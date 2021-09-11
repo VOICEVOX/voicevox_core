@@ -52,7 +52,7 @@ LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/libtorch/lib/" python run.py \
 
 ### C#
 
-[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) @yamachu  
+**[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) @yamachu**  
 VOICEVOX ENGINE の C# 実装。
 
 ### その他の言語
