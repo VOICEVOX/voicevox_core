@@ -8,6 +8,10 @@
 
 [CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) のインストールと [LibTorch](https://pytorch.org/) のダウンロードが必要です。
 
+## API
+
+[core.h](./core.h) をご参照ください。
+
 ## サンプルの実行
 
 まず [Releases](https://github.com/Hiroshiba/voicevox_core/releases) からコアライブラリが入った zip をダウンロードしておきます。
