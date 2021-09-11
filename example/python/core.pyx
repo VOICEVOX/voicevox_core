@@ -5,19 +5,16 @@ from libcpp cimport bool
 
 cpdef initialize(
     str root_dir_path,
-    str yukarin_s_forwarder_path,
-    str yukarin_sa_forwarder_path,
-    str decode_forwarder_path,
-    bool use_gpu
+    bool use_gpu,
 ):
     cdef bool success = c_initialize(
         root_dir_path.encode(),
-        yukarin_s_forwarder_path.encode(),
-        yukarin_sa_forwarder_path.encode(),
-        decode_forwarder_path.encode(),
-        use_gpu
+        use_gpu,
     )
     assert success
+
+cpdef metas():
+    return c_metas().decode()
 
 cpdef numpy.ndarray[numpy.float32_t, ndim=1] yukarin_s_forward(
     int length,

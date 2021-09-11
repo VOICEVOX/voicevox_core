@@ -3,11 +3,10 @@ from libcpp cimport bool
 cdef extern from "core.h":
     bool c_initialize "initialize" (
         char *root_dir_path,
-        char* yukarin_s_forwarder_path,
-        char* yukarin_sa_forwarder_path,
-        char* decode_forwarder_path,
         bool use_gpu
     )
+
+    const char *c_metas "metas" ()
 
     bool c_yukarin_s_forward "yukarin_s_forward" (
         int length,
