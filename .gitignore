@@ -2,6 +2,15 @@
 *.swp
 *.save
 
+# Archives
+*.zip
+
+# Torch
+libtorch/
+
+# Core
+core/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
