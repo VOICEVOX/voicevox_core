@@ -28,7 +28,7 @@ cd example/python
 
 # 環境構築
 pip install -r requirements.txt
-python setup.py install
+python setup.py install  # Linuxの場合は先頭に `LIBRARY_PATH="$LIBRARY_PATH:."` が必要
 
 # # うまく行かないときは毎回以下を実行すると良いかも
 # python setup.py clean
