@@ -15,13 +15,7 @@ def run(
     f0_correct: float,
 ) -> None:
     # コアの初期化
-    core.initialize(
-        "./",
-        "1",
-        "2",
-        "3",
-        use_gpu,
-    )
+    core.initialize("./", use_gpu)
 
     # 音声合成処理モジュールの初期化
     forwarder = Forwarder(

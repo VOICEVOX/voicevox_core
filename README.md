@@ -63,7 +63,7 @@ LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/libtorch/lib/" python run.py \
 
 ## ライセンス
 
-サンプルコードは [MIT LICENSE](./LICENSE) です。
+サンプルコードおよび[core.h](./core.h)は [MIT LICENSE](./LICENSE) です。
 
 [Releases](https://github.com/Hiroshiba/voicevox_core/releases) にある
 ビルド済みのコアライブラリは別ライセンスなのでご注意ください。
