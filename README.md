@@ -50,13 +50,15 @@ LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/libtorch/lib/" python run.py \
 
 「ImportError: DLL load failed: 指定されたモジュールが見つかりません。」というエラーが出た場合は libtorch のパスが間違っているかもしれません。
 
-### C#
+### その他の言語
+
+サンプルコードを実装された際はぜひお知らせください。こちらに追記させて頂きます。
+
+## 事例紹介
 
 **[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) @yamachu** ･･･ VOICEVOX ENGINE の C# 実装
 
-### その他の言語
-
-サンプルコードを実装された際はぜひお知らせください。ここに追記させて頂きます。
+VOICEVOX CORE をご利用された際はぜひお知らせください。こちらに追記させて頂きます。
 
 ## ライセンス
 
