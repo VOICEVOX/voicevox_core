@@ -52,8 +52,7 @@ LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/libtorch/lib/" python run.py \
 
 ### C#
 
-**[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) @yamachu**  
-VOICEVOX ENGINE の C# 実装。
+**[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) @yamachu** ･･･ VOICEVOX ENGINE の C# 実装
 
 ### その他の言語
 
@@ -61,6 +60,6 @@ VOICEVOX ENGINE の C# 実装。
 
 ## ライセンス
 
-サンプルコードおよび[core.h](./core.h)は [MIT LICENSE](./LICENSE) です。
+サンプルコードおよび [core.h](./core.h) は [MIT LICENSE](./LICENSE) です。
 
 [Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリは別ライセンスなのでご注意ください。
