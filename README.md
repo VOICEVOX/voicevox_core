@@ -18,6 +18,26 @@
 
 ### Python 3
 
+#### Dockerから
+
+```bash
+# イメージのビルド
+docker build -t voicevox_core example/python
+
+# コンテナの起動(音声を保存しておくボリュームを作成)
+docker run -it -v ~/voicevox:/root/voice voicevox_core bash
+
+# テスト音声 `おはようございます-1.wav` を生成
+python run.py --text おはようございます --speaker_id 1
+mv *.wav ~/voice
+exit
+
+# 音声の再生
+aplay ~/voice/おはようございます-1.wav
+```
+
+#### ソースから
+
 ```bash
 cd example/python
 
