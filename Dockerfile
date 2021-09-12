@@ -17,8 +17,8 @@ RUN apt-get install -yqq \
 # Setup libtorch
 RUN curl -sLO https://download.pytorch.org/libtorch/cu111/libtorch-cxx11-abi-shared-with-deps-1.9.0%2Bcu111.zip
 RUN unzip -q libtorch*.zip && rm libtorch*.zip
-RUN cp /libtorch/lib/libnvToolsExt-24de1d56.so.1 /libtorch/lib/libnvToolsExt.so.1
-RUN cp /libtorch/lib/libcudart-6d56b25a.so.11.0 /libtorch/lib/libcudart.so.11.0
+RUN ln -s /libtorch/lib/libnvToolsExt-24de1d56.so.1 /libtorch/lib/libnvToolsExt.so.1
+RUN ln -s /libtorch/lib/libcudart-6d56b25a.so.11.0 /libtorch/lib/libcudart.so.11.0
 
 # Add libtorch to LD_LIBRARY_PATH
 ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/libtorch/lib/"
