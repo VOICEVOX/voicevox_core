@@ -39,6 +39,9 @@ RUN mv core/* .
 # Install requirements with pip
 RUN pip install -U pip && pip install -q -r requirements.txt
 
+# Install pyopenjtalk/dic.tar.gz for openjtalk from sourceforge
+RUN python -c 'import pyopenjtalk;pyopenjtalk._lazy_init()'
+
 # Install voicevox_core
 RUN LIBRARY_PATH="$LIBRARY_PATH:." python setup.py install
 
