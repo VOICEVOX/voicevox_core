@@ -1,0 +1,12 @@
+# Tmpfile 
+*.swp
+*.save
+
+# Archives
+*.zip
+
+# Torch
+libtorch/
+
+# Core
+core/
