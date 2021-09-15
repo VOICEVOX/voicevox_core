@@ -57,6 +57,6 @@ RUN pip install -U pip && pip install -q -r requirements.txt
 RUN python -c 'import pyopenjtalk;pyopenjtalk._lazy_init()'
 
 # Install voicevox_core
- RUN LIBRARY_PATH="$LIBRARY_PATH:." python setup.py install
+RUN LIBRARY_PATH="$LIBRARY_PATH:." python setup.py install
 
 # CMD bash
