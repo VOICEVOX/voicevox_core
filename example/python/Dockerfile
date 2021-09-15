@@ -15,7 +15,7 @@ RUN apt-get update -yqq \
     jq
 
 # Copy EntryPoint
-COPY python /voicevox
+COPY ./* /voicevox/
 
 # Setup libtorch
 RUN curl -sLO https://download.pytorch.org/libtorch/cu111/libtorch-cxx11-abi-shared-with-deps-1.9.0%2Bcu111.zip

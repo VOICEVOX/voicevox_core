@@ -62,7 +62,7 @@ LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/libtorch/lib/" python run.py \
 
 ```bash
 # イメージのビルド
-docker build -t voicevox_core example
+docker build -t voicevox_core example/python
 
 # コンテナの起動(音声を保存しておくボリュームを作成)
 docker run -it -v ~/voicevox:/root/voice voicevox_core bash
