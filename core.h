@@ -13,9 +13,6 @@
 #define VOICEVOX_CORE_API
 #endif // _WIN32
 
-
-
-
 /**
  * @fn
  * 初期化する
