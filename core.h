@@ -2,11 +2,19 @@
 
 #include <utility>
 
-#if defined(_WIN32) || defined(_WIN64)
-#define DllExport __declspec(dllexport)
-#else
-#define DllExport
-#endif
+
+#ifdef _WIN32
+#ifdef VOICEVOX_CORE_EXPORTS
+#define VOICEVOX_CORE_API __declspec(dllexport)
+#else // VOICEVOX_CORE_EXPORTS
+#define VOICEVOX_CORE_API __declspec(dllimport)
+#endif // VOICEVOX_CORE_EXPORTS
+#else // _WIN32
+#define VOICEVOX_CORE_API
+#endif // _WIN32
+
+
+
 
 /**
  * @fn
@@ -19,7 +27,7 @@
  * 何度も実行可能。use_gpuを変更して実行しなおすことも可能。
  * 最後に実行したuse_gpuに従って他の関数が実行される。
  */
-extern "C" DllExport bool initialize(char *root_dir_path, bool use_gpu);
+extern "C" VOICEVOX_CORE_API bool initialize(char *root_dir_path, bool use_gpu);
 
 /**
  * @fn
@@ -27,7 +35,7 @@ extern "C" DllExport bool initialize(char *root_dir_path, bool use_gpu);
  * @brief 話者名や話者IDのリストを取得する
  * @return メタ情報が格納されたjson形式の文字列
  */
-extern "C" DllExport const char *metas();
+extern "C" VOICEVOX_CORE_API const char *metas();
 
 /**
  * @fn
@@ -38,7 +46,7 @@ extern "C" DllExport const char *metas();
  * @param speaker_id 話者番号
  * @return 音素ごとの長さ
  */
-extern "C" DllExport bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *output);
+extern "C" VOICEVOX_CORE_API bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *output);
 
 /**
  * @fn
@@ -54,7 +62,7 @@ extern "C" DllExport bool yukarin_s_forward(int length, long *phoneme_list, long
  * @param speaker_id 話者番号
  * @return モーラごとの音高
  */
-extern "C" DllExport bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_phoneme_list,
+extern "C" VOICEVOX_CORE_API bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_phoneme_list,
                                              long *start_accent_list, long *end_accent_list,
                                              long *start_accent_phrase_list, long *end_accent_phrase_list,
                                              long *speaker_id, float *output);
@@ -70,5 +78,5 @@ extern "C" DllExport bool yukarin_sa_forward(int length, long *vowel_phoneme_lis
  * @param speaker_id 話者番号
  * @return 音声波形
  */
-extern "C" DllExport bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme, long *speaker_id,
+extern "C" VOICEVOX_CORE_API bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme, long *speaker_id,
                                          float *output);
