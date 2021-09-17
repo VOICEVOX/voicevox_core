@@ -2,7 +2,6 @@
 
 #include <utility>
 
-
 #ifdef _WIN32
 #ifdef VOICEVOX_CORE_EXPORTS
 #define VOICEVOX_CORE_API __declspec(dllexport)
