@@ -1,7 +1,5 @@
 #pragma once
 
-#include <utility>
-
 #if defined(_WIN32) || defined(_WIN64)
 #define DllExport __declspec(dllexport)
 #else
@@ -19,7 +17,7 @@
  * 何度も実行可能。use_gpuを変更して実行しなおすことも可能。
  * 最後に実行したuse_gpuに従って他の関数が実行される。
  */
-extern "C" DllExport bool initialize(char *root_dir_path, bool use_gpu);
+extern "C" DllExport bool initialize(const char *root_dir_path, bool use_gpu);
 
 /**
  * @fn
@@ -72,3 +70,10 @@ extern "C" DllExport bool yukarin_sa_forward(int length, long *vowel_phoneme_lis
  */
 extern "C" DllExport bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme, long *speaker_id,
                                          float *output);
+
+/**
+ * @fn
+ * 最後に発生したエラーのメッセージを取得する
+ * @return エラーメッセージ
+ */
+extern "C" DllExport const char *last_error_message();
