@@ -80,4 +80,4 @@ extern "C" VOICEVOX_CORE_API bool decode_forward(int length, int phoneme_size, f
  * 最後に発生したエラーのメッセージを取得する
  * @return エラーメッセージ
  */
-extern "C" DllExport const char *last_error_message();
+extern "C" VOICEVOX_CORE_API const char *last_error_message();
