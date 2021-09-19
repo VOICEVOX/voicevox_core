@@ -11,7 +11,7 @@ cpdef initialize(
         root_dir_path.encode(),
         use_gpu,
     )
-    assert success
+    if not success: raise Exception(c_last_error_message().decode())
 
 cpdef metas():
     return c_metas().decode()
@@ -28,7 +28,7 @@ cpdef numpy.ndarray[numpy.float32_t, ndim=1] yukarin_s_forward(
         <long*> speaker_id.data,
         <float*> output.data,
     )
-    assert success
+    if not success: raise Exception(c_last_error_message().decode())
     return output
 
 
@@ -54,7 +54,7 @@ cpdef numpy.ndarray[numpy.float32_t, ndim=2] yukarin_sa_forward(
         <long*> speaker_id.data,
         <float*> output.data,
     )
-    assert success
+    if not success: raise Exception(c_last_error_message().decode())
     return output
 
 cpdef numpy.ndarray[numpy.float32_t, ndim=1] decode_forward(
@@ -73,5 +73,5 @@ cpdef numpy.ndarray[numpy.float32_t, ndim=1] decode_forward(
         <long*> speaker_id.data,
         <float*> output.data,
     )
-    assert success
+    if not success: raise Exception(c_last_error_message().decode())
     return output

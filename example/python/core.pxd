@@ -2,7 +2,7 @@ from libcpp cimport bool
 
 cdef extern from "core.h":
     bool c_initialize "initialize" (
-        char *root_dir_path,
+        const char *root_dir_path,
         bool use_gpu
     )
 
@@ -35,3 +35,5 @@ cdef extern from "core.h":
         long *speaker_id,
         float *output
     )
+
+    const char *c_last_error_message "last_error_message" ()
