@@ -1,16 +1,14 @@
 #pragma once
 
-#include <utility>
-
 #ifdef _WIN32
 #ifdef VOICEVOX_CORE_EXPORTS
 #define VOICEVOX_CORE_API __declspec(dllexport)
-#else // VOICEVOX_CORE_EXPORTS
+#else  // VOICEVOX_CORE_EXPORTS
 #define VOICEVOX_CORE_API __declspec(dllimport)
-#endif // VOICEVOX_CORE_EXPORTS
-#else // _WIN32
+#endif  // VOICEVOX_CORE_EXPORTS
+#else   // _WIN32
 #define VOICEVOX_CORE_API
-#endif // _WIN32
+#endif  // _WIN32
 
 /**
  * @fn
@@ -23,7 +21,7 @@
  * 何度も実行可能。use_gpuを変更して実行しなおすことも可能。
  * 最後に実行したuse_gpuに従って他の関数が実行される。
  */
-extern "C" VOICEVOX_CORE_API bool initialize(char *root_dir_path, bool use_gpu);
+extern "C" VOICEVOX_CORE_API bool initialize(const char *root_dir_path, bool use_gpu);
 
 /**
  * @fn
@@ -59,9 +57,9 @@ extern "C" VOICEVOX_CORE_API bool yukarin_s_forward(int length, long *phoneme_li
  * @return モーラごとの音高
  */
 extern "C" VOICEVOX_CORE_API bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_phoneme_list,
-                                             long *start_accent_list, long *end_accent_list,
-                                             long *start_accent_phrase_list, long *end_accent_phrase_list,
-                                             long *speaker_id, float *output);
+                                                     long *start_accent_list, long *end_accent_list,
+                                                     long *start_accent_phrase_list, long *end_accent_phrase_list,
+                                                     long *speaker_id, float *output);
 
 /**
  * @fn
@@ -74,5 +72,12 @@ extern "C" VOICEVOX_CORE_API bool yukarin_sa_forward(int length, long *vowel_pho
  * @param speaker_id 話者番号
  * @return 音声波形
  */
-extern "C" VOICEVOX_CORE_API bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme, long *speaker_id,
-                                         float *output);
+extern "C" VOICEVOX_CORE_API bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme,
+                                                 long *speaker_id, float *output);
+
+/**
+ * @fn
+ * 最後に発生したエラーのメッセージを取得する
+ * @return エラーメッセージ
+ */
+extern "C" DllExport const char *last_error_message();
