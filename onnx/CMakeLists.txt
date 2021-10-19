@@ -36,7 +36,9 @@ target_include_directories(core
 target_link_libraries(core PUBLIC onnxruntime)
 
 if(ENABLE_CUDA)
-target_compile_definitions(core PRIVATE USE_CUDA)
+	target_compile_definitions(core PRIVATE USE_CUDA)
+	install(FILES ${ONNXRUNTIME_DIR}/lib/onnxruntime_providers_cuda.dll
+		DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 endif(ENABLE_CUDA)
 
 install(TARGETS core
