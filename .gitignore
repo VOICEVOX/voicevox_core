@@ -10,3 +10,9 @@ libtorch/
 
 # Core
 core/
+
+# ONNX
+onnx/build/
+onnx/lib/
+onnx/model/
+onnxruntime*/
