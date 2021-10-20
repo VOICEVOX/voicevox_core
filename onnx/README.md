@@ -12,30 +12,7 @@
 4. `cmake --build . --config Release`でビルド
 5. `cmake --install .`とすると`./lib`フォルダにdll/libが生成される
 
-## Note
-core.dllはonnxruntime.dllに依存しているため、読み込むときはonnxruntime.dllがシステムから見えていなければならない
+## Dependencies
+`core.dll`は`onnxruntime.dll`に依存しているため、読み込むときは`onnxruntime.dll`がシステムから見えていなければならない
 
-```
-> dumpbin /dependents core.dll
-Microsoft (R) COFF/PE Dumper Version 14.29.30038.1
-Copyright (C) Microsoft Corporation.  All rights reserved.
-
-
-Dump of file core.dll
-
-File Type: DLL
-
-  Image has the following dependencies:
-
-    onnxruntime.dll
-    MSVCP140.dll
-    VCRUNTIME140.dll
-    VCRUNTIME140_1.dll
-    api-ms-win-crt-runtime-l1-1-0.dll
-    api-ms-win-crt-heap-l1-1-0.dll
-    api-ms-win-crt-string-l1-1-0.dll
-    api-ms-win-crt-locale-l1-1-0.dll
-    KERNEL32.dll
-
-...(省略)
-```
+GPU版の`onnxruntime.dll`は`onnxruntime_providers_cuda.dll`と`onnxruntime_providers_shared.dll`に依存している。
