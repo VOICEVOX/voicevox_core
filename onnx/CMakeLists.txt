@@ -36,6 +36,9 @@ target_include_directories(core
 target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/lib)
 target_link_libraries(core PUBLIC onnxruntime)
 
+# std::filesystem in GCC < 9.0 (https://gitlab.kitware.com/cmake/cmake/-/issues/17834)
+target_link_libraries(core PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
+
 if(ENABLE_CUDA)
 	target_compile_definitions(core PRIVATE USE_CUDA)
 endif(ENABLE_CUDA)
