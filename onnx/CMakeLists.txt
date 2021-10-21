@@ -25,6 +25,7 @@ file(GLOB ONNXRUNTIME_LIBS
 add_library(core SHARED core.cpp)
 set_property(TARGET core PROPERTY CXX_STANDARD 17)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
+set_property(TARGET core PROPERTY INSTALL_RPATH "$ORIGIN") # make enable to search onnxruntime.so
 target_compile_options(core PRIVATE
 	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8>
 	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>

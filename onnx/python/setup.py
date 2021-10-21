@@ -12,6 +12,7 @@ ext_modules = [
         libraries=["core"],
         include_dirs=["core"],
         library_dirs=["core"],
+        runtime_library_dirs=["$ORIGIN"],
     )
 ]
 
