@@ -15,5 +15,5 @@
 
 ## 2. setuptools
 
-1. ONNX BUILDで生成した`lib`フォルダの中身を`python`ディレクトリに入れる
+1. ONNX BUILDで生成した`lib`フォルダの中身を`python/_core`ディレクトリに入れる
 2. `python`ディレクトリ内で`python setup.py install`を実行

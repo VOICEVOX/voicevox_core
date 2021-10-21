@@ -16,3 +16,10 @@ onnx/build/
 onnx/lib/
 onnx/model/
 onnxruntime*/
+onnx/python/build/
+!onnx/python/core/
+onnx/python/core/*.h
+onnx/python/core/*.cpp
+onnx/python/core/*.lib
+onnx/python/core/*.dll
+onnx/python/core/*.so
