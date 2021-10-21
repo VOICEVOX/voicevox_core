@@ -19,7 +19,8 @@ endif()
 file(GLOB ONNXRUNTIME_LIBS
 	"${ONNXRUNTIME_DIR}/lib/*.dll"
 	"${ONNXRUNTIME_DIR}/lib/*.lib"
-	"${ONNXRUNTIME_DIR}/lib/*.so")
+	"${ONNXRUNTIME_DIR}/lib/*.so"
+	"${ONNXRUNTIME_DIR}/lib/*.so.*")
 
 add_library(core SHARED core.cpp)
 set_property(TARGET core PROPERTY CXX_STANDARD 17)
