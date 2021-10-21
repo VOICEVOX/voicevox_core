@@ -2,11 +2,17 @@
 
 [VOICEVOX](https://voicevox.hiroshiba.jp/) の音声合成コア。
 
-[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にビルド済みのコアライブラリ（.so/.dll）があります。
+[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にビルド済みのコアライブラリ（.so/.dll/.dylib）があります。
 
 ## 依存関係
 
+### Windows と Linux の場合
+
 [CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) のインストールと [LibTorch](https://pytorch.org/) のダウンロードが必要です。
+
+### macOS の場合
+
+パッケージマネージャーの [Homebrew](https://brew.sh/index_ja) を用いて `brew install libtorch` コマンドで LibTorch を導入する方法が便利です（CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります）。
 
 ## API
 
@@ -28,9 +34,12 @@ cd example/python
 # Windowsの場合、DLLからLIBファイルの作成
 ./makelib.bat core
 
+# macOSの場合、libcore_cpu.dylib へのシンボリックリンク libcore.dylib を作成
+ln -s libcore_cpu.dylib libcore.dylib
+
 # 環境構築
 pip install -r requirements.txt
-python setup.py install  # Linuxの場合は先頭に `LIBRARY_PATH="$LIBRARY_PATH:."` が必要
+python setup.py install  # Linux と macOS の場合は先頭に `LIBRARY_PATH="$LIBRARY_PATH:."` が必要
 
 # # うまく行かないときは毎回以下を実行すると良いかも
 # python setup.py clean
@@ -41,8 +50,13 @@ PATH="$PATH:$HOME/libtorch/lib/" python run.py \
     --text "これは本当に実行できているんですか" \
     --speaker_id 1
 
-# 実行（Windows以外の場合）
+# 実行（Linuxの場合）
 LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/libtorch/lib/" python run.py \
+    --text "これは本当に実行できているんですか" \
+    --speaker_id 1
+
+# 実行（macOSの場合）
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH:." python run.py \
     --text "これは本当に実行できているんですか" \
     --speaker_id 1
 
@@ -84,8 +98,8 @@ aplay ~/voice/おはようございます-1.wav
 
 ## 事例紹介
 
-**[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装  
-**[Node VOICEVOX Engine](https://github.com/y-chan/node-voicevox-engine) [@y-chan](https://github.com/y-chan)** ･･･ VOICEVOX ENGINE の Node.js/C++ 実装  
+**[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装
+**[Node VOICEVOX Engine](https://github.com/y-chan/node-voicevox-engine) [@y-chan](https://github.com/y-chan)** ･･･ VOICEVOX ENGINE の Node.js/C++ 実装
 
 ## ライセンス
 
