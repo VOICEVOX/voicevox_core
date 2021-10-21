@@ -75,13 +75,11 @@ bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id,
     const char *inputs[] = {"phoneme_list", "speaker_id"};
     const char *outputs[] = {"phoneme_length"};
     const std::array<int64_t, 1> phoneme_shape{length};
-    std::vector<int64_t> phoneme_list_ll(length);
-    std::copy_n(phoneme_list, length, phoneme_list_ll.begin());
     int64_t speaker_id_ll = static_cast<int64_t>(*speaker_id);
 
     std::array<Ort::Value, 2> input_tensors = {
         Ort::Value::CreateTensor<int64_t>(
-            status->memory_info, phoneme_list_ll.data(), length,
+            status->memory_info, (int64_t *)phoneme_list, length,
             phoneme_shape.data(), phoneme_shape.size()),
         Ort::Value::CreateTensor<int64_t>(status->memory_info, &speaker_id_ll,
                                           1, speaker_shape.data(),
@@ -124,41 +122,28 @@ bool yukarin_sa_forward(int length, long *vowel_phoneme_list,
     const std::array<int64_t, 1> phoneme_shape{length};
     int64_t length_ll = static_cast<int64_t>(length);
     int64_t speaker_id_ll = static_cast<int64_t>(*speaker_id);
-    std::vector<int64_t> vowel_phoneme_list_ll(length),
-        consonant_phoneme_list_ll(length), start_accent_list_ll(length),
-        end_accent_list_ll(length), start_accent_phrase_list_ll(length),
-        end_accent_phrase_list_ll(length);
-    std::copy_n(vowel_phoneme_list, length, vowel_phoneme_list_ll.begin());
-    std::copy_n(consonant_phoneme_list, length,
-                consonant_phoneme_list_ll.begin());
-    std::copy_n(start_accent_list, length, start_accent_list_ll.begin());
-    std::copy_n(end_accent_list, length, end_accent_list_ll.begin());
-    std::copy_n(start_accent_phrase_list, length,
-                start_accent_phrase_list_ll.begin());
-    std::copy_n(end_accent_phrase_list, length,
-                end_accent_phrase_list_ll.begin());
 
     std::array<Ort::Value, 8> input_tensors = {
         Ort::Value::CreateTensor<int64_t>(status->memory_info, &length_ll, 1,
                                           scalar_shape.data(),
                                           scalar_shape.size()),
         Ort::Value::CreateTensor<int64_t>(
-            status->memory_info, vowel_phoneme_list_ll.data(), length,
+            status->memory_info, (int64_t *)vowel_phoneme_list, length,
             phoneme_shape.data(), phoneme_shape.size()),
         Ort::Value::CreateTensor<int64_t>(
-            status->memory_info, consonant_phoneme_list_ll.data(), length,
+            status->memory_info, (int64_t *)consonant_phoneme_list, length,
             phoneme_shape.data(), phoneme_shape.size()),
         Ort::Value::CreateTensor<int64_t>(
-            status->memory_info, start_accent_list_ll.data(), length,
+            status->memory_info, (int64_t *)start_accent_list, length,
             phoneme_shape.data(), phoneme_shape.size()),
         Ort::Value::CreateTensor<int64_t>(
-            status->memory_info, end_accent_list_ll.data(), length,
+            status->memory_info, (int64_t *)end_accent_list, length,
             phoneme_shape.data(), phoneme_shape.size()),
         Ort::Value::CreateTensor<int64_t>(
-            status->memory_info, start_accent_phrase_list_ll.data(), length,
+            status->memory_info, (int64_t *)start_accent_phrase_list, length,
             phoneme_shape.data(), phoneme_shape.size()),
         Ort::Value::CreateTensor<int64_t>(
-            status->memory_info, end_accent_phrase_list_ll.data(), length,
+            status->memory_info, (int64_t *)end_accent_phrase_list, length,
             phoneme_shape.data(), phoneme_shape.size()),
         Ort::Value::CreateTensor<int64_t>(status->memory_info, &speaker_id_ll,
                                           1, speaker_shape.data(),

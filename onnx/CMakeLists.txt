@@ -16,36 +16,30 @@ if(EXISTS ${ONNXRUNTIME_DIR}/VERSION_NUMBER)
 else()
 	message(FATAL_ERROR "Unable to find ONNX Runtime. Use option -DONNXRUNTIME_DIR=...")
 endif()
-add_library(onnxruntime SHARED IMPORTED)
-set_target_properties(onnxruntime PROPERTIES
-	IMPORTED_LOCATION "${ONNXRUNTIME_DIR}/lib/onnxruntime.dll"
-	IMPORTED_IMPLIB "${ONNXRUNTIME_DIR}/lib/onnxruntime.lib"
-	INTERFACE_INCLUDE_DIRECTORIES "${ONNXRUNTIME_DIR}/include"
-)
+file(GLOB ONNXRUNTIME_LIBS
+	"${ONNXRUNTIME_DIR}/lib/*.dll"
+	"${ONNXRUNTIME_DIR}/lib/*.lib"
+	"${ONNXRUNTIME_DIR}/lib/*.so")
 
 add_library(core SHARED core.cpp)
 set_property(TARGET core PROPERTY CXX_STANDARD 17)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
 target_compile_options(core PRIVATE
-	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2>
+	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8>
 	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
 )
 target_include_directories(core
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../
 	PRIVATE ${ONNXRUNTIME_DIR}/include)
+target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/lib)
 target_link_libraries(core PUBLIC onnxruntime)
 
 if(ENABLE_CUDA)
 	target_compile_definitions(core PRIVATE USE_CUDA)
-	install(FILES
-		${ONNXRUNTIME_DIR}/lib/onnxruntime_providers_cuda.dll
-		${ONNXRUNTIME_DIR}/lib/onnxruntime_providers_shared.dll
-		DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 endif(ENABLE_CUDA)
 
 install(TARGETS core
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	RUNTIME DESTINATION lib)
-install(FILES ${ONNXRUNTIME_DIR}/lib/onnxruntime.dll
-	DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install(FILES ${ONNXRUNTIME_LIBS} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)

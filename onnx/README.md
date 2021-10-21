@@ -1,4 +1,5 @@
-# ONNX BUILD
+# How to install
+## 1. ONNX BUILD
 
 1. https://github.com/microsoft/onnxruntime/releases から環境に対応したonnxruntimeをダウンロードし展開
 
@@ -12,7 +13,7 @@
 4. `cmake --build . --config Release`でビルド
 5. `cmake --install .`とすると`./lib`フォルダにdll/libが生成される
 
-## Dependencies
-`core.dll`は`onnxruntime.dll`に依存しているため、読み込むときは`onnxruntime.dll`がシステムから見えていなければならない
+## 2. setuptools
 
-GPU版の`onnxruntime.dll`は`onnxruntime_providers_cuda.dll`と`onnxruntime_providers_shared.dll`に依存している。
+1. ONNX BUILDで生成した`lib`フォルダの中身を`python`ディレクトリに入れる
+2. `python`ディレクトリ内で`python setup.py install`を実行
