@@ -1,8 +1,14 @@
 from setuptools import setup, Extension
+import platform
 
 import numpy
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
+
+if platform.system() == "Windows":
+    runtime_lib_dirs = []
+else:
+    runtime_library_dirs = ["$ORIGIN"]
 
 ext_modules = [
     Extension(
@@ -12,7 +18,7 @@ ext_modules = [
         libraries=["core"],
         include_dirs=["core"],
         library_dirs=["core"],
-        runtime_library_dirs=["$ORIGIN"],
+        runtime_lib_dirs=runtime_lib_dirs,
     )
 ]
 
