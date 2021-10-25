@@ -6,7 +6,7 @@ from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 
 if platform.system() == "Windows":
-    runtime_lib_dirs = []
+    runtime_library_dirs = []
 else:
     runtime_library_dirs = ["$ORIGIN"]
 
@@ -18,7 +18,7 @@ ext_modules = [
         libraries=["core"],
         include_dirs=["core"],
         library_dirs=["core"],
-        runtime_lib_dirs=runtime_lib_dirs,
+        runtime_library_dirs=runtime_library_dirs,
     )
 ]
 
