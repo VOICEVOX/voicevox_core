@@ -32,5 +32,5 @@ setup(
     include_dirs=[
         numpy.get_include(),
     ],
-    package_data={"core": ["*.dll", "*.lib", "*.so", "*.so.*"]},
+    package_data={"core": ["*.dll", "*.so", "*.so.*", "*.dylib"]},
 )
