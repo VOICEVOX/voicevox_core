@@ -46,7 +46,7 @@ static std::string error_message;
 static bool initialized = false;
 static std::unique_ptr<Status> status;
 
-template <typename T, int Rank>
+template <typename T, size_t Rank>
 Ort::Value ToTensor(T *data, const std::array<int64_t, Rank> &shape) {
   int64_t count = 1;
   for (int64_t dim : shape) {
