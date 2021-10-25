@@ -56,6 +56,7 @@ Ort::Value ToTensor(T *data, const std::array<int64_t, Rank> &shape) {
 }
 
 bool initialize(const char *root_dir_path, bool use_gpu) {
+  initialized = false;
   try {
     status = std::make_unique<Status>(root_dir_path, use_gpu);
   } catch (const Ort::Exception &e) {
