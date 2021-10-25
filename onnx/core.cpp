@@ -68,7 +68,8 @@ bool initialize(const char *root_dir_path, bool use_gpu) {
   return true;
 }
 
-const char *metas() { throw std::runtime_error("NotImplemented"); }
+// TODO: 未実装
+const char *metas() { return ""; }
 
 bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *output) {
   if (!initialized) {
