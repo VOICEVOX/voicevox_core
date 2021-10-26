@@ -69,6 +69,11 @@ bool initialize(const char *root_dir_path, bool use_gpu) {
   return true;
 }
 
+void finalize() {
+  initialized = false;
+  status.reset();
+}
+
 // TODO: 未実装
 const char *metas() { return ""; }
 

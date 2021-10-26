@@ -25,6 +25,19 @@ extern "C" VOICEVOX_CORE_API bool initialize(const char *root_dir_path, bool use
 
 /**
  * @fn
+ * 終了処理を行う
+ * @brief 終了処理を行う。以降関数を利用するためには再度初期化を行う必要がある。
+ * @detail
+ * 何度も実行可能。use_gpuを変更して実行しなおすことも可能。
+ * 最後に実行したuse_gpuに従って他の関数が実行される。
+ * @detail
+ * 何度も実行可能。実行せずにexitしても大抵の場合問題ないが、
+ * CUDAを利用している場合これを実行しておかないと例外が起こることがある。
+ */
+extern "C" VOICEVOX_CORE_API void finalize();
+
+/**
+ * @fn
  * メタ情報を取得する
  * @brief 話者名や話者IDのリストを取得する
  * @return メタ情報が格納されたjson形式の文字列
