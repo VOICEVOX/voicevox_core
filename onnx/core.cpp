@@ -11,6 +11,7 @@
 #define NOT_INITIALIZED_ERR "Call initialize() first."
 #define NOT_FOUND_ERR "No such file or directory: "
 #define ONNX_ERR "ONNX raise exception: "
+#define GPU_NOT_SUPPORTED_ERR "This library is CPU version. GPU is not supported."
 
 namespace fs = std::filesystem;
 constexpr std::array<int64_t, 0> scalar_shape{};
@@ -20,18 +21,19 @@ struct Status {
   Status(const char *root_dir_path_utf8, bool use_gpu_)
       : root_dir_path(root_dir_path_utf8),
         use_gpu(use_gpu_),
-        memory_info(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU)) {
+        memory_info(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU)),
+        yukarin_s(nullptr), yukarin_sa(nullptr), decode(nullptr) {
     // deprecated in C++20; Use char8_t for utf-8 char in the future.
     fs::path root = fs::u8path(root_dir_path);
     Ort::SessionOptions session_options;
+    yukarin_s = Ort::Session(env, (root / "yukarin_s.onnx").c_str(), session_options);
+    yukarin_sa = Ort::Session(env, (root / "yukarin_sa.onnx").c_str(), session_options);
 #ifdef USE_CUDA
     if (use_gpu) {
       Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(session_options, 0));
     }
 #endif
-    yukarin_s = std::make_shared<Ort::Session>(env, (root / "yukarin_s.onnx").c_str(), session_options);
-    yukarin_sa = std::make_shared<Ort::Session>(env, (root / "yukarin_sa.onnx").c_str(), session_options);
-    decode = std::make_shared<Ort::Session>(env, (root / "decode.onnx").c_str(), session_options);
+    decode = Ort::Session(env, (root / "decode.onnx").c_str(), session_options);
   }
 
   std::string root_dir_path;
@@ -39,7 +41,7 @@ struct Status {
   Ort::MemoryInfo memory_info;
 
   Ort::Env env{ORT_LOGGING_LEVEL_ERROR};
-  std::shared_ptr<Ort::Session> yukarin_s, yukarin_sa, decode;
+  Ort::Session yukarin_s, yukarin_sa, decode;
 };
 
 static std::string error_message;
@@ -57,8 +59,23 @@ Ort::Value ToTensor(T *data, const std::array<int64_t, Rank> &shape) {
 
 bool initialize(const char *root_dir_path, bool use_gpu) {
   initialized = false;
+#ifndef USE_CUDA
+  if (use_gpu) {
+    error_message = GPU_NOT_SUPPORTED_ERR;
+    return false;
+  }
+#endif
   try {
     status = std::make_unique<Status>(root_dir_path, use_gpu);
+    if (use_gpu) {
+      // 一回走らせて十分なGPUメモリを確保させる
+      int length = 500;
+      int phoneme_size = 45;
+      std::vector<float> phoneme(length * phoneme_size), f0(length);
+      long speaker_id = 0;
+      std::vector<float> output(length * 256);
+      decode_forward(length, phoneme_size, f0.data(), phoneme.data(), &speaker_id, output.data());
+    }
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
     error_message += e.what();
@@ -92,7 +109,7 @@ bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *
                                                ToTensor(&speaker_id_ll, speaker_shape)};
     Ort::Value output_tensor = ToTensor(output, phoneme_shape);
 
-    status->yukarin_s->Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
+    status->yukarin_s.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
                            &output_tensor, 1);
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
@@ -129,7 +146,7 @@ bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_ph
                                                ToTensor(&speaker_id_ll, speaker_shape)};
     Ort::Value output_tensor = ToTensor(output, phoneme_shape);
 
-    status->yukarin_sa->Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
+    status->yukarin_sa.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
                             &output_tensor, 1);
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
@@ -155,7 +172,7 @@ bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme, lon
                                               ToTensor(&speaker_id_ll, speaker_shape)};
     Ort::Value output_tensor = ToTensor(output, wave_shape);
 
-    status->decode->Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(), outputs,
+    status->decode.Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(), outputs,
                         &output_tensor, 1);
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
