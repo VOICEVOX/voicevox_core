@@ -6,6 +6,8 @@ cdef extern from "core.h":
         bool use_gpu
     )
 
+    void c_finalize "finalize" ()
+
     const char *c_metas "metas" ()
 
     bool c_yukarin_s_forward "yukarin_s_forward" (
