@@ -35,6 +35,8 @@ def run(
     # 保存
     soundfile.write(f"{text}-{speaker_id}.wav", data=wave, samplerate=24000)
 
+    core.finalize()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
