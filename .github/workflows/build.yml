@@ -116,16 +116,13 @@ jobs:
       # gcc 7 (ubuntu-18.04 default) does not have stdc++fs
       - name: Install build-essential
         if: startsWith(matrix.os, 'ubuntu')
+        shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake
 
       - if: startsWith(matrix.os, 'mac')
         uses: jwlawson/actions-setup-cmake@v1.9
-
-      - run: |
-          cd onnx
-          ls ../download/onnxruntime
 
       - name: Build
         shell: bash
