@@ -232,7 +232,7 @@ jobs:
           path: core.zip
 
       - name: Upload to Release
-        if: env.SKIP_UPLOADING_RELEASE_ASSET != '1'
+        if: env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
