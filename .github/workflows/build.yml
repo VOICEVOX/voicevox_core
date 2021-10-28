@@ -1,0 +1,130 @@
+name: Build C++ Shared Library
+
+on:
+  push:
+    branches:
+      # - main
+  workflow_dispatch:
+
+jobs:
+  build_cpp_shared_library:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-2019, macos-10.15, ubuntu-18.04 ]
+        device: [ gpu, cpu ]
+
+        exclude:
+          - os: macos-10.15
+            device: gpu
+
+        include:
+          - os: windows-2019
+            library_path: Release/core.dll
+
+          - os: macos-10.15
+            library_path: libcore.dylib
+
+          - os: ubuntu-18.04
+            library_path: libcore.so
+
+          - os: windows-2019
+            device: gpu
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-gpu-1.9.0.zip
+            cmake_additional_options: -DENABLE_CUDA=ON
+            dst_library_name: core.dll
+
+          - os: windows-2019
+            device: cpu-x64
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-1.9.0.zip
+            dst_library_name: core_cpu.dll
+
+          - os: windows-2019
+            device: cpu-x86
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x86-1.9.0.zip
+            dst_library_name: core_cpu_x86.dll
+
+          - os: windows-2019
+            device: cpu-arm64
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-arm64-1.9.0.zip
+            dst_library_name: core_cpu_arm64.dll
+
+          - os: windows-2019
+            device: cpu-arm
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-arm-1.9.0.zip
+            dst_library_name: core_cpu_arm.dll
+
+          - os: macos-10.15
+            device: cpu-x64
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-osx-x64-1.9.0.tgz
+            dst_library_name: libcore_cpu.dylib
+
+          - os: ubuntu-18.04
+            device: gpu
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-gpu-1.9.0.tgz
+            cmake_additional_options: -DENABLE_CUDA=ON
+            dst_library_name: libcore.so
+
+          - os: ubuntu-18.04
+            device: cpu-x64
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-1.9.0.tgz
+            dst_library_name: libcore_cpu.so
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: mkdir download
+
+      # ONNX Runtime
+      - uses: actions/cache@v2
+        id: onnxruntime-cache
+        with:
+          key: ${{ matrix.os }}-${{ matrix.device }}-onnxruntime-cache
+          path: download/onnxruntime
+
+      # download/onnxruntime/lib/onnxruntime.dll
+      - if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip')
+        shell: bash
+        run: |
+          curl "${{ matrix.onnxruntime_url }}" > download/onnxruntime.zip
+          mkdir -p download/onnxruntime
+
+          # strip-components
+          TEMPDIR=$(mktemp -d)
+          unzip download/onnxruntime.zip -d "${TEMPDIR}"
+          mv "${TEMPDIR}"/*/* onnxruntime/
+          rm -rf "${TEMPDIR}"
+
+          rm download/onnxruntime.zip
+
+      # download/onnxruntime/lib/libonnxruntime.so
+      # download/onnxruntime/lib/libonnxruntime.dylib
+      - if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.tgz')
+        shell: bash
+        run: |
+          curl "${{ matrix.onnxruntime_url }}" > download/onnxruntime.tgz
+          mkdir -p download/onnxruntime
+          tar xf download/onnxruntime.tgz -C download/onnxruntime --strip-components 1
+          rm download/onnxruntime.tgz
+
+      # Build
+      - if: startsWith(matrix.os, 'windows')
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - if: startsWith(matrix.os, 'mac') || startsWith(matrix.os, 'ubuntu')
+        uses: jwlawson/actions-setup-cmake@v1.9
+
+      - name: Build
+        run: |
+          cd onnx
+          cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
+          cmake --build . --config Release
+
+      # Upload
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}-${{ matrix.device }}-cpp-shared-library
+          path: ${{ matrix.library_path }}
+          retention-days: 7
