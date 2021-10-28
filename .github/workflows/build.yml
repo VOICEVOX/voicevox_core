@@ -140,24 +140,24 @@ jobs:
 
       - name: Configure (Windows, macOS)
         shell: bash
+        working-directory: onnx
         run: |
-          cd onnx
           cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
 
       - name: Configure (Linux)
         if: startsWith(matrix.os, 'ubuntu')
         shell: bash
+        working-directory: onnx
         env:
           CC:   gcc-8
           CXX:  g++-8
         run: |
-          cd onnx
           cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
 
       - name: Build
         shell: bash
+        working-directory: onnx
         run: |
-          cd onnx
           cmake --build . --config Release
 
       # Upload
