@@ -84,7 +84,6 @@ jobs:
       - run: mkdir download
 
       # ONNX Runtime
-
       - name: Export ONNX Runtime url to calc hash
         shell: bash
         run: echo "${{ matrix.onnxruntime_url }}" > download/onnxruntime_url.txt
