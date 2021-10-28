@@ -1,0 +1,240 @@
+name: Build C++ Shared Library
+
+on:
+  push:
+    branches:
+      # - main
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+env:
+  # Raw character weights are not public.
+  # Skip uploading to GitHub Release on public repo.
+  SKIP_UPLOADING_RELEASE_ASSET: ${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }}
+
+jobs:
+  build-cpp-shared:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2019
+            device: gpu
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-gpu-1.9.0.zip
+            cmake_additional_options: -DENABLE_CUDA=ON
+            artifact_name: windows-x64-gpu
+            library_path: onnx/Release/core.dll
+
+          - os: windows-2019
+            device: cpu-x64
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-1.9.0.zip
+            artifact_name: windows-x64-cpu
+            library_path: onnx/Release/core.dll
+
+          - os: windows-2019
+            device: cpu-x86
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x86-1.9.0.zip
+            cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32
+            artifact_name: windows-x86-cpu
+            library_path: onnx/Release/core.dll
+
+          - os: windows-2019
+            device: cpu-arm64
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-arm64-1.9.0.zip
+            cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm64
+            artifact_name: windows-arm64-cpu
+            library_path: onnx/Release/core.dll
+
+          - os: windows-2019
+            device: cpu-arm
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-arm-1.9.0.zip
+            cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm
+            artifact_name: windows-arm-cpu
+            library_path: onnx/Release/core.dll
+
+          - os: macos-10.15
+            device: cpu-x64
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-osx-x64-1.9.0.tgz
+            artifact_name: osx-x64-cpu
+            library_path: onnx/libcore.dylib
+
+          - os: ubuntu-18.04
+            device: gpu
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-gpu-1.9.0.tgz
+            cmake_additional_options: -DENABLE_CUDA=ON
+            artifact_name: linux-x64-gpu
+            library_path: onnx/libcore.so
+
+          - os: ubuntu-18.04
+            device: cpu-x64
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-1.9.0.tgz
+            artifact_name: linux-x64-cpu
+            library_path: onnx/libcore.so
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: mkdir download
+
+      # ONNX Runtime
+      - name: Export ONNX Runtime url to calc hash
+        shell: bash
+        run: echo "${{ matrix.onnxruntime_url }}" > download/onnxruntime_url.txt
+
+      - name: Cache ONNX Runtime
+        uses: actions/cache@v2
+        id: onnxruntime-cache
+        with:
+          key: ${{ matrix.os }}-${{ matrix.device }}-onnxruntime-cache-v1-${{ hashFiles('download/onnxruntime_url.txt') }}
+          path: download/onnxruntime
+
+      # download/onnxruntime/lib/onnxruntime.dll
+      - name: Download ONNX Runtime (zip)
+        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip')
+        shell: bash
+        run: |
+          curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.zip
+          mkdir -p download/onnxruntime
+
+          # strip-components
+          TEMPDIR=$(mktemp -d)
+          unzip download/onnxruntime.zip -d "${TEMPDIR}"
+          mv "${TEMPDIR}"/*/* download/onnxruntime/
+          rm -rf "${TEMPDIR}"
+
+          rm download/onnxruntime.zip
+
+      # download/onnxruntime/lib/libonnxruntime.so
+      # download/onnxruntime/lib/libonnxruntime.dylib
+      - name: Download ONNX Runtime (tgz)
+        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.tgz')
+        shell: bash
+        run: |
+          curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.tgz
+          mkdir -p download/onnxruntime
+          tar xf download/onnxruntime.tgz -C download/onnxruntime --strip-components 1
+          rm download/onnxruntime.tgz
+
+      # Build
+      - if: startsWith(matrix.os, 'windows')
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - if: startsWith(matrix.os, 'mac')
+        uses: jwlawson/actions-setup-cmake@v1.9
+
+      # gcc 7 (ubuntu-18.04 default) does not have stdc++fs
+      - name: Install build-essential
+        if: startsWith(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-8 g++-8 cmake
+
+      - name: Configure (Windows, macOS)
+        if: ${{ !startsWith(matrix.os, 'ubuntu') }} # '!' cannot be used as a first character in YAML
+        shell: bash
+        working-directory: onnx
+        run: |
+          cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
+
+      - name: Configure (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
+        shell: bash
+        working-directory: onnx
+        env:
+          CC:   gcc-8
+          CXX:  g++-8
+        run: |
+          cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
+
+      - name: Build
+        shell: bash
+        working-directory: onnx
+        run: |
+          cmake --build . --config Release
+
+      # Upload
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.artifact_name }}-cpp-shared
+          path: ${{ matrix.library_path }}
+          retention-days: 7
+
+  # Create core.zip
+  upload-to-release-cpp-shared:
+    if: github.event.release.tag_name != ''
+    needs: [build-cpp-shared]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set BUILD_IDENTIFIER env var
+        run: |
+          echo "BUILD_IDENTIFIER=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+              zip
+
+      - name: Download and extract artifact
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts/
+
+      - name: Rearchive artifacts
+        run: |
+          mkdir release
+
+          readarray -t MAPPINGS <<EOF
+          windows-x64-gpu   core.dll      core_gpu_x64_nvidia.dll
+          windows-x64-cpu   core.dll      core_cpu_x64.dll
+          windows-x86-cpu   core.dll      core_cpu_x86.dll
+          windows-arm64-cpu core.dll      core_cpu_arm64.dll
+          windows-arm-cpu   core.dll      core_cpu_arm.dll
+          osx-x64-cpu       libcore.dylib libcore_cpu_x64.dylib
+          linux-x64-gpu     libcore.so    libcore_gpu_x64_nvidia.so
+          linux-x64-cpu     libcore.so    libcore_cpu_x64.so
+          EOF
+
+          for line in "${MAPPINGS[@]}"; do
+            KND=$(echo $line | awk '$0=$1')
+            SRC=$(echo $line | awk '$0=$2')
+            DST=$(echo $line | awk '$0=$3')
+
+            if [ "${SRC}" = "${DST}" ]; then
+              echo "Skip renaming ${KND}/${SRC} => ${DST}"
+              continue
+            fi
+
+            echo "Renaming ${KND}/${SRC} => ${DST}"
+            mv "artifacts/${KND}-cpp-shared/${SRC}" "artifacts/${KND}-cpp-shared/${DST}"
+          done
+
+          mv artifacts/*/* release/
+
+          cp core.h release/
+
+          echo ${{ env.BUILD_IDENTIFIER }} > release/VERSION
+
+          cd release/
+          zip -r ../core.zip *
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          path: core.zip
+
+      - name: Upload to Release
+        if: env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }} # ==> github.event.release.tag_name
+          file: core.zip
