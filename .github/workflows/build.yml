@@ -153,7 +153,8 @@ jobs:
           cmake --build . --config Release
 
       # Upload
-      - uses: actions/upload-artifact@v2
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.artifact_name }}-cpp-shared
           path: ${{ matrix.library_path }}
