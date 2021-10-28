@@ -130,6 +130,10 @@ jobs:
       - name: Build
         shell: bash
         run: |
+          # fix compiler version
+          export CC=$(which gcc)
+          export CXX=$(which g++)
+
           cd onnx
           cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
           cmake --build . --config Release
