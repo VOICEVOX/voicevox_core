@@ -81,14 +81,15 @@ jobs:
       - uses: actions/cache@v2
         id: onnxruntime-cache
         with:
-          key: ${{ matrix.os }}-${{ matrix.device }}-onnxruntime-cache
+          key: ${{ matrix.os }}-${{ matrix.device }}-onnxruntime-cache-v1
           path: download/onnxruntime
 
       # download/onnxruntime/lib/onnxruntime.dll
-      - if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip')
+      - name: Download ONNX Runtime (zip)
+        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip')
         shell: bash
         run: |
-          curl "${{ matrix.onnxruntime_url }}" > download/onnxruntime.zip
+          curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.zip
           mkdir -p download/onnxruntime
 
           # strip-components
@@ -101,10 +102,11 @@ jobs:
 
       # download/onnxruntime/lib/libonnxruntime.so
       # download/onnxruntime/lib/libonnxruntime.dylib
-      - if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.tgz')
+      - name: Download ONNX Runtime (tgz)
+        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.tgz')
         shell: bash
         run: |
-          curl "${{ matrix.onnxruntime_url }}" > download/onnxruntime.tgz
+          curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.tgz
           mkdir -p download/onnxruntime
           tar xf download/onnxruntime.tgz -C download/onnxruntime --strip-components 1
           rm download/onnxruntime.tgz
@@ -117,6 +119,7 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.9
 
       - name: Build
+        shell: bash
         run: |
           cd onnx
           cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
