@@ -162,11 +162,9 @@ jobs:
 
   # Create core.zip
   upload-to-release-cpp-shared:
-    env:
-      # Raw character weights are not public.
-      # Skip uploading to GitHub Release on public repo.
-      SKIP_UPLOADING_RELEASE_ASSET: ${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }}
-    if: env.SKIP_UPLOADING_RELEASE_ASSET != '1' && github.event.release.tag_name != ''
+    # Raw character weights are not public.
+    # Skip uploading to GitHub Release on public repo.
+    if: (${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }} != '1') && github.event.release.tag_name != ''
     needs: [build-cpp-shared]
     runs-on: ubuntu-latest
     steps:
