@@ -21,14 +21,12 @@ jobs:
             cmake_additional_options: -DENABLE_CUDA=ON
             artifact_name: windows-x64-gpu
             library_path: onnx/Release/core.dll
-            dst_library_name: core.dll
 
           - os: windows-2019
             device: cpu-x64
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-1.9.0.zip
             artifact_name: windows-x64-cpu
             library_path: onnx/Release/core.dll
-            dst_library_name: core_cpu.dll
 
           - os: windows-2019
             device: cpu-x86
@@ -36,7 +34,6 @@ jobs:
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32
             artifact_name: windows-x86-cpu
             library_path: onnx/Release/core.dll
-            dst_library_name: core_cpu_x86.dll
 
           - os: windows-2019
             device: cpu-arm64
@@ -44,7 +41,6 @@ jobs:
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm64
             artifact_name: windows-arm64-cpu
             library_path: onnx/Release/core.dll
-            dst_library_name: core_cpu_arm64.dll
 
           - os: windows-2019
             device: cpu-arm
@@ -52,14 +48,12 @@ jobs:
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm
             artifact_name: windows-arm-cpu
             library_path: onnx/Release/core.dll
-            dst_library_name: core_cpu_arm.dll
 
           - os: macos-10.15
             device: cpu-x64
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-osx-x64-1.9.0.tgz
             artifact_name: osx-x64-cpu
             library_path: onnx/libcore.dylib
-            dst_library_name: libcore_cpu.dylib
 
           - os: ubuntu-18.04
             device: gpu
@@ -67,14 +61,12 @@ jobs:
             cmake_additional_options: -DENABLE_CUDA=ON
             artifact_name: linux-x64-gpu
             library_path: onnx/libcore.so
-            dst_library_name: libcore.so
 
           - os: ubuntu-18.04
             device: cpu-x64
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-1.9.0.tgz
             artifact_name: linux-x64-cpu
             library_path: onnx/libcore.so
-            dst_library_name: libcore_cpu.so
 
     runs-on: ${{ matrix.os }}
 
