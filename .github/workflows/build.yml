@@ -30,6 +30,7 @@ jobs:
           - os: windows-2019
             device: cpu-x86
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x86-1.9.0.zip
+            cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32
             artifact_name: windows-x86-cpu
             library_path: onnx/Release/core.dll
             dst_library_name: core_cpu_x86.dll
@@ -37,6 +38,7 @@ jobs:
           - os: windows-2019
             device: cpu-arm64
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-arm64-1.9.0.zip
+            cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm64
             artifact_name: windows-arm64-cpu
             library_path: onnx/Release/core.dll
             dst_library_name: core_cpu_arm64.dll
@@ -44,6 +46,7 @@ jobs:
           - os: windows-2019
             device: cpu-arm
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-arm-1.9.0.zip
+            cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm
             artifact_name: windows-arm-cpu
             library_path: onnx/Release/core.dll
             dst_library_name: core_cpu_arm.dll
