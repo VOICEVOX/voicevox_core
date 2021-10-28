@@ -9,6 +9,11 @@ on:
       - published
   workflow_dispatch:
 
+env:
+  # Raw character weights are not public.
+  # Skip uploading to GitHub Release on public repo.
+  SKIP_UPLOADING_RELEASE_ASSET: ${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }}
+
 jobs:
   build-cpp-shared:
     strategy:
@@ -162,9 +167,7 @@ jobs:
 
   # Create core.zip
   upload-to-release-cpp-shared:
-    # Raw character weights are not public.
-    # Skip uploading to GitHub Release on public repo.
-    if: (${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }} != '1') && github.event.release.tag_name != ''
+    if: github.event.release.tag_name != ''
     needs: [build-cpp-shared]
     runs-on: ubuntu-latest
     steps:
@@ -223,7 +226,13 @@ jobs:
           cd release/
           zip -r ../core.zip *
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          path: core.zip
+
       - name: Upload to Release
+        if: env.SKIP_UPLOADING_RELEASE_ASSET != '1'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
