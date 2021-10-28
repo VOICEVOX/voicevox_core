@@ -138,7 +138,14 @@ jobs:
       - if: startsWith(matrix.os, 'mac')
         uses: jwlawson/actions-setup-cmake@v1.9
 
-      - name: Build
+      - name: Configure (Windows, macOS)
+        shell: bash
+        run: |
+          cd onnx
+          cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
+
+      - name: Configure (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
         shell: bash
         env:
           CC:   gcc-8
@@ -146,6 +153,11 @@ jobs:
         run: |
           cd onnx
           cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
+
+      - name: Build
+        shell: bash
+        run: |
+          cd onnx
           cmake --build . --config Release
 
       # Upload
