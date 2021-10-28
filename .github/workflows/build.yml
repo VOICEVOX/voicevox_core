@@ -167,6 +167,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Set BUILD_IDENTIFIER env var
+        run: |
+          echo "BUILD_IDENTIFIER=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -210,6 +214,8 @@ jobs:
           mv artifacts/*/* release/
 
           cp core.h release/
+
+          echo ${{ env.BUILD_IDENTIFIER }} > VERSION
 
           cd release/
           zip -r ../core.zip *
