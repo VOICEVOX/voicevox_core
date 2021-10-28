@@ -219,7 +219,7 @@ jobs:
 
           cp core.h release/
 
-          zip -r core.zip release/
+          zip -r core.zip release/*
 
       - name: Upload to Release
         uses: svenstaro/upload-release-action@v2
