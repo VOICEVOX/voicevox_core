@@ -78,10 +78,15 @@ jobs:
       - run: mkdir download
 
       # ONNX Runtime
+
+      - name: Export ONNX Runtime url to calc hash
+        shell: bash
+        run: echo "${{ matrix.onnxruntime_url }}" > download/onnxruntime_url.txt
+
       - uses: actions/cache@v2
         id: onnxruntime-cache
         with:
-          key: ${{ matrix.os }}-${{ matrix.device }}-onnxruntime-cache-v1
+          key: ${{ matrix.os }}-${{ matrix.device }}-onnxruntime-cache-v1-${{ hashFiles('download/onnxruntime_url.txt') }}
           path: download/onnxruntime
 
       # download/onnxruntime/lib/onnxruntime.dll
