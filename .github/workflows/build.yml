@@ -118,6 +118,9 @@ jobs:
       - if: startsWith(matrix.os, 'windows')
         uses: ilammy/msvc-dev-cmd@v1
 
+      - if: startsWith(matrix.os, 'mac')
+        uses: jwlawson/actions-setup-cmake@v1.9
+
       # gcc 7 (ubuntu-18.04 default) does not have stdc++fs
       - name: Install build-essential
         if: startsWith(matrix.os, 'ubuntu')
@@ -125,9 +128,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-8 g++-8 cmake
-
-      - if: startsWith(matrix.os, 'mac')
-        uses: jwlawson/actions-setup-cmake@v1.9
 
       - name: Configure (Windows, macOS)
         if: ${{ !startsWith(matrix.os, 'ubuntu') }} # '!' cannot be used as a first character in YAML
