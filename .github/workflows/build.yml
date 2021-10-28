@@ -119,7 +119,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake
+          sudo apt-get install -y gcc-8 g++-8 cmake
 
       - if: startsWith(matrix.os, 'mac')
         uses: jwlawson/actions-setup-cmake@v1.9
@@ -127,8 +127,8 @@ jobs:
       - name: Build
         shell: bash
         env:
-          CC:   gcc-9
-          CXX:  g++-9
+          CC:   gcc-8
+          CXX:  g++-8
         run: |
           cd onnx
           cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
