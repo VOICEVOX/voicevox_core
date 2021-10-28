@@ -138,7 +138,7 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.9
 
       - name: Configure (Windows, macOS)
-        if: ! startsWith(matrix.os, 'ubuntu')
+        if: ${{ !startsWith(matrix.os, 'ubuntu') }}
         shell: bash
         working-directory: onnx
         run: |
