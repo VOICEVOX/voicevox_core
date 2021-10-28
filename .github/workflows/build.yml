@@ -126,6 +126,9 @@ jobs:
 
       - name: Build
         shell: bash
+        env:
+          CC:   gcc-9
+          CXX:  g++-9
         run: |
           cd onnx
           cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
