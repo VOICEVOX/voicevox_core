@@ -114,11 +114,11 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       # gcc 7 (ubuntu-18.04 default) does not have stdc++fs
-      - name: Install gcc 9
+      - name: Install build-essential
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-9 g++-9 cmake
+          sudo apt-get install -y build-essential cmake
 
       - if: startsWith(matrix.os, 'mac')
         uses: jwlawson/actions-setup-cmake@v1.9
