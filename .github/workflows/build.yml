@@ -193,14 +193,14 @@ jobs:
           mkdir release
 
           readarray -t MAPPINGS <<EOF
-          windows-x64-gpu   core.dll      core.dll
-          windows-x64-cpu   core.dll      core_cpu.dll
+          windows-x64-gpu   core.dll      core_gpu_x64_nvidia.dll
+          windows-x64-cpu   core.dll      core_cpu_x64.dll
           windows-x86-cpu   core.dll      core_cpu_x86.dll
           windows-arm64-cpu core.dll      core_cpu_arm64.dll
           windows-arm-cpu   core.dll      core_cpu_arm.dll
-          osx-x64-cpu       libcore.dylib libcore_cpu.dylib
-          linux-x64-gpu     libcore.so    libcore.so
-          linux-x64-cpu     libcore.so    libcore_cpu.so
+          osx-x64-cpu       libcore.dylib libcore_cpu_x64.dylib
+          linux-x64-gpu     libcore.so    libcore_gpu_x64_nvidia.so
+          linux-x64-cpu     libcore.so    libcore_cpu_x64.so
           EOF
 
           for line in "${MAPPINGS[@]}"; do
