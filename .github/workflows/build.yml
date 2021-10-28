@@ -166,3 +166,64 @@ jobs:
           name: ${{ matrix.artifact_name }}-cpp-shared
           path: ${{ matrix.library_path }}
           retention-days: 7
+
+  # Create core.zip
+  upload-to-release-cpp-shared:
+    if: github.event.release.tag_name != ''
+    needs: [build_cpp_shared]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+              zip
+
+      - name: Download and extract artifact
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts/
+
+      - name: Rearchive artifacts
+        run: |
+          mkdir release
+
+          readarray -t MAPPINGS <<EOF
+windows-x64-gpu   core.dll      core.dll
+windows-x64-cpu   core.dll      core_cpu.dll
+windows-x86-cpu   core.dll      core_cpu_x86.dll
+windows-arm64-cpu core.dll      core_cpu_arm64.dll
+windows-arm-cpu   core.dll      core_cpu_arm.dll
+osx-x64-cpu       libcore.dylib libcore_cpu.dylib
+linux-x64-gpu     libcore.so    libcore.so
+linux-x64-cpu     libcore.so    libcore_cpu.so
+EOF
+
+          for line in "${MAPPINGS[@]}"; do
+            DIR=$(echo $line | awk '$0=$1')
+            SRC=$(echo $line | awk '$0=$2')
+            DST=$(echo $line | awk '$0=$3')
+
+            if [ "${SRC}" = "${DST}" ]; then
+              echo "Skip renaming ${DIR}/${SRC} => ${DST}"
+              continue
+            fi
+
+            echo "Renaming ${DIR}/${SRC} => ${DST}"
+            mv "artifacts/${DIR}/${SRC}" "artifacts/${DIR}/${DST}"
+          done
+
+          mv artifacts/*/* release/
+
+          cp core.h release/
+
+          zip -r core.zip release/
+
+      - name: Upload to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }} # == github.event.release.tag_name
+          file: core.zip
