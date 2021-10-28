@@ -118,9 +118,9 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-8 g++-8
+          sudo apt-get install -y gcc-8 g++-8 cmake
 
-      - if: startsWith(matrix.os, 'mac') || startsWith(matrix.os, 'ubuntu')
+      - if: startsWith(matrix.os, 'mac')
         uses: jwlawson/actions-setup-cmake@v1.9
 
       - run: |
