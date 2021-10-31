@@ -8,7 +8,7 @@ https://github.com/Hiroshiba/vv_core_inference でonnx版に変換したモデ�
 ## 0b. 必須pythonライブラリのインストール
 このリポジトリのexample/python内にある[requirements.txt](../example/python/requirements.txt)にあるライブラリをインストールする。
 
-```
+```bash
 cd ../example/python
 pip install -r requirements.txt
 ```
@@ -16,7 +16,7 @@ pip install -r requirements.txt
 ## 1. コアバイナリの作成
 このREADMEがあるonnxディレクトリで作業する。
 
-```
+```bash
 # https://github.com/microsoft/onnxruntime/releases から環境に対応したonnxruntimeをダウンロードし展開する。
 # 例：Windows(x64アーキテクチャ)でCPU版を作るならonnxruntime-win-x64-1.9.0.zip
 wget https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-1.9.0.zip
@@ -36,15 +36,22 @@ cmake --install .
 ```
 
 ## 2. Pythonライブラリの作成
+このREADMEがあるonnxディレクトリで作業する。
 
-1. 上記で生成した`lib`フォルダの**中身**を全て`./python/core`ディレクトリに入れる
-2. `python`ディレクトリ内で`pip install .`を実行
+```bash
+# 上記で生成した`lib`フォルダの中身を全て./python/coreディレクトリに入れる
+cp lib/* python/core/
+
+# pythonディレクトリ内でpip installを実行
+cd python
+pip install .
+```
 
 ## 3. エンジンの起動
 このリポジトリの`example/python/run.py`を実行するとき、カレントディレクトリにonnxモデルがないと動かないことに注意する。
 
 このREADMEがあるonnxディレクトリで作業する。
-```
+```bash
 cd model
 
 python ../../example/python/run.py \
