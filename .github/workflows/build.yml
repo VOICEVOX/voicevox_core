@@ -220,7 +220,7 @@ jobs:
 
           cp core.h release/
 
-          echo ${{ env.BUILD_IDENTIFIER }} > release/VERSION
+          echo "${{ env.BUILD_IDENTIFIER }}" > release/VERSION
 
           cd release/
           zip -r ../core.zip *
@@ -228,7 +228,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          path: core.zip
+          name: core
+          path: release/*
 
       - name: Upload to Release
         if: env.SKIP_UPLOADING_RELEASE_ASSET == '0'
