@@ -147,10 +147,10 @@ class Forwarder:
                 f0_list[i] = 0
 
         phoneme = numpy.repeat(
-            phoneme_list_s, numpy.round(phoneme_length * rate).astype(numpy.int64)
+            phoneme_list_s, numpy.round(phoneme_length * rate).astype(numpy.int32)
         )
         f0 = numpy.repeat(
-            f0_list, numpy.round(phoneme_length_sa * rate).astype(numpy.int64)
+            f0_list, numpy.round(phoneme_length_sa * rate).astype(numpy.int32)
         )
 
         # forward decode
