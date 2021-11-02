@@ -146,6 +146,7 @@ class Forwarder:
             if p.phoneme in unvoiced_mora_phoneme_list:
                 f0_list[i] = 0
 
+        # use numpy.int32 as the number of repeats to avoid casting int64 to int32 in numpy internal
         phoneme = numpy.repeat(
             phoneme_list_s, numpy.round(phoneme_length * rate).astype(numpy.int32)
         )
