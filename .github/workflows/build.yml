@@ -152,6 +152,7 @@ jobs:
           # copy lib to onnx/lib/* and set rpath (linux)
           cmake --install .
 
+          # remove duplicated files
           cd lib
           rm -f onnxruntime* libonnxruntime* core.h core.lib
 
