@@ -1,8 +1,11 @@
 # VOICEVOX CORE
 
-[VOICEVOX](https://voicevox.hiroshiba.jp/) の音声合成コア。
-
+[VOICEVOX](https://voicevox.hiroshiba.jp/) の音声合成コア。  
 [Releases](https://github.com/Hiroshiba/voicevox_core/releases) にビルド済みのコアライブラリ（.so/.dll/.dylib）があります。
+
+（エディターは [VOICEVOX](https://github.com/Hiroshiba/voicevox/) 、
+エンジンは [VOICEVOX ENGINE](https://github.com/Hiroshiba/voicevox_engine/) 、
+全体構成は [こちら](https://github.com/Hiroshiba/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
 
 ## 依存関係
 
