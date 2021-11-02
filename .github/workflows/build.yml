@@ -25,53 +25,45 @@ jobs:
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-gpu-1.9.0.zip
             cmake_additional_options: -DENABLE_CUDA=ON
             artifact_name: windows-x64-gpu
-            library_path: onnx/Release/core.dll
 
           - os: windows-2019
             device: cpu-x64
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-1.9.0.zip
             artifact_name: windows-x64-cpu
-            library_path: onnx/Release/core.dll
 
           - os: windows-2019
             device: cpu-x86
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x86-1.9.0.zip
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32
             artifact_name: windows-x86-cpu
-            library_path: onnx/Release/core.dll
 
           - os: windows-2019
             device: cpu-arm64
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-arm64-1.9.0.zip
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm64
             artifact_name: windows-arm64-cpu
-            library_path: onnx/Release/core.dll
 
           - os: windows-2019
             device: cpu-arm
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-arm-1.9.0.zip
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm
             artifact_name: windows-arm-cpu
-            library_path: onnx/Release/core.dll
 
           - os: macos-10.15
             device: cpu-x64
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-osx-x64-1.9.0.tgz
             artifact_name: osx-x64-cpu
-            library_path: onnx/libcore.dylib
 
           - os: ubuntu-18.04
             device: gpu
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-gpu-1.9.0.tgz
             cmake_additional_options: -DENABLE_CUDA=ON
             artifact_name: linux-x64-gpu
-            library_path: onnx/libcore.so
 
           - os: ubuntu-18.04
             device: cpu-x64
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-1.9.0.tgz
             artifact_name: linux-x64-cpu
-            library_path: onnx/libcore.so
 
     runs-on: ${{ matrix.os }}
 
@@ -157,12 +149,15 @@ jobs:
         run: |
           cmake --build . --config Release
 
+          # copy lib to onnx/lib/* and set rpath (linux)
+          cmake --install .
+
       # Upload
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.artifact_name }}-cpp-shared
-          path: ${{ matrix.library_path }}
+          path: onnx/lib/*
           retention-days: 7
 
   # Create core.zip
