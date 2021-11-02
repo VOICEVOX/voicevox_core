@@ -220,7 +220,7 @@ jobs:
 
           cp core.h release/
 
-          echo ${{ env.BUILD_IDENTIFIER }} > release/VERSION
+          echo "${{ env.BUILD_IDENTIFIER }}" > release/VERSION
 
           cd release/
           zip -r ../core.zip *
