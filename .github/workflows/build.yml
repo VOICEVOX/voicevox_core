@@ -284,7 +284,7 @@ jobs:
         shell: bash
         env:
           ARCH: "-${{ (matrix.arch != '' && matrix.arch) || '' }}"
-          ARCH_SUFFIX: ${{ (env.ARCH != '-' && env.ARCH) || '' }}
+          ARCH_SUFFIX: "${{ (env.ARCH != '-' && env.ARCH) || '' }}"
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -305,7 +305,7 @@ jobs:
         working-directory: onnx
         env:
           ARCH: "${{ (matrix.arch != '' && matrix.arch) || '' }}-"
-          ARCH_PREFIX: ${{ (env.ARCH != '-' && env.ARCH) || '' }}
+          ARCH_PREFIX: "${{ (env.ARCH != '-' && env.ARCH) || '' }}"
           CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
           CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
         run: |
