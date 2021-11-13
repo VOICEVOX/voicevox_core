@@ -283,8 +283,7 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         shell: bash
         env:
-          ARCH: "-${{ (matrix.arch != '' && matrix.arch) || '' }}"
-          ARCH_SUFFIX: "${{ (env.ARCH != '-' && env.ARCH) || '' }}"
+          ARCH_SUFFIX: "${{ (matrix.arch != '' && '-') || '' }}${{ (matrix.arch != '' && matrix.arch) || '' }}"
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -304,8 +303,7 @@ jobs:
         shell: bash
         working-directory: onnx
         env:
-          ARCH: "${{ (matrix.arch != '' && matrix.arch) || '' }}-"
-          ARCH_PREFIX: "${{ (env.ARCH != '-' && env.ARCH) || '' }}"
+          ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
           CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
           CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
         run: |
