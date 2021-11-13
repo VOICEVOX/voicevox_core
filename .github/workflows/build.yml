@@ -324,7 +324,7 @@ jobs:
 
           if [ "${{ matrix.artifact_name }}" = "linux-armhf-cpu" ]; then
             mkdir "${{ matrix.artifact_name }}"
-            mv libonnxruntime* "${{ matrix.artifact_name }}"/
+            mv libonnxruntime.so.* "${{ matrix.artifact_name }}"/
           fi
 
           rm -f onnxruntime* libonnxruntime* core.h core.lib
