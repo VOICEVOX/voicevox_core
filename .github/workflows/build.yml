@@ -218,6 +218,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    env:
+      ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
+      ARCH_SUFFIX: "${{ (matrix.arch != '' && '-') || '' }}${{ (matrix.arch != '' && matrix.arch) || '' }}"
+
     steps:
       - uses: actions/checkout@v2
 
@@ -282,8 +286,6 @@ jobs:
       - name: Install build-essential
         if: startsWith(matrix.os, 'ubuntu')
         shell: bash
-        env:
-          ARCH_SUFFIX: "${{ (matrix.arch != '' && '-') || '' }}${{ (matrix.arch != '' && matrix.arch) || '' }}"
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -303,7 +305,6 @@ jobs:
         shell: bash
         working-directory: onnx
         env:
-          ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
           CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
           CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
         run: |
