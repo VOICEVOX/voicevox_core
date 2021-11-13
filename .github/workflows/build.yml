@@ -198,11 +198,25 @@ jobs:
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-gpu-1.9.0.tgz
             cmake_additional_options: -DENABLE_CUDA=ON
             artifact_name: linux-x64-gpu
+            cc_version: '8'
+            cxx_version: '8'
+            arch: base
 
           - os: ubuntu-18.04
             device: cpu-x64
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-1.9.0.tgz
             artifact_name: linux-x64-cpu
+            cc_version: '8'
+            cxx_version: '8'
+            arch: base
+
+          - os: ubuntu-18.04
+            device: cpu-armhf
+            onnxruntime_artifact_name: onnxruntime-linux-armhf-cpu
+            artifact_name: linux-x64-cpu
+            cc_version: '8'
+            cxx_version: '8'
+            arch: arm-linux-gnueabihf
 
     runs-on: ${{ matrix.os }}
 
@@ -213,10 +227,12 @@ jobs:
 
       # ONNX Runtime
       - name: Export ONNX Runtime url to calc hash
+        if: matrix.onnxruntime_artifact_name == ''
         shell: bash
         run: echo "${{ matrix.onnxruntime_url }}" > download/onnxruntime_url.txt
 
       - name: Cache ONNX Runtime
+        if: matrix.onnxruntime_artifact_name == ''
         uses: actions/cache@v2
         id: onnxruntime-cache
         with:
@@ -225,7 +241,7 @@ jobs:
 
       # download/onnxruntime/lib/onnxruntime.dll
       - name: Download ONNX Runtime (zip)
-        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip')
+        if: matrix.onnxruntime_artifact_name == '' && steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip')
         shell: bash
         run: |
           curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.zip
@@ -242,13 +258,20 @@ jobs:
       # download/onnxruntime/lib/libonnxruntime.so
       # download/onnxruntime/lib/libonnxruntime.dylib
       - name: Download ONNX Runtime (tgz)
-        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.tgz')
+        if: matrix.onnxruntime_artifact_name == '' && steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.tgz')
         shell: bash
         run: |
           curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.tgz
           mkdir -p download/onnxruntime
           tar xf download/onnxruntime.tgz -C download/onnxruntime --strip-components 1
           rm download/onnxruntime.tgz
+
+      - name: Download ONNX Runtime (artifact)
+        if: matrix.onnxruntime_artifact_name != ''
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.onnxruntime_artifact_name }}
+          path: download/onnxruntime/
 
       # Build
       - if: startsWith(matrix.os, 'windows')
@@ -263,7 +286,10 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-8 g++-8 cmake
+          sudo apt-get install -y \
+            gcc-${{ matrix.cc_version }}-${{ matrix.arch }} \
+            g++-${{ matrix.cxx_version }}-${{ matrix.arch }} \
+            cmake
 
       - name: Configure (Windows, macOS)
         if: ${{ !startsWith(matrix.os, 'ubuntu') }} # '!' cannot be used as a first character in YAML
@@ -277,8 +303,10 @@ jobs:
         shell: bash
         working-directory: onnx
         env:
-          CC:   gcc-8
-          CXX:  g++-8
+          ARCH: "${{ (matrix.arch == 'base' && '') || matrix.arch }}-"
+          ARCH_PREFIX: ${{ (env.ARCH == '-' && '') || enc.ARCH }}
+          CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
+          CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
         run: |
           cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
 
