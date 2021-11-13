@@ -200,7 +200,6 @@ jobs:
             artifact_name: linux-x64-gpu
             cc_version: '8'
             cxx_version: '8'
-            arch: base
 
           - os: ubuntu-18.04
             device: cpu-x64
@@ -208,7 +207,6 @@ jobs:
             artifact_name: linux-x64-cpu
             cc_version: '8'
             cxx_version: '8'
-            arch: base
 
           - os: ubuntu-18.04
             device: cpu-armhf
@@ -284,11 +282,14 @@ jobs:
       - name: Install build-essential
         if: startsWith(matrix.os, 'ubuntu')
         shell: bash
+        env:
+          ARCH: "-${{ (matrix.arch == '' && '') || matrix.arch }}"
+          ARCH_SUFFIX: ${{ (env.ARCH == '-' && '') || env.ARCH }}
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            gcc-${{ matrix.cc_version }}-${{ matrix.arch }} \
-            g++-${{ matrix.cxx_version }}-${{ matrix.arch }} \
+            gcc-${{ matrix.cc_version }}${{ env.ARCH_SUFFIX }} \
+            g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }} \
             cmake
 
       - name: Configure (Windows, macOS)
@@ -303,7 +304,7 @@ jobs:
         shell: bash
         working-directory: onnx
         env:
-          ARCH: "${{ (matrix.arch == 'base' && '') || matrix.arch }}-"
+          ARCH: "${{ (matrix.arch == '' && '') || matrix.arch }}-"
           ARCH_PREFIX: ${{ (env.ARCH == '-' && '') || env.ARCH }}
           CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
           CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
