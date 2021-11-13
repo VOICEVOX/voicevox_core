@@ -213,7 +213,7 @@ jobs:
           - os: ubuntu-18.04
             device: cpu-armhf
             onnxruntime_artifact_name: onnxruntime-linux-armhf-cpu
-            artifact_name: linux-x64-cpu
+            artifact_name: linux-armhf-cpu
             cc_version: '8'
             cxx_version: '8'
             arch: arm-linux-gnueabihf
@@ -304,7 +304,7 @@ jobs:
         working-directory: onnx
         env:
           ARCH: "${{ (matrix.arch == 'base' && '') || matrix.arch }}-"
-          ARCH_PREFIX: ${{ (env.ARCH == '-' && '') || enc.ARCH }}
+          ARCH_PREFIX: ${{ (env.ARCH == '-' && '') || env.ARCH }}
           CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
           CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
         run: |
@@ -367,6 +367,7 @@ jobs:
           osx-x64-cpu       libcore.dylib libcore_cpu_x64.dylib
           linux-x64-gpu     libcore.so    libcore_gpu_x64_nvidia.so
           linux-x64-cpu     libcore.so    libcore_cpu_x64.so
+          linux-armhf-cpu   libcore.so    libcore_cpu_armhf.so
           EOF
 
           for line in "${MAPPINGS[@]}"; do
