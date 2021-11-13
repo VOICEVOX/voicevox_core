@@ -95,7 +95,7 @@ jobs:
           DOCKERFILE_PATH: ${{ matrix.context_dir }}/Dockerfile
         with:
           path: build/
-          key: onnxruntime-${{ matrix.onnxruntime_version }}-${{ steps.build-docker-image.outputs.digest }}-${{ hashFiles('matrix.json') }}-v1
+          key: onnxruntime-build-cache-v1-${{ matrix.onnxruntime_version }}-${{ steps.build-docker-image.outputs.digest }}-${{ hashFiles('matrix.json') }}
 
       - name: Build ONNX Runtime
         if: steps.cache-build-result.outputs.cache-hit != 'true'
