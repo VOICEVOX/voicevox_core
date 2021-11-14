@@ -62,8 +62,8 @@ jobs:
       - name: Install build dependencies
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         run: |
-          apt-get update
-          apt-get install -y \
+          sudo apt-get update
+          sudo apt-get install -y \
               build-essential \
               git \
               wget \
@@ -78,7 +78,7 @@ jobs:
           CMAKE_VERSION: 3.22.0-rc2
         run: |
           wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.sh"
-          bash cmake.sh --skip-license --prefix=/usr/local
+          sudo bash cmake.sh --skip-license --prefix=/usr/local
 
       - name: Configure build environment
         if: steps.cache-build-result.outputs.cache-hit != 'true'
@@ -88,8 +88,8 @@ jobs:
           echo "set(CMAKE_SYSTEM_PROCESSOR \"${{ matrix.cmake_system_processor }}\")" >> cmake/CMakeLists.txt
 
           if [ -n "${{ matrix.ld_symlink_name }}" ]; then
-            ln -s /usr/${{ matrix.arch }}/lib /lib/${{ matrix.arch }}
-            ln -s /lib/${{ matrix.arch }}/ld-*.so /lib/${{ matrix.ld_symlink_name }}
+            sudo ln -s /usr/${{ matrix.arch }}/lib /lib/${{ matrix.arch }}
+            sudo ln -s /lib/${{ matrix.arch }}/ld-*.so /lib/${{ matrix.ld_symlink_name }}
           fi
 
       - name: Build ONNX Runtime
