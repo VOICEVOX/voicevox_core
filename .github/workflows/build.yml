@@ -390,7 +390,7 @@ jobs:
             mv "artifacts/${KND}-cpp-shared/${SRC}" "artifacts/${KND}-cpp-shared/${DST}"
           done
 
-          mv artifacts/*/* release/
+          mv artifacts/*-cpp-shared/* release/
 
           cp core.h release/
 
