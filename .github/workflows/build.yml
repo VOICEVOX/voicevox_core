@@ -318,25 +318,27 @@ jobs:
           # copy lib to onnx/lib/* and set rpath (linux)
           cmake --install .
 
+      - name: Organize artifact
+        shell: bash
+        run: |
+          mkdir artifact
+
           # remove files with duplicate names to create a flat release archive
-          cd lib
+          rm -vf onnx/lib/onnxruntime* onnx/lib/libonnxruntime* onnx/lib/core.h onnx/lib/core.lib
 
+          # copy libonnxruntime from artifact
           if [ "${{ matrix.onnxruntime_artifact_name }}" != "" ]; then
-            mkdir -p "tmp/${{ matrix.onnxruntime_artifact_name }}"
-            rsync -av $(find "download/onnxruntime/" -maxdepth 1 -type f) "tmp/${{ matrix.onnxruntime_artifact_name }}"/
-            mv -v libonnxruntime.so.* "tmp/${{ matrix.onnxruntime_artifact_name }}"/
+            mkdir -p "artifact/${{ matrix.onnxruntime_artifact_name }}/"
+            rsync -av $(find "download/onnxruntime/" -maxdepth 1 -type f) "artifact/${{ matrix.onnxruntime_artifact_name }}/"
+            mv -v libonnxruntime.so.* "artifact/${{ matrix.onnxruntime_artifact_name }}/"
           fi
-
-          rm -vf onnxruntime* libonnxruntime* core.h core.lib
-          mv tmp/* ./
-          rmdir tmp
 
       # Upload
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.artifact_name }}-cpp-shared
-          path: onnx/lib/*
+          path: artifact/*
           retention-days: 7
 
   # Create core.zip
