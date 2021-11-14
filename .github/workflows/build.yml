@@ -27,7 +27,7 @@ jobs:
             arch: arm-linux-gnueabihf
             cmake_system_processor: armv7l
             ld_symlink_name: ld-linux-armhf.so.3
-            build_opts: --arm --config Release --parallel --update --build --build_shared_lib
+            build_opts: --arm --use_openmp --config Release --parallel --update --build --build_shared_lib
             result_dir: build/Linux/Release
 
     env:
