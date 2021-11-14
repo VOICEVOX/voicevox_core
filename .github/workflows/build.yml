@@ -32,6 +32,8 @@ jobs:
 
     env:
       ONNXRUNTIME_VERSION: v1.8.2
+      ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
+      ARCH_SUFFIX: "${{ (matrix.arch != '' && '-') || '' }}${{ (matrix.arch != '' && matrix.arch) || '' }}"
 
     runs-on: ${{ matrix.os }}
 
@@ -66,8 +68,8 @@ jobs:
               build-essential \
               git \
               wget \
-              gcc-${{ matrix.cc_version }}-${{ matrix.arch }} \
-              g++-${{ matrix.cxx_version }}-${{ matrix.arch }} \
+              gcc-${{ matrix.cc_version }}${{ env.ARCH_SUFFIX }} \
+              g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }} \
               python3
 
       # ONNX Runtime v1.9.0 requires CMake 3.18 or higher.
@@ -93,6 +95,9 @@ jobs:
 
       - name: Build ONNX Runtime
         if: steps.cache-build-result.outputs.cache-hit != 'true'
+        env:
+          CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
+          CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
         run: |
           bash ./build.sh ${{ matrix.build_opts }}
 
