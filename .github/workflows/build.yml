@@ -54,9 +54,10 @@ jobs:
       - name: Checkout
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         uses: actions/checkout@v2
-        repository: microsoft/onnxruntime
-        submodules: true
-        ref: ${{ env.ONNXRUNTIME_VERSION }}
+        with:
+          repository: microsoft/onnxruntime
+          submodules: true
+          ref: ${{ env.ONNXRUNTIME_VERSION }}
 
       - name: Install build dependencies
         if: steps.cache-build-result.outputs.cache-hit != 'true'
