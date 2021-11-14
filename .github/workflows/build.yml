@@ -326,7 +326,8 @@ jobs:
           # remove files with duplicate names to create a flat release archive
           rm -vf onnx/lib/core.h onnx/lib/core.lib
 
-          cp -v onnx/lib/core* onnx/lib/libcore* artifact/
+          cp -v onnx/lib/core* artifact/ || true
+          cp -v onnx/lib/libcore* artifact/ || true
 
           # copy libonnxruntime from artifact
           if [ "${{ matrix.onnxruntime_artifact_name }}" != "" ]; then
@@ -336,7 +337,8 @@ jobs:
             rsync -av $(find "download/onnxruntime/" -maxdepth 1 -type f) "artifact/${{ matrix.onnxruntime_artifact_name }}/"
 
             # copy shared library
-            cp -v onnx/lib/onnxruntime* onnx/lib/libonnxruntime.so.* "artifact/${{ matrix.onnxruntime_artifact_name }}/"
+            cp -v onnx/lib/onnxruntime* "artifact/${{ matrix.onnxruntime_artifact_name }}/" || true
+            cp -v onnx/lib/libonnxruntime.so.* "artifact/${{ matrix.onnxruntime_artifact_name }}/" || true
           fi
 
       # Upload
