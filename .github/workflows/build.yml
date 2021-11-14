@@ -87,6 +87,8 @@ jobs:
         run: |
           echo 'string(APPEND CMAKE_C_FLAGS " -latomic")' >> cmake/CMakeLists.txt
           echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
+
+          # CMAKE_SYSTEM_PROCESSOR: https://github.com/microsoft/onnxruntime/releases/tag/v1.9.0
           echo "set(CMAKE_SYSTEM_PROCESSOR \"${{ matrix.cmake_system_processor }}\")" >> cmake/CMakeLists.txt
 
           if [ -n "${{ matrix.ld_symlink_name }}" ]; then
@@ -100,6 +102,8 @@ jobs:
           CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
           CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
         run: |
+          # add --arm for gcc-8: https://github.com/microsoft/onnxruntime/issues/4189
+          # skip test: https://github.com/microsoft/onnxruntime/issues/2436
           bash ./build.sh ${{ matrix.build_opts }}
 
       - name: Organize artifact
