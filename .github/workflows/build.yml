@@ -3,7 +3,7 @@ name: Build C++ Shared Library
 on:
   push:
     branches:
-      # - main
+      - main
   release:
     types:
       - published
