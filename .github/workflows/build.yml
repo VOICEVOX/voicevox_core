@@ -323,6 +323,9 @@ jobs:
         run: |
           mkdir artifact
 
+          # remove files with duplicate names to create a flat release archive
+          rm -vf onnx/lib/core.h onnx/lib/core.lib
+
           cp -v onnx/lib/core* onnx/lib/libcore* artifact/
 
           # copy libonnxruntime from artifact
