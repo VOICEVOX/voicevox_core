@@ -324,8 +324,8 @@ jobs:
 
           if [ "${{ matrix.onnxruntime_artifact_name }}" != "" ]; then
             mkdir "${{ matrix.onnxruntime_artifact_name }}"
+            rsync -av $(find "download/onnxruntime/" -maxdepth 1 -type f) "${{ matrix.onnxruntime_artifact_name }}"/
             mv libonnxruntime.so.* "${{ matrix.onnxruntime_artifact_name }}"/
-            cp $(find "download/onnxruntime/" -maxdepth 1 -type f) "${{ matrix.onnxruntime_artifact_name }}"/
           fi
 
           rm -f onnxruntime* libonnxruntime* core.h core.lib
