@@ -77,9 +77,11 @@ jobs:
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         env:
           CMAKE_VERSION: 3.22.0-rc2
+          CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
+          CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
         run: |
           wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.sh"
-          sudo bash cmake.sh --skip-license --prefix=/usr/local
+          sudo -E bash cmake.sh --skip-license --prefix=/usr/local
 
       - name: Configure build environment
         if: steps.cache-build-result.outputs.cache-hit != 'true'
