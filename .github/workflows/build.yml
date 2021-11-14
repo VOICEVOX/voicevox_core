@@ -53,7 +53,6 @@ jobs:
           key: ${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
 
       - name: Checkout
-        if: steps.cache-build-result.outputs.cache-hit != 'true'
         uses: actions/checkout@v2
         with:
           repository: microsoft/onnxruntime
