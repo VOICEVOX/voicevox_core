@@ -68,6 +68,7 @@ jobs:
               build-essential \
               git \
               wget \
+              qemu-user-binfmt \
               gcc-${{ matrix.cc_version }}${{ env.ARCH_SUFFIX }} \
               g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }} \
               python3
