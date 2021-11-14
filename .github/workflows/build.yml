@@ -322,9 +322,10 @@ jobs:
           # remove files with duplicate names to create a flat release archive
           cd lib
 
-          if [ "${{ matrix.artifact_name }}" = "linux-armhf-cpu" ]; then
-            mkdir "${{ matrix.artifact_name }}"
-            mv libonnxruntime.so.* "${{ matrix.artifact_name }}"/
+          if [ "${{ matrix.onnxruntime_artifact_name }}" != "" ]; then
+            mkdir "${{ matrix.onnxruntime_artifact_name }}"
+            mv libonnxruntime.so.* "${{ matrix.onnxruntime_artifact_name }}"/
+            cp $(find "download/onnxruntime/" -maxdepth 1 -type f) "${{ matrix.onnxruntime_artifact_name }}"/
           fi
 
           rm -f onnxruntime* libonnxruntime* core.h core.lib
