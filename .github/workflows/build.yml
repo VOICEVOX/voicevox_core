@@ -49,7 +49,7 @@ jobs:
           DOCKERFILE_PATH: ${{ matrix.context_dir }}/Dockerfile
         with:
           path: build/
-          key: ${{ matrix.artifact_name }}-${{ hashFiles('matrix.json') }}-v1
+          key: ${{ matrix.artifact_name }}-cache-v1-${{ hashFiles('matrix.json') }}
 
       - name: Checkout
         if: steps.cache-build-result.outputs.cache-hit != 'true'
@@ -229,7 +229,7 @@ jobs:
         uses: actions/cache@v2
         id: onnxruntime-cache
         with:
-          key: ${{ matrix.os }}-${{ matrix.device }}-onnxruntime-cache-v1-${{ hashFiles('download/onnxruntime_url.txt') }}
+          key: onnxruntime-cache-v1-${{ hashFiles('download/onnxruntime_url.txt') }}
           path: download/onnxruntime
 
       # download/onnxruntime/lib/onnxruntime.dll
