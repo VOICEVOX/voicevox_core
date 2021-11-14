@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.3-labs
 ARG BASE_IMAGE=ubuntu:bionic
-FROM ${BASE_IMAGE}
+FROM ${BASE_IMAGE} AS build-env
 
 ARG CC_VERSION=8
 ARG CXX_VERSION=8
@@ -63,3 +63,20 @@ RUN <<EOF
 EOF
 
 WORKDIR /onnxruntime
+
+
+FROM build-env AS runtime-env
+
+ARG CC_VERSION=8
+ARG CXX_VERSION=8
+
+ARG ARCH=arm-linux-gnueabihf
+
+ENV CC=${ARCH}-gcc-${CC_VERSION}
+ENV CXX=${ARCH}-g++-${CXX_VERSION}
+
+ARG BUILD_OPTS=
+
+RUN <<EOF
+    bash ./build.sh ${BUILD_OPTS}
+EOF

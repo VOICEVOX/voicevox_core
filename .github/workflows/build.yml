@@ -76,6 +76,7 @@ jobs:
             LD_SYMLINK_NAME=${{ matrix.ld_symlink_name }}
             ONNXRUNTIME_VERSION=${{ matrix.onnxruntime_version }}
             ATOMIC=${{ matrix.atomic }}
+            BUILD_OPTS=${{ matrix.build_opts }}
           # target: ${{ matrix.target }}
           # platforms: ${{ matrix.platform }}
           load: true
@@ -83,42 +84,23 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_TAG }}-buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_TAG }}-buildcache,mode=max
 
-      - name: Dump matrix context
-        env:
-          MATRIX_CONTEXT: ${{ toJSON(matrix) }}
-        run: echo "$MATRIX_CONTEXT" > matrix.json
-
-      - name: Cache build result
-        id: cache-build-result
-        uses: actions/cache@v2
-        env:
-          DOCKERFILE_PATH: ${{ matrix.context_dir }}/Dockerfile
-        with:
-          path: build/
-          key: onnxruntime-build-cache-v1-${{ matrix.onnxruntime_version }}-${{ steps.build-docker-image.outputs.digest }}-${{ hashFiles('matrix.json') }}
-
-      - name: Build ONNX Runtime
-        if: steps.cache-build-result.outputs.cache-hit != 'true'
-        run: |
-          docker run --rm \
-            -v "${PWD}/build:/onnxruntime/build" \
-            ${{ env.IMAGE_TAG }} bash ./build.sh ${{ matrix.build_opts }}
-
       - name: Organize artifact
         run: |
           mkdir artifact
 
-          # copy build artifact
-          mkdir artifact/lib
-          NAME=$(basename ${{ matrix.result_dir }}/libonnxruntime.so.*)
-          cp "${{ matrix.result_dir }}/${NAME}" artifact/lib/
-          ln -s ${NAME} artifact/lib/libonnxruntime.so
-
           # create a container to copy files from microsoft/onnxruntime repository
           CONTAINER_ID=$(docker run -d ${{ env.IMAGE_TAG }})
 
+          # copy shared lib
+          mkdir artifact/lib
+          docker cp "$CONTAINER_ID:/onnxruntime/build/" ./build
+
+          NAME=$(basename ${{ matrix.result_dir }}/libonnxruntime.so.*)
+          cp "${{ matrix.result_dir }}/${NAME}" artifact/lib/
+          ln -s "${NAME}" artifact/lib/libonnxruntime.so
+
           # copy header files
-          mkdir ./artifact/include
+          mkdir artifact/include
           readarray -t HEADERS <<EOF
           onnxruntime/core/session/onnxruntime_c_api.h
           onnxruntime/core/session/onnxruntime_cxx_api.h
