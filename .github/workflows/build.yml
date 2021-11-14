@@ -332,7 +332,7 @@ jobs:
           if [ "${{ matrix.onnxruntime_artifact_name }}" != "" ]; then
             mkdir -p "artifact/${{ matrix.onnxruntime_artifact_name }}/"
             rsync -av $(find "download/onnxruntime/" -maxdepth 1 -type f) "artifact/${{ matrix.onnxruntime_artifact_name }}/"
-            cp -v onnx/lib/onnxruntime* libonnxruntime.so.* "artifact/${{ matrix.onnxruntime_artifact_name }}/"
+            cp -v onnx/lib/onnxruntime* onnx/lib/libonnxruntime.so.* "artifact/${{ matrix.onnxruntime_artifact_name }}/"
           fi
 
       # Upload
