@@ -133,7 +133,7 @@ jobs:
             cp "include/${path}" ./artifact/include/
           done
 
-          # copy docs & metadata
+          # copy docs & license
           cp VERSION_NUMBER ./artifact/
           cp LICENSE ./artifact/
           cp ThirdPartyNotices.txt ./artifact/
