@@ -331,7 +331,11 @@ jobs:
           # copy libonnxruntime from artifact
           if [ "${{ matrix.onnxruntime_artifact_name }}" != "" ]; then
             mkdir -p "artifact/${{ matrix.onnxruntime_artifact_name }}/"
+
+            # copy docs and license
             rsync -av $(find "download/onnxruntime/" -maxdepth 1 -type f) "artifact/${{ matrix.onnxruntime_artifact_name }}/"
+
+            # copy shared library
             cp -v onnx/lib/onnxruntime* onnx/lib/libonnxruntime.so.* "artifact/${{ matrix.onnxruntime_artifact_name }}/"
           fi
 
