@@ -32,7 +32,6 @@ jobs:
 
     env:
       ONNXRUNTIME_VERSION: v1.8.2
-      IMAGE_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image_tag }}
 
     runs-on: ${{ matrix.os }}
 
@@ -49,7 +48,7 @@ jobs:
           DOCKERFILE_PATH: ${{ matrix.context_dir }}/Dockerfile
         with:
           path: build/
-          key: ${{ matrix.artifact_name }}-cache-v1-${{ hashFiles('matrix.json') }}
+          key: ${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
 
       - name: Checkout
         if: steps.cache-build-result.outputs.cache-hit != 'true'
