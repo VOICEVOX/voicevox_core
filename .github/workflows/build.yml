@@ -38,6 +38,13 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          repository: microsoft/onnxruntime
+          submodules: true
+          ref: ${{ env.ONNXRUNTIME_VERSION }}
+
       - name: Dump matrix context
         env:
           MATRIX_CONTEXT: ${{ toJSON(matrix) }}
@@ -51,13 +58,6 @@ jobs:
         with:
           path: build/
           key: ${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
-
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          repository: microsoft/onnxruntime
-          submodules: true
-          ref: ${{ env.ONNXRUNTIME_VERSION }}
 
       - name: Install build dependencies
         if: steps.cache-build-result.outputs.cache-hit != 'true'
