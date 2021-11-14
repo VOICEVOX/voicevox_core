@@ -31,7 +31,7 @@ jobs:
             result_dir: build/Linux/Release
 
     env:
-      ONNXRUNTIME_VERSION: v1.8.2
+      ONNXRUNTIME_VERSION: v1.9.0
       ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
       ARCH_SUFFIX: "${{ (matrix.arch != '' && '-') || '' }}${{ (matrix.arch != '' && matrix.arch) || '' }}"
 
