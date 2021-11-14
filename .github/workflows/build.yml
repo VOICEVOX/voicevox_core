@@ -140,7 +140,7 @@ jobs:
           cp docs/Privacy.md ./artifact/
           cp README.md ./artifact/
 
-          echo "$GITHUB_SHA" >> ./artifact/GIT_COMMIT_ID
+          echo "$(git rev-parse HEAD)" >> ./artifact/GIT_COMMIT_ID
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
