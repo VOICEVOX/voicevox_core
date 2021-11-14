@@ -31,7 +31,6 @@ jobs:
             arch: arm-linux-gnueabihf
             cmake_system_processor: armv7l
             ld_symlink_name: ld-linux-armhf.so.3
-            atomic: '1'
             build_opts: --arm --config Release --parallel --update --build --build_shared_lib
             result_dir: build/Linux/Release
 
@@ -41,59 +40,71 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Dump matrix context
+        env:
+          MATRIX_CONTEXT: ${{ toJSON(matrix) }}
+        run: echo "$MATRIX_CONTEXT" > matrix.json
+
+      - name: Cache build result
+        id: cache-build-result
+        uses: actions/cache@v2
+        env:
+          DOCKERFILE_PATH: ${{ matrix.context_dir }}/Dockerfile
+        with:
+          path: build/
+          key: ${{ matrix.artifact_name }}-${{ hashFiles('matrix.json') }}-v1
+
       - name: Checkout
+        if: steps.cache-build-result.outputs.cache-hit != 'true'
         uses: actions/checkout@v2
+        repository: microsoft/onnxruntime
+        submodules: true
+        ref: ${{ matrix.onnxruntime_version }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+      - name: Install build dependencies
+        if: steps.cache-build-result.outputs.cache-hit != 'true'
+        run: |
+          apt-get update
+          apt-get install -y \
+              build-essential \
+              git \
+              wget \
+              gcc-${{ matrix.cc_version }}-${{ matrix.arch }} \
+              g++-${{ matrix.cxx_version }}-${{ matrix.arch }} \
+              python3
 
-      - name: Setup Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v1
+      # ONNX Runtime v1.9.0 requires CMake 3.18 or higher.
+      - name: Install CMake
+        if: steps.cache-build-result.outputs.cache-hit != 'true'
+        env:
+          CMAKE_VERSION: 3.22.0-rc2
+        run: |
+          wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.sh"
+          bash cmake.sh --skip-license --prefix=/usr/local
 
-      - name: Available platforms
-        run: echo ${{ steps.buildx.outputs.platforms }}
+      - name: Configure build environment
+        if: steps.cache-build-result.outputs.cache-hit != 'true'
+        run: |
+          echo 'string(APPEND CMAKE_C_FLAGS " -latomic")' >> cmake/CMakeLists.txt
+          echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
+          echo "set(CMAKE_SYSTEM_PROCESSOR \"${{ matrix.cmake_system_processor }}\")" >> cmake/CMakeLists.txt
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          if [ -n "${{ matrix.ld_symlink_name }}" ]; then
+            ln -s /usr/${{ matrix.arch }}/lib /lib/${{ matrix.arch }}
+            ln -s /lib/${{ matrix.arch }}/ld-*.so /lib/${{ matrix.ld_symlink_name }}
+          fi
 
-      - name: Build Docker image
-        id: build-docker-image
-        uses: docker/build-push-action@v2
-        with:
-          context: .github/build/onnxruntime-armhf
-          builder: ${{ steps.buildx.outputs.name }}
-          # file: ./Dockerfile
-          build-args: |
-            BASE_IMAGE=${{ matrix.base_image }}
-            CC_VERSION=${{ matrix.cc_version }}
-            CXX_VERSION=${{ matrix.cxx_version }}
-            ARCH=${{ matrix.arch }}
-            CMAKE_SYSTEM_PROCESSOR=${{ matrix.cmake_system_processor }}
-            LD_SYMLINK_NAME=${{ matrix.ld_symlink_name }}
-            ONNXRUNTIME_VERSION=${{ matrix.onnxruntime_version }}
-            ATOMIC=${{ matrix.atomic }}
-            BUILD_OPTS=${{ matrix.build_opts }}
-          # target: ${{ matrix.target }}
-          # platforms: ${{ matrix.platform }}
-          load: true
-          tags: ${{ env.IMAGE_TAG }}
-          cache-from: type=registry,ref=${{ env.IMAGE_TAG }}-buildcache
-          cache-to: type=registry,ref=${{ env.IMAGE_TAG }}-buildcache,mode=max
+      - name: Build ONNX Runtime
+        if: steps.cache-build-result.outputs.cache-hit != 'true'
+        run: |
+          bash ./build.sh ${{ matrix.build_opts }}
 
       - name: Organize artifact
         run: |
           mkdir artifact
 
-          # create a container to copy files from microsoft/onnxruntime repository
-          CONTAINER_ID=$(docker run -d ${{ env.IMAGE_TAG }})
-
           # copy shared lib
           mkdir artifact/lib
-          docker cp "$CONTAINER_ID:/onnxruntime/build/" ./build
 
           NAME=$(basename ${{ matrix.result_dir }}/libonnxruntime.so.*)
           cp "${{ matrix.result_dir }}/${NAME}" artifact/lib/
@@ -101,6 +112,7 @@ jobs:
 
           # copy header files
           mkdir artifact/include
+
           readarray -t HEADERS <<EOF
           onnxruntime/core/session/onnxruntime_c_api.h
           onnxruntime/core/session/onnxruntime_cxx_api.h
@@ -112,16 +124,15 @@ jobs:
           EOF
 
           for path in "${HEADERS[@]}"; do
-            docker cp "$CONTAINER_ID:/onnxruntime/include/${path}" ./artifact/include/
+            cp "include/${path}" ./artifact/include/
           done
 
           # copy docs & metadata
-          docker cp $CONTAINER_ID:/onnxruntime/VERSION_NUMBER ./artifact/
-          docker cp $CONTAINER_ID:/onnxruntime/LICENSE ./artifact/
-          docker cp $CONTAINER_ID:/onnxruntime/ThirdPartyNotices.txt ./artifact/
-          docker cp $CONTAINER_ID:/onnxruntime/docs/Privacy.md ./artifact/
-          docker cp $CONTAINER_ID:/onnxruntime/README.md ./artifact/
-          docker rm -f $CONTAINER_ID
+          cp VERSION_NUMBER ./artifact/
+          cp LICENSE ./artifact/
+          cp ThirdPartyNotices.txt ./artifact/
+          cp docs/Privacy.md ./artifact/
+          cp README.md ./artifact/
 
           echo "$GITHUB_SHA" >> ./artifact/GIT_COMMIT_ID
 
@@ -265,7 +276,7 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.9
 
       # gcc 7 (ubuntu-18.04 default) does not have stdc++fs
-      - name: Install build-essential
+      - name: Install build dependencies
         if: startsWith(matrix.os, 'ubuntu')
         shell: bash
         run: |
