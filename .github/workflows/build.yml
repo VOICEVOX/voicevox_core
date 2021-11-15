@@ -86,7 +86,7 @@ jobs:
         run: |
           # Apply https://github.com/microsoft/onnxruntime/pull/9029
           git fetch --no-tags --depth=2 origin ece5c3a7a4724527261d2e821b55cfc4397ba1e5
-          git cherry-pick ece5c3a7a4724527261d2e821b55cfc4397ba1e5
+          git -c user.name="GitHub Actions" cherry-pick ece5c3a7a4724527261d2e821b55cfc4397ba1e5
 
           echo 'string(APPEND CMAKE_C_FLAGS " -latomic")' >> cmake/CMakeLists.txt
           echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
