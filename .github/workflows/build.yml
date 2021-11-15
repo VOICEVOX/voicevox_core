@@ -27,7 +27,7 @@ jobs:
             arch: arm-linux-gnueabihf
             cmake_system_processor: armv7l
             ld_symlink_name: ld-linux-armhf.so.3
-            build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Generic CMAKE_SYSTEM_PROCESSOR=armv7l --use_openmp --config Release --parallel --update --build --build_shared_lib
+            build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=armv7l --use_openmp --config Release --parallel --update --build --build_shared_lib
             result_dir: build/Linux/Release
 
     env:
