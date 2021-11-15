@@ -20,6 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # CMAKE_SYSTEM_PROCESSOR: https://github.com/microsoft/onnxruntime/releases/tag/v1.9.0
           - artifact_name: onnxruntime-linux-armhf-cpu
             os: ubuntu-18.04
             cc_version: '8'
@@ -86,13 +87,6 @@ jobs:
         run: |
           echo 'string(APPEND CMAKE_C_FLAGS " -latomic")' >> cmake/CMakeLists.txt
           echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
-
-          # CMAKE_SYSTEM_PROCESSOR: https://github.com/microsoft/onnxruntime/releases/tag/v1.9.0
-          # mv cmake/CMakeLists.txt cmake/CMakeLists.txt.bak
-          # # echo "set(CMAKE_SYSTEM_PROCESSOR \"${{ matrix.cmake_system_processor }}\")" >> cmake/CMakeLists.txt
-          # echo "set(CMAKE_SYSTEM_PROCESSOR armv7l)" >> cmake/CMakeLists.txt
-          # cat cmake/CMakeLists.txt.bak >> cmake/CMakeLists.txt
-          # rm cmake/CMakeLists.txt.bak
 
           if [ -n "${{ matrix.ld_symlink_name }}" ]; then
             sudo ln -s /usr/${{ matrix.arch }}/lib /lib/${{ matrix.arch }}
