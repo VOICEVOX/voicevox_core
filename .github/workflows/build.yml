@@ -45,12 +45,6 @@ jobs:
           submodules: true
           ref: ${{ env.ONNXRUNTIME_VERSION }}
 
-      - name: Apply patch
-        run: |
-          # Apply https://github.com/microsoft/onnxruntime/pull/9029
-          git fetch --no-tags --depth=2 origin ece5c3a7a4724527261d2e821b55cfc4397ba1e5
-          git -c user.name="GitHub Actions" cherry-pick ece5c3a7a4724527261d2e821b55cfc4397ba1e5
-
       - name: Dump matrix context
         env:
           MATRIX_CONTEXT: ${{ toJSON(matrix) }}
