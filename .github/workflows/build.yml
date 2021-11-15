@@ -31,7 +31,7 @@ jobs:
             result_dir: build/Linux/Release
 
     env:
-      ONNXRUNTIME_VERSION: v1.9.0
+      ONNXRUNTIME_VERSION: v1.9.1
       ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
       ARCH_SUFFIX: "${{ (matrix.arch != '' && '-') || '' }}${{ (matrix.arch != '' && matrix.arch) || '' }}"
 
@@ -84,6 +84,9 @@ jobs:
       - name: Configure build environment
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         run: |
+          # Apply https://github.com/microsoft/onnxruntime/pull/9029
+          git cherry-pick ece5c3a7a4724527261d2e821b55cfc4397ba1e5
+
           echo 'string(APPEND CMAKE_C_FLAGS " -latomic")' >> cmake/CMakeLists.txt
           echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
 
