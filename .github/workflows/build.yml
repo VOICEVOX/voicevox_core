@@ -21,6 +21,7 @@ jobs:
       matrix:
         include:
           # ONNX Runtime v1.9.0 requires CMAKE_SYSTEM_PROCESSOR, https://github.com/microsoft/onnxruntime/releases/tag/v1.9.0
+          # Both CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR are required.
           - artifact_name: onnxruntime-linux-armhf-cpu
             os: ubuntu-18.04
             cc_version: '8'
