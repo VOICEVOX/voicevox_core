@@ -331,7 +331,9 @@ jobs:
           # remove files with duplicate names to create a flat release archive
           rm -vf onnx/lib/core.h onnx/lib/core.lib
 
+          # copy Windows DLL if exists
           cp -v onnx/lib/core* artifact/ || true
+          # copy Linux/macOS shared library if exists
           cp -v onnx/lib/libcore* artifact/ || true
 
           # copy libonnxruntime from artifact
@@ -341,8 +343,9 @@ jobs:
             # copy docs and license
             rsync -av $(find "download/onnxruntime/" -maxdepth 1 -type f) "artifact/${{ matrix.onnxruntime_artifact_name }}/"
 
-            # copy shared library
+            # copy Windows DLL if exists
             cp -v onnx/lib/onnxruntime* "artifact/${{ matrix.onnxruntime_artifact_name }}/" || true
+            # copy Linux/macOS shared library if exists
             cp -v onnx/lib/libonnxruntime.so.* "artifact/${{ matrix.onnxruntime_artifact_name }}/" || true
           fi
 
