@@ -148,6 +148,8 @@ jobs:
 
 
   build-cpp-shared:
+    # Execute this job even if build-onnxruntime failed
+    if: always()
     needs:
       - build-onnxruntime
 
