@@ -1,4 +1,4 @@
-# ONNX版 VOICEVOX CORE
+# ONNXバックエンドコア
 
 ## 依存関係
 
