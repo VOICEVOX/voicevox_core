@@ -2,7 +2,7 @@
 
 ## 依存関係
 
-- ONNX Runtime v1.9.0/v1.9.1
+- ONNX Runtime v1.9.0/v1.9.1: https://github.com/microsoft/onnxruntime
 
 ### Raspberry Pi (armhf)の場合
 
