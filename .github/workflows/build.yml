@@ -344,8 +344,10 @@ jobs:
 
           # copy Windows DLL if exists
           cp -v onnx/lib/onnxruntime* "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
-          # copy Linux/macOS shared library if exists
+          # copy Linux shared library if exists
           cp -v onnx/lib/libonnxruntime.so.* "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
+          # copy macOS shared library if exists
+          cp -v onnx/lib/libonnxruntime.dylib "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
 
       # Upload
       - name: Upload artifact
