@@ -83,6 +83,7 @@ jobs:
       - name: Configure build environment
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         run: |
+          # Required for arm build
           # https://github.com/microsoft/onnxruntime/issues/4189#issuecomment-642528278
           echo 'string(APPEND CMAKE_C_FLAGS " -latomic")' >> cmake/CMakeLists.txt
           echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
