@@ -31,6 +31,8 @@ jobs:
 
     env:
       ONNXRUNTIME_VERSION: v1.9.1
+      # prefix usage: "", "arm-linux-gnueabihf-" => "gcc-8", "arm-linux-gnueabihf-gcc-8" (command name)
+      # suffix usage: "", "-arm-linux-gnueabihf" => "gcc-8", "gcc-8-arm-linux-gnueabihf" (package name)
       ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
       ARCH_SUFFIX: "${{ (matrix.arch != '' && '-') || '' }}${{ (matrix.arch != '' && matrix.arch) || '' }}"
 
@@ -219,6 +221,8 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
+      # prefix usage: "", "arm-linux-gnueabihf-" => "gcc-8", "arm-linux-gnueabihf-gcc-8" (command name)
+      # suffix usage: "", "-arm-linux-gnueabihf" => "gcc-8", "gcc-8-arm-linux-gnueabihf" (package name)
       ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
       ARCH_SUFFIX: "${{ (matrix.arch != '' && '-') || '' }}${{ (matrix.arch != '' && matrix.arch) || '' }}"
 
