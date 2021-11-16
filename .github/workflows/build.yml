@@ -336,17 +336,17 @@ jobs:
           # copy Linux/macOS shared library if exists
           cp -v onnx/lib/libcore* artifact/ || true
 
-          # copy libonnxruntime from artifact
+          # copy libonnxruntime
           if [ "${{ matrix.onnxruntime_artifact_name }}" != "" ]; then
-            mkdir -p "artifact/${{ matrix.onnxruntime_artifact_name }}/"
+            mkdir -p "artifact/${{ matrix.artifact_name }}/"
 
-            # copy docs and license
-            rsync -av $(find "download/onnxruntime/" -maxdepth 1 -type f) "artifact/${{ matrix.onnxruntime_artifact_name }}/"
+            # copy docs and license (all files in root dir)
+            rsync -av $(find "download/onnxruntime/" -maxdepth 1 -type f) "artifact/${{ matrix.artifact_name }}/"
 
             # copy Windows DLL if exists
-            cp -v onnx/lib/onnxruntime* "artifact/${{ matrix.onnxruntime_artifact_name }}/" || true
+            cp -v onnx/lib/onnxruntime* "artifact/${{ matrix.artifact_name }}/" || true
             # copy Linux/macOS shared library if exists
-            cp -v onnx/lib/libonnxruntime.so.* "artifact/${{ matrix.onnxruntime_artifact_name }}/" || true
+            cp -v onnx/lib/libonnxruntime.so.* "artifact/${{ matrix.artifact_name }}/" || true
           fi
 
       # Upload
