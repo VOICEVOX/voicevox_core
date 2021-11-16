@@ -1,11 +1,27 @@
-# ONNXバックエンドコア
+# ONNX版 VOICEVOX CORE
+
+## 依存関係
+
+- ONNX Runtime v1.9.0/v1.9.1
+
+### Raspberry Pi (armhf)の場合
+
+`core.zip`にRaspberry Pi用のONNX Runtimeを同梱しています。
+利用には、libgompのインストールが必要です。
+
+```shell
+sudo apt install libgomp1
+```
+
+## ビルド
+
 ONNX RuntimeをバックエンドにしたVOICEVOX CoreのPythonライブラリを作成します。
 
-## 0a. モデルの準備
+### 0a. モデルの準備
 https://github.com/Hiroshiba/vv_core_inference でonnx版に変換したモデルを用意します。
 このディレクトリにある`model/`フォルダの中には、[release-0.0.1](https://github.com/Hiroshiba/vv_core_inference/releases/tag/0.0.1)のonnx版が既に用意されています。
 
-## 0b. 必須pythonライブラリのインストール
+### 0b. 必須pythonライブラリのインストール
 このリポジトリのexample/python内にある[requirements.txt](../example/python/requirements.txt)にあるライブラリをインストールする。
 
 ```bash
@@ -13,7 +29,7 @@ cd ../example/python
 pip install -r requirements.txt
 ```
 
-## 1. コアバイナリの作成
+### 1. コアバイナリの作成
 このREADMEがあるonnxディレクトリで作業する。
 
 ```bash
@@ -35,7 +51,7 @@ cmake --build . --config Release
 cmake --install .
 ```
 
-## 2. Pythonライブラリの作成
+### 2. Pythonライブラリの作成
 このREADMEがあるonnxディレクトリで作業する。
 
 ```bash
@@ -47,7 +63,7 @@ cd python
 pip install .
 ```
 
-## 3. エンジンの起動
+### 3. エンジンの起動
 このリポジトリの`example/python/run.py`を実行するとき、カレントディレクトリにonnxモデルがないと動かないことに注意する。
 
 このREADMEがあるonnxディレクトリで作業する。
