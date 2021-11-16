@@ -340,7 +340,7 @@ jobs:
           mkdir -p "artifact/onnxruntime-${{ matrix.artifact_name }}/"
 
           # copy docs and license (all files in root dir)
-          find "download/onnxruntime/" -maxdepth 1 -type f | xargs cp -v {} "artifact/onnxruntime-${{ matrix.artifact_name }}/"
+          find "download/onnxruntime/" -maxdepth 1 -type f | xargs -I{} cp -v {} "artifact/onnxruntime-${{ matrix.artifact_name }}/"
 
           # copy Windows DLL if exists
           cp -v onnx/lib/onnxruntime* "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
