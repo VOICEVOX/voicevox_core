@@ -52,8 +52,6 @@ jobs:
       - name: Cache build result
         id: cache-build-result
         uses: actions/cache@v2
-        env:
-          DOCKERFILE_PATH: ${{ matrix.context_dir }}/Dockerfile
         with:
           path: build/
           key: ${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
