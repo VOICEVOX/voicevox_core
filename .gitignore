@@ -1,4 +1,4 @@
-# Tmpfile 
+# Tmpfile
 *.swp
 *.save
 
@@ -23,3 +23,15 @@ onnx/python/core/*.cpp
 onnx/python/core/*.lib
 onnx/python/core/*.dll
 onnx/python/core/*.so
+onnx/python/core/*.so.*
+onnx/install_manifest.txt
+onnx/*.cmake
+onnx/Makefile
+
+# Python
+__pycache__/
+*.egg-info
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
