@@ -11,15 +11,14 @@
 
 ### Windows と Linux の場合
 
-[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) のインストールと [LibTorch](https://pytorch.org/) のダウンロードが必要です。
+[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) のインストールと [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
 
 ### macOS の場合
-
-パッケージマネージャーの [Homebrew](https://brew.sh/index_ja) を用いて `brew install libtorch` コマンドで LibTorch を導入する方法が便利です（CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります）。
+CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
 
 ## API
 
-[core.h](./core.h) をご参照ください。
+[core.h](./core/csrc/core.h) をご参照ください。
 
 ## サンプルの実行
 
@@ -30,38 +29,14 @@
 #### ソースコードから実行
 
 ```bash
+pip install .
+
 cd example/python
 
-# example/python のディレクトリにコアライブラリが入った zip ファイルを展開
-
-# Windowsの場合、DLLからLIBファイルの作成
-./makelib.bat core
-
-# macOSの場合、libcore_cpu.dylib へのシンボリックリンク libcore.dylib を作成
-ln -s libcore_cpu.dylib libcore.dylib
-
-# 環境構築
-pip install -r requirements.txt
-python setup.py install  # Linux と macOS の場合は先頭に `LIBRARY_PATH="$LIBRARY_PATH:."` が必要
-
-# # うまく行かないときは毎回以下を実行すると良いかも
-# python setup.py clean
-# rm -r build *.cpp
-
-# 実行（Windowsの場合）
-PATH="$PATH:$HOME/libtorch/lib/" python run.py \
+python run.py \
     --text "これは本当に実行できているんですか" \
     --speaker_id 1
-
-# 実行（Linuxの場合）
-LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/libtorch/lib/" python run.py \
-    --text "これは本当に実行できているんですか" \
-    --speaker_id 1
-
-# 実行（macOSの場合）
-LD_LIBRARY_PATH="$LD_LIBRARY_PATH:." python run.py \
-    --text "これは本当に実行できているんですか" \
-    --speaker_id 1
+    --model="../../model"
 
 # 引数の紹介
 # --text 読み上げるテキスト
@@ -69,9 +44,8 @@ LD_LIBRARY_PATH="$LD_LIBRARY_PATH:." python run.py \
 # --use_gpu GPUを使う
 # --f0_speaker_id 音高の話者ID（デフォルト値はspeaker_id）
 # --f0_correct 音高の補正値（デフォルト値は0。+-0.3くらいで結果が大きく変わります）
+# --model モデルファイルが置いてあるディレクトリへのパス
 ```
-
-「ImportError: DLL load failed: 指定されたモジュールが見つかりません。」というエラーが出た場合は libtorch のパスが間違っているかもしれません。
 
 #### Docker から
 
@@ -106,6 +80,6 @@ aplay ~/voice/おはようございます-1.wav
 
 ## ライセンス
 
-サンプルコードおよび [core.h](./core.h) は [MIT LICENSE](./LICENSE) です。
+サンプルコードおよび [core.h](./core/csrc/core.h) は [MIT LICENSE](./LICENSE) です。
 
 [Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリは別ライセンスなのでご注意ください。
