@@ -8,6 +8,9 @@
 # ONNX
 onnxruntime*/
 
+# Output
+*.wav
+
 # Python
 __pycache__/
 *.egg-info
