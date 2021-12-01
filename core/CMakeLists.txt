@@ -32,7 +32,6 @@ target_compile_options(core PRIVATE
 	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
 )
 target_include_directories(core
-	# PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/csrc  # for core.h
 	PRIVATE ${ONNXRUNTIME_DIR}/include)
 target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/lib)
 target_link_libraries(core PUBLIC onnxruntime)

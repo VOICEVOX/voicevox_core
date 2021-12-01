@@ -8,13 +8,25 @@
 全体構成は [こちら](https://github.com/Hiroshiba/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
 
 ## 依存関係
+* ONNX Runtime v1.9.0/v1.9.1: https://github.com/microsoft/onnxruntime
+
+環境に対応したONNX Runtimeをダウンロードし、リポジトリに展開します。
 
 ### Windows と Linux の場合
 
-[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) のインストールと [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
+GPU対応版は[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) のインストールとGPUに対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
 
 ### macOS の場合
 CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
+
+### Raspberry Pi (armhf)の場合
+
+`core.zip`にRaspberry Pi用のONNX Runtimeを同梱しています。
+利用には、libgompのインストールが必要です。
+
+```shell
+sudo apt install libgomp1
+```
 
 ## API
 
