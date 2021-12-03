@@ -10,7 +10,7 @@
 ## 依存関係
 * ONNX Runtime v1.9.0/v1.9.1: https://github.com/microsoft/onnxruntime
 
-環境に対応したONNX Runtimeをダウンロードし、リポジトリに展開します。
+環境に対応したONNX Runtimeをダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
 
 ### Windows と Linux の場合
 
