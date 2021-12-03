@@ -30,7 +30,7 @@ sudo apt install libgomp1
 
 ## API
 
-[core.h](./core/csrc/core.h) をご参照ください。
+[core.h](./core/src/core.h) をご参照ください。
 
 ## サンプルの実行
 
@@ -92,6 +92,6 @@ aplay ~/voice/おはようございます-1.wav
 
 ## ライセンス
 
-サンプルコードおよび [core.h](./core/csrc/core.h) は [MIT LICENSE](./LICENSE) です。
+サンプルコードおよび [core.h](./core/src/core.h) は [MIT LICENSE](./LICENSE) です。
 
 [Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリは別ライセンスなのでご注意ください。

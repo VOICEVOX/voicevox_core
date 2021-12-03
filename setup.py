@@ -10,7 +10,7 @@ from Cython.Distutils import build_ext
 
 version = '0.0.1'
 
-def build_csrc():
+def build_src():
     """setupより前にC++モジュールのビルド"""
     print('Building C++ modules...')
 
@@ -25,7 +25,7 @@ def build_csrc():
         sys.exit(1)
 
 if __name__ == '__main__':
-    build_csrc()
+    build_src()
 
     if platform.system() == "Windows":
         runtime_library_dirs = []

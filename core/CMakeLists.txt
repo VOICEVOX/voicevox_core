@@ -23,7 +23,7 @@ file(GLOB ONNXRUNTIME_LIBS
 	"${ONNXRUNTIME_DIR}/lib/*.so.*")
 
 # coreライブラリのビルド設定
-add_library(core SHARED csrc/core.cpp)
+add_library(core SHARED src/core.cpp)
 set_property(TARGET core PROPERTY CXX_STANDARD 17)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
 set_property(TARGET core PROPERTY INSTALL_RPATH "$ORIGIN") # make enable to search onnxruntime.so
@@ -49,5 +49,5 @@ install(TARGETS core
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	RUNTIME DESTINATION lib)
-install(FILES ${ONNXRUNTIME_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/csrc/core.h
+install(FILES ${ONNXRUNTIME_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/core.h
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
