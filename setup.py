@@ -27,9 +27,12 @@ def build_src():
 if __name__ == '__main__':
     build_src()
 
+    # 追加ライブラリ(pythonライブラリからの相対パスで./lib/*)を読み込めるように設定
     if platform.system() == "Windows":
+        # Windowsでは別途__init__.pyで明示的に読み込む
         runtime_library_dirs = []
     else:
+        # $ORIGINはpythonライブラリの読み込み時に自動的に自身のパスに展開される
         runtime_library_dirs = ["$ORIGIN/lib"]
 
     ext_modules = [
