@@ -8,7 +8,11 @@ import numpy
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 
-version = '0.0.1'
+def get_version():
+    """バージョン取得"""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(base_dir, 'VERSION.txt')) as f:
+        return f.read().strip()
 
 def build_src():
     """setupより前にC++モジュールのビルド"""
@@ -49,7 +53,7 @@ if __name__ == '__main__':
 
     setup(
         name="core",
-        version=version,
+        version=get_version(),
         packages=["core"],
         cmdclass={
             "build_ext": build_ext,

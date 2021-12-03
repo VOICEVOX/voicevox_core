@@ -11,6 +11,7 @@ onnxruntime*/
 # Build artifacts
 build/
 lib/
+core/_core.cpp
 
 # Output
 *.wav
