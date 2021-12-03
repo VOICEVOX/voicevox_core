@@ -8,6 +8,10 @@
 # ONNX
 onnxruntime*/
 
+# Build artifacts
+build/
+lib/
+
 # Output
 *.wav
 
