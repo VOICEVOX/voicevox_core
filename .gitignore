@@ -5,28 +5,16 @@
 # Archives
 *.zip
 
-# Torch
-libtorch/
-
-# Core
-core/
-
 # ONNX
-onnx/build/
-onnx/lib/
-onnx/model/
 onnxruntime*/
-onnx/python/build/
-!onnx/python/core/
-onnx/python/core/*.h
-onnx/python/core/*.cpp
-onnx/python/core/*.lib
-onnx/python/core/*.dll
-onnx/python/core/*.so
-onnx/python/core/*.so.*
-onnx/install_manifest.txt
-onnx/*.cmake
-onnx/Makefile
+
+# Build artifacts
+build/
+lib/
+core/_core.cpp
+
+# Output
+*.wav
 
 # Python
 __pycache__/

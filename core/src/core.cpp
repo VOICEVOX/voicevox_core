@@ -2,6 +2,7 @@
 
 #include <array>
 #include <filesystem>
+#include <fstream>
 #include <memory>
 #include <string>
 
@@ -10,6 +11,7 @@
 
 #define NOT_INITIALIZED_ERR "Call initialize() first."
 #define NOT_FOUND_ERR "No such file or directory: "
+#define FAILED_TO_OPEN_MODEL_ERR "Unable to open model files."
 #define ONNX_ERR "ONNX raise exception: "
 #define GPU_NOT_SUPPORTED_ERR "This library is CPU version. GPU is not supported."
 
@@ -17,23 +19,62 @@ namespace fs = std::filesystem;
 constexpr std::array<int64_t, 0> scalar_shape{};
 constexpr std::array<int64_t, 1> speaker_shape{1};
 
+static std::string error_message;
+static bool initialized = false;
+
+bool open_models(
+    const fs::path& yukarin_s_path,
+    const fs::path& yukarin_sa_path,
+    const fs::path& decode_path,
+    std::vector<unsigned char>& yukarin_s_model,
+    std::vector<unsigned char>& yukarin_sa_model,
+    std::vector<unsigned char>& decode_model
+) {
+  std::ifstream yukarin_s_file(yukarin_s_path, std::ios::binary),
+      yukarin_sa_file(yukarin_sa_path, std::ios::binary),
+      decode_file(decode_path, std::ios::binary);
+  if (!yukarin_s_file.is_open() || !yukarin_sa_file.is_open() || !decode_file.is_open()) {
+    error_message = FAILED_TO_OPEN_MODEL_ERR;
+    return false;
+  }
+
+  yukarin_s_model = std::vector<unsigned char>(std::istreambuf_iterator<char>(yukarin_s_file), {});
+  yukarin_sa_model = std::vector<unsigned char>(std::istreambuf_iterator<char>(yukarin_sa_file), {});
+  decode_model = std::vector<unsigned char>(std::istreambuf_iterator<char>(decode_file), {});
+  return true;
+}
+
 struct Status {
   Status(const char *root_dir_path_utf8, bool use_gpu_)
       : root_dir_path(root_dir_path_utf8),
         use_gpu(use_gpu_),
         memory_info(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU)),
-        yukarin_s(nullptr), yukarin_sa(nullptr), decode(nullptr) {
+        yukarin_s(nullptr), yukarin_sa(nullptr), decode(nullptr) {}
+
+  bool load() {
     // deprecated in C++20; Use char8_t for utf-8 char in the future.
     fs::path root = fs::u8path(root_dir_path);
+    std::vector<unsigned char> yukarin_s_model, yukarin_sa_model, decode_model;
+    if (!open_models(
+        root / "yukarin_s.onnx",
+        root / "yukarin_sa.onnx",
+        root / "decode.onnx",
+        yukarin_s_model,
+        yukarin_sa_model,
+        decode_model
+    )) {
+      return false;
+    }
     Ort::SessionOptions session_options;
-    yukarin_s = Ort::Session(env, (root / "yukarin_s.onnx").c_str(), session_options);
-    yukarin_sa = Ort::Session(env, (root / "yukarin_sa.onnx").c_str(), session_options);
+    yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
+    yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
 #ifdef USE_CUDA
     if (use_gpu) {
       Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(session_options, 0));
     }
 #endif
-    decode = Ort::Session(env, (root / "decode.onnx").c_str(), session_options);
+    decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
+    return true;
   }
 
   std::string root_dir_path;
@@ -44,12 +85,10 @@ struct Status {
   Ort::Session yukarin_s, yukarin_sa, decode;
 };
 
-static std::string error_message;
-static bool initialized = false;
 static std::unique_ptr<Status> status;
 
 template <typename T, size_t Rank>
-Ort::Value ToTensor(T *data, const std::array<int64_t, Rank> &shape) {
+Ort::Value to_tensor(T *data, const std::array<int64_t, Rank> &shape) {
   int64_t count = 1;
   for (int64_t dim : shape) {
     count *= dim;
@@ -67,6 +106,9 @@ bool initialize(const char *root_dir_path, bool use_gpu) {
 #endif
   try {
     status = std::make_unique<Status>(root_dir_path, use_gpu);
+    if (!status->load()) {
+      return false;
+    }
     if (use_gpu) {
       // 一回走らせて十分なGPUメモリを確保させる
       int length = 500;
@@ -105,9 +147,9 @@ bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *
     const std::array<int64_t, 1> phoneme_shape{length};
     int64_t speaker_id_ll = static_cast<int64_t>(*speaker_id);
 
-    std::array<Ort::Value, 2> input_tensors = {ToTensor((int64_t *)phoneme_list, phoneme_shape),
-                                               ToTensor(&speaker_id_ll, speaker_shape)};
-    Ort::Value output_tensor = ToTensor(output, phoneme_shape);
+    std::array<Ort::Value, 2> input_tensors = {to_tensor((int64_t *)phoneme_list, phoneme_shape),
+                                               to_tensor(&speaker_id_ll, speaker_shape)};
+    Ort::Value output_tensor = to_tensor(output, phoneme_shape);
 
     status->yukarin_s.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
                            &output_tensor, 1);
@@ -136,15 +178,15 @@ bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_ph
     int64_t length_ll = static_cast<int64_t>(length);
     int64_t speaker_id_ll = static_cast<int64_t>(*speaker_id);
 
-    std::array<Ort::Value, 8> input_tensors = {ToTensor(&length_ll, scalar_shape),
-                                               ToTensor((int64_t *)vowel_phoneme_list, phoneme_shape),
-                                               ToTensor((int64_t *)consonant_phoneme_list, phoneme_shape),
-                                               ToTensor((int64_t *)start_accent_list, phoneme_shape),
-                                               ToTensor((int64_t *)end_accent_list, phoneme_shape),
-                                               ToTensor((int64_t *)start_accent_phrase_list, phoneme_shape),
-                                               ToTensor((int64_t *)end_accent_phrase_list, phoneme_shape),
-                                               ToTensor(&speaker_id_ll, speaker_shape)};
-    Ort::Value output_tensor = ToTensor(output, phoneme_shape);
+    std::array<Ort::Value, 8> input_tensors = {to_tensor(&length_ll, scalar_shape),
+                                               to_tensor((int64_t *)vowel_phoneme_list, phoneme_shape),
+                                               to_tensor((int64_t *)consonant_phoneme_list, phoneme_shape),
+                                               to_tensor((int64_t *)start_accent_list, phoneme_shape),
+                                               to_tensor((int64_t *)end_accent_list, phoneme_shape),
+                                               to_tensor((int64_t *)start_accent_phrase_list, phoneme_shape),
+                                               to_tensor((int64_t *)end_accent_phrase_list, phoneme_shape),
+                                               to_tensor(&speaker_id_ll, speaker_shape)};
+    Ort::Value output_tensor = to_tensor(output, phoneme_shape);
 
     status->yukarin_sa.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
                             &output_tensor, 1);
@@ -168,9 +210,9 @@ bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme, lon
     const std::array<int64_t, 2> f0_shape{length, 1}, phoneme_shape{length, phoneme_size};
     int64_t speaker_id_ll = static_cast<int64_t>(*speaker_id);
 
-    std::array<Ort::Value, 3> input_tensor = {ToTensor(f0, f0_shape), ToTensor(phoneme, phoneme_shape),
-                                              ToTensor(&speaker_id_ll, speaker_shape)};
-    Ort::Value output_tensor = ToTensor(output, wave_shape);
+    std::array<Ort::Value, 3> input_tensor = {to_tensor(f0, f0_shape), to_tensor(phoneme, phoneme_shape),
+                                              to_tensor(&speaker_id_ll, speaker_shape)};
+    Ort::Value output_tensor = to_tensor(output, wave_shape);
 
     status->decode.Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(), outputs,
                         &output_tensor, 1);

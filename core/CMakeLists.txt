@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(ONNXCore)
-set(ENABLE_CUDA OFF CACHE BOOL "use CUDA")
-set(ONNXRUNTIME_DIR "" CACHE PATH "Path to ONNX Runtime")
 
 # coreライブラリのインストール先設定。デフォルトはCMakeLists.txtと同じ位置
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -25,7 +23,7 @@ file(GLOB ONNXRUNTIME_LIBS
 	"${ONNXRUNTIME_DIR}/lib/*.so.*")
 
 # coreライブラリのビルド設定
-add_library(core SHARED core.cpp)
+add_library(core SHARED src/core.cpp)
 set_property(TARGET core PROPERTY CXX_STANDARD 17)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
 set_property(TARGET core PROPERTY INSTALL_RPATH "$ORIGIN") # make enable to search onnxruntime.so
@@ -34,7 +32,6 @@ target_compile_options(core PRIVATE
 	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
 )
 target_include_directories(core
-	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../  # for core.h
 	PRIVATE ${ONNXRUNTIME_DIR}/include)
 target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/lib)
 target_link_libraries(core PUBLIC onnxruntime)
@@ -52,5 +49,5 @@ install(TARGETS core
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	RUNTIME DESTINATION lib)
-install(FILES ${ONNXRUNTIME_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/../core.h
+install(FILES ${ONNXRUNTIME_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/core.h
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)

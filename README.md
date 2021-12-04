@@ -8,18 +8,29 @@
 全体構成は [こちら](https://github.com/Hiroshiba/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
 
 ## 依存関係
+* ONNX Runtime v1.9.0/v1.9.1: https://github.com/microsoft/onnxruntime
+
+環境に対応したONNX Runtimeをダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
 
 ### Windows と Linux の場合
 
-[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) のインストールと [LibTorch](https://pytorch.org/) のダウンロードが必要です。
+GPU対応版は[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) のインストールとGPUに対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
 
 ### macOS の場合
+CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
 
-パッケージマネージャーの [Homebrew](https://brew.sh/index_ja) を用いて `brew install libtorch` コマンドで LibTorch を導入する方法が便利です（CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります）。
+### Raspberry Pi (armhf)の場合
+
+`core.zip`にRaspberry Pi用のONNX Runtimeを同梱しています。
+利用には、libgompのインストールが必要です。
+
+```shell
+sudo apt install libgomp1
+```
 
 ## API
 
-[core.h](./core.h) をご参照ください。
+[core.h](./core/src/core.h) をご参照ください。
 
 ## サンプルの実行
 
@@ -30,38 +41,14 @@
 #### ソースコードから実行
 
 ```bash
+pip install .
+
 cd example/python
 
-# example/python のディレクトリにコアライブラリが入った zip ファイルを展開
-
-# Windowsの場合、DLLからLIBファイルの作成
-./makelib.bat core
-
-# macOSの場合、libcore_cpu.dylib へのシンボリックリンク libcore.dylib を作成
-ln -s libcore_cpu.dylib libcore.dylib
-
-# 環境構築
-pip install -r requirements.txt
-python setup.py install  # Linux と macOS の場合は先頭に `LIBRARY_PATH="$LIBRARY_PATH:."` が必要
-
-# # うまく行かないときは毎回以下を実行すると良いかも
-# python setup.py clean
-# rm -r build *.cpp
-
-# 実行（Windowsの場合）
-PATH="$PATH:$HOME/libtorch/lib/" python run.py \
+python run.py \
     --text "これは本当に実行できているんですか" \
     --speaker_id 1
-
-# 実行（Linuxの場合）
-LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/libtorch/lib/" python run.py \
-    --text "これは本当に実行できているんですか" \
-    --speaker_id 1
-
-# 実行（macOSの場合）
-LD_LIBRARY_PATH="$LD_LIBRARY_PATH:." python run.py \
-    --text "これは本当に実行できているんですか" \
-    --speaker_id 1
+    --root_dir_path="../../model"
 
 # 引数の紹介
 # --text 読み上げるテキスト
@@ -69,9 +56,8 @@ LD_LIBRARY_PATH="$LD_LIBRARY_PATH:." python run.py \
 # --use_gpu GPUを使う
 # --f0_speaker_id 音高の話者ID（デフォルト値はspeaker_id）
 # --f0_correct 音高の補正値（デフォルト値は0。+-0.3くらいで結果が大きく変わります）
+# --root_dir_path onnxファイル等必要なファイルがあるディレクトリ
 ```
-
-「ImportError: DLL load failed: 指定されたモジュールが見つかりません。」というエラーが出た場合は libtorch のパスが間違っているかもしれません。
 
 #### Docker から
 
@@ -106,6 +92,6 @@ aplay ~/voice/おはようございます-1.wav
 
 ## ライセンス
 
-サンプルコードおよび [core.h](./core.h) は [MIT LICENSE](./LICENSE) です。
+サンプルコードおよび [core.h](./core/src/core.h) は [MIT LICENSE](./LICENSE) です。
 
 [Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリは別ライセンスなのでご注意ください。
