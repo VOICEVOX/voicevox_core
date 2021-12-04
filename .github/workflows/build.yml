@@ -300,27 +300,24 @@ jobs:
       - name: Configure (Windows, macOS)
         if: ${{ !startsWith(matrix.os, 'ubuntu') }} # '!' cannot be used as a first character in YAML
         shell: bash
-        working-directory: onnx
         run: |
-          cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
+          cmake -DONNXRUNTIME_DIR=download/onnxruntime ${{ matrix.cmake_additional_options }} .
 
       - name: Configure (Linux)
         if: startsWith(matrix.os, 'ubuntu')
         shell: bash
-        working-directory: onnx
         env:
           CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
           CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
         run: |
-          cmake -DONNXRUNTIME_DIR=../download/onnxruntime ${{ matrix.cmake_additional_options }} .
+          cmake -DONNXRUNTIME_DIR=download/onnxruntime ${{ matrix.cmake_additional_options }} .
 
       - name: Build
         shell: bash
-        working-directory: onnx
         run: |
           cmake --build . --config Release
 
-          # copy lib to onnx/lib/* and set rpath (linux)
+          # copy lib to core/lib/* and set rpath (linux)
           cmake --install .
 
       - name: Organize artifact
@@ -329,12 +326,12 @@ jobs:
           mkdir artifact
 
           # remove files with duplicate names to create a flat release archive
-          rm -vf onnx/lib/core.h onnx/lib/core.lib
+          rm -vf core/lib/core.h core/lib/core.lib
 
           # copy Windows DLL if exists
-          cp -v onnx/lib/core* artifact/ || true
+          cp -v core/lib/core* artifact/ || true
           # copy Linux/macOS shared library if exists
-          cp -v onnx/lib/libcore* artifact/ || true
+          cp -v core/lib/libcore* artifact/ || true
 
           # copy libonnxruntime
           if [ "${{ matrix.onnxruntime_artifact_name }}" != "" ]; then
@@ -344,11 +341,11 @@ jobs:
             find "download/onnxruntime/" -maxdepth 1 -type f | xargs -I{} cp -v {} "artifact/onnxruntime-${{ matrix.artifact_name }}/"
 
             # copy Windows DLL if exists
-            cp -v onnx/lib/onnxruntime* "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
+            cp -v core/lib/onnxruntime* "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
             # copy Linux shared library if exists
-            cp -v onnx/lib/libonnxruntime.so.* "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
+            cp -v core/lib/libonnxruntime.so.* "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
             # copy macOS shared library if exists
-            cp -v onnx/lib/libonnxruntime.dylib "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
+            cp -v core/lib/libonnxruntime.dylib "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
           fi
 
       # Upload
