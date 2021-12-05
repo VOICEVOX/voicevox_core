@@ -8,21 +8,23 @@
 全体構成は [こちら](https://github.com/Hiroshiba/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
 
 ## 依存関係
-* ONNX Runtime v1.9.0/v1.9.1: https://github.com/microsoft/onnxruntime
 
-環境に対応したONNX Runtimeをダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
+- ONNX Runtime v1.9.0/v1.9.1: https://github.com/microsoft/onnxruntime
+
+環境に対応した ONNX Runtime をダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
 
 ### Windows と Linux の場合
 
-GPU対応版は[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) のインストールとGPUに対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
+GPU 対応版は[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) のインストールと GPU に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
 
 ### macOS の場合
+
 CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
 
 ### Raspberry Pi (armhf)の場合
 
-`core.zip`にRaspberry Pi用のONNX Runtimeを同梱しています。
-利用には、libgompのインストールが必要です。
+`core.zip`に Raspberry Pi 用の ONNX Runtime を同梱しています。
+利用には、libgomp のインストールが必要です。
 
 ```shell
 sudo apt install libgomp1
@@ -61,6 +63,10 @@ python run.py \
 
 #### Docker から
 
+現在 onnx 化対応中のため、main ブランチ上の Dockerfile は動作しません
+`git checkout origin/release-0.9`を実行し、v0.9 の Dockerfile でお試しください
+詳細-> #44
+
 <details>
 
 ```bash
@@ -88,7 +94,7 @@ aplay ~/voice/おはようございます-1.wav
 ## 事例紹介
 
 **[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装  
-**[Node VOICEVOX Engine](https://github.com/y-chan/node-voicevox-engine) [@y-chan](https://github.com/y-chan)** ･･･ VOICEVOX ENGINE の Node.js/C++ 実装  
+**[Node VOICEVOX Engine](https://github.com/y-chan/node-voicevox-engine) [@y-chan](https://github.com/y-chan)** ･･･ VOICEVOX ENGINE の Node.js/C++ 実装
 
 ## ライセンス
 
