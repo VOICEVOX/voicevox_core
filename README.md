@@ -65,7 +65,7 @@ python run.py \
 
 現在 onnx 化対応中のため、main ブランチ上の Dockerfile は動作しません
 `git checkout origin/release-0.9`を実行し、v0.9 の Dockerfile でお試しください
-詳細-> #44
+詳細-> [#44](https://github.com/VOICEVOX/voicevox_core/issues/44)
 
 <details>
 
