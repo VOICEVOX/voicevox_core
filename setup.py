@@ -51,6 +51,8 @@ if __name__ == '__main__':
         )
     ]
 
+    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests'))
+
     setup(
         name="core",
         version=get_version(),
@@ -70,4 +72,5 @@ if __name__ == '__main__':
                 "lib/*.dylib"
             ]
         },
+        test_suite="core_test",
     )

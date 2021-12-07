@@ -5,6 +5,10 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <unordered_set>
+#include <exception>
+
+#include "nlohmann/json.hpp"
 
 #define VOICEVOX_CORE_EXPORTS
 #include "core.h"
@@ -12,8 +16,11 @@
 #define NOT_INITIALIZED_ERR "Call initialize() first."
 #define NOT_FOUND_ERR "No such file or directory: "
 #define FAILED_TO_OPEN_MODEL_ERR "Unable to open model files."
+#define FAILED_TO_OPEN_METAS_ERR "Unable to open metas.json."
 #define ONNX_ERR "ONNX raise exception: "
+#define JSON_ERR "JSON parser raise exception: "
 #define GPU_NOT_SUPPORTED_ERR "This library is CPU version. GPU is not supported."
+#define UNKNOWN_STYLE "Unknown style ID: "
 
 constexpr float PHONEME_LENGTH_MINIVAL = 0.01f;
 
@@ -40,6 +47,27 @@ bool open_models(const fs::path &yukarin_s_path, const fs::path &yukarin_sa_path
   return true;
 }
 
+/**
+ * Loads the metas.json.
+ *
+ * schema:
+ * [{
+ *  name: string,
+ *  styles: [{name: string, id: int}],
+ *  speaker_uuid: string,
+ *  version: string
+ * }]
+ */
+bool open_metas(const fs::path& metas_path, nlohmann::json& metas) {
+  std::ifstream metas_file(metas_path);
+  if (!metas_file.is_open()) {
+    error_message = FAILED_TO_OPEN_METAS_ERR;
+    return false;
+  }
+  metas_file >> metas;
+  return true;
+}
+
 struct Status {
   Status(const char *root_dir_path_utf8, bool use_gpu_)
       : root_dir_path(root_dir_path_utf8),
@@ -52,6 +80,18 @@ struct Status {
   bool load() {
     // deprecated in C++20; Use char8_t for utf-8 char in the future.
     fs::path root = fs::u8path(root_dir_path);
+
+    if (!open_metas(root / "metas.json", metas)) {
+      return false;
+    }
+    metas_str = metas.dump();
+    supported_styles.clear();
+    for (const auto& meta : metas) {
+      for (const auto& style : meta["styles"]) {
+        supported_styles.insert(style["id"].get<int>());
+      }
+    }
+
     std::vector<unsigned char> yukarin_s_model, yukarin_sa_model, decode_model;
     if (!open_models(root / "yukarin_s.onnx", root / "yukarin_sa.onnx", root / "decode.onnx", yukarin_s_model,
                      yukarin_sa_model, decode_model)) {
@@ -75,6 +115,10 @@ struct Status {
 
   Ort::Env env{ORT_LOGGING_LEVEL_ERROR};
   Ort::Session yukarin_s, yukarin_sa, decode;
+
+  nlohmann::json metas;
+  std::string metas_str;
+  std::unordered_set<int> supported_styles;
 };
 
 static std::unique_ptr<Status> status;
@@ -86,6 +130,14 @@ Ort::Value to_tensor(T *data, const std::array<int64_t, Rank> &shape) {
     count *= dim;
   }
   return Ort::Value::CreateTensor<T>(status->memory_info, data, count, shape.data(), shape.size());
+}
+
+bool validate_speaker_id(int speaker_id) {
+  if (status->supported_styles.find(speaker_id) == status->supported_styles.end()) {
+    error_message = UNKNOWN_STYLE + std::to_string(speaker_id);
+    return false;
+  }
+  return true;
 }
 
 bool initialize(const char *root_dir_path, bool use_gpu) {
@@ -114,6 +166,13 @@ bool initialize(const char *root_dir_path, bool use_gpu) {
     error_message = ONNX_ERR;
     error_message += e.what();
     return false;
+  } catch (const nlohmann::json::exception &e) {
+    error_message = JSON_ERR;
+    error_message += e.what();
+    return false;
+  } catch (const std::exception &e) {
+    error_message = e.what();
+    return false;
   }
 
   initialized = true;
@@ -125,12 +184,14 @@ void finalize() {
   status.reset();
 }
 
-// TODO: 未実装
-const char *metas() { return ""; }
+const char *metas() { return status->metas_str.c_str(); }
 
 bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *output) {
   if (!initialized) {
     error_message = NOT_INITIALIZED_ERR;
+    return false;
+  }
+  if (!validate_speaker_id(*speaker_id)) {
     return false;
   }
   try {
@@ -165,6 +226,9 @@ bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_ph
     error_message = NOT_INITIALIZED_ERR;
     return false;
   }
+  if (!validate_speaker_id(*speaker_id)) {
+    return false;
+  }
   try {
     const char *inputs[] = {
         "length",          "vowel_phoneme_list",       "consonant_phoneme_list", "start_accent_list",
@@ -197,6 +261,9 @@ bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_ph
 bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme, long *speaker_id, float *output) {
   if (!initialized) {
     error_message = NOT_INITIALIZED_ERR;
+    return false;
+  }
+  if (!validate_speaker_id(*speaker_id)) {
     return false;
   }
   try {
