@@ -208,7 +208,7 @@ bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *
                           &output_tensor, 1);
 
     for (int i = 0; i < length; i++) {
-      if (output[i] < 0) output[i] = PHONEME_LENGTH_MINIVAL;
+      if (output[i] < PHONEME_LENGTH_MINIVAL) output[i] = PHONEME_LENGTH_MINIVAL;
     }
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
