@@ -1,12 +1,12 @@
 #include <onnxruntime_cxx_api.h>
 
 #include <array>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <string>
 #include <unordered_set>
-#include <exception>
 
 #include "nlohmann/json.hpp"
 
@@ -22,6 +22,8 @@
 #define GPU_NOT_SUPPORTED_ERR "This library is CPU version. GPU is not supported."
 #define UNKNOWN_STYLE "Unknown style ID: "
 
+constexpr float PHONEME_LENGTH_MINIMAL = 0.01f;
+
 namespace fs = std::filesystem;
 constexpr std::array<int64_t, 0> scalar_shape{};
 constexpr std::array<int64_t, 1> speaker_shape{1};
@@ -29,16 +31,10 @@ constexpr std::array<int64_t, 1> speaker_shape{1};
 static std::string error_message;
 static bool initialized = false;
 
-bool open_models(
-    const fs::path& yukarin_s_path,
-    const fs::path& yukarin_sa_path,
-    const fs::path& decode_path,
-    std::vector<unsigned char>& yukarin_s_model,
-    std::vector<unsigned char>& yukarin_sa_model,
-    std::vector<unsigned char>& decode_model
-) {
-  std::ifstream yukarin_s_file(yukarin_s_path, std::ios::binary),
-      yukarin_sa_file(yukarin_sa_path, std::ios::binary),
+bool open_models(const fs::path &yukarin_s_path, const fs::path &yukarin_sa_path, const fs::path &decode_path,
+                 std::vector<unsigned char> &yukarin_s_model, std::vector<unsigned char> &yukarin_sa_model,
+                 std::vector<unsigned char> &decode_model) {
+  std::ifstream yukarin_s_file(yukarin_s_path, std::ios::binary), yukarin_sa_file(yukarin_sa_path, std::ios::binary),
       decode_file(decode_path, std::ios::binary);
   if (!yukarin_s_file.is_open() || !yukarin_sa_file.is_open() || !decode_file.is_open()) {
     error_message = FAILED_TO_OPEN_MODEL_ERR;
@@ -62,7 +58,7 @@ bool open_models(
  *  version: string
  * }]
  */
-bool open_metas(const fs::path& metas_path, nlohmann::json& metas) {
+bool open_metas(const fs::path &metas_path, nlohmann::json &metas) {
   std::ifstream metas_file(metas_path);
   if (!metas_file.is_open()) {
     error_message = FAILED_TO_OPEN_METAS_ERR;
@@ -77,7 +73,9 @@ struct Status {
       : root_dir_path(root_dir_path_utf8),
         use_gpu(use_gpu_),
         memory_info(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU)),
-        yukarin_s(nullptr), yukarin_sa(nullptr), decode(nullptr) {}
+        yukarin_s(nullptr),
+        yukarin_sa(nullptr),
+        decode(nullptr) {}
 
   bool load() {
     // deprecated in C++20; Use char8_t for utf-8 char in the future.
@@ -88,21 +86,15 @@ struct Status {
     }
     metas_str = metas.dump();
     supported_styles.clear();
-    for (const auto& meta : metas) {
-      for (const auto& style : meta["styles"]) {
+    for (const auto &meta : metas) {
+      for (const auto &style : meta["styles"]) {
         supported_styles.insert(style["id"].get<int>());
       }
     }
 
     std::vector<unsigned char> yukarin_s_model, yukarin_sa_model, decode_model;
-    if (!open_models(
-        root / "yukarin_s.onnx",
-        root / "yukarin_sa.onnx",
-        root / "decode.onnx",
-        yukarin_s_model,
-        yukarin_sa_model,
-        decode_model
-    )) {
+    if (!open_models(root / "yukarin_s.onnx", root / "yukarin_sa.onnx", root / "decode.onnx", yukarin_s_model,
+                     yukarin_sa_model, decode_model)) {
       return false;
     }
     Ort::SessionOptions session_options;
@@ -213,7 +205,11 @@ bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *
     Ort::Value output_tensor = to_tensor(output, phoneme_shape);
 
     status->yukarin_s.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
-                           &output_tensor, 1);
+                          &output_tensor, 1);
+
+    for (int i = 0; i < length; i++) {
+      if (output[i] < PHONEME_LENGTH_MINIMAL) output[i] = PHONEME_LENGTH_MINIMAL;
+    }
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
     error_message += e.what();
@@ -253,7 +249,7 @@ bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_ph
     Ort::Value output_tensor = to_tensor(output, phoneme_shape);
 
     status->yukarin_sa.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
-                            &output_tensor, 1);
+                           &output_tensor, 1);
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
     error_message += e.what();
@@ -282,7 +278,7 @@ bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme, lon
     Ort::Value output_tensor = to_tensor(output, wave_shape);
 
     status->decode.Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(), outputs,
-                        &output_tensor, 1);
+                       &output_tensor, 1);
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
     error_message += e.what();
