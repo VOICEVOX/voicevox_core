@@ -1,12 +1,12 @@
 #include <onnxruntime_cxx_api.h>
 
 #include <array>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <string>
 #include <unordered_set>
-#include <exception>
 
 #include "nlohmann/json.hpp"
 
@@ -22,7 +22,7 @@
 #define GPU_NOT_SUPPORTED_ERR "This library is CPU version. GPU is not supported."
 #define UNKNOWN_STYLE "Unknown style ID: "
 
-constexpr float PHONEME_LENGTH_MINIVAL = 0.01f;
+constexpr float PHONEME_LENGTH_MINIMAL = 0.01f;
 
 namespace fs = std::filesystem;
 constexpr std::array<int64_t, 0> scalar_shape{};
@@ -58,7 +58,7 @@ bool open_models(const fs::path &yukarin_s_path, const fs::path &yukarin_sa_path
  *  version: string
  * }]
  */
-bool open_metas(const fs::path& metas_path, nlohmann::json& metas) {
+bool open_metas(const fs::path &metas_path, nlohmann::json &metas) {
   std::ifstream metas_file(metas_path);
   if (!metas_file.is_open()) {
     error_message = FAILED_TO_OPEN_METAS_ERR;
@@ -86,8 +86,8 @@ struct Status {
     }
     metas_str = metas.dump();
     supported_styles.clear();
-    for (const auto& meta : metas) {
-      for (const auto& style : meta["styles"]) {
+    for (const auto &meta : metas) {
+      for (const auto &style : meta["styles"]) {
         supported_styles.insert(style["id"].get<int>());
       }
     }
@@ -208,7 +208,7 @@ bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *
                           &output_tensor, 1);
 
     for (int i = 0; i < length; i++) {
-      if (output[i] < PHONEME_LENGTH_MINIVAL) output[i] = PHONEME_LENGTH_MINIVAL;
+      if (output[i] < PHONEME_LENGTH_MINIMAL) output[i] = PHONEME_LENGTH_MINIMAL;
     }
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
