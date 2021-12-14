@@ -68,6 +68,17 @@ bool open_metas(const fs::path &metas_path, nlohmann::json &metas) {
   return true;
 }
 
+bool supports_cuda() {
+  const auto providers = Ort::GetAvailableProviders();
+  for (const std::string &p : providers) {
+    if (p == "CUDAExecutionProvider") {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 struct Status {
   Status(const char *root_dir_path_utf8, bool use_gpu_)
       : root_dir_path(root_dir_path_utf8),
@@ -100,11 +111,10 @@ struct Status {
     Ort::SessionOptions session_options;
     yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
     yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
-#ifdef USE_CUDA
     if (use_gpu) {
-      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(session_options, 0));
+      const OrtCUDAProviderOptions cuda_options;
+      session_options.AppendExecutionProvider_CUDA(cuda_options);
     }
-#endif
     decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
     return true;
   }
@@ -142,12 +152,10 @@ bool validate_speaker_id(int speaker_id) {
 
 bool initialize(const char *root_dir_path, bool use_gpu) {
   initialized = false;
-#ifndef USE_CUDA
-  if (use_gpu) {
+  if (use_gpu && !supports_cuda()) {
     error_message = GPU_NOT_SUPPORTED_ERR;
     return false;
   }
-#endif
   try {
     status = std::make_unique<Status>(root_dir_path, use_gpu);
     if (!status->load()) {
