@@ -411,7 +411,7 @@ jobs:
 
           mv -v artifacts/*-cpp-shared/* release/
 
-          cp core.h release/
+          cp core/src/core.h release/
 
           echo "${{ env.BUILD_IDENTIFIER }}" > release/VERSION
 
