@@ -320,6 +320,10 @@ jobs:
           # copy lib to core/lib/* and set rpath (linux)
           cmake --install .
 
+      - name: Unit test
+        shell: bash
+        run: python setup.py test
+
       - name: Organize artifact
         shell: bash
         run: |
