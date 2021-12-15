@@ -102,7 +102,9 @@ if sys.platform == 'win32':
             err = ctypes.WinError(ctypes.get_last_error())
             err.strerror += f' Error adding "{dll_path}" to the DLL directories.'
             raise err
-    
+
+    # 明示的にcore.dllを読み込めば、onnxruntimeなどの残りの依存は自動で解決してくれる
+    # Note: onnxruntime_providers_cuda.dllはLoadLibraryによってロードしようとすると失敗する (GitHub PR #49)
     dll = os.path.join(dll_path, 'core.dll')
     is_loaded = False
     if with_load_library_flags:
