@@ -50,7 +50,7 @@ extern "C" VOICEVOX_CORE_API const char *metas();
  * @param speaker_id 話者番号
  * @return 音素ごとの長さ
  */
-extern "C" VOICEVOX_CORE_API bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *output);
+extern "C" VOICEVOX_CORE_API bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_id, float *output);
 
 /**
  * @fn
@@ -66,10 +66,10 @@ extern "C" VOICEVOX_CORE_API bool yukarin_s_forward(int length, long *phoneme_li
  * @param speaker_id 話者番号
  * @return モーラごとの音高
  */
-extern "C" VOICEVOX_CORE_API bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_phoneme_list,
-                                                     long *start_accent_list, long *end_accent_list,
-                                                     long *start_accent_phrase_list, long *end_accent_phrase_list,
-                                                     long *speaker_id, float *output);
+extern "C" VOICEVOX_CORE_API bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *consonant_phoneme_list,
+                                                     int64_t *start_accent_list, int64_t *end_accent_list,
+                                                     int64_t *start_accent_phrase_list, int64_t *end_accent_phrase_list,
+                                                     int64_t *speaker_id, float *output);
 
 /**
  * @fn
@@ -82,8 +82,8 @@ extern "C" VOICEVOX_CORE_API bool yukarin_sa_forward(int length, long *vowel_pho
  * @param speaker_id 話者番号
  * @return 音声波形
  */
-extern "C" VOICEVOX_CORE_API bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme,
-                                                 long *speaker_id, float *output);
+extern "C" VOICEVOX_CORE_API bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phoneme,
+                                                 int64_t *speaker_id, float *output);
 
 /**
  * @fn
