@@ -19,6 +19,9 @@ cpdef finalize():
 cpdef metas():
     return c_metas().decode()
 
+cpdef supported_devices():
+    return c_supported_devices().decode()
+
 cpdef numpy.ndarray[numpy.float32_t, ndim=1] yukarin_s_forward(
     int length,
     numpy.ndarray[numpy.int64_t, ndim=1] phoneme_list,

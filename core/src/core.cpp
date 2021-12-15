@@ -30,6 +30,7 @@ constexpr std::array<int64_t, 1> speaker_shape{1};
 
 static std::string error_message;
 static bool initialized = false;
+static std::string supported_devices_str;
 
 bool open_models(const fs::path &yukarin_s_path, const fs::path &yukarin_sa_path, const fs::path &decode_path,
                  std::vector<unsigned char> &yukarin_s_model, std::vector<unsigned char> &yukarin_sa_model,
@@ -68,15 +69,23 @@ bool open_metas(const fs::path &metas_path, nlohmann::json &metas) {
   return true;
 }
 
-bool supports_cuda() {
+struct SupportedDevices {
+  bool cpu;
+  bool cuda;
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SupportedDevices, cpu, cuda);
+
+SupportedDevices get_supported_devices() {
+  SupportedDevices devices{false, false};
   const auto providers = Ort::GetAvailableProviders();
   for (const std::string &p : providers) {
-    if (p == "CUDAExecutionProvider") {
-      return true;
+    if (p == "CPUExecutionProvider") {
+      devices.cpu = true;
+    } else if (p == "CUDAExecutionProvider") {
+      devices.cuda = true;
     }
   }
-
-  return false;
+  return devices;
 }
 
 struct Status {
@@ -152,7 +161,7 @@ bool validate_speaker_id(int speaker_id) {
 
 bool initialize(const char *root_dir_path, bool use_gpu) {
   initialized = false;
-  if (use_gpu && !supports_cuda()) {
+  if (use_gpu && !get_supported_devices().cuda) {
     error_message = GPU_NOT_SUPPORTED_ERR;
     return false;
   }
@@ -193,6 +202,13 @@ void finalize() {
 }
 
 const char *metas() { return status->metas_str.c_str(); }
+
+const char *supported_devices() {
+  SupportedDevices devices = get_supported_devices();
+  nlohmann::json json = devices;
+  supported_devices_str = json.dump();
+  return supported_devices_str.c_str();
+}
 
 bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *output) {
   if (!initialized) {

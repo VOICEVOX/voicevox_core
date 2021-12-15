@@ -39,5 +39,11 @@ class TestCore(unittest.TestCase):
         core.finalize()
         self.assertEqual(metas, core_metas)
 
+    def test_supported_devices(self):
+        devices = json.loads(core.supported_devices())
+        for expected_device in ["cpu", "cuda"]:
+            self.assertIn(expected_device, devices)
+        self.assertTrue(devices["cpu"])
+
 if __name__ == '__main__':
     unittest.main()
