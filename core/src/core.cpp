@@ -88,7 +88,7 @@ struct Status {
     supported_styles.clear();
     for (const auto &meta : metas) {
       for (const auto &style : meta["styles"]) {
-        supported_styles.insert(style["id"].get<int>());
+        supported_styles.insert(style["id"].get<int64_t>());
       }
     }
 
@@ -118,7 +118,7 @@ struct Status {
 
   nlohmann::json metas;
   std::string metas_str;
-  std::unordered_set<int> supported_styles;
+  std::unordered_set<int64_t> supported_styles;
 };
 
 static std::unique_ptr<Status> status;
@@ -206,7 +206,7 @@ bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_i
     status->yukarin_s.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
                           &output_tensor, 1);
 
-    for (int i = 0; i < length; i++) {
+    for (int64_t i = 0; i < length; i++) {
       if (output[i] < PHONEME_LENGTH_MINIMAL) output[i] = PHONEME_LENGTH_MINIMAL;
     }
   } catch (const Ort::Exception &e) {
