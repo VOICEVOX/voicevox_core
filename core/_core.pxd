@@ -1,4 +1,5 @@
 from libcpp cimport bool
+from libc.stdint cimport int64_t
 
 cdef extern from "core.h":
     bool c_initialize "initialize" (
@@ -11,30 +12,30 @@ cdef extern from "core.h":
     const char *c_metas "metas" ()
 
     bool c_yukarin_s_forward "yukarin_s_forward" (
-        int length,
-        long *phoneme_list,
-        long *speaker_id,
+        int64_t length,
+        int64_t *phoneme_list,
+        int64_t *speaker_id,
         float *output
     )
 
     bool c_yukarin_sa_forward "yukarin_sa_forward" (
-        int length,
-        long *vowel_phoneme_list,
-        long *consonant_phoneme_list,
-        long *start_accent_list,
-        long *end_accent_list,
-        long *start_accent_phrase_list,
-        long *end_accent_phrase_list,
-        long *speaker_id,
+        int64_t length,
+        int64_t *vowel_phoneme_list,
+        int64_t *consonant_phoneme_list,
+        int64_t *start_accent_list,
+        int64_t *end_accent_list,
+        int64_t *start_accent_phrase_list,
+        int64_t *end_accent_phrase_list,
+        int64_t *speaker_id,
         float *output
     )
 
     bool c_decode_forward "decode_forward" (
-        int length,
-        int phoneme_size,
+        int64_t length,
+        int64_t phoneme_size,
         float *f0,
         float *phoneme,
-        long *speaker_id,
+        int64_t *speaker_id,
         float *output
     )
 
