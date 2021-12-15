@@ -200,7 +200,7 @@ bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_i
     const std::array<int64_t, 1> phoneme_shape{length};
 
     std::array<Ort::Value, 2> input_tensors = {to_tensor(phoneme_list, phoneme_shape),
-                                               to_tensor(&speaker_id, speaker_shape)};
+                                               to_tensor(speaker_id, speaker_shape)};
     Ort::Value output_tensor = to_tensor(output, phoneme_shape);
 
     status->yukarin_s.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
