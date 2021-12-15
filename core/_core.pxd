@@ -1,4 +1,5 @@
 from libcpp cimport bool
+from libc.stdint cimport int64_t
 
 cdef extern from "core.h":
     bool c_initialize "initialize" (

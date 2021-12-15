@@ -2,6 +2,7 @@ cimport numpy
 import numpy
 
 from libcpp cimport bool
+from libc.stdint cimport int64_t
 
 cpdef initialize(
     str root_dir_path,
