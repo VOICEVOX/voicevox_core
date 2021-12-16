@@ -17,6 +17,7 @@ else()
 	message(FATAL_ERROR "Unable to find ONNX Runtime. Use option -DONNXRUNTIME_DIR=...")
 endif()
 file(GLOB ONNXRUNTIME_LIBS
+	"${ONNXRUNTIME_DIR}/lib/*.dylib"
 	"${ONNXRUNTIME_DIR}/lib/*.dll"
 	"${ONNXRUNTIME_DIR}/lib/*.lib"
 	"${ONNXRUNTIME_DIR}/lib/*.so"
