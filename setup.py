@@ -24,10 +24,12 @@ if __name__ == '__main__':
     # 追加ライブラリ(pythonライブラリからの相対パスで./lib/*)を読み込めるように設定
     if platform.system() == "Windows":
         # Windowsでは別途__init__.pyで明示的に読み込む
-        runtime_library_dirs = []
+        extra_link_args = []
+    elif platform.system() == "Darwin":
+        extra_link_args = ["-Wl,-rpath,@loader_path/lib"]
     else:
         # $ORIGINはpythonライブラリの読み込み時に自動的に自身のパスに展開される
-        runtime_library_dirs = ["$ORIGIN/lib"]
+        extra_link_args = ["-Wl,-rpath,$ORIGIN/lib"]
 
     ext_modules = [
         Extension(
@@ -37,7 +39,7 @@ if __name__ == '__main__':
             libraries=["core"],
             include_dirs=["core/lib"],
             library_dirs=["core/lib"],
-            runtime_library_dirs=runtime_library_dirs,
+            extra_link_args=extra_link_args,
         )
     ]
 

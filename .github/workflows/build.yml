@@ -163,17 +163,19 @@ jobs:
         include:
           - os: windows-2019
             device: gpu
+            python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-gpu-1.9.0.zip
-            cmake_additional_options: -DENABLE_CUDA=ON
             artifact_name: windows-x64-gpu
 
           - os: windows-2019
             device: cpu-x64
+            python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-1.9.0.zip
             artifact_name: windows-x64-cpu
 
           - os: windows-2019
             device: cpu-x86
+            python_architecture: 'x86'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x86-1.9.0.zip
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32
             artifact_name: windows-x86-cpu
@@ -192,19 +194,21 @@ jobs:
 
           - os: macos-10.15
             device: cpu-x64
+            python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-osx-x64-1.9.0.tgz
             artifact_name: osx-x64-cpu
 
           - os: ubuntu-18.04
             device: gpu
+            python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-gpu-1.9.0.tgz
-            cmake_additional_options: -DENABLE_CUDA=ON
             artifact_name: linux-x64-gpu
             cc_version: '8'
             cxx_version: '8'
 
           - os: ubuntu-18.04
             device: cpu-x64
+            python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-1.9.0.tgz
             artifact_name: linux-x64-cpu
             cc_version: '8'
@@ -229,10 +233,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set up Python
+      - name: Setup Python
+        if: matrix.python_architecture != ''
+        id: setup-python
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+          architecture: ${{ matrix.python_architecture }}
 
       - run: mkdir download
 
@@ -325,7 +332,8 @@ jobs:
           # copy lib to core/lib/* and set rpath (linux)
           cmake --install .
 
-      - name: Unit test
+      - name: Unit test ${{ matrix.python_architecture }}
+        if: matrix.python_architecture != ''
         shell: bash
         run: |
           pip install -r requirements.txt
