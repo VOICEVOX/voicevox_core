@@ -322,7 +322,9 @@ jobs:
 
       - name: Unit test
         shell: bash
-        run: python setup.py test
+        run: |
+          pip install -r requirements.txt
+          python setup.py test
 
       - name: Organize artifact
         shell: bash
