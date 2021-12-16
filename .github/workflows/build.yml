@@ -160,8 +160,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, macos-10.15, ubuntu-18.04]
-        python: [3.8]
         include:
           - os: windows-2019
             device: gpu
@@ -231,10 +229,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python }}
+      - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python }}
+          python-version: 3.8
 
       - run: mkdir download
 
