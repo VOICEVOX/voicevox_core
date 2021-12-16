@@ -70,18 +70,16 @@ bool open_metas(const fs::path &metas_path, nlohmann::json &metas) {
 }
 
 struct SupportedDevices {
-  bool cpu;
-  bool cuda;
+  bool cpu = true;
+  bool cuda = false;
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SupportedDevices, cpu, cuda);
 
 SupportedDevices get_supported_devices() {
-  SupportedDevices devices{false, false};
+  SupportedDevices devices;
   const auto providers = Ort::GetAvailableProviders();
   for (const std::string &p : providers) {
-    if (p == "CPUExecutionProvider") {
-      devices.cpu = true;
-    } else if (p == "CUDAExecutionProvider") {
+    if (p == "CUDAExecutionProvider") {
       devices.cuda = true;
     }
   }
