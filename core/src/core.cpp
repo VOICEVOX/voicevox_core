@@ -106,7 +106,7 @@ struct Status {
     supported_styles.clear();
     for (const auto &meta : metas) {
       for (const auto &style : meta["styles"]) {
-        supported_styles.insert(style["id"].get<int>());
+        supported_styles.insert(style["id"].get<int64_t>());
       }
     }
 
@@ -135,7 +135,7 @@ struct Status {
 
   nlohmann::json metas;
   std::string metas_str;
-  std::unordered_set<int> supported_styles;
+  std::unordered_set<int64_t> supported_styles;
 };
 
 static std::unique_ptr<Status> status;
@@ -149,7 +149,7 @@ Ort::Value to_tensor(T *data, const std::array<int64_t, Rank> &shape) {
   return Ort::Value::CreateTensor<T>(status->memory_info, data, count, shape.data(), shape.size());
 }
 
-bool validate_speaker_id(int speaker_id) {
+bool validate_speaker_id(int64_t speaker_id) {
   if (status->supported_styles.find(speaker_id) == status->supported_styles.end()) {
     error_message = UNKNOWN_STYLE + std::to_string(speaker_id);
     return false;
@@ -173,7 +173,7 @@ bool initialize(const char *root_dir_path, bool use_gpu) {
       int length = 500;
       int phoneme_size = 45;
       std::vector<float> phoneme(length * phoneme_size), f0(length);
-      long speaker_id = 0;
+      int64_t speaker_id = 0;
       std::vector<float> output(length * 256);
       decode_forward(length, phoneme_size, f0.data(), phoneme.data(), &speaker_id, output.data());
     }
@@ -208,7 +208,7 @@ const char *supported_devices() {
   return supported_devices_str.c_str();
 }
 
-bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *output) {
+bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_id, float *output) {
   if (!initialized) {
     error_message = NOT_INITIALIZED_ERR;
     return false;
@@ -220,16 +220,15 @@ bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *
     const char *inputs[] = {"phoneme_list", "speaker_id"};
     const char *outputs[] = {"phoneme_length"};
     const std::array<int64_t, 1> phoneme_shape{length};
-    int64_t speaker_id_ll = static_cast<int64_t>(*speaker_id);
 
-    std::array<Ort::Value, 2> input_tensors = {to_tensor((int64_t *)phoneme_list, phoneme_shape),
-                                               to_tensor(&speaker_id_ll, speaker_shape)};
+    std::array<Ort::Value, 2> input_tensors = {to_tensor(phoneme_list, phoneme_shape),
+                                               to_tensor(speaker_id, speaker_shape)};
     Ort::Value output_tensor = to_tensor(output, phoneme_shape);
 
     status->yukarin_s.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
                           &output_tensor, 1);
 
-    for (int i = 0; i < length; i++) {
+    for (int64_t i = 0; i < length; i++) {
       if (output[i] < PHONEME_LENGTH_MINIMAL) output[i] = PHONEME_LENGTH_MINIMAL;
     }
   } catch (const Ort::Exception &e) {
@@ -241,9 +240,9 @@ bool yukarin_s_forward(int length, long *phoneme_list, long *speaker_id, float *
   return true;
 }
 
-bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_phoneme_list, long *start_accent_list,
-                        long *end_accent_list, long *start_accent_phrase_list, long *end_accent_phrase_list,
-                        long *speaker_id, float *output) {
+bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *consonant_phoneme_list, int64_t *start_accent_list,
+                        int64_t *end_accent_list, int64_t *start_accent_phrase_list, int64_t *end_accent_phrase_list,
+                        int64_t *speaker_id, float *output) {
   if (!initialized) {
     error_message = NOT_INITIALIZED_ERR;
     return false;
@@ -257,17 +256,15 @@ bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_ph
         "end_accent_list", "start_accent_phrase_list", "end_accent_phrase_list", "speaker_id"};
     const char *outputs[] = {"f0_list"};
     const std::array<int64_t, 1> phoneme_shape{length};
-    int64_t length_ll = static_cast<int64_t>(length);
-    int64_t speaker_id_ll = static_cast<int64_t>(*speaker_id);
 
-    std::array<Ort::Value, 8> input_tensors = {to_tensor(&length_ll, scalar_shape),
-                                               to_tensor((int64_t *)vowel_phoneme_list, phoneme_shape),
-                                               to_tensor((int64_t *)consonant_phoneme_list, phoneme_shape),
-                                               to_tensor((int64_t *)start_accent_list, phoneme_shape),
-                                               to_tensor((int64_t *)end_accent_list, phoneme_shape),
-                                               to_tensor((int64_t *)start_accent_phrase_list, phoneme_shape),
-                                               to_tensor((int64_t *)end_accent_phrase_list, phoneme_shape),
-                                               to_tensor(&speaker_id_ll, speaker_shape)};
+    std::array<Ort::Value, 8> input_tensors = {to_tensor(&length, scalar_shape),
+                                               to_tensor(vowel_phoneme_list, phoneme_shape),
+                                               to_tensor(consonant_phoneme_list, phoneme_shape),
+                                               to_tensor(start_accent_list, phoneme_shape),
+                                               to_tensor(end_accent_list, phoneme_shape),
+                                               to_tensor(start_accent_phrase_list, phoneme_shape),
+                                               to_tensor(end_accent_phrase_list, phoneme_shape),
+                                               to_tensor(speaker_id, speaker_shape)};
     Ort::Value output_tensor = to_tensor(output, phoneme_shape);
 
     status->yukarin_sa.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
@@ -280,7 +277,7 @@ bool yukarin_sa_forward(int length, long *vowel_phoneme_list, long *consonant_ph
   return true;
 }
 
-bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme, long *speaker_id, float *output) {
+bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phoneme, int64_t *speaker_id, float *output) {
   if (!initialized) {
     error_message = NOT_INITIALIZED_ERR;
     return false;
@@ -293,10 +290,9 @@ bool decode_forward(int length, int phoneme_size, float *f0, float *phoneme, lon
     const char *outputs[] = {"wave"};
     const std::array<int64_t, 1> wave_shape{length * 256};
     const std::array<int64_t, 2> f0_shape{length, 1}, phoneme_shape{length, phoneme_size};
-    int64_t speaker_id_ll = static_cast<int64_t>(*speaker_id);
 
     std::array<Ort::Value, 3> input_tensor = {to_tensor(f0, f0_shape), to_tensor(phoneme, phoneme_shape),
-                                              to_tensor(&speaker_id_ll, speaker_shape)};
+                                              to_tensor(speaker_id, speaker_shape)};
     Ort::Value output_tensor = to_tensor(output, wave_shape);
 
     status->decode.Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(), outputs,
