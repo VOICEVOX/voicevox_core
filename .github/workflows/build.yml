@@ -294,6 +294,8 @@ jobs:
       # Build
       - if: startsWith(matrix.os, 'windows')
         uses: ilammy/msvc-dev-cmd@v1
+        with: 
+          arch: ${{ matrix.python_architecture }}
 
       - if: startsWith(matrix.os, 'mac')
         uses: jwlawson/actions-setup-cmake@v1.9
