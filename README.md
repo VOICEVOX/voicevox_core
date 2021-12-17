@@ -64,7 +64,7 @@ cd example/python
 
 python run.py \
     --text "これは本当に実行できているんですか" \
-    --speaker_id 1
+    --speaker_id 1 \
     --root_dir_path="../../model"
 
 # 引数の紹介
