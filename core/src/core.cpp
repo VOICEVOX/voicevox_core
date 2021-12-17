@@ -30,6 +30,7 @@ constexpr std::array<int64_t, 1> speaker_shape{1};
 
 static std::string error_message;
 static bool initialized = false;
+static std::string supported_devices_str;
 
 bool open_models(const fs::path &yukarin_s_path, const fs::path &yukarin_sa_path, const fs::path &decode_path,
                  std::vector<unsigned char> &yukarin_s_model, std::vector<unsigned char> &yukarin_sa_model,
@@ -68,6 +69,23 @@ bool open_metas(const fs::path &metas_path, nlohmann::json &metas) {
   return true;
 }
 
+struct SupportedDevices {
+  bool cpu = true;
+  bool cuda = false;
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SupportedDevices, cpu, cuda);
+
+SupportedDevices get_supported_devices() {
+  SupportedDevices devices;
+  const auto providers = Ort::GetAvailableProviders();
+  for (const std::string &p : providers) {
+    if (p == "CUDAExecutionProvider") {
+      devices.cuda = true;
+    }
+  }
+  return devices;
+}
+
 struct Status {
   Status(const char *root_dir_path_utf8, bool use_gpu_)
       : root_dir_path(root_dir_path_utf8),
@@ -100,11 +118,10 @@ struct Status {
     Ort::SessionOptions session_options;
     yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
     yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
-#ifdef USE_CUDA
     if (use_gpu) {
-      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_CUDA(session_options, 0));
+      const OrtCUDAProviderOptions cuda_options;
+      session_options.AppendExecutionProvider_CUDA(cuda_options);
     }
-#endif
     decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
     return true;
   }
@@ -142,12 +159,10 @@ bool validate_speaker_id(int64_t speaker_id) {
 
 bool initialize(const char *root_dir_path, bool use_gpu) {
   initialized = false;
-#ifndef USE_CUDA
-  if (use_gpu) {
+  if (use_gpu && !get_supported_devices().cuda) {
     error_message = GPU_NOT_SUPPORTED_ERR;
     return false;
   }
-#endif
   try {
     status = std::make_unique<Status>(root_dir_path, use_gpu);
     if (!status->load()) {
@@ -185,6 +200,13 @@ void finalize() {
 }
 
 const char *metas() { return status->metas_str.c_str(); }
+
+const char *supported_devices() {
+  SupportedDevices devices = get_supported_devices();
+  nlohmann::json json = devices;
+  supported_devices_str = json.dump();
+  return supported_devices_str.c_str();
+}
 
 bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_id, float *output) {
   if (!initialized) {

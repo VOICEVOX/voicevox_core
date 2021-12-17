@@ -10,6 +10,7 @@
 ## 依存関係
 
 - ONNX Runtime v1.9.0/v1.9.1: https://github.com/microsoft/onnxruntime
+- CMake
 
 環境に対応した ONNX Runtime をダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
 
@@ -43,6 +44,20 @@ sudo apt install libgomp1
 #### ソースコードから実行
 
 ```bash
+# C++モジュールのビルド
+mkdir build
+cd build
+# もしダウンロードしたonnx runtimeが別のところにあるなら、以下のコマンドを
+# cmake .. -DONNXRUNTIME_DIR=(ダウンロードしたonnx runtimeのパス) に変更する。
+cmake ..
+cmake --build . --config Release
+cmake --install .
+cd ..
+
+# (省略可能) pythonモジュールのテスト
+python setup.py test
+
+# pythonモジュールのインストール
 pip install .
 
 cd example/python

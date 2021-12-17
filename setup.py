@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
+
 from setuptools import setup, Extension
-from subprocess import check_call, CalledProcessError
 import platform
 import os
 import sys
@@ -14,30 +15,21 @@ def get_version():
     with open(os.path.join(base_dir, 'VERSION.txt')) as f:
         return f.read().strip()
 
-def build_src():
-    """setupより前にC++モジュールのビルド"""
-    print('Building C++ modules...')
-
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    build_dir = os.path.join(base_dir, 'build')
-    os.makedirs(build_dir, exist_ok=True)
-    try:
-        check_call(['cmake', '..'], cwd=build_dir)
-        check_call(['cmake', '--build', '.', '--config', 'Release'], cwd=build_dir)
-        check_call(['cmake', '--install', '.'], cwd=build_dir)
-    except (CalledProcessError, KeyboardInterrupt) as e:
-        sys.exit(1)
-
 if __name__ == '__main__':
-    build_src()
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # C++モジュールがすでにビルドされ、core/libに入っているか確認
+    assert os.path.exists(os.path.join(base_dir, 'core', 'lib', 'core.h')), 'C++モジュールがビルドされていません'
 
     # 追加ライブラリ(pythonライブラリからの相対パスで./lib/*)を読み込めるように設定
     if platform.system() == "Windows":
         # Windowsでは別途__init__.pyで明示的に読み込む
-        runtime_library_dirs = []
+        extra_link_args = []
+    elif platform.system() == "Darwin":
+        extra_link_args = ["-Wl,-rpath,@loader_path/lib"]
     else:
         # $ORIGINはpythonライブラリの読み込み時に自動的に自身のパスに展開される
-        runtime_library_dirs = ["$ORIGIN/lib"]
+        extra_link_args = ["-Wl,-rpath,$ORIGIN/lib"]
 
     ext_modules = [
         Extension(
@@ -47,11 +39,11 @@ if __name__ == '__main__':
             libraries=["core"],
             include_dirs=["core/lib"],
             library_dirs=["core/lib"],
-            runtime_library_dirs=runtime_library_dirs,
+            extra_link_args=extra_link_args,
         )
     ]
 
-    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tests'))
+    sys.path.append(os.path.join(base_dir, 'tests'))
 
     setup(
         name="core",

@@ -43,6 +43,14 @@ extern "C" VOICEVOX_CORE_API const char *metas();
 
 /**
  * @fn
+ * 対応デバイス情報を取得する
+ * @brief cpu, cudaのうち、使用可能なデバイス情報を取得する
+ * @return 各デバイスが使用可能かどうかをboolで格納したjson形式の文字列
+ */
+extern "C" VOICEVOX_CORE_API const char *supported_devices();
+
+/**
+ * @fn
  * 音素ごとの長さを求める
  * @brief 音素列から、音素ごとの長さを求める
  * @param length 音素列の長さ

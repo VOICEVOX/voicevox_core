@@ -17,6 +17,7 @@ else()
 	message(FATAL_ERROR "Unable to find ONNX Runtime. Use option -DONNXRUNTIME_DIR=...")
 endif()
 file(GLOB ONNXRUNTIME_LIBS
+	"${ONNXRUNTIME_DIR}/lib/*.dylib"
 	"${ONNXRUNTIME_DIR}/lib/*.dll"
 	"${ONNXRUNTIME_DIR}/lib/*.lib"
 	"${ONNXRUNTIME_DIR}/lib/*.so"
@@ -38,11 +39,6 @@ target_link_libraries(core PUBLIC onnxruntime)
 
 # GCC 9.0以前ではstd::filesystemを使うためにリンクが必要 (https://gitlab.kitware.com/cmake/cmake/-/issues/17834)
 target_link_libraries(core PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
-
-# core.cpp内にUSE_CUDAをdefineする
-if(ENABLE_CUDA)
-	target_compile_definitions(core PRIVATE USE_CUDA)
-endif(ENABLE_CUDA)
 
 # cmake --installを行うとcoreライブラリ、onnxruntimeライブラリ、core.hがインストール先のlibフォルダにコピーされる
 install(TARGETS core

@@ -11,6 +11,8 @@ cdef extern from "core.h":
 
     const char *c_metas "metas" ()
 
+    const char *c_supported_devices "supported_devices" ()
+
     bool c_yukarin_s_forward "yukarin_s_forward" (
         int64_t length,
         int64_t *phoneme_list,
