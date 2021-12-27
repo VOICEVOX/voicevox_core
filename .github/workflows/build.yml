@@ -15,148 +15,7 @@ env:
   SKIP_UPLOADING_RELEASE_ASSET: ${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }}
 
 jobs:
-  build-onnxruntime:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - artifact_name: onnxruntime-linux-armhf-cpu
-            os: ubuntu-18.04
-            cc_version: '8'
-            cxx_version: '8'
-            arch: arm-linux-gnueabihf
-            ld_symlink_name: ld-linux-armhf.so.3
-            build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=armv7l --use_openmp --config Release --parallel --update --build --build_shared_lib
-            result_dir: build/Linux/Release
-
-    env:
-      ONNXRUNTIME_VERSION: v1.9.1
-      # prefix usage: "", "arm-linux-gnueabihf-" => "gcc-8", "arm-linux-gnueabihf-gcc-8" (command name)
-      # suffix usage: "", "-arm-linux-gnueabihf" => "gcc-8", "gcc-8-arm-linux-gnueabihf" (package name)
-      ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
-      ARCH_SUFFIX: "${{ (matrix.arch != '' && '-') || '' }}${{ (matrix.arch != '' && matrix.arch) || '' }}"
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          repository: microsoft/onnxruntime
-          submodules: true
-          ref: ${{ env.ONNXRUNTIME_VERSION }}
-
-      - name: Dump matrix context
-        env:
-          MATRIX_CONTEXT: ${{ toJSON(matrix) }}
-        run: echo "$MATRIX_CONTEXT" > matrix.json
-
-      - name: Cache build result
-        id: cache-build-result
-        uses: actions/cache@v2
-        with:
-          path: build/
-          key: ${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
-
-      - name: Install build dependencies
-        if: steps.cache-build-result.outputs.cache-hit != 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-              build-essential \
-              git \
-              wget \
-              qemu-user-binfmt \
-              gcc-${{ matrix.cc_version }}${{ env.ARCH_SUFFIX }} \
-              g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }} \
-              python3
-
-      # ONNX Runtime v1.9.0 requires CMake 3.18 or higher.
-      - name: Install CMake
-        if: steps.cache-build-result.outputs.cache-hit != 'true'
-        env:
-          CMAKE_VERSION: 3.22.0-rc2
-        run: |
-          wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.sh"
-          sudo bash cmake.sh --skip-license --prefix=/usr/local
-
-      - name: Configure build environment
-        if: steps.cache-build-result.outputs.cache-hit != 'true'
-        run: |
-          # Required for arm build
-          # https://github.com/microsoft/onnxruntime/issues/4189#issuecomment-642528278
-          echo 'string(APPEND CMAKE_C_FLAGS " -latomic")' >> cmake/CMakeLists.txt
-          echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
-
-          # Prevent Exec Format Error during cross-compiling
-          if [ -n "${{ matrix.ld_symlink_name }}" ]; then
-            sudo ln -s /usr/${{ matrix.arch }}/lib /lib/${{ matrix.arch }}
-            sudo ln -s /lib/${{ matrix.arch }}/ld-*.so /lib/${{ matrix.ld_symlink_name }}
-          fi
-
-      - name: Build ONNX Runtime
-        if: steps.cache-build-result.outputs.cache-hit != 'true'
-        env:
-          CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
-          CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
-        run: |
-          # add --arm for gcc-8: https://github.com/microsoft/onnxruntime/issues/4189
-          # skip test: https://github.com/microsoft/onnxruntime/issues/2436
-          # ONNX Runtime v1.9.0 requires CMAKE_SYSTEM_PROCESSOR, https://github.com/microsoft/onnxruntime/releases/tag/v1.9.0
-          # Both CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR are required.
-          bash ./build.sh ${{ matrix.build_opts }}
-
-      - name: Organize artifact
-        run: |
-          mkdir artifact
-
-          # copy shared lib
-          mkdir artifact/lib
-
-          NAME=$(basename ${{ matrix.result_dir }}/libonnxruntime.so.*)
-          cp "${{ matrix.result_dir }}/${NAME}" artifact/lib/
-          ln -s "${NAME}" artifact/lib/libonnxruntime.so
-
-          # copy header files
-          mkdir artifact/include
-
-          readarray -t HEADERS <<EOF
-          onnxruntime/core/session/onnxruntime_c_api.h
-          onnxruntime/core/session/onnxruntime_cxx_api.h
-          onnxruntime/core/session/onnxruntime_cxx_inline.h
-          onnxruntime/core/providers/cpu/cpu_provider_factory.h
-          onnxruntime/core/session/onnxruntime_session_options_config_keys.h
-          onnxruntime/core/session/onnxruntime_run_options_config_keys.h
-          onnxruntime/core/framework/provider_options.h
-          EOF
-
-          for path in "${HEADERS[@]}"; do
-            cp "include/${path}" ./artifact/include/
-          done
-
-          # copy docs & license
-          cp VERSION_NUMBER ./artifact/
-          cp LICENSE ./artifact/
-          cp ThirdPartyNotices.txt ./artifact/
-          cp docs/Privacy.md ./artifact/
-          cp README.md ./artifact/
-
-          echo "$(git rev-parse HEAD)" >> ./artifact/GIT_COMMIT_ID
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: artifact/*
-          retention-days: 7
-
-
   build-cpp-shared:
-    # Execute this job even if build-onnxruntime failed
-    if: always()
-    needs:
-      - build-onnxruntime
-
     strategy:
       fail-fast: false
       matrix:
@@ -213,14 +72,6 @@ jobs:
             artifact_name: linux-x64-cpu
             cc_version: '8'
             cxx_version: '8'
-
-          - os: ubuntu-18.04
-            device: cpu-armhf
-            onnxruntime_artifact_name: onnxruntime-linux-armhf-cpu
-            artifact_name: linux-armhf-cpu
-            cc_version: '8'
-            cxx_version: '8'
-            arch: arm-linux-gnueabihf
 
     runs-on: ${{ matrix.os }}
 
@@ -413,7 +264,6 @@ jobs:
           osx-x64-cpu       libcore.dylib libcore_cpu_x64.dylib
           linux-x64-gpu     libcore.so    libcore_gpu_x64_nvidia.so
           linux-x64-cpu     libcore.so    libcore_cpu_x64.so
-          linux-armhf-cpu   libcore.so    libcore_cpu_armhf.so
           EOF
 
           for line in "${MAPPINGS[@]}"; do
