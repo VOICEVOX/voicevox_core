@@ -272,6 +272,7 @@ jobs:
           osx-x64-cpu       libcore.dylib libcore_cpu_x64.dylib
           linux-x64-gpu     libcore.so    libcore_gpu_x64_nvidia.so
           linux-x64-cpu     libcore.so    libcore_cpu_x64.so
+          linux-armhf-cpu   libcore.so    libcore_cpu_armhf.so
           EOF
 
           for line in "${MAPPINGS[@]}"; do
