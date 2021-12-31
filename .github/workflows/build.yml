@@ -75,7 +75,7 @@ jobs:
 
           - os: ubuntu-18.04
             device: cpu-armhf
-            onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.9.1/onnxruntime-linux-armhf-cpu-v1.9.1.zip
+            onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.9.1.1/onnxruntime-linux-armhf-cpu-v1.9.1.tgz
             artifact_name: linux-armhf-cpu
             cc_version: '8'
             cxx_version: '8'
