@@ -71,18 +71,19 @@ cpdef numpy.ndarray[numpy.float32_t, ndim=1] decode_forward(
     numpy.ndarray[numpy.float32_t, ndim=2] phoneme,
     numpy.ndarray[numpy.int64_t, ndim=1] speaker_id,
 ):
-    # 音が途切れるてしまうのを避けるworkaroundのために、padding sampling rateを始まりと終わりに追加する
+    # 音が途切れるてしまうのを避けるworkaroundのために、padding sampling rate lengthを始まりと終わりに追加する
+    # TODO: 改善したらここの処理を取り除く
     cdef float padding_length =0.4
     cdef int64_t default_sampling_rate = 24000
-    cdef int64_t padding_sampling_rate_length = <int64_t>(padding_length*default_sampling_rate)
-    cdef int64_t start_and_end_padding_sampling_rate_length = 2*padding_sampling_rate_length
-    
-    cdef f0_first = f0[0]
-    cdef padding = [0]*padding_sampling_rate_length
-    f0_first= numpy.append(numpy.append(padding,f0_first),padding)
-    f0[0]=f0_first
+    cdef int64_t padding_sampling_length = <int64_t>(padding_length*default_sampling_rate)
+    cdef int64_t start_and_end_padding_sampling_length = 2*padding_sampling_rate_length
 
-    cdef numpy.ndarray[numpy.float32_t, ndim=1] output = numpy.empty((length*256+ start_and_end_padding_sampling_rate_length), dtype=numpy.float32)
+    # workaroundにより無音区間用のpaddingを追加する
+    # TODO: 改善したらここの処理を取り除く
+    cdef padding_f0_length = round(padding_sampling_length/256)
+    f0 = numpy.pad(f0.reshape(-1),(padding_f0_length,padding_f0_length),"empty")[:,numpy.newaxis]
+
+    cdef numpy.ndarray[numpy.float32_t, ndim=1] output = numpy.empty((length*256+ start_and_end_padding_sampling_length), dtype=numpy.float32)
     cdef bool success = c_decode_forward(
         length,
         phoneme_size,
@@ -92,4 +93,7 @@ cpdef numpy.ndarray[numpy.float32_t, ndim=1] decode_forward(
         <float*> output.data,
     )
     if not success: raise Exception(c_last_error_message().decode())
-    return output[padding_sampling_rate_length:-padding_sampling_rate_length]
+
+    # workaroundにより無音区間を除去
+    # TODO: 改善したらここの処理を取り除く
+    return output[padding_sampling_length:-padding_sampling_rate_length]
