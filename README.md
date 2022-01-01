@@ -24,8 +24,11 @@ CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の
 
 ### Raspberry Pi (armhf)の場合
 
-`core.zip`に Raspberry Pi 用の ONNX Runtime を同梱しています。
-利用には、libgomp のインストールが必要です。
+Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます。
+
+- <https://github.com/VOICEVOX/onnxruntime-builder/releases>
+
+動作には、libgomp のインストールが必要です。
 
 ```shell
 sudo apt install libgomp1

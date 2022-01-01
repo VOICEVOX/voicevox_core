@@ -73,6 +73,14 @@ jobs:
             cc_version: '8'
             cxx_version: '8'
 
+          - os: ubuntu-18.04
+            device: cpu-armhf
+            onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.9.1.1/onnxruntime-linux-armhf-cpu-v1.9.1.tgz
+            artifact_name: linux-armhf-cpu
+            cc_version: '8'
+            cxx_version: '8'
+            arch: arm-linux-gnueabihf
+
     runs-on: ${{ matrix.os }}
 
     env:
@@ -96,12 +104,10 @@ jobs:
 
       # ONNX Runtime
       - name: Export ONNX Runtime url to calc hash
-        if: matrix.onnxruntime_artifact_name == ''
         shell: bash
         run: echo "${{ matrix.onnxruntime_url }}" > download/onnxruntime_url.txt
 
       - name: Cache ONNX Runtime
-        if: matrix.onnxruntime_artifact_name == ''
         uses: actions/cache@v2
         id: onnxruntime-cache
         with:
@@ -110,7 +116,7 @@ jobs:
 
       # download/onnxruntime/lib/onnxruntime.dll
       - name: Download ONNX Runtime (zip)
-        if: matrix.onnxruntime_artifact_name == '' && steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip')
+        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip')
         shell: bash
         run: |
           curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.zip
@@ -127,20 +133,13 @@ jobs:
       # download/onnxruntime/lib/libonnxruntime.so
       # download/onnxruntime/lib/libonnxruntime.dylib
       - name: Download ONNX Runtime (tgz)
-        if: matrix.onnxruntime_artifact_name == '' && steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.tgz')
+        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.tgz')
         shell: bash
         run: |
           curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.tgz
           mkdir -p download/onnxruntime
           tar xf download/onnxruntime.tgz -C download/onnxruntime --strip-components 1
           rm download/onnxruntime.tgz
-
-      - name: Download ONNX Runtime (artifact)
-        if: matrix.onnxruntime_artifact_name != ''
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ matrix.onnxruntime_artifact_name }}
-          path: download/onnxruntime/
 
       # Build
       - if: startsWith(matrix.os, 'windows')
@@ -205,21 +204,6 @@ jobs:
           # copy Linux/macOS shared library if exists
           cp -v core/lib/libcore* artifact/ || true
 
-          # copy libonnxruntime
-          if [ "${{ matrix.onnxruntime_artifact_name }}" != "" ]; then
-            mkdir -p "artifact/onnxruntime-${{ matrix.artifact_name }}/"
-
-            # copy docs and license (all files in root dir)
-            find "download/onnxruntime/" -maxdepth 1 -type f | xargs -I{} cp -v {} "artifact/onnxruntime-${{ matrix.artifact_name }}/"
-
-            # copy Windows DLL if exists
-            cp -v core/lib/onnxruntime* "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
-            # copy Linux shared library if exists
-            cp -v core/lib/libonnxruntime.so.* "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
-            # copy macOS shared library if exists
-            cp -v core/lib/libonnxruntime.dylib "artifact/onnxruntime-${{ matrix.artifact_name }}/" || true
-          fi
-
       # Upload
       - name: Upload artifact
         uses: actions/upload-artifact@v2
@@ -264,6 +248,7 @@ jobs:
           osx-x64-cpu       libcore.dylib libcore_cpu_x64.dylib
           linux-x64-gpu     libcore.so    libcore_gpu_x64_nvidia.so
           linux-x64-cpu     libcore.so    libcore_cpu_x64.so
+          linux-armhf-cpu   libcore.so    libcore_cpu_armhf.so
           EOF
 
           for line in "${MAPPINGS[@]}"; do
