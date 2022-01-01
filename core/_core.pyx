@@ -71,7 +71,13 @@ cpdef numpy.ndarray[numpy.float32_t, ndim=1] decode_forward(
     numpy.ndarray[numpy.float32_t, ndim=2] phoneme,
     numpy.ndarray[numpy.int64_t, ndim=1] speaker_id,
 ):
-    cdef numpy.ndarray[numpy.float32_t, ndim=1] output = numpy.empty((length*256,), dtype=numpy.float32)
+    # 音が途切れるてしまうのを避けるworkaroundのために、padding sampling rateを始まりと終わりに追加する
+    cdef float padding_length =0.4
+    cdef int64_t default_sampling_rate = 24000
+    cdef int64_t padding_length_sampling_rate = <int64_t>(padding_length*default_sampling_rate)
+    cdef int64_t start_and_end_padding_length_sampling_rate = 2*padding_length_sampling_rate
+
+    cdef numpy.ndarray[numpy.float32_t, ndim=1] output = numpy.empty((length*256+ start_and_end_padding_length_sampling_rate), dtype=numpy.float32)
     cdef bool success = c_decode_forward(
         length,
         phoneme_size,
@@ -81,4 +87,4 @@ cpdef numpy.ndarray[numpy.float32_t, ndim=1] decode_forward(
         <float*> output.data,
     )
     if not success: raise Exception(c_last_error_message().decode())
-    return output
+    return output[padding_length_sampling_rate:-padding_length_sampling_rate]
