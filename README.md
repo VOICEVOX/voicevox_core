@@ -53,8 +53,8 @@ cd build
 # もしダウンロードしたonnx runtimeが別のところにあるなら、以下のコマンドを
 # cmake .. -DONNXRUNTIME_DIR=(ダウンロードしたonnx runtimeのパス) に変更する。
 cmake ..
-cmake --build . --config Release
-cmake --install .
+cmake --build .. --config Release
+cmake --install ..
 cd ..
 
 # (省略可能) pythonモジュールのテスト
