@@ -307,7 +307,7 @@ std::vector<float> make_inner_phoneme_with_padding(float *phoneme, int64_t phone
   return inner_phoneme_with_padding;
 }
 
-void copy_inner_output_to_output(std::vector<float> &inner_output, float *output, int64_t padding_f0_size) {
+void copy_inner_output_to_output(const std::vector<float> &inner_output, float *output, int64_t padding_f0_size) {
   const auto padding_sampling_size = padding_f0_size * 256;
   const auto begin_output_copy = inner_output.begin() + padding_sampling_size;
   const auto end_output_copy = inner_output.end() - padding_sampling_size;
