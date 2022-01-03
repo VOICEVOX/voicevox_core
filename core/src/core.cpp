@@ -277,6 +277,43 @@ bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *co
   return true;
 }
 
+std::vector<float> make_inner_f0_with_padding(float *f0, int64_t length, int64_t inner_length,
+                                              int64_t padding_f0_size) {
+  // 0埋め楽するためにreserveせずに初期化で行う
+  std::vector<float> inner_f0_with_padding(inner_length, 0.0);
+  std::copy(f0, f0 + length, inner_f0_with_padding.begin() + padding_f0_size);
+  return inner_f0_with_padding;
+}
+
+std::vector<float> make_inner_phoneme_with_padding(float *phoneme, int64_t phoneme_size, int64_t length,
+                                                   int64_t inner_length, int64_t padding_f0_size) {
+  // 無音部分をphonemeに追加するための処理
+  // TODO: 改善したらここのcopy処理を取り除く
+  std::vector<float> single_silence_phoneme(phoneme_size, 0.0);
+  // 一番はじめのphonemeを有効化することで無音となるか？
+  single_silence_phoneme[0] = 1;
+
+  std::vector<float> silence_phoneme;
+  silence_phoneme.reserve(phoneme_size * padding_f0_size);
+  // 無音区間分無音のphonemeを増やす
+  for (auto i = 0; i < padding_f0_size; i++) {
+    silence_phoneme.insert(silence_phoneme.end(), single_silence_phoneme.begin(), single_silence_phoneme.end());
+  }
+  std::vector<float> inner_phoneme_with_padding(inner_length * phoneme_size, 0.0);
+  std::copy(silence_phoneme.begin(), silence_phoneme.end(), inner_phoneme_with_padding.begin());
+  const auto phoneme_dimension_size = length * phoneme_size;
+  std::copy(phoneme, phoneme + phoneme_dimension_size, inner_phoneme_with_padding.begin() + silence_phoneme.size());
+  std::copy(silence_phoneme.begin(), silence_phoneme.end(), inner_phoneme_with_padding.end() - silence_phoneme.size());
+  return inner_phoneme_with_padding;
+}
+
+void copy_inner_output_to_output(std::vector<float> &inner_output, float *output, int64_t padding_f0_size) {
+  const auto padding_sampling_size = padding_f0_size * 256;
+  const auto begin_output_copy = inner_output.begin() + padding_sampling_size;
+  const auto end_output_copy = inner_output.end() - padding_sampling_size;
+  std::copy(begin_output_copy, end_output_copy, output);
+}
+
 bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phoneme, int64_t *speaker_id,
                     float *output) {
   if (!initialized) {
@@ -296,29 +333,11 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
     const auto start_and_end_padding_f0_size = 2 * padding_f0_size;
     const auto inner_length = length + start_and_end_padding_f0_size;
 
-    // 0埋め楽するためにreserveせずに初期化で行う
-    // TODO: 改善したらここのcopy処理を取り除く
-    std::vector<float> inner_f0_with_padding(inner_length, 0.0);
-    std::copy(f0, f0 + length, inner_f0_with_padding.begin() + padding_f0_size);
-
-    // 無音部分をphonemeに追加するための処理
-    // TODO: 改善したらここのcopy処理を取り除く
-    std::vector<float> single_silence_phoneme(phoneme_size, 0.0);
-    // 一番はじめのphonemeを有効化することで無音となるか？
-    single_silence_phoneme[0] = 1;
-
-    std::vector<float> silence_phoneme;
-    silence_phoneme.reserve(phoneme_size * padding_f0_size);
-    // 無音区間分無音のphonemeを増やす
-    for (auto i = 0; i < padding_f0_size; i++) {
-      silence_phoneme.insert(silence_phoneme.end(), single_silence_phoneme.begin(), single_silence_phoneme.end());
-    }
-    std::vector<float> inner_phoneme_with_padding(inner_length * phoneme_size, 0.0);
-    std::copy(silence_phoneme.begin(), silence_phoneme.end(), inner_phoneme_with_padding.begin());
-    const auto phoneme_dimension_size = length * phoneme_size;
-    std::copy(phoneme, phoneme + phoneme_dimension_size, inner_phoneme_with_padding.begin() + silence_phoneme.size());
-    std::copy(silence_phoneme.begin(), silence_phoneme.end(),
-              inner_phoneme_with_padding.end() - silence_phoneme.size());
+    // TODO: 改善したらここの処理を取り除く
+    auto inner_f0_with_padding = make_inner_f0_with_padding(f0, length, inner_length, padding_f0_size);
+    // TODO: 改善したらここの処理を取り除く
+    auto inner_phoneme_with_padding =
+        make_inner_phoneme_with_padding(phoneme, phoneme_size, length, inner_length, padding_f0_size);
 
     const std::array<int64_t, 2> f0_shape{inner_length, 1}, phoneme_shape{inner_length, phoneme_size};
 
@@ -341,10 +360,7 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
                        &output_tensor, 1);
 
     // TODO: 改善したらここのcopy処理を取り除く
-    const auto padding_sampling_size = padding_f0_size * 256;
-    const auto begin_output_copy = inner_output.begin() + padding_sampling_size;
-    const auto end_output_copy = inner_output.end() - padding_sampling_size;
-    std::copy(begin_output_copy, end_output_copy, output);
+    copy_inner_output_to_output(inner_output, output, padding_f0_size);
 
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
