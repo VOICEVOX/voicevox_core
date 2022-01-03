@@ -279,9 +279,10 @@ bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *co
 
 std::vector<float> make_inner_f0_with_padding(float *f0, int64_t length, int64_t inner_length,
                                               int64_t padding_f0_size) {
-  // 0埋め楽するためにreserveせずに初期化で行う
-  std::vector<float> inner_f0_with_padding(inner_length, 0.0);
-  std::copy(f0, f0 + length, inner_f0_with_padding.begin() + padding_f0_size);
+  std::vector<float> inner_f0_with_padding;
+  inner_f0_with_padding.reserve(inner_length);
+  inner_f0_with_padding.insert(inner_f0_with_padding.end(), padding_f0_size, 0.0);
+  inner_f0_with_padding.insert(inner_f0_with_padding.end(), f0, f0 + length);
   return inner_f0_with_padding;
 }
 
