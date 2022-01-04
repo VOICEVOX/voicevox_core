@@ -330,7 +330,7 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
     return false;
   }
   try {
-    // 音が途切れるてしまうのを避けるworkaroundを処理が入っている
+    // 音が途切れてしまうのを避けるworkaround処理が入っている
     // TODO: 改善したらここのpadding処理を取り除く
     constexpr auto padding_size = 0.4;
     constexpr auto default_sampling_rate = 24000;
