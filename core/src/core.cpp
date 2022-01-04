@@ -300,7 +300,7 @@ std::vector<float> make_phoneme_with_padding(float *phoneme, int64_t phoneme_siz
   // 無音部分をphonemeに追加するための処理
   // TODO: 改善したらここのcopy処理を取り除く
   std::vector<float> padding_phoneme(phoneme_size, 0.0);
-  // 一番はじめのphonemeを有効化することで無音となるか？
+  // 一番はじめのphonemeを有効化することで無音となる
   padding_phoneme[0] = 1;
 
   std::vector<float> phoneme_with_padding;
