@@ -240,9 +240,9 @@ bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_i
   return true;
 }
 
-bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *consonant_phoneme_list, int64_t *start_accent_list,
-                        int64_t *end_accent_list, int64_t *start_accent_phrase_list, int64_t *end_accent_phrase_list,
-                        int64_t *speaker_id, float *output) {
+bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *consonant_phoneme_list,
+                        int64_t *start_accent_list, int64_t *end_accent_list, int64_t *start_accent_phrase_list,
+                        int64_t *end_accent_phrase_list, int64_t *speaker_id, float *output) {
   if (!initialized) {
     error_message = NOT_INITIALIZED_ERR;
     return false;
@@ -277,7 +277,51 @@ bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *co
   return true;
 }
 
-bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phoneme, int64_t *speaker_id, float *output) {
+std::vector<float> make_f0_with_padding(float *f0, int64_t length, int64_t length_with_padding,
+                                        int64_t padding_f0_size) {
+  std::vector<float> f0_with_padding;
+  f0_with_padding.reserve(length_with_padding);
+  f0_with_padding.insert(f0_with_padding.end(), padding_f0_size, 0.0);
+  f0_with_padding.insert(f0_with_padding.end(), f0, f0 + length);
+  f0_with_padding.insert(f0_with_padding.end(), padding_f0_size, 0.0);
+  return f0_with_padding;
+}
+
+void insert_padding_phonemes_to_phoneme_with_padding(std::vector<float> &phoneme_with_padding,
+                                                     const std::vector<float> &padding_phoneme,
+                                                     int64_t padding_phonemes_size) {
+  for (auto i = 0; i < padding_phonemes_size; i++) {
+    phoneme_with_padding.insert(phoneme_with_padding.end(), padding_phoneme.begin(), padding_phoneme.end());
+  }
+}
+
+std::vector<float> make_phoneme_with_padding(float *phoneme, int64_t phoneme_size, int64_t length,
+                                             int64_t length_with_padding, int64_t padding_phonemes_size) {
+  // 無音部分をphonemeに追加するための処理
+  // TODO: 改善したらここのcopy処理を取り除く
+  std::vector<float> padding_phoneme(phoneme_size, 0.0);
+  // 一番はじめのphonemeを有効化することで無音となる
+  padding_phoneme[0] = 1;
+
+  std::vector<float> phoneme_with_padding;
+  phoneme_with_padding.reserve(length_with_padding * phoneme_size);
+  insert_padding_phonemes_to_phoneme_with_padding(phoneme_with_padding, padding_phoneme, padding_phonemes_size);
+  const auto phoneme_dimension_size = length * phoneme_size;
+  phoneme_with_padding.insert(phoneme_with_padding.end(), phoneme, phoneme + phoneme_dimension_size);
+  insert_padding_phonemes_to_phoneme_with_padding(phoneme_with_padding, padding_phoneme, padding_phonemes_size);
+  return phoneme_with_padding;
+}
+
+void copy_output_with_padding_to_output(const std::vector<float> &output_with_padding, float *output,
+                                        int64_t padding_f0_size) {
+  const auto padding_sampling_size = padding_f0_size * 256;
+  const auto begin_output_copy = output_with_padding.begin() + padding_sampling_size;
+  const auto end_output_copy = output_with_padding.end() - padding_sampling_size;
+  std::copy(begin_output_copy, end_output_copy, output);
+}
+
+bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phoneme, int64_t *speaker_id,
+                    float *output) {
   if (!initialized) {
     error_message = NOT_INITIALIZED_ERR;
     return false;
@@ -286,17 +330,46 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
     return false;
   }
   try {
+    // 音が途切れてしまうのを避けるworkaround処理が入っている
+    // TODO: 改善したらここのpadding処理を取り除く
+    constexpr auto padding_size = 0.4;
+    constexpr auto default_sampling_rate = 24000;
+    const auto padding_f0_size =
+        static_cast<int64_t>(std::round(static_cast<double>(padding_size * default_sampling_rate) / 256));
+    const auto start_and_end_padding_f0_size = 2 * padding_f0_size;
+    const auto length_with_padding = length + start_and_end_padding_f0_size;
+
+    // TODO: 改善したらここの処理を取り除く
+    auto f0_with_padding = make_f0_with_padding(f0, length, length_with_padding, padding_f0_size);
+
+    // TODO: 改善したらここの処理を取り除く
+    const auto padding_phonemes_size = padding_f0_size;
+    auto phoneme_with_padding =
+        make_phoneme_with_padding(phoneme, phoneme_size, length, length_with_padding, padding_phonemes_size);
+
+    const std::array<int64_t, 2> f0_shape{length_with_padding, 1}, phoneme_shape{length_with_padding, phoneme_size};
+
+    std::array<Ort::Value, 3> input_tensor = {to_tensor(f0_with_padding.data(), f0_shape),
+                                              to_tensor(phoneme_with_padding.data(), phoneme_shape),
+                                              to_tensor(speaker_id, speaker_shape)};
+
+    // TODO: 改善したらここのpadding処理を取り除く
+    const auto output_with_padding_size = length_with_padding * 256;
+    const std::array<int64_t, 1> wave_shape{output_with_padding_size};
+
+    // TODO: 改善したらここの処理を取り除く
+    std::vector<float> output_with_padding(output_with_padding_size, 0.0);
+    Ort::Value output_tensor = to_tensor(output_with_padding.data(), wave_shape);
+
     const char *inputs[] = {"f0", "phoneme", "speaker_id"};
     const char *outputs[] = {"wave"};
-    const std::array<int64_t, 1> wave_shape{length * 256};
-    const std::array<int64_t, 2> f0_shape{length, 1}, phoneme_shape{length, phoneme_size};
-
-    std::array<Ort::Value, 3> input_tensor = {to_tensor(f0, f0_shape), to_tensor(phoneme, phoneme_shape),
-                                              to_tensor(speaker_id, speaker_shape)};
-    Ort::Value output_tensor = to_tensor(output, wave_shape);
 
     status->decode.Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(), outputs,
                        &output_tensor, 1);
+
+    // TODO: 改善したらここのcopy処理を取り除く
+    copy_output_with_padding_to_output(output_with_padding, output, padding_f0_size);
+
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
     error_message += e.what();
