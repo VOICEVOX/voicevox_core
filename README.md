@@ -38,6 +38,9 @@ sudo apt install libgomp1
 
 [core.h](./core/src/core.h) をご参照ください。
 
+環境変数`VV_NUM_THREADS`で推論時のスレッド数を指定できます
+未指定の場合はCPUをフルパワーで使用しない値に自動で設定されます
+
 ## サンプルの実行
 
 まず [Releases](https://github.com/Hiroshiba/voicevox_core/releases) からコアライブラリが入った zip をダウンロードしておきます。

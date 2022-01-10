@@ -1,9 +1,11 @@
 #include <onnxruntime_cxx_api.h>
 
 #include <array>
+#include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -86,6 +88,14 @@ SupportedDevices get_supported_devices() {
   return devices;
 }
 
+unsigned int get_env_num_threads() {
+  const char *threads_env = std::getenv("VV_NUM_THREADS");
+  if (threads_env == nullptr) return 0;
+  int threads = std::stoi(threads_env);
+  if (threads < 0) return 0;
+  return static_cast<unsigned int>(threads);
+}
+
 struct Status {
   Status(const char *root_dir_path_utf8, bool use_gpu_)
       : root_dir_path(root_dir_path_utf8),
@@ -116,6 +126,8 @@ struct Status {
       return false;
     }
     Ort::SessionOptions session_options;
+    const unsigned int num_threads = get_env_num_threads();
+    session_options.SetInterOpNumThreads(num_threads).SetIntraOpNumThreads(num_threads);
     yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
     yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
     if (use_gpu) {
