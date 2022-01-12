@@ -5,7 +5,7 @@ cdef extern from "core.h":
     bool c_initialize "initialize" (
         const char *root_dir_path,
         bool use_gpu,
-        int num_threads
+        int cpu_num_threads
     )
 
     void c_finalize "finalize" ()

@@ -96,7 +96,7 @@ struct Status {
         yukarin_sa(nullptr),
         decode(nullptr) {}
 
-  bool load(int num_threads) {
+  bool load(int cpu_num_threads) {
     // deprecated in C++20; Use char8_t for utf-8 char in the future.
     fs::path root = fs::u8path(root_dir_path);
 
@@ -117,7 +117,7 @@ struct Status {
       return false;
     }
     Ort::SessionOptions session_options;
-    session_options.SetInterOpNumThreads(num_threads).SetIntraOpNumThreads(num_threads);
+    session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
     yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
     yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
     if (use_gpu) {
@@ -159,7 +159,7 @@ bool validate_speaker_id(int64_t speaker_id) {
   return true;
 }
 
-bool initialize(const char *root_dir_path, bool use_gpu, int num_threads) {
+bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads) {
   initialized = false;
   if (use_gpu && !get_supported_devices().cuda) {
     error_message = GPU_NOT_SUPPORTED_ERR;
@@ -167,7 +167,7 @@ bool initialize(const char *root_dir_path, bool use_gpu, int num_threads) {
   }
   try {
     status = std::make_unique<Status>(root_dir_path, use_gpu);
-    if (!status->load(num_threads)) {
+    if (!status->load(cpu_num_threads)) {
       return false;
     }
     if (use_gpu) {

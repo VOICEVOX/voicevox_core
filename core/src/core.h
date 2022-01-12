@@ -16,13 +16,13 @@
  * @brief 音声合成するための初期化を行う。他の関数を正しく実行するには先に初期化が必要
  * @param root_dir_path 必要なファイルがあるディレクトリ。相対パス・絶対パスどちらも指定可能。文字コードはUTF-8
  * @param use_gpu trueならGPU用、falseならCPU用の初期化を行う
- * @param num_threads 推論に用いるスレッド数を設定する。0の場合論理コア数の半分か、物理コア数が設定される
+ * @param cpu_num_threads 推論に用いるスレッド数を設定する。0の場合論理コア数の半分か、物理コア数が設定される
  * @return 成功したらtrue、失敗したらfalse
  * @detail
  * 何度も実行可能。use_gpuを変更して実行しなおすことも可能。
  * 最後に実行したuse_gpuに従って他の関数が実行される。
  */
-extern "C" VOICEVOX_CORE_API bool initialize(const char *root_dir_path, bool use_gpu, int num_threads = 0);
+extern "C" VOICEVOX_CORE_API bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads = 0);
 
 /**
  * @fn
