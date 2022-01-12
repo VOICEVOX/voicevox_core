@@ -7,10 +7,12 @@ from libc.stdint cimport int64_t
 cpdef initialize(
     str root_dir_path,
     bool use_gpu,
+    int cpu_num_threads = 0
 ):
     cdef bool success = c_initialize(
         root_dir_path.encode(),
         use_gpu,
+        cpu_num_threads
     )
     if not success: raise Exception(c_last_error_message().decode())
 

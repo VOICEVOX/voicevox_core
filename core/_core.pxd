@@ -4,7 +4,8 @@ from libc.stdint cimport int64_t
 cdef extern from "core.h":
     bool c_initialize "initialize" (
         const char *root_dir_path,
-        bool use_gpu
+        bool use_gpu,
+        int cpu_num_threads
     )
 
     void c_finalize "finalize" ()

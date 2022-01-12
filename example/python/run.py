@@ -14,9 +14,10 @@ def run(
     f0_speaker_id: Optional[int],
     f0_correct: float,
     root_dir_path: str,
+    cpu_num_threads: int
 ) -> None:
     # コアの初期化
-    core.initialize(root_dir_path, use_gpu)
+    core.initialize(root_dir_path, use_gpu, cpu_num_threads)
 
     # 音声合成処理モジュールの初期化
     forwarder = Forwarder(
@@ -47,4 +48,5 @@ if __name__ == "__main__":
     parser.add_argument("--f0_speaker_id", type=int)
     parser.add_argument("--f0_correct", type=float, default=0)
     parser.add_argument("--root_dir_path", type=str, default="./")
+    parser.add_argument("--cpu_num_threads", type=int, default=0)
     run(**vars(parser.parse_args()))
