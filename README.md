@@ -7,12 +7,12 @@
 エンジンは [VOICEVOX ENGINE](https://github.com/Hiroshiba/voicevox_engine/) 、
 全体構成は [こちら](https://github.com/Hiroshiba/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
 
-## 依存関係
+## ONNX Runtimeのダウンロード
 
-- ONNX Runtime v1.9.0/v1.9.1: https://github.com/microsoft/onnxruntime
-- CMake
+コアを利用するにはまず環境に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) をダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
 
-環境に対応した ONNX Runtime をダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
+動作確認済みバージョン
+- ONNX Runtime v1.9.0/v1.9.1
 
 ### Windows と Linux の場合
 
@@ -108,7 +108,7 @@ aplay ~/voice/おはようございます-1.wav
 
 ## コアライブラリのビルド
 
-[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。
+[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。ビルドにはONNXRUNTIMEに加えてCMake 3.16以上が必要です。
 
 ```bash
 # C++モジュールのビルド
