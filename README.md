@@ -1,11 +1,11 @@
 # VOICEVOX CORE
 
 [VOICEVOX](https://voicevox.hiroshiba.jp/) の音声合成コア。  
-[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にビルド済みのコアライブラリ（.so/.dll/.dylib）があります。
+[Releases](https://github.com/VOICEVOX/voicevox_core/releases) にビルド済みのコアライブラリ（.so/.dll/.dylib）があります。
 
-（エディターは [VOICEVOX](https://github.com/Hiroshiba/voicevox/) 、
-エンジンは [VOICEVOX ENGINE](https://github.com/Hiroshiba/voicevox_engine/) 、
-全体構成は [こちら](https://github.com/Hiroshiba/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
+（エディターは [VOICEVOX](https://github.com/VOICEVOX/voicevox/) 、
+エンジンは [VOICEVOX ENGINE](https://github.com/VOICEVOX/voicevox_engine/) 、
+全体構成は [こちら](https://github.com/VOICEVOX/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
 
 ## 依存関係
 
@@ -40,7 +40,7 @@ sudo apt install libgomp1
 
 ## サンプルの実行
 
-まず [Releases](https://github.com/Hiroshiba/voicevox_core/releases) からコアライブラリが入った zip をダウンロードしておきます。
+まず [Releases](https://github.com/VOICEVOX/voicevox_core/releases) からコアライブラリが入った zip をダウンロードしておきます。
 
 ### Python 3
 
@@ -118,4 +118,4 @@ aplay ~/voice/おはようございます-1.wav
 
 サンプルコードおよび [core.h](./core/src/core.h) は [MIT LICENSE](./LICENSE) です。
 
-[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリは別ライセンスなのでご注意ください。
+[Releases](https://github.com/VOICEVOX/voicevox_core/releases) にあるビルド済みのコアライブラリは別ライセンスなのでご注意ください。
