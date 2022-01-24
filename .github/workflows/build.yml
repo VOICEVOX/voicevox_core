@@ -23,44 +23,44 @@ jobs:
           - os: windows-2019
             device: gpu
             python_architecture: 'x64'
-            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-gpu-1.9.0.zip
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x64-gpu-1.10.0.zip
             artifact_name: windows-x64-gpu
 
           - os: windows-2019
             device: cpu-x64
             python_architecture: 'x64'
-            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x64-1.9.0.zip
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x64-1.10.0.zip
             artifact_name: windows-x64-cpu
 
           - os: windows-2019
             device: cpu-x86
             python_architecture: 'x86'
-            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-x86-1.9.0.zip
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x86-1.10.0.zip
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32
             artifact_name: windows-x86-cpu
 
           - os: windows-2019
             device: cpu-arm64
-            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-arm64-1.9.0.zip
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-arm64-1.10.0.zip
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm64
             artifact_name: windows-arm64-cpu
 
           - os: windows-2019
             device: cpu-arm
-            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-win-arm-1.9.0.zip
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-arm-1.10.0.zip
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm
             artifact_name: windows-arm-cpu
 
           - os: macos-10.15
             device: cpu-x64
             python_architecture: 'x64'
-            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-osx-x64-1.9.0.tgz
-            artifact_name: osx-x64-cpu
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-osx-universal2-1.10.0.tgz
+            artifact_name: osx-universal2-cpu
 
           - os: ubuntu-18.04
             device: gpu
             python_architecture: 'x64'
-            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-gpu-1.9.0.tgz
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-gpu-1.10.0.tgz
             artifact_name: linux-x64-gpu
             cc_version: '8'
             cxx_version: '8'
@@ -68,14 +68,14 @@ jobs:
           - os: ubuntu-18.04
             device: cpu-x64
             python_architecture: 'x64'
-            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.9.0/onnxruntime-linux-x64-1.9.0.tgz
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-1.10.0.tgz
             artifact_name: linux-x64-cpu
             cc_version: '8'
             cxx_version: '8'
 
           - os: ubuntu-18.04
             device: cpu-armhf
-            onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.9.1.1/onnxruntime-linux-armhf-cpu-v1.9.1.tgz
+            onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-armhf-cpu-v1.10.0.tgz
             artifact_name: linux-armhf-cpu
             cc_version: '8'
             cxx_version: '8'
@@ -161,11 +161,18 @@ jobs:
             g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }} \
             cmake
 
-      - name: Configure (Windows, macOS)
-        if: ${{ !startsWith(matrix.os, 'ubuntu') }} # '!' cannot be used as a first character in YAML
+      - name: Configure (Windows)
+        if: startsWith(matrix.os, 'windows')
         shell: bash
         run: |
           cmake -DONNXRUNTIME_DIR=download/onnxruntime ${{ matrix.cmake_additional_options }} .
+
+      # libcore.dylib for macOS universal
+      - name: Configure (macOS)
+        if: startsWith(matrix.os, 'macos')
+        shell: bash
+        run: |
+          env CMAKE_OSX_ARCHITECTURES="x86_64;arm64" cmake -DONNXRUNTIME_DIR=download/onnxruntime ${{ matrix.cmake_additional_options }} .
 
       - name: Configure (Linux)
         if: startsWith(matrix.os, 'ubuntu')
