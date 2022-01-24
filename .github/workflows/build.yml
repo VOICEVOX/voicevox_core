@@ -252,7 +252,7 @@ jobs:
           windows-x86-cpu   core.dll      core_cpu_x86.dll
           windows-arm64-cpu core.dll      core_cpu_arm64.dll
           windows-arm-cpu   core.dll      core_cpu_arm.dll
-          osx-x64-cpu       libcore.dylib libcore_cpu_x64.dylib
+          osx-x64-cpu       libcore.dylib libcore_cpu_universal2.dylib
           linux-x64-gpu     libcore.so    libcore_gpu_x64_nvidia.so
           linux-x64-cpu     libcore.so    libcore_cpu_x64.so
           linux-armhf-cpu   libcore.so    libcore_cpu_armhf.so
