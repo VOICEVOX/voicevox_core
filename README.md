@@ -49,7 +49,7 @@ sudo apt install libgomp1
 1. まずReleasesからダウンロードしたコアライブラリのzipを、`release`というディレクトリ名で展開する。
 2. `core/lib/`ディレクトリを作成する。
 3. `onnxruntime/lib`にある全てのファイルと、`release/`にある`core.h`を`core/lib/`にコピーする。
-4. `release/`内にある、自身の環境に対応したランタイムライブラリを`core/lib/`にコピーし、名前をWindowsなら`core.dll`に、linuxなら`libcore.so`に変更する。
+4. `release/`内にある、自身の環境に対応したランタイムライブラリを`core/lib/`にコピーし、名前をWindowsなら`core.dll`に、linuxなら`libcore.so`に、Macなら`libcore.dylib`に変更する。
     - (x64版WindowsでCPU版ライブラリを使いたいなら`core_cpu_x64.dll`を`core.dll`に変更)
 5. 以下のコマンドを実行する。
 
