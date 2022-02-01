@@ -7,12 +7,12 @@
 エンジンは [VOICEVOX ENGINE](https://github.com/VOICEVOX/voicevox_engine/) 、
 全体構成は [こちら](https://github.com/VOICEVOX/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
 
-## 依存関係
+## ONNX Runtimeのダウンロード
 
-- ONNX Runtime v1.9.0/v1.9.1: https://github.com/microsoft/onnxruntime
-- CMake
+コアを利用するにはまず環境に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) をダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
 
-環境に対応した ONNX Runtime をダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
+動作確認済みバージョン
+- ONNX Runtime v1.9.0/v1.9.1
 
 ### Windows と Linux の場合
 
@@ -46,29 +46,29 @@ sudo apt install libgomp1
 
 #### ソースコードから実行
 
-```bash
-# C++モジュールのビルド
-mkdir build
-cd build
-# もしダウンロードしたonnx runtimeが別のところにあるなら、以下のコマンドを
-# cmake .. -DONNXRUNTIME_DIR=(ダウンロードしたonnx runtimeのパス) に変更する。
-cmake ..
-cmake --build . --config Release
-cmake --install .
-cd ..
+1. まずReleasesからダウンロードしたコアライブラリのzipを、`release`というディレクトリ名で展開する。
+2. `core/lib/`ディレクトリを作成する。
+3. `onnxruntime/lib`にある全てのファイルと、`release/`にある`core.h`を`core/lib/`にコピーする。
+4. `release/`内にある、自身の環境に対応したランタイムライブラリを`core/lib/`にコピーし、名前をWindowsなら`core.dll`に、linuxなら`libcore.so`に、Macなら`libcore.dylib`に変更する。
+    - (x64版WindowsでCPU版ライブラリを使いたいなら`core_cpu_x64.dll`を`core.dll`に変更)
+5. 以下のコマンドを実行する。
 
-# (省略可能) pythonモジュールのテスト
-python setup.py test
+```bash
+# Windowsの場合、DLLからLIBファイルの作成
+example/python/makelib.bat core/lib/core
 
 # pythonモジュールのインストール
+pip install -r requirements.txt
 pip install .
 
 cd example/python
 
+# サンプルコード実行のための依存モジュールのインストール
+pip install -r requirements.txt
 python run.py \
     --text "これは本当に実行できているんですか" \
     --speaker_id 1 \
-    --root_dir_path="../../model"
+    --root_dir_path="../../release"
 
 # 引数の紹介
 # --text 読み上げるテキスト
@@ -108,6 +108,35 @@ aplay ~/voice/おはようございます-1.wav
 ### その他の言語
 
 サンプルコードを実装された際はぜひお知らせください。こちらに追記させて頂きます。
+
+## コアライブラリのビルド
+
+[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。ビルドにはONNXRUNTIMEに加えてCMake 3.16以上が必要です。
+
+```bash
+# C++モジュールのビルド
+mkdir build
+cd build
+# もしダウンロードしたonnx runtimeが別のところにあるなら、以下のコマンドを
+# cmake .. -DONNXRUNTIME_DIR=(ダウンロードしたonnx runtimeのパス) に変更する。
+cmake ..
+cmake --build . --config Release
+cmake --install .
+cd ..
+
+# (省略可能) pythonモジュールのテスト
+python setup.py test
+
+# pythonモジュールのインストール
+pip install .
+
+cd example/python
+
+python run.py \
+    --text "これは本当に実行できているんですか" \
+    --speaker_id 1 \
+    --root_dir_path="../../model"
+```
 
 ## 事例紹介
 
