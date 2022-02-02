@@ -145,6 +145,6 @@ python run.py \
 
 ## ライセンス
 
-サンプルコードおよび [core.h](./core/src/core.h) は [MIT LICENSE](./LICENSE) です。
+ソースコードのライセンスは [MIT LICENSE](./LICENSE) です。
 
 [Releases](https://github.com/VOICEVOX/voicevox_core/releases) にあるビルド済みのコアライブラリは別ライセンスなのでご注意ください。
