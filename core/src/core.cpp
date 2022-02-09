@@ -1,10 +1,17 @@
 #include <onnxruntime_cxx_api.h>
 
+// #define DIRECTML
+
+#ifdef DIRECTML
+#include <dml_provider_factory.h>
+#endif
+
 #include <array>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -124,6 +131,13 @@ struct Status {
       const OrtCUDAProviderOptions cuda_options;
       session_options.AppendExecutionProvider_CUDA(cuda_options);
     }
+
+#ifdef DIRECTML
+    session_options.DisableMemPattern();
+    session_options.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
+    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
+#endif
+
     decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
     return true;
   }
