@@ -81,6 +81,14 @@ jobs:
             cxx_version: '8'
             arch: arm-linux-gnueabihf
 
+          - os: ubuntu-18.04
+            device: cpu-arm64
+            onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-arm64-cpu-v1.10.0.tgz
+            artifact_name: linux-arm64-cpu
+            cc_version: '8'
+            cxx_version: '8'
+            arch: aarch64-linux-gnu
+
     runs-on: ${{ matrix.os }}
 
     env:
@@ -256,6 +264,7 @@ jobs:
           linux-x64-gpu       libcore.so    libcore_gpu_x64_nvidia.so
           linux-x64-cpu       libcore.so    libcore_cpu_x64.so
           linux-armhf-cpu     libcore.so    libcore_cpu_armhf.so
+          linux-arm64-cpu     libcore.so    libcore_cpu_arm64.so
           EOF
 
           for line in "${MAPPINGS[@]}"; do
