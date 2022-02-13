@@ -80,17 +80,19 @@ bool open_metas(const fs::path &metas_path, nlohmann::json &metas) {
 struct SupportedDevices {
   bool cpu = true;
   bool cuda = false;
+  bool dml = false;
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SupportedDevices, cpu, cuda);
 
 SupportedDevices get_supported_devices() {
-  std::cout << "supported devices" << std::endl;
   SupportedDevices devices;
   const auto providers = Ort::GetAvailableProviders();
   for (const std::string &p : providers) {
     std::cout << p << std::endl;
     if (p == "CUDAExecutionProvider") {
       devices.cuda = true;
+    } else if (p == "DmlExecutionProvider") {
+      devices.dml = true;
     }
   }
   return devices;
@@ -127,15 +129,18 @@ struct Status {
     }
     Ort::SessionOptions session_options;
     session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
-#ifdef DIRECTML
-    std::cout << "enable dml" << std::endl;
-    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
-#endif
+
     yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
     yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
+
     if (use_gpu) {
+#ifdef DIRECTML
+      std::cout << "enable dml" << std::endl;
+      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
+#else
       const OrtCUDAProviderOptions cuda_options;
       session_options.AppendExecutionProvider_CUDA(cuda_options);
+#endif
     }
 
     decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
@@ -176,10 +181,16 @@ bool validate_speaker_id(int64_t speaker_id) {
 
 bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads) {
   initialized = false;
+
+#ifdef DIRECTML
+  if (use_gpu && !get_supported_devices().dml) {
+#else
   if (use_gpu && !get_supported_devices().cuda) {
+#endif /*DIRECTML*/
     error_message = GPU_NOT_SUPPORTED_ERR;
     return false;
   }
+
   try {
     status = std::make_unique<Status>(root_dir_path, use_gpu);
     if (!status->load(cpu_num_threads)) {

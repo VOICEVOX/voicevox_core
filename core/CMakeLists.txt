@@ -15,6 +15,7 @@ add_library(core SHARED src/core.cpp)
 get_filename_component(ONNXRUNTIME_DIR ${ONNXRUNTIME_DIR} ABSOLUTE)
 
 if(NOT DIRECTML)
+	# cpu, cuda版onnxruntimeを読み込み
 	if(EXISTS ${ONNXRUNTIME_DIR}/VERSION_NUMBER)
 		file(READ "${ONNXRUNTIME_DIR}/VERSION_NUMBER" ONNXRUNTIME_VERSION)
 		message("ONNX Runtime Version: ${ONNXRUNTIME_VERSION}")
@@ -35,7 +36,7 @@ if(NOT DIRECTML)
 	target_link_libraries(core PUBLIC onnxruntime)
 
 else()
-	message("DML_ARCH - ${DML_ARCH}")
+	# DirectML版onnxruntimeを読み込み
 	if(EXISTS ${ONNXRUNTIME_DIR}/Privacy.md)
 		message("ONNX Runtime for DirectML - exists")
 	else()
@@ -50,6 +51,7 @@ else()
 	target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/runtimes/win-${DML_ARCH}/native/)
 	target_link_libraries(core PUBLIC onnxruntime)
 
+	# DirectMLを読み込み
 	if(EXISTS ${DIRECTML_DIR}/README.md)
 		message("DirectML exists")
 	else()
@@ -71,7 +73,7 @@ set_property(TARGET core PROPERTY CXX_STANDARD 17)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
 set_property(TARGET core PROPERTY INSTALL_RPATH "$ORIGIN") # make enable to search onnxruntime.so
 target_compile_options(core PRIVATE
-	$<$<CXX_COMPILER_ID:MSVC>: /W4 /utf-8>
+	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8>
 	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
 )
 

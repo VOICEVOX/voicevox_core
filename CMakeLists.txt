@@ -7,6 +7,7 @@ set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime" CACHE PATH "Path t
 option(DIRECTML "Enables building for DirectML" OFF)
 set(DIRECTML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/directml" CACHE PATH "Path to DirectML")
 if(DIRECTML)
+  # DirectML読み込み用にCPUのアーキテクチャを求める
   set(DML_ARCH)
   include(${CMAKE_CURRENT_SOURCE_DIR}/DetermineTargetArchitecture.cmake)
   determine_target_architecture(DML_ARCH)
