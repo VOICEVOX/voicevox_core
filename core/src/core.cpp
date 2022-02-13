@@ -84,9 +84,11 @@ struct SupportedDevices {
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SupportedDevices, cpu, cuda);
 
 SupportedDevices get_supported_devices() {
+  std::cout << "supported devices" << std::endl;
   SupportedDevices devices;
   const auto providers = Ort::GetAvailableProviders();
   for (const std::string &p : providers) {
+    std::cout << p << std::endl;
     if (p == "CUDAExecutionProvider") {
       devices.cuda = true;
     }
@@ -125,6 +127,10 @@ struct Status {
     }
     Ort::SessionOptions session_options;
     session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
+#ifdef DIRECTML
+    std::cout << "enable dml" << std::endl;
+    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
+#endif
     yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
     yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
     if (use_gpu) {
@@ -132,13 +138,8 @@ struct Status {
       session_options.AppendExecutionProvider_CUDA(cuda_options);
     }
 
-#ifdef DIRECTML
-    session_options.DisableMemPattern();
-    session_options.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
-    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
-#endif
-
     decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
+
     return true;
   }
 
@@ -191,6 +192,8 @@ bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads) {
       std::vector<float> phoneme(length * phoneme_size), f0(length);
       int64_t speaker_id = 0;
       std::vector<float> output(length * 256);
+
+      std::cout << "init decode" << std::endl;
       decode_forward(length, phoneme_size, f0.data(), phoneme.data(), &speaker_id, output.data());
     }
   } catch (const Ort::Exception &e) {
@@ -380,9 +383,10 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
     const char *inputs[] = {"f0", "phoneme", "speaker_id"};
     const char *outputs[] = {"wave"};
 
+    std::cout << "before run decode" << std::endl;
     status->decode.Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(), outputs,
                        &output_tensor, 1);
-
+    std::cout << "after run decode" << std::endl;
     // TODO: 改善したらここのcopy処理を取り除く
     copy_output_with_padding_to_output(output_with_padding, output, padding_f0_size);
 
