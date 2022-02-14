@@ -1,4 +1,2 @@
 Cython
 numpy
-soundfile
-pyopenjtalk
