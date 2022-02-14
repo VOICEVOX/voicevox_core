@@ -58,7 +58,7 @@ def get_ort_download_link(version: str, use_gpu: bool) -> str:
                     break
         if not new_assets:
             raise RuntimeError(
-                "Asset was not found. Most likely the version is too old or new that tools/build.py does not support. "
+                f"Asset was not found. Most likely the version is too old or new that {__file__} does not support. "
                 "Try `--ort_download_link` option to manually specify the download link."
             )
         assets = new_assets
@@ -107,7 +107,7 @@ def get_voicevox_download_link(version) -> str:
         if asset["name"] == "core.zip":
             return asset["browser_download_url"]
     raise RuntimeError(
-        "Asset was not found. Most likely the version is too old or new that tools/build.py does not support. "
+        f"Asset was not found. Most likely the version is too old or new that {__file__} does not support. "
         "Try `--voicevox_download_link` option to manually specify the download link."
     )
 
