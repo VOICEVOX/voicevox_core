@@ -66,6 +66,7 @@ else()
 	target_link_directories(core PUBLIC ${DIRECTML_DIR}/bin/${DML_ARCH}-win/)
 	target_link_libraries(core PUBLIC directml)
 
+	# define DIRECTML
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D DIRECTML")
 endif()
 

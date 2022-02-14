@@ -17,8 +17,9 @@ def run(
     cpu_num_threads: int
 ) -> None:
     # コアの初期化
-    core.initialize(root_dir_path, use_gpu, cpu_num_threads)
+    
     print(core.supported_devices())
+    core.initialize(root_dir_path, use_gpu, cpu_num_threads)
 
     # 音声合成処理モジュールの初期化
     forwarder = Forwarder(

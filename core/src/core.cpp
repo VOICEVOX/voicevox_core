@@ -1,7 +1,5 @@
 #include <onnxruntime_cxx_api.h>
 
-// #define DIRECTML
-
 #ifdef DIRECTML
 #include <dml_provider_factory.h>
 #endif
@@ -82,13 +80,12 @@ struct SupportedDevices {
   bool cuda = false;
   bool dml = false;
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SupportedDevices, cpu, cuda);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SupportedDevices, cpu, cuda, dml);
 
 SupportedDevices get_supported_devices() {
   SupportedDevices devices;
   const auto providers = Ort::GetAvailableProviders();
   for (const std::string &p : providers) {
-    std::cout << p << std::endl;
     if (p == "CUDAExecutionProvider") {
       devices.cuda = true;
     } else if (p == "DmlExecutionProvider") {
@@ -130,20 +127,23 @@ struct Status {
     Ort::SessionOptions session_options;
     session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
 
+#ifdef DIRECTML
+    session_options.DisableMemPattern().SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
+    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
+#endif
+
     yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
     yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
 
     if (use_gpu) {
-#ifdef DIRECTML
-      std::cout << "enable dml" << std::endl;
-      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
-#else
+#ifndef DIRECTML
       const OrtCUDAProviderOptions cuda_options;
       session_options.AppendExecutionProvider_CUDA(cuda_options);
 #endif
     }
 
     decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
+    std::cout << "after init decode session" << std::endl;
 
     return true;
   }
@@ -152,7 +152,7 @@ struct Status {
   bool use_gpu;
   Ort::MemoryInfo memory_info;
 
-  Ort::Env env{ORT_LOGGING_LEVEL_ERROR};
+  Ort::Env env{ORT_LOGGING_LEVEL_VERBOSE};
   Ort::Session yukarin_s, yukarin_sa, decode;
 
   nlohmann::json metas;
@@ -203,8 +203,6 @@ bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads) {
       std::vector<float> phoneme(length * phoneme_size), f0(length);
       int64_t speaker_id = 0;
       std::vector<float> output(length * 256);
-
-      std::cout << "init decode" << std::endl;
       decode_forward(length, phoneme_size, f0.data(), phoneme.data(), &speaker_id, output.data());
     }
   } catch (const Ort::Exception &e) {
@@ -394,10 +392,8 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
     const char *inputs[] = {"f0", "phoneme", "speaker_id"};
     const char *outputs[] = {"wave"};
 
-    std::cout << "before run decode" << std::endl;
     status->decode.Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(), outputs,
                        &output_tensor, 1);
-    std::cout << "after run decode" << std::endl;
     // TODO: 改善したらここのcopy処理を取り除く
     copy_output_with_padding_to_output(output_with_padding, output, padding_f0_size);
 
