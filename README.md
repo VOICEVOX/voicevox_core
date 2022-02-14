@@ -16,7 +16,7 @@ pip install -r requirements.txt
 pip install .
 ```
 
-```
+```bash
 cd example/python
 
 # サンプルコード実行のための依存モジュールのインストール
