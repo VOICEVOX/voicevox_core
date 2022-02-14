@@ -10,7 +10,7 @@
 ## 環境構築
 
 MacOSとLinuxについては以下の方法で環境構築ができます。申し訳ございませんがWindowsについては次のセクションをご参照ください。
-```
+```bash
 python configure.py
 pip install -r requirements.txt
 pip install .
