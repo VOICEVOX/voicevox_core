@@ -124,24 +124,28 @@ struct Status {
                      yukarin_sa_model, decode_model)) {
       return false;
     }
+
     Ort::SessionOptions session_options;
-    session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
 
 #ifdef DIRECTML
+    std::cout << "create dml api" << std::endl;
     session_options.DisableMemPattern().SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
+    std::cout << "configure" << std::endl;
     Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
+    std::cout << "change exec provider" << std::endl;
 #endif
-
+    // session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
     yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
     yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
 
-    if (use_gpu) {
 #ifndef DIRECTML
+    if (use_gpu) {
       const OrtCUDAProviderOptions cuda_options;
       session_options.AppendExecutionProvider_CUDA(cuda_options);
-#endif
     }
+#endif
 
+    std::cout << "before init decode session" << std::endl;
     decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
     std::cout << "after init decode session" << std::endl;
 
@@ -152,7 +156,7 @@ struct Status {
   bool use_gpu;
   Ort::MemoryInfo memory_info;
 
-  Ort::Env env{ORT_LOGGING_LEVEL_VERBOSE};
+  Ort::Env env{ORT_LOGGING_LEVEL_ERROR};
   Ort::Session yukarin_s, yukarin_sa, decode;
 
   nlohmann::json metas;
@@ -192,8 +196,10 @@ bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads) {
   }
 
   try {
+    std::cout << "start init" << std::endl;
     status = std::make_unique<Status>(root_dir_path, use_gpu);
     if (!status->load(cpu_num_threads)) {
+      std::cout << "return false" << std::endl;
       return false;
     }
     if (use_gpu) {

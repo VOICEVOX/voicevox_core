@@ -9,17 +9,21 @@ import numpy
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 
+
 def get_version():
     """バージョン取得"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(base_dir, 'VERSION.txt')) as f:
         return f.read().strip()
 
+
 if __name__ == '__main__':
     base_dir = os.path.dirname(os.path.abspath(__file__))
+    print(base_dir)
 
     # C++モジュールがすでにビルドされ、core/libに入っているか確認
-    assert os.path.exists(os.path.join(base_dir, 'core', 'lib', 'core.h')), 'C++モジュールがビルドされていません'
+    assert os.path.exists(os.path.join(
+        base_dir, 'core', 'lib', 'core.h')), 'C++モジュールがビルドされていません'
 
     # 追加ライブラリ(pythonライブラリからの相対パスで./lib/*)を読み込めるように設定
     if platform.system() == "Windows":
