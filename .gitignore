@@ -29,3 +29,5 @@ CMakeCache.txt
 
 # Voicevox release
 release/
+
+directml/
