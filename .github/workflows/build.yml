@@ -151,9 +151,8 @@ jobs:
 
           rm download/onnxruntime.zip
 
-      - run: | 
-        dir download
-        dir download/onnxruntime
+      - run: ls download
+      - run: ls download/onnxruntime
 
       # download/onnxruntime/lib/libonnxruntime.so
       # download/onnxruntime/lib/libonnxruntime.dylib
