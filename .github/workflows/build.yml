@@ -132,7 +132,8 @@ jobs:
         uses: actions/cache@v2
         id: directml-cache
         with:
-          key: directml-cache-v1-${{ hashFiles('download/directml_url.txt')}}
+          key: directml-cache-v1-${{ hashFiles('download/directml_url.txt') }}
+          path: download/directml
 
       # download/onnxruntime/lib/onnxruntime.dll
       - name: Download ONNX Runtime (zip)
