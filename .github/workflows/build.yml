@@ -146,7 +146,7 @@ jobs:
           # strip-components
           TEMPDIR=$(mktemp -d)
           unzip download/onnxruntime.zip -d "${TEMPDIR}"
-          mv "${TEMPDIR}"/*/* download/onnxruntime/
+          mv "${TEMPDIR}"/* download/onnxruntime/.
           rm -rf "${TEMPDIR}"
 
           rm download/onnxruntime.zip
@@ -176,10 +176,12 @@ jobs:
           # strip-components
           TEMPDIR=$(mktemp -d)
           unzip download/directml.zip -d "${TEMPDIR}"
-          mv "${TEMPDIR}"/*/* download/directml
+          mv "${TEMPDIR}"/* download/directml/.
           rm -rf "${TEMPDIR}"
 
           rm download/directml.zip
+
+          ls download/directml
 
       # Build
       - if: startsWith(matrix.os, 'windows')
