@@ -27,7 +27,8 @@ __pycache__/
 CMakeFiles/
 CMakeCache.txt
 
-#VSCode
+# VSCode
 .vscode/
 
+# Voicevox release
 release/

@@ -89,6 +89,14 @@ jobs:
             cxx_version: '8'
             arch: arm-linux-gnueabihf
 
+          - os: ubuntu-18.04
+            device: cpu-arm64
+            onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-arm64-cpu-v1.10.0.tgz
+            artifact_name: linux-arm64-cpu
+            cc_version: '8'
+            cxx_version: '8'
+            arch: aarch64-linux-gnu
+
     runs-on: ${{ matrix.os }}
 
     env:
@@ -281,16 +289,17 @@ jobs:
           mkdir release
 
           readarray -t MAPPINGS <<EOF
-          windows-x64-cuda         core.dll     core_gpu_x64_nvidia.dll
-          windows-x64-directml     core.dll      core_gpu_x64_directml.dll
-          windows-x64-cpu          core.dll      core_cpu_x64.dll
-          windows-x86-cpu          core.dll      core_cpu_x86.dll
-          windows-arm64-cpu        core.dll      core_cpu_arm64.dll
-          windows-arm-cpu          core.dll      core_cpu_arm.dll
-          osx-universal2-cpu       libcore.dylib libcore_cpu_universal2.dylib
-          linux-x64-gpu            libcore.so    libcore_gpu_x64_nvidia.so
-          linux-x64-cpu            libcore.so    libcore_cpu_x64.so
-          linux-armhf-cpu          libcore.so    libcore_cpu_armhf.so
+          windows-x64-gpu        core.dll      core_gpu_x64_nvidia.dll
+          windows-x64-directml   core.dll      core_gpu_x64_directml.dll
+          windows-x64-cpu        core.dll      core_cpu_x64.dll
+          windows-x86-cpu        core.dll      core_cpu_x86.dll
+          windows-arm64-cpu      core.dll      core_cpu_arm64.dll
+          windows-arm-cpu        core.dll      core_cpu_arm.dll
+          osx-universal2-cpu     libcore.dylib libcore_cpu_universal2.dylib
+          linux-x64-gpu          libcore.so    libcore_gpu_x64_nvidia.so
+          linux-x64-cpu          libcore.so    libcore_cpu_x64.so
+          linux-armhf-cpu        libcore.so    libcore_cpu_armhf.so
+          linux-arm64-cpu        libcore.so    libcore_cpu_arm64.so
           EOF
 
           for line in "${MAPPINGS[@]}"; do
