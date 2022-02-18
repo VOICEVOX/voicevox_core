@@ -37,6 +37,7 @@ if(NOT DIRECTML)
 
 else()
 	# DirectML版onnxruntimeを読み込み
+	message("-DONNXRUNTIME_DIR: ${ONNXRUNTIME_DIR}")
 	if(EXISTS ${ONNXRUNTIME_DIR}/Privacy.md)
 		message("ONNX Runtime for DirectML - exists")
 	else()
