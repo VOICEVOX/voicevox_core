@@ -9,7 +9,6 @@
 #include <exception>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -190,10 +189,8 @@ bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads) {
   }
 
   try {
-    std::cout << "start init" << std::endl;
     status = std::make_unique<Status>(root_dir_path, use_gpu);
     if (!status->load(cpu_num_threads)) {
-      std::cout << "return false" << std::endl;
       return false;
     }
     if (use_gpu) {
