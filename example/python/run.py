@@ -1,7 +1,7 @@
 import argparse
 from typing import Optional
 
-import core
+import vvcore
 import soundfile
 
 from forwarder import Forwarder
@@ -17,13 +17,13 @@ def run(
     cpu_num_threads: int
 ) -> None:
     # コアの初期化
-    core.initialize(root_dir_path, use_gpu, cpu_num_threads)
+    vvcore.initialize(root_dir_path, use_gpu, cpu_num_threads)
 
     # 音声合成処理モジュールの初期化
     forwarder = Forwarder(
-        yukarin_s_forwarder=core.yukarin_s_forward,
-        yukarin_sa_forwarder=core.yukarin_sa_forward,
-        decode_forwarder=core.decode_forward,
+        yukarin_s_forwarder=vvcore.yukarin_s_forward,
+        yukarin_sa_forwarder=vvcore.yukarin_sa_forward,
+        decode_forwarder=vvcore.decode_forward,
     )
 
     # 音声合成
@@ -37,7 +37,7 @@ def run(
     # 保存
     soundfile.write(f"{text}-{speaker_id}.wav", data=wave, samplerate=24000)
 
-    core.finalize()
+    vvcore.finalize()
 
 
 if __name__ == "__main__":
