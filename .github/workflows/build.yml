@@ -26,7 +26,7 @@ jobs:
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x64-gpu-1.10.0.zip
             artifact_name: windows-x64-cuda
 
-          os: windows-2019
+          - os: windows-2019
             device: directml
             python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/Microsoft.ML.OnnxRuntime.DirectML.1.10.0.zip
