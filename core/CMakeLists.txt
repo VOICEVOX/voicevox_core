@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.16)
 
 project(ONNXCore)
 
+set(CMAKE_MACOSX_RPATH 1)
+set(CMAKE_INSTALL_RPATH "@loader_path/lib")
+
 # coreライブラリのインストール先設定。デフォルトはCMakeLists.txtと同じ位置
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "Path to install" FORCE)
@@ -36,9 +39,6 @@ target_include_directories(core
 	PRIVATE ${ONNXRUNTIME_DIR}/include)
 target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/lib)
 target_link_libraries(core PUBLIC onnxruntime)
-
-set(CMAKE_MACOSX_RPATH 1)
-set(CMAKE_INSTALL_RPATH "@loader_path/lib")
 
 
 # GCC 9.0以前ではstd::filesystemを使うためにリンクが必要 (https://gitlab.kitware.com/cmake/cmake/-/issues/17834)
