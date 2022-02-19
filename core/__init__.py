@@ -128,4 +128,3 @@ if sys.platform == 'win32':
 
 # load the core library
 from ._core import *
- 

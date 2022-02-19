@@ -8,12 +8,10 @@
 全体構成は [こちら](https://github.com/VOICEVOX/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
 
 ## 環境構築
+Raspberry Pi (armh) **以外** の環境ではconfigure.pyを用いて環境構築を行います
 
-MacOSとLinuxについては以下の方法で環境構築ができます。申し訳ございませんがWindowsについては次のセクションをご参照ください。
 ```bash
 python configure.py
-pip install -r requirements.txt
-pip install .
 ```
 
 ```bash
@@ -35,7 +33,8 @@ python run.py \
 # --root_dir_path onnxファイル等必要なファイルがあるディレクトリ
 ```
 
-## 環境構築（`configure.py`を使わない場合）
+<details>
+<summary>configure.pyを使わない場合</summary>
 
 ### ONNX Runtimeのダウンロード
 
@@ -84,6 +83,8 @@ pip install -r requirements.txt
 pip install .
 ```
 
+</details>
+
 ### その他の言語
 
 サンプルコードを実装された際はぜひお知らせください。こちらに追記させて頂きます。
@@ -94,7 +95,7 @@ pip install .
 
 ## コアライブラリのビルド
 
-[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。ビルドにはONNXRUNTIMEに加えてCMake 3.16以上が必要です。
+[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。ビルドにはONNXRUNTIMEに加えてCMake 3.16以上及び環境に応じたC++開発環境が必要です。
 
 ```bash
 # C++モジュールのビルド

@@ -21,8 +21,13 @@ elif get_os == "Linux":
     lib_file = "libcore.so"
 
 # ライブラリ読み込み
-lib = cdll.LoadLibrary(
-    str(Path(os.path.dirname(__file__) + f"/../../core/lib/{lib_file}")))
+core_dll_path = Path(os.path.dirname(__file__) + f"/lib/{lib_file}")
+if not os.path.exists(core_dll_path):
+    raise Exception(f"coreライブラリファイルが{core_dll_path}に存在しません")
+lib = cdll.LoadLibrary(str(core_dll_path))
+
+# if os.path.exists(Path(os.path.dirname(__file__) + "/lib/DirectML.dll")):
+
 
 # 関数型定義
 lib.initialize.argtypes = (c_char_p, c_bool, c_int)
@@ -50,7 +55,7 @@ lib.last_error_message.restype = c_char_p
 
 
 # ラッパー関数
-def initialize(root_dir_path: str, use_gpu: bool, cpu_num_threads: int):
+def initialize(root_dir_path: str, use_gpu: bool, cpu_num_threads=0):
     success = lib.initialize(root_dir_path.encode(), use_gpu, cpu_num_threads)
     if not success:
         raise Exception(lib.last_error_message().decode())

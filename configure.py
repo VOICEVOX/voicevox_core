@@ -182,7 +182,7 @@ def link_files():
     # run_subprocess(f"mkdir {project_root / 'core/lib'}")
     os.makedirs(project_root / 'core/lib', exist_ok=True)
     run_subprocess(
-        f"{link_cmd} {project_root / 'release/core.h'} {project_root / 'core/lib'}")
+        f"{link_cmd} {project_root/'release'/'core.h'} {project_root/'core'/'lib'}")
     run_subprocess(
         f"{link_cmd} {target_core_lib} {project_root/'core'/'lib'/(f'{lib_prefix}core{lib_suffix}')}")
 
