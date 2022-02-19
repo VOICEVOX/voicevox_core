@@ -2,8 +2,6 @@ import json
 import os
 import unittest
 
-import numpy as np
-
 import core
 
 root_dir = os.path.join(os.path.dirname(
