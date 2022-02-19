@@ -103,18 +103,12 @@ if sys.platform == 'win32':
             err.strerror += f' Error adding "{dll_path}" to the DLL directories.'
             raise err
 
-    # 明示的にcore.dllを読み込めば、onnxruntimeなどの残りの依存は自動で解決してくれる
-    # Note: onnxruntime_providers_cuda.dllはLoadLibraryによってロードしようとすると失敗する (GitHub PR #49)
-    dlls = [os.path.join(dll_path, 'core.dll')]
-
     # DirectML.dllはonnxruntimeと互換性のないWindows標準搭載のものを優先して読み込むことがあるため、明示的に読み込む
     # (参考: https://github.com/microsoft/onnxruntime/issues/3360, https://tadaoyamaoka.hatenablog.com/entry/2020/06/07/113616)
-    dml_dir = os.path.join(dll_path, 'DirectML.dll')
-    if(os.path.exists(dml_dir)):
-        dlls.append(dml_dir)
+    dll = os.path.join(dll_path, 'DirectML.dll')
+    if(os.path.exists(dll)):
 
-    path_patched = False
-    for dll in dlls:
+        path_patched = False
         is_loaded = False
         if with_load_library_flags:
             res = kernel32.LoadLibraryExW(dll, None, 0x00001100)
@@ -135,7 +129,7 @@ if sys.platform == 'win32':
                 err.strerror += f' Error loading "{dll}" or one of its dependencies.'
                 raise err
 
-    kernel32.SetErrorMode(prev_error_mode)
+        kernel32.SetErrorMode(prev_error_mode)
 
 # load the core library
 from ._core import *

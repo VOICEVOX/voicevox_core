@@ -5,6 +5,7 @@ project(VoiceVoxCore)
 set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime" CACHE PATH "Path to ONNX Runtime")
 
 option(DIRECTML "Enables building for DirectML" OFF)
+set(DIRECTML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/directml" CACHE PATH "Path to ONNX Runtime")
 if(DIRECTML)
   # DirectML読み込み用にCPUのアーキテクチャを求める
   set(DML_ARCH)
