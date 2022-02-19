@@ -201,7 +201,9 @@ jobs:
 
       - name: otool
         if:  startsWith(matrix.os, 'macos')
-        run: otool -L ./core/lib/libcore.dylib
+        run: |
+          otool -D libfoo.dylib
+          otool -L ./core/lib/libcore.dylib
 
       - name: Unit test ${{ matrix.python_architecture }}
         if: matrix.python_architecture != ''
