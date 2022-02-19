@@ -6,7 +6,9 @@ import numpy as np
 
 import core
 
-root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../model')
+root_dir = os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), 'release')
+
 
 class TestCore(unittest.TestCase):
     def test_initialize_cpu(self):
@@ -26,7 +28,8 @@ class TestCore(unittest.TestCase):
         with self.assertRaisesRegex(Exception, "Unknown style ID: -1"):
             core.yukarin_s_forward(0, nil, neg)
         with self.assertRaisesRegex(Exception, "Unknown style ID: -1"):
-            core.yukarin_sa_forward(0, nil2, nil2, nil2, nil2, nil2, nil2, neg)
+            core.yukarin_sa_forward(
+                0, nil2, nil2, nil2, nil2, nil2, nil2, neg)
         with self.assertRaisesRegex(Exception, "Unknown style ID: -1"):
             core.decode_forward(0, 0, fnil2, fnil2, neg)
         core.finalize()
@@ -44,6 +47,7 @@ class TestCore(unittest.TestCase):
         for expected_device in ["cpu", "cuda"]:
             self.assertIn(expected_device, devices)
         self.assertTrue(devices["cpu"])
+
 
 if __name__ == '__main__':
     unittest.main()

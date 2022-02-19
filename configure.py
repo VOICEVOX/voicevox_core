@@ -6,6 +6,10 @@ from glob import glob
 from pathlib import Path
 from typing import List, Union
 from urllib import request
+import platform
+import os
+
+from numpy import extract
 
 project_root = Path(__file__).absolute().parent
 
@@ -16,12 +20,8 @@ def run_subprocess(command):
         raise RuntimeError(f"Failed to run: {command}\n{output}")
 
 
-def get_os() -> str:
-    return subprocess.getoutput("uname -s")
-
-
-def get_arch() -> str:
-    return subprocess.getoutput("uname -m")
+os_name = platform.system()
+architecture_name = platform.machine()
 
 
 def get_release(url: str, version: str):
@@ -63,22 +63,26 @@ def get_ort_download_link(version: str, use_gpu: bool) -> str:
             )
         assets = new_assets
 
-    os_type = get_os()
-    arch_type = get_arch()
-    if "x86_64" == arch_type:
+    arch_type = architecture_name.lower()
+    if arch_type in ["x86_64", "amd64"]:
         arch_type = ["x64", "x86_64"]
-    if os_type == "Darwin":
+    if os_name == "Windows":
+        filter_assets("win")
+        filter_assets(arch_type)
+        if use_gpu:
+            filter_assets("gpu")
+    elif os_name == "Darwin":
         if use_gpu:
             raise RuntimeError("onnxruntime for osx does not support gpu.")
         filter_assets("osx")
         filter_assets(arch_type)
-    elif os_type == "Linux":
+    elif os_name == "Linux":
         filter_assets("linux")
         filter_assets(arch_type)
         if use_gpu:
             filter_assets("gpu")
     else:
-        raise RuntimeError(f"Unsupported os type: {os_type}.")
+        raise RuntimeError(f"Unsupported os type: {os_name}.")
     assets = sorted(assets, key=lambda x: x["name"])
     return assets[0]["browser_download_url"]
 
@@ -91,11 +95,18 @@ def download_and_extract_ort(download_link):
         return
     print(f"Downloading onnxruntime from {download_link}...")
     with tempfile.TemporaryDirectory() as tmp_dir:
-        run_subprocess(f"cd {tmp_dir} && wget {download_link} -O archive")
-        extract_cmd = "unzip" if download_link.endswith(".zip") else "tar xzf"
-        run_subprocess(
-            f"cd {tmp_dir} && {extract_cmd} archive && cp -r onnxruntime* {project_root}/onnxruntime"
-        )
+        if(os_name == "Windows"):
+            run_subprocess(
+                f'powershell -Command "cd {tmp_dir}; curl.exe {download_link} -L -o archive.zip"')
+            run_subprocess(
+                f'powershell -Command "cd {tmp_dir}; Expand-Archive -Path archive.zip -Destination ./; Copy-Item onnxruntime* -Recurse {project_root}/onnxruntime"')
+
+        else:
+            run_subprocess(f"cd {tmp_dir} && wget {download_link} -O archive")
+            extract_cmd = "unzip" if download_link.endswith(
+                ".zip") else "tar xzf"
+            run_subprocess(
+                f"cd {tmp_dir} && {extract_cmd} archive && cp -r onnxruntime* {project_root}/onnxruntime")
 
 
 def get_voicevox_download_link(version) -> str:
@@ -120,13 +131,20 @@ def download_and_extract_voicevox(download_link):
         return
     print(f"Downloading voicevox from {download_link}...")
     with tempfile.TemporaryDirectory() as tmp_dir:
-        run_subprocess(
-            f"cd {tmp_dir} && wget {download_link} && unzip core.zip && cp -r core {project_root}/release"
-        )
+        if os_name == "Windows":
+            run_subprocess(
+                f'powershell -Command "cd {tmp_dir}; curl.exe {download_link} -L -O;')
+            run_subprocess(
+                f'powershell -Command "cd {tmp_dir}; Expand-Archive -Path core.zip -Destination ./; Copy-Item core -Recurse {project_root}/release"')
+
+        else:
+            run_subprocess(
+                f"cd {tmp_dir} && wget {download_link} && unzip core.zip && cp -r core {project_root}/release"
+            )
 
 
 def link_files():
-    os_type = get_os()
+    os_type = os_name
     lib_prefix = ""
     lib_suffix = ""
     if os_type == "Darwin":
@@ -135,10 +153,13 @@ def link_files():
     elif os_type == "Linux":
         lib_prefix = "lib"
         lib_suffix = ".so"
+    elif os_type == "Windows":
+        lib_prefix = ""
+        lib_suffix = ".dll"
     else:
         raise RuntimeError(f"Unsupported os type: {os_type}.")
-
-    core_libs = glob(f"{project_root}/release/{lib_prefix}*{lib_suffix}")
+    print(project_root/'release'/(lib_prefix+'*'+lib_suffix))
+    core_libs = glob(str(project_root/'release'/(lib_prefix+'*'+lib_suffix)))
     assert core_libs
 
     target_core_lib = None
@@ -156,14 +177,20 @@ def link_files():
         index = int(index)
         target_core_lib = core_libs[index]
 
-    run_subprocess(f"mkdir {project_root}/core/lib")
-    run_subprocess(f"ln -s {project_root}/release/core.h {project_root}/core/lib")
-    run_subprocess(f"ln -s {target_core_lib} {project_root}/core/lib/{lib_prefix}core{lib_suffix}")
+    link_cmd = "copy /y" if os_name == "Windows" else "ln -s"
 
-    ort_libs = glob(f"{project_root}/onnxruntime/lib/{lib_prefix}*{lib_suffix}")
+    # run_subprocess(f"mkdir {project_root / 'core/lib'}")
+    os.makedirs(project_root / 'core/lib', exist_ok=True)
+    run_subprocess(
+        f"{link_cmd} {project_root/'release'/'core.h'} {project_root/'core'/'lib'}")
+    run_subprocess(
+        f"{link_cmd} {target_core_lib} {project_root/'core'/'lib'/(f'{lib_prefix}core{lib_suffix}')}")
+
+    ort_libs = glob(
+        str(project_root/'onnxruntime'/'lib'/(f"{lib_prefix}*{lib_suffix}*")))
     assert ort_libs
     for ort_lib in ort_libs:
-        run_subprocess(f"ln -s {ort_lib} {project_root}/core/lib")
+        run_subprocess(f"{link_cmd} {ort_lib} {project_root/'core'/'lib'}")
 
 
 if __name__ == "__main__":
@@ -173,7 +200,8 @@ if __name__ == "__main__":
         default="0.10.0",
         help="voicevox release tag found in https://github.com/VOICEVOX/voicevox_core/releases",
     )
-    parser.add_argument("--voicevox_download_link", help="voicevox download link")
+    parser.add_argument("--voicevox_download_link",
+                        help="voicevox download link")
     parser.add_argument(
         "--ort_version",
         default="v1.10.0",
@@ -182,18 +210,21 @@ if __name__ == "__main__":
     parser.add_argument(
         "--use_gpu", action="store_true", help="enable gpu for onnxruntime"
     )
-    parser.add_argument("--ort_download_link", help="onnxruntime download link")
+    parser.add_argument("--ort_download_link",
+                        help="onnxruntime download link")
 
     args = parser.parse_args()
     ort_download_link = args.ort_download_link
     if not ort_download_link:
-        ort_download_link = get_ort_download_link(args.ort_version, args.use_gpu)
+        ort_download_link = get_ort_download_link(
+            args.ort_version, args.use_gpu)
 
     download_and_extract_ort(ort_download_link)
 
     voicevox_download_link = args.voicevox_download_link
     if not voicevox_download_link:
-        voicevox_download_link = get_voicevox_download_link(args.voicevox_version)
+        voicevox_download_link = get_voicevox_download_link(
+            args.voicevox_version)
     download_and_extract_voicevox(voicevox_download_link)
 
     lib_path = project_root / "core/lib"
@@ -206,4 +237,5 @@ if __name__ == "__main__":
         subprocess.getoutput(f"rm -r {lib_path}")
 
     link_files()
+
     print("Successfully configured!")
