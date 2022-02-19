@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.16)
 project(ONNXCore)
 
 set(CMAKE_MACOSX_RPATH 1)
-set(CMAKE_INSTALL_RPATH "@loader_path/lib")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # coreライブラリのインストール先設定。デフォルトはCMakeLists.txtと同じ位置
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
