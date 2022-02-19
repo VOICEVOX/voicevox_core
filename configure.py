@@ -9,8 +9,6 @@ from urllib import request
 import platform
 import os
 
-from numpy import extract
-
 project_root = Path(__file__).absolute().parent
 
 
@@ -144,20 +142,19 @@ def download_and_extract_voicevox(download_link):
 
 
 def link_files():
-    os_type = os_name
     lib_prefix = ""
     lib_suffix = ""
-    if os_type == "Darwin":
+    if os_name == "Darwin":
         lib_prefix = "lib"
         lib_suffix = ".dylib"
-    elif os_type == "Linux":
+    elif os_name == "Linux":
         lib_prefix = "lib"
         lib_suffix = ".so"
-    elif os_type == "Windows":
+    elif os_name == "Windows":
         lib_prefix = ""
         lib_suffix = ".dll"
     else:
-        raise RuntimeError(f"Unsupported os type: {os_type}.")
+        raise RuntimeError(f"Unsupported os type: {os_name}.")
     print(project_root/'release'/(lib_prefix+'*'+lib_suffix))
     core_libs = glob(str(project_root/'release'/(lib_prefix+'*'+lib_suffix)))
     assert core_libs
