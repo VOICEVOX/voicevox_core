@@ -53,4 +53,4 @@ install(TARGETS core
 install(FILES ${ONNXRUNTIME_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/core.h
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
-set_target_properties(core PROPERTIES INSTALL_RPATH "@loader_path/lib")
+set_target_properties(core PROPERTIES INSTALL_RPATH "@loader_path/../lib")
