@@ -237,7 +237,6 @@ jobs:
         if: matrix.python_architecture != ''
         shell: bash
         run: |
-          pip install -r requirements.txt
           python setup.py test
 
       - name: Organize artifact
