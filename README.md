@@ -85,9 +85,6 @@ python configure.py --ort_download_link <独自ビルドonnxruntimeのURL>
 sudo apt install libgomp1
 ```
 
-
-
-
 ## サンプル実行
 ```bash
 cd example/python
