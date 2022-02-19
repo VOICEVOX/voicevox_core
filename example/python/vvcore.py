@@ -2,17 +2,15 @@ from ctypes import *
 import platform
 import os
 from pathlib import Path
-
 import numpy
 
+# numpy ndarray types
 int64_dim1_type = numpy.ctypeslib.ndpointer(dtype=numpy.int64, ndim=1)
 float32_dim1_type = numpy.ctypeslib.ndpointer(dtype=numpy.float32, ndim=1)
-
 int64_dim2_type = numpy.ctypeslib.ndpointer(dtype=numpy.int64, ndim=2)
 float32_dim2_type = numpy.ctypeslib.ndpointer(dtype=numpy.float32, ndim=2)
 
 get_os = platform.system()
-get_arch = platform.machine()
 
 lib_file = ""
 if get_os == "Windows":
@@ -22,9 +20,11 @@ elif get_os == "Darwin":
 elif get_os == "Linux":
     lib_file = "libcore.so"
 
+# ライブラリ読み込み
 lib = cdll.LoadLibrary(
     str(Path(os.path.dirname(__file__) + f"/../../core/lib/{lib_file}")))
 
+# 関数型定義
 lib.initialize.argtypes = (c_char_p, c_bool, c_int)
 lib.initialize.restype = c_bool
 
@@ -49,6 +49,7 @@ lib.decode_forward.restype = c_bool
 lib.last_error_message.restype = c_char_p
 
 
+# ラッパー関数
 def initialize(root_dir_path: str, use_gpu: bool, cpu_num_threads: int):
     success = lib.initialize(root_dir_path.encode(), use_gpu, cpu_num_threads)
     if not success:
@@ -102,9 +103,3 @@ def decode_forward(length: int, phoneme_size: int, f0, phoneme, speaker_id):
 
 def finalize():
     lib.finalize()
-
-
-if __name__ == "__main__":
-    initialize("./release", False, 8)
-    print(metas())
-    finalize()

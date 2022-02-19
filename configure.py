@@ -20,12 +20,8 @@ def run_subprocess(command):
         raise RuntimeError(f"Failed to run: {command}\n{output}")
 
 
-def get_os() -> str:
-    return platform.system()
-
-
-def get_arch() -> str:
-    return platform.machine()
+os_name = platform.system()
+architecture_name = platform.machine()
 
 
 def get_release(url: str, version: str):
@@ -67,27 +63,26 @@ def get_ort_download_link(version: str, use_gpu: bool) -> str:
             )
         assets = new_assets
 
-    os_type = get_os()
-    arch_type = get_arch().lower()
+    arch_type = architecture_name.lower()
     if arch_type in ["x86_64", "amd64"]:
         arch_type = ["x64", "x86_64"]
-    if os_type == "Windows":
+    if os_name == "Windows":
         filter_assets("win")
         filter_assets(arch_type)
         if use_gpu:
             filter_assets("gpu")
-    elif os_type == "Darwin":
+    elif os_name == "Darwin":
         if use_gpu:
             raise RuntimeError("onnxruntime for osx does not support gpu.")
         filter_assets("osx")
         filter_assets(arch_type)
-    elif os_type == "Linux":
+    elif os_name == "Linux":
         filter_assets("linux")
         filter_assets(arch_type)
         if use_gpu:
             filter_assets("gpu")
     else:
-        raise RuntimeError(f"Unsupported os type: {os_type}.")
+        raise RuntimeError(f"Unsupported os type: {os_name}.")
     assets = sorted(assets, key=lambda x: x["name"])
     return assets[0]["browser_download_url"]
 
@@ -100,7 +95,7 @@ def download_and_extract_ort(download_link):
         return
     print(f"Downloading onnxruntime from {download_link}...")
     with tempfile.TemporaryDirectory() as tmp_dir:
-        if(get_os() == "Windows"):
+        if(os_name == "Windows"):
             run_subprocess(
                 f'powershell -Command "cd {tmp_dir}; curl.exe {download_link} -L -o archive.zip"')
             run_subprocess(
@@ -111,7 +106,7 @@ def download_and_extract_ort(download_link):
             extract_cmd = "unzip" if download_link.endswith(
                 ".zip") else "tar xzf"
             run_subprocess(
-                f"cd {tmp_dir} && {extract_cmd} archive && cp -r onnxruntimes* {project_root}/onnxruntime")
+                f"cd {tmp_dir} && {extract_cmd} archive && cp -r onnxruntime* {project_root}/onnxruntime")
 
 
 def get_voicevox_download_link(version) -> str:
@@ -136,7 +131,7 @@ def download_and_extract_voicevox(download_link):
         return
     print(f"Downloading voicevox from {download_link}...")
     with tempfile.TemporaryDirectory() as tmp_dir:
-        if get_os() == "Windows":
+        if os_name == "Windows":
             run_subprocess(
                 f'powershell -Command "cd {tmp_dir}; curl.exe {download_link} -L -O;')
             run_subprocess(
@@ -148,11 +143,8 @@ def download_and_extract_voicevox(download_link):
             )
 
 
-link_cmd = "copy /y" if get_os() == "Windows" else "ln -s"
-
-
 def link_files():
-    os_type = get_os()
+    os_type = os_name
     lib_prefix = ""
     lib_suffix = ""
     if os_type == "Darwin":
@@ -185,15 +177,17 @@ def link_files():
         index = int(index)
         target_core_lib = core_libs[index]
 
+    link_cmd = "copy /y" if os_name == "Windows" else "ln -s"
+
     # run_subprocess(f"mkdir {project_root / 'core/lib'}")
     os.makedirs(project_root / 'core/lib', exist_ok=True)
     run_subprocess(
         f"{link_cmd} {project_root / 'release/core.h'} {project_root / 'core/lib'}")
     run_subprocess(
-        f"{link_cmd} {target_core_lib} {project_root/'core/lib'/lib_prefix/('core'+lib_suffix)}")
+        f"{link_cmd} {target_core_lib} {project_root/'core'/'lib'/(f'{lib_prefix}core{lib_suffix}')}")
 
     ort_libs = glob(
-        str(project_root/'onnxruntime'/'lib'/(lib_prefix+'*'+lib_suffix)))
+        str(project_root/'onnxruntime'/'lib'/(f"{lib_prefix}*{lib_suffix}*")))
     assert ort_libs
     for ort_lib in ort_libs:
         run_subprocess(f"{link_cmd} {ort_lib} {project_root/'core'/'lib'}")
@@ -244,7 +238,4 @@ if __name__ == "__main__":
 
     link_files()
 
-    if(get_os() == "Windows"):
-        run_subprocess(
-            f"{project_root/'example'/'python'/'makelib.bat'} {project_root/'core'/'lib'/'core'}")
     print("Successfully configured!")
