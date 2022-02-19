@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from setuptools import setup, Extension
+from setuptools import setup
 import platform
 import os
 import sys
-
-import numpy
-# from Cython.Build import cythonize
-# from Cython.Distutils import build_ext
 
 
 def get_version():
@@ -40,13 +36,6 @@ if __name__ == '__main__':
         name="core",
         version=get_version(),
         packages=["core"],
-        cmdclass={
-            # "build_ext": build_ext,
-        },
-        # ext_modules=cythonize(ext_modules),
-        include_dirs=[
-            numpy.get_include(),
-        ],
         package_data={
             "core": [
                 "lib/*.dll",
