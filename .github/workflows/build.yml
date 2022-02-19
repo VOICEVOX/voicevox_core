@@ -204,6 +204,7 @@ jobs:
         run: |
           otool -D ./core/lib/libcore.dylib
           otool -L ./core/lib/libcore.dylib
+          otool -l ./core/lib/libcore.dylib
 
       - name: Unit test ${{ matrix.python_architecture }}
         if: matrix.python_architecture != ''
