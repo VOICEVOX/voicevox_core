@@ -14,35 +14,6 @@ configure.pyを用いて環境構築を行う場合
 python configure.py
 pip install .
 ```
-
-### 注意
-#### GPUの使用について
-
-nvidia製GPUを搭載したWindows, Linux PCではCUDAを用いた合成が可能です。
-CUDAを使用する場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) をインストールした上で、環境構築時、上記例の代わりに
-```bash
-python configure.py --use_gpu
-```
-を実行する必要があります
-
-MacOSの場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
-
-#### Raspberry Piでの使用について
-
-Raspberry PiなどのarmhアーキテクチャPCでの使用では、環境構築時に https://github.com/VOICEVOX/onnxruntime-builder/releases にある独自ビルドのonnxruntimeを使用する必要があります。
-そのため、環境にあったファイルのURLを取得し、上記例の代わりに
-```bash
-python configure.py --ort_download_link <独自ビルドonnxruntimeのURL>
-```
-を実行してください
-
-また、動作には、libgomp のインストールが必要です。
-
-```shell
-sudo apt install libgomp1
-```
-
-
 <details>
 <summary>configure.pyを使わない場合</summary>
 
@@ -83,6 +54,36 @@ pip install .
 ```
 
 </details>
+
+### 注意
+#### GPUの使用について
+
+nvidia製GPUを搭載したWindows, Linux PCではCUDAを用いた合成が可能です。
+CUDAを使用する場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) をインストールした上で、環境構築時、上記例の代わりに
+```bash
+python configure.py --use_gpu
+```
+を実行する必要があります
+
+MacOSの場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
+
+#### Raspberry Piでの使用について
+
+Raspberry PiなどのarmhアーキテクチャPCでの使用では、環境構築時に https://github.com/VOICEVOX/onnxruntime-builder/releases にある独自ビルドのonnxruntimeを使用する必要があります。
+そのため、環境にあったファイルのURLを取得し、上記例の代わりに
+```bash
+python configure.py --ort_download_link <独自ビルドonnxruntimeのURL>
+```
+を実行してください
+
+また、動作には、libgomp のインストールが必要です。
+
+```shell
+sudo apt install libgomp1
+```
+
+
+
 
 ## サンプル実行
 ```bash
