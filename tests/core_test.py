@@ -7,7 +7,7 @@ import numpy as np
 import core
 
 root_dir = os.path.join(os.path.dirname(
-    os.path.abspath(__file__)), 'release')
+    os.path.abspath(__file__)), '../model')
 
 
 class TestCore(unittest.TestCase):
