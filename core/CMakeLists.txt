@@ -78,8 +78,6 @@ install(TARGETS core
 install(FILES ${ONNXRUNTIME_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/core.h
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
-if(DIRECTML AND EXISTS ${DIRECTML_DIR}/README.md)
-	install(FILES ${DIRECTML_LIBS} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 # rpath設定用 (参考 https://gist.github.com/robertmaynard/5750737)
 if (APPLE)
 	set_target_properties(core PROPERTIES INSTALL_RPATH "@loader_path/")
