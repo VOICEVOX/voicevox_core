@@ -74,17 +74,19 @@ endif()
 
 set_property(TARGET core PROPERTY CXX_STANDARD 17)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
-set_property(TARGET core PROPERTY INSTALL_RPATH "$ORIGIN") # make enable to search onnxruntime.so
-
-# rpath設定用 (参考 https://gist.github.com/robertmaynard/5750737)
+# rpath設定
 if (APPLE)
-	set_target_properties(core PROPERTIES INSTALL_RPATH "@loader_path/")
-endif()
+	# 参考 https://gist.github.com/robertmaynard/5750737
+	set_property(TARGET core PROPERTY INSTALL_RPATH "@loader_path/")
+elseif (UNIX)
+	set_property(TARGET core PROPERTY INSTALL_RPATH "$ORIGIN")
+endif ()
 
 target_compile_options(core PRIVATE
 	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8>
 	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
 )
+
 
 
 # GCC 9.0以前ではstd::filesystemを使うためにリンクが必要 (https://gitlab.kitware.com/cmake/cmake/-/issues/17834)

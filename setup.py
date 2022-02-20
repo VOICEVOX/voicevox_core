@@ -6,7 +6,6 @@ import os
 import sys
 
 
-
 def get_version():
     """バージョン取得"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
