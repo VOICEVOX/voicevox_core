@@ -12,6 +12,7 @@ configure.pyを用いて環境構築を行う場合
 
 ```bash
 python configure.py
+pip install -r requirements.txt
 pip install .
 ```
 <details>
@@ -49,6 +50,8 @@ Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます�
 5. 以下のコマンドを実行する。
 
 ```bash
+# インストールに必要なモジュールのインストール
+pip install -r requirements.txt
 # pythonモジュールのインストール
 pip install .
 ```
@@ -81,9 +84,6 @@ python configure.py --ort_download_link <独自ビルドonnxruntimeのURL>
 ```shell
 sudo apt install libgomp1
 ```
-
-
-
 
 ## サンプル実行
 ```bash
