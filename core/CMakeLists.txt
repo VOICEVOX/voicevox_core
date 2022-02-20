@@ -30,6 +30,12 @@ add_library(core SHARED src/core.cpp)
 set_property(TARGET core PROPERTY CXX_STANDARD 17)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
 set_property(TARGET core PROPERTY INSTALL_RPATH "$ORIGIN") # make enable to search onnxruntime.so
+
+# rpath設定用 (参考 https://gist.github.com/robertmaynard/5750737)
+if (APPLE)
+	set_target_properties(core PROPERTIES INSTALL_RPATH "@loader_path/")
+endif()
+
 target_compile_options(core PRIVATE
 	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8>
 	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
@@ -50,8 +56,3 @@ install(TARGETS core
 	RUNTIME DESTINATION lib)
 install(FILES ${ONNXRUNTIME_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/core.h
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-
-# rpath設定用 (参考 https://gist.github.com/robertmaynard/5750737)
-if (APPLE)
-	set_target_properties(core PROPERTIES INSTALL_RPATH "@loader_path/")
-endif()
