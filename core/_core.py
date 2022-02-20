@@ -53,7 +53,8 @@ lib.last_error_message.restype = c_char_p
 
 # ラッパー関数
 def initialize(root_dir_path: str, use_gpu: bool, cpu_num_threads=0):
-    success = lib.initialize(root_dir_path.encode(), use_gpu, cpu_num_threads)
+    path = create_string_buffer(root_dir_path.encode())
+    success = lib.initialize(path, use_gpu, cpu_num_threads)
     if not success:
         raise Exception(lib.last_error_message().decode())
 
