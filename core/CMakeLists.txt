@@ -53,5 +53,5 @@ install(FILES ${ONNXRUNTIME_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/core.h
 
 # rpath設定用 (参考 https://gist.github.com/robertmaynard/5750737)
 if (APPLE)
-	set_target_properties(core PROPERTIES INSTALL_RPATH ".")
+	set_target_properties(core PROPERTIES INSTALL_RPATH "@loader_path/")
 endif()
