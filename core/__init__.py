@@ -105,7 +105,7 @@ if sys.platform == 'win32':
 
     # 明示的にcore.dllを読み込めば、onnxruntimeなどの残りの依存は自動で解決してくれる
     # Note: onnxruntime_providers_cuda.dllはLoadLibraryによってロードしようとすると失敗する (GitHub PR #49)
-    dll = os.path.join(dll_path, 'core.dll')
+    dll = os.path.join(dll_path, "core.dll")
     is_loaded = False
     if with_load_library_flags:
         res = kernel32.LoadLibraryExW(dll, None, 0x00001100)
@@ -117,7 +117,7 @@ if sys.platform == 'win32':
         elif res is not None:
             is_loaded = True
     if not is_loaded:
-        os.environ['PATH'] = ';'.join([dll_path] + [os.environ['PATH']])
+        os.environ['PATH'] = dll_path + ';'.join([os.environ['PATH']])
         res = kernel32.LoadLibraryW(dll)
         if res is None:
             err = ctypes.WinError(ctypes.get_last_error())
@@ -128,4 +128,3 @@ if sys.platform == 'win32':
 
 # load the core library
 from ._core import *
- 

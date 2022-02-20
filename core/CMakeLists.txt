@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(ONNXCore)
 
+set(CMAKE_MACOSX_RPATH 1)
+
 # coreライブラリのインストール先設定。デフォルトはCMakeLists.txtと同じ位置
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "Path to install" FORCE)
@@ -27,7 +29,14 @@ file(GLOB ONNXRUNTIME_LIBS
 add_library(core SHARED src/core.cpp)
 set_property(TARGET core PROPERTY CXX_STANDARD 17)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
-set_property(TARGET core PROPERTY INSTALL_RPATH "$ORIGIN") # make enable to search onnxruntime.so
+# rpath設定
+if (APPLE)
+	# 参考 https://gist.github.com/robertmaynard/5750737
+	set_property(TARGET core PROPERTY INSTALL_RPATH "@loader_path/")
+elseif (UNIX)
+	set_property(TARGET core PROPERTY INSTALL_RPATH "$ORIGIN")
+endif ()
+
 target_compile_options(core PRIVATE
 	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8>
 	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
@@ -36,6 +45,7 @@ target_include_directories(core
 	PRIVATE ${ONNXRUNTIME_DIR}/include)
 target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/lib)
 target_link_libraries(core PUBLIC onnxruntime)
+
 
 # GCC 9.0以前ではstd::filesystemを使うためにリンクが必要 (https://gitlab.kitware.com/cmake/cmake/-/issues/17834)
 target_link_libraries(core PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
