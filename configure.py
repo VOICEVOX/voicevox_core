@@ -175,7 +175,6 @@ def link_files():
 
     link_cmd = "copy /y" if os_name == "Windows" else "ln -s"
 
-    # run_subprocess(f"mkdir {project_root / 'core/lib'}")
     os.makedirs(project_root / 'core/lib', exist_ok=True)
     run_subprocess(
         f"{link_cmd} {project_root/'release'/'core.h'} {project_root/'core'/'lib'}")
