@@ -155,7 +155,6 @@ def link_files():
         lib_suffix = ".dll"
     else:
         raise RuntimeError(f"Unsupported os type: {os_name}.")
-    print(project_root/'release'/(lib_prefix+'*'+lib_suffix))
     core_libs = glob(str(project_root/'release'/(lib_prefix+'*'+lib_suffix)))
     assert core_libs
 
