@@ -26,9 +26,6 @@ if not os.path.exists(core_dll_path):
     raise Exception(f"coreライブラリファイルが{core_dll_path}に存在しません")
 lib = cdll.LoadLibrary(str(core_dll_path))
 
-# if os.path.exists(Path(os.path.dirname(__file__) + "/lib/DirectML.dll")):
-
-
 # 関数型定義
 lib.initialize.argtypes = (c_char_p, c_bool, c_int)
 lib.initialize.restype = c_bool
