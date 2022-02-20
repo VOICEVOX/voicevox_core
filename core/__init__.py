@@ -103,34 +103,28 @@ if sys.platform == 'win32':
             err.strerror += f' Error adding "{dll_path}" to the DLL directories.'
             raise err
 
-    dlls = glob.glob(dll_path + '\\*.dll')
-
+    # 明示的にcore.dllを読み込めば、onnxruntimeなどの残りの依存は自動で解決してくれる
     # Note: onnxruntime_providers_cuda.dllはLoadLibraryによってロードしようとすると失敗する (GitHub PR #49)
-    dlls = [i for i in dlls if not "onnxruntime_providers" in i]
+    dll = os.path.join(dll_path, "core.dll")
+    is_loaded = False
+    if with_load_library_flags:
+        res = kernel32.LoadLibraryExW(dll, None, 0x00001100)
+        last_error = ctypes.get_last_error()
+        if res is None and last_error != 126:
+            err = ctypes.WinError(last_error)
+            err.strerror += f' Error loading "{dll}" or one of its dependencies.'
+            raise err
+        elif res is not None:
+            is_loaded = True
+    if not is_loaded:
+        os.environ['PATH'] = dll_path + ';'.join([os.environ['PATH']])
+        res = kernel32.LoadLibraryW(dll)
+        if res is None:
+            err = ctypes.WinError(ctypes.get_last_error())
+            err.strerror += f' Error loading "{dll}" or one of its dependencies.'
+            raise err
 
-    for dll in dlls:
-        path_patched = False
-        is_loaded = False
-        if with_load_library_flags:
-            res = kernel32.LoadLibraryExW(dll, None, 0x00001100)
-            last_error = ctypes.get_last_error()
-            if res is None and last_error != 126:
-                err = ctypes.WinError(last_error)
-                err.strerror += f' Error loading "{dll}" or one of its dependencies.'
-                raise err
-            elif res is not None:
-                is_loaded = True
-        if not is_loaded:
-            if not path_patched:
-                os.environ['PATH'] = dll_path + ';'.join([os.environ['PATH']])
-                path_patched = True
-            res = kernel32.LoadLibraryW(dll)
-            if res is None:
-                err = ctypes.WinError(ctypes.get_last_error())
-                err.strerror += f' Error loading "{dll}" or one of its dependencies.'
-                raise err
-
-        kernel32.SetErrorMode(prev_error_mode)
+    kernel32.SetErrorMode(prev_error_mode)
 
 # load the core library
 from ._core import *
