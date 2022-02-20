@@ -32,7 +32,7 @@ jobs:
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/Microsoft.ML.OnnxRuntime.DirectML.1.10.0.zip
             directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
             artifact_name: windows-x64-directml
-            cmake_additional_options: -DDIRECTML=ON
+            cmake_additional_options: -DDIRECTML=ON -DDIRECTML_DIR=download/directml
 
           - os: windows-2019
             device: cpu-x64
@@ -134,6 +134,14 @@ jobs:
         if: endswith(matrix.artifact_name, '-directml')
         shell: bash
         run: echo "${{matrix.directml_url}}" >> download/directml_url.txt
+
+      - name: Cache DirectML
+        if: endswith(matrix.artifact_name, '-directml')
+        uses: actions/cache@v2
+        id: directml-cache
+        with:
+          key: directml-cache-v1-${{ hashFiles('download/directml_url.txt') }}
+          path: download/directml
 
       # download/onnxruntime/lib/onnxruntime.dll
       - name: Download ONNX Runtime (zip)

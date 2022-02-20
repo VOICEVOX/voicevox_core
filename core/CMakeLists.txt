@@ -54,6 +54,20 @@ else()
 	target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/runtimes/win-${DML_ARCH}/native/)
 	target_link_libraries(core PUBLIC onnxruntime)
 
+		# DirectMLを読み込み
+	if(EXISTS ${DIRECTML_DIR}/README.md)
+		message("DirectML exists")
+		file(GLOB DIRECTML_LIBS
+		"${DIRECTML_DIR}/bin/${DML_ARCH}-win/*.dll"
+		"${DIRECTML_DIR}/bin/${DML_ARCH}-win/*.lib")
+	
+		target_include_directories(core PRIVATE ${DIRECTML_DIR}/include)
+		target_link_directories(core PUBLIC ${DIRECTML_DIR}/bin/${DML_ARCH}-win/)
+		target_link_libraries(core PUBLIC directml)
+	else()
+		message(WARNING "Unable to find DirectML. Use option -DDIRECTML_DIR=...")
+	endif()
+
 	# define DIRECTML
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D DIRECTML")
 endif()
@@ -81,4 +95,8 @@ install(FILES ${ONNXRUNTIME_LIBS} ${CMAKE_CURRENT_SOURCE_DIR}/src/core.h
 # rpath設定用 (参考 https://gist.github.com/robertmaynard/5750737)
 if (APPLE)
 	set_target_properties(core PROPERTIES INSTALL_RPATH "@loader_path/")
+endif()
+
+if(DIRECTML AND EXISTS ${DIRECTML_DIR}/README.md)
+	install(FILES ${DIRECTML_LIBS} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 endif()
