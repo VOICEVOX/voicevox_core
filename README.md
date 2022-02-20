@@ -26,8 +26,11 @@ pip install .
 - ONNX Runtime v1.9.0/v1.9.1
 
 #### GPUを使用する場合
+##### CUDA
+Windows, Linux上でnvidia製GPUを使用してCUDAを用いた合成を行う場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive),[CUDNN](https://developer.nvidia.com/cudnn)のインストールに加えてGPU に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
 
-Windows, Linux上でnvidia製GPUを使用する場合、CUDA11.1,CUDNNのインストールに加えてGPU に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
+##### DirectML
+Windows上でDirectX12に対応したGPUを使用してDirectMLを用いた合成を行う場合、DirectMLに対応した[ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
 
 
 #### Raspberry Pi (armhf)の場合
@@ -61,10 +64,22 @@ pip install .
 ### 注意
 #### GPUの使用について
 
+##### CUDA
 nvidia製GPUを搭載したWindows, Linux PCではCUDAを用いた合成が可能です。
 CUDAを使用する場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) をインストールした上で、環境構築時、上記例の代わりに
 ```bash
 python configure.py --use_gpu
+pip install .
+```
+を実行する必要があります
+
+##### DirectML
+DirectX12に対応したGPUを搭載したWindows PCではDirectMLを用いた合成が可能です
+DirectMLを実行する場合、環境構築時、上記例の代わりに
+```bash 
+python configure.py --use_directml
+python configure_directml.py
+pip install .
 ```
 を実行する必要があります
 
@@ -116,6 +131,7 @@ python run.py \
 ## コアライブラリのビルド
 
 [Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。ビルドにはONNXRUNTIMEに加えてCMake 3.16以上が必要です。
+   
 modelフォルダにあるonnxモデルはダミーのため、ノイズの混じった音声が出力されます
 
 ```bash
