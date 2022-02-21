@@ -38,18 +38,21 @@ jobs:
             device: cpu-x86
             python_architecture: 'x86'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x86-1.10.0.zip
+            directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32 -DDIRECTML=ON -DDIRECTML_DIR=download/directml
             artifact_name: windows-x86-directml
 
           - os: windows-2019
             device: cpu-arm64
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-arm64-1.10.0.zip
+            directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm64 -DDIRECTML=ON -DDIRECTML_DIR=download/directml
             artifact_name: windows-arm64-directml
 
           - os: windows-2019
             device: cpu-arm
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-arm-1.10.0.zip
+            directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm -DDIRECTML=ON -DDIRECTML_DIR=download/directml
             artifact_name: windows-arm-directml
 
