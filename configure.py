@@ -115,6 +115,39 @@ def download_and_extract_ort(download_link):
                 f"cd {tmp_dir} && {extract_cmd} archive && cp -r onnxruntime* {project_root}/onnxruntime")
 
 
+def get_dml_download_link(version: str):
+    resp = request.urlopen(
+        "https://api.nuget.org/v3/registration5-semver1/microsoft.ai.directml/index.json")
+    jsonData = json.loads(resp.read())
+    releases = jsonData["items"][0]["items"]
+    target_release = None
+    for release in releases:
+        if release["catalogEntry"]["version"] == version:
+            assert (
+                target_release is None
+            ), f"Multiple releases were found with tag_name: {version}."
+            target_release = release
+    if target_release is None:
+        raise RuntimeError(f"No release was found with version: {version}.")
+
+    return target_release["catalogEntry"]["packageContent"]
+
+
+def download_and_extract_dml(link):
+    if(project_root / "directml").exists():
+        print(
+            "Skip downloading DirectML because directml directory already exists."
+        )
+        return
+
+    print(f"Downloading DirectML from {link}")
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        run_subprocess(
+            f'powershell -Command "cd {tmp_dir}; curl.exe {link} -L -o archive.zip"')
+        run_subprocess(
+            f'powershell -Command "cd {tmp_dir}; Expand-Archive -Path archive.zip; Copy-Item archive -Recurse {project_root}/directml"')
+
+
 def get_voicevox_download_link(version) -> str:
     target_release = get_release(
         "https://api.github.com/repos/VOICEVOX/voicevox_core/releases", version
@@ -202,6 +235,11 @@ def link_files(use_directml: bool):
         else:
             raise RuntimeError(
                 f"Unsupported architecture type: {architecture_name}")
+        dll_file_path = project_root / "directml" / \
+            'bin' / f"{arch_type}-win" / "DirectML.dll"
+        run_subprocess(
+            f"copy /y {dll_file_path} {project_root / 'core'/'lib'/'DirectML.dll'}"
+        )
         ort_libs = glob(str(os.path.join(
             project_root, "onnxruntime", "runtimes", f"win-{arch_type}", "native", "*.dll")))
     else:
@@ -226,14 +264,23 @@ if __name__ == "__main__":
         default="v1.10.0",
         help="onnxruntime release tag found in https://github.com/microsoft/onnxruntime/releases",
     )
+    parser.add_argument("--ort_download_link",
+                        help="onnxruntime download link")
     parser.add_argument(
         "--use_cuda", action="store_true", help="enable cuda for onnxruntime"
     )
     parser.add_argument(
         "--use_directml", action="store_true", help="enable directml for onnxruntime"
     )
-    parser.add_argument("--ort_download_link",
-                        help="onnxruntime download link")
+    parser.add_argument(
+        "--dml_version",
+        default="1.8.0",
+        help="DirectML version found in https://www.nuget.org/packages/Microsoft.AI.DirectML",
+    )
+    parser.add_argument(
+        "--dml_download_link",
+        help="directml download link"
+    )
 
     args = parser.parse_args()
     ort_download_link = args.ort_download_link
@@ -241,6 +288,7 @@ if __name__ == "__main__":
     if args.use_directml and os_name != "Windows":
         raise RuntimeError(
             "onnxruntime for Mac or Linux don't support DirectML")
+
     if not ort_download_link:
         ort_download_link = get_ort_download_link(
             args.ort_version, args.use_cuda, args.use_directml)
@@ -252,6 +300,12 @@ if __name__ == "__main__":
         voicevox_download_link = get_voicevox_download_link(
             args.voicevox_version)
     download_and_extract_voicevox(voicevox_download_link)
+
+    if args.use_directml:
+        dml_download_link = args.dml_download_link
+        if not dml_download_link:
+            dml_download_link = get_dml_download_link(args.dml_version)
+        download_and_extract_dml(dml_download_link)
 
     lib_path = project_root / "core/lib"
     if lib_path.exists():
