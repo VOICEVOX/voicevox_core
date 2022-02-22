@@ -6,8 +6,6 @@ import soundfile
 
 from forwarder import Forwarder
 
-import time
-
 
 def run(
     use_gpu: bool,
