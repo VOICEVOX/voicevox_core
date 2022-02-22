@@ -6,6 +6,8 @@ import soundfile
 
 from forwarder import Forwarder
 
+import time
+
 
 def run(
     use_gpu: bool,
@@ -26,13 +28,25 @@ def run(
         decode_forwarder=core.decode_forward,
     )
 
-    # 音声合成
     wave = forwarder.forward(
         text=text,
         speaker_id=speaker_id,
         f0_speaker_id=f0_speaker_id if f0_speaker_id is not None else speaker_id,
         f0_correct=f0_correct,
     )
+
+    for j in range(20):
+        start = time.time()
+        # 音声合成
+        for i in range(5):
+            wave = forwarder.forward(
+                text=text,
+                speaker_id=speaker_id,
+                f0_speaker_id=f0_speaker_id if f0_speaker_id is not None else speaker_id,
+                f0_correct=f0_correct,
+            )
+
+        print(time.time()-start)
 
     # 保存
     soundfile.write(f"{text}-{speaker_id}.wav", data=wave, samplerate=24000)
@@ -49,4 +63,5 @@ if __name__ == "__main__":
     parser.add_argument("--f0_correct", type=float, default=0)
     parser.add_argument("--root_dir_path", type=str, default="./")
     parser.add_argument("--cpu_num_threads", type=int, default=0)
+
     run(**vars(parser.parse_args()))
