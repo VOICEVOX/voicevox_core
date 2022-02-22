@@ -38,7 +38,7 @@ if(NOT DIRECTML)
 else()
 	# DirectML版onnxruntimeを読み込み
 	message("-DONNXRUNTIME_DIR: ${ONNXRUNTIME_DIR}")
-	if(EXISTS ${ONNXRUNTIME_DIR}/.signature.p7s)
+	if(EXISTS ${ONNXRUNTIME_DIR}/[Content_Types].xml)
 		message("ONNX Runtime for DirectML - exists")
 	else()
 		message(FATAL_ERROR "Unable to find ONNX Runtime. Use option -DONNXRUNTIME_DIR=...")
