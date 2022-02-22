@@ -123,13 +123,10 @@ struct Status {
                      yukarin_sa_model, decode_model)) {
       return false;
     }
-
     Ort::SessionOptions session_options;
-
     session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
     yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
     yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
-
     if (use_gpu) {
 #ifdef DIRECTML
       session_options.DisableMemPattern().SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
@@ -139,9 +136,7 @@ struct Status {
       session_options.AppendExecutionProvider_CUDA(cuda_options);
 #endif
     }
-
     decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
-
     return true;
   }
 
@@ -187,7 +182,6 @@ bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads) {
     error_message = GPU_NOT_SUPPORTED_ERR;
     return false;
   }
-
   try {
     status = std::make_unique<Status>(root_dir_path, use_gpu);
     if (!status->load(cpu_num_threads)) {
@@ -391,6 +385,7 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
 
     status->decode.Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(), outputs,
                        &output_tensor, 1);
+
     // TODO: 改善したらここのcopy処理を取り除く
     copy_output_with_padding_to_output(output_with_padding, output, padding_f0_size);
 

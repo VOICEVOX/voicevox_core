@@ -30,8 +30,6 @@ if(NOT DIRECTML)
 		"${ONNXRUNTIME_DIR}/lib/*.lib"
 		"${ONNXRUNTIME_DIR}/lib/*.so"
 		"${ONNXRUNTIME_DIR}/lib/*.so.*")
-
-
 	target_include_directories(core
 		PRIVATE ${ONNXRUNTIME_DIR}/include)
 	target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/lib)
@@ -54,7 +52,7 @@ else()
 	target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/runtimes/win-${DML_ARCH}/native/)
 	target_link_libraries(core PUBLIC onnxruntime)
 
-		# DirectMLを読み込み
+	# DirectMLを読み込み
 	if(EXISTS ${DIRECTML_DIR}/README.md)
 		message("DirectML exists")
 		file(GLOB DIRECTML_LIBS
@@ -86,9 +84,6 @@ target_compile_options(core PRIVATE
 	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8>
 	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
 )
-
-
-
 
 # GCC 9.0以前ではstd::filesystemを使うためにリンクが必要 (https://gitlab.kitware.com/cmake/cmake/-/issues/17834)
 target_link_libraries(core PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)

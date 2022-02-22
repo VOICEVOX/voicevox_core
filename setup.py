@@ -15,7 +15,6 @@ def get_version():
 
 if __name__ == '__main__':
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    print(base_dir)
 
     # C++モジュールがすでにビルドされ、core/libに入っているか確認
     assert os.path.exists(os.path.join(

@@ -49,5 +49,4 @@ if __name__ == "__main__":
     parser.add_argument("--f0_correct", type=float, default=0)
     parser.add_argument("--root_dir_path", type=str, default="./")
     parser.add_argument("--cpu_num_threads", type=int, default=0)
-
     run(**vars(parser.parse_args()))
