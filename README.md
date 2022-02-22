@@ -76,7 +76,7 @@ python configure.py --use_cuda
 
 ##### DirectML
 DirectX12に対応したGPUを搭載したWindows PCではDirectMLを用いた合成が可能です
-DirectMLを実行する場合、環境構築時、上記例の代わりに
+DirectMLを使用する場合、環境構築時、上記例の代わりに
 ```bash 
 python configure.py --use_directml
 ```
@@ -138,8 +138,11 @@ modelフォルダにあるonnxモデルはダミーのため、ノイズの混�
 # C++モジュールのビルド
 mkdir build
 cd build
-# もしダウンロードしたonnx runtimeが別のところにあるなら、以下のコマンドを
-# cmake .. -DONNXRUNTIME_DIR=(ダウンロードしたonnx runtimeのパス) に変更する。
+
+# cmake .. 時のオプション
+# -DONNXRUNTIME_DIR=(パス) ダウンロードしたonnxruntimeが別フォルダにある時指定
+# -DDIRECTML=ON             DirectMLを使用する場合指定
+# -DDIRECTML_DIR=(パス)    ダウンロードしたDirectMLが別フォルダにある時指定
 cmake ..
 cmake --build . --config Release
 cmake --install .
