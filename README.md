@@ -122,6 +122,55 @@ python run.py \
 # --root_dir_path onnxファイル等必要なファイルがあるディレクトリ
 ```
 
+</details>
+
+### 注意
+#### GPUの使用について
+
+nvidia製GPUを搭載したWindows, Linux PCではCUDAを用いた合成が可能です。
+CUDAを使用する場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) をインストールした上で、環境構築時、上記例の代わりに
+```bash
+python configure.py --use_gpu
+```
+を実行する必要があります
+
+MacOSの場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
+
+#### Raspberry Piでの使用について
+
+Raspberry PiなどのarmhアーキテクチャPCでの使用では、環境構築時に https://github.com/VOICEVOX/onnxruntime-builder/releases にある独自ビルドのonnxruntimeを使用する必要があります。
+そのため、環境にあったファイルのURLを取得し、上記例の代わりに
+```bash
+python configure.py --ort_download_link <独自ビルドonnxruntimeのURL>
+```
+を実行してください
+
+また、動作には、libgomp のインストールが必要です。
+
+```shell
+sudo apt install libgomp1
+```
+
+## サンプル実行
+```bash
+cd example/python
+
+# サンプルコード実行のための依存モジュールのインストール
+pip install -r requirements.txt
+python run.py \
+    --text "これは本当に実行できているんですか" \
+    --speaker_id 1 \
+    --root_dir_path="../../release"
+
+# 引数の紹介
+# --text 読み上げるテキスト
+# --speaker_id 話者ID
+# --use_gpu GPUを使う
+# --f0_speaker_id 音高の話者ID（デフォルト値はspeaker_id）
+# --f0_correct 音高の補正値（デフォルト値は0。+-0.3くらいで結果が大きく変わります）
+# --root_dir_path onnxファイル等必要なファイルがあるディレクトリ
+```
+
 ### その他の言語
 
 サンプルコードを実装された際はぜひお知らせください。こちらに追記させて頂きます。

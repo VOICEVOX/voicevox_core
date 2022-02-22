@@ -89,6 +89,7 @@ target_compile_options(core PRIVATE
 
 
 
+
 # GCC 9.0以前ではstd::filesystemを使うためにリンクが必要 (https://gitlab.kitware.com/cmake/cmake/-/issues/17834)
 target_link_libraries(core PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
 
