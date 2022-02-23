@@ -296,9 +296,9 @@ jobs:
           readarray -t MAPPINGS <<EOF
           windows-x64-cuda       core.dll      core_gpu_x64_nvidia.dll
           windows-x64-directml   core.dll      core_gpu_x64_directml.dll
-          windows-x86-directml   core.dll      core_cpu_x86_directml.dll
-          windows-arm64-directml core.dll      core_cpu_arm64_directml.dll
-          windows-arm-directml   core.dll      core_cpu_arm_directml.dll
+          windows-x86-directml   core.dll      core_gpu_x86_directml.dll
+          windows-arm64-directml core.dll      core_gpu_arm64_directml.dll
+          windows-arm-directml   core.dll      core_gpu_arm_directml.dll
           osx-universal2-cpu     libcore.dylib libcore_cpu_universal2.dylib
           linux-x64-gpu          libcore.so    libcore_gpu_x64_nvidia.so
           linux-x64-cpu          libcore.so    libcore_cpu_x64.so
