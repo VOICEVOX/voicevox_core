@@ -107,6 +107,7 @@ jobs:
         with:
           python-version: 3.8
           architecture: ${{ matrix.python_architecture }}
+          cache: pip
 
       - run: mkdir download
 
