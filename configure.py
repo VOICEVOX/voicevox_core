@@ -90,10 +90,13 @@ def get_ort_download_link(version: str, use_cuda: bool, use_directml: bool) -> s
 
 def download_and_extract_ort(download_link):
     if (project_root / "onnxruntime").exists():
-        print(
-            "Skip downloading onnxruntime because onnxruntime directory already exists."
-        )
-        return
+        yn = input("Found existing onnxruntime directory. Overwrite? [yn]: ")
+        while yn != "y" and yn != "n":
+            yn = input("Please press y or n: ")
+        if yn == "n":
+            return
+        subprocess.getoutput(f"rm -r {project_root / 'onnxruntime'}")
+
     print(f"Downloading onnxruntime from {download_link}...")
     with tempfile.TemporaryDirectory() as tmp_dir:
         if(os_name == "Windows"):
