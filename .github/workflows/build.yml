@@ -57,7 +57,7 @@ jobs:
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-osx-universal2-1.10.0.tgz
             artifact_name: osx-universal2-cpu
 
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             device: gpu
             python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-gpu-1.10.0.tgz
@@ -65,7 +65,7 @@ jobs:
             cc_version: '9'
             cxx_version: '9'
 
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             device: cpu-x64
             python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-1.10.0.tgz
@@ -73,7 +73,7 @@ jobs:
             cc_version: '9'
             cxx_version: '9'
 
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             device: cpu-armhf
             onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-armhf-cpu-v1.10.0.tgz
             artifact_name: linux-armhf-cpu
@@ -81,7 +81,7 @@ jobs:
             cxx_version: '9'
             arch: arm-linux-gnueabihf
 
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             device: cpu-arm64
             onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-arm64-cpu-v1.10.0.tgz
             artifact_name: linux-arm64-cpu
