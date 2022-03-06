@@ -62,31 +62,31 @@ jobs:
             python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-gpu-1.10.0.tgz
             artifact_name: linux-x64-gpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: '9'
+            cxx_version: '9'
 
           - os: ubuntu-18.04
             device: cpu-x64
             python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-1.10.0.tgz
             artifact_name: linux-x64-cpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: '9'
+            cxx_version: '9'
 
           - os: ubuntu-18.04
             device: cpu-armhf
             onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-armhf-cpu-v1.10.0.tgz
             artifact_name: linux-armhf-cpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: '9'
+            cxx_version: '9'
             arch: arm-linux-gnueabihf
 
           - os: ubuntu-18.04
             device: cpu-arm64
             onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-arm64-cpu-v1.10.0.tgz
             artifact_name: linux-arm64-cpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: '9'
+            cxx_version: '9'
             arch: aarch64-linux-gnu
 
     runs-on: ${{ matrix.os }}
