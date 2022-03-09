@@ -27,7 +27,7 @@ if not os.path.exists(core_dll_path):
 lib = cdll.LoadLibrary(str(core_dll_path))
 
 # 関数型定義
-lib.initialize.argtypes = (c_char_p, c_bool, c_int)
+lib.initialize.argtypes = (c_bool, c_int)
 lib.initialize.restype = c_bool
 
 lib.finalize.argtypes = ()
@@ -52,9 +52,8 @@ lib.last_error_message.restype = c_char_p
 
 
 # ラッパー関数
-def initialize(root_dir_path: str, use_gpu: bool, cpu_num_threads=0):
-    path = create_string_buffer(root_dir_path.encode())
-    success = lib.initialize(path, use_gpu, cpu_num_threads)
+def initialize(use_gpu: bool, cpu_num_threads=0):
+    success = lib.initialize(use_gpu, cpu_num_threads)
     if not success:
         raise Exception(lib.last_error_message().decode())
 

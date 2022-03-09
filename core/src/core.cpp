@@ -3,8 +3,6 @@
 #include <array>
 #include <cstdlib>
 #include <exception>
-#include <filesystem>
-#include <fstream>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -34,34 +32,6 @@ static std::string error_message;
 static bool initialized = false;
 static std::string supported_devices_str;
 
-bool open_models(const fs::path &yukarin_s_path, const fs::path &yukarin_sa_path, const fs::path &decode_path,
-                 std::vector<unsigned char> &yukarin_s_model, std::vector<unsigned char> &yukarin_sa_model,
-                 std::vector<unsigned char> &decode_model) {
-  std::ifstream yukarin_s_file(yukarin_s_path, std::ios::binary), yukarin_sa_file(yukarin_sa_path, std::ios::binary),
-      decode_file(decode_path, std::ios::binary);
-  if (!yukarin_s_file.is_open() || !yukarin_sa_file.is_open() || !decode_file.is_open()) {
-    error_message = FAILED_TO_OPEN_MODEL_ERR;
-    return false;
-  }
-
-  yukarin_s_model = std::vector<unsigned char>(std::istreambuf_iterator<char>(yukarin_s_file), {});
-  yukarin_sa_model = std::vector<unsigned char>(std::istreambuf_iterator<char>(yukarin_sa_file), {});
-  decode_model = std::vector<unsigned char>(std::istreambuf_iterator<char>(decode_file), {});
-  return true;
-}
-
-/**
- * Loads the metas.json.
- *
- * schema:
- * [{
- *  name: string,
- *  styles: [{name: string, id: int}],
- *  speaker_uuid: string,
- *  version: string
- * }]
- */
-
 struct SupportedDevices {
   bool cpu = true;
   bool cuda = false;
@@ -80,18 +50,24 @@ SupportedDevices get_supported_devices() {
 }
 
 struct Status {
-  Status(const char *root_dir_path_utf8, bool use_gpu_)
-      : root_dir_path(root_dir_path_utf8),
-        use_gpu(use_gpu_),
+  Status(bool use_gpu_)
+      : use_gpu(use_gpu_),
         memory_info(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU)),
         yukarin_s(nullptr),
         yukarin_sa(nullptr),
         decode(nullptr) {}
-
+  /**
+   * Loads the metas.json.
+   *
+   * schema:
+   * [{
+   *  name: string,
+   *  styles: [{name: string, id: int}],
+   *  speaker_uuid: string,
+   *  version: string
+   * }]
+   */
   bool load(int cpu_num_threads) {
-    // deprecated in C++20; Use char8_t for utf-8 char in the future.
-    fs::path root = fs::u8path(root_dir_path);
-
     metas = nlohmann::json::parse(metasJson);
     metas_str = metas.dump();
     supported_styles.clear();
@@ -100,21 +76,15 @@ struct Status {
         supported_styles.insert(style["id"].get<int64_t>());
       }
     }
-
-    std::vector<unsigned char> yukarin_s_model, yukarin_sa_model, decode_model;
-    if (!open_models(root / "yukarin_s.onnx", root / "yukarin_sa.onnx", root / "decode.onnx", yukarin_s_model,
-                     yukarin_sa_model, decode_model)) {
-      return false;
-    }
     Ort::SessionOptions session_options;
     session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
-    yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
-    yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
+    yukarin_s = Ort::Session(env, yukarin_s_model, sizeof(yukarin_s_model), session_options);
+    yukarin_sa = Ort::Session(env, yukarin_sa_model, sizeof(yukarin_sa_model), session_options);
     if (use_gpu) {
       const OrtCUDAProviderOptions cuda_options;
       session_options.AppendExecutionProvider_CUDA(cuda_options);
     }
-    decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
+    decode = Ort::Session(env, decode_model, sizeof(decode_model), session_options);
     return true;
   }
 
@@ -149,14 +119,14 @@ bool validate_speaker_id(int64_t speaker_id) {
   return true;
 }
 
-bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads) {
+bool initialize(bool use_gpu, int cpu_num_threads) {
   initialized = false;
   if (use_gpu && !get_supported_devices().cuda) {
     error_message = GPU_NOT_SUPPORTED_ERR;
     return false;
   }
   try {
-    status = std::make_unique<Status>(root_dir_path, use_gpu);
+    status = std::make_unique<Status>(use_gpu);
     if (!status->load(cpu_num_threads)) {
       return false;
     }

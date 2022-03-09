@@ -22,7 +22,7 @@
  * 何度も実行可能。use_gpuを変更して実行しなおすことも可能。
  * 最後に実行したuse_gpuに従って他の関数が実行される。
  */
-extern "C" VOICEVOX_CORE_API bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads = 0);
+extern "C" VOICEVOX_CORE_API bool initialize(bool use_gpu, int cpu_num_threads = 0);
 
 /**
  * @fn

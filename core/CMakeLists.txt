@@ -11,7 +11,6 @@ if(EXISTS ${MODEL_DIR}/metas.json)
 else()
 	message(FATAL_ERROR "Unable to find models. Use option -DONNXRUNTIME_DIR=...")
 endif()
-
 message("Convert models. Please wait...")
 make_includable_text(${MODEL_DIR}/metas.json)
 binary_to_hex_text(${MODEL_DIR}/yukarin_s.onnx)

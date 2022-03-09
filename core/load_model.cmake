@@ -1,5 +1,5 @@
 # テキストのu8Rを頭につけて""で囲うことで、改行のあるutf8ファイルを#includeできるようにする
-function(make_includable_text input_file)s
+function(make_includable_text input_file)
     set(content "u8R\"(\n${content})\"")
     get_filename_component(output_file ${input_file} NAME)
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${output_file}" "${content}")
