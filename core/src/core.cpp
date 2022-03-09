@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_set>
 
+#include "model.h"
 #include "nlohmann/json.hpp"
 
 #define VOICEVOX_CORE_EXPORTS
@@ -60,15 +61,6 @@ bool open_models(const fs::path &yukarin_s_path, const fs::path &yukarin_sa_path
  *  version: string
  * }]
  */
-bool open_metas(const fs::path &metas_path, nlohmann::json &metas) {
-  std::ifstream metas_file(metas_path);
-  if (!metas_file.is_open()) {
-    error_message = FAILED_TO_OPEN_METAS_ERR;
-    return false;
-  }
-  metas_file >> metas;
-  return true;
-}
 
 struct SupportedDevices {
   bool cpu = true;
@@ -100,9 +92,7 @@ struct Status {
     // deprecated in C++20; Use char8_t for utf-8 char in the future.
     fs::path root = fs::u8path(root_dir_path);
 
-    if (!open_metas(root / "metas.json", metas)) {
-      return false;
-    }
+    metas = nlohmann::json::parse(metasJson);
     metas_str = metas.dump();
     supported_styles.clear();
     for (const auto &meta : metas) {

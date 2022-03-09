@@ -4,6 +4,21 @@ project(ONNXCore)
 
 set(CMAKE_MACOSX_RPATH 1)
 
+# modelフォルダ内のファイルをC++にバンドルできるように変換する
+include(./load_model.cmake)
+if(EXISTS ${MODEL_DIR}/metas.json)
+  message("Exists models")
+else()
+	message(FATAL_ERROR "Unable to find models. Use option -DONNXRUNTIME_DIR=...")
+endif()
+
+message("Convert models. Please wait...")
+make_includable_text(${MODEL_DIR}/metas.json)
+binary_to_hex_text(${MODEL_DIR}/yukarin_s.onnx)
+binary_to_hex_text(${MODEL_DIR}/yukarin_sa.onnx)
+binary_to_hex_text(${MODEL_DIR}/decode.onnx)
+
+
 # coreライブラリのインストール先設定。デフォルトはCMakeLists.txtと同じ位置
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "Path to install" FORCE)
@@ -42,7 +57,8 @@ target_compile_options(core PRIVATE
 	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
 )
 target_include_directories(core
-	PRIVATE ${ONNXRUNTIME_DIR}/include)
+	PRIVATE ${ONNXRUNTIME_DIR}/include
+	PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/lib)
 target_link_libraries(core PUBLIC onnxruntime)
 
