@@ -34,7 +34,7 @@ add_library(core
 	src/engine/kana_parser.cpp
 	src/engine/mora_list.cpp
 	src/engine/synthesis_engine.cpp
-	src/engine.cpp ../main.cpp)
+	src/engine.cpp)
 set_property(TARGET core PROPERTY CXX_STANDARD 17)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
 # rpath設定
