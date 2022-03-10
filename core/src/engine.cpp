@@ -12,8 +12,6 @@
 
 static OpenJTalk *openjtalk = nullptr;
 static SynthesisEngine *engine = nullptr;
-// free関数が必要かも
-static const char *wave_binary = nullptr;
 
 bool initialize_openjtalk(const char *dict_path) {
   // TODO: error handling
@@ -22,7 +20,7 @@ bool initialize_openjtalk(const char *dict_path) {
 }
 
 
-const char *tts(const char *text, int64_t *speaker_id, int *binary_size) {
+uint8_t *voicevox_tts(const char *text, int64_t *speaker_id, int *binary_size) {
   if (openjtalk == nullptr) {
     throw std::runtime_error(NOT_INITIALIZED_OPENJTALK_ERR);
   }
@@ -45,7 +43,12 @@ const char *tts(const char *text, int64_t *speaker_id, int *binary_size) {
     "",
   };
 
-  const char *wav = engine->synthesis_wave_format(audio_query, speaker_id, binary_size);
-  wave_binary = wav;
-  return wave_binary;
+  std::vector<unsigned char> wav = engine->synthesis_wave_format(audio_query, speaker_id, binary_size);
+  unsigned char *wav_heap = (unsigned char *)calloc(*binary_size, sizeof(unsigned char));
+  memcpy(wav_heap, wav.data(), sizeof(unsigned char) * (*binary_size));
+  return wav_heap;
+}
+
+void voicevox_wav_free(uint8_t *wav) {
+  free(wav);
 }

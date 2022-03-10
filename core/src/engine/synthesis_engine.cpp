@@ -315,7 +315,7 @@ std::vector<AccentPhraseModel> SynthesisEngine::replace_mora_pitch(std::vector<A
   return accent_phrases;
 }
 
-const char *SynthesisEngine::synthesis_wave_format(AudioQueryModel query, int64_t *speaker_id, int *binary_size,
+std::vector<uint8_t> SynthesisEngine::synthesis_wave_format(AudioQueryModel query, int64_t *speaker_id, int *binary_size,
                                                    bool enable_interrogative_upspeak) {
   std::vector<float> wave = synthesis(query, speaker_id, enable_interrogative_upspeak);
 
@@ -399,8 +399,10 @@ const char *SynthesisEngine::synthesis_wave_format(AudioQueryModel query, int64_
   *binary_size = (int)ss.tellg();
   ss.seekg(0, std::ios::beg);
 
-  const std::string temp = ss.str();
-  const char *result = temp.c_str();
+  std::vector<uint8_t> result(*binary_size);
+  for (int i = 0; i < *binary_size; i++) {
+    result[i] = (uint8_t)ss.get();
+  }
   return result;
 }
 
