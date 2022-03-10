@@ -3,6 +3,7 @@ project(VoiceVoxCore)
 
 # TODO: download onnxruntime
 set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime" CACHE PATH "Path to ONNX Runtime")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(open_jtalk/src)
 add_subdirectory(core)
