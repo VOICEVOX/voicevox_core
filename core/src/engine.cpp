@@ -44,9 +44,9 @@ uint8_t *voicevox_tts(const char *text, int64_t *speaker_id, int *binary_size) {
     "",
   };
 
-  std::vector<unsigned char> wav = engine->synthesis_wave_format(audio_query, speaker_id, binary_size);
-  unsigned char *wav_heap = (unsigned char *)calloc(*binary_size, sizeof(unsigned char));
-  memcpy(wav_heap, wav.data(), sizeof(unsigned char) * (*binary_size));
+  const auto wav = engine->synthesis_wave_format(audio_query, speaker_id, binary_size);
+  auto* wav_heap = new uint8_t[*binary_size];
+  std::copy(wav.begin(),wav.end(),wav_heap);
   return wav_heap;
 }
 
