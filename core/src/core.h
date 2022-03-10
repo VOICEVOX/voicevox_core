@@ -10,6 +10,12 @@
 #define VOICEVOX_CORE_API
 #endif  // _WIN32
 
+#ifdef __cplusplus
+#include <cstdint>
+#else
+#include <stdint.h>
+#endif
+
 /**
  * @fn
  * 初期化する
@@ -102,7 +108,6 @@ extern "C" VOICEVOX_CORE_API bool decode_forward(int64_t length, int64_t phoneme
  * @return エラーメッセージ
  */
 extern "C" VOICEVOX_CORE_API const char *last_error_message();
-
 
 extern "C" VOICEVOX_CORE_API bool initialize_openjtalk(const char *dict_path);
 
