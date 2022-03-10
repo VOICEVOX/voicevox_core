@@ -42,8 +42,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MORA_LIST_H
-#define MORA_LIST_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -198,5 +197,3 @@ static const std::vector<std::string> mora_list_minimum = {
 // clang-format on
 
 std::string mora2text(std::string mora);
-
-#endif  // MORA_LIST_H
