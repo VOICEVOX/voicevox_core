@@ -26,7 +26,15 @@ file(GLOB ONNXRUNTIME_LIBS
 	"${ONNXRUNTIME_DIR}/lib/*.so.*")
 
 # coreライブラリのビルド設定
-add_library(core SHARED src/core.cpp)
+add_library(core
+	SHARED src/core.cpp
+	src/engine/full_context_label.cpp
+	src/engine/acoustic_feature_extractor.cpp
+	src/engine/openjtalk.cpp
+	src/engine/kana_parser.cpp
+	src/engine/mora_list.cpp
+	src/engine/synthesis_engine.cpp
+	src/engine.cpp)
 set_property(TARGET core PROPERTY CXX_STANDARD 17)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
 # rpath設定
@@ -42,9 +50,23 @@ target_compile_options(core PRIVATE
 	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
 )
 target_include_directories(core
-	PRIVATE ${ONNXRUNTIME_DIR}/include)
+	PRIVATE ${ONNXRUNTIME_DIR}/include
+	PRIVATE ../open_jtalk/src/jpcommon
+	PRIVATE ../open_jtalk/src/mecab/src
+	PRIVATE ../open_jtalk/src/mecab2njd
+	PRIVATE ../open_jtalk/src/mecab-naist-jdic
+	PRIVATE ../open_jtalk/src/njd
+	PRIVATE ../open_jtalk/src/njd2jpcommon
+	PRIVATE ../open_jtalk/src/njd_set_accent_phrase
+	PRIVATE ../open_jtalk/src/njd_set_accent_type
+	PRIVATE ../open_jtalk/src/njd_set_digit
+	PRIVATE ../open_jtalk/src/njd_set_long_vowel
+	PRIVATE ../open_jtalk/src/njd_set_pronunciation
+	PRIVATE ../open_jtalk/src/njd_set_unvoiced_vowel
+	PRIVATE ../open_jtalk/src/text2mecab)
 target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/lib)
 target_link_libraries(core PUBLIC onnxruntime)
+target_link_libraries(core PUBLIC openjtalk)
 
 
 # GCC 9.0以前ではstd::filesystemを使うためにリンクが必要 (https://gitlab.kitware.com/cmake/cmake/-/issues/17834)

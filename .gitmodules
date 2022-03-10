@@ -1,0 +1,3 @@
+[submodule "open_jtalk"]
+	path = open_jtalk
+	url = https://github.com/y-chan/open_jtalk

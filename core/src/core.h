@@ -102,3 +102,10 @@ extern "C" VOICEVOX_CORE_API bool decode_forward(int64_t length, int64_t phoneme
  * @return エラーメッセージ
  */
 extern "C" VOICEVOX_CORE_API const char *last_error_message();
+
+
+extern "C" VOICEVOX_CORE_API bool initialize_openjtalk(const char *dict_path);
+
+extern "C" VOICEVOX_CORE_API uint8_t *voicevox_tts(const char *text, int64_t *speaker_id, int *file_size);
+
+extern "C" VOICEVOX_CORE_API void voicevox_wav_free(uint8_t *wav);
