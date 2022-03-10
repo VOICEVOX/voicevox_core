@@ -168,7 +168,22 @@ jobs:
 
       # download/onnxruntime/lib/onnxruntime.dll
       - name: Download ONNX Runtime (zip)
-        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip')
+        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip') && !endswith(matrix.artifact_name, '-directml')
+        shell: bash
+        run: |
+          curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.zip
+          mkdir -p download/onnxruntime
+
+          # strip-components
+          TEMPDIR=$(mktemp -d)
+          unzip download/onnxruntime.zip -d "${TEMPDIR}"
+          mv "${TEMPDIR}"/*/* download/onnxruntime/.
+          rm -rf "${TEMPDIR}"
+
+          rm download/onnxruntime.zip
+
+      - name: Download ONNX Runtime (zip, DirectML)
+        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip') && endswith(matrix.artifact_name, '-directml')
         shell: bash
         run: |
           curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.zip
@@ -181,9 +196,6 @@ jobs:
           rm -rf "${TEMPDIR}"
 
           rm download/onnxruntime.zip
-
-      - run: ls download
-      - run: ls download/onnxruntime
 
       # download/onnxruntime/lib/libonnxruntime.so
       # download/onnxruntime/lib/libonnxruntime.dylib
