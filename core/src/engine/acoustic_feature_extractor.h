@@ -22,7 +22,7 @@ class OjtPhoneme {
         {"sh", 36}, {"t", 37},  {"ts", 38}, {"ty", 39}, {"u", 40},  {"v", 41},  {"w", 42},  {"y", 43},  {"z", 44}};
     return phoneme_map;
   }
-  static const int num_phoneme() { return phoneme_map().size(); }
+  static int num_phoneme() { return (int)phoneme_map().size(); }
   static const std::string space_phoneme() { return std::string("pau"); }
 
   OjtPhoneme() {

@@ -25,7 +25,7 @@ std::vector<MoraModel> to_flatten_moras(std::vector<AccentPhraseModel> accent_ph
 std::vector<OjtPhoneme> to_phoneme_data_list(std::vector<std::string> phoneme_str_list) {
   std::vector<OjtPhoneme> phoneme_data_list;
   for (size_t i = 0; i < phoneme_str_list.size(); i++) {
-    phoneme_data_list.push_back(OjtPhoneme(phoneme_str_list[i], (float)i, (float)i + 1.0));
+    phoneme_data_list.push_back(OjtPhoneme(phoneme_str_list[i], (float)i, (float)i + 1.0f));
   }
   return OjtPhoneme::convert(phoneme_data_list);
 }
@@ -44,8 +44,8 @@ void split_mora(std::vector<OjtPhoneme> phoneme_list, std::vector<OjtPhoneme> &c
   }
   consonant_phoneme_list.push_back(OjtPhoneme());
   for (size_t i = 0; i < vowel_indexes.size() - 1; i++) {
-    long prev = vowel_indexes[i];
-    long next = vowel_indexes[1 + i];
+    int64_t prev = vowel_indexes[i];
+    int64_t next = vowel_indexes[1 + i];
     if (next - prev == 1) {
       consonant_phoneme_list.push_back(OjtPhoneme());
     } else {
@@ -88,9 +88,9 @@ std::vector<MoraModel> adjust_interrogative_moras(AccentPhraseModel accent_phras
 }
 
 MoraModel make_interrogative_mora(MoraModel last_mora) {
-  float fix_vowel_length = 0.15;
-  float adjust_pitch = 0.3;
-  float max_pitch = 6.5;
+  float fix_vowel_length = 0.15f;
+  float adjust_pitch = 0.3f;
+  float max_pitch = 6.5f;
 
   float pitch = last_mora.pitch + adjust_pitch;
   if (pitch > max_pitch) {
@@ -112,7 +112,7 @@ std::vector<AccentPhraseModel> SynthesisEngine::create_accent_phrases(std::strin
     return {};
   }
 
-  int accent_phrases_size = 0;
+  size_t accent_phrases_size = 0;
   for (BreathGroup *breath_group : utterance.breath_groups) accent_phrases_size += breath_group->accent_phrases.size();
   std::vector<AccentPhraseModel> accent_phrases(accent_phrases_size);
 
@@ -269,7 +269,7 @@ std::vector<AccentPhraseModel> SynthesisEngine::replace_mora_pitch(std::vector<A
   std::vector<int64_t> start_accent_phrase_list;
   std::vector<int64_t> end_accent_phrase_list;
 
-  for (long vowel_index : vowel_indexes) {
+  for (int64_t vowel_index : vowel_indexes) {
     start_accent_list.push_back(base_start_accent_list[vowel_index]);
     end_accent_list.push_back(base_end_accent_list[vowel_index]);
     start_accent_phrase_list.push_back(base_start_accent_phrase_list[vowel_index]);
@@ -326,12 +326,12 @@ const char *SynthesisEngine::synthesis_wave_format(AudioQueryModel query, int64_
 
   char num_channels = output_stereo ? 2 : 1;
   char bit_depth = 16;
-  unsigned repeat_count = (output_sampling_rate / default_sampling_rate) * num_channels;
-  int block_size = bit_depth * num_channels / 8;
+  uint32_t repeat_count = (output_sampling_rate / default_sampling_rate) * num_channels;
+  char block_size = bit_depth * num_channels / 8;
 
   std::stringstream ss;
   ss.write("RIFF", 4);
-  int bytes_size = wave.size() * repeat_count * 8;
+  int bytes_size = (int)wave.size() * repeat_count * 8;
   int wave_size = bytes_size + 44 - 8;
   for (int i = 0; i < 4; i++) {
     ss.put((uint8_t)(wave_size & 0xff));  // chunk size
@@ -372,10 +372,10 @@ const char *SynthesisEngine::synthesis_wave_format(AudioQueryModel query, int64_
   for (size_t i = 0; i < wave.size(); i++) {
     float v = wave[i] * volume_scale;
     // clip
-    v = 1.0 < v ? 1.0 : v;
-    v = -1.0 > v ? -1.0 : v;
+    v = 1.0f < v ? 1.0f : v;
+    v = -1.0f > v ? -1.0f : v;
     int16_t data = (int16_t)(v * (float)0x7fff);
-    for (int j = 0; j < repeat_count; j++) {
+    for (uint32_t j = 0; j < repeat_count; j++) {
       ss.put((char)(data & 0xff));
       ss.put((char)((data & 0xff00) >> 8));
     }
@@ -478,7 +478,7 @@ std::vector<float> SynthesisEngine::synthesis(AudioQueryModel query, int64_t *sp
       phoneme.push_back(phonemes_vector);
     }
     phoneme_length_sum += phoneme_length;
-    if (i == *p_vowel_index) {
+    if ((int64_t)i == *p_vowel_index) {
       for (long k = 0; k < phoneme_length_sum; k++) {
         f0.push_back(f0_list[f0_count]);
       }
