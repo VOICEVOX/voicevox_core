@@ -150,7 +150,7 @@ jobs:
         uses: actions/cache@v2
         id: onnxruntime-cache
         with:
-          key: onnxruntime-cache-v1-${{ hashFiles('download/onnxruntime_url.txt') }}-
+          key: onnxruntime-cache-v1-${{ hashFiles('download/onnxruntime_url.txt') }}
           path: download/onnxruntime
 
       - name: Export DirectML url to calc hash
