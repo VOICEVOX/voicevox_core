@@ -35,7 +35,7 @@ class SynthesisEngine {
   std::vector<AccentPhraseModel> replace_mora_pitch(std::vector<AccentPhraseModel> accent_phrases, int64_t *speaker_id);
   std::vector<float> synthesis(AudioQueryModel query, int64_t *speaker_id, bool enable_interrogative_upspeak = true);
   std::vector<uint8_t> synthesis_wave_format(AudioQueryModel query, int64_t *speaker_id, int *binary_size,
-                                    bool enable_interrogative_upspeak = true);
+                                             bool enable_interrogative_upspeak = true);
 
  private:
   OpenJTalk *m_openjtalk;

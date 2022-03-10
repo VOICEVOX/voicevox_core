@@ -7,7 +7,6 @@
 #include "engine/openjtalk.h"
 #include "engine/synthesis_engine.h"
 
-
 #define NOT_INITIALIZED_OPENJTALK_ERR "Call initialize_openjtalk() first."
 
 static OpenJTalk *openjtalk = nullptr;
