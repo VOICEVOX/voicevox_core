@@ -30,7 +30,6 @@ uint8_t *voicevox_tts(const char *text, int64_t *speaker_id, int *binary_size) {
   }
 
   std::vector<AccentPhraseModel> accent_phrases = engine->create_accent_phrases(std::string(text), speaker_id);
-  accent_phrases = engine->replace_mora_data(accent_phrases, speaker_id);
   const AudioQueryModel audio_query = {
     accent_phrases,
     1.0f,
