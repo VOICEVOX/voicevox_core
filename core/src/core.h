@@ -139,7 +139,7 @@ VOICEVOX_CORE_API VoicevoxResultCode voicevox_initialize_openjtalk(const char *d
  * @param out 音声データを出力する先のポインタ。使用が終わったらvoicevox_wav_freeで開放する必要がある
  * @return 結果コード
  */
-VOICEVOX_CORE_API VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int binary_size,
+VOICEVOX_CORE_API VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int *binary_size,
                                                   uint8_t **wav_out);
 
 /**

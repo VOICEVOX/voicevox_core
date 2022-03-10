@@ -18,7 +18,7 @@ VoicevoxResultCode voicevox_initialize_openjtalk(const char *dict_path) {
   return VoicevoxResultSucceed;
 }
 
-VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int binary_size, uint8_t **wav_out) {
+VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int *binary_size, uint8_t **wav_out) {
   if (openjtalk == nullptr) {
     return VoicevoxResultNotInitializedOpenJTalkErr;
   }
@@ -31,8 +31,8 @@ VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int binary
       accent_phrases, 1.0f, 0.0f, 1.0f, 1.0f, 0.1f, 0.1f, engine->default_sampling_rate, false, "",
   };
 
-  const auto wav = engine->synthesis_wave_format(audio_query, &speaker_id, &binary_size);
-  auto *wav_heap = new uint8_t[binary_size];
+  const auto wav = engine->synthesis_wave_format(audio_query, &speaker_id, binary_size);
+  auto *wav_heap = new uint8_t[*binary_size];
   std::copy(wav.begin(), wav.end(), wav_heap);
   *wav_out = wav_heap;
   return VoicevoxResultSucceed;
