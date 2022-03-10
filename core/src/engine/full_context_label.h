@@ -6,6 +6,7 @@
 
 #include "openjtalk.h"
 
+namespace voicevox::core::engine {
 std::string string_feature_by_regex(std::string pattern, std::string label);
 
 class Phoneme {
@@ -89,3 +90,4 @@ class Utterance {
 };
 
 Utterance extract_full_context_label(OpenJTalk *openjtalk, std::string text);
+}

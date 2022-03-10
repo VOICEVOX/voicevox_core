@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+namespace voicevox::core::engine {
 // TODO: 現状のVOICEVOX/voiceovox_engineではOjtしか使われていないので、一旦これのみ実装した
 class OjtPhoneme {
  public:
@@ -40,3 +41,4 @@ class OjtPhoneme {
   long phoneme_id() const;
   static std::vector<OjtPhoneme> convert(std::vector<OjtPhoneme> phonemes);
 };
+}

@@ -47,6 +47,7 @@
 #include <string>
 #include <vector>
 
+namespace voicevox::core::engine {
 // clang-format off
 static const std::vector<std::string> mora_list_minimum = {
    "ヴォ", "v", "o",
@@ -197,3 +198,4 @@ static const std::vector<std::string> mora_list_minimum = {
 // clang-format on
 
 std::string mora2text(std::string mora);
+}

@@ -1,5 +1,6 @@
 #include "mora_list.h"
 
+namespace voicevox::core::engine {
 std::string mora2text(std::string mora) {
   const std::string* mora_list = mora_list_minimum.data();
   // 万が一走査しても見つからなかった時のための初期値として、moraをセットしておく
@@ -15,4 +16,5 @@ std::string mora2text(std::string mora) {
     count += 3;
   }
   return text;
+}
 }

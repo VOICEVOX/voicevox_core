@@ -10,6 +10,7 @@
 #include <njd_set_unvoiced_vowel.h>
 #include <text2mecab.h>
 
+namespace voicevox::core::engine {
 std::vector<std::string> OpenJTalk::extract_fullcontext(std::string text) {
   char buff[8192];
   text2mecab(buff, text.c_str());
@@ -51,4 +52,5 @@ void OpenJTalk::clear() {
   Mecab_clear(&mecab);
   NJD_clear(&njd);
   JPCommon_clear(&jpcommon);
+}
 }

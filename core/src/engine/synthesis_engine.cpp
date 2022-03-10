@@ -5,6 +5,7 @@
 #include "full_context_label.h"
 #include "mora_list.h"
 
+namespace voicevox::core::engine {
 std::vector<MoraModel> to_flatten_moras(std::vector<AccentPhraseModel> accent_phrases) {
   std::vector<MoraModel> flatten_moras;
 
@@ -541,4 +542,5 @@ void SynthesisEngine::create_one_accent_list(std::vector<int64_t> &accent_list, 
   }
   if (accent_phrase.pause_mora != std::nullopt) one_accent_list.push_back(0);
   std::copy(one_accent_list.begin(), one_accent_list.end(), std::back_inserter(accent_list));
+}
 }

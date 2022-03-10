@@ -9,6 +9,7 @@
 #include "model.h"
 #include "openjtalk.h"
 
+namespace voicevox::core::engine {
 static std::vector<std::string> unvoiced_mora_phoneme_list = {"A", "I", "U", "E", "O", "cl", "pau"};
 
 static std::vector<std::string> mora_phoneme_list = {"a", "i", "u", "e", "o",  "N",  "A",
@@ -44,3 +45,4 @@ class SynthesisEngine {
                        std::vector<std::string> &phoneme_str_list, std::vector<OjtPhoneme> &phoneme_data_list);
   void create_one_accent_list(std::vector<int64_t> &accent_list, AccentPhraseModel accent_phrase, int point);
 };
+}

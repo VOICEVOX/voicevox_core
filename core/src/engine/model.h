@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+namespace voicevox::core::engine {
 struct MoraModel {
   std::string text;
   std::optional<std::string> consonant;
@@ -32,3 +33,4 @@ struct AudioQueryModel {
   bool output_stereo;
   std::string kana;
 };
+}

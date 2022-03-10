@@ -9,6 +9,8 @@
 
 #define NOT_INITIALIZED_OPENJTALK_ERR "Call initialize_openjtalk() first."
 
+using namespace voicevox::core::engine;
+
 static OpenJTalk *openjtalk = nullptr;
 static SynthesisEngine *engine = nullptr;
 

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <regex>
 
+namespace voicevox::core::engine {
 std::string string_feature_by_regex(std::string pattern, std::string label) {
   std::regex re(pattern);
   std::smatch match;
@@ -208,4 +209,5 @@ Utterance extract_full_context_label(OpenJTalk *openjtalk, std::string text) {
   std::vector<Phoneme *> phonemes;
   for (std::string label : labels) phonemes.push_back(Phoneme::from_label(label));
   return Utterance::from_phonemes(phonemes);
+}
 }

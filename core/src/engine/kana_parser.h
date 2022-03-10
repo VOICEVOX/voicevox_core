@@ -7,6 +7,7 @@
 #include "model.h"
 #include "mora_list.h"
 
+namespace voicevox::core::engine {
 const int LOOP_LIMIT = 300;
 const std::string UNVOICE_SYMBOL = "_";
 const std::string ACCENT_SYMBOL = "'";
@@ -19,3 +20,4 @@ static const std::map<std::string, MoraModel> text2mora_with_unvoice();
 AccentPhraseModel text_to_accent_phrase(std::string phrase);
 std::vector<AccentPhraseModel> parse_kana(std::string text);
 std::string create_kana(std::vector<AccentPhraseModel> accent_phrases);
+}

@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 
+namespace voicevox::core::engine {
 class OpenJTalk {
  public:
   Mecab mecab;
@@ -34,3 +35,4 @@ class OpenJTalk {
   void load(const std::string& dn_mecab);
   void clear();
 };
+}
