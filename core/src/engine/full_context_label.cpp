@@ -26,7 +26,6 @@ Phoneme *Phoneme::from_label(const std::string &label) {
   contexts["h1"] = string_feature_by_regex(R"(/H\:(\d+|xx)_)", label);
   contexts["i3"] = string_feature_by_regex(R"(\@(\d+|xx)\+)", label);
   contexts["j1"] = string_feature_by_regex(R"(/J\:(\d+|xx)_)", label);
-  std::cout << contexts["p3"] << std::endl;
 
   return new Phoneme(contexts, label);
 }
@@ -210,4 +209,4 @@ Utterance extract_full_context_label(OpenJTalk *openjtalk, std::string text) {
   for (std::string label : labels) phonemes.push_back(Phoneme::from_label(label));
   return Utterance::from_phonemes(phonemes);
 }
-}
+}  // namespace voicevox::core::engine
