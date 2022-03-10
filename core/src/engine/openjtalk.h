@@ -1,9 +1,9 @@
 #pragma once
 
-// off clang-format
+// clang-format off
 // For JPCommon's "FILE" type
 #include <cstdio>
-// on clang-format
+// clang-format on
 
 #include <jpcommon.h>
 #include <mecab.h>
