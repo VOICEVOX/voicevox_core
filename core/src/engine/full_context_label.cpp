@@ -1,6 +1,5 @@
 #include "full_context_label.h"
 
-#include <iostream>
 #include <regex>
 
 namespace voicevox::core::engine {
