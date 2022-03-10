@@ -16,6 +16,22 @@
 #include <stdint.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @enum
+ * 結果コード
+ * エラーの種類が増えたら定義を増やす。
+ * 必ずエラーの値を明示的に指定すること
+ */
+typedef enum {
+  // 成功
+  VoicevoxResultSucceed = 0,
+  // OpenJTalk初期化に失敗した
+  VoicevoxResultNotInitializedOpenJTalkErr = 1,
+} VoicevoxResultCode;
 /**
  * @fn
  * 初期化する
@@ -28,7 +44,7 @@
  * 何度も実行可能。use_gpuを変更して実行しなおすことも可能。
  * 最後に実行したuse_gpuに従って他の関数が実行される。
  */
-extern "C" VOICEVOX_CORE_API bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads = 0);
+VOICEVOX_CORE_API bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads = 0);
 
 /**
  * @fn
@@ -38,7 +54,7 @@ extern "C" VOICEVOX_CORE_API bool initialize(const char *root_dir_path, bool use
  * 何度も実行可能。実行せずにexitしても大抵の場合問題ないが、
  * CUDAを利用している場合これを実行しておかないと例外が起こることがある。
  */
-extern "C" VOICEVOX_CORE_API void finalize();
+VOICEVOX_CORE_API void finalize();
 
 /**
  * @fn
@@ -46,7 +62,7 @@ extern "C" VOICEVOX_CORE_API void finalize();
  * @brief 話者名や話者IDのリストを取得する
  * @return メタ情報が格納されたjson形式の文字列
  */
-extern "C" VOICEVOX_CORE_API const char *metas();
+VOICEVOX_CORE_API const char *metas();
 
 /**
  * @fn
@@ -54,7 +70,7 @@ extern "C" VOICEVOX_CORE_API const char *metas();
  * @brief cpu, cudaのうち、使用可能なデバイス情報を取得する
  * @return 各デバイスが使用可能かどうかをboolで格納したjson形式の文字列
  */
-extern "C" VOICEVOX_CORE_API const char *supported_devices();
+VOICEVOX_CORE_API const char *supported_devices();
 
 /**
  * @fn
@@ -65,8 +81,7 @@ extern "C" VOICEVOX_CORE_API const char *supported_devices();
  * @param speaker_id 話者番号
  * @return 音素ごとの長さ
  */
-extern "C" VOICEVOX_CORE_API bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_id,
-                                                    float *output);
+VOICEVOX_CORE_API bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_id, float *output);
 
 /**
  * @fn
@@ -82,11 +97,10 @@ extern "C" VOICEVOX_CORE_API bool yukarin_s_forward(int64_t length, int64_t *pho
  * @param speaker_id 話者番号
  * @return モーラごとの音高
  */
-extern "C" VOICEVOX_CORE_API bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list,
-                                                     int64_t *consonant_phoneme_list, int64_t *start_accent_list,
-                                                     int64_t *end_accent_list, int64_t *start_accent_phrase_list,
-                                                     int64_t *end_accent_phrase_list, int64_t *speaker_id,
-                                                     float *output);
+VOICEVOX_CORE_API bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *consonant_phoneme_list,
+                                          int64_t *start_accent_list, int64_t *end_accent_list,
+                                          int64_t *start_accent_phrase_list, int64_t *end_accent_phrase_list,
+                                          int64_t *speaker_id, float *output);
 
 /**
  * @fn
@@ -99,18 +113,52 @@ extern "C" VOICEVOX_CORE_API bool yukarin_sa_forward(int64_t length, int64_t *vo
  * @param speaker_id 話者番号
  * @return 音声波形
  */
-extern "C" VOICEVOX_CORE_API bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phoneme,
-                                                 int64_t *speaker_id, float *output);
+VOICEVOX_CORE_API bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phoneme,
+                                      int64_t *speaker_id, float *output);
 
 /**
  * @fn
  * 最後に発生したエラーのメッセージを取得する
  * @return エラーメッセージ
  */
-extern "C" VOICEVOX_CORE_API const char *last_error_message();
+VOICEVOX_CORE_API const char *last_error_message();
 
-extern "C" VOICEVOX_CORE_API bool initialize_openjtalk(const char *dict_path);
+/**
+ * @fn
+ * open jtalkを初期化する
+ * @return 結果コード
+ */
+VOICEVOX_CORE_API VoicevoxResultCode voicevox_initialize_openjtalk(const char *dict_path);
 
-extern "C" VOICEVOX_CORE_API uint8_t *voicevox_tts(const char *text, int64_t *speaker_id, int *file_size);
+/**
+ * @fn
+ * text to spearchを実行する
+ * @param text 音声データに変換するtextデータ
+ * @param speaker_id 話者番号
+ * @param binary_size 音声データのサイズ
+ * @param out 音声データを出力する先のポインタ。使用が終わったらvoicevox_wav_freeで開放する必要がある
+ * @return 結果コード
+ */
+VOICEVOX_CORE_API VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int binary_size,
+                                                  uint8_t **wav_out);
 
-extern "C" VOICEVOX_CORE_API void voicevox_wav_free(uint8_t *wav);
+/**
+ * @fn
+ * voicevox_ttsで生成した音声データを開放する
+ * @param wav 開放する音声データのポインタ
+ */
+VOICEVOX_CORE_API void voicevox_wav_free(uint8_t *wav);
+
+/**
+ * @fn
+ * エラーで返ってきた結果コードをメッセージに変換する
+ * @return エラーメッセージ文字列
+ */
+VOICEVOX_CORE_API const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
+
+#ifdef __cplusplus
+}
+#endif
+
+// 使い終わったマクロ定義は不要なので解除する
+#undef VOICEVOX_CORE_API
