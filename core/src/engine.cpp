@@ -51,5 +51,5 @@ uint8_t *voicevox_tts(const char *text, int64_t *speaker_id, int *binary_size) {
 }
 
 void voicevox_wav_free(uint8_t *wav) {
-  free(wav);
+  delete wav;
 }
