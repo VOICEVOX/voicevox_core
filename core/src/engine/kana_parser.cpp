@@ -1,5 +1,8 @@
 #include "kana_parser.h"
 
+#include <algorithm>
+#include <stdexcept>
+
 static const std::map<std::string, MoraModel> text2mora_with_unvoice() {
   std::map<std::string, MoraModel> text2mora_with_unvoice;
   const std::string* mora_list = mora_list_minimum.data();
