@@ -19,7 +19,7 @@ def run_subprocess(command):
 
 
 os_name = platform.system()
-architecture_name = platform.machine()
+architecture_name = platform.machine().lower()
 
 
 def get_release(url: str, version: str):
@@ -37,7 +37,7 @@ def get_release(url: str, version: str):
     return target_release
 
 
-def get_ort_download_link(version: str, use_gpu: bool) -> str:
+def get_ort_download_link(version: str, use_cuda: bool, use_directml: bool) -> str:
     target_release = get_release(
         "https://api.github.com/repos/microsoft/onnxruntime/releases", version
     )
@@ -61,23 +61,26 @@ def get_ort_download_link(version: str, use_gpu: bool) -> str:
             )
         assets = new_assets
 
-    arch_type = architecture_name.lower()
+    arch_type = architecture_name
     if arch_type in ["x86_64", "amd64"]:
         arch_type = ["x64", "x86_64"]
-    if os_name == "Windows":
+
+    if use_directml:
+        filter_assets("DirectML")
+    elif os_name == "Windows":
         filter_assets("win")
         filter_assets(arch_type)
-        if use_gpu:
+        if use_cuda:
             filter_assets("gpu")
     elif os_name == "Darwin":
-        if use_gpu:
+        if use_cuda or use_directml:
             raise RuntimeError("onnxruntime for osx does not support gpu.")
         filter_assets("osx")
         filter_assets(arch_type)
     elif os_name == "Linux":
         filter_assets("linux")
         filter_assets(arch_type)
-        if use_gpu:
+        if use_cuda:
             filter_assets("gpu")
     else:
         raise RuntimeError(f"Unsupported os type: {os_name}.")
@@ -87,17 +90,25 @@ def get_ort_download_link(version: str, use_gpu: bool) -> str:
 
 def download_and_extract_ort(download_link):
     if (project_root / "onnxruntime").exists():
-        print(
-            "Skip downloading onnxruntime because onnxruntime directory already exists."
-        )
-        return
+        yn = input("Found existing onnxruntime directory. Overwrite? [yn]: ")
+        while yn != "y" and yn != "n":
+            yn = input("Please press y or n: ")
+        if yn == "n":
+            return
+        subprocess.getoutput(f"rm -r {project_root / 'onnxruntime'}")
+
     print(f"Downloading onnxruntime from {download_link}...")
     with tempfile.TemporaryDirectory() as tmp_dir:
         if(os_name == "Windows"):
             run_subprocess(
                 f'powershell -Command "cd {tmp_dir}; curl.exe {download_link} -L -o archive.zip"')
-            run_subprocess(
-                f'powershell -Command "cd {tmp_dir}; Expand-Archive -Path archive.zip -Destination ./; Copy-Item onnxruntime* -Recurse {project_root}/onnxruntime"')
+
+            if "DirectML" in download_link:
+                run_subprocess(
+                    f'powershell -Command "cd {tmp_dir}; Expand-Archive -Path archive.zip; Copy-Item archive -Recurse {project_root}/onnxruntime"')
+            else:
+                run_subprocess(
+                    f'powershell -Command "cd {tmp_dir}; Expand-Archive -Path archive.zip -Destination ./; Copy-Item onnxruntime* -Recurse {project_root}/onnxruntime"')
 
         else:
             run_subprocess(f"cd {tmp_dir} && wget {download_link} -O archive")
@@ -105,6 +116,39 @@ def download_and_extract_ort(download_link):
                 ".zip") else "tar xzf"
             run_subprocess(
                 f"cd {tmp_dir} && {extract_cmd} archive && cp -r onnxruntime* {project_root}/onnxruntime")
+
+
+def get_dml_download_link(version: str):
+    resp = request.urlopen(
+        "https://api.nuget.org/v3/registration5-semver1/microsoft.ai.directml/index.json")
+    jsonData = json.loads(resp.read())
+    releases = jsonData["items"][0]["items"]
+    target_release = None
+    for release in releases:
+        if release["catalogEntry"]["version"] == version:
+            assert (
+                target_release is None
+            ), f"Multiple releases were found with tag_name: {version}."
+            target_release = release
+    if target_release is None:
+        raise RuntimeError(f"No release was found with version: {version}.")
+
+    return target_release["catalogEntry"]["packageContent"]
+
+
+def download_and_extract_dml(link):
+    if(project_root / "directml").exists():
+        print(
+            "Skip downloading DirectML because directml directory already exists."
+        )
+        return
+
+    print(f"Downloading DirectML from {link}")
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        run_subprocess(
+            f'powershell -Command "cd {tmp_dir}; curl.exe {link} -L -o archive.zip"')
+        run_subprocess(
+            f'powershell -Command "cd {tmp_dir}; Expand-Archive -Path archive.zip; Copy-Item archive -Recurse {project_root}/directml"')
 
 
 def get_voicevox_download_link(version) -> str:
@@ -141,7 +185,7 @@ def download_and_extract_voicevox(download_link):
             )
 
 
-def link_files():
+def link_files(use_directml: bool):
     lib_prefix = ""
     lib_suffix = ""
     if os_name == "Darwin":
@@ -181,8 +225,29 @@ def link_files():
     run_subprocess(
         f"{link_cmd} {target_core_lib} {project_root/'core'/'lib'/(f'{lib_prefix}core{lib_suffix}')}")
 
-    ort_libs = glob(
-        str(project_root/'onnxruntime'/'lib'/(f"{lib_prefix}*{lib_suffix}*")))
+    if use_directml:
+        arch_type = ""
+        if architecture_name in ["x86_64", "x64", "amd64"]:
+            arch_type = "x64"
+        elif architecture_name in ["i386", "x86"]:
+            arch_type = "x86"
+        elif architecture_name == "armv7l":
+            arch_type = "arm"
+        elif architecture_name == "aarch64":
+            arch_type = "arm64"
+        else:
+            raise RuntimeError(
+                f"Unsupported architecture type: {architecture_name}")
+        dll_file_path = project_root / "directml" / \
+            'bin' / f"{arch_type}-win" / "DirectML.dll"
+        run_subprocess(
+            f"copy /y {dll_file_path} {project_root / 'core'/'lib'/'DirectML.dll'}"
+        )
+        ort_libs = glob(str(os.path.join(
+            project_root, "onnxruntime", "runtimes", f"win-{arch_type}", "native", "*.dll")))
+    else:
+        ort_libs = glob(
+            str(project_root/'onnxruntime'/'lib'/(f"{lib_prefix}*{lib_suffix}*")))
     assert ort_libs
     for ort_lib in ort_libs:
         run_subprocess(f"{link_cmd} {ort_lib} {project_root/'core'/'lib'}")
@@ -202,17 +267,34 @@ if __name__ == "__main__":
         default="v1.10.0",
         help="onnxruntime release tag found in https://github.com/microsoft/onnxruntime/releases",
     )
-    parser.add_argument(
-        "--use_gpu", action="store_true", help="enable gpu for onnxruntime"
-    )
     parser.add_argument("--ort_download_link",
                         help="onnxruntime download link")
+    parser.add_argument(
+        "--use_cuda", action="store_true", help="enable cuda for onnxruntime"
+    )
+    parser.add_argument(
+        "--use_directml", action="store_true", help="enable directml for onnxruntime"
+    )
+    parser.add_argument(
+        "--dml_version",
+        default="1.8.0",
+        help="DirectML version found in https://www.nuget.org/packages/Microsoft.AI.DirectML",
+    )
+    parser.add_argument(
+        "--dml_download_link",
+        help="directml download link"
+    )
 
     args = parser.parse_args()
     ort_download_link = args.ort_download_link
+
+    if args.use_directml and os_name != "Windows":
+        raise RuntimeError(
+            "onnxruntime for Mac or Linux don't support DirectML")
+
     if not ort_download_link:
         ort_download_link = get_ort_download_link(
-            args.ort_version, args.use_gpu)
+            args.ort_version, args.use_cuda, args.use_directml)
 
     download_and_extract_ort(ort_download_link)
 
@@ -221,6 +303,12 @@ if __name__ == "__main__":
         voicevox_download_link = get_voicevox_download_link(
             args.voicevox_version)
     download_and_extract_voicevox(voicevox_download_link)
+
+    if args.use_directml:
+        dml_download_link = args.dml_download_link
+        if not dml_download_link:
+            dml_download_link = get_dml_download_link(args.dml_version)
+        download_and_extract_dml(dml_download_link)
 
     lib_path = project_root / "core/lib"
     if lib_path.exists():
@@ -231,6 +319,6 @@ if __name__ == "__main__":
             exit()
         subprocess.getoutput(f"rm -r {lib_path}")
 
-    link_files()
+    link_files(args.use_directml)
 
     print("Successfully configured!")

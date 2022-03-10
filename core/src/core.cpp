@@ -1,5 +1,9 @@
 #include <onnxruntime_cxx_api.h>
 
+#ifdef DIRECTML
+#include <dml_provider_factory.h>
+#endif
+
 #include <array>
 #include <cstdlib>
 #include <exception>
@@ -73,8 +77,9 @@ bool open_metas(const fs::path &metas_path, nlohmann::json &metas) {
 struct SupportedDevices {
   bool cpu = true;
   bool cuda = false;
+  bool dml = false;
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SupportedDevices, cpu, cuda);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SupportedDevices, cpu, cuda, dml);
 
 SupportedDevices get_supported_devices() {
   SupportedDevices devices;
@@ -82,6 +87,8 @@ SupportedDevices get_supported_devices() {
   for (const std::string &p : providers) {
     if (p == "CUDAExecutionProvider") {
       devices.cuda = true;
+    } else if (p == "DmlExecutionProvider") {
+      devices.dml = true;
     }
   }
   return devices;
@@ -121,8 +128,13 @@ struct Status {
     yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
     yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
     if (use_gpu) {
+#ifdef DIRECTML
+      session_options.DisableMemPattern().SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
+      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
+#else
       const OrtCUDAProviderOptions cuda_options;
       session_options.AppendExecutionProvider_CUDA(cuda_options);
+#endif
     }
     decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
     return true;
@@ -161,7 +173,12 @@ bool validate_speaker_id(int64_t speaker_id) {
 
 bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads) {
   initialized = false;
+
+#ifdef DIRECTML
+  if (use_gpu && !get_supported_devices().dml) {
+#else
   if (use_gpu && !get_supported_devices().cuda) {
+#endif /*DIRECTML*/
     error_message = GPU_NOT_SUPPORTED_ERR;
     return false;
   }
