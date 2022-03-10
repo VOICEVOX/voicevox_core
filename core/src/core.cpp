@@ -7,11 +7,11 @@
 #include <string>
 #include <unordered_set>
 
-#include "model.h"
 #include "nlohmann/json.hpp"
 
 #define VOICEVOX_CORE_EXPORTS
 #include "core.h"
+#include "model.h"
 
 #define NOT_INITIALIZED_ERR "Call initialize() first."
 #define NOT_FOUND_ERR "No such file or directory: "
