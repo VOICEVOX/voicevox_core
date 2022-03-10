@@ -1,11 +1,14 @@
 #pragma once
 
+// off clang-format
 // For JPCommon's "FILE" type
+#include <cstdio>
+// on clang-format
+
 #include <jpcommon.h>
 #include <mecab.h>
 #include <njd.h>
 
-#include <cstdio>
 #include <stdexcept>
 #include <string>
 #include <vector>
