@@ -488,8 +488,13 @@ std::vector<float> SynthesisEngine::synthesis(AudioQueryModel query, int64_t *sp
     }
   }
 
+  // 2次元のvectorを1次元に変換し、アドレスを連続させる
+  std::vector<float> flatten_phoneme;
+  for (std::vector<float> &p : phoneme) {
+    std::copy(p.begin(), p.end(), std::back_inserter(flatten_phoneme));
+  }
   std::vector<float> wave(f0.size() * 256, 0.0);
-  bool success = decode_forward((int64_t)f0.size(), OjtPhoneme::num_phoneme(), f0.data(), (float *)phoneme.data(),
+  bool success = decode_forward((int64_t)f0.size(), OjtPhoneme::num_phoneme(), f0.data(), flatten_phoneme.data(),
                                 speaker_id, wave.data());
 
   if (!success) {
