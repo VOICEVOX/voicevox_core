@@ -28,9 +28,9 @@ extern "C" {
  */
 typedef enum {
   // 成功
-  VoicevoxResultSucceed = 0,
+  VOICEVOX_RESULT_SUCCEED = 0,
   // OpenJTalk初期化に失敗した
-  VoicevoxResultNotInitializedOpenJTalkErr = 1,
+  VOICEVOX_RESULT_NOT_INITIALIZE_OPEN_JTALK_ERR = 1,
 } VoicevoxResultCode;
 /**
  * @fn
@@ -135,12 +135,12 @@ VOICEVOX_CORE_API VoicevoxResultCode voicevox_initialize_openjtalk(const char *d
  * text to spearchを実行する
  * @param text 音声データに変換するtextデータ
  * @param speaker_id 話者番号
- * @param binary_size 音声データのサイズ
- * @param out 音声データを出力する先のポインタ。使用が終わったらvoicevox_wav_freeで開放する必要がある
+ * @param output_binary_size 音声データのサイズを出力する先のポインタ
+ * @param output_wav 音声データを出力する先のポインタ。使用が終わったらvoicevox_wav_freeで開放する必要がある
  * @return 結果コード
  */
-VOICEVOX_CORE_API VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int *binary_size,
-                                                  uint8_t **wav_out);
+VOICEVOX_CORE_API VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int *output_binary_size,
+                                                  uint8_t **output_wav);
 
 /**
  * @fn
