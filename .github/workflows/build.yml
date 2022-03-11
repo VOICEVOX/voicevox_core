@@ -177,13 +177,16 @@ jobs:
           # strip-components
           TEMPDIR=$(mktemp -d)
           unzip download/onnxruntime.zip -d "${TEMPDIR}"
-          mv "${TEMPDIR}"/* download/onnxruntime/.
+          
+          if [[ ${{ matrix.artifact_name }} != *-directml ]]; then
+            mv "${TEMPDIR}"/*/* download/onnxruntime/
+          else
+            mv "${TEMPDIR}"/* download/onnxruntime/
+          fi
+
           rm -rf "${TEMPDIR}"
 
           rm download/onnxruntime.zip
-
-      - run: ls download
-      - run: ls download/onnxruntime
 
       # download/onnxruntime/lib/libonnxruntime.so
       # download/onnxruntime/lib/libonnxruntime.dylib
