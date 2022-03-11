@@ -150,7 +150,7 @@ jobs:
         uses: actions/cache@v2
         id: onnxruntime-cache
         with:
-          key: onnxruntime-cache-v1-${{ hashFiles('download/onnxruntime_url.txt') }}
+          key: onnxruntime-cache-v1.2-${{ hashFiles('download/onnxruntime_url.txt') }}
           path: download/onnxruntime
 
       - name: Export DirectML url to calc hash
@@ -177,22 +177,13 @@ jobs:
           # strip-components
           TEMPDIR=$(mktemp -d)
           unzip download/onnxruntime.zip -d "${TEMPDIR}"
-          mv "${TEMPDIR}"/*/* download/onnxruntime/
-          rm -rf "${TEMPDIR}"
+          
+          if [[ ${{ matrix.artifact_name }} != *-directml ]]; then
+            mv "${TEMPDIR}"/*/* download/onnxruntime/
+          else
+            mv "${TEMPDIR}"/* download/onnxruntime/
+          fi
 
-          rm download/onnxruntime.zip
-
-      - name: Download ONNX Runtime (zip, DirectML)
-        if: ${{steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip') && endswith(matrix.artifact_name, '-directml')}}
-        shell: bash
-        run: |
-          curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.zip
-          mkdir -p download/onnxruntime
-
-          # strip-components
-          TEMPDIR=$(mktemp -d)
-          unzip download/onnxruntime.zip -d "${TEMPDIR}"
-          mv "${TEMPDIR}"/* download/onnxruntime/
           rm -rf "${TEMPDIR}"
 
           rm download/onnxruntime.zip
