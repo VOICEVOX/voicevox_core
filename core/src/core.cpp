@@ -1,7 +1,6 @@
 #include <onnxruntime_cxx_api.h>
 
 #include <array>
-#include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -11,7 +10,9 @@
 
 #include "nlohmann/json.hpp"
 
+#ifndef VOICEVOX_CORE_EXPORTS
 #define VOICEVOX_CORE_EXPORTS
+#endif  // VOICEVOX_CORE_EXPORTS
 #include "core.h"
 
 #define NOT_INITIALIZED_ERR "Call initialize() first."

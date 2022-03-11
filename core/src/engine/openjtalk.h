@@ -9,7 +9,6 @@
 #include <mecab.h>
 #include <njd.h>
 
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -35,4 +34,4 @@ class OpenJTalk {
   void load(const std::string& dn_mecab);
   void clear();
 };
-}
+}  // namespace voicevox::core::engine

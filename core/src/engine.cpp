@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include <exception>
+#include <stdexcept>
 #include <vector>
 
 #include "core.h"
@@ -20,7 +20,6 @@ bool initialize_openjtalk(const char *dict_path) {
   return true;
 }
 
-
 uint8_t *voicevox_tts(const char *text, int64_t *speaker_id, int *binary_size) {
   if (openjtalk == nullptr) {
     throw std::runtime_error(NOT_INITIALIZED_OPENJTALK_ERR);
@@ -31,24 +30,13 @@ uint8_t *voicevox_tts(const char *text, int64_t *speaker_id, int *binary_size) {
 
   std::vector<AccentPhraseModel> accent_phrases = engine->create_accent_phrases(std::string(text), speaker_id);
   const AudioQueryModel audio_query = {
-    accent_phrases,
-    1.0f,
-    0.0f,
-    1.0f,
-    1.0f,
-    0.1f,
-    0.1f,
-    engine->default_sampling_rate,
-    false,
-    "",
+      accent_phrases, 1.0f, 0.0f, 1.0f, 1.0f, 0.1f, 0.1f, engine->default_sampling_rate, false, "",
   };
 
   const auto wav = engine->synthesis_wave_format(audio_query, speaker_id, binary_size);
-  auto* wav_heap = new uint8_t[*binary_size];
-  std::copy(wav.begin(),wav.end(),wav_heap);
+  auto *wav_heap = new uint8_t[*binary_size];
+  std::copy(wav.begin(), wav.end(), wav_heap);
   return wav_heap;
 }
 
-void voicevox_wav_free(uint8_t *wav) {
-  delete wav;
-}
+void voicevox_wav_free(uint8_t *wav) { delete wav; }

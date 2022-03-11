@@ -17,4 +17,4 @@ std::string mora2text(std::string mora) {
   }
   return text;
 }
-}
+}  // namespace voicevox::core::engine

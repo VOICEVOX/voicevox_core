@@ -33,4 +33,4 @@ struct AudioQueryModel {
   bool output_stereo;
   std::string kana;
 };
-}
+}  // namespace voicevox::core::engine

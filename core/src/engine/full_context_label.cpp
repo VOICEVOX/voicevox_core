@@ -1,7 +1,10 @@
 #include "full_context_label.h"
 
+#include <algorithm>
 #include <iostream>
+#include <iterator>
 #include <regex>
+#include <stdexcept>
 
 namespace voicevox::core::engine {
 std::string string_feature_by_regex(std::string pattern, std::string label) {
@@ -210,4 +213,4 @@ Utterance extract_full_context_label(OpenJTalk *openjtalk, std::string text) {
   for (std::string label : labels) phonemes.push_back(Phoneme::from_label(label));
   return Utterance::from_phonemes(phonemes);
 }
-}
+}  // namespace voicevox::core::engine

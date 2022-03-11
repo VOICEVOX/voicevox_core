@@ -1,10 +1,8 @@
 #pragma once
 
-#include <sstream>
 #include <string>
 #include <vector>
 
-#include "../core.h"
 #include "acoustic_feature_extractor.h"
 #include "model.h"
 #include "openjtalk.h"
@@ -45,4 +43,4 @@ class SynthesisEngine {
                        std::vector<std::string> &phoneme_str_list, std::vector<OjtPhoneme> &phoneme_data_list);
   void create_one_accent_list(std::vector<int64_t> &accent_list, AccentPhraseModel accent_phrase, int point);
 };
-}
+}  // namespace voicevox::core::engine

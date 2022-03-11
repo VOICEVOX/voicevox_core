@@ -198,4 +198,4 @@ static const std::vector<std::string> mora_list_minimum = {
 // clang-format on
 
 std::string mora2text(std::string mora);
-}
+}  // namespace voicevox::core::engine
