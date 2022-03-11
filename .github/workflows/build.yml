@@ -168,7 +168,7 @@ jobs:
 
       # download/onnxruntime/lib/onnxruntime.dll
       - name: Download ONNX Runtime (zip)
-        if: ${{steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip') && !endswith(matrix.artifact_name, '-directml')}}
+        if: ${{steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip')
         shell: bash
         run: |
           curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.zip
