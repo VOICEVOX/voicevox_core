@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <exception>
+#include <memory>
 #include <vector>
 
 #include "core.h"
@@ -9,21 +10,22 @@
 
 using namespace voicevox::core::engine;
 
-static OpenJTalk *openjtalk = nullptr;
-static SynthesisEngine *engine = nullptr;
+// TODO:SynthesisEngineにopenjtalkを持たせるためshared_ptrにしているが、やめたい
+static std::shared_ptr<OpenJTalk> openjtalk;
+static std::unique_ptr<SynthesisEngine> engine;
 
 VoicevoxResultCode voicevox_initialize_openjtalk(const char *dict_path) {
   // TODO: error handling
-  openjtalk = new OpenJTalk(dict_path);
+  openjtalk = std::make_shared<OpenJTalk>(dict_path);
   return VOICEVOX_RESULT_SUCCEED;
 }
 
 VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int *output_binary_size, uint8_t **output_wav) {
-  if (openjtalk == nullptr) {
+  if (!openjtalk) {
     return VOICEVOX_RESULT_NOT_INITIALIZE_OPEN_JTALK_ERR;
   }
-  if (engine == nullptr) {
-    engine = new SynthesisEngine(openjtalk);
+  if (!engine) {
+    engine = std::make_unique<SynthesisEngine>(openjtalk);
   }
 
   std::vector<AccentPhraseModel> accent_phrases = engine->create_accent_phrases(std::string(text), &speaker_id);
