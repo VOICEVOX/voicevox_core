@@ -114,51 +114,51 @@ std::vector<AccentPhraseModel> SynthesisEngine::create_accent_phrases(std::strin
     return {};
   }
 
-  Utterance utterance = extract_full_context_label(m_openjtalk, text);
+  Utterance utterance = extract_full_context_label(*m_openjtalk, text);
   if (utterance.breath_groups.empty()) {
     return {};
   }
 
   size_t accent_phrases_size = 0;
-  for (BreathGroup *breath_group : utterance.breath_groups) accent_phrases_size += breath_group->accent_phrases.size();
+  for (const auto &breath_group : utterance.breath_groups) accent_phrases_size += breath_group.accent_phrases.size();
   std::vector<AccentPhraseModel> accent_phrases(accent_phrases_size);
 
   int accent_phrases_count = 0;
   for (size_t i = 0; i < utterance.breath_groups.size(); i++) {
-    BreathGroup *breath_group = utterance.breath_groups[i];
-    for (size_t j = 0; j < breath_group->accent_phrases.size(); j++) {
-      AccentPhrase *accent_phrase = breath_group->accent_phrases[j];
+    const auto &breath_group = utterance.breath_groups[i];
+    for (size_t j = 0; j < breath_group.accent_phrases.size(); j++) {
+      const auto &accent_phrase = breath_group.accent_phrases[j];
 
-      std::vector<MoraModel> moras(accent_phrase->moras.size());
-      for (size_t k = 0; k < accent_phrase->moras.size(); k++) {
-        Mora *mora = accent_phrase->moras[k];
+      std::vector<MoraModel> moras(accent_phrase.moras.size());
+      for (size_t k = 0; k < accent_phrase.moras.size(); k++) {
+        auto &mora = accent_phrase.moras[k];
         std::string moras_text = "";
-        for (Phoneme *phoneme : mora->phonemes()) moras_text += phoneme->phoneme();
+        for (auto &phoneme : mora.phonemes()) moras_text += phoneme.phoneme();
         std::transform(moras_text.begin(), moras_text.end(), moras_text.begin(), ::tolower);
         if (moras_text == "n") moras_text = "N";
         std::optional<std::string> consonant = std::nullopt;
         std::optional<float> consonant_length = std::nullopt;
-        if (mora->consonant != nullptr) {
-          consonant = mora->consonant->phoneme();
+        if (mora.consonant.has_value()) {
+          consonant = mora.consonant.value().phoneme();
           consonant_length = 0.0f;
         }
         MoraModel new_mora = {
-            mora2text(moras_text), consonant, consonant_length, mora->vowel->phoneme(), 0.0f, 0.0f,
+            mora2text(moras_text), consonant, consonant_length, mora.vowel.phoneme(), 0.0f, 0.0f,
         };
         moras[k] = new_mora;
       }
 
       std::optional<MoraModel> pause_mora = std::nullopt;
-      if (i != utterance.breath_groups.size() - 1 && j == breath_group->accent_phrases.size() - 1) {
+      if (i != utterance.breath_groups.size() - 1 && j == breath_group.accent_phrases.size() - 1) {
         pause_mora = {
             "、", std::nullopt, std::nullopt, "pau", 0.0f, 0.0f,
         };
       }
       AccentPhraseModel new_accent_phrase = {
           moras,
-          accent_phrase->accent,
+          accent_phrase.accent,
           pause_mora,
-          accent_phrase->is_interrogative,
+          accent_phrase.is_interrogative,
       };
 
       accent_phrases[accent_phrases_count] = new_accent_phrase;

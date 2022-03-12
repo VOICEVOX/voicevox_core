@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -25,7 +26,7 @@ class SynthesisEngine {
  public:
   const unsigned int default_sampling_rate = 24000;
 
-  SynthesisEngine(OpenJTalk *openjtalk) { m_openjtalk = openjtalk; }
+  SynthesisEngine(std::shared_ptr<OpenJTalk> openjtalk) : m_openjtalk(openjtalk) {}
 
   std::vector<AccentPhraseModel> create_accent_phrases(std::string text, int64_t *speaker_id);
   std::vector<AccentPhraseModel> replace_mora_data(std::vector<AccentPhraseModel> accent_phrases, int64_t *speaker_id);
@@ -37,7 +38,7 @@ class SynthesisEngine {
                                              bool enable_interrogative_upspeak = true);
 
  private:
-  OpenJTalk *m_openjtalk;
+  std::shared_ptr<OpenJTalk> m_openjtalk;
 
   void initial_process(std::vector<AccentPhraseModel> &accent_phrases, std::vector<MoraModel> &flatten_moras,
                        std::vector<std::string> &phoneme_str_list, std::vector<OjtPhoneme> &phoneme_data_list);
