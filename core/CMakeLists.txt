@@ -46,8 +46,8 @@ elseif (UNIX)
 endif ()
 
 target_compile_options(core PRIVATE
-	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8>
-	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
+	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8 /DVOICEVOX_CORE_EXPORTS>
+	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2 -DVOICEVOX_CORE_EXPORTS>
 )
 target_include_directories(core
 	PRIVATE ${ONNXRUNTIME_DIR}/include

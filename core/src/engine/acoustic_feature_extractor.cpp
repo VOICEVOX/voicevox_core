@@ -15,4 +15,4 @@ std::vector<OjtPhoneme> OjtPhoneme::convert(std::vector<OjtPhoneme> phonemes) {
   }
   return phonemes;
 }
-}
+}  // namespace voicevox::core::engine

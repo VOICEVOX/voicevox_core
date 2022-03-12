@@ -1,8 +1,13 @@
 #include "synthesis_engine.h"
 
 #include <algorithm>
+#include <cmath>
 #include <iterator>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
 
+#include "../core.h"
 #include "full_context_label.h"
 #include "mora_list.h"
 

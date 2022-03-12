@@ -1,11 +1,9 @@
 #pragma once
 
 #include <memory>
-#include <sstream>
 #include <string>
 #include <vector>
 
-#include "../core.h"
 #include "acoustic_feature_extractor.h"
 #include "model.h"
 #include "openjtalk.h"

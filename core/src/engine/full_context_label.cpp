@@ -1,6 +1,10 @@
 #include "full_context_label.h"
 
+#include <algorithm>
+#include <iostream>
+#include <iterator>
 #include <regex>
+#include <stdexcept>
 
 namespace voicevox::core::engine {
 std::string string_feature_by_regex(std::string pattern, std::string label) {

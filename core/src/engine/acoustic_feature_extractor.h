@@ -1,8 +1,6 @@
 #pragma once
 
-#include <iterator>
 #include <map>
-#include <random>
 #include <string>
 #include <vector>
 
@@ -41,4 +39,4 @@ class OjtPhoneme {
   long phoneme_id() const;
   static std::vector<OjtPhoneme> convert(std::vector<OjtPhoneme> phonemes);
 };
-}
+}  // namespace voicevox::core::engine

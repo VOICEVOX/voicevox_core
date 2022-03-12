@@ -1,6 +1,6 @@
 #include <cstdlib>
-#include <exception>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include "core.h"

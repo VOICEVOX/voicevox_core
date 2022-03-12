@@ -1,7 +1,10 @@
 #include "kana_parser.h"
 
 #include <algorithm>
+#include <optional>
 #include <stdexcept>
+
+#include "mora_list.h"
 
 namespace voicevox::core::engine {
 static const std::map<std::string, MoraModel> text2mora_with_unvoice() {
@@ -160,4 +163,4 @@ std::string create_kana(std::vector<AccentPhraseModel> accent_phrases) {
   }
   return text;
 }
-}
+}  // namespace voicevox::core::engine
