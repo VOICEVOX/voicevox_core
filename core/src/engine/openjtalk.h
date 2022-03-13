@@ -33,5 +33,9 @@ class OpenJTalk {
 
   void load(const std::string& dn_mecab);
   void clear();
+  bool is_dict_loaded() const { return dict_loaded; }
+
+ private:
+  bool dict_loaded = false;
 };
 }  // namespace voicevox::core::engine
