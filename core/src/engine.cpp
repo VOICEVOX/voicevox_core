@@ -5,27 +5,24 @@
 
 #include "core.h"
 #include "engine/model.h"
-#include "engine/openjtalk.h"
 #include "engine/synthesis_engine.h"
 
 using namespace voicevox::core::engine;
 
-// TODO:SynthesisEngineにopenjtalkを持たせるためshared_ptrにしているが、やめたい
-static std::shared_ptr<OpenJTalk> openjtalk;
 static std::unique_ptr<SynthesisEngine> engine;
 
 VoicevoxResultCode voicevox_initialize_openjtalk(const char *dict_path) {
   // TODO: error handling
-  openjtalk = std::make_shared<OpenJTalk>(dict_path);
+  if (!engine) {
+    engine = std::make_unique<SynthesisEngine>();
+  }
+  engine->load_openjtalk_dict(dict_path);
   return VOICEVOX_RESULT_SUCCEED;
 }
 
 VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int *output_binary_size, uint8_t **output_wav) {
-  if (!openjtalk) {
+  if (!engine || !engine->is_openjtalk_dict_loaded()) {
     return VOICEVOX_RESULT_NOT_INITIALIZE_OPEN_JTALK_ERR;
-  }
-  if (!engine) {
-    engine = std::make_unique<SynthesisEngine>(openjtalk);
   }
 
   std::vector<AccentPhraseModel> accent_phrases = engine->create_accent_phrases(std::string(text), &speaker_id);

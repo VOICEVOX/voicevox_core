@@ -26,7 +26,9 @@ class SynthesisEngine {
  public:
   const unsigned int default_sampling_rate = 24000;
 
-  SynthesisEngine(std::shared_ptr<OpenJTalk> openjtalk) : m_openjtalk(openjtalk) {}
+  SynthesisEngine() { m_openjtalk = OpenJTalk(); }
+
+  SynthesisEngine(const std::string &dict_path) : SynthesisEngine() { load_openjtalk_dict(dict_path); }
 
   std::vector<AccentPhraseModel> create_accent_phrases(std::string text, int64_t *speaker_id);
   std::vector<AccentPhraseModel> replace_mora_data(std::vector<AccentPhraseModel> accent_phrases, int64_t *speaker_id);
@@ -37,8 +39,11 @@ class SynthesisEngine {
   std::vector<uint8_t> synthesis_wave_format(AudioQueryModel query, int64_t *speaker_id, int *binary_size,
                                              bool enable_interrogative_upspeak = true);
 
+  void load_openjtalk_dict(const std::string &dict_path);
+  bool is_openjtalk_dict_loaded() const { return m_openjtalk.is_dict_loaded(); }
+
  private:
-  std::shared_ptr<OpenJTalk> m_openjtalk;
+  OpenJTalk m_openjtalk;
 
   void initial_process(std::vector<AccentPhraseModel> &accent_phrases, std::vector<MoraModel> &flatten_moras,
                        std::vector<std::string> &phoneme_str_list, std::vector<OjtPhoneme> &phoneme_data_list);
