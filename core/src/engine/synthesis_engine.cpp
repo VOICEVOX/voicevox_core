@@ -114,7 +114,7 @@ std::vector<AccentPhraseModel> SynthesisEngine::create_accent_phrases(std::strin
     return {};
   }
 
-  Utterance utterance = extract_full_context_label(*m_openjtalk, text);
+  Utterance utterance = extract_full_context_label(m_openjtalk, text);
   if (utterance.breath_groups.empty()) {
     return {};
   }
