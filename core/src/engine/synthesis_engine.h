@@ -26,7 +26,7 @@ class SynthesisEngine {
  public:
   const unsigned int default_sampling_rate = 24000;
 
-  SynthesisEngine() { m_openjtalk = OpenJTalk(); }
+  SynthesisEngine() { }
 
   SynthesisEngine(const std::string &dict_path) : SynthesisEngine() { load_openjtalk_dict(dict_path); }
 
