@@ -11,6 +11,7 @@
 
 #define VOICEVOX_CORE_EXPORTS
 #include "core.h"
+#include "decode_model.h"
 #include "model.h"
 
 #define NOT_INITIALIZED_ERR "Call initialize() first."
