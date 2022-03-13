@@ -28,8 +28,6 @@ class SynthesisEngine {
 
   SynthesisEngine() { }
 
-  SynthesisEngine(const std::string &dict_path) : SynthesisEngine() { load_openjtalk_dict(dict_path); }
-
   std::vector<AccentPhraseModel> create_accent_phrases(std::string text, int64_t *speaker_id);
   std::vector<AccentPhraseModel> replace_mora_data(std::vector<AccentPhraseModel> accent_phrases, int64_t *speaker_id);
   std::vector<AccentPhraseModel> replace_phoneme_length(std::vector<AccentPhraseModel> accent_phrases,
