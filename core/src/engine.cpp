@@ -22,7 +22,7 @@ VoicevoxResultCode voicevox_load_openjtalk_dict(const char *dict_path) {
 
 VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int *output_binary_size, uint8_t **output_wav) {
   if (!engine || !engine->is_openjtalk_dict_loaded()) {
-    return VOICEVOX_RESULT_NOT_INITIALIZE_OPEN_JTALK_ERR;
+    return VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT;
   }
 
   std::vector<AccentPhraseModel> accent_phrases = engine->create_accent_phrases(std::string(text), &speaker_id);
@@ -41,8 +41,8 @@ void voicevox_wav_free(uint8_t *wav) { delete wav; }
 
 const char *voicevox_error_result_to_message(VoicevoxResultCode result_code) {
   switch (result_code) {
-    case VOICEVOX_RESULT_NOT_INITIALIZE_OPEN_JTALK_ERR:
-      return "Call initialize_openjtalk() first.";
+    case VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT:
+      return "Call voicevox_load_openjtalk_dict() first.";
 
     default:
       throw std::runtime_error("Unexpected error result code.");
