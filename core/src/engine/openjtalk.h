@@ -25,8 +25,6 @@ class OpenJTalk {
     JPCommon_initialize(&jpcommon);
   }
 
-  OpenJTalk(const std::string& dn_mecab) : OpenJTalk() { load(dn_mecab); }
-
   ~OpenJTalk() { clear(); }
 
   std::vector<std::string> extract_fullcontext(std::string text);
