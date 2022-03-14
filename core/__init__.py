@@ -105,24 +105,34 @@ if sys.platform == 'win32':
 
     # 明示的にcore.dllを読み込めば、onnxruntimeなどの残りの依存は自動で解決してくれる
     # Note: onnxruntime_providers_cuda.dllはLoadLibraryによってロードしようとすると失敗する (GitHub PR #49)
-    dll = os.path.join(dll_path, "core.dll")
-    is_loaded = False
-    if with_load_library_flags:
-        res = kernel32.LoadLibraryExW(dll, None, 0x00001100)
-        last_error = ctypes.get_last_error()
-        if res is None and last_error != 126:
-            err = ctypes.WinError(last_error)
-            err.strerror += f' Error loading "{dll}" or one of its dependencies.'
-            raise err
-        elif res is not None:
-            is_loaded = True
-    if not is_loaded:
-        os.environ['PATH'] = dll_path + ';'.join([os.environ['PATH']])
-        res = kernel32.LoadLibraryW(dll)
-        if res is None:
-            err = ctypes.WinError(ctypes.get_last_error())
-            err.strerror += f' Error loading "{dll}" or one of its dependencies.'
-            raise err
+    dlls = [os.path.join(dll_path, "core.dll")]
+    # DirectML.dllはonnxruntimeと互換性のないWindows標準搭載のものを優先して読み込むことがあるため、明示的に読み込む
+    # (参考: https://github.com/microsoft/onnxruntime/issues/3360, https://tadaoyamaoka.hatenablog.com/entry/2020/06/07/113616)
+    dml = os.path.join(dll_path, 'DirectML.dll')
+    if(os.path.exists(dml)):
+        dlls.append(dml)
+
+    for dll in dlls:
+        path_patched = False
+        is_loaded = False
+        if with_load_library_flags:
+            res = kernel32.LoadLibraryExW(dll, None, 0x00001100)
+            last_error = ctypes.get_last_error()
+            if res is None and last_error != 126:
+                err = ctypes.WinError(last_error)
+                err.strerror += f' Error loading "{dll}" or one of its dependencies.'
+                raise err
+            elif res is not None:
+                is_loaded = True
+        if not is_loaded:
+            if not path_patched:
+                os.environ['PATH'] = dll_path + ';'.join([os.environ['PATH']])
+                path_patched = True
+            res = kernel32.LoadLibraryW(dll)
+            if res is None:
+                err = ctypes.WinError(ctypes.get_last_error())
+                err.strerror += f' Error loading "{dll}" or one of its dependencies.'
+                raise err
 
     kernel32.SetErrorMode(prev_error_mode)
 
