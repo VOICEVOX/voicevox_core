@@ -26,7 +26,7 @@ class SynthesisEngine {
  public:
   const unsigned int default_sampling_rate = 24000;
 
-  SynthesisEngine() { }
+  SynthesisEngine() {}
 
   std::vector<AccentPhraseModel> create_accent_phrases(std::string text, int64_t *speaker_id);
   std::vector<AccentPhraseModel> replace_mora_data(std::vector<AccentPhraseModel> accent_phrases, int64_t *speaker_id);
