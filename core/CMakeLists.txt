@@ -4,7 +4,6 @@ project(ONNXCore)
 
 set(CMAKE_MACOSX_RPATH 1)
 
-# find_package(Embed REQUIRED)
 include(src/embedBin/FindEmbed.cmake)
 EMBED_TARGET(YUKARIN_S "../model/yukarin_s.onnx")
 EMBED_TARGET(YUKARIN_SA "../model/yukarin_sa.onnx")
@@ -17,7 +16,6 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 message("core will be installed to: ${CMAKE_INSTALL_PREFIX}")
 
-message("${EMBED_YUKARIN_S_OUTPUTS}")
 # coreライブラリのビルド設定
 add_library(core SHARED src/core.cpp ${EMBED_YUKARIN_S_OUTPUTS} ${EMBED_YUKARIN_SA_OUTPUTS} ${EMBED_DECODE_OUTPUTS} ${EMBED_METAS_OUTPUTS})
 
