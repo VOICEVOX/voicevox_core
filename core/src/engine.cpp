@@ -9,28 +9,25 @@
 
 using namespace voicevox::core::engine;
 
-static std::unique_ptr<SynthesisEngine> engine;
+static SynthesisEngine engine;
 
 VoicevoxResultCode voicevox_load_openjtalk_dict(const char *dict_path) {
   // TODO: error handling
-  if (!engine) {
-    engine = std::make_unique<SynthesisEngine>();
-  }
-  engine->load_openjtalk_dict(dict_path);
+  engine.load_openjtalk_dict(dict_path);
   return VOICEVOX_RESULT_SUCCEED;
 }
 
 VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int *output_binary_size, uint8_t **output_wav) {
-  if (!engine || !engine->is_openjtalk_dict_loaded()) {
+  if (!engine.is_openjtalk_dict_loaded()) {
     return VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT;
   }
 
-  std::vector<AccentPhraseModel> accent_phrases = engine->create_accent_phrases(std::string(text), &speaker_id);
+  std::vector<AccentPhraseModel> accent_phrases = engine.create_accent_phrases(std::string(text), &speaker_id);
   const AudioQueryModel audio_query = {
-      accent_phrases, 1.0f, 0.0f, 1.0f, 1.0f, 0.1f, 0.1f, engine->default_sampling_rate, false, "",
+      accent_phrases, 1.0f, 0.0f, 1.0f, 1.0f, 0.1f, 0.1f, engine.default_sampling_rate, false, "",
   };
 
-  const auto wav = engine->synthesis_wave_format(audio_query, &speaker_id, output_binary_size);
+  const auto wav = engine.synthesis_wave_format(audio_query, &speaker_id, output_binary_size);
   auto *wav_heap = new uint8_t[*output_binary_size];
   std::copy(wav.begin(), wav.end(), wav_heap);
   *output_wav = wav_heap;
