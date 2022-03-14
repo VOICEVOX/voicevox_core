@@ -4,19 +4,12 @@ project(ONNXCore)
 
 set(CMAKE_MACOSX_RPATH 1)
 
-# modelフォルダ内のファイルをC++にバンドルできるように変換する
-include(./load_model.cmake)
-if(EXISTS ${MODEL_DIR}/metas.json)
-  message("Exists models")
-else()
-	message(FATAL_ERROR "Unable to find models. Use option -DONNXRUNTIME_DIR=...")
-endif()
-message("Convert models. Please wait...")
-make_includable_text(${MODEL_DIR}/metas.json)
-binary_to_hex_text(${MODEL_DIR}/yukarin_s.onnx)
-binary_to_hex_text(${MODEL_DIR}/yukarin_sa.onnx)
-binary_to_hex_text(${MODEL_DIR}/decode.onnx)
-
+# find_package(Embed REQUIRED)
+include(src/embedBin/FindEmbed.cmake)
+EMBED_TARGET(YUKARIN_S "../model/yukarin_s.onnx")
+EMBED_TARGET(YUKARIN_SA "../model/yukarin_sa.onnx")
+EMBED_TARGET(DECODE "../model/decode.onnx")
+EMBED_TARGET(METAS "../model/metas.json")
 
 # coreライブラリのインストール先設定。デフォルトはCMakeLists.txtと同じ位置
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -24,8 +17,9 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 message("core will be installed to: ${CMAKE_INSTALL_PREFIX}")
 
+message("${EMBED_YUKARIN_S_OUTPUTS}")
 # coreライブラリのビルド設定
-add_library(core SHARED src/core.cpp)
+add_library(core SHARED src/core.cpp ${EMBED_YUKARIN_S_OUTPUTS} ${EMBED_YUKARIN_SA_OUTPUTS} ${EMBED_DECODE_OUTPUTS} ${EMBED_METAS_OUTPUTS})
 
 # -DONNXRUNTIME_DIRで指定されたパスをもとにonnxruntimeのライブラリを取得する。失敗した場合はfatal error
 get_filename_component(ONNXRUNTIME_DIR ${ONNXRUNTIME_DIR} ABSOLUTE)

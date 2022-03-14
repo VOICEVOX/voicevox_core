@@ -7,16 +7,17 @@
 #include <array>
 #include <cstdlib>
 #include <exception>
+#include <fstream>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_set>
 
+#include "embedBin/embed.h"
 #include "nlohmann/json.hpp"
 
 #define VOICEVOX_CORE_EXPORTS
 #include "core.h"
-#include "decode_model.h"
-#include "model.h"
 
 #define NOT_INITIALIZED_ERR "Call initialize() first."
 #define NOT_FOUND_ERR "No such file or directory: "
@@ -24,7 +25,8 @@
 #define FAILED_TO_OPEN_METAS_ERR "Unable to open metas.json."
 #define ONNX_ERR "ONNX raise exception: "
 #define JSON_ERR "JSON parser raise exception: "
-#define GPU_NOT_SUPPORTED_ERR "This library is CPU version. GPU is not supported."
+#define GPU_NOT_SUPPORTED_ERR \
+  "This library is CPU version. GPU is not supported."
 #define UNKNOWN_STYLE "Unknown style ID: "
 
 constexpr float PHONEME_LENGTH_MINIMAL = 0.01f;
@@ -36,6 +38,16 @@ constexpr std::array<int64_t, 1> speaker_shape{1};
 static std::string error_message;
 static bool initialized = false;
 static std::string supported_devices_str;
+
+EMBED_DECL(YUKARIN_SA);
+EMBED_DECL(YUKARIN_S);
+EMBED_DECL(DECODE);
+EMBED_DECL(METAS);
+
+embed::Resource yukarin_s_model = YUKARIN_S();
+embed::Resource yukarin_sa_model = YUKARIN_SA();
+embed::Resource decode_model = DECODE();
+embed::Resource metas_file = METAS();
 
 struct SupportedDevices {
   bool cpu = true;
@@ -60,7 +72,8 @@ SupportedDevices get_supported_devices() {
 struct Status {
   Status(bool use_gpu_)
       : use_gpu(use_gpu_),
-        memory_info(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU)),
+        memory_info(
+            Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU)),
         yukarin_s(nullptr),
         yukarin_sa(nullptr),
         decode(nullptr) {}
@@ -76,7 +89,15 @@ struct Status {
    * }]
    */
   bool load(int cpu_num_threads) {
-    metas = nlohmann::json::parse(metasJson);
+    std::cout << "load" << std::endl;
+    std::fstream fstr;
+    std::cout << (long)metas_file.data << std::endl;
+    std::cout << (long)yukarin_s_model.data << std::endl;
+    std::cout << (long)yukarin_sa_model.data << std::endl;
+    std::cout << (long)decode_model.data << std::endl;
+
+    metas = nlohmann::json::parse(metas_file.data);
+    std::cout << "parse" << std::endl;
     metas_str = metas.dump();
     supported_styles.clear();
     for (const auto &meta : metas) {
@@ -84,20 +105,32 @@ struct Status {
         supported_styles.insert(style["id"].get<int64_t>());
       }
     }
+    std::cout << metas_str << std::endl;
+    std::cout << yukarin_s_model.size << std::endl;
+
     Ort::SessionOptions session_options;
-    session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
-    yukarin_s = Ort::Session(env, yukarin_s_model, sizeof(yukarin_s_model), session_options);
-    yukarin_sa = Ort::Session(env, yukarin_sa_model, sizeof(yukarin_sa_model), session_options);
+    session_options.SetInterOpNumThreads(cpu_num_threads)
+        .SetIntraOpNumThreads(cpu_num_threads);
+    yukarin_s = Ort::Session(env, yukarin_s_model.data, yukarin_s_model.size,
+                             session_options);
+    std::cout << "load yukarin_a" << std::endl;
+    yukarin_sa = Ort::Session(env, yukarin_sa_model.data, yukarin_sa_model.size,
+                              session_options);
+    std::cout << "load yukarin_sa" << std::endl;
     if (use_gpu) {
 #ifdef DIRECTML
-      session_options.DisableMemPattern().SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
-      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
+      session_options.DisableMemPattern().SetExecutionMode(
+          ExecutionMode::ORT_SEQUENTIAL);
+      Ort::ThrowOnError(
+          OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
 #else
       const OrtCUDAProviderOptions cuda_options;
       session_options.AppendExecutionProvider_CUDA(cuda_options);
 #endif
     }
-    decode = Ort::Session(env, decode_model, sizeof(decode_model), session_options);
+    decode = Ort::Session(env, decode_model.data, decode_model.size,
+                          session_options);
+    std::cout << "load decode" << std::endl;
     return true;
   }
 
@@ -121,11 +154,13 @@ Ort::Value to_tensor(T *data, const std::array<int64_t, Rank> &shape) {
   for (int64_t dim : shape) {
     count *= dim;
   }
-  return Ort::Value::CreateTensor<T>(status->memory_info, data, count, shape.data(), shape.size());
+  return Ort::Value::CreateTensor<T>(status->memory_info, data, count,
+                                     shape.data(), shape.size());
 }
 
 bool validate_speaker_id(int64_t speaker_id) {
-  if (status->supported_styles.find(speaker_id) == status->supported_styles.end()) {
+  if (status->supported_styles.find(speaker_id) ==
+      status->supported_styles.end()) {
     error_message = UNKNOWN_STYLE + std::to_string(speaker_id);
     return false;
   }
@@ -155,7 +190,8 @@ bool initialize(bool use_gpu, int cpu_num_threads) {
       std::vector<float> phoneme(length * phoneme_size), f0(length);
       int64_t speaker_id = 0;
       std::vector<float> output(length * 256);
-      decode_forward(length, phoneme_size, f0.data(), phoneme.data(), &speaker_id, output.data());
+      decode_forward(length, phoneme_size, f0.data(), phoneme.data(),
+                     &speaker_id, output.data());
     }
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
@@ -188,7 +224,8 @@ const char *supported_devices() {
   return supported_devices_str.c_str();
 }
 
-bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_id, float *output) {
+bool yukarin_s_forward(int64_t length, int64_t *phoneme_list,
+                       int64_t *speaker_id, float *output) {
   if (!initialized) {
     error_message = NOT_INITIALIZED_ERR;
     return false;
@@ -201,15 +238,18 @@ bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_i
     const char *outputs[] = {"phoneme_length"};
     const std::array<int64_t, 1> phoneme_shape{length};
 
-    std::array<Ort::Value, 2> input_tensors = {to_tensor(phoneme_list, phoneme_shape),
-                                               to_tensor(speaker_id, speaker_shape)};
+    std::array<Ort::Value, 2> input_tensors = {
+        to_tensor(phoneme_list, phoneme_shape),
+        to_tensor(speaker_id, speaker_shape)};
     Ort::Value output_tensor = to_tensor(output, phoneme_shape);
 
-    status->yukarin_s.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
+    status->yukarin_s.Run(Ort::RunOptions{nullptr}, inputs,
+                          input_tensors.data(), input_tensors.size(), outputs,
                           &output_tensor, 1);
 
     for (int64_t i = 0; i < length; i++) {
-      if (output[i] < PHONEME_LENGTH_MINIMAL) output[i] = PHONEME_LENGTH_MINIMAL;
+      if (output[i] < PHONEME_LENGTH_MINIMAL)
+        output[i] = PHONEME_LENGTH_MINIMAL;
     }
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
@@ -220,9 +260,12 @@ bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_i
   return true;
 }
 
-bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *consonant_phoneme_list,
-                        int64_t *start_accent_list, int64_t *end_accent_list, int64_t *start_accent_phrase_list,
-                        int64_t *end_accent_phrase_list, int64_t *speaker_id, float *output) {
+bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list,
+                        int64_t *consonant_phoneme_list,
+                        int64_t *start_accent_list, int64_t *end_accent_list,
+                        int64_t *start_accent_phrase_list,
+                        int64_t *end_accent_phrase_list, int64_t *speaker_id,
+                        float *output) {
   if (!initialized) {
     error_message = NOT_INITIALIZED_ERR;
     return false;
@@ -231,23 +274,30 @@ bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *co
     return false;
   }
   try {
-    const char *inputs[] = {
-        "length",          "vowel_phoneme_list",       "consonant_phoneme_list", "start_accent_list",
-        "end_accent_list", "start_accent_phrase_list", "end_accent_phrase_list", "speaker_id"};
+    const char *inputs[] = {"length",
+                            "vowel_phoneme_list",
+                            "consonant_phoneme_list",
+                            "start_accent_list",
+                            "end_accent_list",
+                            "start_accent_phrase_list",
+                            "end_accent_phrase_list",
+                            "speaker_id"};
     const char *outputs[] = {"f0_list"};
     const std::array<int64_t, 1> phoneme_shape{length};
 
-    std::array<Ort::Value, 8> input_tensors = {to_tensor(&length, scalar_shape),
-                                               to_tensor(vowel_phoneme_list, phoneme_shape),
-                                               to_tensor(consonant_phoneme_list, phoneme_shape),
-                                               to_tensor(start_accent_list, phoneme_shape),
-                                               to_tensor(end_accent_list, phoneme_shape),
-                                               to_tensor(start_accent_phrase_list, phoneme_shape),
-                                               to_tensor(end_accent_phrase_list, phoneme_shape),
-                                               to_tensor(speaker_id, speaker_shape)};
+    std::array<Ort::Value, 8> input_tensors = {
+        to_tensor(&length, scalar_shape),
+        to_tensor(vowel_phoneme_list, phoneme_shape),
+        to_tensor(consonant_phoneme_list, phoneme_shape),
+        to_tensor(start_accent_list, phoneme_shape),
+        to_tensor(end_accent_list, phoneme_shape),
+        to_tensor(start_accent_phrase_list, phoneme_shape),
+        to_tensor(end_accent_phrase_list, phoneme_shape),
+        to_tensor(speaker_id, speaker_shape)};
     Ort::Value output_tensor = to_tensor(output, phoneme_shape);
 
-    status->yukarin_sa.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
+    status->yukarin_sa.Run(Ort::RunOptions{nullptr}, inputs,
+                           input_tensors.data(), input_tensors.size(), outputs,
                            &output_tensor, 1);
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
@@ -257,7 +307,8 @@ bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *co
   return true;
 }
 
-std::vector<float> make_f0_with_padding(float *f0, int64_t length, int64_t length_with_padding,
+std::vector<float> make_f0_with_padding(float *f0, int64_t length,
+                                        int64_t length_with_padding,
                                         int64_t padding_f0_size) {
   std::vector<float> f0_with_padding;
   f0_with_padding.reserve(length_with_padding);
@@ -267,16 +318,20 @@ std::vector<float> make_f0_with_padding(float *f0, int64_t length, int64_t lengt
   return f0_with_padding;
 }
 
-void insert_padding_phonemes_to_phoneme_with_padding(std::vector<float> &phoneme_with_padding,
-                                                     const std::vector<float> &padding_phoneme,
-                                                     int64_t padding_phonemes_size) {
+void insert_padding_phonemes_to_phoneme_with_padding(
+    std::vector<float> &phoneme_with_padding,
+    const std::vector<float> &padding_phoneme, int64_t padding_phonemes_size) {
   for (auto i = 0; i < padding_phonemes_size; i++) {
-    phoneme_with_padding.insert(phoneme_with_padding.end(), padding_phoneme.begin(), padding_phoneme.end());
+    phoneme_with_padding.insert(phoneme_with_padding.end(),
+                                padding_phoneme.begin(), padding_phoneme.end());
   }
 }
 
-std::vector<float> make_phoneme_with_padding(float *phoneme, int64_t phoneme_size, int64_t length,
-                                             int64_t length_with_padding, int64_t padding_phonemes_size) {
+std::vector<float> make_phoneme_with_padding(float *phoneme,
+                                             int64_t phoneme_size,
+                                             int64_t length,
+                                             int64_t length_with_padding,
+                                             int64_t padding_phonemes_size) {
   // 無音部分をphonemeに追加するための処理
   // TODO: 改善したらここのcopy処理を取り除く
   std::vector<float> padding_phoneme(phoneme_size, 0.0);
@@ -285,23 +340,29 @@ std::vector<float> make_phoneme_with_padding(float *phoneme, int64_t phoneme_siz
 
   std::vector<float> phoneme_with_padding;
   phoneme_with_padding.reserve(length_with_padding * phoneme_size);
-  insert_padding_phonemes_to_phoneme_with_padding(phoneme_with_padding, padding_phoneme, padding_phonemes_size);
+  insert_padding_phonemes_to_phoneme_with_padding(
+      phoneme_with_padding, padding_phoneme, padding_phonemes_size);
   const auto phoneme_dimension_size = length * phoneme_size;
-  phoneme_with_padding.insert(phoneme_with_padding.end(), phoneme, phoneme + phoneme_dimension_size);
-  insert_padding_phonemes_to_phoneme_with_padding(phoneme_with_padding, padding_phoneme, padding_phonemes_size);
+  phoneme_with_padding.insert(phoneme_with_padding.end(), phoneme,
+                              phoneme + phoneme_dimension_size);
+  insert_padding_phonemes_to_phoneme_with_padding(
+      phoneme_with_padding, padding_phoneme, padding_phonemes_size);
   return phoneme_with_padding;
 }
 
-void copy_output_with_padding_to_output(const std::vector<float> &output_with_padding, float *output,
-                                        int64_t padding_f0_size) {
+void copy_output_with_padding_to_output(
+    const std::vector<float> &output_with_padding, float *output,
+    int64_t padding_f0_size) {
   const auto padding_sampling_size = padding_f0_size * 256;
-  const auto begin_output_copy = output_with_padding.begin() + padding_sampling_size;
-  const auto end_output_copy = output_with_padding.end() - padding_sampling_size;
+  const auto begin_output_copy =
+      output_with_padding.begin() + padding_sampling_size;
+  const auto end_output_copy =
+      output_with_padding.end() - padding_sampling_size;
   std::copy(begin_output_copy, end_output_copy, output);
 }
 
-bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phoneme, int64_t *speaker_id,
-                    float *output) {
+bool decode_forward(int64_t length, int64_t phoneme_size, float *f0,
+                    float *phoneme, int64_t *speaker_id, float *output) {
   if (!initialized) {
     error_message = NOT_INITIALIZED_ERR;
     return false;
@@ -314,24 +375,28 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
     // TODO: 改善したらここのpadding処理を取り除く
     constexpr auto padding_size = 0.4;
     constexpr auto default_sampling_rate = 24000;
-    const auto padding_f0_size =
-        static_cast<int64_t>(std::round(static_cast<double>(padding_size * default_sampling_rate) / 256));
+    const auto padding_f0_size = static_cast<int64_t>(std::round(
+        static_cast<double>(padding_size * default_sampling_rate) / 256));
     const auto start_and_end_padding_f0_size = 2 * padding_f0_size;
     const auto length_with_padding = length + start_and_end_padding_f0_size;
 
     // TODO: 改善したらここの処理を取り除く
-    auto f0_with_padding = make_f0_with_padding(f0, length, length_with_padding, padding_f0_size);
+    auto f0_with_padding =
+        make_f0_with_padding(f0, length, length_with_padding, padding_f0_size);
 
     // TODO: 改善したらここの処理を取り除く
     const auto padding_phonemes_size = padding_f0_size;
     auto phoneme_with_padding =
-        make_phoneme_with_padding(phoneme, phoneme_size, length, length_with_padding, padding_phonemes_size);
+        make_phoneme_with_padding(phoneme, phoneme_size, length,
+                                  length_with_padding, padding_phonemes_size);
 
-    const std::array<int64_t, 2> f0_shape{length_with_padding, 1}, phoneme_shape{length_with_padding, phoneme_size};
+    const std::array<int64_t, 2> f0_shape{length_with_padding, 1},
+        phoneme_shape{length_with_padding, phoneme_size};
 
-    std::array<Ort::Value, 3> input_tensor = {to_tensor(f0_with_padding.data(), f0_shape),
-                                              to_tensor(phoneme_with_padding.data(), phoneme_shape),
-                                              to_tensor(speaker_id, speaker_shape)};
+    std::array<Ort::Value, 3> input_tensor = {
+        to_tensor(f0_with_padding.data(), f0_shape),
+        to_tensor(phoneme_with_padding.data(), phoneme_shape),
+        to_tensor(speaker_id, speaker_shape)};
 
     // TODO: 改善したらここのpadding処理を取り除く
     const auto output_with_padding_size = length_with_padding * 256;
@@ -339,16 +404,18 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
 
     // TODO: 改善したらここの処理を取り除く
     std::vector<float> output_with_padding(output_with_padding_size, 0.0);
-    Ort::Value output_tensor = to_tensor(output_with_padding.data(), wave_shape);
+    Ort::Value output_tensor =
+        to_tensor(output_with_padding.data(), wave_shape);
 
     const char *inputs[] = {"f0", "phoneme", "speaker_id"};
     const char *outputs[] = {"wave"};
 
-    status->decode.Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(), outputs,
-                       &output_tensor, 1);
+    status->decode.Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(),
+                       input_tensor.size(), outputs, &output_tensor, 1);
 
     // TODO: 改善したらここのcopy処理を取り除く
-    copy_output_with_padding_to_output(output_with_padding, output, padding_f0_size);
+    copy_output_with_padding_to_output(output_with_padding, output,
+                                       padding_f0_size);
 
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
