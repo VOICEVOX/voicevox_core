@@ -125,10 +125,10 @@ VOICEVOX_CORE_API const char *last_error_message();
 
 /**
  * @fn
- * open jtalkを初期化する
+ * open jtalkの辞書を読み込む
  * @return 結果コード
  */
-VOICEVOX_CORE_API VoicevoxResultCode voicevox_initialize_openjtalk(const char *dict_path);
+VOICEVOX_CORE_API VoicevoxResultCode voicevox_load_openjtalk_dict(const char *dict_path);
 
 /**
  * @fn

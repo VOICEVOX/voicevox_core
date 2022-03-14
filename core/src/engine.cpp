@@ -11,7 +11,7 @@ using namespace voicevox::core::engine;
 
 static std::unique_ptr<SynthesisEngine> engine;
 
-VoicevoxResultCode voicevox_initialize_openjtalk(const char *dict_path) {
+VoicevoxResultCode voicevox_load_openjtalk_dict(const char *dict_path) {
   // TODO: error handling
   if (!engine) {
     engine = std::make_unique<SynthesisEngine>();
