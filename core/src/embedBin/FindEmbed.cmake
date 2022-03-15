@@ -76,10 +76,10 @@ asm(
 	\"${EndName}:\\n\"
 	\".text\\n\"
 )\;
-extern const char ${DataName}[]\;
-extern const char ${EndName}[]\;
+extern const char data[]\;
+extern const char end_data[]\;
 struct Res ${Name}(void) {
-	struct Res r = { ${DataName}, ${EndName} - ${DataName} }\;
+	struct Res r = { data, end_data - data }\;
 	return r\;
 }"
 		)
