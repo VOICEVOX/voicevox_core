@@ -72,14 +72,14 @@ struct Res ${Name}(void) {
 asm(
 	\"${Section}\\n\"
 	\".align ${CMAKE_SIZEOF_VOID_P}\\n\"
-	\"data: .incbin \\\"${InputAbs}\\\"\\n\"
-	\"end_data:\\n\"
+	\"${DataName}: .incbin \\\"${InputAbs}\\\"\\n\"
+	\"${EndName}:\\n\"
 	\".text\\n\"
 )\;
-extern const char data[]\;
-extern const char end_data[]\;
+extern const char ${DataName}[]\;
+extern const char ${EndName}[]\;
 struct Res ${Name}(void) {
-	struct Res r = { data, end_data - data }\;
+	struct Res r = { ${DataName}, ${EndName} - ${DataName} }\;
 	return r\;
 }"
 		)
