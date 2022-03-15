@@ -28,7 +28,6 @@
 
 constexpr float PHONEME_LENGTH_MINIMAL = 0.01f;
 
-namespace fs = std::filesystem;
 constexpr std::array<int64_t, 0> scalar_shape{};
 constexpr std::array<int64_t, 1> speaker_shape{1};
 
