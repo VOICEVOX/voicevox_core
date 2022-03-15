@@ -71,8 +71,8 @@ asm(
 	\"data: .incbin \\\"${InputAbs}\\\"\\n\"
 	\"end_data:\\n\"
 )\;
-extern const char data[]\;
-extern const char end_data[]\;
+extern volatile const char data[]\;
+extern volatile const char end_data[]\;
 struct Res ${Name}(void) {
 	struct Res r = { data, end_data - data }\;
 	return r\;
