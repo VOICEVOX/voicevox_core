@@ -68,11 +68,11 @@ struct Res ${Name}(void) {
 asm(
 	\"${Section}\\n\"
 	\".align ${CMAKE_SIZEOF_VOID_P}\\n\"
-	\"data: .incbin \\\"${InputAbs}\\\"\\n\"
-	\"end_data:\\n\"
+	\"_data: .incbin \\\"${InputAbs}\\\"\\n\"
+	\"_end_data:\\n\"
 )\;
-extern volatile const char data[]\;
-extern volatile const char end_data[]\;
+extern const char data[]\;
+extern const char end_data[]\;
 struct Res ${Name}(void) {
 	struct Res r = { data, end_data - data }\;
 	return r\;
