@@ -268,7 +268,7 @@ jobs:
           cmake --install .
 
       - name: Unit test ${{ matrix.python_architecture }}
-        if: matrix.python_architecture != ''
+        # if: matrix.python_architecture != ''
         shell: bash
         run: |
           pip install -r requirements.txt
