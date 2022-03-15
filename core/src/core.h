@@ -144,6 +144,18 @@ VOICEVOX_CORE_API VoicevoxResultCode voicevox_tts(const char *text, int64_t spea
 
 /**
  * @fn
+ * text to spearchをAquesTalkライクな記法で実行する
+ * @param text 音声データに変換するtextデータ
+ * @param speaker_id 話者番号
+ * @param output_binary_size 音声データのサイズを出力する先のポインタ
+ * @param output_wav 音声データを出力する先のポインタ。使用が終わったらvoicevox_wav_freeで開放する必要がある
+ * @return 結果コード
+ */
+VOICEVOX_CORE_API VoicevoxResultCode voicevox_tts_from_aquestalk_notation(const char *text, int64_t speaker_id,
+                                                                          int *output_binary_size,uint8_t **output_wav);
+
+/**
+ * @fn
  * voicevox_ttsで生成した音声データを開放する
  * @param wav 開放する音声データのポインタ
  */

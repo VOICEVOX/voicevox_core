@@ -5,6 +5,7 @@
 
 #include "core.h"
 #include "engine/model.h"
+#include "engine/kana_parser.h"
 #include "engine/synthesis_engine.h"
 
 using namespace voicevox::core::engine;
@@ -23,6 +24,21 @@ VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int *outpu
   }
 
   std::vector<AccentPhraseModel> accent_phrases = engine.create_accent_phrases(std::string(text), &speaker_id);
+  const AudioQueryModel audio_query = {
+      accent_phrases, 1.0f, 0.0f, 1.0f, 1.0f, 0.1f, 0.1f, engine.default_sampling_rate, false, "",
+  };
+
+  const auto wav = engine.synthesis_wave_format(audio_query, &speaker_id, output_binary_size);
+  auto *wav_heap = new uint8_t[*output_binary_size];
+  std::copy(wav.begin(), wav.end(), wav_heap);
+  *output_wav = wav_heap;
+  return VOICEVOX_RESULT_SUCCEED;
+}
+
+VoicevoxResultCode voicevox_tts_from_aquestalk_notation(const char *text, int64_t speaker_id, int *output_binary_size,
+                                                        uint8_t **output_wav) {
+  std::vector<AccentPhraseModel> accent_phrases = parse_kana(std::string(text));
+  accent_phrases = engine.replace_mora_data(accent_phrases, &speaker_id);
   const AudioQueryModel audio_query = {
       accent_phrases, 1.0f, 0.0f, 1.0f, 1.0f, 0.1f, 0.1f, engine.default_sampling_rate, false, "",
   };
