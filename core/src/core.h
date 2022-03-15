@@ -29,8 +29,8 @@ extern "C" {
 typedef enum {
   // 成功
   VOICEVOX_RESULT_SUCCEED = 0,
-  // OpenJTalk初期化に失敗した
-  VOICEVOX_RESULT_NOT_INITIALIZE_OPEN_JTALK_ERR = 1,
+  // OpenJTalk辞書がロードされていない
+  VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT = 1,
 } VoicevoxResultCode;
 /**
  * @fn
@@ -125,10 +125,10 @@ VOICEVOX_CORE_API const char *last_error_message();
 
 /**
  * @fn
- * open jtalkを初期化する
+ * open jtalkの辞書を読み込む
  * @return 結果コード
  */
-VOICEVOX_CORE_API VoicevoxResultCode voicevox_initialize_openjtalk(const char *dict_path);
+VOICEVOX_CORE_API VoicevoxResultCode voicevox_load_openjtalk_dict(const char *dict_path);
 
 /**
  * @fn
