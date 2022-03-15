@@ -72,8 +72,9 @@ struct Res ${Name}(void) {
 asm(
 	\"${Section}\\n\"
 	\".align ${CMAKE_SIZEOF_VOID_P}\\n\"
-	\"${DataName}: .incbin \\\"${InputAbs}\\\"\\n\"
-	\"${EndName}:\\n\"
+	\"data: .incbin \\\"${InputAbs}\\\"\\n\"
+	\"end_data:\\n\"
+	\".text\\n\"
 )\;
 extern const char data[]\;
 extern const char end_data[]\;

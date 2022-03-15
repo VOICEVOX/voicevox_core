@@ -41,11 +41,6 @@ EMBED_DECL(YUKARIN_S);
 EMBED_DECL(DECODE);
 EMBED_DECL(METAS);
 
-embed::Resource yukarin_s_model = YUKARIN_S();
-embed::Resource yukarin_sa_model = YUKARIN_SA();
-embed::Resource decode_model = DECODE();
-embed::Resource metas_file = METAS();
-
 struct SupportedDevices {
   bool cpu = true;
   bool cuda = false;
@@ -85,6 +80,11 @@ struct Status {
    * }]
    */
   bool load(int cpu_num_threads) {
+    embed::Resource yukarin_s_model = YUKARIN_S();
+    embed::Resource yukarin_sa_model = YUKARIN_SA();
+    embed::Resource decode_model = DECODE();
+    embed::Resource metas_file = METAS();
+
     metas = nlohmann::json::parse(metas_file.data);
     metas_str = metas.dump();
     supported_styles.clear();
