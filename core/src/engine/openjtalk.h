@@ -25,13 +25,20 @@ class OpenJTalk {
     JPCommon_initialize(&jpcommon);
   }
 
-  OpenJTalk(const std::string& dn_mecab) : OpenJTalk() { load(dn_mecab); }
-
   ~OpenJTalk() { clear(); }
 
   std::vector<std::string> extract_fullcontext(std::string text);
 
   void load(const std::string& dn_mecab);
   void clear();
+  bool is_dict_loaded() const { return dict_loaded; }
+
+ private:
+  bool dict_loaded = false;
+
+  // OpenJTalk内で管理しているfieldはOpenJTalkのオブジェクトがコピーできてしまうと二重でクリアされたり、メモリリークの危険性がある
+  // そのためCopy Protectionによりコピーを防ぐ
+  OpenJTalk(const OpenJTalk&) = delete;
+  void operator=(const OpenJTalk&) = delete;
 };
 }  // namespace voicevox::core::engine

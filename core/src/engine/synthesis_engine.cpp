@@ -114,7 +114,7 @@ std::vector<AccentPhraseModel> SynthesisEngine::create_accent_phrases(std::strin
     return {};
   }
 
-  Utterance utterance = extract_full_context_label(*m_openjtalk, text);
+  Utterance utterance = extract_full_context_label(m_openjtalk, text);
   if (utterance.breath_groups.empty()) {
     return {};
   }
@@ -512,6 +512,8 @@ std::vector<float> SynthesisEngine::synthesis(AudioQueryModel query, int64_t *sp
 
   return wave;
 }
+
+void SynthesisEngine::load_openjtalk_dict(const std::string &dict_path) { m_openjtalk.load(dict_path); }
 
 void SynthesisEngine::initial_process(std::vector<AccentPhraseModel> &accent_phrases,
                                       std::vector<MoraModel> &flatten_moras, std::vector<std::string> &phoneme_str_list,

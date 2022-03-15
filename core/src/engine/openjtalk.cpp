@@ -48,6 +48,7 @@ void OpenJTalk::load(const std::string& dn_mecab) {
     clear();
     throw std::runtime_error("failed to initialize mecab");
   }
+  dict_loaded = true;
 }
 
 void OpenJTalk::clear() {
