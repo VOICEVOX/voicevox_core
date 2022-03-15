@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "param.h"
-
 #define CORE_PATH "./core.dll"
 #define MODEL_DIR "../../../model"
 #define OPENJTALK_DIR "../dic"
@@ -38,6 +36,33 @@ using TTS = VoicevoxResultCode (*)(const char *text, int64_t speaker_id, int *ou
 using FREE = void (*)(uint8_t *wav);
 using ERR2MSG = const char *(*)(VoicevoxResultCode result_code);
 
+std::string SjistoUTF8(std::string srcSjis) {
+  // Unicodeへ変換後の文字列長を得る
+  int lenghtUnicode = MultiByteToWideChar(CP_THREAD_ACP, 0, srcSjis.c_str(), srcSjis.size() + 1, NULL, 0);
+
+  //必要な分だけUnicode文字列のバッファを確保
+  wchar_t *bufUnicode = new wchar_t[lenghtUnicode];
+
+  // ShiftJISからUnicodeへ変換
+  MultiByteToWideChar(CP_THREAD_ACP, 0, srcSjis.c_str(), srcSjis.size() + 1, bufUnicode, lenghtUnicode);
+
+  // UTF8へ変換後の文字列長を得る
+  int lengthUTF8 = WideCharToMultiByte(CP_UTF8, 0, bufUnicode, -1, NULL, 0, NULL, NULL);
+
+  //必要な分だけUTF8文字列のバッファを確保
+  char *bufUTF8 = new char[lengthUTF8];
+
+  // UnicodeからUTF8へ変換
+  WideCharToMultiByte(CP_UTF8, 0, bufUnicode, lenghtUnicode + 1, bufUTF8, lengthUTF8, NULL, NULL);
+
+  std::string strUTF8(bufUTF8);
+
+  delete bufUnicode;
+  delete bufUTF8;
+
+  return strUTF8;
+}
+
 int main(int argc, char *argv[]) {
   std::locale::global(std::locale(""));
 
@@ -57,6 +82,7 @@ int main(int argc, char *argv[]) {
   }
 
   INIT initialize = (INIT)GetProcAddress(handler, "initialize");
+  FIN finalize = (FIN)GetProcAddress(handler, "finalize");
   INIT_OJT initialize_ojt = (INIT_OJT)GetProcAddress(handler, "voicevox_initialize_openjtalk");
   TTS voicevox_tts = (TTS)GetProcAddress(handler, "voicevox_tts");
   FREE voicevox_wav_free = (FREE)GetProcAddress(handler, "voicevox_wav_free");
@@ -90,13 +116,12 @@ int main(int argc, char *argv[]) {
   uint8_t *wav;
   int64_t speaker_id = 1;
   int binary_size;
-  const auto result_code = voicevox_tts(msg.c_str(), speaker_id, &binary_size, &wav);
+  const auto result_code = voicevox_tts(SjistoUTF8(msg).c_str(), speaker_id, &binary_size, &wav);
   if (result_code != VOICEVOX_RESULT_SUCCEED) {
     std::cout << "error:" << voicevox_error_result_to_message(result_code) << std::endl;
     return 0;
   }
   std::cout << result_code << std::endl;
-  // 後続の処理を実装
 
   ofs.write((char *)wav, binary_size);
   ofs.flush();
@@ -105,7 +130,7 @@ int main(int argc, char *argv[]) {
   // 使い終わったら開放する
   voicevox_wav_free(wav);
   std::cout << binary_size << std::endl;
-
+  finalize();
   FreeLibrary(handler);
   return 0;
 }
