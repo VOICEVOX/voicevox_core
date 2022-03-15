@@ -35,5 +35,10 @@ class OpenJTalk {
 
  private:
   bool dict_loaded = false;
+
+  // OpenJTalk内で管理しているfieldはOpenJTalkのオブジェクトがコピーできてしまうと二重でクリアされたり、メモリリークの危険性がある
+  // そのためCopy Protectionによりコピーを防ぐ
+  OpenJTalk(const OpenJTalk&) = delete;
+  void operator=(const OpenJTalk&) = delete;
 };
 }  // namespace voicevox::core::engine
