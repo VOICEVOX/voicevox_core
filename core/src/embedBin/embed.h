@@ -24,16 +24,16 @@
 #define EMBED_DECL(NAME) extern "C" EMBED_NS::EMBED_RES NAME(void)
 namespace EMBED_NS {
 struct EMBED_RES {
-	const char *EMBED_DATA_NAME;
-	std::size_t EMBED_SIZE_NAME;
+  const char *EMBED_DATA_NAME;
+  std::size_t EMBED_SIZE_NAME;
 };
-}
+}  // namespace EMBED_NS
 #else
 #include <stddef.h>
 #define EMBED_DECL(NAME) extern struct EMBED_RES NAME(void)
 typedef struct EMBED_RES {
-	const char *EMBED_DATA_NAME;
-	size_t EMBED_SIZE_NAME;
+  const char *EMBED_DATA_NAME;
+  size_t EMBED_SIZE_NAME;
 } EMBED_RES_TYPE;
 #endif
 #endif

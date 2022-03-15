@@ -14,7 +14,6 @@
  * @fn
  * 初期化する
  * @brief 音声合成するための初期化を行う。他の関数を正しく実行するには先に初期化が必要
- * @param root_dir_path 必要なファイルがあるディレクトリ。相対パス・絶対パスどちらも指定可能。文字コードはUTF-8
  * @param use_gpu trueならGPU用、falseならCPU用の初期化を行う
  * @param cpu_num_threads 推論に用いるスレッド数を設定する。0の場合論理コア数の半分か、物理コア数が設定される
  * @return 成功したらtrue、失敗したらfalse
