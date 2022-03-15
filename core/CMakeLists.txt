@@ -4,11 +4,16 @@ project(ONNXCore)
 
 set(CMAKE_MACOSX_RPATH 1)
 
+# modelファイルを読み込み
 include(src/embedBin/FindEmbed.cmake)
-EMBED_TARGET(YUKARIN_S "../model/yukarin_s.onnx")
-EMBED_TARGET(YUKARIN_SA "../model/yukarin_sa.onnx")
-EMBED_TARGET(DECODE "../model/decode.onnx")
-EMBED_TARGET(METAS "../model/metas.json")
+if(EXISTS "${MODEL_DIR}/metas.json")
+	EMBED_TARGET(YUKARIN_S "${MODEL_DIR}/yukarin_s.onnx")
+	EMBED_TARGET(YUKARIN_SA "${MODEL_DIR}/yukarin_sa.onnx")
+	EMBED_TARGET(DECODE "${MODEL_DIR}/decode.onnx")
+	EMBED_TARGET(METAS "${MODEL_DIR}/metas.json")
+else()
+	message(FATAL_ERROR "Unable to find Model. Use option -DMODEL_DIR=...")
+endif()
 
 # coreライブラリのインストール先設定。デフォルトはCMakeLists.txtと同じ位置
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
