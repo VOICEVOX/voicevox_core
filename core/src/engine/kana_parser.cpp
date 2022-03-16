@@ -128,7 +128,6 @@ std::vector<AccentPhraseModel> parse_kana(std::string text) {
     if (pos != text.size()) {
       letter = extract_one_character(text, pos, &char_size);
     }
-    phrase += letter;
     if (pos == text.size() || letter == PAUSE_DELIMITER || letter == NOPAUSE_DELIMITER) {
       if (phrase.empty()) {
         throw std::runtime_error("accent phrase at position of " + std::to_string(parsed_results.size() + 1) +
@@ -150,6 +149,8 @@ std::vector<AccentPhraseModel> parse_kana(std::string text) {
       accent_phrase.is_interrogative = is_interrogative;
       parsed_results.push_back(accent_phrase);
       phrase = "";
+    } else {
+      phrase += letter;
     }
   }
   return parsed_results;
