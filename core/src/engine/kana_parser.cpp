@@ -61,7 +61,7 @@ std::string extract_one_character(const std::string& text, N pos, N* size) {
   return text.substr(pos, *size);
 }
 
-AccentPhraseModel text_to_accent_phrase(std::string phrase) {
+AccentPhraseModel text_to_accent_phrase(const std::string& phrase) {
   std::optional<unsigned int> accent_index = std::nullopt;
 
   std::vector<MoraModel> moras;
@@ -117,7 +117,7 @@ AccentPhraseModel text_to_accent_phrase(std::string phrase) {
   return accent_phrase;
 }
 
-std::vector<AccentPhraseModel> parse_kana(std::string text) {
+std::vector<AccentPhraseModel> parse_kana(const std::string& text) {
   std::vector<AccentPhraseModel> parsed_results;
 
   std::string phrase;

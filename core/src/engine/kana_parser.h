@@ -19,7 +19,7 @@ static const std::map<std::string, MoraModel> text2mora_with_unvoice();
 template <typename N>
 std::string extract_one_character(const std::string& text, N pos, N* size);
 
-AccentPhraseModel text_to_accent_phrase(std::string phrase);
-std::vector<AccentPhraseModel> parse_kana(std::string text);
+AccentPhraseModel text_to_accent_phrase(const std::string& phrase);
+std::vector<AccentPhraseModel> parse_kana(const std::string& text);
 std::string create_kana(std::vector<AccentPhraseModel> accent_phrases);
 }  // namespace voicevox::core::engine
