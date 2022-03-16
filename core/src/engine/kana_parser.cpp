@@ -43,6 +43,24 @@ static const std::map<std::string, MoraModel> text2mora_with_unvoice() {
   return text2mora_with_unvoice;
 }
 
+template <typename N>
+std::string extract_one_character(const std::string& text, N pos, N* size) {
+  // UTF-8の文字は可変長なので、leadの値で長さを判別する
+  unsigned char lead = text[pos];
+
+  if (lead < 0x80) {
+    *size = 1;
+  } else if (lead < 0xE0) {
+    *size = 2;
+  } else if (lead < 0xF0) {
+    *size = 3;
+  } else {
+    *size = 4;
+  }
+
+  return text.substr(pos, *size);
+}
+
 AccentPhraseModel text_to_accent_phrase(std::string phrase) {
   std::optional<unsigned int> accent_index = std::nullopt;
 
