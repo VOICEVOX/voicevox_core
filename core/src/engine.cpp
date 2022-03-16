@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "core.h"
-#include "engine/model.h"
 #include "engine/kana_parser.h"
+#include "engine/model.h"
 #include "engine/synthesis_engine.h"
 
 using namespace voicevox::core::engine;
