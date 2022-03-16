@@ -67,7 +67,7 @@ AccentPhraseModel text_to_accent_phrase(std::string phrase) {
   std::vector<MoraModel> moras;
 
   int base_index = 0;
-  std::string stack = "";
+  std::string stack;
   std::optional<std::string> matched_text = std::nullopt;
 
   const std::map<std::string, MoraModel> text2mora = text2mora_with_unvoice();
@@ -120,7 +120,7 @@ AccentPhraseModel text_to_accent_phrase(std::string phrase) {
 std::vector<AccentPhraseModel> parse_kana(std::string text) {
   std::vector<AccentPhraseModel> parsed_results;
 
-  std::string phrase = "";
+  std::string phrase;
 
   size_t char_size;
   for (size_t pos = 0; pos <= text.size(); pos += char_size) {
@@ -157,7 +157,7 @@ std::vector<AccentPhraseModel> parse_kana(std::string text) {
 }
 
 std::string create_kana(std::vector<AccentPhraseModel> accent_phrases) {
-  std::string text = "";
+  std::string text;
   for (int i = 0; i < accent_phrases.size(); i++) {
     AccentPhraseModel phrase = accent_phrases[i];
     std::vector<MoraModel> moras = phrase.moras;
