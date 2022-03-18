@@ -121,7 +121,8 @@ int main(int argc, char *argv[]) {
     std::cout << "error:" << voicevox_error_result_to_message(result_code) << std::endl;
     return 0;
   }
-  std::cout << result_code << std::endl;
+
+  std::cout << binary_size << std::endl;
 
   ofs.write((char *)wav, binary_size);
   ofs.flush();
@@ -129,7 +130,6 @@ int main(int argc, char *argv[]) {
 
   // 使い終わったら開放する
   voicevox_wav_free(wav);
-  std::cout << binary_size << std::endl;
   finalize();
   FreeLibrary(handler);
   return 0;
