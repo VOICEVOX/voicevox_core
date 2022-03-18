@@ -43,22 +43,21 @@ static const std::map<std::string, MoraModel> text2mora_with_unvoice() {
   return text2mora_with_unvoice;
 }
 
-template <typename N>
-std::string extract_one_character(const std::string& text, N pos, N* size) {
+std::string extract_one_character(const std::string& text, size_t pos, size_t &size) {
   // UTF-8の文字は可変長なので、leadの値で長さを判別する
   unsigned char lead = text[pos];
 
   if (lead < 0x80) {
-    *size = 1;
+    size = 1;
   } else if (lead < 0xE0) {
-    *size = 2;
+    size = 2;
   } else if (lead < 0xF0) {
-    *size = 3;
+    size = 3;
   } else {
-    *size = 4;
+    size = 4;
   }
 
-  return text.substr(pos, *size);
+  return text.substr(pos, size);
 }
 
 AccentPhraseModel text_to_accent_phrase(const std::string& phrase) {
@@ -66,7 +65,7 @@ AccentPhraseModel text_to_accent_phrase(const std::string& phrase) {
 
   std::vector<MoraModel> moras;
 
-  int base_index = 0;
+  size_t base_index = 0;
   std::string stack;
   std::optional<std::string> matched_text = std::nullopt;
 
@@ -75,8 +74,8 @@ AccentPhraseModel text_to_accent_phrase(const std::string& phrase) {
   int outer_loop = 0;
   while (base_index < phrase.size()) {
     outer_loop++;
-    int char_size;
-    std::string letter = extract_one_character(phrase, base_index, &char_size);
+    size_t char_size;
+    std::string letter = extract_one_character(phrase, base_index, char_size);
     if (letter == ACCENT_SYMBOL) {
       if (moras.empty()) {
         throw std::runtime_error("accent cannot be set at beginning of accent phrase: " + phrase);
@@ -89,9 +88,9 @@ AccentPhraseModel text_to_accent_phrase(const std::string& phrase) {
       base_index += char_size;
       continue;
     }
-    int watch_char_size;
-    for (int watch_index = base_index; watch_index < phrase.size(); watch_index += watch_char_size) {
-      std::string watch_letter = extract_one_character(phrase, watch_index, &watch_char_size);
+    size_t watch_char_size;
+    for (size_t watch_index = base_index; watch_index < phrase.size(); watch_index += watch_char_size) {
+      std::string watch_letter = extract_one_character(phrase, watch_index, watch_char_size);
       if (watch_letter == ACCENT_SYMBOL) break;
       stack += watch_letter;
       if (text2mora.find(stack) != text2mora.end()) {
@@ -126,7 +125,7 @@ std::vector<AccentPhraseModel> parse_kana(const std::string& text) {
   for (size_t pos = 0; pos <= text.size(); pos += char_size) {
     std::string letter;
     if (pos != text.size()) {
-      letter = extract_one_character(text, pos, &char_size);
+      letter = extract_one_character(text, pos, char_size);
     }
     if (pos == text.size() || letter == PAUSE_DELIMITER || letter == NOPAUSE_DELIMITER) {
       if (phrase.empty()) {
