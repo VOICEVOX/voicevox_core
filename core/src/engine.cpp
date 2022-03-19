@@ -35,8 +35,8 @@ VoicevoxResultCode voicevox_tts(const char *text, int64_t speaker_id, int *outpu
   return VOICEVOX_RESULT_SUCCEED;
 }
 
-VoicevoxResultCode voicevox_tts_from_aquestalk_notation(const char *text, int64_t speaker_id, int *output_binary_size,
-                                                        uint8_t **output_wav) {
+VoicevoxResultCode voicevox_tts_from_kana(const char *text, int64_t speaker_id, int *output_binary_size,
+                                          uint8_t **output_wav) {
   std::vector<AccentPhraseModel> accent_phrases = parse_kana(std::string(text));
   accent_phrases = engine.replace_mora_data(accent_phrases, &speaker_id);
   const AudioQueryModel audio_query = {

@@ -151,8 +151,8 @@ VOICEVOX_CORE_API VoicevoxResultCode voicevox_tts(const char *text, int64_t spea
  * @param output_wav 音声データを出力する先のポインタ。使用が終わったらvoicevox_wav_freeで開放する必要がある
  * @return 結果コード
  */
-VOICEVOX_CORE_API VoicevoxResultCode voicevox_tts_from_aquestalk_notation(const char *text, int64_t speaker_id,
-                                                                          int *output_binary_size,uint8_t **output_wav);
+VOICEVOX_CORE_API VoicevoxResultCode voicevox_tts_from_kana(const char *text, int64_t speaker_id,
+                                                            int *output_binary_size, uint8_t **output_wav);
 
 /**
  * @fn
