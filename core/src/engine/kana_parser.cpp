@@ -43,7 +43,7 @@ static const std::map<std::string, MoraModel> text2mora_with_unvoice() {
   return text2mora_with_unvoice;
 }
 
-std::string extract_one_character(const std::string& text, size_t pos, size_t &size) {
+std::string extract_one_character(const std::string& text, size_t pos, size_t& size) {
   // UTF-8の文字は可変長なので、leadの値で長さを判別する
   unsigned char lead = text[pos];
 
