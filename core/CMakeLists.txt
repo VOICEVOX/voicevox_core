@@ -6,7 +6,11 @@ set(CMAKE_MACOSX_RPATH 1)
 
 # modelファイルを読み込み
 include(src/embedBin/FindEmbed.cmake)
-if(EXISTS "${MODEL_DIR}/metas.json")
+if(EXISTS "${MODEL_DIR}/metas.json"
+	AND EXISTS "${MODEL_DIR}/yukarin_s.onnx"
+	AND EXISTS "${MODEL_DIR}/yukarin_sa.onnx"
+	AND EXISTS "${MODEL_DIR}/decode.onnx")
+	message("Models exist.")
 	EMBED_TARGET(YUKARIN_S "${MODEL_DIR}/yukarin_s.onnx")
 	EMBED_TARGET(YUKARIN_SA "${MODEL_DIR}/yukarin_sa.onnx")
 	EMBED_TARGET(DECODE "${MODEL_DIR}/decode.onnx")
