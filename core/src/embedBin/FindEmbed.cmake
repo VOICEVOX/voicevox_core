@@ -34,7 +34,7 @@ struct Res {
 }\;"
 )
 
-macro(EMBED_TARGET Name Input)
+macro(EMBED_TARGET Name Input LibName)
 	get_filename_component(InputAbs "${Input}" REALPATH)
 	if(WIN32)
 		set(OutputRC "${CMAKE_CURRENT_BINARY_DIR}/${Name}.rc")
@@ -45,7 +45,7 @@ macro(EMBED_TARGET Name Input)
 "#include \"windows.h\"
 ${STRUCT}
 struct Res ${Name}(void) {
-	HMODULE handle = GetModuleHandle(\"core.dll\")\;
+	HMODULE handle = GetModuleHandle(\"${LibName}\")\;
 	HRSRC res = FindResource(handle, MAKEINTRESOURCE(${RES_ID}), RT_RCDATA)\;
 	struct Res r = {
 		(const char*) LockResource(LoadResource(handle, res)),
