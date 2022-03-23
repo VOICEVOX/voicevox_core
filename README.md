@@ -115,7 +115,6 @@ python run.py \
 # --use_gpu GPUを使う
 # --f0_speaker_id 音高の話者ID（デフォルト値はspeaker_id）
 # --f0_correct 音高の補正値（デフォルト値は0。+-0.3くらいで結果が大きく変わります）
-# --root_dir_path onnxファイル等必要なファイルがあるディレクトリ
 ```
 
 ### その他の言語
