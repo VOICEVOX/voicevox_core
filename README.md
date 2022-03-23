@@ -108,7 +108,6 @@ pip install -r requirements.txt
 python run.py \
     --text "これは本当に実行できているんですか" \
     --speaker_id 1 \
-    --root_dir_path="../../release"
 
 # 引数の紹介
 # --text 読み上げるテキスト
@@ -158,7 +157,6 @@ cd example/python
 python run.py \
     --text "これは本当に実行できているんですか" \
     --speaker_id 1 \
-    --root_dir_path="../../model"
 ```
 
 ## 事例紹介
