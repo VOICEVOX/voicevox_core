@@ -49,7 +49,7 @@ struct Res ${Name}(void) {
 	GetModuleHandleEx(
 		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
 		| GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-		(LPCTSTR)${Name},	&handle)\;
+		(LPCTSTR)${Name}, &handle)\;
 	HRSRC res = FindResource(handle, MAKEINTRESOURCE(${RES_ID}), RT_RCDATA)\;
 	struct Res r = {
 		(const char*) LockResource(LoadResource(handle, res)),
