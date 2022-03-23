@@ -32,6 +32,3 @@ CMakeCache.txt
 
 # Voicevox release
 release/
-
-example/cpp/dic
-example/cpp/result
