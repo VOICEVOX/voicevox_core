@@ -45,7 +45,11 @@ macro(EMBED_TARGET Name Input LibName)
 "#include \"windows.h\"
 ${STRUCT}
 struct Res ${Name}(void) {
-	HMODULE handle = GetModuleHandle(\"${LibName}\")\;
+	HMODULE handle = NULL\;
+	GetModuleHandleEx(
+		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
+		| GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+		(LPCTSTR)${Name},	&handle)\;
 	HRSRC res = FindResource(handle, MAKEINTRESOURCE(${RES_ID}), RT_RCDATA)\;
 	struct Res r = {
 		(const char*) LockResource(LoadResource(handle, res)),
