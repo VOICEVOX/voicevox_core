@@ -85,7 +85,7 @@ struct Status {
     embed::Resource decode_model = DECODE();
     embed::Resource metas_file = METAS();
 
-    metas = nlohmann::json::parse(metas_file.data);
+    metas = nlohmann::json::parse(metas_file.data, metas_file.data + metas_file.size);
     metas_str = metas.dump();
     supported_styles.clear();
     for (const auto &meta : metas) {

@@ -28,7 +28,10 @@ message("core will be installed to: ${CMAKE_INSTALL_PREFIX}")
 # coreライブラリのビルド設定
 add_library(core
 		SHARED src/core.cpp
-    ${EMBED_YUKARIN_S_OUTPUTS} ${EMBED_YUKARIN_SA_OUTPUTS} ${EMBED_DECODE_OUTPUTS} ${EMBED_METAS_OUTPUTS}
+    ${EMBED_YUKARIN_S_OUTPUTS} 
+		${EMBED_YUKARIN_SA_OUTPUTS} 
+		${EMBED_DECODE_OUTPUTS} 
+		${EMBED_METAS_OUTPUTS}
 		src/engine/full_context_label.cpp
 		src/engine/acoustic_feature_extractor.cpp
 		src/engine/openjtalk.cpp
