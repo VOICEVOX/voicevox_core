@@ -34,7 +34,7 @@ struct Res {
 }\;"
 )
 
-macro(EMBED_TARGET Name Input LibName)
+macro(EMBED_TARGET Name Input)
 	get_filename_component(InputAbs "${Input}" REALPATH)
 	if(WIN32)
 		set(OutputRC "${CMAKE_CURRENT_BINARY_DIR}/${Name}.rc")
