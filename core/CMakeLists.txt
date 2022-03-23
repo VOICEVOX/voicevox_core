@@ -11,7 +11,15 @@ endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 message("core will be installed to: ${CMAKE_INSTALL_PREFIX}")
 
 # coreライブラリのビルド設定
-add_library(core SHARED src/core.cpp)
+add_library(core
+		SHARED src/core.cpp
+		src/engine/full_context_label.cpp
+		src/engine/acoustic_feature_extractor.cpp
+		src/engine/openjtalk.cpp
+		src/engine/kana_parser.cpp
+		src/engine/mora_list.cpp
+		src/engine/synthesis_engine.cpp
+		src/engine.cpp)
 
 # -DONNXRUNTIME_DIRで指定されたパスをもとにonnxruntimeのライブラリを取得する。失敗した場合はfatal error
 get_filename_component(ONNXRUNTIME_DIR ${ONNXRUNTIME_DIR} ABSOLUTE)
@@ -81,9 +89,26 @@ elseif (UNIX)
 endif ()
 
 target_compile_options(core PRIVATE
-	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8>
-	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2>
+	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8 /DVOICEVOX_CORE_EXPORTS>
+	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2 -DVOICEVOX_CORE_EXPORTS>
 )
+
+target_include_directories(core
+	PRIVATE ../open_jtalk/src/jpcommon
+	PRIVATE ../open_jtalk/src/mecab/src
+	PRIVATE ../open_jtalk/src/mecab2njd
+	PRIVATE ../open_jtalk/src/mecab-naist-jdic
+	PRIVATE ../open_jtalk/src/njd
+	PRIVATE ../open_jtalk/src/njd2jpcommon
+	PRIVATE ../open_jtalk/src/njd_set_accent_phrase
+	PRIVATE ../open_jtalk/src/njd_set_accent_type
+	PRIVATE ../open_jtalk/src/njd_set_digit
+	PRIVATE ../open_jtalk/src/njd_set_long_vowel
+	PRIVATE ../open_jtalk/src/njd_set_pronunciation
+	PRIVATE ../open_jtalk/src/njd_set_unvoiced_vowel
+	PRIVATE ../open_jtalk/src/text2mecab)
+target_link_libraries(core PUBLIC openjtalk)
+
 
 # GCC 9.0以前ではstd::filesystemを使うためにリンクが必要 (https://gitlab.kitware.com/cmake/cmake/-/issues/17834)
 target_link_libraries(core PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
