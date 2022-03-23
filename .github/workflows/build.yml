@@ -7,6 +7,7 @@ on:
   release:
     types:
       - published
+  pull_request:
   workflow_dispatch:
 
 env:
@@ -24,7 +25,7 @@ jobs:
             device: gpu
             python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x64-gpu-1.10.0.zip
-            artifact_name: windows-x64-gpu
+            artifact_name: windows-x64-cuda
 
           - os: windows-2019
             device: cpu-x64
@@ -50,6 +51,36 @@ jobs:
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-arm-1.10.0.zip
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm
             artifact_name: windows-arm-cpu
+
+          - os: windows-2019
+            device: directml-x64
+            python_architecture: 'x64'
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/Microsoft.ML.OnnxRuntime.DirectML.1.10.0.zip
+            directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
+            cmake_additional_options: -DDIRECTML=ON -DDIRECTML_DIR=download/directml
+            artifact_name: windows-x64-directml
+
+          - os: windows-2019
+            device: directml-x86
+            python_architecture: 'x86'
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/Microsoft.ML.OnnxRuntime.DirectML.1.10.0.zip
+            directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
+            cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32 -DDIRECTML=ON -DDIRECTML_DIR=download/directml
+            artifact_name: windows-x86-directml
+
+          - os: windows-2019
+            device: directml-arm64
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/Microsoft.ML.OnnxRuntime.DirectML.1.10.0.zip
+            directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
+            cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm64 -DDIRECTML=ON -DDIRECTML_DIR=download/directml
+            artifact_name: windows-arm64-directml
+
+          - os: windows-2019
+            device: directml-arm
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/Microsoft.ML.OnnxRuntime.DirectML.1.10.0.zip
+            directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
+            cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=arm -DDIRECTML=ON -DDIRECTML_DIR=download/directml
+            artifact_name: windows-arm-directml
 
           - os: macos-10.15
             device: cpu-x64
@@ -125,6 +156,19 @@ jobs:
           key: onnxruntime-cache-v1-${{ hashFiles('download/onnxruntime_url.txt') }}
           path: download/onnxruntime
 
+      - name: Export DirectML url to calc hash
+        if: endswith(matrix.artifact_name, '-directml')
+        shell: bash
+        run: echo "${{matrix.directml_url}}" >> download/directml_url.txt
+
+      - name: Cache DirectML
+        if: endswith(matrix.artifact_name, '-directml')
+        uses: actions/cache@v2
+        id: directml-cache
+        with:
+          key: directml-cache-v1-${{ hashFiles('download/directml_url.txt') }}
+          path: download/directml
+
       # download/onnxruntime/lib/onnxruntime.dll
       - name: Download ONNX Runtime (zip)
         if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.zip')
@@ -136,7 +180,13 @@ jobs:
           # strip-components
           TEMPDIR=$(mktemp -d)
           unzip download/onnxruntime.zip -d "${TEMPDIR}"
-          mv "${TEMPDIR}"/*/* download/onnxruntime/
+          
+          if [[ ${{ matrix.artifact_name }} != *-directml ]]; then
+            mv "${TEMPDIR}"/*/* download/onnxruntime/
+          else
+            mv "${TEMPDIR}"/* download/onnxruntime/
+          fi
+
           rm -rf "${TEMPDIR}"
 
           rm download/onnxruntime.zip
@@ -151,6 +201,24 @@ jobs:
           mkdir -p download/onnxruntime
           tar xf download/onnxruntime.tgz -C download/onnxruntime --strip-components 1
           rm download/onnxruntime.tgz
+
+      # download directml
+      - name: Download DirectML
+        if: steps.directml-cache.outputs.cache-hit != 'true' && endswith(matrix.artifact_name, '-directml')
+        shell: bash
+        run: |
+          curl -L "${{matrix.directml_url}}" -o download/directml.zip
+          mkdir -p download/directml
+
+          # strip-components
+          TEMPDIR=$(mktemp -d)
+          unzip download/directml.zip -d "${TEMPDIR}"
+          mv "${TEMPDIR}"/* download/directml/.
+          rm -rf "${TEMPDIR}"
+
+          rm download/directml.zip
+
+          ls download/directml
 
       # Build
       - if: startsWith(matrix.os, 'windows')
@@ -258,16 +326,20 @@ jobs:
           mkdir release
 
           readarray -t MAPPINGS <<EOF
-          windows-x64-gpu     core.dll      core_gpu_x64_nvidia.dll
-          windows-x64-cpu     core.dll      core_cpu_x64.dll
-          windows-x86-cpu     core.dll      core_cpu_x86.dll
-          windows-arm64-cpu   core.dll      core_cpu_arm64.dll
-          windows-arm-cpu     core.dll      core_cpu_arm.dll
-          osx-universal2-cpu  libcore.dylib libcore_cpu_universal2.dylib
-          linux-x64-gpu       libcore.so    libcore_gpu_x64_nvidia.so
-          linux-x64-cpu       libcore.so    libcore_cpu_x64.so
-          linux-armhf-cpu     libcore.so    libcore_cpu_armhf.so
-          linux-arm64-cpu     libcore.so    libcore_cpu_arm64.so
+          windows-x64-cuda       core.dll      core_gpu_x64_nvidia.dll
+          windows-x64-directml   core.dll      core_gpu_x64_directml.dll
+          windows-x86-directml   core.dll      core_gpu_x86_directml.dll
+          windows-arm64-directml core.dll      core_gpu_arm64_directml.dll
+          windows-arm-directml   core.dll      core_gpu_arm_directml.dll
+          windows-x64-cpu        core.dll      core_cpu_x64.dll
+          windows-x86-cpu        core.dll      core_cpu_x86.dll
+          windows-arm64-cpu      core.dll      core_cpu_arm64.dll
+          windows-arm-cpu        core.dll      core_cpu_arm.dll
+          osx-universal2-cpu     libcore.dylib libcore_cpu_universal2.dylib
+          linux-x64-gpu          libcore.so    libcore_gpu_x64_nvidia.so
+          linux-x64-cpu          libcore.so    libcore_cpu_x64.so
+          linux-armhf-cpu        libcore.so    libcore_cpu_armhf.so
+          linux-arm64-cpu        libcore.so    libcore_cpu_arm64.so
           EOF
 
           for line in "${MAPPINGS[@]}"; do

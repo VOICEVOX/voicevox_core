@@ -8,6 +8,9 @@
 # ONNX
 onnxruntime*/
 
+# DirectML
+directml*/
+
 # Build artifacts
 build/
 lib/

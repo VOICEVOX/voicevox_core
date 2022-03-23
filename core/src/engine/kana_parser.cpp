@@ -43,14 +43,30 @@ static const std::map<std::string, MoraModel> text2mora_with_unvoice() {
   return text2mora_with_unvoice;
 }
 
-AccentPhraseModel text_to_accent_phrase(std::string phrase) {
+std::string extract_one_character(const std::string& text, size_t pos, size_t& size) {
+  // UTF-8の文字は可変長なので、leadの値で長さを判別する
+  unsigned char lead = text[pos];
+
+  if (lead < 0x80) {
+    size = 1;
+  } else if (lead < 0xE0) {
+    size = 2;
+  } else if (lead < 0xF0) {
+    size = 3;
+  } else {
+    size = 4;
+  }
+
+  return text.substr(pos, size);
+}
+
+AccentPhraseModel text_to_accent_phrase(const std::string& phrase) {
   std::optional<unsigned int> accent_index = std::nullopt;
 
   std::vector<MoraModel> moras;
-  int count = 0;
 
-  int base_index = 0;
-  std::string stack = "";
+  size_t base_index = 0;
+  std::string stack;
   std::optional<std::string> matched_text = std::nullopt;
 
   const std::map<std::string, MoraModel> text2mora = text2mora_with_unvoice();
@@ -58,7 +74,9 @@ AccentPhraseModel text_to_accent_phrase(std::string phrase) {
   int outer_loop = 0;
   while (base_index < phrase.size()) {
     outer_loop++;
-    if (std::string(&phrase[base_index]) == ACCENT_SYMBOL) {
+    size_t char_size;
+    std::string letter = extract_one_character(phrase, base_index, char_size);
+    if (letter == ACCENT_SYMBOL) {
       if (moras.empty()) {
         throw std::runtime_error("accent cannot be set at beginning of accent phrase: " + phrase);
       }
@@ -67,12 +85,14 @@ AccentPhraseModel text_to_accent_phrase(std::string phrase) {
       }
 
       accent_index = moras.size();
-      base_index++;
+      base_index += char_size;
       continue;
     }
-    for (int watch_index = base_index; watch_index < phrase.size(); watch_index++) {
-      if (std::string(&phrase[base_index]) == ACCENT_SYMBOL) break;
-      stack += phrase[watch_index];
+    size_t watch_char_size;
+    for (size_t watch_index = base_index; watch_index < phrase.size(); watch_index += watch_char_size) {
+      std::string watch_letter = extract_one_character(phrase, watch_index, watch_char_size);
+      if (watch_letter == ACCENT_SYMBOL) break;
+      stack += watch_letter;
       if (text2mora.find(stack) != text2mora.end()) {
         matched_text = stack;
       }
@@ -80,8 +100,7 @@ AccentPhraseModel text_to_accent_phrase(std::string phrase) {
     if (matched_text == std::nullopt) {
       throw std::runtime_error("unknown text in accent phrase: " + stack);
     } else {
-      moras[count] = text2mora.at(*matched_text);
-      count++;
+      moras.push_back(text2mora.at(*matched_text));
       base_index += matched_text->size();
       stack = "";
       matched_text = std::nullopt;
@@ -97,43 +116,47 @@ AccentPhraseModel text_to_accent_phrase(std::string phrase) {
   return accent_phrase;
 }
 
-std::vector<AccentPhraseModel> parse_kana(std::string text) {
+std::vector<AccentPhraseModel> parse_kana(const std::string& text) {
   std::vector<AccentPhraseModel> parsed_results;
 
-  std::string phrase = "";
-  int count = 0;
-  for (size_t i = 0; i <= text.size(); i++) {
-    std::string letter = i == text.size() ? "" : &text[i];
-    phrase += letter;
-    if (i == text.size() || letter == PAUSE_DELIMITER || letter == NOPAUSE_DELIMITER) {
+  std::string phrase;
+
+  size_t char_size;
+  for (size_t pos = 0; pos <= text.size(); pos += char_size) {
+    std::string letter;
+    if (pos != text.size()) {
+      letter = extract_one_character(text, pos, char_size);
+    }
+    if (pos == text.size() || letter == PAUSE_DELIMITER || letter == NOPAUSE_DELIMITER) {
       if (phrase.empty()) {
         throw std::runtime_error("accent phrase at position of " + std::to_string(parsed_results.size() + 1) +
                                  " is empty");
       }
       bool is_interrogative = phrase.find(WIDE_INTERROGATION_MARK) != std::string::npos;
       if (is_interrogative) {
-        if (phrase.find(WIDE_INTERROGATION_MARK) != phrase.length() - 1) {
+        if (phrase.find(WIDE_INTERROGATION_MARK) != phrase.length() - char_size) {
           throw std::runtime_error("interrogative mark cannot be set at not end of accent phrase: " + phrase);
         }
-        phrase = phrase.replace(phrase.length() - 1, 1, "");
+        phrase = phrase.replace(phrase.length() - char_size, char_size, "");
       }
       AccentPhraseModel accent_phrase = text_to_accent_phrase(phrase);
-      if (i < text.size() && letter == PAUSE_DELIMITER) {
+      if (pos < text.size() && letter == PAUSE_DELIMITER) {
         MoraModel pause_mora = {PAUSE_DELIMITER, std::nullopt, std::nullopt, "pau", 0.0f, 0.0f};
 
         accent_phrase.pause_mora = pause_mora;
       }
       accent_phrase.is_interrogative = is_interrogative;
-      parsed_results[count] = accent_phrase;
-      count++;
+      parsed_results.push_back(accent_phrase);
       phrase = "";
+    } else {
+      phrase += letter;
     }
   }
   return parsed_results;
 }
 
 std::string create_kana(std::vector<AccentPhraseModel> accent_phrases) {
-  std::string text = "";
+  std::string text;
   for (int i = 0; i < accent_phrases.size(); i++) {
     AccentPhraseModel phrase = accent_phrases[i];
     std::vector<MoraModel> moras = phrase.moras;

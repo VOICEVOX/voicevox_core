@@ -11,15 +11,11 @@ root_dir = os.path.join(os.path.dirname(
 
 class TestCore(unittest.TestCase):
     def test_initialize_cpu(self):
-        core.initialize(root_dir, False)
+        core.initialize(False)
         core.finalize()
 
-    def test_invalid_initialize_path(self):
-        with self.assertRaises(Exception):
-            core.initialize(" ", False)
-
     def test_invalid_speaker_id(self):
-        core.initialize(root_dir, False)
+        core.initialize(False)
         nil = np.array([], np.int64)
         nil2 = np.array([[]], np.int64)
         fnil2 = np.array([[]], np.float32)
@@ -36,7 +32,7 @@ class TestCore(unittest.TestCase):
     def test_metas(self):
         with open(os.path.join(root_dir, "metas.json"), encoding="utf-8") as f:
             metas = json.dumps(json.load(f), sort_keys=True)
-        core.initialize(root_dir, False)
+        core.initialize(False)
         core_metas = json.dumps(json.loads(core.metas()), sort_keys=True)
         core.finalize()
         self.assertEqual(metas, core_metas)

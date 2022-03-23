@@ -1,13 +1,16 @@
 #include <onnxruntime_cxx_api.h>
 
+#ifdef DIRECTML
+#include <dml_provider_factory.h>
+#endif
+
 #include <array>
 #include <exception>
-#include <filesystem>
-#include <fstream>
 #include <memory>
 #include <string>
 #include <unordered_set>
 
+#include "embedBin/embed.h"
 #include "nlohmann/json.hpp"
 
 #ifndef VOICEVOX_CORE_EXPORTS
@@ -26,7 +29,6 @@
 
 constexpr float PHONEME_LENGTH_MINIMAL = 0.01f;
 
-namespace fs = std::filesystem;
 constexpr std::array<int64_t, 0> scalar_shape{};
 constexpr std::array<int64_t, 1> speaker_shape{1};
 
@@ -34,48 +36,17 @@ static std::string error_message;
 static bool initialized = false;
 static std::string supported_devices_str;
 
-bool open_models(const fs::path &yukarin_s_path, const fs::path &yukarin_sa_path, const fs::path &decode_path,
-                 std::vector<unsigned char> &yukarin_s_model, std::vector<unsigned char> &yukarin_sa_model,
-                 std::vector<unsigned char> &decode_model) {
-  std::ifstream yukarin_s_file(yukarin_s_path, std::ios::binary), yukarin_sa_file(yukarin_sa_path, std::ios::binary),
-      decode_file(decode_path, std::ios::binary);
-  if (!yukarin_s_file.is_open() || !yukarin_sa_file.is_open() || !decode_file.is_open()) {
-    error_message = FAILED_TO_OPEN_MODEL_ERR;
-    return false;
-  }
-
-  yukarin_s_model = std::vector<unsigned char>(std::istreambuf_iterator<char>(yukarin_s_file), {});
-  yukarin_sa_model = std::vector<unsigned char>(std::istreambuf_iterator<char>(yukarin_sa_file), {});
-  decode_model = std::vector<unsigned char>(std::istreambuf_iterator<char>(decode_file), {});
-  return true;
-}
-
-/**
- * Loads the metas.json.
- *
- * schema:
- * [{
- *  name: string,
- *  styles: [{name: string, id: int}],
- *  speaker_uuid: string,
- *  version: string
- * }]
- */
-bool open_metas(const fs::path &metas_path, nlohmann::json &metas) {
-  std::ifstream metas_file(metas_path);
-  if (!metas_file.is_open()) {
-    error_message = FAILED_TO_OPEN_METAS_ERR;
-    return false;
-  }
-  metas_file >> metas;
-  return true;
-}
+EMBED_DECL(YUKARIN_SA);
+EMBED_DECL(YUKARIN_S);
+EMBED_DECL(DECODE);
+EMBED_DECL(METAS);
 
 struct SupportedDevices {
   bool cpu = true;
   bool cuda = false;
+  bool dml = false;
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SupportedDevices, cpu, cuda);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SupportedDevices, cpu, cuda, dml);
 
 SupportedDevices get_supported_devices() {
   SupportedDevices devices;
@@ -83,27 +54,38 @@ SupportedDevices get_supported_devices() {
   for (const std::string &p : providers) {
     if (p == "CUDAExecutionProvider") {
       devices.cuda = true;
+    } else if (p == "DmlExecutionProvider") {
+      devices.dml = true;
     }
   }
   return devices;
 }
 
 struct Status {
-  Status(const char *root_dir_path_utf8, bool use_gpu_)
-      : root_dir_path(root_dir_path_utf8),
-        use_gpu(use_gpu_),
+  Status(bool use_gpu_)
+      : use_gpu(use_gpu_),
         memory_info(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU)),
         yukarin_s(nullptr),
         yukarin_sa(nullptr),
         decode(nullptr) {}
-
+  /**
+   * Loads the metas.json.
+   *
+   * schema:
+   * [{
+   *  name: string,
+   *  styles: [{name: string, id: int}],
+   *  speaker_uuid: string,
+   *  version: string
+   * }]
+   */
   bool load(int cpu_num_threads) {
-    // deprecated in C++20; Use char8_t for utf-8 char in the future.
-    fs::path root = fs::u8path(root_dir_path);
+    embed::Resource yukarin_s_model = YUKARIN_S();
+    embed::Resource yukarin_sa_model = YUKARIN_SA();
+    embed::Resource decode_model = DECODE();
+    embed::Resource metas_file = METAS();
 
-    if (!open_metas(root / "metas.json", metas)) {
-      return false;
-    }
+    metas = nlohmann::json::parse(metas_file.data, metas_file.data + metas_file.size);
     metas_str = metas.dump();
     supported_styles.clear();
     for (const auto &meta : metas) {
@@ -112,20 +94,20 @@ struct Status {
       }
     }
 
-    std::vector<unsigned char> yukarin_s_model, yukarin_sa_model, decode_model;
-    if (!open_models(root / "yukarin_s.onnx", root / "yukarin_sa.onnx", root / "decode.onnx", yukarin_s_model,
-                     yukarin_sa_model, decode_model)) {
-      return false;
-    }
     Ort::SessionOptions session_options;
     session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
-    yukarin_s = Ort::Session(env, yukarin_s_model.data(), yukarin_s_model.size(), session_options);
-    yukarin_sa = Ort::Session(env, yukarin_sa_model.data(), yukarin_sa_model.size(), session_options);
+    yukarin_s = Ort::Session(env, yukarin_s_model.data, yukarin_s_model.size, session_options);
+    yukarin_sa = Ort::Session(env, yukarin_sa_model.data, yukarin_sa_model.size, session_options);
     if (use_gpu) {
+#ifdef DIRECTML
+      session_options.DisableMemPattern().SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
+      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
+#else
       const OrtCUDAProviderOptions cuda_options;
       session_options.AppendExecutionProvider_CUDA(cuda_options);
+#endif
     }
-    decode = Ort::Session(env, decode_model.data(), decode_model.size(), session_options);
+    decode = Ort::Session(env, decode_model.data, decode_model.size, session_options);
     return true;
   }
 
@@ -160,14 +142,19 @@ bool validate_speaker_id(int64_t speaker_id) {
   return true;
 }
 
-bool initialize(const char *root_dir_path, bool use_gpu, int cpu_num_threads) {
+bool initialize(bool use_gpu, int cpu_num_threads) {
   initialized = false;
+
+#ifdef DIRECTML
+  if (use_gpu && !get_supported_devices().dml) {
+#else
   if (use_gpu && !get_supported_devices().cuda) {
+#endif /*DIRECTML*/
     error_message = GPU_NOT_SUPPORTED_ERR;
     return false;
   }
   try {
-    status = std::make_unique<Status>(root_dir_path, use_gpu);
+    status = std::make_unique<Status>(use_gpu);
     if (!status->load(cpu_num_threads)) {
       return false;
     }
