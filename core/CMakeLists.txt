@@ -4,6 +4,21 @@ project(ONNXCore)
 
 set(CMAKE_MACOSX_RPATH 1)
 
+# modelファイルを読み込み
+include(src/embedBin/FindEmbed.cmake)
+if(EXISTS "${MODEL_DIR}/metas.json"
+	AND EXISTS "${MODEL_DIR}/yukarin_s.onnx"
+	AND EXISTS "${MODEL_DIR}/yukarin_sa.onnx"
+	AND EXISTS "${MODEL_DIR}/decode.onnx")
+	message("Models exist.")
+	EMBED_TARGET(YUKARIN_S "${MODEL_DIR}/yukarin_s.onnx" "core")
+	EMBED_TARGET(YUKARIN_SA "${MODEL_DIR}/yukarin_sa.onnx" "core")
+	EMBED_TARGET(DECODE "${MODEL_DIR}/decode.onnx" "core")
+	EMBED_TARGET(METAS "${MODEL_DIR}/metas.json" "core")
+else()
+	message(FATAL_ERROR "Unable to find Model. Use option -DMODEL_DIR=...")
+endif()
+
 # coreライブラリのインストール先設定。デフォルトはCMakeLists.txtと同じ位置
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH "Path to install" FORCE)
@@ -13,6 +28,10 @@ message("core will be installed to: ${CMAKE_INSTALL_PREFIX}")
 # coreライブラリのビルド設定
 add_library(core
 		SHARED src/core.cpp
+    ${EMBED_YUKARIN_S_OUTPUTS} 
+		${EMBED_YUKARIN_SA_OUTPUTS} 
+		${EMBED_DECODE_OUTPUTS} 
+		${EMBED_METAS_OUTPUTS}
 		src/engine/full_context_label.cpp
 		src/engine/acoustic_feature_extractor.cpp
 		src/engine/openjtalk.cpp
