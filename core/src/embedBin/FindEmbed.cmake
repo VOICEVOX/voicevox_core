@@ -71,7 +71,7 @@ struct Res ${Name}(void) {
 "${STRUCT}
 asm(
 	\"${Section}\\n\"
-	\".balign ${CMAKE_SIZEOF_VOID_P}\\n\"
+	\".align ${CMAKE_SIZEOF_VOID_P}\\n\"
 	\"${DataName}: .incbin \\\"${InputAbs}\\\"\\n\"
 	\"${EndName}:\\n\"
 	\".text\\n\"
