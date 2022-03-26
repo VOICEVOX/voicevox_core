@@ -51,7 +51,9 @@ const struct {
 }  // namespace EMBED_DECL_NAMESPACE
 using EMBED_DECL_NAMESPACE::MODELS_LIST;
 
-const auto speaker_id_map = std::map<int64_t, std::pair<int64_t, int64_t>>{};  // 複数モデルある場合はここを書き換える
+// 複数モデルある場合のspeaker_idマッピング
+// {元のspeaker_id: {モデル番号, 新しいspeaker_id}}
+const auto speaker_id_map = std::map<int64_t, std::pair<int64_t, int64_t>>{};
 
 struct SupportedDevices {
   bool cpu = true;
@@ -153,6 +155,9 @@ bool validate_speaker_id(int64_t speaker_id) {
   return true;
 }
 
+/**
+ * 複数モデルあった場合のspeaker_idマッピング
+ */
 std::pair<int64_t, int64_t> get_model_index_and_speaker_id(int64_t speaker_id) {
   const auto found = speaker_id_map.find(speaker_id);
   if (found == speaker_id_map.end()) {
