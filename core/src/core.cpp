@@ -100,7 +100,7 @@ struct Status {
     }
 
     for (const auto MODELS : MODELS_LIST) {
-      embed::Resource yukarin_s_model = MODELS.DECODE();
+      embed::Resource yukarin_s_model = MODELS.YUKARIN_S();
       embed::Resource yukarin_sa_model = MODELS.YUKARIN_SA();
       embed::Resource decode_model = MODELS.DECODE();
 
