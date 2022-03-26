@@ -442,6 +442,7 @@ std::vector<float> SynthesisEngine::synthesis(AudioQueryModel query, int64_t *sp
   }
   phoneme_length_list.push_back(post_phoneme_length);
   f0_list.push_back(0.0);
+  voiced.push_back(false);
   mean_f0 /= (float)count;
 
   if (!std::isnan(mean_f0)) {
