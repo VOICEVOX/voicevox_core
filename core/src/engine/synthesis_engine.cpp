@@ -338,11 +338,12 @@ std::vector<uint8_t> SynthesisEngine::synthesis_wave_format(AudioQueryModel quer
 
   std::stringstream ss;
   ss.write("RIFF", 4);
-  int bytes_size = (int)wave.size() * repeat_count * 8;
-  int wave_size = bytes_size + 44 - 8;
+  int bytes_size = (int)wave.size() * repeat_count * 2;
+  const int wave_size = bytes_size + 44;
+  int chunk_size = wave_size - 8;
   for (int i = 0; i < 4; i++) {
-    ss.put((uint8_t)(wave_size & 0xff));  // chunk size
-    wave_size >>= 8;
+    ss.put((uint8_t)(chunk_size & 0xff));  // chunk size
+    chunk_size >>= 8;
   }
   ss.write("WAVEfmt ", 8);
 
@@ -370,10 +371,9 @@ std::vector<uint8_t> SynthesisEngine::synthesis_wave_format(AudioQueryModel quer
   ss.put(0);
 
   ss.write("data", 4);
-  size_t data_p = ss.tellp();
   for (int i = 0; i < 4; i++) {
     ss.put((char)(bytes_size & 0xff));
-    block_rate >>= 8;
+    bytes_size >>= 8;
   }
 
   for (size_t i = 0; i < wave.size(); i++) {
@@ -388,22 +388,7 @@ std::vector<uint8_t> SynthesisEngine::synthesis_wave_format(AudioQueryModel quer
     }
   }
 
-  size_t last_p = ss.tellp();
-  last_p -= 8;
-  ss.seekp(4);
-  for (int i = 0; i < 4; i++) {
-    ss.put((char)(last_p & 0xff));
-    last_p >>= 8;
-  }
-  ss.seekp(data_p);
-  size_t pointer = last_p - data_p - 4;
-  for (int i = 0; i < 4; i++) {
-    ss.put((char)(pointer & 0xff));
-    pointer >>= 8;
-  }
-
-  ss.seekg(0, std::ios::end);
-  *binary_size = (int)ss.tellg();
+  *binary_size = wave_size;
   ss.seekg(0, std::ios::beg);
 
   std::vector<uint8_t> result(*binary_size);
@@ -457,6 +442,7 @@ std::vector<float> SynthesisEngine::synthesis(AudioQueryModel query, int64_t *sp
   }
   phoneme_length_list.push_back(post_phoneme_length);
   f0_list.push_back(0.0);
+  voiced.push_back(false);
   mean_f0 /= (float)count;
 
   if (!std::isnan(mean_f0)) {
