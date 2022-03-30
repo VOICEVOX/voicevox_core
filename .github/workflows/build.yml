@@ -356,7 +356,10 @@ jobs:
             mv -v "artifacts/${KND}-cpp-shared/${SRC}" "artifacts/${KND}-cpp-shared/${DST}"
             cp core/src/core.h "artifacts/${KND}-cpp-shared"
             echo "${{ env.BUILD_IDENTIFIER }}" > "artifacts/${KND}-cpp-shared/VERSION"
-            zip -r "release/${KND}-cpp-shared.zip" "artifacts/${KND}-cpp-shared"
+            
+            cd "artifacts/${KND}-cpp-shared"
+            zip -r "../../release/${KND}-cpp-shared.zip" *
+            cd ../../
           done
 
           cd release/
