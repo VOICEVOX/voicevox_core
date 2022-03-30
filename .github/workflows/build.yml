@@ -300,7 +300,7 @@ jobs:
 
   # Create core.zip
   upload-to-release-cpp-shared:
-    if: github.event.release.tag_name != ''
+    # if: github.event.release.tag_name != ''
     needs: [build-cpp-shared]
     runs-on: ubuntu-latest
     steps:
