@@ -300,7 +300,7 @@ jobs:
 
   # Create core.zip
   upload-to-release-cpp-shared:
-    # if: github.event.release.tag_name != ''
+    if: github.event.release.tag_name != ''
     needs: [build-cpp-shared]
     runs-on: ubuntu-latest
     steps:
@@ -371,7 +371,7 @@ jobs:
           path: artifacts/*
 
       - name: Upload to Release
-        # if: env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
