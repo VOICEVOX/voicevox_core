@@ -14,6 +14,7 @@ directml*/
 # Build artifacts
 build/
 lib/
+bin/
 core/_core.cpp
 
 # Output
@@ -32,3 +33,7 @@ CMakeCache.txt
 
 # Voicevox release
 release/
+
+# Visual Studio
+.vs/
+packages/
