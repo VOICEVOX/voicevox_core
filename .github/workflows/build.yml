@@ -283,7 +283,7 @@ jobs:
           mkdir artifact
 
           # remove files with duplicate names to create a flat release archive
-          rm -vf core/lib/core.h core/lib/core.lib
+          rm -vf core/lib/core.h
 
           # copy Windows DLL if exists
           cp -v core/lib/core* artifact/ || true
