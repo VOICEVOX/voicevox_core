@@ -51,6 +51,9 @@ int main() {
   std::wcout << L"音声再生中" << std::endl;
   PlaySound((LPCTSTR)output_wav, nullptr, SND_MEMORY);
 
+  std::wcout << L"音声データの開放" << std::endl;
+  voicevox_wav_free(output_wav);
+
 }
 
 /// <summary>
