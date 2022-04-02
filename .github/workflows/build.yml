@@ -359,7 +359,7 @@ jobs:
             
             cd "artifacts/${KND}-cpp-shared"
             zip -r "../../release/${KND}-cpp-shared.zip" *
-            cd ../../
+            cd -
           done
 
       - name: Upload artifact
