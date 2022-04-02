@@ -26,7 +26,7 @@ int main() {
   std::wstring speak_words;
   std::wcin >> speak_words;
 
-  // coreの初期化
+  std::wcout << L"coreの初期化中" << std::endl;
   initialize(false);
 
   VoicevoxResultCode result = VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED;
