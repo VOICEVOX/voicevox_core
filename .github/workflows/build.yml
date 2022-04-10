@@ -23,19 +23,19 @@ jobs:
         include:
           - os: windows-2019
             device: gpu
-            python_architecture: "x64"
+            python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x64-gpu-1.10.0.zip
             artifact_name: windows-x64-cuda
 
           - os: windows-2019
             device: cpu-x64
-            python_architecture: "x64"
+            python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x64-1.10.0.zip
             artifact_name: windows-x64-cpu
 
           - os: windows-2019
             device: cpu-x86
-            python_architecture: "x86"
+            python_architecture: 'x86'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x86-1.10.0.zip
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32
             artifact_name: windows-x86-cpu
@@ -54,7 +54,7 @@ jobs:
 
           - os: windows-2019
             device: directml-x64
-            python_architecture: "x64"
+            python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/Microsoft.ML.OnnxRuntime.DirectML.1.10.0.zip
             directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
             cmake_additional_options: -DDIRECTML=ON -DDIRECTML_DIR=download/directml
@@ -62,7 +62,7 @@ jobs:
 
           - os: windows-2019
             device: directml-x86
-            python_architecture: "x86"
+            python_architecture: 'x86'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/Microsoft.ML.OnnxRuntime.DirectML.1.10.0.zip
             directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32 -DDIRECTML=ON -DDIRECTML_DIR=download/directml
@@ -84,40 +84,40 @@ jobs:
 
           - os: macos-10.15
             device: cpu-x64
-            python_architecture: "x64"
+            python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-osx-universal2-1.10.0.tgz
             artifact_name: osx-universal2-cpu
 
           - os: ubuntu-18.04
             device: gpu
-            python_architecture: "x64"
+            python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-gpu-1.10.0.tgz
             artifact_name: linux-x64-gpu
-            cc_version: "8"
-            cxx_version: "8"
+            cc_version: '8'
+            cxx_version: '8'
 
           - os: ubuntu-18.04
             device: cpu-x64
-            python_architecture: "x64"
+            python_architecture: 'x64'
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-1.10.0.tgz
             artifact_name: linux-x64-cpu
-            cc_version: "8"
-            cxx_version: "8"
+            cc_version: '8'
+            cxx_version: '8'
 
           - os: ubuntu-18.04
             device: cpu-armhf
             onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-armhf-cpu-v1.10.0.tgz
             artifact_name: linux-armhf-cpu
-            cc_version: "8"
-            cxx_version: "8"
+            cc_version: '8'
+            cxx_version: '8'
             arch: arm-linux-gnueabihf
 
           - os: ubuntu-18.04
             device: cpu-arm64
             onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-arm64-cpu-v1.10.0.tgz
             artifact_name: linux-arm64-cpu
-            cc_version: "8"
-            cxx_version: "8"
+            cc_version: '8'
+            cxx_version: '8'
             arch: aarch64-linux-gnu
 
     runs-on: ${{ matrix.os }}
