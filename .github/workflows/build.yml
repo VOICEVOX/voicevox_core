@@ -23,19 +23,19 @@ jobs:
         include:
           - os: windows-2019
             device: gpu
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x64-gpu-1.10.0.zip
             artifact_name: windows-x64-cuda
 
           - os: windows-2019
             device: cpu-x64
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x64-1.10.0.zip
             artifact_name: windows-x64-cpu
 
           - os: windows-2019
             device: cpu-x86
-            python_architecture: 'x86'
+            python_architecture: "x86"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x86-1.10.0.zip
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32
             artifact_name: windows-x86-cpu
@@ -54,7 +54,7 @@ jobs:
 
           - os: windows-2019
             device: directml-x64
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/Microsoft.ML.OnnxRuntime.DirectML.1.10.0.zip
             directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
             cmake_additional_options: -DDIRECTML=ON -DDIRECTML_DIR=download/directml
@@ -62,7 +62,7 @@ jobs:
 
           - os: windows-2019
             device: directml-x86
-            python_architecture: 'x86'
+            python_architecture: "x86"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/Microsoft.ML.OnnxRuntime.DirectML.1.10.0.zip
             directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32 -DDIRECTML=ON -DDIRECTML_DIR=download/directml
@@ -84,40 +84,40 @@ jobs:
 
           - os: macos-10.15
             device: cpu-x64
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-osx-universal2-1.10.0.tgz
             artifact_name: osx-universal2-cpu
 
           - os: ubuntu-18.04
             device: gpu
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-gpu-1.10.0.tgz
             artifact_name: linux-x64-gpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: "8"
+            cxx_version: "8"
 
           - os: ubuntu-18.04
             device: cpu-x64
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-1.10.0.tgz
             artifact_name: linux-x64-cpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: "8"
+            cxx_version: "8"
 
           - os: ubuntu-18.04
             device: cpu-armhf
             onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-armhf-cpu-v1.10.0.tgz
             artifact_name: linux-armhf-cpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: "8"
+            cxx_version: "8"
             arch: arm-linux-gnueabihf
 
           - os: ubuntu-18.04
             device: cpu-arm64
             onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-arm64-cpu-v1.10.0.tgz
             artifact_name: linux-arm64-cpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: "8"
+            cxx_version: "8"
             arch: aarch64-linux-gnu
 
     runs-on: ${{ matrix.os }}
@@ -180,7 +180,7 @@ jobs:
           # strip-components
           TEMPDIR=$(mktemp -d)
           unzip download/onnxruntime.zip -d "${TEMPDIR}"
-          
+
           if [[ ${{ matrix.artifact_name }} != *-directml ]]; then
             mv "${TEMPDIR}"/*/* download/onnxruntime/
           else
@@ -223,7 +223,7 @@ jobs:
       # Build
       - if: startsWith(matrix.os, 'windows')
         uses: ilammy/msvc-dev-cmd@v1
-        with: 
+        with:
           arch: ${{ matrix.python_architecture }}
 
       - if: startsWith(matrix.os, 'mac')
@@ -326,34 +326,23 @@ jobs:
           mkdir release
 
           readarray -t MAPPINGS <<EOF
-          windows-x64-cuda       core.dll      core_gpu_x64_nvidia.dll
-          windows-x64-directml   core.dll      core_gpu_x64_directml.dll
-          windows-x86-directml   core.dll      core_gpu_x86_directml.dll
-          windows-arm64-directml core.dll      core_gpu_arm64_directml.dll
-          windows-arm-directml   core.dll      core_gpu_arm_directml.dll
-          windows-x64-cpu        core.dll      core_cpu_x64.dll
-          windows-x86-cpu        core.dll      core_cpu_x86.dll
-          windows-arm64-cpu      core.dll      core_cpu_arm64.dll
-          windows-arm-cpu        core.dll      core_cpu_arm.dll
-          osx-universal2-cpu     libcore.dylib libcore_cpu_universal2.dylib
-          linux-x64-gpu          libcore.so    libcore_gpu_x64_nvidia.so
-          linux-x64-cpu          libcore.so    libcore_cpu_x64.so
-          linux-armhf-cpu        libcore.so    libcore_cpu_armhf.so
-          linux-arm64-cpu        libcore.so    libcore_cpu_arm64.so
+          windows-x64-cuda
+          windows-x64-directml
+          windows-x86-directml
+          windows-arm64-directml
+          windows-arm-directml
+          windows-x64-cpu
+          windows-x86-cpu
+          windows-arm64-cpu
+          windows-arm-cpu
+          osx-universal2-cpu
+          linux-x64-gpu
+          linux-x64-cpu
+          linux-armhf-cpu
+          linux-arm64-cpu
           EOF
 
-          for line in "${MAPPINGS[@]}"; do
-            KND=$(echo $line | awk '$0=$1')
-            SRC=$(echo $line | awk '$0=$2')
-            DST=$(echo $line | awk '$0=$3')
-
-            if [ "${SRC}" = "${DST}" ]; then
-              echo "Skip renaming ${KND}/${SRC} => ${DST}"
-              continue
-            fi
-
-            echo "Renaming ${KND}/${SRC} => ${DST}"
-            mv -v "artifacts/${KND}-cpp-shared/${SRC}" "artifacts/${KND}-cpp-shared/${DST}"
+          for KND in "${MAPPINGS[@]}"; do
             cp core/src/core.h "artifacts/${KND}-cpp-shared"
             echo "${{ env.BUILD_IDENTIFIER }}" > "artifacts/${KND}-cpp-shared/VERSION"
             
