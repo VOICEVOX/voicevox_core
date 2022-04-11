@@ -409,7 +409,7 @@ jobs:
         path: artifacts\
 
     - name: Copy core.lib
-      run: copy artifacts\core.lib example\cpp\windows\simple_tts\lib\x64
+      run: copy artifacts\windows-x64-cpu-cpp-shared\core.lib example\cpp\windows\simple_tts\lib\x64
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
