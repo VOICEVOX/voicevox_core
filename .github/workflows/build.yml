@@ -408,7 +408,10 @@ jobs:
         path: artifacts\
 
     - name: Copy core.lib
-      run: copy ${{steps.download.outputs.download-path}}\core.lib example\cpp\windows\simple_tts\lib\x64
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        mkdir example\cpp\windows\simple_tts\lib\x64
+        copy ${{steps.download.outputs.download-path}}\core.lib example\cpp\windows\simple_tts\lib\x64
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
