@@ -12,6 +12,7 @@
 #include <codecvt>
 #include <iostream>
 #include <vector>
+#include <fstream>
 
 #include "..\..\..\core\src\core.h"
 
@@ -48,6 +49,13 @@ int main() {
     return 0;
   }
 
+  {
+    //音声ファイルの保存
+    std::ofstream out_stream(GetWaveFileName().c_str(), std::ios::binary);
+    out_stream.write(reinterpret_cast<const char*>(output_wav), output_binary_size);
+    std::wcout << GetWaveFileName() << L" に保存しました。" << std::endl;
+  }  //ここでファイルが閉じられる
+
   std::wcout << L"音声再生中" << std::endl;
   PlaySound((LPCTSTR)output_wav, nullptr, SND_MEMORY);
 
@@ -65,6 +73,16 @@ std::string GetOpenJTalkDict() {
   PathCchCombine(buff, MAX_PATH, GetExeDirectory().c_str(), OPENJTALK_DICT_NAME);
   std::string retVal = wide_to_multi_capi(buff);
   return retVal;
+}
+
+/// <summary>
+/// 音声ファイル名を取得します。
+/// </summary>
+/// <returns>音声ファイルのフルパス</returns>
+std::wstring GetWaveFileName() {
+  wchar_t buff[MAX_PATH] = {0};
+  PathCchCombine(buff, MAX_PATH, GetExeDirectory().c_str(), L"speech.wav");
+  return std::wstring(buff);
 }
 
 /// <summary>
