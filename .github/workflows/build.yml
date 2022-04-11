@@ -283,7 +283,7 @@ jobs:
           mkdir artifact
 
           # remove files with duplicate names to create a flat release archive
-          rm -vf core/lib/core.h core/lib/core.lib
+          rm -vf core/lib/core.h
 
           # copy Windows DLL if exists
           cp -v core/lib/core* artifact/ || true
@@ -354,22 +354,19 @@ jobs:
 
             echo "Renaming ${KND}/${SRC} => ${DST}"
             mv -v "artifacts/${KND}-cpp-shared/${SRC}" "artifacts/${KND}-cpp-shared/${DST}"
+            cp core/src/core.h "artifacts/${KND}-cpp-shared"
+            echo "${{ env.BUILD_IDENTIFIER }}" > "artifacts/${KND}-cpp-shared/VERSION"
+            
+            cd "artifacts/${KND}-cpp-shared"
+            zip -r "../../release/${KND}-cpp-shared.zip" *
+            cd -
           done
-
-          mv -v artifacts/*-cpp-shared/* release/
-
-          cp core/src/core.h release/
-
-          echo "${{ env.BUILD_IDENTIFIER }}" > release/VERSION
-
-          cd release/
-          zip -r ../core.zip *
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: core
-          path: release/*
+          path: artifacts/*
 
       - name: Upload to Release
         if: env.SKIP_UPLOADING_RELEASE_ASSET == '0'
@@ -377,7 +374,8 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }} # ==> github.event.release.tag_name
-          file: core.zip
+          file: release/*.zip
+          file_glob: true
 
   build-win-cpp-example:
     runs-on: windows-latest

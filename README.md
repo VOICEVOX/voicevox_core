@@ -128,10 +128,13 @@ python run.py \
 ## コアライブラリのビルド
 
 [Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。ビルドにはONNXRUNTIMEに加えてCMake 3.16以上が必要です。
-   
+
 modelフォルダにあるonnxモデルはダミーのため、ノイズの混じった音声が出力されます
 
 ```bash
+# ソースコード取得
+git submodule update --init
+
 # C++モジュールのビルド
 mkdir build
 cd build
