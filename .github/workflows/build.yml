@@ -409,11 +409,8 @@ jobs:
         name: windows-x64-cpu-cpp-shared
         path: artifacts\
 
-    - name: 'Echo download path'
-      run: echo ${{steps.download.outputs.download-path}}
-
     - name: Copy core.lib
-      run: copy artifacts\windows-x64-cpu-cpp-shared\core.lib example\cpp\windows\simple_tts\lib\x64
+      run: copy ${{steps.download.outputs.download-path}}\core.lib example\cpp\windows\simple_tts\lib\x64
 
     - name: Build
       working-directory: ${{env.GITHUB_WORKSPACE}}
