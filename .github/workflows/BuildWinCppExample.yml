@@ -1,4 +1,4 @@
-name: MSBuild
+name: Build Win Cpp Example
 
 on:
   push:
