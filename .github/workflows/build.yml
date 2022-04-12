@@ -283,7 +283,7 @@ jobs:
           mkdir artifact
 
           # remove files with duplicate names to create a flat release archive
-          rm -vf core/lib/core.h core/lib/core.lib
+          rm -vf core/lib/core.h
 
           # copy Windows DLL if exists
           cp -v core/lib/core* artifact/ || true
@@ -354,22 +354,19 @@ jobs:
 
             echo "Renaming ${KND}/${SRC} => ${DST}"
             mv -v "artifacts/${KND}-cpp-shared/${SRC}" "artifacts/${KND}-cpp-shared/${DST}"
+            cp core/src/core.h "artifacts/${KND}-cpp-shared"
+            echo "${{ env.BUILD_IDENTIFIER }}" > "artifacts/${KND}-cpp-shared/VERSION"
+            
+            cd "artifacts/${KND}-cpp-shared"
+            zip -r "../../release/${KND}-cpp-shared.zip" *
+            cd -
           done
-
-          mv -v artifacts/*-cpp-shared/* release/
-
-          cp core/src/core.h release/
-
-          echo "${{ env.BUILD_IDENTIFIER }}" > release/VERSION
-
-          cd release/
-          zip -r ../core.zip *
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: core
-          path: release/*
+          path: artifacts/*
 
       - name: Upload to Release
         if: env.SKIP_UPLOADING_RELEASE_ASSET == '0'
@@ -377,4 +374,47 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }} # ==> github.event.release.tag_name
-          file: core.zip
+          file: release/*.zip
+          file_glob: true
+
+  build-win-cpp-example:
+    runs-on: windows-latest
+    needs: [build-cpp-shared]
+
+    env:
+      # Path to the solution file relative to the root of the project.
+      SOLUTION_FILE_PATH: example\cpp\windows\windows_example.sln
+
+      # Configuration type to build.
+      # You can convert this to a build matrix if you need coverage of multiple configuration types.
+      # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+      BUILD_CONFIGURATION: Release
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.2
+
+    - name: Restore NuGet packages
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: nuget restore ${{env.SOLUTION_FILE_PATH}}
+
+    - name: Download and extract artifact
+      uses: actions/download-artifact@v2
+      id: download
+      with:
+        name: windows-x64-cpu-cpp-shared
+        path: artifacts\
+
+    - name: Copy core.lib
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        mkdir example\cpp\windows\simple_tts\lib\x64
+        copy ${{steps.download.outputs.download-path}}\core.lib example\cpp\windows\simple_tts\lib\x64
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      # Add additional options to the MSBuild command line here (like platform or verbosity level).
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}

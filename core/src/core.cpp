@@ -36,10 +36,24 @@ static std::string error_message;
 static bool initialized = false;
 static std::string supported_devices_str;
 
-EMBED_DECL(YUKARIN_SA);
-EMBED_DECL(YUKARIN_S);
-EMBED_DECL(DECODE);
 EMBED_DECL(METAS);
+
+namespace EMBED_DECL_NAMESPACE {
+EMBED_DECL(YUKARIN_S);
+EMBED_DECL(YUKARIN_SA);
+EMBED_DECL(DECODE);
+
+const struct {
+  embed::EMBED_RES (*YUKARIN_S)();
+  embed::EMBED_RES (*YUKARIN_SA)();
+  embed::EMBED_RES (*DECODE)();
+} MODELS_LIST[] = {{YUKARIN_S, YUKARIN_SA, DECODE}};
+}  // namespace EMBED_DECL_NAMESPACE
+using EMBED_DECL_NAMESPACE::MODELS_LIST;
+
+// 複数モデルある場合のspeaker_idマッピング
+// {元のspeaker_id: {モデル番号, 新しいspeaker_id}}
+const auto speaker_id_map = std::map<int64_t, std::pair<int64_t, int64_t>>{};
 
 struct SupportedDevices {
   bool cpu = true;
@@ -63,11 +77,7 @@ SupportedDevices get_supported_devices() {
 
 struct Status {
   Status(bool use_gpu_)
-      : use_gpu(use_gpu_),
-        memory_info(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU)),
-        yukarin_s(nullptr),
-        yukarin_sa(nullptr),
-        decode(nullptr) {}
+      : use_gpu(use_gpu_), memory_info(Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeCPU)) {}
   /**
    * Loads the metas.json.
    *
@@ -80,9 +90,6 @@ struct Status {
    * }]
    */
   bool load(int cpu_num_threads) {
-    embed::Resource yukarin_s_model = YUKARIN_S();
-    embed::Resource yukarin_sa_model = YUKARIN_SA();
-    embed::Resource decode_model = DECODE();
     embed::Resource metas_file = METAS();
 
     metas = nlohmann::json::parse(metas_file.data, metas_file.data + metas_file.size);
@@ -94,20 +101,26 @@ struct Status {
       }
     }
 
-    Ort::SessionOptions session_options;
-    session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
-    yukarin_s = Ort::Session(env, yukarin_s_model.data, yukarin_s_model.size, session_options);
-    yukarin_sa = Ort::Session(env, yukarin_sa_model.data, yukarin_sa_model.size, session_options);
-    if (use_gpu) {
+    for (const auto MODELS : MODELS_LIST) {
+      embed::Resource yukarin_s_model = MODELS.YUKARIN_S();
+      embed::Resource yukarin_sa_model = MODELS.YUKARIN_SA();
+      embed::Resource decode_model = MODELS.DECODE();
+
+      Ort::SessionOptions session_options;
+      session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
+      yukarin_s_list.push_back(Ort::Session(env, yukarin_s_model.data, yukarin_s_model.size, session_options));
+      yukarin_sa_list.push_back(Ort::Session(env, yukarin_sa_model.data, yukarin_sa_model.size, session_options));
+      if (use_gpu) {
 #ifdef DIRECTML
-      session_options.DisableMemPattern().SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
-      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
+        session_options.DisableMemPattern().SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
+        Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
 #else
-      const OrtCUDAProviderOptions cuda_options;
-      session_options.AppendExecutionProvider_CUDA(cuda_options);
+        const OrtCUDAProviderOptions cuda_options;
+        session_options.AppendExecutionProvider_CUDA(cuda_options);
 #endif
+      }
+      decode_list.push_back(Ort::Session(env, decode_model.data, decode_model.size, session_options));
     }
-    decode = Ort::Session(env, decode_model.data, decode_model.size, session_options);
     return true;
   }
 
@@ -116,7 +129,7 @@ struct Status {
   Ort::MemoryInfo memory_info;
 
   Ort::Env env{ORT_LOGGING_LEVEL_ERROR};
-  Ort::Session yukarin_s, yukarin_sa, decode;
+  std::vector<Ort::Session> yukarin_s_list, yukarin_sa_list, decode_list;
 
   nlohmann::json metas;
   std::string metas_str;
@@ -140,6 +153,17 @@ bool validate_speaker_id(int64_t speaker_id) {
     return false;
   }
   return true;
+}
+
+/**
+ * 複数モデルあった場合のspeaker_idマッピング
+ */
+std::pair<int64_t, int64_t> get_model_index_and_speaker_id(int64_t speaker_id) {
+  const auto found = speaker_id_map.find(speaker_id);
+  if (found == speaker_id_map.end()) {
+    return {0, speaker_id};
+  }
+  return found->second;
 }
 
 bool initialize(bool use_gpu, int cpu_num_threads) {
@@ -206,17 +230,18 @@ bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_i
   if (!validate_speaker_id(*speaker_id)) {
     return false;
   }
+  auto [model_index, model_speaker_id] = get_model_index_and_speaker_id(*speaker_id);
   try {
     const char *inputs[] = {"phoneme_list", "speaker_id"};
     const char *outputs[] = {"phoneme_length"};
     const std::array<int64_t, 1> phoneme_shape{length};
 
     std::array<Ort::Value, 2> input_tensors = {to_tensor(phoneme_list, phoneme_shape),
-                                               to_tensor(speaker_id, speaker_shape)};
+                                               to_tensor(&model_speaker_id, speaker_shape)};
     Ort::Value output_tensor = to_tensor(output, phoneme_shape);
 
-    status->yukarin_s.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
-                          &output_tensor, 1);
+    status->yukarin_s_list[model_index].Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(),
+                                            input_tensors.size(), outputs, &output_tensor, 1);
 
     for (int64_t i = 0; i < length; i++) {
       if (output[i] < PHONEME_LENGTH_MINIMAL) output[i] = PHONEME_LENGTH_MINIMAL;
@@ -240,6 +265,7 @@ bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *co
   if (!validate_speaker_id(*speaker_id)) {
     return false;
   }
+  auto [model_index, model_speaker_id] = get_model_index_and_speaker_id(*speaker_id);
   try {
     const char *inputs[] = {
         "length",          "vowel_phoneme_list",       "consonant_phoneme_list", "start_accent_list",
@@ -254,11 +280,11 @@ bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *co
                                                to_tensor(end_accent_list, phoneme_shape),
                                                to_tensor(start_accent_phrase_list, phoneme_shape),
                                                to_tensor(end_accent_phrase_list, phoneme_shape),
-                                               to_tensor(speaker_id, speaker_shape)};
+                                               to_tensor(&model_speaker_id, speaker_shape)};
     Ort::Value output_tensor = to_tensor(output, phoneme_shape);
 
-    status->yukarin_sa.Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(), input_tensors.size(), outputs,
-                           &output_tensor, 1);
+    status->yukarin_sa_list[model_index].Run(Ort::RunOptions{nullptr}, inputs, input_tensors.data(),
+                                             input_tensors.size(), outputs, &output_tensor, 1);
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
     error_message += e.what();
@@ -319,6 +345,7 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
   if (!validate_speaker_id(*speaker_id)) {
     return false;
   }
+  auto [model_index, model_speaker_id] = get_model_index_and_speaker_id(*speaker_id);
   try {
     // 音が途切れてしまうのを避けるworkaround処理が入っている
     // TODO: 改善したらここのpadding処理を取り除く
@@ -341,7 +368,7 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
 
     std::array<Ort::Value, 3> input_tensor = {to_tensor(f0_with_padding.data(), f0_shape),
                                               to_tensor(phoneme_with_padding.data(), phoneme_shape),
-                                              to_tensor(speaker_id, speaker_shape)};
+                                              to_tensor(&model_speaker_id, speaker_shape)};
 
     // TODO: 改善したらここのpadding処理を取り除く
     const auto output_with_padding_size = length_with_padding * 256;
@@ -354,8 +381,8 @@ bool decode_forward(int64_t length, int64_t phoneme_size, float *f0, float *phon
     const char *inputs[] = {"f0", "phoneme", "speaker_id"};
     const char *outputs[] = {"wave"};
 
-    status->decode.Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(), outputs,
-                       &output_tensor, 1);
+    status->decode_list[model_index].Run(Ort::RunOptions{nullptr}, inputs, input_tensor.data(), input_tensor.size(),
+                                         outputs, &output_tensor, 1);
 
     // TODO: 改善したらここのcopy処理を取り除く
     copy_output_with_padding_to_output(output_with_padding, output, padding_f0_size);
