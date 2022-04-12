@@ -379,7 +379,7 @@ jobs:
 
   build-win-cpp-example:
     runs-on: windows-latest
-    needs: [build-cpp-shared]
+    needs: [upload-to-release-cpp-shared]
 
     env:
       # Path to the solution file relative to the root of the project.
