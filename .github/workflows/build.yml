@@ -180,7 +180,7 @@ jobs:
           # strip-components
           TEMPDIR=$(mktemp -d)
           unzip download/onnxruntime.zip -d "${TEMPDIR}"
-          
+
           if [[ ${{ matrix.artifact_name }} != *-directml ]]; then
             mv "${TEMPDIR}"/*/* download/onnxruntime/
           else
@@ -223,7 +223,7 @@ jobs:
       # Build
       - if: startsWith(matrix.os, 'windows')
         uses: ilammy/msvc-dev-cmd@v1
-        with: 
+        with:
           arch: ${{ matrix.python_architecture }}
 
       - if: startsWith(matrix.os, 'mac')
@@ -326,34 +326,23 @@ jobs:
           mkdir release
 
           readarray -t MAPPINGS <<EOF
-          windows-x64-cuda       core.dll      core_gpu_x64_nvidia.dll
-          windows-x64-directml   core.dll      core_gpu_x64_directml.dll
-          windows-x86-directml   core.dll      core_gpu_x86_directml.dll
-          windows-arm64-directml core.dll      core_gpu_arm64_directml.dll
-          windows-arm-directml   core.dll      core_gpu_arm_directml.dll
-          windows-x64-cpu        core.dll      core_cpu_x64.dll
-          windows-x86-cpu        core.dll      core_cpu_x86.dll
-          windows-arm64-cpu      core.dll      core_cpu_arm64.dll
-          windows-arm-cpu        core.dll      core_cpu_arm.dll
-          osx-universal2-cpu     libcore.dylib libcore_cpu_universal2.dylib
-          linux-x64-gpu          libcore.so    libcore_gpu_x64_nvidia.so
-          linux-x64-cpu          libcore.so    libcore_cpu_x64.so
-          linux-armhf-cpu        libcore.so    libcore_cpu_armhf.so
-          linux-arm64-cpu        libcore.so    libcore_cpu_arm64.so
+          windows-x64-cuda
+          windows-x64-directml
+          windows-x86-directml
+          windows-arm64-directml
+          windows-arm-directml
+          windows-x64-cpu
+          windows-x86-cpu
+          windows-arm64-cpu
+          windows-arm-cpu
+          osx-universal2-cpu
+          linux-x64-gpu
+          linux-x64-cpu
+          linux-armhf-cpu
+          linux-arm64-cpu
           EOF
 
-          for line in "${MAPPINGS[@]}"; do
-            KND=$(echo $line | awk '$0=$1')
-            SRC=$(echo $line | awk '$0=$2')
-            DST=$(echo $line | awk '$0=$3')
-
-            if [ "${SRC}" = "${DST}" ]; then
-              echo "Skip renaming ${KND}/${SRC} => ${DST}"
-              continue
-            fi
-
-            echo "Renaming ${KND}/${SRC} => ${DST}"
-            mv -v "artifacts/${KND}-cpp-shared/${SRC}" "artifacts/${KND}-cpp-shared/${DST}"
+          for KND in "${MAPPINGS[@]}"; do
             cp core/src/core.h "artifacts/${KND}-cpp-shared"
             echo "${{ env.BUILD_IDENTIFIER }}" > "artifacts/${KND}-cpp-shared/VERSION"
             
