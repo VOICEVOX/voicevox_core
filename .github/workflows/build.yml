@@ -345,9 +345,11 @@ jobs:
           for KND in "${MAPPINGS[@]}"; do
             cp core/src/core.h "artifacts/${KND}-cpp-shared"
             echo "${{ env.BUILD_IDENTIFIER }}" > "artifacts/${KND}-cpp-shared/VERSION"
-            
-            cd "artifacts/${KND}-cpp-shared"
-            zip -r "../../release/${KND}-cpp-shared.zip" *
+
+            cd artifacts
+            mv -T "${KND}-cpp-shared" core
+            zip -r "../release/${KND}-cpp-shared.zip" core
+            mv -T core "${KND}-cpp-shared"
             cd -
           done
 
