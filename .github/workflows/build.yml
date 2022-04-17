@@ -342,10 +342,6 @@ jobs:
           linux-arm64-cpu
           EOF
 
-          if [ -d artifacts/core ]; then
-            mv -T artifacts/core artifacts/core_
-          fi
-
           for KND in "${MAPPINGS[@]}"; do
             cp core/src/core.h "artifacts/${KND}-cpp-shared"
             echo "${{ env.BUILD_IDENTIFIER }}" > "artifacts/${KND}-cpp-shared/VERSION"
@@ -356,16 +352,6 @@ jobs:
             mv -T core "${KND}-cpp-shared"
             cd -
           done
-
-          if [ -d artifacts/core_ ]; then
-            mv -T artifacts/core_ artifacts/core
-          fi
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: core
-          path: artifacts/*
 
       - name: Upload to Release
         if: env.SKIP_UPLOADING_RELEASE_ASSET == '0'
