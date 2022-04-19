@@ -270,7 +270,7 @@ jobs:
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
 
-          # copy Windows DLL if exists
+          # copy core.h (and Windows DLL if exists)
           cp -v core/lib/core* "artifact/${{ env.ASSET_NAME }}" || true
           # copy Linux/macOS shared library if exists
           cp -v core/lib/libcore* "artifact/${{ env.ASSET_NAME }}" || true
