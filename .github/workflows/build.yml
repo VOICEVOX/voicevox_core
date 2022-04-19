@@ -308,11 +308,17 @@ jobs:
           retention-days: 7
 
       - name: Archive artifact
-        if: github.event.release.tag_name != ''
+        if: github.event.release.tag_name != '' && !startsWith(matrix.os, 'windows-')
         shell: bash
         run: |
           mkdir release
           zip -r "release/${{ env.ASSET_NAME }}.zip" "artifact/${{ env.ASSET_NAME }}"
+
+      - name: Archive artifact (Windows)
+        if: github.event.release.tag_name != '' && startsWith(matrix.os, 'windows-')
+        run: |
+          mkdir release
+          powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "release/${{ env.ASSET_NAME }}.zip"
 
       - name: Upload to Release
         if: github.event.release.tag_name != '' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
