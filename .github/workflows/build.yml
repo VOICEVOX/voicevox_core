@@ -301,7 +301,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.artifact_name }}-cpp-shared
-          path: artifact/voicevox_core-${{ matrix.artifact_name }}-*/*
+          path: artifact/voicevox_core-${{ matrix.artifact_name }}-${{ env.BUILD_IDENTIFIER }}/*
           retention-days: 7
 
   # Create core.zip
