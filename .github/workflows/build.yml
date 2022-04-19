@@ -277,18 +277,22 @@ jobs:
           pip install -r requirements.txt
           python setup.py test
 
+      - name: Set BUILD_IDENTIFIER env var
+        shell: bash
+        run: |
+          echo "BUILD_IDENTIFIER=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
       - name: Organize artifact
         shell: bash
         run: |
-          mkdir artifact
-
-          # remove files with duplicate names to create a flat release archive
-          rm -vf core/lib/core.h
+          mkdir -p "artifact/${{ matrix.artifact_name }}-cpp-shared"
 
           # copy Windows DLL if exists
-          cp -v core/lib/core* artifact/ || true
+          cp -v core/lib/core* "artifact/${{ matrix.artifact_name }}-cpp-shared" || true
           # copy Linux/macOS shared library if exists
-          cp -v core/lib/libcore* artifact/ || true
+          cp -v core/lib/libcore* "artifact/${{ matrix.artifact_name }}-cpp-shared" || true
+
+          echo "${{ env.BUILD_IDENTIFIER }}" > "artifact/${{ matrix.artifact_name }}-cpp-shared/VERSION"
 
       # Upload
       - name: Upload artifact
