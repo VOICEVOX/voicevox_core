@@ -311,15 +311,13 @@ jobs:
         if: github.event.release.tag_name != '' && !startsWith(matrix.os, 'windows-')
         shell: bash
         run: |
-          mkdir release
           cd artifact
-          zip -r "../release/${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
+          zip -r "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
 
       - name: Archive artifact (Windows)
         if: github.event.release.tag_name != '' && startsWith(matrix.os, 'windows-')
         run: |
-          mkdir release
-          powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "release/${{ env.ASSET_NAME }}.zip"
+          powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "${{ env.ASSET_NAME }}.zip"
 
       - name: Upload to Release
         if: github.event.release.tag_name != '' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
@@ -327,7 +325,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }} # ==> github.event.release.tag_name
-          file: release/${{ env.ASSET_NAME }}.zip
+          file: ${{ env.ASSET_NAME }}.zip
 
   build-win-cpp-example:
     runs-on: windows-latest
