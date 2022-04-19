@@ -312,7 +312,8 @@ jobs:
         shell: bash
         run: |
           mkdir release
-          zip -r "release/${{ env.ASSET_NAME }}.zip" "artifact/${{ env.ASSET_NAME }}"
+          cd artifact
+          zip -r "../release/${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
 
       - name: Archive artifact (Windows)
         if: github.event.release.tag_name != '' && startsWith(matrix.os, 'windows-')
