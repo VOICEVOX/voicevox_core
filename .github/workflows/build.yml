@@ -299,7 +299,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.artifact_name }}-cpp-shared
-          path: artifact/*
+          path: artifact/${{ matrix.artifact_name }}-cpp-shared/*
           retention-days: 7
 
   # Create core.zip
