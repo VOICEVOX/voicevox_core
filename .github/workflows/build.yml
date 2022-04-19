@@ -284,22 +284,24 @@ jobs:
 
       - name: Organize artifact
         shell: bash
+        env:
+          ZIP_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ env.BUILD_IDENTIFIER }}
         run: |
-          mkdir -p "artifact/${{ matrix.artifact_name }}-cpp-shared"
+          mkdir -p "artifact/${{ env.ZIP_NAME }}"
 
           # copy Windows DLL if exists
-          cp -v core/lib/core* "artifact/${{ matrix.artifact_name }}-cpp-shared" || true
+          cp -v core/lib/core* "artifact/${{ env.ZIP_NAME }}" || true
           # copy Linux/macOS shared library if exists
-          cp -v core/lib/libcore* "artifact/${{ matrix.artifact_name }}-cpp-shared" || true
+          cp -v core/lib/libcore* "artifact/${{ env.ZIP_NAME }}" || true
 
-          echo "${{ env.BUILD_IDENTIFIER }}" > "artifact/${{ matrix.artifact_name }}-cpp-shared/VERSION"
+          echo "${{ env.BUILD_IDENTIFIER }}" > "artifact/${{ env.ZIP_NAME }}/VERSION"
 
       # Upload
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.artifact_name }}-cpp-shared
-          path: artifact/${{ matrix.artifact_name }}-cpp-shared/*
+          path: artifact/voicevox_core-${{ matrix.artifact_name }}-*/*
           retention-days: 7
 
   # Create core.zip
