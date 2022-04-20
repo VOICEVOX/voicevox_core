@@ -20,8 +20,8 @@ std::vector<MoraModel> to_flatten_moras(std::vector<AccentPhraseModel> accent_ph
     for (MoraModel mora : moras) {
       flatten_moras.push_back(mora);
     }
-    if (accent_phrase.pause_mora != std::nullopt) {
-      MoraModel pause_mora = static_cast<MoraModel>(*accent_phrase.pause_mora);
+    if (accent_phrase.pause_mora.has_value()) {
+      MoraModel pause_mora = accent_phrase.pause_mora.value();
       flatten_moras.push_back(pause_mora);
     }
   }
@@ -204,7 +204,7 @@ std::vector<AccentPhraseModel> SynthesisEngine::replace_phoneme_length(std::vect
     std::vector<MoraModel> moras = accent_phrase.moras;
     for (size_t j = 0; j < moras.size(); j++) {
       MoraModel mora = moras[j];
-      if (mora.consonant != std::nullopt) {
+      if (mora.consonant.has_value()) {
         mora.consonant_length = phoneme_length[vowel_indexes_data[index + 1] - 1];
       }
       mora.vowel_length = phoneme_length[vowel_indexes_data[index + 1]];
@@ -212,7 +212,7 @@ std::vector<AccentPhraseModel> SynthesisEngine::replace_phoneme_length(std::vect
       moras[j] = mora;
     }
     accent_phrase.moras = moras;
-    if (accent_phrase.pause_mora != std::nullopt) {
+    if (accent_phrase.pause_mora.has_value()) {
       std::optional<MoraModel> pause_mora = accent_phrase.pause_mora;
       pause_mora->vowel_length = phoneme_length[vowel_indexes_data[index + 1]];
       index++;
@@ -310,7 +310,7 @@ std::vector<AccentPhraseModel> SynthesisEngine::replace_mora_pitch(std::vector<A
       moras[j] = mora;
     }
     accent_phrase.moras = moras;
-    if (accent_phrase.pause_mora != std::nullopt) {
+    if (accent_phrase.pause_mora.has_value()) {
       std::optional<MoraModel> pause_mora = accent_phrase.pause_mora;
       pause_mora->pitch = f0_list[index + 1];
       index++;
@@ -427,8 +427,8 @@ std::vector<float> SynthesisEngine::synthesis(AudioQueryModel query, int64_t *sp
   int count = 0;
 
   for (MoraModel mora : flatten_moras) {
-    if (mora.consonant != std::nullopt) {
-      phoneme_length_list.push_back(static_cast<float>(*mora.consonant_length));
+    if (mora.consonant.has_value()) {
+      phoneme_length_list.push_back(mora.consonant_length.value());
     }
     phoneme_length_list.push_back(mora.vowel_length);
     float f0_single = mora.pitch * std::pow(2.0f, pitch_scale);
@@ -509,7 +509,7 @@ void SynthesisEngine::initial_process(std::vector<AccentPhraseModel> &accent_phr
   phoneme_str_list.push_back("pau");
   for (MoraModel mora : flatten_moras) {
     std::optional<std::string> consonant = mora.consonant;
-    if (consonant != std::nullopt) phoneme_str_list.push_back(static_cast<std::string>(*consonant));
+    if (consonant.has_value()) phoneme_str_list.push_back(consonant.value());
     phoneme_str_list.push_back(mora.vowel);
   }
   phoneme_str_list.push_back("pau");
@@ -530,11 +530,11 @@ void SynthesisEngine::create_one_accent_list(std::vector<int64_t> &accent_list, 
     else
       value = 0;
     one_accent_list.push_back(value);
-    if (mora.consonant != std::nullopt) {
+    if (mora.consonant.has_value()) {
       one_accent_list.push_back(value);
     }
   }
-  if (accent_phrase.pause_mora != std::nullopt) one_accent_list.push_back(0);
+  if (accent_phrase.pause_mora.has_value()) one_accent_list.push_back(0);
   std::copy(one_accent_list.begin(), one_accent_list.end(), std::back_inserter(accent_list));
 }
 }  // namespace voicevox::core::engine

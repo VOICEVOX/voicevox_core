@@ -97,13 +97,13 @@ AccentPhraseModel text_to_accent_phrase(const std::string& phrase) {
         matched_text = stack;
       }
     }
-    if (matched_text == std::nullopt) {
-      throw std::runtime_error("unknown text in accent phrase: " + stack);
-    } else {
-      moras.push_back(text2mora.at(*matched_text));
+    if (matched_text.has_value()) {
+      moras.push_back(text2mora.at(matched_text.value()));
       base_index += matched_text->size();
       stack = "";
       matched_text = std::nullopt;
+    } else {
+      throw std::runtime_error("unknown text in accent phrase: " + stack);
     }
     if (outer_loop > LOOP_LIMIT) throw std::runtime_error("detect infinity loop!");
   }
@@ -111,7 +111,7 @@ AccentPhraseModel text_to_accent_phrase(const std::string& phrase) {
 
   AccentPhraseModel accent_phrase = {
       moras,
-      static_cast<unsigned int>(*accent_index),
+      accent_index.value(),
   };
   return accent_phrase;
 }
@@ -178,7 +178,7 @@ std::string create_kana(std::vector<AccentPhraseModel> accent_phrases) {
     }
 
     if (i < accent_phrases.size()) {
-      if (phrase.pause_mora != std::nullopt)
+      if (phrase.pause_mora.has_value())
         text += PAUSE_DELIMITER;
       else
         text += NOPAUSE_DELIMITER;
