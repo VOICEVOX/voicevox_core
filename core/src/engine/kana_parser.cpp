@@ -97,7 +97,7 @@ AccentPhraseModel text_to_accent_phrase(const std::string& phrase) {
         matched_text = stack;
       }
     }
-    if (matched_text.has_value()) {
+    if (matched_text) {
       moras.push_back(text2mora.at(matched_text.value()));
       base_index += matched_text->size();
       stack = "";
@@ -178,7 +178,7 @@ std::string create_kana(std::vector<AccentPhraseModel> accent_phrases) {
     }
 
     if (i < accent_phrases.size()) {
-      if (phrase.pause_mora.has_value())
+      if (phrase.pause_mora)
         text += PAUSE_DELIMITER;
       else
         text += NOPAUSE_DELIMITER;
