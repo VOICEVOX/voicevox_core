@@ -15,7 +15,13 @@
 namespace voicevox::core::engine {
 std::vector<std::string> OpenJTalk::extract_fullcontext(std::string text) {
   char buff[8192];
-  text2mecab(buff, text.c_str());
+  errno_t result = text2mecab(buff, 8192, text.c_str());
+  if (result == EINVAL) {
+    throw std::runtime_error("text2mecab failed: invalid parameter.");
+  }
+  if (result == ERANGE) {
+    throw std::range_error("text2mecab failed: Buffer is small.");
+  }
   Mecab_analysis(&mecab, buff);
   mecab2njd(&njd, Mecab_get_feature(&mecab), Mecab_get_size(&mecab));
   njd_set_pronunciation(&njd);
