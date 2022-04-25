@@ -433,7 +433,7 @@ jobs:
       # download/onnxruntime/lib/libonnxruntime.so
       # download/onnxruntime/lib/libonnxruntime.dylib
       - name: Download ONNX Runtime (tgz)
-        if: steps.onnxruntime-cache.outputs.cache-hit != 'true' && endsWith(matrix.onnxruntime_url, '.tgz')
+        if: steps.onnxruntime-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.tgz
