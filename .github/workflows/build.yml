@@ -320,7 +320,7 @@ jobs:
           for KND in "${MAPPINGS[@]}"; do
             cp core/src/core.h "artifacts/${KND}-cpp-shared"
             echo "${{ env.BUILD_IDENTIFIER }}" > "artifacts/${KND}-cpp-shared/VERSION"
-            
+
             cd "artifacts/${KND}-cpp-shared"
             zip -r "../../release/${KND}-cpp-shared.zip" *
             cd -
@@ -382,3 +382,50 @@ jobs:
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
+
+  build-unix-cpp-example:
+    needs: [build-cpp-shared]
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            artifact_name: osx-universal2-cpu-cpp-shared
+            core_name: libcore.dylib
+
+          - os: ubuntu-latest
+            artifact_name: linux-x64-cpu-cpp-shared
+            core_name: libcore.so
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download and extract artifact
+        uses: actions/download-artifact@v2
+        id: download
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: artifacts/
+
+      - name: Copy core library
+        shell: bash
+        run: |
+          cp ${{ steps.download.outputs.download-path }}/${{ matrix.core_name }} example/cpp/unix
+
+      - if: startsWith(matrix.os, 'mac')
+        uses: jwlawson/actions-setup-cmake@v1.9
+
+      - name: Install build dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+
+      - name: Build
+        shell: bash
+        run: |
+          cd example/cpp/unix
+          cmake -S . -B build
+          cmake --build build
