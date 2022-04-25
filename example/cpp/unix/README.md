@@ -12,7 +12,7 @@ voicevox_core ライブラリを C++ から使用するサンプルコード (`s
   - Linux の場合：`voicevox_core-linux-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の `libcore.so`
   - macOS の場合：`voicevox_core-osx-universal2-cpu-{バージョン}.zip` 内の `libcore.dylib`
 - ONNX Runtime v1.10.0 の共有ライブラリ（配布ページ: https://github.com/microsoft/onnxruntime/releases/tag/v1.10.0 ）
-  - Linux の場合：`onnxruntime-linux-{お使いのCPUアーキテクチャ}-1.10.0.tgz` 内の `lib/libonnxruntime.1.10.0.so`
+  - Linux の場合：`onnxruntime-linux-{お使いのCPUアーキテクチャ}-1.10.0.tgz` 内の `lib/libonnxruntime.so.1.10.0`
   - macOS の場合：`onnxruntime-osx-universal2-1.10.0.tgz` 内の `lib/libonnxruntime.1.10.0.dylib`
 - Open JTalk の辞書（配布ページ: http://open-jtalk.sourceforge.net/ ）
   - 配布ページの "Dictionary for Open JTalk" 欄にある "Binary Package (UTF-8)" からダウンロードしてください
@@ -23,7 +23,7 @@ voicevox_core ライブラリを C++ から使用するサンプルコード (`s
 ```
 CMakeLists.txt
 libcore.so または libcore.dylib
-libonnxruntime.1.10.0.so または libonnxruntime.1.10.0.dylib
+libonnxruntime.so.1.10.0 または libonnxruntime.1.10.0.dylib
 open_jtalk_dic_utf_8-1.11
 simple_tts.cpp
 ```
