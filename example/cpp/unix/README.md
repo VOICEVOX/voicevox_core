@@ -8,7 +8,7 @@ voicevox_core ライブラリを C++ から使用するサンプルコード (`s
 
 本ディレクトリに以下のファイル・フォルダを用意してください（あるいは、以下のファイル・フォルダへのシンボリックリンクでも良いです）：
 
-- バージョン 12 以降の voicevox_core ライブラリ（配布ページ: https://github.com/VOICEVOX/voicevox_core/releases ）
+- バージョン 0.12 以降の voicevox_core ライブラリ（配布ページ: https://github.com/VOICEVOX/voicevox_core/releases ）
   - Linux の場合：`voicevox_core-linux-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の `libcore.so`
   - macOS の場合：`voicevox_core-osx-universal2-cpu-{バージョン}.zip` 内の `libcore.dylib`
 - ONNX Runtime v1.10.0 の共有ライブラリ（配布ページ: https://github.com/microsoft/onnxruntime/releases/tag/v1.10.0 ）
