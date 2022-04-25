@@ -416,6 +416,8 @@ jobs:
         run: |
           cp ${{ steps.download.outputs.download-path }}/libcore.${{ matrix.shared_lib_ext }} example/cpp/unix
 
+      - run: mkdir download
+
       # ONNX Runtime
       - name: Export ONNX Runtime url to calc hash
         shell: bash
