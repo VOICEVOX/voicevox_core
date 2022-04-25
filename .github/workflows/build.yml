@@ -255,91 +255,55 @@ jobs:
           pip install -r requirements.txt
           python setup.py test
 
+      - name: Set BUILD_IDENTIFIER env var
+        shell: bash
+        run: |
+          echo "BUILD_IDENTIFIER=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Set ASSET_NAME env var
+        shell: bash
+        run: |
+          echo "ASSET_NAME=voicevox_core-${{ matrix.artifact_name }}-${{ env.BUILD_IDENTIFIER }}" >> $GITHUB_ENV
+
       - name: Organize artifact
         shell: bash
         run: |
-          mkdir artifact
+          mkdir -p "artifact/${{ env.ASSET_NAME }}"
 
-          # remove files with duplicate names to create a flat release archive
-          rm -vf core/lib/core.h
-
-          # copy Windows DLL if exists
-          cp -v core/lib/core* artifact/ || true
+          # copy core.h (and Windows DLL if exists)
+          cp -v core/lib/core* "artifact/${{ env.ASSET_NAME }}" || true
           # copy Linux/macOS shared library if exists
-          cp -v core/lib/libcore* artifact/ || true
+          cp -v core/lib/libcore* "artifact/${{ env.ASSET_NAME }}" || true
+
+          echo "${{ env.BUILD_IDENTIFIER }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
       # Upload
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.artifact_name }}-cpp-shared
-          path: artifact/*
+          path: artifact/${{ env.ASSET_NAME }}/*
           retention-days: 7
 
-  # Create core.zip
-  upload-to-release-cpp-shared:
-    if: github.event.release.tag_name != ''
-    needs: [build-cpp-shared]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set BUILD_IDENTIFIER env var
+      - name: Archive artifact
+        if: github.event.release.tag_name != '' && !startsWith(matrix.os, 'windows-')
+        shell: bash
         run: |
-          echo "BUILD_IDENTIFIER=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          cd artifact
+          zip -r "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
 
-      - name: Install dependencies
+      - name: Archive artifact (Windows)
+        if: github.event.release.tag_name != '' && startsWith(matrix.os, 'windows-')
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-              zip
-
-      - name: Download and extract artifact
-        uses: actions/download-artifact@v2
-        with:
-          path: artifacts/
-
-      - name: Rearchive artifacts
-        run: |
-          mkdir release
-
-          readarray -t MAPPINGS <<EOF
-          windows-x64-cuda
-          windows-x64-directml
-          windows-x64-cpu
-          windows-x86-cpu
-          windows-arm64-cpu
-          windows-arm-cpu
-          osx-universal2-cpu
-          linux-x64-gpu
-          linux-x64-cpu
-          linux-armhf-cpu
-          linux-arm64-cpu
-          EOF
-
-          for KND in "${MAPPINGS[@]}"; do
-            cp core/src/core.h "artifacts/${KND}-cpp-shared"
-            echo "${{ env.BUILD_IDENTIFIER }}" > "artifacts/${KND}-cpp-shared/VERSION"
-            
-            cd "artifacts/${KND}-cpp-shared"
-            zip -r "../../release/${KND}-cpp-shared.zip" *
-            cd -
-          done
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: core
-          path: artifacts/*
+          powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "${{ env.ASSET_NAME }}.zip"
 
       - name: Upload to Release
-        if: env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: github.event.release.tag_name != '' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }} # ==> github.event.release.tag_name
-          file: release/*.zip
-          file_glob: true
+          file: ${{ env.ASSET_NAME }}.zip
 
   build-win-cpp-example:
     runs-on: windows-latest

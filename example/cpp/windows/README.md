@@ -13,7 +13,7 @@ Visual Studio Installerを使用しインストールしてください。
 ビルドして実行するには、「core.dll」「core.lib」「Open JTalk辞書フォルダ」が必要です。
 以下はDebug x64でビルドする場合です。他の構成・プラットフォーム向けにビルドする場合は、適宜読み替えてください。  
 
-Releasesから「windows-x64-cpu-cpp-shared.zip」をダウンロードします。
+Releasesから「voicevox_core-windows-x64-cpu-{バージョン名}.zip」をダウンロードします。
 zipファイルを展開し、展開されたフォルダに含まれているdllファイルを「core.dll」にリネームします。
 出力フォルダを作成するために、一度ビルドします。「windows_example.sln」をVisual Studioで開き、メニューの「ビルド」→「ソリューションのビルド」を押します。
 この段階では、ビルドは失敗します。「bin」フォルダと「lib」フォルダが生成されていればOKです。  
