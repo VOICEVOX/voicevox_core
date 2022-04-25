@@ -1,4 +1,4 @@
-# C++ サンプルコード（Linux・macOS 向け)
+# C++ サンプルコード（Linux・macOS 向け）
 
 voicevox_core ライブラリを C++ から使用するサンプルコード (`simple_tts.cpp`) です。ビルドするために C++ の開発環境（CMake 3.16 以上を含む）が必要です。
 
