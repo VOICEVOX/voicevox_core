@@ -392,12 +392,14 @@ jobs:
           - os: macos-latest
             artifact_name: osx-universal2-cpu-cpp-shared
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-osx-universal2-1.10.0.tgz
-            shared_lib_ext: dylib
+            onnxruntime_lib_name: libonnxruntime.1.10.0.dylib
+            core_name: libcore.dylib
 
           - os: ubuntu-latest
             artifact_name: linux-x64-cpu-cpp-shared
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-1.10.0.tgz
-            shared_lib_ext: so
+            onnxruntime_lib_name: libonnxruntime.so.1.10.0
+            core_name: libcore.so
 
     runs-on: ${{ matrix.os }}
 
@@ -414,7 +416,7 @@ jobs:
       - name: Copy core library
         shell: bash
         run: |
-          cp ${{ steps.download.outputs.download-path }}/libcore.${{ matrix.shared_lib_ext }} example/cpp/unix
+          cp ${{ steps.download.outputs.download-path }}/${{ matrix.core_name }} example/cpp/unix
 
       - run: mkdir download
 
@@ -444,7 +446,7 @@ jobs:
       - name: Copy ONNX Runtime
         shell: bash
         run: |
-          cp download/onnxruntime/lib/libonnxruntime.1.10.0.${{ matrix.shared_lib_ext }} example/cpp/unix
+          cp download/onnxruntime/lib/${{ matrix.onnxruntime_lib_name }} example/cpp/unix
 
       - if: startsWith(matrix.os, 'mac')
         uses: jwlawson/actions-setup-cmake@v1.9
