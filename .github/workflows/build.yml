@@ -386,6 +386,7 @@ jobs:
   build-unix-cpp-example:
     needs: [build-cpp-shared]
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
