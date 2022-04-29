@@ -346,3 +346,85 @@ jobs:
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
+
+  build-unix-cpp-example:
+    needs: [build-cpp-shared]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifact_name: osx-universal2-cpu-cpp-shared
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-osx-universal2-1.10.0.tgz
+            onnxruntime_lib_name: libonnxruntime.1.10.0.dylib
+            core_name: libcore.dylib
+
+          - os: ubuntu-latest
+            artifact_name: linux-x64-cpu-cpp-shared
+            onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-1.10.0.tgz
+            onnxruntime_lib_name: libonnxruntime.so.1.10.0
+            core_name: libcore.so
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download and extract artifact
+        uses: actions/download-artifact@v2
+        id: download
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: artifacts/
+
+      - name: Copy core library
+        shell: bash
+        run: |
+          cp ${{ steps.download.outputs.download-path }}/${{ matrix.core_name }} example/cpp/unix
+
+      - run: mkdir download
+
+      # ONNX Runtime
+      - name: Export ONNX Runtime url to calc hash
+        shell: bash
+        run: echo "${{ matrix.onnxruntime_url }}" > download/onnxruntime_url.txt
+
+      - name: Cache ONNX Runtime
+        uses: actions/cache@v2
+        id: onnxruntime-cache
+        with:
+          key: onnxruntime-cache-v1-${{ hashFiles('download/onnxruntime_url.txt') }}
+          path: download/onnxruntime
+
+      # download/onnxruntime/lib/libonnxruntime.so
+      # download/onnxruntime/lib/libonnxruntime.dylib
+      - name: Download ONNX Runtime (tgz)
+        if: steps.onnxruntime-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          curl -L "${{ matrix.onnxruntime_url }}" > download/onnxruntime.tgz
+          mkdir -p download/onnxruntime
+          tar xf download/onnxruntime.tgz -C download/onnxruntime --strip-components 1
+          rm download/onnxruntime.tgz
+
+      - name: Copy ONNX Runtime
+        shell: bash
+        run: |
+          cp download/onnxruntime/lib/${{ matrix.onnxruntime_lib_name }} example/cpp/unix
+
+      - if: startsWith(matrix.os, 'mac')
+        uses: jwlawson/actions-setup-cmake@v1.9
+
+      - name: Install build dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+
+      - name: Build
+        shell: bash
+        run: |
+          cd example/cpp/unix
+          cmake -S . -B build
+          cmake --build build

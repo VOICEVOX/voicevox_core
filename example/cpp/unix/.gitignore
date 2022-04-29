@@ -1,0 +1,9 @@
+# libraries
+*.dylib
+*.so
+
+# OpenJTalk-dictionary's dir
+open_jtalk_dic_utf_8-*
+
+# executable
+simple_tts
