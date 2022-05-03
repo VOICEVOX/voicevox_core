@@ -229,14 +229,14 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         shell: bash
         run: |
-          cmake -DONNXRUNTIME_DIR=download/onnxruntime ${{ matrix.cmake_additional_options }} .
+          cmake -DNO_TEST=true -DONNXRUNTIME_DIR=download/onnxruntime ${{ matrix.cmake_additional_options }} .
 
       # libcore.dylib for macOS universal
       - name: Configure (macOS)
         if: startsWith(matrix.os, 'macos')
         shell: bash
         run: |
-          env CMAKE_OSX_ARCHITECTURES="x86_64;arm64" cmake -DONNXRUNTIME_DIR=download/onnxruntime ${{ matrix.cmake_additional_options }} .
+          env CMAKE_OSX_ARCHITECTURES="x86_64;arm64" cmake -DNO_TEST=true -DONNXRUNTIME_DIR=download/onnxruntime ${{ matrix.cmake_additional_options }} .
 
       - name: Configure (Linux)
         if: startsWith(matrix.os, 'ubuntu')
@@ -245,7 +245,7 @@ jobs:
           CC: ${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}
           CXX: ${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}
         run: |
-          cmake -DONNXRUNTIME_DIR=download/onnxruntime ${{ matrix.cmake_additional_options }} .
+          cmake -DNO_TEST=true -DONNXRUNTIME_DIR=download/onnxruntime ${{ matrix.cmake_additional_options }} .
 
       - name: Build
         shell: bash
