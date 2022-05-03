@@ -148,6 +148,9 @@ cmake --build . --config Release
 cmake --install .
 cd ..
 
+#(省略可能) C++のテスト実行
+ctest --test-dir build --verbose
+
 # (省略可能) pythonモジュールのテスト
 python setup.py test
 
