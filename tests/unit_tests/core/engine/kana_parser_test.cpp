@@ -6,18 +6,16 @@
 using namespace voicevox::core::engine;
 
 TEST_CASE("extract_one_character") {
-  struct Given {
-    std::string text;
-    size_t pos;
-  };
-  struct Expected {
-    std::string one_char;
-    size_t after_size;
-  };
   struct TestCase {
     std::string name;
-    Given given;
-    Expected expected;
+    struct {
+      std::string text;
+      size_t pos;
+    } given;
+    struct {
+      std::string one_char;
+      size_t after_size;
+    } expected;
   };
   auto t = GENERATE(TestCase{.name = "target_is_alphabet",
                              .given = {.text = "abcd", .pos = 2},
