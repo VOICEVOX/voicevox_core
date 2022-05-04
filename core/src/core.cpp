@@ -21,9 +21,6 @@
 
 #define NOT_INITIALIZED_ERR "Call initialize() first."
 #define NOT_LOADED_ERR "Model is not loaded."
-#define NOT_FOUND_ERR "No such file or directory: "
-#define FAILED_TO_OPEN_MODEL_ERR "Unable to open model files."
-#define FAILED_TO_OPEN_METAS_ERR "Unable to open metas.json."
 #define ONNX_ERR "ONNX raise exception: "
 #define JSON_ERR "JSON parser raise exception: "
 #define GPU_NOT_SUPPORTED_ERR "This library is CPU version. GPU is not supported."
