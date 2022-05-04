@@ -38,12 +38,30 @@ typedef enum {
  * @brief 音声合成するための初期化を行う。他の関数を正しく実行するには先に初期化が必要
  * @param use_gpu trueならGPU用、falseならCPU用の初期化を行う
  * @param cpu_num_threads 推論に用いるスレッド数を設定する。0の場合論理コア数の半分か、物理コア数が設定される
+ * @param load_all_models trueなら全てのモデルをロードする
  * @return 成功したらtrue、失敗したらfalse
  * @detail
  * 何度も実行可能。use_gpuを変更して実行しなおすことも可能。
  * 最後に実行したuse_gpuに従って他の関数が実行される。
  */
-VOICEVOX_CORE_API bool initialize(bool use_gpu, int cpu_num_threads = 0);
+VOICEVOX_CORE_API bool initialize(bool use_gpu, int cpu_num_threads = 0, bool load_all_models = true);
+
+/**
+ * モデルをロードする
+ * @param speaker_id 話者番号
+ * @return 成功したらtrue、失敗したらfalse
+ * @detail
+ * 必ずしも話者とモデルが1:1対応しているわけではない。
+ */
+VOICEVOX_CORE_API bool load_model(int64_t speaker_id);
+
+/**
+ * @fn
+ * モデルがロード済みかどうか
+ * @param speaker_id 話者番号
+ * @return ロード済みならtrue、そうでないならfalse
+ */
+VOICEVOX_CORE_API bool is_model_loaded(int64_t speaker_id);
 
 /**
  * @fn

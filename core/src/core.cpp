@@ -128,7 +128,7 @@ struct Status {
   /**
    * モデルを読み込む
    */
-  bool load_model(int model_index, int cpu_num_threads) {
+  bool load_model(int model_index) {
     const auto VVMODEL = VVMODEL_LIST[model_index];
     embed::Resource yukarin_s_model = VVMODEL.YUKARIN_S();
     embed::Resource yukarin_sa_model = VVMODEL.YUKARIN_SA();
@@ -184,7 +184,7 @@ std::pair<int64_t, int64_t> get_model_index_and_speaker_id(int64_t speaker_id) {
   return found->second;
 }
 
-bool initialize(bool use_gpu, int cpu_num_threads) {
+bool initialize(bool use_gpu, int cpu_num_threads, bool load_all_models) {
   initialized = false;
 
 #ifdef DIRECTML
@@ -201,20 +201,24 @@ bool initialize(bool use_gpu, int cpu_num_threads) {
     if (!status->load_metas()) {
       return false;
     }
-    for (int model_index = 0; model_index < model_count; model_index++) {
-      if (!status->load_model(model_index, cpu_num_threads)) {
-        return false;
+
+    if (load_all_models) {
+      for (int model_index = 0; model_index < model_count; model_index++) {
+        if (!status->load_model(model_index)) {
+          return false;
+        }
       }
-    }
-    if (use_gpu) {
-      // 一回走らせて十分なGPUメモリを確保させる
-      // TODO: 全MODELに対して行う
-      int length = 500;
-      int phoneme_size = 45;
-      std::vector<float> phoneme(length * phoneme_size), f0(length);
-      int64_t speaker_id = 0;
-      std::vector<float> output(length * 256);
-      decode_forward(length, phoneme_size, f0.data(), phoneme.data(), &speaker_id, output.data());
+
+      if (use_gpu) {
+        // 一回走らせて十分なGPUメモリを確保させる
+        // TODO: 全MODELに対して行う
+        int length = 500;
+        int phoneme_size = 45;
+        std::vector<float> phoneme(length * phoneme_size), f0(length);
+        int64_t speaker_id = 0;
+        std::vector<float> output(length * 256);
+        decode_forward(length, phoneme_size, f0.data(), phoneme.data(), &speaker_id, output.data());
+      }
     }
   } catch (const Ort::Exception &e) {
     error_message = ONNX_ERR;
@@ -231,6 +235,17 @@ bool initialize(bool use_gpu, int cpu_num_threads) {
 
   initialized = true;
   return true;
+}
+
+bool load_model(int64_t speaker_id) {
+  auto [model_index, _] = get_model_index_and_speaker_id(speaker_id);
+  return status->load_model(model_index);
+}
+
+bool is_model_loaded(int64_t speaker_id) {
+  auto [model_index, _] = get_model_index_and_speaker_id(speaker_id);
+  return (status->yukarin_s_list[model_index].has_value() && status->yukarin_sa_list[model_index].has_value() &&
+          status->decode_list[model_index].has_value());
 }
 
 void finalize() {
