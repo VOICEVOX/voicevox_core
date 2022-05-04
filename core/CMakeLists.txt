@@ -25,20 +25,14 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 message("core will be installed to: ${CMAKE_INSTALL_PREFIX}")
 
+file(GLOB_RECURSE core_sources "src/*.cpp")
 # coreライブラリのビルド設定
 add_library(core
-		SHARED src/core.cpp
+		SHARED ${core_sources}
 		${EMBED_YUKARIN_S_OUTPUTS}
 		${EMBED_YUKARIN_SA_OUTPUTS}
 		${EMBED_DECODE_OUTPUTS}
-		${EMBED_METAS_OUTPUTS}
-		src/engine/full_context_label.cpp
-		src/engine/acoustic_feature_extractor.cpp
-		src/engine/openjtalk.cpp
-		src/engine/kana_parser.cpp
-		src/engine/mora_list.cpp
-		src/engine/synthesis_engine.cpp
-		src/engine.cpp)
+		${EMBED_METAS_OUTPUTS})
 
 # -DONNXRUNTIME_DIRで指定されたパスをもとにonnxruntimeのライブラリを取得する。失敗した場合はfatal error
 get_filename_component(ONNXRUNTIME_DIR ${ONNXRUNTIME_DIR} ABSOLUTE)
