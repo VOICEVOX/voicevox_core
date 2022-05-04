@@ -28,7 +28,7 @@ endif()
 add_subdirectory(core)
 add_subdirectory(open_jtalk/src)
 
-if(NOT NO_TEST)
+if(BUILD_TEST)
   enable_testing()
   add_subdirectory(tests)
 endif()
