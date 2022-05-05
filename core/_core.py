@@ -52,8 +52,8 @@ lib.last_error_message.restype = c_char_p
 
 
 # ラッパー関数
-def initialize(use_gpu: bool, cpu_num_threads=0):
-    success = lib.initialize(use_gpu, cpu_num_threads)
+def initialize(use_gpu: bool, cpu_num_threads=0, load_all_models=True):
+    success = lib.initialize(use_gpu, cpu_num_threads, load_all_models)
     if not success:
         raise Exception(lib.last_error_message().decode())
 
