@@ -120,6 +120,7 @@ struct Status {
         supported_styles.insert(style["id"].get<int64_t>());
       }
     }
+    return true;
   }
 
   /**
