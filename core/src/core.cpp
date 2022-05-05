@@ -308,7 +308,7 @@ bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list, int64_t *co
     return false;
   }
   auto [model_index, model_speaker_id] = get_model_index_and_speaker_id(*speaker_id);
-  auto model = std::move(status->yukarin_sa_list[model_index]);
+  auto &model = status->yukarin_sa_list[model_index];
   if (!model) {
     error_message = NOT_LOADED_ERR;
     return false;
