@@ -27,7 +27,7 @@ if not os.path.exists(core_dll_path):
 lib = cdll.LoadLibrary(str(core_dll_path))
 
 # 関数型定義
-lib.initialize.argtypes = (c_bool, c_int)
+lib.initialize.argtypes = (c_bool, c_int, c_bool)
 lib.initialize.restype = c_bool
 
 lib.finalize.argtypes = ()
