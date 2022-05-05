@@ -268,7 +268,7 @@ bool yukarin_s_forward(int64_t length, int64_t *phoneme_list, int64_t *speaker_i
     return false;
   }
   auto [model_index, model_speaker_id] = get_model_index_and_speaker_id(*speaker_id);
-  auto model = std::move(status->yukarin_s_list[model_index]);
+  auto &model = status->yukarin_s_list[model_index];
   if (!model) {
     error_message = NOT_LOADED_ERR;
     return false;
