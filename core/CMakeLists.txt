@@ -102,8 +102,13 @@ elseif (UNIX)
 endif ()
 
 target_compile_options(core PRIVATE
-	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8 /DVOICEVOX_CORE_EXPORTS>
-	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2 -DVOICEVOX_CORE_EXPORTS>
+	$<$<CXX_COMPILER_ID:MSVC>: /W4 /utf-8 /DVOICEVOX_CORE_EXPORTS>
+	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra  -DVOICEVOX_CORE_EXPORTS>
+)
+
+add_compile_options(TARGET core 
+	$<$<CONFIG:Release>:$<CXX_COMPILER_ID:MSVC>: /O2>
+	$<$<CONFIG:Release>:$<CXX_COMPILER_ID:GNU>: -O2>
 )
 
 target_include_directories(core
