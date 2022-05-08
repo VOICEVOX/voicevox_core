@@ -91,7 +91,7 @@ else()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D DIRECTML")
 endif()
 
-set_property(TARGET core PROPERTY CXX_STANDARD 17)
+set_property(TARGET core PROPERTY CXX_STANDARD 20)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
 # rpath設定
 if (APPLE)
