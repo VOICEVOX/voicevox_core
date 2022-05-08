@@ -14,6 +14,7 @@ target_compile_options(
   unit_test PRIVATE $<$<CXX_COMPILER_ID:MSVC>: /W4 /utf-8>
                     $<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra>)
 set_property(TARGET unit_test PROPERTY CXX_STANDARD 20)
+set_property(TARGET Catch2 PROPERTY CXX_STANDARD 20)
 target_include_directories(unit_test PRIVATE ${Catch2_SOURCE_DIR}/src)
 target_include_directories(unit_test PRIVATE ${CORE_DIR}/src)
 target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain)
