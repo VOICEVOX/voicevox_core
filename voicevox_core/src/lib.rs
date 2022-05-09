@@ -35,6 +35,11 @@ pub extern "C" fn metas() -> *const c_char {
 }
 
 #[no_mangle]
+pub extern "C" fn last_error_message() -> *const c_char {
+    unimplemented!()
+}
+
+#[no_mangle]
 pub extern "C" fn supported_devices() -> *const c_char {
     unimplemented!()
 }
