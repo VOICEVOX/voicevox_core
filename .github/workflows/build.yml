@@ -4,13 +4,20 @@ on:
   push:
     branches:
       # - main
+  pull_request:
   release:
     types:
       - published
-  pull_request:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
+        required: true
 
 env:
+  # releaseタグ名か、workflow_dispatchでのバージョン名か、DEBUGが入る
+  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || 'DEBUG' }}
+
   # Raw character weights are not public.
   # Skip uploading to GitHub Release on public repo.
   SKIP_UPLOADING_RELEASE_ASSET: ${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }}
@@ -23,19 +30,19 @@ jobs:
         include:
           - os: windows-2019
             device: gpu
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x64-gpu-1.10.0.zip
             artifact_name: windows-x64-cuda
 
           - os: windows-2019
             device: cpu-x64
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x64-1.10.0.zip
             artifact_name: windows-x64-cpu
 
           - os: windows-2019
             device: cpu-x86
-            python_architecture: 'x86'
+            python_architecture: "x86"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-win-x86-1.10.0.zip
             cmake_additional_options: -DCMAKE_GENERATOR_PLATFORM=Win32
             artifact_name: windows-x86-cpu
@@ -54,7 +61,7 @@ jobs:
 
           - os: windows-2019
             device: directml
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/Microsoft.ML.OnnxRuntime.DirectML.1.10.0.zip
             directml_url: https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.8.0
             cmake_additional_options: -DDIRECTML=ON -DDIRECTML_DIR=download/directml
@@ -62,40 +69,40 @@ jobs:
 
           - os: macos-10.15
             device: cpu-x64
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-osx-universal2-1.10.0.tgz
             artifact_name: osx-universal2-cpu
 
           - os: ubuntu-18.04
             device: gpu
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-gpu-1.10.0.tgz
             artifact_name: linux-x64-gpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: "8"
+            cxx_version: "8"
 
           - os: ubuntu-18.04
             device: cpu-x64
-            python_architecture: 'x64'
+            python_architecture: "x64"
             onnxruntime_url: https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-1.10.0.tgz
             artifact_name: linux-x64-cpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: "8"
+            cxx_version: "8"
 
           - os: ubuntu-18.04
             device: cpu-armhf
             onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-armhf-cpu-v1.10.0.tgz
             artifact_name: linux-armhf-cpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: "8"
+            cxx_version: "8"
             arch: arm-linux-gnueabihf
 
           - os: ubuntu-18.04
             device: cpu-arm64
             onnxruntime_url: https://github.com/VOICEVOX/onnxruntime-builder/releases/download/1.10.0.1/onnxruntime-linux-arm64-cpu-v1.10.0.tgz
             artifact_name: linux-arm64-cpu
-            cc_version: '8'
-            cxx_version: '8'
+            cc_version: "8"
+            cxx_version: "8"
             arch: aarch64-linux-gnu
 
     runs-on: ${{ matrix.os }}
@@ -255,15 +262,10 @@ jobs:
           pip install -r requirements.txt
           python setup.py test
 
-      - name: Set BUILD_IDENTIFIER env var
-        shell: bash
-        run: |
-          echo "BUILD_IDENTIFIER=${GITHUB_REF##*/}" >> $GITHUB_ENV
-
       - name: Set ASSET_NAME env var
         shell: bash
         run: |
-          echo "ASSET_NAME=voicevox_core-${{ matrix.artifact_name }}-${{ env.BUILD_IDENTIFIER }}" >> $GITHUB_ENV
+          echo "ASSET_NAME=voicevox_core-${{ matrix.artifact_name }}-${{ env.VERSION }}" >> $GITHUB_ENV
 
       - name: Organize artifact
         shell: bash
@@ -286,23 +288,24 @@ jobs:
           retention-days: 7
 
       - name: Archive artifact
-        if: github.event.release.tag_name != '' && !startsWith(matrix.os, 'windows-')
+        if: env.VERSION != 'DEBUG' && !startsWith(matrix.os, 'windows-')
         shell: bash
         run: |
           cd artifact
           zip -r "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
 
       - name: Archive artifact (Windows)
-        if: github.event.release.tag_name != '' && startsWith(matrix.os, 'windows-')
+        if: env.VERSION != 'DEBUG' && startsWith(matrix.os, 'windows-')
         run: |
           powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "${{ env.ASSET_NAME }}.zip"
 
       - name: Upload to Release
-        if: github.event.release.tag_name != '' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref }} # ==> github.event.release.tag_name
+          prerelease: true
+          tag: ${{ env.VERSION }}
           file: ${{ env.ASSET_NAME }}.zip
 
   build-win-cpp-example:
@@ -319,33 +322,33 @@ jobs:
       BUILD_CONFIGURATION: Release
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.2
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
 
-    - name: Restore NuGet packages
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: nuget restore ${{env.SOLUTION_FILE_PATH}}
+      - name: Restore NuGet packages
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: nuget restore ${{env.SOLUTION_FILE_PATH}}
 
-    - name: Download and extract artifact
-      uses: actions/download-artifact@v2
-      id: download
-      with:
-        name: windows-x64-cpu-cpp-shared
-        path: artifacts\
+      - name: Download and extract artifact
+        uses: actions/download-artifact@v2
+        id: download
+        with:
+          name: windows-x64-cpu-cpp-shared
+          path: artifacts\
 
-    - name: Copy core.lib
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: |
-        mkdir example\cpp\windows\simple_tts\lib\x64
-        copy ${{steps.download.outputs.download-path}}\core.lib example\cpp\windows\simple_tts\lib\x64
+      - name: Copy core.lib
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          mkdir example\cpp\windows\simple_tts\lib\x64
+          copy ${{steps.download.outputs.download-path}}\core.lib example\cpp\windows\simple_tts\lib\x64
 
-    - name: Build
-      working-directory: ${{env.GITHUB_WORKSPACE}}
-      # Add additional options to the MSBuild command line here (like platform or verbosity level).
-      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
-      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
+      - name: Build
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        # Add additional options to the MSBuild command line here (like platform or verbosity level).
+        # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+        run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
 
   build-unix-cpp-example:
     needs: [build-cpp-shared]
