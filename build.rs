@@ -23,8 +23,9 @@ fn main() {
             prefix: Some(
                 r#"#ifdef _WIN32
 __declspec(dllimport)
-#endif"#
-                    .into(),
+#endif
+"#
+                .into(),
             ),
             ..Default::default()
         },

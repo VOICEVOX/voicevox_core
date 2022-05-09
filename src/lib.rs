@@ -1,11 +1,4 @@
-use std::os::raw::{c_char, c_void};
-
-#[repr(C)]
-pub struct VoicevoxInitializeOptions {
-    use_gpu: bool,
-    cpu_num_threads: usize,
-    openjtalk_dict_path: *const c_char,
-}
+use std::os::raw::c_char;
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
@@ -17,51 +10,37 @@ pub enum VoicevoxResultCode {
 }
 
 #[no_mangle]
-#[allow(improper_ctypes_definitions)]
-pub extern "C" fn voicevox_default_initialize_options() -> VoicevoxInitializeOptions {
+pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: usize, load_all_models: bool) -> bool {
     unimplemented!()
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_initialize(
-    options: *const VoicevoxInitializeOptions,
-) -> VoicevoxResultCode {
-    unimplemented!()
-}
-
-type VoicevoxAsyncContext = *mut c_void;
-
-#[repr(C)]
-pub struct VoicevoxLoadModelAsyncResult {
-    ctx: VoicevoxAsyncContext,
-    result_code: VoicevoxResultCode,
-}
-
-#[no_mangle]
-pub extern "C" fn voicevox_load_model_async(
-    ctx: VoicevoxAsyncContext,
-    speaker_id: i64,
-    loaded_model_callback: extern "C" fn(*const VoicevoxLoadModelAsyncResult),
-) -> VoicevoxResultCode {
-    unimplemented!()
-}
-#[no_mangle]
-pub extern "C" fn voicevox_finalize() -> VoicevoxResultCode {
+pub extern "C" fn load_model(speaker_id: i64) -> bool {
     unimplemented!()
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_metas() -> *const c_char {
+pub extern "C" fn is_model_loaded(speaker_id: i64) -> bool {
     unimplemented!()
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_supported_devices() -> *const c_char {
+pub extern "C" fn finalize() {
     unimplemented!()
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_yukarin_s_forward(
+pub extern "C" fn metas() -> *const c_char {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub extern "C" fn supported_devices() -> *const c_char {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub extern "C" fn yukarin_s_forward(
     length: i64,
     phoneme_list: *const i64,
     speaker_id: *const i64,
@@ -71,7 +50,7 @@ pub extern "C" fn voicevox_yukarin_s_forward(
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_yukarin_sa_forward(
+pub extern "C" fn yukarin_sa_forward(
     length: i64,
     vowel_phoneme_list: *const i64,
     consonant_phoneme_list: *const i64,
@@ -86,7 +65,7 @@ pub extern "C" fn voicevox_yukarin_sa_forward(
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_decode_forward(
+pub extern "C" fn decode_forward(
     length: i64,
     phoneme_size: i64,
     f0: *const f32,
