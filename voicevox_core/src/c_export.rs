@@ -17,18 +17,18 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT = 1,
 }
 
-impl<T> From<Result<T>> for VoicevoxResultCode {
-    fn from(result: Result<T>) -> Self {
-        if let Some(err) = result.err() {
+fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
+    match result {
+        Ok(target) => (Some(target), VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED),
+        Err(err) => {
             eprintln!("{}", err);
             dbg!(&err);
             match err {
-                Error::NotLoadedOpenjtalkDict => {
-                    VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT
-                }
+                Error::NotLoadedOpenjtalkDict => (
+                    None,
+                    VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT,
+                ),
             }
-        } else {
-            VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
         }
     }
 }
@@ -39,6 +39,7 @@ static mut ERROR_MESSAGE: String = String::new();
 #[no_mangle]
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
     let result = internal::initialize(use_gpu, cpu_num_threads as usize, load_all_models);
+    //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         unsafe {
             ERROR_MESSAGE = format!("{}\0", err);
@@ -52,6 +53,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
 #[no_mangle]
 pub extern "C" fn load_model(speaker_id: i64) -> bool {
     let result = internal::load_model(speaker_id);
+    //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         unsafe {
             ERROR_MESSAGE = format!("{}\0", err);
@@ -95,6 +97,7 @@ pub extern "C" fn yukarin_s_forward(
     output: *mut f32,
 ) -> bool {
     let result = internal::yukarin_s_forward(length, phoneme_list, &unsafe { *speaker_id }, output);
+    //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         unsafe {
             ERROR_MESSAGE = format!("{}\0", err);
@@ -128,6 +131,7 @@ pub extern "C" fn yukarin_sa_forward(
         speaker_id,
         output,
     );
+    //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         unsafe {
             ERROR_MESSAGE = format!("{}\0", err);
@@ -148,6 +152,7 @@ pub extern "C" fn decode_forward(
     output: *mut f32,
 ) -> bool {
     let result = internal::decode_forward(length, phoneme_size, f0, phoneme, speaker_id, output);
+    //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         unsafe {
             ERROR_MESSAGE = format!("{}\0", err);
@@ -160,7 +165,10 @@ pub extern "C" fn decode_forward(
 
 #[no_mangle]
 pub extern "C" fn voicevox_load_openjtalk_dict(dict_path: *const c_char) -> VoicevoxResultCode {
-    internal::voicevox_load_openjtalk_dict(unsafe { CStr::from_ptr(dict_path) }).into()
+    let (_, result_code) = convert_result(internal::voicevox_load_openjtalk_dict(unsafe {
+        CStr::from_ptr(dict_path)
+    }));
+    result_code
 }
 
 #[no_mangle]
@@ -170,13 +178,13 @@ pub extern "C" fn voicevox_tts(
     output_binary_size: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    internal::voicevox_tts(
+    let (_, result_code) = convert_result(internal::voicevox_tts(
         unsafe { CStr::from_ptr(text) },
         speaker_id,
         output_binary_size,
         output_wav,
-    )
-    .into()
+    ));
+    result_code
 }
 
 #[no_mangle]
@@ -186,17 +194,19 @@ pub extern "C" fn voicevox_tts_from_kana(
     output_binary_size: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    internal::voicevox_tts_from_kana(
+    let (_, result_code) = convert_result(internal::voicevox_tts_from_kana(
         unsafe { CStr::from_ptr(text) },
         speaker_id,
         output_binary_size,
         output_wav,
-    )
-    .into()
+    ));
+    result_code
 }
 
+#[no_mangle]
 pub extern "C" fn voicevox_wav_free(wav: *mut u8) -> VoicevoxResultCode {
-    internal::voicevox_wav_free(wav).into()
+    let (_, result_code) = convert_result(internal::voicevox_wav_free(wav));
+    result_code
 }
 
 #[no_mangle]
