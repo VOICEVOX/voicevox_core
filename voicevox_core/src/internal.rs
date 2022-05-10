@@ -95,7 +95,7 @@ pub fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -> *con
         }
 
         VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED => {
-            panic!("出力しようとしたVoicevoxResultCodeはエラーコードではありません")
+            "エラーが発生しませんでした\0".as_ptr() as *const c_char
         }
     }
 }
