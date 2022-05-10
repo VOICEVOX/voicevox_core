@@ -1,6 +1,6 @@
 use super::*;
 use std::ffi::CStr;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_int};
 
 /*
  * Cの関数として公開するための型や関数を定義するこれらの実装はinternal.rsに定義してある同名関数にある
@@ -37,8 +37,8 @@ impl<T> From<Result<T>> for VoicevoxResultCode {
 static mut ERROR_MESSAGE: String = String::new();
 
 #[no_mangle]
-pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: usize, load_all_models: bool) -> bool {
-    let result = internal::initialize(use_gpu, cpu_num_threads, load_all_models);
+pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
+    let result = internal::initialize(use_gpu, cpu_num_threads as usize, load_all_models);
     if let Some(err) = result.err() {
         unsafe {
             ERROR_MESSAGE = format!("{}\0", err);
@@ -90,8 +90,8 @@ pub extern "C" fn supported_devices() -> *const c_char {
 #[no_mangle]
 pub extern "C" fn yukarin_s_forward(
     length: i64,
-    phoneme_list: *const i64,
-    speaker_id: *const i64,
+    phoneme_list: *mut i64,
+    speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
     let result = internal::yukarin_s_forward(length, phoneme_list, &unsafe { *speaker_id }, output);
@@ -108,13 +108,13 @@ pub extern "C" fn yukarin_s_forward(
 #[no_mangle]
 pub extern "C" fn yukarin_sa_forward(
     length: i64,
-    vowel_phoneme_list: *const i64,
-    consonant_phoneme_list: *const i64,
-    start_accent_list: *const i64,
-    end_accent_list: *const i64,
-    start_accent_phrase_list: *const i64,
-    end_accent_phrase_list: *const i64,
-    speaker_id: *const i64,
+    vowel_phoneme_list: *mut i64,
+    consonant_phoneme_list: *mut i64,
+    start_accent_list: *mut i64,
+    end_accent_list: *mut i64,
+    start_accent_phrase_list: *mut i64,
+    end_accent_phrase_list: *mut i64,
+    speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
     let result = internal::yukarin_sa_forward(
@@ -142,9 +142,9 @@ pub extern "C" fn yukarin_sa_forward(
 pub extern "C" fn decode_forward(
     length: i64,
     phoneme_size: i64,
-    f0: *const f32,
-    phoneme: *const f32,
-    speaker_id: *const i64,
+    f0: *mut f32,
+    phoneme: *mut f32,
+    speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
     let result = internal::decode_forward(length, phoneme_size, f0, phoneme, speaker_id, output);
