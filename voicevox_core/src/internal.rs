@@ -1,7 +1,7 @@
 use super::*;
 use c_export::VoicevoxResultCode;
 use std::ffi::CStr;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_int};
 use std::path::Path;
 
 pub fn initialize(use_gpu: bool, cpu_num_threads: usize, load_all_models: bool) -> Result<()> {
@@ -69,7 +69,7 @@ pub fn voicevox_load_openjtalk_dict(dict_path: &CStr) -> Result<()> {
 pub fn voicevox_tts(
     text: &CStr,
     speaker_id: i64,
-    output_binary_size: *mut usize,
+    output_binary_size: *mut c_int,
     output_wav: *const *mut u8,
 ) -> Result<()> {
     unimplemented!()

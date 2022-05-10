@@ -174,7 +174,7 @@ pub extern "C" fn voicevox_load_openjtalk_dict(dict_path: *const c_char) -> Voic
 pub extern "C" fn voicevox_tts(
     text: *const c_char,
     speaker_id: i64,
-    output_binary_size: *mut usize,
+    output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     let (_, result_code) = convert_result(internal::voicevox_tts(
