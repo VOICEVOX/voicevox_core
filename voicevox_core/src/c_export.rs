@@ -22,14 +22,10 @@ impl<T> From<Result<T>> for VoicevoxResultCode {
         if let Some(err) = result.err() {
             eprintln!("{}", err);
             dbg!(&err);
-            if let Ok(err) = err.downcast::<Error>() {
-                match err {
-                    Error::NotLoadedOpenjtalkDict => {
-                        VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT
-                    }
+            match err {
+                Error::NotLoadedOpenjtalkDict => {
+                    VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT
                 }
-            } else {
-                panic!()
             }
         } else {
             VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
@@ -98,7 +94,7 @@ pub extern "C" fn yukarin_s_forward(
     speaker_id: *const i64,
     output: *mut f32,
 ) -> bool {
-    let result = internal::yukarin_s_forward(length, phoneme_list, speaker_id, output);
+    let result = internal::yukarin_s_forward(length, phoneme_list, &unsafe { *speaker_id }, output);
     if let Some(err) = result.err() {
         unsafe {
             ERROR_MESSAGE = format!("{}\0", err);
@@ -164,8 +160,7 @@ pub extern "C" fn decode_forward(
 
 #[no_mangle]
 pub extern "C" fn voicevox_load_openjtalk_dict(dict_path: *const c_char) -> VoicevoxResultCode {
-    let dict_path = unsafe { CStr::from_ptr(dict_path).to_str().unwrap() };
-    internal::voicevox_load_openjtalk_dict(dict_path).into()
+    internal::voicevox_load_openjtalk_dict(unsafe { CStr::from_ptr(dict_path) }).into()
 }
 
 #[no_mangle]
@@ -173,7 +168,7 @@ pub extern "C" fn voicevox_tts(
     text: *const c_char,
     speaker_id: i64,
     output_binary_size: *mut usize,
-    output_wav: *const *mut u8,
+    output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     internal::voicevox_tts(
         unsafe { CStr::from_ptr(text) },
@@ -189,7 +184,7 @@ pub extern "C" fn voicevox_tts_from_kana(
     text: *const c_char,
     speaker_id: i64,
     output_binary_size: *mut usize,
-    output_wav: *const *mut u8,
+    output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     internal::voicevox_tts_from_kana(
         unsafe { CStr::from_ptr(text) },

@@ -1,2 +1,2 @@
-pub use anyhow::Context as _;
-pub use anyhow::Result;
+use super::*;
+pub type Result<T> = std::result::Result<T, Error>;

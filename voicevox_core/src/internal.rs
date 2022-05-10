@@ -31,7 +31,7 @@ pub fn supported_devices() -> &'static CStr {
 pub fn yukarin_s_forward(
     length: i64,
     phoneme_list: *const i64,
-    speaker_id: *const i64,
+    speaker_id: &i64,
     output: *mut f32,
 ) -> Result<()> {
     unimplemented!()
@@ -63,7 +63,7 @@ pub fn decode_forward(
     unimplemented!()
 }
 
-pub fn voicevox_load_openjtalk_dict(dict_path: impl AsRef<Path>) -> Result<()> {
+pub fn voicevox_load_openjtalk_dict(dict_path: &CStr) -> Result<()> {
     unimplemented!()
 }
 pub fn voicevox_tts(
