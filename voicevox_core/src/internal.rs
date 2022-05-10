@@ -78,7 +78,7 @@ pub fn voicevox_tts(
 pub fn voicevox_tts_from_kana(
     text: &CStr,
     speaker_id: i64,
-    output_binary_size: *mut usize,
+    output_binary_size: *mut c_int,
     output_wav: *const *mut u8,
 ) -> Result<()> {
     unimplemented!()

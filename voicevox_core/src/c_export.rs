@@ -190,7 +190,7 @@ pub extern "C" fn voicevox_tts(
 pub extern "C" fn voicevox_tts_from_kana(
     text: *const c_char,
     speaker_id: i64,
-    output_binary_size: *mut usize,
+    output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     let (_, result_code) = convert_result(internal::voicevox_tts_from_kana(
