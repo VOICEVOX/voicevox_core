@@ -1,3 +1,5 @@
+use super::*;
+use c_export::VoicevoxResultCode::{self, *};
 use thiserror::Error;
 
 /*
@@ -7,6 +9,14 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("openjtalkの辞書が読み込まれていません")]
+    /*
+     * エラーメッセージのベースとなる文字列は必ずbase_error_message関数を使用してVoicevoxResultCodeのエラー出力の内容と対応するようにすること
+     */
+    #[error("{}", base_error_message(VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT))]
     NotLoadedOpenjtalkDict,
+}
+
+fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
+    let c_message: &'static str = internal::voicevox_error_result_to_message(result_code);
+    &c_message[..(c_message.len() - 1)]
 }

@@ -88,14 +88,13 @@ pub fn voicevox_wav_free(wav: *mut u8) -> Result<()> {
     unimplemented!()
 }
 
-pub fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -> *const c_char {
+pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
+    // C APIのため、messageには必ず末尾にNULL文字を追加する
     match result_code {
         VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT => {
-            "voicevox_load_openjtalk_dict() を初めに呼んでください\0".as_ptr() as *const c_char
+            "voicevox_load_openjtalk_dict() を初めに呼んでください\0"
         }
 
-        VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED => {
-            "エラーが発生しませんでした\0".as_ptr() as *const c_char
-        }
+        VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
     }
 }

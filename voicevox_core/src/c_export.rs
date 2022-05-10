@@ -212,5 +212,5 @@ pub extern "C" fn voicevox_wav_free(wav: *mut u8) -> VoicevoxResultCode {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    internal::voicevox_error_result_to_message(result_code)
+    internal::voicevox_error_result_to_message(result_code).as_ptr() as *const c_char
 }
