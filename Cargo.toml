@@ -1,2 +1,2 @@
 [workspace]
-members = ["voicevox_core"]
+members = ["crates/voicevox_core"]
