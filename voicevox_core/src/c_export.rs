@@ -35,7 +35,7 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
     }
 }
 
-// FIXME:static変数はunsafeなので各関数の戻り値をboolからVoicevoxResultCodeに変えてこのstatic変数を削除する
+// FIXME:各関数の戻り値をboolからVoicevoxResultCodeに変えてこのstatic変数を削除する
 static ERROR_MESSAGE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
 
 fn set_message(message: &str) {
