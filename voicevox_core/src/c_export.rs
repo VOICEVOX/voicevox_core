@@ -1,6 +1,8 @@
 use super::*;
+use once_cell::sync::Lazy;
 use std::ffi::CStr;
 use std::os::raw::{c_char, c_int};
+use std::sync::Mutex;
 
 /*
  * Cの関数として公開するための型や関数を定義するこれらの実装はinternal.rsに定義してある同名関数にある
@@ -34,16 +36,21 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
 }
 
 // FIXME:static変数はunsafeなので各関数の戻り値をboolからVoicevoxResultCodeに変えてこのstatic変数を削除する
-static mut ERROR_MESSAGE: String = String::new();
+static ERROR_MESSAGE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
+
+fn set_message(message: &str) {
+    ERROR_MESSAGE
+        .lock()
+        .unwrap()
+        .replace_range(.., &format!("{}\0", message));
+}
 
 #[no_mangle]
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
     let result = internal::initialize(use_gpu, cpu_num_threads as usize, load_all_models);
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
-        unsafe {
-            ERROR_MESSAGE = format!("{}\0", err);
-        }
+        set_message(&format!("{}", err));
         false
     } else {
         true
@@ -55,9 +62,7 @@ pub extern "C" fn load_model(speaker_id: i64) -> bool {
     let result = internal::load_model(speaker_id);
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
-        unsafe {
-            ERROR_MESSAGE = format!("{}\0", err);
-        }
+        set_message(&format!("{}", err));
         false
     } else {
         true
@@ -81,7 +86,7 @@ pub extern "C" fn metas() -> *const c_char {
 
 #[no_mangle]
 pub extern "C" fn last_error_message() -> *const c_char {
-    unsafe { ERROR_MESSAGE.as_ptr() as *const c_char }
+    ERROR_MESSAGE.lock().unwrap().as_ptr() as *const c_char
 }
 
 #[no_mangle]
@@ -99,9 +104,7 @@ pub extern "C" fn yukarin_s_forward(
     let result = internal::yukarin_s_forward(length, phoneme_list, &unsafe { *speaker_id }, output);
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
-        unsafe {
-            ERROR_MESSAGE = format!("{}\0", err);
-        }
+        set_message(&format!("{}", err));
         false
     } else {
         true
@@ -133,9 +136,7 @@ pub extern "C" fn yukarin_sa_forward(
     );
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
-        unsafe {
-            ERROR_MESSAGE = format!("{}\0", err);
-        }
+        set_message(&format!("{}", err));
         false
     } else {
         true
@@ -154,9 +155,7 @@ pub extern "C" fn decode_forward(
     let result = internal::decode_forward(length, phoneme_size, f0, phoneme, speaker_id, output);
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
-        unsafe {
-            ERROR_MESSAGE = format!("{}\0", err);
-        }
+        set_message(&format!("{}", err));
         false
     } else {
         true
