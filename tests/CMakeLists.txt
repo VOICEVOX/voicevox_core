@@ -19,6 +19,12 @@ target_include_directories(unit_test PRIVATE ${Catch2_SOURCE_DIR}/src)
 target_include_directories(unit_test PRIVATE ${CORE_DIR}/src)
 target_link_libraries(unit_test PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(unit_test PRIVATE core)
+if (WIN32)
+  add_custom_command(TARGET unit_test POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "$<TARGET_FILE:core>;${DEPENDENT_DLLS}" $<TARGET_FILE_DIR:unit_test>
+    COMMAND_EXPAND_LISTS )
+endif (WIN32)
 list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
 include(Catch)
 include(CTest)

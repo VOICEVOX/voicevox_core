@@ -11,6 +11,9 @@ set(MODEL_DIR
 set(CORE_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}/core"
     CACHE PATH "Path to core")
+set(DEPENDENT_DLLS
+    ""
+    CACHE INTERNAL "Dependent DLLs of core.dll")
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
