@@ -279,6 +279,8 @@ jobs:
 
           echo "${{ env.BUILD_IDENTIFIER }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
+          cp README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
+
       # Upload
       - name: Upload artifact
         uses: actions/upload-artifact@v2
