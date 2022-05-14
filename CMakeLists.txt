@@ -18,9 +18,7 @@ set(DEPENDENT_DLLS
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(DIRECTML "Enables building for DirectML" OFF)
-set(DIRECTML_DIR
-    "${CMAKE_CURRENT_SOURCE_DIR}/directml"
-    CACHE PATH "Path to ONNX Runtime")
+set(DIRECTML_DIR "${CMAKE_CURRENT_SOURCE_DIR}/directml" CACHE PATH "Path to ONNX Runtime")
 if(DIRECTML)
   # DirectML読み込み用にCPUのアーキテクチャを求める
   set(DML_ARCH)
