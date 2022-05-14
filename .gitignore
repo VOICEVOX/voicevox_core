@@ -38,8 +38,6 @@ release/
 .vs/
 packages/
 
-
-# Added by cargo
-
+# Cargo
 target
 /Cargo.lock
