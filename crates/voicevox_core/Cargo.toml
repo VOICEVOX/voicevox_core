@@ -3,11 +3,9 @@ name = "voicevox_core"
 version = "0.1.0"
 edition = "2021"
 
-
 [lib]
 name = "core"
 crate-type = ["cdylib"]
-
 
 [dependencies]
 derive-getters = "0.2.0"
