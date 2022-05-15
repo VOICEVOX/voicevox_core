@@ -11,6 +11,7 @@ use std::sync::Mutex;
  */
 
 #[repr(C)]
+#[derive(Debug, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum VoicevoxResultCode {
     // C でのenum定義に合わせて大文字で定義している
@@ -213,4 +214,21 @@ pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
     internal::voicevox_error_result_to_message(result_code).as_ptr() as *const c_char
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[rstest]
+    #[case(Ok(()), VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED)]
+    #[case(
+        Err(Error::NotLoadedOpenjtalkDict),
+        VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT
+    )]
+    fn convert_result_works(#[case] result: Result<()>, #[case] expected: VoicevoxResultCode) {
+        let (_, actual) = convert_result(result);
+        assert_eq!(expected, actual);
+    }
 }
