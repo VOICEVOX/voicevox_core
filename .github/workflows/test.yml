@@ -1,0 +1,34 @@
+name: test workflow
+on: [push]
+jobs:
+  rust-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: cargo clippy --all-features --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo fmt -- --check
+
+  rust-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2019
+          - os: windows-2022
+          - os: macos-10.15
+          - os: macos-11
+          - os: macos-12
+          - os: ubuntu-18.04
+          - os: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: cargo test --all-features .
+env:
+  CARGO_TERM_COLOR: always

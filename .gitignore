@@ -37,3 +37,7 @@ release/
 # Visual Studio
 .vs/
 packages/
+
+# Cargo
+target
+/Cargo.lock
