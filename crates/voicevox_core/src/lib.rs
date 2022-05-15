@@ -5,3 +5,6 @@ mod result;
 
 use error::*;
 use result::*;
+
+#[cfg(test)]
+use rstest::*;
