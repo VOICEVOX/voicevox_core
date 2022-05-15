@@ -13,6 +13,7 @@ directml*/
 
 # Build artifacts
 build/
+test_build/
 lib/
 bin/
 core/_core.cpp

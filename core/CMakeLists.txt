@@ -27,6 +27,7 @@ message("core will be installed to: ${CMAKE_INSTALL_PREFIX}")
 
 file(GLOB_RECURSE core_sources "src/*.cpp")
 # coreライブラリのビルド設定
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 add_library(core
 		SHARED ${core_sources}
 		${EMBED_YUKARIN_S_OUTPUTS}
@@ -51,6 +52,9 @@ if(NOT DIRECTML)
 		"${ONNXRUNTIME_DIR}/lib/*.lib"
 		"${ONNXRUNTIME_DIR}/lib/*.so"
 		"${ONNXRUNTIME_DIR}/lib/*.so.*")
+	file(GLOB ONNXRUNTIME_DLLS
+		"${ONNXRUNTIME_DIR}/lib/*.dll")
+	set(DEPENDENT_DLLS "${DEPENDENT_DLLS};${ONNXRUNTIME_DLLS}" PARENT_SCOPE)
 	target_include_directories(core
 		PRIVATE ${ONNXRUNTIME_DIR}/include)
 	target_link_directories(core PUBLIC ${ONNXRUNTIME_DIR}/lib)
@@ -79,6 +83,9 @@ else()
 		file(GLOB DIRECTML_LIBS
 		"${DIRECTML_DIR}/bin/${DML_ARCH}-win/*.dll"
 		"${DIRECTML_DIR}/bin/${DML_ARCH}-win/*.lib")
+		file(GLOB DIRECTML_DLLS
+		"${DIRECTML_DIR}/bin/${DML_ARCH}-win/*.dll")
+		set(DEPENDENT_DLLS "${DEPENDENT_DLLS};${DIRECTML_DLLS}" PARENT_SCOPE)
 
 		target_include_directories(core PRIVATE ${DIRECTML_DIR}/include)
 		target_link_directories(core PUBLIC ${DIRECTML_DIR}/bin/${DML_ARCH}-win/)
@@ -91,7 +98,7 @@ else()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D DIRECTML")
 endif()
 
-set_property(TARGET core PROPERTY CXX_STANDARD 17)
+set_property(TARGET core PROPERTY CXX_STANDARD 20)
 set_property(TARGET core PROPERTY POSITION_INDEPENDENT_CODE ON) # fPIC
 # rpath設定
 if (APPLE)
@@ -102,8 +109,13 @@ elseif (UNIX)
 endif ()
 
 target_compile_options(core PRIVATE
-	$<$<CXX_COMPILER_ID:MSVC>: /W4 /O2 /utf-8 /DVOICEVOX_CORE_EXPORTS>
-	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra -O2 -DVOICEVOX_CORE_EXPORTS>
+	$<$<CXX_COMPILER_ID:MSVC>: /W4 /utf-8 /DVOICEVOX_CORE_EXPORTS>
+	$<$<CXX_COMPILER_ID:GNU>: -Wall -Wextra  -DVOICEVOX_CORE_EXPORTS>
+)
+
+add_compile_options(TARGET core 
+	$<$<CONFIG:Release>:$<CXX_COMPILER_ID:MSVC>: /O2>
+	$<$<CONFIG:Release>:$<CXX_COMPILER_ID:GNU>: -O2>
 )
 
 target_include_directories(core
