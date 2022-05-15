@@ -1,17 +1,22 @@
 use super::*;
 use c_export::VoicevoxResultCode;
 use std::ffi::CStr;
-use std::os::raw::{c_char, c_int};
-use std::path::Path;
+use std::os::raw::c_int;
 
+//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+#[allow(unused_variables)]
 pub fn initialize(use_gpu: bool, cpu_num_threads: usize, load_all_models: bool) -> Result<()> {
     unimplemented!()
 }
 
+//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+#[allow(unused_variables)]
 pub fn load_model(speaker_id: i64) -> Result<()> {
     unimplemented!()
 }
 
+//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+#[allow(unused_variables)]
 pub fn is_model_loaded(speaker_id: i64) -> bool {
     unimplemented!()
 }
@@ -28,6 +33,8 @@ pub fn supported_devices() -> &'static CStr {
     unimplemented!()
 }
 
+//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+#[allow(unused_variables)]
 pub fn yukarin_s_forward(
     length: i64,
     phoneme_list: *const i64,
@@ -37,6 +44,8 @@ pub fn yukarin_s_forward(
     unimplemented!()
 }
 
+//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+#[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
 pub fn yukarin_sa_forward(
     length: i64,
@@ -52,6 +61,8 @@ pub fn yukarin_sa_forward(
     unimplemented!()
 }
 
+//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+#[allow(unused_variables)]
 pub fn decode_forward(
     length: i64,
     phoneme_size: i64,
@@ -63,9 +74,14 @@ pub fn decode_forward(
     unimplemented!()
 }
 
+//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+#[allow(unused_variables)]
 pub fn voicevox_load_openjtalk_dict(dict_path: &CStr) -> Result<()> {
     unimplemented!()
 }
+
+//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+#[allow(unused_variables)]
 pub fn voicevox_tts(
     text: &CStr,
     speaker_id: i64,
@@ -75,6 +91,8 @@ pub fn voicevox_tts(
     unimplemented!()
 }
 
+//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+#[allow(unused_variables)]
 pub fn voicevox_tts_from_kana(
     text: &CStr,
     speaker_id: i64,
@@ -84,6 +102,8 @@ pub fn voicevox_tts_from_kana(
     unimplemented!()
 }
 
+//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+#[allow(unused_variables)]
 pub fn voicevox_wav_free(wav: *mut u8) -> Result<()> {
     unimplemented!()
 }
