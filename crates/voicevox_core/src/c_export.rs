@@ -19,6 +19,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_SUCCEED = 0,
     VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT = 1,
     VOICEVOX_RESULT_LOAD_MODEL_ORT_ERROR = 2,
+    VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR = 3,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -32,9 +33,13 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT,
                 ),
-                Error::LoadModelOnnxruntime(_) => (
+                Error::LoadModelOnnxruntimeOrt(_) => (
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ORT_ERROR,
+                ),
+                Error::GetSupportedDevicesOrt(_) => (
+                    None,
+                    VoicevoxResultCode::VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
                 ),
             }
         }

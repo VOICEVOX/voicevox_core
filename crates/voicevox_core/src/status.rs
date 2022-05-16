@@ -43,6 +43,36 @@ static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
         .unwrap()
 });
 
+pub struct SupportedDevices {
+    cpu: bool,
+    cuda: bool,
+    dml: bool,
+}
+
+impl SupportedDevices {
+    pub fn get_supported_devices() -> Result<Self> {
+        use Error::*;
+        let mut cuda_support = false;
+        let mut dml_support = false;
+        for provider in onnxruntime::session::get_available_providers()
+            .map_err(GetSupportedDevicesOrt)?
+            .iter()
+        {
+            match provider.as_str() {
+                "CUDAExecutionProvider" => cuda_support = true,
+                "DmlExecutionProvider" => dml_support = true,
+                _ => {}
+            }
+        }
+
+        Ok(SupportedDevices {
+            cpu: true,
+            cuda: cuda_support,
+            dml: dml_support,
+        })
+    }
+}
+
 impl Status {
     const YUKARIN_S_MODEL: &'static [u8] = include_bytes!(concat!(
         env!("CARGO_WORKSPACE_DIR"),
@@ -74,23 +104,23 @@ impl Status {
     }
 
     pub fn load_model(&mut self, model_index: usize) -> Result<()> {
-        use Error::LoadModelOnnxruntime;
+        use Error::LoadModelOnnxruntimeOrt;
         let model = &Self::MODELS[model_index];
         let yukarin_s_session = self
             .new_session_builder()
-            .map_err(LoadModelOnnxruntime)?
+            .map_err(LoadModelOnnxruntimeOrt)?
             .with_model_from_memory(model.yukarin_s_model)
-            .map_err(LoadModelOnnxruntime)?;
+            .map_err(LoadModelOnnxruntimeOrt)?;
         let yukarin_sa_session = self
             .new_session_builder()
-            .map_err(LoadModelOnnxruntime)?
+            .map_err(LoadModelOnnxruntimeOrt)?
             .with_model_from_memory(model.yukarin_sa_model)
-            .map_err(LoadModelOnnxruntime)?;
+            .map_err(LoadModelOnnxruntimeOrt)?;
         let decode_model = self
             .new_session_builder()
-            .map_err(LoadModelOnnxruntime)?
+            .map_err(LoadModelOnnxruntimeOrt)?
             .with_model_from_memory(model.decode_model)
-            .map_err(LoadModelOnnxruntime)?;
+            .map_err(LoadModelOnnxruntimeOrt)?;
 
         let mut models = self.models.lock().unwrap();
         models.yukarin_s.insert(model_index, yukarin_s_session);

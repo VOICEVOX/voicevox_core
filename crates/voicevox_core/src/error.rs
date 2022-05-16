@@ -19,7 +19,13 @@ pub enum Error {
     NotLoadedOpenjtalkDict,
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_MODEL_ORT_ERROR))]
-    LoadModelOnnxruntime(OrtError),
+    LoadModelOnnxruntimeOrt(OrtError),
+
+    #[error(
+        "{},{0}",
+        base_error_message(VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR)
+    )]
+    GetSupportedDevicesOrt(OrtError),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {

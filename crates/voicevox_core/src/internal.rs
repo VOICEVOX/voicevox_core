@@ -112,14 +112,18 @@ pub fn voicevox_wav_free(wav: *mut u8) -> Result<()> {
 
 pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
     // C APIのため、messageには必ず末尾にNULL文字を追加する
+    use VoicevoxResultCode::*;
     match result_code {
-        VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT => {
+        VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT => {
             "voicevox_load_openjtalk_dict() を初めに呼んでください\0"
         }
-
-        VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
-        VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ORT_ERROR => {
+        VOICEVOX_RESULT_LOAD_MODEL_ORT => {
             "modelデータ読み込み中にOnnxruntimeエラーが発生しました\0"
         }
+        VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR => {
+            "サポートされているデバイス情報取得中にエラーが発生しました\0"
+        }
+
+        VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
     }
 }
