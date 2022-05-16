@@ -3,6 +3,8 @@ use c_export::VoicevoxResultCode;
 use std::ffi::CStr;
 use std::os::raw::c_int;
 
+use status::*;
+
 //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
 #[allow(unused_variables)]
 pub fn initialize(use_gpu: bool, cpu_num_threads: usize, load_all_models: bool) -> Result<()> {
@@ -116,5 +118,8 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         }
 
         VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
+        VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ORT_ERROR => {
+            "modelデータ読み込み中にOnnxruntimeエラーが発生しました\0"
+        }
     }
 }

@@ -30,9 +30,11 @@ __declspec(dllimport)
         ..Default::default()
     };
 
+    /*
     cbindgen::generate_with_config(&crate_dir, config)
         .unwrap()
         .write_to_file(&output_file);
+    */
 }
 fn target_dir() -> PathBuf {
     PathBuf::from(env::var("CARGO_WORKSPACE_DIR").unwrap()).join("target")

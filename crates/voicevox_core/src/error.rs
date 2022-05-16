@@ -1,5 +1,6 @@
 use super::*;
 use c_export::VoicevoxResultCode::{self, *};
+use onnxruntime::OrtError;
 use thiserror::Error;
 
 /*
@@ -16,6 +17,9 @@ pub enum Error {
     // TODO:仮実装がlinterエラーにならないようにするための属性なのでこのenumが正式に使われる際にallow(dead_code)を取り除くこと
     #[allow(dead_code)]
     NotLoadedOpenjtalkDict,
+
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_MODEL_ORT_ERROR))]
+    LoadModelOnnxruntime(OrtError),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {

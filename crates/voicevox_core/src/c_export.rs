@@ -18,6 +18,7 @@ pub enum VoicevoxResultCode {
     // 出力フォーマットを変更すればRustでよく使われているUpperCamelにできるが、実際に出力されるコードとの差異をできるだけ少なくするため
     VOICEVOX_RESULT_SUCCEED = 0,
     VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT = 1,
+    VOICEVOX_RESULT_LOAD_MODEL_ORT_ERROR = 2,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -30,6 +31,10 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                 Error::NotLoadedOpenjtalkDict => (
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT,
+                ),
+                Error::LoadModelOnnxruntime(_) => (
+                    None,
+                    VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ORT_ERROR,
                 ),
             }
         }
