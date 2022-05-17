@@ -9,10 +9,9 @@ cfg_if! {
     }
 }
 use std::collections::BTreeMap;
-use std::sync::Mutex;
 
 pub struct Status {
-    models: Mutex<StatusModels>,
+    models: StatusModels,
     session_options: SessionOptions,
 }
 
@@ -110,11 +109,11 @@ impl Status {
 
     pub fn new(use_gpu: bool, cpu_num_threads: usize) -> Self {
         Self {
-            models: Mutex::new(StatusModels {
+            models: StatusModels {
                 yukarin_s: BTreeMap::new(),
                 yukarin_sa: BTreeMap::new(),
                 decode: BTreeMap::new(),
-            }),
+            },
             session_options: SessionOptions::new(cpu_num_threads, use_gpu),
         }
     }
@@ -131,11 +130,12 @@ impl Status {
             .new_session(model.decode_model)
             .map_err(Error::LoadModel)?;
 
-        let mut models = self.models.lock().unwrap();
-        models.yukarin_s.insert(model_index, yukarin_s_session);
-        models.yukarin_sa.insert(model_index, yukarin_sa_session);
+        self.models.yukarin_s.insert(model_index, yukarin_s_session);
+        self.models
+            .yukarin_sa
+            .insert(model_index, yukarin_sa_session);
 
-        models.decode.insert(model_index, decode_model);
+        self.models.decode.insert(model_index, decode_model);
 
         Ok(())
     }
