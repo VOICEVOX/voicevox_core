@@ -1,14 +1,51 @@
 use super::*;
 use c_export::VoicevoxResultCode;
+use once_cell::sync::Lazy;
 use std::ffi::CStr;
 use std::os::raw::c_int;
+use std::sync::Mutex;
 
 use status::*;
 
-//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-#[allow(unused_variables)]
+static INITIALIZED: Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(false));
+static STATUS: Lazy<Mutex<Option<Status>>> = Lazy::new(|| Mutex::new(None));
+
 pub fn initialize(use_gpu: bool, cpu_num_threads: usize, load_all_models: bool) -> Result<()> {
-    unimplemented!()
+    let mut initialized = INITIALIZED.lock().unwrap();
+    *initialized = false;
+    if !use_gpu || can_support_gpu_feature()? {
+        let mut status_opt = STATUS.lock().unwrap();
+        let mut status = Status::new(use_gpu, cpu_num_threads);
+
+        // TODO: ここに status.load_metas() を呼び出すようにする
+        // https://github.com/VOICEVOX/voicevox_core/blob/main/core/src/core.cpp#L199-L201
+
+        if load_all_models {
+            for model_index in 0..Status::MODELS_COUNT {
+                status.load_model(model_index)?;
+            }
+            // TODO: ここにGPUメモリを確保させる処理を実装する
+            // https://github.com/VOICEVOX/voicevox_core/blob/main/core/src/core.cpp#L210-L219
+        }
+
+        *status_opt = Some(status);
+        *initialized = true;
+        Ok(())
+    } else {
+        Err(Error::CantGpuSupport)
+    }
+}
+
+fn can_support_gpu_feature() -> Result<bool> {
+    let supported_devices = SupportedDevices::get_supported_devices()?;
+
+    cfg_if! {
+        if #[cfg(feature = "directml")]{
+            Ok(*supported_devices.dml())
+        } else{
+            Ok(*supported_devices.cuda())
+        }
+    }
 }
 
 //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
@@ -120,6 +157,8 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         VOICEVOX_RESULT_FAILED_LOAD_MODEL => {
             "modelデータ読み込み中にOnnxruntimeエラーが発生しました\0"
         }
+
+        VOICEVOX_RESULT_CANT_GPU_SUPPORT => "GPU機能をサポートすることができません\0",
         VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES => {
             "サポートされているデバイス情報取得中にエラーが発生しました\0"
         }

@@ -1,9 +1,8 @@
 use super::*;
 use once_cell::sync::Lazy;
 use onnxruntime::{
-    environment::Environment,
-    session::{Session, SessionBuilder},
-    CudaProviderOptions, GraphOptimizationLevel, LoggingLevel, OrtError,
+    environment::Environment, session::Session, CudaProviderOptions, GraphOptimizationLevel,
+    LoggingLevel,
 };
 use std::collections::BTreeMap;
 use std::sync::Mutex;
@@ -32,10 +31,13 @@ struct Model {
 }
 
 static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
-    #[cfg(debug_assertions)]
-    const LOGGING_LEVEL: LoggingLevel = LoggingLevel::Verbose;
-    #[cfg(not(debug_assertions))]
-    const LOGGING_LEVEL: LoggingLevel = LoggingLevel::Warning;
+    cfg_if! {
+        if #[cfg(debug_assertions)]{
+            const LOGGING_LEVEL: LoggingLevel = LoggingLevel::Verbose;
+        } else{
+            const LOGGING_LEVEL: LoggingLevel = LoggingLevel::Warning;
+        }
+    }
     Environment::builder()
         .with_name(env!("CARGO_PKG_NAME"))
         .with_log_level(LOGGING_LEVEL)
@@ -43,9 +45,14 @@ static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
         .unwrap()
 });
 
+#[derive(Getters)]
 pub struct SupportedDevices {
+    // supported_devices関数を実装したらこのattributeをはずす
+    #[allow(dead_code)]
     cpu: bool,
     cuda: bool,
+    // supported_devices関数を実装したらこのattributeをはずす
+    #[allow(dead_code)]
     dml: bool,
 }
 
@@ -72,6 +79,9 @@ impl SupportedDevices {
     }
 }
 
+unsafe impl Send for Status {}
+unsafe impl Sync for Status {}
+
 impl Status {
     const YUKARIN_S_MODEL: &'static [u8] = include_bytes!(concat!(
         env!("CARGO_WORKSPACE_DIR"),
@@ -90,6 +100,7 @@ impl Status {
         yukarin_sa_model: Self::YUKARIN_SA_MODEL,
         decode_model: Self::DECODE_MODEL,
     }];
+    pub const MODELS_COUNT: usize = Self::MODELS.len();
 
     pub fn new(use_gpu: bool, cpu_num_threads: usize) -> Self {
         Self {
@@ -134,18 +145,17 @@ impl Status {
             .with_inter_op_num_threads(*self.session_options.cpu_num_threads() as i32)?;
 
         let session_builder = if *self.session_options.use_gpu() {
-            #[cfg(feature = "directml")]
-            {
-                session_builder
-                    .with_disable_mem_pattern()?
-                    .with_execution_mode(onnxruntime::ExecutionMode::ORT_SEQUENTIAL)?
-            }
-            #[cfg(not(feature = "directml"))]
-            {
-                let options = CudaProviderOptions::default();
-                session_builder
-                    .with_disable_mem_pattern()?
-                    .with_append_execution_provider_cuda(options)?
+            cfg_if! {
+                if #[cfg(feature = "directml")]{
+                    session_builder
+                        .with_disable_mem_pattern()?
+                        .with_execution_mode(onnxruntime::ExecutionMode::ORT_SEQUENTIAL)?
+                } else {
+                    let options = CudaProviderOptions::default();
+                    session_builder
+                        .with_disable_mem_pattern()?
+                        .with_append_execution_provider_cuda(options)?
+                }
             }
         } else {
             session_builder

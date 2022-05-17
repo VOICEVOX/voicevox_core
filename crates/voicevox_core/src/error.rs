@@ -17,6 +17,9 @@ pub enum Error {
     #[allow(dead_code)]
     NotLoadedOpenjtalkDict,
 
+    #[error("{}", base_error_message(VOICEVOX_RESULT_CANT_GPU_SUPPORT))]
+    CantGpuSupport,
+
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_FAILED_LOAD_MODEL))]
     LoadModel(#[source] anyhow::Error),
 

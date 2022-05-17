@@ -10,7 +10,7 @@ use std::sync::Mutex;
  * これはC文脈の処理と実装をわけるためと、内部実装の変更がAPIに影響を与えにくくするためである
  */
 
-#[repr(C)]
+#[repr(i32)]
 #[derive(Debug, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum VoicevoxResultCode {
@@ -20,6 +20,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT = 1,
     VOICEVOX_RESULT_FAILED_LOAD_MODEL = 2,
     VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES = 3,
+    VOICEVOX_RESULT_CANT_GPU_SUPPORT = 4,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -33,6 +34,9 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT,
                 ),
+                Error::CantGpuSupport => {
+                    (None, VoicevoxResultCode::VOICEVOX_RESULT_CANT_GPU_SUPPORT)
+                }
                 Error::LoadModel(_) => {
                     (None, VoicevoxResultCode::VOICEVOX_RESULT_FAILED_LOAD_MODEL)
                 }
