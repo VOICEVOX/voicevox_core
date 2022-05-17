@@ -29,6 +29,7 @@ __declspec(dllimport)
         },
         ..Default::default()
     };
+
     cbindgen::generate_with_config(&crate_dir, config)
         .unwrap()
         .write_to_file(&output_file);

@@ -45,7 +45,7 @@ static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
         .unwrap()
 });
 
-#[derive(Getters)]
+#[derive(Getters, Debug)]
 pub struct SupportedDevices {
     // supported_devices関数を実装したらこのattributeをはずす
     #[allow(dead_code)]
@@ -162,5 +162,17 @@ impl Status {
         };
 
         Ok(session_builder.with_model_from_memory(model_bytes)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[rstest]
+    fn supported_devices_get_supported_devices_works() {
+        let result = SupportedDevices::get_supported_devices();
+        // 環境によって結果が変わるので、関数呼び出しが成功するかどうかの確認のみ行う
+        assert!(result.is_ok());
     }
 }
