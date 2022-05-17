@@ -1,9 +1,13 @@
 use super::*;
 use once_cell::sync::Lazy;
 use onnxruntime::{
-    environment::Environment, session::Session, CudaProviderOptions, GraphOptimizationLevel,
-    LoggingLevel,
+    environment::Environment, session::Session, GraphOptimizationLevel, LoggingLevel,
 };
+cfg_if! {
+    if #[cfg(not(feature="directml"))]{
+        use onnxruntime::CudaProviderOptions;
+    }
+}
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
@@ -45,11 +49,13 @@ static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
         .unwrap()
 });
 
-#[derive(Getters, Debug)]
+#[derive(Getters)]
 pub struct SupportedDevices {
     // supported_devices関数を実装したらこのattributeをはずす
     #[allow(dead_code)]
     cpu: bool,
+    // supported_devices関数を実装したらこのattributeをはずす
+    #[allow(dead_code)]
     cuda: bool,
     // supported_devices関数を実装したらこのattributeをはずす
     #[allow(dead_code)]
