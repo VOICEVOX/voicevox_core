@@ -1,6 +1,5 @@
 use super::*;
 use c_export::VoicevoxResultCode::{self, *};
-use onnxruntime::OrtError;
 use thiserror::Error;
 
 /*
@@ -18,14 +17,14 @@ pub enum Error {
     #[allow(dead_code)]
     NotLoadedOpenjtalkDict,
 
-    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_MODEL_ORT_ERROR))]
-    LoadModelOnnxruntimeOrt(OrtError),
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_FAILED_LOAD_MODEL))]
+    LoadModel(#[source] anyhow::Error),
 
     #[error(
         "{},{0}",
-        base_error_message(VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR)
+        base_error_message(VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES)
     )]
-    GetSupportedDevicesOrt(OrtError),
+    GetSupportedDevices(#[source] anyhow::Error),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {

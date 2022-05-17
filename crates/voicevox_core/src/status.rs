@@ -51,11 +51,10 @@ pub struct SupportedDevices {
 
 impl SupportedDevices {
     pub fn get_supported_devices() -> Result<Self> {
-        use Error::*;
         let mut cuda_support = false;
         let mut dml_support = false;
         for provider in onnxruntime::session::get_available_providers()
-            .map_err(GetSupportedDevicesOrt)?
+            .map_err(|e| Error::GetSupportedDevices(e.into()))?
             .iter()
         {
             match provider.as_str() {
@@ -104,23 +103,16 @@ impl Status {
     }
 
     pub fn load_model(&mut self, model_index: usize) -> Result<()> {
-        use Error::LoadModelOnnxruntimeOrt;
         let model = &Self::MODELS[model_index];
         let yukarin_s_session = self
-            .new_session_builder()
-            .map_err(LoadModelOnnxruntimeOrt)?
-            .with_model_from_memory(model.yukarin_s_model)
-            .map_err(LoadModelOnnxruntimeOrt)?;
+            .new_session(model.yukarin_s_model)
+            .map_err(Error::LoadModel)?;
         let yukarin_sa_session = self
-            .new_session_builder()
-            .map_err(LoadModelOnnxruntimeOrt)?
-            .with_model_from_memory(model.yukarin_sa_model)
-            .map_err(LoadModelOnnxruntimeOrt)?;
+            .new_session(model.yukarin_sa_model)
+            .map_err(Error::LoadModel)?;
         let decode_model = self
-            .new_session_builder()
-            .map_err(LoadModelOnnxruntimeOrt)?
-            .with_model_from_memory(model.decode_model)
-            .map_err(LoadModelOnnxruntimeOrt)?;
+            .new_session(model.decode_model)
+            .map_err(Error::LoadModel)?;
 
         let mut models = self.models.lock().unwrap();
         models.yukarin_s.insert(model_index, yukarin_s_session);
@@ -131,7 +123,10 @@ impl Status {
         Ok(())
     }
 
-    fn new_session_builder(&self) -> std::result::Result<SessionBuilder<'static>, OrtError> {
+    fn new_session<B: AsRef<[u8]>>(
+        &self,
+        model_bytes: B,
+    ) -> std::result::Result<Session<'static>, anyhow::Error> {
         let session_builder = ENVIRONMENT
             .new_session_builder()?
             .with_optimization_level(GraphOptimizationLevel::Basic)?
@@ -156,6 +151,6 @@ impl Status {
             session_builder
         };
 
-        Ok(session_builder)
+        Ok(session_builder.with_model_from_memory(model_bytes)?)
     }
 }

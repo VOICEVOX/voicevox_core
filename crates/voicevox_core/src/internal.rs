@@ -117,10 +117,10 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT => {
             "voicevox_load_openjtalk_dict() を初めに呼んでください\0"
         }
-        VOICEVOX_RESULT_LOAD_MODEL_ORT => {
+        VOICEVOX_RESULT_FAILED_LOAD_MODEL => {
             "modelデータ読み込み中にOnnxruntimeエラーが発生しました\0"
         }
-        VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR => {
+        VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES => {
             "サポートされているデバイス情報取得中にエラーが発生しました\0"
         }
 

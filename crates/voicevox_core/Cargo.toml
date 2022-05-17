@@ -13,6 +13,7 @@ name = "core"
 crate-type = ["cdylib"]
 
 [dependencies]
+anyhow = "1.0.57"
 derive-getters = "0.2.0"
 derive-new = "0.5.9"
 once_cell = "1.10.0"
