@@ -8,6 +8,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - uses: Swatinem/rust-cache@v1
       - run: cargo clippy --all-features --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo fmt -- --check
 
@@ -29,6 +30,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - uses: Swatinem/rust-cache@v1
       - run: cargo test --all-features .
 env:
   CARGO_TERM_COLOR: always
