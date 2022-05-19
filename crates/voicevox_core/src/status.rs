@@ -50,13 +50,13 @@ static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
 
 #[derive(Getters)]
 pub struct SupportedDevices {
-    // supported_devices関数を実装したらこのattributeをはずす
+    // TODO:supported_devices関数を実装したらこのattributeをはずす
     #[allow(dead_code)]
     cpu: bool,
-    // supported_devices関数を実装したらこのattributeをはずす
+    // TODO:supported_devices関数を実装したらこのattributeをはずす
     #[allow(dead_code)]
     cuda: bool,
-    // supported_devices関数を実装したらこのattributeをはずす
+    // TODO:supported_devices関数を実装したらこのattributeをはずす
     #[allow(dead_code)]
     dml: bool,
 }
