@@ -7,7 +7,6 @@ edition = "2021"
 default = []
 directml = []
 
-
 [lib]
 name = "core"
 crate-type = ["cdylib"]
