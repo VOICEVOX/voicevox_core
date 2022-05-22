@@ -30,6 +30,12 @@ lib = cdll.LoadLibrary(str(core_dll_path))
 lib.initialize.argtypes = (c_bool, c_int, c_bool)
 lib.initialize.restype = c_bool
 
+lib.load_model.argtypes = (c_int64,)
+lib.load_model.restype = c_bool
+
+lib.is_model_loaded.argtypes = (c_int64,)
+lib.is_model_loaded.restype = c_bool
+
 lib.finalize.argtypes = ()
 
 lib.metas.restype = c_char_p
@@ -50,6 +56,19 @@ lib.decode_forward.restype = c_bool
 
 lib.last_error_message.restype = c_char_p
 
+lib.voicevox_load_openjtalk_dict.argtypes = (c_char_p,)
+lib.voicevox_load_openjtalk_dict.restype = c_int
+
+lib.voicevox_tts.argtypes = (c_char_p, c_int64, POINTER(c_int), POINTER(POINTER(c_uint8)))
+lib.voicevox_tts.restype = c_int
+
+lib.voicevox_tts_from_kana.argtypes = (c_char_p, c_int64, POINTER(c_int), POINTER(POINTER(c_uint8)))
+lib.voicevox_tts_from_kana.restype = c_int
+
+lib.voicevox_wav_free.argtypes = (POINTER(c_uint8),)
+
+lib.voicevox_error_result_to_message.argtypes = (c_int,)
+lib.voicevox_load_openjtalk_dict.argtypes = (c_char_p,)
 
 # ラッパー関数
 def initialize(use_gpu: bool, cpu_num_threads=0, load_all_models=True):
@@ -57,6 +76,13 @@ def initialize(use_gpu: bool, cpu_num_threads=0, load_all_models=True):
     if not success:
         raise Exception(lib.last_error_message().decode())
 
+def load_model(speaker_id: int):
+    success = lib.load_model(speaker_id)
+    if not success:
+        raise Exception(lib.last_error_message().decode())
+
+def is_model_loaded(speaker_id: int) -> bool:
+    return lib.is_model_loaded(speaker_id)
 
 def metas() -> str:
     return lib.metas().decode()
@@ -102,6 +128,32 @@ def decode_forward(length: int, phoneme_size: int, f0, phoneme, speaker_id):
         raise Exception(lib.last_error_message().decode())
     return output
 
+def voicevox_load_openjtalk_dict(dict_path: str):
+    errno = lib.voicevox_load_openjtalk_dict(dict_path.encode())
+    if errno != 0:
+        raise Exception(lib.voicevox_error_result_to_message(errno).decode())
+
+def voicevox_tts(text: str, speaker_id: int) -> bytes:
+    output_binary_size = c_int()
+    output_wav = POINTER(c_uint8)()
+    errno = lib.voicevox_tts(text.encode(), speaker_id, byref(output_binary_size), byref(output_wav))
+    if errno != 0:
+        raise Exception(lib.voicevox_error_result_to_message(errno).decode())
+    output = create_string_buffer(output_binary_size.value * sizeof(c_uint8))
+    memmove(output, output_wav, output_binary_size.value * sizeof(c_uint8))
+    lib.voicevox_wav_free(output_wav)
+    return output
+
+def voicevox_tts_from_kana(text: str, speaker_id: int) -> bytes:
+    output_binary_size = c_int()
+    output_wav = POINTER(c_uint8)()
+    errno = lib.voicevox_tts_from_kana(text.encode(), speaker_id, byref(output_binary_size), byref(output_wav))
+    if errno != 0:
+        raise Exception(lib.voicevox_error_result_to_message(errno).decode())
+    output = create_string_buffer(output_binary_size.value * sizeof(c_uint8))
+    memmove(output, output_wav, output_binary_size.value * sizeof(c_uint8))
+    lib.voicevox_wav_free(output_wav)
+    return output
 
 def finalize():
     lib.finalize()
