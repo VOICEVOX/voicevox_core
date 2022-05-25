@@ -204,6 +204,25 @@ impl Status {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[rstest]
+    #[case(true, 0)]
+    #[case(true, 1)]
+    #[case(true, 8)]
+    #[case(false, 2)]
+    #[case(false, 4)]
+    #[case(false, 8)]
+    #[case(false, 0)]
+    fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: usize) {
+        let status = Status::new(use_gpu, cpu_num_threads);
+        assert_eq!(use_gpu, status.session_options.use_gpu);
+        assert_eq!(cpu_num_threads, status.session_options.cpu_num_threads);
+        assert!(status.models.yukarin_s.is_empty());
+        assert!(status.models.yukarin_sa.is_empty());
+        assert!(status.models.decode.is_empty());
+        assert!(status.supported_styles.is_empty());
+    }
 
     #[rstest]
     fn supported_devices_get_supported_devices_works() {
