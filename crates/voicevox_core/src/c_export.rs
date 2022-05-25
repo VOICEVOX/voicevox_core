@@ -10,7 +10,7 @@ use std::sync::Mutex;
  * これはC文脈の処理と実装をわけるためと、内部実装の変更がAPIに影響を与えにくくするためである
  */
 
-#[repr(C)]
+#[repr(i32)]
 #[derive(Debug, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum VoicevoxResultCode {
@@ -18,6 +18,9 @@ pub enum VoicevoxResultCode {
     // 出力フォーマットを変更すればRustでよく使われているUpperCamelにできるが、実際に出力されるコードとの差異をできるだけ少なくするため
     VOICEVOX_RESULT_SUCCEED = 0,
     VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT = 1,
+    VOICEVOX_RESULT_FAILED_LOAD_MODEL = 2,
+    VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES = 3,
+    VOICEVOX_RESULT_CANT_GPU_SUPPORT = 4,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -30,6 +33,16 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                 Error::NotLoadedOpenjtalkDict => (
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT,
+                ),
+                Error::CantGpuSupport => {
+                    (None, VoicevoxResultCode::VOICEVOX_RESULT_CANT_GPU_SUPPORT)
+                }
+                Error::LoadModel(_) => {
+                    (None, VoicevoxResultCode::VOICEVOX_RESULT_FAILED_LOAD_MODEL)
+                }
+                Error::GetSupportedDevices(_) => (
+                    None,
+                    VoicevoxResultCode::VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES,
                 ),
             }
         }
@@ -219,6 +232,7 @@ pub extern "C" fn voicevox_error_result_to_message(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::anyhow;
     use pretty_assertions::assert_eq;
 
     #[rstest]
@@ -226,6 +240,14 @@ mod tests {
     #[case(
         Err(Error::NotLoadedOpenjtalkDict),
         VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT
+    )]
+    #[case(
+        Err(Error::LoadModel(anyhow!("some load model error"))),
+        VoicevoxResultCode::VOICEVOX_RESULT_FAILED_LOAD_MODEL
+    )]
+    #[case(
+        Err(Error::GetSupportedDevices(anyhow!("some get supported devices error"))),
+        VoicevoxResultCode::VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES
     )]
     fn convert_result_works(#[case] result: Result<()>, #[case] expected: VoicevoxResultCode) {
         let (_, actual) = convert_result(result);

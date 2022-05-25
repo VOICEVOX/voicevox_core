@@ -16,6 +16,18 @@ pub enum Error {
     // TODO:仮実装がlinterエラーにならないようにするための属性なのでこのenumが正式に使われる際にallow(dead_code)を取り除くこと
     #[allow(dead_code)]
     NotLoadedOpenjtalkDict,
+
+    #[error("{}", base_error_message(VOICEVOX_RESULT_CANT_GPU_SUPPORT))]
+    CantGpuSupport,
+
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_FAILED_LOAD_MODEL))]
+    LoadModel(#[source] anyhow::Error),
+
+    #[error(
+        "{},{0}",
+        base_error_message(VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES)
+    )]
+    GetSupportedDevices(#[source] anyhow::Error),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
