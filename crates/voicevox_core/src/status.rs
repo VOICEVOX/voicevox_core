@@ -225,6 +225,17 @@ mod tests {
     }
 
     #[rstest]
+    fn status_load_metas_works() {
+        let mut status = Status::new(true, 0);
+        let result = status.load_metas();
+        assert!(result.is_ok(), "{:?}", result);
+        let mut expected = BTreeSet::new();
+        expected.insert(0);
+        expected.insert(1);
+        assert_eq!(expected, status.supported_styles);
+    }
+
+    #[rstest]
     fn supported_devices_get_supported_devices_works() {
         let result = SupportedDevices::get_supported_devices();
         // 環境によって結果が変わるので、関数呼び出しが成功するかどうかの確認のみ行う
