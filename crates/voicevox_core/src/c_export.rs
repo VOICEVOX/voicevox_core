@@ -21,6 +21,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_FAILED_LOAD_MODEL = 2,
     VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES = 3,
     VOICEVOX_RESULT_CANT_GPU_SUPPORT = 4,
+    VOICEVOX_RESULT_FAILED_LOAD_METAS = 5,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -39,6 +40,9 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                 }
                 Error::LoadModel(_) => {
                     (None, VoicevoxResultCode::VOICEVOX_RESULT_FAILED_LOAD_MODEL)
+                }
+                Error::LoadMetas(_) => {
+                    (None, VoicevoxResultCode::VOICEVOX_RESULT_FAILED_LOAD_METAS)
                 }
                 Error::GetSupportedDevices(_) => (
                     None,

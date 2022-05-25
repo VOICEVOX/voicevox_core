@@ -825,6 +825,8 @@ dependencies = [
  "onnxruntime",
  "pretty_assertions",
  "rstest",
+ "serde",
+ "serde_json",
  "thiserror",
 ]
 

@@ -3,16 +3,19 @@ use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment, session::Session, GraphOptimizationLevel, LoggingLevel,
 };
+use serde::Deserialize;
+
 cfg_if! {
     if #[cfg(not(feature="directml"))]{
         use onnxruntime::CudaProviderOptions;
     }
 }
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub struct Status {
     models: StatusModels,
     session_options: SessionOptions,
+    supported_styles: BTreeSet<u64>,
 }
 
 struct StatusModels {
@@ -33,6 +36,15 @@ struct Model {
     decode_model: &'static [u8],
 }
 
+#[derive(Deserialize, Getters)]
+struct Meta {
+    styles: Vec<Style>,
+}
+
+#[derive(Deserialize, Getters)]
+struct Style {
+    id: u64,
+}
 static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
     cfg_if! {
         if #[cfg(debug_assertions)]{
@@ -105,6 +117,10 @@ impl Status {
         yukarin_sa_model: Self::YUKARIN_SA_MODEL,
         decode_model: Self::DECODE_MODEL,
     }];
+
+    pub const METAS_STR: &'static str =
+        include_str!(concat!(env!("CARGO_WORKSPACE_DIR"), "/model/metas.json"));
+
     pub const MODELS_COUNT: usize = Self::MODELS.len();
 
     pub fn new(use_gpu: bool, cpu_num_threads: usize) -> Self {
@@ -115,7 +131,21 @@ impl Status {
                 decode: BTreeMap::new(),
             },
             session_options: SessionOptions::new(cpu_num_threads, use_gpu),
+            supported_styles: BTreeSet::default(),
         }
+    }
+
+    pub fn load_metas(&mut self) -> Result<()> {
+        let metas: Vec<Meta> =
+            serde_json::from_str(Self::METAS_STR).map_err(|e| Error::LoadMetas(e.into()))?;
+
+        for meta in metas.iter() {
+            for style in meta.styles().iter() {
+                self.supported_styles.insert(*style.id());
+            }
+        }
+
+        Ok(())
     }
 
     pub fn load_model(&mut self, model_index: usize) -> Result<()> {

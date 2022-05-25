@@ -6,6 +6,7 @@ use std::os::raw::c_int;
 use std::sync::Mutex;
 
 use status::*;
+use std::ffi::CString;
 
 static INITIALIZED: Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(false));
 static STATUS: Lazy<Mutex<Option<Status>>> = Lazy::new(|| Mutex::new(None));
@@ -17,8 +18,7 @@ pub fn initialize(use_gpu: bool, cpu_num_threads: usize, load_all_models: bool) 
         let mut status_opt = STATUS.lock().unwrap();
         let mut status = Status::new(use_gpu, cpu_num_threads);
 
-        // TODO: ここに status.load_metas() を呼び出すようにする
-        // https://github.com/VOICEVOX/voicevox_core/blob/main/core/src/core.cpp#L199-L201
+        status.load_metas()?;
 
         if load_all_models {
             for model_index in 0..Status::MODELS_COUNT {
@@ -64,8 +64,9 @@ pub fn finalize() {
     unimplemented!()
 }
 
+static METAS_CSTRING: Lazy<CString> = Lazy::new(|| CString::new(Status::METAS_STR).unwrap());
 pub fn metas() -> &'static CStr {
-    unimplemented!()
+    &METAS_CSTRING
 }
 
 pub fn supported_devices() -> &'static CStr {
@@ -157,6 +158,7 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         VOICEVOX_RESULT_FAILED_LOAD_MODEL => {
             "modelデータ読み込み中にOnnxruntimeエラーが発生しました\0"
         }
+        VOICEVOX_RESULT_FAILED_LOAD_METAS => "メタデータ読み込みに失敗しました\0",
 
         VOICEVOX_RESULT_CANT_GPU_SUPPORT => "GPU機能をサポートすることができません\0",
         VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES => {
