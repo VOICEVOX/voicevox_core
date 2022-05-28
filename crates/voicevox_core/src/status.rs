@@ -203,6 +203,7 @@ impl Status {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use pretty_assertions::assert_eq;
 
@@ -239,6 +240,6 @@ mod tests {
     fn supported_devices_get_supported_devices_works() {
         let result = SupportedDevices::get_supported_devices();
         // 環境によって結果が変わるので、関数呼び出しが成功するかどうかの確認のみ行う
-        assert!(result.is_ok(), "{:?}", result.err().unwrap().to_string());
+        assert!(result.is_ok(), "{:?}", result);
     }
 }
