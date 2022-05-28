@@ -60,7 +60,7 @@ static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
         .unwrap()
 });
 
-#[derive(Getters)]
+#[derive(Getters, Debug)]
 pub struct SupportedDevices {
     // TODO:supported_devices関数を実装したらこのattributeをはずす
     #[allow(dead_code)]
@@ -239,6 +239,6 @@ mod tests {
     fn supported_devices_get_supported_devices_works() {
         let result = SupportedDevices::get_supported_devices();
         // 環境によって結果が変わるので、関数呼び出しが成功するかどうかの確認のみ行う
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "{:?}", result);
     }
 }
