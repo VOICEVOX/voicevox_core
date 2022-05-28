@@ -40,14 +40,14 @@ bool Phoneme::is_pause() const { return contexts.at("f1") == "xx"; }
 void Mora::set_context(const std::string &key, const std::string &value) {
   vowel.contexts[key] = value;
 
-  if (!consonant.has_value()) {
+  if (!consonant) {
     consonant.value().contexts[key] = value;
   }
 }
 
 std::vector<Phoneme> Mora::phonemes() const {
   std::vector<Phoneme> phonemes;
-  if (consonant.has_value()) {
+  if (consonant) {
     phonemes = {consonant.value(), vowel};
   } else {
     phonemes = {vowel};
