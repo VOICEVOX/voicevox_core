@@ -40,4 +40,3 @@ packages/
 
 # Cargo
 target
-/Cargo.lock
