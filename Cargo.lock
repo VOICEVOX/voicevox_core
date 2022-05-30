@@ -532,8 +532,8 @@ checksum = "87f3e037eac156d1775da914196f0f37741a274155e34a0b7e427c35d2a2ecb9"
 
 [[package]]
 name = "onnxruntime"
-version = "0.0.18"
-source = "git+https://github.com/qwerty2501/onnxruntime-rs.git#b0c098fa0e6695caff874b4d79fa8fbf7b443185"
+version = "0.0.19"
+source = "git+https://github.com/qwerty2501/onnxruntime-rs.git#c1e2ef77ae371bdcf1d75fe32cc15956a5bdf867"
 dependencies = [
  "lazy_static",
  "ndarray",
@@ -544,8 +544,8 @@ dependencies = [
 
 [[package]]
 name = "onnxruntime-sys"
-version = "0.0.17"
-source = "git+https://github.com/qwerty2501/onnxruntime-rs.git#b0c098fa0e6695caff874b4d79fa8fbf7b443185"
+version = "0.0.18"
+source = "git+https://github.com/qwerty2501/onnxruntime-rs.git#c1e2ef77ae371bdcf1d75fe32cc15956a5bdf867"
 dependencies = [
  "bindgen",
  "flate2",
