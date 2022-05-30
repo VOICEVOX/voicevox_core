@@ -100,6 +100,14 @@ sudo apt install libgomp1
 ```
 
 ## サンプル実行
+
+### C++ サンプルコード
+
+* [UNIX サンプルコード](./example/cpp/unix/)
+* [Windows サンプルコード](./example/cpp/windows/)
+
+### Python サンプルコード
+
 ```bash
 cd example/python
 
