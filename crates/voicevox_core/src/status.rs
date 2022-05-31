@@ -242,4 +242,14 @@ mod tests {
         // 環境によって結果が変わるので、関数呼び出しが成功するかどうかの確認のみ行う
         assert!(result.is_ok(), "{:?}", result);
     }
+
+    #[rstest]
+    fn status_load_model_works() {
+        let mut status = Status::new(false, 0);
+        let result = status.load_model(0);
+        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(1, status.models.yukarin_s.len());
+        assert_eq!(1, status.models.yukarin_sa.len());
+        assert_eq!(1, status.models.decode.len());
+    }
 }
