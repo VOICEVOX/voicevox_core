@@ -41,8 +41,8 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
         with:
-          key: "cargo-test-cache-${{ matrix.os }}-${{ env.CARGO_CACHE_VERSION }}"
+          # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
+          key: "v1-cargo-test-cache-${{ matrix.os }}"
       - run: cargo test --all-features
 env:
   CARGO_TERM_COLOR: always
-  CARGO_CACHE_VERSION: 1 # cacheが原因でなにかおかしいと感じたらこのバージョンを変更する
