@@ -3,16 +3,19 @@ use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment, session::Session, GraphOptimizationLevel, LoggingLevel,
 };
+use serde::Deserialize;
+
 cfg_if! {
     if #[cfg(not(feature="directml"))]{
         use onnxruntime::CudaProviderOptions;
     }
 }
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub struct Status {
     models: StatusModels,
     session_options: SessionOptions,
+    supported_styles: BTreeSet<u64>,
 }
 
 struct StatusModels {
@@ -33,6 +36,15 @@ struct Model {
     decode_model: &'static [u8],
 }
 
+#[derive(Deserialize, Getters)]
+struct Meta {
+    styles: Vec<Style>,
+}
+
+#[derive(Deserialize, Getters)]
+struct Style {
+    id: u64,
+}
 static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
     cfg_if! {
         if #[cfg(debug_assertions)]{
@@ -48,7 +60,7 @@ static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
         .unwrap()
 });
 
-#[derive(Getters)]
+#[derive(Getters, Debug)]
 pub struct SupportedDevices {
     // TODO:supported_devices関数を実装したらこのattributeをはずす
     #[allow(dead_code)]
@@ -105,6 +117,10 @@ impl Status {
         yukarin_sa_model: Self::YUKARIN_SA_MODEL,
         decode_model: Self::DECODE_MODEL,
     }];
+
+    pub const METAS_STR: &'static str =
+        include_str!(concat!(env!("CARGO_WORKSPACE_DIR"), "/model/metas.json"));
+
     pub const MODELS_COUNT: usize = Self::MODELS.len();
 
     pub fn new(use_gpu: bool, cpu_num_threads: usize) -> Self {
@@ -115,7 +131,21 @@ impl Status {
                 decode: BTreeMap::new(),
             },
             session_options: SessionOptions::new(cpu_num_threads, use_gpu),
+            supported_styles: BTreeSet::default(),
         }
+    }
+
+    pub fn load_metas(&mut self) -> Result<()> {
+        let metas: Vec<Meta> =
+            serde_json::from_str(Self::METAS_STR).map_err(|e| Error::LoadMetas(e.into()))?;
+
+        for meta in metas.iter() {
+            for style in meta.styles().iter() {
+                self.supported_styles.insert(*style.id());
+            }
+        }
+
+        Ok(())
     }
 
     pub fn load_model(&mut self, model_index: usize) -> Result<()> {
@@ -173,12 +203,43 @@ impl Status {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[rstest]
+    #[case(true, 0)]
+    #[case(true, 1)]
+    #[case(true, 8)]
+    #[case(false, 2)]
+    #[case(false, 4)]
+    #[case(false, 8)]
+    #[case(false, 0)]
+    fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: usize) {
+        let status = Status::new(use_gpu, cpu_num_threads);
+        assert_eq!(use_gpu, status.session_options.use_gpu);
+        assert_eq!(cpu_num_threads, status.session_options.cpu_num_threads);
+        assert!(status.models.yukarin_s.is_empty());
+        assert!(status.models.yukarin_sa.is_empty());
+        assert!(status.models.decode.is_empty());
+        assert!(status.supported_styles.is_empty());
+    }
+
+    #[rstest]
+    fn status_load_metas_works() {
+        let mut status = Status::new(true, 0);
+        let result = status.load_metas();
+        assert!(result.is_ok(), "{:?}", result);
+        let mut expected = BTreeSet::new();
+        expected.insert(0);
+        expected.insert(1);
+        assert_eq!(expected, status.supported_styles);
+    }
 
     #[rstest]
     fn supported_devices_get_supported_devices_works() {
         let result = SupportedDevices::get_supported_devices();
         // 環境によって結果が変わるので、関数呼び出しが成功するかどうかの確認のみ行う
-        assert!(result.is_ok());
+        assert!(result.is_ok(), "{:?}", result);
     }
 }

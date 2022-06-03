@@ -23,6 +23,9 @@ pub enum Error {
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_FAILED_LOAD_MODEL))]
     LoadModel(#[source] anyhow::Error),
 
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_FAILED_LOAD_METAS))]
+    LoadMetas(#[source] anyhow::Error),
+
     #[error(
         "{},{0}",
         base_error_message(VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES)
