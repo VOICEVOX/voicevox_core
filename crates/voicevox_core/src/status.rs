@@ -19,9 +19,9 @@ pub struct Status {
 }
 
 struct StatusModels {
-    yukarin_s: BTreeMap<usize, Session>,
-    yukarin_sa: BTreeMap<usize, Session>,
-    decode: BTreeMap<usize, Session>,
+    yukarin_s: BTreeMap<usize, Session<'static>>,
+    yukarin_sa: BTreeMap<usize, Session<'static>>,
+    decode: BTreeMap<usize, Session<'static>>,
 }
 
 #[derive(new, Getters)]
@@ -173,7 +173,7 @@ impl Status {
     fn new_session<B: AsRef<[u8]>>(
         &self,
         model_bytes: B,
-    ) -> std::result::Result<Session, anyhow::Error> {
+    ) -> std::result::Result<Session<'static>, anyhow::Error> {
         let session_builder = ENVIRONMENT
             .new_session_builder()?
             .with_optimization_level(GraphOptimizationLevel::Basic)?
