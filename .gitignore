@@ -38,6 +38,3 @@ release/
 # Visual Studio
 .vs/
 packages/
-
-# Example
-example/**/open_jtalk_dic_*/
