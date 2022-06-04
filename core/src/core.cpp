@@ -87,14 +87,18 @@ struct Status {
     yukarin_sa_list = std::vector<std::optional<Ort::Session>>(model_count);
     decode_list = std::vector<std::optional<Ort::Session>>(model_count);
 
-    session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
+    // 軽いモデルの場合はCPUの方が速い
+    light_session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
+
+    // 重いモデルはGPUを使ったほうが速い
+    heavy_session_options.SetInterOpNumThreads(cpu_num_threads).SetIntraOpNumThreads(cpu_num_threads);
     if (use_gpu) {
 #ifdef DIRECTML
-      session_options.DisableMemPattern().SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
-      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0));
+      heavy_session_options.DisableMemPattern().SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
+      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(heavy_session_options, 0));
 #else
       const OrtCUDAProviderOptions cuda_options;
-      session_options.AppendExecutionProvider_CUDA(cuda_options);
+      heavy_session_options.AppendExecutionProvider_CUDA(cuda_options);
 #endif
     }
   }
@@ -133,15 +137,17 @@ struct Status {
     embed::Resource decode_model = VVMODEL.DECODE();
 
     yukarin_s_list[model_index] =
-        std::move(Ort::Session(env, yukarin_s_model.data, yukarin_s_model.size, session_options));
+        std::move(Ort::Session(env, yukarin_s_model.data, yukarin_s_model.size, light_session_options));
     yukarin_sa_list[model_index] =
-        std::move(Ort::Session(env, yukarin_sa_model.data, yukarin_sa_model.size, session_options));
-    decode_list[model_index] = std::move(Ort::Session(env, decode_model.data, decode_model.size, session_options));
+        std::move(Ort::Session(env, yukarin_sa_model.data, yukarin_sa_model.size, light_session_options));
+    decode_list[model_index] =
+        std::move(Ort::Session(env, decode_model.data, decode_model.size, heavy_session_options));
     return true;
   }
 
   std::string root_dir_path;
-  Ort::SessionOptions session_options;
+  Ort::SessionOptions light_session_options;  // 軽いモデルはこちらを使う
+  Ort::SessionOptions heavy_session_options;  // 重いモデルはこちらを使う
   Ort::MemoryInfo memory_info;
 
   Ort::Env env{ORT_LOGGING_LEVEL_ERROR};

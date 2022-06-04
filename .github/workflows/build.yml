@@ -277,7 +277,7 @@ jobs:
           # copy Linux/macOS shared library if exists
           cp -v core/lib/libcore* "artifact/${{ env.ASSET_NAME }}" || true
 
-          echo "${{ env.BUILD_IDENTIFIER }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
+          echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
           cp README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
 
