@@ -103,7 +103,7 @@ sudo apt install libgomp1
 
 ### C++ サンプルコード
 
-* [UNIX サンプルコード](./example/cpp/unix#readme)
+* [Linux・macOS サンプルコード](./example/cpp/unix#readme)
 * [Windows サンプルコード](./example/cpp/windows#readme)
 
 ### Python サンプルコード
