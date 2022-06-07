@@ -69,14 +69,14 @@ pub fn metas() -> &'static CStr {
     &METAS_CSTRING
 }
 
-static SUPPORTED_DEVICES_STRING: Lazy<CString> = Lazy::new(|| {
+static SUPPORTED_DEVICES_CSTRING: Lazy<CString> = Lazy::new(|| {
     CString::new(
         serde_json::to_string(&SupportedDevices::get_supported_devices().unwrap()).unwrap(),
     )
     .unwrap()
 });
 pub fn supported_devices() -> &'static CStr {
-    &SUPPORTED_DEVICES_STRING
+    &SUPPORTED_DEVICES_CSTRING
 }
 
 //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
