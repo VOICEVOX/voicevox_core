@@ -3,7 +3,7 @@ use c_export::VoicevoxResultCode;
 use once_cell::sync::Lazy;
 use std::ffi::CStr;
 use std::os::raw::c_int;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::Mutex;
 
 use status::*;
 use std::ffi::CString;
@@ -69,15 +69,14 @@ pub fn metas() -> &'static CStr {
     &METAS_CSTRING
 }
 
-static SUPPORTED_DEVICES_STRING: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
-pub fn supported_devices() -> MutexGuard<'static, String> {
-    let mut supported_devices_string = SUPPORTED_DEVICES_STRING.lock().unwrap();
-    supported_devices_string.replace_range(
-        ..,
-        &(serde_json::to_string(&SupportedDevices::get_supported_devices().unwrap()).unwrap()
-            + "\0"),
-    );
-    supported_devices_string
+static SUPPORTED_DEVICES_STRING: Lazy<CString> = Lazy::new(|| {
+    CString::new(
+        serde_json::to_string(&SupportedDevices::get_supported_devices().unwrap()).unwrap(),
+    )
+    .unwrap()
+});
+pub fn supported_devices() -> &'static CStr {
+    &SUPPORTED_DEVICES_STRING
 }
 
 //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
