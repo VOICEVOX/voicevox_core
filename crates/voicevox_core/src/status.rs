@@ -3,7 +3,7 @@ use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment, session::Session, GraphOptimizationLevel, LoggingLevel,
 };
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 cfg_if! {
     if #[cfg(not(feature="directml"))]{

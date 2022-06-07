@@ -75,7 +75,8 @@ pub fn supported_devices() -> MutexGuard<'static, String> {
     let mut supported_devices_string = SUPPORTED_DEVICES_STRING.lock().unwrap();
     supported_devices_string.replace_range(
         ..,
-        &(serde_json::to_string(&SupportedDevices::get_supported_devices().unwrap()).unwrap() + "\0")
+        &(serde_json::to_string(&SupportedDevices::get_supported_devices().unwrap()).unwrap()
+            + "\0"),
     );
     supported_devices_string
 }
