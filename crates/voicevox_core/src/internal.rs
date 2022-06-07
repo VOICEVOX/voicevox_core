@@ -69,8 +69,14 @@ pub fn metas() -> &'static CStr {
     &METAS_CSTRING
 }
 
+static SUPPORTED_DEVICES_CSTRING: Lazy<CString> = Lazy::new(|| {
+    CString::new(
+        serde_json::to_string(&SupportedDevices::get_supported_devices().unwrap()).unwrap(),
+    )
+    .unwrap()
+});
 pub fn supported_devices() -> &'static CStr {
-    unimplemented!()
+    &SUPPORTED_DEVICES_CSTRING
 }
 
 //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
@@ -166,5 +172,20 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         }
 
         VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[rstest]
+    fn supported_devices_works() {
+        let cstr_result = supported_devices();
+        assert!(cstr_result.to_str().is_ok(), "{:?}", cstr_result);
+
+        let json_result: std::result::Result<SupportedDevices, _> =
+            serde_json::from_str(cstr_result.to_str().unwrap());
+        assert!(json_result.is_ok(), "{:?}", json_result);
     }
 }
