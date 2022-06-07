@@ -3,7 +3,7 @@ use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment, session::Session, GraphOptimizationLevel, LoggingLevel,
 };
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 
 cfg_if! {
     if #[cfg(not(feature="directml"))]{
@@ -60,16 +60,10 @@ static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
         .unwrap()
 });
 
-#[derive(Getters, Debug)]
+#[derive(Getters, Debug, Serialize)]
 pub struct SupportedDevices {
-    // TODO:supported_devices関数を実装したらこのattributeをはずす
-    #[allow(dead_code)]
     cpu: bool,
-    // TODO:supported_devices関数を実装したらこのattributeをはずす
-    #[allow(dead_code)]
     cuda: bool,
-    // TODO:supported_devices関数を実装したらこのattributeをはずす
-    #[allow(dead_code)]
     dml: bool,
 }
 
