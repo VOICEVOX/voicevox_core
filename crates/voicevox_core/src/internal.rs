@@ -1,6 +1,7 @@
 use super::*;
 use c_export::VoicevoxResultCode;
 use once_cell::sync::Lazy;
+use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::os::raw::c_int;
 use std::sync::Mutex;
@@ -10,6 +11,8 @@ use std::ffi::CString;
 
 static INITIALIZED: Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(false));
 static STATUS: Lazy<Mutex<Option<Status>>> = Lazy::new(|| Mutex::new(None));
+
+static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> = Lazy::new(BTreeMap::new);
 
 pub fn initialize(use_gpu: bool, cpu_num_threads: usize, load_all_models: bool) -> Result<()> {
     let mut initialized = INITIALIZED.lock().unwrap();
@@ -54,9 +57,10 @@ pub fn load_model(speaker_id: i64) -> Result<()> {
     unimplemented!()
 }
 
-pub fn is_model_loaded(speaker_id: i64) -> bool {
+pub fn is_model_loaded(speaker_id: usize) -> bool {
     if let Some(status) = STATUS.lock().unwrap().as_ref() {
-        status.is_model_loaded(speaker_id as usize)
+        let (model_index, _) = get_model_index_and_speaker_id(speaker_id);
+        status.is_model_loaded(model_index)
     } else {
         false
     }
@@ -156,6 +160,10 @@ pub fn voicevox_wav_free(wav: *mut u8) -> Result<()> {
     unimplemented!()
 }
 
+fn get_model_index_and_speaker_id(speaker_id: usize) -> (usize, usize) {
+    *SPEAKER_ID_MAP.get(&speaker_id).unwrap_or(&(0, speaker_id))
+}
+
 pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
     // C APIのため、messageには必ず末尾にNULL文字を追加する
     use VoicevoxResultCode::*;
@@ -180,6 +188,7 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[rstest]
     fn supported_devices_works() {
@@ -189,5 +198,17 @@ mod tests {
         let json_result: std::result::Result<SupportedDevices, _> =
             serde_json::from_str(cstr_result.to_str().unwrap());
         assert!(json_result.is_ok(), "{:?}", json_result);
+    }
+
+    #[rstest]
+    #[case(0,(0,0))]
+    #[case(1,(0,1))]
+    #[case(3,(0,3))]
+    fn get_model_index_and_speaker_id_works(
+        #[case] speaker_id: usize,
+        #[case] expected: (usize, usize),
+    ) {
+        let actual = get_model_index_and_speaker_id(speaker_id);
+        assert_eq!(expected, actual);
     }
 }
