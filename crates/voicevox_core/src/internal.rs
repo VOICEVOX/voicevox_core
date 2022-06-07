@@ -174,3 +174,18 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[rstest]
+    fn supported_devices_works() {
+        let cstr_result = supported_devices();
+        assert!(cstr_result.to_str().is_ok(), "{:?}", cstr_result);
+
+        let json_result: std::result::Result<SupportedDevices, _> =
+            serde_json::from_str(cstr_result.to_str().unwrap());
+        assert!(json_result.is_ok(), "{:?}", json_result);
+    }
+}

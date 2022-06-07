@@ -60,7 +60,7 @@ static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
         .unwrap()
 });
 
-#[derive(Getters, Debug, Serialize)]
+#[derive(Getters, Debug, Serialize, Deserialize)]
 pub struct SupportedDevices {
     cpu: bool,
     cuda: bool,
