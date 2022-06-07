@@ -54,10 +54,12 @@ pub fn load_model(speaker_id: i64) -> Result<()> {
     unimplemented!()
 }
 
-//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-#[allow(unused_variables)]
 pub fn is_model_loaded(speaker_id: i64) -> bool {
-    unimplemented!()
+    if let Some(status) = STATUS.lock().unwrap().as_ref() {
+        status.is_model_loaded(speaker_id as usize)
+    } else {
+        false
+    }
 }
 
 pub fn finalize() {
