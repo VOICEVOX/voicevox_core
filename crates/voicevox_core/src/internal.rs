@@ -48,10 +48,14 @@ fn can_support_gpu_feature() -> Result<bool> {
     }
 }
 
-//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-#[allow(unused_variables)]
 pub fn load_model(speaker_id: i64) -> Result<()> {
-    unimplemented!()
+    if *INITIALIZED.lock().unwrap() {
+        let mut status_opt = STATUS.lock().unwrap();
+        let status = status_opt.as_mut().ok_or(Error::UninitializedStatus)?;
+        status.load_model(speaker_id as usize)
+    } else {
+        Err(Error::UninitializedStatus)
+    }
 }
 
 //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
@@ -166,5 +170,6 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         }
 
         VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
+        VOICEVOX_RESULT_UNINITIALIZED_STATUS => "Statusが初期化されていません\0",
     }
 }
