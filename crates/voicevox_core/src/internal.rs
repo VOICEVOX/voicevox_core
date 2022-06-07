@@ -1,7 +1,6 @@
 use super::*;
 use c_export::VoicevoxResultCode;
 use once_cell::sync::Lazy;
-use serde_json;
 use std::ffi::CStr;
 use std::os::raw::c_int;
 use std::sync::{Mutex, MutexGuard};
