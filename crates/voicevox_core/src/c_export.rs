@@ -5,7 +5,7 @@ use std::ffi::CStr;
 use std::os::raw::{c_char, c_int};
 use std::sync::{Mutex, MutexGuard};
 
-static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| Internal::new_with_mutex());
+static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(Internal::new_with_mutex);
 
 fn lock_internal() -> MutexGuard<'static, Internal> {
     INTERNAL.lock().unwrap()
