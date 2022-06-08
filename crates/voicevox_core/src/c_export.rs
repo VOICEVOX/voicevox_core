@@ -94,7 +94,7 @@ pub extern "C" fn load_model(speaker_id: i64) -> bool {
 
 #[no_mangle]
 pub extern "C" fn is_model_loaded(speaker_id: i64) -> bool {
-    internal::is_model_loaded(speaker_id)
+    internal::is_model_loaded(speaker_id as usize)
 }
 
 #[no_mangle]

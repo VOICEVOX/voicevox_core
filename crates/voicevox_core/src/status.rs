@@ -164,6 +164,12 @@ impl Status {
         Ok(())
     }
 
+    pub fn is_model_loaded(&self, model_index: usize) -> bool {
+        self.models.yukarin_sa.contains_key(&model_index)
+            && self.models.yukarin_s.contains_key(&model_index)
+            && self.models.decode.contains_key(&model_index)
+    }
+
     fn new_session<B: AsRef<[u8]>>(
         &self,
         model_bytes: B,
@@ -245,5 +251,21 @@ mod tests {
         assert_eq!(1, status.models.yukarin_s.len());
         assert_eq!(1, status.models.yukarin_sa.len());
         assert_eq!(1, status.models.decode.len());
+    }
+
+    #[rstest]
+    fn status_is_model_loaded_works() {
+        let mut status = Status::new(false, 0);
+        let model_index = 0;
+        assert!(
+            !status.is_model_loaded(model_index),
+            "model should  not be loaded"
+        );
+        let result = status.load_model(model_index);
+        assert!(result.is_ok(), "{:?}", result);
+        assert!(
+            status.is_model_loaded(model_index),
+            "model should be loaded"
+        );
     }
 }
