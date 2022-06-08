@@ -22,6 +22,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES = 3,
     VOICEVOX_RESULT_CANT_GPU_SUPPORT = 4,
     VOICEVOX_RESULT_FAILED_LOAD_METAS = 5,
+    VOICEVOX_RESULT_UNINITIALIZED_STATUS = 6,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -47,6 +48,10 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                 Error::GetSupportedDevices(_) => (
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES,
+                ),
+                Error::UninitializedStatus => (
+                    None,
+                    VoicevoxResultCode::VOICEVOX_RESULT_UNINITIALIZED_STATUS,
                 ),
             }
         }
