@@ -34,6 +34,9 @@ pub enum Error {
 
     #[error("{}", base_error_message(VOICEVOX_RESULT_UNINITIALIZED_STATUS))]
     UninitializedStatus,
+
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_SPEAKER_ID))]
+    InvalidSpeakerId(usize),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {

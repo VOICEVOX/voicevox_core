@@ -30,6 +30,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_CANT_GPU_SUPPORT = 4,
     VOICEVOX_RESULT_FAILED_LOAD_METAS = 5,
     VOICEVOX_RESULT_UNINITIALIZED_STATUS = 6,
+    VOICEVOX_RESULT_INVALID_SPEAKER_ID = 7,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -60,6 +61,9 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_UNINITIALIZED_STATUS,
                 ),
+                Error::InvalidSpeakerId(_) => {
+                    (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_SPEAKER_ID)
+                }
             }
         }
     }

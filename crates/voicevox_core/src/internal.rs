@@ -9,7 +9,12 @@ use std::sync::Mutex;
 use status::*;
 use std::ffi::CString;
 
-static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> = Lazy::new(BTreeMap::new);
+static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> = Lazy::new(|| {
+    let mut btm = BTreeMap::new();
+    btm.insert(0, (0, 0));
+    btm.insert(1, (0, 1));
+    btm
+});
 
 pub struct Internal {
     initialized: bool,
@@ -67,16 +72,22 @@ impl Internal {
                 .status_option
                 .as_mut()
                 .ok_or(Error::UninitializedStatus)?;
-            let (model_index, _) = get_model_index_and_speaker_id(speaker_id);
-            status.load_model(model_index)
+            if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
+                status.load_model(model_index)
+            } else {
+                Err(Error::InvalidSpeakerId(speaker_id))
+            }
         } else {
             Err(Error::UninitializedStatus)
         }
     }
     pub fn is_model_loaded(&self, speaker_id: usize) -> bool {
         if let Some(status) = self.status_option.as_ref() {
-            let (model_index, _) = get_model_index_and_speaker_id(speaker_id);
-            status.is_model_loaded(model_index)
+            if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
+                status.is_model_loaded(model_index)
+            } else {
+                false
+            }
         } else {
             false
         }
@@ -180,8 +191,8 @@ static SUPPORTED_DEVICES_CSTRING: Lazy<CString> = Lazy::new(|| {
     .unwrap()
 });
 
-fn get_model_index_and_speaker_id(speaker_id: usize) -> (usize, usize) {
-    *SPEAKER_ID_MAP.get(&speaker_id).unwrap_or(&(0, speaker_id))
+fn get_model_index_and_speaker_id(speaker_id: usize) -> Option<(usize, usize)> {
+    SPEAKER_ID_MAP.get(&speaker_id).map(|&x| x)
 }
 
 pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
@@ -203,6 +214,7 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
 
         VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
         VOICEVOX_RESULT_UNINITIALIZED_STATUS => "Statusが初期化されていません\0",
+        VOICEVOX_RESULT_INVALID_SPEAKER_ID => "無効なspeaker_idです\0",
     }
 }
 
@@ -214,7 +226,7 @@ mod tests {
     #[rstest]
     #[case(0, false, true)]
     #[case(1, false, true)]
-    #[case(3, false, true)]
+    #[case(3, false, false)]
     fn load_model_works(
         #[case] speaker_id: usize,
         #[case] expected_ok_at_uninitialized: bool,
@@ -246,7 +258,7 @@ mod tests {
     #[rstest]
     #[case(0, true)]
     #[case(1, true)]
-    #[case(3, true)]
+    #[case(3, false)]
     fn is_model_loaded_works(#[case] speaker_id: usize, #[case] expected: bool) {
         let internal = Internal::new_with_mutex();
         assert!(
@@ -264,7 +276,11 @@ mod tests {
             "expected is_model_loaded to return false, but got true",
         );
 
-        internal.lock().unwrap().load_model(speaker_id).unwrap();
+        internal
+            .lock()
+            .unwrap()
+            .load_model(speaker_id)
+            .unwrap_or(());
         assert_eq!(
             internal.lock().unwrap().is_model_loaded(speaker_id),
             expected,
@@ -287,12 +303,12 @@ mod tests {
     }
 
     #[rstest]
-    #[case(0,(0,0))]
-    #[case(1,(0,1))]
-    #[case(3,(0,3))]
+    #[case(0, Some((0,0)))]
+    #[case(1, Some((0,1)))]
+    #[case(3, None)]
     fn get_model_index_and_speaker_id_works(
         #[case] speaker_id: usize,
-        #[case] expected: (usize, usize),
+        #[case] expected: Option<(usize, usize)>,
     ) {
         let actual = get_model_index_and_speaker_id(speaker_id);
         assert_eq!(expected, actual);
