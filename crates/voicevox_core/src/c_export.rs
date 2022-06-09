@@ -62,10 +62,10 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_UNINITIALIZED_STATUS,
                 ),
-                Error::InvalidSpeakerId(_) => {
+                Error::InvalidSpeakerId { .. } => {
                     (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_SPEAKER_ID)
                 }
-                Error::InvalidModelIndex(_) => (
+                Error::InvalidModelIndex { .. } => (
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_INVALID_MODEL_INDEX,
                 ),

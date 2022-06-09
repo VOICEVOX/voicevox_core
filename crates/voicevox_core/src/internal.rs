@@ -75,7 +75,7 @@ impl Internal {
             if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
                 status.load_model(model_index)
             } else {
-                Err(Error::InvalidSpeakerId(speaker_id))
+                Err(Error::InvalidSpeakerId { speaker_id })
             }
         } else {
             Err(Error::UninitializedStatus)

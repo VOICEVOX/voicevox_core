@@ -164,7 +164,7 @@ impl Status {
 
             Ok(())
         } else {
-            Err(Error::InvalidModelIndex(model_index))
+            Err(Error::InvalidModelIndex { model_index })
         }
     }
 
