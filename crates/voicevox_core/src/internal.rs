@@ -244,6 +244,7 @@ mod tests {
 
     #[rstest]
     #[case(0, false, true)]
+    #[case(1, false, true)]
     #[case(3, false, true)]
     fn load_model_works(
         #[case] speaker_id: usize,
