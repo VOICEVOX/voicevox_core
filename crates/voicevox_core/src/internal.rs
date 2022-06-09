@@ -211,50 +211,19 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
 
-    #[fixture]
-    #[once]
-    fn internal_uninitialized() -> Internal {
-        Internal {
-            initialized: false,
-            status_option: None,
-        }
-    }
-
-    #[fixture]
-    #[once]
-    fn internal_initialized_but_model_unloaded() -> Internal {
-        let mut internal = Internal {
-            initialized: false,
-            status_option: None,
-        };
-        internal.initialize(false, 0, false).unwrap();
-        internal
-    }
-
-    #[fixture]
-    #[once]
-    fn internal_initialized_and_model_loaded() -> Internal {
-        let mut internal = Internal {
-            initialized: false,
-            status_option: None,
-        };
-        internal.initialize(false, 0, true).unwrap();
-        internal
-    }
-
     #[rstest]
     #[case(0, false, true)]
     #[case(1, false, true)]
     #[case(3, false, true)]
     fn load_model_works(
         #[case] speaker_id: usize,
-        #[case] expected_at_uninitialized: bool,
-        #[case] expected_at_initialized: bool,
+        #[case] expected_ok_at_uninitialized: bool,
+        #[case] expected_ok_at_initialized: bool,
     ) {
         let internal = Internal::new_with_mutex();
         let result = internal.lock().unwrap().load_model(speaker_id);
         assert_eq!(
-            expected_at_uninitialized,
+            expected_ok_at_uninitialized,
             result.is_ok(),
             "expected load_model to be failed, but succeed wrongly",
         );
@@ -266,7 +235,7 @@ mod tests {
             .unwrap();
         let result = internal.lock().unwrap().load_model(speaker_id);
         assert_eq!(
-            expected_at_initialized,
+            expected_ok_at_initialized,
             result.is_ok(),
             "got load_model result: {:?}",
             result
@@ -277,36 +246,38 @@ mod tests {
     #[case(0, true)]
     #[case(1, true)]
     #[case(3, true)]
-    fn is_model_loaded_works(
-        #[case] speaker_id: usize,
-        internal_uninitialized: &Internal,
-        internal_initialized_but_model_unloaded: &Internal,
-        internal_initialized_and_model_loaded: &Internal,
-        #[case] expected_at_model_loaded: bool,
-    ) {
+    fn is_model_loaded_works(#[case] speaker_id: usize, #[case] expected: bool) {
+        let internal = Internal::new_with_mutex();
         assert!(
-            !internal_uninitialized.is_model_loaded(speaker_id),
+            !internal.lock().unwrap().is_model_loaded(speaker_id),
             "expected is_model_loaded to return false, but got true",
         );
 
+        internal
+            .lock()
+            .unwrap()
+            .initialize(false, 0, false)
+            .unwrap();
         assert!(
-            !internal_initialized_but_model_unloaded.is_model_loaded(speaker_id),
+            !internal.lock().unwrap().is_model_loaded(speaker_id),
             "expected is_model_loaded to return false, but got true",
         );
 
+        internal.lock().unwrap().load_model(speaker_id).unwrap();
         assert_eq!(
-            internal_initialized_and_model_loaded.is_model_loaded(speaker_id),
-            expected_at_model_loaded,
+            internal.lock().unwrap().is_model_loaded(speaker_id),
+            expected,
             "expected is_model_loaded return value against speaker_id `{}` is `{}`, but got `{}`",
             speaker_id,
-            expected_at_model_loaded,
-            !expected_at_model_loaded
+            expected,
+            !expected
         );
     }
 
     #[rstest]
-    fn supported_devices_works(internal_uninitialized: &Internal) {
-        let cstr_result = internal_uninitialized.supported_devices();
+    fn supported_devices_works() {
+        let internal = Internal::new_with_mutex();
+        let cstr_result = internal.lock().unwrap().supported_devices();
         assert!(cstr_result.to_str().is_ok(), "{:?}", cstr_result);
 
         let json_result: std::result::Result<SupportedDevices, _> =
