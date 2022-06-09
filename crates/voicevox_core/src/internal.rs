@@ -202,6 +202,7 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
 
         VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
         VOICEVOX_RESULT_UNINITIALIZED_STATUS => "Statusが初期化されていません\0",
+        VOICEVOX_RESULT_INVALID_MODEL_INDEX => "無効なmodel_indexです\0",
     }
 }
 
@@ -231,5 +232,59 @@ mod tests {
     ) {
         let actual = get_model_index_and_speaker_id(speaker_id);
         assert_eq!(expected, actual);
+    }
+
+    #[rstest]
+    #[case(false, 0, false)]
+    #[case(false, 4, false)]
+    #[case(false, 0, true)]
+    #[case(false, 4, true)]
+    fn initialize_works(
+        #[case] use_gpu: bool,
+        #[case] cpu_num_threads: usize,
+        #[case] load_all_models: bool,
+    ) {
+        let internal = Internal::new_with_mutex();
+        let result = internal
+            .lock()
+            .unwrap()
+            .initialize(use_gpu, cpu_num_threads, load_all_models);
+        assert!(result.is_ok(), "{:?}", result);
+    }
+
+    #[rstest]
+    fn metas() {
+        let internal = Internal::new_with_mutex();
+        assert_ne!(0, internal.lock().unwrap().metas().to_str().unwrap().len());
+        assert_eq!(METAS_CSTRING.as_ref(), internal.lock().unwrap().metas());
+    }
+
+    #[rstest]
+    #[case(0, true)]
+    #[case(1, false)]
+    fn load_model_works(#[case] speaker_id: i64, #[case] expected_ok: bool) {
+        let internal = Internal::new_with_mutex();
+        internal
+            .lock()
+            .unwrap()
+            .initialize(false, 0, false)
+            .unwrap();
+        let result = internal.lock().unwrap().load_model(speaker_id);
+        assert_eq!(expected_ok, result.is_ok(), "{:?}", result);
+    }
+
+    use VoicevoxResultCode::*;
+    #[rstest]
+    #[case(VOICEVOX_RESULT_SUCCEED)]
+    #[case(VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT)]
+    #[case(VOICEVOX_RESULT_FAILED_LOAD_MODEL)]
+    #[case(VOICEVOX_RESULT_CANT_GPU_SUPPORT)]
+    #[case(VOICEVOX_RESULT_FAILED_LOAD_METAS)]
+    #[case(VOICEVOX_RESULT_INVALID_MODEL_INDEX)]
+    fn voicevox_error_result_to_message_should_be_cstr_works(
+        #[case] result_code: VoicevoxResultCode,
+    ) {
+        let actual_message = voicevox_error_result_to_message(result_code);
+        assert_eq!('\0', actual_message.chars().last().unwrap());
     }
 }
