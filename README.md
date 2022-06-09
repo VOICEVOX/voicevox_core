@@ -100,6 +100,14 @@ sudo apt install libgomp1
 ```
 
 ## サンプル実行
+
+### C++ サンプルコード
+
+* [Linux・macOS サンプルコード](./example/cpp/unix#readme)
+* [Windows サンプルコード](./example/cpp/windows#readme)
+
+### Python サンプルコード
+
 まずOpen JTalk辞書フォルダを配置します。
 http://open-jtalk.sourceforge.net/ を開き、Dictionary for Open JTalk 欄の Binary Package (UTF-8)をクリックして「open_jtalk_dic_utf_8-1.11.tar.gz」をダウンロードします。  
 これを展開してできた「open_jtalk_dic_utf_8-1.11」フォルダをexample/pythonに配置します。
