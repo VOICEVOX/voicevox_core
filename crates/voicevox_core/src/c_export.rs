@@ -31,6 +31,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_FAILED_LOAD_METAS = 5,
     VOICEVOX_RESULT_UNINITIALIZED_STATUS = 6,
     VOICEVOX_RESULT_INVALID_SPEAKER_ID = 7,
+    VOICEVOX_RESULT_INVALID_MODEL_INDEX = 8,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -64,6 +65,10 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                 Error::InvalidSpeakerId(_) => {
                     (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_SPEAKER_ID)
                 }
+                Error::InvalidModelIndex(_) => (
+                    None,
+                    VoicevoxResultCode::VOICEVOX_RESULT_INVALID_MODEL_INDEX,
+                ),
             }
         }
     }

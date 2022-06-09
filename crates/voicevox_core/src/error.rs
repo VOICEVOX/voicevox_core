@@ -37,6 +37,9 @@ pub enum Error {
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_SPEAKER_ID))]
     InvalidSpeakerId(usize),
+
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_MODEL_INDEX))]
+    InvalidModelIndex(usize),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {

@@ -143,25 +143,29 @@ impl Status {
     }
 
     pub fn load_model(&mut self, model_index: usize) -> Result<()> {
-        let model = &Self::MODELS[model_index];
-        let yukarin_s_session = self
-            .new_session(model.yukarin_s_model)
-            .map_err(Error::LoadModel)?;
-        let yukarin_sa_session = self
-            .new_session(model.yukarin_sa_model)
-            .map_err(Error::LoadModel)?;
-        let decode_model = self
-            .new_session(model.decode_model)
-            .map_err(Error::LoadModel)?;
+        if model_index < Self::MODELS.len() {
+            let model = &Self::MODELS[model_index];
+            let yukarin_s_session = self
+                .new_session(model.yukarin_s_model)
+                .map_err(Error::LoadModel)?;
+            let yukarin_sa_session = self
+                .new_session(model.yukarin_sa_model)
+                .map_err(Error::LoadModel)?;
+            let decode_model = self
+                .new_session(model.decode_model)
+                .map_err(Error::LoadModel)?;
 
-        self.models.yukarin_s.insert(model_index, yukarin_s_session);
-        self.models
-            .yukarin_sa
-            .insert(model_index, yukarin_sa_session);
+            self.models.yukarin_s.insert(model_index, yukarin_s_session);
+            self.models
+                .yukarin_sa
+                .insert(model_index, yukarin_sa_session);
 
-        self.models.decode.insert(model_index, decode_model);
+            self.models.decode.insert(model_index, decode_model);
 
-        Ok(())
+            Ok(())
+        } else {
+            Err(Error::InvalidModelIndex(model_index))
+        }
     }
 
     pub fn is_model_loaded(&self, model_index: usize) -> bool {

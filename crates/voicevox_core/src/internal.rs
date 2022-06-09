@@ -215,6 +215,7 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
         VOICEVOX_RESULT_UNINITIALIZED_STATUS => "Statusが初期化されていません\0",
         VOICEVOX_RESULT_INVALID_SPEAKER_ID => "無効なspeaker_idです\0",
+        VOICEVOX_RESULT_INVALID_MODEL_INDEX => "無効なmodel_indexです\0",
     }
 }
 
