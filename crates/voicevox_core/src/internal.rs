@@ -225,7 +225,8 @@ mod tests {
         assert_eq!(
             expected_ok_at_uninitialized,
             result.is_ok(),
-            "expected load_model to be failed, but succeed wrongly",
+            "expected load_model to be failed, but succeed wrongly. got result: {:?}",
+            result
         );
 
         internal
