@@ -89,7 +89,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
 
 #[no_mangle]
 pub extern "C" fn load_model(speaker_id: i64) -> bool {
-    let result = lock_internal().load_model(speaker_id);
+    let result = lock_internal().load_model(speaker_id as usize);
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         set_message(&format!("{}", err));

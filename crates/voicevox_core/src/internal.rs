@@ -61,13 +61,14 @@ impl Internal {
             }
         }
     }
-    pub fn load_model(&mut self, speaker_id: i64) -> Result<()> {
+    pub fn load_model(&mut self, speaker_id: usize) -> Result<()> {
         if self.initialized {
             let status = self
                 .status_option
                 .as_mut()
                 .ok_or(Error::UninitializedStatus)?;
-            status.load_model(speaker_id as usize)
+            let (model_index, _) = get_model_index_and_speaker_id(speaker_id);
+            status.load_model(model_index)
         } else {
             Err(Error::UninitializedStatus)
         }
