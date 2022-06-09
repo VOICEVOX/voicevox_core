@@ -9,75 +9,168 @@ use std::sync::Mutex;
 use status::*;
 use std::ffi::CString;
 
-static INITIALIZED: Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(false));
-static STATUS: Lazy<Mutex<Option<Status>>> = Lazy::new(|| Mutex::new(None));
-
 static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> = Lazy::new(BTreeMap::new);
 
-pub fn initialize(use_gpu: bool, cpu_num_threads: usize, load_all_models: bool) -> Result<()> {
-    let mut initialized = INITIALIZED.lock().unwrap();
-    *initialized = false;
-    if !use_gpu || can_support_gpu_feature()? {
-        let mut status_opt = STATUS.lock().unwrap();
-        let mut status = Status::new(use_gpu, cpu_num_threads);
+pub struct Internal {
+    initialized: bool,
+    status_option: Option<Status>,
+}
 
-        status.load_metas()?;
+impl Internal {
+    pub fn new_with_mutex() -> Mutex<Internal> {
+        Mutex::new(Internal {
+            initialized: false,
+            status_option: None,
+        })
+    }
+    pub fn initialize(
+        &mut self,
+        use_gpu: bool,
+        cpu_num_threads: usize,
+        load_all_models: bool,
+    ) -> Result<()> {
+        self.initialized = false;
+        if !use_gpu || self.can_support_gpu_feature()? {
+            let mut status = Status::new(use_gpu, cpu_num_threads);
 
-        if load_all_models {
-            for model_index in 0..Status::MODELS_COUNT {
-                status.load_model(model_index)?;
+            status.load_metas()?;
+
+            if load_all_models {
+                for model_index in 0..Status::MODELS_COUNT {
+                    status.load_model(model_index)?;
+                }
+                // TODO: ここにGPUメモリを確保させる処理を実装する
+                // https://github.com/VOICEVOX/voicevox_core/blob/main/core/src/core.cpp#L210-L219
             }
-            // TODO: ここにGPUメモリを確保させる処理を実装する
-            // https://github.com/VOICEVOX/voicevox_core/blob/main/core/src/core.cpp#L210-L219
-        }
 
-        *status_opt = Some(status);
-        *initialized = true;
-        Ok(())
-    } else {
-        Err(Error::CantGpuSupport)
-    }
-}
-
-fn can_support_gpu_feature() -> Result<bool> {
-    let supported_devices = SupportedDevices::get_supported_devices()?;
-
-    cfg_if! {
-        if #[cfg(feature = "directml")]{
-            Ok(*supported_devices.dml())
-        } else{
-            Ok(*supported_devices.cuda())
+            self.status_option = Some(status);
+            self.initialized = true;
+            Ok(())
+        } else {
+            Err(Error::CantGpuSupport)
         }
     }
-}
+    fn can_support_gpu_feature(&self) -> Result<bool> {
+        let supported_devices = SupportedDevices::get_supported_devices()?;
 
-pub fn load_model(speaker_id: i64) -> Result<()> {
-    if *INITIALIZED.lock().unwrap() {
-        let mut status_opt = STATUS.lock().unwrap();
-        let status = status_opt.as_mut().ok_or(Error::UninitializedStatus)?;
-        status.load_model(speaker_id as usize)
-    } else {
-        Err(Error::UninitializedStatus)
+        cfg_if! {
+            if #[cfg(feature = "directml")]{
+                Ok(*supported_devices.dml())
+            } else{
+                Ok(*supported_devices.cuda())
+            }
+        }
     }
-}
-
-pub fn is_model_loaded(speaker_id: usize) -> bool {
-    if let Some(status) = STATUS.lock().unwrap().as_ref() {
-        let (model_index, _) = get_model_index_and_speaker_id(speaker_id);
-        status.is_model_loaded(model_index)
-    } else {
-        false
+    pub fn load_model(&mut self, speaker_id: i64) -> Result<()> {
+        if self.initialized {
+            let status = self
+                .status_option
+                .as_mut()
+                .ok_or(Error::UninitializedStatus)?;
+            status.load_model(speaker_id as usize)
+        } else {
+            Err(Error::UninitializedStatus)
+        }
     }
-}
+    pub fn is_model_loaded(&self, speaker_id: usize) -> bool {
+        if let Some(status) = self.status_option.as_ref() {
+            let (model_index, _) = get_model_index_and_speaker_id(speaker_id);
+            status.is_model_loaded(model_index)
+        } else {
+            false
+        }
+    }
+    pub fn finalize(&mut self) {
+        unimplemented!()
+    }
+    pub fn metas(&self) -> &'static CStr {
+        &METAS_CSTRING
+    }
+    pub fn supported_devices(&self) -> &'static CStr {
+        &SUPPORTED_DEVICES_CSTRING
+    }
+    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+    #[allow(unused_variables)]
+    pub fn yukarin_s_forward(
+        &mut self,
+        length: i64,
+        phoneme_list: *const i64,
+        speaker_id: &i64,
+        output: *mut f32,
+    ) -> Result<()> {
+        unimplemented!()
+    }
 
-pub fn finalize() {
-    unimplemented!()
+    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+    #[allow(unused_variables)]
+    #[allow(clippy::too_many_arguments)]
+    pub fn yukarin_sa_forward(
+        &mut self,
+        length: i64,
+        vowel_phoneme_list: *const i64,
+        consonant_phoneme_list: *const i64,
+        start_accent_list: *const i64,
+        end_accent_list: *const i64,
+        start_accent_phrase_list: *const i64,
+        end_accent_phrase_list: *const i64,
+        speaker_id: *const i64,
+        output: *mut f32,
+    ) -> Result<()> {
+        unimplemented!()
+    }
+
+    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+    #[allow(unused_variables)]
+    pub fn decode_forward(
+        &mut self,
+        length: i64,
+        phoneme_size: i64,
+        f0: *const f32,
+        phoneme: *const f32,
+        speaker_id: *const i64,
+        output: *mut f32,
+    ) -> Result<()> {
+        unimplemented!()
+    }
+
+    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+    #[allow(unused_variables)]
+    pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &CStr) -> Result<()> {
+        unimplemented!()
+    }
+
+    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+    #[allow(unused_variables)]
+    pub fn voicevox_tts(
+        &self,
+        text: &CStr,
+        speaker_id: i64,
+        output_binary_size: *mut c_int,
+        output_wav: *const *mut u8,
+    ) -> Result<()> {
+        unimplemented!()
+    }
+
+    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+    #[allow(unused_variables)]
+    pub fn voicevox_tts_from_kana(
+        &self,
+        text: &CStr,
+        speaker_id: i64,
+        output_binary_size: *mut c_int,
+        output_wav: *const *mut u8,
+    ) -> Result<()> {
+        unimplemented!()
+    }
+
+    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+    #[allow(unused_variables)]
+    pub fn voicevox_wav_free(&self, wav: *mut u8) -> Result<()> {
+        unimplemented!()
+    }
 }
 
 static METAS_CSTRING: Lazy<CString> = Lazy::new(|| CString::new(Status::METAS_STR).unwrap());
-pub fn metas() -> &'static CStr {
-    &METAS_CSTRING
-}
 
 static SUPPORTED_DEVICES_CSTRING: Lazy<CString> = Lazy::new(|| {
     CString::new(
@@ -85,84 +178,6 @@ static SUPPORTED_DEVICES_CSTRING: Lazy<CString> = Lazy::new(|| {
     )
     .unwrap()
 });
-pub fn supported_devices() -> &'static CStr {
-    &SUPPORTED_DEVICES_CSTRING
-}
-
-//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-#[allow(unused_variables)]
-pub fn yukarin_s_forward(
-    length: i64,
-    phoneme_list: *const i64,
-    speaker_id: &i64,
-    output: *mut f32,
-) -> Result<()> {
-    unimplemented!()
-}
-
-//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-#[allow(unused_variables)]
-#[allow(clippy::too_many_arguments)]
-pub fn yukarin_sa_forward(
-    length: i64,
-    vowel_phoneme_list: *const i64,
-    consonant_phoneme_list: *const i64,
-    start_accent_list: *const i64,
-    end_accent_list: *const i64,
-    start_accent_phrase_list: *const i64,
-    end_accent_phrase_list: *const i64,
-    speaker_id: *const i64,
-    output: *mut f32,
-) -> Result<()> {
-    unimplemented!()
-}
-
-//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-#[allow(unused_variables)]
-pub fn decode_forward(
-    length: i64,
-    phoneme_size: i64,
-    f0: *const f32,
-    phoneme: *const f32,
-    speaker_id: *const i64,
-    output: *mut f32,
-) -> Result<()> {
-    unimplemented!()
-}
-
-//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-#[allow(unused_variables)]
-pub fn voicevox_load_openjtalk_dict(dict_path: &CStr) -> Result<()> {
-    unimplemented!()
-}
-
-//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-#[allow(unused_variables)]
-pub fn voicevox_tts(
-    text: &CStr,
-    speaker_id: i64,
-    output_binary_size: *mut c_int,
-    output_wav: *const *mut u8,
-) -> Result<()> {
-    unimplemented!()
-}
-
-//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-#[allow(unused_variables)]
-pub fn voicevox_tts_from_kana(
-    text: &CStr,
-    speaker_id: i64,
-    output_binary_size: *mut c_int,
-    output_wav: *const *mut u8,
-) -> Result<()> {
-    unimplemented!()
-}
-
-//TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-#[allow(unused_variables)]
-pub fn voicevox_wav_free(wav: *mut u8) -> Result<()> {
-    unimplemented!()
-}
 
 fn get_model_index_and_speaker_id(speaker_id: usize) -> (usize, usize) {
     *SPEAKER_ID_MAP.get(&speaker_id).unwrap_or(&(0, speaker_id))
@@ -197,7 +212,8 @@ mod tests {
 
     #[rstest]
     fn supported_devices_works() {
-        let cstr_result = supported_devices();
+        let internal = Internal::new_with_mutex();
+        let cstr_result = internal.lock().unwrap().supported_devices();
         assert!(cstr_result.to_str().is_ok(), "{:?}", cstr_result);
 
         let json_result: std::result::Result<SupportedDevices, _> =

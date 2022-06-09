@@ -1,8 +1,15 @@
 use super::*;
+use internal::Internal;
 use once_cell::sync::Lazy;
 use std::ffi::CStr;
 use std::os::raw::{c_char, c_int};
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
+
+static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(Internal::new_with_mutex);
+
+fn lock_internal() -> MutexGuard<'static, Internal> {
+    INTERNAL.lock().unwrap()
+}
 
 /*
  * Cの関数として公開するための型や関数を定義するこれらの実装はinternal.rsに定義してある同名関数にある
@@ -70,7 +77,7 @@ fn set_message(message: &str) {
 
 #[no_mangle]
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
-    let result = internal::initialize(use_gpu, cpu_num_threads as usize, load_all_models);
+    let result = lock_internal().initialize(use_gpu, cpu_num_threads as usize, load_all_models);
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         set_message(&format!("{}", err));
@@ -82,7 +89,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
 
 #[no_mangle]
 pub extern "C" fn load_model(speaker_id: i64) -> bool {
-    let result = internal::load_model(speaker_id);
+    let result = lock_internal().load_model(speaker_id);
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         set_message(&format!("{}", err));
@@ -94,17 +101,17 @@ pub extern "C" fn load_model(speaker_id: i64) -> bool {
 
 #[no_mangle]
 pub extern "C" fn is_model_loaded(speaker_id: i64) -> bool {
-    internal::is_model_loaded(speaker_id as usize)
+    lock_internal().is_model_loaded(speaker_id as usize)
 }
 
 #[no_mangle]
 pub extern "C" fn finalize() {
-    internal::finalize()
+    lock_internal().finalize()
 }
 
 #[no_mangle]
 pub extern "C" fn metas() -> *const c_char {
-    internal::metas().as_ptr()
+    lock_internal().metas().as_ptr()
 }
 
 #[no_mangle]
@@ -114,7 +121,7 @@ pub extern "C" fn last_error_message() -> *const c_char {
 
 #[no_mangle]
 pub extern "C" fn supported_devices() -> *const c_char {
-    internal::supported_devices().as_ptr()
+    lock_internal().supported_devices().as_ptr()
 }
 
 #[no_mangle]
@@ -124,7 +131,8 @@ pub extern "C" fn yukarin_s_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let result = internal::yukarin_s_forward(length, phoneme_list, &unsafe { *speaker_id }, output);
+    let result =
+        lock_internal().yukarin_s_forward(length, phoneme_list, &unsafe { *speaker_id }, output);
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         set_message(&format!("{}", err));
@@ -146,7 +154,7 @@ pub extern "C" fn yukarin_sa_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let result = internal::yukarin_sa_forward(
+    let result = lock_internal().yukarin_sa_forward(
         length,
         vowel_phoneme_list,
         consonant_phoneme_list,
@@ -175,7 +183,8 @@ pub extern "C" fn decode_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let result = internal::decode_forward(length, phoneme_size, f0, phoneme, speaker_id, output);
+    let result =
+        lock_internal().decode_forward(length, phoneme_size, f0, phoneme, speaker_id, output);
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         set_message(&format!("{}", err));
@@ -187,9 +196,9 @@ pub extern "C" fn decode_forward(
 
 #[no_mangle]
 pub extern "C" fn voicevox_load_openjtalk_dict(dict_path: *const c_char) -> VoicevoxResultCode {
-    let (_, result_code) = convert_result(internal::voicevox_load_openjtalk_dict(unsafe {
-        CStr::from_ptr(dict_path)
-    }));
+    let (_, result_code) = convert_result(
+        lock_internal().voicevox_load_openjtalk_dict(unsafe { CStr::from_ptr(dict_path) }),
+    );
     result_code
 }
 
@@ -200,7 +209,7 @@ pub extern "C" fn voicevox_tts(
     output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    let (_, result_code) = convert_result(internal::voicevox_tts(
+    let (_, result_code) = convert_result(lock_internal().voicevox_tts(
         unsafe { CStr::from_ptr(text) },
         speaker_id,
         output_binary_size,
@@ -216,7 +225,7 @@ pub extern "C" fn voicevox_tts_from_kana(
     output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    let (_, result_code) = convert_result(internal::voicevox_tts_from_kana(
+    let (_, result_code) = convert_result(lock_internal().voicevox_tts_from_kana(
         unsafe { CStr::from_ptr(text) },
         speaker_id,
         output_binary_size,
@@ -227,7 +236,7 @@ pub extern "C" fn voicevox_tts_from_kana(
 
 #[no_mangle]
 pub extern "C" fn voicevox_wav_free(wav: *mut u8) -> VoicevoxResultCode {
-    let (_, result_code) = convert_result(internal::voicevox_wav_free(wav));
+    let (_, result_code) = convert_result(lock_internal().voicevox_wav_free(wav));
     result_code
 }
 
