@@ -192,7 +192,7 @@ static SUPPORTED_DEVICES_CSTRING: Lazy<CString> = Lazy::new(|| {
 });
 
 fn get_model_index_and_speaker_id(speaker_id: usize) -> Option<(usize, usize)> {
-    SPEAKER_ID_MAP.get(&speaker_id).map(|&x| x)
+    SPEAKER_ID_MAP.get(&speaker_id).copied()
 }
 
 pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
