@@ -6,7 +6,7 @@ const WIDE_INTERROGATION_MARK: char = '？';
 const LOOP_LIMIT: usize = 300;
 
 #[allow(dead_code)] // TODO: remove this feature
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 struct MoraModel {
 	text: String,
 	consonant: Option<String>,
@@ -17,7 +17,6 @@ struct MoraModel {
 }
 
 #[allow(dead_code)] // TODO: remove this feature
-#[derive(Debug)]
 struct AccentPhraseModel {
 	moras: Vec<MoraModel>,
 	accent: usize,
