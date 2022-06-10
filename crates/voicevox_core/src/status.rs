@@ -178,7 +178,7 @@ impl Status {
     fn new_session<B: AsRef<[u8]>>(
         &self,
         model_bytes: B,
-    ) -> std::result::Result<Session<'static>, anyhow::Error> {
+    ) -> std::result::Result<Session<'static>, SourceError> {
         let session_builder = ENVIRONMENT
             .new_session_builder()?
             .with_optimization_level(GraphOptimizationLevel::Basic)?
@@ -261,7 +261,7 @@ mod tests {
     fn status_load_metas_works() {
         let mut status = Status::new(true, 0);
         let result = status.load_metas();
-        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(Ok(()), result);
         let mut expected = BTreeSet::new();
         expected.insert(0);
         expected.insert(1);
@@ -279,7 +279,7 @@ mod tests {
     fn status_load_model_works() {
         let mut status = Status::new(false, 0);
         let result = status.load_model(0);
-        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(Ok(()), result);
         assert_eq!(1, status.models.yukarin_s.len());
         assert_eq!(1, status.models.yukarin_sa.len());
         assert_eq!(1, status.models.decode.len());
@@ -294,7 +294,7 @@ mod tests {
             "model should  not be loaded"
         );
         let result = status.load_model(model_index);
-        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(Ok(()), result);
         assert!(
             status.is_model_loaded(model_index),
             "model should be loaded"
