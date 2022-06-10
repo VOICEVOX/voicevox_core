@@ -146,10 +146,10 @@ impl Internal {
             ndarray::arr1(&[speaker_id as i64]),
         ];
 
-        let mut result = status.yukarin_s_session_run(model_index, input_tensors)?;
+        let result = status.yukarin_s_session_run(model_index, input_tensors)?;
 
-        let mut output_vec: Vec<f32> = unsafe { Vec::from_raw_parts(output, 0, length as usize) };
-        output_vec.append(&mut result);
+        let mut output_vec: Vec<f32> = unsafe { Vec::from_raw_parts(output, 0, 0) };
+        let _ = std::mem::replace(&mut output_vec, result);
 
         for output_item in &mut output_vec {
             if *output_item < PHONEME_LENGTH_MINIMAL {
