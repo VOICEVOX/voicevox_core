@@ -49,7 +49,7 @@ impl std::fmt::Display for ParseError {
 
 impl std::error::Error for ParseError {}
 
-const MORA_LIST_MINIMUM: [[&'static str; 3]; 144] = [
+const MORA_LIST_MINIMUM: [[&str; 3]; 144] = [
 	["ヴォ", "v", "o"],
 	["ヴェ", "v", "e"],
 	["ヴィ", "v", "i"],
@@ -212,7 +212,7 @@ fn mora2text(mora: &str) -> &str {
 fn text2mora_with_unvioce() -> std::collections::BTreeMap<String, MoraModel> {
 	let mut text2mora_with_unvioce = std::collections::BTreeMap::new();
 	for [text, consonant, vowel] in MORA_LIST_MINIMUM {
-		let consonant = if consonant != "" {
+		let consonant = if consonant.is_empty() {
 			Some(consonant.to_string())
 		} else {
 			None
@@ -224,7 +224,7 @@ fn text2mora_with_unvioce() -> std::collections::BTreeMap<String, MoraModel> {
 			let unvoice_mora = MoraModel {
 				text: text.to_string(),
 				consonant: consonant.clone(),
-				consonant_length: consonant_length.clone(),
+				consonant_length,
 				vowel: upper_vowel,
 				vowel_length: 0.0,
 				pitch: 0.0,
@@ -295,7 +295,7 @@ fn text_to_accent_phrase(phrase: &str) -> Result<AccentPhraseModel, ParseError> 
 			)));
 		}
 		if loop_count > LOOP_LIMIT {
-			return Err(ParseError(format!("detected infinity loop!")));
+			return Err(ParseError("detected infinity loop!".to_string()));
 		}
 	}
 	if accent_index.is_none() {
