@@ -9,7 +9,12 @@ use std::sync::Mutex;
 use status::*;
 use std::ffi::CString;
 
-static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> = Lazy::new(BTreeMap::new);
+static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> = Lazy::new(|| {
+    let mut btm = BTreeMap::new();
+    btm.insert(0, (0, 0));
+    btm.insert(1, (0, 1));
+    btm
+});
 
 pub struct Internal {
     initialized: bool,
@@ -61,21 +66,28 @@ impl Internal {
             }
         }
     }
-    pub fn load_model(&mut self, speaker_id: i64) -> Result<()> {
+    pub fn load_model(&mut self, speaker_id: usize) -> Result<()> {
         if self.initialized {
             let status = self
                 .status_option
                 .as_mut()
                 .ok_or(Error::UninitializedStatus)?;
-            status.load_model(speaker_id as usize)
+            if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
+                status.load_model(model_index)
+            } else {
+                Err(Error::InvalidSpeakerId { speaker_id })
+            }
         } else {
             Err(Error::UninitializedStatus)
         }
     }
     pub fn is_model_loaded(&self, speaker_id: usize) -> bool {
         if let Some(status) = self.status_option.as_ref() {
-            let (model_index, _) = get_model_index_and_speaker_id(speaker_id);
-            status.is_model_loaded(model_index)
+            if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
+                status.is_model_loaded(model_index)
+            } else {
+                false
+            }
         } else {
             false
         }
@@ -179,8 +191,8 @@ static SUPPORTED_DEVICES_CSTRING: Lazy<CString> = Lazy::new(|| {
     .unwrap()
 });
 
-fn get_model_index_and_speaker_id(speaker_id: usize) -> (usize, usize) {
-    *SPEAKER_ID_MAP.get(&speaker_id).unwrap_or(&(0, speaker_id))
+fn get_model_index_and_speaker_id(speaker_id: usize) -> Option<(usize, usize)> {
+    SPEAKER_ID_MAP.get(&speaker_id).copied()
 }
 
 pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
@@ -202,6 +214,8 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
 
         VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
         VOICEVOX_RESULT_UNINITIALIZED_STATUS => "Statusが初期化されていません\0",
+        VOICEVOX_RESULT_INVALID_SPEAKER_ID => "無効なspeaker_idです\0",
+        VOICEVOX_RESULT_INVALID_MODEL_INDEX => "無効なmodel_indexです\0",
     }
 }
 
@@ -209,6 +223,74 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[rstest]
+    #[case(0, false, true)]
+    #[case(1, false, true)]
+    #[case(3, false, false)]
+    fn load_model_works(
+        #[case] speaker_id: usize,
+        #[case] expected_ok_at_uninitialized: bool,
+        #[case] expected_ok_at_initialized: bool,
+    ) {
+        let internal = Internal::new_with_mutex();
+        let result = internal.lock().unwrap().load_model(speaker_id);
+        assert_eq!(
+            expected_ok_at_uninitialized,
+            result.is_ok(),
+            "expected load_model to be failed, but succeed wrongly. got result: {:?}",
+            result
+        );
+
+        internal
+            .lock()
+            .unwrap()
+            .initialize(false, 0, false)
+            .unwrap();
+        let result = internal.lock().unwrap().load_model(speaker_id);
+        assert_eq!(
+            expected_ok_at_initialized,
+            result.is_ok(),
+            "got load_model result: {:?}",
+            result
+        );
+    }
+
+    #[rstest]
+    #[case(0, true)]
+    #[case(1, true)]
+    #[case(3, false)]
+    fn is_model_loaded_works(#[case] speaker_id: usize, #[case] expected: bool) {
+        let internal = Internal::new_with_mutex();
+        assert!(
+            !internal.lock().unwrap().is_model_loaded(speaker_id),
+            "expected is_model_loaded to return false, but got true",
+        );
+
+        internal
+            .lock()
+            .unwrap()
+            .initialize(false, 0, false)
+            .unwrap();
+        assert!(
+            !internal.lock().unwrap().is_model_loaded(speaker_id),
+            "expected is_model_loaded to return false, but got true",
+        );
+
+        internal
+            .lock()
+            .unwrap()
+            .load_model(speaker_id)
+            .unwrap_or(());
+        assert_eq!(
+            internal.lock().unwrap().is_model_loaded(speaker_id),
+            expected,
+            "expected is_model_loaded return value against speaker_id `{}` is `{}`, but got `{}`",
+            speaker_id,
+            expected,
+            !expected
+        );
+    }
 
     #[rstest]
     fn supported_devices_works() {
@@ -222,12 +304,12 @@ mod tests {
     }
 
     #[rstest]
-    #[case(0,(0,0))]
-    #[case(1,(0,1))]
-    #[case(3,(0,3))]
+    #[case(0, Some((0,0)))]
+    #[case(1, Some((0,1)))]
+    #[case(3, None)]
     fn get_model_index_and_speaker_id_works(
         #[case] speaker_id: usize,
-        #[case] expected: (usize, usize),
+        #[case] expected: Option<(usize, usize)>,
     ) {
         let actual = get_model_index_and_speaker_id(speaker_id);
         assert_eq!(expected, actual);

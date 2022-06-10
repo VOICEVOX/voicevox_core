@@ -30,6 +30,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_CANT_GPU_SUPPORT = 4,
     VOICEVOX_RESULT_FAILED_LOAD_METAS = 5,
     VOICEVOX_RESULT_UNINITIALIZED_STATUS = 6,
+    VOICEVOX_RESULT_INVALID_SPEAKER_ID = 7,
+    VOICEVOX_RESULT_INVALID_MODEL_INDEX = 8,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -60,6 +62,13 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_UNINITIALIZED_STATUS,
                 ),
+                Error::InvalidSpeakerId { .. } => {
+                    (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_SPEAKER_ID)
+                }
+                Error::InvalidModelIndex { .. } => (
+                    None,
+                    VoicevoxResultCode::VOICEVOX_RESULT_INVALID_MODEL_INDEX,
+                ),
             }
         }
     }
@@ -89,7 +98,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
 
 #[no_mangle]
 pub extern "C" fn load_model(speaker_id: i64) -> bool {
-    let result = lock_internal().load_model(speaker_id);
+    let result = lock_internal().load_model(speaker_id as usize);
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         set_message(&format!("{}", err));
