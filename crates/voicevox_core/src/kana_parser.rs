@@ -6,7 +6,7 @@ const WIDE_INTERROGATION_MARK: char = '？';
 const LOOP_LIMIT: usize = 300;
 
 #[allow(dead_code)] // TODO: remove this feature
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct MoraModel {
 	text: String,
 	consonant: Option<String>,
@@ -17,6 +17,7 @@ struct MoraModel {
 }
 
 #[allow(dead_code)] // TODO: remove this feature
+#[derive(Debug)]
 struct AccentPhraseModel {
 	moras: Vec<MoraModel>,
 	accent: usize,
@@ -37,6 +38,17 @@ struct AudioQueryModel {
 	output_stereo: bool,
 	kana: String,
 }
+
+#[derive(Clone, Debug)]
+struct ParseError(String);
+
+impl std::fmt::Display for ParseError {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "Parse Error: {}", self.0)
+	}
+}
+
+impl std::error::Error for ParseError {}
 
 const MORA_LIST_MINIMUM: [[&'static str; 3]; 144] = [
 	["ヴォ", "v", "o"],
@@ -234,7 +246,7 @@ fn text2mora_with_unvioce() -> std::collections::BTreeMap<String, MoraModel> {
 	text2mora_with_unvioce
 }
 
-fn text_to_accent_phrase(phrase: &str) -> AccentPhraseModel {
+fn text_to_accent_phrase(phrase: &str) -> Result<AccentPhraseModel, ParseError> {
 	let phrase_vec: Vec<char> = phrase.chars().collect();
 	let mut accent_index: Option<usize> = None;
 	let mut moras: Vec<MoraModel> = Vec::new();
@@ -247,18 +259,22 @@ fn text_to_accent_phrase(phrase: &str) -> AccentPhraseModel {
 		loop_count += 1;
 		let letter = phrase_vec[index];
 		if letter == ACCENT_SYMBOL {
-			panic!(
-				"accent cannot be set at beginning of accent phrase: {}",
-				phrase
-			);
+			if index == 0 {
+				return Err(ParseError(format!(
+					"accent cannot be set at beginning of accent phrase: {}",
+					phrase
+				)));
+			}
+			if accent_index.is_some() {
+				return Err(ParseError(format!(
+					"second accent cannot be set at an accent phrase: {}",
+					phrase
+				)));
+			}
+			accent_index = Some(moras.len());
+			index += 1;
+			continue;
 		}
-		if accent_index.is_some() {
-			panic!(
-				"second accent cannot be set at an accent phrase: {}",
-				phrase
-			);
-		}
-		accent_index = Some(moras.len());
 
 		for &watch_letter in &phrase_vec[index..] {
 			if watch_letter == ACCENT_SYMBOL {
@@ -274,25 +290,31 @@ fn text_to_accent_phrase(phrase: &str) -> AccentPhraseModel {
 			moras.push(text2mora.get(&matched_text).unwrap().clone());
 			stack.clear();
 		} else {
-			panic!("unknown text in accent phrase: {}", phrase);
+			return Err(ParseError(format!(
+				"unknown text in accent phrase: {}",
+				phrase
+			)));
 		}
 		if loop_count > LOOP_LIMIT {
-			panic!("detected infinity loop!");
+			return Err(ParseError(format!("detected infinity loop!")));
 		}
 	}
 	if accent_index.is_none() {
-		panic!("accent not found in accent phrase: {}", phrase);
+		return Err(ParseError(format!(
+			"accent not found in accent phrase: {}",
+			phrase
+		)));
 	}
-	AccentPhraseModel {
+	Ok(AccentPhraseModel {
 		moras,
 		accent: accent_index.unwrap(),
 		pause_mora: None,
 		is_interrogative: false,
-	}
+	})
 }
 
 #[allow(dead_code)] // TODO: remove this feature
-fn parse_kana(text: &str) -> Vec<AccentPhraseModel> {
+fn parse_kana(text: &str) -> Result<Vec<AccentPhraseModel>, ParseError> {
 	const DUMMY: char = '\0';
 	let mut parsed_result = Vec::new();
 	let text_vec: Vec<char> = text.chars().chain([DUMMY]).collect();
@@ -300,23 +322,23 @@ fn parse_kana(text: &str) -> Vec<AccentPhraseModel> {
 	for letter in text_vec {
 		if letter == DUMMY || letter == PAUSE_DELIMITER || letter == NOPAUSE_DELIMITER {
 			if phrase.is_empty() {
-				panic!(
+				return Err(ParseError(format!(
 					"accent phrase at position of {} is empty",
 					parsed_result.len()
-				);
+				)));
 			}
 			let is_interrogative = phrase.contains(WIDE_INTERROGATION_MARK);
 			if is_interrogative {
 				if phrase.find(WIDE_INTERROGATION_MARK).unwrap() == phrase.len() - 1 {
-					panic!(
+					return Err(ParseError(format!(
 						"interrogative mark cannot be set at not end of accent phrase: {}",
 						phrase
-					);
+					)));
 				}
 				phrase.pop(); // remove WIDE_INTERROGATION_MARK
 			}
 			let accent_phrase = {
-				let mut accent_phrase = text_to_accent_phrase(&phrase);
+				let mut accent_phrase = text_to_accent_phrase(&phrase)?;
 				if letter == PAUSE_DELIMITER {
 					accent_phrase.pause_mora = Some(MoraModel {
 						text: PAUSE_DELIMITER.to_string(),
@@ -336,7 +358,7 @@ fn parse_kana(text: &str) -> Vec<AccentPhraseModel> {
 			phrase.push(letter);
 		}
 	}
-	parsed_result
+	Ok(parsed_result)
 }
 
 #[allow(dead_code)] // TODO: remove this feature
@@ -411,5 +433,46 @@ mod tests {
 				assert_eq!(m, mora.unwrap());
 			}
 		}
+	}
+
+	#[test]
+	fn test_text_to_accent_phrase() {
+		let text_ok = ["ア_シタ'ワ", "ユウヒガ'", "_キ'レイ"];
+		let text_err = [
+			"アクセントナシ",
+			"アクセ'ント'タクサン'",
+			"'アクセントハジマリ",
+			"不明な'文字",
+		];
+		for text in text_ok {
+			assert!(text_to_accent_phrase(text).is_ok());
+			// TODO: もっと細かい確認
+		}
+		for text in text_err {
+			assert!(text_to_accent_phrase(text).is_err());
+		}
+	}
+
+	#[test]
+	fn test_parse_kana() {
+		let text_ok = ["テ'ス_ト/テ_ス'ト、_テ'_スト？/テ'ス_ト？"];
+		let text_err = [
+			"クウハクノ'//フレーズ'",
+			"フレー？ズノ'/トチュウニ'、ギモ'ンフ",
+		];
+		for text in text_ok {
+			assert!(parse_kana(text).is_ok());
+			// TODO: もっと細かい確認
+		}
+		for text in text_err {
+			assert!(parse_kana(text).is_err());
+		}
+	}
+	#[test]
+	fn test_create_kana() {
+		let text = "アンドロ'イドワ、デンキ'/ヒ'_ツジノ/ユメ'オ/ミ'ルカ？";
+		let phrases = parse_kana(text).unwrap();
+		let text_created = create_kana(&phrases);
+		assert_eq!(text, &text_created);
 	}
 }
