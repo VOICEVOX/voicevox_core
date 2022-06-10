@@ -225,22 +225,17 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     #[rstest]
-    #[case(0, false, true)]
-    #[case(1, false, true)]
-    #[case(3, false, false)]
+    #[case(0, Err(Error::UninitializedStatus), Ok(()))]
+    #[case(1, Err(Error::UninitializedStatus), Ok(()))]
+    #[case(3, Err(Error::UninitializedStatus), Err(Error::InvalidSpeakerId{speaker_id:3}))]
     fn load_model_works(
         #[case] speaker_id: usize,
-        #[case] expected_ok_at_uninitialized: bool,
-        #[case] expected_ok_at_initialized: bool,
+        #[case] expected_result_at_uninitialized: Result<()>,
+        #[case] expected_result_at_initialized: Result<()>,
     ) {
         let internal = Internal::new_with_mutex();
         let result = internal.lock().unwrap().load_model(speaker_id);
-        assert_eq!(
-            expected_ok_at_uninitialized,
-            result.is_ok(),
-            "expected load_model to be failed, but succeed wrongly. got result: {:?}",
-            result
-        );
+        assert_eq!(expected_result_at_uninitialized, result);
 
         internal
             .lock()
@@ -249,10 +244,8 @@ mod tests {
             .unwrap();
         let result = internal.lock().unwrap().load_model(speaker_id);
         assert_eq!(
-            expected_ok_at_initialized,
-            result.is_ok(),
-            "got load_model result: {:?}",
-            result
+            expected_result_at_initialized, result,
+            "got load_model result"
         );
     }
 
