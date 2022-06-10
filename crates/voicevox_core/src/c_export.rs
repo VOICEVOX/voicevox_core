@@ -32,6 +32,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_UNINITIALIZED_STATUS = 6,
     VOICEVOX_RESULT_INVALID_SPEAKER_ID = 7,
     VOICEVOX_RESULT_INVALID_MODEL_INDEX = 8,
+    VOICEVOX_RESULT_INFERENCE_FAILED = 9,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -69,6 +70,9 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_INVALID_MODEL_INDEX,
                 ),
+                Error::InferenceFailed => {
+                    (None, VoicevoxResultCode::VOICEVOX_RESULT_INFERENCE_FAILED)
+                }
             }
         }
     }

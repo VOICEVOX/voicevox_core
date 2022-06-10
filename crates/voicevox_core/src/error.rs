@@ -40,6 +40,9 @@ pub enum Error {
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_MODEL_INDEX))]
     InvalidModelIndex { model_index: usize },
+
+    #[error("{}", base_error_message(VOICEVOX_RESULT_INFERENCE_FAILED))]
+    InferenceFailed,
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {

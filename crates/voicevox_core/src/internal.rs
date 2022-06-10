@@ -9,6 +9,8 @@ use std::sync::Mutex;
 use status::*;
 use std::ffi::CString;
 
+const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
+
 static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> = Lazy::new(|| {
     let mut btm = BTreeMap::new();
     btm.insert(0, (0, 0));
@@ -110,7 +112,53 @@ impl Internal {
         speaker_id: &i64,
         output: *mut f32,
     ) -> Result<()> {
-        unimplemented!()
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        let speaker_id = *speaker_id as usize;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, model_speaker_id) =
+            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
+                (model_index, speaker_id)
+            } else {
+                return Err(Error::InvalidSpeakerId { speaker_id });
+            };
+
+        if model_index >= Status::MODELS_COUNT {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        let phoneme_list_slice =
+            unsafe { std::slice::from_raw_parts(phoneme_list, length as usize) };
+
+        let input_tensors = vec![
+            ndarray::arr1(phoneme_list_slice),
+            ndarray::arr1(&[speaker_id as i64]),
+        ];
+
+        let mut result = status.yukarin_s_session_run(model_index, input_tensors)?;
+
+        let mut output_vec: Vec<f32> = unsafe { Vec::from_raw_parts(output, 0, length as usize) };
+        output_vec.append(&mut result);
+
+        for output_item in &mut output_vec {
+            if *output_item < PHONEME_LENGTH_MINIMAL {
+                *output_item = PHONEME_LENGTH_MINIMAL;
+            }
+        }
+        std::mem::forget(output_vec);
+
+        Ok(())
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
@@ -216,6 +264,7 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         VOICEVOX_RESULT_UNINITIALIZED_STATUS => "Statusが初期化されていません\0",
         VOICEVOX_RESULT_INVALID_SPEAKER_ID => "無効なspeaker_idです\0",
         VOICEVOX_RESULT_INVALID_MODEL_INDEX => "無効なmodel_indexです\0",
+        VOICEVOX_RESULT_INFERENCE_FAILED => "推論に失敗しました\0",
     }
 }
 
@@ -313,5 +362,33 @@ mod tests {
     ) {
         let actual = get_model_index_and_speaker_id(speaker_id);
         assert_eq!(expected, actual);
+    }
+
+    #[rstest]
+    fn yukarin_s_forward_works() {
+        let internal = Internal::new_with_mutex();
+        internal.lock().unwrap().initialize(false, 0, true).unwrap();
+
+        // 「こんにちは、音声合成の世界へようこそ」という文章を変換して得た phoneme_list
+        let phoneme_list = [
+            0, 23, 30, 4, 28, 21, 10, 21, 42, 7, 0, 30, 4, 35, 14, 14, 16, 30, 30, 35, 14, 14, 28,
+            30, 35, 14, 23, 7, 21, 14, 43, 30, 30, 23, 30, 35, 30, 0,
+        ];
+        let length = phoneme_list.len() as i64;
+        let phoneme_list = phoneme_list.as_ptr();
+        let mut output_vec = Vec::with_capacity(length as usize);
+        let output_ptr = output_vec.as_mut_ptr();
+        std::mem::forget(output_vec);
+
+        let result =
+            internal
+                .lock()
+                .unwrap()
+                .yukarin_s_forward(length, phoneme_list, &0, output_ptr);
+        assert!(result.is_ok(), "{:?}", result);
+
+        let output: Vec<f32> =
+            unsafe { Vec::from_raw_parts(output_ptr, length as usize, length as usize) };
+        assert_eq!(output.len(), length as usize);
     }
 }
