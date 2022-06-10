@@ -212,7 +212,7 @@ fn mora2text(mora: &str) -> &str {
 fn text2mora_with_unvioce() -> std::collections::BTreeMap<String, MoraModel> {
     let mut text2mora_with_unvioce = std::collections::BTreeMap::new();
     for [text, consonant, vowel] in MORA_LIST_MINIMUM {
-        let consonant = if consonant.is_empty() {
+        let consonant = if !consonant.is_empty() {
             Some(consonant.to_string())
         } else {
             None
