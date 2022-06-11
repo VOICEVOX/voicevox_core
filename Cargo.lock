@@ -821,6 +821,7 @@ dependencies = [
  "cfg-if",
  "derive-getters",
  "derive-new",
+ "ndarray",
  "once_cell",
  "onnxruntime",
  "pretty_assertions",

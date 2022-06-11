@@ -32,6 +32,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_UNINITIALIZED_STATUS = 6,
     VOICEVOX_RESULT_INVALID_SPEAKER_ID = 7,
     VOICEVOX_RESULT_INVALID_MODEL_INDEX = 8,
+    VOICEVOX_RESULT_INFERENCE_FAILED = 9,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -69,6 +70,9 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_INVALID_MODEL_INDEX,
                 ),
+                Error::InferenceFailed => {
+                    (None, VoicevoxResultCode::VOICEVOX_RESULT_INFERENCE_FAILED)
+                }
             }
         }
     }
@@ -140,8 +144,12 @@ pub extern "C" fn yukarin_s_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let result =
-        lock_internal().yukarin_s_forward(length, phoneme_list, &unsafe { *speaker_id }, output);
+    let result = lock_internal().yukarin_s_forward(
+        length,
+        phoneme_list,
+        unsafe { *speaker_id as usize },
+        output,
+    );
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         set_message(&format!("{}", err));

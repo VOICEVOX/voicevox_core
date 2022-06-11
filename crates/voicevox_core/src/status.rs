@@ -1,4 +1,5 @@
 use super::*;
+use ndarray::Array1;
 use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment, session::Session, GraphOptimizationLevel, LoggingLevel,
@@ -15,7 +16,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub struct Status {
     models: StatusModels,
     session_options: SessionOptions,
-    supported_styles: BTreeSet<u64>,
+    supported_styles: BTreeSet<usize>,
 }
 
 struct StatusModels {
@@ -135,7 +136,7 @@ impl Status {
 
         for meta in metas.iter() {
             for style in meta.styles().iter() {
-                self.supported_styles.insert(*style.id());
+                self.supported_styles.insert(*style.id() as usize);
             }
         }
 
@@ -202,6 +203,33 @@ impl Status {
         };
 
         Ok(session_builder.with_model_from_memory(model_bytes)?)
+    }
+
+    pub fn validate_speaker_id(&self, speaker_id: usize) -> bool {
+        self.supported_styles.contains(&speaker_id)
+    }
+
+    pub fn yukarin_s_session_run(
+        &mut self,
+        model_index: usize,
+        inputs: Vec<Array1<i64>>,
+    ) -> Result<Vec<f32>> {
+        if let Some(model) = self.models.yukarin_s.get_mut(&model_index) {
+            if let Ok(result) = model.run(inputs) {
+                let mut output: Vec<Vec<f32>> = result
+                    .iter()
+                    .map(|tensor| {
+                        let output_view: &ndarray::ArrayView<_, _> = &**tensor;
+                        output_view.as_slice().unwrap().to_vec()
+                    })
+                    .collect();
+                Ok(output.pop().unwrap())
+            } else {
+                Err(Error::InferenceFailed)
+            }
+        } else {
+            Err(Error::InvalidModelIndex { model_index })
+        }
     }
 }
 
