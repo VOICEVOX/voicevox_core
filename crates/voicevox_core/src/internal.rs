@@ -263,6 +263,7 @@ impl Internal {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
+        // TODO: 音が途切れてしまうのを避けるworkaround処理を入れる
         let f0_slice = unsafe { std::slice::from_raw_parts(f0, length as usize) };
         let phoneme_slice = unsafe { std::slice::from_raw_parts(phoneme, phoneme_size as usize) };
 
