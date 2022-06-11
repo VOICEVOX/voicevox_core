@@ -179,7 +179,7 @@ pub extern "C" fn yukarin_sa_forward(
         end_accent_list,
         start_accent_phrase_list,
         end_accent_phrase_list,
-        speaker_id,
+        unsafe { *speaker_id as usize },
         output,
     );
     //TODO: VoicevoxResultCodeを返すようにする
