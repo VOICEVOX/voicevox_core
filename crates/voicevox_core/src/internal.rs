@@ -109,7 +109,7 @@ impl Internal {
         &mut self,
         length: i64,
         phoneme_list: *const i64,
-        speaker_id: &i64,
+        speaker_id: usize,
         output: *mut f32,
     ) -> Result<()> {
         if !self.initialized {
@@ -120,8 +120,6 @@ impl Internal {
             .status_option
             .as_mut()
             .ok_or(Error::UninitializedStatus)?;
-
-        let speaker_id = *speaker_id as usize;
 
         if !status.validate_speaker_id(speaker_id) {
             return Err(Error::InvalidSpeakerId { speaker_id });
@@ -376,7 +374,7 @@ mod tests {
             internal
                 .lock()
                 .unwrap()
-                .yukarin_s_forward(length, phoneme_list, &0, output_ptr);
+                .yukarin_s_forward(length, phoneme_list, 0, output_ptr);
         assert!(result.is_ok(), "{:?}", result);
 
         let output: Vec<f32> =

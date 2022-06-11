@@ -144,8 +144,12 @@ pub extern "C" fn yukarin_s_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let result =
-        lock_internal().yukarin_s_forward(length, phoneme_list, &unsafe { *speaker_id }, output);
+    let result = lock_internal().yukarin_s_forward(
+        length,
+        phoneme_list,
+        unsafe { *speaker_id as usize },
+        output,
+    );
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         set_message(&format!("{}", err));
