@@ -211,13 +211,13 @@ impl Internal {
             unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length as usize) };
 
         let input_tensors = vec![
-            ndarray::arr1(&[length]),
-            ndarray::arr1(vowel_phoneme_list_slice),
-            ndarray::arr1(consonant_phoneme_list_slice),
-            ndarray::arr1(start_accent_list_slice),
-            ndarray::arr1(end_accent_list_slice),
-            ndarray::arr1(start_accent_phrase_list_slice),
-            ndarray::arr1(end_accent_phrase_list_slice),
+            ndarray::arr0(length).into_dyn(),
+            ndarray::arr1(vowel_phoneme_list_slice).into_dyn(),
+            ndarray::arr1(consonant_phoneme_list_slice).into_dyn(),
+            ndarray::arr1(start_accent_list_slice).into_dyn(),
+            ndarray::arr1(end_accent_list_slice).into_dyn(),
+            ndarray::arr1(start_accent_phrase_list_slice).into_dyn(),
+            ndarray::arr1(end_accent_phrase_list_slice).into_dyn(),
         ];
 
         let result = status.yukarin_sa_session_run(model_index, input_tensors)?;
@@ -236,10 +236,44 @@ impl Internal {
         phoneme_size: i64,
         f0: *const f32,
         phoneme: *const f32,
-        speaker_id: *const i64,
+        speaker_id: usize,
         output: *mut f32,
     ) -> Result<()> {
-        unimplemented!()
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) =
+            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
+                (model_index, speaker_id)
+            } else {
+                return Err(Error::InvalidSpeakerId { speaker_id });
+            };
+
+        if model_index >= Status::MODELS_COUNT {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        let f0_slice = unsafe { std::slice::from_raw_parts(f0, length as usize) };
+        let phoneme_slice = unsafe { std::slice::from_raw_parts(phoneme, phoneme_size as usize) };
+
+        let input_tensors = vec![ndarray::arr1(f0_slice), ndarray::arr1(phoneme_slice)];
+
+        let result = status.decode_session_run(model_index, input_tensors)?;
+
+        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
+        output_slice.clone_from_slice(&result);
+
+        Ok(())
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと

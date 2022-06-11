@@ -1,5 +1,5 @@
 use super::*;
-use ndarray::Array1;
+use ndarray::{Array1, ArrayD};
 use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment, session::Session, GraphOptimizationLevel, LoggingLevel,
@@ -235,9 +235,32 @@ impl Status {
     pub fn yukarin_sa_session_run(
         &mut self,
         model_index: usize,
-        inputs: Vec<Array1<i64>>,
+        inputs: Vec<ArrayD<i64>>,
     ) -> Result<Vec<f32>> {
         if let Some(model) = self.models.yukarin_sa.get_mut(&model_index) {
+            if let Ok(result) = model.run(inputs) {
+                let mut output: Vec<Vec<f32>> = result
+                    .iter()
+                    .map(|tensor| {
+                        let output_view: &ndarray::ArrayView<_, _> = &**tensor;
+                        output_view.as_slice().unwrap().to_vec()
+                    })
+                    .collect();
+                Ok(output.pop().unwrap())
+            } else {
+                Err(Error::InferenceFailed)
+            }
+        } else {
+            Err(Error::InvalidModelIndex { model_index })
+        }
+    }
+
+    pub fn decode_session_run(
+        &mut self,
+        model_index: usize,
+        inputs: Vec<Array1<f32>>,
+    ) -> Result<Vec<f32>> {
+        if let Some(model) = self.models.decode.get_mut(&model_index) {
             if let Ok(result) = model.run(inputs) {
                 let mut output: Vec<Vec<f32>> = result
                     .iter()

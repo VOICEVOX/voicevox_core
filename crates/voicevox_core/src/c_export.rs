@@ -200,8 +200,14 @@ pub extern "C" fn decode_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let result =
-        lock_internal().decode_forward(length, phoneme_size, f0, phoneme, speaker_id, output);
+    let result = lock_internal().decode_forward(
+        length,
+        phoneme_size,
+        f0,
+        phoneme,
+        unsafe { *speaker_id as usize },
+        output,
+    );
     //TODO: VoicevoxResultCodeを返すようにする
     if let Some(err) = result.err() {
         set_message(&format!("{}", err));
