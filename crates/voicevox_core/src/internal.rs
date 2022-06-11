@@ -375,7 +375,7 @@ mod tests {
                 .lock()
                 .unwrap()
                 .yukarin_s_forward(length, phoneme_list, 0, output_ptr);
-        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(result, Ok(()));
 
         let output: Vec<f32> =
             unsafe { Vec::from_raw_parts(output_ptr, length as usize, length as usize) };
