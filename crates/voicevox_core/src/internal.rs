@@ -125,7 +125,7 @@ impl Internal {
             return Err(Error::InvalidSpeakerId { speaker_id });
         }
 
-        let (model_index, model_speaker_id) =
+        let (model_index, speaker_id) =
             if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
                 (model_index, speaker_id)
             } else {
