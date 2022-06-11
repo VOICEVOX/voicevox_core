@@ -148,15 +148,14 @@ impl Internal {
 
         let result = status.yukarin_s_session_run(model_index, input_tensors)?;
 
-        let mut output_vec: Vec<f32> = unsafe { Vec::from_raw_parts(output, 0, 0) };
-        let _ = std::mem::replace(&mut output_vec, result);
+        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
+        output_slice.clone_from_slice(&result);
 
-        for output_item in &mut output_vec {
+        for output_item in output_slice {
             if *output_item < PHONEME_LENGTH_MINIMAL {
                 *output_item = PHONEME_LENGTH_MINIMAL;
             }
         }
-        std::mem::forget(output_vec);
 
         Ok(())
     }
