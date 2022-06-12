@@ -1,42 +1,14 @@
+use crate::engine::{
+    model::{AccentPhraseModel, MoraModel},
+    mora_list::MORA_LIST_MINIMUM,
+};
+
 const UNVOICE_SYMBOL: char = '_';
 const ACCENT_SYMBOL: char = '\'';
 const NOPAUSE_DELIMITER: char = '/';
 const PAUSE_DELIMITER: char = '、';
 const WIDE_INTERROGATION_MARK: char = '？';
 const LOOP_LIMIT: usize = 300;
-
-#[allow(dead_code)] // TODO: remove this feature
-#[derive(Clone)]
-struct MoraModel {
-    text: String,
-    consonant: Option<String>,
-    consonant_length: Option<f32>,
-    vowel: String,
-    vowel_length: f32,
-    pitch: f32,
-}
-
-#[allow(dead_code)] // TODO: remove this feature
-struct AccentPhraseModel {
-    moras: Vec<MoraModel>,
-    accent: usize,
-    pause_mora: Option<MoraModel>,
-    is_interrogative: bool,
-}
-
-#[allow(dead_code)] // TODO: remove this feature
-struct AudioQueryModel {
-    accent_phrases: Vec<AccentPhraseModel>,
-    speed_scale: f32,
-    pitch_scale: f32,
-    intonation_scale: f32,
-    volume_scale: f32,
-    pre_phoneme_length: f32,
-    post_phoneme_length: f32,
-    output_sampling_rate: u32,
-    output_stereo: bool,
-    kana: String,
-}
 
 #[derive(Clone, Debug)]
 struct ParseError(String);
@@ -48,166 +20,6 @@ impl std::fmt::Display for ParseError {
 }
 
 impl std::error::Error for ParseError {}
-
-const MORA_LIST_MINIMUM: [[&str; 3]; 144] = [
-    ["ヴォ", "v", "o"],
-    ["ヴェ", "v", "e"],
-    ["ヴィ", "v", "i"],
-    ["ヴァ", "v", "a"],
-    ["ヴ", "v", "u"],
-    ["ン", "", "N"],
-    ["ワ", "w", "a"],
-    ["ロ", "r", "o"],
-    ["レ", "r", "e"],
-    ["ル", "r", "u"],
-    ["リョ", "ry", "o"],
-    ["リュ", "ry", "u"],
-    ["リャ", "ry", "a"],
-    ["リェ", "ry", "e"],
-    ["リ", "r", "i"],
-    ["ラ", "r", "a"],
-    ["ヨ", "y", "o"],
-    ["ユ", "y", "u"],
-    ["ヤ", "y", "a"],
-    ["モ", "m", "o"],
-    ["メ", "m", "e"],
-    ["ム", "m", "u"],
-    ["ミョ", "my", "o"],
-    ["ミュ", "my", "u"],
-    ["ミャ", "my", "a"],
-    ["ミェ", "my", "e"],
-    ["ミ", "m", "i"],
-    ["マ", "m", "a"],
-    ["ポ", "p", "o"],
-    ["ボ", "b", "o"],
-    ["ホ", "h", "o"],
-    ["ペ", "p", "e"],
-    ["ベ", "b", "e"],
-    ["ヘ", "h", "e"],
-    ["プ", "p", "u"],
-    ["ブ", "b", "u"],
-    ["フォ", "f", "o"],
-    ["フェ", "f", "e"],
-    ["フィ", "f", "i"],
-    ["ファ", "f", "a"],
-    ["フ", "f", "u"],
-    ["ピョ", "py", "o"],
-    ["ピュ", "py", "u"],
-    ["ピャ", "py", "a"],
-    ["ピェ", "py", "e"],
-    ["ピ", "p", "i"],
-    ["ビョ", "by", "o"],
-    ["ビュ", "by", "u"],
-    ["ビャ", "by", "a"],
-    ["ビェ", "by", "e"],
-    ["ビ", "b", "i"],
-    ["ヒョ", "hy", "o"],
-    ["ヒュ", "hy", "u"],
-    ["ヒャ", "hy", "a"],
-    ["ヒェ", "hy", "e"],
-    ["ヒ", "h", "i"],
-    ["パ", "p", "a"],
-    ["バ", "b", "a"],
-    ["ハ", "h", "a"],
-    ["ノ", "n", "o"],
-    ["ネ", "n", "e"],
-    ["ヌ", "n", "u"],
-    ["ニョ", "ny", "o"],
-    ["ニュ", "ny", "u"],
-    ["ニャ", "ny", "a"],
-    ["ニェ", "ny", "e"],
-    ["ニ", "n", "i"],
-    ["ナ", "n", "a"],
-    ["ドゥ", "d", "u"],
-    ["ド", "d", "o"],
-    ["トゥ", "t", "u"],
-    ["ト", "t", "o"],
-    ["デョ", "dy", "o"],
-    ["デュ", "dy", "u"],
-    ["デャ", "dy", "a"],
-    ["ディ", "d", "i"],
-    ["デ", "d", "e"],
-    ["テョ", "ty", "o"],
-    ["テュ", "ty", "u"],
-    ["テャ", "ty", "a"],
-    ["ティ", "t", "i"],
-    ["テ", "t", "e"],
-    ["ツォ", "ts", "o"],
-    ["ツェ", "ts", "e"],
-    ["ツィ", "ts", "i"],
-    ["ツァ", "ts", "a"],
-    ["ツ", "ts", "u"],
-    ["ッ", "", "cl"],
-    ["チョ", "ch", "o"],
-    ["チュ", "ch", "u"],
-    ["チャ", "ch", "a"],
-    ["チェ", "ch", "e"],
-    ["チ", "ch", "i"],
-    ["ダ", "d", "a"],
-    ["タ", "t", "a"],
-    ["ゾ", "z", "o"],
-    ["ソ", "s", "o"],
-    ["ゼ", "z", "e"],
-    ["セ", "s", "e"],
-    ["ズィ", "z", "i"],
-    ["ズ", "z", "u"],
-    ["スィ", "s", "i"],
-    ["ス", "s", "u"],
-    ["ジョ", "j", "o"],
-    ["ジュ", "j", "u"],
-    ["ジャ", "j", "a"],
-    ["ジェ", "j", "e"],
-    ["ジ", "j", "i"],
-    ["ショ", "sh", "o"],
-    ["シュ", "sh", "u"],
-    ["シャ", "sh", "a"],
-    ["シェ", "sh", "e"],
-    ["シ", "sh", "i"],
-    ["ザ", "z", "a"],
-    ["サ", "s", "a"],
-    ["ゴ", "g", "o"],
-    ["コ", "k", "o"],
-    ["ゲ", "g", "e"],
-    ["ケ", "k", "e"],
-    ["グヮ", "gw", "a"],
-    ["グ", "g", "u"],
-    ["クヮ", "kw", "a"],
-    ["ク", "k", "u"],
-    ["ギョ", "gy", "o"],
-    ["ギュ", "gy", "u"],
-    ["ギャ", "gy", "a"],
-    ["ギェ", "gy", "e"],
-    ["ギ", "g", "i"],
-    ["キョ", "ky", "o"],
-    ["キュ", "ky", "u"],
-    ["キャ", "ky", "a"],
-    ["キェ", "ky", "e"],
-    ["キ", "k", "i"],
-    ["ガ", "g", "a"],
-    ["カ", "k", "a"],
-    ["オ", "", "o"],
-    ["エ", "", "e"],
-    ["ウォ", "w", "o"],
-    ["ウェ", "w", "e"],
-    ["ウィ", "w", "i"],
-    ["ウ", "", "u"],
-    ["イェ", "y", "e"],
-    ["イ", "", "i"],
-    ["ア", "", "a"],
-];
-
-#[allow(dead_code)] // TODO: remove this feature
-fn mora2text(mora: &str) -> &str {
-    for [text, consonant, vowel] in MORA_LIST_MINIMUM {
-        if mora.len() >= consonant.len()
-            && &mora[..consonant.len()] == consonant
-            && &mora[consonant.len()..] == vowel
-        {
-            return text;
-        }
-    }
-    mora
-}
 
 fn text2mora_with_unvioce() -> std::collections::BTreeMap<String, MoraModel> {
     let mut text2mora_with_unvioce = std::collections::BTreeMap::new();
@@ -390,20 +202,7 @@ fn create_kana(accent_phrases: &[AccentPhraseModel]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn test_mora2text() {
-        let lis = [
-            ("da", "ダ"),
-            ("N", "ン"),
-            ("cl", "ッ"),
-            ("sho", "ショ"),
-            ("u", "ウ"),
-            ("fail", "fail"),
-        ];
-        for (mora, text) in lis {
-            assert_eq!(mora2text(mora), text);
-        }
-    }
+    use crate::engine::mora_list::MORA_LIST_MINIMUM;
 
     #[test]
     fn test_text2mora_with_unvoice() {
