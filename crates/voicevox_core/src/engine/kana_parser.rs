@@ -1,7 +1,7 @@
 use crate::engine::model::{AccentPhraseModel, MoraModel};
 use crate::engine::mora_list::MORA_LIST_MINIMUM;
 use once_cell::sync::Lazy;
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 const UNVOICE_SYMBOL: char = '_';
 const ACCENT_SYMBOL: char = '\'';
@@ -23,8 +23,8 @@ impl std::error::Error for KanaParseError {}
 
 type KanaParseResult<T> = std::result::Result<T, KanaParseError>;
 
-static TEXT2MORA_WITH_UNVOICE: Lazy<BTreeMap<String, MoraModel>> = Lazy::new(|| {
-    let mut text2mora_with_unvoice = BTreeMap::new();
+static TEXT2MORA_WITH_UNVOICE: Lazy<HashMap<String, MoraModel>> = Lazy::new(|| {
+    let mut text2mora_with_unvoice = HashMap::new();
     for [text, consonant, vowel] in MORA_LIST_MINIMUM {
         let consonant = if !consonant.is_empty() {
             Some(consonant.to_string())
