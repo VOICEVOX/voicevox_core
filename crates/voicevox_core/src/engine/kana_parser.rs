@@ -1,7 +1,7 @@
-use crate::engine::{
-    model::{AccentPhraseModel, MoraModel},
-    mora_list::MORA_LIST_MINIMUM,
-};
+use crate::engine::model::{AccentPhraseModel, MoraModel};
+use crate::engine::mora_list::MORA_LIST_MINIMUM;
+use once_cell::sync::Lazy;
+use std::collections::BTreeMap;
 
 const UNVOICE_SYMBOL: char = '_';
 const ACCENT_SYMBOL: char = '\'';
@@ -11,18 +11,20 @@ const WIDE_INTERROGATION_MARK: char = '？';
 const LOOP_LIMIT: usize = 300;
 
 #[derive(Clone, Debug)]
-struct ParseError(String);
+struct KanaParseError(String);
 
-impl std::fmt::Display for ParseError {
+impl std::fmt::Display for KanaParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Parse Error: {}", self.0)
     }
 }
 
-impl std::error::Error for ParseError {}
+impl std::error::Error for KanaParseError {}
 
-fn text2mora_with_unvioce() -> std::collections::BTreeMap<String, MoraModel> {
-    let mut text2mora_with_unvioce = std::collections::BTreeMap::new();
+type KanaParseResult<T> = std::result::Result<T, KanaParseError>;
+
+static TEXT2MORA_WITH_UNVOICE: Lazy<BTreeMap<String, MoraModel>> = Lazy::new(|| {
+    let mut text2mora_with_unvoice = BTreeMap::new();
     for [text, consonant, vowel] in MORA_LIST_MINIMUM {
         let consonant = if !consonant.is_empty() {
             Some(consonant.to_string())
@@ -31,8 +33,8 @@ fn text2mora_with_unvioce() -> std::collections::BTreeMap<String, MoraModel> {
         };
         let consonant_length = if consonant.is_some() { Some(0.0) } else { None };
 
-        if ["a", "i", "u", "e", "o"].contains(&vowel) {
-            let upper_vowel = vowel.chars().next().unwrap().to_uppercase().to_string();
+        if ["a", "i", "u", "e", "o"].contains(vowel) {
+            let upper_vowel = vowel.to_uppercase();
             let unvoice_mora = MoraModel {
                 text: text.to_string(),
                 consonant: consonant.clone(),
@@ -41,7 +43,7 @@ fn text2mora_with_unvioce() -> std::collections::BTreeMap<String, MoraModel> {
                 vowel_length: 0.0,
                 pitch: 0.0,
             };
-            text2mora_with_unvioce.insert(UNVOICE_SYMBOL.to_string() + text, unvoice_mora);
+            text2mora_with_unvoice.insert(UNVOICE_SYMBOL.to_string() + text, unvoice_mora);
         }
 
         let mora = MoraModel {
@@ -52,18 +54,18 @@ fn text2mora_with_unvioce() -> std::collections::BTreeMap<String, MoraModel> {
             vowel_length: 0.0,
             pitch: 0.0,
         };
-        text2mora_with_unvioce.insert(text.to_string(), mora);
+        text2mora_with_unvoice.insert(text.to_string(), mora);
     }
-    text2mora_with_unvioce
-}
+    text2mora_with_unvoice
+});
 
-fn text_to_accent_phrase(phrase: &str) -> Result<AccentPhraseModel, ParseError> {
+fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhraseModel> {
     let phrase_vec: Vec<char> = phrase.chars().collect();
     let mut accent_index: Option<usize> = None;
     let mut moras: Vec<MoraModel> = Vec::new();
     let mut stack = String::new();
     let mut matched_text: Option<String> = None;
-    let text2mora = text2mora_with_unvioce();
+    let text2mora = &TEXT2MORA_WITH_UNVOICE;
     let mut index = 0;
     let mut loop_count = 0;
     while index < phrase_vec.len() {
@@ -71,13 +73,13 @@ fn text_to_accent_phrase(phrase: &str) -> Result<AccentPhraseModel, ParseError> 
         let letter = phrase_vec[index];
         if letter == ACCENT_SYMBOL {
             if index == 0 {
-                return Err(ParseError(format!(
+                return Err(KanaParseError(format!(
                     "accent cannot be set at beginning of accent phrase: {}",
                     phrase
                 )));
             }
             if accent_index.is_some() {
-                return Err(ParseError(format!(
+                return Err(KanaParseError(format!(
                     "second accent cannot be set at an accent phrase: {}",
                     phrase
                 )));
@@ -101,17 +103,17 @@ fn text_to_accent_phrase(phrase: &str) -> Result<AccentPhraseModel, ParseError> 
             moras.push(text2mora.get(&matched_text).unwrap().clone());
             stack.clear();
         } else {
-            return Err(ParseError(format!(
+            return Err(KanaParseError(format!(
                 "unknown text in accent phrase: {}",
                 phrase
             )));
         }
         if loop_count > LOOP_LIMIT {
-            return Err(ParseError("detected infinity loop!".to_string()));
+            return Err(KanaParseError("detected infinity loop!".to_string()));
         }
     }
     if accent_index.is_none() {
-        return Err(ParseError(format!(
+        return Err(KanaParseError(format!(
             "accent not found in accent phrase: {}",
             phrase
         )));
@@ -125,23 +127,25 @@ fn text_to_accent_phrase(phrase: &str) -> Result<AccentPhraseModel, ParseError> 
 }
 
 #[allow(dead_code)] // TODO: remove this feature
-fn parse_kana(text: &str) -> Result<Vec<AccentPhraseModel>, ParseError> {
-    const DUMMY: char = '\0';
+fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> {
+    const TERMINATOR: char = '\0';
     let mut parsed_result = Vec::new();
-    let text_vec: Vec<char> = text.chars().chain([DUMMY]).collect();
+    let chars_of_text = text.chars().chain([TERMINATOR]);
     let mut phrase = String::new();
-    for letter in text_vec {
-        if letter == DUMMY || letter == PAUSE_DELIMITER || letter == NOPAUSE_DELIMITER {
+    for letter in chars_of_text {
+        if letter == TERMINATOR || letter == PAUSE_DELIMITER || letter == NOPAUSE_DELIMITER {
             if phrase.is_empty() {
-                return Err(ParseError(format!(
+                return Err(KanaParseError(format!(
                     "accent phrase at position of {} is empty",
                     parsed_result.len()
                 )));
             }
             let is_interrogative = phrase.contains(WIDE_INTERROGATION_MARK);
             if is_interrogative {
-                if phrase.find(WIDE_INTERROGATION_MARK).unwrap() == phrase.len() - 1 {
-                    return Err(ParseError(format!(
+                if phrase.find(WIDE_INTERROGATION_MARK).unwrap()
+                    != phrase.len() - WIDE_INTERROGATION_MARK.len_utf8()
+                {
+                    return Err(KanaParseError(format!(
                         "interrogative mark cannot be set at not end of accent phrase: {}",
                         phrase
                     )));
@@ -206,7 +210,7 @@ mod tests {
 
     #[test]
     fn test_text2mora_with_unvoice() {
-        let text2mora = text2mora_with_unvioce();
+        let text2mora = &TEXT2MORA_WITH_UNVOICE;
         assert_eq!(text2mora.len(), MORA_LIST_MINIMUM.len() * 2 - 2); // added twice except ン and ッ
         let lis = [
             (Some("da"), "ダ"),

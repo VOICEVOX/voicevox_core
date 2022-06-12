@@ -39,7 +39,7 @@
 //  OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 //  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //  POSSIBILITY OF SUCH DAMAGE.
-pub(super) const MORA_LIST_MINIMUM: [[&str; 3]; 144] = [
+pub(super) const MORA_LIST_MINIMUM: &[[&str; 3]] = &[
     ["ヴォ", "v", "o"],
     ["ヴェ", "v", "e"],
     ["ヴィ", "v", "i"],
@@ -188,7 +188,7 @@ pub(super) const MORA_LIST_MINIMUM: [[&str; 3]; 144] = [
 
 #[allow(dead_code)] // TODO: remove this feature
 fn mora2text(mora: &str) -> &str {
-    for [text, consonant, vowel] in MORA_LIST_MINIMUM {
+    for &[text, consonant, vowel] in MORA_LIST_MINIMUM {
         if mora.len() >= consonant.len()
             && &mora[..consonant.len()] == consonant
             && &mora[consonant.len()..] == vowel
