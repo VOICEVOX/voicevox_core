@@ -218,6 +218,7 @@ impl Internal {
             ndarray::arr1(end_accent_list_slice).into_dyn(),
             ndarray::arr1(start_accent_phrase_list_slice).into_dyn(),
             ndarray::arr1(end_accent_phrase_list_slice).into_dyn(),
+            ndarray::arr1(&[speaker_id as i64]).into_dyn(),
         ];
 
         let result = status.yukarin_sa_session_run(model_index, input_tensors)?;
