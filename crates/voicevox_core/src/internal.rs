@@ -103,8 +103,7 @@ impl Internal {
     pub fn supported_devices(&self) -> &'static CStr {
         &SUPPORTED_DEVICES_CSTRING
     }
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
+
     pub fn yukarin_s_forward(
         &mut self,
         length: i64,
@@ -158,8 +157,6 @@ impl Internal {
         Ok(())
     }
 
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
     #[allow(clippy::too_many_arguments)]
     pub fn yukarin_sa_forward(
         &mut self,
