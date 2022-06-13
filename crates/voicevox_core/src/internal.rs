@@ -113,8 +113,7 @@ impl Internal {
         length: i64,
         phoneme_list: *const i64,
         speaker_id: usize,
-        output: *mut f32,
-    ) -> Result<()> {
+    ) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
         }
@@ -148,18 +147,15 @@ impl Internal {
         let input_tensors: Vec<&mut dyn AnyArray> =
             vec![&mut phoneme_list_array, &mut speaker_id_array];
 
-        let result = status.yukarin_s_session_run(model_index, input_tensors)?;
+        let mut output = status.yukarin_s_session_run(model_index, input_tensors)?;
 
-        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
-        output_slice.clone_from_slice(&result);
-
-        for output_item in output_slice {
+        for output_item in output.iter_mut() {
             if *output_item < PHONEME_LENGTH_MINIMAL {
                 *output_item = PHONEME_LENGTH_MINIMAL;
             }
         }
 
-        Ok(())
+        Ok(output)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -173,8 +169,7 @@ impl Internal {
         start_accent_phrase_list: *const i64,
         end_accent_phrase_list: *const i64,
         speaker_id: usize,
-        output: *mut f32,
-    ) -> Result<()> {
+    ) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
         }
@@ -235,12 +230,7 @@ impl Internal {
             &mut speaker_id_array,
         ];
 
-        let result = status.yukarin_sa_session_run(model_index, input_tensors)?;
-
-        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
-        output_slice.clone_from_slice(&result);
-
-        Ok(())
+        status.yukarin_sa_session_run(model_index, input_tensors)
     }
 
     pub fn decode_forward(
@@ -250,8 +240,7 @@ impl Internal {
         f0: *const f32,
         phoneme: *const f32,
         speaker_id: usize,
-        output: *mut f32,
-    ) -> Result<()> {
+    ) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
         }
@@ -291,12 +280,7 @@ impl Internal {
         let input_tensors: Vec<&mut dyn AnyArray> =
             vec![&mut f0_array, &mut phoneme_array, &mut speaker_id_array];
 
-        let result = status.decode_session_run(model_index, input_tensors)?;
-
-        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };
-        output_slice.clone_from_slice(&result);
-
-        Ok(())
+        status.decode_session_run(model_index, input_tensors)
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
@@ -475,19 +459,13 @@ mod tests {
         ];
         let length = phoneme_list.len() as i64;
         let phoneme_list = phoneme_list.as_ptr();
-        let mut output_vec = Vec::with_capacity(length as usize);
-        let output_ptr = output_vec.as_mut_ptr();
-        std::mem::forget(output_vec);
 
-        let result =
-            internal
-                .lock()
-                .unwrap()
-                .yukarin_s_forward(length, phoneme_list, 0, output_ptr);
-        assert_eq!(result, Ok(()));
+        let result = internal
+            .lock()
+            .unwrap()
+            .yukarin_s_forward(length, phoneme_list, 0);
 
-        let output: Vec<f32> =
-            unsafe { Vec::from_raw_parts(output_ptr, length as usize, length as usize) };
-        assert_eq!(output.len(), length as usize);
+        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(result.unwrap().len(), length as usize);
     }
 }
