@@ -503,7 +503,7 @@ mod tests {
 
         // 「テスト」という文章に対応する入力
         const F0_LENGTH: usize = 69;
-        let mut f0 = [0.; 69];
+        let mut f0 = [0.; F0_LENGTH];
         f0[9..24].fill(5.905218);
         f0[37..60].fill(5.565851);
 
