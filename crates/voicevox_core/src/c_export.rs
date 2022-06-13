@@ -201,8 +201,8 @@ pub extern "C" fn decode_forward(
     output: *mut f32,
 ) -> bool {
     let result = lock_internal().decode_forward(
-        length,
-        phoneme_size,
+        length as usize,
+        phoneme_size as usize,
         f0,
         phoneme,
         unsafe { *speaker_id as usize },

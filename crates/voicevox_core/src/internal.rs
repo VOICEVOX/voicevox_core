@@ -1,6 +1,10 @@
 use super::*;
 use c_export::VoicevoxResultCode;
 use once_cell::sync::Lazy;
+use onnxruntime::{
+    ndarray,
+    session::{AnyArray, NdArray},
+};
 use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::os::raw::c_int;
@@ -138,10 +142,11 @@ impl Internal {
         let phoneme_list_slice =
             unsafe { std::slice::from_raw_parts(phoneme_list, length as usize) };
 
-        let input_tensors = vec![
-            ndarray::arr1(phoneme_list_slice),
-            ndarray::arr1(&[speaker_id as i64]),
-        ];
+        let mut phoneme_list_array = NdArray::new(ndarray::arr1(phoneme_list_slice));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> =
+            vec![&mut phoneme_list_array, &mut speaker_id_array];
 
         let result = status.yukarin_s_session_run(model_index, input_tensors)?;
 
@@ -207,15 +212,27 @@ impl Internal {
         let end_accent_phrase_list_slice =
             unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length as usize) };
 
-        let input_tensors = vec![
-            ndarray::arr0(length).into_dyn(),
-            ndarray::arr1(vowel_phoneme_list_slice).into_dyn(),
-            ndarray::arr1(consonant_phoneme_list_slice).into_dyn(),
-            ndarray::arr1(start_accent_list_slice).into_dyn(),
-            ndarray::arr1(end_accent_list_slice).into_dyn(),
-            ndarray::arr1(start_accent_phrase_list_slice).into_dyn(),
-            ndarray::arr1(end_accent_phrase_list_slice).into_dyn(),
-            ndarray::arr1(&[speaker_id as i64]).into_dyn(),
+        let mut length_array = NdArray::new(ndarray::arr0(length));
+        let mut vowel_phoneme_list_array = NdArray::new(ndarray::arr1(vowel_phoneme_list_slice));
+        let mut consonant_phoneme_list_array =
+            NdArray::new(ndarray::arr1(consonant_phoneme_list_slice));
+        let mut start_accent_list_array = NdArray::new(ndarray::arr1(start_accent_list_slice));
+        let mut end_accent_list_array = NdArray::new(ndarray::arr1(end_accent_list_slice));
+        let mut start_accent_phrase_list_array =
+            NdArray::new(ndarray::arr1(start_accent_phrase_list_slice));
+        let mut end_accent_phrase_list_array =
+            NdArray::new(ndarray::arr1(end_accent_phrase_list_slice));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> = vec![
+            &mut length_array,
+            &mut vowel_phoneme_list_array,
+            &mut consonant_phoneme_list_array,
+            &mut start_accent_list_array,
+            &mut end_accent_list_array,
+            &mut start_accent_phrase_list_array,
+            &mut end_accent_phrase_list_array,
+            &mut speaker_id_array,
         ];
 
         let result = status.yukarin_sa_session_run(model_index, input_tensors)?;
@@ -226,12 +243,10 @@ impl Internal {
         Ok(())
     }
 
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
     pub fn decode_forward(
         &mut self,
-        length: i64,
-        phoneme_size: i64,
+        length: usize,
+        phoneme_size: usize,
         f0: *const f32,
         phoneme: *const f32,
         speaker_id: usize,
@@ -262,14 +277,23 @@ impl Internal {
         }
 
         // TODO: 音が途切れてしまうのを避けるworkaround処理を入れる
-        let f0_slice = unsafe { std::slice::from_raw_parts(f0, length as usize) };
-        let phoneme_slice = unsafe { std::slice::from_raw_parts(phoneme, phoneme_size as usize) };
+        let f0_slice = unsafe { std::slice::from_raw_parts(f0, length) };
+        let phoneme_slice = unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) };
 
-        let input_tensors = vec![ndarray::arr1(f0_slice), ndarray::arr1(phoneme_slice)];
+        let mut f0_array = NdArray::new(ndarray::arr1(f0_slice).into_shape([length, 1]).unwrap());
+        let mut phoneme_array = NdArray::new(
+            ndarray::arr1(phoneme_slice)
+                .into_shape([length, phoneme_size])
+                .unwrap(),
+        );
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> =
+            vec![&mut f0_array, &mut phoneme_array, &mut speaker_id_array];
 
         let result = status.decode_session_run(model_index, input_tensors)?;
 
-        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
+        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };
         output_slice.clone_from_slice(&result);
 
         Ok(())
