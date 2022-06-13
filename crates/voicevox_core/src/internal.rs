@@ -457,15 +457,81 @@ mod tests {
             0, 23, 30, 4, 28, 21, 10, 21, 42, 7, 0, 30, 4, 35, 14, 14, 16, 30, 30, 35, 14, 14, 28,
             30, 35, 14, 23, 7, 21, 14, 43, 30, 30, 23, 30, 35, 30, 0,
         ];
-        let length = phoneme_list.len() as i64;
-        let phoneme_list = phoneme_list.as_ptr();
 
-        let result = internal
-            .lock()
-            .unwrap()
-            .yukarin_s_forward(length, phoneme_list, 0);
+        let result = internal.lock().unwrap().yukarin_s_forward(
+            phoneme_list.len() as i64,
+            phoneme_list.as_ptr(),
+            0,
+        );
 
         assert!(result.is_ok(), "{:?}", result);
-        assert_eq!(result.unwrap().len(), length as usize);
+        assert_eq!(result.unwrap().len(), phoneme_list.len());
+    }
+
+    #[rstest]
+    fn yukarin_sa_forward_works() {
+        let internal = Internal::new_with_mutex();
+        internal.lock().unwrap().initialize(false, 0, true).unwrap();
+
+        // 「テスト」という文章に対応する入力
+        let vowel_phoneme_list = [0, 14, 6, 30, 0];
+        let consonant_phoneme_list = [-1, 37, 35, 37, -1];
+        let start_accent_list = [0, 1, 0, 0, 0];
+        let end_accent_list = [0, 1, 0, 0, 0, 0];
+        let start_accent_phrase_list = [0, 1, 0, 0, 0];
+        let end_accent_phrase_list = [0, 0, 0, 1, 0];
+
+        let result = internal.lock().unwrap().yukarin_sa_forward(
+            vowel_phoneme_list.len() as i64,
+            vowel_phoneme_list.as_ptr(),
+            consonant_phoneme_list.as_ptr(),
+            start_accent_list.as_ptr(),
+            end_accent_list.as_ptr(),
+            start_accent_phrase_list.as_ptr(),
+            end_accent_phrase_list.as_ptr(),
+            0,
+        );
+
+        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(result.unwrap().len(), vowel_phoneme_list.len());
+    }
+
+    #[rstest]
+    fn decode_forward_works() {
+        let internal = Internal::new_with_mutex();
+        internal.lock().unwrap().initialize(false, 0, true).unwrap();
+
+        // 「テスト」という文章に対応する入力
+        const F0_LENGTH: usize = 69;
+        let mut f0 = [0.; 69];
+        f0[9..24].fill(5.905218);
+        f0[37..60].fill(5.565851);
+
+        const PHONEME_SIZE: usize = 45;
+        let mut phoneme = [0.; PHONEME_SIZE * F0_LENGTH];
+        let mut set_one = |index, range| {
+            for i in range {
+                phoneme[i * PHONEME_SIZE + index] = 1.;
+            }
+        };
+        set_one(0, 0..9);
+        set_one(37, 9..13);
+        set_one(14, 13..24);
+        set_one(35, 24..30);
+        set_one(6, 30..37);
+        set_one(37, 37..45);
+        set_one(30, 45..60);
+        set_one(0, 60..69);
+
+        let result = internal.lock().unwrap().decode_forward(
+            F0_LENGTH,
+            PHONEME_SIZE,
+            f0.as_ptr(),
+            phoneme.as_ptr(),
+            0,
+        );
+
+        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
     }
 }
