@@ -216,12 +216,8 @@ impl Status {
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
         if let Some(model) = self.models.yukarin_s.get_mut(&model_index) {
-            if let Ok(result) = model.run(inputs) {
-                let mut output: Vec<Vec<f32>> = result
-                    .iter()
-                    .map(|tensor| tensor.as_slice().unwrap().to_owned())
-                    .collect();
-                Ok(output.pop().unwrap())
+            if let Ok(output_tensors) = model.run(inputs) {
+                Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
                 Err(Error::InferenceFailed)
             }
@@ -236,12 +232,8 @@ impl Status {
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
         if let Some(model) = self.models.yukarin_sa.get_mut(&model_index) {
-            if let Ok(result) = model.run(inputs) {
-                let mut output: Vec<Vec<f32>> = result
-                    .iter()
-                    .map(|tensor| tensor.as_slice().unwrap().to_owned())
-                    .collect();
-                Ok(output.pop().unwrap())
+            if let Ok(output_tensors) = model.run(inputs) {
+                Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
                 Err(Error::InferenceFailed)
             }
@@ -256,12 +248,8 @@ impl Status {
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
         if let Some(model) = self.models.decode.get_mut(&model_index) {
-            if let Ok(result) = model.run(inputs) {
-                let mut output: Vec<Vec<f32>> = result
-                    .iter()
-                    .map(|tensor| tensor.as_slice().unwrap().to_owned())
-                    .collect();
-                Ok(output.pop().unwrap())
+            if let Ok(output_tensors) = model.run(inputs) {
+                Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
                 Err(Error::InferenceFailed)
             }
