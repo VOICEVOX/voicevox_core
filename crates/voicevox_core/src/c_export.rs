@@ -144,18 +144,19 @@ pub extern "C" fn yukarin_s_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let result = lock_internal().yukarin_s_forward(
-        length,
-        phoneme_list,
-        unsafe { *speaker_id as usize },
-        output,
-    );
+    let result =
+        lock_internal().yukarin_s_forward(length, phoneme_list, unsafe { *speaker_id as usize });
     //TODO: VoicevoxResultCodeを返すようにする
-    if let Some(err) = result.err() {
-        set_message(&format!("{}", err));
-        false
-    } else {
-        true
+    match result {
+        Ok(output_vec) => {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
+            output_slice.clone_from_slice(&output_vec);
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{}", err));
+            false
+        }
     }
 }
 
@@ -179,15 +180,19 @@ pub extern "C" fn yukarin_sa_forward(
         end_accent_list,
         start_accent_phrase_list,
         end_accent_phrase_list,
-        speaker_id,
-        output,
+        unsafe { *speaker_id as usize },
     );
     //TODO: VoicevoxResultCodeを返すようにする
-    if let Some(err) = result.err() {
-        set_message(&format!("{}", err));
-        false
-    } else {
-        true
+    match result {
+        Ok(output_vec) => {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
+            output_slice.clone_from_slice(&output_vec);
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{}", err));
+            false
+        }
     }
 }
 
@@ -200,14 +205,25 @@ pub extern "C" fn decode_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let result =
-        lock_internal().decode_forward(length, phoneme_size, f0, phoneme, speaker_id, output);
+    let result = lock_internal().decode_forward(
+        length as usize,
+        phoneme_size as usize,
+        f0,
+        phoneme,
+        unsafe { *speaker_id as usize },
+    );
     //TODO: VoicevoxResultCodeを返すようにする
-    if let Some(err) = result.err() {
-        set_message(&format!("{}", err));
-        false
-    } else {
-        true
+    match result {
+        Ok(output_vec) => {
+            let output_slice =
+                unsafe { std::slice::from_raw_parts_mut(output, (length as usize) * 256) };
+            output_slice.clone_from_slice(&output_vec);
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{}", err));
+            false
+        }
     }
 }
 
