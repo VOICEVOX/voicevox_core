@@ -99,7 +99,8 @@ impl Internal {
         }
     }
     pub fn finalize(&mut self) {
-        unimplemented!()
+        self.initialized = false;
+        self.status_option = None;
     }
     pub fn metas(&self) -> &'static CStr {
         &METAS_CSTRING
@@ -362,6 +363,16 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[rstest]
+    fn finalize_works() {
+        let internal = Internal::new_with_mutex();
+        let result = internal.lock().unwrap().initialize(false, 0, false);
+        assert_eq!(Ok(()), result);
+        internal.lock().unwrap().finalize();
+        assert_eq!(false, internal.lock().unwrap().initialized);
+        assert_eq!(true, internal.lock().unwrap().status_option.is_none());
+    }
 
     #[rstest]
     #[case(0, Err(Error::UninitializedStatus), Ok(()))]
