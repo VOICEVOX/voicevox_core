@@ -321,17 +321,6 @@ impl Internal {
         f0_with_padding
     }
 
-    fn insert_padding_phonemes_to_phoneme_with_padding(
-        mut phoneme_with_padding: Vec<f32>,
-        padding_phoneme: &[f32],
-        padding_phonemes_size: usize,
-    ) -> Vec<f32> {
-        for _ in 0..padding_phonemes_size {
-            phoneme_with_padding.extend_from_slice(padding_phoneme);
-        }
-        phoneme_with_padding
-    }
-
     fn make_phoneme_with_padding(
         phoneme_slice: &[f32],
         phoneme_size: usize,
@@ -342,19 +331,18 @@ impl Internal {
         // 改善したらこの関数を削除する
         let mut padding_phoneme = vec![0.0; phoneme_size];
         padding_phoneme[0] = 1.0;
-        let phoneme_with_padding = Vec::with_capacity(phoneme_size * length_with_padding);
-        let mut phoneme_with_padding = Self::insert_padding_phonemes_to_phoneme_with_padding(
-            phoneme_with_padding,
-            &padding_phoneme,
-            padding_phonemes_size,
-        );
+        let padding_phoneme_len = padding_phoneme.len();
+        let padding_phonemes: Vec<f32> = padding_phoneme
+            .into_iter()
+            .cycle()
+            .take(padding_phoneme_len * padding_phonemes_size)
+            .collect();
+        let mut phoneme_with_padding = Vec::with_capacity(phoneme_size * length_with_padding);
+        phoneme_with_padding.extend_from_slice(&padding_phonemes);
         phoneme_with_padding.extend_from_slice(phoneme_slice);
+        phoneme_with_padding.extend_from_slice(&padding_phonemes);
 
-        Self::insert_padding_phonemes_to_phoneme_with_padding(
-            phoneme_with_padding,
-            &padding_phoneme,
-            padding_phonemes_size,
-        )
+        phoneme_with_padding
     }
 
     fn trim_padding_from_output(mut output: Vec<f32>, padding_f0_size: usize) -> Vec<f32> {
