@@ -3,8 +3,6 @@ fn main() {
     let lib_dir = dst_dir.join("lib");
     println!("cargo:rustc-link-search=native={}", lib_dir.display());
     println!("cargo:rustc-link-lib=static=OpenjtalkSys");
-    #[cfg(os = "windows")]
-    println!("cargo:rustc-link-lib=static=openjtalk");
     generate_bindings();
 }
 
