@@ -2,6 +2,8 @@ name: gen_bind
 on:
   push:
     paths:
+      - "crates/openjtalk-sys/openjtalk/src/*"
+      - "crates/openjtalk-sys/openjtalk/CMakeLists.txt"
       - "crates/openjtalk-sys/build.rs"
       - ".github/workflows/gen_bind.yaml"
       - ".github/actions/auto_gen_bind_pr/action.yaml"
