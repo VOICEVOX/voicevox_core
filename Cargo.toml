@@ -1,2 +1,2 @@
 [workspace]
-members = ["crates/voicevox_core"]
+members = ["crates/voicevox_core", "crates/openjtalk-sys"]

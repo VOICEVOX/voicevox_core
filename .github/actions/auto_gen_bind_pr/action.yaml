@@ -1,0 +1,40 @@
+name: "auto_gen_bind_pr"
+description: "bindコードを生成するためのCIアクションをしてPRを送る"
+inputs:
+  triple:
+    description: "cargo build target"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Extract branch name
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      id: extract_branch
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - name: install triple
+      run: rustup target add ${{ inputs.triple }}
+      shell: bash
+    - uses: Swatinem/rust-cache@v1
+      with:
+        # cargoのキャシュが原因でテストが失敗してることが考えられる場合はバージョン部分を変更する
+        key: "v1-cargo-test-cache-${{ inputs.triple }}"
+    - name: gen bind
+      run: cargo build --target ${{ inputs.triple }} -p openjtalk-sys --features generate-bindings
+      shell: bash
+    - name: check
+      run: git status -s | grep -E "M|A"
+      shell: bash
+    - name: create_pr
+      if: success()
+      id: cpr
+      uses: peter-evans/create-pull-request@v4
+      with:
+        commit-message: Automated generate bindings for ${{ inputs.triple }}
+        branch: ${{ steps.extract_branch.outputs.branch }}_auto_gen_bindings_${{ inputs.triple }}
+        delete-branch: true
+        title: Automated generate bindings for ${{ inputs.triple }}
+        body: |
+          Automated generate bindings for ${{ inputs.triple }}

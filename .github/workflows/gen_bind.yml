@@ -1,0 +1,55 @@
+name: gen_bind
+on:
+  push:
+    paths:
+      - "crates/openjtalk-sys/build.rs"
+      - ".github/workflows/gen_bind.yaml"
+      - ".github/actions/auto_gen_bind_pr/action.yaml"
+jobs:
+  generate_bind_x86_64_linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: ./.github/actions/auto_gen_bind_pr
+        with:
+          triple: x86_64-unknown-linux-gnu
+  generate_bind_x86_64_windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+      - name: x86_64_windows
+        uses: ./.github/actions/auto_gen_bind_pr
+        with:
+          triple: x86_64-pc-windows-msvc
+  generate_bind_x86_windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+      - name: x86_windows
+        uses: ./.github/actions/auto_gen_bind_pr
+        with:
+          triple: i686-pc-windows-msvc
+  generate_bind_x86_64_mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: ./.github/actions/auto_gen_bind_pr
+        with:
+          triple: x86_64-apple-darwin
+  generate_bind_arm64_mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: ./.github/actions/auto_gen_bind_pr
+        with:
+          triple: aarch64-apple-darwin
