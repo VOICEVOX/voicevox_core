@@ -1,3 +1,9 @@
+/*
+ * TODO:C++で書かれたコードのopenjtalkのglue codeに対するwrapperになっているが、
+ * 本来はopenjtalkのheaderから直接生成したコードに対する薄いwrapperであるべきであるため
+ * openjtalk-sysがそのように変更された場合修正すること
+ */
+
 use openjtalk_sys::*;
 
 use std::ffi::CString;
