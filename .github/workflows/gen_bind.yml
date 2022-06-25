@@ -1,4 +1,5 @@
 name: gen_bind
+description: "openjtalkのbindコードを生成してPRを送る"
 on:
   push:
     paths:
