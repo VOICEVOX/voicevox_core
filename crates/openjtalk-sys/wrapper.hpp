@@ -1,7 +1,6 @@
-#include <stdio.h>;
-#include <jpcommon.h>;
 #include <mecab.h>;
 #include <njd.h>;
+#include <jpcommon.h>;
 #include <njd2jpcommon.h>;
 #include <njd_set_accent_phrase.h>;
 #include <njd_set_accent_type.h>;
