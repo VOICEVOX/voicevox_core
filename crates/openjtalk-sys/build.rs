@@ -16,7 +16,7 @@ fn generate_bindings() {
     println!("cargo:rerun-if-changed=wrapper.hpp");
     println!("cargo:rerun-if-changed=src/generated/bindings.rs");
     let bindings = bindgen::Builder::default()
-        .header("warapper.hpp")
+        .header("wrapper.hpp")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .size_t_is_usize(true)
         .rustfmt_bindings(true)
