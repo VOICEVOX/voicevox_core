@@ -266,14 +266,33 @@ impl Internal {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        // TODO: 音が途切れてしまうのを避けるworkaround処理を入れる
+        // 音が途切れてしまうのを避けるworkaround処理が入っている
+        // TODO: 改善したらここのpadding処理を取り除く
+        const PADDING_SIZE: f64 = 0.4;
+        const DEFAULT_SAMPLING_RATE: f64 = 24000.0;
+        let padding_size = ((PADDING_SIZE * DEFAULT_SAMPLING_RATE) / 256.0).round() as usize;
+        let start_and_end_padding_size = 2 * padding_size;
+        let length_with_padding = length + start_and_end_padding_size;
         let f0_slice = unsafe { std::slice::from_raw_parts(f0, length) };
+        let f0_with_padding =
+            Self::make_f0_with_padding(f0_slice, length_with_padding, padding_size);
         let phoneme_slice = unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) };
 
-        let mut f0_array = NdArray::new(ndarray::arr1(f0_slice).into_shape([length, 1]).unwrap());
+        let phoneme_with_padding = Self::make_phoneme_with_padding(
+            phoneme_slice,
+            phoneme_size,
+            length_with_padding,
+            padding_size,
+        );
+
+        let mut f0_array = NdArray::new(
+            ndarray::arr1(&f0_with_padding)
+                .into_shape([length_with_padding, 1])
+                .unwrap(),
+        );
         let mut phoneme_array = NdArray::new(
-            ndarray::arr1(phoneme_slice)
-                .into_shape([length, phoneme_size])
+            ndarray::arr1(&phoneme_with_padding)
+                .into_shape([length_with_padding, phoneme_size])
                 .unwrap(),
         );
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
@@ -281,7 +300,57 @@ impl Internal {
         let input_tensors: Vec<&mut dyn AnyArray> =
             vec![&mut f0_array, &mut phoneme_array, &mut speaker_id_array];
 
-        status.decode_session_run(model_index, input_tensors)
+        status
+            .decode_session_run(model_index, input_tensors)
+            .map(|output| Self::trim_padding_from_output(output, padding_size))
+    }
+
+    fn make_f0_with_padding(
+        f0_slice: &[f32],
+        length_with_padding: usize,
+        padding_size: usize,
+    ) -> Vec<f32> {
+        // 音が途切れてしまうのを避けるworkaround処理
+        // 改善したらこの関数を削除する
+        let mut f0_with_padding = Vec::with_capacity(length_with_padding);
+        let padding = vec![0.0; padding_size];
+        f0_with_padding.extend_from_slice(&padding);
+        f0_with_padding.extend_from_slice(f0_slice);
+        f0_with_padding.extend_from_slice(&padding);
+        f0_with_padding
+    }
+
+    fn make_phoneme_with_padding(
+        phoneme_slice: &[f32],
+        phoneme_size: usize,
+        length_with_padding: usize,
+        padding_size: usize,
+    ) -> Vec<f32> {
+        // 音が途切れてしまうのを避けるworkaround処理
+        // 改善したらこの関数を削除する
+        let mut padding_phoneme = vec![0.0; phoneme_size];
+        padding_phoneme[0] = 1.0;
+        let padding_phoneme_len = padding_phoneme.len();
+        let padding_phonemes: Vec<f32> = padding_phoneme
+            .into_iter()
+            .cycle()
+            .take(padding_phoneme_len * padding_size)
+            .collect();
+        let mut phoneme_with_padding = Vec::with_capacity(phoneme_size * length_with_padding);
+        phoneme_with_padding.extend_from_slice(&padding_phonemes);
+        phoneme_with_padding.extend_from_slice(phoneme_slice);
+        phoneme_with_padding.extend_from_slice(&padding_phonemes);
+
+        phoneme_with_padding
+    }
+
+    fn trim_padding_from_output(mut output: Vec<f32>, padding_f0_size: usize) -> Vec<f32> {
+        // 音が途切れてしまうのを避けるworkaround処理
+        // 改善したらこの関数を削除する
+        let padding_sampling_size = padding_f0_size * 256;
+        output
+            .drain(padding_sampling_size..output.len() - padding_sampling_size)
+            .collect()
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
