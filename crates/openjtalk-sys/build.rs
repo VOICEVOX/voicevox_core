@@ -8,7 +8,7 @@ fn main() {
 }
 
 #[cfg(not(feature = "generate-bindings"))]
-fn generate_bindings(include_dir: impl AsRef<Path>) {}
+fn generate_bindings(#[allow(unused_variables)] include_dir: impl AsRef<Path>) {}
 
 #[cfg(feature = "generate-bindings")]
 fn generate_bindings(include_dir: impl AsRef<Path>) {
