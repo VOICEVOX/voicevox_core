@@ -25,7 +25,7 @@ jobs:
             triple: aarch64-apple-darwin
     runs-on: ${{ matrix.target.os }}
     steps:
-      - uses: lukka/get-cmake@v3.23.0
+      - uses: lukka/get-cmake@v2.8.11
       - uses: actions/checkout@v3
         with:
           ref: ${{ github.head_ref }}

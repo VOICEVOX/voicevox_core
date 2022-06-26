@@ -8,11 +8,9 @@ FetchContent_Declare(
   GIT_TAG 1.11
   SOURCE_SUBDIR src)
 FetchContent_MakeAvailable(openjtalk)
-add_library(OpenJtalkSys src/openjtalk.cpp)
-target_link_libraries(OpenJtalkSys PUBLIC openjtalk)
 
 install(
-  TARGETS OpenJtalkSys
+  TARGETS openjtalk
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib)
