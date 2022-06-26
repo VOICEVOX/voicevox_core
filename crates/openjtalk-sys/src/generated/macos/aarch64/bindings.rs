@@ -8,430 +8,5359 @@ pub const _LIBCPP_HIDE_FROM_ABI_PER_TU: u32 = 1;
 pub const _LIBCPP_DEBUG_LEVEL: u32 = 0;
 pub const _LIBCPP_LOCALE__L_EXTENSIONS: u32 = 1;
 pub const _LIBCPP_HAS_CATOPEN: u32 = 1;
+pub const __DARWIN_ONLY_64_BIT_INO_T: u32 = 1;
+pub const __DARWIN_ONLY_UNIX_CONFORMANCE: u32 = 1;
+pub const __DARWIN_ONLY_VERS_1050: u32 = 1;
+pub const __DARWIN_UNIX03: u32 = 1;
+pub const __DARWIN_64_BIT_INO_T: u32 = 1;
+pub const __DARWIN_VERS_1050: u32 = 1;
+pub const __DARWIN_NON_CANCELABLE: u32 = 0;
+pub const __DARWIN_SUF_EXTSN: &[u8; 14usize] = b"$DARWIN_EXTSN\0";
+pub const __DARWIN_C_ANSI: u32 = 4096;
+pub const __DARWIN_C_FULL: u32 = 900000;
+pub const __DARWIN_C_LEVEL: u32 = 900000;
+pub const __STDC_WANT_LIB_EXT1__: u32 = 1;
+pub const __DARWIN_NO_LONG_LONG: u32 = 0;
+pub const _DARWIN_FEATURE_64_BIT_INODE: u32 = 1;
+pub const _DARWIN_FEATURE_ONLY_64_BIT_INODE: u32 = 1;
+pub const _DARWIN_FEATURE_ONLY_VERS_1050: u32 = 1;
+pub const _DARWIN_FEATURE_ONLY_UNIX_CONFORMANCE: u32 = 1;
+pub const _DARWIN_FEATURE_UNIX_CONFORMANCE: u32 = 3;
+pub const __API_TO_BE_DEPRECATED: u32 = 100000;
+pub const __MAC_10_0: u32 = 1000;
+pub const __MAC_10_1: u32 = 1010;
+pub const __MAC_10_2: u32 = 1020;
+pub const __MAC_10_3: u32 = 1030;
+pub const __MAC_10_4: u32 = 1040;
+pub const __MAC_10_5: u32 = 1050;
+pub const __MAC_10_6: u32 = 1060;
+pub const __MAC_10_7: u32 = 1070;
+pub const __MAC_10_8: u32 = 1080;
+pub const __MAC_10_9: u32 = 1090;
+pub const __MAC_10_10: u32 = 101000;
+pub const __MAC_10_10_2: u32 = 101002;
+pub const __MAC_10_10_3: u32 = 101003;
+pub const __MAC_10_11: u32 = 101100;
+pub const __MAC_10_11_2: u32 = 101102;
+pub const __MAC_10_11_3: u32 = 101103;
+pub const __MAC_10_11_4: u32 = 101104;
+pub const __MAC_10_12: u32 = 101200;
+pub const __MAC_10_12_1: u32 = 101201;
+pub const __MAC_10_12_2: u32 = 101202;
+pub const __MAC_10_12_4: u32 = 101204;
+pub const __MAC_10_13: u32 = 101300;
+pub const __MAC_10_13_1: u32 = 101301;
+pub const __MAC_10_13_2: u32 = 101302;
+pub const __MAC_10_13_4: u32 = 101304;
+pub const __MAC_10_14: u32 = 101400;
+pub const __MAC_10_14_1: u32 = 101401;
+pub const __MAC_10_14_4: u32 = 101404;
+pub const __MAC_10_14_6: u32 = 101406;
+pub const __MAC_10_15: u32 = 101500;
+pub const __MAC_10_15_1: u32 = 101501;
+pub const __MAC_10_15_4: u32 = 101504;
+pub const __MAC_10_16: u32 = 101600;
+pub const __MAC_11_0: u32 = 110000;
+pub const __MAC_11_1: u32 = 110100;
+pub const __MAC_11_3: u32 = 110300;
+pub const __MAC_11_4: u32 = 110400;
+pub const __MAC_11_5: u32 = 110500;
+pub const __MAC_11_6: u32 = 110600;
+pub const __MAC_12_0: u32 = 120000;
+pub const __MAC_12_1: u32 = 120100;
+pub const __IPHONE_2_0: u32 = 20000;
+pub const __IPHONE_2_1: u32 = 20100;
+pub const __IPHONE_2_2: u32 = 20200;
+pub const __IPHONE_3_0: u32 = 30000;
+pub const __IPHONE_3_1: u32 = 30100;
+pub const __IPHONE_3_2: u32 = 30200;
+pub const __IPHONE_4_0: u32 = 40000;
+pub const __IPHONE_4_1: u32 = 40100;
+pub const __IPHONE_4_2: u32 = 40200;
+pub const __IPHONE_4_3: u32 = 40300;
+pub const __IPHONE_5_0: u32 = 50000;
+pub const __IPHONE_5_1: u32 = 50100;
+pub const __IPHONE_6_0: u32 = 60000;
+pub const __IPHONE_6_1: u32 = 60100;
+pub const __IPHONE_7_0: u32 = 70000;
+pub const __IPHONE_7_1: u32 = 70100;
+pub const __IPHONE_8_0: u32 = 80000;
+pub const __IPHONE_8_1: u32 = 80100;
+pub const __IPHONE_8_2: u32 = 80200;
+pub const __IPHONE_8_3: u32 = 80300;
+pub const __IPHONE_8_4: u32 = 80400;
+pub const __IPHONE_9_0: u32 = 90000;
+pub const __IPHONE_9_1: u32 = 90100;
+pub const __IPHONE_9_2: u32 = 90200;
+pub const __IPHONE_9_3: u32 = 90300;
+pub const __IPHONE_10_0: u32 = 100000;
+pub const __IPHONE_10_1: u32 = 100100;
+pub const __IPHONE_10_2: u32 = 100200;
+pub const __IPHONE_10_3: u32 = 100300;
+pub const __IPHONE_11_0: u32 = 110000;
+pub const __IPHONE_11_1: u32 = 110100;
+pub const __IPHONE_11_2: u32 = 110200;
+pub const __IPHONE_11_3: u32 = 110300;
+pub const __IPHONE_11_4: u32 = 110400;
+pub const __IPHONE_12_0: u32 = 120000;
+pub const __IPHONE_12_1: u32 = 120100;
+pub const __IPHONE_12_2: u32 = 120200;
+pub const __IPHONE_12_3: u32 = 120300;
+pub const __IPHONE_12_4: u32 = 120400;
+pub const __IPHONE_13_0: u32 = 130000;
+pub const __IPHONE_13_1: u32 = 130100;
+pub const __IPHONE_13_2: u32 = 130200;
+pub const __IPHONE_13_3: u32 = 130300;
+pub const __IPHONE_13_4: u32 = 130400;
+pub const __IPHONE_13_5: u32 = 130500;
+pub const __IPHONE_13_6: u32 = 130600;
+pub const __IPHONE_13_7: u32 = 130700;
+pub const __IPHONE_14_0: u32 = 140000;
+pub const __IPHONE_14_1: u32 = 140100;
+pub const __IPHONE_14_2: u32 = 140200;
+pub const __IPHONE_14_3: u32 = 140300;
+pub const __IPHONE_14_5: u32 = 140500;
+pub const __IPHONE_14_6: u32 = 140600;
+pub const __IPHONE_14_7: u32 = 140700;
+pub const __IPHONE_14_8: u32 = 140800;
+pub const __IPHONE_15_0: u32 = 150000;
+pub const __IPHONE_15_1: u32 = 150100;
+pub const __IPHONE_15_2: u32 = 150200;
+pub const __TVOS_9_0: u32 = 90000;
+pub const __TVOS_9_1: u32 = 90100;
+pub const __TVOS_9_2: u32 = 90200;
+pub const __TVOS_10_0: u32 = 100000;
+pub const __TVOS_10_0_1: u32 = 100001;
+pub const __TVOS_10_1: u32 = 100100;
+pub const __TVOS_10_2: u32 = 100200;
+pub const __TVOS_11_0: u32 = 110000;
+pub const __TVOS_11_1: u32 = 110100;
+pub const __TVOS_11_2: u32 = 110200;
+pub const __TVOS_11_3: u32 = 110300;
+pub const __TVOS_11_4: u32 = 110400;
+pub const __TVOS_12_0: u32 = 120000;
+pub const __TVOS_12_1: u32 = 120100;
+pub const __TVOS_12_2: u32 = 120200;
+pub const __TVOS_12_3: u32 = 120300;
+pub const __TVOS_12_4: u32 = 120400;
+pub const __TVOS_13_0: u32 = 130000;
+pub const __TVOS_13_2: u32 = 130200;
+pub const __TVOS_13_3: u32 = 130300;
+pub const __TVOS_13_4: u32 = 130400;
+pub const __TVOS_14_0: u32 = 140000;
+pub const __TVOS_14_1: u32 = 140100;
+pub const __TVOS_14_2: u32 = 140200;
+pub const __TVOS_14_3: u32 = 140300;
+pub const __TVOS_14_5: u32 = 140500;
+pub const __TVOS_14_6: u32 = 140600;
+pub const __TVOS_14_7: u32 = 140700;
+pub const __TVOS_15_0: u32 = 150000;
+pub const __TVOS_15_1: u32 = 150100;
+pub const __TVOS_15_2: u32 = 150200;
+pub const __WATCHOS_1_0: u32 = 10000;
+pub const __WATCHOS_2_0: u32 = 20000;
+pub const __WATCHOS_2_1: u32 = 20100;
+pub const __WATCHOS_2_2: u32 = 20200;
+pub const __WATCHOS_3_0: u32 = 30000;
+pub const __WATCHOS_3_1: u32 = 30100;
+pub const __WATCHOS_3_1_1: u32 = 30101;
+pub const __WATCHOS_3_2: u32 = 30200;
+pub const __WATCHOS_4_0: u32 = 40000;
+pub const __WATCHOS_4_1: u32 = 40100;
+pub const __WATCHOS_4_2: u32 = 40200;
+pub const __WATCHOS_4_3: u32 = 40300;
+pub const __WATCHOS_5_0: u32 = 50000;
+pub const __WATCHOS_5_1: u32 = 50100;
+pub const __WATCHOS_5_2: u32 = 50200;
+pub const __WATCHOS_5_3: u32 = 50300;
+pub const __WATCHOS_6_0: u32 = 60000;
+pub const __WATCHOS_6_1: u32 = 60100;
+pub const __WATCHOS_6_2: u32 = 60200;
+pub const __WATCHOS_7_0: u32 = 70000;
+pub const __WATCHOS_7_1: u32 = 70100;
+pub const __WATCHOS_7_2: u32 = 70200;
+pub const __WATCHOS_7_3: u32 = 70300;
+pub const __WATCHOS_7_4: u32 = 70400;
+pub const __WATCHOS_7_5: u32 = 70500;
+pub const __WATCHOS_7_6: u32 = 70600;
+pub const __WATCHOS_8_0: u32 = 80000;
+pub const __WATCHOS_8_1: u32 = 80100;
+pub const __WATCHOS_8_3: u32 = 80300;
+pub const MAC_OS_X_VERSION_10_0: u32 = 1000;
+pub const MAC_OS_X_VERSION_10_1: u32 = 1010;
+pub const MAC_OS_X_VERSION_10_2: u32 = 1020;
+pub const MAC_OS_X_VERSION_10_3: u32 = 1030;
+pub const MAC_OS_X_VERSION_10_4: u32 = 1040;
+pub const MAC_OS_X_VERSION_10_5: u32 = 1050;
+pub const MAC_OS_X_VERSION_10_6: u32 = 1060;
+pub const MAC_OS_X_VERSION_10_7: u32 = 1070;
+pub const MAC_OS_X_VERSION_10_8: u32 = 1080;
+pub const MAC_OS_X_VERSION_10_9: u32 = 1090;
+pub const MAC_OS_X_VERSION_10_10: u32 = 101000;
+pub const MAC_OS_X_VERSION_10_10_2: u32 = 101002;
+pub const MAC_OS_X_VERSION_10_10_3: u32 = 101003;
+pub const MAC_OS_X_VERSION_10_11: u32 = 101100;
+pub const MAC_OS_X_VERSION_10_11_2: u32 = 101102;
+pub const MAC_OS_X_VERSION_10_11_3: u32 = 101103;
+pub const MAC_OS_X_VERSION_10_11_4: u32 = 101104;
+pub const MAC_OS_X_VERSION_10_12: u32 = 101200;
+pub const MAC_OS_X_VERSION_10_12_1: u32 = 101201;
+pub const MAC_OS_X_VERSION_10_12_2: u32 = 101202;
+pub const MAC_OS_X_VERSION_10_12_4: u32 = 101204;
+pub const MAC_OS_X_VERSION_10_13: u32 = 101300;
+pub const MAC_OS_X_VERSION_10_13_1: u32 = 101301;
+pub const MAC_OS_X_VERSION_10_13_2: u32 = 101302;
+pub const MAC_OS_X_VERSION_10_13_4: u32 = 101304;
+pub const MAC_OS_X_VERSION_10_14: u32 = 101400;
+pub const MAC_OS_X_VERSION_10_14_1: u32 = 101401;
+pub const MAC_OS_X_VERSION_10_14_4: u32 = 101404;
+pub const MAC_OS_X_VERSION_10_14_6: u32 = 101406;
+pub const MAC_OS_X_VERSION_10_15: u32 = 101500;
+pub const MAC_OS_X_VERSION_10_15_1: u32 = 101501;
+pub const MAC_OS_X_VERSION_10_16: u32 = 101600;
+pub const MAC_OS_VERSION_11_0: u32 = 110000;
+pub const MAC_OS_VERSION_12_0: u32 = 120000;
+pub const __DRIVERKIT_19_0: u32 = 190000;
+pub const __DRIVERKIT_20_0: u32 = 200000;
+pub const __DRIVERKIT_21_0: u32 = 210000;
+pub const __IPHONE_OS_VERSION_MAX_ALLOWED: u32 = 150200;
+pub const __ENABLE_LEGACY_IPHONE_AVAILABILITY: u32 = 1;
+pub const __PTHREAD_SIZE__: u32 = 8176;
+pub const __PTHREAD_ATTR_SIZE__: u32 = 56;
+pub const __PTHREAD_MUTEXATTR_SIZE__: u32 = 8;
+pub const __PTHREAD_MUTEX_SIZE__: u32 = 56;
+pub const __PTHREAD_CONDATTR_SIZE__: u32 = 8;
+pub const __PTHREAD_COND_SIZE__: u32 = 40;
+pub const __PTHREAD_ONCE_SIZE__: u32 = 8;
+pub const __PTHREAD_RWLOCK_SIZE__: u32 = 192;
+pub const __PTHREAD_RWLOCKATTR_SIZE__: u32 = 16;
+pub const __DARWIN_WCHAR_MIN: i32 = -2147483648;
+pub const _FORTIFY_SOURCE: u32 = 2;
+pub const RENAME_SECLUDE: u32 = 1;
+pub const RENAME_SWAP: u32 = 2;
+pub const RENAME_EXCL: u32 = 4;
+pub const __SLBF: u32 = 1;
+pub const __SNBF: u32 = 2;
+pub const __SRD: u32 = 4;
+pub const __SWR: u32 = 8;
+pub const __SRW: u32 = 16;
+pub const __SEOF: u32 = 32;
+pub const __SERR: u32 = 64;
+pub const __SMBF: u32 = 128;
+pub const __SAPP: u32 = 256;
+pub const __SSTR: u32 = 512;
+pub const __SOPT: u32 = 1024;
+pub const __SNPT: u32 = 2048;
+pub const __SOFF: u32 = 4096;
+pub const __SMOD: u32 = 8192;
+pub const __SALC: u32 = 16384;
+pub const __SIGN: u32 = 32768;
+pub const _IOFBF: u32 = 0;
+pub const _IOLBF: u32 = 1;
+pub const _IONBF: u32 = 2;
+pub const BUFSIZ: u32 = 1024;
+pub const EOF: i32 = -1;
+pub const FOPEN_MAX: u32 = 20;
+pub const FILENAME_MAX: u32 = 1024;
+pub const P_tmpdir: &[u8; 10usize] = b"/var/tmp/\0";
+pub const L_tmpnam: u32 = 1024;
+pub const TMP_MAX: u32 = 308915776;
+pub const SEEK_SET: u32 = 0;
+pub const SEEK_CUR: u32 = 1;
+pub const SEEK_END: u32 = 2;
+pub const L_ctermid: u32 = 1024;
+pub const TRUE: u32 = 1;
+pub const FALSE: u32 = 0;
+pub type __int8_t = ::std::os::raw::c_schar;
+pub type __uint8_t = ::std::os::raw::c_uchar;
+pub type __int16_t = ::std::os::raw::c_short;
+pub type __uint16_t = ::std::os::raw::c_ushort;
+pub type __int32_t = ::std::os::raw::c_int;
+pub type __uint32_t = ::std::os::raw::c_uint;
+pub type __int64_t = ::std::os::raw::c_longlong;
+pub type __uint64_t = ::std::os::raw::c_ulonglong;
+pub type __darwin_intptr_t = ::std::os::raw::c_long;
+pub type __darwin_natural_t = ::std::os::raw::c_uint;
+pub type __darwin_ct_rune_t = ::std::os::raw::c_int;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct std_nullptr_t {
-    pub __lx: *mut ::std::os::raw::c_void,
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct std_nullptr_t___nat {
-    pub __for_bool_: ::std::os::raw::c_int,
+#[derive(Copy, Clone)]
+pub union __mbstate_t {
+    pub __mbstate8: [::std::os::raw::c_char; 128usize],
+    pub _mbstateL: ::std::os::raw::c_longlong,
 }
 #[test]
-fn bindgen_test_layout_std_nullptr_t___nat() {
+fn bindgen_test_layout___mbstate_t() {
     assert_eq!(
-        ::std::mem::size_of::<std_nullptr_t___nat>(),
-        4usize,
-        concat!("Size of: ", stringify!(std_nullptr_t___nat))
+        ::std::mem::size_of::<__mbstate_t>(),
+        128usize,
+        concat!("Size of: ", stringify!(__mbstate_t))
     );
     assert_eq!(
-        ::std::mem::align_of::<std_nullptr_t___nat>(),
-        4usize,
-        concat!("Alignment of ", stringify!(std_nullptr_t___nat))
+        ::std::mem::align_of::<__mbstate_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(__mbstate_t))
     );
-    fn test_field___for_bool_() {
+    fn test_field___mbstate8() {
         assert_eq!(
             unsafe {
-                let uninit = ::std::mem::MaybeUninit::<std_nullptr_t___nat>::uninit();
+                let uninit = ::std::mem::MaybeUninit::<__mbstate_t>::uninit();
                 let ptr = uninit.as_ptr();
-                ::std::ptr::addr_of!((*ptr).__for_bool_) as usize - ptr as usize
+                ::std::ptr::addr_of!((*ptr).__mbstate8) as usize - ptr as usize
             },
             0usize,
             concat!(
                 "Offset of field: ",
-                stringify!(std_nullptr_t___nat),
+                stringify!(__mbstate_t),
                 "::",
-                stringify!(__for_bool_)
+                stringify!(__mbstate8)
             )
         );
     }
-    test_field___for_bool_();
-}
-#[test]
-fn bindgen_test_layout_std_nullptr_t() {
-    assert_eq!(
-        ::std::mem::size_of::<std_nullptr_t>(),
-        8usize,
-        concat!("Size of: ", stringify!(std_nullptr_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<std_nullptr_t>(),
-        8usize,
-        concat!("Alignment of ", stringify!(std_nullptr_t))
-    );
-    fn test_field___lx() {
+    test_field___mbstate8();
+    fn test_field__mbstateL() {
         assert_eq!(
             unsafe {
-                let uninit = ::std::mem::MaybeUninit::<std_nullptr_t>::uninit();
+                let uninit = ::std::mem::MaybeUninit::<__mbstate_t>::uninit();
                 let ptr = uninit.as_ptr();
-                ::std::ptr::addr_of!((*ptr).__lx) as usize - ptr as usize
+                ::std::ptr::addr_of!((*ptr)._mbstateL) as usize - ptr as usize
             },
             0usize,
             concat!(
                 "Offset of field: ",
-                stringify!(std_nullptr_t),
+                stringify!(__mbstate_t),
                 "::",
-                stringify!(__lx)
+                stringify!(_mbstateL)
             )
         );
     }
-    test_field___lx();
+    test_field__mbstateL();
+}
+pub type __darwin_mbstate_t = __mbstate_t;
+pub type __darwin_ptrdiff_t = ::std::os::raw::c_long;
+pub type __darwin_size_t = ::std::os::raw::c_ulong;
+pub type __darwin_va_list = __builtin_va_list;
+pub type __darwin_wchar_t = ::std::os::raw::c_int;
+pub type __darwin_rune_t = __darwin_wchar_t;
+pub type __darwin_wint_t = ::std::os::raw::c_int;
+pub type __darwin_clock_t = ::std::os::raw::c_ulong;
+pub type __darwin_socklen_t = __uint32_t;
+pub type __darwin_ssize_t = ::std::os::raw::c_long;
+pub type __darwin_time_t = ::std::os::raw::c_long;
+pub type __darwin_blkcnt_t = __int64_t;
+pub type __darwin_blksize_t = __int32_t;
+pub type __darwin_dev_t = __int32_t;
+pub type __darwin_fsblkcnt_t = ::std::os::raw::c_uint;
+pub type __darwin_fsfilcnt_t = ::std::os::raw::c_uint;
+pub type __darwin_gid_t = __uint32_t;
+pub type __darwin_id_t = __uint32_t;
+pub type __darwin_ino64_t = __uint64_t;
+pub type __darwin_ino_t = __darwin_ino64_t;
+pub type __darwin_mach_port_name_t = __darwin_natural_t;
+pub type __darwin_mach_port_t = __darwin_mach_port_name_t;
+pub type __darwin_mode_t = __uint16_t;
+pub type __darwin_off_t = __int64_t;
+pub type __darwin_pid_t = __int32_t;
+pub type __darwin_sigset_t = __uint32_t;
+pub type __darwin_suseconds_t = __int32_t;
+pub type __darwin_uid_t = __uint32_t;
+pub type __darwin_useconds_t = __uint32_t;
+pub type __darwin_uuid_t = [::std::os::raw::c_uchar; 16usize];
+pub type __darwin_uuid_string_t = [::std::os::raw::c_char; 37usize];
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct __darwin_pthread_handler_rec {
+    pub __routine: ::std::option::Option<unsafe extern "C" fn(arg1: *mut ::std::os::raw::c_void)>,
+    pub __arg: *mut ::std::os::raw::c_void,
+    pub __next: *mut __darwin_pthread_handler_rec,
+}
+#[test]
+fn bindgen_test_layout___darwin_pthread_handler_rec() {
+    assert_eq!(
+        ::std::mem::size_of::<__darwin_pthread_handler_rec>(),
+        24usize,
+        concat!("Size of: ", stringify!(__darwin_pthread_handler_rec))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<__darwin_pthread_handler_rec>(),
+        8usize,
+        concat!("Alignment of ", stringify!(__darwin_pthread_handler_rec))
+    );
+    fn test_field___routine() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__darwin_pthread_handler_rec>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__routine) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__darwin_pthread_handler_rec),
+                "::",
+                stringify!(__routine)
+            )
+        );
+    }
+    test_field___routine();
+    fn test_field___arg() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__darwin_pthread_handler_rec>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__arg) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__darwin_pthread_handler_rec),
+                "::",
+                stringify!(__arg)
+            )
+        );
+    }
+    test_field___arg();
+    fn test_field___next() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__darwin_pthread_handler_rec>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__next) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__darwin_pthread_handler_rec),
+                "::",
+                stringify!(__next)
+            )
+        );
+    }
+    test_field___next();
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct std___libcpp_is_integral {
-    pub _address: u8,
-}
-pub const std___libcpp_is_integral_value: std___libcpp_is_integral__bindgen_ty_1 =
-    std___libcpp_is_integral__bindgen_ty_1::value;
-#[repr(i32)]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum std___libcpp_is_integral__bindgen_ty_1 {
-    value = 0,
+pub struct _opaque_pthread_attr_t {
+    pub __sig: ::std::os::raw::c_long,
+    pub __opaque: [::std::os::raw::c_char; 56usize],
 }
 #[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_bool__close0_instantiation() {
+fn bindgen_test_layout__opaque_pthread_attr_t() {
     assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::size_of::<_opaque_pthread_attr_t>(),
+        64usize,
+        concat!("Size of: ", stringify!(_opaque_pthread_attr_t))
     );
     assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::align_of::<_opaque_pthread_attr_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_opaque_pthread_attr_t))
     );
+    fn test_field___sig() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_attr_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__sig) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_attr_t),
+                "::",
+                stringify!(__sig)
+            )
+        );
+    }
+    test_field___sig();
+    fn test_field___opaque() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_attr_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__opaque) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_attr_t),
+                "::",
+                stringify!(__opaque)
+            )
+        );
+    }
+    test_field___opaque();
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _opaque_pthread_cond_t {
+    pub __sig: ::std::os::raw::c_long,
+    pub __opaque: [::std::os::raw::c_char; 40usize],
 }
 #[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_char_close0_instantiation() {
+fn bindgen_test_layout__opaque_pthread_cond_t() {
     assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::size_of::<_opaque_pthread_cond_t>(),
+        48usize,
+        concat!("Size of: ", stringify!(_opaque_pthread_cond_t))
     );
     assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::align_of::<_opaque_pthread_cond_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_opaque_pthread_cond_t))
     );
+    fn test_field___sig() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_cond_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__sig) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_cond_t),
+                "::",
+                stringify!(__sig)
+            )
+        );
+    }
+    test_field___sig();
+    fn test_field___opaque() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_cond_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__opaque) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_cond_t),
+                "::",
+                stringify!(__opaque)
+            )
+        );
+    }
+    test_field___opaque();
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _opaque_pthread_condattr_t {
+    pub __sig: ::std::os::raw::c_long,
+    pub __opaque: [::std::os::raw::c_char; 8usize],
 }
 #[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_signed_char_close0_instantiation() {
+fn bindgen_test_layout__opaque_pthread_condattr_t() {
     assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::size_of::<_opaque_pthread_condattr_t>(),
+        16usize,
+        concat!("Size of: ", stringify!(_opaque_pthread_condattr_t))
     );
     assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::align_of::<_opaque_pthread_condattr_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_opaque_pthread_condattr_t))
     );
+    fn test_field___sig() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_condattr_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__sig) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_condattr_t),
+                "::",
+                stringify!(__sig)
+            )
+        );
+    }
+    test_field___sig();
+    fn test_field___opaque() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_condattr_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__opaque) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_condattr_t),
+                "::",
+                stringify!(__opaque)
+            )
+        );
+    }
+    test_field___opaque();
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _opaque_pthread_mutex_t {
+    pub __sig: ::std::os::raw::c_long,
+    pub __opaque: [::std::os::raw::c_char; 56usize],
 }
 #[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_unsigned_char_close0_instantiation() {
+fn bindgen_test_layout__opaque_pthread_mutex_t() {
     assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::size_of::<_opaque_pthread_mutex_t>(),
+        64usize,
+        concat!("Size of: ", stringify!(_opaque_pthread_mutex_t))
     );
     assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::align_of::<_opaque_pthread_mutex_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_opaque_pthread_mutex_t))
     );
+    fn test_field___sig() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_mutex_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__sig) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_mutex_t),
+                "::",
+                stringify!(__sig)
+            )
+        );
+    }
+    test_field___sig();
+    fn test_field___opaque() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_mutex_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__opaque) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_mutex_t),
+                "::",
+                stringify!(__opaque)
+            )
+        );
+    }
+    test_field___opaque();
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _opaque_pthread_mutexattr_t {
+    pub __sig: ::std::os::raw::c_long,
+    pub __opaque: [::std::os::raw::c_char; 8usize],
 }
 #[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_wchar_t_close0_instantiation() {
+fn bindgen_test_layout__opaque_pthread_mutexattr_t() {
     assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::size_of::<_opaque_pthread_mutexattr_t>(),
+        16usize,
+        concat!("Size of: ", stringify!(_opaque_pthread_mutexattr_t))
     );
     assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::align_of::<_opaque_pthread_mutexattr_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_opaque_pthread_mutexattr_t))
     );
+    fn test_field___sig() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_mutexattr_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__sig) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_mutexattr_t),
+                "::",
+                stringify!(__sig)
+            )
+        );
+    }
+    test_field___sig();
+    fn test_field___opaque() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_mutexattr_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__opaque) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_mutexattr_t),
+                "::",
+                stringify!(__opaque)
+            )
+        );
+    }
+    test_field___opaque();
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _opaque_pthread_once_t {
+    pub __sig: ::std::os::raw::c_long,
+    pub __opaque: [::std::os::raw::c_char; 8usize],
 }
 #[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_char16_t_close0_instantiation() {
+fn bindgen_test_layout__opaque_pthread_once_t() {
     assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::size_of::<_opaque_pthread_once_t>(),
+        16usize,
+        concat!("Size of: ", stringify!(_opaque_pthread_once_t))
     );
     assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::align_of::<_opaque_pthread_once_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_opaque_pthread_once_t))
     );
+    fn test_field___sig() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_once_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__sig) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_once_t),
+                "::",
+                stringify!(__sig)
+            )
+        );
+    }
+    test_field___sig();
+    fn test_field___opaque() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_once_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__opaque) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_once_t),
+                "::",
+                stringify!(__opaque)
+            )
+        );
+    }
+    test_field___opaque();
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _opaque_pthread_rwlock_t {
+    pub __sig: ::std::os::raw::c_long,
+    pub __opaque: [::std::os::raw::c_char; 192usize],
 }
 #[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_char32_t_close0_instantiation() {
+fn bindgen_test_layout__opaque_pthread_rwlock_t() {
     assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::size_of::<_opaque_pthread_rwlock_t>(),
+        200usize,
+        concat!("Size of: ", stringify!(_opaque_pthread_rwlock_t))
     );
     assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::align_of::<_opaque_pthread_rwlock_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_opaque_pthread_rwlock_t))
     );
+    fn test_field___sig() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_rwlock_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__sig) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_rwlock_t),
+                "::",
+                stringify!(__sig)
+            )
+        );
+    }
+    test_field___sig();
+    fn test_field___opaque() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_rwlock_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__opaque) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_rwlock_t),
+                "::",
+                stringify!(__opaque)
+            )
+        );
+    }
+    test_field___opaque();
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _opaque_pthread_rwlockattr_t {
+    pub __sig: ::std::os::raw::c_long,
+    pub __opaque: [::std::os::raw::c_char; 16usize],
 }
 #[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_short_close0_instantiation() {
+fn bindgen_test_layout__opaque_pthread_rwlockattr_t() {
     assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::size_of::<_opaque_pthread_rwlockattr_t>(),
+        24usize,
+        concat!("Size of: ", stringify!(_opaque_pthread_rwlockattr_t))
     );
     assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::align_of::<_opaque_pthread_rwlockattr_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_opaque_pthread_rwlockattr_t))
     );
+    fn test_field___sig() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_rwlockattr_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__sig) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_rwlockattr_t),
+                "::",
+                stringify!(__sig)
+            )
+        );
+    }
+    test_field___sig();
+    fn test_field___opaque() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_rwlockattr_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__opaque) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_rwlockattr_t),
+                "::",
+                stringify!(__opaque)
+            )
+        );
+    }
+    test_field___opaque();
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _opaque_pthread_t {
+    pub __sig: ::std::os::raw::c_long,
+    pub __cleanup_stack: *mut __darwin_pthread_handler_rec,
+    pub __opaque: [::std::os::raw::c_char; 8176usize],
 }
 #[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_unsigned_short_close0_instantiation() {
+fn bindgen_test_layout__opaque_pthread_t() {
     assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::size_of::<_opaque_pthread_t>(),
+        8192usize,
+        concat!("Size of: ", stringify!(_opaque_pthread_t))
     );
     assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
+        ::std::mem::align_of::<_opaque_pthread_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_opaque_pthread_t))
     );
+    fn test_field___sig() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__sig) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_t),
+                "::",
+                stringify!(__sig)
+            )
+        );
+    }
+    test_field___sig();
+    fn test_field___cleanup_stack() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__cleanup_stack) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_t),
+                "::",
+                stringify!(__cleanup_stack)
+            )
+        );
+    }
+    test_field___cleanup_stack();
+    fn test_field___opaque() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_opaque_pthread_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).__opaque) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_opaque_pthread_t),
+                "::",
+                stringify!(__opaque)
+            )
+        );
+    }
+    test_field___opaque();
 }
-#[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_int_close0_instantiation() {
-    assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-}
-#[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_unsigned_int_close0_instantiation() {
-    assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-}
-#[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_long_close0_instantiation() {
-    assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-}
-#[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_unsigned_long_close0_instantiation() {
-    assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-}
-#[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_long_long_close0_instantiation() {
-    assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-}
-#[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_unsigned_long_long_close0_instantiation() {
-    assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-}
-#[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0___int128_close0_instantiation() {
-    assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-}
-#[test]
-fn __bindgen_test_layout_std___libcpp_is_integral_open0_unsigned___int128_close0_instantiation() {
-    assert_eq!(
-        ::std::mem::size_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Size of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<std___libcpp_is_integral>(),
-        1usize,
-        concat!(
-            "Alignment of template specialization: ",
-            stringify!(std___libcpp_is_integral)
-        )
-    );
-}
+pub type __darwin_pthread_attr_t = _opaque_pthread_attr_t;
+pub type __darwin_pthread_cond_t = _opaque_pthread_cond_t;
+pub type __darwin_pthread_condattr_t = _opaque_pthread_condattr_t;
+pub type __darwin_pthread_key_t = ::std::os::raw::c_ulong;
+pub type __darwin_pthread_mutex_t = _opaque_pthread_mutex_t;
+pub type __darwin_pthread_mutexattr_t = _opaque_pthread_mutexattr_t;
+pub type __darwin_pthread_once_t = _opaque_pthread_once_t;
+pub type __darwin_pthread_rwlock_t = _opaque_pthread_rwlock_t;
+pub type __darwin_pthread_rwlockattr_t = _opaque_pthread_rwlockattr_t;
+pub type __darwin_pthread_t = *mut _opaque_pthread_t;
+pub type __darwin_nl_item = ::std::os::raw::c_int;
+pub type __darwin_wctrans_t = ::std::os::raw::c_int;
+pub type __darwin_wctype_t = __uint32_t;
+pub type u_int8_t = ::std::os::raw::c_uchar;
+pub type u_int16_t = ::std::os::raw::c_ushort;
+pub type u_int32_t = ::std::os::raw::c_uint;
+pub type u_int64_t = ::std::os::raw::c_ulonglong;
+pub type register_t = i64;
+pub type user_addr_t = u_int64_t;
+pub type user_size_t = u_int64_t;
+pub type user_ssize_t = i64;
+pub type user_long_t = i64;
+pub type user_ulong_t = u_int64_t;
+pub type user_time_t = i64;
+pub type user_off_t = i64;
+pub type syscall_arg_t = u_int64_t;
+pub type va_list = __darwin_va_list;
 extern "C" {
-    pub fn OpenJTalk_create() -> *mut ::std::os::raw::c_void;
-}
-extern "C" {
-    pub fn OpenJTalk_extract_fullcontext(
-        openjtalk: *mut ::std::os::raw::c_void,
-        text: *const ::std::os::raw::c_char,
-        size: *mut usize,
-    ) -> *mut *mut ::std::os::raw::c_char;
-}
-extern "C" {
-    pub fn OpenJTalk_load(
-        openjtalk: *mut ::std::os::raw::c_void,
-        dn_mecab: *const ::std::os::raw::c_char,
+    pub fn renameat(
+        arg1: ::std::os::raw::c_int,
+        arg2: *const ::std::os::raw::c_char,
+        arg3: ::std::os::raw::c_int,
+        arg4: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    pub fn OpenJTalk_clear(openjtalk: *mut ::std::os::raw::c_void);
+    pub fn renamex_np(
+        arg1: *const ::std::os::raw::c_char,
+        arg2: *const ::std::os::raw::c_char,
+        arg3: ::std::os::raw::c_uint,
+    ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    pub fn OpenJTalk_delete(openjtalk: *mut ::std::os::raw::c_void);
+    pub fn renameatx_np(
+        arg1: ::std::os::raw::c_int,
+        arg2: *const ::std::os::raw::c_char,
+        arg3: ::std::os::raw::c_int,
+        arg4: *const ::std::os::raw::c_char,
+        arg5: ::std::os::raw::c_uint,
+    ) -> ::std::os::raw::c_int;
 }
+pub type fpos_t = __darwin_off_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct __sbuf {
+    pub _base: *mut ::std::os::raw::c_uchar,
+    pub _size: ::std::os::raw::c_int,
+}
+#[test]
+fn bindgen_test_layout___sbuf() {
+    assert_eq!(
+        ::std::mem::size_of::<__sbuf>(),
+        16usize,
+        concat!("Size of: ", stringify!(__sbuf))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<__sbuf>(),
+        8usize,
+        concat!("Alignment of ", stringify!(__sbuf))
+    );
+    fn test_field__base() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sbuf>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._base) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sbuf),
+                "::",
+                stringify!(_base)
+            )
+        );
+    }
+    test_field__base();
+    fn test_field__size() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sbuf>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._size) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sbuf),
+                "::",
+                stringify!(_size)
+            )
+        );
+    }
+    test_field__size();
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct __sFILEX {
+    _unused: [u8; 0],
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct __sFILE {
+    pub _p: *mut ::std::os::raw::c_uchar,
+    pub _r: ::std::os::raw::c_int,
+    pub _w: ::std::os::raw::c_int,
+    pub _flags: ::std::os::raw::c_short,
+    pub _file: ::std::os::raw::c_short,
+    pub _bf: __sbuf,
+    pub _lbfsize: ::std::os::raw::c_int,
+    pub _cookie: *mut ::std::os::raw::c_void,
+    pub _close: ::std::option::Option<
+        unsafe extern "C" fn(arg1: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int,
+    >,
+    pub _read: ::std::option::Option<
+        unsafe extern "C" fn(
+            arg1: *mut ::std::os::raw::c_void,
+            arg2: *mut ::std::os::raw::c_char,
+            arg3: ::std::os::raw::c_int,
+        ) -> ::std::os::raw::c_int,
+    >,
+    pub _seek: ::std::option::Option<
+        unsafe extern "C" fn(
+            arg1: *mut ::std::os::raw::c_void,
+            arg2: fpos_t,
+            arg3: ::std::os::raw::c_int,
+        ) -> fpos_t,
+    >,
+    pub _write: ::std::option::Option<
+        unsafe extern "C" fn(
+            arg1: *mut ::std::os::raw::c_void,
+            arg2: *const ::std::os::raw::c_char,
+            arg3: ::std::os::raw::c_int,
+        ) -> ::std::os::raw::c_int,
+    >,
+    pub _ub: __sbuf,
+    pub _extra: *mut __sFILEX,
+    pub _ur: ::std::os::raw::c_int,
+    pub _ubuf: [::std::os::raw::c_uchar; 3usize],
+    pub _nbuf: [::std::os::raw::c_uchar; 1usize],
+    pub _lb: __sbuf,
+    pub _blksize: ::std::os::raw::c_int,
+    pub _offset: fpos_t,
+}
+#[test]
+fn bindgen_test_layout___sFILE() {
+    assert_eq!(
+        ::std::mem::size_of::<__sFILE>(),
+        152usize,
+        concat!("Size of: ", stringify!(__sFILE))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<__sFILE>(),
+        8usize,
+        concat!("Alignment of ", stringify!(__sFILE))
+    );
+    fn test_field__p() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._p) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_p)
+            )
+        );
+    }
+    test_field__p();
+    fn test_field__r() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._r) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_r)
+            )
+        );
+    }
+    test_field__r();
+    fn test_field__w() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._w) as usize - ptr as usize
+            },
+            12usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_w)
+            )
+        );
+    }
+    test_field__w();
+    fn test_field__flags() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._flags) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_flags)
+            )
+        );
+    }
+    test_field__flags();
+    fn test_field__file() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._file) as usize - ptr as usize
+            },
+            18usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_file)
+            )
+        );
+    }
+    test_field__file();
+    fn test_field__bf() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._bf) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_bf)
+            )
+        );
+    }
+    test_field__bf();
+    fn test_field__lbfsize() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._lbfsize) as usize - ptr as usize
+            },
+            40usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_lbfsize)
+            )
+        );
+    }
+    test_field__lbfsize();
+    fn test_field__cookie() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._cookie) as usize - ptr as usize
+            },
+            48usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_cookie)
+            )
+        );
+    }
+    test_field__cookie();
+    fn test_field__close() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._close) as usize - ptr as usize
+            },
+            56usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_close)
+            )
+        );
+    }
+    test_field__close();
+    fn test_field__read() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._read) as usize - ptr as usize
+            },
+            64usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_read)
+            )
+        );
+    }
+    test_field__read();
+    fn test_field__seek() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._seek) as usize - ptr as usize
+            },
+            72usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_seek)
+            )
+        );
+    }
+    test_field__seek();
+    fn test_field__write() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._write) as usize - ptr as usize
+            },
+            80usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_write)
+            )
+        );
+    }
+    test_field__write();
+    fn test_field__ub() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._ub) as usize - ptr as usize
+            },
+            88usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_ub)
+            )
+        );
+    }
+    test_field__ub();
+    fn test_field__extra() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._extra) as usize - ptr as usize
+            },
+            104usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_extra)
+            )
+        );
+    }
+    test_field__extra();
+    fn test_field__ur() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._ur) as usize - ptr as usize
+            },
+            112usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_ur)
+            )
+        );
+    }
+    test_field__ur();
+    fn test_field__ubuf() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._ubuf) as usize - ptr as usize
+            },
+            116usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_ubuf)
+            )
+        );
+    }
+    test_field__ubuf();
+    fn test_field__nbuf() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._nbuf) as usize - ptr as usize
+            },
+            119usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_nbuf)
+            )
+        );
+    }
+    test_field__nbuf();
+    fn test_field__lb() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._lb) as usize - ptr as usize
+            },
+            120usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_lb)
+            )
+        );
+    }
+    test_field__lb();
+    fn test_field__blksize() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._blksize) as usize - ptr as usize
+            },
+            136usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_blksize)
+            )
+        );
+    }
+    test_field__blksize();
+    fn test_field__offset() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<__sFILE>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr)._offset) as usize - ptr as usize
+            },
+            144usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(__sFILE),
+                "::",
+                stringify!(_offset)
+            )
+        );
+    }
+    test_field__offset();
+}
+pub type FILE = __sFILE;
+extern "C" {
+    pub static mut __stdinp: *mut FILE;
+}
+extern "C" {
+    pub static mut __stdoutp: *mut FILE;
+}
+extern "C" {
+    pub static mut __stderrp: *mut FILE;
+}
+extern "C" {
+    pub fn clearerr(arg1: *mut FILE);
+}
+extern "C" {
+    pub fn fclose(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn feof(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn ferror(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn fflush(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn fgetc(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn fgetpos(arg1: *mut FILE, arg2: *mut fpos_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn fgets(
+        arg1: *mut ::std::os::raw::c_char,
+        arg2: ::std::os::raw::c_int,
+        arg3: *mut FILE,
+    ) -> *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn fopen(
+        __filename: *const ::std::os::raw::c_char,
+        __mode: *const ::std::os::raw::c_char,
+    ) -> *mut FILE;
+}
+extern "C" {
+    pub fn fprintf(
+        arg1: *mut FILE,
+        arg2: *const ::std::os::raw::c_char,
+        ...
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn fputc(arg1: ::std::os::raw::c_int, arg2: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn fputs(arg1: *const ::std::os::raw::c_char, arg2: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn fread(
+        __ptr: *mut ::std::os::raw::c_void,
+        __size: usize,
+        __nitems: usize,
+        __stream: *mut FILE,
+    ) -> usize;
+}
+extern "C" {
+    pub fn freopen(
+        arg1: *const ::std::os::raw::c_char,
+        arg2: *const ::std::os::raw::c_char,
+        arg3: *mut FILE,
+    ) -> *mut FILE;
+}
+extern "C" {
+    pub fn fscanf(
+        arg1: *mut FILE,
+        arg2: *const ::std::os::raw::c_char,
+        ...
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn fseek(
+        arg1: *mut FILE,
+        arg2: ::std::os::raw::c_long,
+        arg3: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn fsetpos(arg1: *mut FILE, arg2: *const fpos_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn ftell(arg1: *mut FILE) -> ::std::os::raw::c_long;
+}
+extern "C" {
+    pub fn fwrite(
+        __ptr: *const ::std::os::raw::c_void,
+        __size: usize,
+        __nitems: usize,
+        __stream: *mut FILE,
+    ) -> usize;
+}
+extern "C" {
+    pub fn getc(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn getchar() -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn gets(arg1: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn perror(arg1: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn printf(arg1: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn putc(arg1: ::std::os::raw::c_int, arg2: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn putchar(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn puts(arg1: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn remove(arg1: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn rename(
+        __old: *const ::std::os::raw::c_char,
+        __new: *const ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn rewind(arg1: *mut FILE);
+}
+extern "C" {
+    pub fn scanf(arg1: *const ::std::os::raw::c_char, ...) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn setbuf(arg1: *mut FILE, arg2: *mut ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn setvbuf(
+        arg1: *mut FILE,
+        arg2: *mut ::std::os::raw::c_char,
+        arg3: ::std::os::raw::c_int,
+        arg4: usize,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn sprintf(
+        arg1: *mut ::std::os::raw::c_char,
+        arg2: *const ::std::os::raw::c_char,
+        ...
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn sscanf(
+        arg1: *const ::std::os::raw::c_char,
+        arg2: *const ::std::os::raw::c_char,
+        ...
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn tmpfile() -> *mut FILE;
+}
+extern "C" {
+    pub fn tmpnam(arg1: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn ungetc(arg1: ::std::os::raw::c_int, arg2: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vfprintf(
+        arg1: *mut FILE,
+        arg2: *const ::std::os::raw::c_char,
+        arg3: va_list,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vprintf(arg1: *const ::std::os::raw::c_char, arg2: va_list) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vsprintf(
+        arg1: *mut ::std::os::raw::c_char,
+        arg2: *const ::std::os::raw::c_char,
+        arg3: va_list,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn ctermid(arg1: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn fdopen(arg1: ::std::os::raw::c_int, arg2: *const ::std::os::raw::c_char) -> *mut FILE;
+}
+extern "C" {
+    pub fn fileno(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn pclose(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn popen(
+        arg1: *const ::std::os::raw::c_char,
+        arg2: *const ::std::os::raw::c_char,
+    ) -> *mut FILE;
+}
+extern "C" {
+    pub fn __srget(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn __svfscanf(
+        arg1: *mut FILE,
+        arg2: *const ::std::os::raw::c_char,
+        arg3: va_list,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn __swbuf(arg1: ::std::os::raw::c_int, arg2: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn flockfile(arg1: *mut FILE);
+}
+extern "C" {
+    pub fn ftrylockfile(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn funlockfile(arg1: *mut FILE);
+}
+extern "C" {
+    pub fn getc_unlocked(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn getchar_unlocked() -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn putc_unlocked(arg1: ::std::os::raw::c_int, arg2: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn putchar_unlocked(arg1: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn getw(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn putw(arg1: ::std::os::raw::c_int, arg2: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn tempnam(
+        __dir: *const ::std::os::raw::c_char,
+        __prefix: *const ::std::os::raw::c_char,
+    ) -> *mut ::std::os::raw::c_char;
+}
+pub type off_t = __darwin_off_t;
+extern "C" {
+    pub fn fseeko(
+        __stream: *mut FILE,
+        __offset: off_t,
+        __whence: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn ftello(__stream: *mut FILE) -> off_t;
+}
+extern "C" {
+    pub fn snprintf(
+        __str: *mut ::std::os::raw::c_char,
+        __size: usize,
+        __format: *const ::std::os::raw::c_char,
+        ...
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vfscanf(
+        __stream: *mut FILE,
+        __format: *const ::std::os::raw::c_char,
+        arg1: va_list,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vscanf(__format: *const ::std::os::raw::c_char, arg1: va_list) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vsnprintf(
+        __str: *mut ::std::os::raw::c_char,
+        __size: usize,
+        __format: *const ::std::os::raw::c_char,
+        arg1: va_list,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vsscanf(
+        __str: *const ::std::os::raw::c_char,
+        __format: *const ::std::os::raw::c_char,
+        arg1: va_list,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn dprintf(
+        arg1: ::std::os::raw::c_int,
+        arg2: *const ::std::os::raw::c_char,
+        ...
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vdprintf(
+        arg1: ::std::os::raw::c_int,
+        arg2: *const ::std::os::raw::c_char,
+        arg3: va_list,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn getdelim(
+        __linep: *mut *mut ::std::os::raw::c_char,
+        __linecapp: *mut usize,
+        __delimiter: ::std::os::raw::c_int,
+        __stream: *mut FILE,
+    ) -> isize;
+}
+extern "C" {
+    pub fn getline(
+        __linep: *mut *mut ::std::os::raw::c_char,
+        __linecapp: *mut usize,
+        __stream: *mut FILE,
+    ) -> isize;
+}
+extern "C" {
+    pub fn fmemopen(
+        __buf: *mut ::std::os::raw::c_void,
+        __size: usize,
+        __mode: *const ::std::os::raw::c_char,
+    ) -> *mut FILE;
+}
+extern "C" {
+    pub fn open_memstream(
+        __bufp: *mut *mut ::std::os::raw::c_char,
+        __sizep: *mut usize,
+    ) -> *mut FILE;
+}
+extern "C" {
+    pub static sys_nerr: ::std::os::raw::c_int;
+}
+extern "C" {
+    pub static mut sys_errlist: [*const ::std::os::raw::c_char; 0usize];
+}
+extern "C" {
+    pub fn asprintf(
+        arg1: *mut *mut ::std::os::raw::c_char,
+        arg2: *const ::std::os::raw::c_char,
+        ...
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn ctermid_r(arg1: *mut ::std::os::raw::c_char) -> *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn fgetln(arg1: *mut FILE, arg2: *mut usize) -> *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn fmtcheck(
+        arg1: *const ::std::os::raw::c_char,
+        arg2: *const ::std::os::raw::c_char,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn fpurge(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn setbuffer(
+        arg1: *mut FILE,
+        arg2: *mut ::std::os::raw::c_char,
+        arg3: ::std::os::raw::c_int,
+    );
+}
+extern "C" {
+    pub fn setlinebuf(arg1: *mut FILE) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vasprintf(
+        arg1: *mut *mut ::std::os::raw::c_char,
+        arg2: *const ::std::os::raw::c_char,
+        arg3: va_list,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn funopen(
+        arg1: *const ::std::os::raw::c_void,
+        arg2: ::std::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::std::os::raw::c_void,
+                arg2: *mut ::std::os::raw::c_char,
+                arg3: ::std::os::raw::c_int,
+            ) -> ::std::os::raw::c_int,
+        >,
+        arg3: ::std::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::std::os::raw::c_void,
+                arg2: *const ::std::os::raw::c_char,
+                arg3: ::std::os::raw::c_int,
+            ) -> ::std::os::raw::c_int,
+        >,
+        arg4: ::std::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::std::os::raw::c_void,
+                arg2: fpos_t,
+                arg3: ::std::os::raw::c_int,
+            ) -> fpos_t,
+        >,
+        arg5: ::std::option::Option<
+            unsafe extern "C" fn(arg1: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int,
+        >,
+    ) -> *mut FILE;
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _JPCommonLabelPhoneme {
+    pub phoneme: *mut ::std::os::raw::c_char,
+    pub prev: *mut _JPCommonLabelPhoneme,
+    pub next: *mut _JPCommonLabelPhoneme,
+    pub up: *mut _JPCommonLabelMora,
+}
+#[test]
+fn bindgen_test_layout__JPCommonLabelPhoneme() {
+    assert_eq!(
+        ::std::mem::size_of::<_JPCommonLabelPhoneme>(),
+        32usize,
+        concat!("Size of: ", stringify!(_JPCommonLabelPhoneme))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<_JPCommonLabelPhoneme>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_JPCommonLabelPhoneme))
+    );
+    fn test_field_phoneme() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelPhoneme>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).phoneme) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelPhoneme),
+                "::",
+                stringify!(phoneme)
+            )
+        );
+    }
+    test_field_phoneme();
+    fn test_field_prev() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelPhoneme>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).prev) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelPhoneme),
+                "::",
+                stringify!(prev)
+            )
+        );
+    }
+    test_field_prev();
+    fn test_field_next() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelPhoneme>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).next) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelPhoneme),
+                "::",
+                stringify!(next)
+            )
+        );
+    }
+    test_field_next();
+    fn test_field_up() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelPhoneme>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).up) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelPhoneme),
+                "::",
+                stringify!(up)
+            )
+        );
+    }
+    test_field_up();
+}
+pub type JPCommonLabelPhoneme = _JPCommonLabelPhoneme;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _JPCommonLabelMora {
+    pub mora: *mut ::std::os::raw::c_char,
+    pub head: *mut _JPCommonLabelPhoneme,
+    pub tail: *mut _JPCommonLabelPhoneme,
+    pub prev: *mut _JPCommonLabelMora,
+    pub next: *mut _JPCommonLabelMora,
+    pub up: *mut _JPCommonLabelWord,
+}
+#[test]
+fn bindgen_test_layout__JPCommonLabelMora() {
+    assert_eq!(
+        ::std::mem::size_of::<_JPCommonLabelMora>(),
+        48usize,
+        concat!("Size of: ", stringify!(_JPCommonLabelMora))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<_JPCommonLabelMora>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_JPCommonLabelMora))
+    );
+    fn test_field_mora() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelMora>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).mora) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelMora),
+                "::",
+                stringify!(mora)
+            )
+        );
+    }
+    test_field_mora();
+    fn test_field_head() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelMora>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).head) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelMora),
+                "::",
+                stringify!(head)
+            )
+        );
+    }
+    test_field_head();
+    fn test_field_tail() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelMora>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).tail) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelMora),
+                "::",
+                stringify!(tail)
+            )
+        );
+    }
+    test_field_tail();
+    fn test_field_prev() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelMora>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).prev) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelMora),
+                "::",
+                stringify!(prev)
+            )
+        );
+    }
+    test_field_prev();
+    fn test_field_next() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelMora>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).next) as usize - ptr as usize
+            },
+            32usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelMora),
+                "::",
+                stringify!(next)
+            )
+        );
+    }
+    test_field_next();
+    fn test_field_up() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelMora>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).up) as usize - ptr as usize
+            },
+            40usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelMora),
+                "::",
+                stringify!(up)
+            )
+        );
+    }
+    test_field_up();
+}
+pub type JPCommonLabelMora = _JPCommonLabelMora;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _JPCommonLabelWord {
+    pub pron: *mut ::std::os::raw::c_char,
+    pub pos: *mut ::std::os::raw::c_char,
+    pub ctype: *mut ::std::os::raw::c_char,
+    pub cform: *mut ::std::os::raw::c_char,
+    pub head: *mut _JPCommonLabelMora,
+    pub tail: *mut _JPCommonLabelMora,
+    pub prev: *mut _JPCommonLabelWord,
+    pub next: *mut _JPCommonLabelWord,
+    pub up: *mut _JPCommonLabelAccentPhrase,
+}
+#[test]
+fn bindgen_test_layout__JPCommonLabelWord() {
+    assert_eq!(
+        ::std::mem::size_of::<_JPCommonLabelWord>(),
+        72usize,
+        concat!("Size of: ", stringify!(_JPCommonLabelWord))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<_JPCommonLabelWord>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_JPCommonLabelWord))
+    );
+    fn test_field_pron() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelWord>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).pron) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelWord),
+                "::",
+                stringify!(pron)
+            )
+        );
+    }
+    test_field_pron();
+    fn test_field_pos() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelWord>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).pos) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelWord),
+                "::",
+                stringify!(pos)
+            )
+        );
+    }
+    test_field_pos();
+    fn test_field_ctype() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelWord>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).ctype) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelWord),
+                "::",
+                stringify!(ctype)
+            )
+        );
+    }
+    test_field_ctype();
+    fn test_field_cform() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelWord>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).cform) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelWord),
+                "::",
+                stringify!(cform)
+            )
+        );
+    }
+    test_field_cform();
+    fn test_field_head() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelWord>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).head) as usize - ptr as usize
+            },
+            32usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelWord),
+                "::",
+                stringify!(head)
+            )
+        );
+    }
+    test_field_head();
+    fn test_field_tail() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelWord>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).tail) as usize - ptr as usize
+            },
+            40usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelWord),
+                "::",
+                stringify!(tail)
+            )
+        );
+    }
+    test_field_tail();
+    fn test_field_prev() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelWord>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).prev) as usize - ptr as usize
+            },
+            48usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelWord),
+                "::",
+                stringify!(prev)
+            )
+        );
+    }
+    test_field_prev();
+    fn test_field_next() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelWord>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).next) as usize - ptr as usize
+            },
+            56usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelWord),
+                "::",
+                stringify!(next)
+            )
+        );
+    }
+    test_field_next();
+    fn test_field_up() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelWord>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).up) as usize - ptr as usize
+            },
+            64usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelWord),
+                "::",
+                stringify!(up)
+            )
+        );
+    }
+    test_field_up();
+}
+pub type JPCommonLabelWord = _JPCommonLabelWord;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _JPCommonLabelAccentPhrase {
+    pub accent: ::std::os::raw::c_int,
+    pub emotion: *mut ::std::os::raw::c_char,
+    pub head: *mut _JPCommonLabelWord,
+    pub tail: *mut _JPCommonLabelWord,
+    pub prev: *mut _JPCommonLabelAccentPhrase,
+    pub next: *mut _JPCommonLabelAccentPhrase,
+    pub up: *mut _JPCommonLabelBreathGroup,
+}
+#[test]
+fn bindgen_test_layout__JPCommonLabelAccentPhrase() {
+    assert_eq!(
+        ::std::mem::size_of::<_JPCommonLabelAccentPhrase>(),
+        56usize,
+        concat!("Size of: ", stringify!(_JPCommonLabelAccentPhrase))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<_JPCommonLabelAccentPhrase>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_JPCommonLabelAccentPhrase))
+    );
+    fn test_field_accent() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelAccentPhrase>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).accent) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelAccentPhrase),
+                "::",
+                stringify!(accent)
+            )
+        );
+    }
+    test_field_accent();
+    fn test_field_emotion() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelAccentPhrase>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).emotion) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelAccentPhrase),
+                "::",
+                stringify!(emotion)
+            )
+        );
+    }
+    test_field_emotion();
+    fn test_field_head() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelAccentPhrase>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).head) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelAccentPhrase),
+                "::",
+                stringify!(head)
+            )
+        );
+    }
+    test_field_head();
+    fn test_field_tail() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelAccentPhrase>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).tail) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelAccentPhrase),
+                "::",
+                stringify!(tail)
+            )
+        );
+    }
+    test_field_tail();
+    fn test_field_prev() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelAccentPhrase>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).prev) as usize - ptr as usize
+            },
+            32usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelAccentPhrase),
+                "::",
+                stringify!(prev)
+            )
+        );
+    }
+    test_field_prev();
+    fn test_field_next() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelAccentPhrase>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).next) as usize - ptr as usize
+            },
+            40usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelAccentPhrase),
+                "::",
+                stringify!(next)
+            )
+        );
+    }
+    test_field_next();
+    fn test_field_up() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelAccentPhrase>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).up) as usize - ptr as usize
+            },
+            48usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelAccentPhrase),
+                "::",
+                stringify!(up)
+            )
+        );
+    }
+    test_field_up();
+}
+pub type JPCommonLabelAccentPhrase = _JPCommonLabelAccentPhrase;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _JPCommonLabelBreathGroup {
+    pub head: *mut _JPCommonLabelAccentPhrase,
+    pub tail: *mut _JPCommonLabelAccentPhrase,
+    pub prev: *mut _JPCommonLabelBreathGroup,
+    pub next: *mut _JPCommonLabelBreathGroup,
+}
+#[test]
+fn bindgen_test_layout__JPCommonLabelBreathGroup() {
+    assert_eq!(
+        ::std::mem::size_of::<_JPCommonLabelBreathGroup>(),
+        32usize,
+        concat!("Size of: ", stringify!(_JPCommonLabelBreathGroup))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<_JPCommonLabelBreathGroup>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_JPCommonLabelBreathGroup))
+    );
+    fn test_field_head() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelBreathGroup>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).head) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelBreathGroup),
+                "::",
+                stringify!(head)
+            )
+        );
+    }
+    test_field_head();
+    fn test_field_tail() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelBreathGroup>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).tail) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelBreathGroup),
+                "::",
+                stringify!(tail)
+            )
+        );
+    }
+    test_field_tail();
+    fn test_field_prev() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelBreathGroup>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).prev) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelBreathGroup),
+                "::",
+                stringify!(prev)
+            )
+        );
+    }
+    test_field_prev();
+    fn test_field_next() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabelBreathGroup>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).next) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabelBreathGroup),
+                "::",
+                stringify!(next)
+            )
+        );
+    }
+    test_field_next();
+}
+pub type JPCommonLabelBreathGroup = _JPCommonLabelBreathGroup;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _JPCommonLabel {
+    pub size: ::std::os::raw::c_int,
+    pub feature: *mut *mut ::std::os::raw::c_char,
+    pub breath_head: *mut JPCommonLabelBreathGroup,
+    pub breath_tail: *mut JPCommonLabelBreathGroup,
+    pub accent_head: *mut JPCommonLabelAccentPhrase,
+    pub accent_tail: *mut JPCommonLabelAccentPhrase,
+    pub word_head: *mut JPCommonLabelWord,
+    pub word_tail: *mut JPCommonLabelWord,
+    pub mora_head: *mut JPCommonLabelMora,
+    pub mora_tail: *mut JPCommonLabelMora,
+    pub phoneme_head: *mut JPCommonLabelPhoneme,
+    pub phoneme_tail: *mut JPCommonLabelPhoneme,
+    pub short_pause_flag: ::std::os::raw::c_int,
+}
+#[test]
+fn bindgen_test_layout__JPCommonLabel() {
+    assert_eq!(
+        ::std::mem::size_of::<_JPCommonLabel>(),
+        104usize,
+        concat!("Size of: ", stringify!(_JPCommonLabel))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<_JPCommonLabel>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_JPCommonLabel))
+    );
+    fn test_field_size() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).size) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(size)
+            )
+        );
+    }
+    test_field_size();
+    fn test_field_feature() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).feature) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(feature)
+            )
+        );
+    }
+    test_field_feature();
+    fn test_field_breath_head() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).breath_head) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(breath_head)
+            )
+        );
+    }
+    test_field_breath_head();
+    fn test_field_breath_tail() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).breath_tail) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(breath_tail)
+            )
+        );
+    }
+    test_field_breath_tail();
+    fn test_field_accent_head() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).accent_head) as usize - ptr as usize
+            },
+            32usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(accent_head)
+            )
+        );
+    }
+    test_field_accent_head();
+    fn test_field_accent_tail() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).accent_tail) as usize - ptr as usize
+            },
+            40usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(accent_tail)
+            )
+        );
+    }
+    test_field_accent_tail();
+    fn test_field_word_head() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).word_head) as usize - ptr as usize
+            },
+            48usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(word_head)
+            )
+        );
+    }
+    test_field_word_head();
+    fn test_field_word_tail() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).word_tail) as usize - ptr as usize
+            },
+            56usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(word_tail)
+            )
+        );
+    }
+    test_field_word_tail();
+    fn test_field_mora_head() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).mora_head) as usize - ptr as usize
+            },
+            64usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(mora_head)
+            )
+        );
+    }
+    test_field_mora_head();
+    fn test_field_mora_tail() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).mora_tail) as usize - ptr as usize
+            },
+            72usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(mora_tail)
+            )
+        );
+    }
+    test_field_mora_tail();
+    fn test_field_phoneme_head() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).phoneme_head) as usize - ptr as usize
+            },
+            80usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(phoneme_head)
+            )
+        );
+    }
+    test_field_phoneme_head();
+    fn test_field_phoneme_tail() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).phoneme_tail) as usize - ptr as usize
+            },
+            88usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(phoneme_tail)
+            )
+        );
+    }
+    test_field_phoneme_tail();
+    fn test_field_short_pause_flag() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonLabel>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).short_pause_flag) as usize - ptr as usize
+            },
+            96usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonLabel),
+                "::",
+                stringify!(short_pause_flag)
+            )
+        );
+    }
+    test_field_short_pause_flag();
+}
+pub type JPCommonLabel = _JPCommonLabel;
+extern "C" {
+    pub fn JPCommonLabel_initialize(label: *mut JPCommonLabel);
+}
+extern "C" {
+    pub fn JPCommonLabel_push_word(
+        label: *mut JPCommonLabel,
+        pron: *const ::std::os::raw::c_char,
+        pos: *const ::std::os::raw::c_char,
+        ctype: *const ::std::os::raw::c_char,
+        cform: *const ::std::os::raw::c_char,
+        acc: ::std::os::raw::c_int,
+        chain_flag: ::std::os::raw::c_int,
+    );
+}
+extern "C" {
+    pub fn JPCommonLabel_make(label: *mut JPCommonLabel);
+}
+extern "C" {
+    pub fn JPCommonLabel_get_size(label: *mut JPCommonLabel) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn JPCommonLabel_get_feature(label: *mut JPCommonLabel)
+        -> *mut *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn JPCommonLabel_print(label: *mut JPCommonLabel);
+}
+extern "C" {
+    pub fn JPCommonLabel_fprint(label: *mut JPCommonLabel, fp: *mut FILE);
+}
+extern "C" {
+    pub fn JPCommonLabel_clear(label: *mut JPCommonLabel);
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _JPCommonNode {
+    pub pron: *mut ::std::os::raw::c_char,
+    pub pos: *mut ::std::os::raw::c_char,
+    pub ctype: *mut ::std::os::raw::c_char,
+    pub cform: *mut ::std::os::raw::c_char,
+    pub acc: ::std::os::raw::c_int,
+    pub chain_flag: ::std::os::raw::c_int,
+    pub prev: *mut _JPCommonNode,
+    pub next: *mut _JPCommonNode,
+}
+#[test]
+fn bindgen_test_layout__JPCommonNode() {
+    assert_eq!(
+        ::std::mem::size_of::<_JPCommonNode>(),
+        56usize,
+        concat!("Size of: ", stringify!(_JPCommonNode))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<_JPCommonNode>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_JPCommonNode))
+    );
+    fn test_field_pron() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).pron) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonNode),
+                "::",
+                stringify!(pron)
+            )
+        );
+    }
+    test_field_pron();
+    fn test_field_pos() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).pos) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonNode),
+                "::",
+                stringify!(pos)
+            )
+        );
+    }
+    test_field_pos();
+    fn test_field_ctype() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).ctype) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonNode),
+                "::",
+                stringify!(ctype)
+            )
+        );
+    }
+    test_field_ctype();
+    fn test_field_cform() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).cform) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonNode),
+                "::",
+                stringify!(cform)
+            )
+        );
+    }
+    test_field_cform();
+    fn test_field_acc() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).acc) as usize - ptr as usize
+            },
+            32usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonNode),
+                "::",
+                stringify!(acc)
+            )
+        );
+    }
+    test_field_acc();
+    fn test_field_chain_flag() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).chain_flag) as usize - ptr as usize
+            },
+            36usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonNode),
+                "::",
+                stringify!(chain_flag)
+            )
+        );
+    }
+    test_field_chain_flag();
+    fn test_field_prev() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).prev) as usize - ptr as usize
+            },
+            40usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonNode),
+                "::",
+                stringify!(prev)
+            )
+        );
+    }
+    test_field_prev();
+    fn test_field_next() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommonNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).next) as usize - ptr as usize
+            },
+            48usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommonNode),
+                "::",
+                stringify!(next)
+            )
+        );
+    }
+    test_field_next();
+}
+pub type JPCommonNode = _JPCommonNode;
+extern "C" {
+    pub fn JPCommonNode_initialize(node: *mut JPCommonNode);
+}
+extern "C" {
+    pub fn JPCommonNode_set_pron(node: *mut JPCommonNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn JPCommonNode_set_pos(node: *mut JPCommonNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn JPCommonNode_set_ctype(node: *mut JPCommonNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn JPCommonNode_set_cform(node: *mut JPCommonNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn JPCommonNode_set_acc(node: *mut JPCommonNode, acc: ::std::os::raw::c_int);
+}
+extern "C" {
+    pub fn JPCommonNode_set_chain_flag(node: *mut JPCommonNode, flag: ::std::os::raw::c_int);
+}
+extern "C" {
+    pub fn JPCommonNode_get_pron(node: *mut JPCommonNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn JPCommonNode_get_pos(node: *mut JPCommonNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn JPCommonNode_get_ctype(node: *mut JPCommonNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn JPCommonNode_get_cform(node: *mut JPCommonNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn JPCommonNode_get_acc(node: *mut JPCommonNode) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn JPCommonNode_get_chain_flag(node: *mut JPCommonNode) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn JPCommonNode_print(node: *mut JPCommonNode);
+}
+extern "C" {
+    pub fn JPCommonNode_fprint(node: *mut JPCommonNode, fp: *mut FILE);
+}
+extern "C" {
+    pub fn JPCommonNode_clear(node: *mut JPCommonNode);
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _JPCommon {
+    pub head: *mut JPCommonNode,
+    pub tail: *mut JPCommonNode,
+    pub label: *mut JPCommonLabel,
+}
+#[test]
+fn bindgen_test_layout__JPCommon() {
+    assert_eq!(
+        ::std::mem::size_of::<_JPCommon>(),
+        24usize,
+        concat!("Size of: ", stringify!(_JPCommon))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<_JPCommon>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_JPCommon))
+    );
+    fn test_field_head() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommon>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).head) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommon),
+                "::",
+                stringify!(head)
+            )
+        );
+    }
+    test_field_head();
+    fn test_field_tail() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommon>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).tail) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommon),
+                "::",
+                stringify!(tail)
+            )
+        );
+    }
+    test_field_tail();
+    fn test_field_label() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_JPCommon>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).label) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_JPCommon),
+                "::",
+                stringify!(label)
+            )
+        );
+    }
+    test_field_label();
+}
+pub type JPCommon = _JPCommon;
+extern "C" {
+    pub fn JPCommon_initialize(jpcommon: *mut JPCommon);
+}
+extern "C" {
+    pub fn JPCommon_push(jpcommon: *mut JPCommon, node: *mut JPCommonNode);
+}
+extern "C" {
+    pub fn JPCommon_make_label(jpcommon: *mut JPCommon);
+}
+extern "C" {
+    pub fn JPCommon_get_label_size(jpcommon: *mut JPCommon) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn JPCommon_get_label_feature(jpcommon: *mut JPCommon) -> *mut *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn JPCommon_print(jpcommon: *mut JPCommon);
+}
+extern "C" {
+    pub fn JPCommon_fprint(jpcommon: *mut JPCommon, fp: *mut FILE);
+}
+extern "C" {
+    pub fn JPCommon_refresh(jpcommon: *mut JPCommon);
+}
+extern "C" {
+    pub fn JPCommon_clear(jpcommon: *mut JPCommon);
+}
+#[doc = " DictionaryInfo structure"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mecab_dictionary_info_t {
+    #[doc = " filename of dictionary"]
+    #[doc = " On Windows, filename is stored in UTF-8 encoding"]
+    pub filename: *const ::std::os::raw::c_char,
+    #[doc = " character set of the dictionary. e.g., \"SHIFT-JIS\", \"UTF-8\""]
+    pub charset: *const ::std::os::raw::c_char,
+    #[doc = " How many words are registered in this dictionary."]
+    pub size: ::std::os::raw::c_uint,
+    #[doc = " dictionary type"]
+    #[doc = " this value should be MECAB_USR_DIC, MECAB_SYS_DIC, or MECAB_UNK_DIC."]
+    pub type_: ::std::os::raw::c_int,
+    #[doc = " left attributes size"]
+    pub lsize: ::std::os::raw::c_uint,
+    #[doc = " right attributes size"]
+    pub rsize: ::std::os::raw::c_uint,
+    #[doc = " version of this dictionary"]
+    pub version: ::std::os::raw::c_ushort,
+    #[doc = " pointer to the next dictionary info."]
+    pub next: *mut mecab_dictionary_info_t,
+}
+#[test]
+fn bindgen_test_layout_mecab_dictionary_info_t() {
+    assert_eq!(
+        ::std::mem::size_of::<mecab_dictionary_info_t>(),
+        48usize,
+        concat!("Size of: ", stringify!(mecab_dictionary_info_t))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<mecab_dictionary_info_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(mecab_dictionary_info_t))
+    );
+    fn test_field_filename() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_dictionary_info_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).filename) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_dictionary_info_t),
+                "::",
+                stringify!(filename)
+            )
+        );
+    }
+    test_field_filename();
+    fn test_field_charset() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_dictionary_info_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).charset) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_dictionary_info_t),
+                "::",
+                stringify!(charset)
+            )
+        );
+    }
+    test_field_charset();
+    fn test_field_size() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_dictionary_info_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).size) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_dictionary_info_t),
+                "::",
+                stringify!(size)
+            )
+        );
+    }
+    test_field_size();
+    fn test_field_type() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_dictionary_info_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).type_) as usize - ptr as usize
+            },
+            20usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_dictionary_info_t),
+                "::",
+                stringify!(type_)
+            )
+        );
+    }
+    test_field_type();
+    fn test_field_lsize() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_dictionary_info_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).lsize) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_dictionary_info_t),
+                "::",
+                stringify!(lsize)
+            )
+        );
+    }
+    test_field_lsize();
+    fn test_field_rsize() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_dictionary_info_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).rsize) as usize - ptr as usize
+            },
+            28usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_dictionary_info_t),
+                "::",
+                stringify!(rsize)
+            )
+        );
+    }
+    test_field_rsize();
+    fn test_field_version() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_dictionary_info_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).version) as usize - ptr as usize
+            },
+            32usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_dictionary_info_t),
+                "::",
+                stringify!(version)
+            )
+        );
+    }
+    test_field_version();
+    fn test_field_next() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_dictionary_info_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).next) as usize - ptr as usize
+            },
+            40usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_dictionary_info_t),
+                "::",
+                stringify!(next)
+            )
+        );
+    }
+    test_field_next();
+}
+#[doc = " Path structure"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mecab_path_t {
+    #[doc = " pointer to the right node"]
+    pub rnode: *mut mecab_node_t,
+    #[doc = " pointer to the next right path"]
+    pub rnext: *mut mecab_path_t,
+    #[doc = " pointer to the left node"]
+    pub lnode: *mut mecab_node_t,
+    #[doc = " pointer to the next left path"]
+    pub lnext: *mut mecab_path_t,
+    #[doc = " local cost"]
+    pub cost: ::std::os::raw::c_int,
+    #[doc = " marginal probability"]
+    pub prob: f32,
+}
+#[test]
+fn bindgen_test_layout_mecab_path_t() {
+    assert_eq!(
+        ::std::mem::size_of::<mecab_path_t>(),
+        40usize,
+        concat!("Size of: ", stringify!(mecab_path_t))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<mecab_path_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(mecab_path_t))
+    );
+    fn test_field_rnode() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_path_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).rnode) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_path_t),
+                "::",
+                stringify!(rnode)
+            )
+        );
+    }
+    test_field_rnode();
+    fn test_field_rnext() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_path_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).rnext) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_path_t),
+                "::",
+                stringify!(rnext)
+            )
+        );
+    }
+    test_field_rnext();
+    fn test_field_lnode() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_path_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).lnode) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_path_t),
+                "::",
+                stringify!(lnode)
+            )
+        );
+    }
+    test_field_lnode();
+    fn test_field_lnext() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_path_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).lnext) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_path_t),
+                "::",
+                stringify!(lnext)
+            )
+        );
+    }
+    test_field_lnext();
+    fn test_field_cost() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_path_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).cost) as usize - ptr as usize
+            },
+            32usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_path_t),
+                "::",
+                stringify!(cost)
+            )
+        );
+    }
+    test_field_cost();
+    fn test_field_prob() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_path_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).prob) as usize - ptr as usize
+            },
+            36usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_path_t),
+                "::",
+                stringify!(prob)
+            )
+        );
+    }
+    test_field_prob();
+}
+#[doc = " Node structure"]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mecab_node_t {
+    #[doc = " pointer to the previous node."]
+    pub prev: *mut mecab_node_t,
+    #[doc = " pointer to the next node."]
+    pub next: *mut mecab_node_t,
+    #[doc = " pointer to the node which ends at the same position."]
+    pub enext: *mut mecab_node_t,
+    #[doc = " pointer to the node which starts at the same position."]
+    pub bnext: *mut mecab_node_t,
+    #[doc = " pointer to the right path."]
+    #[doc = " this value is NULL if MECAB_ONE_BEST mode."]
+    pub rpath: *mut mecab_path_t,
+    #[doc = " pointer to the right path."]
+    #[doc = " this value is NULL if MECAB_ONE_BEST mode."]
+    pub lpath: *mut mecab_path_t,
+    #[doc = " surface string."]
+    #[doc = " this value is not 0 terminated."]
+    #[doc = " You can get the length with length/rlength members."]
+    pub surface: *const ::std::os::raw::c_char,
+    #[doc = " feature string"]
+    pub feature: *const ::std::os::raw::c_char,
+    #[doc = " unique node id"]
+    pub id: ::std::os::raw::c_uint,
+    #[doc = " length of the surface form."]
+    pub length: ::std::os::raw::c_ushort,
+    #[doc = " length of the surface form including white space before the morph."]
+    pub rlength: ::std::os::raw::c_ushort,
+    #[doc = " right attribute id"]
+    pub rcAttr: ::std::os::raw::c_ushort,
+    #[doc = " left attribute id"]
+    pub lcAttr: ::std::os::raw::c_ushort,
+    #[doc = " unique part of speech id. This value is defined in \"pos.def\" file."]
+    pub posid: ::std::os::raw::c_ushort,
+    #[doc = " character type"]
+    pub char_type: ::std::os::raw::c_uchar,
+    #[doc = " status of this model."]
+    #[doc = " This value is MECAB_NOR_NODE, MECAB_UNK_NODE, MECAB_BOS_NODE, MECAB_EOS_NODE, or MECAB_EON_NODE."]
+    pub stat: ::std::os::raw::c_uchar,
+    #[doc = " set 1 if this node is best node."]
+    pub isbest: ::std::os::raw::c_uchar,
+    #[doc = " forward accumulative log summation."]
+    #[doc = " This value is only available when MECAB_MARGINAL_PROB is passed."]
+    pub alpha: f32,
+    #[doc = " backward accumulative log summation."]
+    #[doc = " This value is only available when MECAB_MARGINAL_PROB is passed."]
+    pub beta: f32,
+    #[doc = " marginal probability."]
+    #[doc = " This value is only available when MECAB_MARGINAL_PROB is passed."]
+    pub prob: f32,
+    #[doc = " word cost."]
+    pub wcost: ::std::os::raw::c_short,
+    #[doc = " best accumulative cost from bos node to this node."]
+    pub cost: ::std::os::raw::c_long,
+}
+#[test]
+fn bindgen_test_layout_mecab_node_t() {
+    assert_eq!(
+        ::std::mem::size_of::<mecab_node_t>(),
+        112usize,
+        concat!("Size of: ", stringify!(mecab_node_t))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<mecab_node_t>(),
+        8usize,
+        concat!("Alignment of ", stringify!(mecab_node_t))
+    );
+    fn test_field_prev() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).prev) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(prev)
+            )
+        );
+    }
+    test_field_prev();
+    fn test_field_next() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).next) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(next)
+            )
+        );
+    }
+    test_field_next();
+    fn test_field_enext() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).enext) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(enext)
+            )
+        );
+    }
+    test_field_enext();
+    fn test_field_bnext() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).bnext) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(bnext)
+            )
+        );
+    }
+    test_field_bnext();
+    fn test_field_rpath() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).rpath) as usize - ptr as usize
+            },
+            32usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(rpath)
+            )
+        );
+    }
+    test_field_rpath();
+    fn test_field_lpath() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).lpath) as usize - ptr as usize
+            },
+            40usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(lpath)
+            )
+        );
+    }
+    test_field_lpath();
+    fn test_field_surface() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).surface) as usize - ptr as usize
+            },
+            48usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(surface)
+            )
+        );
+    }
+    test_field_surface();
+    fn test_field_feature() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).feature) as usize - ptr as usize
+            },
+            56usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(feature)
+            )
+        );
+    }
+    test_field_feature();
+    fn test_field_id() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).id) as usize - ptr as usize
+            },
+            64usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(id)
+            )
+        );
+    }
+    test_field_id();
+    fn test_field_length() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).length) as usize - ptr as usize
+            },
+            68usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(length)
+            )
+        );
+    }
+    test_field_length();
+    fn test_field_rlength() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).rlength) as usize - ptr as usize
+            },
+            70usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(rlength)
+            )
+        );
+    }
+    test_field_rlength();
+    fn test_field_rcAttr() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).rcAttr) as usize - ptr as usize
+            },
+            72usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(rcAttr)
+            )
+        );
+    }
+    test_field_rcAttr();
+    fn test_field_lcAttr() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).lcAttr) as usize - ptr as usize
+            },
+            74usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(lcAttr)
+            )
+        );
+    }
+    test_field_lcAttr();
+    fn test_field_posid() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).posid) as usize - ptr as usize
+            },
+            76usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(posid)
+            )
+        );
+    }
+    test_field_posid();
+    fn test_field_char_type() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).char_type) as usize - ptr as usize
+            },
+            78usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(char_type)
+            )
+        );
+    }
+    test_field_char_type();
+    fn test_field_stat() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).stat) as usize - ptr as usize
+            },
+            79usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(stat)
+            )
+        );
+    }
+    test_field_stat();
+    fn test_field_isbest() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).isbest) as usize - ptr as usize
+            },
+            80usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(isbest)
+            )
+        );
+    }
+    test_field_isbest();
+    fn test_field_alpha() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).alpha) as usize - ptr as usize
+            },
+            84usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(alpha)
+            )
+        );
+    }
+    test_field_alpha();
+    fn test_field_beta() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).beta) as usize - ptr as usize
+            },
+            88usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(beta)
+            )
+        );
+    }
+    test_field_beta();
+    fn test_field_prob() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).prob) as usize - ptr as usize
+            },
+            92usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(prob)
+            )
+        );
+    }
+    test_field_prob();
+    fn test_field_wcost() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).wcost) as usize - ptr as usize
+            },
+            96usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(wcost)
+            )
+        );
+    }
+    test_field_wcost();
+    fn test_field_cost() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<mecab_node_t>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).cost) as usize - ptr as usize
+            },
+            104usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(mecab_node_t),
+                "::",
+                stringify!(cost)
+            )
+        );
+    }
+    test_field_cost();
+}
+pub const MECAB_NOR_NODE: _bindgen_ty_1 = _bindgen_ty_1::MECAB_NOR_NODE;
+pub const MECAB_UNK_NODE: _bindgen_ty_1 = _bindgen_ty_1::MECAB_UNK_NODE;
+pub const MECAB_BOS_NODE: _bindgen_ty_1 = _bindgen_ty_1::MECAB_BOS_NODE;
+pub const MECAB_EOS_NODE: _bindgen_ty_1 = _bindgen_ty_1::MECAB_EOS_NODE;
+pub const MECAB_EON_NODE: _bindgen_ty_1 = _bindgen_ty_1::MECAB_EON_NODE;
+#[repr(u32)]
+#[doc = " Parameters for MeCab::Node::stat"]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum _bindgen_ty_1 {
+    #[doc = " Normal node defined in the dictionary."]
+    MECAB_NOR_NODE = 0,
+    #[doc = " Unknown node not defined in the dictionary."]
+    MECAB_UNK_NODE = 1,
+    #[doc = " Virtual node representing a beginning of the sentence."]
+    MECAB_BOS_NODE = 2,
+    #[doc = " Virtual node representing a end of the sentence."]
+    MECAB_EOS_NODE = 3,
+    #[doc = " Virtual node representing a end of the N-best enumeration."]
+    MECAB_EON_NODE = 4,
+}
+pub const MECAB_SYS_DIC: _bindgen_ty_2 = _bindgen_ty_2::MECAB_SYS_DIC;
+pub const MECAB_USR_DIC: _bindgen_ty_2 = _bindgen_ty_2::MECAB_USR_DIC;
+pub const MECAB_UNK_DIC: _bindgen_ty_2 = _bindgen_ty_2::MECAB_UNK_DIC;
+#[repr(u32)]
+#[doc = " Parameters for MeCab::DictionaryInfo::type"]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum _bindgen_ty_2 {
+    #[doc = " This is a system dictionary."]
+    MECAB_SYS_DIC = 0,
+    #[doc = " This is a user dictionary."]
+    MECAB_USR_DIC = 1,
+    #[doc = " This is a unknown word dictionary."]
+    MECAB_UNK_DIC = 2,
+}
+pub const MECAB_ONE_BEST: _bindgen_ty_3 = _bindgen_ty_3::MECAB_ONE_BEST;
+pub const MECAB_NBEST: _bindgen_ty_3 = _bindgen_ty_3::MECAB_NBEST;
+pub const MECAB_PARTIAL: _bindgen_ty_3 = _bindgen_ty_3::MECAB_PARTIAL;
+pub const MECAB_MARGINAL_PROB: _bindgen_ty_3 = _bindgen_ty_3::MECAB_MARGINAL_PROB;
+pub const MECAB_ALTERNATIVE: _bindgen_ty_3 = _bindgen_ty_3::MECAB_ALTERNATIVE;
+pub const MECAB_ALL_MORPHS: _bindgen_ty_3 = _bindgen_ty_3::MECAB_ALL_MORPHS;
+pub const MECAB_ALLOCATE_SENTENCE: _bindgen_ty_3 = _bindgen_ty_3::MECAB_ALLOCATE_SENTENCE;
+#[repr(u32)]
+#[doc = " Parameters for MeCab::Lattice::request_type"]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum _bindgen_ty_3 {
+    #[doc = " One best result is obtained (default mode)"]
+    MECAB_ONE_BEST = 1,
+    #[doc = " Set this flag if you want to obtain N best results."]
+    MECAB_NBEST = 2,
+    #[doc = " Set this flag if you want to enable a partial parsing mode."]
+    #[doc = " When this flag is set, the input |sentence| needs to be written"]
+    #[doc = " in partial parsing format."]
+    MECAB_PARTIAL = 4,
+    #[doc = " Set this flag if you want to obtain marginal probabilities."]
+    #[doc = " Marginal probability is set in MeCab::Node::prob."]
+    #[doc = " The parsing speed will get 3-5 times slower than the default mode."]
+    MECAB_MARGINAL_PROB = 8,
+    #[doc = " Set this flag if you want to obtain alternative results."]
+    #[doc = " Not implemented."]
+    MECAB_ALTERNATIVE = 16,
+    #[doc = " When this flag is set, the result linked-list (Node::next/prev)"]
+    #[doc = " traverses all nodes in the lattice."]
+    MECAB_ALL_MORPHS = 32,
+    #[doc = " When this flag is set, tagger internally copies the body of passed"]
+    #[doc = " sentence into internal buffer."]
+    MECAB_ALLOCATE_SENTENCE = 64,
+}
+pub const MECAB_ANY_BOUNDARY: _bindgen_ty_4 = _bindgen_ty_4::MECAB_ANY_BOUNDARY;
+pub const MECAB_TOKEN_BOUNDARY: _bindgen_ty_4 = _bindgen_ty_4::MECAB_TOKEN_BOUNDARY;
+pub const MECAB_INSIDE_TOKEN: _bindgen_ty_4 = _bindgen_ty_4::MECAB_INSIDE_TOKEN;
+#[repr(u32)]
+#[doc = " Parameters for MeCab::Lattice::boundary_constraint_type"]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum _bindgen_ty_4 {
+    #[doc = " The token boundary is not specified."]
+    MECAB_ANY_BOUNDARY = 0,
+    #[doc = " The position is a strong token boundary."]
+    MECAB_TOKEN_BOUNDARY = 1,
+    #[doc = " The position is not a token boundary."]
+    MECAB_INSIDE_TOKEN = 2,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mecab_t {
+    _unused: [u8; 0],
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mecab_model_t {
+    _unused: [u8; 0],
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct mecab_lattice_t {
+    _unused: [u8; 0],
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::create(argc, argv)"]
+    pub fn mecab_new(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> *mut mecab_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::create(arg)"]
+    pub fn mecab_new2(arg: *const ::std::os::raw::c_char) -> *mut mecab_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::version()"]
+    pub fn mecab_version() -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::getLastError()"]
+    pub fn mecab_strerror(mecab: *mut mecab_t) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::deleteTagger(tagger)"]
+    pub fn mecab_destroy(mecab: *mut mecab_t);
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger:set_partial()"]
+    pub fn mecab_get_partial(mecab: *mut mecab_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::partial()"]
+    pub fn mecab_set_partial(mecab: *mut mecab_t, partial: ::std::os::raw::c_int);
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::theta()"]
+    pub fn mecab_get_theta(mecab: *mut mecab_t) -> f32;
+}
+extern "C" {
+    #[doc = " C wrapper of  MeCab::Tagger::set_theta()"]
+    pub fn mecab_set_theta(mecab: *mut mecab_t, theta: f32);
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::lattice_level()"]
+    pub fn mecab_get_lattice_level(mecab: *mut mecab_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::set_lattice_level()"]
+    pub fn mecab_set_lattice_level(mecab: *mut mecab_t, level: ::std::os::raw::c_int);
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::all_morphs()"]
+    pub fn mecab_get_all_morphs(mecab: *mut mecab_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::set_all_moprhs()"]
+    pub fn mecab_set_all_morphs(mecab: *mut mecab_t, all_morphs: ::std::os::raw::c_int);
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::parse(MeCab::Lattice *lattice)"]
+    pub fn mecab_parse_lattice(
+        mecab: *mut mecab_t,
+        lattice: *mut mecab_lattice_t,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::parse(const char *str)"]
+    pub fn mecab_sparse_tostr(
+        mecab: *mut mecab_t,
+        str_: *const ::std::os::raw::c_char,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::parse(const char *str, size_t len)"]
+    pub fn mecab_sparse_tostr2(
+        mecab: *mut mecab_t,
+        str_: *const ::std::os::raw::c_char,
+        len: usize,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::parse(const char *str, char *ostr, size_t olen)"]
+    pub fn mecab_sparse_tostr3(
+        mecab: *mut mecab_t,
+        str_: *const ::std::os::raw::c_char,
+        len: usize,
+        ostr: *mut ::std::os::raw::c_char,
+        olen: usize,
+    ) -> *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::parseToNode(const char *str)"]
+    pub fn mecab_sparse_tonode(
+        mecab: *mut mecab_t,
+        arg1: *const ::std::os::raw::c_char,
+    ) -> *const mecab_node_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::parseToNode(const char *str, size_t len)"]
+    pub fn mecab_sparse_tonode2(
+        mecab: *mut mecab_t,
+        arg1: *const ::std::os::raw::c_char,
+        arg2: usize,
+    ) -> *const mecab_node_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::parseNBest(size_t N, const char *str)"]
+    pub fn mecab_nbest_sparse_tostr(
+        mecab: *mut mecab_t,
+        N: usize,
+        str_: *const ::std::os::raw::c_char,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::parseNBest(size_t N, const char *str, size_t len)"]
+    pub fn mecab_nbest_sparse_tostr2(
+        mecab: *mut mecab_t,
+        N: usize,
+        str_: *const ::std::os::raw::c_char,
+        len: usize,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::parseNBest(size_t N, const char *str, char *ostr, size_t olen)"]
+    pub fn mecab_nbest_sparse_tostr3(
+        mecab: *mut mecab_t,
+        N: usize,
+        str_: *const ::std::os::raw::c_char,
+        len: usize,
+        ostr: *mut ::std::os::raw::c_char,
+        olen: usize,
+    ) -> *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::parseNBestInit(const char *str)"]
+    pub fn mecab_nbest_init(
+        mecab: *mut mecab_t,
+        str_: *const ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::parseNBestInit(const char *str, size_t len)"]
+    pub fn mecab_nbest_init2(
+        mecab: *mut mecab_t,
+        str_: *const ::std::os::raw::c_char,
+        len: usize,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::next()"]
+    pub fn mecab_nbest_next_tostr(mecab: *mut mecab_t) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::next(char *ostr, size_t olen)"]
+    pub fn mecab_nbest_next_tostr2(
+        mecab: *mut mecab_t,
+        ostr: *mut ::std::os::raw::c_char,
+        olen: usize,
+    ) -> *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::nextNode()"]
+    pub fn mecab_nbest_next_tonode(mecab: *mut mecab_t) -> *const mecab_node_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::formatNode(const Node *node)"]
+    pub fn mecab_format_node(
+        mecab: *mut mecab_t,
+        node: *const mecab_node_t,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Tagger::dictionary_info()"]
+    pub fn mecab_dictionary_info(mecab: *mut mecab_t) -> *const mecab_dictionary_info_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::createLattice()"]
+    pub fn mecab_lattice_new() -> *mut mecab_lattice_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::deleteLattice(lattice)"]
+    pub fn mecab_lattice_destroy(lattice: *mut mecab_lattice_t);
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::clear()"]
+    pub fn mecab_lattice_clear(lattice: *mut mecab_lattice_t);
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::is_available()"]
+    pub fn mecab_lattice_is_available(lattice: *mut mecab_lattice_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::bos_node()"]
+    pub fn mecab_lattice_get_bos_node(lattice: *mut mecab_lattice_t) -> *mut mecab_node_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::eos_node()"]
+    pub fn mecab_lattice_get_eos_node(lattice: *mut mecab_lattice_t) -> *mut mecab_node_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::begin_nodes()"]
+    pub fn mecab_lattice_get_all_begin_nodes(
+        lattice: *mut mecab_lattice_t,
+    ) -> *mut *mut mecab_node_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::end_nodes()"]
+    pub fn mecab_lattice_get_all_end_nodes(lattice: *mut mecab_lattice_t)
+        -> *mut *mut mecab_node_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::begin_nodes(pos)"]
+    pub fn mecab_lattice_get_begin_nodes(
+        lattice: *mut mecab_lattice_t,
+        pos: usize,
+    ) -> *mut mecab_node_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::end_nodes(pos)"]
+    pub fn mecab_lattice_get_end_nodes(
+        lattice: *mut mecab_lattice_t,
+        pos: usize,
+    ) -> *mut mecab_node_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::sentence()"]
+    pub fn mecab_lattice_get_sentence(
+        lattice: *mut mecab_lattice_t,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::set_sentence(sentence)"]
+    pub fn mecab_lattice_set_sentence(
+        lattice: *mut mecab_lattice_t,
+        sentence: *const ::std::os::raw::c_char,
+    );
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::set_sentence(sentence, len)"]
+    pub fn mecab_lattice_set_sentence2(
+        lattice: *mut mecab_lattice_t,
+        sentence: *const ::std::os::raw::c_char,
+        len: usize,
+    );
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::size()"]
+    pub fn mecab_lattice_get_size(lattice: *mut mecab_lattice_t) -> usize;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::Z()"]
+    pub fn mecab_lattice_get_z(lattice: *mut mecab_lattice_t) -> f64;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::set_Z()"]
+    pub fn mecab_lattice_set_z(lattice: *mut mecab_lattice_t, Z: f64);
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::theta()"]
+    pub fn mecab_lattice_get_theta(lattice: *mut mecab_lattice_t) -> f64;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::set_theta()"]
+    pub fn mecab_lattice_set_theta(lattice: *mut mecab_lattice_t, theta: f64);
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::next()"]
+    pub fn mecab_lattice_next(lattice: *mut mecab_lattice_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::request_type()"]
+    pub fn mecab_lattice_get_request_type(lattice: *mut mecab_lattice_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::has_request_type()"]
+    pub fn mecab_lattice_has_request_type(
+        lattice: *mut mecab_lattice_t,
+        request_type: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::set_request_type()"]
+    pub fn mecab_lattice_set_request_type(
+        lattice: *mut mecab_lattice_t,
+        request_type: ::std::os::raw::c_int,
+    );
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::add_request_type()"]
+    pub fn mecab_lattice_add_request_type(
+        lattice: *mut mecab_lattice_t,
+        request_type: ::std::os::raw::c_int,
+    );
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::remove_request_type()"]
+    pub fn mecab_lattice_remove_request_type(
+        lattice: *mut mecab_lattice_t,
+        request_type: ::std::os::raw::c_int,
+    );
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::newNode();"]
+    pub fn mecab_lattice_new_node(lattice: *mut mecab_lattice_t) -> *mut mecab_node_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::toString()"]
+    pub fn mecab_lattice_tostr(lattice: *mut mecab_lattice_t) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::toString(buf, size)"]
+    pub fn mecab_lattice_tostr2(
+        lattice: *mut mecab_lattice_t,
+        buf: *mut ::std::os::raw::c_char,
+        size: usize,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::enumNBestAsString(N)"]
+    pub fn mecab_lattice_nbest_tostr(
+        lattice: *mut mecab_lattice_t,
+        N: usize,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::enumNBestAsString(N, buf, size)"]
+    pub fn mecab_lattice_nbest_tostr2(
+        lattice: *mut mecab_lattice_t,
+        N: usize,
+        buf: *mut ::std::os::raw::c_char,
+        size: usize,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::has_constraint()"]
+    pub fn mecab_lattice_has_constraint(lattice: *mut mecab_lattice_t) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::boundary_constraint(pos)"]
+    pub fn mecab_lattice_get_boundary_constraint(
+        lattice: *mut mecab_lattice_t,
+        pos: usize,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::feature_constraint(pos)"]
+    pub fn mecab_lattice_get_feature_constraint(
+        lattice: *mut mecab_lattice_t,
+        pos: usize,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::boundary_constraint(pos, type)"]
+    pub fn mecab_lattice_set_boundary_constraint(
+        lattice: *mut mecab_lattice_t,
+        pos: usize,
+        boundary_type: ::std::os::raw::c_int,
+    );
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::set_feature_constraint(begin_pos, end_pos, feature)"]
+    pub fn mecab_lattice_set_feature_constraint(
+        lattice: *mut mecab_lattice_t,
+        begin_pos: usize,
+        end_pos: usize,
+        feature: *const ::std::os::raw::c_char,
+    );
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::set_result(result);"]
+    pub fn mecab_lattice_set_result(
+        lattice: *mut mecab_lattice_t,
+        result: *const ::std::os::raw::c_char,
+    );
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Lattice::what()"]
+    pub fn mecab_lattice_strerror(lattice: *mut mecab_lattice_t) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " C wapper of MeCab::Model::create(argc, argv)"]
+    pub fn mecab_model_new(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> *mut mecab_model_t;
+}
+extern "C" {
+    #[doc = " C wapper of MeCab::Model::create(arg)"]
+    pub fn mecab_model_new2(arg: *const ::std::os::raw::c_char) -> *mut mecab_model_t;
+}
+extern "C" {
+    #[doc = " C wapper of MeCab::deleteModel(model)"]
+    pub fn mecab_model_destroy(model: *mut mecab_model_t);
+}
+extern "C" {
+    #[doc = " C wapper of MeCab::Model::createTagger()"]
+    pub fn mecab_model_new_tagger(model: *mut mecab_model_t) -> *mut mecab_t;
+}
+extern "C" {
+    #[doc = " C wapper of MeCab::Model::createLattice()"]
+    pub fn mecab_model_new_lattice(model: *mut mecab_model_t) -> *mut mecab_lattice_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Model::swap()"]
+    pub fn mecab_model_swap(
+        model: *mut mecab_model_t,
+        new_model: *mut mecab_model_t,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wapper of MeCab::Model::dictionary_info()"]
+    pub fn mecab_model_dictionary_info(model: *mut mecab_model_t)
+        -> *const mecab_dictionary_info_t;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Model::transition_cost()"]
+    pub fn mecab_model_transition_cost(
+        model: *mut mecab_model_t,
+        rcAttr: ::std::os::raw::c_ushort,
+        lcAttr: ::std::os::raw::c_ushort,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    #[doc = " C wrapper of MeCab::Model::lookup()"]
+    pub fn mecab_model_lookup(
+        model: *mut mecab_model_t,
+        begin: *const ::std::os::raw::c_char,
+        end: *const ::std::os::raw::c_char,
+        lattice: *mut mecab_lattice_t,
+    ) -> *mut mecab_node_t;
+}
+extern "C" {
+    pub fn mecab_do(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn mecab_dict_index(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn mecab_dict_gen(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn mecab_cost_train(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn mecab_system_eval(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn mecab_test_gen(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+#[doc = " DictionaryInfo structure"]
+pub type MeCab_DictionaryInfo = mecab_dictionary_info_t;
+#[doc = " Path structure"]
+pub type MeCab_Path = mecab_path_t;
+#[doc = " Node structure"]
+pub type MeCab_Node = mecab_node_t;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct MeCab_Allocator {
+    pub _address: u8,
+}
+#[repr(C)]
+pub struct MeCab_Lattice__bindgen_vtable(::std::os::raw::c_void);
+#[doc = " Lattice class"]
+#[repr(C)]
+#[derive(Debug)]
+pub struct MeCab_Lattice {
+    pub vtable_: *const MeCab_Lattice__bindgen_vtable,
+}
+#[test]
+fn bindgen_test_layout_MeCab_Lattice() {
+    assert_eq!(
+        ::std::mem::size_of::<MeCab_Lattice>(),
+        8usize,
+        concat!("Size of: ", stringify!(MeCab_Lattice))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<MeCab_Lattice>(),
+        8usize,
+        concat!("Alignment of ", stringify!(MeCab_Lattice))
+    );
+}
+extern "C" {
+    #[doc = " Create new Lattice object"]
+    #[doc = " @return new Lattice object"]
+    #[link_name = "\u{1}__ZN5MeCab7Lattice6createEv"]
+    pub fn MeCab_Lattice_create() -> *mut MeCab_Lattice;
+}
+impl MeCab_Lattice {
+    #[inline]
+    pub unsafe fn create() -> *mut MeCab_Lattice {
+        MeCab_Lattice_create()
+    }
+}
+#[repr(C)]
+pub struct MeCab_Model__bindgen_vtable(::std::os::raw::c_void);
+#[doc = " Model class"]
+#[repr(C)]
+#[derive(Debug)]
+pub struct MeCab_Model {
+    pub vtable_: *const MeCab_Model__bindgen_vtable,
+}
+#[test]
+fn bindgen_test_layout_MeCab_Model() {
+    assert_eq!(
+        ::std::mem::size_of::<MeCab_Model>(),
+        8usize,
+        concat!("Size of: ", stringify!(MeCab_Model))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<MeCab_Model>(),
+        8usize,
+        concat!("Alignment of ", stringify!(MeCab_Model))
+    );
+}
+extern "C" {
+    #[doc = " Return a version string"]
+    #[doc = " @return version string"]
+    #[link_name = "\u{1}__ZN5MeCab5Model7versionEv"]
+    pub fn MeCab_Model_version() -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " Factory method to create a new Model with a specified main's argc/argv-style parameters."]
+    #[doc = " Return NULL if new model cannot be initialized. Use MeCab::getLastError() to obtain the"]
+    #[doc = " cause of the errors."]
+    #[doc = " @return new Model object"]
+    #[doc = " @param argc number of parameters"]
+    #[doc = " @param argv parameter list"]
+    #[link_name = "\u{1}__ZN5MeCab5Model6createEiPPc"]
+    pub fn MeCab_Model_create(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> *mut MeCab_Model;
+}
+extern "C" {
+    #[doc = " Factory method to create a new Model with a string parameter representation, i.e.,"]
+    #[doc = " \"-d /user/local/mecab/dic/ipadic -Ochasen\"."]
+    #[doc = " Return NULL if new model cannot be initialized. Use MeCab::getLastError() to obtain the"]
+    #[doc = " cause of the errors."]
+    #[doc = " @return new Model object"]
+    #[doc = " @param arg single string representation of the argment."]
+    #[link_name = "\u{1}__ZN5MeCab5Model6createEPKc"]
+    pub fn MeCab_Model_create1(arg: *const ::std::os::raw::c_char) -> *mut MeCab_Model;
+}
+impl MeCab_Model {
+    #[inline]
+    pub unsafe fn version() -> *const ::std::os::raw::c_char {
+        MeCab_Model_version()
+    }
+    #[inline]
+    pub unsafe fn create(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> *mut MeCab_Model {
+        MeCab_Model_create(argc, argv)
+    }
+    #[inline]
+    pub unsafe fn create1(arg: *const ::std::os::raw::c_char) -> *mut MeCab_Model {
+        MeCab_Model_create1(arg)
+    }
+}
+#[repr(C)]
+pub struct MeCab_Tagger__bindgen_vtable(::std::os::raw::c_void);
+#[doc = " Tagger class"]
+#[repr(C)]
+#[derive(Debug)]
+pub struct MeCab_Tagger {
+    pub vtable_: *const MeCab_Tagger__bindgen_vtable,
+}
+#[test]
+fn bindgen_test_layout_MeCab_Tagger() {
+    assert_eq!(
+        ::std::mem::size_of::<MeCab_Tagger>(),
+        8usize,
+        concat!("Size of: ", stringify!(MeCab_Tagger))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<MeCab_Tagger>(),
+        8usize,
+        concat!("Alignment of ", stringify!(MeCab_Tagger))
+    );
+}
+extern "C" {
+    #[doc = " Handy static method."]
+    #[doc = " Return true if lattice is parsed successfully."]
+    #[doc = " This function is equivalent to"]
+    #[doc = " {"]
+    #[doc = "   Tagger *tagger = model.createModel();"]
+    #[doc = "   cosnt bool result = tagger->parse(lattice);"]
+    #[doc = "   delete tagger;"]
+    #[doc = "   return result;"]
+    #[doc = " }"]
+    #[doc = " @return boolean"]
+    #[link_name = "\u{1}__ZN5MeCab6Tagger5parseERKNS_5ModelEPNS_7LatticeE"]
+    pub fn MeCab_Tagger_parse(model: *const MeCab_Model, lattice: *mut MeCab_Lattice) -> bool;
+}
+extern "C" {
+    #[doc = " Factory method to create a new Tagger with a specified main's argc/argv-style parameters."]
+    #[doc = " Return NULL if new model cannot be initialized. Use MeCab::getLastError() to obtain the"]
+    #[doc = " cause of the errors."]
+    #[doc = " @return new Tagger object"]
+    #[doc = " @param argc number of parameters"]
+    #[doc = " @param argv parameter list"]
+    #[link_name = "\u{1}__ZN5MeCab6Tagger6createEiPPc"]
+    pub fn MeCab_Tagger_create(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> *mut MeCab_Tagger;
+}
+extern "C" {
+    #[doc = " Factory method to create a new Tagger with a string parameter representation, i.e.,"]
+    #[doc = " \"-d /user/local/mecab/dic/ipadic -Ochasen\"."]
+    #[doc = " Return NULL if new model cannot be initialized. Use MeCab::getLastError() to obtain the"]
+    #[doc = " cause of the errors."]
+    #[doc = " @return new Model object"]
+    #[doc = " @param arg single string representation of the argment."]
+    #[link_name = "\u{1}__ZN5MeCab6Tagger6createEPKc"]
+    pub fn MeCab_Tagger_create1(arg: *const ::std::os::raw::c_char) -> *mut MeCab_Tagger;
+}
+extern "C" {
+    #[doc = " Return a version string"]
+    #[doc = " @return version string"]
+    #[link_name = "\u{1}__ZN5MeCab6Tagger7versionEv"]
+    pub fn MeCab_Tagger_version() -> *const ::std::os::raw::c_char;
+}
+impl MeCab_Tagger {
+    #[inline]
+    pub unsafe fn parse(model: *const MeCab_Model, lattice: *mut MeCab_Lattice) -> bool {
+        MeCab_Tagger_parse(model, lattice)
+    }
+    #[inline]
+    pub unsafe fn create(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> *mut MeCab_Tagger {
+        MeCab_Tagger_create(argc, argv)
+    }
+    #[inline]
+    pub unsafe fn create1(arg: *const ::std::os::raw::c_char) -> *mut MeCab_Tagger {
+        MeCab_Tagger_create1(arg)
+    }
+    #[inline]
+    pub unsafe fn version() -> *const ::std::os::raw::c_char {
+        MeCab_Tagger_version()
+    }
+}
+extern "C" {
+    #[doc = " Alias of Lattice::create()"]
+    #[link_name = "\u{1}__ZN5MeCab13createLatticeEv"]
+    pub fn MeCab_createLattice() -> *mut MeCab_Lattice;
+}
+extern "C" {
+    #[doc = " Alias of Mode::create(argc, argv)"]
+    #[link_name = "\u{1}__ZN5MeCab11createModelEiPPc"]
+    pub fn MeCab_createModel(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> *mut MeCab_Model;
+}
+extern "C" {
+    #[doc = " Alias of Mode::create(arg)"]
+    #[link_name = "\u{1}__ZN5MeCab11createModelEPKc"]
+    pub fn MeCab_createModel1(arg: *const ::std::os::raw::c_char) -> *mut MeCab_Model;
+}
+extern "C" {
+    #[doc = " Alias of Tagger::create(argc, argv)"]
+    #[link_name = "\u{1}__ZN5MeCab12createTaggerEiPPc"]
+    pub fn MeCab_createTagger(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> *mut MeCab_Tagger;
+}
+extern "C" {
+    #[doc = " Alias of Tagger::create(arg)"]
+    #[link_name = "\u{1}__ZN5MeCab12createTaggerEPKc"]
+    pub fn MeCab_createTagger1(arg: *const ::std::os::raw::c_char) -> *mut MeCab_Tagger;
+}
+extern "C" {
+    #[doc = " delete Lattice object."]
+    #[doc = " This method calles \"delete lattice\"."]
+    #[doc = " In some environment, e.g., MS-Windows, an object allocated inside a DLL must be deleted in the same DLL too."]
+    #[doc = " @param lattice lattice object"]
+    #[link_name = "\u{1}__ZN5MeCab13deleteLatticeEPNS_7LatticeE"]
+    pub fn MeCab_deleteLattice(lattice: *mut MeCab_Lattice);
+}
+extern "C" {
+    #[doc = " delete Model object."]
+    #[doc = " This method calles \"delete model\"."]
+    #[doc = " In some environment, e.g., MS-Windows, an object allocated inside a DLL must be deleted in the same DLL too."]
+    #[doc = " @param model model object"]
+    #[link_name = "\u{1}__ZN5MeCab11deleteModelEPNS_5ModelE"]
+    pub fn MeCab_deleteModel(model: *mut MeCab_Model);
+}
+extern "C" {
+    #[doc = " delete Tagger object."]
+    #[doc = " This method calles \"delete tagger\"."]
+    #[doc = " In some environment, e.g., MS-Windows, an object allocated inside a DLL must be deleted in the same DLL too."]
+    #[doc = " @param tagger tagger object"]
+    #[link_name = "\u{1}__ZN5MeCab12deleteTaggerEPNS_6TaggerE"]
+    pub fn MeCab_deleteTagger(tagger: *mut MeCab_Tagger);
+}
+extern "C" {
+    #[doc = " Return last error string."]
+    #[doc = " @return error string"]
+    #[link_name = "\u{1}__ZN5MeCab12getLastErrorEv"]
+    pub fn MeCab_getLastError() -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    #[doc = " An alias of getLastError."]
+    #[doc = " It is kept for backward compatibility."]
+    #[doc = " @return error string"]
+    #[link_name = "\u{1}__ZN5MeCab14getTaggerErrorEv"]
+    pub fn MeCab_getTaggerError() -> *const ::std::os::raw::c_char;
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _Mecab {
+    pub feature: *mut *mut ::std::os::raw::c_char,
+    pub size: ::std::os::raw::c_int,
+    pub model: *mut ::std::os::raw::c_void,
+    pub tagger: *mut ::std::os::raw::c_void,
+    pub lattice: *mut ::std::os::raw::c_void,
+}
+#[test]
+fn bindgen_test_layout__Mecab() {
+    assert_eq!(
+        ::std::mem::size_of::<_Mecab>(),
+        40usize,
+        concat!("Size of: ", stringify!(_Mecab))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<_Mecab>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_Mecab))
+    );
+    fn test_field_feature() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_Mecab>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).feature) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_Mecab),
+                "::",
+                stringify!(feature)
+            )
+        );
+    }
+    test_field_feature();
+    fn test_field_size() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_Mecab>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).size) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_Mecab),
+                "::",
+                stringify!(size)
+            )
+        );
+    }
+    test_field_size();
+    fn test_field_model() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_Mecab>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).model) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_Mecab),
+                "::",
+                stringify!(model)
+            )
+        );
+    }
+    test_field_model();
+    fn test_field_tagger() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_Mecab>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).tagger) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_Mecab),
+                "::",
+                stringify!(tagger)
+            )
+        );
+    }
+    test_field_tagger();
+    fn test_field_lattice() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_Mecab>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).lattice) as usize - ptr as usize
+            },
+            32usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_Mecab),
+                "::",
+                stringify!(lattice)
+            )
+        );
+    }
+    test_field_lattice();
+}
+pub type Mecab = _Mecab;
+extern "C" {
+    pub fn Mecab_initialize(m: *mut Mecab) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn Mecab_load(
+        m: *mut Mecab,
+        dicdir: *const ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn Mecab_analysis(
+        m: *mut Mecab,
+        str_: *const ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn Mecab_print(m: *mut Mecab) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn Mecab_get_size(m: *mut Mecab) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn Mecab_get_feature(m: *mut Mecab) -> *mut *mut ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn Mecab_refresh(m: *mut Mecab) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn Mecab_clear(m: *mut Mecab) -> ::std::os::raw::c_int;
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _NJDNode {
+    pub string: *mut ::std::os::raw::c_char,
+    pub pos: *mut ::std::os::raw::c_char,
+    pub pos_group1: *mut ::std::os::raw::c_char,
+    pub pos_group2: *mut ::std::os::raw::c_char,
+    pub pos_group3: *mut ::std::os::raw::c_char,
+    pub ctype: *mut ::std::os::raw::c_char,
+    pub cform: *mut ::std::os::raw::c_char,
+    pub orig: *mut ::std::os::raw::c_char,
+    pub read: *mut ::std::os::raw::c_char,
+    pub pron: *mut ::std::os::raw::c_char,
+    pub acc: ::std::os::raw::c_int,
+    pub mora_size: ::std::os::raw::c_int,
+    pub chain_rule: *mut ::std::os::raw::c_char,
+    pub chain_flag: ::std::os::raw::c_int,
+    pub prev: *mut _NJDNode,
+    pub next: *mut _NJDNode,
+}
+#[test]
+fn bindgen_test_layout__NJDNode() {
+    assert_eq!(
+        ::std::mem::size_of::<_NJDNode>(),
+        120usize,
+        concat!("Size of: ", stringify!(_NJDNode))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<_NJDNode>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_NJDNode))
+    );
+    fn test_field_string() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).string) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(string)
+            )
+        );
+    }
+    test_field_string();
+    fn test_field_pos() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).pos) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(pos)
+            )
+        );
+    }
+    test_field_pos();
+    fn test_field_pos_group1() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).pos_group1) as usize - ptr as usize
+            },
+            16usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(pos_group1)
+            )
+        );
+    }
+    test_field_pos_group1();
+    fn test_field_pos_group2() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).pos_group2) as usize - ptr as usize
+            },
+            24usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(pos_group2)
+            )
+        );
+    }
+    test_field_pos_group2();
+    fn test_field_pos_group3() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).pos_group3) as usize - ptr as usize
+            },
+            32usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(pos_group3)
+            )
+        );
+    }
+    test_field_pos_group3();
+    fn test_field_ctype() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).ctype) as usize - ptr as usize
+            },
+            40usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(ctype)
+            )
+        );
+    }
+    test_field_ctype();
+    fn test_field_cform() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).cform) as usize - ptr as usize
+            },
+            48usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(cform)
+            )
+        );
+    }
+    test_field_cform();
+    fn test_field_orig() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).orig) as usize - ptr as usize
+            },
+            56usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(orig)
+            )
+        );
+    }
+    test_field_orig();
+    fn test_field_read() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).read) as usize - ptr as usize
+            },
+            64usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(read)
+            )
+        );
+    }
+    test_field_read();
+    fn test_field_pron() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).pron) as usize - ptr as usize
+            },
+            72usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(pron)
+            )
+        );
+    }
+    test_field_pron();
+    fn test_field_acc() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).acc) as usize - ptr as usize
+            },
+            80usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(acc)
+            )
+        );
+    }
+    test_field_acc();
+    fn test_field_mora_size() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).mora_size) as usize - ptr as usize
+            },
+            84usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(mora_size)
+            )
+        );
+    }
+    test_field_mora_size();
+    fn test_field_chain_rule() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).chain_rule) as usize - ptr as usize
+            },
+            88usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(chain_rule)
+            )
+        );
+    }
+    test_field_chain_rule();
+    fn test_field_chain_flag() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).chain_flag) as usize - ptr as usize
+            },
+            96usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(chain_flag)
+            )
+        );
+    }
+    test_field_chain_flag();
+    fn test_field_prev() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).prev) as usize - ptr as usize
+            },
+            104usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(prev)
+            )
+        );
+    }
+    test_field_prev();
+    fn test_field_next() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJDNode>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).next) as usize - ptr as usize
+            },
+            112usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJDNode),
+                "::",
+                stringify!(next)
+            )
+        );
+    }
+    test_field_next();
+}
+pub type NJDNode = _NJDNode;
+extern "C" {
+    pub fn NJDNode_initialize(node: *mut NJDNode);
+}
+extern "C" {
+    pub fn NJDNode_set_string(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_set_pos(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_set_pos_group1(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_set_pos_group2(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_set_pos_group3(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_set_ctype(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_set_cform(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_set_orig(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_set_read(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_set_pron(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_set_acc(node: *mut NJDNode, acc: ::std::os::raw::c_int);
+}
+extern "C" {
+    pub fn NJDNode_set_mora_size(node: *mut NJDNode, size: ::std::os::raw::c_int);
+}
+extern "C" {
+    pub fn NJDNode_set_chain_rule(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_set_chain_flag(node: *mut NJDNode, flag: ::std::os::raw::c_int);
+}
+extern "C" {
+    pub fn NJDNode_add_string(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_add_orig(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_add_read(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_add_pron(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_add_acc(node: *mut NJDNode, acc: ::std::os::raw::c_int);
+}
+extern "C" {
+    pub fn NJDNode_add_mora_size(node: *mut NJDNode, size: ::std::os::raw::c_int);
+}
+extern "C" {
+    pub fn NJDNode_get_string(node: *mut NJDNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn NJDNode_get_pos(node: *mut NJDNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn NJDNode_get_pos_group1(node: *mut NJDNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn NJDNode_get_pos_group2(node: *mut NJDNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn NJDNode_get_pos_group3(node: *mut NJDNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn NJDNode_get_ctype(node: *mut NJDNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn NJDNode_get_cform(node: *mut NJDNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn NJDNode_get_orig(node: *mut NJDNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn NJDNode_get_read(node: *mut NJDNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn NJDNode_get_pron(node: *mut NJDNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn NJDNode_get_acc(node: *mut NJDNode) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn NJDNode_get_mora_size(node: *mut NJDNode) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn NJDNode_get_chain_rule(node: *mut NJDNode) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn NJDNode_get_chain_flag(node: *mut NJDNode) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn NJDNode_load(node: *mut NJDNode, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJDNode_insert(
+        prev: *mut NJDNode,
+        next: *mut NJDNode,
+        node: *mut NJDNode,
+    ) -> *mut NJDNode;
+}
+extern "C" {
+    pub fn NJDNode_copy(node1: *mut NJDNode, node2: *mut NJDNode);
+}
+extern "C" {
+    pub fn NJDNode_print(node: *mut NJDNode);
+}
+extern "C" {
+    pub fn NJDNode_fprint(node: *mut NJDNode, fp: *mut FILE);
+}
+extern "C" {
+    pub fn NJDNode_sprint(
+        node: *mut NJDNode,
+        buff: *mut ::std::os::raw::c_char,
+        split_code: *const ::std::os::raw::c_char,
+    );
+}
+extern "C" {
+    pub fn NJDNode_clear(node: *mut NJDNode);
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _NJD {
+    pub head: *mut NJDNode,
+    pub tail: *mut NJDNode,
+}
+#[test]
+fn bindgen_test_layout__NJD() {
+    assert_eq!(
+        ::std::mem::size_of::<_NJD>(),
+        16usize,
+        concat!("Size of: ", stringify!(_NJD))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<_NJD>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_NJD))
+    );
+    fn test_field_head() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJD>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).head) as usize - ptr as usize
+            },
+            0usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJD),
+                "::",
+                stringify!(head)
+            )
+        );
+    }
+    test_field_head();
+    fn test_field_tail() {
+        assert_eq!(
+            unsafe {
+                let uninit = ::std::mem::MaybeUninit::<_NJD>::uninit();
+                let ptr = uninit.as_ptr();
+                ::std::ptr::addr_of!((*ptr).tail) as usize - ptr as usize
+            },
+            8usize,
+            concat!(
+                "Offset of field: ",
+                stringify!(_NJD),
+                "::",
+                stringify!(tail)
+            )
+        );
+    }
+    test_field_tail();
+}
+pub type NJD = _NJD;
+extern "C" {
+    pub fn NJD_initialize(njd: *mut NJD);
+}
+extern "C" {
+    pub fn NJD_load(njd: *mut NJD, str_: *const ::std::os::raw::c_char);
+}
+extern "C" {
+    pub fn NJD_load_from_fp(njd: *mut NJD, fp: *mut FILE);
+}
+extern "C" {
+    pub fn NJD_get_size(njd: *mut NJD) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn NJD_push_node(njd: *mut NJD, node: *mut NJDNode);
+}
+extern "C" {
+    pub fn NJD_remove_node(njd: *mut NJD, node: *mut NJDNode) -> *mut NJDNode;
+}
+extern "C" {
+    pub fn NJD_remove_silent_node(njd: *mut NJD);
+}
+extern "C" {
+    pub fn NJD_print(njd: *mut NJD);
+}
+extern "C" {
+    pub fn NJD_fprint(njd: *mut NJD, fp: *mut FILE);
+}
+extern "C" {
+    pub fn NJD_sprint(
+        njd: *mut NJD,
+        buff: *mut ::std::os::raw::c_char,
+        split_code: *const ::std::os::raw::c_char,
+    );
+}
+extern "C" {
+    pub fn NJD_refresh(njd: *mut NJD);
+}
+extern "C" {
+    pub fn NJD_clear(wl: *mut NJD);
+}
+extern "C" {
+    pub fn njd2jpcommon(jpcommon: *mut JPCommon, njd: *mut NJD);
+}
+extern "C" {
+    pub fn njd_set_accent_phrase(njd: *mut NJD);
+}
+extern "C" {
+    pub fn njd_set_accent_type(njd: *mut NJD);
+}
+extern "C" {
+    pub fn njd_set_digit(njd: *mut NJD);
+}
+extern "C" {
+    pub fn njd_set_long_vowel(njd: *mut NJD);
+}
+extern "C" {
+    pub fn njd_set_pronunciation(njd: *mut NJD);
+}
+extern "C" {
+    pub fn njd_set_unvoiced_vowel(njd: *mut NJD);
+}
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum text2mecab_result_t {
+    TEXT2MECAB_RESULT_SUCCESS = 0,
+    TEXT2MECAB_RESULT_INVALID_ARGUMENT = 1,
+    TEXT2MECAB_RESULT_RANGE_ERROR = 2,
+}
+extern "C" {
+    pub fn text2mecab(
+        output: *mut ::std::os::raw::c_char,
+        sizeOfOutput: usize,
+        input: *const ::std::os::raw::c_char,
+    ) -> text2mecab_result_t;
+}
+extern "C" {
+    pub fn mecab2njd(
+        njd: *mut NJD,
+        feature: *mut *mut ::std::os::raw::c_char,
+        size: ::std::os::raw::c_int,
+    );
+}
+pub type __builtin_va_list = *mut ::std::os::raw::c_char;
