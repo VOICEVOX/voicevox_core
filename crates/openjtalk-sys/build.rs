@@ -21,7 +21,6 @@ fn generate_bindings(include_dir: impl AsRef<Path>) {
     let bindings = bindgen::Builder::default()
         .header("wrapper.hpp")
         .clang_args(clang_args)
-        .layout_tests(false)
         .blocklist_type("IMAGE_TLS_DIRECTORY")
         .blocklist_type("IMAGE_TLS_DIRECTORY64")
         .blocklist_type("_IMAGE_TLS_DIRECTORY32")
