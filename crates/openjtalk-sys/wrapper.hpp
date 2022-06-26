@@ -1,4 +1,4 @@
-#include <cstdio>;
+#include <stdio.h>;
 #include <jpcommon.h>;
 #include <mecab.h>;
 #include <njd.h>;
