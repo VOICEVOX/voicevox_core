@@ -1,13 +1,12 @@
 name: gen_bind
-description: "openjtalkのbindコードを生成してPRを送る"
 on:
   push:
     paths:
       - "crates/openjtalk-sys/openjtalk/src/*"
       - "crates/openjtalk-sys/openjtalk/CMakeLists.txt"
       - "crates/openjtalk-sys/build.rs"
-      - ".github/workflows/gen_bind.yaml"
-      - ".github/actions/auto_gen_bind_pr/action.yaml"
+      - ".github/workflows/gen_bind.yml"
+      - ".github/actions/auto_gen_bind_pr/action.yml"
 jobs:
   generate_bind:
     strategy:

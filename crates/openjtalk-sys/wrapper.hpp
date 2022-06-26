@@ -1,4 +1,4 @@
-#include <stdio.h>;
+#include <cstdio>;
 #include <openjtalk/jpcommon.h>;
 #include <openjtalk/mecab.h>;
 #include <openjtalk/njd.h>;
