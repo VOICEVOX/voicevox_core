@@ -11,3 +11,6 @@ generate-bindings = []
 [build-dependencies]
 cmake = "0.1.48"
 bindgen = "0.60.1"
+
+[dependencies]
+link-cplusplus = "1.0.6"

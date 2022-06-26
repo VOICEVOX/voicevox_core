@@ -1,3 +1,4 @@
+extern crate link_cplusplus;
 #[allow(clippy::all)]
 #[allow(warnings)]
 mod bindings {
