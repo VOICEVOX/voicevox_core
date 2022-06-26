@@ -1,22 +1,26 @@
+use std::path::Path;
 fn main() {
     let dst_dir = cmake::build("openjtalk");
     let lib_dir = dst_dir.join("lib");
     println!("cargo:rustc-link-search=native={}", lib_dir.display());
-    println!("cargo:rustc-link-lib=static=OpenjtalkSys");
-    generate_bindings();
+    println!("cargo:rustc-link-lib=static=openjtalk");
+    generate_bindings(dst_dir.join("include"));
 }
 
 #[cfg(not(feature = "generate-bindings"))]
-fn generate_bindings() {}
+fn generate_bindings(include_dir: impl AsRef<Path>) {}
 
 #[cfg(feature = "generate-bindings")]
-fn generate_bindings() {
+fn generate_bindings(include_dir: impl AsRef<Path>) {
     use std::env;
     use std::path::PathBuf;
+    let include_dir = include_dir.as_ref();
+    let clang_args = &[format!("-I{}", include_dir.display())];
     println!("cargo:rerun-if-changed=wrapper.hpp");
     println!("cargo:rerun-if-changed=src/generated/bindings.rs");
     let bindings = bindgen::Builder::default()
         .header("wrapper.hpp")
+        .clang_args(clang_args)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .size_t_is_usize(true)
         .rustfmt_bindings(true)

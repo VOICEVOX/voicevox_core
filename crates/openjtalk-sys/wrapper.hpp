@@ -1,1 +1,13 @@
-#include "./openjtalk/src/openjtalk.hpp"
+#include <stdio.h>;
+#include <openjtalk/jpcommon.h>;
+#include <openjtalk/mecab.h>;
+#include <openjtalk/njd.h>;
+#include <openjtalk/njd2jpcommon.h>;
+#include <openjtalk/njd_set_accent_phrase.h>;
+#include <openjtalk/njd_set_accent_type.h>;
+#include <openjtalk/njd_set_digit.h>;
+#include <openjtalk/njd_set_long_vowel.h>;
+#include <openjtalk/njd_set_pronunciation.h>;
+#include <openjtalk/njd_set_unvoiced_vowel.h>;
+#include <openjtalk/text2mecab.h>;
+#include <openjtalk/mecab2njd.h>;
