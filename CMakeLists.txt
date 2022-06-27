@@ -26,6 +26,12 @@ if(DIRECTML)
   determine_target_architecture(DML_ARCH)
 endif()
 
+option(ARMHF "Enables building for ARMHF" OFF)
+if(ARMHF)
+  # https://github.com/VOICEVOX/voicevox_core/issues/132
+  add_link_options("-Xlinker" "--long-plt")
+endif()
+
 add_subdirectory(core)
 add_subdirectory(open_jtalk/src)
 

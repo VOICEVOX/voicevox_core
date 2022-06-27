@@ -96,6 +96,7 @@ jobs:
             cc_version: "8"
             cxx_version: "8"
             arch: arm-linux-gnueabihf
+            cmake_additional_options: -DARMHF=ON
 
           - os: ubuntu-18.04
             device: cpu-arm64
