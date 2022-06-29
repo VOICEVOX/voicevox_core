@@ -207,33 +207,31 @@ fn create_kana(accent_phrases: &[AccentPhraseModel]) -> String {
 mod tests {
     use super::*;
     use crate::engine::mora_list::MORA_LIST_MINIMUM;
+    use pretty_assertions::assert_eq;
+    use rstest::rstest;
 
-    #[test]
-    fn test_text2mora_with_unvoice() {
+    #[rstest]
+    #[case(Some("da"), "ダ")]
+    #[case(Some("N"), "ン")]
+    #[case(Some("cl"), "ッ")]
+    #[case(Some("sho"), "ショ")]
+    #[case(Some("u"), "ウ")]
+    #[case(Some("gA"), "_ガ")]
+    #[case(Some("byO"), "_ビョ")]
+    #[case(Some("O"), "_オ")]
+    #[case(None, "fail")]
+    fn test_text2mora_with_unvoice(#[case] mora: Option<&str>, #[case] text: &str) {
         let text2mora = &TEXT2MORA_WITH_UNVOICE;
         assert_eq!(text2mora.len(), MORA_LIST_MINIMUM.len() * 2 - 2); // added twice except ン and ッ
-        let lis = [
-            (Some("da"), "ダ"),
-            (Some("N"), "ン"),
-            (Some("cl"), "ッ"),
-            (Some("sho"), "ショ"),
-            (Some("u"), "ウ"),
-            (Some("gA"), "_ガ"),
-            (Some("byO"), "_ビョ"),
-            (Some("O"), "_オ"),
-            (None, "fail"),
-        ];
-        for (mora, text) in lis {
-            let res = text2mora.get(text);
-            assert_eq!(mora.is_some(), res.is_some());
-            if let Some(res) = res {
-                let mut m = String::new();
-                if let Some(ref c) = res.consonant {
-                    m.push_str(c);
-                }
-                m.push_str(&res.vowel);
-                assert_eq!(m, mora.unwrap());
+        let res = text2mora.get(text);
+        assert_eq!(mora.is_some(), res.is_some());
+        if let Some(res) = res {
+            let mut m = String::new();
+            if let Some(ref c) = res.consonant {
+                m.push_str(c);
             }
+            m.push_str(&res.vowel);
+            assert_eq!(m, mora.unwrap());
         }
     }
 
@@ -247,11 +245,12 @@ mod tests {
             "不明な'文字",
         ];
         for text in text_ok {
-            assert!(text_to_accent_phrase(text).is_ok());
-            // TODO: もっと細かい確認
+            let result = text_to_accent_phrase(text);
+            assert!(result.is_ok(), "{:?}", result);
         }
         for text in text_err {
-            assert!(text_to_accent_phrase(text).is_err());
+            let result = text_to_accent_phrase(text);
+            assert!(result.is_err(), "{:?}", result);
         }
     }
 
@@ -263,11 +262,12 @@ mod tests {
             "フレー？ズノ'/トチュウニ'、ギモ'ンフ",
         ];
         for text in text_ok {
-            assert!(parse_kana(text).is_ok());
-            // TODO: もっと細かい確認
+            let result = parse_kana(text);
+            assert!(result.is_ok(), "{:?}", result);
         }
         for text in text_err {
-            assert!(parse_kana(text).is_err());
+            let result = parse_kana(text);
+            assert!(result.is_err(), "{:?}", result);
         }
     }
     #[test]

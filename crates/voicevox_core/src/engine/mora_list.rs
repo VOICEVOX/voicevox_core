@@ -202,19 +202,17 @@ fn mora2text(mora: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
+    use rstest::rstest;
 
-    #[test]
-    fn test_mora2text() {
-        let lis = [
-            ("da", "ダ"),
-            ("N", "ン"),
-            ("cl", "ッ"),
-            ("sho", "ショ"),
-            ("u", "ウ"),
-            ("fail", "fail"),
-        ];
-        for (mora, text) in lis {
-            assert_eq!(mora2text(mora), text);
-        }
+    #[rstest]
+    #[case("da", "ダ")]
+    #[case("N", "ン")]
+    #[case("cl", "ッ")]
+    #[case("sho", "ショ")]
+    #[case("u", "ウ")]
+    #[case("fail", "fail")]
+    fn test_mora2text(#[case] mora: &str, #[case] text: &str) {
+        assert_eq!(mora2text(mora), text);
     }
 }

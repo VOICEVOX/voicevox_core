@@ -1,5 +1,5 @@
 #[allow(dead_code)] // TODO: remove this feature
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(super) struct MoraModel {
     pub text: String,
     pub consonant: Option<String>,
@@ -10,6 +10,7 @@ pub(super) struct MoraModel {
 }
 
 #[allow(dead_code)] // TODO: remove this feature
+#[derive(Debug)]
 pub(super) struct AccentPhraseModel {
     pub moras: Vec<MoraModel>,
     pub accent: usize,
