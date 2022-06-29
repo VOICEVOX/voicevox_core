@@ -1,6 +1,10 @@
 use super::*;
 use c_export::VoicevoxResultCode;
 use once_cell::sync::Lazy;
+use onnxruntime::{
+    ndarray,
+    session::{AnyArray, NdArray},
+};
 use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::os::raw::c_int;
@@ -95,7 +99,8 @@ impl Internal {
         }
     }
     pub fn finalize(&mut self) {
-        unimplemented!()
+        self.initialized = false;
+        self.status_option = None;
     }
     pub fn metas(&self) -> &'static CStr {
         &METAS_CSTRING
@@ -103,15 +108,13 @@ impl Internal {
     pub fn supported_devices(&self) -> &'static CStr {
         &SUPPORTED_DEVICES_CSTRING
     }
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
+
     pub fn yukarin_s_forward(
         &mut self,
         length: i64,
         phoneme_list: *const i64,
         speaker_id: usize,
-        output: *mut f32,
-    ) -> Result<()> {
+    ) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
         }
@@ -139,27 +142,23 @@ impl Internal {
         let phoneme_list_slice =
             unsafe { std::slice::from_raw_parts(phoneme_list, length as usize) };
 
-        let input_tensors = vec![
-            ndarray::arr1(phoneme_list_slice),
-            ndarray::arr1(&[speaker_id as i64]),
-        ];
+        let mut phoneme_list_array = NdArray::new(ndarray::arr1(phoneme_list_slice));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
-        let result = status.yukarin_s_session_run(model_index, input_tensors)?;
+        let input_tensors: Vec<&mut dyn AnyArray> =
+            vec![&mut phoneme_list_array, &mut speaker_id_array];
 
-        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
-        output_slice.clone_from_slice(&result);
+        let mut output = status.yukarin_s_session_run(model_index, input_tensors)?;
 
-        for output_item in output_slice {
+        for output_item in output.iter_mut() {
             if *output_item < PHONEME_LENGTH_MINIMAL {
                 *output_item = PHONEME_LENGTH_MINIMAL;
             }
         }
 
-        Ok(())
+        Ok(output)
     }
 
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
     #[allow(clippy::too_many_arguments)]
     pub fn yukarin_sa_forward(
         &mut self,
@@ -170,24 +169,188 @@ impl Internal {
         end_accent_list: *const i64,
         start_accent_phrase_list: *const i64,
         end_accent_phrase_list: *const i64,
-        speaker_id: *const i64,
-        output: *mut f32,
-    ) -> Result<()> {
-        unimplemented!()
+        speaker_id: usize,
+    ) -> Result<Vec<f32>> {
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) =
+            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
+                (model_index, speaker_id)
+            } else {
+                return Err(Error::InvalidSpeakerId { speaker_id });
+            };
+
+        if model_index >= Status::MODELS_COUNT {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        let vowel_phoneme_list_slice =
+            unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length as usize) };
+        let consonant_phoneme_list_slice =
+            unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length as usize) };
+        let start_accent_list_slice =
+            unsafe { std::slice::from_raw_parts(start_accent_list, length as usize) };
+        let end_accent_list_slice =
+            unsafe { std::slice::from_raw_parts(end_accent_list, length as usize) };
+        let start_accent_phrase_list_slice =
+            unsafe { std::slice::from_raw_parts(start_accent_phrase_list, length as usize) };
+        let end_accent_phrase_list_slice =
+            unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length as usize) };
+
+        let mut length_array = NdArray::new(ndarray::arr0(length));
+        let mut vowel_phoneme_list_array = NdArray::new(ndarray::arr1(vowel_phoneme_list_slice));
+        let mut consonant_phoneme_list_array =
+            NdArray::new(ndarray::arr1(consonant_phoneme_list_slice));
+        let mut start_accent_list_array = NdArray::new(ndarray::arr1(start_accent_list_slice));
+        let mut end_accent_list_array = NdArray::new(ndarray::arr1(end_accent_list_slice));
+        let mut start_accent_phrase_list_array =
+            NdArray::new(ndarray::arr1(start_accent_phrase_list_slice));
+        let mut end_accent_phrase_list_array =
+            NdArray::new(ndarray::arr1(end_accent_phrase_list_slice));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> = vec![
+            &mut length_array,
+            &mut vowel_phoneme_list_array,
+            &mut consonant_phoneme_list_array,
+            &mut start_accent_list_array,
+            &mut end_accent_list_array,
+            &mut start_accent_phrase_list_array,
+            &mut end_accent_phrase_list_array,
+            &mut speaker_id_array,
+        ];
+
+        status.yukarin_sa_session_run(model_index, input_tensors)
     }
 
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
     pub fn decode_forward(
         &mut self,
-        length: i64,
-        phoneme_size: i64,
+        length: usize,
+        phoneme_size: usize,
         f0: *const f32,
         phoneme: *const f32,
-        speaker_id: *const i64,
-        output: *mut f32,
-    ) -> Result<()> {
-        unimplemented!()
+        speaker_id: usize,
+    ) -> Result<Vec<f32>> {
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) =
+            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
+                (model_index, speaker_id)
+            } else {
+                return Err(Error::InvalidSpeakerId { speaker_id });
+            };
+
+        if model_index >= Status::MODELS_COUNT {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        // 音が途切れてしまうのを避けるworkaround処理が入っている
+        // TODO: 改善したらここのpadding処理を取り除く
+        const PADDING_SIZE: f64 = 0.4;
+        const DEFAULT_SAMPLING_RATE: f64 = 24000.0;
+        let padding_size = ((PADDING_SIZE * DEFAULT_SAMPLING_RATE) / 256.0).round() as usize;
+        let start_and_end_padding_size = 2 * padding_size;
+        let length_with_padding = length + start_and_end_padding_size;
+        let f0_slice = unsafe { std::slice::from_raw_parts(f0, length) };
+        let f0_with_padding =
+            Self::make_f0_with_padding(f0_slice, length_with_padding, padding_size);
+        let phoneme_slice = unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) };
+
+        let phoneme_with_padding = Self::make_phoneme_with_padding(
+            phoneme_slice,
+            phoneme_size,
+            length_with_padding,
+            padding_size,
+        );
+
+        let mut f0_array = NdArray::new(
+            ndarray::arr1(&f0_with_padding)
+                .into_shape([length_with_padding, 1])
+                .unwrap(),
+        );
+        let mut phoneme_array = NdArray::new(
+            ndarray::arr1(&phoneme_with_padding)
+                .into_shape([length_with_padding, phoneme_size])
+                .unwrap(),
+        );
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> =
+            vec![&mut f0_array, &mut phoneme_array, &mut speaker_id_array];
+
+        status
+            .decode_session_run(model_index, input_tensors)
+            .map(|output| Self::trim_padding_from_output(output, padding_size))
+    }
+
+    fn make_f0_with_padding(
+        f0_slice: &[f32],
+        length_with_padding: usize,
+        padding_size: usize,
+    ) -> Vec<f32> {
+        // 音が途切れてしまうのを避けるworkaround処理
+        // 改善したらこの関数を削除する
+        let mut f0_with_padding = Vec::with_capacity(length_with_padding);
+        let padding = vec![0.0; padding_size];
+        f0_with_padding.extend_from_slice(&padding);
+        f0_with_padding.extend_from_slice(f0_slice);
+        f0_with_padding.extend_from_slice(&padding);
+        f0_with_padding
+    }
+
+    fn make_phoneme_with_padding(
+        phoneme_slice: &[f32],
+        phoneme_size: usize,
+        length_with_padding: usize,
+        padding_size: usize,
+    ) -> Vec<f32> {
+        // 音が途切れてしまうのを避けるworkaround処理
+        // 改善したらこの関数を削除する
+        let mut padding_phoneme = vec![0.0; phoneme_size];
+        padding_phoneme[0] = 1.0;
+        let padding_phoneme_len = padding_phoneme.len();
+        let padding_phonemes: Vec<f32> = padding_phoneme
+            .into_iter()
+            .cycle()
+            .take(padding_phoneme_len * padding_size)
+            .collect();
+        let mut phoneme_with_padding = Vec::with_capacity(phoneme_size * length_with_padding);
+        phoneme_with_padding.extend_from_slice(&padding_phonemes);
+        phoneme_with_padding.extend_from_slice(phoneme_slice);
+        phoneme_with_padding.extend_from_slice(&padding_phonemes);
+
+        phoneme_with_padding
+    }
+
+    fn trim_padding_from_output(mut output: Vec<f32>, padding_f0_size: usize) -> Vec<f32> {
+        // 音が途切れてしまうのを避けるworkaround処理
+        // 改善したらこの関数を削除する
+        let padding_sampling_size = padding_f0_size * 256;
+        output
+            .drain(padding_sampling_size..output.len() - padding_sampling_size)
+            .collect()
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
@@ -269,6 +432,16 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[rstest]
+    fn finalize_works() {
+        let internal = Internal::new_with_mutex();
+        let result = internal.lock().unwrap().initialize(false, 0, false);
+        assert_eq!(Ok(()), result);
+        internal.lock().unwrap().finalize();
+        assert_eq!(false, internal.lock().unwrap().initialized);
+        assert_eq!(true, internal.lock().unwrap().status_option.is_none());
+    }
 
     #[rstest]
     #[case(0, Err(Error::UninitializedStatus), Ok(()))]
@@ -364,21 +537,81 @@ mod tests {
             0, 23, 30, 4, 28, 21, 10, 21, 42, 7, 0, 30, 4, 35, 14, 14, 16, 30, 30, 35, 14, 14, 28,
             30, 35, 14, 23, 7, 21, 14, 43, 30, 30, 23, 30, 35, 30, 0,
         ];
-        let length = phoneme_list.len() as i64;
-        let phoneme_list = phoneme_list.as_ptr();
-        let mut output_vec = Vec::with_capacity(length as usize);
-        let output_ptr = output_vec.as_mut_ptr();
-        std::mem::forget(output_vec);
 
-        let result =
-            internal
-                .lock()
-                .unwrap()
-                .yukarin_s_forward(length, phoneme_list, 0, output_ptr);
-        assert_eq!(result, Ok(()));
+        let result = internal.lock().unwrap().yukarin_s_forward(
+            phoneme_list.len() as i64,
+            phoneme_list.as_ptr(),
+            0,
+        );
 
-        let output: Vec<f32> =
-            unsafe { Vec::from_raw_parts(output_ptr, length as usize, length as usize) };
-        assert_eq!(output.len(), length as usize);
+        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(result.unwrap().len(), phoneme_list.len());
+    }
+
+    #[rstest]
+    fn yukarin_sa_forward_works() {
+        let internal = Internal::new_with_mutex();
+        internal.lock().unwrap().initialize(false, 0, true).unwrap();
+
+        // 「テスト」という文章に対応する入力
+        let vowel_phoneme_list = [0, 14, 6, 30, 0];
+        let consonant_phoneme_list = [-1, 37, 35, 37, -1];
+        let start_accent_list = [0, 1, 0, 0, 0];
+        let end_accent_list = [0, 1, 0, 0, 0, 0];
+        let start_accent_phrase_list = [0, 1, 0, 0, 0];
+        let end_accent_phrase_list = [0, 0, 0, 1, 0];
+
+        let result = internal.lock().unwrap().yukarin_sa_forward(
+            vowel_phoneme_list.len() as i64,
+            vowel_phoneme_list.as_ptr(),
+            consonant_phoneme_list.as_ptr(),
+            start_accent_list.as_ptr(),
+            end_accent_list.as_ptr(),
+            start_accent_phrase_list.as_ptr(),
+            end_accent_phrase_list.as_ptr(),
+            0,
+        );
+
+        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(result.unwrap().len(), vowel_phoneme_list.len());
+    }
+
+    #[rstest]
+    fn decode_forward_works() {
+        let internal = Internal::new_with_mutex();
+        internal.lock().unwrap().initialize(false, 0, true).unwrap();
+
+        // 「テスト」という文章に対応する入力
+        const F0_LENGTH: usize = 69;
+        let mut f0 = [0.; F0_LENGTH];
+        f0[9..24].fill(5.905218);
+        f0[37..60].fill(5.565851);
+
+        const PHONEME_SIZE: usize = 45;
+        let mut phoneme = [0.; PHONEME_SIZE * F0_LENGTH];
+        let mut set_one = |index, range| {
+            for i in range {
+                phoneme[i * PHONEME_SIZE + index] = 1.;
+            }
+        };
+        set_one(0, 0..9);
+        set_one(37, 9..13);
+        set_one(14, 13..24);
+        set_one(35, 24..30);
+        set_one(6, 30..37);
+        set_one(37, 37..45);
+        set_one(30, 45..60);
+        set_one(0, 60..69);
+
+        let result = internal.lock().unwrap().decode_forward(
+            F0_LENGTH,
+            PHONEME_SIZE,
+            f0.as_ptr(),
+            phoneme.as_ptr(),
+            0,
+        );
+
+        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
     }
 }
