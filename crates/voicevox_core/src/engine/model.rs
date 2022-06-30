@@ -1,24 +1,25 @@
 #[allow(dead_code)] // TODO: remove this feature
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, new, Getter)]
 pub(super) struct MoraModel {
-    pub text: String,
-    pub consonant: Option<String>,
-    pub consonant_length: Option<f32>,
-    pub vowel: String,
-    pub vowel_length: f32,
-    pub pitch: f32,
+    text: String,
+    consonant: Option<String>,
+    consonant_length: Option<f32>,
+    vowel: String,
+    vowel_length: f32,
+    pitch: f32,
 }
 
 #[allow(dead_code)] // TODO: remove this feature
-#[derive(Debug)]
+#[derive(Debug, new, Getter)]
 pub(super) struct AccentPhraseModel {
-    pub moras: Vec<MoraModel>,
-    pub accent: usize,
-    pub pause_mora: Option<MoraModel>,
-    pub is_interrogative: bool,
+    moras: Vec<MoraModel>,
+    accent: usize,
+    pause_mora: Option<MoraModel>,
+    is_interrogative: bool,
 }
 
 #[allow(dead_code)] // TODO: remove this feature
+#[derive(new, Getter)]
 pub(super) struct AudioQueryModel {
     accent_phrases: Vec<AccentPhraseModel>,
     speed_scale: f32,
