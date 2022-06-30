@@ -35,25 +35,21 @@ static TEXT2MORA_WITH_UNVOICE: Lazy<HashMap<String, MoraModel>> = Lazy::new(|| {
 
         if ["a", "i", "u", "e", "o"].contains(vowel) {
             let upper_vowel = vowel.to_uppercase();
-            let unvoice_mora = MoraModel {
-                text: text.to_string(),
-                consonant: consonant.clone(),
+            let unvoice_mora = MoraModel::new(
+                text.to_string(),
+                consonant.clone(),
                 consonant_length,
-                vowel: upper_vowel,
-                vowel_length: 0.0,
-                pitch: 0.0,
-            };
+                upper_vowel,
+            );
             text2mora_with_unvoice.insert(UNVOICE_SYMBOL.to_string() + text, unvoice_mora);
         }
 
-        let mora = MoraModel {
-            text: text.to_string(),
+        let mora = MoraModel::new(
+            text.to_string(),
             consonant,
             consonant_length,
-            vowel: vowel.to_string(),
-            vowel_length: 0.0,
-            pitch: 0.0,
-        };
+            vowel.to_string(),
+        );
         text2mora_with_unvoice.insert(text.to_string(), mora);
     }
     text2mora_with_unvoice
@@ -118,12 +114,12 @@ fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhraseModel> {
             phrase
         )));
     }
-    Ok(AccentPhraseModel {
+    Ok(AccentPhraseModel::new(
         moras,
-        accent: accent_index.unwrap(),
-        pause_mora: None,
-        is_interrogative: false,
-    })
+        accent_index.unwrap(),
+        None,
+        false,
+    ))
 }
 
 #[allow(dead_code)] // TODO: remove this feature
@@ -155,14 +151,12 @@ fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> {
             let accent_phrase = {
                 let mut accent_phrase = text_to_accent_phrase(&phrase)?;
                 if letter == PAUSE_DELIMITER {
-                    accent_phrase.pause_mora = Some(MoraModel {
-                        text: PAUSE_DELIMITER.to_string(),
-                        consonant: None,
-                        consonant_length: None,
-                        vowel: "pau".to_string(),
-                        vowel_length: 0.0,
-                        pitch: 0.0,
-                    });
+                    accent_phrase.pause_mora = Some(MoraModel::new(
+                        PAUSE_DELIMITER.to_string(),
+                        None,
+                        None,
+                        "pau".to_string(),
+                    ));
                 }
                 accent_phrase.is_interrogative = is_interrogative;
                 accent_phrase
@@ -180,20 +174,20 @@ fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> {
 fn create_kana(accent_phrases: &[AccentPhraseModel]) -> String {
     let mut text = String::new();
     for phrase in accent_phrases {
-        let moras = &phrase.moras;
+        let moras = phrase.moras();
         for (index, mora) in moras.iter().enumerate() {
-            if ["A", "E", "I", "O", "U"].contains(&mora.vowel.as_ref()) {
+            if ["A", "E", "I", "O", "U"].contains(&(*mora.vowel()).as_ref()) {
                 text.push(UNVOICE_SYMBOL);
             }
-            text.push_str(&mora.text);
-            if index + 1 == phrase.accent {
+            text.push_str(mora.text());
+            if index + 1 == *phrase.accent() {
                 text.push(ACCENT_SYMBOL);
             }
         }
-        if phrase.is_interrogative {
+        if *phrase.is_interrogative() {
             text.push(WIDE_INTERROGATION_MARK);
         }
-        text.push(if phrase.pause_mora.is_some() {
+        text.push(if phrase.pause_mora().is_some() {
             PAUSE_DELIMITER
         } else {
             NOPAUSE_DELIMITER
@@ -227,10 +221,10 @@ mod tests {
         assert_eq!(mora.is_some(), res.is_some());
         if let Some(res) = res {
             let mut m = String::new();
-            if let Some(ref c) = res.consonant {
+            if let Some(ref c) = *res.consonant() {
                 m.push_str(c);
             }
-            m.push_str(&res.vowel);
+            m.push_str(res.vowel());
             assert_eq!(m, mora.unwrap());
         }
     }
