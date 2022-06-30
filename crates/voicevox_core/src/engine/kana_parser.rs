@@ -151,14 +151,14 @@ fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> {
             let accent_phrase = {
                 let mut accent_phrase = text_to_accent_phrase(&phrase)?;
                 if letter == PAUSE_DELIMITER {
-                    accent_phrase.pause_mora = Some(MoraModel::new(
+                    accent_phrase.set_pause_mora(Some(MoraModel::new(
                         PAUSE_DELIMITER.to_string(),
                         None,
                         None,
                         "pau".to_string(),
-                    ));
+                    )));
                 }
-                accent_phrase.is_interrogative = is_interrogative;
+                accent_phrase.set_is_interrogative(is_interrogative);
                 accent_phrase
             };
             parsed_result.push(accent_phrase);

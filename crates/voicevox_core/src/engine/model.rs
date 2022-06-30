@@ -19,8 +19,18 @@ pub(super) struct MoraModel {
 pub(super) struct AccentPhraseModel {
     moras: Vec<MoraModel>,
     accent: usize,
-    pub(super) pause_mora: Option<MoraModel>,
-    pub(super) is_interrogative: bool,
+    pause_mora: Option<MoraModel>,
+    is_interrogative: bool,
+}
+
+impl AccentPhraseModel {
+    pub(super) fn set_pause_mora(&mut self, pause_mora: Option<MoraModel>) {
+        self.pause_mora = pause_mora;
+    }
+
+    pub(super) fn set_is_interrogative(&mut self, is_interrogative: bool) {
+        self.is_interrogative = is_interrogative;
+    }
 }
 
 #[allow(dead_code, clippy::too_many_arguments)] // TODO: remove allow(dead_code)
