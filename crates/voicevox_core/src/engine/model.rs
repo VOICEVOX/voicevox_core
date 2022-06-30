@@ -23,7 +23,7 @@ pub(super) struct AccentPhraseModel {
     pub(super) is_interrogative: bool,
 }
 
-#[allow(dead_code)] // TODO: remove this feature
+#[allow(dead_code, clippy::too_many_arguments)] // TODO: remove allow(dead_code)
 #[derive(new, Getters)]
 pub(super) struct AudioQueryModel {
     accent_phrases: Vec<AccentPhraseModel>,
