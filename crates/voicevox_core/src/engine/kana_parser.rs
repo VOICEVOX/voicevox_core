@@ -248,21 +248,13 @@ mod tests {
         assert_eq!(result.is_ok(), result_is_ok_expected, "{:?}", result);
     }
 
-    #[test]
-    fn test_parse_kana() {
-        let text_ok = ["テ'ス_ト/テ_ス'ト、_テ'_スト？/テ'ス_ト？"];
-        let text_err = [
-            "クウハクノ'//フレーズ'",
-            "フレー？ズノ'/トチュウニ'、ギモ'ンフ",
-        ];
-        for text in text_ok {
-            let result = parse_kana(text);
-            assert!(result.is_ok(), "{:?}", result);
-        }
-        for text in text_err {
-            let result = parse_kana(text);
-            assert!(result.is_err(), "{:?}", result);
-        }
+    #[rstest]
+    #[case("テ'ス_ト/テ_ス'ト、_テ'_スト？/テ'ス_ト？", true)]
+    #[case("クウハクノ'//フレーズ'", false)]
+    #[case("フレー？ズノ'/トチュウニ'、ギモ'ンフ", false)]
+    fn test_parse_kana(#[case] text: &str, #[case] result_is_ok_expected: bool) {
+        let result = parse_kana(text);
+        assert_eq!(result.is_ok(), result_is_ok_expected, "{:?}", result);
     }
     #[rstest]
     fn test_create_kana() {
