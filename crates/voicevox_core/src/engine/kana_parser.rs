@@ -264,7 +264,7 @@ mod tests {
             assert!(result.is_err(), "{:?}", result);
         }
     }
-    #[test]
+    #[rstest]
     fn test_create_kana() {
         let text = "アンドロ'イドワ、デンキ'/ヒ'_ツジノ/ユメ'オ/ミ'ルカ？";
         let phrases = parse_kana(text).unwrap();
