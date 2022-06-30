@@ -235,23 +235,17 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_text_to_accent_phrase() {
-        let text_ok = ["ア_シタ'ワ", "ユウヒガ'", "_キ'レイ"];
-        let text_err = [
-            "アクセントナシ",
-            "アクセ'ント'タクサン'",
-            "'アクセントハジマリ",
-            "不明な'文字",
-        ];
-        for text in text_ok {
-            let result = text_to_accent_phrase(text);
-            assert!(result.is_ok(), "{:?}", result);
-        }
-        for text in text_err {
-            let result = text_to_accent_phrase(text);
-            assert!(result.is_err(), "{:?}", result);
-        }
+    #[rstest]
+    #[case("ア_シタ'ワ", true)]
+    #[case("ユウヒガ'", true)]
+    #[case("_キ'レイ", true)]
+    #[case("アクセントナシ", false)]
+    #[case("アクセ'ント'タクサン'", false)]
+    #[case("'アクセントハジマリ", false)]
+    #[case("不明な'文字", false)]
+    fn test_text_to_accent_phrase(#[case] text: &str, #[case] result_is_ok_expected: bool) {
+        let result = text_to_accent_phrase(text);
+        assert_eq!(result.is_ok(), result_is_ok_expected, "{:?}", result);
     }
 
     #[test]
