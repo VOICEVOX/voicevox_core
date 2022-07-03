@@ -289,7 +289,7 @@ jobs:
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing
         shell: bash
         run: |
-          bash build_util/codesign.bash "core.dll"
+          bash build_util/codesign.bash "artifact/core.dll"
         env:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
