@@ -27,7 +27,7 @@ env:
 
 jobs:
   build-cpp-shared:
-    environment: ${{ github.event.inputs.code_signing && 'code_signing' }}
+    environment: ${{ github.event.inputs.code_signing && 'code_signing' }} # コード署名用のenvironment
     strategy:
       fail-fast: false
       matrix:
@@ -289,10 +289,16 @@ jobs:
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing
         shell: bash
         run: |
-          bash codesign.bash "core.dll"
+          bash build_util/codesign.bash "core.dll"
         env:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+
+      # coreのredirectブランチ戻した？
+      # coreのredirectブランチ戻した？
+      # coreのredirectブランチ戻した？
+      # coreのredirectブランチ戻した？
+      # coreのredirectブランチ戻した？
 
       # Upload
       - name: Upload artifact
