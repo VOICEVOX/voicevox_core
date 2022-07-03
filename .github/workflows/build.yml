@@ -294,12 +294,6 @@ jobs:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
 
-      # coreのredirectブランチ戻した？
-      # coreのredirectブランチ戻した？
-      # coreのredirectブランチ戻した？
-      # coreのredirectブランチ戻した？
-      # coreのredirectブランチ戻した？
-
       # Upload
       - name: Upload artifact
         uses: actions/upload-artifact@v2
