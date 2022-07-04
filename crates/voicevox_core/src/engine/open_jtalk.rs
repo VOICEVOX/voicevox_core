@@ -57,12 +57,13 @@ impl OpenJtalk {
             self.njd.set_long_vowel();
             self.jpcommon.njd2jpcommon(&self.njd);
             self.jpcommon.make_label();
-            self.jpcommon.get_label_feature_to_vec().ok_or_else(|| {
-                OpenJtalkError::ExtractFullContext {
+            self.jpcommon
+                .get_label_feature_to_iter()
+                .ok_or_else(|| OpenJtalkError::ExtractFullContext {
                     text: text.as_ref().into(),
                     source: None,
-                }
-            })
+                })
+                .map(|iter| iter.map(|s| s.to_string()).collect())
         } else {
             Err(OpenJtalkError::ExtractFullContext {
                 text: text.as_ref().into(),
