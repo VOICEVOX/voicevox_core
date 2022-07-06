@@ -27,7 +27,7 @@ env:
 
 jobs:
   build-cpp-shared:
-    environment: ${{ github.event.inputs.code_signing && 'code_signing' }} # コード署名用のenvironment
+    environment: ${{ github.event.inputs.code_signing == 'true' && 'code_signing' }} # コード署名用のenvironment
     strategy:
       fail-fast: false
       matrix:
