@@ -49,6 +49,15 @@ impl OpenJtalk {
                 source: Some(e.into()),
             })?;
         if self.mecab.analysis(mecab_text) {
+            self.njd.mecab2njd(
+                self.mecab
+                    .get_feature()
+                    .ok_or(OpenJtalkError::ExtractFullContext {
+                        text: text.as_ref().into(),
+                        source: None,
+                    })?,
+                self.mecab.get_size(),
+            );
             self.njd.set_pronunciation();
             self.njd.set_digit();
             self.njd.set_accent_phrase();
