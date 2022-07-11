@@ -16,7 +16,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub struct Status {
     models: StatusModels,
-    session_options: SessionOptions,
+    light_session_options: SessionOptions, // 軽いモデルはこちらを使う
+    heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
     supported_styles: BTreeSet<usize>,
 }
 
@@ -126,7 +127,8 @@ impl Status {
                 yukarin_sa: BTreeMap::new(),
                 decode: BTreeMap::new(),
             },
-            session_options: SessionOptions::new(cpu_num_threads, use_gpu),
+            light_session_options: SessionOptions::new(cpu_num_threads, false),
+            heavy_session_options: SessionOptions::new(cpu_num_threads, use_gpu),
             supported_styles: BTreeSet::default(),
         }
     }
@@ -148,13 +150,13 @@ impl Status {
         if model_index < Self::MODELS.len() {
             let model = &Self::MODELS[model_index];
             let yukarin_s_session = self
-                .new_session(model.yukarin_s_model)
+                .new_session(model.yukarin_s_model, &self.light_session_options)
                 .map_err(Error::LoadModel)?;
             let yukarin_sa_session = self
-                .new_session(model.yukarin_sa_model)
+                .new_session(model.yukarin_sa_model, &self.light_session_options)
                 .map_err(Error::LoadModel)?;
             let decode_model = self
-                .new_session(model.decode_model)
+                .new_session(model.decode_model, &self.heavy_session_options)
                 .map_err(Error::LoadModel)?;
 
             self.models.yukarin_s.insert(model_index, yukarin_s_session);
@@ -179,14 +181,15 @@ impl Status {
     fn new_session<B: AsRef<[u8]>>(
         &self,
         model_bytes: B,
+        session_options: &SessionOptions,
     ) -> std::result::Result<Session<'static>, SourceError> {
         let session_builder = ENVIRONMENT
             .new_session_builder()?
             .with_optimization_level(GraphOptimizationLevel::Basic)?
-            .with_intra_op_num_threads(*self.session_options.cpu_num_threads() as i32)?
-            .with_inter_op_num_threads(*self.session_options.cpu_num_threads() as i32)?;
+            .with_intra_op_num_threads(*session_options.cpu_num_threads() as i32)?
+            .with_inter_op_num_threads(*session_options.cpu_num_threads() as i32)?;
 
-        let session_builder = if *self.session_options.use_gpu() {
+        let session_builder = if *session_options.use_gpu() {
             cfg_if! {
                 if #[cfg(feature = "directml")]{
                     session_builder
@@ -275,8 +278,16 @@ mod tests {
     #[case(false, 0)]
     fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: usize) {
         let status = Status::new(use_gpu, cpu_num_threads);
-        assert_eq!(use_gpu, status.session_options.use_gpu);
-        assert_eq!(cpu_num_threads, status.session_options.cpu_num_threads);
+        assert_eq!(false, status.light_session_options.use_gpu);
+        assert_eq!(use_gpu, status.heavy_session_options.use_gpu);
+        assert_eq!(
+            cpu_num_threads,
+            status.light_session_options.cpu_num_threads
+        );
+        assert_eq!(
+            cpu_num_threads,
+            status.heavy_session_options.cpu_num_threads
+        );
         assert!(status.models.yukarin_s.is_empty());
         assert!(status.models.yukarin_sa.is_empty());
         assert!(status.models.decode.is_empty());
