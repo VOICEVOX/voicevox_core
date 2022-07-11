@@ -59,13 +59,7 @@ impl Internal {
                     let phoneme = [0.; PHONEME_SIZE * LENGTH];
                     let speaker_id = 0;
 
-                    let _ = self.decode_forward(
-                        LENGTH,
-                        PHONEME_SIZE,
-                        f0.as_ptr(),
-                        phoneme.as_ptr(),
-                        speaker_id,
-                    )?;
+                    let _ = self.decode_forward(LENGTH, PHONEME_SIZE, &f0, &phoneme, speaker_id)?;
                 }
             }
 
