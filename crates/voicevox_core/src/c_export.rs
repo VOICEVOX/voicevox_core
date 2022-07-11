@@ -145,7 +145,6 @@ pub extern "C" fn yukarin_s_forward(
     output: *mut f32,
 ) -> bool {
     let result = lock_internal().yukarin_s_forward(
-        length,
         unsafe { std::slice::from_raw_parts_mut(phoneme_list, length as usize) },
         unsafe { *speaker_id as usize },
     );

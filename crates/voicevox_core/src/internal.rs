@@ -126,7 +126,6 @@ impl Internal {
 
     pub fn yukarin_s_forward(
         &mut self,
-        length: i64,
         phoneme_list: &[i64],
         speaker_id: usize,
     ) -> Result<Vec<f32>> {
@@ -532,11 +531,7 @@ mod tests {
             30, 35, 14, 23, 7, 21, 14, 43, 30, 30, 23, 30, 35, 30, 0,
         ];
 
-        let result =
-            internal
-                .lock()
-                .unwrap()
-                .yukarin_s_forward(phoneme_list.len() as i64, &phoneme_list, 0);
+        let result = internal.lock().unwrap().yukarin_s_forward(&phoneme_list, 0);
 
         assert!(result.is_ok(), "{:?}", result);
         assert_eq!(result.unwrap().len(), phoneme_list.len());
