@@ -686,8 +686,8 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "open_jtalk"
-version = "0.1.5"
-source = "git+https://github.com/qwerty2501/open_jtalk-rs.git#425e2ca31b21d95fe026218df2221d8e786d5856"
+version = "0.1.6"
+source = "git+https://github.com/qwerty2501/open_jtalk-rs.git#2b251db09ced472aa10980053f8c0c23d9026d0f"
 dependencies = [
  "open_jtalk-sys",
  "thiserror",
@@ -696,7 +696,7 @@ dependencies = [
 [[package]]
 name = "open_jtalk-sys"
 version = "0.1.111"
-source = "git+https://github.com/qwerty2501/open_jtalk-rs.git#425e2ca31b21d95fe026218df2221d8e786d5856"
+source = "git+https://github.com/qwerty2501/open_jtalk-rs.git#2b251db09ced472aa10980053f8c0c23d9026d0f"
 dependencies = [
  "bindgen",
  "cmake",
