@@ -3,7 +3,7 @@ use derive_new::new;
 
 #[allow(dead_code)] // TODO: remove this feature
 #[derive(Clone, Debug, new, Getters)]
-pub(super) struct MoraModel {
+pub struct MoraModel {
     text: String,
     consonant: Option<String>,
     consonant_length: Option<f32>,
@@ -16,7 +16,7 @@ pub(super) struct MoraModel {
 
 #[allow(dead_code)] // TODO: remove this feature
 #[derive(Debug, new, Getters)]
-pub(super) struct AccentPhraseModel {
+pub struct AccentPhraseModel {
     moras: Vec<MoraModel>,
     accent: usize,
     pause_mora: Option<MoraModel>,
@@ -35,7 +35,7 @@ impl AccentPhraseModel {
 
 #[allow(dead_code, clippy::too_many_arguments)] // TODO: remove allow(dead_code)
 #[derive(new, Getters)]
-pub(super) struct AudioQueryModel {
+pub struct AudioQueryModel {
     accent_phrases: Vec<AccentPhraseModel>,
     speed_scale: f32,
     pitch_scale: f32,
