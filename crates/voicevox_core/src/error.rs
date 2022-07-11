@@ -57,6 +57,7 @@ fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
 pub struct SourceError(anyhow::Error);
 
 impl SourceError {
+    #[allow(dead_code)]
     pub fn new(source: anyhow::Error) -> Self {
         Self(source)
     }
