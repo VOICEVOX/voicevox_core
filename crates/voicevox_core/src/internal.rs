@@ -59,13 +59,7 @@ impl Internal {
                     let phoneme = [0.; PHONEME_SIZE * LENGTH];
                     let speaker_id = 0;
 
-                    let _ = self.decode_forward(
-                        LENGTH,
-                        PHONEME_SIZE,
-                        f0.as_ptr(),
-                        phoneme.as_ptr(),
-                        speaker_id,
-                    )?;
+                    let _ = self.decode_forward(LENGTH, PHONEME_SIZE, &f0, &phoneme, speaker_id)?;
                 }
             }
 
@@ -126,8 +120,7 @@ impl Internal {
 
     pub fn yukarin_s_forward(
         &mut self,
-        length: i64,
-        phoneme_list: *const i64,
+        phoneme_list: &[i64],
         speaker_id: usize,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
@@ -154,10 +147,7 @@ impl Internal {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let phoneme_list_slice =
-            unsafe { std::slice::from_raw_parts(phoneme_list, length as usize) };
-
-        let mut phoneme_list_array = NdArray::new(ndarray::arr1(phoneme_list_slice));
+        let mut phoneme_list_array = NdArray::new(ndarray::arr1(phoneme_list));
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
@@ -178,12 +168,12 @@ impl Internal {
     pub fn yukarin_sa_forward(
         &mut self,
         length: i64,
-        vowel_phoneme_list: *const i64,
-        consonant_phoneme_list: *const i64,
-        start_accent_list: *const i64,
-        end_accent_list: *const i64,
-        start_accent_phrase_list: *const i64,
-        end_accent_phrase_list: *const i64,
+        vowel_phoneme_list: &[i64],
+        consonant_phoneme_list: &[i64],
+        start_accent_list: &[i64],
+        end_accent_list: &[i64],
+        start_accent_phrase_list: &[i64],
+        end_accent_phrase_list: &[i64],
         speaker_id: usize,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
@@ -210,29 +200,14 @@ impl Internal {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let vowel_phoneme_list_slice =
-            unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length as usize) };
-        let consonant_phoneme_list_slice =
-            unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length as usize) };
-        let start_accent_list_slice =
-            unsafe { std::slice::from_raw_parts(start_accent_list, length as usize) };
-        let end_accent_list_slice =
-            unsafe { std::slice::from_raw_parts(end_accent_list, length as usize) };
-        let start_accent_phrase_list_slice =
-            unsafe { std::slice::from_raw_parts(start_accent_phrase_list, length as usize) };
-        let end_accent_phrase_list_slice =
-            unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length as usize) };
-
         let mut length_array = NdArray::new(ndarray::arr0(length));
-        let mut vowel_phoneme_list_array = NdArray::new(ndarray::arr1(vowel_phoneme_list_slice));
-        let mut consonant_phoneme_list_array =
-            NdArray::new(ndarray::arr1(consonant_phoneme_list_slice));
-        let mut start_accent_list_array = NdArray::new(ndarray::arr1(start_accent_list_slice));
-        let mut end_accent_list_array = NdArray::new(ndarray::arr1(end_accent_list_slice));
+        let mut vowel_phoneme_list_array = NdArray::new(ndarray::arr1(vowel_phoneme_list));
+        let mut consonant_phoneme_list_array = NdArray::new(ndarray::arr1(consonant_phoneme_list));
+        let mut start_accent_list_array = NdArray::new(ndarray::arr1(start_accent_list));
+        let mut end_accent_list_array = NdArray::new(ndarray::arr1(end_accent_list));
         let mut start_accent_phrase_list_array =
-            NdArray::new(ndarray::arr1(start_accent_phrase_list_slice));
-        let mut end_accent_phrase_list_array =
-            NdArray::new(ndarray::arr1(end_accent_phrase_list_slice));
+            NdArray::new(ndarray::arr1(start_accent_phrase_list));
+        let mut end_accent_phrase_list_array = NdArray::new(ndarray::arr1(end_accent_phrase_list));
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> = vec![
@@ -253,8 +228,8 @@ impl Internal {
         &mut self,
         length: usize,
         phoneme_size: usize,
-        f0: *const f32,
-        phoneme: *const f32,
+        f0: &[f32],
+        phoneme: &[f32],
         speaker_id: usize,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
@@ -288,13 +263,10 @@ impl Internal {
         let padding_size = ((PADDING_SIZE * DEFAULT_SAMPLING_RATE) / 256.0).round() as usize;
         let start_and_end_padding_size = 2 * padding_size;
         let length_with_padding = length + start_and_end_padding_size;
-        let f0_slice = unsafe { std::slice::from_raw_parts(f0, length) };
-        let f0_with_padding =
-            Self::make_f0_with_padding(f0_slice, length_with_padding, padding_size);
-        let phoneme_slice = unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) };
+        let f0_with_padding = Self::make_f0_with_padding(f0, length_with_padding, padding_size);
 
         let phoneme_with_padding = Self::make_phoneme_with_padding(
-            phoneme_slice,
+            phoneme,
             phoneme_size,
             length_with_padding,
             padding_size,
@@ -553,11 +525,7 @@ mod tests {
             30, 35, 14, 23, 7, 21, 14, 43, 30, 30, 23, 30, 35, 30, 0,
         ];
 
-        let result = internal.lock().unwrap().yukarin_s_forward(
-            phoneme_list.len() as i64,
-            phoneme_list.as_ptr(),
-            0,
-        );
+        let result = internal.lock().unwrap().yukarin_s_forward(&phoneme_list, 0);
 
         assert!(result.is_ok(), "{:?}", result);
         assert_eq!(result.unwrap().len(), phoneme_list.len());
@@ -572,18 +540,18 @@ mod tests {
         let vowel_phoneme_list = [0, 14, 6, 30, 0];
         let consonant_phoneme_list = [-1, 37, 35, 37, -1];
         let start_accent_list = [0, 1, 0, 0, 0];
-        let end_accent_list = [0, 1, 0, 0, 0, 0];
+        let end_accent_list = [0, 1, 0, 0, 0];
         let start_accent_phrase_list = [0, 1, 0, 0, 0];
         let end_accent_phrase_list = [0, 0, 0, 1, 0];
 
         let result = internal.lock().unwrap().yukarin_sa_forward(
             vowel_phoneme_list.len() as i64,
-            vowel_phoneme_list.as_ptr(),
-            consonant_phoneme_list.as_ptr(),
-            start_accent_list.as_ptr(),
-            end_accent_list.as_ptr(),
-            start_accent_phrase_list.as_ptr(),
-            end_accent_phrase_list.as_ptr(),
+            &vowel_phoneme_list,
+            &consonant_phoneme_list,
+            &start_accent_list,
+            &end_accent_list,
+            &start_accent_phrase_list,
+            &end_accent_phrase_list,
             0,
         );
 
@@ -618,13 +586,11 @@ mod tests {
         set_one(30, 45..60);
         set_one(0, 60..69);
 
-        let result = internal.lock().unwrap().decode_forward(
-            F0_LENGTH,
-            PHONEME_SIZE,
-            f0.as_ptr(),
-            phoneme.as_ptr(),
-            0,
-        );
+        let result =
+            internal
+                .lock()
+                .unwrap()
+                .decode_forward(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, 0);
 
         assert!(result.is_ok(), "{:?}", result);
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);

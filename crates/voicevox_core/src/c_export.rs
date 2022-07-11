@@ -144,8 +144,10 @@ pub extern "C" fn yukarin_s_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let result =
-        lock_internal().yukarin_s_forward(length, phoneme_list, unsafe { *speaker_id as usize });
+    let result = lock_internal().yukarin_s_forward(
+        unsafe { std::slice::from_raw_parts_mut(phoneme_list, length as usize) },
+        unsafe { *speaker_id as usize },
+    );
     //TODO: VoicevoxResultCodeを返すようにする
     match result {
         Ok(output_vec) => {
@@ -174,12 +176,12 @@ pub extern "C" fn yukarin_sa_forward(
 ) -> bool {
     let result = lock_internal().yukarin_sa_forward(
         length,
-        vowel_phoneme_list,
-        consonant_phoneme_list,
-        start_accent_list,
-        end_accent_list,
-        start_accent_phrase_list,
-        end_accent_phrase_list,
+        unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length as usize) },
+        unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length as usize) },
+        unsafe { std::slice::from_raw_parts(start_accent_list, length as usize) },
+        unsafe { std::slice::from_raw_parts(end_accent_list, length as usize) },
+        unsafe { std::slice::from_raw_parts(start_accent_phrase_list, length as usize) },
+        unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length as usize) },
         unsafe { *speaker_id as usize },
     );
     //TODO: VoicevoxResultCodeを返すようにする
@@ -205,11 +207,13 @@ pub extern "C" fn decode_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
+    let length = length as usize;
+    let phoneme_size = phoneme_size as usize;
     let result = lock_internal().decode_forward(
-        length as usize,
-        phoneme_size as usize,
-        f0,
-        phoneme,
+        length,
+        phoneme_size,
+        unsafe { std::slice::from_raw_parts(f0, length) },
+        unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) },
         unsafe { *speaker_id as usize },
     );
     //TODO: VoicevoxResultCodeを返すようにする
