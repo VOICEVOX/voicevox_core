@@ -43,6 +43,12 @@ jobs:
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
           key: "v1-cargo-test-cache-${{ matrix.os }}"
+      - name: Prepare onnxruntime.dll
+        if: matrix.os == 'windows-2022'
+        shell: bash
+        run: |
+          cargo build
+          cp target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll target/debug/deps/
       - run: cargo test --all-features
 env:
   CARGO_TERM_COLOR: always
