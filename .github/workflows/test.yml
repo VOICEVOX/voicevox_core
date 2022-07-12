@@ -44,6 +44,15 @@ jobs:
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
           key: "v1-cargo-test-cache-${{ matrix.os }}"
+      # FIXME: windows-2022 では、onnxruntime-sys のビルド時にダウンロードされる onnxruntime.dll に対してパスが通らないために、テストが行えない
+      #        原因が不明であるため、姑息的な回避策として target/debug/deps ディレクトリに onnxruntime.dll をコピーする。根本的な解決策を望む。
+      #        cf. https://github.com/VOICEVOX/voicevox_core/pull/140#issuecomment-1140276585
+      - name: Prepare onnxruntime.dll
+        if: matrix.os == 'windows-2022'
+        shell: bash
+        run: |
+          cargo build
+          cp target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll target/debug/deps/
       - run: cargo test --all-features
 env:
   CARGO_TERM_COLOR: always
