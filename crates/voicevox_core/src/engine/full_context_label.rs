@@ -282,6 +282,8 @@ impl Utterance {
     }
 
     pub fn phonemes(&self) -> Vec<Phoneme> {
+        // TODO:実装が中途半端なのであとでちゃんと実装する必要があるらしい
+        // https://github.com/VOICEVOX/voicevox_core/pull/174#discussion_r919982651
         let mut phonemes = Vec::with_capacity(self.breath_groups.len());
 
         for i in 0..self.pauses().len() {
