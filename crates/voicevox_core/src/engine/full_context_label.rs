@@ -212,10 +212,10 @@ impl BreathGroup {
         for i in 0..phonemes.len() {
             accent_phonemes.push(phonemes.get(i).unwrap().clone());
             if i + 1 == phonemes.len()
-                || phonemes.get(i).unwrap().contexts().get("i3")
-                    != phonemes.get(i + 1).unwrap().contexts().get("i3")
-                || phonemes.get(i).unwrap().contexts().get("f5")
-                    != phonemes.get(i + 1).unwrap().contexts().get("f5")
+                || phonemes.get(i).unwrap().contexts().get("i3").unwrap()
+                    != phonemes.get(i + 1).unwrap().contexts().get("i3").unwrap()
+                || phonemes.get(i).unwrap().contexts().get("f5").unwrap()
+                    != phonemes.get(i + 1).unwrap().contexts().get("f5").unwrap()
             {
                 accent_phrases.push(AccentPhrase::from_phonemes(accent_phonemes.clone())?);
                 accent_phonemes.clear();
