@@ -21,7 +21,7 @@ onnxruntime = { git = "https://github.com/qwerty2501/onnxruntime-rs.git", versio
 serde = "1.0.137"
 serde_json = "1.0.81"
 thiserror = "1.0.31"
-open_jtalk = { git = "https://github.com/qwerty2501/open_jtalk-rs.git", version = "0.1.6" }
+open_jtalk = { git = "https://github.com/qwerty2501/open_jtalk-rs.git", version = "0.1.7" }
 
 [dev-dependencies]
 rstest = "0.12.0"
