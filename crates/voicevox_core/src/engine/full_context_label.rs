@@ -87,10 +87,8 @@ impl Mora {
     pub fn set_context(&mut self, key: impl Into<String>, value: impl Into<String>) {
         let key = key.into();
         let value = value.into();
-        if self.consonant().is_none() {
-            let mut contexts = HashMap::new();
-            contexts.insert(key.clone(), value.clone());
-            self.consonant = Some(Phoneme::new(contexts, "".into()))
+        if let Some(ref mut consonant) = self.consonant {
+            consonant.contexts.insert(key.clone(), value.clone());
         }
         self.vowel.contexts.insert(key, value);
     }
