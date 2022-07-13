@@ -71,7 +71,7 @@ impl Phoneme {
     }
 
     pub fn is_pause(&self) -> bool {
-        self.contexts.get("f1").map(|s| s == "xx").unwrap_or(false)
+        self.contexts.get("f1").unwrap().as_str() == "xx"
     }
 }
 
