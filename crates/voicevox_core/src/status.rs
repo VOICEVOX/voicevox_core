@@ -93,7 +93,9 @@ impl SupportedDevices {
     }
 }
 
+#[allow(unsafe_code)]
 unsafe impl Send for Status {}
+#[allow(unsafe_code)]
 unsafe impl Sync for Status {}
 
 impl Status {

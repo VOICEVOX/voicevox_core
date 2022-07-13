@@ -1,3 +1,6 @@
+#![deny(unsafe_code)]
+
+#[allow(unsafe_code)]
 mod c_export;
 mod engine;
 mod error;
