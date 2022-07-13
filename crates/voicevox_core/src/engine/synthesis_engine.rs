@@ -3,13 +3,15 @@ use std::path::Path;
 use super::open_jtalk::OpenJtalk;
 use super::*;
 
-/*
- * TODO: OpenJtalk機能を使用するようになったら、allow(dead_code),allow(unused_variables)を消す
- */
-#[allow(dead_code)]
 pub struct SynthesisEngine {
     open_jtalk: OpenJtalk,
+    is_openjtalk_dict_loaded: bool,
 }
+
+#[allow(unsafe_code)]
+unsafe impl Send for SynthesisEngine {}
+#[allow(unsafe_code)]
+unsafe impl Sync for SynthesisEngine {}
 
 #[allow(dead_code)]
 #[allow(unused_variables)]
@@ -20,6 +22,7 @@ impl SynthesisEngine {
     pub fn new() -> Self {
         Self {
             open_jtalk: OpenJtalk::initialize(),
+            is_openjtalk_dict_loaded: false,
         }
     }
 
@@ -75,10 +78,14 @@ impl SynthesisEngine {
     }
 
     pub fn load_openjtalk_dict(&mut self, mecab_dict_dir: impl AsRef<Path>) -> Result<()> {
-        unimplemented!()
+        let result = self.open_jtalk.load(mecab_dict_dir);
+        if result.is_ok() {
+            self.is_openjtalk_dict_loaded = true;
+        }
+        result.map_err(|_| Error::NotLoadedOpenjtalkDict)
     }
 
     pub fn is_openjtalk_dict_loaded(&self) -> bool {
-        unimplemented!()
+        self.is_openjtalk_dict_loaded
     }
 }

@@ -8,6 +8,7 @@ mod internal;
 mod result;
 mod status;
 
+use engine::*;
 use error::*;
 use result::*;
 

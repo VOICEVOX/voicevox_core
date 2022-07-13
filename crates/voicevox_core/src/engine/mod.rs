@@ -8,3 +8,4 @@ mod synthesis_engine;
 use super::*;
 
 pub use model::*;
+pub use synthesis_engine::*;

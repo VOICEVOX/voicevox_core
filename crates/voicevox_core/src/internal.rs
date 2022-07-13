@@ -8,6 +8,7 @@ use onnxruntime::{
 use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::os::raw::c_int;
+use std::path::Path;
 use std::sync::Mutex;
 
 use status::*;
@@ -25,6 +26,7 @@ static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> = Lazy::new(|| {
 pub struct Internal {
     initialized: bool,
     status_option: Option<Status>,
+    synthesis_engine: SynthesisEngine,
 }
 
 impl Internal {
@@ -32,6 +34,7 @@ impl Internal {
         Mutex::new(Internal {
             initialized: false,
             status_option: None,
+            synthesis_engine: SynthesisEngine::new(),
         })
     }
     pub fn initialize(
@@ -340,10 +343,13 @@ impl Internal {
             .collect()
     }
 
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
     pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &CStr) -> Result<()> {
-        unimplemented!()
+        let mecab_dict_dir = Path::new(
+            dict_path
+                .to_str()
+                .map_err(|_| Error::NotLoadedOpenjtalkDict)?,
+        );
+        self.synthesis_engine.load_openjtalk_dict(mecab_dict_dir)
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
