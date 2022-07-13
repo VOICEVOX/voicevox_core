@@ -132,8 +132,8 @@ impl AccentPhrase {
             }
 
             if i + 1 == phonemes.len()
-                || phonemes.get(i).unwrap().contexts().get("a2")
-                    != phonemes.get(i + 1).unwrap().contexts().get("a2")
+                || phonemes.get(i).unwrap().contexts().get("a2").unwrap()
+                    != phonemes.get(i + 1).unwrap().contexts().get("a2").unwrap()
             {
                 if mora_phonemes.len() == 1 {
                     moras.push(Mora::new(None, mora_phonemes.get(0).unwrap().clone()));
