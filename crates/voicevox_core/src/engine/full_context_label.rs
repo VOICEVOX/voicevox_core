@@ -67,7 +67,7 @@ impl Phoneme {
     }
 
     pub fn phoneme(&self) -> &str {
-        self.contexts.get("p3").map(|s| s.as_str()).unwrap_or("")
+        self.contexts.get("p3").unwrap().as_str()
     }
 
     pub fn is_pause(&self) -> bool {
