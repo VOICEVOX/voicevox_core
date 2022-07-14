@@ -40,6 +40,8 @@ static TEXT2MORA_WITH_UNVOICE: Lazy<HashMap<String, MoraModel>> = Lazy::new(|| {
                 consonant.clone(),
                 consonant_length,
                 upper_vowel,
+                0.,
+                0.,
             );
             text2mora_with_unvoice.insert(UNVOICE_SYMBOL.to_string() + text, unvoice_mora);
         }
@@ -49,6 +51,8 @@ static TEXT2MORA_WITH_UNVOICE: Lazy<HashMap<String, MoraModel>> = Lazy::new(|| {
             consonant,
             consonant_length,
             vowel.to_string(),
+            0.,
+            0.,
         );
         text2mora_with_unvoice.insert(text.to_string(), mora);
     }
@@ -156,6 +160,8 @@ fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> {
                         None,
                         None,
                         "pau".to_string(),
+                        0.,
+                        0.,
                     )));
                 }
                 accent_phrase.set_is_interrogative(is_interrogative);

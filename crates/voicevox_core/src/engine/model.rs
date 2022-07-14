@@ -1,21 +1,17 @@
 use derive_getters::Getters;
 use derive_new::new;
 
-#[allow(dead_code)] // TODO: remove this feature
 #[derive(Clone, Debug, new, Getters)]
 pub struct MoraModel {
     text: String,
     consonant: Option<String>,
     consonant_length: Option<f32>,
     vowel: String,
-    #[new(default)]
     vowel_length: f32,
-    #[new(default)]
     pitch: f32,
 }
 
-#[allow(dead_code)] // TODO: remove this feature
-#[derive(Debug, new, Getters)]
+#[derive(Clone, Debug, new, Getters)]
 pub struct AccentPhraseModel {
     moras: Vec<MoraModel>,
     accent: usize,
