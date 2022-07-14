@@ -8,7 +8,6 @@ use onnxruntime::{
 use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::os::raw::c_int;
-use std::path::Path;
 use std::sync::Mutex;
 
 use status::*;
@@ -344,12 +343,11 @@ impl Internal {
     }
 
     pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &CStr) -> Result<()> {
-        let mecab_dict_dir = Path::new(
+        self.synthesis_engine.load_openjtalk_dict(
             dict_path
                 .to_str()
                 .map_err(|_| Error::NotLoadedOpenjtalkDict)?,
-        );
-        self.synthesis_engine.load_openjtalk_dict(mecab_dict_dir)
+        )
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
