@@ -13,7 +13,6 @@ macro_rules! make_phoneme_map {
     };
 }
 
-#[allow(unused)]
 #[rustfmt::skip]
 static PHONEME_MAP: Lazy<HashMap<String, i64>> = Lazy::new(|| {
     make_phoneme_map!(
@@ -25,16 +24,17 @@ static PHONEME_MAP: Lazy<HashMap<String, i64>> = Lazy::new(|| {
     )
 });
 
-#[allow(unused)]
 #[derive(Debug, Clone, new, Default, Getters)]
 pub struct OjtPhoneme {
     phoneme: String,
+    #[allow(dead_code)]
     start: f32,
+    #[allow(dead_code)]
     end: f32,
 }
 
-#[allow(unused)]
 impl OjtPhoneme {
+    #[allow(dead_code)]
     pub fn num_phoneme() -> usize {
         PHONEME_MAP.len()
     }
