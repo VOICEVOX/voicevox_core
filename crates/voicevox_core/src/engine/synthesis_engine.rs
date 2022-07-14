@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use super::internal::InferenceCore;
 use super::open_jtalk::OpenJtalk;
 use super::*;
 
@@ -9,7 +10,13 @@ use super::*;
 #[allow(dead_code)]
 pub struct SynthesisEngine {
     open_jtalk: OpenJtalk,
+    inference_core: InferenceCore,
 }
+
+#[allow(unsafe_code)]
+unsafe impl Send for SynthesisEngine {}
+#[allow(unsafe_code)]
+unsafe impl Sync for SynthesisEngine {}
 
 #[allow(dead_code)]
 #[allow(unused_variables)]
@@ -17,10 +24,19 @@ impl SynthesisEngine {
     const DEFAULT_SAMPLING_RATE: usize = 24000;
 
     #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+    pub fn new(inference_core: InferenceCore) -> Self {
         Self {
             open_jtalk: OpenJtalk::initialize(),
+            inference_core,
         }
+    }
+
+    pub fn inference_core(&self) -> &InferenceCore {
+        &self.inference_core
+    }
+
+    pub fn inference_core_mut(&mut self) -> &mut InferenceCore {
+        &mut self.inference_core
     }
 
     pub fn create_accent_phrases(

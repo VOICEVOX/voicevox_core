@@ -1,5 +1,6 @@
 use super::*;
 use c_export::VoicevoxResultCode;
+use engine::*;
 use once_cell::sync::Lazy;
 use onnxruntime::{
     ndarray,
@@ -23,17 +24,150 @@ static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> = Lazy::new(|| {
 });
 
 pub struct Internal {
-    initialized: bool,
-    status_option: Option<Status>,
+    synthesis_engine: SynthesisEngine,
 }
 
 impl Internal {
     pub fn new_with_mutex() -> Mutex<Internal> {
         Mutex::new(Internal {
-            initialized: false,
-            status_option: None,
+            synthesis_engine: SynthesisEngine::new(InferenceCore::new(false, None)),
         })
     }
+
+    pub fn initialize(
+        &mut self,
+        use_gpu: bool,
+        cpu_num_threads: usize,
+        load_all_models: bool,
+    ) -> Result<()> {
+        self.synthesis_engine.inference_core_mut().initialize(
+            use_gpu,
+            cpu_num_threads,
+            load_all_models,
+        )
+    }
+
+    pub fn load_model(&mut self, speaker_id: usize) -> Result<()> {
+        self.synthesis_engine
+            .inference_core_mut()
+            .load_model(speaker_id)
+    }
+
+    pub fn is_model_loaded(&self, speaker_id: usize) -> bool {
+        self.synthesis_engine
+            .inference_core()
+            .is_model_loaded(speaker_id)
+    }
+
+    pub fn finalize(&mut self) {
+        self.synthesis_engine.inference_core_mut().finalize()
+    }
+
+    pub fn metas(&self) -> &'static CStr {
+        &METAS_CSTRING
+    }
+
+    pub fn supported_devices(&self) -> &'static CStr {
+        &SUPPORTED_DEVICES_CSTRING
+    }
+
+    pub fn yukarin_s_forward(
+        &mut self,
+        phoneme_list: &[i64],
+        speaker_id: usize,
+    ) -> Result<Vec<f32>> {
+        self.synthesis_engine
+            .inference_core_mut()
+            .yukarin_s_forward(phoneme_list, speaker_id)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn yukarin_sa_forward(
+        &mut self,
+        length: i64,
+        vowel_phoneme_list: &[i64],
+        consonant_phoneme_list: &[i64],
+        start_accent_list: &[i64],
+        end_accent_list: &[i64],
+        start_accent_phrase_list: &[i64],
+        end_accent_phrase_list: &[i64],
+        speaker_id: usize,
+    ) -> Result<Vec<f32>> {
+        self.synthesis_engine
+            .inference_core_mut()
+            .yukarin_sa_forward(
+                length,
+                vowel_phoneme_list,
+                consonant_phoneme_list,
+                start_accent_list,
+                end_accent_list,
+                start_accent_phrase_list,
+                end_accent_phrase_list,
+                speaker_id,
+            )
+    }
+
+    pub fn decode_forward(
+        &mut self,
+        length: usize,
+        phoneme_size: usize,
+        f0: &[f32],
+        phoneme: &[f32],
+        speaker_id: usize,
+    ) -> Result<Vec<f32>> {
+        self.synthesis_engine.inference_core_mut().decode_forward(
+            length,
+            phoneme_size,
+            f0,
+            phoneme,
+            speaker_id,
+        )
+    }
+
+    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+    #[allow(unused_variables)]
+    pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &CStr) -> Result<()> {
+        unimplemented!()
+    }
+
+    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+    #[allow(unused_variables)]
+    pub fn voicevox_tts(
+        &self,
+        text: &CStr,
+        speaker_id: i64,
+        output_binary_size: *mut c_int,
+        output_wav: *const *mut u8,
+    ) -> Result<()> {
+        unimplemented!()
+    }
+
+    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+    #[allow(unused_variables)]
+    pub fn voicevox_tts_from_kana(
+        &self,
+        text: &CStr,
+        speaker_id: i64,
+        output_binary_size: *mut c_int,
+        output_wav: *const *mut u8,
+    ) -> Result<()> {
+        unimplemented!()
+    }
+
+    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
+    #[allow(unused_variables)]
+    pub fn voicevox_wav_free(&self, wav: *mut u8) -> Result<()> {
+        unimplemented!()
+    }
+}
+
+#[derive(new)]
+pub struct InferenceCore {
+    initialized: bool,
+    status_option: Option<Status>,
+}
+
+impl InferenceCore {
     pub fn initialize(
         &mut self,
         use_gpu: bool,
@@ -110,12 +244,6 @@ impl Internal {
     pub fn finalize(&mut self) {
         self.initialized = false;
         self.status_option = None;
-    }
-    pub fn metas(&self) -> &'static CStr {
-        &METAS_CSTRING
-    }
-    pub fn supported_devices(&self) -> &'static CStr {
-        &SUPPORTED_DEVICES_CSTRING
     }
 
     pub fn yukarin_s_forward(
@@ -339,42 +467,6 @@ impl Internal {
             .drain(padding_sampling_size..output.len() - padding_sampling_size)
             .collect()
     }
-
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
-    pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &CStr) -> Result<()> {
-        unimplemented!()
-    }
-
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
-    pub fn voicevox_tts(
-        &self,
-        text: &CStr,
-        speaker_id: i64,
-        output_binary_size: *mut c_int,
-        output_wav: *const *mut u8,
-    ) -> Result<()> {
-        unimplemented!()
-    }
-
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
-    pub fn voicevox_tts_from_kana(
-        &self,
-        text: &CStr,
-        speaker_id: i64,
-        output_binary_size: *mut c_int,
-        output_wav: *const *mut u8,
-    ) -> Result<()> {
-        unimplemented!()
-    }
-
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
-    pub fn voicevox_wav_free(&self, wav: *mut u8) -> Result<()> {
-        unimplemented!()
-    }
 }
 
 static METAS_CSTRING: Lazy<CString> = Lazy::new(|| CString::new(Status::METAS_STR).unwrap());
@@ -426,8 +518,25 @@ mod tests {
         let result = internal.lock().unwrap().initialize(false, 0, false);
         assert_eq!(Ok(()), result);
         internal.lock().unwrap().finalize();
-        assert_eq!(false, internal.lock().unwrap().initialized);
-        assert_eq!(true, internal.lock().unwrap().status_option.is_none());
+        assert_eq!(
+            false,
+            internal
+                .lock()
+                .unwrap()
+                .synthesis_engine
+                .inference_core()
+                .initialized
+        );
+        assert_eq!(
+            true,
+            internal
+                .lock()
+                .unwrap()
+                .synthesis_engine
+                .inference_core()
+                .status_option
+                .is_none()
+        );
     }
 
     #[rstest]

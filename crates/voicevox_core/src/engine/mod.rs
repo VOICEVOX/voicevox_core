@@ -10,3 +10,4 @@ use super::*;
 
 pub use acoustic_feature_extractor::*;
 pub use model::*;
+pub use synthesis_engine::*;
