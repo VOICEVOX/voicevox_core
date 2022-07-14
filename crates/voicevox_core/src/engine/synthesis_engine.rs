@@ -102,7 +102,7 @@ impl SynthesisEngine {
                             new_mora
                         })
                         .collect(),
-                    accent_phrase.accent().clone(),
+                    *accent_phrase.accent(),
                     accent_phrase.pause_mora().as_ref().map(|pause_mora| {
                         let new_pause_mora = MoraModel::new(
                             pause_mora.text().clone(),
@@ -202,8 +202,7 @@ impl SynthesisEngine {
         for i in 0..vowel_phoneme_data_list.len() {
             if UNVOICED_MORA_PHONEME_LIST
                 .iter()
-                .find(|phoneme| **phoneme == vowel_phoneme_data_list[i].phoneme())
-                .is_some()
+                .any(|phoneme| *phoneme == vowel_phoneme_data_list[i].phoneme())
             {
                 f0_list[i] = 0.;
             }
@@ -341,7 +340,7 @@ pub fn to_flatten_moras(accent_phrases: &[AccentPhraseModel]) -> Vec<MoraModel> 
 pub fn to_phoneme_data_list<T: AsRef<str>>(phoneme_str_list: &[T]) -> Vec<OjtPhoneme> {
     OjtPhoneme::convert(
         phoneme_str_list
-            .into_iter()
+            .iter()
             .enumerate()
             .map(|(i, s)| OjtPhoneme::new(s.as_ref().to_string(), i as f32, i as f32 + 1.))
             .collect::<Vec<OjtPhoneme>>()
@@ -351,11 +350,8 @@ pub fn to_phoneme_data_list<T: AsRef<str>>(phoneme_str_list: &[T]) -> Vec<OjtPho
 
 pub fn split_mora(phoneme_list: &[OjtPhoneme]) -> (Vec<OjtPhoneme>, Vec<OjtPhoneme>, Vec<i64>) {
     let mut vowel_indexes = Vec::new();
-    for i in 0..phoneme_list.len() {
-        let result = MORA_PHONEME_LIST
-            .iter()
-            .find(|phoneme| **phoneme == phoneme_list[i].phoneme());
-        if result.is_some() {
+    for (i, phoneme) in phoneme_list.iter().enumerate() {
+        if MORA_PHONEME_LIST.iter().any(|p| *p == phoneme.phoneme()) {
             vowel_indexes.push(i as i64);
         }
     }
