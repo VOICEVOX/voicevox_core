@@ -52,7 +52,7 @@ jobs:
         shell: bash
         run: |
           cargo build
-          cp target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll target/debug/deps/
+          rm -f target/debug/deps/onnxruntime.dll && cp target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll target/debug/deps/
       - run: cargo test --all-features
 env:
   CARGO_TERM_COLOR: always
