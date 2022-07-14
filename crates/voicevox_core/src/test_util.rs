@@ -2,10 +2,9 @@ use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
     path::{Path, PathBuf},
-    sync::Mutex,
 };
 
-use async_std::{fs, io::ReadExt};
+use async_std::{fs, io::ReadExt, sync::Mutex};
 use flate2::read::GzDecoder;
 use once_cell::sync::Lazy;
 use tar::Archive;
@@ -51,7 +50,7 @@ async fn create_user_dict(path: impl AsRef<Path>, out_path: impl AsRef<Path>) {
 }
 
 pub async fn download_open_jtalk_dict_if_no_exists() -> PathBuf {
-    let mut open_jtalk_dic_dir = OPEN_JTALK_DIC_DIR.lock().unwrap();
+    let mut open_jtalk_dic_dir = OPEN_JTALK_DIC_DIR.lock().await;
     if open_jtalk_dic_dir.is_none() {
         let dic_dir = PathBuf::from(env!("OUT_DIR"))
             .join("testdata/open_jtalk_dic")
