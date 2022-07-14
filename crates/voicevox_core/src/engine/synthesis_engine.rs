@@ -36,7 +36,10 @@ impl SynthesisEngine {
         accent_phrases: &[AccentPhraseModel],
         speaker_id: usize,
     ) -> Result<Vec<AccentPhraseModel>> {
-        unimplemented!()
+        self.replace_mora_pitch(
+            &self.replace_phoneme_length(accent_phrases, speaker_id)?,
+            speaker_id,
+        )
     }
 
     pub fn replace_phoneme_length(
