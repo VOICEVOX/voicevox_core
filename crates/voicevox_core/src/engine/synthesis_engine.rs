@@ -79,9 +79,7 @@ impl SynthesisEngine {
 
     pub fn load_openjtalk_dict(&mut self, mecab_dict_dir: impl AsRef<Path>) -> Result<()> {
         let result = self.open_jtalk.load(mecab_dict_dir);
-        if result.is_ok() {
-            self.is_openjtalk_dict_loaded = true;
-        }
+        self.is_openjtalk_dict_loaded = result.is_ok();
         result.map_err(|_| Error::NotLoadedOpenjtalkDict)
     }
 
