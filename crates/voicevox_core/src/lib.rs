@@ -8,6 +8,12 @@ mod internal;
 mod result;
 mod status;
 
+#[cfg(test)]
+mod test_util;
+
+#[cfg(test)]
+use test_util::*;
+
 use error::*;
 use result::*;
 
