@@ -351,7 +351,10 @@ pub fn to_phoneme_data_list<T: AsRef<str>>(phoneme_str_list: &[T]) -> Vec<OjtPho
 pub fn split_mora(phoneme_list: &[OjtPhoneme]) -> (Vec<OjtPhoneme>, Vec<OjtPhoneme>, Vec<i64>) {
     let mut vowel_indexes = Vec::new();
     for (i, phoneme) in phoneme_list.iter().enumerate() {
-        if MORA_PHONEME_LIST.iter().any(|p| *p == phoneme.phoneme()) {
+        if MORA_PHONEME_LIST
+            .iter()
+            .any(|mora_phoneme| *mora_phoneme == phoneme.phoneme())
+        {
             vowel_indexes.push(i as i64);
         }
     }
