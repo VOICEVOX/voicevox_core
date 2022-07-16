@@ -155,9 +155,8 @@ impl Internal {
             "".into(),
         );
 
-        Ok(self
-            .synthesis_engine
-            .synthesis_wave_format(&audio_query, speaker_id, false)?)
+        self.synthesis_engine
+            .synthesis_wave_format(&audio_query, speaker_id, false)
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと

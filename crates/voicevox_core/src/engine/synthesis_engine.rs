@@ -445,32 +445,32 @@ impl SynthesisEngine {
         let buf: Vec<u8> = Vec::new();
         let mut cur = Cursor::new(buf);
 
-        cur.write("RIFF".as_bytes()).unwrap();
+        cur.write_all("RIFF".as_bytes()).unwrap();
 
         let bytes_size = wave.len() as u32 * repeat_count * 2;
         let wave_size = bytes_size + 44 - 8;
 
-        cur.write(&wave_size.to_le_bytes()).unwrap();
-        cur.write("WAVEfmt ".as_bytes()).unwrap();
-        cur.write(&16_u32.to_le_bytes()).unwrap(); // fmt header length
-        cur.write(&1_u16.to_le_bytes()).unwrap(); //linear PCM
-        cur.write(&num_channels.to_le_bytes()).unwrap();
-        cur.write(&output_sampling_rate.to_le_bytes()).unwrap();
+        cur.write_all(&wave_size.to_le_bytes()).unwrap();
+        cur.write_all("WAVEfmt ".as_bytes()).unwrap();
+        cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
+        cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
+        cur.write_all(&num_channels.to_le_bytes()).unwrap();
+        cur.write_all(&output_sampling_rate.to_le_bytes()).unwrap();
 
         let block_rate = output_sampling_rate * block_size as u32;
 
-        cur.write(&block_rate.to_le_bytes()).unwrap();
-        cur.write(&block_size.to_le_bytes()).unwrap();
-        cur.write(&bit_depth.to_le_bytes()).unwrap();
-        cur.write("data".as_bytes()).unwrap();
-        cur.write(&bytes_size.to_le_bytes()).unwrap();
+        cur.write_all(&block_rate.to_le_bytes()).unwrap();
+        cur.write_all(&block_size.to_le_bytes()).unwrap();
+        cur.write_all(&bit_depth.to_le_bytes()).unwrap();
+        cur.write_all("data".as_bytes()).unwrap();
+        cur.write_all(&bytes_size.to_le_bytes()).unwrap();
 
         for value in wave {
             // clip
             let v = (value * volume_scale).max(-1.).min(1.);
             let data = (v * 0x7fff as f32) as i16;
             for _ in 0..repeat_count {
-                cur.write(&data.to_le_bytes()).unwrap();
+                cur.write_all(&data.to_le_bytes()).unwrap();
             }
         }
 
