@@ -52,7 +52,8 @@ jobs:
         shell: bash
         run: |
           cargo build
-          rm -f target/debug/deps/onnxruntime.dll && cp target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll target/debug/deps/
+          find target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib -name onnxruntime.dll -ctime 0
+          find target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib -name onnxruntime.dll -ctime 0 | head -n 1 | xargs -i cp {} target/debug/deps/
       - run: cargo test --all-features
 env:
   CARGO_TERM_COLOR: always
