@@ -1,7 +1,7 @@
-use derive_getters::Getters;
+use derive_getters::{Dissolve, Getters};
 use derive_new::new;
 
-#[derive(Clone, Debug, new, Getters)]
+#[derive(Clone, Debug, new, Dissolve, Getters)]
 pub struct MoraModel {
     text: String,
     consonant: Option<String>,

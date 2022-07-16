@@ -326,12 +326,105 @@ impl SynthesisEngine {
     }
 
     pub fn synthesis(
-        &self,
+        &mut self,
         query: &AudioQueryModel,
         speaker_id: usize,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<f32>> {
-        unimplemented!()
+        let accent_phrases = query.accent_phrases().clone();
+        let speed_scale = *query.speed_scale();
+        let pitch_scale = *query.pitch_scale();
+        let intonation_scale = *query.intonation_scale();
+        let pre_phoneme_length = *query.pre_phoneme_length();
+        let post_phoneme_length = *query.post_phoneme_length();
+
+        // TODO: enable_interrogative_upspeak が true のときに疑問文対応する
+
+        let (flatten_moras, phoneme_data_list) = SynthesisEngine::initial_process(&accent_phrases);
+
+        let mut phoneme_length_list = vec![pre_phoneme_length];
+        let mut f0_list = vec![0.];
+        let mut voiced_list = vec![false];
+        {
+            let mut sum_of_f0_bigger_than_zero = 0.;
+            let mut count_of_f0_bigger_than_zero = 0;
+
+            for mora in flatten_moras {
+                let (_, _, consonant_length, _, vowel_length, pitch) = mora.dissolve();
+
+                if let Some(consonant_length) = consonant_length {
+                    phoneme_length_list.push(consonant_length);
+                }
+                phoneme_length_list.push(vowel_length);
+
+                let f0_single = pitch * 2.0_f32.powf(pitch_scale);
+                f0_list.push(f0_single);
+
+                let bigger_than_zero = f0_single > 0.;
+                voiced_list.push(bigger_than_zero);
+
+                if bigger_than_zero {
+                    sum_of_f0_bigger_than_zero += f0_single;
+                    count_of_f0_bigger_than_zero += 1;
+                }
+            }
+            phoneme_length_list.push(post_phoneme_length);
+            f0_list.push(0.);
+            voiced_list.push(false);
+            let mean_f0 = sum_of_f0_bigger_than_zero / (count_of_f0_bigger_than_zero as f32);
+
+            if !mean_f0.is_nan() {
+                for i in 0..f0_list.len() {
+                    if voiced_list[i] {
+                        f0_list[i] = (f0_list[i] - mean_f0) * intonation_scale + mean_f0;
+                    }
+                }
+            }
+        }
+
+        let (_, _, vowel_indexes) = split_mora(&phoneme_data_list);
+
+        let mut phoneme: Vec<Vec<f32>> = Vec::new();
+        let mut f0: Vec<f32> = Vec::new();
+        {
+            const RATE: f32 = 24000. / 256.;
+            let mut sum_of_phoneme_length = 0;
+            let mut count_of_f0 = 0;
+            let mut vowel_indexes_index = 0;
+
+            for (i, phoneme_length) in phoneme_length_list.iter().enumerate() {
+                let phoneme_length =
+                    ((*phoneme_length * RATE).round() / speed_scale).round() as usize;
+                let phoneme_id = phoneme_data_list[i].phoneme_id();
+
+                for _ in 0..phoneme_length {
+                    let mut phonemes_vec = vec![0.; OjtPhoneme::num_phoneme()];
+                    phonemes_vec[phoneme_id as usize] = 1.0;
+                    phoneme.push(phonemes_vec)
+                }
+                sum_of_phoneme_length += phoneme_length;
+
+                if i as i64 == vowel_indexes[vowel_indexes_index] {
+                    for _ in 0..sum_of_phoneme_length {
+                        f0.push(f0_list[count_of_f0]);
+                    }
+                    count_of_f0 += 1;
+                    sum_of_phoneme_length = 0;
+                    vowel_indexes_index += 1;
+                }
+            }
+        }
+
+        // 2次元のvectorを1次元に変換し、アドレスを連続させる
+        let flatten_phoneme = phoneme.into_iter().flatten().collect::<Vec<_>>();
+
+        self.inference_core_mut().decode_forward(
+            f0.len(),
+            OjtPhoneme::num_phoneme(),
+            &f0,
+            &flatten_phoneme,
+            speaker_id,
+        )
     }
 
     pub fn synthesis_wave_format(
