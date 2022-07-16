@@ -123,24 +123,35 @@ impl Internal {
         )
     }
 
-    pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &CStr) -> Result<()> {
-        self.synthesis_engine.load_openjtalk_dict(
-            dict_path
-                .to_str()
-                .map_err(|_| Error::NotLoadedOpenjtalkDict)?,
-        )
+    pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &str) -> Result<()> {
+        self.synthesis_engine.load_openjtalk_dict(dict_path)
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
     #[allow(unused_variables)]
-    pub fn voicevox_tts(
-        &self,
-        text: &CStr,
-        speaker_id: i64,
-        output_binary_size: *mut c_int,
-        output_wav: *const *mut u8,
-    ) -> Result<()> {
-        unimplemented!()
+    pub fn voicevox_tts(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
+        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
+            return Err(Error::NotLoadedOpenjtalkDict);
+        }
+        let accent_phrases = self
+            .synthesis_engine
+            .create_accent_phrases(text, speaker_id)?;
+
+        let audio_query = AudioQueryModel::new(
+            accent_phrases,
+            1.,
+            0.,
+            1.,
+            1.,
+            0.1,
+            0.1,
+            SynthesisEngine::DEFAULT_SAMPLING_RATE,
+            false,
+            "".into(),
+        );
+
+        self.synthesis_engine
+            .synthesis_wave_format(&audio_query, speaker_id, false)
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
@@ -152,12 +163,6 @@ impl Internal {
         output_binary_size: *mut c_int,
         output_wav: *const *mut u8,
     ) -> Result<()> {
-        unimplemented!()
-    }
-
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
-    pub fn voicevox_wav_free(&self, wav: *mut u8) -> Result<()> {
         unimplemented!()
     }
 }
@@ -505,6 +510,10 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         VOICEVOX_RESULT_INVALID_SPEAKER_ID => "無効なspeaker_idです\0",
         VOICEVOX_RESULT_INVALID_MODEL_INDEX => "無効なmodel_indexです\0",
         VOICEVOX_RESULT_INFERENCE_FAILED => "推論に失敗しました\0",
+        VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL => {
+            "入力テキストからのフルコンテキストラベル抽出に失敗しました\0"
+        }
+        VOICEVOX_RESULT_INVALID_UTF8_INPUT => "入力テキストが無効なUTF-8データでした\0",
     }
 }
 
@@ -711,11 +720,10 @@ mod tests {
     async fn voicevox_load_openjtalk_dict_works() {
         let internal = Internal::new_with_mutex();
         let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
-        let result = internal.lock().unwrap().voicevox_load_openjtalk_dict(
-            CString::new(open_jtalk_dic_dir.to_str().unwrap())
-                .unwrap()
-                .as_c_str(),
-        );
+        let result = internal
+            .lock()
+            .unwrap()
+            .voicevox_load_openjtalk_dict(open_jtalk_dic_dir.to_str().unwrap());
         assert_eq!(result, Ok(()));
     }
 }

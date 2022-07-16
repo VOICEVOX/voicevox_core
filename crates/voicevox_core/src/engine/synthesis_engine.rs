@@ -1,5 +1,7 @@
+use std::io::{Cursor, Write};
 use std::path::Path;
 
+use super::full_context_label::Utterance;
 use super::internal::InferenceCore;
 use super::open_jtalk::OpenJtalk;
 use super::*;
@@ -23,7 +25,7 @@ unsafe impl Sync for SynthesisEngine {}
 #[allow(dead_code)]
 #[allow(unused_variables)]
 impl SynthesisEngine {
-    const DEFAULT_SAMPLING_RATE: usize = 24000;
+    pub const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
     pub fn new(inference_core: InferenceCore) -> Self {
         Self {
@@ -41,11 +43,85 @@ impl SynthesisEngine {
     }
 
     pub fn create_accent_phrases(
-        &self,
+        &mut self,
         text: impl AsRef<str>,
         speaker_id: usize,
     ) -> Result<Vec<AccentPhraseModel>> {
-        unimplemented!()
+        if text.as_ref().is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let utterance = Utterance::extract_full_context_label(&mut self.open_jtalk, text.as_ref())
+            .map_err(Error::FailedExtractFullContextLabel)?;
+
+        let accent_phrases: Vec<AccentPhraseModel> = utterance
+            .breath_groups()
+            .iter()
+            .enumerate()
+            .fold(Vec::new(), |mut accum_vec, (i, breath_group)| {
+                accum_vec.extend(breath_group.accent_phrases().iter().enumerate().map(
+                    |(j, accent_phrase)| {
+                        let moras = accent_phrase
+                            .moras()
+                            .iter()
+                            .map(|mora| {
+                                let mut mora_text = mora
+                                    .phonemes()
+                                    .iter()
+                                    .map(|phoneme| phoneme.phoneme().to_string())
+                                    .collect::<Vec<_>>()
+                                    .join("");
+                                mora_text = mora_text.to_lowercase();
+                                if mora_text == "n" {
+                                    mora_text = String::from("N");
+                                }
+
+                                let (consonant, consonant_length) =
+                                    if let Some(consonant) = mora.consonant() {
+                                        (Some(consonant.phoneme().to_string()), Some(0.))
+                                    } else {
+                                        (None, None)
+                                    };
+
+                                MoraModel::new(
+                                    mora_text,
+                                    consonant,
+                                    consonant_length,
+                                    mora.vowel().phoneme().into(),
+                                    0.,
+                                    0.,
+                                )
+                            })
+                            .collect();
+
+                        let pause_mora = if i != utterance.breath_groups().len() - 1
+                            && j == breath_group.accent_phrases().len() - 1
+                        {
+                            Some(MoraModel::new(
+                                "、".into(),
+                                None,
+                                None,
+                                "pau".into(),
+                                0.,
+                                0.,
+                            ))
+                        } else {
+                            None
+                        };
+
+                        AccentPhraseModel::new(
+                            moras,
+                            *accent_phrase.accent(),
+                            pause_mora,
+                            *accent_phrase.is_interrogative(),
+                        )
+                    },
+                ));
+
+                accum_vec
+            });
+
+        self.replace_mora_data(&accent_phrases, speaker_id)
     }
 
     pub fn replace_mora_data(
@@ -86,7 +162,7 @@ impl SynthesisEngine {
                             let new_mora = MoraModel::new(
                                 mora.text().clone(),
                                 mora.consonant().clone(),
-                                mora.consonant().as_ref().map(|s| {
+                                mora.consonant().as_ref().map(|_| {
                                     phoneme_length[vowel_indexes_data[index + 1] as usize - 1]
                                 }),
                                 mora.vowel().clone(),
@@ -102,7 +178,10 @@ impl SynthesisEngine {
                         let new_pause_mora = MoraModel::new(
                             pause_mora.text().clone(),
                             pause_mora.consonant().clone(),
-                            Some(phoneme_length[vowel_indexes_data[index + 1] as usize]),
+                            pause_mora
+                                .consonant()
+                                .as_ref()
+                                .map(|_| phoneme_length[vowel_indexes_data[index + 1] as usize]),
                             pause_mora.vowel().clone(),
                             *pause_mora.vowel_length(),
                             *pause_mora.pitch(),
@@ -246,22 +325,160 @@ impl SynthesisEngine {
     }
 
     pub fn synthesis(
-        &self,
+        &mut self,
         query: &AudioQueryModel,
         speaker_id: usize,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<f32>> {
-        unimplemented!()
+        let accent_phrases = query.accent_phrases().clone();
+        let speed_scale = *query.speed_scale();
+        let pitch_scale = *query.pitch_scale();
+        let intonation_scale = *query.intonation_scale();
+        let pre_phoneme_length = *query.pre_phoneme_length();
+        let post_phoneme_length = *query.post_phoneme_length();
+
+        // TODO: enable_interrogative_upspeak が true のときに疑問文対応する
+
+        let (flatten_moras, phoneme_data_list) = SynthesisEngine::initial_process(&accent_phrases);
+
+        let mut phoneme_length_list = vec![pre_phoneme_length];
+        let mut f0_list = vec![0.];
+        let mut voiced_list = vec![false];
+        {
+            let mut sum_of_f0_bigger_than_zero = 0.;
+            let mut count_of_f0_bigger_than_zero = 0;
+
+            for mora in flatten_moras {
+                let consonant_length = *mora.consonant_length();
+                let vowel_length = *mora.vowel_length();
+                let pitch = *mora.pitch();
+
+                if let Some(consonant_length) = consonant_length {
+                    phoneme_length_list.push(consonant_length);
+                }
+                phoneme_length_list.push(vowel_length);
+
+                let f0_single = pitch * 2.0_f32.powf(pitch_scale);
+                f0_list.push(f0_single);
+
+                let bigger_than_zero = f0_single > 0.;
+                voiced_list.push(bigger_than_zero);
+
+                if bigger_than_zero {
+                    sum_of_f0_bigger_than_zero += f0_single;
+                    count_of_f0_bigger_than_zero += 1;
+                }
+            }
+            phoneme_length_list.push(post_phoneme_length);
+            f0_list.push(0.);
+            voiced_list.push(false);
+            let mean_f0 = sum_of_f0_bigger_than_zero / (count_of_f0_bigger_than_zero as f32);
+
+            if !mean_f0.is_nan() {
+                for i in 0..f0_list.len() {
+                    if voiced_list[i] {
+                        f0_list[i] = (f0_list[i] - mean_f0) * intonation_scale + mean_f0;
+                    }
+                }
+            }
+        }
+
+        let (_, _, vowel_indexes) = split_mora(&phoneme_data_list);
+
+        let mut phoneme: Vec<Vec<f32>> = Vec::new();
+        let mut f0: Vec<f32> = Vec::new();
+        {
+            const RATE: f32 = 24000. / 256.;
+            let mut sum_of_phoneme_length = 0;
+            let mut count_of_f0 = 0;
+            let mut vowel_indexes_index = 0;
+
+            for (i, phoneme_length) in phoneme_length_list.iter().enumerate() {
+                let phoneme_length =
+                    ((*phoneme_length * RATE).round() / speed_scale).round() as usize;
+                let phoneme_id = phoneme_data_list[i].phoneme_id();
+
+                for _ in 0..phoneme_length {
+                    let mut phonemes_vec = vec![0.; OjtPhoneme::num_phoneme()];
+                    phonemes_vec[phoneme_id as usize] = 1.;
+                    phoneme.push(phonemes_vec)
+                }
+                sum_of_phoneme_length += phoneme_length;
+
+                if i as i64 == vowel_indexes[vowel_indexes_index] {
+                    for _ in 0..sum_of_phoneme_length {
+                        f0.push(f0_list[count_of_f0]);
+                    }
+                    count_of_f0 += 1;
+                    sum_of_phoneme_length = 0;
+                    vowel_indexes_index += 1;
+                }
+            }
+        }
+
+        // 2次元のvectorを1次元に変換し、アドレスを連続させる
+        let flatten_phoneme = phoneme.into_iter().flatten().collect::<Vec<_>>();
+
+        self.inference_core_mut().decode_forward(
+            f0.len(),
+            OjtPhoneme::num_phoneme(),
+            &f0,
+            &flatten_phoneme,
+            speaker_id,
+        )
     }
 
     pub fn synthesis_wave_format(
-        &self,
+        &mut self,
         query: &AudioQueryModel,
         speaker_id: usize,
-        binary_size: usize,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<u8>> {
-        unimplemented!()
+        let wave = self.synthesis(query, speaker_id, enable_interrogative_upspeak)?;
+
+        let volume_scale = *query.volume_scale();
+        let output_stereo = *query.output_stereo();
+        // TODO: 44.1kHzなどの対応
+        let output_sampling_rate = *query.output_sampling_rate();
+
+        let num_channels: u16 = if output_stereo { 2 } else { 1 };
+        let bit_depth: u16 = 16;
+        let repeat_count: u32 =
+            (output_sampling_rate / Self::DEFAULT_SAMPLING_RATE) * num_channels as u32;
+        let block_size: u16 = bit_depth * num_channels / 8;
+
+        let bytes_size = wave.len() as u32 * repeat_count * 2;
+        let wave_size = bytes_size + 44;
+
+        let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
+        let mut cur = Cursor::new(buf);
+
+        cur.write_all("RIFF".as_bytes()).unwrap();
+        cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
+        cur.write_all("WAVEfmt ".as_bytes()).unwrap();
+        cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
+        cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
+        cur.write_all(&num_channels.to_le_bytes()).unwrap();
+        cur.write_all(&output_sampling_rate.to_le_bytes()).unwrap();
+
+        let block_rate = output_sampling_rate * block_size as u32;
+
+        cur.write_all(&block_rate.to_le_bytes()).unwrap();
+        cur.write_all(&block_size.to_le_bytes()).unwrap();
+        cur.write_all(&bit_depth.to_le_bytes()).unwrap();
+        cur.write_all("data".as_bytes()).unwrap();
+        cur.write_all(&bytes_size.to_le_bytes()).unwrap();
+
+        for value in wave {
+            // clip
+            let v = (value * volume_scale).max(-1.).min(1.);
+            let data = (v * 0x7fff as f32) as i16;
+            for _ in 0..repeat_count {
+                cur.write_all(&data.to_le_bytes()).unwrap();
+            }
+        }
+
+        Ok(cur.into_inner())
     }
 
     pub fn load_openjtalk_dict(&mut self, mecab_dict_dir: impl AsRef<Path>) -> Result<()> {

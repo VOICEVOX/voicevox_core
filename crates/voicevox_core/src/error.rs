@@ -1,7 +1,10 @@
 use std::fmt::Display;
 
+use crate::engine::FullContextLabelError;
+
 use super::*;
 use c_export::VoicevoxResultCode::{self, *};
+//use engine::
 use thiserror::Error;
 
 /*
@@ -45,6 +48,12 @@ pub enum Error {
 
     #[error("{}", base_error_message(VOICEVOX_RESULT_INFERENCE_FAILED))]
     InferenceFailed,
+
+    #[error(
+        "{},{0}",
+        base_error_message(VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL)
+    )]
+    FailedExtractFullContextLabel(#[source] FullContextLabelError),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
