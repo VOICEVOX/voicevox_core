@@ -99,23 +99,7 @@ unsafe impl Send for Status {}
 unsafe impl Sync for Status {}
 
 impl Status {
-    const YUKARIN_S_MODEL: &'static [u8] = include_bytes!(concat!(
-        env!("CARGO_WORKSPACE_DIR"),
-        "/model/yukarin_s.onnx"
-    ));
-    const YUKARIN_SA_MODEL: &'static [u8] = include_bytes!(concat!(
-        env!("CARGO_WORKSPACE_DIR"),
-        "/model/yukarin_sa.onnx"
-    ));
-
-    const DECODE_MODEL: &'static [u8] =
-        include_bytes!(concat!(env!("CARGO_WORKSPACE_DIR"), "/model/decode.onnx"));
-
-    const MODELS: [Model; 1] = [Model {
-        yukarin_s_model: Self::YUKARIN_S_MODEL,
-        yukarin_sa_model: Self::YUKARIN_SA_MODEL,
-        decode_model: Self::DECODE_MODEL,
-    }];
+    const MODELS: &'static [Model] = &include!("include_models.rs");
 
     pub const METAS_STR: &'static str =
         include_str!(concat!(env!("CARGO_WORKSPACE_DIR"), "/model/metas.json"));

@@ -18,8 +18,7 @@ const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 
 static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> = Lazy::new(|| {
     let mut btm = BTreeMap::new();
-    btm.insert(0, (0, 0));
-    btm.insert(1, (0, 1));
+    include!("include_speaker_id_map.rs");
     btm
 });
 
