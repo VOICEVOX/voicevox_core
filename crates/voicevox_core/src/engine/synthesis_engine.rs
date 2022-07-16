@@ -1,3 +1,4 @@
+use std::io::{Cursor, Write};
 use std::path::Path;
 
 use super::full_context_label::Utterance;
@@ -28,7 +29,7 @@ unsafe impl Sync for SynthesisEngine {}
 #[allow(dead_code)]
 #[allow(unused_variables)]
 impl SynthesisEngine {
-    const DEFAULT_SAMPLING_RATE: usize = 24000;
+    const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
     #[allow(clippy::new_without_default)]
     pub fn new(inference_core: InferenceCore) -> Self {
@@ -428,13 +429,58 @@ impl SynthesisEngine {
     }
 
     pub fn synthesis_wave_format(
-        &self,
+        &mut self,
         query: &AudioQueryModel,
         speaker_id: usize,
         binary_size: usize,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<u8>> {
-        unimplemented!()
+        let wave = self.synthesis(query, speaker_id, enable_interrogative_upspeak)?;
+
+        let volume_scale = *query.volume_scale();
+        let output_stereo = *query.output_stereo();
+        // TODO: 44.1kHzなどの対応
+        let output_sampling_rate = *query.output_sampling_rate();
+
+        let num_channels: u16 = if output_stereo { 2 } else { 1 };
+        let bit_depth: u16 = 16;
+        let repeat_count: u32 =
+            (output_sampling_rate / Self::DEFAULT_SAMPLING_RATE) * num_channels as u32;
+        let block_size: u16 = bit_depth * num_channels / 8;
+
+        let buf: Vec<u8> = Vec::new();
+        let mut cur = Cursor::new(buf);
+
+        cur.write("RIFF".as_bytes()).unwrap();
+
+        let bytes_size = wave.len() as u32 * repeat_count * 2;
+        let wave_size = bytes_size + 44 - 8;
+
+        cur.write(&wave_size.to_le_bytes()).unwrap();
+        cur.write("WAVEfmt ".as_bytes()).unwrap();
+        cur.write(&16_u32.to_le_bytes()).unwrap(); // fmt header length
+        cur.write(&1_u16.to_le_bytes()).unwrap(); //linear PCM
+        cur.write(&num_channels.to_le_bytes()).unwrap();
+        cur.write(&output_sampling_rate.to_le_bytes()).unwrap();
+
+        let block_rate = output_sampling_rate * block_size as u32;
+
+        cur.write(&block_rate.to_le_bytes()).unwrap();
+        cur.write(&block_size.to_le_bytes()).unwrap();
+        cur.write(&bit_depth.to_le_bytes()).unwrap();
+        cur.write("data".as_bytes()).unwrap();
+        cur.write(&bytes_size.to_le_bytes()).unwrap();
+
+        for value in wave {
+            // clip
+            let v = (value * volume_scale).max(-1.).min(1.);
+            let data = (v * 0x7fff as f32) as i16;
+            for _ in 0..repeat_count {
+                cur.write(&data.to_le_bytes()).unwrap();
+            }
+        }
+
+        Ok(cur.into_inner())
     }
 
     pub fn load_openjtalk_dict(&mut self, mecab_dict_dir: impl AsRef<Path>) -> Result<()> {
