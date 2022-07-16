@@ -162,7 +162,7 @@ impl SynthesisEngine {
                             let new_mora = MoraModel::new(
                                 mora.text().clone(),
                                 mora.consonant().clone(),
-                                mora.consonant().as_ref().map(|s| {
+                                mora.consonant().as_ref().map(|_| {
                                     phoneme_length[vowel_indexes_data[index + 1] as usize - 1]
                                 }),
                                 mora.vowel().clone(),
@@ -178,7 +178,10 @@ impl SynthesisEngine {
                         let new_pause_mora = MoraModel::new(
                             pause_mora.text().clone(),
                             pause_mora.consonant().clone(),
-                            Some(phoneme_length[vowel_indexes_data[index + 1] as usize]),
+                            pause_mora
+                                .consonant()
+                                .as_ref()
+                                .map(|_| phoneme_length[vowel_indexes_data[index + 1] as usize]),
                             pause_mora.vowel().clone(),
                             *pause_mora.vowel_length(),
                             *pause_mora.pitch(),
@@ -395,7 +398,7 @@ impl SynthesisEngine {
 
                 for _ in 0..phoneme_length {
                     let mut phonemes_vec = vec![0.; OjtPhoneme::num_phoneme()];
-                    phonemes_vec[phoneme_id as usize] = 1.0;
+                    phonemes_vec[phoneme_id as usize] = 1.;
                     phoneme.push(phonemes_vec)
                 }
                 sum_of_phoneme_length += phoneme_length;

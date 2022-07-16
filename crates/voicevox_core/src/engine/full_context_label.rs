@@ -40,11 +40,13 @@ static I3_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(@(\d+|xx)\+)").unwrap(
 static J1_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(/J:(\d+|xx)_)").unwrap());
 
 fn string_feature_by_regex(re: &Regex, label: &str) -> Result<String> {
-    re.find(label)
-        .map(|m| m.as_str().to_string())
-        .ok_or_else(|| FullContextLabelError::LabelParse {
+    if let Some(caps) = re.captures(label) {
+        Ok(caps.get(2).unwrap().as_str().to_string())
+    } else {
+        Err(FullContextLabelError::LabelParse {
             label: label.into(),
         })
+    }
 }
 
 #[allow(dead_code)]
