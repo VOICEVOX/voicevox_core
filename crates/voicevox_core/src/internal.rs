@@ -514,6 +514,7 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL => {
             "入力テキストからのフルコンテキストラベル抽出に失敗しました\0"
         }
+        VOICEVOX_RESULT_INVALID_UTF8_INPUT => "入力テキストが無効なUTF-8データでした\0",
     }
 }
 

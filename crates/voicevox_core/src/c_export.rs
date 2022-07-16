@@ -35,6 +35,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_INVALID_MODEL_INDEX = 8,
     VOICEVOX_RESULT_INFERENCE_FAILED = 9,
     VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL = 10,
+    VOICEVOX_RESULT_INVALID_UTF8_INPUT = 11,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -239,10 +240,13 @@ pub extern "C" fn decode_forward(
 
 #[no_mangle]
 pub extern "C" fn voicevox_load_openjtalk_dict(dict_path: *const c_char) -> VoicevoxResultCode {
-    let (_, result_code) = convert_result(
-        lock_internal()
-            .voicevox_load_openjtalk_dict(unsafe { CStr::from_ptr(dict_path) }.to_str().unwrap()),
-    );
+    let (_, result_code) = {
+        if let Ok(dict_path) = unsafe { CStr::from_ptr(dict_path) }.to_str() {
+            convert_result(lock_internal().voicevox_load_openjtalk_dict(dict_path))
+        } else {
+            (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT)
+        }
+    };
     result_code
 }
 
@@ -253,10 +257,13 @@ pub extern "C" fn voicevox_tts(
     output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    let (output_opt, result_code) = convert_result(lock_internal().voicevox_tts(
-        unsafe { CStr::from_ptr(text) }.to_str().unwrap(),
-        speaker_id as usize,
-    ));
+    let (output_opt, result_code) = {
+        if let Ok(text) = unsafe { CStr::from_ptr(text) }.to_str() {
+            convert_result(lock_internal().voicevox_tts(text, speaker_id as usize))
+        } else {
+            (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT)
+        }
+    };
     if let Some(output) = output_opt {
         unsafe {
             output_binary_size.write(output.len() as c_int);
