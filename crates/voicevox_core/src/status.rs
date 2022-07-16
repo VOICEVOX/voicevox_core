@@ -99,7 +99,7 @@ unsafe impl Send for Status {}
 unsafe impl Sync for Status {}
 
 impl Status {
-    const MODELS: [Model; 1] = include!("include_models.rs");
+    const MODELS: &'static [Model] = &include!("include_models.rs");
 
     pub const METAS_STR: &'static str =
         include_str!(concat!(env!("CARGO_WORKSPACE_DIR"), "/model/metas.json"));
