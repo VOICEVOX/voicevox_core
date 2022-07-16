@@ -52,10 +52,10 @@ const PHONEME_LIST: &[&str] = &[
     "z",
 ];
 
-static PHONEME_MAP: Lazy<HashMap<String, i64>> = Lazy::new(|| {
+static PHONEME_MAP: Lazy<HashMap<&str, i64>> = Lazy::new(|| {
     let mut m = HashMap::new();
     for (i, s) in PHONEME_LIST.iter().enumerate() {
-        m.insert((*s).into(), i as i64);
+        m.insert(*s, i as i64);
     }
     m
 });
@@ -83,7 +83,7 @@ impl OjtPhoneme {
         if self.phoneme.is_empty() {
             -1
         } else {
-            *PHONEME_MAP.get(&self.phoneme).unwrap()
+            *PHONEME_MAP.get(&self.phoneme.as_str()).unwrap()
         }
     }
 
