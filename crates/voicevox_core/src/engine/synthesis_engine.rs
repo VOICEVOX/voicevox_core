@@ -10,10 +10,6 @@ const MORA_PHONEME_LIST: &[&str] = &[
     "a", "i", "u", "e", "o", "N", "A", "I", "U", "E", "O", "cl", "pau",
 ];
 
-/*
- * TODO: OpenJtalk機能を使用するようになったら、allow(dead_code),allow(unused_variables)を消す
- */
-#[allow(dead_code)]
 pub struct SynthesisEngine {
     open_jtalk: OpenJtalk,
     inference_core: InferenceCore,
@@ -29,7 +25,6 @@ unsafe impl Sync for SynthesisEngine {}
 impl SynthesisEngine {
     const DEFAULT_SAMPLING_RATE: usize = 24000;
 
-    #[allow(clippy::new_without_default)]
     pub fn new(inference_core: InferenceCore) -> Self {
         Self {
             open_jtalk: OpenJtalk::initialize(),
@@ -270,11 +265,13 @@ impl SynthesisEngine {
     }
 
     pub fn load_openjtalk_dict(&mut self, mecab_dict_dir: impl AsRef<Path>) -> Result<()> {
-        unimplemented!()
+        self.open_jtalk
+            .load(mecab_dict_dir)
+            .map_err(|_| Error::NotLoadedOpenjtalkDict)
     }
 
     pub fn is_openjtalk_dict_loaded(&self) -> bool {
-        unimplemented!()
+        self.open_jtalk.dict_loaded()
     }
 
     fn initial_process(accent_phrases: &[AccentPhraseModel]) -> (Vec<MoraModel>, Vec<OjtPhoneme>) {
@@ -376,4 +373,40 @@ pub fn split_mora(phoneme_list: &[OjtPhoneme]) -> (Vec<OjtPhoneme>, Vec<OjtPhone
     }
 
     (consonant_phoneme_list, vowel_phoneme_list, vowel_indexes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    use crate::*;
+
+    #[rstest]
+    #[async_std::test]
+    async fn load_openjtalk_dict_works() {
+        let core = InferenceCore::new(false, None);
+        let mut synthesis_engine = SynthesisEngine::new(core);
+        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
+
+        let result = synthesis_engine.load_openjtalk_dict(&open_jtalk_dic_dir);
+        assert_eq!(result, Ok(()));
+
+        let result = synthesis_engine.load_openjtalk_dict("");
+        assert_eq!(result, Err(Error::NotLoadedOpenjtalkDict));
+    }
+
+    #[rstest]
+    #[async_std::test]
+    async fn is_openjtalk_dict_loaded_works() {
+        let core = InferenceCore::new(false, None);
+        let mut synthesis_engine = SynthesisEngine::new(core);
+        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
+
+        let _ = synthesis_engine.load_openjtalk_dict(&open_jtalk_dic_dir);
+        assert_eq!(synthesis_engine.is_openjtalk_dict_loaded(), true);
+
+        let _ = synthesis_engine.load_openjtalk_dict("");
+        assert_eq!(synthesis_engine.is_openjtalk_dict_loaded(), false);
+    }
 }

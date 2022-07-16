@@ -31,7 +31,6 @@ pub struct OpenJtalk {
 }
 
 impl OpenJtalk {
-    #[allow(dead_code)]
     pub fn initialize() -> Self {
         Self {
             mecab: ManagedResource::initialize(),
@@ -81,17 +80,21 @@ impl OpenJtalk {
         }
     }
 
-    #[allow(dead_code)]
     pub fn load(&mut self, mecab_dict_dir: impl AsRef<Path>) -> Result<()> {
         let result = self.mecab.load(mecab_dict_dir.as_ref());
         if result {
             self.dict_loaded = true;
             Ok(())
         } else {
+            self.dict_loaded = false;
             Err(OpenJtalkError::Load {
                 mecab_dict_dir: mecab_dict_dir.as_ref().into(),
             })
         }
+    }
+
+    pub fn dict_loaded(&self) -> bool {
+        self.dict_loaded
     }
 }
 
