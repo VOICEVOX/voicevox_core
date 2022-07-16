@@ -132,14 +132,30 @@ impl Internal {
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
     #[allow(unused_variables)]
-    pub fn voicevox_tts(
-        &self,
-        text: &CStr,
-        speaker_id: i64,
-        output_binary_size: *mut c_int,
-        output_wav: *const *mut u8,
-    ) -> Result<()> {
-        unimplemented!()
+    pub fn voicevox_tts(&mut self, text: &CStr, speaker_id: usize) -> Result<Vec<u8>> {
+        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
+            return Err(Error::NotLoadedOpenjtalkDict);
+        }
+        let accent_phrases = self
+            .synthesis_engine
+            .create_accent_phrases(text.to_str().unwrap(), speaker_id)?;
+
+        let audio_query = AudioQueryModel::new(
+            accent_phrases,
+            1.,
+            0.,
+            1.,
+            1.,
+            0.1,
+            0.1,
+            SynthesisEngine::DEFAULT_SAMPLING_RATE,
+            false,
+            "".into(),
+        );
+
+        Ok(self
+            .synthesis_engine
+            .synthesis_wave_format(&audio_query, speaker_id, false)?)
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
@@ -151,12 +167,6 @@ impl Internal {
         output_binary_size: *mut c_int,
         output_wav: *const *mut u8,
     ) -> Result<()> {
-        unimplemented!()
-    }
-
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
-    pub fn voicevox_wav_free(&self, wav: *mut u8) -> Result<()> {
         unimplemented!()
     }
 }

@@ -1,5 +1,6 @@
 use super::*;
 use internal::Internal;
+use libc::c_void;
 use once_cell::sync::Lazy;
 use std::ffi::CStr;
 use std::os::raw::{c_char, c_int};
@@ -251,12 +252,17 @@ pub extern "C" fn voicevox_tts(
     output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    let (_, result_code) = convert_result(lock_internal().voicevox_tts(
-        unsafe { CStr::from_ptr(text) },
-        speaker_id,
-        output_binary_size,
-        output_wav,
-    ));
+    let (output_opt, result_code) = convert_result(
+        lock_internal().voicevox_tts(unsafe { CStr::from_ptr(text) }, speaker_id as usize),
+    );
+    if let Some(output) = output_opt {
+        unsafe {
+            output_binary_size.write(output.len() as c_int);
+            let wav_heap = libc::malloc(output.len());
+            libc::memcpy(wav_heap, output.as_ptr() as *const c_void, output.len());
+            output_wav.write(wav_heap as *mut u8);
+        }
+    }
     result_code
 }
 
@@ -277,9 +283,10 @@ pub extern "C" fn voicevox_tts_from_kana(
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_wav_free(wav: *mut u8) -> VoicevoxResultCode {
-    let (_, result_code) = convert_result(lock_internal().voicevox_wav_free(wav));
-    result_code
+pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
+    unsafe {
+        libc::free(wav as *mut c_void);
+    }
 }
 
 #[no_mangle]

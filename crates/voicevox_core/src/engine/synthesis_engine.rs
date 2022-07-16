@@ -29,7 +29,7 @@ unsafe impl Sync for SynthesisEngine {}
 #[allow(dead_code)]
 #[allow(unused_variables)]
 impl SynthesisEngine {
-    const DEFAULT_SAMPLING_RATE: u32 = 24000;
+    pub const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
     #[allow(clippy::new_without_default)]
     pub fn new(inference_core: InferenceCore) -> Self {
@@ -432,7 +432,6 @@ impl SynthesisEngine {
         &mut self,
         query: &AudioQueryModel,
         speaker_id: usize,
-        binary_size: usize,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<u8>> {
         let wave = self.synthesis(query, speaker_id, enable_interrogative_upspeak)?;
