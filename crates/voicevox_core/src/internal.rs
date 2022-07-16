@@ -124,10 +124,12 @@ impl Internal {
         )
     }
 
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
     pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &CStr) -> Result<()> {
-        unimplemented!()
+        self.synthesis_engine.load_openjtalk_dict(
+            dict_path
+                .to_str()
+                .map_err(|_| Error::NotLoadedOpenjtalkDict)?,
+        )
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
@@ -703,5 +705,18 @@ mod tests {
 
         assert!(result.is_ok(), "{:?}", result);
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
+    }
+
+    #[rstest]
+    #[async_std::test]
+    async fn voicevox_load_openjtalk_dict_works() {
+        let internal = Internal::new_with_mutex();
+        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
+        let result = internal.lock().unwrap().voicevox_load_openjtalk_dict(
+            CString::new(open_jtalk_dic_dir.to_str().unwrap())
+                .unwrap()
+                .as_c_str(),
+        );
+        assert_eq!(result, Ok(()));
     }
 }
