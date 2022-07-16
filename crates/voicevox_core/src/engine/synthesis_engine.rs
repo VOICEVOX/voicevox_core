@@ -445,15 +445,14 @@ impl SynthesisEngine {
             (output_sampling_rate / Self::DEFAULT_SAMPLING_RATE) * num_channels as u32;
         let block_size: u16 = bit_depth * num_channels / 8;
 
-        let buf: Vec<u8> = Vec::new();
+        let bytes_size = wave.len() as u32 * repeat_count * 2;
+        let wave_size = bytes_size + 44;
+
+        let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
         let mut cur = Cursor::new(buf);
 
         cur.write_all("RIFF".as_bytes()).unwrap();
-
-        let bytes_size = wave.len() as u32 * repeat_count * 2;
-        let wave_size = bytes_size + 44 - 8;
-
-        cur.write_all(&wave_size.to_le_bytes()).unwrap();
+        cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
         cur.write_all("WAVEfmt ".as_bytes()).unwrap();
         cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
         cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
