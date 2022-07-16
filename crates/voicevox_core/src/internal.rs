@@ -124,23 +124,19 @@ impl Internal {
         )
     }
 
-    pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &CStr) -> Result<()> {
-        self.synthesis_engine.load_openjtalk_dict(
-            dict_path
-                .to_str()
-                .map_err(|_| Error::NotLoadedOpenjtalkDict)?,
-        )
+    pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &str) -> Result<()> {
+        self.synthesis_engine.load_openjtalk_dict(dict_path)
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
     #[allow(unused_variables)]
-    pub fn voicevox_tts(&mut self, text: &CStr, speaker_id: usize) -> Result<Vec<u8>> {
+    pub fn voicevox_tts(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
             return Err(Error::NotLoadedOpenjtalkDict);
         }
         let accent_phrases = self
             .synthesis_engine
-            .create_accent_phrases(text.to_str().unwrap(), speaker_id)?;
+            .create_accent_phrases(text, speaker_id)?;
 
         let audio_query = AudioQueryModel::new(
             accent_phrases,
@@ -724,11 +720,10 @@ mod tests {
     async fn voicevox_load_openjtalk_dict_works() {
         let internal = Internal::new_with_mutex();
         let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
-        let result = internal.lock().unwrap().voicevox_load_openjtalk_dict(
-            CString::new(open_jtalk_dic_dir.to_str().unwrap())
-                .unwrap()
-                .as_c_str(),
-        );
+        let result = internal
+            .lock()
+            .unwrap()
+            .voicevox_load_openjtalk_dict(open_jtalk_dic_dir.to_str().unwrap());
         assert_eq!(result, Ok(()));
     }
 }
