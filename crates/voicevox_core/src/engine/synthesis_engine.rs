@@ -349,7 +349,9 @@ impl SynthesisEngine {
             let mut count_of_f0_bigger_than_zero = 0;
 
             for mora in flatten_moras {
-                let (_, _, consonant_length, _, vowel_length, pitch) = mora.dissolve();
+                let consonant_length = *mora.consonant_length();
+                let vowel_length = *mora.vowel_length();
+                let pitch = *mora.pitch();
 
                 if let Some(consonant_length) = consonant_length {
                     phoneme_length_list.push(consonant_length);
