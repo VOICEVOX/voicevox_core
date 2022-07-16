@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use super::full_context_label::Utterance;
 use super::internal::InferenceCore;
 use super::open_jtalk::OpenJtalk;
 use super::*;
@@ -46,11 +47,85 @@ impl SynthesisEngine {
     }
 
     pub fn create_accent_phrases(
-        &self,
+        &mut self,
         text: impl AsRef<str>,
         speaker_id: usize,
     ) -> Result<Vec<AccentPhraseModel>> {
-        unimplemented!()
+        if text.as_ref().is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let utterance = Utterance::extract_full_context_label(&mut self.open_jtalk, text.as_ref())
+            .map_err(Error::FailedExtractFullContextLabel)?;
+
+        let accent_phrases: Vec<AccentPhraseModel> = utterance
+            .breath_groups()
+            .iter()
+            .enumerate()
+            .fold(Vec::new(), |mut accum_vec, (i, breath_group)| {
+                accum_vec.extend(breath_group.accent_phrases().iter().enumerate().map(
+                    |(j, accent_phrase)| {
+                        let moras = accent_phrase
+                            .moras()
+                            .iter()
+                            .map(|mora| {
+                                let mut mora_text = mora
+                                    .phonemes()
+                                    .iter()
+                                    .map(|phoneme| phoneme.phoneme().to_string())
+                                    .collect::<Vec<_>>()
+                                    .join("");
+                                mora_text = mora_text.to_lowercase();
+                                if mora_text == "n" {
+                                    mora_text = String::from("N");
+                                }
+
+                                let (consonant, consonant_length) =
+                                    if let Some(consonant) = mora.consonant() {
+                                        (Some(consonant.phoneme().to_string()), Some(0.))
+                                    } else {
+                                        (None, None)
+                                    };
+
+                                MoraModel::new(
+                                    mora_text,
+                                    consonant,
+                                    consonant_length,
+                                    mora.vowel().phoneme().into(),
+                                    0.,
+                                    0.,
+                                )
+                            })
+                            .collect();
+
+                        let pause_mora = if i != utterance.breath_groups().len() - 1
+                            && j == breath_group.accent_phrases().len() - 1
+                        {
+                            Some(MoraModel::new(
+                                "、".into(),
+                                None,
+                                None,
+                                "pau".into(),
+                                0.,
+                                0.,
+                            ))
+                        } else {
+                            None
+                        };
+
+                        AccentPhraseModel::new(
+                            moras,
+                            *accent_phrase.accent(),
+                            pause_mora,
+                            *accent_phrase.is_interrogative(),
+                        )
+                    },
+                ));
+
+                accum_vec
+            });
+
+        self.replace_mora_data(&accent_phrases, speaker_id)
     }
 
     pub fn replace_mora_data(

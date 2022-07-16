@@ -504,6 +504,9 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         VOICEVOX_RESULT_INVALID_SPEAKER_ID => "無効なspeaker_idです\0",
         VOICEVOX_RESULT_INVALID_MODEL_INDEX => "無効なmodel_indexです\0",
         VOICEVOX_RESULT_INFERENCE_FAILED => "推論に失敗しました\0",
+        VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL => {
+            "入力テキストからのフルコンテキストラベル抽出に失敗しました\0"
+        }
     }
 }
 
