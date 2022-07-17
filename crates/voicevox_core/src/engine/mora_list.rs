@@ -186,7 +186,6 @@ pub(super) const MORA_LIST_MINIMUM: &[[&str; 3]] = &[
     ["ア", "", "a"],
 ];
 
-#[allow(dead_code)] // TODO: remove this feature
 pub fn mora2text(mora: &str) -> &str {
     for &[text, consonant, vowel] in MORA_LIST_MINIMUM {
         if mora.len() >= consonant.len()
