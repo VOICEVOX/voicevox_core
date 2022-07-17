@@ -65,16 +65,12 @@ impl SynthesisEngine {
                             .moras()
                             .iter()
                             .map(|mora| {
-                                let mut mora_text = mora
+                                let mora_text = mora
                                     .phonemes()
                                     .iter()
                                     .map(|phoneme| phoneme.phoneme().to_string())
                                     .collect::<Vec<_>>()
                                     .join("");
-                                mora_text = mora_text.to_lowercase();
-                                if mora_text == "n" {
-                                    mora_text = String::from("N");
-                                }
 
                                 let (consonant, consonant_length) =
                                     if let Some(consonant) = mora.consonant() {
@@ -84,7 +80,7 @@ impl SynthesisEngine {
                                     };
 
                                 MoraModel::new(
-                                    mora_text,
+                                    mora_to_text(&mora_text),
                                     consonant,
                                     consonant_length,
                                     mora.vowel().phoneme().into(),
@@ -590,6 +586,21 @@ pub fn split_mora(phoneme_list: &[OjtPhoneme]) -> (Vec<OjtPhoneme>, Vec<OjtPhone
     }
 
     (consonant_phoneme_list, vowel_phoneme_list, vowel_indexes)
+}
+
+fn mora_to_text(mora: impl AsRef<str>) -> String {
+    let last_char = mora.as_ref().chars().last().unwrap();
+    let mora = if ['A', 'I', 'U', 'E', 'O'].contains(&last_char) {
+        format!(
+            "{}{}",
+            &mora.as_ref()[0..mora.as_ref().len() - 1],
+            last_char.to_lowercase()
+        )
+    } else {
+        mora.as_ref().to_string()
+    };
+    // もしカタカナに変換できなければ、引数で与えた文字列がそのまま返ってくる
+    mora_list::mora2text(&mora).to_string()
 }
 
 #[cfg(test)]
