@@ -16,11 +16,8 @@ use std::ffi::CString;
 
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 
-static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> = Lazy::new(|| {
-    let mut btm = BTreeMap::new();
-    include!("include_speaker_id_map.rs");
-    btm
-});
+static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> =
+    Lazy::new(|| include!("include_speaker_id_map.rs").into_iter().collect());
 
 pub struct Internal {
     synthesis_engine: SynthesisEngine,
