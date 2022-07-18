@@ -19,12 +19,10 @@ jobs:
             feature: default
             target: x86_64-pc-windows-msvc
             use_gpu: true
-          # FIXME: windows x86のbuildに失敗するので直すこと
-          #
-          #- os: windows-latest
-          #  feature: default
-          #  target: i686-pc-windows-msvc
-          #  use_gpu: false
+          - os: windows-latest
+            feature: default
+            target: i686-pc-windows-msvc
+            use_gpu: false
           - os: ubuntu-latest
             feature: default
             target: x86_64-unknown-linux-gnu
