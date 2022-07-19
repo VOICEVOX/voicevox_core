@@ -326,14 +326,17 @@ impl SynthesisEngine {
         speaker_id: usize,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<f32>> {
-        let accent_phrases = query.accent_phrases().clone();
         let speed_scale = *query.speed_scale();
         let pitch_scale = *query.pitch_scale();
         let intonation_scale = *query.intonation_scale();
         let pre_phoneme_length = *query.pre_phoneme_length();
         let post_phoneme_length = *query.post_phoneme_length();
 
-        // TODO: enable_interrogative_upspeak が true のときに疑問文対応する
+        let accent_phrases = if enable_interrogative_upspeak {
+            adjust_interrogative_accent_phrases(query.accent_phrases().as_slice())
+        } else {
+            query.accent_phrases().clone()
+        };
 
         let (flatten_moras, phoneme_data_list) = SynthesisEngine::initial_process(&accent_phrases);
 
@@ -601,6 +604,55 @@ fn mora_to_text(mora: impl AsRef<str>) -> String {
     };
     // もしカタカナに変換できなければ、引数で与えた文字列がそのまま返ってくる
     mora_list::mora2text(&mora).to_string()
+}
+
+fn adjust_interrogative_accent_phrases(
+    accent_phrases: &[AccentPhraseModel],
+) -> Vec<AccentPhraseModel> {
+    accent_phrases
+        .iter()
+        .map(|accent_phrase| {
+            AccentPhraseModel::new(
+                adjust_interrogative_moras(accent_phrase),
+                *accent_phrase.accent(),
+                accent_phrase.pause_mora().clone(),
+                *accent_phrase.is_interrogative(),
+            )
+        })
+        .collect()
+}
+
+fn adjust_interrogative_moras(accent_phrase: &AccentPhraseModel) -> Vec<MoraModel> {
+    let moras = accent_phrase.moras();
+    if *accent_phrase.is_interrogative() && !moras.is_empty() {
+        let last_mora = moras.last().unwrap();
+        let last_mora_pitch = *last_mora.pitch();
+        if last_mora_pitch != 0.0 {
+            let mut new_moras: Vec<MoraModel> = Vec::with_capacity(moras.len() + 1);
+            new_moras.extend_from_slice(moras.as_slice());
+            let interrogative_mora = make_interrogative_mora(last_mora);
+            new_moras.push(interrogative_mora);
+            return new_moras;
+        }
+    }
+    moras.clone()
+}
+
+fn make_interrogative_mora(last_mora: &MoraModel) -> MoraModel {
+    const FIX_VOWEL_LENGTH: f32 = 0.15;
+    const ADJUST_PITCH: f32 = 0.3;
+    const MAX_PITCH: f32 = 6.5;
+
+    let pitch = (*last_mora.pitch() + ADJUST_PITCH).min(MAX_PITCH);
+
+    MoraModel::new(
+        mora_to_text(last_mora.vowel()),
+        None,
+        None,
+        last_mora.vowel().clone(),
+        FIX_VOWEL_LENGTH,
+        pitch,
+    )
 }
 
 #[cfg(test)]
