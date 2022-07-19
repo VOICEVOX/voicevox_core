@@ -111,7 +111,6 @@ impl Mora {
     }
 }
 
-#[allow(dead_code)]
 #[derive(new, Getters, Clone, Debug, PartialEq)]
 pub struct AccentPhrase {
     moras: Vec<Mora>,
@@ -155,7 +154,7 @@ impl AccentPhrase {
         let mut accent: usize = mora
             .vowel()
             .contexts()
-            .get("a2")
+            .get("f2")
             .ok_or_else(|| FullContextLabelError::InvalidMora { mora: mora.clone() })?
             .parse()
             .map_err(|_| FullContextLabelError::InvalidMora { mora: mora.clone() })?;
@@ -165,7 +164,7 @@ impl AccentPhrase {
             .unwrap()
             .vowel()
             .contexts()
-            .get("a3")
+            .get("f3")
             .map(|s| s.as_str())
             == Some("1");
         // workaround for VOICEVOX/voicevox_engine#55
