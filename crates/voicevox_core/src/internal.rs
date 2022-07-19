@@ -124,7 +124,12 @@ impl Internal {
         self.synthesis_engine.load_openjtalk_dict(dict_path)
     }
 
-    pub fn voicevox_tts(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
+    pub fn voicevox_tts(
+        &mut self,
+        text: &str,
+        speaker_id: usize,
+        enable_interrogative_upspeak: bool,
+    ) -> Result<Vec<u8>> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
             return Err(Error::NotLoadedOpenjtalkDict);
         }
@@ -145,8 +150,11 @@ impl Internal {
             "".into(),
         );
 
-        self.synthesis_engine
-            .synthesis_wave_format(&audio_query, speaker_id, true)
+        self.synthesis_engine.synthesis_wave_format(
+            &audio_query,
+            speaker_id,
+            enable_interrogative_upspeak,
+        )
     }
 
     //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと

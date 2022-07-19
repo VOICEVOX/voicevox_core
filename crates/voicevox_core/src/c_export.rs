@@ -256,10 +256,15 @@ pub extern "C" fn voicevox_tts(
     speaker_id: i64,
     output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
+    enable_interrogative_upspeak: bool,
 ) -> VoicevoxResultCode {
     let (output_opt, result_code) = {
         if let Ok(text) = unsafe { CStr::from_ptr(text) }.to_str() {
-            convert_result(lock_internal().voicevox_tts(text, speaker_id as usize))
+            convert_result(lock_internal().voicevox_tts(
+                text,
+                speaker_id as usize,
+                enable_interrogative_upspeak,
+            ))
         } else {
             (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT)
         }
