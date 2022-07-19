@@ -1,0 +1,56 @@
+name: build and deploy workflow
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["test workflow"]
+    types:
+      - completed
+
+jobs:
+  build_and_deploy:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            feature: default
+            target: x86_64-pc-windows-msvc
+            use_gpu: false
+          - os: windows-latest
+            feature: default
+            target: x86_64-pc-windows-msvc
+            use_gpu: true
+          - os: windows-latest
+            feature: default
+            target: i686-pc-windows-msvc
+            use_gpu: false
+          - os: ubuntu-latest
+            feature: default
+            target: x86_64-unknown-linux-gnu
+            use_gpu: false
+          - os: ubuntu-latest
+            feature: default
+            target: x86_64-unknown-linux-gnu
+            use_gpu: true
+          - os: macos-latest
+            feature: default
+            target: aarch64-apple-darwin
+            use_gpu: false
+          - os: macos-latest
+            feature: default
+            target: x86_64-apple-darwin
+            use_gpu: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          default: true
+      - name: build release
+        run: cargo build --features ${{ matrix.feature }} --target ${{ matrix.target }} --release
+        env:
+          ORT_USE_CUDA: ${{ matrix.use_gpu }}
+      - name: deploy
+        if: startsWith( github.ref, 'refs/tags/' )
+        run: echo "TODO:deploy処理を実装する"
