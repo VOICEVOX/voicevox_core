@@ -8,7 +8,6 @@ use onnxruntime::{
 };
 use std::collections::BTreeMap;
 use std::ffi::CStr;
-use std::os::raw::c_int;
 use std::sync::Mutex;
 
 use status::*;
@@ -149,16 +148,27 @@ impl Internal {
             .synthesis_wave_format(&audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
     }
 
-    //TODO:仮実装がlinterエラーにならないようにするための属性なのでこの関数を正式に実装する際にallow(unused_variables)を取り除くこと
-    #[allow(unused_variables)]
-    pub fn voicevox_tts_from_kana(
-        &self,
-        text: &CStr,
-        speaker_id: i64,
-        output_binary_size: *mut c_int,
-        output_wav: *const *mut u8,
-    ) -> Result<()> {
-        unimplemented!()
+    pub fn voicevox_tts_from_kana(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
+        let accent_phrases = parse_kana(text)?;
+        let accent_phrases = self
+            .synthesis_engine
+            .replace_mora_data(&accent_phrases, speaker_id)?;
+
+        let audio_query = AudioQueryModel::new(
+            accent_phrases,
+            1.,
+            0.,
+            1.,
+            1.,
+            0.1,
+            0.1,
+            SynthesisEngine::DEFAULT_SAMPLING_RATE,
+            false,
+            "".into(),
+        );
+
+        self.synthesis_engine
+            .synthesis_wave_format(&audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
     }
 }
 
@@ -509,6 +519,9 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
             "入力テキストからのフルコンテキストラベル抽出に失敗しました\0"
         }
         VOICEVOX_RESULT_INVALID_UTF8_INPUT => "入力テキストが無効なUTF-8データでした\0",
+        VOICEVOX_RESULT_FAILED_PARSE_KANA => {
+            "入力テキストをAquesTalkライクな読み仮名としてパースすることに失敗しました\0"
+        }
     }
 }
 

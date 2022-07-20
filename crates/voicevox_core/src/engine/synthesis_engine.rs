@@ -22,8 +22,6 @@ unsafe impl Send for SynthesisEngine {}
 #[allow(unsafe_code)]
 unsafe impl Sync for SynthesisEngine {}
 
-#[allow(dead_code)]
-#[allow(unused_variables)]
 impl SynthesisEngine {
     pub const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
@@ -51,8 +49,7 @@ impl SynthesisEngine {
             return Ok(Vec::new());
         }
 
-        let utterance = Utterance::extract_full_context_label(&mut self.open_jtalk, text.as_ref())
-            .map_err(Error::FailedExtractFullContextLabel)?;
+        let utterance = Utterance::extract_full_context_label(&mut self.open_jtalk, text.as_ref())?;
 
         let accent_phrases: Vec<AccentPhraseModel> = utterance
             .breath_groups()

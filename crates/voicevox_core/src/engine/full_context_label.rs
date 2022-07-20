@@ -21,7 +21,6 @@ pub enum FullContextLabelError {
 
 type Result<T> = std::result::Result<T, FullContextLabelError>;
 
-#[allow(dead_code)]
 #[derive(new, Getters, Clone, PartialEq, Debug)]
 pub struct Phoneme {
     contexts: HashMap<String, String>,
@@ -49,7 +48,6 @@ fn string_feature_by_regex(re: &Regex, label: &str) -> Result<String> {
     }
 }
 
-#[allow(dead_code)]
 impl Phoneme {
     pub fn from_label(label: impl Into<String>) -> Result<Self> {
         let mut contexts = HashMap::<String, String>::with_capacity(10);
@@ -77,14 +75,12 @@ impl Phoneme {
     }
 }
 
-#[allow(dead_code)]
 #[derive(new, Getters, Clone, PartialEq, Debug)]
 pub struct Mora {
     consonant: Option<Phoneme>,
     vowel: Phoneme,
 }
 
-#[allow(dead_code)]
 impl Mora {
     pub fn set_context(&mut self, key: impl Into<String>, value: impl Into<String>) {
         let key = key.into();
@@ -106,6 +102,7 @@ impl Mora {
         }
     }
 
+    #[allow(dead_code)]
     pub fn labels(&self) -> Vec<String> {
         self.phonemes().iter().map(|p| p.label().clone()).collect()
     }
@@ -118,7 +115,6 @@ pub struct AccentPhrase {
     is_interrogative: bool,
 }
 
-#[allow(dead_code)]
 impl AccentPhrase {
     pub fn from_phonemes(mut phonemes: Vec<Phoneme>) -> Result<Self> {
         let mut moras = Vec::with_capacity(phonemes.len());
@@ -175,6 +171,7 @@ impl AccentPhrase {
         Ok(Self::new(moras, accent, is_interrogative))
     }
 
+    #[allow(dead_code)]
     pub fn set_context(&mut self, key: impl Into<String>, value: impl Into<String>) {
         let key = key.into();
         let value = value.into();
@@ -187,10 +184,12 @@ impl AccentPhrase {
         self.moras.iter().flat_map(|m| m.phonemes()).collect()
     }
 
+    #[allow(dead_code)]
     pub fn labels(&self) -> Vec<String> {
         self.phonemes().iter().map(|p| p.label().clone()).collect()
     }
 
+    #[allow(dead_code)]
     pub fn merge(&self, accent_phrase: AccentPhrase) -> AccentPhrase {
         let mut moras = self.moras().clone();
         let is_interrogative = *accent_phrase.is_interrogative();
@@ -199,13 +198,11 @@ impl AccentPhrase {
     }
 }
 
-#[allow(dead_code)]
 #[derive(new, Getters, Clone, PartialEq, Debug)]
 pub struct BreathGroup {
     accent_phrases: Vec<AccentPhrase>,
 }
 
-#[allow(dead_code)]
 impl BreathGroup {
     pub fn from_phonemes(phonemes: Vec<Phoneme>) -> Result<Self> {
         let mut accent_phrases = Vec::with_capacity(phonemes.len());
@@ -226,6 +223,7 @@ impl BreathGroup {
         Ok(Self::new(accent_phrases))
     }
 
+    #[allow(dead_code)]
     pub fn set_context(&mut self, key: impl Into<String>, value: impl Into<String>) {
         let key = key.into();
         let value = value.into();
@@ -241,19 +239,18 @@ impl BreathGroup {
             .collect()
     }
 
+    #[allow(dead_code)]
     pub fn labels(&self) -> Vec<String> {
         self.phonemes().iter().map(|p| p.label().clone()).collect()
     }
 }
 
-#[allow(dead_code)]
 #[derive(new, Getters, Clone, PartialEq, Debug)]
 pub struct Utterance {
     breath_groups: Vec<BreathGroup>,
     pauses: Vec<Phoneme>,
 }
 
-#[allow(dead_code)]
 impl Utterance {
     pub fn from_phonemes(phonemes: Vec<Phoneme>) -> Result<Self> {
         let mut breath_groups = vec![];
@@ -274,6 +271,7 @@ impl Utterance {
         Ok(Self::new(breath_groups, pauses))
     }
 
+    #[allow(dead_code)]
     pub fn set_context(&mut self, key: impl Into<String>, value: impl Into<String>) {
         let key = key.into();
         let value = value.into();
@@ -282,6 +280,7 @@ impl Utterance {
         }
     }
 
+    #[allow(dead_code)]
     pub fn phonemes(&self) -> Vec<Phoneme> {
         // TODO:実装が中途半端なのであとでちゃんと実装する必要があるらしい
         // https://github.com/VOICEVOX/voicevox_core/pull/174#discussion_r919982651
@@ -297,6 +296,7 @@ impl Utterance {
         phonemes
     }
 
+    #[allow(dead_code)]
     pub fn labels(&self) -> Vec<String> {
         self.phonemes().iter().map(|p| p.label().clone()).collect()
     }

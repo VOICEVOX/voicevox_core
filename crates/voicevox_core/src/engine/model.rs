@@ -29,7 +29,7 @@ impl AccentPhraseModel {
     }
 }
 
-#[allow(dead_code, clippy::too_many_arguments)] // TODO: remove allow(dead_code)
+#[allow(clippy::too_many_arguments)]
 #[derive(new, Getters)]
 pub struct AudioQueryModel {
     accent_phrases: Vec<AccentPhraseModel>,
@@ -41,5 +41,6 @@ pub struct AudioQueryModel {
     post_phoneme_length: f32,
     output_sampling_rate: u32,
     output_stereo: bool,
+    #[allow(dead_code)]
     kana: String,
 }

@@ -10,5 +10,6 @@ use super::*;
 
 pub use acoustic_feature_extractor::*;
 pub use full_context_label::*;
+pub use kana_parser::*;
 pub use model::*;
 pub use synthesis_engine::*;

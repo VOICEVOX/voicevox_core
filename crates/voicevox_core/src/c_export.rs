@@ -36,6 +36,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_INFERENCE_FAILED = 9,
     VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL = 10,
     VOICEVOX_RESULT_INVALID_UTF8_INPUT = 11,
+    VOICEVOX_RESULT_FAILED_PARSE_KANA = 12,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -80,6 +81,9 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL,
                 ),
+                Error::FailedParseKana(_) => {
+                    (None, VoicevoxResultCode::VOICEVOX_RESULT_FAILED_PARSE_KANA)
+                }
             }
         }
     }
@@ -250,6 +254,13 @@ pub extern "C" fn voicevox_load_openjtalk_dict(dict_path: *const c_char) -> Voic
     result_code
 }
 
+unsafe fn write_wav_to_ptr(output_wav_ptr: *mut *mut u8, output_size_ptr: *mut c_int, data: &[u8]) {
+    output_size_ptr.write(data.len() as c_int);
+    let wav_heap = libc::malloc(data.len());
+    libc::memcpy(wav_heap, data.as_ptr() as *const c_void, data.len());
+    output_wav_ptr.write(wav_heap as *mut u8);
+}
+
 #[no_mangle]
 pub extern "C" fn voicevox_tts(
     text: *const c_char,
@@ -266,10 +277,7 @@ pub extern "C" fn voicevox_tts(
     };
     if let Some(output) = output_opt {
         unsafe {
-            output_binary_size.write(output.len() as c_int);
-            let wav_heap = libc::malloc(output.len());
-            libc::memcpy(wav_heap, output.as_ptr() as *const c_void, output.len());
-            output_wav.write(wav_heap as *mut u8);
+            write_wav_to_ptr(output_wav, output_binary_size, output.as_slice());
         }
     }
     result_code
@@ -282,12 +290,18 @@ pub extern "C" fn voicevox_tts_from_kana(
     output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    let (_, result_code) = convert_result(lock_internal().voicevox_tts_from_kana(
-        unsafe { CStr::from_ptr(text) },
-        speaker_id,
-        output_binary_size,
-        output_wav,
-    ));
+    let (output_opt, result_code) = {
+        if let Ok(text) = unsafe { CStr::from_ptr(text) }.to_str() {
+            convert_result(lock_internal().voicevox_tts_from_kana(text, speaker_id as usize))
+        } else {
+            (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT)
+        }
+    };
+    if let Some(output) = output_opt {
+        unsafe {
+            write_wav_to_ptr(output_wav, output_binary_size, output.as_slice());
+        }
+    }
     result_code
 }
 

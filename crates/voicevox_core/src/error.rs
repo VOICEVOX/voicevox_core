@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::engine::FullContextLabelError;
+use crate::engine::{FullContextLabelError, KanaParseError};
 
 use super::*;
 use c_export::VoicevoxResultCode::{self, *};
@@ -18,8 +18,6 @@ pub enum Error {
      * エラーメッセージのベースとなる文字列は必ずbase_error_message関数を使用してVoicevoxResultCodeのエラー出力の内容と対応するようにすること
      */
     #[error("{}", base_error_message(VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT))]
-    // TODO:仮実装がlinterエラーにならないようにするための属性なのでこのenumが正式に使われる際にallow(dead_code)を取り除くこと
-    #[allow(dead_code)]
     NotLoadedOpenjtalkDict,
 
     #[error("{}", base_error_message(VOICEVOX_RESULT_CANT_GPU_SUPPORT))]
@@ -53,7 +51,10 @@ pub enum Error {
         "{},{0}",
         base_error_message(VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL)
     )]
-    FailedExtractFullContextLabel(#[source] FullContextLabelError),
+    FailedExtractFullContextLabel(#[from] FullContextLabelError),
+
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_FAILED_PARSE_KANA))]
+    FailedParseKana(#[from] KanaParseError),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
