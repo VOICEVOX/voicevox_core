@@ -11,7 +11,17 @@ fn main() {
         language: Language::C,
         no_includes: true,
         after_includes: Some(
-            r#"#ifdef __cplusplus
+            r#"#ifdef _WIN32
+#ifdef VOICEVOX_CORE_EXPORTS
+#define VOICEVOX_CORE_API __declspec(dllexport)
+#else  // VOICEVOX_CORE_EXPORTS
+#define VOICEVOX_CORE_API __declspec(dllimport)
+#endif  // VOICEVOX_CORE_EXPORTS
+#else   // _WIN32
+#define VOICEVOX_CORE_API
+#endif  // _WIN32
+
+#ifdef __cplusplus
 #include <cstdint>
 #else
 #include <stdbool.h>
@@ -22,13 +32,7 @@ fn main() {
         cpp_compat: true,
         include_guard: Some("VOICEVOX_CORE_INCLUDE_GUARD".into()),
         function: FunctionConfig {
-            prefix: Some(
-                r#"#ifdef _WIN32
-__declspec(dllimport)
-#endif
-"#
-                .into(),
-            ),
+            prefix: Some("VOICEVOX_CORE_API".into()),
             ..Default::default()
         },
         enumeration: EnumConfig {
