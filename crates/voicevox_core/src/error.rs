@@ -51,10 +51,10 @@ pub enum Error {
         "{},{0}",
         base_error_message(VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL)
     )]
-    FailedExtractFullContextLabel(#[source] FullContextLabelError),
+    FailedExtractFullContextLabel(#[from] FullContextLabelError),
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_FAILED_PARSE_KANA))]
-    FailedParseKana(#[source] KanaParseError),
+    FailedParseKana(#[from] KanaParseError),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {

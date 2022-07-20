@@ -149,7 +149,7 @@ impl Internal {
     }
 
     pub fn voicevox_tts_from_kana(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
-        let accent_phrases = parse_kana(text).map_err(Error::FailedParseKana)?;
+        let accent_phrases = parse_kana(text)?;
         let accent_phrases = self
             .synthesis_engine
             .replace_mora_data(&accent_phrases, speaker_id)?;
