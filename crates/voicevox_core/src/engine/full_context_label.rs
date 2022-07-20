@@ -21,7 +21,6 @@ pub enum FullContextLabelError {
 
 type Result<T> = std::result::Result<T, FullContextLabelError>;
 
-#[allow(dead_code)]
 #[derive(new, Getters, Clone, PartialEq, Debug)]
 pub struct Phoneme {
     contexts: HashMap<String, String>,
@@ -49,7 +48,6 @@ fn string_feature_by_regex(re: &Regex, label: &str) -> Result<String> {
     }
 }
 
-#[allow(dead_code)]
 impl Phoneme {
     pub fn from_label(label: impl Into<String>) -> Result<Self> {
         let mut contexts = HashMap::<String, String>::with_capacity(10);
@@ -77,14 +75,12 @@ impl Phoneme {
     }
 }
 
-#[allow(dead_code)]
 #[derive(new, Getters, Clone, PartialEq, Debug)]
 pub struct Mora {
     consonant: Option<Phoneme>,
     vowel: Phoneme,
 }
 
-#[allow(dead_code)]
 impl Mora {
     pub fn set_context(&mut self, key: impl Into<String>, value: impl Into<String>) {
         let key = key.into();
@@ -106,6 +102,7 @@ impl Mora {
         }
     }
 
+    #[allow(dead_code)]
     pub fn labels(&self) -> Vec<String> {
         self.phonemes().iter().map(|p| p.label().clone()).collect()
     }

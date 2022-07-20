@@ -18,8 +18,6 @@ pub enum Error {
      * エラーメッセージのベースとなる文字列は必ずbase_error_message関数を使用してVoicevoxResultCodeのエラー出力の内容と対応するようにすること
      */
     #[error("{}", base_error_message(VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT))]
-    // TODO:仮実装がlinterエラーにならないようにするための属性なのでこのenumが正式に使われる際にallow(dead_code)を取り除くこと
-    #[allow(dead_code)]
     NotLoadedOpenjtalkDict,
 
     #[error("{}", base_error_message(VOICEVOX_RESULT_CANT_GPU_SUPPORT))]
