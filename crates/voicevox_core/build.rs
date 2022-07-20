@@ -9,7 +9,6 @@ fn main() {
     let output_file = target_dir().join("core.h").display().to_string();
     let config = Config {
         language: Language::C,
-        pragma_once: true,
         no_includes: true,
         after_includes: Some(
             r#"#ifdef _WIN32
