@@ -2,6 +2,7 @@
 
 #[allow(unsafe_code)]
 mod c_export;
+/// cbindgen:ignore
 mod engine;
 mod error;
 mod internal;
