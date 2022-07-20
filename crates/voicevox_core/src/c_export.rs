@@ -254,6 +254,13 @@ pub extern "C" fn voicevox_load_openjtalk_dict(dict_path: *const c_char) -> Voic
     result_code
 }
 
+unsafe fn write_wav_to_ptr(output_wav_ptr: *mut *mut u8, output_size_ptr: *mut c_int, data: &[u8]) {
+    output_size_ptr.write(data.len() as c_int);
+    let wav_heap = libc::malloc(data.len());
+    libc::memcpy(wav_heap, data.as_ptr() as *const c_void, data.len());
+    output_wav_ptr.write(wav_heap as *mut u8);
+}
+
 #[no_mangle]
 pub extern "C" fn voicevox_tts(
     text: *const c_char,
@@ -270,10 +277,7 @@ pub extern "C" fn voicevox_tts(
     };
     if let Some(output) = output_opt {
         unsafe {
-            output_binary_size.write(output.len() as c_int);
-            let wav_heap = libc::malloc(output.len());
-            libc::memcpy(wav_heap, output.as_ptr() as *const c_void, output.len());
-            output_wav.write(wav_heap as *mut u8);
+            write_wav_to_ptr(output_wav, output_binary_size, output.as_slice());
         }
     }
     result_code
@@ -295,10 +299,7 @@ pub extern "C" fn voicevox_tts_from_kana(
     };
     if let Some(output) = output_opt {
         unsafe {
-            output_binary_size.write(output.len() as c_int);
-            let wav_heap = libc::malloc(output.len());
-            libc::memcpy(wav_heap, output.as_ptr() as *const c_void, output.len());
-            output_wav.write(wav_heap as *mut u8);
+            write_wav_to_ptr(output_wav, output_binary_size, output.as_slice());
         }
     }
     result_code
