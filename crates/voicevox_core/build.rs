@@ -24,10 +24,10 @@ fn main() {
 
 #ifdef __cplusplus
 #include <cstdint>
-#else
+#else // __cplusplus
 #include <stdbool.h>
 #include <stdint.h>
-#endif"#
+#endif // __cplusplus"#
                 .into(),
         ),
         cpp_compat: true,
