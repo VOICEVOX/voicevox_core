@@ -2,11 +2,6 @@ use std::path::{Path, PathBuf};
 
 use ::open_jtalk::*;
 
-/*
- * TODO: OpenJtalk機能を使用するようになったら、allow(dead_code)を消す
- */
-
-#[allow(dead_code)]
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum OpenJtalkError {
     #[error("open_jtalk load error")]
@@ -19,10 +14,8 @@ pub enum OpenJtalkError {
     },
 }
 
-#[allow(dead_code)]
 pub type Result<T> = std::result::Result<T, OpenJtalkError>;
 
-#[allow(dead_code)]
 pub struct OpenJtalk {
     mecab: ManagedResource<Mecab>,
     njd: ManagedResource<Njd>,
@@ -40,7 +33,6 @@ impl OpenJtalk {
         }
     }
 
-    #[allow(dead_code)]
     pub fn extract_fullcontext(&mut self, text: impl AsRef<str>) -> Result<Vec<String>> {
         let mecab_text =
             text2mecab(text.as_ref()).map_err(|e| OpenJtalkError::ExtractFullContext {

@@ -70,7 +70,6 @@ pub struct OjtPhoneme {
 }
 
 impl OjtPhoneme {
-    #[allow(dead_code)]
     pub fn num_phoneme() -> usize {
         PHONEME_MAP.len()
     }

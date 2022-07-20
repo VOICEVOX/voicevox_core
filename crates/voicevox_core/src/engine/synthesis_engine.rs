@@ -22,8 +22,6 @@ unsafe impl Send for SynthesisEngine {}
 #[allow(unsafe_code)]
 unsafe impl Sync for SynthesisEngine {}
 
-#[allow(dead_code)]
-#[allow(unused_variables)]
 impl SynthesisEngine {
     pub const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
