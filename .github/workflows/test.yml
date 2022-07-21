@@ -1,5 +1,10 @@
 name: test workflow
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  release:
+    types:
+      - published
 jobs:
   rust-lint:
     runs-on: ubuntu-latest

@@ -5,7 +5,8 @@ on:
     workflows: ["test workflow"]
     types:
       - completed
-
+env:
+  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || 'DEBUG' }}
 jobs:
   build_and_deploy:
     strategy:
@@ -14,30 +15,37 @@ jobs:
           - os: windows-latest
             feature: default
             target: x86_64-pc-windows-msvc
+            artifact_name: windows-x64-cpu
             use_gpu: false
           - os: windows-latest
             feature: default
             target: x86_64-pc-windows-msvc
+            artifact_name: windows-x64-gpu
             use_gpu: true
           - os: windows-latest
             feature: default
             target: i686-pc-windows-msvc
+            artifact_name: windows-x86-cpu
             use_gpu: false
           - os: ubuntu-latest
             feature: default
             target: x86_64-unknown-linux-gnu
+            artifact_name: linux-x64-cpu
             use_gpu: false
           - os: ubuntu-latest
             feature: default
             target: x86_64-unknown-linux-gnu
+            artifact_name: linux-x64-gpu
             use_gpu: true
           - os: macos-latest
             feature: default
             target: aarch64-apple-darwin
+            artifact_name: osx-aarch64-cpu
             use_gpu: false
           - os: macos-latest
             feature: default
             target: x86_64-apple-darwin
+            artifact_name: osx-x64-cpu
             use_gpu: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -51,6 +59,40 @@ jobs:
         run: cargo build --features ${{ matrix.feature }} --target ${{ matrix.target }} --release
         env:
           ORT_USE_CUDA: ${{ matrix.use_gpu }}
-      - name: deploy
-        if: startsWith( github.ref, 'refs/tags/' )
-        run: echo "TODO:deploy処理を実装する"
+      - name: Set ASSET_NAME env var
+        shell: bash
+        run: echo "ASSET_NAME=voicevox_core-${{ matrix.artifact_name }}-${{ env.VERSION }}" >> $GITHUB_ENV
+      - name: Organize artifact
+        shell: bash
+        run: |
+          mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          cp -v target/core.h "artifact/${{ env.ASSET_NAME }}"
+          cp -v target/${{ matrix.target }}/release/*.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
+          cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
+          echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
+      - name: Organize onnxruntime(other)
+        shell: bash
+        if: contains(matrix.os,'macos') == false
+        run: cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so} "artifact/${{ env.ASSET_NAME }}" || true
+      - name: Organize onnxruntime(macos)
+        shell: bash
+        if: contains(matrix.os,'macos')
+        run: cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.dylib "artifact/${{ env.ASSET_NAME }}" || true
+      - name: Archive artifact
+        shell: bash
+        if: (!contains(matrix.os , 'windows'))
+        run: |
+          cd artifact
+          zip -r "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
+      - name: Archive artifact (Windows)
+        if: contains(matrix.os, 'windows')
+        run: |
+          powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "${{ env.ASSET_NAME }}.zip"
+      - name: Upload to Release
+        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: true
+          tag: ${{ env.VERSION }}
+          file: ${{ env.ASSET_NAME }}.zip
