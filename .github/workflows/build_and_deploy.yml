@@ -1,12 +1,25 @@
 name: build and deploy workflow
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
+        required: true
+      code_signing:
+        description: "コード署名する"
+        type: boolean
+        required: false
   workflow_run:
     workflows: ["test workflow"]
     types:
       - completed
 env:
+  # releaseタグ名か、workflow_dispatchでのバージョン名か、DEBUGが入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || 'DEBUG' }}
+
+  # Raw character weights are not public.
+  # Skip uploading to GitHub Release on public repo.
+  SKIP_UPLOADING_RELEASE_ASSET: ${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }}
 jobs:
   build_and_deploy:
     strategy:
