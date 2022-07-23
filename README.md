@@ -20,11 +20,37 @@ pip install .
 <details>
 <summary>configure.pyを使わない場合</summary>
 
+<!--
+### ONNX Runtimeのダウンロード
+
+コアを利用するにはまず環境に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) をダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
+
+動作確認済みバージョン
+- ONNX Runtime v1.11.1
+-->
+
 #### GPU を使用する場合
 
 ##### CUDA
 
 Windows, Linux 上で nvidia 製 GPU を使用して CUDA を用いた合成を行う場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive),[CUDNN](https://developer.nvidia.com/cudnn)のインストールに加えて GPU に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
+
+<!--
+##### DirectML
+Windows上でDirectX12に対応したGPUを使用してDirectMLを用いた合成を行う場合、[DirectML](https://www.nuget.org/packages/Microsoft.AI.DirectML)及びDirectMLに対応した[ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
+
+DirectMLは.nupkgファイルで提供されますが、拡張子を.zipに変更した上で、リポジトリに`directml`というディレクトリ名で展開してください。
+-->
+
+<!--
+#### Raspberry Pi (armhf)の場合
+
+Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます。
+
+- <https://github.com/VOICEVOX/onnxruntime-builder/releases>
+
+動作には、libgomp のインストールが必要です。
+-->
 
 ### コアライブラリのダウンロードと配置
 
@@ -32,8 +58,7 @@ Windows, Linux 上で nvidia 製 GPU を使用して CUDA を用いた合成を�
 
 1. まず Releases からダウンロードしたコアライブラリの zip を、`release`というディレクトリ名で展開する。
 2. `core/lib/`ディレクトリを作成する。
-3. `release/`内にある、自身の環境に対応したランタイムライブラリを`core/lib/`にコピーし、名前を Windows なら`core.dll`に、linux なら`libcore.so`に、Mac なら`libcore.dylib`に変更する。
-4. 以下のコマンドを実行する。
+3. `release/`内にある、自身の環境に対応したランタイムライブラリを`core/lib/`にコピーする
 
 ```bash
 # インストールに必要なモジュールのインストール
@@ -59,13 +84,36 @@ python configure.py --use_cuda
 
 を実行する必要があります
 
+<!--
+##### DirectML
+DirectX12に対応したGPUを搭載したWindows PCではDirectMLを用いた合成が可能です
+DirectMLを使用する場合、環境構築時、上記例の代わりに
+
 ```bash
 python configure.py --use_directml
 ```
 
 を実行する必要があります
+-->
 
 MacOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
+
+<!--
+#### Raspberry Piでの使用について
+
+Raspberry PiなどのarmhアーキテクチャPCでの使用では、環境構築時に https://github.com/VOICEVOX/onnxruntime-builder/releases にある独自ビルドのonnxruntimeを使用する必要があります。
+そのため、環境にあったファイルのURLを取得し、上記例の代わりに
+```bash
+python configure.py --ort_download_link <独自ビルドonnxruntimeのURL>
+```
+を実行してください
+
+また、動作には、libgomp のインストールが必要です。
+
+```shell
+sudo apt install libgomp1
+```
+-->
 
 ## サンプル実行
 
