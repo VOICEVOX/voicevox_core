@@ -4,6 +4,7 @@ project(SimpleTTS)
 
 execute_process(COMMAND cargo build --release WORKING_DIRECTORY ../../../)
 add_executable(simple_tts simple_tts.cpp)
+set_property(TARGET simple_tts PROPERTY CXX_STANDARD 11)
 target_include_directories(simple_tts PRIVATE ../../../target)
 file(
   GLOB
