@@ -94,7 +94,7 @@ jobs:
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
         shell: bash
         run: |
-          bash build_util/codesign.sh "artifact/${{ env.ASSET_NAME }}/core.dll"
+          bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/core.dll"
         env:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
