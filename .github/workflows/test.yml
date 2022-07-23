@@ -65,8 +65,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - os: macos-latest
-          # artifact_name: osx-x64-cpu-cpp-shared
+          - os: macos-latest
+            artifact_name: osx-x64-cpu-cpp-shared
           - os: ubuntu-latest
             artifact_name: linux-x64-cpu-cpp-shared
     runs-on: ${{ matrix.os }}
@@ -75,6 +75,15 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - name: build voicevox_core
+        run: cargo build
+      - name: 必要なfileをunix用exampleのディレクトリに移動させる
+        run: |
+          cp -v target/core.h example/cpp/unix/
+          cp -v target/debug/libcore.{so,dylib} example/cpp/unix/ || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* example/cpp/unix/ || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib example/cpp/unix/ || true
+
       - if: startsWith(matrix.os, 'mac')
         uses: jwlawson/actions-setup-cmake@v1.9
       - name: Install build dependencies
