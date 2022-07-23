@@ -100,11 +100,21 @@ sudo apt install libgomp1
 ```
 
 ## サンプル実行
+
+### C++ サンプルコード
+
+* [Linux・macOS サンプルコード](./example/cpp/unix#readme)
+* [Windows サンプルコード](./example/cpp/windows#readme)
+
+### Python サンプルコード
+
+まずOpen JTalk辞書フォルダを配置します。
+http://open-jtalk.sourceforge.net/ を開き、Dictionary for Open JTalk 欄の Binary Package (UTF-8)をクリックして「open_jtalk_dic_utf_8-1.11.tar.gz」をダウンロードします。  
+これを展開してできた「open_jtalk_dic_utf_8-1.11」フォルダをexample/pythonに配置します。
+
 ```bash
 cd example/python
 
-# サンプルコード実行のための依存モジュールのインストール
-pip install -r requirements.txt
 python run.py \
     --text "これは本当に実行できているんですか" \
     --speaker_id 1
@@ -113,8 +123,7 @@ python run.py \
 # --text 読み上げるテキスト
 # --speaker_id 話者ID
 # --use_gpu GPUを使う
-# --f0_speaker_id 音高の話者ID（デフォルト値はspeaker_id）
-# --f0_correct 音高の補正値（デフォルト値は0。+-0.3くらいで結果が大きく変わります）
+# --openjtalk_dict OpenJtalk辞書フォルダへのパス
 ```
 
 ### その他の言語
@@ -147,6 +156,11 @@ cmake ..
 cmake --build . --config Release
 cmake --install .
 cd ..
+
+#(省略可能) C++のテスト実行
+cmake -S . -B test_build -DBUILD_TEST=YES
+cmake --build test_build
+ctest --test-dir test_build --verbose
 
 # (省略可能) pythonモジュールのテスト
 python setup.py test
