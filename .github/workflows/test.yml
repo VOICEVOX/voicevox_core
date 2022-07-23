@@ -61,21 +61,15 @@ jobs:
       - run: cargo test --all-features
 
   build-unix-cpp-example:
-    needs: [build-cpp-shared]
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: macos-latest
-            artifact_name: osx-universal2-cpu-cpp-shared
-            core_name: libcore.dylib
-
+            artifact_name: osx-x64-cpu-cpp-shared
           - os: ubuntu-latest
             artifact_name: linux-x64-cpu-cpp-shared
-            core_name: libcore.so
-
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v3
       - if: startsWith(matrix.os, 'mac')
