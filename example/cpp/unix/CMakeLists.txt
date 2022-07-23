@@ -12,8 +12,8 @@ file(
 )
 
 file(GLOB ONNXRUNTIME_SHARED_LIB
-     ${ONNXRUNTIME_SHARED_LIB_DIR}/*onnxruntime*.so*
-     ${ONNXRUNTIME_SHARED_LIB_DjR}/*onnxruntime*.dylib)
+     ${ONNXRUNTIME_SHARED_LIB_DIR}/libonnxruntime.so.*
+     ${ONNXRUNTIME_SHARED_LIB_DjR}/libonnxruntime.*.dylib)
 
 set(CORE_LIB_DIR ../../../target/release)
 file(GLOB CORE_LIB ${CORE_LIB_DIR}/*core*)
