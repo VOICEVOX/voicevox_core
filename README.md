@@ -33,7 +33,7 @@ pip install .
 
 ##### CUDA
 
-Windows, Linux 上で nvidia 製 GPU を使用して CUDA を用いた合成を行う場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive),[CUDNN](https://developer.nvidia.com/cudnn)のインストールに加えて GPU に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
+[Releases](https://github.com/VOICEVOX/voicevox_core/releases) から環境にあった CUDA 対応版の zip ファイルをダウンロードして展開してください。
 
 <!--
 ##### DirectML
@@ -76,7 +76,6 @@ pip install .
 ##### CUDA
 
 nvidia 製 GPU を搭載した Windows, Linux PC では CUDA を用いた合成が可能です。
-CUDA を使用する場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) をインストールした上で、環境構築時、上記例の代わりに
 
 ```bash
 python configure.py --use_cuda
