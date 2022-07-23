@@ -49,7 +49,7 @@ jobs:
           - os: ubuntu-latest
             feature: default
             target: x86_64-unknown-linux-gnu
-            artifact_name: linux-x64-cuda
+            artifact_name: linux-x64-gpu
             use_cuda: true
           - os: macos-latest
             feature: default
