@@ -65,8 +65,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
-            artifact_name: osx-x64-cpu-cpp-shared
+          #
+          #
+          #         - os: macos-latest
+          #            artifact_name: osx-x64-cpu-cpp-shared
           - os: ubuntu-latest
             artifact_name: linux-x64-cpu-cpp-shared
     runs-on: ${{ matrix.os }}
