@@ -96,7 +96,7 @@ python run.py \
 
 ## コアライブラリのビルド
 
-[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。ビルドには [Rust](https://www.rust-lang.org/ja) が必要です。
+[Releases](https://github.com/VOICEVOX/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。ビルドには [Rust](https://www.rust-lang.org/ja) が必要です。
 
 model フォルダにある onnx モデルはダミーのため、ノイズの混じった音声が出力されます
 
