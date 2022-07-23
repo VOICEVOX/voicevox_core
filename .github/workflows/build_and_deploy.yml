@@ -90,6 +90,10 @@ jobs:
           cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.dylib "artifact/${{ env.ASSET_NAME }}" || true
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
+      - name: Set libcore.dylib's identification name (macOS)
+        if: startsWith(matrix.os, 'macos')
+        shell: bash
+        run: install_name_tool -id "@rpath/libcore.dylib" "artifact/${{ env.ASSET_NAME }}/libcore.dylib"
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
         shell: bash
