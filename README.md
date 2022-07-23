@@ -92,7 +92,7 @@ python run.py \
 
 ## API
 
-[Releases](https://github.com/Hiroshiba/voicevox_core/releases)にある zip ファイル内に core.h が入っているのでご確認ください
+[Releases](https://github.com/VOICEVOX/voicevox_core/releases)にある zip ファイル内に core.h が入っているのでご確認ください
 
 ## コアライブラリのビルド
 
