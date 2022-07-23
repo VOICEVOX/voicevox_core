@@ -9,6 +9,9 @@ on:
         description: "コード署名する"
         type: boolean
         required: false
+  release:
+    types:
+      - published
   workflow_run:
     workflows: ["test workflow"]
     types:
