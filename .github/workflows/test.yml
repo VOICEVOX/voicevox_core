@@ -59,5 +59,39 @@ jobs:
           find target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib -name onnxruntime.dll -ctime 0
           find target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib -name onnxruntime.dll -ctime 0 | head -n 1 | xargs -i cp {} target/debug/deps/
       - run: cargo test --all-features
+
+  build-unix-cpp-example:
+    needs: [build-cpp-shared]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifact_name: osx-universal2-cpu-cpp-shared
+            core_name: libcore.dylib
+
+          - os: ubuntu-latest
+            artifact_name: linux-x64-cpu-cpp-shared
+            core_name: libcore.so
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - if: startsWith(matrix.os, 'mac')
+        uses: jwlawson/actions-setup-cmake@v1.9
+      - name: Install build dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+      - name: Build
+        shell: bash
+        run: |
+          cd example/cpp/unix
+          cmake -S . -B build
+          cmake --build build
+
 env:
   CARGO_TERM_COLOR: always
