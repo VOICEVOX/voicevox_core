@@ -8,51 +8,32 @@
 全体構成は [こちら](https://github.com/VOICEVOX/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
 
 ## 環境構築
-configure.pyを用いて環境構築を行う場合
+
+configure.py を用いて環境構築を行う場合
 
 ```bash
 python configure.py
 pip install -r requirements.txt
 pip install .
 ```
+
 <details>
 <summary>configure.pyを使わない場合</summary>
 
-### ONNX Runtimeのダウンロード
+#### GPU を使用する場合
 
-コアを利用するにはまず環境に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) をダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
-
-動作確認済みバージョン
-- ONNX Runtime v1.9.0/v1.9.1
-
-#### GPUを使用する場合
 ##### CUDA
-Windows, Linux上でnvidia製GPUを使用してCUDAを用いた合成を行う場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive),[CUDNN](https://developer.nvidia.com/cudnn)のインストールに加えてGPU に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
 
-##### DirectML
-Windows上でDirectX12に対応したGPUを使用してDirectMLを用いた合成を行う場合、[DirectML](https://www.nuget.org/packages/Microsoft.AI.DirectML)及びDirectMLに対応した[ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
-
-DirectMLは.nupkgファイルで提供されますが、拡張子を.zipに変更した上で、リポジトリに`directml`というディレクトリ名で展開してください。
-
-
-#### Raspberry Pi (armhf)の場合
-
-Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます。
-
-- <https://github.com/VOICEVOX/onnxruntime-builder/releases>
-
-動作には、libgomp のインストールが必要です。
+Windows, Linux 上で nvidia 製 GPU を使用して CUDA を用いた合成を行う場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive),[CUDNN](https://developer.nvidia.com/cudnn)のインストールに加えて GPU に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
 
 ### コアライブラリのダウンロードと配置
 
 まず [Releases](https://github.com/VOICEVOX/voicevox_core/releases) からコアライブラリが入った zip をダウンロードしておきます。
 
-1. まずReleasesからダウンロードしたコアライブラリのzipを、`release`というディレクトリ名で展開する。
+1. まず Releases からダウンロードしたコアライブラリの zip を、`release`というディレクトリ名で展開する。
 2. `core/lib/`ディレクトリを作成する。
-3. `onnxruntime/lib`にある全てのファイルと、`release/`にある`core.h`を`core/lib/`にコピーする。
-4. `release/`内にある、自身の環境に対応したランタイムライブラリを`core/lib/`にコピーし、名前をWindowsなら`core.dll`に、linuxなら`libcore.so`に、Macなら`libcore.dylib`に変更する。
-    - (x64版WindowsでCPU版ライブラリを使いたいなら`core_cpu_x64.dll`を`core.dll`に変更)
-5. 以下のコマンドを実行する。
+3. `release/`内にある、自身の環境に対応したランタイムライブラリを`core/lib/`にコピーし、名前を Windows なら`core.dll`に、linux なら`libcore.so`に、Mac なら`libcore.dylib`に変更する。
+4. 以下のコマンドを実行する。
 
 ```bash
 # インストールに必要なモジュールのインストール
@@ -64,42 +45,30 @@ pip install .
 </details>
 
 ### 注意
-#### GPUの使用について
+
+#### GPU の使用について
 
 ##### CUDA
-nvidia製GPUを搭載したWindows, Linux PCではCUDAを用いた合成が可能です。
-CUDAを使用する場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) をインストールした上で、環境構築時、上記例の代わりに
+
+nvidia 製 GPU を搭載した Windows, Linux PC では CUDA を用いた合成が可能です。
+CUDA を使用する場合、[CUDA 11.1](https://developer.nvidia.com/cuda-11.1.0-download-archive) と [CUDNN](https://developer.nvidia.com/cudnn) をインストールした上で、環境構築時、上記例の代わりに
+
 ```bash
 python configure.py --use_cuda
 ```
+
 を実行する必要があります
 
-##### DirectML
-DirectX12に対応したGPUを搭載したWindows PCではDirectMLを用いた合成が可能です
-DirectMLを使用する場合、環境構築時、上記例の代わりに
-```bash 
+```bash
 python configure.py --use_directml
 ```
+
 を実行する必要があります
 
-MacOSの場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
-
-#### Raspberry Piでの使用について
-
-Raspberry PiなどのarmhアーキテクチャPCでの使用では、環境構築時に https://github.com/VOICEVOX/onnxruntime-builder/releases にある独自ビルドのonnxruntimeを使用する必要があります。
-そのため、環境にあったファイルのURLを取得し、上記例の代わりに
-```bash
-python configure.py --ort_download_link <独自ビルドonnxruntimeのURL>
-```
-を実行してください
-
-また、動作には、libgomp のインストールが必要です。
-
-```shell
-sudo apt install libgomp1
-```
+MacOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
 
 ## サンプル実行
+
 ```bash
 cd example/python
 
@@ -127,26 +96,12 @@ python run.py \
 
 ## コアライブラリのビルド
 
-[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。ビルドにはONNXRUNTIMEに加えてCMake 3.16以上が必要です。
+[Releases](https://github.com/Hiroshiba/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。ビルドには [Rust](https://www.rust-lang.org/ja) が必要です。
 
-modelフォルダにあるonnxモデルはダミーのため、ノイズの混じった音声が出力されます
+model フォルダにある onnx モデルはダミーのため、ノイズの混じった音声が出力されます
 
 ```bash
-# ソースコード取得
-git submodule update --init
-
-# C++モジュールのビルド
-mkdir build
-cd build
-
-# cmake .. 時のオプション
-# -DONNXRUNTIME_DIR=(パス) ダウンロードしたonnxruntimeが別フォルダにある時指定
-# -DDIRECTML=ON             DirectMLを使用する場合指定
-# -DDIRECTML_DIR=(パス)    ダウンロードしたDirectMLが別フォルダにある時指定
-cmake ..
-cmake --build . --config Release
-cmake --install .
-cd ..
+cargo build --release
 
 # (省略可能) pythonモジュールのテスト
 python setup.py test
@@ -159,6 +114,12 @@ cd example/python
 python run.py \
     --text "これは本当に実行できているんですか" \
     --speaker_id 1
+```
+
+## コアライブラリのテスト
+
+```bash
+cargo test
 ```
 
 ## 事例紹介
