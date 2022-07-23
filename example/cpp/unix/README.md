@@ -39,7 +39,8 @@ cmake --build build
 
 ```bash
 cp build/simple_tts ./
-LD_LIBRARY_PATH=./:$LD_LIBRARY_PATH simple_tts これはテストです
+# ./simple_tts <読み上げさせたい文章>
+./simple_tts これはテストです
 ```
 
 正常に実行されれば `audio.wav` が生成されます。以下のコマンドですぐに聞くことができます：
