@@ -5,5 +5,9 @@
 # OpenJTalk-dictionary's dir
 open_jtalk_dic_utf_8-*
 
+core.h
+libcore*
+libonnxruntime*
+
 # executable
 simple_tts

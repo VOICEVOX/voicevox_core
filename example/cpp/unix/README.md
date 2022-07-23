@@ -4,6 +4,11 @@ voicevox_core ライブラリを C++ から使用するサンプルコード (`s
 
 ## 必要なファイルの準備
 
+本ディレクトリに以下のファイル・フォルダを用意してください（あるいは、以下のファイル・フォルダへのシンボリックリンクでも良いです）：
+
+- バージョン 0.12 以降の voicevox_core, onnxruntime ライブラリ（配布ページ: https://github.com/VOICEVOX/voicevox_core/releases ）
+  - Linux の場合：`voicevox_core-linux-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の `core.h` , `libcore.so` 及び `libonnxruntime.so.{onnxruntimeのバージョン}`
+  - macOS の場合：`voicevox_core-osx-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の `core.h` , `libcore.dylib` 及び `libonnxruntime.{onnxruntimeのバージョン}.dylib`
 - Open JTalk の辞書（配布ページ: http://open-jtalk.sourceforge.net/ ）
   - 配布ページの "Dictionary for Open JTalk" 欄にある "Binary Package (UTF-8)" からダウンロードしてください
   - 解凍してできた `open_jtalk_dic_utf_8-1.11` フォルダをそのままこのディレクトリに配置してください
@@ -30,7 +35,8 @@ cmake --build build
 `build` ディレクトリ以下にできた実行ファイル (`simple_tts`) をこのディレクトリにコピーしてから実行します：
 
 ```bash
-LD_LIBRARY_PATH=./build:$LD_LIBRARY_PATH build/simple_tts これはテストです
+cp build/simple_tts ./
+LD_LIBRARY_PATH=./:$LD_LIBRARY_PATH simple_tts これはテストです
 ```
 
 正常に実行されれば `audio.wav` が生成されます。以下のコマンドですぐに聞くことができます：
