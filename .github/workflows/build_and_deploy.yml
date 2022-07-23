@@ -81,6 +81,7 @@ jobs:
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
           cp -v target/core.h "artifact/${{ env.ASSET_NAME }}"
           cp -v target/${{ matrix.target }}/release/*.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
+          cp -v target/${{ matrix.target }}/release/core.dll.lib "artifact/${{ env.ASSET_NAME }}/core.lib" || true
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
       - name: Organize onnxruntime(other)
