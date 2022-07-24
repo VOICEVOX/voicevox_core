@@ -136,6 +136,3 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
-
-# OpenJTalk-dictionary's dir
-open_jtalk_dic_utf_8-*

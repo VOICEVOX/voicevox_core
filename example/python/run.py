@@ -1,27 +1,40 @@
 import argparse
+from typing import Optional
 
 import core
+import soundfile
+
+from forwarder import Forwarder
 
 
 def run(
     use_gpu: bool,
     text: str,
     speaker_id: int,
-    cpu_num_threads: int,
-    openjtalk_dict: str
+    f0_speaker_id: Optional[int],
+    f0_correct: float,
+    cpu_num_threads: int
 ) -> None:
     # コアの初期化
     core.initialize(use_gpu, cpu_num_threads)
 
-    # openjtalk辞書のロード
-    core.voicevox_load_openjtalk_dict(openjtalk_dict)
+    # 音声合成処理モジュールの初期化
+    forwarder = Forwarder(
+        yukarin_s_forwarder=core.yukarin_s_forward,
+        yukarin_sa_forwarder=core.yukarin_sa_forward,
+        decode_forwarder=core.decode_forward,
+    )
 
     # 音声合成
-    wavefmt = core.voicevox_tts(text, speaker_id)
+    wave = forwarder.forward(
+        text=text,
+        speaker_id=speaker_id,
+        f0_speaker_id=f0_speaker_id if f0_speaker_id is not None else speaker_id,
+        f0_correct=f0_correct,
+    )
 
     # 保存
-    with open(f"{text}-{speaker_id}.wav", "wb") as f:
-        f.write(wavefmt)
+    soundfile.write(f"{text}-{speaker_id}.wav", data=wave, samplerate=24000)
 
     core.finalize()
 
@@ -31,6 +44,7 @@ if __name__ == "__main__":
     parser.add_argument("--use_gpu", action="store_true")
     parser.add_argument("--text", required=True)
     parser.add_argument("--speaker_id", type=int, required=True)
+    parser.add_argument("--f0_speaker_id", type=int)
+    parser.add_argument("--f0_correct", type=float, default=0)
     parser.add_argument("--cpu_num_threads", type=int, default=0)
-    parser.add_argument("--openjtalk_dict", type=str, default="open_jtalk_dic_utf_8-1.11")
     run(**vars(parser.parse_args()))
