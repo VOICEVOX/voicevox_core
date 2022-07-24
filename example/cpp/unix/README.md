@@ -18,7 +18,7 @@ voicevox_core ライブラリを C++ から使用するサンプルコード (`s
 ```
 CMakeLists.txt
 libcore.so または libcore.dylib
-libonnxruntime.so.{バージョン} または libonnxruntime.バージョン.dylib
+libonnxruntime.so.{バージョン} または libonnxruntime.{バージョン}.dylib
 core.h
 open_jtalk_dic_utf_8-1.11
 simple_tts.cpp
