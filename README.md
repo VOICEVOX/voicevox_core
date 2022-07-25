@@ -122,7 +122,7 @@ sudo apt install libgomp1
 - バージョン 0.12 以降の voicevox_core, onnxruntime ライブラリ（配布ページ: https://github.com/VOICEVOX/voicevox_core/releases ）を example/python に配置する
   - Linux の場合：`voicevox_core-linux-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の 全ての so file
   - macOS の場合：`voicevox_core-osx-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の 全ての dylib file
-  - macOS の場合：`voicevox_core-windows-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の 全ての dll file
+  - Windows の場合：`voicevox_core-windows-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の 全ての dll file
 
 ```bash
 cd example/python
