@@ -157,18 +157,6 @@ model フォルダにある onnx モデルはダミーのため、ノイズの�
 
 ```bash
 cargo build --release
-
-# (省略可能) pythonモジュールのテスト
-python setup.py test
-
-# pythonモジュールのインストール
-pip install .
-
-cd example/python
-
-python run.py \
-    --text "これは本当に実行できているんですか" \
-    --speaker_id 1
 ```
 
 ## コアライブラリのテスト
