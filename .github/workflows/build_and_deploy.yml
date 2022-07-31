@@ -35,6 +35,11 @@ jobs:
             artifact_name: windows-x64-cpu
             use_cuda: false
           - os: windows-latest
+            feature: directml
+            target: x86_64-pc-windows-msvc
+            artifact_name: windows-x64-directml
+            use_cuda: false
+          - os: windows-latest
             feature: default
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cuda
