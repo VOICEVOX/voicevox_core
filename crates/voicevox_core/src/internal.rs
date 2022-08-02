@@ -560,7 +560,7 @@ mod tests {
     #[rstest]
     #[case(0, Err(Error::UninitializedStatus), Ok(()))]
     #[case(1, Err(Error::UninitializedStatus), Ok(()))]
-    #[case(3, Err(Error::UninitializedStatus), Err(Error::InvalidSpeakerId{speaker_id:3}))]
+    #[case(999, Err(Error::UninitializedStatus), Err(Error::InvalidSpeakerId{speaker_id:3}))]
     fn load_model_works(
         #[case] speaker_id: usize,
         #[case] expected_result_at_uninitialized: Result<()>,
@@ -585,7 +585,7 @@ mod tests {
     #[rstest]
     #[case(0, true)]
     #[case(1, true)]
-    #[case(3, false)]
+    #[case(999, false)]
     fn is_model_loaded_works(#[case] speaker_id: usize, #[case] expected: bool) {
         let internal = Internal::new_with_mutex();
         assert!(
@@ -632,7 +632,7 @@ mod tests {
     #[rstest]
     #[case(0, Some((0,0)))]
     #[case(1, Some((0,1)))]
-    #[case(3, None)]
+    #[case(999, None)]
     fn get_model_index_and_speaker_id_works(
         #[case] speaker_id: usize,
         #[case] expected: Option<(usize, usize)>,
