@@ -1306,14 +1306,14 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.10.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87f3e037eac156d1775da914196f0f37741a274155e34a0b7e427c35d2a2ecb9"
+checksum = "18a6dbe30758c9f83eb00cbea4ac95966305f5a7772f3f42ebfc7fc7eddbd8e1"
 
 [[package]]
 name = "onnxruntime"
-version = "0.0.27"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git#750e61bec0d51a96e19f956102494bda37d1a778"
+version = "0.0.28"
+source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git#7d112cbb6515a42bd76efe4c40dbb44de460733f"
 dependencies = [
  "lazy_static",
  "ndarray",
@@ -1324,10 +1324,11 @@ dependencies = [
 
 [[package]]
 name = "onnxruntime-sys"
-version = "0.0.22"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git#750e61bec0d51a96e19f956102494bda37d1a778"
+version = "0.0.23"
+source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git#7d112cbb6515a42bd76efe4c40dbb44de460733f"
 dependencies = [
  "flate2",
+ "once_cell",
  "tar",
  "ureq",
  "zip",
