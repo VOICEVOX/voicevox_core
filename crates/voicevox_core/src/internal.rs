@@ -560,7 +560,7 @@ mod tests {
     #[rstest]
     #[case(0, Err(Error::UninitializedStatus), Ok(()))]
     #[case(1, Err(Error::UninitializedStatus), Ok(()))]
-    #[case(999, Err(Error::UninitializedStatus), Err(Error::InvalidSpeakerId{speaker_id:3}))]
+    #[case(999, Err(Error::UninitializedStatus), Err(Error::InvalidSpeakerId{speaker_id:999}))]
     fn load_model_works(
         #[case] speaker_id: usize,
         #[case] expected_result_at_uninitialized: Result<()>,
