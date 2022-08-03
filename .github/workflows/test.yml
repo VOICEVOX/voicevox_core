@@ -1,0 +1,113 @@
+name: test workflow
+on:
+  push:
+  pull_request:
+  release:
+    types:
+      - published
+jobs:
+  rust-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
+      - run: cargo fmt -- --check
+
+  rust-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2019
+            features: default
+          - os: windows-2022
+            features: default
+          - os: windows-2019
+            features: directml
+          - os: windows-2022
+            features: directml
+          - os: macos-11
+            features: default
+          - os: macos-12
+            features: default
+          - os: ubuntu-18.04
+            features: default
+          - os: ubuntu-20.04
+            features: default
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install LLVM and Clang # required for bindgen to work, see https://github.com/rust-lang/rust-bindgen/issues/1797
+        uses: KyleMayes/install-llvm-action@32c4866ebb71e0949e8833eb49beeebed48532bd
+        if: matrix.os == 'windows-2019'
+        with:
+          version: "11.0"
+          directory: ${{ runner.temp }}/llvm
+      - name: Set LIBCLANG_PATH
+        run: echo "LIBCLANG_PATH=$((gcm clang).source -replace "clang.exe")" >> $env:GITHUB_ENV
+        if: matrix.os == 'windows-2019'
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v1
+        with:
+          # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
+          key: "v1-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
+      # FIXME: windows-2022 では、onnxruntime-sys のビルド時にダウンロードされる onnxruntime.dll に対してパスが通らないために、テストが行えない
+      #        原因が不明であるため、姑息的な回避策として target/debug/deps ディレクトリに onnxruntime.dll をコピーする。根本的な解決策を望む。
+      #        cf. https://github.com/VOICEVOX/voicevox_core/pull/140#issuecomment-1140276585
+      - name: Prepare onnxruntime.dll
+        if: matrix.os == 'windows-2022'
+        shell: bash
+        run: |
+          cargo build
+          find target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib -name onnxruntime.dll -ctime 0
+          find target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib -name onnxruntime.dll -ctime 0 | head -n 1 | xargs -i cp {} target/debug/deps/
+      - run: cargo test --features ${{ matrix.features }}
+
+  build-unix-cpp-example:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifact_name: osx-x64-cpu-cpp-shared
+          - os: ubuntu-latest
+            artifact_name: linux-x64-cpu-cpp-shared
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: build voicevox_core
+        run: cargo build
+      - name: 必要なfileをunix用exampleのディレクトリに移動させる
+        run: |
+          cp -v target/core.h example/cpp/unix/
+          cp -v target/debug/libcore.{so,dylib} example/cpp/unix/ || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* example/cpp/unix/ || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib example/cpp/unix/ || true
+
+      - if: startsWith(matrix.os, 'mac')
+        uses: jwlawson/actions-setup-cmake@v1.9
+      - name: Install build dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+      - name: Build
+        shell: bash
+        run: |
+          cd example/cpp/unix
+          cmake -S . -B build
+          cmake --build build
+
+env:
+  CARGO_TERM_COLOR: always

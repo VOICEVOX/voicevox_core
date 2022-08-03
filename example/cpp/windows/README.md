@@ -10,16 +10,23 @@ Visual Studio Installerを使用しインストールしてください。
 
 ### 環境構築・ビルド方法
 
-ビルドして実行するには、「core.dll」「core.lib」「Open JTalk辞書フォルダ」が必要です。
 以下はDebug x64でビルドする場合です。他の構成・プラットフォーム向けにビルドする場合は、適宜読み替えてください。  
 
-Releasesから「voicevox_core-windows-x64-cpu-{バージョン名}.zip」をダウンロードします。
-zipファイルを展開し、展開されたフォルダに含まれているdllファイルを「core.dll」にリネームします。
 出力フォルダを作成するために、一度ビルドします。「windows_example.sln」をVisual Studioで開き、メニューの「ビルド」→「ソリューションのビルド」を押します。
 この段階では、ビルドは失敗します。「bin」フォルダと「lib」フォルダが生成されていればOKです。  
+Releasesから「voicevox_core-windows-x64-cpu-{バージョン名}.zip」をダウンロードし、展開します。  
+展開してできたファイルをそれぞれ下記のフォルダへ配置します。
 
-「core.lib」を「simple_tts\lib\x64」に配置します。  
-「core.dll」を「simple_tts\bin\x64\Debug」に配置します。
+- simple_tts に配置
+  - core.h
+
+- simple_tts\bin\x64\Debug に配置
+  - core.dll
+  - onnxruntime.dll
+  - onnxruntime_providers_shared.dll
+
+- simple_tts\lib\x64 に配置
+  - core.lib
 
 もう一度ビルドします。今度は成功するはずです。失敗した場合は、「core.lib」の場所を確認してください。
 
@@ -31,7 +38,7 @@ http://open-jtalk.sourceforge.net/ を開き、Dictionary for Open JTalk 欄の 
 最終的には以下のようなフォルダ構成になっているはずです。
 ```
 simple_tts
-│  packages.config
+│  core.h
 │  simple_tts.cpp
 │  simple_tts.h
 │  simple_tts.vcxproj

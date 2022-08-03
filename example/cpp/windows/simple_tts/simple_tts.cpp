@@ -14,7 +14,7 @@
 #include <vector>
 #include <fstream>
 
-#include "..\..\..\core\src\core.h"
+#include "core.h"
 
 #define OPENJTALK_DICT_NAME L"open_jtalk_dic_utf_8-1.11"
 
@@ -28,14 +28,17 @@ int main() {
   std::wcin >> speak_words;
 
   std::wcout << L"coreの初期化中" << std::endl;
-  initialize(false);
+  if (!initialize(false, 0, true)) {
+    std::wcout << L"coreの初期化に失敗しました" << std::endl;
+    return 0;
+  }
 
   VoicevoxResultCode result = VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED;
 
   std::wcout << L"openjtalk辞書の読み込み" << std::endl;
   result = voicevox_load_openjtalk_dict(GetOpenJTalkDict().c_str());
   if (result != VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED) {
-    std::cout << voicevox_error_result_to_message(result) << std::endl;
+    OutErrorMessage(result);
     return 0;
   }
 
@@ -45,7 +48,7 @@ int main() {
   uint8_t* output_wav = nullptr;
   result = voicevox_tts(wide_to_utf8_cppapi(speak_words).c_str(), speaker_id, &output_binary_size, &output_wav);
   if (result != VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED) {
-    std::cout << voicevox_error_result_to_message(result) << std::endl;
+    OutErrorMessage(result);
     return 0;
   }
 
@@ -71,7 +74,7 @@ int main() {
 std::string GetOpenJTalkDict() {
   wchar_t buff[MAX_PATH] = {0};
   PathCchCombine(buff, MAX_PATH, GetExeDirectory().c_str(), OPENJTALK_DICT_NAME);
-  std::string retVal = wide_to_multi_capi(buff);
+  std::string retVal = wide_to_utf8_cppapi(buff);
   return retVal;
 }
 
@@ -108,23 +111,13 @@ std::wstring GetExeDirectory() {
 }
 
 /// <summary>
-/// ワイド文字列をShift_JISに変換します。
+/// コンソール画面にエラーメッセージを出力します。
 /// </summary>
-/// <param name="src">ワイド文字列</param>
-/// <returns>Shift_JIS文字列</returns>
-/// <remarks>
-/// https://nekko1119.hatenablog.com/entry/2017/01/02/054629 から引用
-/// </remarks>
-std::string wide_to_multi_capi(std::wstring const& src) {
-  std::size_t converted{};
-  std::vector<char> dest(src.size() * sizeof(wchar_t) + 1, '\0');
-  if (::_wcstombs_s_l(&converted, dest.data(), dest.size(), src.data(), _TRUNCATE, ::_create_locale(LC_ALL, "jpn")) !=
-      0) {
-    throw std::system_error{errno, std::system_category()};
-  }
-  dest.resize(std::char_traits<char>::length(dest.data()));
-  dest.shrink_to_fit();
-  return std::string(dest.begin(), dest.end());
+/// <param name="messageCode">メッセージコード</param>
+void OutErrorMessage(VoicevoxResultCode messageCode) {
+  const char* utf8Str = voicevox_error_result_to_message(messageCode);
+  std::wstring wideStr = utf8_to_wide_cppapi(utf8Str);
+  std::wcout << wideStr << std::endl;
 }
 
 /// <summary>
@@ -138,4 +131,17 @@ std::string wide_to_multi_capi(std::wstring const& src) {
 std::string wide_to_utf8_cppapi(std::wstring const& src) {
   std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
   return converter.to_bytes(src);
+}
+
+/// <summary>
+/// UTF8をワイド文字に変換します。
+/// </summary>
+/// <param name="src">UTF8文字列</param>
+/// <returns>ワイド文字列</returns>
+/// <remarks>
+/// https://nekko1119.hatenablog.com/entry/2017/01/02/054629 から引用
+/// </remarks>
+std::wstring utf8_to_wide_cppapi(std::string const& src) {
+  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+  return converter.from_bytes(src);
 }
