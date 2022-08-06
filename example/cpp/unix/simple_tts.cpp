@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-#include "../../../core/src/core.h"
+#include "core.h"
 
 #define OUTPUT_WAV_NAME "audio.wav"
 
@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 
   std::cout << "coreの初期化中..." << std::endl;
 
-  if (!initialize(false)) {
+  if (!initialize(false, 0, true)) {
     std::cout << "coreの初期化に失敗しました" << std::endl;
     return 1;
   }
@@ -38,7 +38,8 @@ int main(int argc, char *argv[]) {
   int output_binary_size = 0;
   uint8_t *output_wav = nullptr;
 
-  result = voicevox_tts(text.c_str(), speaker_id, &output_binary_size, &output_wav);
+  result =
+      voicevox_tts(text.c_str(), speaker_id, &output_binary_size, &output_wav);
   if (result != VOICEVOX_RESULT_SUCCEED) {
     std::cout << voicevox_error_result_to_message(result) << std::endl;
     return 1;
@@ -47,7 +48,8 @@ int main(int argc, char *argv[]) {
   std::cout << "音声ファイル保存中..." << std::endl;
 
   std::ofstream wav_file(OUTPUT_WAV_NAME, std::ios::binary);
-  wav_file.write(reinterpret_cast<const char*>(output_wav), output_binary_size);
+  wav_file.write(reinterpret_cast<const char *>(output_wav),
+                 output_binary_size);
   voicevox_wav_free(output_wav);
 
   std::cout << "音声ファイル保存完了 (" << OUTPUT_WAV_NAME << ")" << std::endl;

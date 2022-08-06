@@ -1,0 +1,123 @@
+name: build and deploy workflow
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
+        required: true
+      code_signing:
+        description: "コード署名する"
+        type: boolean
+        required: false
+  release:
+    types:
+      - published
+  workflow_run:
+    workflows: ["test workflow"]
+    types:
+      - completed
+env:
+  # releaseタグ名か、workflow_dispatchでのバージョン名か、DEBUGが入る
+  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || 'DEBUG' }}
+
+  # Raw character weights are not public.
+  # Skip uploading to GitHub Release on public repo.
+  SKIP_UPLOADING_RELEASE_ASSET: ${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }}
+jobs:
+  build_and_deploy:
+    environment: ${{ github.event.inputs.code_signing == 'true' && 'code_signing' }} # コード署名用のenvironment（false時の挙動は2022年7月10日時点で未定義動作）
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            feature: default
+            target: x86_64-pc-windows-msvc
+            artifact_name: windows-x64-cpu
+            use_cuda: false
+          - os: windows-latest
+            feature: directml
+            target: x86_64-pc-windows-msvc
+            artifact_name: windows-x64-directml
+            use_cuda: false
+          - os: windows-latest
+            feature: default
+            target: x86_64-pc-windows-msvc
+            artifact_name: windows-x64-cuda
+            use_cuda: true
+          - os: windows-latest
+            feature: default
+            target: i686-pc-windows-msvc
+            artifact_name: windows-x86-cpu
+            use_cuda: false
+          - os: ubuntu-latest
+            feature: default
+            target: x86_64-unknown-linux-gnu
+            artifact_name: linux-x64-cpu
+            use_cuda: false
+          - os: ubuntu-latest
+            feature: default
+            target: x86_64-unknown-linux-gnu
+            artifact_name: linux-x64-gpu
+            use_cuda: true
+          - os: macos-latest
+            feature: default
+            target: aarch64-apple-darwin
+            artifact_name: osx-aarch64-cpu
+            use_cuda: false
+          - os: macos-latest
+            feature: default
+            target: x86_64-apple-darwin
+            artifact_name: osx-x64-cpu
+            use_cuda: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          default: true
+      - name: build release
+        run: cargo build --features ${{ matrix.feature }} --target ${{ matrix.target }} --release
+        env:
+          ORT_USE_CUDA: ${{ matrix.use_cuda }}
+      - name: Set ASSET_NAME env var
+        shell: bash
+        run: echo "ASSET_NAME=voicevox_core-${{ matrix.artifact_name }}-${{ env.VERSION }}" >> $GITHUB_ENV
+      - name: Organize artifact
+        shell: bash
+        run: |
+          mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          cp -v target/core.h "artifact/${{ env.ASSET_NAME }}"
+          cp -v target/${{ matrix.target }}/release/*.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
+          cp -v target/${{ matrix.target }}/release/core.dll.lib "artifact/${{ env.ASSET_NAME }}/core.lib" || true
+          cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so.*} "artifact/${{ env.ASSET_NAME }}" || true
+          cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib "artifact/${{ env.ASSET_NAME }}" || true
+          cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
+          echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
+      - name: Code signing (Windows)
+        if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
+        shell: bash
+        run: |
+          bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/core.dll"
+        env:
+          CERT_BASE64: ${{ secrets.CERT_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+      - name: Archive artifact
+        shell: bash
+        if: (!contains(matrix.os , 'windows'))
+        run: |
+          cd artifact
+          zip -r "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
+      - name: Archive artifact (Windows)
+        if: contains(matrix.os, 'windows')
+        run: |
+          powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "${{ env.ASSET_NAME }}.zip"
+      - name: Upload to Release
+        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: true
+          tag: ${{ env.VERSION }}
+          file: ${{ env.ASSET_NAME }}.zip
