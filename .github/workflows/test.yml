@@ -24,21 +24,21 @@ jobs:
       matrix:
         include:
           - os: windows-2019
-            features: generate-c-header
+            additional-features: ""
           - os: windows-2022
-            features: generate-c-header
+            additional-features: ""
           - os: windows-2019
-            features: directml,generate-c-header
+            additional-features: directml
           - os: windows-2022
-            features: directml,generate-c-header
+            additional-features: directml
           - os: macos-11
-            features: generate-c-header
+            additional-features: ""
           - os: macos-12
-            features: generate-c-header
+            additional-features: ""
           - os: ubuntu-18.04
-            features: generate-c-header
+            additional-features: ""
           - os: ubuntu-20.04
-            features: generate-c-header
+            additional-features: ""
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install LLVM and Clang # required for bindgen to work, see https://github.com/rust-lang/rust-bindgen/issues/1797
@@ -57,7 +57,7 @@ jobs:
       - uses: Swatinem/rust-cache@v1
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
-          key: "v1-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
+          key: "v1-cargo-test-cache-${{ matrix.additional-features }}-${{ matrix.os }}"
       # FIXME: windows-2022 では、onnxruntime-sys のビルド時にダウンロードされる onnxruntime.dll に対してパスが通らないために、テストが行えない
       #        原因が不明であるため、姑息的な回避策として target/debug/deps ディレクトリに onnxruntime.dll をコピーする。根本的な解決策を望む。
       #        cf. https://github.com/VOICEVOX/voicevox_core/pull/140#issuecomment-1140276585
@@ -68,7 +68,7 @@ jobs:
           cargo build
           find target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib -name onnxruntime.dll -ctime 0
           find target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib -name onnxruntime.dll -ctime 0 | head -n 1 | xargs -i cp {} target/debug/deps/
-      - run: cargo test --features ${{ matrix.features }}
+      - run: cargo test --features generate-c-header,${{ matrix.additional-features }}
 
   build-unix-cpp-example:
     strategy:
