@@ -1,5 +1,3 @@
-extern crate cbindgen;
-
 use cbindgen::{Config, EnumConfig, FunctionConfig, Language, RenameRule};
 use std::env;
 use std::path::PathBuf;
