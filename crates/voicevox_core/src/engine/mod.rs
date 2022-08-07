@@ -8,6 +8,7 @@ mod synthesis_engine;
 
 use super::*;
 
+pub use self::open_jtalk::OpenJtalk;
 pub use acoustic_feature_extractor::*;
 pub use full_context_label::*;
 pub use kana_parser::*;
