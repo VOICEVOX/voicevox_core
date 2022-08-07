@@ -6,6 +6,7 @@ edition = "2021"
 [features]
 default = []
 directml = ["onnxruntime/directml"]
+generate-c-header = ["dep:cbindgen"]
 
 [lib]
 name = "core"
@@ -35,4 +36,4 @@ tar = "0.4.38"
 
 
 [build-dependencies]
-cbindgen = "0.23.0"
+cbindgen = { version = "0.23.0", optional = true }

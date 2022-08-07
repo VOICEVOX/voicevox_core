@@ -1,4 +1,5 @@
 fn main() {
+    #[cfg(feature = "generate-c-header")]
     generate_c_header();
 
     #[cfg(target_os = "linux")]
@@ -8,6 +9,7 @@ fn main() {
     println!("cargo:rustc-link-arg=-Wl,-install_name,@rpath/libcore.dylib");
 }
 
+#[cfg(feature = "generate-c-header")]
 fn generate_c_header() {
     use cbindgen::{Config, EnumConfig, FunctionConfig, Language, RenameRule};
     use std::env;
