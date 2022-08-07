@@ -86,7 +86,7 @@ jobs:
         with:
           toolchain: stable
       - name: build voicevox_core
-        run: cargo build
+        run: cargo build --features generate-c-header
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
           cp -v target/core.h example/cpp/unix/
