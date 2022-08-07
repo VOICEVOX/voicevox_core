@@ -1,8 +1,18 @@
-use cbindgen::{Config, EnumConfig, FunctionConfig, Language, RenameRule};
-use std::env;
-use std::path::PathBuf;
-
 fn main() {
+    generate_c_header();
+
+    #[cfg(target_os = "linux")]
+    println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
+
+    #[cfg(target_os = "macos")]
+    println!("cargo:rustc-link-arg=-Wl,-install_name,@rpath/libcore.dylib");
+}
+
+fn generate_c_header() {
+    use cbindgen::{Config, EnumConfig, FunctionConfig, Language, RenameRule};
+    use std::env;
+    use std::path::PathBuf;
+
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let output_file = target_dir().join("core.h").display().to_string();
     let config = Config {
@@ -40,12 +50,7 @@ __declspec(dllimport)
         .unwrap()
         .write_to_file(&output_file);
 
-    #[cfg(target_os = "linux")]
-    println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
-
-    #[cfg(target_os = "macos")]
-    println!("cargo:rustc-link-arg=-Wl,-install_name,@rpath/libcore.dylib");
-}
-fn target_dir() -> PathBuf {
-    PathBuf::from(env::var("CARGO_WORKSPACE_DIR").unwrap()).join("target")
+    fn target_dir() -> PathBuf {
+        PathBuf::from(env::var("CARGO_WORKSPACE_DIR").unwrap()).join("target")
+    }
 }
