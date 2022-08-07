@@ -1,2 +1,12 @@
 [workspace]
 members = ["crates/voicevox_core"]
+
+
+# min-sized-rustを元にrelease buildのサイズが小さくなるようにした
+# https://github.com/johnthagen/min-sized-rust
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
