@@ -25,7 +25,10 @@ pub struct Internal {
 impl Internal {
     pub fn new_with_mutex() -> Mutex<Internal> {
         Mutex::new(Internal {
-            synthesis_engine: SynthesisEngine::new(InferenceCore::new(false, None)),
+            synthesis_engine: SynthesisEngine::new(
+                InferenceCore::new(false, None),
+                OpenJtalk::initialize(),
+            ),
         })
     }
 
