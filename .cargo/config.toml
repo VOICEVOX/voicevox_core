@@ -1,2 +1,6 @@
 [env]
 CARGO_WORKSPACE_DIR = { value = "", relative = true }
+
+# Windows環境でテストエラーになるのを防ぐために設定するworkaround
+# https://github.com/VOICEVOX/onnxruntime-rs/issues/3#issuecomment-1207381367
+ORT_OUT_DIR = { value = "target/debug/deps", relative = true }

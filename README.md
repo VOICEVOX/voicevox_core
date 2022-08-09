@@ -162,9 +162,6 @@ cargo build --release
 ## コアライブラリのテスト
 
 ```bash
-# Windowsの場合は最初にonnxruntime.dllをカレントディレクトリにコピーする必要があります
-# find target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib -name onnxruntime.dll | head -n 1 | xargs -i cp {} target/debug/deps/
-
 cargo test
 ```
 
