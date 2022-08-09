@@ -68,7 +68,9 @@ jobs:
           cargo build
           find target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib -name onnxruntime.dll -ctime 0
           find target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib -name onnxruntime.dll -ctime 0 | head -n 1 | xargs -i cp {} target/debug/deps/
-      - run: cargo test --features generate-c-header,${{ matrix.additional-features }}
+      - name: Run cargo test
+        shell: bash
+        run: cargo test --features generate-c-header,${{ matrix.additional-features }}
 
   build-unix-cpp-example:
     strategy:
