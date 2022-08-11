@@ -207,7 +207,14 @@ impl InferenceCore {
                     let phoneme = [0.; PHONEME_SIZE * LENGTH];
                     let speaker_id = 0;
 
-                    let _ = self.decode_forward(LENGTH, PHONEME_SIZE, &f0, &phoneme, speaker_id)?;
+                    let _ = Self::decode_forward_from_status(
+                        &mut status,
+                        LENGTH,
+                        PHONEME_SIZE,
+                        &f0,
+                        &phoneme,
+                        speaker_id,
+                    )?;
                 }
             }
 
@@ -383,6 +390,17 @@ impl InferenceCore {
             .as_mut()
             .ok_or(Error::UninitializedStatus)?;
 
+        Self::decode_forward_from_status(status, length, phoneme_size, f0, phoneme, speaker_id)
+    }
+
+    fn decode_forward_from_status(
+        status: &mut Status,
+        length: usize,
+        phoneme_size: usize,
+        f0: &[f32],
+        phoneme: &[f32],
+        speaker_id: usize,
+    ) -> Result<Vec<f32>> {
         if !status.validate_speaker_id(speaker_id) {
             return Err(Error::InvalidSpeakerId { speaker_id });
         }
