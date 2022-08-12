@@ -17,8 +17,7 @@ jobs:
         shell: bash
         run: |
           rust_version=$(rustup run stable rustc --version | sed -r "s/.*([0-9]+\.[0-9]+\.[0-9]+[^ ]*).*/\1/")
-          sed -i -r "s/channel = \".*\"/channel = \"$rust_version\"/" ./rust-toolchain.toml
-          sed -i -r "s/toolchain: .*/toolchain: \"$rust_version\"/" ./.github/workflows/build_and_deploy.yml  ./.github/workflows/test.yml
+          echo "$rust_version" > ./rust-toolchain.toml
           echo "RUST_VERSION=$rust_version" >> $GITHUB_ENV
       - name: check update rust version
         shell: bash

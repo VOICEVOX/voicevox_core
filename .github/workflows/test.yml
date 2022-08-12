@@ -11,8 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
       - uses: Swatinem/rust-cache@v1
       - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
@@ -52,8 +50,6 @@ jobs:
         if: matrix.os == 'windows-2019'
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
       - uses: Swatinem/rust-cache@v1
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
@@ -75,8 +71,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
       - name: build voicevox_core
         run: cargo build --features generate-c-header
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
