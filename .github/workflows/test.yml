@@ -57,7 +57,7 @@ jobs:
       - uses: Swatinem/rust-cache@v1
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
-          key: "v1-cargo-test-cache-${{ matrix.additional-features }}-${{ matrix.os }}"
+          key: "v2-cargo-test-cache-${{ matrix.additional-features }}-${{ matrix.os }}"
       - name: Run cargo test
         shell: bash
         run: cargo test --features generate-c-header,${{ matrix.additional-features }}
