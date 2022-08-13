@@ -34,6 +34,14 @@ impl OpenJtalk {
     }
 
     pub fn extract_fullcontext(&mut self, text: impl AsRef<str>) -> Result<Vec<String>> {
+        let result = self.extract_fullcontext_non_reflesh(text);
+        self.jpcommon.refresh();
+        self.njd.refresh();
+        self.mecab.refresh();
+        result
+    }
+
+    fn extract_fullcontext_non_reflesh(&mut self, text: impl AsRef<str>) -> Result<Vec<String>> {
         let mecab_text =
             text2mecab(text.as_ref()).map_err(|e| OpenJtalkError::ExtractFullContext {
                 text: text.as_ref().into(),
@@ -197,5 +205,21 @@ mod tests {
         open_jtalk.load(&open_jtalk_dic_dir).unwrap();
         let result = open_jtalk.extract_fullcontext(text);
         assert_eq!(expected, result);
+    }
+
+    #[rstest]
+    #[case("こんにちは、ヒホです。", Ok(testdata_hello_hiho()))]
+    #[async_std::test]
+    async fn extract_fullcontext_loop_works(
+        #[case] text: &str,
+        #[case] expected: super::Result<Vec<String>>,
+    ) {
+        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
+        let mut open_jtalk = OpenJtalk::initialize();
+        open_jtalk.load(&open_jtalk_dic_dir).unwrap();
+        for _ in 0..10 {
+            let result = open_jtalk.extract_fullcontext(text);
+            assert_eq!(expected, result);
+        }
     }
 }
