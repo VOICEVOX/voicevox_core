@@ -198,17 +198,6 @@ impl InferenceCore {
                 for model_index in 0..Status::MODELS_COUNT {
                     status.load_model(model_index)?;
                 }
-                // 一回走らせて十分なGPUメモリを確保させる
-                // TODO: 全MODELに対して行う
-                if use_gpu {
-                    const LENGTH: usize = 500;
-                    const PHONEME_SIZE: usize = 45;
-                    let f0 = [0.; LENGTH];
-                    let phoneme = [0.; PHONEME_SIZE * LENGTH];
-                    let speaker_id = 0;
-
-                    let _ = self.decode_forward(LENGTH, PHONEME_SIZE, &f0, &phoneme, speaker_id)?;
-                }
             }
 
             self.status_option = Some(status);
