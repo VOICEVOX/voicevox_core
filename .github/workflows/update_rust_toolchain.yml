@@ -20,7 +20,6 @@ jobs:
           echo "$rust_version" > ./rust-toolchain
           echo "RUST_VERSION=$rust_version" >> $GITHUB_ENV
       - name: create_pr
-        if: success()
         id: update-rust-toolchain
         uses: peter-evans/create-pull-request@v4
         with:
