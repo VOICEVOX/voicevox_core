@@ -39,10 +39,23 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-directml
             use_cuda: false
+            directml_full: true
+            directml_platform: x64-win
+          - os: windows-latest
+            additional-features: directml
+            target: x86_64-pc-windows-msvc
+            artifact_name: windows-x64-directml-min
+            use_cuda: false
           - os: windows-latest
             additional-features: ""
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cuda
+            use_cuda: true
+            cuda_full: true
+          - os: windows-latest
+            additional-features: ""
+            target: x86_64-pc-windows-msvc
+            artifact_name: windows-x64-cuda-min
             use_cuda: true
           - os: windows-latest
             additional-features: ""
@@ -58,6 +71,12 @@ jobs:
             additional-features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-gpu
+            use_cuda: true
+            cuda_full: true
+          - os: ubuntu-latest
+            additional-features: ""
+            target: x86_64-unknown-linux-gnu
+            artifact_name: linux-x64-gpu-min
             use_cuda: true
           - os: macos-latest
             additional-features: ""
@@ -95,6 +114,14 @@ jobs:
           rm -f artifact/${{ env.ASSET_NAME }}/libonnxruntime.{so,dylib}
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
+      - name: Organize directml artifact
+        shell: bash
+        if: ${{ matrix.directml_full }}
+        run: |
+          directml_link=$(curl -s https://api.nuget.org/v3/registration5-semver1/microsoft.ai.directml/index.json | jq ".items[0].items | max_by(.catalogEntry.version) | .catalogEntry.packageContent" | sed "s/\"//g")
+          curl -sO $directml_link
+          unzip -d ./ext_directml ./microsoft.ai.directml.*.nupkg
+          cp -v ext_directml/bin/${{ matrix.directml_platform }}/DirectML.dll artifact/${{ env.ASSET_NAME }}
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
         shell: bash
