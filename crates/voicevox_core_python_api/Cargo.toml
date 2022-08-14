@@ -1,0 +1,21 @@
+[package]
+name = "voicevox_core_python_api"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata.maturin]
+name = "voicevox_core._rust"
+python-source = "python"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+easy-ext = "1.0.0"
+eyre = "0.6.8"
+numpy = "0.17.0"
+pyo3 = { version = "0.17.0", features = ["abi3-py38", "extension-module"] }
+serde = "1.0.144"
+serde_json = "1.0.83"
+voicevox_core = { path = "../voicevox_core" }
