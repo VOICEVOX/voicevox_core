@@ -1,0 +1,31 @@
+name: update rust toolchain
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 0 * * *"
+jobs:
+  update-rust-toolchain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: update rust toolchain
+        shell: bash
+        run: |
+          rust_version=$(rustup run stable rustc --version | sed -r "s/.*([0-9]+\.[0-9]+\.[0-9]+[^ ]*).*/\1/")
+          echo "$rust_version" > ./rust-toolchain
+          echo "RUST_VERSION=$rust_version" >> $GITHUB_ENV
+      - name: create_pr
+        id: update-rust-toolchain
+        uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: Update rust toolchain ${{ env.RUST_VERSION }}
+          branch: update_rust_toolchain_${{ env.RUST_VERSION }}
+          delete-branch: true
+          title: Update rust toolchain ${{ env.RUST_VERSION }}
+          body: |
+            Update rust toolchain ${{ env.RUST_VERSION }}
