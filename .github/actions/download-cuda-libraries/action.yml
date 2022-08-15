@@ -1,0 +1,73 @@
+name: download cuda libraries
+description: cuda libraryをダウンロードする
+inputs:
+  cudnn_download_url:
+    description: cudaのダウンロードURL
+    required: true
+  artifact_name:
+    description: artifactの名前
+    required: true
+  cuda_version:
+    description: cudaのバージョン
+    required: true
+  cuda_lib_dir:
+    description: libraryは配置されているディレクトリ
+    required: true
+  extract_dir:
+    description: 出力先のディレクトリ
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Prepare cuDNN cache
+      uses: actions/cache@v2
+      id: cuda-library-cache
+      with:
+        key: v1-cuda-library-cache-${{ inputs.artifact_name }}-${{ inputs.cuda_version }}
+        path: download/cuda
+    - name: Prepare cuDNN cache
+      uses: actions/cache@v2
+      id: cudnn-library-cache
+      with:
+        key: v1-cudnn-library-cache-${{ inputs.artifact_name }}-${{ inputs.cudnn_download_url }}
+        path: download/cudnn
+    - uses: Jimver/cuda-toolkit@v0.2.8
+      id: cuda-toolkit
+      with:
+        method: network
+        cuda: ${{ inputs.cuda_version }}
+    - name: Extract CUDA Library
+      if: steps.cuda-library-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -eux
+        CUDA_ROOT=$( echo "${{ steps.cuda-toolkit.outputs.CUDA_PATH }}" | tr '\\' '/' )
+        mkdir -p download/cuda/bin
+        cp -v $CUDA_ROOT/${{ inputs.cuda_lib_dir }}/*.{so*,dll} download/cuda/bin/ || true
+    - name: Extract CUDNN Library
+      if: steps.cudnn-library-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -eux
+        mkdir -p download/cudnn_tmp
+        if [[ "${{ inputs.artifact_name }}" =~ "linux" ]]; then
+          curl -L "${{ matrix.cudnn_download_url }}" > download/cudnn.tar.xz
+          tar -Jxvf download/cudnn.tar.xz -C download/cudnn_tmp
+          mkdir -p download/cudnn_tmp/bin
+          mv -v download/cudnn_tmp/**/lib/* download/cudnn_tmp/bin
+        elif [[ "${{ inputs.artifact_name }}" =~ "windows" ]];then
+          curl -L "${{ matrix.cudnn_download_url }}" > download/cudnn.zip
+          unzip download/cudnn.zip cudnn*/bin/*.dll -d download/cudnn_tmp
+          mkdir -p ./download/cudnn_tmp/bin
+          mv -v ./download/cudnn_tmp/cudnn*/bin/* ./download/cudnn_tmp/bin
+        fi
+        mkdir -p download/cudnn/bin
+        mv download/cudnn_tmp/bin/*.{so*,dll} download/cudnn/bin/ || true
+        rm -rf download/cudnn_tmp
+        rm -f download/cudnn.*
+    - name: Extract Libraries
+      shell: bash
+      run: |
+        mkdir -p ${{ inputs.extract_dir }}
+        cp -v download/cuda/bin/* ${{ inputs.extract_dir }}
+        cp -v download/cudnn/bin/* ${{ inputs.extract_dir }}

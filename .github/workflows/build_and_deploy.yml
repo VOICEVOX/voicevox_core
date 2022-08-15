@@ -51,6 +51,9 @@ jobs:
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cuda
             use_cuda: true
+            cudnn_download_url: https://developer.download.nvidia.com/compute/redist/cudnn/v8.4.1/local_installers/11.6/cudnn-windows-x86_64-8.4.1.50_cuda11.6-archive.zip
+            cuda_version: 11.7.0
+            cuda_lib_dir: bin
           - os: windows-latest
             additional-features: ""
             target: i686-pc-windows-msvc
@@ -66,6 +69,9 @@ jobs:
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-gpu
             use_cuda: true
+            cudnn_download_url: https://developer.download.nvidia.com/compute/redist/cudnn/v8.4.1/local_installers/11.6/cudnn-linux-x86_64-8.4.1.50_cuda11.6-archive.tar.xz
+            cuda_version: 11.7.0
+            cuda_lib_dir: lib64
           - os: macos-latest
             additional-features: ""
             target: aarch64-apple-darwin
@@ -90,6 +96,10 @@ jobs:
       - name: Set ASSET_NAME env var
         shell: bash
         run: echo "ASSET_NAME=voicevox_core-${{ matrix.artifact_name }}-${{ env.VERSION }}" >> $GITHUB_ENV
+      - name: Set CUDA_LIB_ASSET_NAME env var
+        shell: bash
+        if: ${{ matrix.use_cuda }}
+        run: echo "CUDA_LIB_ASSET_NAME=voicevox_core-${{ matrix.artifact_name }}-cuda-lib-${{ env.VERSION }}" >> $GITHUB_ENV
       - name: Organize artifact
         shell: bash
         run: |
@@ -110,6 +120,15 @@ jobs:
           curl -sO $directml_link
           unzip -d ./ext_directml ./microsoft.ai.directml.*.nupkg
           cp -v ext_directml/bin/${{ matrix.directml_platform }}/DirectML.dll artifact/${{ env.ASSET_NAME }}
+      - name: Organize cuda lib artifact
+        if: ${{ matrix.use_cuda }}
+        uses: ./.github/actions/download-cuda-libraries
+        with:
+          cudnn_download_url: ${{ matrix.cudnn_download_url }}
+          artifact_name: ${{ matrix.artifact_name }}
+          cuda_version: ${{ matrix.cuda_version }}
+          cuda_lib_dir: ${{ matrix.cuda_lib_dir }}
+          extract_dir: artifact/${{ env.CUDA_LIB_ASSET_NAME }}
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
         shell: bash
@@ -124,10 +143,20 @@ jobs:
         run: |
           cd artifact
           zip -r "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
+      - name: Archive artifact cuda libraries
+        shell: bash
+        if: ${{ (!contains(matrix.os , 'windows')) && (matrix.use_cuda) }}
+        run: |
+          cd artifact
+          zip -r "../${{ env.CUDA_LIB_ASSET_NAME }}.zip" "${{ env.CUDA_LIB_ASSET_NAME }}"
       - name: Archive artifact (Windows)
         if: contains(matrix.os, 'windows')
         run: |
           powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "${{ env.ASSET_NAME }}.zip"
+      - name: Archive artifact (Windows) cuda libraries
+        if: ${{ contains(matrix.os, 'windows') && (matrix.use_cuda) }}
+        run: |
+          powershell Compress-Archive -Path "artifact/${{ env.CUDA_LIB_ASSET_NAME }}" -DestinationPath "${{ env.CUDA_LIB_ASSET_NAME }}.zip"
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: svenstaro/upload-release-action@v2
@@ -136,3 +165,11 @@ jobs:
           prerelease: true
           tag: ${{ env.VERSION }}
           file: ${{ env.ASSET_NAME }}.zip
+      - name: Upload to Release cuda libraries
+        if: ${{ env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && (matrix.use_cuda) }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: true
+          tag: ${{ env.VERSION }}
+          file: ${{ env.CUDA_LIB_ASSET_NAME }}.zip
