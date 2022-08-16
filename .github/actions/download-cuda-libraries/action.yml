@@ -87,11 +87,18 @@ runs:
       run: |
         # CUDA
         ln -sf "$(pwd)/download/cuda/bin"/libcublas.so.* "${{ inputs.extract_dir }}"
+        rm -f "${{ inputs.extract_dir }}"/libcublas.so.*.*
         ln -sf "$(pwd)/download/cuda/bin"/libcublasLt.so.* "${{ inputs.extract_dir }}"
+        rm -f "${{ inputs.extract_dir }}"/libcublasLt.so.*.*
         ln -sf "$(pwd)/download/cuda/bin"/libcudart.so.* "${{ inputs.extract_dir }}"
+        rm -f "${{ inputs.extract_dir }}"/libcudart.so.*.*
         ln -sf "$(pwd)/download/cuda/bin"/libcufft.so.* "${{ inputs.extract_dir }}"
+        rm -f "${{ inputs.extract_dir }}"/libcufft.so.*.*
         ln -sf "$(pwd)/download/cuda/bin"/libcurand.so.* "${{ inputs.extract_dir }}"
+        rm -f "${{ inputs.extract_dir }}"/libcurand.so.*.*
 
         # cuDNN
         ln -sf "$(pwd)/download/cudnn/bin"/libcudnn.so.* "${{ inputs.extract_dir }}"
+        rm -f "${{ inputs.extract_dir }}"/libcudnn.so.*.*
         ln -sf "$(pwd)/download/cudnn/bin"/libcudnn_*_infer.so.* "${{ inputs.extract_dir }}"
+        rm -f "${{ inputs.extract_dir }}"/libcudnn_*_infer.so.*.*
