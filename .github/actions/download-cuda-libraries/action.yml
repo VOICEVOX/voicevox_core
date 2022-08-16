@@ -66,6 +66,7 @@ runs:
         rm -rf download/cudnn_tmp
         rm -f download/cudnn.*
         mkdir -p ${{ inputs.extract_dir }}
+        cp -v docs/licenses/cuda/* "${{ inputs.extract_dir }}"
     - name: Extract Libraries for Windows
       shell: bash
       if: contains(inputs.artifact_name,'windows')
