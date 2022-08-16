@@ -119,7 +119,8 @@ jobs:
           directml_link=$(curl -s https://api.nuget.org/v3/registration5-semver1/microsoft.ai.directml/index.json | jq ".items[0].items | max_by(.catalogEntry.version) | .catalogEntry.packageContent" | sed "s/\"//g")
           curl -sO $directml_link
           unzip -d ./ext_directml ./microsoft.ai.directml.*.nupkg
-          cp -v ext_directml/bin/${{ matrix.directml_platform }}/DirectML.dll artifact/${{ env.ASSET_NAME }}
+          cp -v "ext_directml/bin/${{ matrix.directml_platform }}/DirectML.dll" "artifact/${{ env.ASSET_NAME }}"
+          cp -v "ext_directml/bin/${{ matrix.directml_platform }}/LICENSE.txt" "artifact/${{ env.ASSET_NAME }}/DirectML_LICENSE.txt"
       - name: Organize cuda lib artifact
         if: ${{ matrix.use_cuda }}
         uses: ./.github/actions/download-cuda-libraries
