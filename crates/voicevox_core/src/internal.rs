@@ -126,7 +126,11 @@ impl Internal {
         self.synthesis_engine.load_openjtalk_dict(dict_path)
     }
 
-    pub fn voicevox_tts(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
+    pub fn voicevox_audio_query(
+        &mut self,
+        text: &str,
+        speaker_id: usize,
+    ) -> Result<AudioQueryModel> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
             return Err(Error::NotLoadedOpenjtalkDict);
         }
@@ -134,7 +138,7 @@ impl Internal {
             .synthesis_engine
             .create_accent_phrases(text, speaker_id)?;
 
-        let audio_query = AudioQueryModel::new(
+        Ok(AudioQueryModel::new(
             accent_phrases,
             1.,
             0.,
@@ -145,19 +149,20 @@ impl Internal {
             SynthesisEngine::DEFAULT_SAMPLING_RATE,
             false,
             "".into(),
-        );
-
-        self.synthesis_engine
-            .synthesis_wave_format(&audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
+        ))
     }
 
-    pub fn voicevox_tts_from_kana(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
+    pub fn voicevox_audio_query_from_kana(
+        &mut self,
+        text: &str,
+        speaker_id: usize,
+    ) -> Result<AudioQueryModel> {
         let accent_phrases = parse_kana(text)?;
         let accent_phrases = self
             .synthesis_engine
             .replace_mora_data(&accent_phrases, speaker_id)?;
 
-        let audio_query = AudioQueryModel::new(
+        Ok(AudioQueryModel::new(
             accent_phrases,
             1.,
             0.,
@@ -168,10 +173,26 @@ impl Internal {
             SynthesisEngine::DEFAULT_SAMPLING_RATE,
             false,
             "".into(),
-        );
+        ))
+    }
 
+    pub fn voicevox_synthesis(
+        &mut self,
+        audio_query: &AudioQueryModel,
+        speaker_id: usize,
+    ) -> Result<Vec<u8>> {
         self.synthesis_engine
-            .synthesis_wave_format(&audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
+            .synthesis_wave_format(audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
+    }
+
+    pub fn voicevox_tts(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
+        let audio_query = &self.voicevox_audio_query(text, speaker_id)?;
+        self.voicevox_synthesis(audio_query, speaker_id)
+    }
+
+    pub fn voicevox_tts_from_kana(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
+        let audio_query = &self.voicevox_audio_query_from_kana(text, speaker_id)?;
+        self.voicevox_synthesis(audio_query, speaker_id)
     }
 }
 
@@ -514,6 +535,7 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         VOICEVOX_RESULT_FAILED_PARSE_KANA => {
             "入力テキストをAquesTalkライクな読み仮名としてパースすることに失敗しました\0"
         }
+        VOICEVOX_RESULT_INVALID_AUDIO_QUERY => "無効なaudio_queryです\0",
     }
 }
 

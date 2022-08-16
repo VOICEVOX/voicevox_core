@@ -1,7 +1,8 @@
 use derive_getters::Getters;
 use derive_new::new;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, new, Getters)]
+#[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
 pub struct MoraModel {
     text: String,
     consonant: Option<String>,
@@ -11,7 +12,7 @@ pub struct MoraModel {
     pitch: f32,
 }
 
-#[derive(Clone, Debug, new, Getters)]
+#[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
 pub struct AccentPhraseModel {
     moras: Vec<MoraModel>,
     accent: usize,
@@ -30,7 +31,7 @@ impl AccentPhraseModel {
 }
 
 #[allow(clippy::too_many_arguments)]
-#[derive(new, Getters)]
+#[derive(Clone, new, Getters, Deserialize, Serialize)]
 pub struct AudioQueryModel {
     accent_phrases: Vec<AccentPhraseModel>,
     speed_scale: f32,
@@ -43,4 +44,10 @@ pub struct AudioQueryModel {
     output_stereo: bool,
     #[allow(dead_code)]
     kana: String,
+}
+
+impl AudioQueryModel {
+    pub(crate) fn to_json(&self) -> String {
+        serde_json::to_string(self).expect("should be always valid")
+    }
 }

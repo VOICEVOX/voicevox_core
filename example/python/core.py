@@ -2,6 +2,8 @@ from ctypes import *
 import platform
 import os
 from pathlib import Path
+import json
+from typing import List, Optional, TypedDict, Union
 import numpy
 
 # numpy ndarray types
@@ -59,11 +61,22 @@ lib.last_error_message.restype = c_char_p
 lib.voicevox_load_openjtalk_dict.argtypes = (c_char_p,)
 lib.voicevox_load_openjtalk_dict.restype = c_int
 
+lib.voicevox_audio_query.argtypes = (c_char_p, c_int64, POINTER(c_char_p))
+lib.voicevox_audio_query.restype = c_int
+
+lib.voicevox_audio_query_from_kana.argtypes = (c_char_p, c_int64, POINTER(c_char_p))
+lib.voicevox_audio_query_from_kana.restype = c_int
+
+lib.voicevox_synthesis.argtypes = (c_char_p, c_int64, POINTER(c_int), POINTER(POINTER(c_uint8)))
+lib.voicevox_synthesis.restype = c_int
+
 lib.voicevox_tts.argtypes = (c_char_p, c_int64, POINTER(c_int), POINTER(POINTER(c_uint8)))
 lib.voicevox_tts.restype = c_int
 
 lib.voicevox_tts_from_kana.argtypes = (c_char_p, c_int64, POINTER(c_int), POINTER(POINTER(c_uint8)))
 lib.voicevox_tts_from_kana.restype = c_int
+
+lib.voicevox_json_free.argtypes = (c_char_p,)
 
 lib.voicevox_wav_free.argtypes = (POINTER(c_uint8),)
 
@@ -133,6 +146,35 @@ def voicevox_load_openjtalk_dict(dict_path: str):
     if errno != 0:
         raise Exception(lib.voicevox_error_result_to_message(errno).decode())
 
+def voicevox_audio_query(text: str, speaker_id: int) -> "AudioQuery":
+    output_json = c_char_p()
+    errno = lib.voicevox_audio_query(text.encode(), speaker_id, byref(output_json))
+    if errno != 0:
+        raise Exception(lib.voicevox_error_result_to_message(errno).decode())
+    audio_query = json.loads(output_json.value)
+    lib.voicevox_json_free(output_json)
+    return audio_query
+
+def voicevox_audio_query_from_kana(text: str, speaker_id: int) -> "AudioQuery":
+    output_json = c_char_p()
+    errno = lib.voicevox_audio_query_from_kana(text.encode(), speaker_id, byref(output_json))
+    if errno != 0:
+        raise Exception(lib.voicevox_error_result_to_message(errno).decode())
+    audio_query = json.loads(output_json.value)
+    lib.voicevox_json_free(output_json)
+    return audio_query
+
+def voicevox_synthesis(audio_query: "AudioQuery", speaker_id: int) -> bytes:
+    output_binary_size = c_int()
+    output_wav = POINTER(c_uint8)()
+    errno = lib.voicevox_synthesis(json.dumps(audio_query).encode(), speaker_id, byref(output_binary_size), byref(output_wav))
+    if errno != 0:
+        raise Exception(lib.voicevox_error_result_to_message(errno).decode())
+    output = create_string_buffer(output_binary_size.value * sizeof(c_uint8))
+    memmove(output, output_wav, output_binary_size.value * sizeof(c_uint8))
+    lib.voicevox_wav_free(output_wav)
+    return output
+
 def voicevox_tts(text: str, speaker_id: int) -> bytes:
     output_binary_size = c_int()
     output_wav = POINTER(c_uint8)()
@@ -157,3 +199,29 @@ def voicevox_tts_from_kana(text: str, speaker_id: int) -> bytes:
 
 def finalize():
     lib.finalize()
+
+class AudioQuery(TypedDict):
+    accent_phrases: List["AccentPhrase"]
+    speedScale: float
+    pitchScale: float
+    intonationScale: float
+    volumeScale: float
+    prePhonemeLength: float
+    postPhonemeLength: float
+    outputSamplingRate: int
+    outputStereo: bool
+    kana: Optional[str]
+
+class AccentPhrase(TypedDict):
+    moras: List["Mora"]
+    accent: int
+    pause_mora: Optional["Mora"]
+    is_interrogative: bool
+
+class Mora(TypedDict):
+    text: str
+    consonant: Optional[str]
+    consonant_length: Optional[float]
+    vowel: str
+    vowel_length: float
+    pitch: float
