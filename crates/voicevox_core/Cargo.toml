@@ -27,7 +27,7 @@ open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", version = 
 regex = "1.6.0"
 
 [dev-dependencies]
-rstest = "0.12.0"
+rstest = "0.15.0"
 pretty_assertions = "1.2.1"
 async-std = { version = "1.12.0", features = ["attributes"] }
 surf = "2.3.2"
