@@ -1,3 +1,6 @@
+// TODO: ドキュメントを作成する段階になったらこのallowを外し、各pointerを使用している関数にunsafeとSafety documentを追加する
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
+
 use libc::c_void;
 use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
