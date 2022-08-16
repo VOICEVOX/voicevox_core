@@ -77,7 +77,7 @@ jobs:
           target: ${{ matrix.target }}
           default: true
       - name: build release
-        run: cargo build --features generate-c-header,${{ matrix.additional-features }} --target ${{ matrix.target }} --release
+        run: cargo build -p voicevox_core_c_ffi --features generate-c-header,${{ matrix.additional-features }} --target ${{ matrix.target }} --release
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: Set ASSET_NAME env var

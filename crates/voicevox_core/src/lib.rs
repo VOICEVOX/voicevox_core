@@ -1,13 +1,14 @@
 #![deny(unsafe_code)]
 
-#[allow(unsafe_code)]
-mod c_export;
 /// cbindgen:ignore
 mod engine;
 mod error;
-mod internal;
+mod publish;
 mod result;
+pub mod result_code;
 mod status;
+
+pub use publish::*;
 
 #[cfg(test)]
 mod test_util;
@@ -15,8 +16,9 @@ mod test_util;
 #[cfg(test)]
 use test_util::*;
 
-use error::*;
-use result::*;
+pub use engine::AudioQueryModel;
+pub use error::*;
+pub use result::*;
 
 use derive_getters::*;
 use derive_new::new;
