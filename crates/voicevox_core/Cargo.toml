@@ -36,4 +36,4 @@ tar = "0.4.38"
 
 
 [build-dependencies]
-cbindgen = { version = "0.23.0", optional = true }
+cbindgen = { version = "0.24.3", optional = true }
