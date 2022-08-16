@@ -137,39 +137,19 @@ jobs:
         env:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
-      - name: Archive artifact
-        shell: bash
-        if: (!contains(matrix.os , 'windows'))
-        run: |
-          cd artifact
-          zip -r "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
-      - name: Archive artifact cuda libraries
-        shell: bash
-        if: ${{ (!contains(matrix.os , 'windows')) && (matrix.use_cuda) }}
-        run: |
-          cd artifact
-          zip -r "../${{ env.CUDA_LIB_ASSET_NAME }}.zip" "${{ env.CUDA_LIB_ASSET_NAME }}"
-      - name: Archive artifact (Windows)
-        if: contains(matrix.os, 'windows')
-        run: |
-          powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "${{ env.ASSET_NAME }}.zip"
-      - name: Archive artifact (Windows) cuda libraries
-        if: ${{ contains(matrix.os, 'windows') && (matrix.use_cuda) }}
-        run: |
-          powershell Compress-Archive -Path "artifact/${{ env.CUDA_LIB_ASSET_NAME }}" -DestinationPath "${{ env.CUDA_LIB_ASSET_NAME }}.zip"
-      - name: Upload to Release
-        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
-        uses: svenstaro/upload-release-action@v2
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        if: ${{ env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' }}
         with:
+          artifact_dir: artifact
+          assert_name: ${{ env.ASSET_NAME }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: true
-          tag: ${{ env.VERSION }}
-          file: ${{ env.ASSET_NAME }}.zip
-      - name: Upload to Release cuda libraries
+          version: ${{ env.VERSION }}
+      - name: Upload cuda artifact
         if: ${{ env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && (matrix.use_cuda) }}
-        uses: svenstaro/upload-release-action@v2
+        uses: ./.github/actions/upload-artifact
         with:
+          artifact_dir: artifact
+          assert_name: ${{ env.CUDA_LIB_ASSET_NAME }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: true
-          tag: ${{ env.VERSION }}
-          file: ${{ env.CUDA_LIB_ASSET_NAME }}.zip
+          version: ${{ env.VERSION }}

@@ -43,7 +43,7 @@ runs:
         set -eux
         CUDA_ROOT=$( echo "${{ steps.cuda-toolkit.outputs.CUDA_PATH }}" | tr '\\' '/' )
         mkdir -p download/cuda/bin
-        cp -v $CUDA_ROOT/${{ inputs.cuda_lib_dir }}/*.{so*,dll} download/cuda/bin/ || true
+        cp -v "$CUDA_ROOT/${{ inputs.cuda_lib_dir }}/"*.{so*,dll} download/cuda/bin/ || true
     - name: Extract CUDNN Library
       if: steps.cudnn-library-cache.outputs.cache-hit != 'true'
       shell: bash
