@@ -20,7 +20,7 @@ derive-new = "0.5.9"
 libc = "0.2.131"
 once_cell = "1.10.0"
 onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", version = "0.0.30" }
-serde = "1.0.143"
+serde = { version = "1.0.143", features = ["derive"] }
 serde_json = "1.0.83"
 thiserror = "1.0.32"
 open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", version = "0.1.25" }
