@@ -65,9 +65,32 @@ runs:
         mv download/cudnn_tmp/bin/*.{so*,dll} download/cudnn/bin/ || true
         rm -rf download/cudnn_tmp
         rm -f download/cudnn.*
-    - name: Extract Libraries
-      shell: bash
-      run: |
         mkdir -p ${{ inputs.extract_dir }}
-        cp -v download/cuda/bin/* ${{ inputs.extract_dir }}
-        cp -v download/cudnn/bin/* ${{ inputs.extract_dir }}
+    - name: Extract Libraries for Windows
+      shell: bash
+      if: contains(inputs.artifact_name,'windows')
+      run: |
+        # CUDA
+        ln -sf "$(pwd)/download/cuda/bin"/cublas64_*.dll "${{ inputs.extract_dir }}"
+        ln -sf "$(pwd)/download/cuda/bin"/cublasLt64_*.dll "${{ inputs.extract_dir }}"
+        ln -sf "$(pwd)/download/cuda/bin"/cudart64_*.dll "${{ inputs.extract_dir }}"
+        ln -sf "$(pwd)/download/cuda/bin"/cufft64_*.dll "${{ inputs.extract_dir }}"
+        ln -sf "$(pwd)/download/cuda/bin"/curand64_*.dll "${{ inputs.extract_dir }}"
+
+        # cuDNN
+        ln -sf "$(pwd)/download/cudnn/bin"/cudnn64_*.dll "${{ inputs.extract_dir }}"
+        ln -sf "$(pwd)/download/cudnn/bin"/cudnn_*_infer64*.dll "${{ inputs.extract_dir }}"
+    - name: Extract Libraries for Linux
+      shell: bash
+      if: contains(inputs.artifact_name,'linux')
+      run: |
+        # CUDA
+        ln -sf "$(pwd)/download/cuda/bin"/libcublas.so.* "${{ inputs.extract_dir }}"
+        ln -sf "$(pwd)/download/cuda/bin"/libcublasLt.so.* "${{ inputs.extract_dir }}"
+        ln -sf "$(pwd)/download/cuda/bin"/libcudart.so.* "${{ inputs.extract_dir }}"
+        ln -sf "$(pwd)/download/cuda/bin"/libcufft.so.* "${{ inputs.extract_dir }}"
+        ln -sf "$(pwd)/download/cuda/bin"/libcurand.so.* "${{ inputs.extract_dir }}"
+
+        # cuDNN
+        ln -sf "$(pwd)/download/cudnn/bin"/libcudnn.so.* "${{ inputs.extract_dir }}"
+        ln -sf "$(pwd)/download/cudnn/bin"/libcudnn_*_infer.so.* "${{ inputs.extract_dir }}"
