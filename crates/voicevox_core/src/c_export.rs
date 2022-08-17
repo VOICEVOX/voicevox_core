@@ -326,7 +326,7 @@ unsafe fn write_wav_to_ptr(output_wav_ptr: *mut *mut u8, output_size_ptr: *mut c
 
 #[no_mangle]
 pub extern "C" fn voicevox_synthesis(
-    audio_query: *const c_char,
+    audio_query_json: *const c_char,
     speaker_id: i64,
     output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
