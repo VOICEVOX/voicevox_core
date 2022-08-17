@@ -76,7 +76,7 @@ lib.voicevox_tts.restype = c_int
 lib.voicevox_tts_from_kana.argtypes = (c_char_p, c_int64, POINTER(c_int), POINTER(POINTER(c_uint8)))
 lib.voicevox_tts_from_kana.restype = c_int
 
-lib.voicevox_json_free.argtypes = (c_char_p,)
+lib.voicevox_audio_query_json_free.argtypes = (c_char_p,)
 
 lib.voicevox_wav_free.argtypes = (POINTER(c_uint8),)
 
@@ -152,7 +152,7 @@ def voicevox_audio_query(text: str, speaker_id: int) -> "AudioQuery":
     if errno != 0:
         raise Exception(lib.voicevox_error_result_to_message(errno).decode())
     audio_query = json.loads(output_json.value)
-    lib.voicevox_json_free(output_json)
+    lib.voicevox_audio_query_json_free(output_json)
     return audio_query
 
 def voicevox_audio_query_from_kana(text: str, speaker_id: int) -> "AudioQuery":
@@ -161,7 +161,7 @@ def voicevox_audio_query_from_kana(text: str, speaker_id: int) -> "AudioQuery":
     if errno != 0:
         raise Exception(lib.voicevox_error_result_to_message(errno).decode())
     audio_query = json.loads(output_json.value)
-    lib.voicevox_json_free(output_json)
+    lib.voicevox_audio_query_json_free(output_json)
     return audio_query
 
 def voicevox_synthesis(audio_query: "AudioQuery", speaker_id: int) -> bytes:

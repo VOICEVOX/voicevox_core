@@ -409,7 +409,7 @@ pub extern "C" fn voicevox_tts_from_kana(
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_json_free(json: *mut c_char) {
+pub extern "C" fn voicevox_audio_query_json_free(json: *mut c_char) {
     unsafe {
         libc::free(json as *mut c_void);
     }
