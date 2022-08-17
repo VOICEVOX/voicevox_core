@@ -1,8 +1,10 @@
+use crate::engine::AudioQueryModel;
+
 use super::*;
 use internal::Internal;
 use libc::c_void;
 use once_cell::sync::Lazy;
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int};
 use std::sync::{Mutex, MutexGuard};
 
@@ -37,6 +39,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL = 10,
     VOICEVOX_RESULT_INVALID_UTF8_INPUT = 11,
     VOICEVOX_RESULT_FAILED_PARSE_KANA = 12,
+    VOICEVOX_RESULT_INVALID_AUDIO_QUERY = 13,
 }
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
@@ -254,11 +257,111 @@ pub extern "C" fn voicevox_load_openjtalk_dict(dict_path: *const c_char) -> Voic
     result_code
 }
 
+#[no_mangle]
+pub extern "C" fn voicevox_audio_query(
+    text: *const c_char,
+    speaker_id: i64,
+    output_audio_query_json: *mut *mut c_char,
+) -> VoicevoxResultCode {
+    let text = unsafe { CStr::from_ptr(text) };
+
+    let audio_query = &match create_audio_query(text, speaker_id, Internal::voicevox_audio_query) {
+        Ok(audio_query) => audio_query,
+        Err(result_code) => return result_code,
+    };
+
+    unsafe {
+        write_json_to_ptr(output_audio_query_json, audio_query);
+    }
+    VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
+}
+
+#[no_mangle]
+pub extern "C" fn voicevox_audio_query_from_kana(
+    text: *const c_char,
+    speaker_id: i64,
+    output_audio_query_json: *mut *mut c_char,
+) -> VoicevoxResultCode {
+    let text = unsafe { CStr::from_ptr(text) };
+
+    let audio_query =
+        &match create_audio_query(text, speaker_id, Internal::voicevox_audio_query_from_kana) {
+            Ok(audio_query) => audio_query,
+            Err(result_code) => return result_code,
+        };
+
+    unsafe {
+        write_json_to_ptr(output_audio_query_json, audio_query);
+    }
+    VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
+}
+
+fn create_audio_query(
+    japanese_or_kana: &CStr,
+    speaker_id: i64,
+    method: fn(&mut Internal, &str, usize) -> Result<AudioQueryModel>,
+) -> std::result::Result<CString, VoicevoxResultCode> {
+    let japanese_or_kana = ensure_utf8(japanese_or_kana)?;
+    let speaker_id = speaker_id as usize;
+
+    let (audio_query, result_code) =
+        convert_result(method(&mut lock_internal(), japanese_or_kana, speaker_id));
+    let audio_query = audio_query.ok_or(result_code)?;
+    Ok(CString::new(audio_query.to_json()).expect("should not contain '\\0'"))
+}
+
+unsafe fn write_json_to_ptr(output_ptr: *mut *mut c_char, json: &CStr) {
+    let n = json.to_bytes_with_nul().len();
+    let json_heap = libc::malloc(n);
+    libc::memcpy(json_heap, json.as_ptr() as *const c_void, n);
+    output_ptr.write(json_heap as *mut c_char);
+}
+
 unsafe fn write_wav_to_ptr(output_wav_ptr: *mut *mut u8, output_size_ptr: *mut c_int, data: &[u8]) {
     output_size_ptr.write(data.len() as c_int);
     let wav_heap = libc::malloc(data.len());
     libc::memcpy(wav_heap, data.as_ptr() as *const c_void, data.len());
     output_wav_ptr.write(wav_heap as *mut u8);
+}
+
+#[no_mangle]
+pub extern "C" fn voicevox_synthesis(
+    audio_query_json: *const c_char,
+    speaker_id: i64,
+    output_binary_size: *mut c_int,
+    output_wav: *mut *mut u8,
+) -> VoicevoxResultCode {
+    let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) };
+
+    let audio_query_json = match ensure_utf8(audio_query_json) {
+        Ok(audio_query_json) => audio_query_json,
+        Err(result_code) => return result_code,
+    };
+    let audio_query = &if let Ok(audio_query) = serde_json::from_str(audio_query_json) {
+        audio_query
+    } else {
+        return VoicevoxResultCode::VOICEVOX_RESULT_INVALID_AUDIO_QUERY;
+    };
+
+    let speaker_id = speaker_id as usize;
+
+    let (wav, result_code) =
+        convert_result(lock_internal().voicevox_synthesis(audio_query, speaker_id));
+    let wav = &if let Some(wav) = wav {
+        wav
+    } else {
+        return result_code;
+    };
+
+    unsafe {
+        write_wav_to_ptr(output_wav, output_binary_size, wav);
+    }
+    VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
+}
+
+fn ensure_utf8(s: &CStr) -> std::result::Result<&str, VoicevoxResultCode> {
+    s.to_str()
+        .map_err(|_| VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT)
 }
 
 #[no_mangle]
@@ -303,6 +406,13 @@ pub extern "C" fn voicevox_tts_from_kana(
         }
     }
     result_code
+}
+
+#[no_mangle]
+pub extern "C" fn voicevox_audio_query_json_free(json: *mut c_char) {
+    unsafe {
+        libc::free(json as *mut c_void);
+    }
 }
 
 #[no_mangle]
