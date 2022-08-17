@@ -265,7 +265,7 @@ pub extern "C" fn voicevox_audio_query(
 ) -> VoicevoxResultCode {
     let text = unsafe { CStr::from_ptr(text) };
 
-    let audio_query = &match audio_query(text, speaker_id, Internal::voicevox_audio_query) {
+    let audio_query = &match create_audio_query(text, speaker_id, Internal::voicevox_audio_query) {
         Ok(audio_query) => audio_query,
         Err(result_code) => return result_code,
     };
@@ -284,11 +284,11 @@ pub extern "C" fn voicevox_audio_query_from_kana(
 ) -> VoicevoxResultCode {
     let text = unsafe { CStr::from_ptr(text) };
 
-    let audio_query = &match audio_query(text, speaker_id, Internal::voicevox_audio_query_from_kana)
-    {
-        Ok(audio_query) => audio_query,
-        Err(result_code) => return result_code,
-    };
+    let audio_query =
+        &match create_audio_query(text, speaker_id, Internal::voicevox_audio_query_from_kana) {
+            Ok(audio_query) => audio_query,
+            Err(result_code) => return result_code,
+        };
 
     unsafe {
         write_json_to_ptr(output_audio_query_json, audio_query);
@@ -296,7 +296,7 @@ pub extern "C" fn voicevox_audio_query_from_kana(
     VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
 }
 
-fn audio_query(
+fn create_audio_query(
     japanese_or_kana: &CStr,
     speaker_id: i64,
     method: fn(&mut Internal, &str, usize) -> Result<AudioQueryModel>,
