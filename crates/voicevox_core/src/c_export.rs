@@ -271,7 +271,7 @@ pub extern "C" fn voicevox_audio_query(
     };
 
     unsafe {
-        write_json_to_ptr(output, audio_query);
+        write_json_to_ptr(output_audio_query_json, audio_query);
     }
     VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
 }
@@ -291,7 +291,7 @@ pub extern "C" fn voicevox_audio_query_from_kana(
     };
 
     unsafe {
-        write_json_to_ptr(output, audio_query);
+        write_json_to_ptr(output_audio_query_json, audio_query);
     }
     VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
 }
@@ -331,13 +331,13 @@ pub extern "C" fn voicevox_synthesis(
     output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    let audio_query = unsafe { CStr::from_ptr(audio_query) };
+    let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) };
 
-    let audio_query = match ensure_utf8(audio_query) {
-        Ok(audio_query) => audio_query,
+    let audio_query_json = match ensure_utf8(audio_query_json) {
+        Ok(audio_query_json) => audio_query_json,
         Err(_) => return VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT,
     };
-    let audio_query = &if let Ok(audio_query) = serde_json::from_str(audio_query) {
+    let audio_query = &if let Ok(audio_query) = serde_json::from_str(audio_query_json) {
         audio_query
     } else {
         return VoicevoxResultCode::VOICEVOX_RESULT_INVALID_AUDIO_QUERY;
