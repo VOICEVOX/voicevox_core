@@ -335,7 +335,7 @@ pub extern "C" fn voicevox_synthesis(
 
     let audio_query_json = match ensure_utf8(audio_query_json) {
         Ok(audio_query_json) => audio_query_json,
-        Err(_) => return VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT,
+        Err(result_code) => return result_code,
     };
     let audio_query = &if let Ok(audio_query) = serde_json::from_str(audio_query_json) {
         audio_query
