@@ -261,7 +261,7 @@ pub extern "C" fn voicevox_load_openjtalk_dict(dict_path: *const c_char) -> Voic
 pub extern "C" fn voicevox_audio_query(
     text: *const c_char,
     speaker_id: i64,
-    output: *mut *mut c_char,
+    output_audio_query_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
     let text = unsafe { CStr::from_ptr(text) };
 
