@@ -280,7 +280,7 @@ pub extern "C" fn voicevox_audio_query(
 pub extern "C" fn voicevox_audio_query_from_kana(
     text: *const c_char,
     speaker_id: i64,
-    output: *mut *mut c_char,
+    output_audio_query_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
     let text = unsafe { CStr::from_ptr(text) };
 
