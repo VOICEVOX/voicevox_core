@@ -1,5 +1,5 @@
 [package]
-name = "voicevox_core_c_ffi"
+name = "voicevox_core_c_api"
 version = "0.1.0"
 edition = "2021"
 
