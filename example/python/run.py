@@ -19,8 +19,11 @@ def run(
     # 話者のロード
     core.load_model(speaker_id)
 
+    # AudioQueryの生成
+    audio_query = core.voicevox_audio_query(text, speaker_id)
+
     # 音声合成
-    wavefmt = core.voicevox_tts(text, speaker_id)
+    wavefmt = core.voicevox_synthesis(audio_query, speaker_id)
 
     # 保存
     with open(f"{text}-{speaker_id}.wav", "wb") as f:
