@@ -14,7 +14,7 @@ EOM
   exit 2
 }
 
-base_url="https://github.com/VOICEVOX/voicevox_core"
+voicevox_core_repository_base_url="https://github.com/VOICEVOX/voicevox_core"
 
 voicevox_core_releases_url(){
   os=$1
@@ -25,13 +25,13 @@ voicevox_core_releases_url(){
   if [ "$os" = "linux" ] && [ "$artifact_type" = "cuda" ];then
     artifact_type="gpu"
   fi
-  url="$base_url/releases/download/$version/voicevox_core-$os-$cpu_arch-$artifact_type-$version.zip"
+  url="$voicevox_core_repository_base_url/releases/download/$version/voicevox_core-$os-$cpu_arch-$artifact_type-$version.zip"
   echo "$url"
 }
 
 latest_voicevox_core_version(){
-  get_latest_url="$base_url/releases/tag"
-  echo -En $(curl -sSI "$base_url/releases/latest"| grep -oP "location: $get_latest_url/\K.*$" | sed 's/\r//g')
+  get_latest_url="$voicevox_core_repository_base_url/releases/tag"
+  echo -En $(curl -sSI "$voicevox_core_repository_base_url/releases/latest"| grep -oP "location: $get_latest_url/\K.*$" | sed 's/\r//g')
 }
 
 target_os(){
@@ -119,4 +119,6 @@ echo "ダウンロードアーティファクトタイプ:$artifact_type"
 
 voicevox_core_url=$(voicevox_core_releases_url "$os" "$cpu_arch" "$artifact_type" "$version")
 
-download_and_extract "$voicevox_core_url" "$output"
+download_and_extract "$voicevox_core_url" "$output" &
+task=$!
+wait $task
