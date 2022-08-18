@@ -15,6 +15,8 @@ EOM
 }
 
 voicevox_core_repository_base_url="https://github.com/VOICEVOX/voicevox_core"
+open_jtalk_dict_url="https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
+open_jtalk_dict_dir_name="open_jtalk_dic_utf_8-1.11"
 
 voicevox_core_releases_url(){
   os=$1
@@ -56,12 +58,27 @@ target_arch(){
 }
 
 download_and_extract(){
-  url=$1
-  extract_dir=$2
-  echo "$urlからファイルをダウンロードして$extract_dirに展開します..."
+  target=$1
+  url=$2
+  extract_dir=$3
+  archive_format="${4+x}"
+  if [[ "$url" == *.tar.gz ]]; then
+    archive_format="tar.gz"
+  else
+    archive_format="zip"
+  fi
+
+  echo "$targetを$urlからファイルをダウンロードします..."
   tmp_path=$(mktemp)
   curl -sSLo "$tmp_path" "$url"
-  unzip -jo "$tmp_path" -d "$extract_dir"
+  echo "$targetをダウンロード完了,$archive_format形式で$extract_dirに解凍します..."
+  if [ "$archive_format" = "zip" ];then
+    unzip -jo "$tmp_path" -d "$extract_dir"
+  elif  [ "$archive_format" = "tar.gz" ];then
+    mkdir -p "$extract_dir"
+    tar --overwrite --strip-components 1 -xvzf "$tmp_path" -C "$extract_dir"
+  fi
+  echo "$targetのファイルを展開完了しました"
 }
 
 version="latest"
@@ -104,6 +121,7 @@ done
 
 os=$(target_os)
 cpu_arch=$(target_arch)
+open_jtalk_output="${output%/}/$open_jtalk_dict_dir_name"
 
 
 # zipファイルに厳格なバージョン番号が含まれるため、latestだった場合はバージョンを特定して設定する
@@ -113,12 +131,15 @@ fi
 
 echo "対象OS:$os"
 echo "対象CPUアーキテクチャ:$cpu_arch"
-echo "ダウンロードバージョン:$version"
+echo "ダウンロードvoicevox_coreバージョン:$version"
 echo "ダウンロードアーティファクトタイプ:$artifact_type"
 
 
 voicevox_core_url=$(voicevox_core_releases_url "$os" "$cpu_arch" "$artifact_type" "$version")
 
-download_and_extract "$voicevox_core_url" "$output" &
-task=$!
-wait $task
+download_and_extract "voicevox_core" "$voicevox_core_url" "$output" &
+voicevox_core_download_task=$!
+download_and_extract "open_jtalk" "$open_jtalk_dict_url" "$open_jtalk_output" &
+open_jtalk_download_task=$!
+wait $voicevox_core_download_task
+wait $open_jtalk_download_task
