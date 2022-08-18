@@ -11,10 +11,13 @@ def run(
     openjtalk_dict: str
 ) -> None:
     # コアの初期化
-    core.initialize(use_gpu, cpu_num_threads)
+    core.initialize(use_gpu, cpu_num_threads, load_all_models=False)
 
     # openjtalk辞書のロード
     core.voicevox_load_openjtalk_dict(openjtalk_dict)
+
+    # 話者のロード
+    core.load_model(speaker_id)
 
     # AudioQueryの生成
     audio_query = core.voicevox_audio_query(text, speaker_id)
