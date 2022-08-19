@@ -13,6 +13,10 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           components: clippy,rustfmt
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
       - uses: Swatinem/rust-cache@v1
       - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
@@ -42,6 +46,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
       - uses: actions-rs/toolchain@v1
       - uses: Swatinem/rust-cache@v1
         with:
