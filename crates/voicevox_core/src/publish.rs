@@ -1,11 +1,11 @@
 use super::*;
-use c_export::VoicevoxResultCode;
 use engine::*;
 use once_cell::sync::Lazy;
 use onnxruntime::{
     ndarray,
     session::{AnyArray, NdArray},
 };
+use result_code::VoicevoxResultCode;
 use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::sync::Mutex;
@@ -18,13 +18,13 @@ const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> =
     Lazy::new(|| include!("include_speaker_id_map.rs").into_iter().collect());
 
-pub struct Internal {
+pub struct VoicevoxCore {
     synthesis_engine: SynthesisEngine,
 }
 
-impl Internal {
-    pub fn new_with_mutex() -> Mutex<Internal> {
-        Mutex::new(Internal {
+impl VoicevoxCore {
+    pub fn new_with_mutex() -> Mutex<VoicevoxCore> {
+        Mutex::new(VoicevoxCore {
             synthesis_engine: SynthesisEngine::new(
                 InferenceCore::new(false, None),
                 OpenJtalk::initialize(),
@@ -546,7 +546,7 @@ mod tests {
 
     #[rstest]
     fn finalize_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         let result = internal.lock().unwrap().initialize(false, 0, false);
         assert_eq!(Ok(()), result);
         internal.lock().unwrap().finalize();
@@ -580,7 +580,7 @@ mod tests {
         #[case] expected_result_at_uninitialized: Result<()>,
         #[case] expected_result_at_initialized: Result<()>,
     ) {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         let result = internal.lock().unwrap().load_model(speaker_id);
         assert_eq!(expected_result_at_uninitialized, result);
 
@@ -601,7 +601,7 @@ mod tests {
     #[case(1, true)]
     #[case(999, false)]
     fn is_model_loaded_works(#[case] speaker_id: usize, #[case] expected: bool) {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         assert!(
             !internal.lock().unwrap().is_model_loaded(speaker_id),
             "expected is_model_loaded to return false, but got true",
@@ -634,7 +634,7 @@ mod tests {
 
     #[rstest]
     fn supported_devices_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         let cstr_result = internal.lock().unwrap().supported_devices();
         assert!(cstr_result.to_str().is_ok(), "{:?}", cstr_result);
 
@@ -657,7 +657,7 @@ mod tests {
 
     #[rstest]
     fn yukarin_s_forward_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         internal.lock().unwrap().initialize(false, 0, true).unwrap();
 
         // 「こんにちは、音声合成の世界へようこそ」という文章を変換して得た phoneme_list
@@ -674,7 +674,7 @@ mod tests {
 
     #[rstest]
     fn yukarin_sa_forward_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         internal.lock().unwrap().initialize(false, 0, true).unwrap();
 
         // 「テスト」という文章に対応する入力
@@ -702,7 +702,7 @@ mod tests {
 
     #[rstest]
     fn decode_forward_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         internal.lock().unwrap().initialize(false, 0, true).unwrap();
 
         // 「テスト」という文章に対応する入力
@@ -740,7 +740,7 @@ mod tests {
     #[rstest]
     #[async_std::test]
     async fn voicevox_load_openjtalk_dict_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
         let result = internal
             .lock()

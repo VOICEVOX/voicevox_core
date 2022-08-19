@@ -3,9 +3,9 @@ use std::io::{Cursor, Write};
 use std::path::Path;
 
 use super::full_context_label::Utterance;
-use super::internal::InferenceCore;
 use super::open_jtalk::OpenJtalk;
 use super::*;
+use crate::InferenceCore;
 
 const UNVOICED_MORA_PHONEME_LIST: &[&str] = &["A", "I", "U", "E", "O", "cl", "pau"];
 

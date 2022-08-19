@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/voicevox_core"]
+members = ["crates/voicevox_core", "crates/voicevox_core_c_api"]
 
 
 # min-sized-rustを元にrelease buildのサイズが小さくなるようにした

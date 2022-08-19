@@ -1,12 +1,19 @@
-use crate::engine::AudioQueryModel;
+// TODO: ドキュメントを作成する段階になったらこのallowを外し、各pointerを使用している関数にunsafeとSafety documentを追加する
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
 
-use super::*;
-use internal::Internal;
 use libc::c_void;
 use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int};
 use std::sync::{Mutex, MutexGuard};
+use voicevox_core::AudioQueryModel;
+use voicevox_core::VoicevoxCore;
+use voicevox_core::{Error, Result};
+
+#[cfg(test)]
+use rstest::*;
+
+type Internal = VoicevoxCore;
 
 static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(Internal::new_with_mutex);
 
@@ -20,27 +27,7 @@ fn lock_internal() -> MutexGuard<'static, Internal> {
  * これはC文脈の処理と実装をわけるためと、内部実装の変更がAPIに影響を与えにくくするためである
  */
 
-#[repr(i32)]
-#[derive(Debug, PartialEq, Eq)]
-#[allow(non_camel_case_types)]
-pub enum VoicevoxResultCode {
-    // C でのenum定義に合わせて大文字で定義している
-    // 出力フォーマットを変更すればRustでよく使われているUpperCamelにできるが、実際に出力されるコードとの差異をできるだけ少なくするため
-    VOICEVOX_RESULT_SUCCEED = 0,
-    VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT = 1,
-    VOICEVOX_RESULT_FAILED_LOAD_MODEL = 2,
-    VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES = 3,
-    VOICEVOX_RESULT_CANT_GPU_SUPPORT = 4,
-    VOICEVOX_RESULT_FAILED_LOAD_METAS = 5,
-    VOICEVOX_RESULT_UNINITIALIZED_STATUS = 6,
-    VOICEVOX_RESULT_INVALID_SPEAKER_ID = 7,
-    VOICEVOX_RESULT_INVALID_MODEL_INDEX = 8,
-    VOICEVOX_RESULT_INFERENCE_FAILED = 9,
-    VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL = 10,
-    VOICEVOX_RESULT_INVALID_UTF8_INPUT = 11,
-    VOICEVOX_RESULT_FAILED_PARSE_KANA = 12,
-    VOICEVOX_RESULT_INVALID_AUDIO_QUERY = 13,
-}
+pub use voicevox_core::result_code::VoicevoxResultCode;
 
 fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
     match result {
@@ -307,7 +294,11 @@ fn create_audio_query(
     let (audio_query, result_code) =
         convert_result(method(&mut lock_internal(), japanese_or_kana, speaker_id));
     let audio_query = audio_query.ok_or(result_code)?;
-    Ok(CString::new(audio_query.to_json()).expect("should not contain '\\0'"))
+    Ok(CString::new(audio_query_model_to_json(&audio_query)).expect("should not contain '\\0'"))
+}
+
+fn audio_query_model_to_json(audio_query_model: &AudioQueryModel) -> String {
+    serde_json::to_string(audio_query_model).expect("should be always valid")
 }
 
 unsafe fn write_json_to_ptr(output_ptr: *mut *mut c_char, json: &CStr) {
@@ -426,7 +417,7 @@ pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    internal::voicevox_error_result_to_message(result_code).as_ptr() as *const c_char
+    voicevox_core::voicevox_error_result_to_message(result_code).as_ptr() as *const c_char
 }
 
 #[cfg(test)]
@@ -442,11 +433,11 @@ mod tests {
         VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT
     )]
     #[case(
-        Err(Error::LoadModel(SourceError::new(anyhow!("some load model error")))),
+        Err(Error::LoadModel(voicevox_core::SourceError::new(anyhow!("some load model error")))),
         VoicevoxResultCode::VOICEVOX_RESULT_FAILED_LOAD_MODEL
     )]
     #[case(
-        Err(Error::GetSupportedDevices(SourceError::new(anyhow!("some get supported devices error")))),
+        Err(Error::GetSupportedDevices(voicevox_core::SourceError::new(anyhow!("some get supported devices error")))),
         VoicevoxResultCode::VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES
     )]
     fn convert_result_works(#[case] result: Result<()>, #[case] expected: VoicevoxResultCode) {

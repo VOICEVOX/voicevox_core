@@ -3,12 +3,12 @@ use std::fmt::Display;
 use crate::engine::{FullContextLabelError, KanaParseError};
 
 use super::*;
-use c_export::VoicevoxResultCode::{self, *};
+use result_code::VoicevoxResultCode::{self, *};
 //use engine::
 use thiserror::Error;
 
 /*
- * 新しいエラーを定義したら、必ずc_export.rsにあるVoicevoxResultCodeに対応するコードを定義し、
+ * 新しいエラーを定義したら、必ずresult_code.rsにあるVoicevoxResultCodeに対応するコードを定義し、
  * internal.rsにある変換関数に変換処理を加えること
  */
 
@@ -58,7 +58,7 @@ pub enum Error {
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
-    let c_message: &'static str = internal::voicevox_error_result_to_message(result_code);
+    let c_message: &'static str = crate::voicevox_error_result_to_message(result_code);
     &c_message[..(c_message.len() - 1)]
 }
 

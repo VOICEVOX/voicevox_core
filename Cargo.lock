@@ -1347,8 +1347,8 @@ checksum = "18a6dbe30758c9f83eb00cbea4ac95966305f5a7772f3f42ebfc7fc7eddbd8e1"
 
 [[package]]
 name = "onnxruntime"
-version = "0.0.30"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git#3f7fed98ca95b7246e680753ad9d6a65cd79a71b"
+version = "0.1.0"
+source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git#bee215aaf6d5e346d96e0724acd02a51f612a72e"
 dependencies = [
  "lazy_static",
  "ndarray",
@@ -1360,7 +1360,7 @@ dependencies = [
 [[package]]
 name = "onnxruntime-sys"
 version = "0.0.25"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git#3f7fed98ca95b7246e680753ad9d6a65cd79a71b"
+source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git#bee215aaf6d5e346d96e0724acd02a51f612a72e"
 dependencies = [
  "flate2",
  "once_cell",
@@ -2366,12 +2366,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-std",
- "cbindgen",
  "cfg-if",
  "derive-getters",
  "derive-new",
  "flate2",
- "libc",
  "once_cell",
  "onnxruntime",
  "open_jtalk",
@@ -2383,6 +2381,20 @@ dependencies = [
  "surf",
  "tar",
  "thiserror",
+]
+
+[[package]]
+name = "voicevox_core_c_api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cbindgen",
+ "libc",
+ "once_cell",
+ "pretty_assertions",
+ "rstest",
+ "serde_json",
+ "voicevox_core",
 ]
 
 [[package]]

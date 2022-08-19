@@ -53,9 +53,3 @@ pub struct AudioQueryModel {
     #[allow(dead_code)]
     kana: String,
 }
-
-impl AudioQueryModel {
-    pub(crate) fn to_json(&self) -> String {
-        serde_json::to_string(self).expect("should be always valid")
-    }
-}
