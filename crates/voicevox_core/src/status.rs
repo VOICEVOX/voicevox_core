@@ -181,11 +181,10 @@ impl Status {
                     session_builder
                         .with_disable_mem_pattern()?
                         .with_execution_mode(onnxruntime::ExecutionMode::ORT_SEQUENTIAL)?
+                        .with_append_execution_provider_directml(0)?
                 } else {
                     let options = CudaProviderOptions::default();
-                    session_builder
-                        .with_disable_mem_pattern()?
-                        .with_append_execution_provider_cuda(options)?
+                    session_builder.with_append_execution_provider_cuda(options)?
                 }
             }
         } else {

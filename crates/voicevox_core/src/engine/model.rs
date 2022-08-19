@@ -1,7 +1,8 @@
 use derive_getters::Getters;
 use derive_new::new;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, new, Getters)]
+#[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
 pub struct MoraModel {
     text: String,
     consonant: Option<String>,
@@ -11,7 +12,7 @@ pub struct MoraModel {
     pitch: f32,
 }
 
-#[derive(Clone, Debug, new, Getters)]
+#[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
 pub struct AccentPhraseModel {
     moras: Vec<MoraModel>,
     accent: usize,
@@ -30,16 +31,24 @@ impl AccentPhraseModel {
 }
 
 #[allow(clippy::too_many_arguments)]
-#[derive(new, Getters)]
+#[derive(Clone, new, Getters, Deserialize, Serialize)]
 pub struct AudioQueryModel {
     accent_phrases: Vec<AccentPhraseModel>,
+    #[serde(rename = "speedScale")]
     speed_scale: f32,
+    #[serde(rename = "pitchScale")]
     pitch_scale: f32,
+    #[serde(rename = "intonationScale")]
     intonation_scale: f32,
+    #[serde(rename = "volumeScale")]
     volume_scale: f32,
+    #[serde(rename = "prePhonemeLength")]
     pre_phoneme_length: f32,
+    #[serde(rename = "postPhonemeLength")]
     post_phoneme_length: f32,
+    #[serde(rename = "outputSamplingRate")]
     output_sampling_rate: u32,
+    #[serde(rename = "outputStereo")]
     output_stereo: bool,
     #[allow(dead_code)]
     kana: String,

@@ -1,10 +1,11 @@
+use derive_new::new;
 use std::io::{Cursor, Write};
 use std::path::Path;
 
 use super::full_context_label::Utterance;
-use super::internal::InferenceCore;
 use super::open_jtalk::OpenJtalk;
 use super::*;
+use crate::InferenceCore;
 
 const UNVOICED_MORA_PHONEME_LIST: &[&str] = &["A", "I", "U", "E", "O", "cl", "pau"];
 
@@ -12,9 +13,10 @@ const MORA_PHONEME_LIST: &[&str] = &[
     "a", "i", "u", "e", "o", "N", "A", "I", "U", "E", "O", "cl", "pau",
 ];
 
+#[derive(new)]
 pub struct SynthesisEngine {
-    open_jtalk: OpenJtalk,
     inference_core: InferenceCore,
+    open_jtalk: OpenJtalk,
 }
 
 #[allow(unsafe_code)]
@@ -24,13 +26,6 @@ unsafe impl Sync for SynthesisEngine {}
 
 impl SynthesisEngine {
     pub const DEFAULT_SAMPLING_RATE: u32 = 24000;
-
-    pub fn new(inference_core: InferenceCore) -> Self {
-        Self {
-            open_jtalk: OpenJtalk::initialize(),
-            inference_core,
-        }
-    }
 
     pub fn inference_core(&self) -> &InferenceCore {
         &self.inference_core
@@ -663,7 +658,7 @@ mod tests {
     #[async_std::test]
     async fn load_openjtalk_dict_works() {
         let core = InferenceCore::new(false, None);
-        let mut synthesis_engine = SynthesisEngine::new(core);
+        let mut synthesis_engine = SynthesisEngine::new(core, OpenJtalk::initialize());
         let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
 
         let result = synthesis_engine.load_openjtalk_dict(&open_jtalk_dic_dir);
@@ -677,7 +672,7 @@ mod tests {
     #[async_std::test]
     async fn is_openjtalk_dict_loaded_works() {
         let core = InferenceCore::new(false, None);
-        let mut synthesis_engine = SynthesisEngine::new(core);
+        let mut synthesis_engine = SynthesisEngine::new(core, OpenJtalk::initialize());
         let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
 
         let _ = synthesis_engine.load_openjtalk_dict(&open_jtalk_dic_dir);

@@ -10,7 +10,7 @@ const PAUSE_DELIMITER: char = '、';
 const WIDE_INTERROGATION_MARK: char = '？';
 const LOOP_LIMIT: usize = 300;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct KanaParseError(String);
 
 impl std::fmt::Display for KanaParseError {

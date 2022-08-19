@@ -21,7 +21,7 @@ pub enum FullContextLabelError {
 
 type Result<T> = std::result::Result<T, FullContextLabelError>;
 
-#[derive(new, Getters, Clone, PartialEq, Debug)]
+#[derive(new, Getters, Clone, PartialEq, Eq, Debug)]
 pub struct Phoneme {
     contexts: HashMap<String, String>,
     label: String,
@@ -75,7 +75,7 @@ impl Phoneme {
     }
 }
 
-#[derive(new, Getters, Clone, PartialEq, Debug)]
+#[derive(new, Getters, Clone, PartialEq, Eq, Debug)]
 pub struct Mora {
     consonant: Option<Phoneme>,
     vowel: Phoneme,
@@ -108,7 +108,7 @@ impl Mora {
     }
 }
 
-#[derive(new, Getters, Clone, Debug, PartialEq)]
+#[derive(new, Getters, Clone, Debug, PartialEq, Eq)]
 pub struct AccentPhrase {
     moras: Vec<Mora>,
     accent: usize,
@@ -198,7 +198,7 @@ impl AccentPhrase {
     }
 }
 
-#[derive(new, Getters, Clone, PartialEq, Debug)]
+#[derive(new, Getters, Clone, PartialEq, Eq, Debug)]
 pub struct BreathGroup {
     accent_phrases: Vec<AccentPhrase>,
 }
@@ -245,7 +245,7 @@ impl BreathGroup {
     }
 }
 
-#[derive(new, Getters, Clone, PartialEq, Debug)]
+#[derive(new, Getters, Clone, PartialEq, Eq, Debug)]
 pub struct Utterance {
     breath_groups: Vec<BreathGroup>,
     pauses: Vec<Phoneme>,

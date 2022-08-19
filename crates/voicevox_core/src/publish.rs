@@ -1,11 +1,11 @@
 use super::*;
-use c_export::VoicevoxResultCode;
 use engine::*;
 use once_cell::sync::Lazy;
 use onnxruntime::{
     ndarray,
     session::{AnyArray, NdArray},
 };
+use result_code::VoicevoxResultCode;
 use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::sync::Mutex;
@@ -18,14 +18,17 @@ const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> =
     Lazy::new(|| include!("include_speaker_id_map.rs").into_iter().collect());
 
-pub struct Internal {
+pub struct VoicevoxCore {
     synthesis_engine: SynthesisEngine,
 }
 
-impl Internal {
-    pub fn new_with_mutex() -> Mutex<Internal> {
-        Mutex::new(Internal {
-            synthesis_engine: SynthesisEngine::new(InferenceCore::new(false, None)),
+impl VoicevoxCore {
+    pub fn new_with_mutex() -> Mutex<VoicevoxCore> {
+        Mutex::new(VoicevoxCore {
+            synthesis_engine: SynthesisEngine::new(
+                InferenceCore::new(false, None),
+                OpenJtalk::initialize(),
+            ),
         })
     }
 
@@ -123,7 +126,11 @@ impl Internal {
         self.synthesis_engine.load_openjtalk_dict(dict_path)
     }
 
-    pub fn voicevox_tts(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
+    pub fn voicevox_audio_query(
+        &mut self,
+        text: &str,
+        speaker_id: usize,
+    ) -> Result<AudioQueryModel> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
             return Err(Error::NotLoadedOpenjtalkDict);
         }
@@ -131,7 +138,7 @@ impl Internal {
             .synthesis_engine
             .create_accent_phrases(text, speaker_id)?;
 
-        let audio_query = AudioQueryModel::new(
+        Ok(AudioQueryModel::new(
             accent_phrases,
             1.,
             0.,
@@ -142,19 +149,20 @@ impl Internal {
             SynthesisEngine::DEFAULT_SAMPLING_RATE,
             false,
             "".into(),
-        );
-
-        self.synthesis_engine
-            .synthesis_wave_format(&audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
+        ))
     }
 
-    pub fn voicevox_tts_from_kana(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
+    pub fn voicevox_audio_query_from_kana(
+        &mut self,
+        text: &str,
+        speaker_id: usize,
+    ) -> Result<AudioQueryModel> {
         let accent_phrases = parse_kana(text)?;
         let accent_phrases = self
             .synthesis_engine
             .replace_mora_data(&accent_phrases, speaker_id)?;
 
-        let audio_query = AudioQueryModel::new(
+        Ok(AudioQueryModel::new(
             accent_phrases,
             1.,
             0.,
@@ -165,10 +173,26 @@ impl Internal {
             SynthesisEngine::DEFAULT_SAMPLING_RATE,
             false,
             "".into(),
-        );
+        ))
+    }
 
+    pub fn voicevox_synthesis(
+        &mut self,
+        audio_query: &AudioQueryModel,
+        speaker_id: usize,
+    ) -> Result<Vec<u8>> {
         self.synthesis_engine
-            .synthesis_wave_format(&audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
+            .synthesis_wave_format(audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
+    }
+
+    pub fn voicevox_tts(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
+        let audio_query = &self.voicevox_audio_query(text, speaker_id)?;
+        self.voicevox_synthesis(audio_query, speaker_id)
+    }
+
+    pub fn voicevox_tts_from_kana(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
+        let audio_query = &self.voicevox_audio_query_from_kana(text, speaker_id)?;
+        self.voicevox_synthesis(audio_query, speaker_id)
     }
 }
 
@@ -194,17 +218,6 @@ impl InferenceCore {
             if load_all_models {
                 for model_index in 0..Status::MODELS_COUNT {
                     status.load_model(model_index)?;
-                }
-                // 一回走らせて十分なGPUメモリを確保させる
-                // TODO: 全MODELに対して行う
-                if use_gpu {
-                    const LENGTH: usize = 500;
-                    const PHONEME_SIZE: usize = 45;
-                    let f0 = [0.; LENGTH];
-                    let phoneme = [0.; PHONEME_SIZE * LENGTH];
-                    let speaker_id = 0;
-
-                    let _ = self.decode_forward(LENGTH, PHONEME_SIZE, &f0, &phoneme, speaker_id)?;
                 }
             }
 
@@ -522,6 +535,7 @@ pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -
         VOICEVOX_RESULT_FAILED_PARSE_KANA => {
             "入力テキストをAquesTalkライクな読み仮名としてパースすることに失敗しました\0"
         }
+        VOICEVOX_RESULT_INVALID_AUDIO_QUERY => "無効なaudio_queryです\0",
     }
 }
 
@@ -532,7 +546,7 @@ mod tests {
 
     #[rstest]
     fn finalize_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         let result = internal.lock().unwrap().initialize(false, 0, false);
         assert_eq!(Ok(()), result);
         internal.lock().unwrap().finalize();
@@ -566,7 +580,7 @@ mod tests {
         #[case] expected_result_at_uninitialized: Result<()>,
         #[case] expected_result_at_initialized: Result<()>,
     ) {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         let result = internal.lock().unwrap().load_model(speaker_id);
         assert_eq!(expected_result_at_uninitialized, result);
 
@@ -587,7 +601,7 @@ mod tests {
     #[case(1, true)]
     #[case(999, false)]
     fn is_model_loaded_works(#[case] speaker_id: usize, #[case] expected: bool) {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         assert!(
             !internal.lock().unwrap().is_model_loaded(speaker_id),
             "expected is_model_loaded to return false, but got true",
@@ -620,7 +634,7 @@ mod tests {
 
     #[rstest]
     fn supported_devices_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         let cstr_result = internal.lock().unwrap().supported_devices();
         assert!(cstr_result.to_str().is_ok(), "{:?}", cstr_result);
 
@@ -643,7 +657,7 @@ mod tests {
 
     #[rstest]
     fn yukarin_s_forward_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         internal.lock().unwrap().initialize(false, 0, true).unwrap();
 
         // 「こんにちは、音声合成の世界へようこそ」という文章を変換して得た phoneme_list
@@ -660,7 +674,7 @@ mod tests {
 
     #[rstest]
     fn yukarin_sa_forward_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         internal.lock().unwrap().initialize(false, 0, true).unwrap();
 
         // 「テスト」という文章に対応する入力
@@ -688,7 +702,7 @@ mod tests {
 
     #[rstest]
     fn decode_forward_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         internal.lock().unwrap().initialize(false, 0, true).unwrap();
 
         // 「テスト」という文章に対応する入力
@@ -726,7 +740,7 @@ mod tests {
     #[rstest]
     #[async_std::test]
     async fn voicevox_load_openjtalk_dict_works() {
-        let internal = Internal::new_with_mutex();
+        let internal = VoicevoxCore::new_with_mutex();
         let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
         let result = internal
             .lock()
