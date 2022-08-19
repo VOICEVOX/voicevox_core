@@ -34,13 +34,21 @@ impl AccentPhraseModel {
 #[derive(Clone, new, Getters, Deserialize, Serialize)]
 pub struct AudioQueryModel {
     accent_phrases: Vec<AccentPhraseModel>,
+    #[serde(rename = "speedScale")]
     speed_scale: f32,
+    #[serde(rename = "pitchScale")]
     pitch_scale: f32,
+    #[serde(rename = "intonationScale")]
     intonation_scale: f32,
+    #[serde(rename = "volumeScale")]
     volume_scale: f32,
+    #[serde(rename = "prePhonemeLength")]
     pre_phoneme_length: f32,
+    #[serde(rename = "postPhonemeLength")]
     post_phoneme_length: f32,
+    #[serde(rename = "outputSamplingRate")]
     output_sampling_rate: u32,
+    #[serde(rename = "outputStereo")]
     output_stereo: bool,
     #[allow(dead_code)]
     kana: String,
