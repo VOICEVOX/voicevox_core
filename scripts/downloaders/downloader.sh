@@ -31,9 +31,14 @@ voicevox_core_releases_url(){
   echo "$url"
 }
 
+latest_version(){
+  base_url=$1
+  get_latest_url="$base_url/releases/tag"
+  echo -En $(curl -sSI "$base_url/releases/latest"| grep -oP "location: $get_latest_url/\K.*$" | sed 's/\r//g')
+}
+
 latest_voicevox_core_version(){
-  get_latest_url="$voicevox_core_repository_base_url/releases/tag"
-  echo -En $(curl -sSI "$voicevox_core_repository_base_url/releases/latest"| grep -oP "location: $get_latest_url/\K.*$" | sed 's/\r//g')
+  latest_version $voicevox_core_repository_base_url
 }
 
 target_os(){
