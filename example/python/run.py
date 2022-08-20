@@ -38,5 +38,5 @@ if __name__ == "__main__":
     parser.add_argument("--text", required=True)
     parser.add_argument("--speaker_id", type=int, required=True)
     parser.add_argument("--cpu_num_threads", type=int, default=0)
-    parser.add_argument("--openjtalk_dict", type=str, default="open_jtalk_dic_utf_8-1.11")
+    parser.add_argument("--openjtalk_dict", type=str, default="voicevox_core/open_jtalk_dic_utf_8-1.11")
     run(**vars(parser.parse_args()))
