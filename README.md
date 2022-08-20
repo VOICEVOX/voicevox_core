@@ -9,38 +9,28 @@
 
 ## 環境構築
 
-configure.py を用いて環境構築を行う場合
+downloader を用いて環境構築を行う場合
 
-```bash
-python configure.py
-pip install -r requirements.txt
-pip install .
+### Windows の場合
+
+powershell で下記コマンドを実行してください
+
+```powershell
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 | powershell
 ```
 
+### Linux,MacOS の場合
+
+```bash
+curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s
+```
+
+詳細な downloader の使い方については [こちら](./docs/downloads/Download.md) を参照してください
+
 <details>
-<summary>configure.pyを使わない場合</summary>
-
-<!--
-### ONNX Runtimeのダウンロード
-
-コアを利用するにはまず環境に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) をダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
-
-動作確認済みバージョン
-- ONNX Runtime v1.11.1
--->
+<summary> downloader を使わない場合</summary>
 
 #### GPU を使用する場合
-
-##### CUDA
-
-[Releases](https://github.com/VOICEVOX/voicevox_core/releases) から環境にあった CUDA 対応版の zip ファイルをダウンロードして展開してください。
-
-<!--
-##### DirectML
-Windows上でDirectX12に対応したGPUを使用してDirectMLを用いた合成を行う場合、[DirectML](https://www.nuget.org/packages/Microsoft.AI.DirectML)及びDirectMLに対応した[ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
-
-DirectMLは.nupkgファイルで提供されますが、拡張子を.zipに変更した上で、リポジトリに`directml`というディレクトリ名で展開してください。
--->
 
 <!--
 #### Raspberry Pi (armhf)の場合
@@ -54,18 +44,9 @@ Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます�
 
 ### コアライブラリのダウンロードと配置
 
-まず [Releases](https://github.com/VOICEVOX/voicevox_core/releases) からコアライブラリが入った zip をダウンロードしておきます。
-
-1. まず Releases からダウンロードしたコアライブラリの zip を、`release`というディレクトリ名で展開する。
-2. `core/lib/`ディレクトリを作成する。
-3. `release/`内にある、自身の環境に対応したランタイムライブラリを`core/lib/`にコピーする
-
-```bash
-# インストールに必要なモジュールのインストール
-pip install -r requirements.txt
-# pythonモジュールのインストール
-pip install .
-```
+1. まず [Releases](https://github.com/VOICEVOX/voicevox_core/releases/latest) からダウンロードしたコアライブラリの zip を、適当なディレクトリ名で展開します。CUDA 版、DirectML 版はかならずその zip ファイルをダウンロードしてください。
+2. CUDA,DirectML を利用するのであれば [追加ライブラリ](https://github.com/VOICEVOX/voicevox_additional_libraries/releases/latest) をダウンロードして展開したディレクトリに展開する。
+3. tts 機能を使うのであれば次に [open_jtalk 公式](https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz) から open_jtalk の辞書ファイルをダウンロードしてコアライブラリを展開したディレクトリに展開する。
 
 </details>
 
@@ -77,23 +58,14 @@ pip install .
 
 nvidia 製 GPU を搭載した Windows, Linux PC では CUDA を用いた合成が可能です。
 
-```bash
-python configure.py --use_cuda
-```
+CUDA 版を利用するには専用の download コマンドの実行が必要です。  
+詳細は [CUDA 版をダウンロードする場合](./docs/downloads/Download.md#cuda-版をダウンロードする場合) を参照してください
 
-を実行する必要があります
-
-<!--
 ##### DirectML
-DirectX12に対応したGPUを搭載したWindows PCではDirectMLを用いた合成が可能です
-DirectMLを使用する場合、環境構築時、上記例の代わりに
 
-```bash
-python configure.py --use_directml
-```
-
-を実行する必要があります
--->
+DirectX12 に対応した GPU を搭載した Windows PC では DirectML を用いた合成が可能です  
+DirectML 版を利用するには専用の download コマンドの実行が必要です。  
+詳細は [DirectML 版をダウンロードする場合](./docs/downloads/Download.md#directml-版をダウンロードする場合) を参照してください
 
 MacOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
 
