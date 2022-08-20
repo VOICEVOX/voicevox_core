@@ -3,13 +3,11 @@ set -eu
 help(){
   cat <<EOM
   Usage: $(basename "$0") [OPTION]...
-    -h|--help                     ヘルプの表示
-    -o|--output \$directory       出力先の指定(default ./voicevox_core)
-    -v|--version \$version        ダウンロードするvoicevox_coreのバージョンの指定(default latest)
-    --directml                    DirectML版voicevox_coreをダウンロードする
-    --cuda                        CUDA版voicevox_coreをダウンロードする
-    --cpu                         CPU版voicevox_coreをダウンロードする
-    --full                        DirectML版及びCUDA版ダウンロード時に追加で必要なライブラリをダウンロードする
+    -h|--help                      ヘルプの表示
+    -o|--output \$directory        出力先の指定(default ./voicevox_core)
+    -v|--version \$version         ダウンロードするvoicevox_coreのバージョンの指定(default latest)
+    --artifact-type $artifact_type ダウンロードするartifact_typeを指定する(cpu,cudaを指定可能)
+    --full                         DirectML版及びCUDA版ダウンロード時に追加で必要なライブラリをダウンロードする
 EOM
   exit 2
 }
@@ -87,7 +85,7 @@ download_and_extract(){
 }
 
 version="latest"
-artifact_type="cpu"
+artifact_type=""
 output="./voicevox_core"
 full=""
 
@@ -104,15 +102,9 @@ do
     -v|--version)
       version="$2"
       shift;;
-    --directml)
-      artifact_type="directml"
-      ;;
-    --cuda)
-      artifact_type="cuda"
-      ;;
-    --cpu)
-      artifact_type="cpu"
-      ;;
+    --artifact-type)
+      artifact_type="$2"
+      shift;;
     --full)
       full=true
       ;;
@@ -128,6 +120,10 @@ os=$(target_os)
 cpu_arch=$(target_arch)
 open_jtalk_output="${output%/}/$open_jtalk_dict_dir_name"
 
+
+if [ "$artifact_type" = "" ];then
+  artifact_type="cpu"
+fi
 
 # zipファイルに厳格なバージョン番号が含まれるため、latestだった場合はバージョンを特定して設定する
 if [ "$version" = "latest" ];then
