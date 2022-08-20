@@ -6,9 +6,9 @@ use onnxruntime::{
     session::{AnyArray, NdArray},
 };
 use result_code::VoicevoxResultCode;
-use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::sync::Mutex;
+use std::{collections::BTreeMap, path::PathBuf};
 
 use status::*;
 use std::ffi::CString;
@@ -32,12 +32,8 @@ impl VoicevoxCore {
         })
     }
 
-    pub fn initialize(
-        &mut self,
-        use_gpu: bool,
-        cpu_num_threads: usize,
-        load_all_models: bool,
-    ) -> Result<()> {
+    pub fn initialize(&mut self, options: InitializeOptions) -> Result<()> {
+        unimplemented!();
         self.synthesis_engine.inference_core_mut().initialize(
             use_gpu,
             cpu_num_threads,
@@ -61,11 +57,11 @@ impl VoicevoxCore {
         self.synthesis_engine.inference_core_mut().finalize()
     }
 
-    pub fn metas(&self) -> &'static CStr {
+    pub fn get_metas_json(&self) -> &'static CStr {
         &METAS_CSTRING
     }
 
-    pub fn supported_devices(&self) -> &'static CStr {
+    pub fn get_supported_devices_json(&self) -> &'static CStr {
         &SUPPORTED_DEVICES_CSTRING
     }
 
@@ -122,15 +118,7 @@ impl VoicevoxCore {
         )
     }
 
-    pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &str) -> Result<()> {
-        self.synthesis_engine.load_openjtalk_dict(dict_path)
-    }
-
-    pub fn voicevox_audio_query(
-        &mut self,
-        text: &str,
-        speaker_id: usize,
-    ) -> Result<AudioQueryModel> {
+    pub fn audio_query(&mut self, text: &str, speaker_id: usize) -> Result<AudioQueryModel> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
             return Err(Error::NotLoadedOpenjtalkDict);
         }
@@ -152,48 +140,36 @@ impl VoicevoxCore {
         ))
     }
 
-    pub fn voicevox_audio_query_from_kana(
-        &mut self,
-        text: &str,
-        speaker_id: usize,
-    ) -> Result<AudioQueryModel> {
-        let accent_phrases = parse_kana(text)?;
-        let accent_phrases = self
-            .synthesis_engine
-            .replace_mora_data(&accent_phrases, speaker_id)?;
-
-        Ok(AudioQueryModel::new(
-            accent_phrases,
-            1.,
-            0.,
-            1.,
-            1.,
-            0.1,
-            0.1,
-            SynthesisEngine::DEFAULT_SAMPLING_RATE,
-            false,
-            "".into(),
-        ))
-    }
-
-    pub fn voicevox_synthesis(
+    pub fn synthesis(
         &mut self,
         audio_query: &AudioQueryModel,
         speaker_id: usize,
+        options: SynthesisOptions,
     ) -> Result<Vec<u8>> {
+        unimplemented!();
         self.synthesis_engine
             .synthesis_wave_format(audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
     }
 
-    pub fn voicevox_tts(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
-        let audio_query = &self.voicevox_audio_query(text, speaker_id)?;
-        self.voicevox_synthesis(audio_query, speaker_id)
+    pub fn tts(&mut self, text: &str, speaker_id: usize, options: TtsOptions) -> Result<Vec<u8>> {
+        let audio_query = &self.audio_query(text, speaker_id)?;
+        self.synthesis(audio_query, speaker_id)
     }
+}
 
-    pub fn voicevox_tts_from_kana(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
-        let audio_query = &self.voicevox_audio_query_from_kana(text, speaker_id)?;
-        self.voicevox_synthesis(audio_query, speaker_id)
-    }
+pub struct InitializeOptions {
+    use_cuda: bool,
+    cpu_num_threads: u32,
+    load_all_models: bool,
+    open_jtalk_dict_dir: Option<PathBuf>,
+}
+
+pub struct SynthesisOptions {
+    kana: bool,
+}
+
+pub struct TtsOptions {
+    kana: bool,
 }
 
 #[derive(new)]
@@ -506,7 +482,7 @@ fn get_model_index_and_speaker_id(speaker_id: usize) -> Option<(usize, usize)> {
     SPEAKER_ID_MAP.get(&speaker_id).copied()
 }
 
-pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
+pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
     // C APIのため、messageには必ず末尾にNULL文字を追加する
     use VoicevoxResultCode::*;
     match result_code {
@@ -635,7 +611,7 @@ mod tests {
     #[rstest]
     fn supported_devices_works() {
         let internal = VoicevoxCore::new_with_mutex();
-        let cstr_result = internal.lock().unwrap().supported_devices();
+        let cstr_result = internal.lock().unwrap().get_supported_devices_json();
         assert!(cstr_result.to_str().is_ok(), "{:?}", cstr_result);
 
         let json_result: std::result::Result<SupportedDevices, _> =
@@ -735,17 +711,5 @@ mod tests {
 
         assert!(result.is_ok(), "{:?}", result);
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
-    }
-
-    #[rstest]
-    #[async_std::test]
-    async fn voicevox_load_openjtalk_dict_works() {
-        let internal = VoicevoxCore::new_with_mutex();
-        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
-        let result = internal
-            .lock()
-            .unwrap()
-            .voicevox_load_openjtalk_dict(open_jtalk_dic_dir.to_str().unwrap());
-        assert_eq!(result, Ok(()));
     }
 }

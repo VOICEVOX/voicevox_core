@@ -22,9 +22,10 @@ fn lock_internal() -> MutexGuard<'static, Internal> {
 }
 
 /*
- * Cの関数として公開するための型や関数を定義するこれらの実装はinternal.rsに定義してある同名関数にある
- * この関数ではinternal.rsにある同名関数の呼び出しと、その戻り値をCの形式に変換する処理のみとする
+ * Cの関数として公開するための型や関数を定義するこれらの実装はvoicevox_core/publish.rsに定義してある対応する関数にある
+ * この関数ではvoicevox_core/publish.rsにある対応する関数の呼び出しと、その戻り値をCの形式に変換する処理のみとする
  * これはC文脈の処理と実装をわけるためと、内部実装の変更がAPIに影響を与えにくくするためである
+ * voicevox_core/publish.rsにある対応する関数とはこのファイルに定義してある公開関数からvoicevoxプレフィックスを取り除いた名前の関数である
  */
 
 pub use voicevox_core::result_code::VoicevoxResultCode;
@@ -131,12 +132,12 @@ pub extern "C" fn voicevox_finalize() {
 
 #[no_mangle]
 pub extern "C" fn voicevox_get_metas_json() -> *const c_char {
-    lock_internal().metas().as_ptr()
+    lock_internal().get_metas_json().as_ptr()
 }
 
 #[no_mangle]
 pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
-    lock_internal().supported_devices().as_ptr()
+    lock_internal().get_supported_devices_json().as_ptr()
 }
 
 #[no_mangle]
@@ -255,7 +256,7 @@ pub extern "C" fn voicevox_audio_query(
     unimplemented!();
     let text = unsafe { CStr::from_ptr(text) };
 
-    let audio_query = &match create_audio_query(text, speaker_id, Internal::voicevox_audio_query) {
+    let audio_query = &match create_audio_query(text, speaker_id, Internal::audio_query) {
         Ok(audio_query) => audio_query,
         Err(result_code) => return result_code,
     };
@@ -319,8 +320,7 @@ pub extern "C" fn voicevox_synthesis(
 
     let speaker_id = speaker_id as usize;
 
-    let (wav, result_code) =
-        convert_result(lock_internal().voicevox_synthesis(audio_query, speaker_id));
+    let (wav, result_code) = convert_result(lock_internal().synthesis(audio_query, speaker_id));
     let wav = &if let Some(wav) = wav {
         wav
     } else {
@@ -358,7 +358,7 @@ pub extern "C" fn voicevox_tts(
 ) -> VoicevoxResultCode {
     let (output_opt, result_code) = {
         if let Ok(text) = unsafe { CStr::from_ptr(text) }.to_str() {
-            convert_result(lock_internal().voicevox_tts(text, speaker_id as usize))
+            convert_result(lock_internal().tts(text, speaker_id as usize))
         } else {
             (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT)
         }
@@ -389,7 +389,7 @@ pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    voicevox_core::voicevox_error_result_to_message(result_code).as_ptr() as *const c_char
+    voicevox_core::error_result_to_message(result_code).as_ptr() as *const c_char
 }
 
 #[cfg(test)]

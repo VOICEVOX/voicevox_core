@@ -58,7 +58,7 @@ pub enum Error {
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
-    let c_message: &'static str = crate::voicevox_error_result_to_message(result_code);
+    let c_message: &'static str = crate::error_result_to_message(result_code);
     &c_message[..(c_message.len() - 1)]
 }
 
