@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  std::string open_jtalk_dict_path("open_jtalk_dic_utf_8-1.11");
+  std::string open_jtalk_dict_path("voicevox_core/open_jtalk_dic_utf_8-1.11");
   std::string text(argv[1]);
 
   std::cout << "coreの初期化中..." << std::endl;

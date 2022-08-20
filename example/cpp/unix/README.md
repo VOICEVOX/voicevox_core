@@ -2,27 +2,9 @@
 
 voicevox_core ライブラリを C++ から使用するサンプルコード (`simple_tts.cpp`) です。ビルドするために C++ の開発環境（CMake 3.16 以上を含む）が必要です。
 
-## 必要なファイルの準備
+## サンプル実行方法
 
-本ディレクトリに以下のファイル・フォルダを用意してください（あるいは、以下のファイル・フォルダへのシンボリックリンクでも良いです）：
-
-- バージョン 0.12 以降の voicevox_core, onnxruntime ライブラリ（配布ページ: https://github.com/VOICEVOX/voicevox_core/releases ）
-  - Linux の場合：`voicevox_core-linux-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の `core.h` , `libcore.so` 及び `libonnxruntime.so.{onnxruntimeのバージョン}`
-  - macOS の場合：`voicevox_core-osx-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の `core.h` , `libcore.dylib` 及び `libonnxruntime.{onnxruntimeのバージョン}.dylib`
-- Open JTalk の辞書（配布ページ: http://open-jtalk.sourceforge.net/ ）
-  - 配布ページの "Dictionary for Open JTalk" 欄にある "Binary Package (UTF-8)" からダウンロードしてください
-  - 解凍してできた `open_jtalk_dic_utf_8-1.11` フォルダをそのままこのディレクトリに配置してください
-
-以上の準備を終えると、本ディレクトリには以下のファイル・フォルダが存在することになります：
-
-```
-CMakeLists.txt
-libcore.so または libcore.dylib
-libonnxruntime.so.{バージョン} または libonnxruntime.{バージョン}.dylib
-core.h
-open_jtalk_dic_utf_8-1.11
-simple_tts.cpp
-```
+まず、この README があるディレクトリで、[downloader を使用して voicevox_core をダウンロードします](../../../docs/downloads/Download.md#一般的な実行方法)。
 
 ## ビルド
 
