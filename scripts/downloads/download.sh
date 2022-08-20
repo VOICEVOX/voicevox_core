@@ -65,10 +65,12 @@ download_and_extract(){
   url=$2
   extract_dir=$3
   archive_format="${4+x}"
-  if [[ "$url" == *.tar.gz ]]; then
-    archive_format="tar.gz"
-  else
-    archive_format="zip"
+  if [[ "$archive_format" == "" ]]; then
+    if [[ "$url" == *.tar.gz ]]; then
+      archive_format="tar.gz"
+    else
+      archive_format="zip"
+    fi
   fi
 
   echo "$targetを$urlからファイルをダウンロードします..."
