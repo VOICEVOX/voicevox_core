@@ -6,7 +6,7 @@ help(){
     -h|--help                      ヘルプの表示
     -o|--output \$directory        出力先の指定(default ./voicevox_core)
     -v|--version \$version         ダウンロードするvoicevox_coreのバージョンの指定(default latest)
-    --artifact-type $artifact_type ダウンロードするartifact_typeを指定する(cpu,cudaを指定可能)
+    --type $type ダウンロードするtypeを指定する(cpu,cudaを指定可能)
     --full                         DirectML版及びCUDA版ダウンロード時に追加で必要なライブラリをダウンロードする
 EOM
   exit 2
@@ -19,13 +19,13 @@ open_jtalk_dict_dir_name="open_jtalk_dic_utf_8-1.11"
 voicevox_core_releases_url(){
   os=$1
   cpu_arch=$2
-  artifact_type=$3
+  type=$3
   version=$4
 
-  if [ "$os" = "linux" ] && [ "$artifact_type" = "cuda" ];then
-    artifact_type="gpu"
+  if [ "$os" = "linux" ] && [ "$type" = "cuda" ];then
+    type="gpu"
   fi
-  url="$voicevox_core_repository_base_url/releases/download/$version/voicevox_core-$os-$cpu_arch-$artifact_type-$version.zip"
+  url="$voicevox_core_repository_base_url/releases/download/$version/voicevox_core-$os-$cpu_arch-$type-$version.zip"
   echo "$url"
 }
 
@@ -85,7 +85,7 @@ download_and_extract(){
 }
 
 version="latest"
-artifact_type=""
+type=""
 output="./voicevox_core"
 full=""
 
@@ -102,8 +102,8 @@ do
     -v|--version)
       version="$2"
       shift;;
-    --artifact-type)
-      artifact_type="$2"
+    --type)
+      type="$2"
       shift;;
     --full)
       full=true
@@ -121,8 +121,8 @@ cpu_arch=$(target_arch)
 open_jtalk_output="${output%/}/$open_jtalk_dict_dir_name"
 
 
-if [ "$artifact_type" = "" ];then
-  artifact_type="cpu"
+if [ "$type" = "" ];then
+  type="cpu"
 fi
 
 # zipファイルに厳格なバージョン番号が含まれるため、latestだった場合はバージョンを特定して設定する
@@ -133,10 +133,10 @@ fi
 echo "対象OS:$os"
 echo "対象CPUアーキテクチャ:$cpu_arch"
 echo "ダウンロードvoicevox_coreバージョン:$version"
-echo "ダウンロードアーティファクトタイプ:$artifact_type"
+echo "ダウンロードアーティファクトタイプ:$type"
 
 
-voicevox_core_url=$(voicevox_core_releases_url "$os" "$cpu_arch" "$artifact_type" "$version")
+voicevox_core_url=$(voicevox_core_releases_url "$os" "$cpu_arch" "$type" "$version")
 
 download_and_extract "voicevox_core" "$voicevox_core_url" "$output" &
 voicevox_core_download_task=$!
