@@ -24,8 +24,8 @@ Param(
 	$Type = "cpu",
 	[Parameter()]
 	[bool]
-	# DirectML版及びCUDA版ダウンロード時に追加で必要なライブラリをダウンロードするのを有効化する
-	$Full = $False
+	# ダウンロードするライブラリを最小限にするように指定
+	$Min = $False
 )
 
 $VoicevoxCoreRepositoryBaseUrl="https://github.com/VOICEVOX/voicevox_core"
@@ -71,6 +71,9 @@ Function Download-and-Extract($Target,$Url,$ExtractDir,$ArchiveFormat){
 	If( $ArchiveFormat -eq "zip" ){
 		$Zip=[System.IO.Compression.ZipFile]::OpenRead("${TmpPath}")
 		$Zip.Entries.ForEach{
+			if ([string]::IsNullOrEmpty($_.Name)){
+				return
+			}
 			$NewFile=[IO.FileInfo]($ExtractDir,$_.Name -join "/")
 			$NewFile.Directory.Create()
 			[System.IO.Compression.ZipFileExtensions]::ExtractToFile($_,$NewFile)
@@ -99,5 +102,8 @@ echo "ダウンロードアーティファクトタイプ:$type"
 $VoicevoxCoreUrl=Voicevox-Core-Releases-Url "$Os" "$CpuArch" "$Type" "$Version"
 
 Download-and-Extract "voicevox_core" "$VoicevoxCoreUrl" "$Output"
-Download-and-Extract "open_jtalk" "$OpenJtalkDictUrl" "$OpenJtalkOutput"
+
+if ( -not $Min ){
+	Download-and-Extract "open_jtalk" "$OpenJtalkDictUrl" "$OpenJtalkOutput"
+}
 

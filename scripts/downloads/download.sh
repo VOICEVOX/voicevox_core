@@ -7,7 +7,7 @@ help(){
     -o|--output \$directory        出力先の指定(default ./voicevox_core)
     -v|--version \$version         ダウンロードするvoicevox_coreのバージョンの指定(default latest)
     --type $type                   ダウンロードするtypeを指定する(cpu,cudaを指定可能.cudaはlinuxのみ)
-    --full                         DirectML版及びCUDA版ダウンロード時に追加で必要なライブラリをダウンロードするのを有効化する
+    --min                          ダウンロードするライブラリを最小限にするように指定
 EOM
   exit 2
 }
@@ -89,7 +89,7 @@ download_and_extract(){
 version="latest"
 type=""
 output="./voicevox_core"
-full=""
+min=""
 
 
 
@@ -107,8 +107,8 @@ do
     --type)
       type="$2"
       shift;;
-    --full)
-      full=true
+    --min)
+      min=true
       ;;
     *)
       echo "サポートされていないオプションです"
@@ -142,7 +142,11 @@ voicevox_core_url=$(voicevox_core_releases_url "$os" "$cpu_arch" "$type" "$versi
 
 download_and_extract "voicevox_core" "$voicevox_core_url" "$output" &
 voicevox_core_download_task=$!
-download_and_extract "open_jtalk" "$open_jtalk_dict_url" "$open_jtalk_output" &
-open_jtalk_download_task=$!
+if [ "$min" != "true" ]; then
+  download_and_extract "open_jtalk" "$open_jtalk_dict_url" "$open_jtalk_output" &
+  open_jtalk_download_task=$!
+
+
+  wait $open_jtalk_download_task
+fi
 wait $voicevox_core_download_task
-wait $open_jtalk_download_task
