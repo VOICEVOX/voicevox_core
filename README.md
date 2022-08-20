@@ -88,30 +88,11 @@ sudo apt install libgomp1
 
 ## サンプル実行
 
-まず Open JTalk 辞書フォルダを配置します。 http://open-jtalk.sourceforge.net/ を開き、Dictionary for Open JTalk 欄の Binary Package (UTF-8)をクリックして「open_jtalk_dic_utf_8-1.11.tar.gz」をダウンロードします。
-これを展開してできた「open_jtalk_dic_utf_8-1.11」フォルダを example/python に配置します。
+現在このリポジトリには下記 example が提供されています。実行方法についてはそれぞれのディレクトリ内にある README を参照してください
 
-- バージョン 0.12 以降の voicevox_core, onnxruntime ライブラリ（配布ページ: https://github.com/VOICEVOX/voicevox_core/releases ）を example/python に配置する
-  - Linux の場合：`voicevox_core-linux-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の 全ての so file
-  - macOS の場合：`voicevox_core-osx-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の 全ての dylib file
-  - Windows の場合：`voicevox_core-windows-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の 全ての dll file
-
-```bash
-cd example/python
-
-# サンプルコード実行のための依存モジュールのインストール
-pip install -r requirements.txt
-python run.py \
-    --text "これは本当に実行できているんですか" \
-    --speaker_id 1
-
-# 引数の紹介
-# --text 読み上げるテキスト
-# --speaker_id 話者ID
-# --use_gpu GPUを使う
-# --f0_speaker_id 音高の話者ID（デフォルト値はspeaker_id）
-# --f0_correct 音高の補正値（デフォルト値は0。+-0.3くらいで結果が大きく変わります）
-```
+- [python](./example/python)
+- [C++(unix cmake)](./example/cpp/unix)
+- [C++(windows VisualStudio)](./example/cpp/windows)
 
 ### その他の言語
 
