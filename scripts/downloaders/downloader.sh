@@ -7,7 +7,7 @@ help(){
     -o|--output \$directory        出力先の指定(default ./voicevox_core)
     -v|--version \$version         ダウンロードするvoicevox_coreのバージョンの指定(default latest)
     --type $type                   ダウンロードするtypeを指定する(cpu,cudaを指定可能.cudaはlinuxのみ)
-    --full                         DirectML版及びCUDA版ダウンロード時に追加で必要なライブラリをダウンロードする
+    --full                         DirectML版及びCUDA版ダウンロード時に追加で必要なライブラリをダウンロードするのを有効化する
 EOM
   exit 2
 }
