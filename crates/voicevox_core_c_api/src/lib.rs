@@ -219,10 +219,14 @@ pub extern "C" fn voicevox_audio_query(
     VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
 }
 
+#[repr(C)]
+pub struct VoicevoxSynthesisOptions {}
+
 #[no_mangle]
 pub extern "C" fn voicevox_synthesis(
     audio_query_json: *const c_char,
     speaker_id: i64,
+    options: VoicevoxSynthesisOptions,
     output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
