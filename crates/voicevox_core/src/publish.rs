@@ -76,7 +76,7 @@ impl VoicevoxCore {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn yukarin_sa_forward(
+    pub fn predict_intonation(
         &mut self,
         length: i64,
         vowel_phoneme_list: &[i64],
@@ -89,7 +89,7 @@ impl VoicevoxCore {
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
-            .yukarin_sa_forward(
+            .predict_intonation(
                 length,
                 vowel_phoneme_list,
                 consonant_phoneme_list,
@@ -291,7 +291,7 @@ impl InferenceCore {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn yukarin_sa_forward(
+    pub fn predict_intonation(
         &mut self,
         length: i64,
         vowel_phoneme_list: &[i64],
@@ -659,7 +659,7 @@ mod tests {
         let start_accent_phrase_list = [0, 1, 0, 0, 0];
         let end_accent_phrase_list = [0, 0, 0, 1, 0];
 
-        let result = internal.lock().unwrap().yukarin_sa_forward(
+        let result = internal.lock().unwrap().predict_intonation(
             vowel_phoneme_list.len() as i64,
             &vowel_phoneme_list,
             &consonant_phoneme_list,

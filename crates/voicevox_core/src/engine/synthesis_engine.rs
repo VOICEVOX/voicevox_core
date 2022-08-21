@@ -250,7 +250,7 @@ impl SynthesisEngine {
             end_accent_phrase_list.push(base_end_accent_phrase_list[vowel_index as usize]);
         }
 
-        let mut f0_list = self.inference_core_mut().yukarin_sa_forward(
+        let mut f0_list = self.inference_core_mut().predict_intonation(
             vowel_phoneme_list.len() as i64,
             &vowel_phoneme_list,
             &consonant_phoneme_list,

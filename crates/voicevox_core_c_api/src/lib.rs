@@ -119,7 +119,7 @@ pub extern "C" fn voicevox_yukarin_s_forward(
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_yukarin_sa_forward(
+pub extern "C" fn voicevox_predict_intonation(
     length: i64,
     vowel_phoneme_list: *mut i64,
     consonant_phoneme_list: *mut i64,
@@ -131,7 +131,7 @@ pub extern "C" fn voicevox_yukarin_sa_forward(
     output: *mut f32,
 ) -> VoicevoxResultCode {
     unimplemented!();
-    let result = lock_internal().yukarin_sa_forward(
+    let result = lock_internal().predict_intonation(
         length,
         unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length as usize) },
         unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length as usize) },
