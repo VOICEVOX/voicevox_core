@@ -93,14 +93,14 @@ pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_yukarin_s_forward(
+pub extern "C" fn voicevox_predict_duration(
     length: i64,
     phoneme_list: *mut i64,
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> VoicevoxResultCode {
     unimplemented!();
-    let result = lock_internal().yukarin_s_forward(
+    let result = lock_internal().predict_duration(
         unsafe { std::slice::from_raw_parts_mut(phoneme_list, length as usize) },
         unsafe { *speaker_id as usize },
     );

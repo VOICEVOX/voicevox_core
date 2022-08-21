@@ -65,14 +65,14 @@ impl VoicevoxCore {
         &SUPPORTED_DEVICES_CSTRING
     }
 
-    pub fn yukarin_s_forward(
+    pub fn predict_duration(
         &mut self,
         phoneme_list: &[i64],
         speaker_id: usize,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
-            .yukarin_s_forward(phoneme_list, speaker_id)
+            .predict_duration(phoneme_list, speaker_id)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -244,7 +244,7 @@ impl InferenceCore {
         self.status_option = None;
     }
 
-    pub fn yukarin_s_forward(
+    pub fn predict_duration(
         &mut self,
         phoneme_list: &[i64],
         speaker_id: usize,
@@ -640,7 +640,7 @@ mod tests {
             30, 35, 14, 23, 7, 21, 14, 43, 30, 30, 23, 30, 35, 30, 0,
         ];
 
-        let result = internal.lock().unwrap().yukarin_s_forward(&phoneme_list, 0);
+        let result = internal.lock().unwrap().predict_duration(&phoneme_list, 0);
 
         assert!(result.is_ok(), "{:?}", result);
         assert_eq!(result.unwrap().len(), phoneme_list.len());

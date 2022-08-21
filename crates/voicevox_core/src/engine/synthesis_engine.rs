@@ -136,7 +136,7 @@ impl SynthesisEngine {
             .collect();
         let phoneme_length = self
             .inference_core_mut()
-            .yukarin_s_forward(&phoneme_list_s, speaker_id)?;
+            .predict_duration(&phoneme_list_s, speaker_id)?;
 
         let mut index = 0;
         let new_accent_phrases = accent_phrases
