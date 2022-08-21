@@ -72,8 +72,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
-      - name: build voicevox_core
-        run: cargo build --features generate-c-header
+      - name: build voicevox_core_c_api
+        run: cargo build -p voicevox_core_c_api --features generate-c-header
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
           cp -v target/core.h example/cpp/unix/
