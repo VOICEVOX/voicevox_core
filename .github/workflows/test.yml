@@ -96,5 +96,49 @@ jobs:
           cmake -S . -B build
           cmake --build build
 
+  build-python-api:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+          - os: macos-latest
+          - os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+      - uses: actions-rs/toolchain@v1
+      - name: venv作成
+        shell: bash
+        run: |
+          virtual_env="$RUNNER_TEMP"/.venv
+          python -m venv "$virtual_env"
+          if [ "$RUNNER_OS" = Windows ]; then
+            echo "$virtual_env"/Scripts >>"$GITHUB_PATH"
+          else
+            echo "$virtual_env"/bin >>"$GITHUB_PATH"
+          fi
+          echo "VIRTUAL_ENV=$virtual_env" >>"$GITHUB_ENV"
+      - shell: bash
+        run: pip install -r ./requirements.txt
+      - shell: bash
+        run: cargo build -p voicevox_core_c_api
+      - shell: bash
+        run: maturin build --locked
+      - shell: bash
+        run: maturin develop --locked
+      - name: 必要なDLLをカレントディレクトリにコピー
+        run: |
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll . || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* . || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
+      - name: '`maturin develop`でインストールした`voicevox_core_python_api`を実行'
+        shell: python
+        run: import voicevox_core
+
 env:
   CARGO_TERM_COLOR: always
