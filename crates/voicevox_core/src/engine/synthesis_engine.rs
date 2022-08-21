@@ -410,7 +410,7 @@ impl SynthesisEngine {
         // 2次元のvectorを1次元に変換し、アドレスを連続させる
         let flatten_phoneme = phoneme.into_iter().flatten().collect::<Vec<_>>();
 
-        self.inference_core_mut().decode_forward(
+        self.inference_core_mut().decode(
             f0.len(),
             OjtPhoneme::num_phoneme(),
             &f0,

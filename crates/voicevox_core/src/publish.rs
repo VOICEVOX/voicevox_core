@@ -101,7 +101,7 @@ impl VoicevoxCore {
             )
     }
 
-    pub fn decode_forward(
+    pub fn decode(
         &mut self,
         length: usize,
         phoneme_size: usize,
@@ -109,7 +109,7 @@ impl VoicevoxCore {
         phoneme: &[f32],
         speaker_id: usize,
     ) -> Result<Vec<f32>> {
-        self.synthesis_engine.inference_core_mut().decode_forward(
+        self.synthesis_engine.inference_core_mut().decode(
             length,
             phoneme_size,
             f0,
@@ -350,7 +350,7 @@ impl InferenceCore {
         status.yukarin_sa_session_run(model_index, input_tensors)
     }
 
-    pub fn decode_forward(
+    pub fn decode(
         &mut self,
         length: usize,
         phoneme_size: usize,
@@ -701,11 +701,10 @@ mod tests {
         set_one(30, 45..60);
         set_one(0, 60..69);
 
-        let result =
-            internal
-                .lock()
-                .unwrap()
-                .decode_forward(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, 0);
+        let result = internal
+            .lock()
+            .unwrap()
+            .decode(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, 0);
 
         assert!(result.is_ok(), "{:?}", result);
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);

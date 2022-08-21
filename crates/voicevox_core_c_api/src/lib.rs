@@ -156,17 +156,17 @@ pub extern "C" fn voicevox_yukarin_sa_forward(
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_decode_forward(
+pub extern "C" fn voicevox_decode(
     length: i64,
     phoneme_size: i64,
     f0: *mut f32,
     phoneme: *mut f32,
     speaker_id: *mut i64,
     output: *mut f32,
-) -> bool {
+) -> VoicevoxResultCode {
     let length = length as usize;
     let phoneme_size = phoneme_size as usize;
-    let result = lock_internal().decode_forward(
+    let result = lock_internal().decode(
         length,
         phoneme_size,
         unsafe { std::slice::from_raw_parts(f0, length) },
