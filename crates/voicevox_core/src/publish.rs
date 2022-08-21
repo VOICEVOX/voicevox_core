@@ -144,7 +144,6 @@ impl VoicevoxCore {
         &mut self,
         audio_query: &AudioQueryModel,
         speaker_id: usize,
-        options: SynthesisOptions,
     ) -> Result<Vec<u8>> {
         unimplemented!();
         self.synthesis_engine
@@ -162,10 +161,6 @@ pub struct InitializeOptions {
     cpu_num_threads: u16,
     load_all_models: bool,
     open_jtalk_dict_dir: Option<PathBuf>,
-}
-
-pub struct SynthesisOptions {
-    kana: bool,
 }
 
 pub struct TtsOptions {
