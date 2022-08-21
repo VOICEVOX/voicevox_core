@@ -159,7 +159,7 @@ impl VoicevoxCore {
 
 pub struct InitializeOptions {
     use_cuda: bool,
-    cpu_num_threads: u32,
+    cpu_num_threads: u16,
     load_all_models: bool,
     open_jtalk_dict_dir: Option<PathBuf>,
 }

@@ -83,7 +83,7 @@ fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
 #[repr(C)]
 pub struct VoicevoxInitializeOptions {
     use_cuda: bool,
-    cpu_num_threads: u32,
+    cpu_num_threads: u16,
     load_all_models: bool,
     open_jtalk_dict_dir: *const c_char,
 }
