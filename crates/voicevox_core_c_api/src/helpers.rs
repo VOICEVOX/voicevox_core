@@ -116,3 +116,29 @@ impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
         Self {}
     }
 }
+
+impl Default for VoicevoxInitializeOptions {
+    fn default() -> Self {
+        let options = voicevox_core::InitializeOptions::default();
+        Self {
+            use_gpu: options.use_gpu,
+            cpu_num_threads: options.cpu_num_threads,
+            load_all_models: options.load_all_models,
+            open_jtalk_dict_dir: null(),
+        }
+    }
+}
+
+impl VoicevoxInitializeOptions {
+    pub(crate) unsafe fn try_into_options(
+        self,
+    ) -> std::result::Result<voicevox_core::InitializeOptions, VoicevoxResultCode> {
+        let open_jtalk_dict_dir = ensure_utf8(CStr::from_ptr(self.open_jtalk_dict_dir))?;
+        Ok(voicevox_core::InitializeOptions {
+            use_gpu: self.use_gpu,
+            cpu_num_threads: self.cpu_num_threads,
+            load_all_models: self.load_all_models,
+            open_jtalk_dict_dir: Some(PathBuf::from(open_jtalk_dict_dir)),
+        })
+    }
+}

@@ -42,37 +42,14 @@ pub struct VoicevoxInitializeOptions {
     open_jtalk_dict_dir: *const c_char,
 }
 
-impl VoicevoxInitializeOptions {
-    fn from_default_options(options: voicevox_core::InitializeOptions) -> Self {
-        Self {
-            use_gpu: options.use_gpu,
-            cpu_num_threads: options.cpu_num_threads,
-            load_all_models: options.load_all_models,
-            open_jtalk_dict_dir: null(),
-        }
-    }
-
-    fn try_into_options(
-        self,
-    ) -> std::result::Result<voicevox_core::InitializeOptions, VoicevoxResultCode> {
-        let open_jtalk_dict_dir = ensure_utf8(unsafe { CStr::from_ptr(self.open_jtalk_dict_dir) })?;
-        Ok(voicevox_core::InitializeOptions {
-            use_gpu: self.use_gpu,
-            cpu_num_threads: self.cpu_num_threads,
-            load_all_models: self.load_all_models,
-            open_jtalk_dict_dir: Some(PathBuf::from(open_jtalk_dict_dir)),
-        })
-    }
-}
-
 #[no_mangle]
 pub extern "C" fn voicevox_default_initialize_options() -> VoicevoxInitializeOptions {
-    VoicevoxInitializeOptions::from_default_options(voicevox_core::InitializeOptions::default())
+    VoicevoxInitializeOptions::default()
 }
 
 #[no_mangle]
 pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> VoicevoxResultCode {
-    match options.try_into_options() {
+    match unsafe { options.try_into_options() } {
         Ok(options) => {
             let result = lock_internal().initialize(options);
             let (_, result_code) = convert_result(result);
