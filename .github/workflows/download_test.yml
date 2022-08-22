@@ -1,0 +1,34 @@
+name: Download test workflow
+on:
+  push:
+  pull_request:
+jobs:
+  downlaod-releases:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            download_command: ./scripts/downloads/Download.ps1
+            check_items: |
+              voicevox_core/core.dll
+              voicevox_core/README.txt
+          - os: ubuntu-latest
+            download_command: ./scripts/downloads/download.sh
+            check_items: |
+              voicevox_core/libcore.so
+              voicevox_core/README.txt
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Execute download command
+        run: ${{ matrix.download_command }}
+      - name: Check downloaded files
+        shell: bash
+        run: |
+          items=($(echo -e "${{ matrix.check_items }}" | xargs))
+          for item in "${items[@]}"
+          do
+            echo "check exists ${item}..."
+            [ -e "$item" ]
+          done
