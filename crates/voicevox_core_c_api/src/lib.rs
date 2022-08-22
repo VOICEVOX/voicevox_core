@@ -192,17 +192,6 @@ pub struct VoicevoxAudioQueryOptions {
     kana: bool,
 }
 
-impl From<voicevox_core::AudioQueryOptions> for VoicevoxAudioQueryOptions {
-    fn from(options: voicevox_core::AudioQueryOptions) -> Self {
-        Self { kana: options.kana }
-    }
-}
-impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
-    fn from(options: VoicevoxAudioQueryOptions) -> Self {
-        Self { kana: options.kana }
-    }
-}
-
 #[no_mangle]
 pub extern "C" fn voicevox_default_audio_query_options() -> VoicevoxAudioQueryOptions {
     voicevox_core::AudioQueryOptions::default().into()
@@ -233,12 +222,6 @@ pub struct VoicevoxSynthesisOptions {
     // improper_ctypes_definitions を避けるためフィールドを持っておく
     // TODO: improper_ctypes_definitionsを使用した機能を作る
     enable_interrogative_upspeak: bool,
-}
-
-impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
-    fn from(_: VoicevoxSynthesisOptions) -> Self {
-        Self {}
-    }
 }
 
 #[no_mangle]

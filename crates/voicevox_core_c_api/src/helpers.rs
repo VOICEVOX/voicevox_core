@@ -99,3 +99,20 @@ pub(crate) fn ensure_utf8(s: &CStr) -> std::result::Result<&str, VoicevoxResultC
     s.to_str()
         .map_err(|_| VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT)
 }
+
+impl From<voicevox_core::AudioQueryOptions> for VoicevoxAudioQueryOptions {
+    fn from(options: voicevox_core::AudioQueryOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
+    fn from(options: VoicevoxAudioQueryOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+
+impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
+    fn from(_: VoicevoxSynthesisOptions) -> Self {
+        Self {}
+    }
+}
