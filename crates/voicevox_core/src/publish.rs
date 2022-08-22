@@ -211,7 +211,7 @@ impl Default for TtsOptions {
     fn default() -> Self {
         Self {
             enable_interrogative_upspeak: true,
-            kana: false,
+            kana: Default::default(),
         }
     }
 }
