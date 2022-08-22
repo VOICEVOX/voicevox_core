@@ -164,16 +164,8 @@ impl VoicevoxCore {
     }
 
     pub fn tts(&mut self, text: &str, speaker_id: usize, options: TtsOptions) -> Result<Vec<u8>> {
-        let audio_query = &self.audio_query(
-            text,
-            speaker_id,
-            AudioQueryOptions::from_tts_options(&options),
-        )?;
-        self.synthesis(
-            audio_query,
-            speaker_id,
-            SynthesisOptions::from_tts_options(&options),
-        )
+        let audio_query = &self.audio_query(text, speaker_id, AudioQueryOptions::from(&options))?;
+        self.synthesis(audio_query, speaker_id, SynthesisOptions::from(&options))
     }
 }
 
@@ -182,8 +174,8 @@ pub struct AudioQueryOptions {
     pub kana: bool,
 }
 
-impl AudioQueryOptions {
-    fn from_tts_options(options: &TtsOptions) -> Self {
+impl From<&TtsOptions> for AudioQueryOptions {
+    fn from(options: &TtsOptions) -> Self {
         Self { kana: options.kana }
     }
 }
@@ -198,8 +190,9 @@ pub struct InitializeOptions {
 
 pub struct SynthesisOptions {}
 
-impl SynthesisOptions {
-    fn from_tts_options(_: &TtsOptions) -> Self {
+impl From<&TtsOptions> for SynthesisOptions {
+    fn from(_: &TtsOptions) -> Self {
+        // TODO:変換の必要性が出たら実装する
         Self {}
     }
 }
