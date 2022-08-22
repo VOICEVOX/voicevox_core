@@ -318,7 +318,7 @@ impl InferenceCore {
         let input_tensors: Vec<&mut dyn AnyArray> =
             vec![&mut phoneme_list_array, &mut speaker_id_array];
 
-        let mut output = status.yukarin_s_session_run(model_index, input_tensors)?;
+        let mut output = status.predict_duration_session_run(model_index, input_tensors)?;
 
         for output_item in output.iter_mut() {
             if *output_item < PHONEME_LENGTH_MINIMAL {
@@ -386,7 +386,7 @@ impl InferenceCore {
             &mut speaker_id_array,
         ];
 
-        status.yukarin_sa_session_run(model_index, input_tensors)
+        status.predict_intonation_session_run(model_index, input_tensors)
     }
 
     pub fn decode(
@@ -672,7 +672,7 @@ mod tests {
     }
 
     #[rstest]
-    fn yukarin_s_forward_works() {
+    fn predict_duration_works() {
         let internal = VoicevoxCore::new_with_mutex();
         internal
             .lock()
@@ -696,7 +696,7 @@ mod tests {
     }
 
     #[rstest]
-    fn yukarin_sa_forward_works() {
+    fn predict_intonation_works() {
         let internal = VoicevoxCore::new_with_mutex();
         internal
             .lock()
