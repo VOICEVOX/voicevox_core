@@ -32,7 +32,7 @@ voicevox_core_releases_url(){
 latest_version(){
   base_url=$1
   get_latest_url="$base_url/releases/tag"
-  echo -En $(curl -sSI "$base_url/releases/latest"| grep "location:" | sed -e "s%location: $get_latest_url/%%" | sed 's/\r//g')
+  echo -En $(curl -sSfI "$base_url/releases/latest"| grep "location:" | sed -e "s%location: $get_latest_url/%%" | sed 's/\r//g')
 }
 
 latest_voicevox_core_version(){
@@ -76,7 +76,7 @@ download_and_extract(){
 
   echo "${target}を${url}からファイルをダウンロードします..."
   tmp_path=$(mktemp)
-  curl -sSLo "$tmp_path" "$url"
+  curl -sSLfo "$tmp_path" "$url"
   echo "${target}をダウンロード完了,${archive_format}形式で${extract_dir}に解凍します..."
   if [ "$archive_format" = "zip" ];then
     unzip -j "$tmp_path" -d "$extract_dir"
