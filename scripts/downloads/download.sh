@@ -32,7 +32,7 @@ voicevox_core_releases_url(){
 latest_version(){
   base_url=$1
   get_latest_url="$base_url/releases/tag"
-  echo -En $(curl -sSI "$base_url/releases/latest"| grep -oP "location: $get_latest_url/\K.*$" | sed 's/\r//g')
+  echo -En $(curl -sSI "$base_url/releases/latest"| grep "location:" | sed -e "s%location: $get_latest_url/%%" | sed 's/\r//g')
 }
 
 latest_voicevox_core_version(){
@@ -45,17 +45,18 @@ target_os(){
   elif [ "$(expr substr $(uname -s) 1 5)" == 'Linux' ]; then
     echo "linux"
   else
-    echo "サポートされていない環境です"
+    echo "$(uname)はサポートされていない環境です" >&2
     exit 1
   fi
 }
 
 target_arch(){
-  case "$(arch)" in
+  cpu_arch=$(uname -m)
+  case "$cpu_arch" in
     "x86_64") echo "x64";;
     "arm64") echo "aarch64";;
     *)
-      echo "サポートされていない環境です"
+      echo "$cpu_archはサポートされていない環境です" >&2
       exit 1;;
   esac
 }
@@ -73,17 +74,17 @@ download_and_extract(){
     fi
   fi
 
-  echo "$targetを$urlからファイルをダウンロードします..."
+  echo "${target}を${url}からファイルをダウンロードします..."
   tmp_path=$(mktemp)
   curl -sSLo "$tmp_path" "$url"
-  echo "$targetをダウンロード完了,$archive_format形式で$extract_dirに解凍します..."
+  echo "${target}をダウンロード完了,${archive_format}形式で${extract_dir}に解凍します..."
   if [ "$archive_format" = "zip" ];then
     unzip -j "$tmp_path" -d "$extract_dir"
   elif  [ "$archive_format" = "tar.gz" ];then
     mkdir -p "$extract_dir"
     tar --strip-components 1 -xvzf "$tmp_path" -C "$extract_dir"
   fi
-  echo "$targetのファイルを展開完了しました"
+  echo "${target}のファイルを展開完了しました"
 }
 
 version="latest"
@@ -111,7 +112,7 @@ do
       min=true
       ;;
     *)
-      echo "サポートされていないオプションです"
+      echo "サポートされていないオプションです" >%2
       exit 1;;
   esac
   shift
