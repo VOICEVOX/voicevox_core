@@ -202,10 +202,18 @@ impl From<&TtsOptions> for SynthesisOptions {
     }
 }
 
-#[derive(Default)]
 pub struct TtsOptions {
     pub kana: bool,
     pub enable_interrogative_upspeak: bool,
+}
+
+impl Default for TtsOptions {
+    fn default() -> Self {
+        Self {
+            enable_interrogative_upspeak: true,
+            kana: false,
+        }
+    }
 }
 
 #[derive(new)]

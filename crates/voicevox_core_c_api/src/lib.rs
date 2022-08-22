@@ -199,6 +199,10 @@ pub struct VoicevoxSynthesisOptions {
     enable_interrogative_upspeak: bool,
 }
 
+pub extern "C" fn voicevox_default_synthesis_options() -> VoicevoxSynthesisOptions {
+    VoicevoxSynthesisOptions::default()
+}
+
 #[no_mangle]
 pub extern "C" fn voicevox_synthesis(
     audio_query_json: *const c_char,

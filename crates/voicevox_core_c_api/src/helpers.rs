@@ -162,3 +162,12 @@ impl From<VoicevoxTtsOptions> for voicevox_core::TtsOptions {
         }
     }
 }
+
+impl Default for VoicevoxSynthesisOptions {
+    fn default() -> Self {
+        let options = voicevox_core::TtsOptions::default();
+        Self {
+            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+        }
+    }
+}
