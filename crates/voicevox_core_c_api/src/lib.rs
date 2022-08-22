@@ -293,7 +293,7 @@ impl From<VoicevoxTtsOptions> for voicevox_core::TtsOptions {
 }
 
 #[no_mangle]
-pub fn voicevox_default_tts_options() -> VoicevoxTtsOptions {
+pub extern "C" fn voicevox_default_tts_options() -> VoicevoxTtsOptions {
     voicevox_core::TtsOptions::default().into()
 }
 

@@ -17,18 +17,11 @@ int main(int argc, char *argv[]) {
 
   std::cout << "coreの初期化中..." << std::endl;
 
-  if (!initialize(false, 0, true)) {
+  auto initialize_options = voicevox_default_initialize_options();
+  initialize_options.load_all_models = true;
+  initialize_options.open_jtalk_dict_dir = open_jtalk_dict_path.c_str();
+  if (voicevox_initialize(initialize_options) != VOICEVOX_RESULT_SUCCEED) {
     std::cout << "coreの初期化に失敗しました" << std::endl;
-    return 1;
-  }
-
-  VoicevoxResultCode result;
-
-  std::cout << "openjtalk辞書の読み込み中..." << std::endl;
-
-  result = voicevox_load_openjtalk_dict(open_jtalk_dict_path.c_str());
-  if (result != VOICEVOX_RESULT_SUCCEED) {
-    std::cout << voicevox_error_result_to_message(result) << std::endl;
     return 1;
   }
 
@@ -38,8 +31,9 @@ int main(int argc, char *argv[]) {
   int output_binary_size = 0;
   uint8_t *output_wav = nullptr;
 
-  result =
-      voicevox_tts(text.c_str(), speaker_id, &output_binary_size, &output_wav);
+  auto result =
+      voicevox_tts(text.c_str(), speaker_id, voicevox_default_tts_options(),
+                   &output_binary_size, &output_wav);
   if (result != VOICEVOX_RESULT_SUCCEED) {
     std::cout << voicevox_error_result_to_message(result) << std::endl;
     return 1;
