@@ -731,7 +731,7 @@ mod tests {
     }
 
     #[rstest]
-    fn decode_forward_works() {
+    fn decode_works() {
         let internal = VoicevoxCore::new_with_mutex();
         internal
             .lock()
