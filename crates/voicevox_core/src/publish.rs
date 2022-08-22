@@ -156,11 +156,13 @@ impl VoicevoxCore {
         &mut self,
         audio_query: &AudioQueryModel,
         speaker_id: usize,
-        // TODO: SynthesisOptions を使用した機能を提供する
-        #[allow(unused_variables)] options: SynthesisOptions,
+        options: SynthesisOptions,
     ) -> Result<Vec<u8>> {
-        self.synthesis_engine
-            .synthesis_wave_format(audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
+        self.synthesis_engine.synthesis_wave_format(
+            audio_query,
+            speaker_id,
+            options.enable_interrogative_upspeak,
+        )
     }
 
     pub fn tts(&mut self, text: &str, speaker_id: usize, options: TtsOptions) -> Result<Vec<u8>> {
@@ -188,18 +190,22 @@ pub struct InitializeOptions {
     pub open_jtalk_dict_dir: Option<PathBuf>,
 }
 
-pub struct SynthesisOptions {}
+pub struct SynthesisOptions {
+    pub enable_interrogative_upspeak: bool,
+}
 
 impl From<&TtsOptions> for SynthesisOptions {
-    fn from(_: &TtsOptions) -> Self {
-        // TODO:変換の必要性が出たら実装する
-        Self {}
+    fn from(options: &TtsOptions) -> Self {
+        Self {
+            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+        }
     }
 }
 
 #[derive(Default)]
 pub struct TtsOptions {
     pub kana: bool,
+    pub enable_interrogative_upspeak: bool,
 }
 
 #[derive(new)]

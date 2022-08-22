@@ -196,8 +196,6 @@ pub extern "C" fn voicevox_audio_query(
 
 #[repr(C)]
 pub struct VoicevoxSynthesisOptions {
-    // improper_ctypes_definitions を避けるためフィールドを持っておく
-    // TODO: improper_ctypes_definitionsを使用した機能を作る
     enable_interrogative_upspeak: bool,
 }
 
@@ -238,18 +236,7 @@ pub extern "C" fn voicevox_synthesis(
 #[repr(C)]
 pub struct VoicevoxTtsOptions {
     kana: bool,
-}
-
-impl From<voicevox_core::TtsOptions> for VoicevoxTtsOptions {
-    fn from(options: voicevox_core::TtsOptions) -> Self {
-        Self { kana: options.kana }
-    }
-}
-
-impl From<VoicevoxTtsOptions> for voicevox_core::TtsOptions {
-    fn from(options: VoicevoxTtsOptions) -> Self {
-        Self { kana: options.kana }
-    }
+    enable_interrogative_upspeak: bool,
 }
 
 #[no_mangle]

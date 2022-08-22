@@ -112,8 +112,10 @@ impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
 }
 
 impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
-    fn from(_: VoicevoxSynthesisOptions) -> Self {
-        Self {}
+    fn from(options: VoicevoxSynthesisOptions) -> Self {
+        Self {
+            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+        }
     }
 }
 
@@ -140,5 +142,23 @@ impl VoicevoxInitializeOptions {
             load_all_models: self.load_all_models,
             open_jtalk_dict_dir: Some(PathBuf::from(open_jtalk_dict_dir)),
         })
+    }
+}
+
+impl From<voicevox_core::TtsOptions> for VoicevoxTtsOptions {
+    fn from(options: voicevox_core::TtsOptions) -> Self {
+        Self {
+            kana: options.kana,
+            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+        }
+    }
+}
+
+impl From<VoicevoxTtsOptions> for voicevox_core::TtsOptions {
+    fn from(options: VoicevoxTtsOptions) -> Self {
+        Self {
+            kana: options.kana,
+            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+        }
     }
 }
