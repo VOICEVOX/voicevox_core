@@ -81,7 +81,7 @@ Function Download-and-Extract($Target,$Url,$ExtractDir,$ArchiveFormat){
 		$Zip.Dispose()
 	}ElseIf( $ArchiveFormat -eq "tar.gz" ){
 		mkdir -p "$ExtractDir"
-		tar --overwrite --strip-components 1 -xvzf "$TmpPath" -C "$ExtractDir"
+		tar --strip-components 1 -xvzf "$TmpPath" -C "$ExtractDir"
 	}
 	echo "${Target}のファイルを展開完了しました"
 }

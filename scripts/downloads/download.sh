@@ -78,10 +78,10 @@ download_and_extract(){
   curl -sSLo "$tmp_path" "$url"
   echo "$targetをダウンロード完了,$archive_format形式で$extract_dirに解凍します..."
   if [ "$archive_format" = "zip" ];then
-    unzip -jo "$tmp_path" -d "$extract_dir"
+    unzip -j "$tmp_path" -d "$extract_dir"
   elif  [ "$archive_format" = "tar.gz" ];then
     mkdir -p "$extract_dir"
-    tar --overwrite --strip-components 1 -xvzf "$tmp_path" -C "$extract_dir"
+    tar --strip-components 1 -xvzf "$tmp_path" -C "$extract_dir"
   fi
   echo "$targetのファイルを展開完了しました"
 }
