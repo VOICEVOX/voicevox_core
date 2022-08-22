@@ -52,14 +52,23 @@ pub(crate) fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResult
 
 pub(crate) fn create_audio_query(
     japanese_or_kana: &CStr,
-    speaker_id: i64,
-    method: fn(&mut Internal, &str, usize) -> Result<AudioQueryModel>,
+    speaker_id: usize,
+    method: fn(
+        &mut Internal,
+        &str,
+        usize,
+        voicevox_core::AudioQueryOptions,
+    ) -> Result<AudioQueryModel>,
+    options: VoicevoxAudioQueryOptions,
 ) -> std::result::Result<CString, VoicevoxResultCode> {
     let japanese_or_kana = ensure_utf8(japanese_or_kana)?;
-    let speaker_id = speaker_id as usize;
 
-    let (audio_query, result_code) =
-        convert_result(method(&mut lock_internal(), japanese_or_kana, speaker_id));
+    let (audio_query, result_code) = convert_result(method(
+        &mut lock_internal(),
+        japanese_or_kana,
+        speaker_id,
+        options.into(),
+    ));
     let audio_query = audio_query.ok_or(result_code)?;
     Ok(CString::new(audio_query_model_to_json(&audio_query)).expect("should not contain '\\0'"))
 }

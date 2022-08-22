@@ -29,7 +29,7 @@ struct StatusModels {
 
 #[derive(new, Getters)]
 struct SessionOptions {
-    cpu_num_threads: usize,
+    cpu_num_threads: u16,
     use_gpu: bool,
 }
 
@@ -106,7 +106,7 @@ impl Status {
 
     pub const MODELS_COUNT: usize = Self::MODELS.len();
 
-    pub fn new(use_gpu: bool, cpu_num_threads: usize) -> Self {
+    pub fn new(use_gpu: bool, cpu_num_threads: u16) -> Self {
         Self {
             models: StatusModels {
                 yukarin_s: BTreeMap::new(),
@@ -261,7 +261,7 @@ mod tests {
     #[case(false, 4)]
     #[case(false, 8)]
     #[case(false, 0)]
-    fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: usize) {
+    fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: u16) {
         let status = Status::new(use_gpu, cpu_num_threads);
         assert_eq!(false, status.light_session_options.use_gpu);
         assert_eq!(use_gpu, status.heavy_session_options.use_gpu);

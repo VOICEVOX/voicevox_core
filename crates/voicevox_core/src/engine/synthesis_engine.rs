@@ -251,7 +251,7 @@ impl SynthesisEngine {
         }
 
         let mut f0_list = self.inference_core_mut().predict_intonation(
-            vowel_phoneme_list.len() as i64,
+            vowel_phoneme_list.len(),
             &vowel_phoneme_list,
             &consonant_phoneme_list,
             &start_accent_list,

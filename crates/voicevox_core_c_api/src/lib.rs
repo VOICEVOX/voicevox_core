@@ -7,6 +7,8 @@ use libc::c_void;
 use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int};
+use std::path::PathBuf;
+use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
 use voicevox_core::AudioQueryModel;
 use voicevox_core::VoicevoxCore;
@@ -34,47 +36,62 @@ pub use voicevox_core::result_code::VoicevoxResultCode;
 
 #[repr(C)]
 pub struct VoicevoxInitializeOptions {
-    use_cuda: bool,
+    use_gpu: bool,
     cpu_num_threads: u16,
     load_all_models: bool,
     open_jtalk_dict_dir: *const c_char,
 }
 
+impl VoicevoxInitializeOptions {
+    fn from_default_options(options: voicevox_core::InitializeOptions) -> Self {
+        Self {
+            use_gpu: options.use_gpu,
+            cpu_num_threads: options.cpu_num_threads,
+            load_all_models: options.load_all_models,
+            open_jtalk_dict_dir: null(),
+        }
+    }
+
+    fn try_into_options(
+        self,
+    ) -> std::result::Result<voicevox_core::InitializeOptions, VoicevoxResultCode> {
+        let open_jtalk_dict_dir = ensure_utf8(unsafe { CStr::from_ptr(self.open_jtalk_dict_dir) })?;
+        Ok(voicevox_core::InitializeOptions {
+            use_gpu: self.use_gpu,
+            cpu_num_threads: self.cpu_num_threads,
+            load_all_models: self.load_all_models,
+            open_jtalk_dict_dir: Some(PathBuf::from(open_jtalk_dict_dir)),
+        })
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn voicevox_default_initialize_options() -> VoicevoxInitializeOptions {
-    unimplemented!()
+    VoicevoxInitializeOptions::from_default_options(voicevox_core::InitializeOptions::default())
 }
 
 #[no_mangle]
 pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> VoicevoxResultCode {
-    unimplemented!();
-    let result = lock_internal().initialize(use_gpu, cpu_num_threads as usize, load_all_models);
-    //TODO: VoicevoxResultCodeを返すようにする
-    if let Some(err) = result.err() {
-        set_message(&format!("{}", err));
-        false
-    } else {
-        true
+    match options.try_into_options() {
+        Ok(options) => {
+            let result = lock_internal().initialize(options);
+            let (_, result_code) = convert_result(result);
+            result_code
+        }
+        Err(result_code) => result_code,
     }
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_load_model(speaker_id: i64) -> VoicevoxResultCode {
-    unimplemented!();
-    let result = lock_internal().load_model(speaker_id as usize);
-    //TODO: VoicevoxResultCodeを返すようにする
-    if let Some(err) = result.err() {
-        set_message(&format!("{}", err));
-        false
-    } else {
-        true
-    }
+pub extern "C" fn voicevox_load_model(speaker_id: usize) -> VoicevoxResultCode {
+    let result = lock_internal().load_model(speaker_id);
+    let (_, result_code) = convert_result(result);
+    result_code
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_is_model_loaded(speaker_id: i64) -> VoicevoxResultCode {
-    unimplemented!();
-    lock_internal().is_model_loaded(speaker_id as usize)
+pub extern "C" fn voicevox_is_model_loaded(speaker_id: usize) -> bool {
+    lock_internal().is_model_loaded(speaker_id)
 }
 
 #[no_mangle]
@@ -94,74 +111,63 @@ pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
 
 #[no_mangle]
 pub extern "C" fn voicevox_predict_duration(
-    length: i64,
+    length: usize,
     phoneme_list: *mut i64,
-    speaker_id: *mut i64,
+    speaker_id: usize,
     output: *mut f32,
 ) -> VoicevoxResultCode {
-    unimplemented!();
     let result = lock_internal().predict_duration(
-        unsafe { std::slice::from_raw_parts_mut(phoneme_list, length as usize) },
-        unsafe { *speaker_id as usize },
+        unsafe { std::slice::from_raw_parts_mut(phoneme_list, length) },
+        speaker_id,
     );
-    //TODO: VoicevoxResultCodeを返すようにする
-    match result {
-        Ok(output_vec) => {
-            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
+
+    let (output_vec, result_code) = convert_result(result);
+    if result_code == VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED {
+        if let Some(output_vec) = output_vec {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length) };
             output_slice.clone_from_slice(&output_vec);
-            true
-        }
-        Err(err) => {
-            set_message(&format!("{}", err));
-            false
         }
     }
+    result_code
 }
 
 #[no_mangle]
 pub extern "C" fn voicevox_predict_intonation(
-    length: i64,
+    length: usize,
     vowel_phoneme_list: *mut i64,
     consonant_phoneme_list: *mut i64,
     start_accent_list: *mut i64,
     end_accent_list: *mut i64,
     start_accent_phrase_list: *mut i64,
     end_accent_phrase_list: *mut i64,
-    speaker_id: *mut i64,
+    speaker_id: usize,
     output: *mut f32,
 ) -> VoicevoxResultCode {
-    unimplemented!();
     let result = lock_internal().predict_intonation(
         length,
-        unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length as usize) },
-        unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length as usize) },
-        unsafe { std::slice::from_raw_parts(start_accent_list, length as usize) },
-        unsafe { std::slice::from_raw_parts(end_accent_list, length as usize) },
-        unsafe { std::slice::from_raw_parts(start_accent_phrase_list, length as usize) },
-        unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length as usize) },
-        unsafe { *speaker_id as usize },
+        unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length) },
+        unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length) },
+        unsafe { std::slice::from_raw_parts(start_accent_list, length) },
+        unsafe { std::slice::from_raw_parts(end_accent_list, length) },
+        unsafe { std::slice::from_raw_parts(start_accent_phrase_list, length) },
+        unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length) },
+        speaker_id,
     );
-    //TODO: VoicevoxResultCodeを返すようにする
-    match result {
-        Ok(output_vec) => {
-            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
-            output_slice.clone_from_slice(&output_vec);
-            true
-        }
-        Err(err) => {
-            set_message(&format!("{}", err));
-            false
-        }
+    let (output_vec, result_code) = convert_result(result);
+    if let Some(output_vec) = output_vec {
+        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length) };
+        output_slice.clone_from_slice(&output_vec);
     }
+    result_code
 }
 
 #[no_mangle]
 pub extern "C" fn voicevox_decode(
-    length: i64,
+    length: usize,
     phoneme_size: i64,
     f0: *mut f32,
     phoneme: *mut f32,
-    speaker_id: *mut i64,
+    speaker_id: usize,
     output: *mut f32,
 ) -> VoicevoxResultCode {
     let length = length as usize;
@@ -171,21 +177,14 @@ pub extern "C" fn voicevox_decode(
         phoneme_size,
         unsafe { std::slice::from_raw_parts(f0, length) },
         unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) },
-        unsafe { *speaker_id as usize },
+        speaker_id,
     );
-    //TODO: VoicevoxResultCodeを返すようにする
-    match result {
-        Ok(output_vec) => {
-            let output_slice =
-                unsafe { std::slice::from_raw_parts_mut(output, (length as usize) * 256) };
-            output_slice.clone_from_slice(&output_vec);
-            true
-        }
-        Err(err) => {
-            set_message(&format!("{}", err));
-            false
-        }
+    let (output_vec, result_code) = convert_result(result);
+    if let Some(output_vec) = output_vec {
+        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length) };
+        output_slice.clone_from_slice(&output_vec);
     }
+    result_code
 }
 
 #[repr(C)]
@@ -193,22 +192,32 @@ pub struct VoicevoxAudioQueryOptions {
     kana: bool,
 }
 
+impl From<voicevox_core::AudioQueryOptions> for VoicevoxAudioQueryOptions {
+    fn from(options: voicevox_core::AudioQueryOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
+    fn from(options: VoicevoxAudioQueryOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn voicevox_default_audio_query_options() -> VoicevoxAudioQueryOptions {
-    unimplemented!()
+    voicevox_core::AudioQueryOptions::default().into()
 }
 
 #[no_mangle]
 pub extern "C" fn voicevox_audio_query(
     text: *const c_char,
-    speaker_id: i64,
+    speaker_id: usize,
     options: VoicevoxAudioQueryOptions,
     output_audio_query_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
-    unimplemented!();
     let text = unsafe { CStr::from_ptr(text) };
 
-    let audio_query = &match create_audio_query(text, speaker_id, Internal::audio_query) {
+    let audio_query = &match create_audio_query(text, speaker_id, Internal::audio_query, options) {
         Ok(audio_query) => audio_query,
         Err(result_code) => return result_code,
     };
@@ -222,10 +231,16 @@ pub extern "C" fn voicevox_audio_query(
 #[repr(C)]
 pub struct VoicevoxSynthesisOptions {}
 
+impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
+    fn from(_: VoicevoxSynthesisOptions) -> Self {
+        Self {}
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn voicevox_synthesis(
     audio_query_json: *const c_char,
-    speaker_id: i64,
+    speaker_id: usize,
     options: VoicevoxSynthesisOptions,
     output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
@@ -242,9 +257,8 @@ pub extern "C" fn voicevox_synthesis(
         return VoicevoxResultCode::VOICEVOX_RESULT_INVALID_AUDIO_QUERY;
     };
 
-    let speaker_id = speaker_id as usize;
-
-    let (wav, result_code) = convert_result(lock_internal().synthesis(audio_query, speaker_id));
+    let (wav, result_code) =
+        convert_result(lock_internal().synthesis(audio_query, speaker_id, options.into()));
     let wav = &if let Some(wav) = wav {
         wav
     } else {
@@ -262,22 +276,34 @@ pub struct VoicevoxTtsOptions {
     kana: bool,
 }
 
+impl From<voicevox_core::TtsOptions> for VoicevoxTtsOptions {
+    fn from(options: voicevox_core::TtsOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+
+impl From<VoicevoxTtsOptions> for voicevox_core::TtsOptions {
+    fn from(options: VoicevoxTtsOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+
 #[no_mangle]
 pub fn voicevox_default_tts_options() -> VoicevoxTtsOptions {
-    unimplemented!()
+    voicevox_core::TtsOptions::default().into()
 }
 
 #[no_mangle]
 pub extern "C" fn voicevox_tts(
     text: *const c_char,
-    speaker_id: i64,
+    speaker_id: usize,
     options: VoicevoxTtsOptions,
     output_binary_size: *mut c_int,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     let (output_opt, result_code) = {
         if let Ok(text) = unsafe { CStr::from_ptr(text) }.to_str() {
-            convert_result(lock_internal().tts(text, speaker_id as usize))
+            convert_result(lock_internal().tts(text, speaker_id, options.into()))
         } else {
             (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT)
         }

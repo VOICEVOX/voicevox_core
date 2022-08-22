@@ -33,11 +33,10 @@ impl VoicevoxCore {
     }
 
     pub fn initialize(&mut self, options: InitializeOptions) -> Result<()> {
-        unimplemented!();
         self.synthesis_engine.inference_core_mut().initialize(
-            use_gpu,
-            cpu_num_threads,
-            load_all_models,
+            options.use_gpu,
+            options.cpu_num_threads,
+            options.load_all_models,
         )
     }
 
@@ -78,7 +77,7 @@ impl VoicevoxCore {
     #[allow(clippy::too_many_arguments)]
     pub fn predict_intonation(
         &mut self,
-        length: i64,
+        length: usize,
         vowel_phoneme_list: &[i64],
         consonant_phoneme_list: &[i64],
         start_accent_list: &[i64],
@@ -118,13 +117,21 @@ impl VoicevoxCore {
         )
     }
 
-    pub fn audio_query(&mut self, text: &str, speaker_id: usize) -> Result<AudioQueryModel> {
+    pub fn audio_query(
+        &mut self,
+        text: &str,
+        speaker_id: usize,
+        options: AudioQueryOptions,
+    ) -> Result<AudioQueryModel> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
             return Err(Error::NotLoadedOpenjtalkDict);
         }
-        let accent_phrases = self
-            .synthesis_engine
-            .create_accent_phrases(text, speaker_id)?;
+        let accent_phrases = if options.kana {
+            parse_kana(text)?
+        } else {
+            self.synthesis_engine
+                .create_accent_phrases(text, speaker_id)?
+        };
 
         Ok(AudioQueryModel::new(
             accent_phrases,
@@ -143,31 +150,57 @@ impl VoicevoxCore {
     pub fn synthesis(
         &mut self,
         audio_query: &AudioQueryModel,
-        options: SynthesisOptions,
         speaker_id: usize,
+        options: SynthesisOptions,
     ) -> Result<Vec<u8>> {
-        unimplemented!();
         self.synthesis_engine
             .synthesis_wave_format(audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
     }
 
     pub fn tts(&mut self, text: &str, speaker_id: usize, options: TtsOptions) -> Result<Vec<u8>> {
-        let audio_query = &self.audio_query(text, speaker_id)?;
-        self.synthesis(audio_query, speaker_id)
+        let audio_query = &self.audio_query(
+            text,
+            speaker_id,
+            AudioQueryOptions::from_tts_options(&options),
+        )?;
+        self.synthesis(
+            audio_query,
+            speaker_id,
+            SynthesisOptions::from_tts_options(&options),
+        )
     }
 }
 
+#[derive(Default)]
+pub struct AudioQueryOptions {
+    pub kana: bool,
+}
+
+impl AudioQueryOptions {
+    fn from_tts_options(options: &TtsOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+
+#[derive(Default)]
 pub struct InitializeOptions {
-    use_cuda: bool,
-    cpu_num_threads: u16,
-    load_all_models: bool,
-    open_jtalk_dict_dir: Option<PathBuf>,
+    pub use_gpu: bool,
+    pub cpu_num_threads: u16,
+    pub load_all_models: bool,
+    pub open_jtalk_dict_dir: Option<PathBuf>,
 }
 
 pub struct SynthesisOptions {}
 
+impl SynthesisOptions {
+    fn from_tts_options(_: &TtsOptions) -> Self {
+        Self {}
+    }
+}
+
+#[derive(Default)]
 pub struct TtsOptions {
-    kana: bool,
+    pub kana: bool,
 }
 
 #[derive(new)]
@@ -180,7 +213,7 @@ impl InferenceCore {
     pub fn initialize(
         &mut self,
         use_gpu: bool,
-        cpu_num_threads: usize,
+        cpu_num_threads: u16,
         load_all_models: bool,
     ) -> Result<()> {
         self.initialized = false;
@@ -293,7 +326,7 @@ impl InferenceCore {
     #[allow(clippy::too_many_arguments)]
     pub fn predict_intonation(
         &mut self,
-        length: i64,
+        length: usize,
         vowel_phoneme_list: &[i64],
         consonant_phoneme_list: &[i64],
         start_accent_list: &[i64],
@@ -326,7 +359,7 @@ impl InferenceCore {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let mut length_array = NdArray::new(ndarray::arr0(length));
+        let mut length_array = NdArray::new(ndarray::arr0(length as i64));
         let mut vowel_phoneme_list_array = NdArray::new(ndarray::arr1(vowel_phoneme_list));
         let mut consonant_phoneme_list_array = NdArray::new(ndarray::arr1(consonant_phoneme_list));
         let mut start_accent_list_array = NdArray::new(ndarray::arr1(start_accent_list));
@@ -521,7 +554,10 @@ mod tests {
     #[rstest]
     fn finalize_works() {
         let internal = VoicevoxCore::new_with_mutex();
-        let result = internal.lock().unwrap().initialize(false, 0, false);
+        let result = internal
+            .lock()
+            .unwrap()
+            .initialize(InitializeOptions::default());
         assert_eq!(Ok(()), result);
         internal.lock().unwrap().finalize();
         assert_eq!(
@@ -561,7 +597,7 @@ mod tests {
         internal
             .lock()
             .unwrap()
-            .initialize(false, 0, false)
+            .initialize(InitializeOptions::default())
             .unwrap();
         let result = internal.lock().unwrap().load_model(speaker_id);
         assert_eq!(
@@ -584,7 +620,7 @@ mod tests {
         internal
             .lock()
             .unwrap()
-            .initialize(false, 0, false)
+            .initialize(InitializeOptions::default())
             .unwrap();
         assert!(
             !internal.lock().unwrap().is_model_loaded(speaker_id),
@@ -632,7 +668,14 @@ mod tests {
     #[rstest]
     fn yukarin_s_forward_works() {
         let internal = VoicevoxCore::new_with_mutex();
-        internal.lock().unwrap().initialize(false, 0, true).unwrap();
+        internal
+            .lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                load_all_models: true,
+                ..Default::default()
+            })
+            .unwrap();
 
         // 「こんにちは、音声合成の世界へようこそ」という文章を変換して得た phoneme_list
         let phoneme_list = [
@@ -649,7 +692,14 @@ mod tests {
     #[rstest]
     fn yukarin_sa_forward_works() {
         let internal = VoicevoxCore::new_with_mutex();
-        internal.lock().unwrap().initialize(false, 0, true).unwrap();
+        internal
+            .lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                load_all_models: true,
+                ..Default::default()
+            })
+            .unwrap();
 
         // 「テスト」という文章に対応する入力
         let vowel_phoneme_list = [0, 14, 6, 30, 0];
@@ -660,7 +710,7 @@ mod tests {
         let end_accent_phrase_list = [0, 0, 0, 1, 0];
 
         let result = internal.lock().unwrap().predict_intonation(
-            vowel_phoneme_list.len() as i64,
+            vowel_phoneme_list.len(),
             &vowel_phoneme_list,
             &consonant_phoneme_list,
             &start_accent_list,
@@ -677,7 +727,14 @@ mod tests {
     #[rstest]
     fn decode_forward_works() {
         let internal = VoicevoxCore::new_with_mutex();
-        internal.lock().unwrap().initialize(false, 0, true).unwrap();
+        internal
+            .lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                load_all_models: true,
+                ..Default::default()
+            })
+            .unwrap();
 
         // 「テスト」という文章に対応する入力
         const F0_LENGTH: usize = 69;
