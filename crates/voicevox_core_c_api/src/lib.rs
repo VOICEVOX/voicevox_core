@@ -229,7 +229,11 @@ pub extern "C" fn voicevox_audio_query(
 }
 
 #[repr(C)]
-pub struct VoicevoxSynthesisOptions {}
+pub struct VoicevoxSynthesisOptions {
+    // improper_ctypes_definitions を避けるためフィールドを持っておく
+    // TODO: improper_ctypes_definitionsを使用した機能を作る
+    enable_interrogative_upspeak: bool,
+}
 
 impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
     fn from(_: VoicevoxSynthesisOptions) -> Self {

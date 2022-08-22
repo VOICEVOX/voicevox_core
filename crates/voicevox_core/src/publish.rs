@@ -37,7 +37,12 @@ impl VoicevoxCore {
             options.use_gpu,
             options.cpu_num_threads,
             options.load_all_models,
-        )
+        )?;
+        if let Some(open_jtalk_dict_dir) = options.open_jtalk_dict_dir {
+            self.synthesis_engine
+                .load_openjtalk_dict(open_jtalk_dict_dir)?;
+        }
+        Ok(())
     }
 
     pub fn load_model(&mut self, speaker_id: usize) -> Result<()> {
@@ -151,7 +156,8 @@ impl VoicevoxCore {
         &mut self,
         audio_query: &AudioQueryModel,
         speaker_id: usize,
-        options: SynthesisOptions,
+        // TODO: SynthesisOptions を使用した機能を提供する
+        #[allow(unused_variables)] options: SynthesisOptions,
     ) -> Result<Vec<u8>> {
         self.synthesis_engine
             .synthesis_wave_format(audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
