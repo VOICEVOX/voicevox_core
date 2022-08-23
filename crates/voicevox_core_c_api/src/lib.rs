@@ -34,9 +34,18 @@ fn lock_internal() -> MutexGuard<'static, Internal> {
 
 pub use voicevox_core::result_code::VoicevoxResultCode;
 
+#[repr(i32)]
+#[derive(Debug, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
+pub enum VoicevoxAccelerationMode {
+    VOICEVOX_ACCELERATION_MODE_AUTO = 1,
+    VOICEVOX_ACCELERATION_MODE_CPU = 2,
+    VOICEVOX_ACCELERATION_MODE_GPU = 3,
+}
+
 #[repr(C)]
 pub struct VoicevoxInitializeOptions {
-    use_gpu: bool,
+    acceleration_mode: VoicevoxAccelerationMode,
     cpu_num_threads: u16,
     load_all_models: bool,
     open_jtalk_dict_dir: *const c_char,

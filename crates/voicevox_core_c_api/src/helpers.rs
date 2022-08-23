@@ -119,11 +119,33 @@ impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
     }
 }
 
+impl From<voicevox_core::AccelerationMode> for VoicevoxAccelerationMode {
+    fn from(mode: voicevox_core::AccelerationMode) -> Self {
+        use voicevox_core::AccelerationMode::*;
+        match mode {
+            Auto => Self::VOICEVOX_ACCELERATION_MODE_AUTO,
+            Cpu => Self::VOICEVOX_ACCELERATION_MODE_CPU,
+            Gpu => Self::VOICEVOX_ACCELERATION_MODE_GPU,
+        }
+    }
+}
+
+impl From<VoicevoxAccelerationMode> for voicevox_core::AccelerationMode {
+    fn from(mode: VoicevoxAccelerationMode) -> Self {
+        use VoicevoxAccelerationMode::*;
+        match mode {
+            VOICEVOX_ACCELERATION_MODE_AUTO => Self::Auto,
+            VOICEVOX_ACCELERATION_MODE_CPU => Self::Cpu,
+            VOICEVOX_ACCELERATION_MODE_GPU => Self::Gpu,
+        }
+    }
+}
+
 impl Default for VoicevoxInitializeOptions {
     fn default() -> Self {
         let options = voicevox_core::InitializeOptions::default();
         Self {
-            use_gpu: options.use_gpu,
+            acceleration_mode: options.acceleration_mode.into(),
             cpu_num_threads: options.cpu_num_threads,
             load_all_models: options.load_all_models,
             open_jtalk_dict_dir: null(),
@@ -137,7 +159,7 @@ impl VoicevoxInitializeOptions {
     ) -> std::result::Result<voicevox_core::InitializeOptions, VoicevoxResultCode> {
         let open_jtalk_dict_dir = ensure_utf8(CStr::from_ptr(self.open_jtalk_dict_dir))?;
         Ok(voicevox_core::InitializeOptions {
-            use_gpu: self.use_gpu,
+            acceleration_mode: self.acceleration_mode.into(),
             cpu_num_threads: self.cpu_num_threads,
             load_all_models: self.load_all_models,
             open_jtalk_dict_dir: Some(PathBuf::from(open_jtalk_dict_dir)),

@@ -33,8 +33,24 @@ impl VoicevoxCore {
     }
 
     pub fn initialize(&mut self, options: InitializeOptions) -> Result<()> {
+        let use_gpu = match options.acceleration_mode {
+            AccelerationMode::Auto => {
+                let supported_devices = SupportedDevices::get_supported_devices()?;
+
+                cfg_if! {
+                    if #[cfg(feature="directml")]{
+                        *supported_devices.dml()
+
+                    } else {
+                        *supported_devices.cuda()
+                    }
+                }
+            }
+            AccelerationMode::Cpu => false,
+            AccelerationMode::Gpu => true,
+        };
         self.synthesis_engine.inference_core_mut().initialize(
-            options.use_gpu,
+            use_gpu,
             options.cpu_num_threads,
             options.load_all_models,
         )?;
@@ -182,9 +198,22 @@ impl From<&TtsOptions> for AudioQueryOptions {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum AccelerationMode {
+    Auto,
+    Cpu,
+    Gpu,
+}
+
+impl Default for AccelerationMode {
+    fn default() -> Self {
+        Self::Auto
+    }
+}
+
 #[derive(Default)]
 pub struct InitializeOptions {
-    pub use_gpu: bool,
+    pub acceleration_mode: AccelerationMode,
     pub cpu_num_threads: u16,
     pub load_all_models: bool,
     pub open_jtalk_dict_dir: Option<PathBuf>,
