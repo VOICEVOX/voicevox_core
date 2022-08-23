@@ -38,9 +38,9 @@ pub use voicevox_core::result_code::VoicevoxResultCode;
 #[derive(Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
 pub enum VoicevoxAccelerationMode {
-    VOICEVOX_ACCELERATION_MODE_AUTO = 1,
-    VOICEVOX_ACCELERATION_MODE_CPU = 2,
-    VOICEVOX_ACCELERATION_MODE_GPU = 3,
+    VOICEVOX_ACCELERATION_MODE_AUTO = 0,
+    VOICEVOX_ACCELERATION_MODE_CPU = 1,
+    VOICEVOX_ACCELERATION_MODE_GPU = 2,
 }
 
 #[repr(C)]
