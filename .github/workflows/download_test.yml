@@ -14,23 +14,33 @@ jobs:
               voicevox_core/core.dll
               voicevox_core/open_jtalk_dic_utf_8-1.11
               voicevox_core/README.txt
+            voicevox_core_version_path: voicevox_core/VERSION
           - os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh
             check_items: |
               voicevox_core/libcore.so
               voicevox_core/open_jtalk_dic_utf_8-1.11
               voicevox_core/README.txt
+            voicevox_core_version_path: voicevox_core/VERSION
           - os: macos-latest
             download_command: ./scripts/downloads/download.sh
             check_items: |
               voicevox_core/libcore.so
               voicevox_core/open_jtalk_dic_utf_8-1.11
               voicevox_core/README.txt
+            voicevox_core_version_path: voicevox_core/VERSION
     runs-on: ${{ matrix.os }}
+    env:
+      EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || '0.13.0' }}
     steps:
       - uses: actions/checkout@v2
       - name: Execute download command
         run: ${{ matrix.download_command }}
+      - name: Check downloaded version
+        shell: bash
+        run: |
+          [ -e "${{ matrix.voicevox_core_version_path }}" ]
+          [ "$(cat "${{ matrix.voicevox_core_version_path }}")" = "${{ env.EXPECTED_VOICEVOX_CORE_VERSION }}" ]
       - name: Check downloaded files
         shell: bash
         run: |
