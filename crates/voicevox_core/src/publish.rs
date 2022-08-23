@@ -20,6 +20,7 @@ static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> =
 
 pub struct VoicevoxCore {
     synthesis_engine: SynthesisEngine,
+    use_gpu: bool,
 }
 
 impl VoicevoxCore {
@@ -29,6 +30,7 @@ impl VoicevoxCore {
                 InferenceCore::new(false, None),
                 OpenJtalk::initialize(),
             ),
+            use_gpu: false,
         })
     }
 
@@ -49,6 +51,7 @@ impl VoicevoxCore {
             AccelerationMode::Cpu => false,
             AccelerationMode::Gpu => true,
         };
+        self.use_gpu = use_gpu;
         self.synthesis_engine.inference_core_mut().initialize(
             use_gpu,
             options.cpu_num_threads,
@@ -59,6 +62,10 @@ impl VoicevoxCore {
                 .load_openjtalk_dict(open_jtalk_dict_dir)?;
         }
         Ok(())
+    }
+
+    pub fn is_use_gpu(&self) -> bool {
+        self.use_gpu
     }
 
     pub fn load_model(&mut self, speaker_id: usize) -> Result<()> {
@@ -639,13 +646,31 @@ mod tests {
         internal
             .lock()
             .unwrap()
-            .initialize(InitializeOptions::default())
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            })
             .unwrap();
         let result = internal.lock().unwrap().load_model(speaker_id);
         assert_eq!(
             expected_result_at_initialized, result,
             "got load_model result"
         );
+    }
+
+    #[rstest]
+    fn is_use_gpu_works() {
+        let internal = VoicevoxCore::new_with_mutex();
+        assert_eq!(false, internal.lock().unwrap().is_use_gpu());
+        internal
+            .lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            })
+            .unwrap();
+        assert_eq!(false, internal.lock().unwrap().is_use_gpu());
     }
 
     #[rstest]
@@ -662,7 +687,10 @@ mod tests {
         internal
             .lock()
             .unwrap()
-            .initialize(InitializeOptions::default())
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            })
             .unwrap();
         assert!(
             !internal.lock().unwrap().is_model_loaded(speaker_id),
@@ -715,6 +743,7 @@ mod tests {
             .unwrap()
             .initialize(InitializeOptions {
                 load_all_models: true,
+                acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
             })
             .unwrap();
@@ -739,6 +768,7 @@ mod tests {
             .unwrap()
             .initialize(InitializeOptions {
                 load_all_models: true,
+                acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
             })
             .unwrap();
@@ -773,6 +803,7 @@ mod tests {
             .lock()
             .unwrap()
             .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
                 load_all_models: true,
                 ..Default::default()
             })
