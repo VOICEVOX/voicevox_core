@@ -205,17 +205,12 @@ impl From<&TtsOptions> for AudioQueryOptions {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub enum AccelerationMode {
+    #[default]
     Auto,
     Cpu,
     Gpu,
-}
-
-impl Default for AccelerationMode {
-    fn default() -> Self {
-        Self::Auto
-    }
 }
 
 #[derive(Default)]
