@@ -10,25 +10,25 @@ jobs:
         include:
           - os: windows-latest
             download_command: ./scripts/downloads/Download.ps1
+            download_dir: voicevox_core
             check_items: |
-              voicevox_core/core.dll
-              voicevox_core/open_jtalk_dic_utf_8-1.11
-              voicevox_core/README.txt
-            voicevox_core_version_path: voicevox_core/VERSION
+              core.dll
+              open_jtalk_dic_utf_8-1.11
+              README.txt
           - os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh
+            download_dir: voicevox_core
             check_items: |
-              voicevox_core/libcore.so
-              voicevox_core/open_jtalk_dic_utf_8-1.11
-              voicevox_core/README.txt
-            voicevox_core_version_path: voicevox_core/VERSION
+              libcore.so
+              open_jtalk_dic_utf_8-1.11
+              README.txt
           - os: macos-latest
             download_command: ./scripts/downloads/download.sh
+            download_dir: voicevox_core
             check_items: |
-              voicevox_core/libcore.so
-              voicevox_core/open_jtalk_dic_utf_8-1.11
-              voicevox_core/README.txt
-            voicevox_core_version_path: voicevox_core/VERSION
+              libcore.so
+              open_jtalk_dic_utf_8-1.11
+              README.txt
     runs-on: ${{ matrix.os }}
     env:
       EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || '0.13.0' }}
@@ -39,14 +39,14 @@ jobs:
       - name: Check downloaded version
         shell: bash
         run: |
-          [ -e "${{ matrix.voicevox_core_version_path }}" ]
-          [ "$(cat "${{ matrix.voicevox_core_version_path }}")" = "${{ env.EXPECTED_VOICEVOX_CORE_VERSION }}" ]
+          [ -e "${{ matrix.download_dir }}/VERSION" ]
+          [ "$(cat "${{ matrix.download_dir }}/VERSION")" = "${{ env.EXPECTED_VOICEVOX_CORE_VERSION }}" ]
       - name: Check downloaded files
         shell: bash
         run: |
           items=($(echo -e "${{ matrix.check_items }}" | xargs))
           for item in "${items[@]}"
           do
-            echo "check exists ${item}..."
-            [ -e "$item" ]
+            echo "check exists ${{ matrix.download_dir }}/${item}..."
+            [ -e "${{ matrix.download_dir }}/${item}" ]
           done
