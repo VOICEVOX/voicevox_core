@@ -35,9 +35,9 @@ jobs:
             additional-features: ""
           - os: macos-12
             additional-features: ""
-          - os: ubuntu-18.04
-            additional-features: ""
           - os: ubuntu-20.04
+            additional-features: ""
+          - os: ubuntu-22.04
             additional-features: ""
     runs-on: ${{ matrix.os }}
     steps:
