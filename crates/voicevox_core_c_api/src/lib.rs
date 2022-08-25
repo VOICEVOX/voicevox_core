@@ -52,7 +52,7 @@ pub struct VoicevoxInitializeOptions {
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_default_initialize_options() -> VoicevoxInitializeOptions {
+pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitializeOptions {
     VoicevoxInitializeOptions::default()
 }
 
@@ -184,7 +184,7 @@ pub struct VoicevoxAudioQueryOptions {
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_default_audio_query_options() -> VoicevoxAudioQueryOptions {
+pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQueryOptions {
     voicevox_core::AudioQueryOptions::default().into()
 }
 
@@ -213,7 +213,7 @@ pub struct VoicevoxSynthesisOptions {
     enable_interrogative_upspeak: bool,
 }
 
-pub extern "C" fn voicevox_default_synthesis_options() -> VoicevoxSynthesisOptions {
+pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesisOptions {
     VoicevoxSynthesisOptions::default()
 }
 
@@ -258,7 +258,7 @@ pub struct VoicevoxTtsOptions {
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_default_tts_options() -> VoicevoxTtsOptions {
+pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
     voicevox_core::TtsOptions::default().into()
 }
 
