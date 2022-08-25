@@ -22,13 +22,6 @@ jobs:
               libcore.so
               open_jtalk_dic_utf_8-1.11
               README.txt
-          - os: macos-latest
-            download_command: ./scripts/downloads/download.sh
-            download_dir: voicevox_core
-            check_items: |
-              libcore.so
-              open_jtalk_dic_utf_8-1.11
-              README.txt
     runs-on: ${{ matrix.os }}
     env:
       EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || '0.13.0' }}
