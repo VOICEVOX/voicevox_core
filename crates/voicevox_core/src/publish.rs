@@ -64,7 +64,7 @@ impl VoicevoxCore {
         Ok(())
     }
 
-    pub fn is_use_gpu(&self) -> bool {
+    pub fn is_gpu_mode(&self) -> bool {
         self.use_gpu
     }
 
@@ -656,7 +656,7 @@ mod tests {
     #[rstest]
     fn is_use_gpu_works() {
         let internal = VoicevoxCore::new_with_mutex();
-        assert_eq!(false, internal.lock().unwrap().is_use_gpu());
+        assert_eq!(false, internal.lock().unwrap().is_gpu_mode());
         internal
             .lock()
             .unwrap()
@@ -665,7 +665,7 @@ mod tests {
                 ..Default::default()
             })
             .unwrap();
-        assert_eq!(false, internal.lock().unwrap().is_use_gpu());
+        assert_eq!(false, internal.lock().unwrap().is_gpu_mode());
     }
 
     #[rstest]

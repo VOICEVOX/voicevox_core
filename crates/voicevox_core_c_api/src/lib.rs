@@ -76,8 +76,8 @@ pub extern "C" fn voicevox_load_model(speaker_id: usize) -> VoicevoxResultCode {
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_is_use_gpu() -> bool {
-    lock_internal().is_use_gpu()
+pub extern "C" fn voicevox_is_gpu_mode() -> bool {
+    lock_internal().is_gpu_mode()
 }
 
 #[no_mangle]
