@@ -39,7 +39,7 @@ pub enum Error {
     UninitializedStatus,
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_SPEAKER_ID))]
-    InvalidSpeakerId { speaker_id: usize },
+    InvalidSpeakerId { speaker_id: u32 },
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_MODEL_INDEX))]
     InvalidModelIndex { model_index: usize },

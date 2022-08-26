@@ -69,7 +69,7 @@ pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> Voi
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_load_model(speaker_id: usize) -> VoicevoxResultCode {
+pub extern "C" fn voicevox_load_model(speaker_id: u32) -> VoicevoxResultCode {
     let result = lock_internal().load_model(speaker_id);
     let (_, result_code) = convert_result(result);
     result_code
@@ -81,7 +81,7 @@ pub extern "C" fn voicevox_is_gpu_mode() -> bool {
 }
 
 #[no_mangle]
-pub extern "C" fn voicevox_is_model_loaded(speaker_id: usize) -> bool {
+pub extern "C" fn voicevox_is_model_loaded(speaker_id: u32) -> bool {
     lock_internal().is_model_loaded(speaker_id)
 }
 
@@ -104,7 +104,7 @@ pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
 pub extern "C" fn voicevox_predict_duration(
     length: usize,
     phoneme_list: *mut i64,
-    speaker_id: usize,
+    speaker_id: u32,
     output: *mut f32,
 ) -> VoicevoxResultCode {
     let result = lock_internal().predict_duration(
@@ -131,7 +131,7 @@ pub extern "C" fn voicevox_predict_intonation(
     end_accent_list: *mut i64,
     start_accent_phrase_list: *mut i64,
     end_accent_phrase_list: *mut i64,
-    speaker_id: usize,
+    speaker_id: u32,
     output: *mut f32,
 ) -> VoicevoxResultCode {
     let result = lock_internal().predict_intonation(
@@ -158,7 +158,7 @@ pub extern "C" fn voicevox_decode(
     phoneme_size: i64,
     f0: *mut f32,
     phoneme: *mut f32,
-    speaker_id: usize,
+    speaker_id: u32,
     output: *mut f32,
 ) -> VoicevoxResultCode {
     let length = length as usize;
@@ -191,7 +191,7 @@ pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQu
 #[no_mangle]
 pub extern "C" fn voicevox_audio_query(
     text: *const c_char,
-    speaker_id: usize,
+    speaker_id: u32,
     options: VoicevoxAudioQueryOptions,
     output_audio_query_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
@@ -220,7 +220,7 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
 #[no_mangle]
 pub extern "C" fn voicevox_synthesis(
     audio_query_json: *const c_char,
-    speaker_id: usize,
+    speaker_id: u32,
     options: VoicevoxSynthesisOptions,
     output_wav_size: *mut usize,
     output_wav: *mut *mut u8,
@@ -265,7 +265,7 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 #[no_mangle]
 pub extern "C" fn voicevox_tts(
     text: *const c_char,
-    speaker_id: usize,
+    speaker_id: u32,
     options: VoicevoxTtsOptions,
     output_wav_size: *mut usize,
     output_wav: *mut *mut u8,

@@ -15,7 +15,7 @@ use std::ffi::CString;
 
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 
-static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> =
+static SPEAKER_ID_MAP: Lazy<BTreeMap<u32, (usize, u32)>> =
     Lazy::new(|| include!("include_speaker_id_map.rs").into_iter().collect());
 
 pub struct VoicevoxCore {
@@ -68,13 +68,13 @@ impl VoicevoxCore {
         self.use_gpu
     }
 
-    pub fn load_model(&mut self, speaker_id: usize) -> Result<()> {
+    pub fn load_model(&mut self, speaker_id: u32) -> Result<()> {
         self.synthesis_engine
             .inference_core_mut()
             .load_model(speaker_id)
     }
 
-    pub fn is_model_loaded(&self, speaker_id: usize) -> bool {
+    pub fn is_model_loaded(&self, speaker_id: u32) -> bool {
         self.synthesis_engine
             .inference_core()
             .is_model_loaded(speaker_id)
@@ -92,11 +92,7 @@ impl VoicevoxCore {
         &SUPPORTED_DEVICES_CSTRING
     }
 
-    pub fn predict_duration(
-        &mut self,
-        phoneme_list: &[i64],
-        speaker_id: usize,
-    ) -> Result<Vec<f32>> {
+    pub fn predict_duration(&mut self, phoneme_list: &[i64], speaker_id: u32) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
             .predict_duration(phoneme_list, speaker_id)
@@ -112,7 +108,7 @@ impl VoicevoxCore {
         end_accent_list: &[i64],
         start_accent_phrase_list: &[i64],
         end_accent_phrase_list: &[i64],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
@@ -134,7 +130,7 @@ impl VoicevoxCore {
         phoneme_size: usize,
         f0: &[f32],
         phoneme: &[f32],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine.inference_core_mut().decode(
             length,
@@ -148,7 +144,7 @@ impl VoicevoxCore {
     pub fn audio_query(
         &mut self,
         text: &str,
-        speaker_id: usize,
+        speaker_id: u32,
         options: AudioQueryOptions,
     ) -> Result<AudioQueryModel> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
@@ -178,7 +174,7 @@ impl VoicevoxCore {
     pub fn synthesis(
         &mut self,
         audio_query: &AudioQueryModel,
-        speaker_id: usize,
+        speaker_id: u32,
         options: SynthesisOptions,
     ) -> Result<Vec<u8>> {
         self.synthesis_engine.synthesis_wave_format(
@@ -188,7 +184,7 @@ impl VoicevoxCore {
         )
     }
 
-    pub fn tts(&mut self, text: &str, speaker_id: usize, options: TtsOptions) -> Result<Vec<u8>> {
+    pub fn tts(&mut self, text: &str, speaker_id: u32, options: TtsOptions) -> Result<Vec<u8>> {
         let audio_query = &self.audio_query(text, speaker_id, AudioQueryOptions::from(&options))?;
         self.synthesis(audio_query, speaker_id, SynthesisOptions::from(&options))
     }
@@ -290,7 +286,7 @@ impl InferenceCore {
             }
         }
     }
-    pub fn load_model(&mut self, speaker_id: usize) -> Result<()> {
+    pub fn load_model(&mut self, speaker_id: u32) -> Result<()> {
         if self.initialized {
             let status = self
                 .status_option
@@ -305,7 +301,7 @@ impl InferenceCore {
             Err(Error::UninitializedStatus)
         }
     }
-    pub fn is_model_loaded(&self, speaker_id: usize) -> bool {
+    pub fn is_model_loaded(&self, speaker_id: u32) -> bool {
         if let Some(status) = self.status_option.as_ref() {
             if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
                 status.is_model_loaded(model_index)
@@ -321,11 +317,7 @@ impl InferenceCore {
         self.status_option = None;
     }
 
-    pub fn predict_duration(
-        &mut self,
-        phoneme_list: &[i64],
-        speaker_id: usize,
-    ) -> Result<Vec<f32>> {
+    pub fn predict_duration(&mut self, phoneme_list: &[i64], speaker_id: u32) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
         }
@@ -377,7 +369,7 @@ impl InferenceCore {
         end_accent_list: &[i64],
         start_accent_phrase_list: &[i64],
         end_accent_phrase_list: &[i64],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
@@ -433,7 +425,7 @@ impl InferenceCore {
         phoneme_size: usize,
         f0: &[f32],
         phoneme: &[f32],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
@@ -553,7 +545,7 @@ static SUPPORTED_DEVICES_CSTRING: Lazy<CString> = Lazy::new(|| {
     .unwrap()
 });
 
-fn get_model_index_and_speaker_id(speaker_id: usize) -> Option<(usize, usize)> {
+fn get_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
     SPEAKER_ID_MAP.get(&speaker_id).copied()
 }
 
@@ -630,7 +622,7 @@ mod tests {
     #[case(1, Err(Error::UninitializedStatus), Ok(()))]
     #[case(999, Err(Error::UninitializedStatus), Err(Error::InvalidSpeakerId{speaker_id:999}))]
     fn load_model_works(
-        #[case] speaker_id: usize,
+        #[case] speaker_id: u32,
         #[case] expected_result_at_uninitialized: Result<()>,
         #[case] expected_result_at_initialized: Result<()>,
     ) {
@@ -672,7 +664,7 @@ mod tests {
     #[case(0, true)]
     #[case(1, true)]
     #[case(999, false)]
-    fn is_model_loaded_works(#[case] speaker_id: usize, #[case] expected: bool) {
+    fn is_model_loaded_works(#[case] speaker_id: u32, #[case] expected: bool) {
         let internal = VoicevoxCore::new_with_mutex();
         assert!(
             !internal.lock().unwrap().is_model_loaded(speaker_id),
@@ -723,8 +715,8 @@ mod tests {
     #[case(1, Some((0,1)))]
     #[case(999, None)]
     fn get_model_index_and_speaker_id_works(
-        #[case] speaker_id: usize,
-        #[case] expected: Option<(usize, usize)>,
+        #[case] speaker_id: u32,
+        #[case] expected: Option<(usize, u32)>,
     ) {
         let actual = get_model_index_and_speaker_id(speaker_id);
         assert_eq!(expected, actual);

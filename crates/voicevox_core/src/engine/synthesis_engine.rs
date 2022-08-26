@@ -38,7 +38,7 @@ impl SynthesisEngine {
     pub fn create_accent_phrases(
         &mut self,
         text: impl AsRef<str>,
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<AccentPhraseModel>> {
         if text.as_ref().is_empty() {
             return Ok(Vec::new());
@@ -115,7 +115,7 @@ impl SynthesisEngine {
     pub fn replace_mora_data(
         &mut self,
         accent_phrases: &[AccentPhraseModel],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<AccentPhraseModel>> {
         let accent_phrases = self.replace_phoneme_length(accent_phrases, speaker_id)?;
         self.replace_mora_pitch(&accent_phrases, speaker_id)
@@ -124,7 +124,7 @@ impl SynthesisEngine {
     pub fn replace_phoneme_length(
         &mut self,
         accent_phrases: &[AccentPhraseModel],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<AccentPhraseModel>> {
         let (_, phoneme_data_list) = SynthesisEngine::initial_process(accent_phrases);
 
@@ -188,7 +188,7 @@ impl SynthesisEngine {
     pub fn replace_mora_pitch(
         &mut self,
         accent_phrases: &[AccentPhraseModel],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<AccentPhraseModel>> {
         let (_, phoneme_data_list) = SynthesisEngine::initial_process(accent_phrases);
 
@@ -315,7 +315,7 @@ impl SynthesisEngine {
     pub fn synthesis(
         &mut self,
         query: &AudioQueryModel,
-        speaker_id: usize,
+        speaker_id: u32,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<f32>> {
         let speed_scale = *query.speed_scale();
@@ -422,7 +422,7 @@ impl SynthesisEngine {
     pub fn synthesis_wave_format(
         &mut self,
         query: &AudioQueryModel,
-        speaker_id: usize,
+        speaker_id: u32,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<u8>> {
         let wave = self.synthesis(query, speaker_id, enable_interrogative_upspeak)?;

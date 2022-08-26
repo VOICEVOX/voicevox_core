@@ -52,11 +52,11 @@ pub(crate) fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResult
 
 pub(crate) fn create_audio_query(
     japanese_or_kana: &CStr,
-    speaker_id: usize,
+    speaker_id: u32,
     method: fn(
         &mut Internal,
         &str,
-        usize,
+        u32,
         voicevox_core::AudioQueryOptions,
     ) -> Result<AudioQueryModel>,
     options: VoicevoxAudioQueryOptions,

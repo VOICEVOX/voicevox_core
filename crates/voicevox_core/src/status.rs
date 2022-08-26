@@ -18,7 +18,7 @@ pub struct Status {
     models: StatusModels,
     light_session_options: SessionOptions, // 軽いモデルはこちらを使う
     heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
-    supported_styles: BTreeSet<usize>,
+    supported_styles: BTreeSet<u32>,
 }
 
 struct StatusModels {
@@ -125,7 +125,7 @@ impl Status {
 
         for meta in metas.iter() {
             for style in meta.styles().iter() {
-                self.supported_styles.insert(*style.id() as usize);
+                self.supported_styles.insert(*style.id() as u32);
             }
         }
 
@@ -196,7 +196,7 @@ impl Status {
         Ok(session_builder.with_model_from_memory(model_bytes)?)
     }
 
-    pub fn validate_speaker_id(&self, speaker_id: usize) -> bool {
+    pub fn validate_speaker_id(&self, speaker_id: u32) -> bool {
         self.supported_styles.contains(&speaker_id)
     }
 
