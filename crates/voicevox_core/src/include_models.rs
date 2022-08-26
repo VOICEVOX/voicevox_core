@@ -1,12 +1,12 @@
 [
     Model{
-        yukarin_s_model: include_bytes!(concat!(
+        predict_duration_model: include_bytes!(concat!(
         env!("CARGO_WORKSPACE_DIR"),
-        "/model/yukarin_s.onnx"
+        "/model/predict_duration.onnx"
     )),
-        yukarin_sa_model: include_bytes!(concat!(
+        predict_intonation_model: include_bytes!(concat!(
         env!("CARGO_WORKSPACE_DIR"),
-        "/model/yukarin_sa.onnx"
+        "/model/predict_intonation.onnx"
     )),
         decode_model: include_bytes!(concat!(
         env!("CARGO_WORKSPACE_DIR"), 

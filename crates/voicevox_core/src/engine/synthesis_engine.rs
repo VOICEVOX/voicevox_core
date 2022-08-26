@@ -38,7 +38,7 @@ impl SynthesisEngine {
     pub fn create_accent_phrases(
         &mut self,
         text: impl AsRef<str>,
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<AccentPhraseModel>> {
         if text.as_ref().is_empty() {
             return Ok(Vec::new());
@@ -115,7 +115,7 @@ impl SynthesisEngine {
     pub fn replace_mora_data(
         &mut self,
         accent_phrases: &[AccentPhraseModel],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<AccentPhraseModel>> {
         let accent_phrases = self.replace_phoneme_length(accent_phrases, speaker_id)?;
         self.replace_mora_pitch(&accent_phrases, speaker_id)
@@ -124,7 +124,7 @@ impl SynthesisEngine {
     pub fn replace_phoneme_length(
         &mut self,
         accent_phrases: &[AccentPhraseModel],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<AccentPhraseModel>> {
         let (_, phoneme_data_list) = SynthesisEngine::initial_process(accent_phrases);
 
@@ -136,7 +136,7 @@ impl SynthesisEngine {
             .collect();
         let phoneme_length = self
             .inference_core_mut()
-            .yukarin_s_forward(&phoneme_list_s, speaker_id)?;
+            .predict_duration(&phoneme_list_s, speaker_id)?;
 
         let mut index = 0;
         let new_accent_phrases = accent_phrases
@@ -188,7 +188,7 @@ impl SynthesisEngine {
     pub fn replace_mora_pitch(
         &mut self,
         accent_phrases: &[AccentPhraseModel],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<AccentPhraseModel>> {
         let (_, phoneme_data_list) = SynthesisEngine::initial_process(accent_phrases);
 
@@ -250,8 +250,8 @@ impl SynthesisEngine {
             end_accent_phrase_list.push(base_end_accent_phrase_list[vowel_index as usize]);
         }
 
-        let mut f0_list = self.inference_core_mut().yukarin_sa_forward(
-            vowel_phoneme_list.len() as i64,
+        let mut f0_list = self.inference_core_mut().predict_intonation(
+            vowel_phoneme_list.len(),
             &vowel_phoneme_list,
             &consonant_phoneme_list,
             &start_accent_list,
@@ -315,7 +315,7 @@ impl SynthesisEngine {
     pub fn synthesis(
         &mut self,
         query: &AudioQueryModel,
-        speaker_id: usize,
+        speaker_id: u32,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<f32>> {
         let speed_scale = *query.speed_scale();
@@ -410,7 +410,7 @@ impl SynthesisEngine {
         // 2次元のvectorを1次元に変換し、アドレスを連続させる
         let flatten_phoneme = phoneme.into_iter().flatten().collect::<Vec<_>>();
 
-        self.inference_core_mut().decode_forward(
+        self.inference_core_mut().decode(
             f0.len(),
             OjtPhoneme::num_phoneme(),
             &f0,
@@ -422,7 +422,7 @@ impl SynthesisEngine {
     pub fn synthesis_wave_format(
         &mut self,
         query: &AudioQueryModel,
-        speaker_id: usize,
+        speaker_id: u32,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<u8>> {
         let wave = self.synthesis(query, speaker_id, enable_interrogative_upspeak)?;

@@ -39,7 +39,7 @@ pub enum Error {
     UninitializedStatus,
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_SPEAKER_ID))]
-    InvalidSpeakerId { speaker_id: usize },
+    InvalidSpeakerId { speaker_id: u32 },
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_MODEL_INDEX))]
     InvalidModelIndex { model_index: usize },
@@ -58,7 +58,7 @@ pub enum Error {
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
-    let c_message: &'static str = crate::voicevox_error_result_to_message(result_code);
+    let c_message: &'static str = crate::error_result_to_message(result_code);
     &c_message[..(c_message.len() - 1)]
 }
 

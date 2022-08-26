@@ -6,20 +6,21 @@ use onnxruntime::{
     session::{AnyArray, NdArray},
 };
 use result_code::VoicevoxResultCode;
-use std::collections::BTreeMap;
 use std::ffi::CStr;
 use std::sync::Mutex;
+use std::{collections::BTreeMap, path::PathBuf};
 
 use status::*;
 use std::ffi::CString;
 
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 
-static SPEAKER_ID_MAP: Lazy<BTreeMap<usize, (usize, usize)>> =
+static SPEAKER_ID_MAP: Lazy<BTreeMap<u32, (usize, u32)>> =
     Lazy::new(|| include!("include_speaker_id_map.rs").into_iter().collect());
 
 pub struct VoicevoxCore {
     synthesis_engine: SynthesisEngine,
+    use_gpu: bool,
 }
 
 impl VoicevoxCore {
@@ -29,29 +30,51 @@ impl VoicevoxCore {
                 InferenceCore::new(false, None),
                 OpenJtalk::initialize(),
             ),
+            use_gpu: false,
         })
     }
 
-    pub fn initialize(
-        &mut self,
-        use_gpu: bool,
-        cpu_num_threads: usize,
-        load_all_models: bool,
-    ) -> Result<()> {
+    pub fn initialize(&mut self, options: InitializeOptions) -> Result<()> {
+        let use_gpu = match options.acceleration_mode {
+            AccelerationMode::Auto => {
+                let supported_devices = SupportedDevices::get_supported_devices()?;
+
+                cfg_if! {
+                    if #[cfg(feature="directml")]{
+                        *supported_devices.dml()
+
+                    } else {
+                        *supported_devices.cuda()
+                    }
+                }
+            }
+            AccelerationMode::Cpu => false,
+            AccelerationMode::Gpu => true,
+        };
+        self.use_gpu = use_gpu;
         self.synthesis_engine.inference_core_mut().initialize(
             use_gpu,
-            cpu_num_threads,
-            load_all_models,
-        )
+            options.cpu_num_threads,
+            options.load_all_models,
+        )?;
+        if let Some(open_jtalk_dict_dir) = options.open_jtalk_dict_dir {
+            self.synthesis_engine
+                .load_openjtalk_dict(open_jtalk_dict_dir)?;
+        }
+        Ok(())
     }
 
-    pub fn load_model(&mut self, speaker_id: usize) -> Result<()> {
+    pub fn is_gpu_mode(&self) -> bool {
+        self.use_gpu
+    }
+
+    pub fn load_model(&mut self, speaker_id: u32) -> Result<()> {
         self.synthesis_engine
             .inference_core_mut()
             .load_model(speaker_id)
     }
 
-    pub fn is_model_loaded(&self, speaker_id: usize) -> bool {
+    pub fn is_model_loaded(&self, speaker_id: u32) -> bool {
         self.synthesis_engine
             .inference_core()
             .is_model_loaded(speaker_id)
@@ -61,39 +84,35 @@ impl VoicevoxCore {
         self.synthesis_engine.inference_core_mut().finalize()
     }
 
-    pub fn metas(&self) -> &'static CStr {
+    pub fn get_metas_json(&self) -> &'static CStr {
         &METAS_CSTRING
     }
 
-    pub fn supported_devices(&self) -> &'static CStr {
+    pub fn get_supported_devices_json(&self) -> &'static CStr {
         &SUPPORTED_DEVICES_CSTRING
     }
 
-    pub fn yukarin_s_forward(
-        &mut self,
-        phoneme_list: &[i64],
-        speaker_id: usize,
-    ) -> Result<Vec<f32>> {
+    pub fn predict_duration(&mut self, phoneme_list: &[i64], speaker_id: u32) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
-            .yukarin_s_forward(phoneme_list, speaker_id)
+            .predict_duration(phoneme_list, speaker_id)
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn yukarin_sa_forward(
+    pub fn predict_intonation(
         &mut self,
-        length: i64,
+        length: usize,
         vowel_phoneme_list: &[i64],
         consonant_phoneme_list: &[i64],
         start_accent_list: &[i64],
         end_accent_list: &[i64],
         start_accent_phrase_list: &[i64],
         end_accent_phrase_list: &[i64],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
-            .yukarin_sa_forward(
+            .predict_intonation(
                 length,
                 vowel_phoneme_list,
                 consonant_phoneme_list,
@@ -105,15 +124,15 @@ impl VoicevoxCore {
             )
     }
 
-    pub fn decode_forward(
+    pub fn decode(
         &mut self,
         length: usize,
         phoneme_size: usize,
         f0: &[f32],
         phoneme: &[f32],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<f32>> {
-        self.synthesis_engine.inference_core_mut().decode_forward(
+        self.synthesis_engine.inference_core_mut().decode(
             length,
             phoneme_size,
             f0,
@@ -122,21 +141,21 @@ impl VoicevoxCore {
         )
     }
 
-    pub fn voicevox_load_openjtalk_dict(&mut self, dict_path: &str) -> Result<()> {
-        self.synthesis_engine.load_openjtalk_dict(dict_path)
-    }
-
-    pub fn voicevox_audio_query(
+    pub fn audio_query(
         &mut self,
         text: &str,
-        speaker_id: usize,
+        speaker_id: u32,
+        options: AudioQueryOptions,
     ) -> Result<AudioQueryModel> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
             return Err(Error::NotLoadedOpenjtalkDict);
         }
-        let accent_phrases = self
-            .synthesis_engine
-            .create_accent_phrases(text, speaker_id)?;
+        let accent_phrases = if options.kana {
+            parse_kana(text)?
+        } else {
+            self.synthesis_engine
+                .create_accent_phrases(text, speaker_id)?
+        };
 
         Ok(AudioQueryModel::new(
             accent_phrases,
@@ -152,47 +171,75 @@ impl VoicevoxCore {
         ))
     }
 
-    pub fn voicevox_audio_query_from_kana(
-        &mut self,
-        text: &str,
-        speaker_id: usize,
-    ) -> Result<AudioQueryModel> {
-        let accent_phrases = parse_kana(text)?;
-        let accent_phrases = self
-            .synthesis_engine
-            .replace_mora_data(&accent_phrases, speaker_id)?;
-
-        Ok(AudioQueryModel::new(
-            accent_phrases,
-            1.,
-            0.,
-            1.,
-            1.,
-            0.1,
-            0.1,
-            SynthesisEngine::DEFAULT_SAMPLING_RATE,
-            false,
-            "".into(),
-        ))
-    }
-
-    pub fn voicevox_synthesis(
+    pub fn synthesis(
         &mut self,
         audio_query: &AudioQueryModel,
-        speaker_id: usize,
+        speaker_id: u32,
+        options: SynthesisOptions,
     ) -> Result<Vec<u8>> {
-        self.synthesis_engine
-            .synthesis_wave_format(audio_query, speaker_id, true) // TODO: 疑問文化を設定可能にする
+        self.synthesis_engine.synthesis_wave_format(
+            audio_query,
+            speaker_id,
+            options.enable_interrogative_upspeak,
+        )
     }
 
-    pub fn voicevox_tts(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
-        let audio_query = &self.voicevox_audio_query(text, speaker_id)?;
-        self.voicevox_synthesis(audio_query, speaker_id)
+    pub fn tts(&mut self, text: &str, speaker_id: u32, options: TtsOptions) -> Result<Vec<u8>> {
+        let audio_query = &self.audio_query(text, speaker_id, AudioQueryOptions::from(&options))?;
+        self.synthesis(audio_query, speaker_id, SynthesisOptions::from(&options))
     }
+}
 
-    pub fn voicevox_tts_from_kana(&mut self, text: &str, speaker_id: usize) -> Result<Vec<u8>> {
-        let audio_query = &self.voicevox_audio_query_from_kana(text, speaker_id)?;
-        self.voicevox_synthesis(audio_query, speaker_id)
+#[derive(Default)]
+pub struct AudioQueryOptions {
+    pub kana: bool,
+}
+
+impl From<&TtsOptions> for AudioQueryOptions {
+    fn from(options: &TtsOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+
+#[derive(Default, Debug, PartialEq, Eq)]
+pub enum AccelerationMode {
+    #[default]
+    Auto,
+    Cpu,
+    Gpu,
+}
+
+#[derive(Default)]
+pub struct InitializeOptions {
+    pub acceleration_mode: AccelerationMode,
+    pub cpu_num_threads: u16,
+    pub load_all_models: bool,
+    pub open_jtalk_dict_dir: Option<PathBuf>,
+}
+
+pub struct SynthesisOptions {
+    pub enable_interrogative_upspeak: bool,
+}
+
+impl From<&TtsOptions> for SynthesisOptions {
+    fn from(options: &TtsOptions) -> Self {
+        Self {
+            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+        }
+    }
+}
+
+pub struct TtsOptions {
+    pub kana: bool,
+    pub enable_interrogative_upspeak: bool,
+}
+
+impl Default for TtsOptions {
+    fn default() -> Self {
+        Self {
+            enable_interrogative_upspeak: true,
+            kana: Default::default(),
+        }
     }
 }
 
@@ -206,7 +253,7 @@ impl InferenceCore {
     pub fn initialize(
         &mut self,
         use_gpu: bool,
-        cpu_num_threads: usize,
+        cpu_num_threads: u16,
         load_all_models: bool,
     ) -> Result<()> {
         self.initialized = false;
@@ -239,7 +286,7 @@ impl InferenceCore {
             }
         }
     }
-    pub fn load_model(&mut self, speaker_id: usize) -> Result<()> {
+    pub fn load_model(&mut self, speaker_id: u32) -> Result<()> {
         if self.initialized {
             let status = self
                 .status_option
@@ -254,7 +301,7 @@ impl InferenceCore {
             Err(Error::UninitializedStatus)
         }
     }
-    pub fn is_model_loaded(&self, speaker_id: usize) -> bool {
+    pub fn is_model_loaded(&self, speaker_id: u32) -> bool {
         if let Some(status) = self.status_option.as_ref() {
             if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
                 status.is_model_loaded(model_index)
@@ -270,11 +317,7 @@ impl InferenceCore {
         self.status_option = None;
     }
 
-    pub fn yukarin_s_forward(
-        &mut self,
-        phoneme_list: &[i64],
-        speaker_id: usize,
-    ) -> Result<Vec<f32>> {
+    pub fn predict_duration(&mut self, phoneme_list: &[i64], speaker_id: u32) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
         }
@@ -305,7 +348,7 @@ impl InferenceCore {
         let input_tensors: Vec<&mut dyn AnyArray> =
             vec![&mut phoneme_list_array, &mut speaker_id_array];
 
-        let mut output = status.yukarin_s_session_run(model_index, input_tensors)?;
+        let mut output = status.predict_duration_session_run(model_index, input_tensors)?;
 
         for output_item in output.iter_mut() {
             if *output_item < PHONEME_LENGTH_MINIMAL {
@@ -317,16 +360,16 @@ impl InferenceCore {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn yukarin_sa_forward(
+    pub fn predict_intonation(
         &mut self,
-        length: i64,
+        length: usize,
         vowel_phoneme_list: &[i64],
         consonant_phoneme_list: &[i64],
         start_accent_list: &[i64],
         end_accent_list: &[i64],
         start_accent_phrase_list: &[i64],
         end_accent_phrase_list: &[i64],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
@@ -352,7 +395,7 @@ impl InferenceCore {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let mut length_array = NdArray::new(ndarray::arr0(length));
+        let mut length_array = NdArray::new(ndarray::arr0(length as i64));
         let mut vowel_phoneme_list_array = NdArray::new(ndarray::arr1(vowel_phoneme_list));
         let mut consonant_phoneme_list_array = NdArray::new(ndarray::arr1(consonant_phoneme_list));
         let mut start_accent_list_array = NdArray::new(ndarray::arr1(start_accent_list));
@@ -373,16 +416,16 @@ impl InferenceCore {
             &mut speaker_id_array,
         ];
 
-        status.yukarin_sa_session_run(model_index, input_tensors)
+        status.predict_intonation_session_run(model_index, input_tensors)
     }
 
-    pub fn decode_forward(
+    pub fn decode(
         &mut self,
         length: usize,
         phoneme_size: usize,
         f0: &[f32],
         phoneme: &[f32],
-        speaker_id: usize,
+        speaker_id: u32,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
@@ -502,11 +545,11 @@ static SUPPORTED_DEVICES_CSTRING: Lazy<CString> = Lazy::new(|| {
     .unwrap()
 });
 
-fn get_model_index_and_speaker_id(speaker_id: usize) -> Option<(usize, usize)> {
+fn get_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
     SPEAKER_ID_MAP.get(&speaker_id).copied()
 }
 
-pub const fn voicevox_error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
+pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
     // C APIのため、messageには必ず末尾にNULL文字を追加する
     use VoicevoxResultCode::*;
     match result_code {
@@ -547,7 +590,10 @@ mod tests {
     #[rstest]
     fn finalize_works() {
         let internal = VoicevoxCore::new_with_mutex();
-        let result = internal.lock().unwrap().initialize(false, 0, false);
+        let result = internal
+            .lock()
+            .unwrap()
+            .initialize(InitializeOptions::default());
         assert_eq!(Ok(()), result);
         internal.lock().unwrap().finalize();
         assert_eq!(
@@ -576,7 +622,7 @@ mod tests {
     #[case(1, Err(Error::UninitializedStatus), Ok(()))]
     #[case(999, Err(Error::UninitializedStatus), Err(Error::InvalidSpeakerId{speaker_id:999}))]
     fn load_model_works(
-        #[case] speaker_id: usize,
+        #[case] speaker_id: u32,
         #[case] expected_result_at_uninitialized: Result<()>,
         #[case] expected_result_at_initialized: Result<()>,
     ) {
@@ -587,7 +633,10 @@ mod tests {
         internal
             .lock()
             .unwrap()
-            .initialize(false, 0, false)
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            })
             .unwrap();
         let result = internal.lock().unwrap().load_model(speaker_id);
         assert_eq!(
@@ -597,10 +646,25 @@ mod tests {
     }
 
     #[rstest]
+    fn is_use_gpu_works() {
+        let internal = VoicevoxCore::new_with_mutex();
+        assert_eq!(false, internal.lock().unwrap().is_gpu_mode());
+        internal
+            .lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            })
+            .unwrap();
+        assert_eq!(false, internal.lock().unwrap().is_gpu_mode());
+    }
+
+    #[rstest]
     #[case(0, true)]
     #[case(1, true)]
     #[case(999, false)]
-    fn is_model_loaded_works(#[case] speaker_id: usize, #[case] expected: bool) {
+    fn is_model_loaded_works(#[case] speaker_id: u32, #[case] expected: bool) {
         let internal = VoicevoxCore::new_with_mutex();
         assert!(
             !internal.lock().unwrap().is_model_loaded(speaker_id),
@@ -610,7 +674,10 @@ mod tests {
         internal
             .lock()
             .unwrap()
-            .initialize(false, 0, false)
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            })
             .unwrap();
         assert!(
             !internal.lock().unwrap().is_model_loaded(speaker_id),
@@ -635,7 +702,7 @@ mod tests {
     #[rstest]
     fn supported_devices_works() {
         let internal = VoicevoxCore::new_with_mutex();
-        let cstr_result = internal.lock().unwrap().supported_devices();
+        let cstr_result = internal.lock().unwrap().get_supported_devices_json();
         assert!(cstr_result.to_str().is_ok(), "{:?}", cstr_result);
 
         let json_result: std::result::Result<SupportedDevices, _> =
@@ -648,17 +715,25 @@ mod tests {
     #[case(1, Some((0,1)))]
     #[case(999, None)]
     fn get_model_index_and_speaker_id_works(
-        #[case] speaker_id: usize,
-        #[case] expected: Option<(usize, usize)>,
+        #[case] speaker_id: u32,
+        #[case] expected: Option<(usize, u32)>,
     ) {
         let actual = get_model_index_and_speaker_id(speaker_id);
         assert_eq!(expected, actual);
     }
 
     #[rstest]
-    fn yukarin_s_forward_works() {
+    fn predict_duration_works() {
         let internal = VoicevoxCore::new_with_mutex();
-        internal.lock().unwrap().initialize(false, 0, true).unwrap();
+        internal
+            .lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                load_all_models: true,
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            })
+            .unwrap();
 
         // 「こんにちは、音声合成の世界へようこそ」という文章を変換して得た phoneme_list
         let phoneme_list = [
@@ -666,16 +741,24 @@ mod tests {
             30, 35, 14, 23, 7, 21, 14, 43, 30, 30, 23, 30, 35, 30, 0,
         ];
 
-        let result = internal.lock().unwrap().yukarin_s_forward(&phoneme_list, 0);
+        let result = internal.lock().unwrap().predict_duration(&phoneme_list, 0);
 
         assert!(result.is_ok(), "{:?}", result);
         assert_eq!(result.unwrap().len(), phoneme_list.len());
     }
 
     #[rstest]
-    fn yukarin_sa_forward_works() {
+    fn predict_intonation_works() {
         let internal = VoicevoxCore::new_with_mutex();
-        internal.lock().unwrap().initialize(false, 0, true).unwrap();
+        internal
+            .lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                load_all_models: true,
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            })
+            .unwrap();
 
         // 「テスト」という文章に対応する入力
         let vowel_phoneme_list = [0, 14, 6, 30, 0];
@@ -685,8 +768,8 @@ mod tests {
         let start_accent_phrase_list = [0, 1, 0, 0, 0];
         let end_accent_phrase_list = [0, 0, 0, 1, 0];
 
-        let result = internal.lock().unwrap().yukarin_sa_forward(
-            vowel_phoneme_list.len() as i64,
+        let result = internal.lock().unwrap().predict_intonation(
+            vowel_phoneme_list.len(),
             &vowel_phoneme_list,
             &consonant_phoneme_list,
             &start_accent_list,
@@ -701,9 +784,17 @@ mod tests {
     }
 
     #[rstest]
-    fn decode_forward_works() {
+    fn decode_works() {
         let internal = VoicevoxCore::new_with_mutex();
-        internal.lock().unwrap().initialize(false, 0, true).unwrap();
+        internal
+            .lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                ..Default::default()
+            })
+            .unwrap();
 
         // 「テスト」という文章に対応する入力
         const F0_LENGTH: usize = 69;
@@ -727,25 +818,12 @@ mod tests {
         set_one(30, 45..60);
         set_one(0, 60..69);
 
-        let result =
-            internal
-                .lock()
-                .unwrap()
-                .decode_forward(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, 0);
-
-        assert!(result.is_ok(), "{:?}", result);
-        assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
-    }
-
-    #[rstest]
-    #[async_std::test]
-    async fn voicevox_load_openjtalk_dict_works() {
-        let internal = VoicevoxCore::new_with_mutex();
-        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
         let result = internal
             .lock()
             .unwrap()
-            .voicevox_load_openjtalk_dict(open_jtalk_dic_dir.to_str().unwrap());
-        assert_eq!(result, Ok(()));
+            .decode(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, 0);
+
+        assert!(result.is_ok(), "{:?}", result);
+        assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
     }
 }
