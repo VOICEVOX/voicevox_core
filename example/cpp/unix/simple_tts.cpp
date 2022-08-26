@@ -28,12 +28,12 @@ int main(int argc, char *argv[]) {
   std::cout << "音声生成中..." << std::endl;
 
   int64_t speaker_id = 0;
-  int output_binary_size = 0;
+  size_t output_wav_size = 0;
   uint8_t *output_wav = nullptr;
 
   auto result = voicevox_tts(text.c_str(), speaker_id,
                              voicevox_make_default_tts_options(),
-                             &output_binary_size, &output_wav);
+                             &output_wav_size, &output_wav);
   if (result != VOICEVOX_RESULT_SUCCEED) {
     std::cout << voicevox_error_result_to_message(result) << std::endl;
     return 1;
@@ -42,8 +42,7 @@ int main(int argc, char *argv[]) {
   std::cout << "音声ファイル保存中..." << std::endl;
 
   std::ofstream wav_file(OUTPUT_WAV_NAME, std::ios::binary);
-  wav_file.write(reinterpret_cast<const char *>(output_wav),
-                 output_binary_size);
+  wav_file.write(reinterpret_cast<const char *>(output_wav), output_wav_size);
   voicevox_wav_free(output_wav);
 
   std::cout << "音声ファイル保存完了 (" << OUTPUT_WAV_NAME << ")" << std::endl;

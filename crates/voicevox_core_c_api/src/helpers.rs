@@ -86,10 +86,10 @@ pub(crate) unsafe fn write_json_to_ptr(output_ptr: *mut *mut c_char, json: &CStr
 
 pub(crate) unsafe fn write_wav_to_ptr(
     output_wav_ptr: *mut *mut u8,
-    output_size_ptr: *mut c_int,
+    output_size_ptr: *mut usize,
     data: &[u8],
 ) {
-    output_size_ptr.write(data.len() as c_int);
+    output_size_ptr.write(data.len());
     let wav_heap = libc::malloc(data.len());
     libc::memcpy(wav_heap, data.as_ptr() as *const c_void, data.len());
     output_wav_ptr.write(wav_heap as *mut u8);

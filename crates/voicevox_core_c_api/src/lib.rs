@@ -6,7 +6,7 @@ use helpers::*;
 use libc::c_void;
 use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int};
+use std::os::raw::c_char;
 use std::path::PathBuf;
 use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
@@ -222,7 +222,7 @@ pub extern "C" fn voicevox_synthesis(
     audio_query_json: *const c_char,
     speaker_id: usize,
     options: VoicevoxSynthesisOptions,
-    output_binary_size: *mut c_int,
+    output_wav_size: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) };
@@ -246,7 +246,7 @@ pub extern "C" fn voicevox_synthesis(
     };
 
     unsafe {
-        write_wav_to_ptr(output_wav, output_binary_size, wav);
+        write_wav_to_ptr(output_wav, output_wav_size, wav);
     }
     VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
 }
@@ -267,7 +267,7 @@ pub extern "C" fn voicevox_tts(
     text: *const c_char,
     speaker_id: usize,
     options: VoicevoxTtsOptions,
-    output_binary_size: *mut c_int,
+    output_wav_size: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     let (output_opt, result_code) = {
@@ -279,7 +279,7 @@ pub extern "C" fn voicevox_tts(
     };
     if let Some(output) = output_opt {
         unsafe {
-            write_wav_to_ptr(output_wav, output_binary_size, output.as_slice());
+            write_wav_to_ptr(output_wav, output_wav_size, output.as_slice());
         }
     }
     result_code
