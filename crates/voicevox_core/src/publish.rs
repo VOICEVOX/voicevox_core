@@ -157,6 +157,8 @@ impl VoicevoxCore {
                 .create_accent_phrases(text, speaker_id)?
         };
 
+        let kana = create_kana(&accent_phrases);
+
         Ok(AudioQueryModel::new(
             accent_phrases,
             1.,
@@ -167,7 +169,7 @@ impl VoicevoxCore {
             0.1,
             SynthesisEngine::DEFAULT_SAMPLING_RATE,
             false,
-            "".into(),
+            kana,
         ))
     }
 
