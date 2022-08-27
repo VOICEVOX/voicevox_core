@@ -166,12 +166,9 @@ impl SynthesisEngine {
                         let new_pause_mora = MoraModel::new(
                             pause_mora.text().clone(),
                             pause_mora.consonant().clone(),
-                            pause_mora
-                                .consonant()
-                                .as_ref()
-                                .map(|_| phoneme_length[vowel_indexes_data[index + 1] as usize]),
+                            *pause_mora.consonant_length(),
                             pause_mora.vowel().clone(),
-                            *pause_mora.vowel_length(),
+                            phoneme_length[vowel_indexes_data[index + 1] as usize],
                             *pause_mora.pitch(),
                         );
                         index += 1;
