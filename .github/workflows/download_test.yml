@@ -15,6 +15,9 @@ jobs:
               core.dll
               open_jtalk_dic_utf_8-1.11
               README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
           - os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh
             download_dir: voicevox_core
@@ -22,6 +25,9 @@ jobs:
               libcore.so
               open_jtalk_dic_utf_8-1.11
               README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
     runs-on: ${{ matrix.os }}
     env:
       EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || '0.13.0' }}
@@ -42,4 +48,13 @@ jobs:
           do
             echo "check exists ${{ matrix.download_dir }}/${item}..."
             [ -e "${{ matrix.download_dir }}/${item}" ]
+          done
+      - name: Check should not exists files
+        shell: bash
+        run: |
+          items=($(echo -e "${{ matrix.check_not_exists_items }}" | xargs))
+          for item in "${items[@]}"
+          do
+            echo "check should not exists ${{ matrix.download_dir }}/${item}..."
+            [ ! -e "${{ matrix.download_dir }}/${item}" ]
           done
