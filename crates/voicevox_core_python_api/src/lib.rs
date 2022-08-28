@@ -7,7 +7,7 @@ use pyo3::{
     exceptions::PyException,
     pyclass, pymethods, pymodule,
     types::{PyBytes, PyDict, PyModule, PyType},
-    PyAny, PyResult, Python,
+    FromPyObject as _, PyAny, PyResult, Python,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use voicevox_core::{
@@ -82,13 +82,13 @@ impl VoicevoxCore {
         acceleration_mode: AccelerationMode,
         cpu_num_threads: u16,
         load_all_models: bool,
-        open_jtalk_dict_dir: Option<PathBuf>,
+        #[pyo3(from_py_with = "from_optional_utf8_path")] open_jtalk_dict_dir: Option<String>,
     ) -> PyResult<Self> {
         let inner = voicevox_core::VoicevoxCore::new_with_initialize(InitializeOptions {
             acceleration_mode,
             cpu_num_threads,
             load_all_models,
-            open_jtalk_dict_dir,
+            open_jtalk_dict_dir: open_jtalk_dict_dir.map(Into::into),
         })
         .into_py_result()?;
         Ok(Self { inner })
@@ -237,23 +237,40 @@ impl VoicevoxCore {
 }
 
 fn from_optional_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
-    if ob.is_none() {
-        return Ok(AccelerationMode::default());
-    }
+    let mode = from_optional(|ob| {
+        let py = ob.py();
 
-    let py = ob.py();
+        let class = py.import("voicevox_core")?.getattr("AccelerationMode")?;
+        let mode = class.get_item(ob)?;
 
-    let class = py.import("voicevox_core")?.getattr("AccelerationMode")?;
-    let mode = class.get_item(ob)?;
+        if mode.eq(class.getattr("AUTO")?)? {
+            Ok(AccelerationMode::Auto)
+        } else if mode.eq(class.getattr("CPU")?)? {
+            Ok(AccelerationMode::Cpu)
+        } else if mode.eq(class.getattr("GPU")?)? {
+            Ok(AccelerationMode::Gpu)
+        } else {
+            unreachable!("{} should be one of {{AUTO, CPU, GPU}}", mode.repr()?);
+        }
+    })(ob)?;
+    Ok(mode.unwrap_or_default())
+}
 
-    if mode.eq(class.getattr("AUTO")?)? {
-        Ok(AccelerationMode::Auto)
-    } else if mode.eq(class.getattr("CPU")?)? {
-        Ok(AccelerationMode::Cpu)
-    } else if mode.eq(class.getattr("GPU")?)? {
-        Ok(AccelerationMode::Gpu)
-    } else {
-        unreachable!("{} should be one of {{AUTO, CPU, GPU}}", mode.repr()?);
+fn from_optional_utf8_path(ob: &PyAny) -> PyResult<Option<String>> {
+    from_optional(|ob| {
+        PathBuf::extract(ob)?
+            .into_os_string()
+            .into_string()
+            .map_err(|s| VoicevoxError::new_err(format!("{s:?} cannot be encoded to UTF-8")))
+    })(ob)
+}
+
+fn from_optional<T>(f: fn(&PyAny) -> PyResult<T>) -> impl Fn(&PyAny) -> PyResult<Option<T>> {
+    move |ob: &PyAny| {
+        if ob.is_none() {
+            return Ok(None);
+        }
+        f(ob).map(Some)
     }
 }
 
