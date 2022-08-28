@@ -8,7 +8,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
+          - name: 通常ダウンロード
+            os: windows-latest
             download_command: ./scripts/downloads/Download.ps1
             download_dir: voicevox_core
             check_items: |
@@ -24,7 +25,8 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
-          - os: windows-latest
+          - name: output先指定ダウンロード
+            os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Output other_output
             download_dir: other_output
             check_items: |
@@ -40,7 +42,8 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
-          - os: windows-latest
+          - name: Min option確認
+            os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Min $True
             download_dir: voicevox_core
             check_items: |
@@ -56,7 +59,8 @@ jobs:
               *cufft*
               *curand*
               open_jtalk_dic_utf_8-1.11
-          - os: windows-latest
+          - name: DirectML option確認
+            os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Type directml
             download_dir: voicevox_core
             check_items: |
@@ -73,7 +77,8 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
-          - os: windows-latest
+          - name: DirectMLかつMin option確認
+            os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Type directml -Min $true
             download_dir: voicevox_core
             check_items: |
@@ -89,7 +94,8 @@ jobs:
               Directml.dll
               DirectML_LICENSE.txt
               open_jtalk_dic_utf_8-1.11
-          - os: windows-latest
+          - name: cuda option確認
+            os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Type cuda
             download_dir: voicevox_core
             check_items: |
@@ -109,7 +115,8 @@ jobs:
               curand64_*.dll
             check_not_exists_items: |
               *directml*
-          - os: windows-latest
+          - name: cudaかつmin option確認
+            os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Type cuda -Min $true
             download_dir: voicevox_core
             check_items: |
@@ -129,7 +136,8 @@ jobs:
               cufft64_*.dll
               curand64_*.dll
               open_jtalk_dic_utf_8-1.11
-          - os: ubuntu-latest
+          - name: 通常ダウンロード
+            os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh
             download_dir: voicevox_core
             check_items: |
@@ -145,7 +153,8 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
-          - os: ubuntu-latest
+          - name: output先指定ダウンロード
+            os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh --output other_output
             download_dir: other_output
             check_items: |
@@ -161,7 +170,8 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
-          - os: ubuntu-latest
+          - name: min option確認
+            os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh --min
             download_dir: voicevox_core
             check_items: |
@@ -177,7 +187,8 @@ jobs:
               *cufft*
               *curand*
               open_jtalk_dic_utf_8-1.11
-          - os: ubuntu-latest
+          - name: cuda option確認
+            os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh --type cuda
             download_dir: voicevox_core
             check_items: |
@@ -196,7 +207,8 @@ jobs:
               libcurand.so.*
             check_not_exists_items: |
               *directml*
-          - os: ubuntu-latest
+          - name: cudaかつmin option確認
+            os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh --type cuda --min
             download_dir: voicevox_core
             check_items: |
@@ -216,6 +228,7 @@ jobs:
               libcurand.so.*
               open_jtalk_dic_utf_8-1.11
     runs-on: ${{ matrix.os }}
+    name: ${{ matrix.name }}-${{ matrix.os }}
     env:
       EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || '0.13.0' }}
     steps:
