@@ -125,7 +125,7 @@ pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
 }
 
 /// predict durationを実行する
-/// @param [in] length phoneme_list , output のデータ長
+/// @param [in] length phoneme_list, output のデータ長
 /// @param [in] phoneme_list  音素データ
 /// @param [in] speaker_id speaker ID
 /// @param [out] output データの出力先
