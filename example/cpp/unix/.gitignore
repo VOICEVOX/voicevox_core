@@ -2,7 +2,8 @@
 *.dylib
 *.so
 *.so.*
-core.h
+vocevox_core.h
+
 
 # OpenJTalk-dictionary's dir
 open_jtalk_dic_utf_8-*
