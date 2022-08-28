@@ -1,0 +1,25 @@
+name: generate API documents
+on:
+  push:
+    branches:
+      - main
+jobs:
+  generate_c_api_document:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Generate C header file
+        run: cargo build -p voicevox_core_c_api --features generate-c-header
+      - name: Copy C header file
+        run: cp -v target/*.h ./docs/apis/c_api/doxygen/
+      - name: Generate doxygen document
+        uses: mattnotmitt/doxygen-action@v1.9.4
+        with:
+          working-directory: "docs/apis/c_api/doxygen"
+      - name: Deploy GitHub pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/apis/c_api/html
