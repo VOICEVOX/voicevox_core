@@ -1,6 +1,7 @@
 use std::{fmt::Display, path::PathBuf};
 
 use easy_ext::ext;
+use log::debug;
 use numpy::{Ix1, PyArray};
 use pyo3::{
     create_exception,
@@ -18,6 +19,8 @@ use voicevox_core::{
 #[pymodule]
 #[pyo3(name = "_rust")]
 fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
+    pyo3_log::init();
+
     let (meta_from_json, supported_devices_from_json) = {
         let voicevox_core = py.import("voicevox_core")?;
 
@@ -295,8 +298,7 @@ fn from_dataclass<T: DeserializeOwned>(ob: &PyAny) -> PyResult<T> {
 
 impl Drop for VoicevoxCore {
     fn drop(&mut self) {
-        // https://github.com/vorner/pyo3-log/pull/20
-        //log::debug!("Destructing a VoicevoxCore");
+        debug!("Destructing a VoicevoxCore");
         self.inner.finalize();
     }
 }
