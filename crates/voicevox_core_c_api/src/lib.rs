@@ -164,7 +164,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
 /// @param [in] end_accent_list 終了アクセントデータ
 /// @param [in] start_accent_phrase_list 開始アクセントフレーズデータ
 /// @param [in] end_accent_phrase_list 終了アクセントフレーズデータ
-/// @param [in] speaker_id speaker id
+/// @param [in] speaker_id speaker ID
 /// @param [out] output データの出力先
 /// @return 結果コード
 ///
