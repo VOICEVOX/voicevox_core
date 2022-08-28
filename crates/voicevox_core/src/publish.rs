@@ -828,4 +828,60 @@ mod tests {
         assert!(result.is_ok(), "{:?}", result);
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
     }
+
+    #[rstest]
+    #[async_std::test]
+    async fn audio_query_works() {
+        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
+
+        let core = VoicevoxCore::new_with_mutex();
+        core.lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                open_jtalk_dict_dir: Some(open_jtalk_dic_dir),
+                ..Default::default()
+            })
+            .unwrap();
+
+        let query = core
+            .lock()
+            .unwrap()
+            .audio_query("これはテストです", 0, Default::default())
+            .unwrap();
+
+        assert_eq!(query.accent_phrases().len(), 2);
+
+        assert_eq!(query.accent_phrases()[0].moras().len(), 3);
+        for (i, (text, consonant, vowel)) in [("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")]
+            .iter()
+            .enumerate()
+        {
+            let mora = query.accent_phrases()[0].moras().get(i).unwrap();
+            assert_eq!(mora.text(), text);
+            assert_eq!(mora.consonant(), &Some(consonant.to_string()));
+            assert_eq!(mora.vowel(), vowel);
+        }
+        assert_eq!(query.accent_phrases()[0].accent(), &3);
+
+        assert_eq!(query.accent_phrases()[1].moras().len(), 5);
+        for (i, (text, consonant, vowel)) in [
+            ("テ", "t", "e"),
+            ("ス", "s", "U"),
+            ("ト", "t", "o"),
+            ("デ", "d", "e"),
+            ("ス", "s", "U"),
+        ]
+        .iter()
+        .enumerate()
+        {
+            let mora = query.accent_phrases()[1].moras().get(i).unwrap();
+            assert_eq!(mora.text(), text);
+            assert_eq!(mora.consonant(), &Some(consonant.to_string()));
+            assert_eq!(mora.vowel(), vowel);
+        }
+        assert_eq!(query.accent_phrases()[1].accent(), &1);
+        assert_eq!(query.kana(), "コレワ'/テ'_ストデ_ス");
+    }
 }
