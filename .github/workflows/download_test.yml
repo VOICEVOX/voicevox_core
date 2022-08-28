@@ -25,6 +25,22 @@ jobs:
               *cufft*
               *curand*
           - os: windows-latest
+            download_command: ./scripts/downloads/Download.ps1 -Output other_output
+            download_dir: other_output
+            check_items: |
+              core.dll
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+          - os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Min $True
             download_dir: voicevox_core
             check_items: |
@@ -116,6 +132,22 @@ jobs:
           - os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh
             download_dir: voicevox_core
+            check_items: |
+              libcore.so
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+          - os: ubuntu-latest
+            download_command: ./scripts/downloads/download.sh --output other_output
+            download_dir: other_output
             check_items: |
               libcore.so
               open_jtalk_dic_utf_8-1.11
