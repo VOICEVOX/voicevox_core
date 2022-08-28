@@ -18,6 +18,32 @@ jobs:
             check_not_exists_items: |
               *directml*
               *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+          - os: windows-latest
+            download_command: ./scripts/downloads/Download.ps1 -Type cuda
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+              EULA.txt
+              NVIDIA_SLA_cuDNN_Support.txt
+              cublas64_*.dll
+              cublasLt64_*.dll
+              cudart64_*.dll
+              cudnn64_*.dll
+              cudnn_adv_infer64_*.dll
+              cudnn_cnn_infer64_*.dll
+              cudnn_ops_infer64_*.dll
+              cufft64_*.dll
+              curand64_*.dll
+            check_not_exists_items: |
+              *directml*
           - os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh
             download_dir: voicevox_core
@@ -28,6 +54,12 @@ jobs:
             check_not_exists_items: |
               *directml*
               *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
     runs-on: ${{ matrix.os }}
     env:
       EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || '0.13.0' }}
