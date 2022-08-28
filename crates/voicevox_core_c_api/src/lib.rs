@@ -169,7 +169,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
 /// @return 結果コード
 ///
 /// # Safety
-/// vowel_phoneme_list , consonant_phoneme_list , start_accent_list , end_accent_list , start_accent_phrase_list , end_accent_phrase_list は必ず length の長さだけデータがある状態で渡すこと
+/// vowel_phoneme_list, consonant_phoneme_list, start_accent_list, end_accent_list, start_accent_phrase_list, end_accent_phrase_list は必ず length の長さだけデータがある状態で渡すこと
 /// output には length で指定した長さのデータが上書きされるので length 分の領域を確保した状態で渡すこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_intonation(
