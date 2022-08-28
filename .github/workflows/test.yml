@@ -68,8 +68,8 @@ jobs:
         run: cargo build --features generate-c-header
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
-          cp -v target/core.h example/cpp/unix/
-          cp -v target/debug/libcore.{so,dylib} example/cpp/unix/ || true
+          cp -v target/voicevox_core.h example/cpp/unix/
+          cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/ || true
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* example/cpp/unix/ || true
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib example/cpp/unix/ || true
 
