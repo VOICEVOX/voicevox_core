@@ -98,7 +98,7 @@ pub extern "C" fn voicevox_is_gpu_mode() -> bool {
 }
 
 /// 指定したspeaker_idのmodelが読み込まれているか判定する
-/// @return modelが読み込まれているのであればtrueそうでないならfalse
+/// @return modelが読み込まれているのであればtrue、そうでないならfalse
 #[no_mangle]
 pub extern "C" fn voicevox_is_model_loaded(speaker_id: u32) -> bool {
     lock_internal().is_model_loaded(speaker_id)
