@@ -79,7 +79,7 @@ jobs:
           for item in "${items[@]}"
           do
             echo "check exists ${{ matrix.download_dir }}/${item}..."
-            [ -e "${{ matrix.download_dir }}/${item}" ]
+            [ -e "${{ matrix.download_dir }}"/${item} ]
           done
       - name: Check should not exists files
         shell: bash
@@ -88,5 +88,5 @@ jobs:
           for item in "${items[@]}"
           do
             echo "check should not exists ${{ matrix.download_dir }}/${item}..."
-            [ ! -e "${{ matrix.download_dir }}/${item}" ]
+            [ ! -e "${{ matrix.download_dir }}"/${item} ]
           done
