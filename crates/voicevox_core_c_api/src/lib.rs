@@ -91,7 +91,7 @@ pub extern "C" fn voicevox_load_model(speaker_id: u32) -> VoicevoxResultCode {
 }
 
 /// ハードウェアアクセラレーションがGPUモードか判定する
-/// @return GPUモードならtrueそうでないならfalse
+/// @return GPUモードならtrue、そうでないならfalse
 #[no_mangle]
 pub extern "C" fn voicevox_is_gpu_mode() -> bool {
     lock_internal().is_gpu_mode()
