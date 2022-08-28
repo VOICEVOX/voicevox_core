@@ -18,6 +18,9 @@ Param(
 	# ダウンロードするvoicevox_coreのバージョンの指定
 	$Version = "latest",
 	[Parameter()]
+	[String]
+	$AdditionalLibrariesVersion = "latest",
+	[Parameter()]
 	[ValidateSet("cpu","cuda","directml")]
 	[string]
 	# ダウンロードするTypeを指定する(cpu,cuda,directmlを指定可能)
@@ -29,11 +32,22 @@ Param(
 )
 
 $VoicevoxCoreRepositoryBaseUrl="https://github.com/VOICEVOX/voicevox_core"
+$VoicevoxAdditionalLibrariesBaseUrl="https://github.com/VOICEVOX/voicevox_additional_libraries"
 $OpenJtalkDictUrl="https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
 $OpenJtalkDictDirName="open_jtalk_dic_utf_8-1.11"
 
 Function Voicevox-Core-Releases-Url($Os,$CpuArch,$Type,$Version){
 	"${VoicevoxCoreRepositoryBaseUrl}/releases/download/${Version}/voicevox_core-${Os}-${CpuArch}-${type}-${Version}.zip"
+}
+
+Function Voicevox-Additional-Libraries-Releases-Url($Os,$CpuArch,$Type,$Version){
+	If ( $Type -eq "cuda" ){
+		$Type="CUDA"
+	} ElseIf ( $Type -eq "directml" ){
+		$Type="DirectML"
+	}
+
+	"${VoicevoxAdditionalLibrariesBaseUrl}/releases/download/${Version}/${Type}-${Os}-${CpuArch}.zip"
 }
 
 Function Latest-Version($BaseUrl){
@@ -44,6 +58,11 @@ Function Latest-Version($BaseUrl){
 Function Latest-Voicevox-Core-Version(){
 	Latest-Version $VoicevoxCoreRepositoryBaseUrl
 }
+
+Function Latest-Voicevox-Additional-Libraries-Version(){
+	Latest-Version $VoicevoxAdditionalLibrariesBaseUrl
+}
+
 
 Function Target-Os(){
 	"windows"
@@ -90,8 +109,16 @@ $Os=Target-Os
 $CpuArch=Target-Arch
 $OpenJtalkOutput="${Output}/${OpenJtalkDictDirName}"
 
-if ( $Version -eq "latest" ){
+If ( $Type -eq "cpu" ){
+	$AdditionalLibrariesVersion=""
+}
+
+If ( $Version -eq "latest" ){
 	$Version=Latest-Voicevox-Core-Version
+}
+
+If ( $AdditionalLibrariesVersion -eq "latest" ){
+	$AdditionalLibrariesVersion=Latest-Voicevox-Additional-Libraries-Version
 }
 
 echo "対象OS:$Os"
@@ -100,10 +127,15 @@ echo "ダウンロードvoicevox_coreバージョン:$version"
 echo "ダウンロードアーティファクトタイプ:$type"
 
 $VoicevoxCoreUrl=Voicevox-Core-Releases-Url "$Os" "$CpuArch" "$Type" "$Version"
+$VoicevoxAdditionalLibrariesUrl=Voicevox-Additional-Libraries-Releases-Url "$Os" "$CpuArch" "$Type" "$AdditionalLibrariesVersion"
 
 Download-and-Extract "voicevox_core" "$VoicevoxCoreUrl" "$Output"
 
 if ( -not $Min ){
 	Download-and-Extract "open_jtalk" "$OpenJtalkDictUrl" "$OpenJtalkOutput"
+	if ( -not $AdditionalLibrariesVersion -eq "" ){
+		Download-and-Extract "voicevox_additional_libraries" "$VoicevoxAdditionalLibrariesUrl" "$Output"
+	}
 }
 
+echo "全ての必要なファイルダウンロードが完了しました"

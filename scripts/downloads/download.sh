@@ -3,16 +3,18 @@ set -eu
 help(){
   cat <<EOM
   Usage: $(basename "$0") [OPTION]...
-    -h|--help                      ヘルプの表示
-    -o|--output \$directory        出力先の指定(default ./voicevox_core)
-    -v|--version \$version         ダウンロードするvoicevox_coreのバージョンの指定(default latest)
-    --type $type                   ダウンロードするtypeを指定する(cpu,cudaを指定可能.cudaはlinuxのみ)
-    --min                          ダウンロードするライブラリを最小限にするように指定
+    -h|--help                                 ヘルプの表示
+    -o|--output \$directory                   出力先の指定(default ./voicevox_core)
+    -v|--version \$version                    ダウンロードするvoicevox_coreのバージョンの指定(default latest)
+    --additional-libraries-version \$version  追加でダウンロードするライブラリのバージョン
+    --type $type                              ダウンロードするtypeを指定する(cpu,cudaを指定可能.cudaはlinuxのみ)
+    --min                                     ダウンロードするライブラリを最小限にするように指定
 EOM
   exit 2
 }
 
 voicevox_core_repository_base_url="https://github.com/VOICEVOX/voicevox_core"
+voicevox_additional_libraries_base_url="https://github.com/VOICEVOX/voicevox_additional_libraries"
 open_jtalk_dict_url="https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
 open_jtalk_dict_dir_name="open_jtalk_dic_utf_8-1.11"
 
@@ -29,6 +31,20 @@ voicevox_core_releases_url(){
   echo "$url"
 }
 
+voicevox_additional_libraries_url(){
+  os=$1
+  cpu_arch=$2
+  type=$3
+  version=$4
+  if [ "$type" = "cuda" ];then
+    type="CUDA"
+  elif [ "$type" = "directml" ];then
+    type="DirectML"
+  fi
+  url="${voicevox_additional_libraries_base_url}/releases/download/${version}/${type}-${os}-${cpu_arch}.zip"
+  echo "$url"
+}
+
 latest_version(){
   base_url=$1
   get_latest_url="$base_url/releases/tag"
@@ -37,6 +53,10 @@ latest_version(){
 
 latest_voicevox_core_version(){
   latest_version $voicevox_core_repository_base_url
+}
+
+latest_voicevox_additional_libraries_version(){
+  latest_version $voicevox_additional_libraries_base_url
 }
 
 target_os(){
@@ -84,10 +104,11 @@ download_and_extract(){
     mkdir -p "$extract_dir"
     tar --strip-components 1 -xvzf "$tmp_path" -C "$extract_dir"
   fi
-  echo "${target}のファイルを展開完了しました"
+  echo "${target}のファイルを展開完了しました。後続のファイルダウンロード処理を待ってください"
 }
 
 version="latest"
+additional_libraries_version="latest"
 type=""
 output="./voicevox_core"
 min=""
@@ -104,6 +125,9 @@ do
       shift;;
     -v|--version)
       version="$2"
+      shift;;
+    --additional-libraries-version)
+      additional_libraries_version="$2"
       shift;;
     --type)
       type="$2"
@@ -128,9 +152,17 @@ if [ "$type" = "" ];then
   type="cpu"
 fi
 
+if [ "$type" = "cpu" ];then
+  additional_libraries_version=""
+fi
+
 # zipファイルに厳格なバージョン番号が含まれるため、latestだった場合はバージョンを特定して設定する
 if [ "$version" = "latest" ];then
   version=$(latest_voicevox_core_version)
+fi
+
+if [ "$additional_libraries_version" != "" ] && [ "$additional_libraries_version" = "latest" ];then
+  additional_libraries_version=$(latest_voicevox_additional_libraries_version)
 fi
 
 echo "対象OS:$os"
@@ -138,8 +170,13 @@ echo "対象CPUアーキテクチャ:$cpu_arch"
 echo "ダウンロードvoicevox_coreバージョン:$version"
 echo "ダウンロードアーティファクトタイプ:$type"
 
+if [ "$additional_libraries_version" != "" ];then
+  echo "ダウンロード追加ライブラリバージョン:$additional_libraries_version"
+fi
+
 
 voicevox_core_url=$(voicevox_core_releases_url "$os" "$cpu_arch" "$type" "$version")
+voicevox_additional_laibraries_url=$(voicevox_additional_libraries_url "$os" "$cpu_arch" "$type" "$additional_libraries_version")
 
 download_and_extract "voicevox_core" "$voicevox_core_url" "$output" &
 voicevox_core_download_task=$!
@@ -147,7 +184,14 @@ if [ "$min" != "true" ]; then
   download_and_extract "open_jtalk" "$open_jtalk_dict_url" "$open_jtalk_output" &
   open_jtalk_download_task=$!
 
+  if [ "$additional_libraries_version" != "" ];then
+    download_and_extract "voicevox_additional_libraries" "$voicevox_additional_laibraries_url" "$output" &
+    additional_libraries_download_task=$!
+    wait $additional_libraries_download_task
+  fi
 
   wait $open_jtalk_download_task
 fi
 wait $voicevox_core_download_task
+
+echo "全ての必要なファイルダウンロードが完了しました"
