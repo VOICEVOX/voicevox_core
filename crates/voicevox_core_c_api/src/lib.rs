@@ -356,7 +356,7 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 
 /// ttsを実行する
 /// @param [in] text テキスト
-/// @param [in] speaker_id
+/// @param [in] speaker_id speaker ID
 /// @param [in] options tts オプション
 /// @param [out] output_wav_size 出力する wav データのサイズ
 /// @param [out] output_wav wav データの出力先
