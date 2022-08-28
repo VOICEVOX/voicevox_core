@@ -1,6 +1,3 @@
-// TODO: ドキュメントを作成する段階になったらこのallowを外し、各pointerを使用している関数にunsafeとSafety documentを追加する
-#![allow(clippy::not_unsafe_ptr_arg_deref)]
-
 mod helpers;
 use helpers::*;
 use libc::c_void;
@@ -34,28 +31,43 @@ fn lock_internal() -> MutexGuard<'static, Internal> {
 
 pub use voicevox_core::result_code::VoicevoxResultCode;
 
+/// voicevox_coreのハードウェアアクセラレーションモードを設定する設定値
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
 pub enum VoicevoxAccelerationMode {
+    /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する
     VOICEVOX_ACCELERATION_MODE_AUTO = 0,
+    /// ハードウェアアクセラレーションモードをCPUに設定する
     VOICEVOX_ACCELERATION_MODE_CPU = 1,
+    /// ハードウェアアクセラレーションモードをGPUに設定する
     VOICEVOX_ACCELERATION_MODE_GPU = 2,
 }
 
+/// 初期化オプション
 #[repr(C)]
 pub struct VoicevoxInitializeOptions {
+    /// ハードウェアアクセラレーションモード
     acceleration_mode: VoicevoxAccelerationMode,
+    /// CPU利用数を指定
+    /// 0を指定すると環境に合わせたCPUが利用される
     cpu_num_threads: u16,
+    /// 全てのmodelを読み込む
     load_all_models: bool,
+    /// open_jtalkの辞書ディレクトリ
     open_jtalk_dict_dir: *const c_char,
 }
 
+/// デフォルトの初期化オプションを生成する
+/// @return デフォルト値が設定された初期化オプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitializeOptions {
     VoicevoxInitializeOptions::default()
 }
 
+/// 初期化する
+/// @param [in] options 初期化オプション
+/// @return 結果コード
 #[no_mangle]
 pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> VoicevoxResultCode {
     match unsafe { options.try_into_options() } {
@@ -68,6 +80,9 @@ pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> Voi
     }
 }
 
+/// modelを読み込む
+/// @param [in] speaker_id 読み込むmodelのspeaker ID
+/// @return 結果コード
 #[no_mangle]
 pub extern "C" fn voicevox_load_model(speaker_id: u32) -> VoicevoxResultCode {
     let result = lock_internal().load_model(speaker_id);
@@ -75,55 +90,89 @@ pub extern "C" fn voicevox_load_model(speaker_id: u32) -> VoicevoxResultCode {
     result_code
 }
 
+/// ハードウェアアクセラレーションがGPUモードか判定する
+/// @return GPUモードならtrueそうでないならfalse
 #[no_mangle]
 pub extern "C" fn voicevox_is_gpu_mode() -> bool {
     lock_internal().is_gpu_mode()
 }
 
+/// 指定したspeaker_idのmodelが読み込まれているか判定する
+/// @return modelが読み込まれているのであればtrueそうでないならfalse
 #[no_mangle]
 pub extern "C" fn voicevox_is_model_loaded(speaker_id: u32) -> bool {
     lock_internal().is_model_loaded(speaker_id)
 }
 
+/// このライブラリの利用を終了し、確保しているリソースを開放する
 #[no_mangle]
 pub extern "C" fn voicevox_finalize() {
     lock_internal().finalize()
 }
 
+/// メタ情報をjsonで取得する
+/// @return メタ情報のjson文字列
 #[no_mangle]
 pub extern "C" fn voicevox_get_metas_json() -> *const c_char {
     lock_internal().get_metas_json().as_ptr()
 }
 
+/// サポートデバイス情報をjsonで取得する
+/// @return サポートデバイス情報のjson文字列
 #[no_mangle]
 pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
     lock_internal().get_supported_devices_json().as_ptr()
 }
 
+/// predict durationを実行する
+/// @param [in] length phoneme_list , output のデータ長
+/// @param [in] phoneme_list  音素データ
+/// @param [in] speaker_id speaker ID
+/// @param [out] output データの出力先
+/// @return 結果コード
+///
+/// # Safety
+/// phoneme_list は必ず length の長さだけデータがある状態で渡すこと
+/// output には length で指定した長さのデータが上書きされるので length 分の領域を確保した状態で渡すこと
 #[no_mangle]
-pub extern "C" fn voicevox_predict_duration(
+pub unsafe extern "C" fn voicevox_predict_duration(
     length: usize,
     phoneme_list: *mut i64,
     speaker_id: u32,
     output: *mut f32,
 ) -> VoicevoxResultCode {
     let result = lock_internal().predict_duration(
-        unsafe { std::slice::from_raw_parts_mut(phoneme_list, length) },
+        std::slice::from_raw_parts_mut(phoneme_list, length),
         speaker_id,
     );
 
     let (output_vec, result_code) = convert_result(result);
     if result_code == VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED {
         if let Some(output_vec) = output_vec {
-            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length) };
+            let output_slice = std::slice::from_raw_parts_mut(output, length);
             output_slice.clone_from_slice(&output_vec);
         }
     }
     result_code
 }
 
+/// predict intonationを実行する
+/// @param [in] length vowel_phoneme_list , consonant_phoneme_list , start_accent_list, end_accent_list , start_accent_phrase_list , end_accent_phrase_list , output のデータ長
+/// @param [in] vowel_phoneme_list 母音の音素データ
+/// @param [in] consonant_phoneme_list 子音の音素データ
+/// @param [in] start_accent_list 開始アクセントデータ
+/// @param [in] end_accent_list 終了アクセントデータ
+/// @param [in] start_accent_phrase_list 開始アクセントフレーズデータ
+/// @param [in] end_accent_phrase_list 終了アクセントフレーズデータ
+/// @param [in] speaker_id speaker id
+/// @param [out] output データの出力先
+/// @return 結果コード
+///
+/// # Safety
+/// vowel_phoneme_list , consonant_phoneme_list , start_accent_list , end_accent_list , start_accent_phrase_list , end_accent_phrase_list は必ず length の長さだけデータがある状態で渡すこと
+/// output には length で指定した長さのデータが上書きされるので length 分の領域を確保した状態で渡すこと
 #[no_mangle]
-pub extern "C" fn voicevox_predict_intonation(
+pub unsafe extern "C" fn voicevox_predict_intonation(
     length: usize,
     vowel_phoneme_list: *mut i64,
     consonant_phoneme_list: *mut i64,
@@ -136,24 +185,37 @@ pub extern "C" fn voicevox_predict_intonation(
 ) -> VoicevoxResultCode {
     let result = lock_internal().predict_intonation(
         length,
-        unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length) },
-        unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length) },
-        unsafe { std::slice::from_raw_parts(start_accent_list, length) },
-        unsafe { std::slice::from_raw_parts(end_accent_list, length) },
-        unsafe { std::slice::from_raw_parts(start_accent_phrase_list, length) },
-        unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length) },
+        std::slice::from_raw_parts(vowel_phoneme_list, length),
+        std::slice::from_raw_parts(consonant_phoneme_list, length),
+        std::slice::from_raw_parts(start_accent_list, length),
+        std::slice::from_raw_parts(end_accent_list, length),
+        std::slice::from_raw_parts(start_accent_phrase_list, length),
+        std::slice::from_raw_parts(end_accent_phrase_list, length),
         speaker_id,
     );
     let (output_vec, result_code) = convert_result(result);
     if let Some(output_vec) = output_vec {
-        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length) };
+        let output_slice = std::slice::from_raw_parts_mut(output, length);
         output_slice.clone_from_slice(&output_vec);
     }
     result_code
 }
 
+/// decodeを実行する
+/// @param [in] length f0 , output のデータ長及び phoneme のデータ長に関連する
+/// @param [in] phoneme_size 音素のサイズ phoneme のデータ長に関連する
+/// @param [in] f0 基本周波数
+/// @param [in] phoneme 音素データ
+/// @param [in] speaker_id speaker ID
+/// @param [out] output データ出力先
+/// @return 結果コード
+///
+/// # Safety
+/// f0には必ず length の長さだけデータがある状態で渡すこと
+/// phoneme には必ず length * phoneme_size の長さだけデータがある状態で渡すこと
+/// output には length　の長さだけデータが上書きされるので length 分の領域を確保した状態で渡すこと
 #[no_mangle]
-pub extern "C" fn voicevox_decode(
+pub unsafe extern "C" fn voicevox_decode(
     length: usize,
     phoneme_size: i64,
     f0: *mut f32,
@@ -166,66 +228,93 @@ pub extern "C" fn voicevox_decode(
     let result = lock_internal().decode(
         length,
         phoneme_size,
-        unsafe { std::slice::from_raw_parts(f0, length) },
-        unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) },
+        std::slice::from_raw_parts(f0, length),
+        std::slice::from_raw_parts(phoneme, phoneme_size * length),
         speaker_id,
     );
     let (output_vec, result_code) = convert_result(result);
     if let Some(output_vec) = output_vec {
-        let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length) };
+        let output_slice = std::slice::from_raw_parts_mut(output, length);
         output_slice.clone_from_slice(&output_vec);
     }
     result_code
 }
 
+/// Audio query のオプション
 #[repr(C)]
 pub struct VoicevoxAudioQueryOptions {
+    /// aquestalk形式のkanaとしてテキストを解釈する
     kana: bool,
 }
 
+/// デフォルトの audio query のオプションを生成する
+/// @return デフォルト値が設定された audio query オプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQueryOptions {
     voicevox_core::AudioQueryOptions::default().into()
 }
 
+/// audio query を実行する
+/// @param [in] text テキスト
+/// @param [in] speaker_id speaker ID
+/// @param [in] options audio queryのオプション
+/// @param [out] output_audio_query_json audio query を json でフォーマットしたもの
+/// @return 結果コード
+///
+/// # Safety
+/// text はnull終端文字列であること
+/// output_audio_query_json は自動でheapメモリが割り当てられるので voicevox_audio_query_json_free で開放する必要がある
 #[no_mangle]
-pub extern "C" fn voicevox_audio_query(
+pub unsafe extern "C" fn voicevox_audio_query(
     text: *const c_char,
     speaker_id: u32,
     options: VoicevoxAudioQueryOptions,
     output_audio_query_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
-    let text = unsafe { CStr::from_ptr(text) };
+    let text = CStr::from_ptr(text);
 
     let audio_query = &match create_audio_query(text, speaker_id, Internal::audio_query, options) {
         Ok(audio_query) => audio_query,
         Err(result_code) => return result_code,
     };
 
-    unsafe {
-        write_json_to_ptr(output_audio_query_json, audio_query);
-    }
+    write_json_to_ptr(output_audio_query_json, audio_query);
     VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
 }
 
+/// synthesis のオプション
 #[repr(C)]
 pub struct VoicevoxSynthesisOptions {
+    /// 疑問文の調整を有効にする
     enable_interrogative_upspeak: bool,
 }
 
+/// デフォルトの synthesis オプションを生成する
+/// @return デフォルト値が設定されたsynthesisのオプション
 pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesisOptions {
     VoicevoxSynthesisOptions::default()
 }
 
+/// synthesis を実行する
+/// @param [in] audio_query_json jsonフォーマットされた audio query
+/// @param [in] speaker_id  speaker ID
+/// @param [in] options synthesis オプション
+/// @param [out] output_wav_size 出力する wav データのサイズ
+/// @param [out] output_wav wav データの出力先
+/// @return 結果コード
+///
+/// # Safety
+/// output_wav_size には出力先の領域が確保された状態でpointerに渡されていること
+/// output_wav は自動で output_wav_size 分のデータが割り当てられるので voicevox_wav_free で開放する必要がある
 #[no_mangle]
-pub extern "C" fn voicevox_synthesis(
+pub unsafe extern "C" fn voicevox_synthesis(
     audio_query_json: *const c_char,
     speaker_id: u32,
     options: VoicevoxSynthesisOptions,
     output_wav_size: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) };
+    let audio_query_json = CStr::from_ptr(audio_query_json);
 
     let audio_query_json = match ensure_utf8(audio_query_json) {
         Ok(audio_query_json) => audio_query_json,
@@ -245,25 +334,39 @@ pub extern "C" fn voicevox_synthesis(
         return result_code;
     };
 
-    unsafe {
-        write_wav_to_ptr(output_wav, output_wav_size, wav);
-    }
+    write_wav_to_ptr(output_wav, output_wav_size, wav);
     VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
 }
 
+/// tts オプション
 #[repr(C)]
 pub struct VoicevoxTtsOptions {
+    /// aquestalk形式のkanaとしてテキストを解釈する
     kana: bool,
+    /// 疑問文の調整を有効にする
     enable_interrogative_upspeak: bool,
 }
 
+/// デフォルトの tts オプションを生成する
+/// @return tts オプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
     voicevox_core::TtsOptions::default().into()
 }
 
+/// ttsを実行する
+/// @param [in] text テキスト
+/// @param [in] speaker_id
+/// @param [in] options tts オプション
+/// @param [out] output_wav_size 出力する wav データのサイズ
+/// @param [out] output_wav wav データの出力先
+/// @return 結果コード
+///
+/// # Safety
+/// output_wav_size には出力先の領域が確保された状態でpointerに渡されていること
+/// output_wav は自動で output_wav_size 分のデータが割り当てられるので voicevox_wav_free で開放する必要がある
 #[no_mangle]
-pub extern "C" fn voicevox_tts(
+pub unsafe extern "C" fn voicevox_tts(
     text: *const c_char,
     speaker_id: u32,
     options: VoicevoxTtsOptions,
@@ -271,27 +374,29 @@ pub extern "C" fn voicevox_tts(
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     let (output_opt, result_code) = {
-        if let Ok(text) = unsafe { CStr::from_ptr(text) }.to_str() {
+        if let Ok(text) = CStr::from_ptr(text).to_str() {
             convert_result(lock_internal().tts(text, speaker_id, options.into()))
         } else {
             (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT)
         }
     };
     if let Some(output) = output_opt {
-        unsafe {
-            write_wav_to_ptr(output_wav, output_wav_size, output.as_slice());
-        }
+        write_wav_to_ptr(output_wav, output_wav_size, output.as_slice());
     }
     result_code
 }
 
+/// jsonフォーマットされた audio query データのメモリを開放する
+/// @param [in] audio_query_json 開放する json フォーマットされた audio query データ
 #[no_mangle]
-pub extern "C" fn voicevox_audio_query_json_free(json: *mut c_char) {
+pub extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c_char) {
     unsafe {
-        libc::free(json as *mut c_void);
+        libc::free(audio_query_json as *mut c_void);
     }
 }
 
+/// wav データのメモリを開放する
+/// @param [in] wav 開放する wav データ
 #[no_mangle]
 pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
     unsafe {
@@ -299,6 +404,9 @@ pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
     }
 }
 
+/// エラー結果をメッセージに変換する
+/// @param [in] result_code メッセージに変換する result_code
+/// @return 結果コードを元に変換されたメッセージ文字列
 #[no_mangle]
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,

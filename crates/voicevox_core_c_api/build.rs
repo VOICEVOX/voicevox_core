@@ -49,6 +49,7 @@ __declspec(dllimport)
             ),
             ..Default::default()
         },
+        documentation_style: cbindgen::DocumentationStyle::Doxy,
         enumeration: EnumConfig {
             rename_variants: RenameRule::ScreamingSnakeCase,
             ..Default::default()
