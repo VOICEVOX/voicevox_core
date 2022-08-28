@@ -27,6 +27,7 @@ fn generate_c_header() {
             ..Default::default()
         },
         language: Language::C,
+        header: Some("/// @file".into()),
         no_includes: true,
         after_includes: Some(
             r#"#ifdef __cplusplus
