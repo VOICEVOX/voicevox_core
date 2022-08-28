@@ -717,8 +717,8 @@ mod tests {
             "accent_phrases[4].pause_mora() is not None"
         );
 
-        for i in 0..4 {
-            let pause_mora = accent_phrases[i].pause_mora().clone().unwrap();
+        for accent_phrase in accent_phrases.iter().take(4) {
+            let pause_mora = accent_phrase.pause_mora().clone().unwrap();
             assert_eq!(pause_mora.text(), "、");
             assert_eq!(pause_mora.consonant(), &None);
             assert_eq!(pause_mora.consonant_length(), &None);
