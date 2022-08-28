@@ -34,13 +34,29 @@ jobs:
               DirectML.dll
               DirectML_LICENSE.txt
             check_not_exists_items: |
+              *directml*
               *cuda*
               *cudnn*
-              *onnxruntime*providers*
               *eula*
               *nvidia*
               *cufft*
               *curand*
+          - os: windows-latest
+            download_command: ./scripts/downloads/Download.ps1 -Type directml -min
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+            check_not_exists_items: |
+              *cuda*
+              *cudnn*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+              Directml.dll
+              DirectML_LICENSE.txt
           - os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Type cuda
             download_dir: voicevox_core
