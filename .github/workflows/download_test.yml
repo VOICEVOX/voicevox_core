@@ -25,6 +25,22 @@ jobs:
               *cufft*
               *curand*
           - os: windows-latest
+            download_command: ./scripts/downloads/Download.ps1 -Min
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+              open_jtalk_dic_utf_8-1.11
+          - os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Type directml
             download_dir: voicevox_core
             check_items: |
@@ -113,6 +129,22 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
+          - os: ubuntu-latest
+            download_command: ./scripts/downloads/download.sh --min
+            download_dir: voicevox_core
+            check_items: |
+              libcore.so
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+              open_jtalk_dic_utf_8-1.11
           - os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh --type cuda
             download_dir: voicevox_core
