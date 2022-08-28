@@ -18,24 +18,24 @@ pub struct Status {
     models: StatusModels,
     light_session_options: SessionOptions, // 軽いモデルはこちらを使う
     heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
-    supported_styles: BTreeSet<usize>,
+    supported_styles: BTreeSet<u32>,
 }
 
 struct StatusModels {
-    yukarin_s: BTreeMap<usize, Session<'static>>,
-    yukarin_sa: BTreeMap<usize, Session<'static>>,
+    predict_duration: BTreeMap<usize, Session<'static>>,
+    predict_intonation: BTreeMap<usize, Session<'static>>,
     decode: BTreeMap<usize, Session<'static>>,
 }
 
 #[derive(new, Getters)]
 struct SessionOptions {
-    cpu_num_threads: usize,
+    cpu_num_threads: u16,
     use_gpu: bool,
 }
 
 struct Model {
-    yukarin_s_model: &'static [u8],
-    yukarin_sa_model: &'static [u8],
+    predict_duration_model: &'static [u8],
+    predict_intonation_model: &'static [u8],
     decode_model: &'static [u8],
 }
 
@@ -106,11 +106,11 @@ impl Status {
 
     pub const MODELS_COUNT: usize = Self::MODELS.len();
 
-    pub fn new(use_gpu: bool, cpu_num_threads: usize) -> Self {
+    pub fn new(use_gpu: bool, cpu_num_threads: u16) -> Self {
         Self {
             models: StatusModels {
-                yukarin_s: BTreeMap::new(),
-                yukarin_sa: BTreeMap::new(),
+                predict_duration: BTreeMap::new(),
+                predict_intonation: BTreeMap::new(),
                 decode: BTreeMap::new(),
             },
             light_session_options: SessionOptions::new(cpu_num_threads, false),
@@ -125,7 +125,7 @@ impl Status {
 
         for meta in metas.iter() {
             for style in meta.styles().iter() {
-                self.supported_styles.insert(*style.id() as usize);
+                self.supported_styles.insert(*style.id() as u32);
             }
         }
 
@@ -135,20 +135,22 @@ impl Status {
     pub fn load_model(&mut self, model_index: usize) -> Result<()> {
         if model_index < Self::MODELS.len() {
             let model = &Self::MODELS[model_index];
-            let yukarin_s_session = self
-                .new_session(model.yukarin_s_model, &self.light_session_options)
+            let predict_duration_session = self
+                .new_session(model.predict_duration_model, &self.light_session_options)
                 .map_err(Error::LoadModel)?;
-            let yukarin_sa_session = self
-                .new_session(model.yukarin_sa_model, &self.light_session_options)
+            let predict_intonation_session = self
+                .new_session(model.predict_intonation_model, &self.light_session_options)
                 .map_err(Error::LoadModel)?;
             let decode_model = self
                 .new_session(model.decode_model, &self.heavy_session_options)
                 .map_err(Error::LoadModel)?;
 
-            self.models.yukarin_s.insert(model_index, yukarin_s_session);
             self.models
-                .yukarin_sa
-                .insert(model_index, yukarin_sa_session);
+                .predict_duration
+                .insert(model_index, predict_duration_session);
+            self.models
+                .predict_intonation
+                .insert(model_index, predict_intonation_session);
 
             self.models.decode.insert(model_index, decode_model);
 
@@ -159,8 +161,8 @@ impl Status {
     }
 
     pub fn is_model_loaded(&self, model_index: usize) -> bool {
-        self.models.yukarin_sa.contains_key(&model_index)
-            && self.models.yukarin_s.contains_key(&model_index)
+        self.models.predict_intonation.contains_key(&model_index)
+            && self.models.predict_duration.contains_key(&model_index)
             && self.models.decode.contains_key(&model_index)
     }
 
@@ -194,16 +196,16 @@ impl Status {
         Ok(session_builder.with_model_from_memory(model_bytes)?)
     }
 
-    pub fn validate_speaker_id(&self, speaker_id: usize) -> bool {
+    pub fn validate_speaker_id(&self, speaker_id: u32) -> bool {
         self.supported_styles.contains(&speaker_id)
     }
 
-    pub fn yukarin_s_session_run(
+    pub fn predict_duration_session_run(
         &mut self,
         model_index: usize,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model) = self.models.yukarin_s.get_mut(&model_index) {
+        if let Some(model) = self.models.predict_duration.get_mut(&model_index) {
             if let Ok(output_tensors) = model.run(inputs) {
                 Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
@@ -214,12 +216,12 @@ impl Status {
         }
     }
 
-    pub fn yukarin_sa_session_run(
+    pub fn predict_intonation_session_run(
         &mut self,
         model_index: usize,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model) = self.models.yukarin_sa.get_mut(&model_index) {
+        if let Some(model) = self.models.predict_intonation.get_mut(&model_index) {
             if let Ok(output_tensors) = model.run(inputs) {
                 Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
@@ -261,7 +263,7 @@ mod tests {
     #[case(false, 4)]
     #[case(false, 8)]
     #[case(false, 0)]
-    fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: usize) {
+    fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: u16) {
         let status = Status::new(use_gpu, cpu_num_threads);
         assert_eq!(false, status.light_session_options.use_gpu);
         assert_eq!(use_gpu, status.heavy_session_options.use_gpu);
@@ -273,8 +275,8 @@ mod tests {
             cpu_num_threads,
             status.heavy_session_options.cpu_num_threads
         );
-        assert!(status.models.yukarin_s.is_empty());
-        assert!(status.models.yukarin_sa.is_empty());
+        assert!(status.models.predict_duration.is_empty());
+        assert!(status.models.predict_intonation.is_empty());
         assert!(status.models.decode.is_empty());
         assert!(status.supported_styles.is_empty());
     }
@@ -302,8 +304,8 @@ mod tests {
         let mut status = Status::new(false, 0);
         let result = status.load_model(0);
         assert_eq!(Ok(()), result);
-        assert_eq!(1, status.models.yukarin_s.len());
-        assert_eq!(1, status.models.yukarin_sa.len());
+        assert_eq!(1, status.models.predict_duration.len());
+        assert_eq!(1, status.models.predict_intonation.len());
         assert_eq!(1, status.models.decode.len());
     }
 
