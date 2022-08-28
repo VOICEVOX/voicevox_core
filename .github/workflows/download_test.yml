@@ -25,7 +25,7 @@ jobs:
               *cufft*
               *curand*
           - os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1 -Min
+            download_command: ./scripts/downloads/Download.ps1 -Min $True
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -58,7 +58,7 @@ jobs:
               *cufft*
               *curand*
           - os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1 -Type directml -Min
+            download_command: ./scripts/downloads/Download.ps1 -Type directml -Min $true
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -94,7 +94,7 @@ jobs:
             check_not_exists_items: |
               *directml*
           - os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1 -Type cuda -Min
+            download_command: ./scripts/downloads/Download.ps1 -Type cuda -Min $true
             download_dir: voicevox_core
             check_items: |
               core.dll
