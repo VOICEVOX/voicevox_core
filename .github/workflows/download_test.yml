@@ -132,6 +132,25 @@ jobs:
               libcurand.so.*
             check_not_exists_items: |
               *directml*
+          - os: ubuntu-latest
+            download_command: ./scripts/downloads/download.sh --type cuda --min
+            download_dir: voicevox_core
+            check_items: |
+              libcore.so
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              EULA.txt
+              NVIDIA_SLA_cuDNN_Support.txt
+              libcublas.so.*
+              libcublasLt.so.*
+              libcudnn.so.*
+              libcudnn_adv_infer.so.*
+              libcudnn_cnn_infer.so.*
+              libcudnn_ops_infer.so.*
+              libcufft.so.*
+              libcurand.so.*
     runs-on: ${{ matrix.os }}
     env:
       EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || '0.13.0' }}
