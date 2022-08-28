@@ -157,7 +157,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
 }
 
 /// predict intonationを実行する
-/// @param [in] length vowel_phoneme_list , consonant_phoneme_list , start_accent_list, end_accent_list , start_accent_phrase_list , end_accent_phrase_list , output のデータ長
+/// @param [in] length vowel_phoneme_list, consonant_phoneme_list, start_accent_list, end_accent_list, start_accent_phrase_list, end_accent_phrase_list, output のデータ長
 /// @param [in] vowel_phoneme_list 母音の音素データ
 /// @param [in] consonant_phoneme_list 子音の音素データ
 /// @param [in] start_accent_list 開始アクセントデータ
