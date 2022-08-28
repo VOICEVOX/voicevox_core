@@ -175,8 +175,7 @@ pub fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> {
     Ok(parsed_result)
 }
 
-#[allow(dead_code)] // TODO: remove this feature
-fn create_kana(accent_phrases: &[AccentPhraseModel]) -> String {
+pub fn create_kana(accent_phrases: &[AccentPhraseModel]) -> String {
     let mut text = String::new();
     for phrase in accent_phrases {
         let moras = phrase.moras();
