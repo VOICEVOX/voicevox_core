@@ -96,6 +96,10 @@ impl VoicevoxCore {
         Ok(Self { inner })
     }
 
+    fn __repr__(&self) -> &'static str {
+        "VoicevoxCore { .. }"
+    }
+
     #[getter]
     fn is_gpu_mode(&self) -> bool {
         self.inner.is_gpu_mode()
@@ -236,10 +240,6 @@ impl VoicevoxCore {
             )
             .into_py_result()?;
         Ok(PyBytes::new(py, wav))
-    }
-
-    fn __repr__(&self) -> &'static str {
-        "VoicevoxCore { .. }"
     }
 }
 
