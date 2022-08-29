@@ -44,8 +44,8 @@ curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/do
 
 ## その他詳細なオプションを指定したい場合
 
-script の help を表示を行えば使用できる全てのオプションを参照することができます
-以下に help の表示方法を示します。
+スクリプトにヘルプ表示機能があります。
+以下のようにしてヘルプを表示できます。
 
 ### Windows の場合
 
