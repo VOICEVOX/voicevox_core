@@ -4,7 +4,7 @@
 
 ### Windows の場合
 
-powershell で下記コマンドを実行してください
+PowerShell で下記コマンドを実行してください
 
 ```powershell
 Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 | powershell
