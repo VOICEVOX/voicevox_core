@@ -222,14 +222,12 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_decode(
     length: usize,
-    phoneme_size: i64,
+    phoneme_size: usize,
     f0: *mut f32,
     phoneme: *mut f32,
     speaker_id: u32,
     output: *mut f32,
 ) -> VoicevoxResultCode {
-    let length = length as usize;
-    let phoneme_size = phoneme_size as usize;
     let result = lock_internal().decode(
         length,
         phoneme_size,
