@@ -154,7 +154,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
         if let Some(output_vec) = output_vec {
             write_predict_duration_to_ptr(
                 output_predict_duration_data,
-                output_predict_duration_length,
+                output_predict_duration_data_length,
                 &output_vec,
             );
         }
