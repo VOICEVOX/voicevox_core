@@ -88,7 +88,7 @@ sudo apt install libgomp1
 
 ## サンプル実行
 
-現在このリポジトリには下記 example が提供されています。実行方法についてはそれぞれのディレクトリ内にある README を参照してください
+現在このリポジトリでは次のサンプルが提供されています。実行方法についてはそれぞれのディレクトリ内にある README を参照してください
 
 - [python](./example/python)
 - [C++(unix cmake)](./example/cpp/unix)
