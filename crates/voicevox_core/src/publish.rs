@@ -555,32 +555,32 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
     // C APIのため、messageには必ず末尾にNULL文字を追加する
     use VoicevoxResultCode::*;
     match result_code {
-        VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT => {
+        VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR => {
             "voicevox_load_openjtalk_dict() を初めに呼んでください\0"
         }
-        VOICEVOX_RESULT_FAILED_LOAD_MODEL => {
+        VOICEVOX_RESULT_LOAD_MODEL_ERROR => {
             "modelデータ読み込み中にOnnxruntimeエラーが発生しました\0"
         }
-        VOICEVOX_RESULT_FAILED_LOAD_METAS => "メタデータ読み込みに失敗しました\0",
+        VOICEVOX_RESULT_LOAD_METAS_ERROR => "メタデータ読み込みに失敗しました\0",
 
-        VOICEVOX_RESULT_CANT_GPU_SUPPORT => "GPU機能をサポートすることができません\0",
-        VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES => {
+        VOICEVOX_RESULT_GPU_SUPPORT_ERROR => "GPU機能をサポートすることができません\0",
+        VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR => {
             "サポートされているデバイス情報取得中にエラーが発生しました\0"
         }
 
-        VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
-        VOICEVOX_RESULT_UNINITIALIZED_STATUS => "Statusが初期化されていません\0",
-        VOICEVOX_RESULT_INVALID_SPEAKER_ID => "無効なspeaker_idです\0",
-        VOICEVOX_RESULT_INVALID_MODEL_INDEX => "無効なmodel_indexです\0",
-        VOICEVOX_RESULT_INFERENCE_FAILED => "推論に失敗しました\0",
-        VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL => {
+        VOICEVOX_RESULT_OK => "エラーが発生しませんでした\0",
+        VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR => "Statusが初期化されていません\0",
+        VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR => "無効なspeaker_idです\0",
+        VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR => "無効なmodel_indexです\0",
+        VOICEVOX_RESULT_INFERENCE_ERROR => "推論に失敗しました\0",
+        VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR => {
             "入力テキストからのフルコンテキストラベル抽出に失敗しました\0"
         }
-        VOICEVOX_RESULT_INVALID_UTF8_INPUT => "入力テキストが無効なUTF-8データでした\0",
-        VOICEVOX_RESULT_FAILED_PARSE_KANA => {
+        VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR => "入力テキストが無効なUTF-8データでした\0",
+        VOICEVOX_RESULT_PARSE_KANA_ERROR => {
             "入力テキストをAquesTalkライクな読み仮名としてパースすることに失敗しました\0"
         }
-        VOICEVOX_RESULT_INVALID_AUDIO_QUERY => "無効なaudio_queryです\0",
+        VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR => "無効なaudio_queryです\0",
     }
 }
 

@@ -150,7 +150,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
     );
 
     let (output_vec, result_code) = convert_result(result);
-    if result_code == VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED {
+    if result_code == VoicevoxResultCode::VOICEVOX_RESULT_OK {
         if let Some(output_vec) = output_vec {
             write_predict_duration_to_ptr(
                 output_predict_duration_data,
@@ -326,7 +326,7 @@ pub unsafe extern "C" fn voicevox_audio_query(
     };
 
     write_json_to_ptr(output_audio_query_json, audio_query);
-    VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
+    VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 
 /// synthesis のオプション
@@ -370,7 +370,7 @@ pub unsafe extern "C" fn voicevox_synthesis(
     let audio_query = &if let Ok(audio_query) = serde_json::from_str(audio_query_json) {
         audio_query
     } else {
-        return VoicevoxResultCode::VOICEVOX_RESULT_INVALID_AUDIO_QUERY;
+        return VoicevoxResultCode::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR;
     };
 
     let (wav, result_code) =
@@ -382,7 +382,7 @@ pub unsafe extern "C" fn voicevox_synthesis(
     };
 
     write_wav_to_ptr(output_wav, output_wav_length, wav);
-    VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
+    VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 
 /// tts オプション
@@ -424,7 +424,10 @@ pub unsafe extern "C" fn voicevox_tts(
         if let Ok(text) = CStr::from_ptr(text).to_str() {
             convert_result(lock_internal().tts(text, speaker_id, options.into()))
         } else {
-            (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT)
+            (
+                None,
+                VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
+            )
         }
     };
     if let Some(output) = output_opt {
@@ -470,18 +473,18 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     #[rstest]
-    #[case(Ok(()), VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED)]
+    #[case(Ok(()), VoicevoxResultCode::VOICEVOX_RESULT_OK)]
     #[case(
         Err(Error::NotLoadedOpenjtalkDict),
-        VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT
+        VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR
     )]
     #[case(
         Err(Error::LoadModel(voicevox_core::SourceError::new(anyhow!("some load model error")))),
-        VoicevoxResultCode::VOICEVOX_RESULT_FAILED_LOAD_MODEL
+        VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ERROR
     )]
     #[case(
         Err(Error::GetSupportedDevices(voicevox_core::SourceError::new(anyhow!("some get supported devices error")))),
-        VoicevoxResultCode::VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES
+        VoicevoxResultCode::VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR
     )]
     fn convert_result_works(#[case] result: Result<()>, #[case] expected: VoicevoxResultCode) {
         let (_, actual) = convert_result(result);

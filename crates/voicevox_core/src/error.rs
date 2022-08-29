@@ -17,43 +17,49 @@ pub enum Error {
     /*
      * エラーメッセージのベースとなる文字列は必ずbase_error_message関数を使用してVoicevoxResultCodeのエラー出力の内容と対応するようにすること
      */
-    #[error("{}", base_error_message(VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT))]
+    #[error(
+        "{}",
+        base_error_message(VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR)
+    )]
     NotLoadedOpenjtalkDict,
 
-    #[error("{}", base_error_message(VOICEVOX_RESULT_CANT_GPU_SUPPORT))]
+    #[error("{}", base_error_message(VOICEVOX_RESULT_GPU_SUPPORT_ERROR))]
     CantGpuSupport,
 
-    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_FAILED_LOAD_MODEL))]
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_MODEL_ERROR))]
     LoadModel(#[source] SourceError),
 
-    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_FAILED_LOAD_METAS))]
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_METAS_ERROR))]
     LoadMetas(#[source] SourceError),
 
     #[error(
         "{},{0}",
-        base_error_message(VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES)
+        base_error_message(VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR)
     )]
     GetSupportedDevices(#[source] SourceError),
 
-    #[error("{}", base_error_message(VOICEVOX_RESULT_UNINITIALIZED_STATUS))]
+    #[error("{}", base_error_message(VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR))]
     UninitializedStatus,
 
-    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_SPEAKER_ID))]
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR))]
     InvalidSpeakerId { speaker_id: u32 },
 
-    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_MODEL_INDEX))]
+    #[error(
+        "{},{0}",
+        base_error_message(VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR)
+    )]
     InvalidModelIndex { model_index: usize },
 
-    #[error("{}", base_error_message(VOICEVOX_RESULT_INFERENCE_FAILED))]
+    #[error("{}", base_error_message(VOICEVOX_RESULT_INFERENCE_ERROR))]
     InferenceFailed,
 
     #[error(
         "{},{0}",
-        base_error_message(VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL)
+        base_error_message(VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR)
     )]
     FailedExtractFullContextLabel(#[from] FullContextLabelError),
 
-    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_FAILED_PARSE_KANA))]
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_PARSE_KANA_ERROR))]
     FailedParseKana(#[from] KanaParseError),
 }
 
