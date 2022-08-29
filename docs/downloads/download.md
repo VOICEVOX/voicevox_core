@@ -1,6 +1,6 @@
 # VOICEVOX CORE Downloader
 
-## 一般的な実行方法
+## デフォルト(CPU 版)をダウンロードする場合
 
 ### Windows の場合
 
