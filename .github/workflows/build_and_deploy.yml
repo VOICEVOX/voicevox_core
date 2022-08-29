@@ -76,6 +76,12 @@ jobs:
         with:
           target: ${{ matrix.target }}
           default: true
+      - uses: actions-rs/install@0.1
+        with:
+          crate: set-cargo-version
+          version: latest
+      - name: set cargo version
+        run: set-cargo-version ./crates/voicevox_core/Cargo.toml ${{ env.VERSION }}
       - name: build release
         run: cargo build -p voicevox_core_c_api --features generate-c-header,${{ matrix.additional-features }} --target ${{ matrix.target }} --release
         env:

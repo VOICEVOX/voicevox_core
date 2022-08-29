@@ -68,6 +68,16 @@ pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> Voi
     }
 }
 
+static VOICEVOX_VERSION: once_cell::sync::Lazy<CString> =
+    once_cell::sync::Lazy::new(|| CString::new(lock_internal().get_version()).unwrap());
+
+/// voicevoxのversionを取得する
+/// @return SemVerでフォーマットされたバージョン
+#[no_mangle]
+pub extern "C" fn voicevox_get_version() -> *const c_char {
+    VOICEVOX_VERSION.as_ptr()
+}
+
 #[no_mangle]
 pub extern "C" fn voicevox_load_model(speaker_id: u32) -> VoicevoxResultCode {
     let result = lock_internal().load_model(speaker_id);

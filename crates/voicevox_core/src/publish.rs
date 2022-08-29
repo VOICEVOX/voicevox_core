@@ -84,6 +84,10 @@ impl VoicevoxCore {
         self.synthesis_engine.inference_core_mut().finalize()
     }
 
+    pub const fn get_version(&self) -> &'static str {
+        env!("CARGO_PKG_VERSION")
+    }
+
     pub fn get_metas_json(&self) -> &'static CStr {
         &METAS_CSTRING
     }
@@ -883,5 +887,11 @@ mod tests {
         }
         assert_eq!(query.accent_phrases()[1].accent(), &1);
         assert_eq!(query.kana(), "コレワ'/テ'_ストデ_ス");
+    }
+
+    #[rstest]
+    fn get_version_works() {
+        let core = VoicevoxCore::new_with_mutex();
+        assert_eq!("999.999.999", core.lock().unwrap().get_version());
     }
 }
