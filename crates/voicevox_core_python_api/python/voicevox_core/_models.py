@@ -1,4 +1,3 @@
-import dataclasses
 from enum import Enum
 from typing import List, Optional
 
@@ -19,7 +18,7 @@ class Meta:
     version: str
 
 
-@dataclasses.dataclass
+@pydantic.dataclasses.dataclass
 class SupportedDevices:
     cpu: bool
     cuda: bool
