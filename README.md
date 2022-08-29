@@ -45,8 +45,8 @@ Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます�
 ### コアライブラリのダウンロードと配置
 
 1. まず [Releases](https://github.com/VOICEVOX/voicevox_core/releases/latest) からダウンロードしたコアライブラリの zip を、適当なディレクトリ名で展開します。CUDA 版、DirectML 版はかならずその zip ファイルをダウンロードしてください。
-2. CUDA,DirectML を利用するのであれば [追加ライブラリ](https://github.com/VOICEVOX/voicevox_additional_libraries/releases/latest) をダウンロードして展開したディレクトリに展開する。
-3. tts 機能を使うのであれば次に [open_jtalk 公式](https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz) から open_jtalk の辞書ファイルをダウンロードしてコアライブラリを展開したディレクトリに展開する。
+2. CUDA や DirectML を利用する場合は、 [追加ライブラリ](https://github.com/VOICEVOX/voicevox_additional_libraries/releases/latest) をダウンロードして、コアライブラリを展開したディレクトリに展開してください。
+3. [Open JTalk から配布されている辞書ファイル](https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz) から Open JTalk の辞書ファイルをダウンロードしてコアライブラリを展開したディレクトリに展開してください。
 
 </details>
 
