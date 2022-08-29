@@ -210,7 +210,7 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
 /// @param [in] length f0 , output のデータ長及び phoneme のデータ長に関連する
 /// @param [in] phoneme_size 音素のサイズ phoneme のデータ長に関連する
 /// @param [in] f0 基本周波数
-/// @param [in] phoneme 音素データ
+/// @param [in] phoneme_list 音素データ
 /// @param [in] speaker_id speaker ID
 /// @param [out] output データ出力先
 /// @return 結果コード #VoicevoxResultCode
@@ -224,7 +224,7 @@ pub unsafe extern "C" fn voicevox_decode(
     length: usize,
     phoneme_size: usize,
     f0: *mut f32,
-    phoneme: *mut f32,
+    phoneme_list: *mut f32,
     speaker_id: u32,
     output: *mut f32,
 ) -> VoicevoxResultCode {
@@ -232,7 +232,7 @@ pub unsafe extern "C" fn voicevox_decode(
         length,
         phoneme_size,
         std::slice::from_raw_parts(f0, length),
-        std::slice::from_raw_parts(phoneme, phoneme_size * length),
+        std::slice::from_raw_parts(phoneme_list, phoneme_size * length),
         speaker_id,
     );
     let (output_vec, result_code) = convert_result(result);

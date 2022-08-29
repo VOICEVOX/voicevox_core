@@ -129,14 +129,14 @@ impl VoicevoxCore {
         length: usize,
         phoneme_size: usize,
         f0: &[f32],
-        phoneme: &[f32],
+        phoneme_list: &[f32],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine.inference_core_mut().decode(
             length,
             phoneme_size,
             f0,
-            phoneme,
+            phoneme_list,
             speaker_id,
         )
     }
@@ -426,7 +426,7 @@ impl InferenceCore {
         length: usize,
         phoneme_size: usize,
         f0: &[f32],
-        phoneme: &[f32],
+        phoneme_list: &[f32],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
@@ -463,7 +463,7 @@ impl InferenceCore {
         let f0_with_padding = Self::make_f0_with_padding(f0, length_with_padding, padding_size);
 
         let phoneme_with_padding = Self::make_phoneme_with_padding(
-            phoneme,
+            phoneme_list,
             phoneme_size,
             length_with_padding,
             padding_size,
