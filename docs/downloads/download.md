@@ -9,7 +9,7 @@
 PowerShell で下記コマンドを実行してください
 
 ```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 | PowerShell
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 | PowerShell
 ```
 
 ### Linux/macOS の場合
@@ -23,8 +23,8 @@ curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/do
 ## DirectML 版をダウンロードする場合
 
 ```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 -Output ./Download.ps1
-./Download.ps1 -type directml
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -Output ./download.ps1
+./download.ps1 -type directml
 ```
 
 <a id="cuda"></a>
@@ -34,8 +34,8 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 ### Windows の場合
 
 ```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 -Output ./Download.ps1
-./Download.ps1 -type cuda
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -Output ./download.ps1
+./download.ps1 -type cuda
 ```
 
 ### Linux の場合
@@ -52,8 +52,8 @@ curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/do
 ### Windows の場合
 
 ```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 -Output ./Download.ps1
-Get-Help ./Download.ps1 -full
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -Output ./download.ps1
+Get-Help ./download.ps1 -full
 ```
 
 ### Linux/macOS の場合
