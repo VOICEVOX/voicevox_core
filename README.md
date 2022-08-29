@@ -30,8 +30,6 @@ curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/do
 <details>
 <summary> downloader を使わない場合</summary>
 
-#### GPU を使用する場合
-
 <!--
 #### Raspberry Pi (armhf)の場合
 
