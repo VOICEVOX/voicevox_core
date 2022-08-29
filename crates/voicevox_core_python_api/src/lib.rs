@@ -97,6 +97,11 @@ impl VoicevoxCore {
         Ok(Self { inner })
     }
 
+    #[getter]
+    fn is_gpu_mode(&self) -> bool {
+        self.inner.is_gpu_mode()
+    }
+
     fn load_model(&mut self, speaker_id: u32) -> PyResult<()> {
         self.inner.load_model(speaker_id).into_py_result()
     }

@@ -22,6 +22,9 @@ class VoicevoxCore:
         pass
     def __repr__(self) -> str:
         pass
+    @property
+    def is_gpu_mode(self) -> bool:
+        pass
     def load_model(self, speaker_id: int) -> None:
         pass
     def is_model_loaded(self, speaker_id: int) -> bool:
