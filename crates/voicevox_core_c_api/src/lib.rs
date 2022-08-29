@@ -193,7 +193,7 @@ pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_da
 /// @param start_accent_phrase_list 必ずlengthの長さだけデータがある状態で渡すこと
 /// @param end_accent_phrase_list 必ずlengthの長さだけデータがある状態で渡すこと
 /// @param output_predict_intonation_data_length uintptr_t 分のメモリ領域が割り当てられていること
-/// @param output_predict_intonation_data 成功後にメモリ領域が割り当てられるので
+/// @param output_predict_intonation_data 成功後にメモリ領域が割り当てられるので ::voicevox_predict_intonation_data_free で開放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_intonation(
     length: usize,
@@ -244,13 +244,15 @@ pub unsafe extern "C" fn voicevox_predict_intonation_data_free(predict_intonatio
 /// @param [in] f0 基本周波数
 /// @param [in] phoneme_list 音素データ
 /// @param [in] speaker_id speaker ID
-/// @param [out] output データ出力先
+/// @param [out] output_decode_data_length 出力先データのサイズ
+/// @param [out] output_decode_data データ出力先
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
 /// @param f0 必ず length の長さだけデータがある状態で渡すこと
-/// @param phoneme 必ず length * phoneme_size の長さだけデータがある状態で渡すこと
-/// @param output lengthの長さだけデータが上書きされるので length 分の領域を確保した状態で渡すこと
+/// @param phoneme_list 必ず length * phoneme_size の長さだけデータがある状態で渡すこと
+/// @param output_decode_data_length uintptr_t 分のメモリ領域が割り当てられていること
+/// @param output_decode_data 成功後にメモリ領域が割り当てられるので ::voicevox_decode_data_free で開放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_decode(
     length: usize,
@@ -258,7 +260,8 @@ pub unsafe extern "C" fn voicevox_decode(
     f0: *mut f32,
     phoneme_list: *mut f32,
     speaker_id: u32,
-    output: *mut f32,
+    output_decode_data_length: *mut usize,
+    output_decode_data: *mut *mut f32,
 ) -> VoicevoxResultCode {
     let result = lock_internal().decode(
         length,
@@ -269,10 +272,19 @@ pub unsafe extern "C" fn voicevox_decode(
     );
     let (output_vec, result_code) = convert_result(result);
     if let Some(output_vec) = output_vec {
-        let output_slice = std::slice::from_raw_parts_mut(output, length);
-        output_slice.clone_from_slice(&output_vec);
+        write_decode_to_ptr(output_decode_data, output_decode_data_length, &output_vec);
     }
     result_code
+}
+
+/// ::voicevox_decodeで出力されたデータを開放する
+/// @param[in] decode_data 確保されたメモリ領域
+///
+/// # Safety
+/// @param decode_data 実行後に割り当てられたメモリ領域が開放される
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_decode_data_free(decode_data: *mut f32) {
+    libc::free(decode_data as *mut c_void);
 }
 
 /// Audio query のオプション

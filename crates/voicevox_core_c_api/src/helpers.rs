@@ -116,6 +116,14 @@ pub(crate) unsafe fn write_predict_intonation_to_ptr(
     );
 }
 
+pub(crate) unsafe fn write_decode_to_ptr(
+    output_decode_ptr: *mut *mut f32,
+    output_decode_length_ptr: *mut usize,
+    data: &[f32],
+) {
+    write_data_to_ptr(output_decode_ptr, output_decode_length_ptr, data);
+}
+
 unsafe fn write_data_to_ptr<T>(
     output_data_ptr: *mut *mut T,
     output_length_ptr: *mut usize,
