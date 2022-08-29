@@ -238,11 +238,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}-${{ matrix.os }}
     env:
-      EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || '0.13.0' }}
+      EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || 'latest' }}
     steps:
       - uses: actions/checkout@v2
       - name: Execute download command
         run: ${{ matrix.download_command }}
+      - name: Get latest version
+        if: ${{ env.EXPECTED_VOICEVOX_CORE_VERSION == 'latest' }}
+        shell: bash
+        run: |
+          curl -sSfI "https://github.com/VOICEVOX/voicevox_core/releases/latest"| grep "location:" | sed -e "s%location: https://github.com/VOICEVOX/voicevox_core/releases/tag/%%" | sed 's/\r//g' >> $GITHUB_ENV
       - name: Check downloaded version
         shell: bash
         run: |
