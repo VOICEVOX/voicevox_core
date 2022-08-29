@@ -1,6 +1,10 @@
 name: test workflow
 on:
   push:
+    branches:
+      - "*"
+    tags-ignore:
+      - "*"
   pull_request:
   release:
     types:

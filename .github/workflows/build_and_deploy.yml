@@ -12,9 +12,10 @@ on:
   release:
     types:
       - published
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["test workflow"]
+    types:
+      - completed
 env:
   # releaseタグ名か、workflow_dispatchでのバージョン名か、DEBUGが入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || 'DEBUG' }}
