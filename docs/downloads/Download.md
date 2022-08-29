@@ -50,7 +50,7 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 Get-Help ./Download.ps1 -full
 ```
 
-### Linux,MacOS の場合
+### Linux/macOS の場合
 
 ```bash
 curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s -- --help
