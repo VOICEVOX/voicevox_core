@@ -92,34 +92,38 @@ impl VoicevoxCore {
         &SUPPORTED_DEVICES_CSTRING
     }
 
-    pub fn predict_duration(&mut self, phoneme_list: &[i64], speaker_id: u32) -> Result<Vec<f32>> {
+    pub fn predict_duration(
+        &mut self,
+        phoneme_vector: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
-            .predict_duration(phoneme_list, speaker_id)
+            .predict_duration(phoneme_vector, speaker_id)
     }
 
     #[allow(clippy::too_many_arguments)]
     pub fn predict_intonation(
         &mut self,
         length: usize,
-        vowel_phoneme_list: &[i64],
-        consonant_phoneme_list: &[i64],
-        start_accent_list: &[i64],
-        end_accent_list: &[i64],
-        start_accent_phrase_list: &[i64],
-        end_accent_phrase_list: &[i64],
+        vowel_phoneme_vector: &[i64],
+        consonant_phoneme_vector: &[i64],
+        start_accent_vector: &[i64],
+        end_accent_vector: &[i64],
+        start_accent_phrase_vector: &[i64],
+        end_accent_phrase_vector: &[i64],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
             .predict_intonation(
                 length,
-                vowel_phoneme_list,
-                consonant_phoneme_list,
-                start_accent_list,
-                end_accent_list,
-                start_accent_phrase_list,
-                end_accent_phrase_list,
+                vowel_phoneme_vector,
+                consonant_phoneme_vector,
+                start_accent_vector,
+                end_accent_vector,
+                start_accent_phrase_vector,
+                end_accent_phrase_vector,
                 speaker_id,
             )
     }
@@ -129,14 +133,14 @@ impl VoicevoxCore {
         length: usize,
         phoneme_size: usize,
         f0: &[f32],
-        phoneme_list: &[f32],
+        phoneme_vector: &[f32],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine.inference_core_mut().decode(
             length,
             phoneme_size,
             f0,
-            phoneme_list,
+            phoneme_vector,
             speaker_id,
         )
     }
@@ -319,7 +323,11 @@ impl InferenceCore {
         self.status_option = None;
     }
 
-    pub fn predict_duration(&mut self, phoneme_list: &[i64], speaker_id: u32) -> Result<Vec<f32>> {
+    pub fn predict_duration(
+        &mut self,
+        phoneme_vector: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
         }
@@ -344,11 +352,11 @@ impl InferenceCore {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let mut phoneme_list_array = NdArray::new(ndarray::arr1(phoneme_list));
+        let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
-            vec![&mut phoneme_list_array, &mut speaker_id_array];
+            vec![&mut phoneme_vector_array, &mut speaker_id_array];
 
         let mut output = status.predict_duration_session_run(model_index, input_tensors)?;
 
@@ -365,12 +373,12 @@ impl InferenceCore {
     pub fn predict_intonation(
         &mut self,
         length: usize,
-        vowel_phoneme_list: &[i64],
-        consonant_phoneme_list: &[i64],
-        start_accent_list: &[i64],
-        end_accent_list: &[i64],
-        start_accent_phrase_list: &[i64],
-        end_accent_phrase_list: &[i64],
+        vowel_phoneme_vector: &[i64],
+        consonant_phoneme_vector: &[i64],
+        start_accent_vector: &[i64],
+        end_accent_vector: &[i64],
+        start_accent_phrase_vector: &[i64],
+        end_accent_phrase_vector: &[i64],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
@@ -398,23 +406,25 @@ impl InferenceCore {
         }
 
         let mut length_array = NdArray::new(ndarray::arr0(length as i64));
-        let mut vowel_phoneme_list_array = NdArray::new(ndarray::arr1(vowel_phoneme_list));
-        let mut consonant_phoneme_list_array = NdArray::new(ndarray::arr1(consonant_phoneme_list));
-        let mut start_accent_list_array = NdArray::new(ndarray::arr1(start_accent_list));
-        let mut end_accent_list_array = NdArray::new(ndarray::arr1(end_accent_list));
-        let mut start_accent_phrase_list_array =
-            NdArray::new(ndarray::arr1(start_accent_phrase_list));
-        let mut end_accent_phrase_list_array = NdArray::new(ndarray::arr1(end_accent_phrase_list));
+        let mut vowel_phoneme_vector_array = NdArray::new(ndarray::arr1(vowel_phoneme_vector));
+        let mut consonant_phoneme_vector_array =
+            NdArray::new(ndarray::arr1(consonant_phoneme_vector));
+        let mut start_accent_vector_array = NdArray::new(ndarray::arr1(start_accent_vector));
+        let mut end_accent_vector_array = NdArray::new(ndarray::arr1(end_accent_vector));
+        let mut start_accent_phrase_vector_array =
+            NdArray::new(ndarray::arr1(start_accent_phrase_vector));
+        let mut end_accent_phrase_vector_array =
+            NdArray::new(ndarray::arr1(end_accent_phrase_vector));
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> = vec![
             &mut length_array,
-            &mut vowel_phoneme_list_array,
-            &mut consonant_phoneme_list_array,
-            &mut start_accent_list_array,
-            &mut end_accent_list_array,
-            &mut start_accent_phrase_list_array,
-            &mut end_accent_phrase_list_array,
+            &mut vowel_phoneme_vector_array,
+            &mut consonant_phoneme_vector_array,
+            &mut start_accent_vector_array,
+            &mut end_accent_vector_array,
+            &mut start_accent_phrase_vector_array,
+            &mut end_accent_phrase_vector_array,
             &mut speaker_id_array,
         ];
 
@@ -426,7 +436,7 @@ impl InferenceCore {
         length: usize,
         phoneme_size: usize,
         f0: &[f32],
-        phoneme_list: &[f32],
+        phoneme_vector: &[f32],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
@@ -463,7 +473,7 @@ impl InferenceCore {
         let f0_with_padding = Self::make_f0_with_padding(f0, length_with_padding, padding_size);
 
         let phoneme_with_padding = Self::make_phoneme_with_padding(
-            phoneme_list,
+            phoneme_vector,
             phoneme_size,
             length_with_padding,
             padding_size,
@@ -737,16 +747,19 @@ mod tests {
             })
             .unwrap();
 
-        // 「こんにちは、音声合成の世界へようこそ」という文章を変換して得た phoneme_list
-        let phoneme_list = [
+        // 「こんにちは、音声合成の世界へようこそ」という文章を変換して得た phoneme_vector
+        let phoneme_vector = [
             0, 23, 30, 4, 28, 21, 10, 21, 42, 7, 0, 30, 4, 35, 14, 14, 16, 30, 30, 35, 14, 14, 28,
             30, 35, 14, 23, 7, 21, 14, 43, 30, 30, 23, 30, 35, 30, 0,
         ];
 
-        let result = internal.lock().unwrap().predict_duration(&phoneme_list, 0);
+        let result = internal
+            .lock()
+            .unwrap()
+            .predict_duration(&phoneme_vector, 0);
 
         assert!(result.is_ok(), "{:?}", result);
-        assert_eq!(result.unwrap().len(), phoneme_list.len());
+        assert_eq!(result.unwrap().len(), phoneme_vector.len());
     }
 
     #[rstest]
@@ -763,26 +776,26 @@ mod tests {
             .unwrap();
 
         // 「テスト」という文章に対応する入力
-        let vowel_phoneme_list = [0, 14, 6, 30, 0];
-        let consonant_phoneme_list = [-1, 37, 35, 37, -1];
-        let start_accent_list = [0, 1, 0, 0, 0];
-        let end_accent_list = [0, 1, 0, 0, 0];
-        let start_accent_phrase_list = [0, 1, 0, 0, 0];
-        let end_accent_phrase_list = [0, 0, 0, 1, 0];
+        let vowel_phoneme_vector = [0, 14, 6, 30, 0];
+        let consonant_phoneme_vector = [-1, 37, 35, 37, -1];
+        let start_accent_vector = [0, 1, 0, 0, 0];
+        let end_accent_vector = [0, 1, 0, 0, 0];
+        let start_accent_phrase_vector = [0, 1, 0, 0, 0];
+        let end_accent_phrase_vector = [0, 0, 0, 1, 0];
 
         let result = internal.lock().unwrap().predict_intonation(
-            vowel_phoneme_list.len(),
-            &vowel_phoneme_list,
-            &consonant_phoneme_list,
-            &start_accent_list,
-            &end_accent_list,
-            &start_accent_phrase_list,
-            &end_accent_phrase_list,
+            vowel_phoneme_vector.len(),
+            &vowel_phoneme_vector,
+            &consonant_phoneme_vector,
+            &start_accent_vector,
+            &end_accent_vector,
+            &start_accent_phrase_vector,
+            &end_accent_phrase_vector,
             0,
         );
 
         assert!(result.is_ok(), "{:?}", result);
-        assert_eq!(result.unwrap().len(), vowel_phoneme_list.len());
+        assert_eq!(result.unwrap().len(), vowel_phoneme_vector.len());
     }
 
     #[rstest]

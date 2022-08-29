@@ -125,27 +125,27 @@ pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
 }
 
 /// predict durationを実行する
-/// @param [in] length phoneme_list, output のデータ長
-/// @param [in] phoneme_list  音素データ
+/// @param [in] length phoneme_vector, output のデータ長
+/// @param [in] phoneme_vector  音素データ
 /// @param [in] speaker_id speaker ID
 /// @param [out] output_predict_duration_length 出力データのサイズ
 /// @param [out] output_predict_duration_data データの出力先
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
-/// @param phoneme_list 必ずlengthの長さだけデータがある状態で渡すこと
+/// @param phoneme_vector 必ずlengthの長さだけデータがある状態で渡すこと
 /// @param output_predict_duration_data_length uintptr_t 分のメモリ領域が割り当てられていること
 /// @param output_predict_duration_data 成功後にメモリ領域が割り当てられるので ::voicevox_predict_duration_data_free で開放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_duration(
     length: usize,
-    phoneme_list: *mut i64,
+    phoneme_vector: *mut i64,
     speaker_id: u32,
     output_predict_duration_data_length: *mut usize,
     output_predict_duration_data: *mut *mut f32,
 ) -> VoicevoxResultCode {
     let result = lock_internal().predict_duration(
-        std::slice::from_raw_parts_mut(phoneme_list, length),
+        std::slice::from_raw_parts_mut(phoneme_vector, length),
         speaker_id,
     );
 
@@ -173,48 +173,48 @@ pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_da
 }
 
 /// predict intonationを実行する
-/// @param [in] length vowel_phoneme_list, consonant_phoneme_list, start_accent_list, end_accent_list, start_accent_phrase_list, end_accent_phrase_list, output のデータ長
-/// @param [in] vowel_phoneme_list 母音の音素データ
-/// @param [in] consonant_phoneme_list 子音の音素データ
-/// @param [in] start_accent_list 開始アクセントデータ
-/// @param [in] end_accent_list 終了アクセントデータ
-/// @param [in] start_accent_phrase_list 開始アクセントフレーズデータ
-/// @param [in] end_accent_phrase_list 終了アクセントフレーズデータ
+/// @param [in] length vowel_phoneme_vector, consonant_phoneme_vector, start_accent_vector, end_accent_vector, start_accent_phrase_vector, end_accent_phrase_vector, output のデータ長
+/// @param [in] vowel_phoneme_vector 母音の音素データ
+/// @param [in] consonant_phoneme_vector 子音の音素データ
+/// @param [in] start_accent_vector 開始アクセントデータ
+/// @param [in] end_accent_vector 終了アクセントデータ
+/// @param [in] start_accent_phrase_vector 開始アクセントフレーズデータ
+/// @param [in] end_accent_phrase_vector 終了アクセントフレーズデータ
 /// @param [in] speaker_id speaker ID
 /// @param [out] output_predict_intonation_data_length 出力データのサイズ
 /// @param [out] output_predict_intonation_data データの出力先
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
-/// @param vowel_phoneme_list 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param consonant_phoneme_list 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param start_accent_list 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param end_accent_list 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param start_accent_phrase_list 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param end_accent_phrase_list 必ずlengthの長さだけデータがある状態で渡すこと
+/// @param vowel_phoneme_vector 必ずlengthの長さだけデータがある状態で渡すこと
+/// @param consonant_phoneme_vector 必ずlengthの長さだけデータがある状態で渡すこと
+/// @param start_accent_vector 必ずlengthの長さだけデータがある状態で渡すこと
+/// @param end_accent_vector 必ずlengthの長さだけデータがある状態で渡すこと
+/// @param start_accent_phrase_vector 必ずlengthの長さだけデータがある状態で渡すこと
+/// @param end_accent_phrase_vector 必ずlengthの長さだけデータがある状態で渡すこと
 /// @param output_predict_intonation_data_length uintptr_t 分のメモリ領域が割り当てられていること
 /// @param output_predict_intonation_data 成功後にメモリ領域が割り当てられるので ::voicevox_predict_intonation_data_free で開放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_intonation(
     length: usize,
-    vowel_phoneme_list: *mut i64,
-    consonant_phoneme_list: *mut i64,
-    start_accent_list: *mut i64,
-    end_accent_list: *mut i64,
-    start_accent_phrase_list: *mut i64,
-    end_accent_phrase_list: *mut i64,
+    vowel_phoneme_vector: *mut i64,
+    consonant_phoneme_vector: *mut i64,
+    start_accent_vector: *mut i64,
+    end_accent_vector: *mut i64,
+    start_accent_phrase_vector: *mut i64,
+    end_accent_phrase_vector: *mut i64,
     speaker_id: u32,
     output_predict_intonation_data_length: *mut usize,
     output_predict_intonation_data: *mut *mut f32,
 ) -> VoicevoxResultCode {
     let result = lock_internal().predict_intonation(
         length,
-        std::slice::from_raw_parts(vowel_phoneme_list, length),
-        std::slice::from_raw_parts(consonant_phoneme_list, length),
-        std::slice::from_raw_parts(start_accent_list, length),
-        std::slice::from_raw_parts(end_accent_list, length),
-        std::slice::from_raw_parts(start_accent_phrase_list, length),
-        std::slice::from_raw_parts(end_accent_phrase_list, length),
+        std::slice::from_raw_parts(vowel_phoneme_vector, length),
+        std::slice::from_raw_parts(consonant_phoneme_vector, length),
+        std::slice::from_raw_parts(start_accent_vector, length),
+        std::slice::from_raw_parts(end_accent_vector, length),
+        std::slice::from_raw_parts(start_accent_phrase_vector, length),
+        std::slice::from_raw_parts(end_accent_phrase_vector, length),
         speaker_id,
     );
     let (output_vec, result_code) = convert_result(result);
@@ -242,7 +242,7 @@ pub unsafe extern "C" fn voicevox_predict_intonation_data_free(predict_intonatio
 /// @param [in] length f0 , output のデータ長及び phoneme のデータ長に関連する
 /// @param [in] phoneme_size 音素のサイズ phoneme のデータ長に関連する
 /// @param [in] f0 基本周波数
-/// @param [in] phoneme_list 音素データ
+/// @param [in] phoneme_vector 音素データ
 /// @param [in] speaker_id speaker ID
 /// @param [out] output_decode_data_length 出力先データのサイズ
 /// @param [out] output_decode_data データ出力先
@@ -250,7 +250,7 @@ pub unsafe extern "C" fn voicevox_predict_intonation_data_free(predict_intonatio
 ///
 /// # Safety
 /// @param f0 必ず length の長さだけデータがある状態で渡すこと
-/// @param phoneme_list 必ず length * phoneme_size の長さだけデータがある状態で渡すこと
+/// @param phoneme_vector 必ず length * phoneme_size の長さだけデータがある状態で渡すこと
 /// @param output_decode_data_length uintptr_t 分のメモリ領域が割り当てられていること
 /// @param output_decode_data 成功後にメモリ領域が割り当てられるので ::voicevox_decode_data_free で開放する必要がある
 #[no_mangle]
@@ -258,7 +258,7 @@ pub unsafe extern "C" fn voicevox_decode(
     length: usize,
     phoneme_size: usize,
     f0: *mut f32,
-    phoneme_list: *mut f32,
+    phoneme_vector: *mut f32,
     speaker_id: u32,
     output_decode_data_length: *mut usize,
     output_decode_data: *mut *mut f32,
@@ -267,7 +267,7 @@ pub unsafe extern "C" fn voicevox_decode(
         length,
         phoneme_size,
         std::slice::from_raw_parts(f0, length),
-        std::slice::from_raw_parts(phoneme_list, phoneme_size * length),
+        std::slice::from_raw_parts(phoneme_vector, phoneme_size * length),
         speaker_id,
     );
     let (output_vec, result_code) = convert_result(result);
