@@ -18,7 +18,7 @@ curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/do
 
 ## DirectML 版をダウンロードする場合
 
-一度 downloader スクリプトファイルをダウンロードする必要があります
+一度 Downloader スクリプトファイルをダウンロードする必要があります
 
 ```powershell
 Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 -Output ./Download.ps1
@@ -29,7 +29,7 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 
 ### Windows の場合
 
-一度 downloader スクリプトファイルをダウンロードする必要があります
+一度 Downloader スクリプトファイルをダウンロードする必要があります
 
 ```powershell
 Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 -Output ./Download.ps1
@@ -49,7 +49,7 @@ curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/do
 
 ### Windows の場合
 
-一度 downloader スクリプトファイルをダウンロードする必要があります
+一度 Downloader スクリプトファイルをダウンロードする必要があります
 
 ```powershell
 Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 -Output ./Download.ps1
