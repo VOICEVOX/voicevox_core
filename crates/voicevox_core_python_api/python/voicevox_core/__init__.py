@@ -1,4 +1,5 @@
-from . import _load_dlls as _  # noqa: F401
+from . import _load_dlls  # noqa: F401
+
 from ._models import (  # noqa: F401
     AccelerationMode,
     AccentPhrase,
