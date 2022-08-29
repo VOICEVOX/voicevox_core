@@ -44,10 +44,25 @@ def main() -> None:
 
 def parse_args() -> Tuple[AccelerationMode, Path, str, Path]:
     argparser = ArgumentParser()
-    argparser.add_argument("--mode", type=AccelerationMode)
-    argparser.add_argument("open_jtalk_dict_dir", type=Path)
-    argparser.add_argument("text")
-    argparser.add_argument("out", type=Path)
+    argparser.add_argument(
+        "--mode",
+        type=AccelerationMode,
+        help='モード ("AUTO", "CPU", "GPU")',
+    )
+    argparser.add_argument(
+        "open_jtalk_dict_dir",
+        type=Path,
+        help="Open JTalkの辞書ディレクトリ",
+    )
+    argparser.add_argument(
+        "text",
+        help="読み上げさせたい文章",
+    )
+    argparser.add_argument(
+        "out",
+        type=Path,
+        help="出力wavファイルのパス",
+    )
     args = argparser.parse_args()
     return (args.mode, args.open_jtalk_dict_dir, args.text, args.out)
 
