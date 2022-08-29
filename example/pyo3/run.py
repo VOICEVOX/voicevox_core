@@ -48,6 +48,7 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path]:
     argparser = ArgumentParser()
     argparser.add_argument(
         "--mode",
+        default="AUTO",
         type=AccelerationMode,
         help='モード ("AUTO", "CPU", "GPU")',
     )

@@ -34,7 +34,7 @@ optional arguments:
 ❯ python ./run.py ./open_jtalk_dic_utf_8-1.11 これはテストです ./audio.wav
 [DEBUG] run.py: voicevox_core.METAS=[Meta(name='四国めたん', styles=[Style(name='あまあま', id=0)], speaker_uuid='7ffcb7ce-00ec-4bdc-82cd-45a8889e43ff', version='0.0.1'), Meta(name='ずんだもん', styles=[Style(name='あまあま', id=1)], speaker_uuid='388f246b-8c41-4ac1-8e2d-5d79f3ff56d9', version='0.0.1')]
 [DEBUG] run.py: voicevox_core.SUPPORTED_DEVICES=SupportedDevices(cpu=True, cuda=True, dml=False)
-[INFO] run.py: Initializing (acceleration_mode=None, open_jtalk_dict_dir=PosixPath('open_jtalk_dic_utf_8-1.11'))
+[INFO] run.py: Initializing (acceleration_mode=<AccelerationMode.AUTO: 'AUTO'>, open_jtalk_dict_dir=PosixPath('open_jtalk_dic_utf_8-1.11'))
 [DEBUG] run.py: core.is_gpu_mode=True
 [INFO] run.py: Loading model 0
 [DEBUG] run.py: core.is_model_loaded(0)=True

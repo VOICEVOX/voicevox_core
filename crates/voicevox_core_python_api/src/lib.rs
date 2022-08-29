@@ -81,8 +81,7 @@ impl VoicevoxCore {
         open_jtalk_dict_dir = "None"
     )]
     fn new(
-        #[pyo3(from_py_with = "from_optional_acceleration_mode")]
-        acceleration_mode: AccelerationMode,
+        #[pyo3(from_py_with = "from_acceleration_mode")] acceleration_mode: AccelerationMode,
         cpu_num_threads: u16,
         load_all_models: bool,
         #[pyo3(from_py_with = "from_optional_utf8_path")] open_jtalk_dict_dir: Option<String>,
@@ -244,42 +243,33 @@ impl VoicevoxCore {
     }
 }
 
-fn from_optional_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
-    let mode = from_optional(|ob| {
-        let py = ob.py();
+fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
+    let py = ob.py();
 
-        let class = py.import("voicevox_core")?.getattr("AccelerationMode")?;
-        let mode = class.get_item(ob)?;
+    let class = py.import("voicevox_core")?.getattr("AccelerationMode")?;
+    let mode = class.get_item(ob)?;
 
-        if mode.eq(class.getattr("AUTO")?)? {
-            Ok(AccelerationMode::Auto)
-        } else if mode.eq(class.getattr("CPU")?)? {
-            Ok(AccelerationMode::Cpu)
-        } else if mode.eq(class.getattr("GPU")?)? {
-            Ok(AccelerationMode::Gpu)
-        } else {
-            unreachable!("{} should be one of {{AUTO, CPU, GPU}}", mode.repr()?);
-        }
-    })(ob)?;
-    Ok(mode.unwrap_or_default())
+    if mode.eq(class.getattr("AUTO")?)? {
+        Ok(AccelerationMode::Auto)
+    } else if mode.eq(class.getattr("CPU")?)? {
+        Ok(AccelerationMode::Cpu)
+    } else if mode.eq(class.getattr("GPU")?)? {
+        Ok(AccelerationMode::Gpu)
+    } else {
+        unreachable!("{} should be one of {{AUTO, CPU, GPU}}", mode.repr()?);
+    }
 }
 
 fn from_optional_utf8_path(ob: &PyAny) -> PyResult<Option<String>> {
-    from_optional(|ob| {
-        PathBuf::extract(ob)?
-            .into_os_string()
-            .into_string()
-            .map_err(|s| VoicevoxError::new_err(format!("{s:?} cannot be encoded to UTF-8")))
-    })(ob)
-}
-
-fn from_optional<T>(f: fn(&PyAny) -> PyResult<T>) -> impl Fn(&PyAny) -> PyResult<Option<T>> {
-    move |ob: &PyAny| {
-        if ob.is_none() {
-            return Ok(None);
-        }
-        f(ob).map(Some)
+    if ob.is_none() {
+        return Ok(None);
     }
+
+    PathBuf::extract(ob)?
+        .into_os_string()
+        .into_string()
+        .map(Some)
+        .map_err(|s| VoicevoxError::new_err(format!("{s:?} cannot be encoded to UTF-8")))
 }
 
 fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {

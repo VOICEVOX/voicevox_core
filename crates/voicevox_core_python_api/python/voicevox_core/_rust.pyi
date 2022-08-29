@@ -13,8 +13,8 @@ class VoicevoxCore:
     def __init__(
         self,
         acceleration_mode: Union[
-            AccelerationMode, Literal["AUTO", "CPU", "GPU"], None
-        ] = None,
+            AccelerationMode, Literal["AUTO", "CPU", "GPU"]
+        ] = AccelerationMode.AUTO,
         cpu_num_threads: int = 0,
         load_all_models: bool = False,
         open_jtalk_dict_dir: Union[Path, str, None] = None,
