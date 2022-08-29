@@ -6,8 +6,8 @@
 
 PowerShell で下記コマンドを実行してください
 
-```powershell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 | powershell
+```PowerShell
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 | PowerShell
 ```
 
 ### Linux/macOS の場合
@@ -20,7 +20,7 @@ curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/do
 
 一度 Downloader スクリプトファイルをダウンロードする必要があります
 
-```powershell
+```PowerShell
 Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 -Output ./Download.ps1
 ./Download.ps1 -type directml
 ```
@@ -31,7 +31,7 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 
 一度 Downloader スクリプトファイルをダウンロードする必要があります
 
-```powershell
+```PowerShell
 Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 -Output ./Download.ps1
 ./Download.ps1 -type cuda
 ```
@@ -51,7 +51,7 @@ curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/do
 
 一度 Downloader スクリプトファイルをダウンロードする必要があります
 
-```powershell
+```PowerShell
 Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/Download.ps1 -Output ./Download.ps1
 Get-Help ./Download.ps1 -full
 ```
