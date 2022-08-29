@@ -57,15 +57,15 @@ Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます�
 nvidia 製 GPU を搭載した Windows, Linux PC では CUDA を用いた合成が可能です。
 
 CUDA 版を利用するには専用の download コマンドの実行が必要です。  
-詳細は [CUDA 版をダウンロードする場合](./docs/downloads/Download.md#cuda-版をダウンロードする場合) を参照してください
+詳細は [CUDA 版をダウンロードする場合](./docs/downloads/Download.md#cuda) を参照してください
 
 ##### DirectML
 
 DirectX12 に対応した GPU を搭載した Windows PC では DirectML を用いた合成が可能です  
 DirectML 版を利用するには専用の download コマンドの実行が必要です。  
-詳細は [DirectML 版をダウンロードする場合](./docs/downloads/Download.md#directml-版をダウンロードする場合) を参照してください
+詳細は [DirectML 版をダウンロードする場合](./docs/downloads/Download.md#directml) を参照してください
 
-MacOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
+macOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
 
 <!--
 #### Raspberry Piでの使用について
