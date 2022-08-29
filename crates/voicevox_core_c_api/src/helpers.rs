@@ -86,13 +86,33 @@ pub(crate) unsafe fn write_json_to_ptr(output_ptr: *mut *mut c_char, json: &CStr
 
 pub(crate) unsafe fn write_wav_to_ptr(
     output_wav_ptr: *mut *mut u8,
-    output_size_ptr: *mut usize,
+    output_length_ptr: *mut usize,
     data: &[u8],
 ) {
-    output_size_ptr.write(data.len());
+    write_data_to_ptr(output_wav_ptr, output_length_ptr, data);
+}
+
+pub(crate) unsafe fn write_predict_duration_to_ptr(
+    output_predict_duration_ptr: *mut *mut f32,
+    output_predict_duration_length_ptr: *mut usize,
+    data: &[f32],
+) {
+    write_data_to_ptr(
+        output_predict_duration_ptr,
+        output_predict_duration_length_ptr,
+        data,
+    );
+}
+
+unsafe fn write_data_to_ptr<T>(
+    output_data_ptr: *mut *mut T,
+    output_length_ptr: *mut usize,
+    data: &[T],
+) {
+    output_length_ptr.write(data.len());
     let wav_heap = libc::malloc(data.len());
     libc::memcpy(wav_heap, data.as_ptr() as *const c_void, data.len());
-    output_wav_ptr.write(wav_heap as *mut u8);
+    output_data_ptr.write(wav_heap as *mut T);
 }
 
 pub(crate) fn ensure_utf8(s: &CStr) -> std::result::Result<&str, VoicevoxResultCode> {

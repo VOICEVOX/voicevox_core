@@ -128,18 +128,21 @@ pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
 /// @param [in] length phoneme_list, output のデータ長
 /// @param [in] phoneme_list  音素データ
 /// @param [in] speaker_id speaker ID
-/// @param [out] output データの出力先
+/// @param [out] output_predict_duration_length 出力データのサイズ
+/// @param [out] output_predict_duration_data データの出力先
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
 /// @param phoneme_list 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param output lengthで指定した長さのデータが上書きされるのでlength分の領域を確保した状態で渡すこと
+/// @param output_predict_duration_data_length には uintptr_t 分のメモリ領域が割り当てられていること
+/// @param output_predict_duration_data 実行後にメモリ領域が割り当てられるので ::voicevox_predict_duration_data_free で開放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_duration(
     length: usize,
     phoneme_list: *mut i64,
     speaker_id: u32,
-    output: *mut f32,
+    output_predict_duration_data_length: *mut usize,
+    output_predict_duration_data: *mut *mut f32,
 ) -> VoicevoxResultCode {
     let result = lock_internal().predict_duration(
         std::slice::from_raw_parts_mut(phoneme_list, length),
@@ -149,11 +152,24 @@ pub unsafe extern "C" fn voicevox_predict_duration(
     let (output_vec, result_code) = convert_result(result);
     if result_code == VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED {
         if let Some(output_vec) = output_vec {
-            let output_slice = std::slice::from_raw_parts_mut(output, length);
-            output_slice.clone_from_slice(&output_vec);
+            write_predict_duration_to_ptr(
+                output_predict_duration_data,
+                output_predict_duration_length,
+                &output_vec,
+            );
         }
     }
     result_code
+}
+
+/// ::voicevox_predict_durationで出力されたデータを開放する
+/// @param[in] predict_duration_data 確保されたメモリ領域
+///
+/// # Safety
+/// @param predict_duration_data 実行後に割り当てられたメモリ領域が開放される
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_data: *mut f32) {
+    libc::free(predict_duration_data as *mut c_void);
 }
 
 /// predict intonationを実行する
@@ -302,19 +318,19 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
 /// @param [in] audio_query_json jsonフォーマットされた audio query
 /// @param [in] speaker_id  speaker ID
 /// @param [in] options synthesis オプション
-/// @param [out] output_wav_size 出力する wav データのサイズ
+/// @param [out] output_wav_length 出力する wav データのサイズ
 /// @param [out] output_wav wav データの出力先
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
-/// @param output_wav_size 出力先の領域が確保された状態でpointerに渡されていること
-/// @param output_wav 自動で output_wav_size 分のデータが割り当てられるので ::voicevox_wav_free で開放する必要がある
+/// @param output_wav_length 出力先の領域が確保された状態でpointerに渡されていること
+/// @param output_wav 自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で開放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesis(
     audio_query_json: *const c_char,
     speaker_id: u32,
     options: VoicevoxSynthesisOptions,
-    output_wav_size: *mut usize,
+    output_wav_length: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     let audio_query_json = CStr::from_ptr(audio_query_json);
@@ -337,7 +353,7 @@ pub unsafe extern "C" fn voicevox_synthesis(
         return result_code;
     };
 
-    write_wav_to_ptr(output_wav, output_wav_size, wav);
+    write_wav_to_ptr(output_wav, output_wav_length, wav);
     VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED
 }
 
@@ -361,19 +377,19 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 /// @param [in] text テキスト
 /// @param [in] speaker_id speaker ID
 /// @param [in] options tts オプション
-/// @param [out] output_wav_size 出力する wav データのサイズ
+/// @param [out] output_wav_length 出力する wav データのサイズ
 /// @param [out] output_wav wav データの出力先
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
-/// @param output_wav_size 出力先の領域が確保された状態でpointerに渡されていること
-/// @param output_wav は自動で output_wav_size 分のデータが割り当てられるので ::voicevox_wav_free で開放する必要がある
+/// @param output_wav_length 出力先の領域が確保された状態でpointerに渡されていること
+/// @param output_wav は自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で開放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_tts(
     text: *const c_char,
     speaker_id: u32,
     options: VoicevoxTtsOptions,
-    output_wav_size: *mut usize,
+    output_wav_length: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     let (output_opt, result_code) = {
@@ -384,7 +400,7 @@ pub unsafe extern "C" fn voicevox_tts(
         }
     };
     if let Some(output) = output_opt {
-        write_wav_to_ptr(output_wav, output_wav_size, output.as_slice());
+        write_wav_to_ptr(output_wav, output_wav_length, output.as_slice());
     }
     result_code
 }
