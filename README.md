@@ -9,7 +9,7 @@
 
 ## 環境構築
 
-downloader を用いて環境構築を行う場合
+Downloader を用いて環境構築を行う場合
 
 ### Windows の場合
 
@@ -25,10 +25,10 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s
 ```
 
-詳細な downloader の使い方については [こちら](./docs/downloads/Download.md) を参照してください
+詳細な Downloader の使い方については [こちら](./docs/downloads/Download.md) を参照してください
 
 <details>
-<summary> downloader を使わない場合</summary>
+<summary> Downloader を使わない場合</summary>
 
 <!--
 #### Raspberry Pi (armhf)の場合
