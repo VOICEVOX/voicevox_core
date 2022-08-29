@@ -274,7 +274,7 @@ impl InferenceCore {
             self.initialized = true;
             Ok(())
         } else {
-            Err(Error::CantGpuSupport)
+            Err(Error::GpuSupport)
         }
     }
     fn can_support_gpu_feature(&self) -> Result<bool> {

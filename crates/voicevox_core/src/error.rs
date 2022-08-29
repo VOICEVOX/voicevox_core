@@ -24,7 +24,7 @@ pub enum Error {
     NotLoadedOpenjtalkDict,
 
     #[error("{}", base_error_message(VOICEVOX_RESULT_GPU_SUPPORT_ERROR))]
-    CantGpuSupport,
+    GpuSupport,
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_MODEL_ERROR))]
     LoadModel(#[source] SourceError),
@@ -57,10 +57,10 @@ pub enum Error {
         "{},{0}",
         base_error_message(VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR)
     )]
-    FailedExtractFullContextLabel(#[from] FullContextLabelError),
+    ExtractFullContextLabel(#[from] FullContextLabelError),
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_PARSE_KANA_ERROR))]
-    FailedParseKana(#[from] KanaParseError),
+    ParseKana(#[from] KanaParseError),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {

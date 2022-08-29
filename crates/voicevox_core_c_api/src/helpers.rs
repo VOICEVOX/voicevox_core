@@ -11,9 +11,7 @@ pub(crate) fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResult
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
                 ),
-                Error::CantGpuSupport => {
-                    (None, VoicevoxResultCode::VOICEVOX_RESULT_GPU_SUPPORT_ERROR)
-                }
+                Error::GpuSupport => (None, VoicevoxResultCode::VOICEVOX_RESULT_GPU_SUPPORT_ERROR),
                 Error::LoadModel(_) => (None, VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ERROR),
                 Error::LoadMetas(_) => (None, VoicevoxResultCode::VOICEVOX_RESULT_LOAD_METAS_ERROR),
                 Error::GetSupportedDevices(_) => (
@@ -35,13 +33,11 @@ pub(crate) fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResult
                 Error::InferenceFailed => {
                     (None, VoicevoxResultCode::VOICEVOX_RESULT_INFERENCE_ERROR)
                 }
-                Error::FailedExtractFullContextLabel(_) => (
+                Error::ExtractFullContextLabel(_) => (
                     None,
                     VoicevoxResultCode::VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
                 ),
-                Error::FailedParseKana(_) => {
-                    (None, VoicevoxResultCode::VOICEVOX_RESULT_PARSE_KANA_ERROR)
-                }
+                Error::ParseKana(_) => (None, VoicevoxResultCode::VOICEVOX_RESULT_PARSE_KANA_ERROR),
             }
         }
     }
