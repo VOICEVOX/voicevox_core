@@ -3,15 +3,14 @@ import platform
 from ctypes import CDLL
 from pathlib import Path
 
-# TODO: 実行に必要なDLLをすべてここで読む
 if platform.system() == "Windows":
-    filename = "onnxruntime.dll"
+    pathname = "*.dll"
 elif platform.system() == "Darwin":
-    filename = "libonnxruntime.*.dylib"
+    pathname = "*.dylib"
 elif platform.system() == "Linux":
-    filename = "libonnxruntime.so.*"
+    pathname = "*.so.*"
 else:
     raise RuntimeError("Unsupported platform")
 
-for dll in glob.glob(filename):
+for dll in glob.glob(pathname):
     CDLL(str(Path(dll).resolve(strict=True)))
