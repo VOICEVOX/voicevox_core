@@ -1,7 +1,15 @@
 name: Download test workflow
 on:
   push:
+    branches:
+      - main
+    paths:
+      - "scripts/downloads/*"
+      - ".github/workflows/download_test.yml"
   pull_request:
+    paths:
+      - "scripts/downloads/*"
+      - ".github/workflows/download_test.yml"
 jobs:
   downlaod-releases:
     strategy:
