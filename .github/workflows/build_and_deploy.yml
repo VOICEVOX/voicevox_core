@@ -12,9 +12,11 @@ on:
   release:
     types:
       - published
+  pull_request:
   push:
     branches:
-      - main
+      - "*"
+      - "**/*"
 env:
   # releaseタグ名か、workflow_dispatchでのバージョン名か、DEBUGが入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || 'DEBUG' }}
