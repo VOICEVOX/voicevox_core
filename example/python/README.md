@@ -1,4 +1,4 @@
-# python のサンプルコード
+# Python のサンプルコード
 
 python から voicevox_core ライブラリを使用するためのサンプルコードです。
 
