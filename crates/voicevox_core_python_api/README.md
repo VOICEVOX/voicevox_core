@@ -4,6 +4,29 @@ VOICEVOX CORE の Python バインディングです。
 
 ## 環境構築
 
+以下の環境が必要です。
+
+- Rustup
+- Python ≧3.8のvenv
+    - `maturin>=0.13.2,<0.14`
+
+[Maturin](https://maturin.rs/)は vevn にインストールする必要があります。
+適当な場所にvenvを作って下さい。
+
+```console
+❯ python -m venv ../../.venv
+```
+
+```console
+❯ ../../.venv/Scripts/Activate.ps1 (Windows)
+```
+
+```console
+❯ ../../.venv/activate (maxOS/Linux)
+```
+
+venvを作ったらそのvenv上でMaturinをインストールします。
+
 ```console
 # maturinのインストール
 ❯ pip install -r ./requirements.txt
