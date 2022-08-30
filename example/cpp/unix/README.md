@@ -2,7 +2,7 @@
 
 voicevox_core ライブラリを C++ から使用するサンプルコード (`simple_tts.cpp`) です。ビルドするために C++ の開発環境（CMake 3.16 以上を含む）が必要です。
 
-## サンプル実行方法
+## 必要なファイルの準備
 
 まず、この README があるディレクトリで、[Downloader を使用して voicevox_core をダウンロードします](../../../docs/downloads/download.md#default)。
 
