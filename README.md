@@ -62,7 +62,7 @@ CUDA 版を利用するには Downloader の実行が必要です。
 ##### DirectML
 
 DirectX12 に対応した GPU を搭載した Windows PC では DirectML を用いた合成が可能です  
-DirectML 版を利用するには専用の download コマンドの実行が必要です。  
+DirectML 版を利用するには Downloader の実行が必要です。  
 詳細は [DirectML 版をダウンロードする場合](./docs/downloads/download.md#directml) を参照してください
 
 macOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
