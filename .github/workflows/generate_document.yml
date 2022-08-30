@@ -35,8 +35,8 @@ jobs:
     environment:
       name: C APIドキュメント
       url: ${{ steps.api.outputs.page_url }}/apis/c_api
+    if: ${{ github.ref_name == 'main' }}
     steps:
       - name: Deploy to GitHub pages
         id: api
-        if: ${{ github.ref_name == 'main' }}
         uses: actions/deploy-pages@v1
