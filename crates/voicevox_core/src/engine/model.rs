@@ -2,12 +2,16 @@ use derive_getters::Getters;
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 
+/* 各フィールドのjsonフィールド名はcamelCaseとする*/
+
 #[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
 pub struct MoraModel {
     text: String,
     consonant: Option<String>,
+    #[serde(rename = "consonantLength")]
     consonant_length: Option<f32>,
     vowel: String,
+    #[serde(rename = "vowelLength")]
     vowel_length: f32,
     pitch: f32,
 }
@@ -16,7 +20,9 @@ pub struct MoraModel {
 pub struct AccentPhraseModel {
     moras: Vec<MoraModel>,
     accent: usize,
+    #[serde(rename = "pauseMora")]
     pause_mora: Option<MoraModel>,
+    #[serde(rename = "isInterrogative")]
     is_interrogative: bool,
 }
 
@@ -33,6 +39,7 @@ impl AccentPhraseModel {
 #[allow(clippy::too_many_arguments)]
 #[derive(Clone, new, Getters, Deserialize, Serialize)]
 pub struct AudioQueryModel {
+    #[serde(rename = "accentPhrases")]
     accent_phrases: Vec<AccentPhraseModel>,
     #[serde(rename = "speedScale")]
     speed_scale: f32,
