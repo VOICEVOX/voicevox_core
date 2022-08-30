@@ -7,7 +7,7 @@ use pyo3::{
     create_exception,
     exceptions::PyException,
     pyclass, pymethods, pymodule,
-    types::{PyBytes, PyDict, PyModule, PyType},
+    types::{PyBytes, PyDict, PyModule},
     FromPyObject as _, PyAny, PyResult, Python,
 };
 use serde::{de::DeserializeOwned, Serialize};
@@ -21,42 +21,35 @@ use voicevox_core::{
 fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
 
-    let (meta_from_json, supported_devices_from_json) = {
-        let voicevox_core = py.import("voicevox_core")?;
+    module.add("METAS", {
+        let meta_from_json = from_json(py, "Meta")?;
+        serde_json::from_str::<Vec<_>>(voicevox_core::METAS)
+            .into_py_result()?
+            .into_iter()
+            .map(|meta| meta_from_json(&meta))
+            .collect::<Result<Vec<_>, _>>()?
+    })?;
 
-        let from_json = |class_name: &str| -> PyResult<_> {
-            let class = voicevox_core.getattr(class_name)?.cast_as()?;
-            return Ok(from_json(class));
+    module.add("SUPPORTED_DEVICES", {
+        let supported_devices_from_json = from_json(py, "SupportedDevices")?;
+        supported_devices_from_json(&voicevox_core::SUPPORTED_DEVICES.to_json())?
+    })?;
 
-            fn from_json<'py>(
-                class: &'py PyType,
-            ) -> impl Fn(&serde_json::Value) -> PyResult<&'py PyAny> {
-                move |value| {
-                    let py = class.py();
-                    let kwargs = py
-                        .import("json")?
-                        .call_method1("loads", (value.to_string(),))?
-                        .cast_as::<PyDict>()?;
-                    class.call((), Some(kwargs))
-                }
-            }
-        };
+    return module.add_class::<VoicevoxCore>();
 
-        (from_json("Meta")?, from_json("SupportedDevices")?)
-    };
-
-    let metas = serde_json::from_str::<Vec<_>>(voicevox_core::METAS)
-        .into_py_result()?
-        .into_iter()
-        .map(|meta| meta_from_json(&meta))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let supported_devices =
-        supported_devices_from_json(&voicevox_core::SUPPORTED_DEVICES.to_json())?;
-
-    module.add("METAS", metas)?;
-    module.add("SUPPORTED_DEVICES", supported_devices)?;
-    module.add_class::<VoicevoxCore>()
+    fn from_json<'py>(
+        py: Python<'py>,
+        class_name: &str,
+    ) -> PyResult<impl Fn(&serde_json::Value) -> PyResult<&'py PyAny>> {
+        let class = py.import("voicevox_core")?.getattr(class_name)?;
+        Ok(move |value: &serde_json::Value| {
+            let kwargs = py
+                .import("json")?
+                .call_method1("loads", (value.to_string(),))?
+                .cast_as::<PyDict>()?;
+            class.call((), Some(kwargs))
+        })
+    }
 }
 
 create_exception!(
