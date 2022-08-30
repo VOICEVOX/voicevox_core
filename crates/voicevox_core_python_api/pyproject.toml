@@ -10,4 +10,3 @@ build-backend = "maturin"
 [tool.maturin]
 bindings = "pyo3"
 skip-auditwheel = true
-manifest-path = "crates/voicevox_core_python_api/Cargo.toml"

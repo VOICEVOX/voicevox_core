@@ -1,3 +1,1 @@
-maturin>=0.13.2,<0.14
 numpy
-pydantic>=1.9.2,<2
