@@ -10,7 +10,7 @@ VOICEVOX CORE の Python バインディングです。
 - Python ≧3.8のvenv
     - `maturin>=0.13.2,<0.14`
 
-[Maturin](https://maturin.rs/)は vevn にインストールする必要があります。
+[Maturin](https://maturin.rs/)は venv にインストールする必要があります。
 適当な場所にvenvを作って下さい。
 
 ```console
