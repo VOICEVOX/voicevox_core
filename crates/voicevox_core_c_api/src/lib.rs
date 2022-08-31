@@ -329,7 +329,7 @@ pub unsafe extern "C" fn voicevox_audio_query(
     VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 
-/// synthesis のオプション
+/// `voicevox_synthesis` のオプション
 #[repr(C)]
 pub struct VoicevoxSynthesisOptions {
     /// 疑問文の調整を有効にする
