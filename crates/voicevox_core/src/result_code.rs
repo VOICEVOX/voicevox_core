@@ -1,4 +1,4 @@
-/// voicevox_coreの処理結果を示す結果コード
+/// 処理結果を示す結果コード
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]

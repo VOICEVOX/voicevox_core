@@ -31,7 +31,7 @@ fn lock_internal() -> MutexGuard<'static, Internal> {
 
 pub use voicevox_core::result_code::VoicevoxResultCode;
 
-/// voicevox_coreのハードウェアアクセラレーションモードを設定する設定値
+/// ハードウェアアクセラレーションモードを設定する設定値
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
