@@ -124,7 +124,7 @@ pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
     lock_internal().get_supported_devices_json().as_ptr()
 }
 
-/// predict durationを実行する
+/// 音素ごとの長さを推論する
 /// @param [in] length phoneme_vector, output のデータ長
 /// @param [in] phoneme_vector  音素データ
 /// @param [in] speaker_id speaker ID
