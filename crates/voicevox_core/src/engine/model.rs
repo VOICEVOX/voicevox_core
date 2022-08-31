@@ -70,19 +70,27 @@ mod tests {
         let audio_query_model =
             AudioQueryModel::new(vec![], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, false, "".into());
         let val = serde_json::to_value(&audio_query_model).unwrap();
-        let obj = val.as_object().unwrap();
-        check_json_field_camel_case(obj);
+        check_json_field_camel_case(&val);
     }
 
-    fn check_json_field_camel_case(obj: &serde_json::Map<String, serde_json::Value>) {
-        for (k, v) in obj.iter() {
-            assert!(
-                inflections::case::is_camel_case(k),
-                "should be camel case {k}"
-            );
-            if v.is_object() {
-                check_json_field_camel_case(v.as_object().unwrap());
+    fn check_json_field_camel_case(val: &serde_json::Value) {
+        use serde_json::Value::*;
+        match val {
+            Object(obj) => {
+                for (k, v) in obj.iter() {
+                    assert!(
+                        inflections::case::is_camel_case(k),
+                        "should be camel case {k}"
+                    );
+                    check_json_field_camel_case(v);
+                }
             }
+            Array(array) => {
+                for val in array.iter() {
+                    check_json_field_camel_case(val);
+                }
+            }
+            _ => {}
         }
     }
 }
