@@ -52,7 +52,7 @@ pub struct VoicevoxInitializeOptions {
     /// CPU利用数を指定
     /// 0を指定すると環境に合わせたCPUが利用される
     cpu_num_threads: u16,
-    /// 全てのmodelを読み込む
+    /// 全てのモデルを読み込む
     load_all_models: bool,
     /// open_jtalkの辞書ディレクトリ
     open_jtalk_dict_dir: *const c_char,
@@ -80,8 +80,8 @@ pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> Voi
     }
 }
 
-/// modelを読み込む
-/// @param [in] speaker_id 読み込むmodelのspeaker ID
+/// モデルを読み込む
+/// @param [in] speaker_id 読み込むモデルの話者ID
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
 pub extern "C" fn voicevox_load_model(speaker_id: u32) -> VoicevoxResultCode {
@@ -97,8 +97,8 @@ pub extern "C" fn voicevox_is_gpu_mode() -> bool {
     lock_internal().is_gpu_mode()
 }
 
-/// 指定したspeaker_idのmodelが読み込まれているか判定する
-/// @return modelが読み込まれているのであればtrue、そうでないならfalse
+/// 指定したspeaker_idのモデルが読み込まれているか判定する
+/// @return モデルが読み込まれているのであればtrue、そうでないならfalse
 #[no_mangle]
 pub extern "C" fn voicevox_is_model_loaded(speaker_id: u32) -> bool {
     lock_internal().is_model_loaded(speaker_id)
@@ -127,7 +127,7 @@ pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
 /// 音素ごとの長さを推論する
 /// @param [in] length phoneme_vector, output のデータ長
 /// @param [in] phoneme_vector  音素データ
-/// @param [in] speaker_id speaker ID
+/// @param [in] speaker_id 話者ID
 /// @param [out] output_predict_duration_length 出力データのサイズ
 /// @param [out] output_predict_duration_data データの出力先
 /// @return 結果コード #VoicevoxResultCode
@@ -180,7 +180,7 @@ pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_da
 /// @param [in] end_accent_vector 終了アクセントデータ
 /// @param [in] start_accent_phrase_vector 開始アクセントフレーズデータ
 /// @param [in] end_accent_phrase_vector 終了アクセントフレーズデータ
-/// @param [in] speaker_id speaker ID
+/// @param [in] speaker_id 話者ID
 /// @param [out] output_predict_intonation_data_length 出力データのサイズ
 /// @param [out] output_predict_intonation_data データの出力先
 /// @return 結果コード #VoicevoxResultCode
@@ -243,7 +243,7 @@ pub unsafe extern "C" fn voicevox_predict_intonation_data_free(predict_intonatio
 /// @param [in] phoneme_size 音素のサイズ phoneme のデータ長に関連する
 /// @param [in] f0 基本周波数
 /// @param [in] phoneme_vector 音素データ
-/// @param [in] speaker_id speaker ID
+/// @param [in] speaker_id 話者ID
 /// @param [out] output_decode_data_length 出力先データのサイズ
 /// @param [out] output_decode_data データ出力先
 /// @return 結果コード #VoicevoxResultCode
@@ -303,7 +303,7 @@ pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQu
 
 /// AudioQuery を実行する
 /// @param [in] text テキスト
-/// @param [in] speaker_id speaker ID
+/// @param [in] speaker_id 話者ID
 /// @param [in] options AudioQueryのオプション
 /// @param [out] output_audio_query_json AudioQuery を json でフォーマットしたもの
 /// @return 結果コード #VoicevoxResultCode
@@ -336,16 +336,16 @@ pub struct VoicevoxSynthesisOptions {
     enable_interrogative_upspeak: bool,
 }
 
-/// デフォルトの synthesis オプションを生成する
-/// @return デフォルト値が設定されたsynthesisのオプション
+/// デフォルトの `voicevox_synthesis` のオプションを生成する
+/// @return デフォルト値が設定された `voicevox_synthesis` のオプション
 pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesisOptions {
     VoicevoxSynthesisOptions::default()
 }
 
 /// AudioQuery から音声合成する
 /// @param [in] audio_query_json jsonフォーマットされた AudioQuery
-/// @param [in] speaker_id  speaker ID
-/// @param [in] options synthesis オプション
+/// @param [in] speaker_id  話者ID
+/// @param [in] options AudioQueryから音声合成オプション
 /// @param [out] output_wav_length 出力する wav データのサイズ
 /// @param [out] output_wav wav データの出力先
 /// @return 結果コード #VoicevoxResultCode
@@ -403,7 +403,7 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 
 /// テキスト音声合成を実行する
 /// @param [in] text テキスト
-/// @param [in] speaker_id speaker ID
+/// @param [in] speaker_id 話者ID
 /// @param [in] options テキスト音声合成オプション
 /// @param [out] output_wav_length 出力する wav データのサイズ
 /// @param [out] output_wav wav データの出力先
