@@ -7,11 +7,11 @@ VOICEVOX CORE の Python バインディングです。
 以下の環境が必要です。
 
 - Rustup
-- Python ≧3.8のvenv
+- Python ≧3.8の venv
     - `maturin>=0.13.2,<0.14`
 
 [Maturin](https://maturin.rs/)は venv にインストールする必要があります。
-適当な場所にvenvを作って下さい。
+適当な場所に venv を作って下さい。
 
 ```console
 ❯ python -m venv ../../.venv
@@ -22,10 +22,10 @@ VOICEVOX CORE の Python バインディングです。
 ```
 
 ```console
-❯ ../../.venv/activate (maxOS/Linux)
+❯ ../../.venv/bin/activate (maxOS/Linux)
 ```
 
-venvを作ったらそのvenv上でMaturinをインストールします。
+venv を作ったらその venv 上で Maturin をインストールします。
 
 ```console
 # maturinのインストール
@@ -50,7 +50,7 @@ venvを作ったらそのvenv上でMaturinをインストールします。
 │       └── _rust.pyi                 : _rust.abi3.{dll,dylib,so}用のpyiファイルです。
 ├── README.md
 ├── requirements.txt
-└── src                               : Rustのソースコードです。
+└── src                               : Rustのソースコードです。_rust.abi3.{dll,dylib,so}にコンパイルされます。
     └── lib.rs
 ```
 
