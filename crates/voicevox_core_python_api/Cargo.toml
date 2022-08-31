@@ -11,6 +11,9 @@ python-source = "python"
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+directml = ["voicevox_core/directml"]
+
 [dependencies]
 easy-ext = "1.0.0"
 log = "0.4.17"
