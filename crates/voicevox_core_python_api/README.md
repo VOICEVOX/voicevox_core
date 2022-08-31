@@ -70,4 +70,4 @@ venvを作ったらそのvenv上でMaturinをインストールします。
 
 ## サンプル実行
 
-`maturin develop` で editable な状態でインストールした後、[example/pyo3](../example/pyo3) にてサンプルを実行できます。
+`maturin develop` で editable な状態でインストールした後、[example/pyo3](../../example/pyo3) にてサンプルを実行できます。
