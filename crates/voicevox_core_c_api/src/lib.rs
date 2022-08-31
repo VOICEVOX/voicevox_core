@@ -294,18 +294,18 @@ pub struct VoicevoxAudioQueryOptions {
     kana: bool,
 }
 
-/// デフォルトの audio query のオプションを生成する
-/// @return デフォルト値が設定された audio query オプション
+/// デフォルトの AudioQuery のオプションを生成する
+/// @return デフォルト値が設定された AudioQuery オプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQueryOptions {
     voicevox_core::AudioQueryOptions::default().into()
 }
 
-/// audio query を実行する
+/// AudioQuery を実行する
 /// @param [in] text テキスト
 /// @param [in] speaker_id speaker ID
-/// @param [in] options audio queryのオプション
-/// @param [out] output_audio_query_json audio query を json でフォーマットしたもの
+/// @param [in] options AudioQueryのオプション
+/// @param [out] output_audio_query_json AudioQuery を json でフォーマットしたもの
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
@@ -343,7 +343,7 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
 }
 
 /// AudioQuery から音声合成する
-/// @param [in] audio_query_json jsonフォーマットされた audio query
+/// @param [in] audio_query_json jsonフォーマットされた AudioQuery
 /// @param [in] speaker_id  speaker ID
 /// @param [in] options synthesis オプション
 /// @param [out] output_wav_length 出力する wav データのサイズ
@@ -436,8 +436,8 @@ pub unsafe extern "C" fn voicevox_tts(
     result_code
 }
 
-/// jsonフォーマットされた audio query データのメモリを解放する
-/// @param [in] audio_query_json 解放する json フォーマットされた audio query データ
+/// jsonフォーマットされた AudioQuery データのメモリを解放する
+/// @param [in] audio_query_json 解放する json フォーマットされた AudioQuery データ
 ///
 /// # Safety
 /// @param wav 確保したメモリ領域が破棄される
