@@ -9,4 +9,4 @@ build-backend = "maturin"
 
 [tool.maturin]
 bindings = "pyo3"
-skip-auditwheel = true
+skip-auditwheel = true # Linuxでlibonnxruntime.so.*の不在を許してもらう
