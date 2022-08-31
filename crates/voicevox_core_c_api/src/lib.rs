@@ -104,7 +104,7 @@ pub extern "C" fn voicevox_is_model_loaded(speaker_id: u32) -> bool {
     lock_internal().is_model_loaded(speaker_id)
 }
 
-/// このライブラリの利用を終了し、確保しているリソースを開放する
+/// このライブラリの利用を終了し、確保しているリソースを解放する
 #[no_mangle]
 pub extern "C" fn voicevox_finalize() {
     lock_internal().finalize()
@@ -135,7 +135,7 @@ pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
 /// # Safety
 /// @param phoneme_vector 必ずlengthの長さだけデータがある状態で渡すこと
 /// @param output_predict_duration_data_length uintptr_t 分のメモリ領域が割り当てられていること
-/// @param output_predict_duration_data 成功後にメモリ領域が割り当てられるので ::voicevox_predict_duration_data_free で開放する必要がある
+/// @param output_predict_duration_data 成功後にメモリ領域が割り当てられるので ::voicevox_predict_duration_data_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_duration(
     length: usize,
@@ -162,11 +162,11 @@ pub unsafe extern "C" fn voicevox_predict_duration(
     result_code
 }
 
-/// ::voicevox_predict_durationで出力されたデータを開放する
+/// ::voicevox_predict_durationで出力されたデータを解放する
 /// @param[in] predict_duration_data 確保されたメモリ領域
 ///
 /// # Safety
-/// @param predict_duration_data 実行後に割り当てられたメモリ領域が開放される
+/// @param predict_duration_data 実行後に割り当てられたメモリ領域が解放される
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_data: *mut f32) {
     libc::free(predict_duration_data as *mut c_void);
@@ -193,7 +193,7 @@ pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_da
 /// @param start_accent_phrase_vector 必ずlengthの長さだけデータがある状態で渡すこと
 /// @param end_accent_phrase_vector 必ずlengthの長さだけデータがある状態で渡すこと
 /// @param output_predict_intonation_data_length uintptr_t 分のメモリ領域が割り当てられていること
-/// @param output_predict_intonation_data 成功後にメモリ領域が割り当てられるので ::voicevox_predict_intonation_data_free で開放する必要がある
+/// @param output_predict_intonation_data 成功後にメモリ領域が割り当てられるので ::voicevox_predict_intonation_data_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_intonation(
     length: usize,
@@ -228,11 +228,11 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
     result_code
 }
 
-/// ::voicevox_predict_intonationで出力されたデータを開放する
+/// ::voicevox_predict_intonationで出力されたデータを解放する
 /// @param[in] predict_intonation_data 確保されたメモリ領域
 ///
 /// # Safety
-/// @param predict_intonation_data 実行後に割り当てられたメモリ領域が開放される
+/// @param predict_intonation_data 実行後に割り当てられたメモリ領域が解放される
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_intonation_data_free(predict_intonation_data: *mut f32) {
     libc::free(predict_intonation_data as *mut c_void);
@@ -252,7 +252,7 @@ pub unsafe extern "C" fn voicevox_predict_intonation_data_free(predict_intonatio
 /// @param f0 必ず length の長さだけデータがある状態で渡すこと
 /// @param phoneme_vector 必ず length * phoneme_size の長さだけデータがある状態で渡すこと
 /// @param output_decode_data_length uintptr_t 分のメモリ領域が割り当てられていること
-/// @param output_decode_data 成功後にメモリ領域が割り当てられるので ::voicevox_decode_data_free で開放する必要がある
+/// @param output_decode_data 成功後にメモリ領域が割り当てられるので ::voicevox_decode_data_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_decode(
     length: usize,
@@ -277,11 +277,11 @@ pub unsafe extern "C" fn voicevox_decode(
     result_code
 }
 
-/// ::voicevox_decodeで出力されたデータを開放する
+/// ::voicevox_decodeで出力されたデータを解放する
 /// @param[in] decode_data 確保されたメモリ領域
 ///
 /// # Safety
-/// @param decode_data 実行後に割り当てられたメモリ領域が開放される
+/// @param decode_data 実行後に割り当てられたメモリ領域が解放される
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_decode_data_free(decode_data: *mut f32) {
     libc::free(decode_data as *mut c_void);
@@ -310,7 +310,7 @@ pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQu
 ///
 /// # Safety
 /// @param text null終端文字列であること
-/// @param output_audio_query_json 自動でheapメモリが割り当てられるので ::voicevox_audio_query_json_free で開放する必要がある
+/// @param output_audio_query_json 自動でheapメモリが割り当てられるので ::voicevox_audio_query_json_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_audio_query(
     text: *const c_char,
@@ -352,7 +352,7 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
 ///
 /// # Safety
 /// @param output_wav_length 出力先の領域が確保された状態でpointerに渡されていること
-/// @param output_wav 自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で開放する必要がある
+/// @param output_wav 自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesis(
     audio_query_json: *const c_char,
@@ -411,7 +411,7 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 ///
 /// # Safety
 /// @param output_wav_length 出力先の領域が確保された状態でpointerに渡されていること
-/// @param output_wav は自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で開放する必要がある
+/// @param output_wav は自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_tts(
     text: *const c_char,
@@ -436,8 +436,8 @@ pub unsafe extern "C" fn voicevox_tts(
     result_code
 }
 
-/// jsonフォーマットされた audio query データのメモリを開放する
-/// @param [in] audio_query_json 開放する json フォーマットされた audio query データ
+/// jsonフォーマットされた audio query データのメモリを解放する
+/// @param [in] audio_query_json 解放する json フォーマットされた audio query データ
 ///
 /// # Safety
 /// @param wav 確保したメモリ領域が破棄される
@@ -446,8 +446,8 @@ pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c
     libc::free(audio_query_json as *mut c_void);
 }
 
-/// wav データのメモリを開放する
-/// @param [in] wav 開放する wav データ
+/// wav データのメモリを解放する
+/// @param [in] wav 解放する wav データ
 ///
 /// # Safety
 /// @param wav 確保したメモリ領域が破棄される
