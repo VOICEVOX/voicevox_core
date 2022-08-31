@@ -385,7 +385,7 @@ pub unsafe extern "C" fn voicevox_synthesis(
     VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 
-/// tts オプション
+/// テキスト音声合成オプション
 #[repr(C)]
 pub struct VoicevoxTtsOptions {
     /// aquestalk形式のkanaとしてテキストを解釈する
@@ -394,17 +394,17 @@ pub struct VoicevoxTtsOptions {
     enable_interrogative_upspeak: bool,
 }
 
-/// デフォルトの tts オプションを生成する
+/// デフォルトのテキスト音声合成オプションを生成する
 /// @return tts オプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
     voicevox_core::TtsOptions::default().into()
 }
 
-/// ttsを実行する
+/// テキスト音声合成を実行する
 /// @param [in] text テキスト
 /// @param [in] speaker_id speaker ID
-/// @param [in] options tts オプション
+/// @param [in] options テキスト音声合成オプション
 /// @param [out] output_wav_length 出力する wav データのサイズ
 /// @param [out] output_wav wav データの出力先
 /// @return 結果コード #VoicevoxResultCode
