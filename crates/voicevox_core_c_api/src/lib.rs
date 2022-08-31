@@ -342,7 +342,7 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
     VoicevoxSynthesisOptions::default()
 }
 
-/// synthesis を実行する
+/// AudioQuery から音声合成する
 /// @param [in] audio_query_json jsonフォーマットされた audio query
 /// @param [in] speaker_id  speaker ID
 /// @param [in] options synthesis オプション
