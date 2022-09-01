@@ -18,23 +18,17 @@ class VoicevoxCore:
         cpu_num_threads: int = 0,
         load_all_models: bool = False,
         open_jtalk_dict_dir: Union[Path, str, None] = None,
-    ) -> None:
-        pass
-    def __repr__(self) -> str:
-        pass
+    ) -> None: ...
+    def __repr__(self) -> str: ...
     @property
-    def is_gpu_mode(self) -> bool:
-        pass
-    def load_model(self, speaker_id: int) -> None:
-        pass
-    def is_model_loaded(self, speaker_id: int) -> bool:
-        pass
+    def is_gpu_mode(self) -> bool: ...
+    def load_model(self, speaker_id: int) -> None: ...
+    def is_model_loaded(self, speaker_id: int) -> bool: ...
     def predict_duration(
         self,
         phoneme_list: NDArray[np.int64],
         speaker_id: int,
-    ) -> NDArray[np.float32]:
-        pass
+    ) -> NDArray[np.float32]: ...
     def predict_intonation(
         self,
         length: int,
@@ -45,8 +39,7 @@ class VoicevoxCore:
         start_accent_phrase_list: NDArray[np.int64],
         end_accent_phrase_list: NDArray[np.int64],
         speaker_id: int,
-    ) -> NDArray[np.float32]:
-        pass
+    ) -> NDArray[np.float32]: ...
     def decode(
         self,
         length: int,
@@ -54,27 +47,23 @@ class VoicevoxCore:
         f0: NDArray[np.float32],
         phoneme: NDArray[np.float32],
         speaker_id: int,
-    ):
-        pass
+    ): ...
     def audio_query(
         self,
         text: str,
         speaker_id: int,
         kana: bool = False,
-    ) -> AudioQuery:
-        pass
+    ) -> AudioQuery: ...
     def synthesis(
         self,
         audio_query: AudioQuery,
         speaker_id: int,
         enable_interrogative_upspeak: bool = True,
-    ) -> bytes:
-        pass
+    ) -> bytes: ...
     def tts(
         self,
         text: str,
         speaker_id: int,
         kana: bool = False,
         enable_interrogative_upspeak: bool = True,
-    ) -> bytes:
-        pass
+    ) -> bytes: ...
