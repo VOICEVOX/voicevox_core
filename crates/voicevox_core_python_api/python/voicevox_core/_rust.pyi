@@ -47,7 +47,7 @@ class VoicevoxCore:
         f0: NDArray[np.float32],
         phoneme: NDArray[np.float32],
         speaker_id: int,
-    ): ...
+    ) -> NDArray[np.float32]: ...
     def audio_query(
         self,
         text: str,
