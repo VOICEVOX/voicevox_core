@@ -7,7 +7,7 @@ use pyo3::{
     create_exception,
     exceptions::PyException,
     pyclass, pymethods, pymodule,
-    types::{PyBytes, PyDict, PyModule},
+    types::{PyBytes, PyModule},
     FromPyObject as _, PyAny, PyResult, Python,
 };
 use serde::{de::DeserializeOwned, Serialize};
@@ -22,7 +22,8 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
 
     module.add("METAS", {
-        let meta_from_json = from_json(py, "Meta")?;
+        let class = py.import("voicevox_core")?.getattr("Meta")?.cast_as()?;
+        let meta_from_json = |x: &serde_json::Value| to_pydantic_dataclass(x, class);
         serde_json::from_str::<Vec<_>>(voicevox_core::METAS)
             .into_py_result()?
             .into_iter()
@@ -31,25 +32,15 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     })?;
 
     module.add("SUPPORTED_DEVICES", {
-        let supported_devices_from_json = from_json(py, "SupportedDevices")?;
+        let class = py
+            .import("voicevox_core")?
+            .getattr("SupportedDevices")?
+            .cast_as()?;
+        let supported_devices_from_json = |x: &serde_json::Value| to_pydantic_dataclass(x, class);
         supported_devices_from_json(&voicevox_core::SUPPORTED_DEVICES.to_json())?
     })?;
 
-    return module.add_class::<VoicevoxCore>();
-
-    fn from_json<'py>(
-        py: Python<'py>,
-        class_name: &str,
-    ) -> PyResult<impl Fn(&serde_json::Value) -> PyResult<&'py PyAny>> {
-        let class = py.import("voicevox_core")?.getattr(class_name)?;
-        Ok(move |value: &serde_json::Value| {
-            let kwargs = py
-                .import("json")?
-                .call_method1("loads", (value.to_string(),))?
-                .cast_as::<PyDict>()?;
-            class.call((), Some(kwargs))
-        })
-    }
+    module.add_class::<VoicevoxCore>()
 }
 
 create_exception!(
@@ -265,14 +256,6 @@ fn from_optional_utf8_path(ob: &PyAny) -> PyResult<Option<String>> {
         .map_err(|s| VoicevoxError::new_err(format!("{s:?} cannot be encoded to UTF-8")))
 }
 
-fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {
-    let py = class.py();
-
-    let x = serde_json::to_string(&x).into_py_result()?;
-    let x = py.import("json")?.call_method1("loads", (x,))?.cast_as()?;
-    class.call((), Some(x))
-}
-
 fn from_dataclass<T: DeserializeOwned>(ob: &PyAny) -> PyResult<T> {
     let py = ob.py();
 
@@ -282,6 +265,14 @@ fn from_dataclass<T: DeserializeOwned>(ob: &PyAny) -> PyResult<T> {
         .call_method1("dumps", (ob,))?
         .extract::<String>()?;
     serde_json::from_str(json).into_py_result()
+}
+
+fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {
+    let py = class.py();
+
+    let x = serde_json::to_string(&x).into_py_result()?;
+    let x = py.import("json")?.call_method1("loads", (x,))?.cast_as()?;
+    class.call((), Some(x))
 }
 
 impl Drop for VoicevoxCore {
