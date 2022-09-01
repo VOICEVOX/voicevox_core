@@ -5,24 +5,22 @@ use serde::{Deserialize, Serialize};
 /* 各フィールドのjsonフィールド名はcamelCaseとする*/
 
 #[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MoraModel {
     text: String,
     consonant: Option<String>,
-    #[serde(rename = "consonantLength")]
     consonant_length: Option<f32>,
     vowel: String,
-    #[serde(rename = "vowelLength")]
     vowel_length: f32,
     pitch: f32,
 }
 
 #[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AccentPhraseModel {
     moras: Vec<MoraModel>,
     accent: usize,
-    #[serde(rename = "pauseMora")]
     pause_mora: Option<MoraModel>,
-    #[serde(rename = "isInterrogative")]
     is_interrogative: bool,
 }
 
@@ -38,24 +36,16 @@ impl AccentPhraseModel {
 
 #[allow(clippy::too_many_arguments)]
 #[derive(Clone, new, Getters, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AudioQueryModel {
-    #[serde(rename = "accentPhrases")]
     accent_phrases: Vec<AccentPhraseModel>,
-    #[serde(rename = "speedScale")]
     speed_scale: f32,
-    #[serde(rename = "pitchScale")]
     pitch_scale: f32,
-    #[serde(rename = "intonationScale")]
     intonation_scale: f32,
-    #[serde(rename = "volumeScale")]
     volume_scale: f32,
-    #[serde(rename = "prePhonemeLength")]
     pre_phoneme_length: f32,
-    #[serde(rename = "postPhonemeLength")]
     post_phoneme_length: f32,
-    #[serde(rename = "outputSamplingRate")]
     output_sampling_rate: u32,
-    #[serde(rename = "outputStereo")]
     output_stereo: bool,
     kana: String,
 }
