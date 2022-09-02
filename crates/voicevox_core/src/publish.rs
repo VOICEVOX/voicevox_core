@@ -24,14 +24,24 @@ pub struct VoicevoxCore {
 }
 
 impl VoicevoxCore {
+    pub fn new_with_initialize(options: InitializeOptions) -> Result<Self> {
+        let mut this = Self::new();
+        this.initialize(options)?;
+        Ok(this)
+    }
+
     pub fn new_with_mutex() -> Mutex<VoicevoxCore> {
-        Mutex::new(VoicevoxCore {
+        Mutex::new(Self::new())
+    }
+
+    fn new() -> Self {
+        Self {
             synthesis_engine: SynthesisEngine::new(
                 InferenceCore::new(false, None),
                 OpenJtalk::initialize(),
             ),
             use_gpu: false,
-        })
+        }
     }
 
     pub fn initialize(&mut self, options: InitializeOptions) -> Result<()> {
@@ -548,14 +558,15 @@ impl InferenceCore {
     }
 }
 
-static METAS_CSTRING: Lazy<CString> = Lazy::new(|| CString::new(Status::METAS_STR).unwrap());
+pub static METAS: &str = Status::METAS_STR;
 
-static SUPPORTED_DEVICES_CSTRING: Lazy<CString> = Lazy::new(|| {
-    CString::new(
-        serde_json::to_string(&SupportedDevices::get_supported_devices().unwrap()).unwrap(),
-    )
-    .unwrap()
-});
+pub static METAS_CSTRING: Lazy<CString> = Lazy::new(|| CString::new(METAS).unwrap());
+
+pub static SUPPORTED_DEVICES: Lazy<SupportedDevices> =
+    Lazy::new(|| SupportedDevices::get_supported_devices().unwrap());
+
+pub static SUPPORTED_DEVICES_CSTRING: Lazy<CString> =
+    Lazy::new(|| CString::new(SUPPORTED_DEVICES.to_json().to_string()).unwrap());
 
 fn get_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
     SPEAKER_ID_MAP.get(&speaker_id).copied()
