@@ -72,12 +72,24 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
       - uses: actions-rs/toolchain@v1
         with:
           target: ${{ matrix.target }}
           default: true
-      - name: build release
+      - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api --features generate-c-header,${{ matrix.additional-features }} --target ${{ matrix.target }} --release
+        env:
+          ORT_USE_CUDA: ${{ matrix.use_cuda }}
+      - name: build voicevox_core_python_api
+        id: build-voicevox-core-python-api
+        shell: bash
+        run: |
+          maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.additional-features }}, --target ${{ matrix.target }} --release
+          printf '::set-output name=whl::%s\n' "$(find ./target/wheels -type f)"
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: Set ASSET_NAME env var
@@ -121,6 +133,14 @@ jobs:
           prerelease: true
           tag: ${{ env.VERSION }}
           file: ${{ env.ASSET_NAME }}.zip
+      - name: Upload Python whl to Release
+        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: true
+          tag: ${{ env.VERSION }}
+          file: ${{ steps.build-voicevox-core-python-api.outputs.whl }}
   deploy_downloader:
     runs-on: ubuntu-latest
     steps:

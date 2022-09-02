@@ -1,0 +1,12 @@
+[project]
+name = "voicevox_core"
+requires-python = ">=3.8"
+dependencies = ["numpy", "pydantic>=1.9.2,<2"]
+
+[build-system]
+requires = ["maturin>=0.13.2,<0.14"]
+build-backend = "maturin"
+
+[tool.maturin]
+bindings = "pyo3"
+skip-auditwheel = true # Linuxでlibonnxruntime.so.*の不在を許してもらう
