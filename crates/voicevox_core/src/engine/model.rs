@@ -2,7 +2,7 @@ use derive_getters::Getters;
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 
-/* 各フィールドのjsonフィールド名はcamelCaseとする*/
+/* 各フィールドのjsonフィールド名はsnake_caseとする*/
 
 #[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
 pub struct MoraModel {
