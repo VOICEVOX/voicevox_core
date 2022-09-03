@@ -1,0 +1,8 @@
+# OpenJTalk-dictionary's dir
+open_jtalk_dic_utf_8-*
+
+# shared library
+*.so
+*.so.*
+*.dylib
+*.dll

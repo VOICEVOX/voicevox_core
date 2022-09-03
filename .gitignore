@@ -24,6 +24,11 @@ core/_core.cpp
 __pycache__/
 *.egg-info
 
+# Maturin
+*.abi3.dll
+*.abi3.dylib
+*.abi3.so
+
 # CMake
 CMakeFiles/
 CMakeCache.txt
