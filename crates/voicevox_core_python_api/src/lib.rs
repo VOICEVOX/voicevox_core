@@ -84,6 +84,10 @@ impl VoicevoxCore {
         "VoicevoxCore { .. }"
     }
 
+    fn get_version(&self) -> &'static str {
+        self.inner.get_version()
+    }
+
     #[getter]
     fn is_gpu_mode(&self) -> bool {
         self.inner.is_gpu_mode()
