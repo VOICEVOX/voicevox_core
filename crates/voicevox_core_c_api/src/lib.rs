@@ -395,7 +395,7 @@ pub struct VoicevoxTtsOptions {
 }
 
 /// デフォルトのテキスト音声合成オプションを生成する
-/// @return tts オプション
+/// @return テキスト音声合成オプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
     voicevox_core::TtsOptions::default().into()
