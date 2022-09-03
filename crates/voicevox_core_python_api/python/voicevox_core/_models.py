@@ -56,8 +56,8 @@ class AudioQuery:
     pitch_scale: float
     intonation_scale: float
     volume_scale: float
-    prePhoneme_length: float
-    postPhoneme_length: float
+    pre_phoneme_length: float
+    post_phoneme_length: float
     output_sampling_rate: int
     output_stereo: bool
     kana: Optional[str]
