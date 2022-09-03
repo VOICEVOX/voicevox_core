@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 /* 各フィールドのjsonフィールド名はcamelCaseとする*/
 
 #[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct MoraModel {
     text: String,
     consonant: Option<String>,
@@ -16,7 +15,6 @@ pub struct MoraModel {
 }
 
 #[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct AccentPhraseModel {
     moras: Vec<MoraModel>,
     accent: usize,
@@ -36,7 +34,6 @@ impl AccentPhraseModel {
 
 #[allow(clippy::too_many_arguments)]
 #[derive(Clone, new, Getters, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct AudioQueryModel {
     accent_phrases: Vec<AccentPhraseModel>,
     speed_scale: f32,
@@ -65,11 +62,12 @@ mod tests {
 
     fn check_json_field_camel_case(val: &serde_json::Value) {
         use serde_json::Value::*;
+
         match val {
             Object(obj) => {
                 for (k, v) in obj.iter() {
                     assert!(
-                        inflections::case::is_camel_case(k),
+                        inflections::case::is_snake_case(k),
                         "should be camel case {k}"
                     );
                     check_json_field_camel_case(v);
