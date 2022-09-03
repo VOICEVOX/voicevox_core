@@ -1,6 +1,6 @@
 [package]
 name = "voicevox_core_c_api"
-version = "0.1.0"
+version = "999.999.999"
 edition = "2021"
 
 [lib]
