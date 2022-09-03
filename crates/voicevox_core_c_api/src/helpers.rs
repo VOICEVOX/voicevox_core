@@ -125,9 +125,9 @@ unsafe fn write_data_to_ptr<T>(
     output_length_ptr.write(data.len());
     use std::mem;
     let num_bytes = mem::size_of_val(data);
-    let wav_heap = libc::malloc(num_bytes);
-    libc::memcpy(wav_heap, data.as_ptr() as *const c_void, num_bytes);
-    output_data_ptr.write(wav_heap as *mut T);
+    let data_heap = libc::malloc(num_bytes);
+    libc::memcpy(data_heap, data.as_ptr() as *const c_void, num_bytes);
+    output_data_ptr.write(data_heap as *mut T);
 }
 
 pub(crate) fn ensure_utf8(s: &CStr) -> std::result::Result<&str, VoicevoxResultCode> {
