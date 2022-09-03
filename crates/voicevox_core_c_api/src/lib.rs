@@ -71,7 +71,7 @@ pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> Voi
 static VOICEVOX_VERSION: once_cell::sync::Lazy<CString> =
     once_cell::sync::Lazy::new(|| CString::new(Internal::get_version()).unwrap());
 
-/// voicevoxのversionを取得する
+/// voicevoxのバージョンを取得する
 /// @return SemVerでフォーマットされたバージョン
 #[no_mangle]
 pub extern "C" fn voicevox_get_version() -> *const c_char {
