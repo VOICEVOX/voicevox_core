@@ -53,14 +53,14 @@ mod tests {
     use crate::*;
 
     #[rstest]
-    fn check_audio_query_model_json_field_camel_case() {
+    fn check_audio_query_model_json_field_snake_case() {
         let audio_query_model =
             AudioQueryModel::new(vec![], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, false, "".into());
         let val = serde_json::to_value(&audio_query_model).unwrap();
-        check_json_field_camel_case(&val);
+        check_json_field_snake_case(&val);
     }
 
-    fn check_json_field_camel_case(val: &serde_json::Value) {
+    fn check_json_field_snake_case(val: &serde_json::Value) {
         use serde_json::Value::*;
 
         match val {
@@ -68,14 +68,14 @@ mod tests {
                 for (k, v) in obj.iter() {
                     assert!(
                         inflections::case::is_snake_case(k),
-                        "should be camel case {k}"
+                        "should be snake case {k}"
                     );
-                    check_json_field_camel_case(v);
+                    check_json_field_snake_case(v);
                 }
             }
             Array(array) => {
                 for val in array.iter() {
-                    check_json_field_camel_case(val);
+                    check_json_field_snake_case(val);
                 }
             }
             _ => {}
