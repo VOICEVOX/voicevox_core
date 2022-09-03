@@ -28,4 +28,4 @@ async-std = { version = "1.12.0", features = ["attributes"] }
 surf = "2.3.2"
 flate2 = "1.0.24"
 tar = "0.4.38"
-inflections = "1.1.1"
+heck = "0.4.0"

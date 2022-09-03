@@ -51,6 +51,7 @@ pub struct AudioQueryModel {
 mod tests {
     use super::*;
     use crate::*;
+    use pretty_assertions::assert_eq;
 
     #[rstest]
     fn check_audio_query_model_json_field_snake_case() {
@@ -66,8 +67,9 @@ mod tests {
         match val {
             Object(obj) => {
                 for (k, v) in obj.iter() {
-                    assert!(
-                        inflections::case::is_snake_case(k),
+                    assert_eq!(
+                        &format!("{}", heck::AsSnakeCase(k)),
+                        k,
                         "should be snake case {k}"
                     );
                     check_json_field_snake_case(v);
