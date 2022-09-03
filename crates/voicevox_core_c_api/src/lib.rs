@@ -38,9 +38,9 @@ pub use voicevox_core::result_code::VoicevoxResultCode;
 pub enum VoicevoxAccelerationMode {
     /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する
     VOICEVOX_ACCELERATION_MODE_AUTO = 0,
-    /// ハードウェアアクセラレーションモードをCPUに設定する
+    /// ハードウェアアクセラレーションモードを"CPU"に設定する
     VOICEVOX_ACCELERATION_MODE_CPU = 1,
-    /// ハードウェアアクセラレーションモードをGPUに設定する
+    /// ハードウェアアクセラレーションモードを"GPU"に設定する
     VOICEVOX_ACCELERATION_MODE_GPU = 2,
 }
 
