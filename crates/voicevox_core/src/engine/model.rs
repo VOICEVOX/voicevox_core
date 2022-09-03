@@ -67,11 +67,8 @@ mod tests {
         match val {
             Object(obj) => {
                 for (k, v) in obj.iter() {
-                    assert_eq!(
-                        &format!("{}", heck::AsSnakeCase(k)),
-                        k,
-                        "should be snake case {k}"
-                    );
+                    use heck::ToSnakeCase as _;
+                    assert_eq!(k.to_snake_case(), *k, "should be snake case {k}");
                     check_json_field_snake_case(v);
                 }
             }
