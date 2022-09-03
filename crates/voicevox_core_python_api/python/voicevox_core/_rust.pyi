@@ -8,6 +8,7 @@ from voicevox_core import AccelerationMode, AudioQuery, Meta, SupportedDevices
 
 METAS: Final[List[Meta]]
 SUPPORTED_DEVICES: Final[SupportedDevices]
+__version__: str
 
 class VoicevoxCore:
     def __init__(

@@ -94,7 +94,7 @@ impl VoicevoxCore {
         self.synthesis_engine.inference_core_mut().finalize()
     }
 
-    pub const fn get_version(&self) -> &'static str {
+    pub const fn get_version() -> &'static str {
         env!("CARGO_PKG_VERSION")
     }
 
@@ -902,7 +902,6 @@ mod tests {
 
     #[rstest]
     fn get_version_works() {
-        let core = VoicevoxCore::new_with_mutex();
-        assert_eq!("999.999.999", core.lock().unwrap().get_version());
+        assert_eq!("0.0.0", VoicevoxCore::get_version());
     }
 }

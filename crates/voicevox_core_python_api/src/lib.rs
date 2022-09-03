@@ -40,6 +40,8 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
         supported_devices_from_json(&voicevox_core::SUPPORTED_DEVICES.to_json())?
     })?;
 
+    module.add("__version__", voicevox_core::VoicevoxCore::get_version())?;
+
     module.add_class::<VoicevoxCore>()
 }
 
@@ -82,10 +84,6 @@ impl VoicevoxCore {
 
     fn __repr__(&self) -> &'static str {
         "VoicevoxCore { .. }"
-    }
-
-    fn get_version(&self) -> &'static str {
-        self.inner.get_version()
     }
 
     #[getter]

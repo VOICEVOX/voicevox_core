@@ -1,6 +1,6 @@
 [package]
 name = "voicevox_core_python_api"
-version = "999.999.999"
+version = "0.0.0"
 edition = "2021"
 publish = false
 
