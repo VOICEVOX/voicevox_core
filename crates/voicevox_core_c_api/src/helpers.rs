@@ -123,8 +123,10 @@ unsafe fn write_data_to_ptr<T>(
     data: &[T],
 ) {
     output_length_ptr.write(data.len());
-    let wav_heap = libc::malloc(data.len());
-    libc::memcpy(wav_heap, data.as_ptr() as *const c_void, data.len());
+    use std::mem;
+    let num_bytes = mem::size_of_val(data);
+    let wav_heap = libc::malloc(num_bytes);
+    libc::memcpy(wav_heap, data.as_ptr() as *const c_void, num_bytes);
     output_data_ptr.write(wav_heap as *mut T);
 }
 
