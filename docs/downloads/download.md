@@ -41,7 +41,7 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 ### Linux の場合
 
 ```bash
-curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s -- --type cuda
+curl -sSL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s -- --type cuda
 ```
 
 ## その他詳細なオプションを指定したい場合
@@ -59,5 +59,5 @@ Get-Help ./download.ps1 -full
 ### Linux/macOS の場合
 
 ```bash
-curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s -- --help
+curl -sSL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s -- --help
 ```

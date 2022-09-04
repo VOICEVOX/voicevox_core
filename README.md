@@ -22,7 +22,7 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 ### Linux/macOS の場合
 
 ```bash
-curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s
+curl -sSL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s
 ```
 
 詳細な Downloader の使い方については [こちら](./docs/downloads/download.md) を参照してください
@@ -39,6 +39,7 @@ Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます�
 
 動作には、libgomp のインストールが必要です。
 -->
+
 1. まず [Releases](https://github.com/VOICEVOX/voicevox_core/releases/latest) からダウンロードしたコアライブラリの zip を、適当なディレクトリ名で展開します。CUDA 版、DirectML 版はかならずその zip ファイルをダウンロードしてください。
 2. [Open JTalk から配布されている辞書ファイル](https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz) をダウンロードしてコアライブラリを展開したディレクトリに展開してください。
 3. CUDA や DirectML を利用する場合は、 [追加ライブラリ](https://github.com/VOICEVOX/voicevox_additional_libraries/releases/latest) をダウンロードして、コアライブラリを展開したディレクトリに展開してください。
