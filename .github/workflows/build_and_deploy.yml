@@ -82,7 +82,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           default: true
-      - uses: actions-rs/install@0.1
+      - uses: actions-rs/install@v0.1
         with:
           crate: set-cargo-version
           version: latest
