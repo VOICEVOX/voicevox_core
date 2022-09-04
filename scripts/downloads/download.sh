@@ -4,10 +4,10 @@ help(){
   cat <<EOM
   Usage: $(basename "$0") [OPTION]...
     -h|--help                                 ヘルプの表示
-    -o|--output \$directory                   出力先の指定(default ./voicevox_core)
-    -v|--version \$version                    ダウンロードするvoicevox_coreのバージョンの指定(default latest)
-    --additional-libraries-version \$version  追加でダウンロードするライブラリのバージョン
-    --type $type                              ダウンロードするtypeを指定する(cpu,cudaを指定可能.cudaはlinuxのみ)
+    -o|--output \$directory                    出力先の指定(default ./voicevox_core)
+    -v|--version \$version                     ダウンロードするvoicevox_coreのバージョンの指定(default latest)
+    --additional-libraries-version \$version   追加でダウンロードするライブラリのバージョン
+    --type \$type                              ダウンロードするtypeを指定する(cpu,cudaを指定可能.cudaはlinuxのみ)
     --min                                     ダウンロードするライブラリを最小限にするように指定
 EOM
   exit 2
