@@ -1,10 +1,10 @@
 name: test workflow
 on:
   push:
+    branches:
+      - "*"
+      - "**/*"
   pull_request:
-  release:
-    types:
-      - published
 jobs:
   rust-lint:
     runs-on: windows-latest
