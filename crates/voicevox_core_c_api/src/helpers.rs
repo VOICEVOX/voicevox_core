@@ -2,49 +2,42 @@ use super::*;
 
 pub(crate) fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
     match result {
-        Ok(target) => (Some(target), VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED),
+        Ok(target) => (Some(target), VoicevoxResultCode::VOICEVOX_RESULT_OK),
         Err(err) => {
             eprintln!("{}", err);
             dbg!(&err);
             match err {
                 Error::NotLoadedOpenjtalkDict => (
                     None,
-                    VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT,
+                    VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
                 ),
-                Error::CantGpuSupport => {
-                    (None, VoicevoxResultCode::VOICEVOX_RESULT_CANT_GPU_SUPPORT)
-                }
-                Error::LoadModel(_) => {
-                    (None, VoicevoxResultCode::VOICEVOX_RESULT_FAILED_LOAD_MODEL)
-                }
-                Error::LoadMetas(_) => {
-                    (None, VoicevoxResultCode::VOICEVOX_RESULT_FAILED_LOAD_METAS)
-                }
+                Error::GpuSupport => (None, VoicevoxResultCode::VOICEVOX_RESULT_GPU_SUPPORT_ERROR),
+                Error::LoadModel(_) => (None, VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ERROR),
+                Error::LoadMetas(_) => (None, VoicevoxResultCode::VOICEVOX_RESULT_LOAD_METAS_ERROR),
                 Error::GetSupportedDevices(_) => (
                     None,
-                    VoicevoxResultCode::VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES,
+                    VoicevoxResultCode::VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
                 ),
                 Error::UninitializedStatus => (
                     None,
-                    VoicevoxResultCode::VOICEVOX_RESULT_UNINITIALIZED_STATUS,
+                    VoicevoxResultCode::VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR,
                 ),
-                Error::InvalidSpeakerId { .. } => {
-                    (None, VoicevoxResultCode::VOICEVOX_RESULT_INVALID_SPEAKER_ID)
-                }
+                Error::InvalidSpeakerId { .. } => (
+                    None,
+                    VoicevoxResultCode::VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR,
+                ),
                 Error::InvalidModelIndex { .. } => (
                     None,
-                    VoicevoxResultCode::VOICEVOX_RESULT_INVALID_MODEL_INDEX,
+                    VoicevoxResultCode::VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR,
                 ),
                 Error::InferenceFailed => {
-                    (None, VoicevoxResultCode::VOICEVOX_RESULT_INFERENCE_FAILED)
+                    (None, VoicevoxResultCode::VOICEVOX_RESULT_INFERENCE_ERROR)
                 }
-                Error::FailedExtractFullContextLabel(_) => (
+                Error::ExtractFullContextLabel(_) => (
                     None,
-                    VoicevoxResultCode::VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL,
+                    VoicevoxResultCode::VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
                 ),
-                Error::FailedParseKana(_) => {
-                    (None, VoicevoxResultCode::VOICEVOX_RESULT_FAILED_PARSE_KANA)
-                }
+                Error::ParseKana(_) => (None, VoicevoxResultCode::VOICEVOX_RESULT_PARSE_KANA_ERROR),
             }
         }
     }
@@ -86,18 +79,60 @@ pub(crate) unsafe fn write_json_to_ptr(output_ptr: *mut *mut c_char, json: &CStr
 
 pub(crate) unsafe fn write_wav_to_ptr(
     output_wav_ptr: *mut *mut u8,
-    output_size_ptr: *mut usize,
+    output_length_ptr: *mut usize,
     data: &[u8],
 ) {
-    output_size_ptr.write(data.len());
-    let wav_heap = libc::malloc(data.len());
-    libc::memcpy(wav_heap, data.as_ptr() as *const c_void, data.len());
-    output_wav_ptr.write(wav_heap as *mut u8);
+    write_data_to_ptr(output_wav_ptr, output_length_ptr, data);
+}
+
+pub(crate) unsafe fn write_predict_duration_to_ptr(
+    output_predict_duration_ptr: *mut *mut f32,
+    output_predict_duration_length_ptr: *mut usize,
+    data: &[f32],
+) {
+    write_data_to_ptr(
+        output_predict_duration_ptr,
+        output_predict_duration_length_ptr,
+        data,
+    );
+}
+
+pub(crate) unsafe fn write_predict_intonation_to_ptr(
+    output_predict_intonation_ptr: *mut *mut f32,
+    output_predict_intonation_length_ptr: *mut usize,
+    data: &[f32],
+) {
+    write_data_to_ptr(
+        output_predict_intonation_ptr,
+        output_predict_intonation_length_ptr,
+        data,
+    );
+}
+
+pub(crate) unsafe fn write_decode_to_ptr(
+    output_decode_ptr: *mut *mut f32,
+    output_decode_length_ptr: *mut usize,
+    data: &[f32],
+) {
+    write_data_to_ptr(output_decode_ptr, output_decode_length_ptr, data);
+}
+
+unsafe fn write_data_to_ptr<T>(
+    output_data_ptr: *mut *mut T,
+    output_length_ptr: *mut usize,
+    data: &[T],
+) {
+    output_length_ptr.write(data.len());
+    use std::mem;
+    let num_bytes = mem::size_of_val(data);
+    let data_heap = libc::malloc(num_bytes);
+    libc::memcpy(data_heap, data.as_ptr() as *const c_void, num_bytes);
+    output_data_ptr.write(data_heap as *mut T);
 }
 
 pub(crate) fn ensure_utf8(s: &CStr) -> std::result::Result<&str, VoicevoxResultCode> {
     s.to_str()
-        .map_err(|_| VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT)
+        .map_err(|_| VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR)
 }
 
 impl From<voicevox_core::AudioQueryOptions> for VoicevoxAudioQueryOptions {

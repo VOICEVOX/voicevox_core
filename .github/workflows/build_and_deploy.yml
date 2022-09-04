@@ -12,10 +12,11 @@ on:
   release:
     types:
       - published
-  workflow_run:
-    workflows: ["test workflow"]
-    types:
-      - completed
+  pull_request:
+  push:
+    branches:
+      - "*"
+      - "**/*"
 env:
   # releaseタグ名か、workflow_dispatchでのバージョン名か、DEBUGが入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || 'DEBUG' }}
@@ -76,6 +77,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "3.8"
+          architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
       - uses: actions-rs/toolchain@v1
         with:
           target: ${{ matrix.target }}
@@ -88,6 +90,7 @@ jobs:
         id: build-voicevox-core-python-api
         shell: bash
         run: |
+          pip install -r ./crates/voicevox_core_python_api/requirements.txt
           maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.additional-features }}, --target ${{ matrix.target }} --release
           printf '::set-output name=whl::%s\n' "$(find ./target/wheels -type f)"
         env:
