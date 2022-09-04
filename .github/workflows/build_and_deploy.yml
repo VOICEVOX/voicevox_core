@@ -85,17 +85,6 @@ jobs:
         run: cargo build -p voicevox_core_c_api --features generate-c-header,${{ matrix.additional-features }} --target ${{ matrix.target }} --release
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
-      - name: venv作成
-        shell: bash
-        run: |
-          virtual_env="$RUNNER_TEMP"/.venv
-          python -m venv "$virtual_env"
-          if [ "$RUNNER_OS" = Windows ]; then
-            echo "$virtual_env"/Scripts >>"$GITHUB_PATH"
-          else
-            echo "$virtual_env"/bin >>"$GITHUB_PATH"
-          fi
-          echo "VIRTUAL_ENV=$virtual_env" >>"$GITHUB_ENV"
       - name: build voicevox_core_python_api
         id: build-voicevox-core-python-api
         shell: bash
