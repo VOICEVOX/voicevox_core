@@ -15,7 +15,7 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 ### Linux/macOS の場合
 
 ```bash
-curl -sSLo https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s
+curl -sSL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s
 ```
 
 <a id="directml"></a>
