@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   auto initialize_options = voicevox_make_default_initialize_options();
   initialize_options.load_all_models = true;
   initialize_options.open_jtalk_dict_dir = open_jtalk_dict_path.c_str();
-  if (voicevox_initialize(initialize_options) != VOICEVOX_RESULT_SUCCEED) {
+  if (voicevox_initialize(initialize_options) != VOICEVOX_RESULT_OK) {
     std::cout << "coreの初期化に失敗しました" << std::endl;
     return 1;
   }
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
   auto result = voicevox_tts(text.c_str(), speaker_id,
                              voicevox_make_default_tts_options(),
                              &output_wav_size, &output_wav);
-  if (result != VOICEVOX_RESULT_SUCCEED) {
+  if (result != VOICEVOX_RESULT_OK) {
     std::cout << voicevox_error_result_to_message(result) << std::endl;
     return 1;
   }

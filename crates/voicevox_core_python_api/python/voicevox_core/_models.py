@@ -52,12 +52,12 @@ class AccentPhrase:
 @pydantic.dataclasses.dataclass
 class AudioQuery:
     accent_phrases: List[AccentPhrase]
-    speedScale: float
-    pitchScale: float
-    intonationScale: float
-    volumeScale: float
-    prePhonemeLength: float
-    postPhonemeLength: float
-    outputSamplingRate: int
-    outputStereo: bool
+    speed_scale: float
+    pitch_scale: float
+    intonation_scale: float
+    volume_scale: float
+    pre_phoneme_length: float
+    post_phoneme_length: float
+    output_sampling_rate: int
+    output_stereo: bool
     kana: Optional[str]
