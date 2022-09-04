@@ -83,10 +83,12 @@ jobs:
           target: ${{ matrix.target }}
           default: true
       - uses: actions-rs/install@v0.1
+        if: ${{ env.VERSION != 'DEBUG' }}
         with:
           crate: set-cargo-version
           version: latest
       - name: set cargo version
+        if: ${{ env.VERSION != 'DEBUG' }}
         run: |
           set-cargo-version ./crates/voicevox_core/Cargo.toml ${{ env.VERSION }}
           set-cargo-version ./crates/voicevox_core_c_api/Cargo.toml ${{ env.VERSION }}
