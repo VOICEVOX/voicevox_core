@@ -90,9 +90,9 @@ jobs:
       - name: set cargo version
         if: ${{ env.VERSION != 'DEBUG' }}
         run: |
-          set-cargo-version ./crates/voicevox_core/Cargo.toml ${{ env.VERSION }}
-          set-cargo-version ./crates/voicevox_core_c_api/Cargo.toml ${{ env.VERSION }}
-          set-cargo-version ./crates/voicevox_core_python_api/Cargo.toml ${{ env.VERSION }}
+          for cargo_toml in $( echo ./crates/voicevox_core_*/Cargo.toml ); do
+            set-cargo-version $cargo_toml ${{ env.VERSION }}
+          done
       - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api --features generate-c-header,${{ matrix.additional-features }} --target ${{ matrix.target }} --release
         env:
