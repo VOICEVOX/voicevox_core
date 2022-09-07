@@ -89,6 +89,7 @@ jobs:
           version: latest
       - name: set cargo version
         if: ${{ env.VERSION != 'DEBUG' }}
+        shell: bash
         run: |
           for cargo_toml in $( echo ./crates/voicevox_core_*/Cargo.toml ); do
             set-cargo-version $cargo_toml ${{ env.VERSION }}
