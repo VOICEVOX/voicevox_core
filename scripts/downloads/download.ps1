@@ -23,8 +23,8 @@ Param(
 	[Parameter()]
 	[ValidateSet("cpu","cuda","directml")]
 	[string]
-	# ダウンロードするTypeを指定する(cpu,cuda,directmlを指定可能)
-	$Type = "cpu",
+	# ダウンロードするAcceleratorを指定する(cpu,cuda,directmlを指定可能)
+	$Accelerator = "cpu",
 	[Parameter()]
 	[bool]
 	# ダウンロードするライブラリを最小限にするように指定
@@ -36,18 +36,18 @@ $VoicevoxAdditionalLibrariesBaseUrl="https://github.com/VOICEVOX/voicevox_additi
 $OpenJtalkDictUrl="https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
 $OpenJtalkDictDirName="open_jtalk_dic_utf_8-1.11"
 
-Function Voicevox-Core-Releases-Url($Os,$CpuArch,$Type,$Version){
-	"${VoicevoxCoreRepositoryBaseUrl}/releases/download/${Version}/voicevox_core-${Os}-${CpuArch}-${type}-${Version}.zip"
+Function Voicevox-Core-Releases-Url($Os,$CpuArch,$Accelerator,$Version){
+	"${VoicevoxCoreRepositoryBaseUrl}/releases/download/${Version}/voicevox_core-${Os}-${CpuArch}-${Accelerator}-${Version}.zip"
 }
 
-Function Voicevox-Additional-Libraries-Releases-Url($Os,$CpuArch,$Type,$Version){
-	If ( $Type -eq "cuda" ){
-		$Type="CUDA"
-	} ElseIf ( $Type -eq "directml" ){
-		$Type="DirectML"
+Function Voicevox-Additional-Libraries-Releases-Url($Os,$CpuArch,$Accelerator,$Version){
+	If ( $Accelerator -eq "cuda" ){
+		$Accelerator="CUDA"
+	} ElseIf ( $Accelerator -eq "directml" ){
+		$Accelerator="DirectML"
 	}
 
-	"${VoicevoxAdditionalLibrariesBaseUrl}/releases/download/${Version}/${Type}-${Os}-${CpuArch}.zip"
+	"${VoicevoxAdditionalLibrariesBaseUrl}/releases/download/${Version}/${Accelerator}-${Os}-${CpuArch}.zip"
 }
 
 Function Latest-Version($BaseUrl){
@@ -109,7 +109,7 @@ $Os=Target-Os
 $CpuArch=Target-Arch
 $OpenJtalkOutput="${Output}/${OpenJtalkDictDirName}"
 
-If ( $Type -eq "cpu" ){
+If ( $Accelerator -eq "cpu" ){
 	$AdditionalLibrariesVersion=""
 }
 
@@ -124,10 +124,10 @@ If ( $AdditionalLibrariesVersion -eq "latest" ){
 echo "対象OS:$Os"
 echo "対象CPUアーキテクチャ:$cpu_arch"
 echo "ダウンロードvoicevox_coreバージョン:$version"
-echo "ダウンロードアーティファクトタイプ:$type"
+echo "ダウンロードアーティファクトタイプ:$Accelerator"
 
-$VoicevoxCoreUrl=Voicevox-Core-Releases-Url "$Os" "$CpuArch" "$Type" "$Version"
-$VoicevoxAdditionalLibrariesUrl=Voicevox-Additional-Libraries-Releases-Url "$Os" "$CpuArch" "$Type" "$AdditionalLibrariesVersion"
+$VoicevoxCoreUrl=Voicevox-Core-Releases-Url "$Os" "$CpuArch" "$Accelerator" "$Version"
+$VoicevoxAdditionalLibrariesUrl=Voicevox-Additional-Libraries-Releases-Url "$Os" "$CpuArch" "$Accelerator" "$AdditionalLibrariesVersion"
 
 Download-and-Extract "voicevox_core" "$VoicevoxCoreUrl" "$Output"
 
