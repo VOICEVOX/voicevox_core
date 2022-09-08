@@ -40,6 +40,8 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
         supported_devices_from_json(&voicevox_core::SUPPORTED_DEVICES.to_json())?
     })?;
 
+    module.add("__version__", voicevox_core::VoicevoxCore::get_version())?;
+
     module.add_class::<VoicevoxCore>()
 }
 

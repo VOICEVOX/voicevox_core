@@ -2527,7 +2527,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "voicevox_core"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2551,7 +2551,7 @@ dependencies = [
 
 [[package]]
 name = "voicevox_core_c_api"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "cbindgen",
