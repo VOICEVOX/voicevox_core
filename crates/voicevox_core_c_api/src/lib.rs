@@ -80,6 +80,16 @@ pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> Voi
     }
 }
 
+static VOICEVOX_VERSION: once_cell::sync::Lazy<CString> =
+    once_cell::sync::Lazy::new(|| CString::new(Internal::get_version()).unwrap());
+
+/// voicevoxのバージョンを取得する
+/// @return SemVerでフォーマットされたバージョン
+#[no_mangle]
+pub extern "C" fn voicevox_get_version() -> *const c_char {
+    VOICEVOX_VERSION.as_ptr()
+}
+
 /// モデルを読み込む
 /// @param [in] speaker_id 読み込むモデルの話者ID
 /// @return 結果コード #VoicevoxResultCode
