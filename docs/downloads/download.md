@@ -23,7 +23,7 @@ curl -sSL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/dow
 ## DirectML 版をダウンロードする場合
 
 ```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -Output ./download.ps1
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
 ./download.ps1 -type directml
 ```
 
