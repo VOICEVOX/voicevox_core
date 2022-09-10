@@ -98,7 +98,7 @@ Function Download-and-Extract($Target,$Url,$ExtractDir,$ArchiveFormat){
 			if ([string]::IsNullOrEmpty($_.Name)){
 				return
 			}
-			$NewFile=[IO.FileInfo]($ExtractDir,$_.Name -join "/")
+      $NewFile=[IO.FileInfo]([IO.Path]::Combine($ExtractDir,$_.Name))
 			$NewFile.Directory.Create()
 			[System.IO.Compression.ZipFileExtensions]::ExtractToFile($_,$NewFile)
 		}
@@ -112,7 +112,7 @@ Function Download-and-Extract($Target,$Url,$ExtractDir,$ArchiveFormat){
 
 $Os=Target-Os
 $CpuArch=Target-Arch
-$OpenJtalkOutput="${Output}/${OpenJtalkDictDirName}"
+$OpenJtalkOutput= Join-Path $Output $OpenJtalkDictDirName
 
 If ( $Accelerator -eq "cpu" ){
 	$AdditionalLibrariesVersion=""
