@@ -32,7 +32,7 @@ jobs:
               *curand*
           - name: output先指定ダウンロード
             os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1 -Output other_output
+            download_command: ./scripts/downloads/Download.ps1 -OutFile other_output
             download_dir: other_output
             check_items: |
               core.dll
