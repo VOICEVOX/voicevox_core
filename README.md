@@ -16,7 +16,8 @@ Downloader を用いて環境構築を行う場合
 PowerShell で下記コマンドを実行してください
 
 ```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 | powershell
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
+./download.ps1
 ```
 
 ### Linux/macOS の場合

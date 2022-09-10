@@ -1,6 +1,7 @@
 # VOICEVOX CORE Downloader
 
 <a id="default"></a>
+<a id="cpu"></a>
 
 ## デフォルト(CPU 版)をダウンロードする場合
 
@@ -9,7 +10,8 @@
 PowerShell で下記コマンドを実行してください
 
 ```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 | PowerShell
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
+./download.ps1
 ```
 
 ### Linux/macOS の場合
@@ -43,6 +45,8 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 ```bash
 curl -sSL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s -- --type cuda
 ```
+
+<a id="help"></a>
 
 ## その他詳細なオプションを指定したい場合
 
