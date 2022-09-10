@@ -52,7 +52,7 @@ curl -sSL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/dow
 ### Windows の場合
 
 ```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -Output ./download.ps1
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
 Get-Help ./download.ps1 -full
 ```
 
