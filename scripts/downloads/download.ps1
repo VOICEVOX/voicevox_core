@@ -19,6 +19,7 @@ Param(
 	$Version = "latest",
 	[Parameter()]
 	[String]
+  # 追加ダウンロードするライブラリのバージョンの指定
 	$AdditionalLibrariesVersion = "latest",
 	[Parameter()]
 	[ValidateSet("cpu","cuda","directml")]
@@ -30,6 +31,10 @@ Param(
 	# ダウンロードするライブラリを最小限にするように指定
 	$Min = $False
 )
+mkdir -p $Output
+If (-Not(Split-Path $Output -IsAbsolute)){
+  $Output=Resolve-Path $Output
+}
 
 $VoicevoxCoreRepositoryBaseUrl="https://github.com/VOICEVOX/voicevox_core"
 $VoicevoxAdditionalLibrariesBaseUrl="https://github.com/VOICEVOX/voicevox_additional_libraries"
@@ -125,6 +130,7 @@ echo "対象OS:$Os"
 echo "対象CPUアーキテクチャ:$cpu_arch"
 echo "ダウンロードvoicevox_coreバージョン:$version"
 echo "ダウンロードアーティファクトタイプ:$Accelerator"
+echo "出力先:$Output"
 
 $VoicevoxCoreUrl=Voicevox-Core-Releases-Url "$Os" "$CpuArch" "$Accelerator" "$Version"
 $VoicevoxAdditionalLibrariesUrl=Voicevox-Additional-Libraries-Releases-Url "$Os" "$CpuArch" "$Accelerator" "$AdditionalLibrariesVersion"
