@@ -9,38 +9,27 @@
 
 ## 環境構築
 
-configure.py を用いて環境構築を行う場合
+Downloader を用いて環境構築を行う場合
 
-```bash
-python configure.py
-pip install -r requirements.txt
-pip install .
+### Windows の場合
+
+PowerShell で下記コマンドを実行してください
+
+```PowerShell
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
+./download.ps1
 ```
 
+### Linux/macOS の場合
+
+```bash
+curl -sSL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s
+```
+
+詳細な Downloader の使い方については [こちら](./docs/downloads/download.md) を参照してください
+
 <details>
-<summary>configure.pyを使わない場合</summary>
-
-<!--
-### ONNX Runtimeのダウンロード
-
-コアを利用するにはまず環境に対応した [ONNXRUNTIME](https://github.com/microsoft/onnxruntime) をダウンロードし、リポジトリに`onnxruntime`というディレクトリ名で展開します。
-
-動作確認済みバージョン
-- ONNX Runtime v1.11.1
--->
-
-#### GPU を使用する場合
-
-##### CUDA
-
-[Releases](https://github.com/VOICEVOX/voicevox_core/releases) から環境にあった CUDA 対応版の zip ファイルをダウンロードして展開してください。
-
-<!--
-##### DirectML
-Windows上でDirectX12に対応したGPUを使用してDirectMLを用いた合成を行う場合、[DirectML](https://www.nuget.org/packages/Microsoft.AI.DirectML)及びDirectMLに対応した[ONNXRUNTIME](https://github.com/microsoft/onnxruntime) のダウンロードが必要です。
-
-DirectMLは.nupkgファイルで提供されますが、拡張子を.zipに変更した上で、リポジトリに`directml`というディレクトリ名で展開してください。
--->
+<summary> Downloader を使わない場合</summary>
 
 <!--
 #### Raspberry Pi (armhf)の場合
@@ -52,20 +41,9 @@ Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます�
 動作には、libgomp のインストールが必要です。
 -->
 
-### コアライブラリのダウンロードと配置
-
-まず [Releases](https://github.com/VOICEVOX/voicevox_core/releases) からコアライブラリが入った zip をダウンロードしておきます。
-
-1. まず Releases からダウンロードしたコアライブラリの zip を、`release`というディレクトリ名で展開する。
-2. `core/lib/`ディレクトリを作成する。
-3. `release/`内にある、自身の環境に対応したランタイムライブラリを`core/lib/`にコピーする
-
-```bash
-# インストールに必要なモジュールのインストール
-pip install -r requirements.txt
-# pythonモジュールのインストール
-pip install .
-```
+1. まず [Releases](https://github.com/VOICEVOX/voicevox_core/releases/latest) からダウンロードしたコアライブラリの zip を、適当なディレクトリ名で展開します。CUDA 版、DirectML 版はかならずその zip ファイルをダウンロードしてください。
+2. [Open JTalk から配布されている辞書ファイル](https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz) をダウンロードしてコアライブラリを展開したディレクトリに展開してください。
+3. CUDA や DirectML を利用する場合は、 [追加ライブラリ](https://github.com/VOICEVOX/voicevox_additional_libraries/releases/latest) をダウンロードして、コアライブラリを展開したディレクトリに展開してください。
 
 </details>
 
@@ -77,25 +55,16 @@ pip install .
 
 nvidia 製 GPU を搭載した Windows, Linux PC では CUDA を用いた合成が可能です。
 
-```bash
-python configure.py --use_cuda
-```
+CUDA 版を利用するには Downloader の実行が必要です。  
+詳細は [CUDA 版をダウンロードする場合](./docs/downloads/download.md#cuda) を参照してください
 
-を実行する必要があります
-
-<!--
 ##### DirectML
-DirectX12に対応したGPUを搭載したWindows PCではDirectMLを用いた合成が可能です
-DirectMLを使用する場合、環境構築時、上記例の代わりに
 
-```bash
-python configure.py --use_directml
-```
+DirectX12 に対応した GPU を搭載した Windows PC では DirectML を用いた合成が可能です  
+DirectML 版を利用するには Downloader の実行が必要です。  
+詳細は [DirectML 版をダウンロードする場合](./docs/downloads/download.md#directml) を参照してください
 
-を実行する必要があります
--->
-
-MacOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
+macOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
 
 <!--
 #### Raspberry Piでの使用について
@@ -116,30 +85,11 @@ sudo apt install libgomp1
 
 ## サンプル実行
 
-まず Open JTalk 辞書フォルダを配置します。 http://open-jtalk.sourceforge.net/ を開き、Dictionary for Open JTalk 欄の Binary Package (UTF-8)をクリックして「open_jtalk_dic_utf_8-1.11.tar.gz」をダウンロードします。
-これを展開してできた「open_jtalk_dic_utf_8-1.11」フォルダを example/python に配置します。
+現在このリポジトリでは次のサンプルが提供されています。実行方法についてはそれぞれのディレクトリ内にある README を参照してください
 
-- バージョン 0.12 以降の voicevox_core, onnxruntime ライブラリ（配布ページ: https://github.com/VOICEVOX/voicevox_core/releases ）を example/python に配置する
-  - Linux の場合：`voicevox_core-linux-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の 全ての so file
-  - macOS の場合：`voicevox_core-osx-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の 全ての dylib file
-  - Windows の場合：`voicevox_core-windows-{お使いのCPUアーキテクチャ}-cpu-{バージョン}.zip` 内の 全ての dll file
-
-```bash
-cd example/python
-
-# サンプルコード実行のための依存モジュールのインストール
-pip install -r requirements.txt
-python run.py \
-    --text "これは本当に実行できているんですか" \
-    --speaker_id 1
-
-# 引数の紹介
-# --text 読み上げるテキスト
-# --speaker_id 話者ID
-# --use_gpu GPUを使う
-# --f0_speaker_id 音高の話者ID（デフォルト値はspeaker_id）
-# --f0_correct 音高の補正値（デフォルト値は0。+-0.3くらいで結果が大きく変わります）
-```
+- [Python](./example/python)
+- [C++(UNIX CMake)](./example/cpp/unix)
+- [C++(Windows Visual Studio)](./example/cpp/windows)
 
 ### その他の言語
 

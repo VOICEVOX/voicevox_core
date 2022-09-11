@@ -156,3 +156,16 @@ jobs:
           prerelease: true
           tag: ${{ env.VERSION }}
           file: ${{ steps.build-voicevox-core-python-api.outputs.whl }}
+  deploy_downloader:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Upload to Release
+        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: true
+          file: scripts/downloads/*
+          file_glob: true
+          tag: ${{ env.VERSION }}
