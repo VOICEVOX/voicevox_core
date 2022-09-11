@@ -147,7 +147,7 @@ python run.py \
 
 ## API
 
-[Releases](https://github.com/VOICEVOX/voicevox_core/releases)にある zip ファイル内に core.h が入っているのでご確認ください
+[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/c_api/globals_func.html)をご覧ください。
 
 ## コアライブラリのビルド
 
