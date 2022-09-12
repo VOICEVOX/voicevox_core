@@ -26,7 +26,7 @@ curl -sSL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/dow
 
 ```PowerShell
 Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
-./download.ps1 -type directml
+./download.ps1 -Accelerator directml
 ```
 
 <a id="cuda"></a>
