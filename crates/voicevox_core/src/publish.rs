@@ -24,14 +24,24 @@ pub struct VoicevoxCore {
 }
 
 impl VoicevoxCore {
+    pub fn new_with_initialize(options: InitializeOptions) -> Result<Self> {
+        let mut this = Self::new();
+        this.initialize(options)?;
+        Ok(this)
+    }
+
     pub fn new_with_mutex() -> Mutex<VoicevoxCore> {
-        Mutex::new(VoicevoxCore {
+        Mutex::new(Self::new())
+    }
+
+    fn new() -> Self {
+        Self {
             synthesis_engine: SynthesisEngine::new(
                 InferenceCore::new(false, None),
                 OpenJtalk::initialize(),
             ),
             use_gpu: false,
-        })
+        }
     }
 
     pub fn initialize(&mut self, options: InitializeOptions) -> Result<()> {
@@ -84,6 +94,10 @@ impl VoicevoxCore {
         self.synthesis_engine.inference_core_mut().finalize()
     }
 
+    pub const fn get_version() -> &'static str {
+        env!("CARGO_PKG_VERSION")
+    }
+
     pub fn get_metas_json(&self) -> &'static CStr {
         &METAS_CSTRING
     }
@@ -92,34 +106,38 @@ impl VoicevoxCore {
         &SUPPORTED_DEVICES_CSTRING
     }
 
-    pub fn predict_duration(&mut self, phoneme_list: &[i64], speaker_id: u32) -> Result<Vec<f32>> {
+    pub fn predict_duration(
+        &mut self,
+        phoneme_vector: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
-            .predict_duration(phoneme_list, speaker_id)
+            .predict_duration(phoneme_vector, speaker_id)
     }
 
     #[allow(clippy::too_many_arguments)]
     pub fn predict_intonation(
         &mut self,
         length: usize,
-        vowel_phoneme_list: &[i64],
-        consonant_phoneme_list: &[i64],
-        start_accent_list: &[i64],
-        end_accent_list: &[i64],
-        start_accent_phrase_list: &[i64],
-        end_accent_phrase_list: &[i64],
+        vowel_phoneme_vector: &[i64],
+        consonant_phoneme_vector: &[i64],
+        start_accent_vector: &[i64],
+        end_accent_vector: &[i64],
+        start_accent_phrase_vector: &[i64],
+        end_accent_phrase_vector: &[i64],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
             .predict_intonation(
                 length,
-                vowel_phoneme_list,
-                consonant_phoneme_list,
-                start_accent_list,
-                end_accent_list,
-                start_accent_phrase_list,
-                end_accent_phrase_list,
+                vowel_phoneme_vector,
+                consonant_phoneme_vector,
+                start_accent_vector,
+                end_accent_vector,
+                start_accent_phrase_vector,
+                end_accent_phrase_vector,
                 speaker_id,
             )
     }
@@ -129,14 +147,14 @@ impl VoicevoxCore {
         length: usize,
         phoneme_size: usize,
         f0: &[f32],
-        phoneme: &[f32],
+        phoneme_vector: &[f32],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine.inference_core_mut().decode(
             length,
             phoneme_size,
             f0,
-            phoneme,
+            phoneme_vector,
             speaker_id,
         )
     }
@@ -157,6 +175,8 @@ impl VoicevoxCore {
                 .create_accent_phrases(text, speaker_id)?
         };
 
+        let kana = create_kana(&accent_phrases);
+
         Ok(AudioQueryModel::new(
             accent_phrases,
             1.,
@@ -167,7 +187,7 @@ impl VoicevoxCore {
             0.1,
             SynthesisEngine::DEFAULT_SAMPLING_RATE,
             false,
-            "".into(),
+            kana,
         ))
     }
 
@@ -272,7 +292,7 @@ impl InferenceCore {
             self.initialized = true;
             Ok(())
         } else {
-            Err(Error::CantGpuSupport)
+            Err(Error::GpuSupport)
         }
     }
     fn can_support_gpu_feature(&self) -> Result<bool> {
@@ -317,7 +337,11 @@ impl InferenceCore {
         self.status_option = None;
     }
 
-    pub fn predict_duration(&mut self, phoneme_list: &[i64], speaker_id: u32) -> Result<Vec<f32>> {
+    pub fn predict_duration(
+        &mut self,
+        phoneme_vector: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
         if !self.initialized {
             return Err(Error::UninitializedStatus);
         }
@@ -342,11 +366,11 @@ impl InferenceCore {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let mut phoneme_list_array = NdArray::new(ndarray::arr1(phoneme_list));
+        let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
-            vec![&mut phoneme_list_array, &mut speaker_id_array];
+            vec![&mut phoneme_vector_array, &mut speaker_id_array];
 
         let mut output = status.predict_duration_session_run(model_index, input_tensors)?;
 
@@ -363,12 +387,12 @@ impl InferenceCore {
     pub fn predict_intonation(
         &mut self,
         length: usize,
-        vowel_phoneme_list: &[i64],
-        consonant_phoneme_list: &[i64],
-        start_accent_list: &[i64],
-        end_accent_list: &[i64],
-        start_accent_phrase_list: &[i64],
-        end_accent_phrase_list: &[i64],
+        vowel_phoneme_vector: &[i64],
+        consonant_phoneme_vector: &[i64],
+        start_accent_vector: &[i64],
+        end_accent_vector: &[i64],
+        start_accent_phrase_vector: &[i64],
+        end_accent_phrase_vector: &[i64],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
@@ -396,23 +420,25 @@ impl InferenceCore {
         }
 
         let mut length_array = NdArray::new(ndarray::arr0(length as i64));
-        let mut vowel_phoneme_list_array = NdArray::new(ndarray::arr1(vowel_phoneme_list));
-        let mut consonant_phoneme_list_array = NdArray::new(ndarray::arr1(consonant_phoneme_list));
-        let mut start_accent_list_array = NdArray::new(ndarray::arr1(start_accent_list));
-        let mut end_accent_list_array = NdArray::new(ndarray::arr1(end_accent_list));
-        let mut start_accent_phrase_list_array =
-            NdArray::new(ndarray::arr1(start_accent_phrase_list));
-        let mut end_accent_phrase_list_array = NdArray::new(ndarray::arr1(end_accent_phrase_list));
+        let mut vowel_phoneme_vector_array = NdArray::new(ndarray::arr1(vowel_phoneme_vector));
+        let mut consonant_phoneme_vector_array =
+            NdArray::new(ndarray::arr1(consonant_phoneme_vector));
+        let mut start_accent_vector_array = NdArray::new(ndarray::arr1(start_accent_vector));
+        let mut end_accent_vector_array = NdArray::new(ndarray::arr1(end_accent_vector));
+        let mut start_accent_phrase_vector_array =
+            NdArray::new(ndarray::arr1(start_accent_phrase_vector));
+        let mut end_accent_phrase_vector_array =
+            NdArray::new(ndarray::arr1(end_accent_phrase_vector));
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> = vec![
             &mut length_array,
-            &mut vowel_phoneme_list_array,
-            &mut consonant_phoneme_list_array,
-            &mut start_accent_list_array,
-            &mut end_accent_list_array,
-            &mut start_accent_phrase_list_array,
-            &mut end_accent_phrase_list_array,
+            &mut vowel_phoneme_vector_array,
+            &mut consonant_phoneme_vector_array,
+            &mut start_accent_vector_array,
+            &mut end_accent_vector_array,
+            &mut start_accent_phrase_vector_array,
+            &mut end_accent_phrase_vector_array,
             &mut speaker_id_array,
         ];
 
@@ -424,7 +450,7 @@ impl InferenceCore {
         length: usize,
         phoneme_size: usize,
         f0: &[f32],
-        phoneme: &[f32],
+        phoneme_vector: &[f32],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
@@ -461,7 +487,7 @@ impl InferenceCore {
         let f0_with_padding = Self::make_f0_with_padding(f0, length_with_padding, padding_size);
 
         let phoneme_with_padding = Self::make_phoneme_with_padding(
-            phoneme,
+            phoneme_vector,
             phoneme_size,
             length_with_padding,
             padding_size,
@@ -536,14 +562,15 @@ impl InferenceCore {
     }
 }
 
-static METAS_CSTRING: Lazy<CString> = Lazy::new(|| CString::new(Status::METAS_STR).unwrap());
+pub static METAS: &str = Status::METAS_STR;
 
-static SUPPORTED_DEVICES_CSTRING: Lazy<CString> = Lazy::new(|| {
-    CString::new(
-        serde_json::to_string(&SupportedDevices::get_supported_devices().unwrap()).unwrap(),
-    )
-    .unwrap()
-});
+pub static METAS_CSTRING: Lazy<CString> = Lazy::new(|| CString::new(METAS).unwrap());
+
+pub static SUPPORTED_DEVICES: Lazy<SupportedDevices> =
+    Lazy::new(|| SupportedDevices::get_supported_devices().unwrap());
+
+pub static SUPPORTED_DEVICES_CSTRING: Lazy<CString> =
+    Lazy::new(|| CString::new(SUPPORTED_DEVICES.to_json().to_string()).unwrap());
 
 fn get_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
     SPEAKER_ID_MAP.get(&speaker_id).copied()
@@ -553,32 +580,32 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
     // C APIのため、messageには必ず末尾にNULL文字を追加する
     use VoicevoxResultCode::*;
     match result_code {
-        VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT => {
+        VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR => {
             "voicevox_load_openjtalk_dict() を初めに呼んでください\0"
         }
-        VOICEVOX_RESULT_FAILED_LOAD_MODEL => {
+        VOICEVOX_RESULT_LOAD_MODEL_ERROR => {
             "modelデータ読み込み中にOnnxruntimeエラーが発生しました\0"
         }
-        VOICEVOX_RESULT_FAILED_LOAD_METAS => "メタデータ読み込みに失敗しました\0",
+        VOICEVOX_RESULT_LOAD_METAS_ERROR => "メタデータ読み込みに失敗しました\0",
 
-        VOICEVOX_RESULT_CANT_GPU_SUPPORT => "GPU機能をサポートすることができません\0",
-        VOICEVOX_RESULT_FAILED_GET_SUPPORTED_DEVICES => {
+        VOICEVOX_RESULT_GPU_SUPPORT_ERROR => "GPU機能をサポートすることができません\0",
+        VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR => {
             "サポートされているデバイス情報取得中にエラーが発生しました\0"
         }
 
-        VOICEVOX_RESULT_SUCCEED => "エラーが発生しませんでした\0",
-        VOICEVOX_RESULT_UNINITIALIZED_STATUS => "Statusが初期化されていません\0",
-        VOICEVOX_RESULT_INVALID_SPEAKER_ID => "無効なspeaker_idです\0",
-        VOICEVOX_RESULT_INVALID_MODEL_INDEX => "無効なmodel_indexです\0",
-        VOICEVOX_RESULT_INFERENCE_FAILED => "推論に失敗しました\0",
-        VOICEVOX_RESULT_FAILED_EXTRACT_FULL_CONTEXT_LABEL => {
+        VOICEVOX_RESULT_OK => "エラーが発生しませんでした\0",
+        VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR => "Statusが初期化されていません\0",
+        VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR => "無効なspeaker_idです\0",
+        VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR => "無効なmodel_indexです\0",
+        VOICEVOX_RESULT_INFERENCE_ERROR => "推論に失敗しました\0",
+        VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR => {
             "入力テキストからのフルコンテキストラベル抽出に失敗しました\0"
         }
-        VOICEVOX_RESULT_INVALID_UTF8_INPUT => "入力テキストが無効なUTF-8データでした\0",
-        VOICEVOX_RESULT_FAILED_PARSE_KANA => {
+        VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR => "入力テキストが無効なUTF-8データでした\0",
+        VOICEVOX_RESULT_PARSE_KANA_ERROR => {
             "入力テキストをAquesTalkライクな読み仮名としてパースすることに失敗しました\0"
         }
-        VOICEVOX_RESULT_INVALID_AUDIO_QUERY => "無効なaudio_queryです\0",
+        VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR => "無効なaudio_queryです\0",
     }
 }
 
@@ -735,16 +762,19 @@ mod tests {
             })
             .unwrap();
 
-        // 「こんにちは、音声合成の世界へようこそ」という文章を変換して得た phoneme_list
-        let phoneme_list = [
+        // 「こんにちは、音声合成の世界へようこそ」という文章を変換して得た phoneme_vector
+        let phoneme_vector = [
             0, 23, 30, 4, 28, 21, 10, 21, 42, 7, 0, 30, 4, 35, 14, 14, 16, 30, 30, 35, 14, 14, 28,
             30, 35, 14, 23, 7, 21, 14, 43, 30, 30, 23, 30, 35, 30, 0,
         ];
 
-        let result = internal.lock().unwrap().predict_duration(&phoneme_list, 0);
+        let result = internal
+            .lock()
+            .unwrap()
+            .predict_duration(&phoneme_vector, 0);
 
         assert!(result.is_ok(), "{:?}", result);
-        assert_eq!(result.unwrap().len(), phoneme_list.len());
+        assert_eq!(result.unwrap().len(), phoneme_vector.len());
     }
 
     #[rstest]
@@ -761,26 +791,26 @@ mod tests {
             .unwrap();
 
         // 「テスト」という文章に対応する入力
-        let vowel_phoneme_list = [0, 14, 6, 30, 0];
-        let consonant_phoneme_list = [-1, 37, 35, 37, -1];
-        let start_accent_list = [0, 1, 0, 0, 0];
-        let end_accent_list = [0, 1, 0, 0, 0];
-        let start_accent_phrase_list = [0, 1, 0, 0, 0];
-        let end_accent_phrase_list = [0, 0, 0, 1, 0];
+        let vowel_phoneme_vector = [0, 14, 6, 30, 0];
+        let consonant_phoneme_vector = [-1, 37, 35, 37, -1];
+        let start_accent_vector = [0, 1, 0, 0, 0];
+        let end_accent_vector = [0, 1, 0, 0, 0];
+        let start_accent_phrase_vector = [0, 1, 0, 0, 0];
+        let end_accent_phrase_vector = [0, 0, 0, 1, 0];
 
         let result = internal.lock().unwrap().predict_intonation(
-            vowel_phoneme_list.len(),
-            &vowel_phoneme_list,
-            &consonant_phoneme_list,
-            &start_accent_list,
-            &end_accent_list,
-            &start_accent_phrase_list,
-            &end_accent_phrase_list,
+            vowel_phoneme_vector.len(),
+            &vowel_phoneme_vector,
+            &consonant_phoneme_vector,
+            &start_accent_vector,
+            &end_accent_vector,
+            &start_accent_phrase_vector,
+            &end_accent_phrase_vector,
             0,
         );
 
         assert!(result.is_ok(), "{:?}", result);
-        assert_eq!(result.unwrap().len(), vowel_phoneme_list.len());
+        assert_eq!(result.unwrap().len(), vowel_phoneme_vector.len());
     }
 
     #[rstest]
@@ -825,5 +855,66 @@ mod tests {
 
         assert!(result.is_ok(), "{:?}", result);
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
+    }
+
+    #[rstest]
+    #[async_std::test]
+    async fn audio_query_works() {
+        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
+
+        let core = VoicevoxCore::new_with_mutex();
+        core.lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                open_jtalk_dict_dir: Some(open_jtalk_dic_dir),
+                ..Default::default()
+            })
+            .unwrap();
+
+        let query = core
+            .lock()
+            .unwrap()
+            .audio_query("これはテストです", 0, Default::default())
+            .unwrap();
+
+        assert_eq!(query.accent_phrases().len(), 2);
+
+        assert_eq!(query.accent_phrases()[0].moras().len(), 3);
+        for (i, (text, consonant, vowel)) in [("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")]
+            .iter()
+            .enumerate()
+        {
+            let mora = query.accent_phrases()[0].moras().get(i).unwrap();
+            assert_eq!(mora.text(), text);
+            assert_eq!(mora.consonant(), &Some(consonant.to_string()));
+            assert_eq!(mora.vowel(), vowel);
+        }
+        assert_eq!(query.accent_phrases()[0].accent(), &3);
+
+        assert_eq!(query.accent_phrases()[1].moras().len(), 5);
+        for (i, (text, consonant, vowel)) in [
+            ("テ", "t", "e"),
+            ("ス", "s", "U"),
+            ("ト", "t", "o"),
+            ("デ", "d", "e"),
+            ("ス", "s", "U"),
+        ]
+        .iter()
+        .enumerate()
+        {
+            let mora = query.accent_phrases()[1].moras().get(i).unwrap();
+            assert_eq!(mora.text(), text);
+            assert_eq!(mora.consonant(), &Some(consonant.to_string()));
+            assert_eq!(mora.vowel(), vowel);
+        }
+        assert_eq!(query.accent_phrases()[1].accent(), &1);
+        assert_eq!(query.kana(), "コレワ'/テ'_ストデ_ス");
+    }
+
+    #[rstest]
+    fn get_version_works() {
+        assert_eq!("0.0.0", VoicevoxCore::get_version());
     }
 }

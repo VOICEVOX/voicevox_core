@@ -166,12 +166,9 @@ impl SynthesisEngine {
                         let new_pause_mora = MoraModel::new(
                             pause_mora.text().clone(),
                             pause_mora.consonant().clone(),
-                            pause_mora
-                                .consonant()
-                                .as_ref()
-                                .map(|_| phoneme_length[vowel_indexes_data[index + 1] as usize]),
+                            *pause_mora.consonant_length(),
                             pause_mora.vowel().clone(),
-                            *pause_mora.vowel_length(),
+                            phoneme_length[vowel_indexes_data[index + 1] as usize],
                             *pause_mora.pitch(),
                         );
                         index += 1;
@@ -680,5 +677,57 @@ mod tests {
 
         let _ = synthesis_engine.load_openjtalk_dict("");
         assert_eq!(synthesis_engine.is_openjtalk_dict_loaded(), false);
+    }
+
+    #[rstest]
+    #[async_std::test]
+    async fn create_accent_phrases_works() {
+        let mut core = InferenceCore::new(true, None);
+        core.initialize(false, 0, true).unwrap();
+        let mut synthesis_engine = SynthesisEngine::new(core, OpenJtalk::initialize());
+        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
+
+        let _ = synthesis_engine.load_openjtalk_dict(&open_jtalk_dic_dir);
+        let accent_phrases = synthesis_engine
+            .create_accent_phrases("同じ、文章、です。完全に、同一です。", 0)
+            .unwrap();
+        assert_eq!(accent_phrases.len(), 5);
+
+        // 入力テキストに「、」や「。」などの句読点が含まれていたときに
+        // AccentPhraseModel の pause_mora に期待する値をテスト
+
+        assert!(
+            accent_phrases[0].pause_mora().is_some(),
+            "accent_phrases[0].pause_mora() is None"
+        );
+        assert!(
+            accent_phrases[1].pause_mora().is_some(),
+            "accent_phrases[1].pause_mora() is None"
+        );
+        assert!(
+            accent_phrases[2].pause_mora().is_some(),
+            "accent_phrases[2].pause_mora() is None"
+        );
+        assert!(
+            accent_phrases[3].pause_mora().is_some(),
+            "accent_phrases[3].pause_mora() is None"
+        );
+        assert!(
+            accent_phrases[4].pause_mora().is_none(), // 文末の句読点は削除される
+            "accent_phrases[4].pause_mora() is not None"
+        );
+
+        for accent_phrase in accent_phrases.iter().take(4) {
+            let pause_mora = accent_phrase.pause_mora().clone().unwrap();
+            assert_eq!(pause_mora.text(), "、");
+            assert_eq!(pause_mora.consonant(), &None);
+            assert_eq!(pause_mora.consonant_length(), &None);
+            assert_eq!(pause_mora.vowel(), "pau");
+            assert_ne!(
+                pause_mora.vowel_length(),
+                &0.0,
+                "pause_mora.vowel_length() should not be 0.0"
+            );
+        }
     }
 }

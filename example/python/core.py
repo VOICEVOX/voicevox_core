@@ -23,7 +23,7 @@ elif get_os == "Linux":
     lib_file = "libcore.so"
 
 # ライブラリ読み込み
-core_dll_path = Path(os.path.dirname(__file__) + f"/{lib_file}")
+core_dll_path = Path(os.path.dirname(__file__) + f"/voicevox_core/{lib_file}")
 if not os.path.exists(core_dll_path):
     raise Exception(f"coreライブラリファイルが{core_dll_path}に存在しません")
 lib = cdll.LoadLibrary(str(core_dll_path))

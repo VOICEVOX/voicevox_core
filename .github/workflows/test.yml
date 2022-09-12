@@ -1,10 +1,10 @@
 name: test workflow
 on:
   push:
+    branches:
+      - "*"
+      - "**/*"
   pull_request:
-  release:
-    types:
-      - published
 jobs:
   rust-lint:
     runs-on: windows-latest
@@ -13,6 +13,10 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           components: clippy,rustfmt
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
       - uses: Swatinem/rust-cache@v1
       - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
@@ -42,6 +46,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
       - uses: actions-rs/toolchain@v1
       - uses: Swatinem/rust-cache@v1
         with:
@@ -64,14 +72,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
-      - name: build voicevox_core
-        run: cargo build --features generate-c-header
+      - name: build voicevox_core_c_api
+        run: cargo build -p voicevox_core_c_api --features generate-c-header
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
-          cp -v target/voicevox_core.h example/cpp/unix/
-          cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/ || true
-          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* example/cpp/unix/ || true
-          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib example/cpp/unix/ || true
+          mkdir -p example/cpp/unix/voicevox_core/
+          cp -v target/voicevox_core.h example/cpp/unix/voicevox_core/
+          cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/ || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* example/cpp/unix/voicevox_core/ || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/ || true
 
       - if: startsWith(matrix.os, 'mac')
         uses: jwlawson/actions-setup-cmake@v1.9
@@ -87,6 +96,50 @@ jobs:
           cd example/cpp/unix
           cmake -S . -B build
           cmake --build build
+
+  build-python-api:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+          - os: macos-latest
+          - os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+      - uses: actions-rs/toolchain@v1
+      - name: venv作成
+        shell: bash
+        run: |
+          virtual_env="$RUNNER_TEMP"/.venv
+          python -m venv "$virtual_env"
+          if [ "$RUNNER_OS" = Windows ]; then
+            echo "$virtual_env"/Scripts >>"$GITHUB_PATH"
+          else
+            echo "$virtual_env"/bin >>"$GITHUB_PATH"
+          fi
+          echo "VIRTUAL_ENV=$virtual_env" >>"$GITHUB_ENV"
+      - shell: bash
+        run: pip install -r ./crates/voicevox_core_python_api/requirements.txt
+      - shell: bash
+        run: cargo build -p voicevox_core_c_api
+      - shell: bash
+        run: maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
+      - shell: bash
+        run: maturin develop --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
+      - name: 必要なDLLをカレントディレクトリにコピー
+        run: |
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll . || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* . || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
+      - name: '`maturin develop`でインストールした`voicevox_core_python_api`を実行'
+        shell: python
+        run: import voicevox_core
 
 env:
   CARGO_TERM_COLOR: always

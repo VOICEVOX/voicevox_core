@@ -144,3 +144,4 @@ open_jtalk_dic_utf_8-*
 *.so.*
 *.dylib
 *.dll
+voicevox_core/
