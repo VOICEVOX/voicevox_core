@@ -8,4 +8,4 @@ from ._models import (  # noqa: F401
     Mora,
     SupportedDevices,
 )
-from ._rust import METAS, SUPPORTED_DEVICES, VoicevoxCore  # noqa: F401
+from ._rust import __version__, VoicevoxCore  # noqa: F401
