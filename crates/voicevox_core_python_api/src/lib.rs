@@ -18,28 +18,8 @@ use voicevox_core::{
 
 #[pymodule]
 #[pyo3(name = "_rust")]
-fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
+fn rust(_: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
-
-    module.add("METAS", {
-        let class = py.import("voicevox_core")?.getattr("Meta")?.cast_as()?;
-        let meta_from_json = |x: &serde_json::Value| to_pydantic_dataclass(x, class);
-        serde_json::from_str::<Vec<_>>(voicevox_core::METAS)
-            .into_py_result()?
-            .into_iter()
-            .map(|meta| meta_from_json(&meta))
-            .collect::<Result<Vec<_>, _>>()?
-    })?;
-
-    module.add("SUPPORTED_DEVICES", {
-        let class = py
-            .import("voicevox_core")?
-            .getattr("SupportedDevices")?
-            .cast_as()?;
-        let supported_devices_from_json = |x: &serde_json::Value| to_pydantic_dataclass(x, class);
-        supported_devices_from_json(&voicevox_core::SUPPORTED_DEVICES.to_json())?
-    })?;
-
     module.add("__version__", voicevox_core::VoicevoxCore::get_version())?;
 
     module.add_class::<VoicevoxCore>()
@@ -89,6 +69,31 @@ impl VoicevoxCore {
     #[getter]
     fn is_gpu_mode(&self) -> bool {
         self.inner.is_gpu_mode()
+    }
+
+    #[getter]
+    fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
+        let class = py.import("voicevox_core")?.getattr("Meta")?.cast_as()?;
+        let meta_from_json = |x: &serde_json::Value| to_pydantic_dataclass(x, class);
+
+        serde_json::from_str::<Vec<_>>(&serde_json::to_string(self.inner.metas()).unwrap())
+            .into_py_result()?
+            .into_iter()
+            .map(|meta| meta_from_json(&meta))
+            .collect::<Result<Vec<_>, _>>()
+    }
+
+    #[getter]
+    fn supported_devices<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
+        let class = py
+            .import("voicevox_core")?
+            .getattr("SupportedDevices")?
+            .cast_as()?;
+        let supported_devices_from_json = |x: &serde_json::Value| to_pydantic_dataclass(x, class);
+        supported_devices_from_json(
+            &serde_json::from_str(&serde_json::to_string(self.inner.supported_devices()).unwrap())
+                .unwrap(),
+        )
     }
 
     fn load_model(&mut self, speaker_id: u32) -> PyResult<()> {

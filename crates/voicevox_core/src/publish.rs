@@ -6,12 +6,13 @@ use onnxruntime::{
     session::{AnyArray, NdArray},
 };
 use result_code::VoicevoxResultCode;
-use std::ffi::CStr;
+use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use std::{collections::BTreeMap, path::PathBuf};
 
 use status::*;
-use std::ffi::CString;
+
+pub use status::SupportedDevices;
 
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 
@@ -98,12 +99,12 @@ impl VoicevoxCore {
         env!("CARGO_PKG_VERSION")
     }
 
-    pub fn get_metas_json(&self) -> &'static CStr {
-        &METAS_CSTRING
+    pub fn metas(&self) -> &[Meta] {
+        &METAS
     }
 
-    pub fn get_supported_devices_json(&self) -> &'static CStr {
-        &SUPPORTED_DEVICES_CSTRING
+    pub fn supported_devices(&self) -> &SupportedDevices {
+        &SUPPORTED_DEVICES
     }
 
     pub fn predict_duration(
@@ -562,15 +563,24 @@ impl InferenceCore {
     }
 }
 
-pub static METAS: &str = Status::METAS_STR;
+#[derive(Getters, Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub struct Style {
+    name: String,
+    id: u32,
+}
 
-pub static METAS_CSTRING: Lazy<CString> = Lazy::new(|| CString::new(METAS).unwrap());
+#[derive(Getters, Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub struct Meta {
+    name: String,
+    styles: Vec<Style>,
+    speaker_uuid: String,
+    version: String,
+}
 
-pub static SUPPORTED_DEVICES: Lazy<SupportedDevices> =
+static METAS: Lazy<Vec<Meta>> = Lazy::new(|| serde_json::from_str(Status::METAS_STR).unwrap());
+
+static SUPPORTED_DEVICES: Lazy<SupportedDevices> =
     Lazy::new(|| SupportedDevices::get_supported_devices().unwrap());
-
-pub static SUPPORTED_DEVICES_CSTRING: Lazy<CString> =
-    Lazy::new(|| CString::new(SUPPORTED_DEVICES.to_json().to_string()).unwrap());
 
 fn get_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
     SPEAKER_ID_MAP.get(&speaker_id).copied()
@@ -724,17 +734,6 @@ mod tests {
             expected,
             !expected
         );
-    }
-
-    #[rstest]
-    fn supported_devices_works() {
-        let internal = VoicevoxCore::new_with_mutex();
-        let cstr_result = internal.lock().unwrap().get_supported_devices_json();
-        assert!(cstr_result.to_str().is_ok(), "{:?}", cstr_result);
-
-        let json_result: std::result::Result<SupportedDevices, _> =
-            serde_json::from_str(cstr_result.to_str().unwrap());
-        assert!(json_result.is_ok(), "{:?}", json_result);
     }
 
     #[rstest]

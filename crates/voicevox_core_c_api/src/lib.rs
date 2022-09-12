@@ -120,18 +120,25 @@ pub extern "C" fn voicevox_finalize() {
     lock_internal().finalize()
 }
 
+static METAS_JSON_CSTRING: Lazy<CString> =
+    Lazy::new(|| CString::new(serde_json::to_string(lock_internal().metas()).unwrap()).unwrap());
+
 /// メタ情報をjsonで取得する
 /// @return メタ情報のjson文字列
 #[no_mangle]
 pub extern "C" fn voicevox_get_metas_json() -> *const c_char {
-    lock_internal().get_metas_json().as_ptr()
+    METAS_JSON_CSTRING.as_ptr()
 }
+
+static SUPPORTED_DEVICES_JOSN_CSTRING: Lazy<CString> = Lazy::new(|| {
+    CString::new(serde_json::to_string(lock_internal().supported_devices()).unwrap()).unwrap()
+});
 
 /// サポートデバイス情報をjsonで取得する
 /// @return サポートデバイス情報のjson文字列
 #[no_mangle]
 pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
-    lock_internal().get_supported_devices_json().as_ptr()
+    SUPPORTED_DEVICES_JOSN_CSTRING.as_ptr()
 }
 
 /// 音素ごとの長さを推論する
@@ -482,6 +489,13 @@ mod tests {
     use anyhow::anyhow;
     use pretty_assertions::assert_eq;
 
+    #[rstest]
+    fn supported_devices_works() {
+        let json_result: std::result::Result<voicevox_core::SupportedDevices, _> =
+            serde_json::from_str(SUPPORTED_DEVICES_JOSN_CSTRING.to_str().unwrap());
+
+        assert!(json_result.is_ok(), "{:?}", json_result,);
+    }
     #[rstest]
     #[case(Ok(()), VoicevoxResultCode::VOICEVOX_RESULT_OK)]
     #[case(
