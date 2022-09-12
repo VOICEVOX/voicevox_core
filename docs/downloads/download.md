@@ -37,7 +37,7 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 
 ```PowerShell
 Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
-./download.ps1 -accelerator cuda
+./download.ps1 -Accelerator cuda
 ```
 
 ### Linux の場合
