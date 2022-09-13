@@ -114,9 +114,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
-          cp -v target/core.h "artifact/${{ env.ASSET_NAME }}"
+          cp -v target/voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
           cp -v target/${{ matrix.target }}/release/*.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
-          cp -v target/${{ matrix.target }}/release/core.dll.lib "artifact/${{ env.ASSET_NAME }}/core.lib" || true
+          cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
           cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
           rm -f artifact/${{ env.ASSET_NAME }}/libonnxruntime.{so,dylib}
@@ -126,7 +126,7 @@ jobs:
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
         shell: bash
         run: |
-          bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/core.dll"
+          bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
         env:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}

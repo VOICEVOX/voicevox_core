@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-#include "voicevox_core/core.h"
+#include "voicevox_core/voicevox_core.h"
 
 #define OUTPUT_WAV_NAME "audio.wav"
 
