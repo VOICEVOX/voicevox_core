@@ -121,7 +121,7 @@ pub extern "C" fn voicevox_finalize() {
 }
 
 static METAS_JSON_CSTRING: Lazy<CString> =
-    Lazy::new(|| CString::new(serde_json::to_string(lock_internal().metas()).unwrap()).unwrap());
+    Lazy::new(|| CString::new(serde_json::to_string(Internal::metas()).unwrap()).unwrap());
 
 /// メタ情報をjsonで取得する
 /// @return メタ情報のjson文字列
@@ -131,7 +131,7 @@ pub extern "C" fn voicevox_get_metas_json() -> *const c_char {
 }
 
 static SUPPORTED_DEVICES_JOSN_CSTRING: Lazy<CString> = Lazy::new(|| {
-    CString::new(serde_json::to_string(lock_internal().supported_devices()).unwrap()).unwrap()
+    CString::new(serde_json::to_string(Internal::supported_devices()).unwrap()).unwrap()
 });
 
 /// サポートデバイス情報をjsonで取得する

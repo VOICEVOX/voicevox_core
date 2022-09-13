@@ -99,11 +99,11 @@ impl VoicevoxCore {
         env!("CARGO_PKG_VERSION")
     }
 
-    pub fn metas(&self) -> &[Meta] {
+    pub fn metas() -> &'static [Meta] {
         &METAS
     }
 
-    pub fn supported_devices(&self) -> &SupportedDevices {
+    pub fn supported_devices() -> &'static SupportedDevices {
         &SUPPORTED_DEVICES
     }
 

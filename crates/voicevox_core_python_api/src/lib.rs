@@ -71,28 +71,32 @@ impl VoicevoxCore {
         self.inner.is_gpu_mode()
     }
 
-    #[getter]
-    fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
+    #[staticmethod]
+    fn metas<'py>(py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
         let class = py.import("voicevox_core")?.getattr("Meta")?.cast_as()?;
         let meta_from_json = |x: &serde_json::Value| to_pydantic_dataclass(x, class);
 
-        serde_json::from_str::<Vec<_>>(&serde_json::to_string(self.inner.metas()).unwrap())
-            .into_py_result()?
-            .into_iter()
-            .map(|meta| meta_from_json(&meta))
-            .collect::<Result<Vec<_>, _>>()
+        serde_json::from_str::<Vec<_>>(
+            &serde_json::to_string(voicevox_core::VoicevoxCore::metas()).unwrap(),
+        )
+        .into_py_result()?
+        .into_iter()
+        .map(|meta| meta_from_json(&meta))
+        .collect::<Result<Vec<_>, _>>()
     }
 
-    #[getter]
-    fn supported_devices<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
+    #[staticmethod]
+    fn supported_devices<'py>(py: Python<'py>) -> PyResult<&'py PyAny> {
         let class = py
             .import("voicevox_core")?
             .getattr("SupportedDevices")?
             .cast_as()?;
         let supported_devices_from_json = |x: &serde_json::Value| to_pydantic_dataclass(x, class);
         supported_devices_from_json(
-            &serde_json::from_str(&serde_json::to_string(self.inner.supported_devices()).unwrap())
-                .unwrap(),
+            &serde_json::from_str(
+                &serde_json::to_string(voicevox_core::VoicevoxCore::supported_devices()).unwrap(),
+            )
+            .unwrap(),
         )
     }
 
