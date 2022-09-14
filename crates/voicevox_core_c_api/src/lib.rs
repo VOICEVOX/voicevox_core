@@ -1,3 +1,5 @@
+/// cbindgen:ignore
+mod compatible_engine;
 mod helpers;
 use helpers::*;
 use libc::c_void;
@@ -18,7 +20,7 @@ type Internal = VoicevoxCore;
 
 static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(Internal::new_with_mutex);
 
-fn lock_internal() -> MutexGuard<'static, Internal> {
+pub(crate) fn lock_internal() -> MutexGuard<'static, Internal> {
     INTERNAL.lock().unwrap()
 }
 
