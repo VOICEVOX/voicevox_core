@@ -581,7 +581,7 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
     use VoicevoxResultCode::*;
     match result_code {
         VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR => {
-            "voicevox_load_openjtalk_dict() を初めに呼んでください\0"
+            "OpenJTalkの辞書読み込みに失敗しました\0"
         }
         VOICEVOX_RESULT_LOAD_MODEL_ERROR => {
             "modelデータ読み込み中にOnnxruntimeエラーが発生しました\0"
