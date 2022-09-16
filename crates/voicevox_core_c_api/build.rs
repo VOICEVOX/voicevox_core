@@ -8,7 +8,7 @@ fn main() {
     #[cfg(target_os = "macos")]
     {
         println!("cargo:rustc-link-arg=-Wl,-rpath,@loader_path/");
-        println!("cargo:rustc-link-arg=-Wl,-install_name,@rpath/libcore.dylib");
+        println!("cargo:rustc-link-arg=-Wl,-install_name,@rpath/libvoicevox_core.dylib");
     }
 }
 
@@ -19,7 +19,7 @@ fn generate_c_header() {
     use std::path::PathBuf;
 
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let output_file = target_dir().join("core.h").display().to_string();
+    let output_file = target_dir().join("voicevox_core.h").display().to_string();
     let config = Config {
         parse: ParseConfig {
             parse_deps: true,

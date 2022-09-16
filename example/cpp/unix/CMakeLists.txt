@@ -9,5 +9,5 @@ file(GLOB ONNXRUNTIME_SHARED_LIB ./libonnxruntime.so.* ./libonnxruntime.*.dylib)
 target_link_directories(simple_tts PRIVATE ./voicevox_core)
 
 
-file(GLOB CORE_LIB ./voicevox_core/libcore.so.* ./voicevox_core/libcore.*.dylib)
-target_link_libraries(simple_tts core)
+file(GLOB CORE_LIB ./voicevox_core/libvoicevox_core.so.* ./voicevox_core/libvoicevox_core.*.dylib)
+target_link_libraries(simple_tts voicevox_core)
