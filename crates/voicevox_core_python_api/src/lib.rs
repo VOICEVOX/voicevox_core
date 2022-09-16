@@ -71,18 +71,15 @@ impl VoicevoxCore {
         self.inner.is_gpu_mode()
     }
 
-    #[staticmethod]
-    fn metas<'py>(py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
+    fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
         let class = py.import("voicevox_core")?.getattr("Meta")?.cast_as()?;
         let meta_from_json = |x: &serde_json::Value| to_pydantic_dataclass(x, class);
 
-        serde_json::from_str::<Vec<_>>(
-            &serde_json::to_string(voicevox_core::VoicevoxCore::metas()).unwrap(),
-        )
-        .into_py_result()?
-        .into_iter()
-        .map(|meta| meta_from_json(&meta))
-        .collect::<Result<Vec<_>, _>>()
+        serde_json::from_str::<Vec<_>>(&serde_json::to_string(self.inner.metas()).unwrap())
+            .into_py_result()?
+            .into_iter()
+            .map(|meta| meta_from_json(&meta))
+            .collect::<Result<Vec<_>, _>>()
     }
 
     #[staticmethod]

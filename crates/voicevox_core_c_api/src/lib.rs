@@ -123,7 +123,7 @@ pub extern "C" fn voicevox_finalize() {
 }
 
 static METAS_JSON_CSTRING: Lazy<CString> =
-    Lazy::new(|| CString::new(serde_json::to_string(Internal::metas()).unwrap()).unwrap());
+    Lazy::new(|| CString::new(serde_json::to_string(lock_internal().metas()).unwrap()).unwrap());
 
 /// メタ情報をjsonで取得する
 /// @return メタ情報のjson文字列

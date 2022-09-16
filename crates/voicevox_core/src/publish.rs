@@ -99,7 +99,7 @@ impl VoicevoxCore {
         env!("CARGO_PKG_VERSION")
     }
 
-    pub fn metas() -> &'static [Meta] {
+    pub fn metas(&self) -> &'static [Meta] {
         &METAS
     }
 
