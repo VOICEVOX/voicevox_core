@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Final, List, Literal, Union
+from typing import List, Literal, Union
 
 import numpy as np
 from numpy.typing import NDArray
