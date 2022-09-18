@@ -1,0 +1,37 @@
+language = "C"
+
+# Options for wrapping the contents of the header:
+
+header = "/// @file"
+include_guard = "VOICEVOX_CORE_INCLUDE_GUARD"
+no_includes = true
+cpp_compat = true
+after_includes = """
+#ifdef __cplusplus
+#include <cstdint>
+#else // __cplusplus
+#include <stdbool.h>
+#include <stdint.h>
+#endif // __cplusplus"""
+
+# Code Style Options
+
+documentation_style = "doxy"
+
+# Codegen Options
+
+[fn]
+prefix = """
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+"""
+
+[enum]
+rename_variants = "ScreamingSnakeCase"
+
+# Options for how your Rust library should be parsed
+
+[parse]
+parse_deps = true
+include = ["voicevox_core"]
