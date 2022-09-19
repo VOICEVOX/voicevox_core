@@ -87,6 +87,12 @@ jobs:
         with:
           crate: set-cargo-version
           version: latest
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@v1
+        with:
+          tool: cargo-binstall
+      - name: Install cbindgen
+        run: cargo binstall cbindgen --version ^0.24 --no-confirm
       - name: set cargo version
         if: ${{ env.VERSION != 'DEBUG' }}
         shell: bash
@@ -96,7 +102,7 @@ jobs:
           done
       - name: generate voicevox_core.h
         shell: bash
-        run: cargo xtask generate-c-header -o ./voicevox_core.h
+        run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
       - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
         env:

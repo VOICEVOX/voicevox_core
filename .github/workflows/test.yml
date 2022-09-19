@@ -72,10 +72,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@v1
+        with:
+          tool: cargo-binstall
+      - name: Install cbindgen
+        run: cargo binstall cbindgen --version ^0.24 --no-confirm
       - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api
       - name: voicevox_core.hを生成
-        run: cargo xtask generate-c-header -o ./example/cpp/unix/voicevox_core/voicevox_core.h
+        run: cbindgen --crate voicevox_core_c_api -o ./example/cpp/unix/voicevox_core/voicevox_core.h
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
           mkdir -p example/cpp/unix/voicevox_core/
