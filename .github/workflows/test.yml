@@ -59,6 +59,24 @@ jobs:
         shell: bash
         run: cargo test --features ,${{ matrix.features }}
 
+  xtask-generate-c-header:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@v1
+        with:
+          tool: cargo-binstall
+      - name: Install cbindgen
+        run: cargo binstall cbindgen --version ^0.24 --no-confirm
+      - name: Generate voicevox_core_1.h
+        run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core_1.h
+      - name: Generate voicevox_core_2.h
+        run: cargo xtask generate-c-header -o ./voicevox_core_2.h
+      - name: Assert these header files are same
+        run: diff -u --color=always ./voicevox_core_{1,2}.h
+
   build-unix-cpp-example:
     strategy:
       fail-fast: false
