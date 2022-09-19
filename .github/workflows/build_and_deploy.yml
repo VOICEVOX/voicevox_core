@@ -31,42 +31,42 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            additional-features: ""
+            features: ""
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cpu
             use_cuda: false
           - os: windows-latest
-            additional-features: directml
+            features: directml
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-directml
             use_cuda: false
           - os: windows-latest
-            additional-features: ""
+            features: ""
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cuda
             use_cuda: true
           - os: windows-latest
-            additional-features: ""
+            features: ""
             target: i686-pc-windows-msvc
             artifact_name: windows-x86-cpu
             use_cuda: false
           - os: ubuntu-latest
-            additional-features: ""
+            features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-cpu
             use_cuda: false
           - os: ubuntu-latest
-            additional-features: ""
+            features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-gpu
             use_cuda: true
           - os: macos-latest
-            additional-features: ""
+            features: ""
             target: aarch64-apple-darwin
             artifact_name: osx-aarch64-cpu
             use_cuda: false
           - os: macos-latest
-            additional-features: ""
+            features: ""
             target: x86_64-apple-darwin
             artifact_name: osx-x64-cpu
             use_cuda: false
@@ -94,8 +94,11 @@ jobs:
           for cargo_toml in $( echo ./crates/voicevox_core_*/Cargo.toml ); do
             set-cargo-version $cargo_toml ${{ env.VERSION }}
           done
+      - name: generate voicevox_core.h
+        shell: bash
+        run: cargo xtask generate-c-header -o ./voicevox_core.h
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api --features generate-c-header,${{ matrix.additional-features }} --target ${{ matrix.target }} --release
+        run: cargo build -p voicevox_core_c_api --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_python_api
@@ -103,7 +106,7 @@ jobs:
         shell: bash
         run: |
           pip install -r ./crates/voicevox_core_python_api/requirements.txt
-          maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.additional-features }}, --target ${{ matrix.target }} --release
+          maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
           printf '::set-output name=whl::%s\n' "$(find ./target/wheels -type f)"
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
@@ -114,7 +117,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
-          cp -v target/voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
+          cp -v voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
           cp -v target/${{ matrix.target }}/release/*.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
           cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true

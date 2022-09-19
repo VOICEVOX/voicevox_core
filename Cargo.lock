@@ -2733,7 +2733,6 @@ name = "voicevox_core_c_api"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "cbindgen",
  "libc",
  "once_cell",
  "pretty_assertions",

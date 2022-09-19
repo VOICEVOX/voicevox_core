@@ -12,9 +12,7 @@ jobs:
         with:
           submodules: true
       - name: Generate C header file
-        run: cargo build -p voicevox_core_c_api --features generate-c-header
-      - name: Copy C header file
-        run: cp -v target/*.h ./docs/apis/c_api/doxygen/
+        run: cargo xtask generate-c-header -o ./docs/apis/c_api/doxygen/voicevox_core.h
       - name: mkdir public
         run: mkdir -p public/apis/c_api
       - name: Generate doxygen document

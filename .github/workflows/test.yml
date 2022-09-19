@@ -28,21 +28,21 @@ jobs:
       matrix:
         include:
           - os: windows-2019
-            additional-features: ""
+            features: ""
           - os: windows-2022
-            additional-features: ""
+            features: ""
           - os: windows-2019
-            additional-features: directml
+            features: directml
           - os: windows-2022
-            additional-features: directml
+            features: directml
           - os: macos-11
-            additional-features: ""
+            features: ""
           - os: macos-12
-            additional-features: ""
+            features: ""
           - os: ubuntu-20.04
-            additional-features: ""
+            features: ""
           - os: ubuntu-22.04
-            additional-features: ""
+            features: ""
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -54,10 +54,10 @@ jobs:
       - uses: Swatinem/rust-cache@v1
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
-          key: "v2-cargo-test-cache-${{ matrix.additional-features }}-${{ matrix.os }}"
+          key: "v2-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
       - name: Run cargo test
         shell: bash
-        run: cargo test --features generate-c-header,${{ matrix.additional-features }}
+        run: cargo test --features ,${{ matrix.features }}
 
   build-unix-cpp-example:
     strategy:
@@ -73,11 +73,12 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api --features generate-c-header
+        run: cargo build -p voicevox_core_c_api
+      - name: voicevox_core.hを生成
+        run: cargo xtask generate-c-header -o ./example/cpp/unix/voicevox_core/voicevox_core.h
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
           mkdir -p example/cpp/unix/voicevox_core/
-          cp -v target/voicevox_core.h example/cpp/unix/voicevox_core/
           cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/ || true
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* example/cpp/unix/voicevox_core/ || true
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/ || true
