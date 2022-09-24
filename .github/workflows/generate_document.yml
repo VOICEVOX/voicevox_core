@@ -12,11 +12,9 @@ jobs:
         with:
           submodules: true
       - name: Install cargo-binstall
-        uses: taiki-e/install-action@v1
-        with:
-          tool: cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
-        run: cargo binstall cbindgen --version ^0.24 --no-confirm
+        run: cargo binstall cbindgen@^0.24 --no-confirm
       - name: Generate C header file
         run: cbindgen --crate voicevox_core_c_api -o ./docs/apis/c_api/doxygen/voicevox_core.h
       - name: mkdir public
