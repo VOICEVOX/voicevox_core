@@ -1,7 +1,4 @@
-use std::{
-    io,
-    path::{Path, PathBuf},
-};
+use std::{io, path::PathBuf};
 
 use eyre::ensure;
 
@@ -19,7 +16,7 @@ pub(crate) struct ArgsGenerateCHeader {
 pub(crate) fn run(ArgsGenerateCHeader { verify, output }: ArgsGenerateCHeader) -> eyre::Result<()> {
     let bindings = cbindgen::generate(CRATE_DIR)?;
 
-    if let Some(output) = output.filter(|output| output != Path::new("-")) {
+    if let Some(output) = output {
         let changed = bindings.write_to_file(&output);
         ensure!(
             !(verify && changed),
