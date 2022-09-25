@@ -2,6 +2,8 @@
 
 ## **現在のmainブランチは工事中なので正しく動かないことがあります。[バージョン0.13.0](https://github.com/VOICEVOX/voicevox_core/tree/0.13.0)をご利用ください。**
 
+[![dependency status](https://deps.rs/repo/github/VOICEVOX/voicevox_core/status.svg)](https://deps.rs/repo/github/VOICEVOX/voicevox_core)
+
 [VOICEVOX](https://voicevox.hiroshiba.jp/) の音声合成コア。  
 [Releases](https://github.com/VOICEVOX/voicevox_core/releases) にビルド済みのコアライブラリ（.so/.dll/.dylib）があります。
 
