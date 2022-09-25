@@ -350,6 +350,7 @@ pub struct VoicevoxSynthesisOptions {
 
 /// デフォルトの `voicevox_synthesis` のオプションを生成する
 /// @return デフォルト値が設定された `voicevox_synthesis` のオプション
+#[no_mangle]
 pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesisOptions {
     VoicevoxSynthesisOptions::default()
 }
@@ -379,14 +380,18 @@ pub unsafe extern "C" fn voicevox_synthesis(
         Ok(audio_query_json) => audio_query_json,
         Err(result_code) => return result_code,
     };
-    let audio_query = &if let Ok(audio_query) = serde_json::from_str(audio_query_json) {
+    let (audio_query, result_code) = convert_other_result(
+        serde_json::from_str(audio_query_json),
+        VoicevoxResultCode::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
+    );
+    let audio_query = if let Some(audio_query) = audio_query {
         audio_query
     } else {
-        return VoicevoxResultCode::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR;
+        return result_code;
     };
 
     let (wav, result_code) =
-        convert_result(lock_internal().synthesis(audio_query, speaker_id, options.into()));
+        convert_result(lock_internal().synthesis(&audio_query, speaker_id, options.into()));
     let wav = &if let Some(wav) = wav {
         wav
     } else {
@@ -433,13 +438,14 @@ pub unsafe extern "C" fn voicevox_tts(
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     let (output_opt, result_code) = {
-        if let Ok(text) = CStr::from_ptr(text).to_str() {
+        let (text, result_code) = convert_other_result(
+            CStr::from_ptr(text).to_str(),
+            VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
+        );
+        if let Some(text) = text {
             convert_result(lock_internal().tts(text, speaker_id, options.into()))
         } else {
-            (
-                None,
-                VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
-            )
+            (None, result_code)
         }
     };
     if let Some(output) = output_opt {
