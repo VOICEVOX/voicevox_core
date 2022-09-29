@@ -1,4 +1,20 @@
+use std::fmt::{Debug, Display};
+
 use super::*;
+
+pub(crate) fn convert_other_result<T, E: Debug + Display>(
+    result: std::result::Result<T, E>,
+    return_result_code_if_error: VoicevoxResultCode,
+) -> (Option<T>, VoicevoxResultCode) {
+    match result {
+        Ok(target) => (Some(target), VoicevoxResultCode::VOICEVOX_RESULT_OK),
+        Err(err) => {
+            eprintln!("{}", err);
+            dbg!(&err);
+            (None, return_result_code_if_error)
+        }
+    }
+}
 
 pub(crate) fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
     match result {
@@ -131,8 +147,11 @@ unsafe fn write_data_to_ptr<T>(
 }
 
 pub(crate) fn ensure_utf8(s: &CStr) -> std::result::Result<&str, VoicevoxResultCode> {
-    s.to_str()
-        .map_err(|_| VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR)
+    s.to_str().map_err(|err| {
+        eprintln!("{}", err);
+        dbg!(&err);
+        VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR
+    })
 }
 
 impl From<voicevox_core::AudioQueryOptions> for VoicevoxAudioQueryOptions {
