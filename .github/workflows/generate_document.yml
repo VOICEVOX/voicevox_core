@@ -14,7 +14,7 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
-        run: cargo binstall cbindgen@^0.24 --no-confirm
+        uses: ./.github/actions/cargo-binstall-cbindgen
       - name: Generate C header file
         run: cbindgen --crate voicevox_core_c_api -o ./docs/apis/c_api/doxygen/voicevox_core.h
       - name: mkdir public

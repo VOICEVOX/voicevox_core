@@ -1,0 +1,24 @@
+inputs:
+  version:
+    required: true
+    default: ^0.24
+
+runs:
+  using: composite
+  steps:
+    - name: Install cbindgen
+      shell: bash
+      run: |
+        case "$OS" in
+          Windows)
+            cargo install cbindgen --version ${{ inputs.version }};;
+          macOS | Linux )
+            cargo binstall \
+              cbindgen@${{ inputs.version }} \
+              --pkg-url 'https://github.com/alsuren/cargo-quickinstall/releases/download/{ name }-{ version }-{ target }/{ name }-{ version }-{ target }.tar.gz' \
+              --pkg-fmt tgz \
+              --bin-dir '{ bin }{ binary-ext }' \
+              --no-confirm \
+              --log-level debug;;
+        esac
+
