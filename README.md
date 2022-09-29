@@ -110,7 +110,14 @@ sudo apt install libgomp1
 model フォルダにある onnx モデルはダミーのため、ノイズの混じった音声が出力されます
 
 ```bash
-cargo build --release
+# DLLをビルド
+cargo build --release -p voicevox_core_c_api
+```
+
+```bash
+# DLL用のヘッダファイルvoicevox_core.hを生成
+# cbindgenが手元にインストールされているのならそちらでも可
+cargo xtask generate-c-header 
 ```
 
 ## コアライブラリのテスト

@@ -8,7 +8,6 @@ name = "voicevox_core"
 crate-type = ["cdylib"]
 
 [features]
-generate-c-header = ["dep:cbindgen"]
 directml = ["voicevox_core/directml"]
 
 [dependencies]
@@ -21,6 +20,3 @@ serde_json = "1.0.83"
 pretty_assertions = "1.2.1"
 anyhow = "1.0.61"
 rstest = "0.15.0"
-
-[build-dependencies]
-cbindgen = { version = "0.24.3", optional = true }

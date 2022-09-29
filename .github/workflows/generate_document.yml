@@ -11,10 +11,12 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+      - name: Install cbindgen
+        run: cargo binstall cbindgen@^0.24 --no-confirm
       - name: Generate C header file
-        run: cargo build -p voicevox_core_c_api --features generate-c-header
-      - name: Copy C header file
-        run: cp -v target/*.h ./docs/apis/c_api/doxygen/
+        run: cbindgen --crate voicevox_core_c_api -o ./docs/apis/c_api/doxygen/voicevox_core.h
       - name: mkdir public
         run: mkdir -p public/apis/c_api
       - name: Generate doxygen document
