@@ -67,7 +67,7 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
-        run: cargo binstall cbindgen@^0.24 --no-confirm
+        uses: ./.github/actions/cargo-binstall-cbindgen
       - name: Generate voicevox_core_1.h
         run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core_1.h
       - name: Generate voicevox_core_2.h
@@ -91,7 +91,7 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
-        run: cargo binstall cbindgen@^0.24 --no-confirm
+        uses: ./.github/actions/cargo-binstall-cbindgen
       - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api
       - name: voicevox_core.hを生成
