@@ -10,8 +10,8 @@ use std::path::PathBuf;
 use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
 use voicevox_core::AudioQueryModel;
+use voicevox_core::Result;
 use voicevox_core::VoicevoxCore;
-use voicevox_core::{Error, Result};
 
 #[cfg(test)]
 use rstest::*;
@@ -72,14 +72,11 @@ pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitiali
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
 pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> VoicevoxResultCode {
-    match unsafe { options.try_into_options() } {
-        Ok(options) => {
-            let result = lock_internal().initialize(options);
-            let (_, result_code) = convert_result(result);
-            result_code
-        }
-        Err(result_code) => result_code,
-    }
+    fallible_c_api((|| {
+        let options = unsafe { options.try_into_options() }?;
+        lock_internal().initialize(options)?;
+        Ok(())
+    })())
 }
 
 static VOICEVOX_VERSION: once_cell::sync::Lazy<CString> =
@@ -97,9 +94,7 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
 pub extern "C" fn voicevox_load_model(speaker_id: u32) -> VoicevoxResultCode {
-    let result = lock_internal().load_model(speaker_id);
-    let (_, result_code) = convert_result(result);
-    result_code
+    fallible_c_api(lock_internal().load_model(speaker_id).map_err(Into::into))
 }
 
 /// ハードウェアアクセラレーションがGPUモードか判定する
@@ -156,22 +151,18 @@ pub unsafe extern "C" fn voicevox_predict_duration(
     output_predict_duration_data_length: *mut usize,
     output_predict_duration_data: *mut *mut f32,
 ) -> VoicevoxResultCode {
-    let result = lock_internal().predict_duration(
-        std::slice::from_raw_parts_mut(phoneme_vector, length),
-        speaker_id,
-    );
-
-    let (output_vec, result_code) = convert_result(result);
-    if result_code == VoicevoxResultCode::VOICEVOX_RESULT_OK {
-        if let Some(output_vec) = output_vec {
-            write_predict_duration_to_ptr(
-                output_predict_duration_data,
-                output_predict_duration_data_length,
-                &output_vec,
-            );
-        }
-    }
-    result_code
+    fallible_c_api((|| {
+        let output_vec = lock_internal().predict_duration(
+            std::slice::from_raw_parts_mut(phoneme_vector, length),
+            speaker_id,
+        )?;
+        write_predict_duration_to_ptr(
+            output_predict_duration_data,
+            output_predict_duration_data_length,
+            &output_vec,
+        );
+        Ok(())
+    })())
 }
 
 /// ::voicevox_predict_durationで出力されたデータを解放する
@@ -219,25 +210,24 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
     output_predict_intonation_data_length: *mut usize,
     output_predict_intonation_data: *mut *mut f32,
 ) -> VoicevoxResultCode {
-    let result = lock_internal().predict_intonation(
-        length,
-        std::slice::from_raw_parts(vowel_phoneme_vector, length),
-        std::slice::from_raw_parts(consonant_phoneme_vector, length),
-        std::slice::from_raw_parts(start_accent_vector, length),
-        std::slice::from_raw_parts(end_accent_vector, length),
-        std::slice::from_raw_parts(start_accent_phrase_vector, length),
-        std::slice::from_raw_parts(end_accent_phrase_vector, length),
-        speaker_id,
-    );
-    let (output_vec, result_code) = convert_result(result);
-    if let Some(output_vec) = output_vec {
+    fallible_c_api((|| {
+        let output_vec = lock_internal().predict_intonation(
+            length,
+            std::slice::from_raw_parts(vowel_phoneme_vector, length),
+            std::slice::from_raw_parts(consonant_phoneme_vector, length),
+            std::slice::from_raw_parts(start_accent_vector, length),
+            std::slice::from_raw_parts(end_accent_vector, length),
+            std::slice::from_raw_parts(start_accent_phrase_vector, length),
+            std::slice::from_raw_parts(end_accent_phrase_vector, length),
+            speaker_id,
+        )?;
         write_predict_intonation_to_ptr(
             output_predict_intonation_data,
             output_predict_intonation_data_length,
             &output_vec,
         );
-    }
-    result_code
+        Ok(())
+    })())
 }
 
 /// ::voicevox_predict_intonationで出力されたデータを解放する
@@ -275,18 +265,17 @@ pub unsafe extern "C" fn voicevox_decode(
     output_decode_data_length: *mut usize,
     output_decode_data: *mut *mut f32,
 ) -> VoicevoxResultCode {
-    let result = lock_internal().decode(
-        length,
-        phoneme_size,
-        std::slice::from_raw_parts(f0, length),
-        std::slice::from_raw_parts(phoneme_vector, phoneme_size * length),
-        speaker_id,
-    );
-    let (output_vec, result_code) = convert_result(result);
-    if let Some(output_vec) = output_vec {
+    fallible_c_api((|| {
+        let output_vec = lock_internal().decode(
+            length,
+            phoneme_size,
+            std::slice::from_raw_parts(f0, length),
+            std::slice::from_raw_parts(phoneme_vector, phoneme_size * length),
+            speaker_id,
+        )?;
         write_decode_to_ptr(output_decode_data, output_decode_data_length, &output_vec);
-    }
-    result_code
+        Ok(())
+    })())
 }
 
 /// ::voicevox_decodeで出力されたデータを解放する
@@ -330,15 +319,12 @@ pub unsafe extern "C" fn voicevox_audio_query(
     options: VoicevoxAudioQueryOptions,
     output_audio_query_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
-    let text = CStr::from_ptr(text);
-
-    let audio_query = &match create_audio_query(text, speaker_id, Internal::audio_query, options) {
-        Ok(audio_query) => audio_query,
-        Err(result_code) => return result_code,
-    };
-
-    write_json_to_ptr(output_audio_query_json, audio_query);
-    VoicevoxResultCode::VOICEVOX_RESULT_OK
+    fallible_c_api((|| {
+        let text = CStr::from_ptr(text);
+        let audio_query = &create_audio_query(text, speaker_id, Internal::audio_query, options)?;
+        write_json_to_ptr(output_audio_query_json, audio_query);
+        Ok(())
+    })())
 }
 
 /// `voicevox_synthesis` のオプション
@@ -374,32 +360,16 @@ pub unsafe extern "C" fn voicevox_synthesis(
     output_wav_length: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    let audio_query_json = CStr::from_ptr(audio_query_json);
-
-    let audio_query_json = match ensure_utf8(audio_query_json) {
-        Ok(audio_query_json) => audio_query_json,
-        Err(result_code) => return result_code,
-    };
-    let (audio_query, result_code) = convert_other_result(
-        serde_json::from_str(audio_query_json),
-        VoicevoxResultCode::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
-    );
-    let audio_query = if let Some(audio_query) = audio_query {
-        audio_query
-    } else {
-        return result_code;
-    };
-
-    let (wav, result_code) =
-        convert_result(lock_internal().synthesis(&audio_query, speaker_id, options.into()));
-    let wav = &if let Some(wav) = wav {
-        wav
-    } else {
-        return result_code;
-    };
-
-    write_wav_to_ptr(output_wav, output_wav_length, wav);
-    VoicevoxResultCode::VOICEVOX_RESULT_OK
+    fallible_c_api((|| {
+        let audio_query_json = CStr::from_ptr(audio_query_json)
+            .to_str()
+            .map_err(|_| CApiError::InvalidUtf8Input)?;
+        let audio_query =
+            &serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
+        let wav = &lock_internal().synthesis(audio_query, speaker_id, options.into())?;
+        write_wav_to_ptr(output_wav, output_wav_length, wav);
+        Ok(())
+    })())
 }
 
 /// テキスト音声合成オプション
@@ -437,21 +407,12 @@ pub unsafe extern "C" fn voicevox_tts(
     output_wav_length: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    let (output_opt, result_code) = {
-        let (text, result_code) = convert_other_result(
-            CStr::from_ptr(text).to_str(),
-            VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
-        );
-        if let Some(text) = text {
-            convert_result(lock_internal().tts(text, speaker_id, options.into()))
-        } else {
-            (None, result_code)
-        }
-    };
-    if let Some(output) = output_opt {
+    fallible_c_api((|| {
+        let text = ensure_utf8(CStr::from_ptr(text))?;
+        let output = lock_internal().tts(text, speaker_id, options.into())?;
         write_wav_to_ptr(output_wav, output_wav_length, output.as_slice());
-    }
-    result_code
+        Ok(())
+    })())
 }
 
 /// jsonフォーマットされた AudioQuery データのメモリを解放する
@@ -489,6 +450,7 @@ mod tests {
     use super::*;
     use anyhow::anyhow;
     use pretty_assertions::assert_eq;
+    use voicevox_core::Error;
 
     #[rstest]
     #[case(Ok(()), VoicevoxResultCode::VOICEVOX_RESULT_OK)]
@@ -504,8 +466,8 @@ mod tests {
         Err(Error::GetSupportedDevices(voicevox_core::SourceError::new(anyhow!("some get supported devices error")))),
         VoicevoxResultCode::VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR
     )]
-    fn convert_result_works(#[case] result: Result<()>, #[case] expected: VoicevoxResultCode) {
-        let (_, actual) = convert_result(result);
+    fn fallible_c_api_works(#[case] result: Result<()>, #[case] expected: VoicevoxResultCode) {
+        let actual = fallible_c_api(result.map_err(Into::into));
         assert_eq!(expected, actual);
     }
 }
