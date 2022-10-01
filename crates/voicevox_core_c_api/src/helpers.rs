@@ -5,35 +5,20 @@ use thiserror::Error;
 use super::*;
 
 pub(crate) fn fallible_c_api(result: CApiResult<()>) -> VoicevoxResultCode {
-    match result {
+    return match result {
         Ok(()) => VoicevoxResultCode::VOICEVOX_RESULT_OK,
         Err(err) => {
-            let result_code = err.result_code();
             eprintln!("{err}");
-            dbg!(err);
-            result_code
+            dbg!(&err);
+            result_code(&err)
         }
-    }
-}
+    };
 
-type CApiResult<T> = std::result::Result<T, CApiError>;
-
-#[derive(Error, Debug)]
-pub(crate) enum CApiError {
-    #[error("{0}")]
-    RustApi(#[from] voicevox_core::Error),
-    #[error("UTF-8として不正な入力です")]
-    InvalidUtf8Input,
-    #[error("無効なAudioQueryです: {0}")]
-    InvalidAudioQuery(serde_json::Error),
-}
-
-impl CApiError {
-    fn result_code(&self) -> VoicevoxResultCode {
+    fn result_code(err: &CApiError) -> VoicevoxResultCode {
         use voicevox_core::{result_code::VoicevoxResultCode::*, Error::*};
         use CApiError::*;
 
-        match self {
+        match err {
             RustApi(NotLoadedOpenjtalkDict) => VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
             RustApi(GpuSupport) => VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
             RustApi(LoadModel(_)) => VOICEVOX_RESULT_LOAD_MODEL_ERROR,
@@ -49,6 +34,18 @@ impl CApiError {
             InvalidAudioQuery(_) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
         }
     }
+}
+
+type CApiResult<T> = std::result::Result<T, CApiError>;
+
+#[derive(Error, Debug)]
+pub(crate) enum CApiError {
+    #[error("{0}")]
+    RustApi(#[from] voicevox_core::Error),
+    #[error("UTF-8として不正な入力です")]
+    InvalidUtf8Input,
+    #[error("無効なAudioQueryです: {0}")]
+    InvalidAudioQuery(serde_json::Error),
 }
 
 pub(crate) fn create_audio_query(
