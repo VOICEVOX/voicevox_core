@@ -1,62 +1,55 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
+
+use thiserror::Error;
 
 use super::*;
 
-pub(crate) fn convert_other_result<T, E: Debug + Display>(
-    result: std::result::Result<T, E>,
-    return_result_code_if_error: VoicevoxResultCode,
-) -> (Option<T>, VoicevoxResultCode) {
-    match result {
-        Ok(target) => (Some(target), VoicevoxResultCode::VOICEVOX_RESULT_OK),
-        Err(err) => {
-            eprintln!("{}", err);
-            dbg!(&err);
-            (None, return_result_code_if_error)
+pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxResultCode {
+    if let Err(err) = &result {
+        display_error(err);
+    }
+    return into_result_code(result);
+
+    fn display_error(err: &CApiError) {
+        eprintln!("{err}");
+        dbg!(err);
+    }
+
+    fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
+        use voicevox_core::{result_code::VoicevoxResultCode::*, Error::*};
+        use CApiError::*;
+
+        match result {
+            Ok(()) => VOICEVOX_RESULT_OK,
+            Err(RustApi(NotLoadedOpenjtalkDict)) => VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
+            Err(RustApi(GpuSupport)) => VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
+            Err(RustApi(LoadModel(_))) => VOICEVOX_RESULT_LOAD_MODEL_ERROR,
+            Err(RustApi(LoadMetas(_))) => VOICEVOX_RESULT_LOAD_METAS_ERROR,
+            Err(RustApi(GetSupportedDevices(_))) => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
+            Err(RustApi(UninitializedStatus)) => VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR,
+            Err(RustApi(InvalidSpeakerId { .. })) => VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR,
+            Err(RustApi(InvalidModelIndex { .. })) => VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR,
+            Err(RustApi(InferenceFailed)) => VOICEVOX_RESULT_INFERENCE_ERROR,
+            Err(RustApi(ExtractFullContextLabel(_))) => {
+                VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR
+            }
+            Err(RustApi(ParseKana(_))) => VOICEVOX_RESULT_PARSE_KANA_ERROR,
+            Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
+            Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
         }
     }
 }
 
-pub(crate) fn convert_result<T>(result: Result<T>) -> (Option<T>, VoicevoxResultCode) {
-    match result {
-        Ok(target) => (Some(target), VoicevoxResultCode::VOICEVOX_RESULT_OK),
-        Err(err) => {
-            eprintln!("{}", err);
-            dbg!(&err);
-            match err {
-                Error::NotLoadedOpenjtalkDict => (
-                    None,
-                    VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
-                ),
-                Error::GpuSupport => (None, VoicevoxResultCode::VOICEVOX_RESULT_GPU_SUPPORT_ERROR),
-                Error::LoadModel(_) => (None, VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ERROR),
-                Error::LoadMetas(_) => (None, VoicevoxResultCode::VOICEVOX_RESULT_LOAD_METAS_ERROR),
-                Error::GetSupportedDevices(_) => (
-                    None,
-                    VoicevoxResultCode::VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
-                ),
-                Error::UninitializedStatus => (
-                    None,
-                    VoicevoxResultCode::VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR,
-                ),
-                Error::InvalidSpeakerId { .. } => (
-                    None,
-                    VoicevoxResultCode::VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR,
-                ),
-                Error::InvalidModelIndex { .. } => (
-                    None,
-                    VoicevoxResultCode::VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR,
-                ),
-                Error::InferenceFailed => {
-                    (None, VoicevoxResultCode::VOICEVOX_RESULT_INFERENCE_ERROR)
-                }
-                Error::ExtractFullContextLabel(_) => (
-                    None,
-                    VoicevoxResultCode::VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
-                ),
-                Error::ParseKana(_) => (None, VoicevoxResultCode::VOICEVOX_RESULT_PARSE_KANA_ERROR),
-            }
-        }
-    }
+type CApiResult<T> = std::result::Result<T, CApiError>;
+
+#[derive(Error, Debug)]
+pub(crate) enum CApiError {
+    #[error("{0}")]
+    RustApi(#[from] voicevox_core::Error),
+    #[error("UTF-8として不正な入力です")]
+    InvalidUtf8Input,
+    #[error("無効なAudioQueryです: {0}")]
+    InvalidAudioQuery(serde_json::Error),
 }
 
 pub(crate) fn create_audio_query(
@@ -69,16 +62,15 @@ pub(crate) fn create_audio_query(
         voicevox_core::AudioQueryOptions,
     ) -> Result<AudioQueryModel>,
     options: VoicevoxAudioQueryOptions,
-) -> std::result::Result<CString, VoicevoxResultCode> {
+) -> CApiResult<CString> {
     let japanese_or_kana = ensure_utf8(japanese_or_kana)?;
 
-    let (audio_query, result_code) = convert_result(method(
+    let audio_query = method(
         &mut lock_internal(),
         japanese_or_kana,
         speaker_id,
         options.into(),
-    ));
-    let audio_query = audio_query.ok_or(result_code)?;
+    )?;
     Ok(CString::new(audio_query_model_to_json(&audio_query)).expect("should not contain '\\0'"))
 }
 
@@ -146,12 +138,8 @@ unsafe fn write_data_to_ptr<T>(
     output_data_ptr.write(data_heap as *mut T);
 }
 
-pub(crate) fn ensure_utf8(s: &CStr) -> std::result::Result<&str, VoicevoxResultCode> {
-    s.to_str().map_err(|err| {
-        eprintln!("{}", err);
-        dbg!(&err);
-        VoicevoxResultCode::VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR
-    })
+pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
+    s.to_str().map_err(|_| CApiError::InvalidUtf8Input)
 }
 
 impl From<voicevox_core::AudioQueryOptions> for VoicevoxAudioQueryOptions {
@@ -208,9 +196,7 @@ impl Default for VoicevoxInitializeOptions {
 }
 
 impl VoicevoxInitializeOptions {
-    pub(crate) unsafe fn try_into_options(
-        self,
-    ) -> std::result::Result<voicevox_core::InitializeOptions, VoicevoxResultCode> {
+    pub(crate) unsafe fn try_into_options(self) -> CApiResult<voicevox_core::InitializeOptions> {
         let open_jtalk_dict_dir = ensure_utf8(CStr::from_ptr(self.open_jtalk_dict_dir))?;
         Ok(voicevox_core::InitializeOptions {
             acceleration_mode: self.acceleration_mode.into(),
