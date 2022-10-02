@@ -466,7 +466,7 @@ mod tests {
         Err(Error::GetSupportedDevices(voicevox_core::SourceError::new(anyhow!("some get supported devices error")))),
         VoicevoxResultCode::VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR
     )]
-    fn fallible_c_api_works(#[case] result: Result<()>, #[case] expected: VoicevoxResultCode) {
+    fn into_result_code_with_error_works(#[case] result: Result<()>, #[case] expected: VoicevoxResultCode) {
         let actual = into_result_code_with_error(result.map_err(Into::into));
         assert_eq!(expected, actual);
     }
