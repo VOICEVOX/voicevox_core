@@ -5,33 +5,37 @@ use thiserror::Error;
 use super::*;
 
 pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxResultCode {
-    return match result {
-        Ok(()) => VoicevoxResultCode::VOICEVOX_RESULT_OK,
-        Err(err) => {
-            eprintln!("{err}");
-            dbg!(&err);
-            result_code(&err)
-        }
-    };
+    if let Err(err) = &result {
+        display_error(err);
+    }
+    return into_result_code(result);
 
-    fn result_code(err: &CApiError) -> VoicevoxResultCode {
+    fn display_error(err: &CApiError) {
+        eprintln!("{err}");
+        dbg!(err);
+    }
+
+    fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
         use voicevox_core::{result_code::VoicevoxResultCode::*, Error::*};
         use CApiError::*;
 
-        match err {
-            RustApi(NotLoadedOpenjtalkDict) => VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
-            RustApi(GpuSupport) => VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
-            RustApi(LoadModel(_)) => VOICEVOX_RESULT_LOAD_MODEL_ERROR,
-            RustApi(LoadMetas(_)) => VOICEVOX_RESULT_LOAD_METAS_ERROR,
-            RustApi(GetSupportedDevices(_)) => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
-            RustApi(UninitializedStatus) => VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR,
-            RustApi(InvalidSpeakerId { .. }) => VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR,
-            RustApi(InvalidModelIndex { .. }) => VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR,
-            RustApi(InferenceFailed) => VOICEVOX_RESULT_INFERENCE_ERROR,
-            RustApi(ExtractFullContextLabel(_)) => VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
-            RustApi(ParseKana(_)) => VOICEVOX_RESULT_PARSE_KANA_ERROR,
-            InvalidUtf8Input => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
-            InvalidAudioQuery(_) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
+        match result {
+            Ok(()) => VOICEVOX_RESULT_OK,
+            Err(RustApi(NotLoadedOpenjtalkDict)) => VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
+            Err(RustApi(GpuSupport)) => VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
+            Err(RustApi(LoadModel(_))) => VOICEVOX_RESULT_LOAD_MODEL_ERROR,
+            Err(RustApi(LoadMetas(_))) => VOICEVOX_RESULT_LOAD_METAS_ERROR,
+            Err(RustApi(GetSupportedDevices(_))) => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
+            Err(RustApi(UninitializedStatus)) => VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR,
+            Err(RustApi(InvalidSpeakerId { .. })) => VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR,
+            Err(RustApi(InvalidModelIndex { .. })) => VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR,
+            Err(RustApi(InferenceFailed)) => VOICEVOX_RESULT_INFERENCE_ERROR,
+            Err(RustApi(ExtractFullContextLabel(_))) => {
+                VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR
+            }
+            Err(RustApi(ParseKana(_))) => VOICEVOX_RESULT_PARSE_KANA_ERROR,
+            Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
+            Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
         }
     }
 }
