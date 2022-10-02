@@ -72,7 +72,7 @@ pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitiali
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
 pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> VoicevoxResultCode {
-    fallible_c_api((|| {
+    into_result_code_with_error((|| {
         let options = unsafe { options.try_into_options() }?;
         lock_internal().initialize(options)?;
         Ok(())
@@ -94,7 +94,7 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
 pub extern "C" fn voicevox_load_model(speaker_id: u32) -> VoicevoxResultCode {
-    fallible_c_api(lock_internal().load_model(speaker_id).map_err(Into::into))
+    into_result_code_with_error(lock_internal().load_model(speaker_id).map_err(Into::into))
 }
 
 /// ハードウェアアクセラレーションがGPUモードか判定する
@@ -151,7 +151,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
     output_predict_duration_data_length: *mut usize,
     output_predict_duration_data: *mut *mut f32,
 ) -> VoicevoxResultCode {
-    fallible_c_api((|| {
+    into_result_code_with_error((|| {
         let output_vec = lock_internal().predict_duration(
             std::slice::from_raw_parts_mut(phoneme_vector, length),
             speaker_id,
@@ -210,7 +210,7 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
     output_predict_intonation_data_length: *mut usize,
     output_predict_intonation_data: *mut *mut f32,
 ) -> VoicevoxResultCode {
-    fallible_c_api((|| {
+    into_result_code_with_error((|| {
         let output_vec = lock_internal().predict_intonation(
             length,
             std::slice::from_raw_parts(vowel_phoneme_vector, length),
@@ -265,7 +265,7 @@ pub unsafe extern "C" fn voicevox_decode(
     output_decode_data_length: *mut usize,
     output_decode_data: *mut *mut f32,
 ) -> VoicevoxResultCode {
-    fallible_c_api((|| {
+    into_result_code_with_error((|| {
         let output_vec = lock_internal().decode(
             length,
             phoneme_size,
@@ -319,7 +319,7 @@ pub unsafe extern "C" fn voicevox_audio_query(
     options: VoicevoxAudioQueryOptions,
     output_audio_query_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
-    fallible_c_api((|| {
+    into_result_code_with_error((|| {
         let text = CStr::from_ptr(text);
         let audio_query = &create_audio_query(text, speaker_id, Internal::audio_query, options)?;
         write_json_to_ptr(output_audio_query_json, audio_query);
@@ -360,7 +360,7 @@ pub unsafe extern "C" fn voicevox_synthesis(
     output_wav_length: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    fallible_c_api((|| {
+    into_result_code_with_error((|| {
         let audio_query_json = CStr::from_ptr(audio_query_json)
             .to_str()
             .map_err(|_| CApiError::InvalidUtf8Input)?;
@@ -407,7 +407,7 @@ pub unsafe extern "C" fn voicevox_tts(
     output_wav_length: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
-    fallible_c_api((|| {
+    into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let output = lock_internal().tts(text, speaker_id, options.into())?;
         write_wav_to_ptr(output_wav, output_wav_length, output.as_slice());
@@ -467,7 +467,7 @@ mod tests {
         VoicevoxResultCode::VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR
     )]
     fn fallible_c_api_works(#[case] result: Result<()>, #[case] expected: VoicevoxResultCode) {
-        let actual = fallible_c_api(result.map_err(Into::into));
+        let actual = into_result_code_with_error(result.map_err(Into::into));
         assert_eq!(expected, actual);
     }
 }

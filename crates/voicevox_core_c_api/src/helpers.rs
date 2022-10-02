@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use super::*;
 
-pub(crate) fn fallible_c_api(result: CApiResult<()>) -> VoicevoxResultCode {
+pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxResultCode {
     return match result {
         Ok(()) => VoicevoxResultCode::VOICEVOX_RESULT_OK,
         Err(err) => {
