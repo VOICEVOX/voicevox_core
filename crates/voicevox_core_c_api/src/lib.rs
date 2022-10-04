@@ -459,11 +459,11 @@ mod tests {
         VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR
     )]
     #[case(
-        Err(Error::LoadModel(voicevox_core::SourceError::new(anyhow!("some load model error")))),
+        Err(Error::LoadModel(anyhow!("some load model error"))),
         VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ERROR
     )]
     #[case(
-        Err(Error::GetSupportedDevices(voicevox_core::SourceError::new(anyhow!("some get supported devices error")))),
+        Err(Error::GetSupportedDevices(anyhow!("some get supported devices error"))),
         VoicevoxResultCode::VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR
     )]
     fn into_result_code_with_error_works(
