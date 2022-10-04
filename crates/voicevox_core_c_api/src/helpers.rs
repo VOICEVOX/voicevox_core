@@ -11,8 +11,8 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
     return into_result_code(result);
 
     fn display_error(err: &CApiError) {
-        eprintln!("{err}");
-        dbg!(err);
+        eprintln!("Error(Display): {err}");
+        eprintln!("Error(Debug): {err:#?}");
     }
 
     fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
