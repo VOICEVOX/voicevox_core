@@ -174,7 +174,7 @@ impl Status {
         &self,
         model_bytes: B,
         session_options: &SessionOptions,
-    ) -> std::result::Result<Session<'static>, SourceError> {
+    ) -> anyhow::Result<Session<'static>> {
         let session_builder = ENVIRONMENT
             .new_session_builder()?
             .with_optimization_level(GraphOptimizationLevel::Basic)?

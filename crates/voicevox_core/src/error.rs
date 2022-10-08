@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use crate::engine::{FullContextLabelError, KanaParseError};
 
 use super::*;
@@ -12,7 +10,7 @@ use thiserror::Error;
  * internal.rsにある変換関数に変換処理を加えること
  */
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum Error {
     /*
      * エラーメッセージのベースとなる文字列は必ずbase_error_message関数を使用してVoicevoxResultCodeのエラー出力の内容と対応するようにすること
@@ -27,16 +25,16 @@ pub enum Error {
     GpuSupport,
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_MODEL_ERROR))]
-    LoadModel(#[source] SourceError),
+    LoadModel(#[source] anyhow::Error),
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_METAS_ERROR))]
-    LoadMetas(#[source] SourceError),
+    LoadMetas(#[source] anyhow::Error),
 
     #[error(
         "{},{0}",
         base_error_message(VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR)
     )]
-    GetSupportedDevices(#[source] SourceError),
+    GetSupportedDevices(#[source] anyhow::Error),
 
     #[error("{}", base_error_message(VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR))]
     UninitializedStatus,
@@ -63,47 +61,42 @@ pub enum Error {
     ParseKana(#[from] KanaParseError),
 }
 
+impl PartialEq for Error {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::NotLoadedOpenjtalkDict, Self::NotLoadedOpenjtalkDict)
+            | (Self::GpuSupport, Self::GpuSupport)
+            | (Self::UninitializedStatus, Self::UninitializedStatus)
+            | (Self::InferenceFailed, Self::InferenceFailed) => true,
+            (Self::LoadModel(e1), Self::LoadModel(e2))
+            | (Self::LoadMetas(e1), Self::LoadMetas(e2))
+            | (Self::GetSupportedDevices(e1), Self::GetSupportedDevices(e2)) => {
+                e1.to_string() == e2.to_string()
+            }
+            (
+                Self::InvalidSpeakerId {
+                    speaker_id: speaker_id1,
+                },
+                Self::InvalidSpeakerId {
+                    speaker_id: speaker_id2,
+                },
+            ) => speaker_id1 == speaker_id2,
+            (
+                Self::InvalidModelIndex {
+                    model_index: model_index1,
+                },
+                Self::InvalidModelIndex {
+                    model_index: model_index2,
+                },
+            ) => model_index1 == model_index2,
+            (Self::ExtractFullContextLabel(e1), Self::ExtractFullContextLabel(e2)) => e1 == e2,
+            (Self::ParseKana(e1), Self::ParseKana(e2)) => e1 == e2,
+            _ => false,
+        }
+    }
+}
+
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
     let c_message: &'static str = crate::error_result_to_message(result_code);
     &c_message[..(c_message.len() - 1)]
-}
-
-#[derive(Debug)]
-#[repr(transparent)]
-pub struct SourceError(anyhow::Error);
-
-impl SourceError {
-    #[allow(dead_code)]
-    pub fn new(source: anyhow::Error) -> Self {
-        Self(source)
-    }
-}
-
-impl Display for SourceError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl<'a> thiserror::private::AsDynError<'a> for SourceError {
-    fn as_dyn_error(&self) -> &(dyn std::error::Error + 'a) {
-        &*self.0
-    }
-}
-
-impl PartialEq for SourceError {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.to_string() == other.0.to_string()
-    }
-}
-impl AsRef<dyn std::error::Error + Send + Sync> for SourceError {
-    fn as_ref(&self) -> &(dyn std::error::Error + Send + Sync + 'static) {
-        &*self.0
-    }
-}
-
-impl<E: std::error::Error + Sync + Send + 'static> From<E> for SourceError {
-    fn from(source: E) -> Self {
-        Self(source.into())
-    }
 }
