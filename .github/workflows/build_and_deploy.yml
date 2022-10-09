@@ -34,41 +34,49 @@ jobs:
             features: ""
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cpu
+            whl_package_name: voicevox-core-cpu
             use_cuda: false
           - os: windows-latest
             features: directml
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-directml
+            whl_package_name: voicevox-core-directml
             use_cuda: false
           - os: windows-latest
             features: ""
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cuda
+            whl_package_name: voicevox-core-cuda
             use_cuda: true
           - os: windows-latest
             features: ""
             target: i686-pc-windows-msvc
             artifact_name: windows-x86-cpu
+            whl_package_name: voicevox-core-cpu
             use_cuda: false
           - os: ubuntu-latest
             features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-cpu
+            whl_package_name: voicevox-core-cpu
             use_cuda: false
           - os: ubuntu-latest
             features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-gpu
+            whl_package_name: voicevox-core-gpu
             use_cuda: true
           - os: macos-latest
             features: ""
             target: aarch64-apple-darwin
             artifact_name: osx-aarch64-cpu
+            whl_package_name: voicevox-core-cpu
             use_cuda: false
           - os: macos-latest
             features: ""
             target: x86_64-apple-darwin
             artifact_name: osx-x64-cpu
+            whl_package_name: voicevox-core-cpu
             use_cuda: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -111,7 +119,10 @@ jobs:
         run: |
           pip install -r ./crates/voicevox_core_python_api/requirements.txt
           maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
-          printf '::set-output name=whl::%s\n' "$(find ./target/wheels -type f)"
+          from="$(find ./target/wheels -type f)"
+          to="$(sed 's/voicevox_core/${{ matrix.whl_package_name }}/' <<<"$from")"
+          mv "$from" "$to"
+          printf '::set-output name=whl::%s\n' "$to"
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: Set ASSET_NAME env var
