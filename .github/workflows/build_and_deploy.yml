@@ -64,7 +64,7 @@ jobs:
             features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-gpu
-            whl_package_name: voicevox-core-gpu
+            whl_package_name: voicevox-core-cuda
             use_cuda: true
           - os: macos-latest
             features: ""
