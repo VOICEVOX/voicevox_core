@@ -34,49 +34,49 @@ jobs:
             features: ""
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cpu
-            whl_package_name: voicevox-core-cpu
+            whl_package_name: voicevox_core-cpu
             use_cuda: false
           - os: windows-latest
             features: directml
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-directml
-            whl_package_name: voicevox-core-directml
+            whl_package_name: voicevox_core-directml
             use_cuda: false
           - os: windows-latest
             features: ""
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cuda
-            whl_package_name: voicevox-core-cuda
+            whl_package_name: voicevox_core-cuda
             use_cuda: true
           - os: windows-latest
             features: ""
             target: i686-pc-windows-msvc
             artifact_name: windows-x86-cpu
-            whl_package_name: voicevox-core-cpu
+            whl_package_name: voicevox_core-cpu
             use_cuda: false
           - os: ubuntu-latest
             features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-cpu
-            whl_package_name: voicevox-core-cpu
+            whl_package_name: voicevox_core-cpu
             use_cuda: false
           - os: ubuntu-latest
             features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-gpu
-            whl_package_name: voicevox-core-cuda
+            whl_package_name: voicevox_core-cuda
             use_cuda: true
           - os: macos-latest
             features: ""
             target: aarch64-apple-darwin
             artifact_name: osx-aarch64-cpu
-            whl_package_name: voicevox-core-cpu
+            whl_package_name: voicevox_core-cpu
             use_cuda: false
           - os: macos-latest
             features: ""
             target: x86_64-apple-darwin
             artifact_name: osx-x64-cpu
-            whl_package_name: voicevox-core-cpu
+            whl_package_name: voicevox_core-cpu
             use_cuda: false
     runs-on: ${{ matrix.os }}
     steps:
