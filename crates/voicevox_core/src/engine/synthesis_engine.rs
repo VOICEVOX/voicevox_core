@@ -21,8 +21,6 @@ pub struct SynthesisEngine {
 
 #[allow(unsafe_code)]
 unsafe impl Send for SynthesisEngine {}
-#[allow(unsafe_code)]
-unsafe impl Sync for SynthesisEngine {}
 
 impl SynthesisEngine {
     pub const DEFAULT_SAMPLING_RATE: u32 = 24000;
