@@ -106,6 +106,9 @@ jobs:
           for cargo_toml in $( echo ./crates/voicevox_core_*/Cargo.toml ); do
             set-cargo-version $cargo_toml ${{ env.VERSION }}
           done
+      - name: set `project.name` for voicevox_core_python_api
+        shell: bash
+        run: sed -i 's/voicevox_core/${{ matrix.whl_package_name }}/' ./crates/voicevox_core_python_api/pyproject.toml
       - name: generate voicevox_core.h
         shell: bash
         run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
@@ -119,10 +122,7 @@ jobs:
         run: |
           pip install -r ./crates/voicevox_core_python_api/requirements.txt
           maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
-          from="$(find ./target/wheels -type f)"
-          to="$(sed 's/voicevox_core/${{ matrix.whl_package_name }}/' <<<"$from")"
-          mv "$from" "$to"
-          printf '::set-output name=whl::%s\n' "$to"
+          printf '::set-output name=whl::%s\n' "$(find ./target/wheels -type f)"
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: Set ASSET_NAME env var
