@@ -110,11 +110,11 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" = macOS ]; then
-            gsed=gsed
+            sed_i='sed -i ""'
           else
-            gsed=sed
+            sed_i='sed -i'
           fi
-          "$gsed" -i 's/voicevox_core/${{ matrix.whl_package_name }}/' ./crates/voicevox_core_python_api/pyproject.toml
+          $sed_i 's/voicevox_core/${{ matrix.whl_package_name }}/' ./crates/voicevox_core_python_api/pyproject.toml
       - name: generate voicevox_core.h
         shell: bash
         run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
