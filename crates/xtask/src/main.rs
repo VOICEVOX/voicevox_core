@@ -1,11 +1,10 @@
 mod commands;
 
-use clap::{AppSettings, Parser as _};
+use clap::Parser as _;
 
 use crate::commands::generate_c_header::ArgsGenerateCHeader;
 
 #[derive(clap::Parser)]
-#[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 enum Args {
     /// Generate voicevox_core.h
     GenerateCHeader(ArgsGenerateCHeader),
