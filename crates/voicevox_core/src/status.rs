@@ -99,8 +99,6 @@ impl SupportedDevices {
 
 #[allow(unsafe_code)]
 unsafe impl Send for Status {}
-#[allow(unsafe_code)]
-unsafe impl Sync for Status {}
 
 impl Status {
     const MODELS: &'static [Model] = &include!("include_models.rs");
