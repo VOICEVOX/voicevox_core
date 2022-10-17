@@ -34,49 +34,49 @@ jobs:
             features: ""
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cpu
-            whl_version_local: cpu
+            whl_local_version: cpu
             use_cuda: false
           - os: windows-latest
             features: directml
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-directml
-            whl_version_local: directml
+            whl_local_version: directml
             use_cuda: false
           - os: windows-latest
             features: ""
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cuda
-            whl_version_local: cuda
+            whl_local_version: cuda
             use_cuda: true
           - os: windows-latest
             features: ""
             target: i686-pc-windows-msvc
             artifact_name: windows-x86-cpu
-            whl_version_local: cpu
+            whl_local_version: cpu
             use_cuda: false
           - os: ubuntu-latest
             features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-cpu
-            whl_version_local: cpu
+            whl_local_version: cpu
             use_cuda: false
           - os: ubuntu-latest
             features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-gpu
-            whl_version_local: cuda
+            whl_local_version: cuda
             use_cuda: true
           - os: macos-latest
             features: ""
             target: aarch64-apple-darwin
             artifact_name: osx-aarch64-cpu
-            whl_version_local: cpu
+            whl_local_version: cpu
             use_cuda: false
           - os: macos-latest
             features: ""
             target: x86_64-apple-darwin
             artifact_name: osx-x64-cpu
-            whl_version_local: cpu
+            whl_local_version: cpu
             use_cuda: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -105,7 +105,7 @@ jobs:
         run: |
           for cargo_toml in $( echo ./crates/voicevox_core_*/Cargo.toml ); do
             if [[ "$cargo_toml" =~ voicevox_core_python_api ]]; then
-              version="$VERSION+"${{ matrix.whl_version_local }}
+              version="$VERSION+"${{ matrix.whl_local_version }}
             else
               version="$VERSION"
             fi
