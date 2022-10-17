@@ -323,7 +323,7 @@ jobs:
           tag_name: ${{ env.VERSION }}
           files: |-
             ${{ env.ASSET_NAME }}.zip
-          target_commitish: ${{ github.ref }}
+          target_commitish: ${{ github.sha }}
 
   build-win-cpp-example:
     runs-on: windows-latest
