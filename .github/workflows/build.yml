@@ -317,7 +317,7 @@ jobs:
 
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v1
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
