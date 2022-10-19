@@ -72,9 +72,9 @@ jobs:
             use_cuda: false
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: "3.8"
           architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
@@ -166,7 +166,7 @@ jobs:
   deploy_downloader:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: svenstaro/upload-release-action@v2

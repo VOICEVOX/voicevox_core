@@ -9,7 +9,7 @@ jobs:
   update-rust-toolchain:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: set up stable rust
         uses: dtolnay/rust-toolchain@stable
       - name: update rust toolchain
