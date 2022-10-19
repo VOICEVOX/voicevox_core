@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
       - run: cargo fmt -- --check
@@ -51,7 +51,7 @@ jobs:
         with:
           python-version: "3.8"
       - uses: actions-rs/toolchain@v1
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
           key: "v2-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
