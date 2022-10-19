@@ -10,7 +10,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-file
         with:
           components: clippy,rustfmt
       - name: Set up Python 3.8
@@ -50,7 +51,8 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "3.8"
-      - uses: actions-rs/toolchain@v1
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-file
       - uses: Swatinem/rust-cache@v1
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
@@ -63,7 +65,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
@@ -87,7 +90,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
@@ -133,7 +137,8 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: "3.8"
-      - uses: actions-rs/toolchain@v1
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-file
       - name: venv作成
         shell: bash
         run: |
