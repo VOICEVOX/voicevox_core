@@ -12,6 +12,7 @@ class Style:
 
 @pydantic.dataclasses.dataclass
 class Meta:
+    """メタ情報。 """
     name: str
     styles: List[Style]
     speaker_uuid: str
@@ -20,12 +21,14 @@ class Meta:
 
 @pydantic.dataclasses.dataclass
 class SupportedDevices:
+    """サポートデバイス情報。 """
     cpu: bool
     cuda: bool
     dml: bool
 
 
 class AccelerationMode(str, Enum):
+    """ハードウェアアクセラレーションモードを設定する設定値。 """
     AUTO = "AUTO"
     CPU = "CPU"
     GPU = "GPU"

@@ -22,14 +22,24 @@ class VoicevoxCore:
     ) -> None: ...
     def __repr__(self) -> str: ...
     @property
-    def is_gpu_mode(self) -> bool: ...
+    def is_gpu_mode(self) -> bool:
+        """ハードウェアアクセラレーションがGPUモードか判定する。"""
+        ...
     def load_model(self, speaker_id: int) -> None: ...
     def is_model_loaded(self, speaker_id: int) -> bool: ...
     def predict_duration(
         self,
         phoneme_list: NDArray[np.int64],
         speaker_id: int,
-    ) -> NDArray[np.float32]: ...
+    ) -> NDArray[np.float32]:
+        """音素ごとの長さを推論する。
+
+        Parameters
+        ----------
+        phoneme_list : 音素データ
+        speaker_id : 話者ID
+        """
+        ...
     def predict_intonation(
         self,
         length: int,
@@ -40,7 +50,9 @@ class VoicevoxCore:
         start_accent_phrase_list: NDArray[np.int64],
         end_accent_phrase_list: NDArray[np.int64],
         speaker_id: int,
-    ) -> NDArray[np.float32]: ...
+    ) -> NDArray[np.float32]: 
+        """モーラごとのF0を推論する。"""
+        ...
     def decode(
         self,
         length: int,
@@ -48,23 +60,50 @@ class VoicevoxCore:
         f0: NDArray[np.float32],
         phoneme: NDArray[np.float32],
         speaker_id: int,
-    ) -> NDArray[np.float32]: ...
+    ) -> NDArray[np.float32]: 
+        """decodeを実行する。"""
+        ...
     def audio_query(
         self,
         text: str,
         speaker_id: int,
         kana: bool = False,
-    ) -> AudioQuery: ...
+    ) -> AudioQuery: 
+        """AudioQuery を実行する。"""
+        ...
     def synthesis(
         self,
         audio_query: AudioQuery,
         speaker_id: int,
         enable_interrogative_upspeak: bool = True,
-    ) -> bytes: ...
+    ) -> bytes: 
+        """AudioQuery から音声合成する。
+
+        Parameters
+        ----------
+        audio_query : AudioQuery
+        speaker_id : 話者ID
+        enable_interrogative_upspeak : 疑問文の調整を有効にする 
+
+        Returns
+        -------
+        wavデータ
+        """
+        ...
     def tts(
         self,
         text: str,
         speaker_id: int,
         kana: bool = False,
         enable_interrogative_upspeak: bool = True,
-    ) -> bytes: ...
+    ) -> bytes: 
+        """テキスト音声合成を実行する。
+
+        Parameters
+        ----------
+        text : テキスト
+        speaker_id : 話者ID
+        kana : aquestalk形式のkanaとしてテキストを解釈する 
+        enable_interrogative_upspeak : 疑問文の調整を有効にする 
+        """
+        ...
