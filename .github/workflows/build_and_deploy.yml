@@ -162,30 +162,32 @@ jobs:
           powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "${{ env.ASSET_NAME }}.zip"
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          tag: ${{ env.VERSION }}
-          file: ${{ env.ASSET_NAME }}.zip
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ env.ASSET_NAME }}.zip
+          target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          tag: ${{ env.VERSION }}
-          file: ${{ steps.build-voicevox-core-python-api.outputs.whl }}
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ steps.build-voicevox-core-python-api.outputs.whl }}
+          target_commitish: ${{ github.sha }}
   deploy_downloader:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          file: scripts/downloads/*
-          file_glob: true
-          tag: ${{ env.VERSION }}
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            scripts/downloads/*
+          target_commitish: ${{ github.sha }}
