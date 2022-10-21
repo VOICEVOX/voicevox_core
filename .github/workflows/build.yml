@@ -317,12 +317,13 @@ jobs:
 
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          tag: ${{ env.VERSION }}
-          file: ${{ env.ASSET_NAME }}.zip
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ env.ASSET_NAME }}.zip
+          target_commitish: ${{ github.sha }}
 
   build-win-cpp-example:
     runs-on: windows-latest
