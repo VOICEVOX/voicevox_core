@@ -86,10 +86,10 @@ jobs:
         with:
           python-version: "3.8"
           architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
-      - uses: actions-rs/toolchain@v1
+      - name: set up ${{ matrix.target }}
+        uses: ./.github/actions/rust-toolchain-from-file
         with:
-          target: ${{ matrix.target }}
-          default: true
+          targets: ${{ matrix.target }}
       - uses: actions-rs/install@v0.1
         if: ${{ env.VERSION != 'DEBUG' }}
         with:
@@ -135,7 +135,7 @@ jobs:
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
           cp -v voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
-          cp -v target/${{ matrix.target }}/release/*.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
+          cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
           cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
@@ -162,30 +162,32 @@ jobs:
           powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "${{ env.ASSET_NAME }}.zip"
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          tag: ${{ env.VERSION }}
-          file: ${{ env.ASSET_NAME }}.zip
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ env.ASSET_NAME }}.zip
+          target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          tag: ${{ env.VERSION }}
-          file: ${{ steps.build-voicevox-core-python-api.outputs.whl }}
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ steps.build-voicevox-core-python-api.outputs.whl }}
+          target_commitish: ${{ github.sha }}
   deploy_downloader:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: true
-          file: scripts/downloads/*
-          file_glob: true
-          tag: ${{ env.VERSION }}
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            scripts/downloads/*
+          target_commitish: ${{ github.sha }}

@@ -179,10 +179,10 @@ pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_da
 /// @param [in] length vowel_phoneme_vector, consonant_phoneme_vector, start_accent_vector, end_accent_vector, start_accent_phrase_vector, end_accent_phrase_vector, output のデータ長
 /// @param [in] vowel_phoneme_vector 母音の音素データ
 /// @param [in] consonant_phoneme_vector 子音の音素データ
-/// @param [in] start_accent_vector 開始アクセントデータ
-/// @param [in] end_accent_vector 終了アクセントデータ
-/// @param [in] start_accent_phrase_vector 開始アクセントフレーズデータ
-/// @param [in] end_accent_phrase_vector 終了アクセントフレーズデータ
+/// @param [in] start_accent_vector アクセントの開始位置のデータ
+/// @param [in] end_accent_vector アクセントの終了位置のデータ
+/// @param [in] start_accent_phrase_vector アクセント句の開始位置のデータ
+/// @param [in] end_accent_phrase_vector アクセント句の終了位置のデータ
 /// @param [in] speaker_id 話者ID
 /// @param [out] output_predict_intonation_data_length 出力データのサイズ
 /// @param [out] output_predict_intonation_data データの出力先
