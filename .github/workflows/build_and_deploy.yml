@@ -135,7 +135,7 @@ jobs:
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
           cp -v voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
-          cp -v target/${{ matrix.target }}/release/*.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
+          cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
           cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
