@@ -62,14 +62,14 @@ class VoicevoxCore:
         ...
     def predict_duration(
         self,
-        phoneme_list: NDArray[np.int64],
+        phoneme_vector: NDArray[np.int64],
         speaker_id: int,
     ) -> NDArray[np.float32]:
         """音素ごとの長さを推論する。
 
         Parameters
         ----------
-        phoneme_list
+        phoneme_vector
             音素データ。
         speaker_id
             話者ID。
@@ -82,12 +82,12 @@ class VoicevoxCore:
     def predict_intonation(
         self,
         length: int,
-        vowel_phoneme_list: NDArray[np.int64],
-        consonant_phoneme_list: NDArray[np.int64],
-        start_accent_list: NDArray[np.int64],
-        end_accent_list: NDArray[np.int64],
-        start_accent_phrase_list: NDArray[np.int64],
-        end_accent_phrase_list: NDArray[np.int64],
+        vowel_phoneme_vector: NDArray[np.int64],
+        consonant_phoneme_vector: NDArray[np.int64],
+        start_accent_vector: NDArray[np.int64],
+        end_accent_vector: NDArray[np.int64],
+        start_accent_phrase_vector: NDArray[np.int64],
+        end_accent_phrase_vector: NDArray[np.int64],
         speaker_id: int,
     ) -> NDArray[np.float32]:
         """モーラごとのF0を推論する。
@@ -95,18 +95,18 @@ class VoicevoxCore:
         Parameters
         ----------
         length
-            vowel_phoneme_list, consonant_phoneme_list, start_accent_list, end_accent_list, start_accent_phrase_list, end_accent_phrase_list, output のデータ長。
-        vowel_phoneme_list
+            vowel_phoneme_vector, consonant_phoneme_vector, start_accent_vector, end_accent_vector, start_accent_phrase_vector, end_accent_phrase_vector, output のデータ長。
+        vowel_phoneme_vector
             母音の音素データ。
-        consonant_phoneme_list
+        consonant_phoneme_vector
             子音の音素データ。
-        start_accent_list
+        start_accent_vector
             開始アクセントデータ。
-        end_accent_list
+        end_accent_vector
             終了アクセントデータ。
-        start_accent_phrase_list
+        start_accent_phrase_vector
             開始アクセントフレーズデータ。
-        end_accent_phrase_list
+        end_accent_phrase_vector
             終了アクセントフレーズデータ。
         speaker_id
             話者ID。
@@ -134,7 +134,7 @@ class VoicevoxCore:
             音素のサイズ phoneme のデータ長に関連する。
         f0
             基本周波数。
-        phoneme_list
+        phoneme_vector
             音素データ。
         speaker_id
             話者ID。
