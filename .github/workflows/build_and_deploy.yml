@@ -124,7 +124,7 @@ jobs:
         run: |
           pip install -r ./crates/voicevox_core_python_api/requirements.txt
           maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
-          printf '::set-output name=whl::%s\n' "$(find ./target/wheels -type f)"
+          echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: Set ASSET_NAME env var
