@@ -101,13 +101,13 @@ class VoicevoxCore:
         consonant_phoneme_list
             子音の音素データ。
         start_accent_list
-            開始アクセントデータ。
+            アクセントの開始位置のデータ。
         end_accent_list
-            終了アクセントデータ。
+            アクセントの終了位置のデータ。
         start_accent_phrase_list
-            開始アクセントフレーズデータ。
+            アクセント句の開始位置のデータ。
         end_accent_phrase_list
-            終了アクセントフレーズデータ。
+            アクセント句の終了位置のデータ。
         speaker_id
             話者ID。
 
