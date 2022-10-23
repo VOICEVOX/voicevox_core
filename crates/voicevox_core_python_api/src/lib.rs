@@ -101,13 +101,13 @@ impl VoicevoxCore {
 
     fn predict_duration<'py>(
         &mut self,
-        phoneme_list: &'py PyArray<i64, Ix1>,
+        phoneme_vector: &'py PyArray<i64, Ix1>,
         speaker_id: u32,
         py: Python<'py>,
     ) -> PyResult<&'py PyArray<f32, Ix1>> {
         let duration = self
             .inner
-            .predict_duration(&phoneme_list.to_vec()?, speaker_id)
+            .predict_duration(&phoneme_vector.to_vec()?, speaker_id)
             .into_py_result()?;
         Ok(PyArray::from_vec(py, duration))
     }
@@ -116,12 +116,12 @@ impl VoicevoxCore {
     fn predict_intonation<'py>(
         &mut self,
         length: usize,
-        vowel_phoneme_list: &'py PyArray<i64, Ix1>,
-        consonant_phoneme_list: &'py PyArray<i64, Ix1>,
-        start_accent_list: &'py PyArray<i64, Ix1>,
-        end_accent_list: &'py PyArray<i64, Ix1>,
-        start_accent_phrase_list: &'py PyArray<i64, Ix1>,
-        end_accent_phrase_list: &'py PyArray<i64, Ix1>,
+        vowel_phoneme_vector: &'py PyArray<i64, Ix1>,
+        consonant_phoneme_vector: &'py PyArray<i64, Ix1>,
+        start_accent_vector: &'py PyArray<i64, Ix1>,
+        end_accent_vector: &'py PyArray<i64, Ix1>,
+        start_accent_phrase_vector: &'py PyArray<i64, Ix1>,
+        end_accent_phrase_vector: &'py PyArray<i64, Ix1>,
         speaker_id: u32,
         py: Python<'py>,
     ) -> PyResult<&'py PyArray<f32, Ix1>> {
@@ -129,12 +129,12 @@ impl VoicevoxCore {
             .inner
             .predict_intonation(
                 length,
-                &vowel_phoneme_list.to_vec()?,
-                &consonant_phoneme_list.to_vec()?,
-                &start_accent_list.to_vec()?,
-                &end_accent_list.to_vec()?,
-                &start_accent_phrase_list.to_vec()?,
-                &end_accent_phrase_list.to_vec()?,
+                &vowel_phoneme_vector.to_vec()?,
+                &consonant_phoneme_vector.to_vec()?,
+                &start_accent_vector.to_vec()?,
+                &end_accent_vector.to_vec()?,
+                &start_accent_phrase_vector.to_vec()?,
+                &end_accent_phrase_vector.to_vec()?,
                 speaker_id,
             )
             .into_py_result()?;
