@@ -14,7 +14,7 @@ use status::*;
 use std::ffi::CString;
 
 #[cfg(feature = "directml")]
-#[allow(non_upper_case_globals)]
+#[allow(non_upper_case_globals, unsafe_code)]
 const _: () = {
     use winapi::shared::minwindef::DWORD;
 
