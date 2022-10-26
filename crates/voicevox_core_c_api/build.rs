@@ -1,4 +1,10 @@
 fn main() {
+    #[cfg(feature = "directml")]
+    {
+        println!("cargo:rustc-link-arg=/EXPORT:NvOptimusEnablement");
+        println!("cargo:rustc-link-arg=/EXPORT:AmdPowerXpressRequestHighPerformance");
+    }
+
     #[cfg(target_os = "linux")]
     println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
 

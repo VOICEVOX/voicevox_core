@@ -2720,6 +2720,7 @@ dependencies = [
  "surf",
  "tar",
  "thiserror",
+ "winapi",
 ]
 
 [[package]]

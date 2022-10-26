@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = []
-directml = ["onnxruntime/directml"]
+directml = ["dep:winapi", "onnxruntime/directml"]
 
 
 [dependencies]
@@ -20,6 +20,7 @@ serde_json = "1.0.85"
 thiserror = "1.0.37"
 open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="c77112b470874a6a963426ed6c2fb21f12394a78" }
 regex = "1.6.0"
+winapi = { version = "0.3.9", optional = true }
 
 [dev-dependencies]
 rstest = "0.15.0"

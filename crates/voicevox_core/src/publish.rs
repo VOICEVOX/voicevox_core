@@ -13,6 +13,18 @@ use std::{collections::BTreeMap, path::PathBuf};
 use status::*;
 use std::ffi::CString;
 
+#[cfg(feature = "directml")]
+#[allow(non_upper_case_globals)]
+const _: () = {
+    use winapi::shared::minwindef::DWORD;
+
+    #[no_mangle]
+    pub static NvOptimusEnablement: DWORD = 0x00000001;
+
+    #[no_mangle]
+    pub static AmdPowerXpressRequestHighPerformance: DWORD = 0x00000001;
+};
+
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 
 static SPEAKER_ID_MAP: Lazy<BTreeMap<u32, (usize, u32)>> =
