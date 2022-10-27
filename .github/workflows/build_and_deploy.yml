@@ -115,7 +115,7 @@ jobs:
         shell: bash
         run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+        run: cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_python_api

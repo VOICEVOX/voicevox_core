@@ -19,8 +19,8 @@ jobs:
         with:
           python-version: "3.8"
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
-      - run: cargo clippy --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
       - run: cargo fmt -- --check
 
   rust-test:
@@ -59,7 +59,7 @@ jobs:
           key: "v2-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
       - name: Run cargo test
         shell: bash
-        run: cargo test --features ,${{ matrix.features }}
+        run: cargo test -vv --features ,${{ matrix.features }}
 
   xtask-generate-c-header:
     runs-on: ubuntu-latest
@@ -97,7 +97,7 @@ jobs:
       - name: Install cbindgen
         uses: ./.github/actions/cargo-binstall-cbindgen
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api
+        run: cargo build -p voicevox_core_c_api -vv
       - name: voicevox_core.hを生成
         run: cbindgen --crate voicevox_core_c_api -o ./example/cpp/unix/voicevox_core/voicevox_core.h
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
@@ -153,7 +153,7 @@ jobs:
       - shell: bash
         run: pip install -r ./crates/voicevox_core_python_api/requirements.txt
       - shell: bash
-        run: cargo build -p voicevox_core_c_api
+        run: cargo build -p voicevox_core_c_api -vv
       - shell: bash
         run: maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
       - shell: bash
