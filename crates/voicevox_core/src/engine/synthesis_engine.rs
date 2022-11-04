@@ -502,16 +502,12 @@ impl SynthesisEngine {
         let mut one_accent_list: Vec<i64> = Vec::new();
 
         for (i, mora) in accent_phrase.moras().iter().enumerate() {
-            let value = if i as i32 == point
-                || (point < 0 && i == (accent_phrase.moras().len() as i32 + point) as usize)
-            {
-                1
-            } else {
-                0
-            };
-            one_accent_list.push(value as i64);
+            let value = (i as i32 == point
+                || (point < 0 && i == (accent_phrase.moras().len() as i32 + point) as usize))
+                .into();
+            one_accent_list.push(value);
             if mora.consonant().is_some() {
-                one_accent_list.push(value as i64);
+                one_accent_list.push(value);
             }
         }
         if accent_phrase.pause_mora().is_some() {
