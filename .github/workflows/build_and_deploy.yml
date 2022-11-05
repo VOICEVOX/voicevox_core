@@ -90,27 +90,20 @@ jobs:
         uses: ./.github/actions/rust-toolchain-from-file
         with:
           targets: ${{ matrix.target }}
-      - uses: actions-rs/install@v0.1
-        if: ${{ env.VERSION != 'DEBUG' }}
-        with:
-          crate: set-cargo-version
-          version: latest
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
         uses: ./.github/actions/cargo-binstall-cbindgen
+      - name: Install cargo-edit
+        if: ${{ env.VERSION != 'DEBUG' }}
+        shell: bash
+        run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
       - name: set cargo version
         if: ${{ env.VERSION != 'DEBUG' }}
         shell: bash
         run: |
-          for cargo_toml in $( echo ./crates/voicevox_core_*/Cargo.toml ); do
-            if [[ "$cargo_toml" =~ voicevox_core_python_api ]]; then
-              version="$VERSION+"${{ matrix.whl_local_version }}
-            else
-              version="$VERSION"
-            fi
-            set-cargo-version $cargo_toml "$version"
-          done
+          cargo set-version "$VERSION" --exclude voicevox_core_python_api
+          cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api
       - name: generate voicevox_core.h
         shell: bash
         run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
