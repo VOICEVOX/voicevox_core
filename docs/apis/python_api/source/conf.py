@@ -16,7 +16,7 @@ project = 'voicevox_core_python_api'
 
 autodoc_docstring_signature = True
 
-extensions = ["sphinx.ext.autodoc", "autoapi.extension"]
+extensions = ["autoapi.extension"]
 
 autoapi_type = "python"
 autoapi_dirs = ["../../../../crates/voicevox_core_python_api/python"]
@@ -37,5 +37,5 @@ exclude_patterns = []
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'nature'
+html_theme = "pydata_sphinx_theme"
 # html_static_path = ['_static']
