@@ -19,7 +19,7 @@ autodoc_docstring_signature = True
 extensions = ["autoapi.extension"]
 
 autoapi_type = "python"
-autoapi_dirs = ["../../../../crates/voicevox_core_python_api/python"]
+autoapi_dirs = ["../../../crates/voicevox_core_python_api/python"]
 autoapi_options = [
     "members",
     "undoc-members",

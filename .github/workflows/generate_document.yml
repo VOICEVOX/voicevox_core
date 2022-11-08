@@ -5,77 +5,56 @@ on:
       - main
   pull_request:
 jobs:
-  generate_c_api_document:
+  generate_api_document:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Install cargo-binstall
-        uses: taiki-e/install-action@cargo-binstall
-      - name: Install cbindgen
-        uses: ./.github/actions/cargo-binstall-cbindgen
-      - name: Generate C header file
-        run: cbindgen --crate voicevox_core_c_api -o ./docs/apis/c_api/doxygen/voicevox_core.h
-      - name: mkdir public
-        run: mkdir -p public/apis/c_api
-      - name: Generate doxygen document
-        uses: mattnotmitt/doxygen-action@v1.9.4
-        with:
-          working-directory: "docs/apis/c_api/doxygen"
-      - name: Uplaod api document
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: public
-  deploy_c_api_github_pages:
-    runs-on: ubuntu-latest
-    needs:
-      - generate_c_api_document
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: C APIドキュメント
-      url: ${{ steps.api.outputs.page_url }}/apis/c_api
-    if: ${{ github.ref_name == 'main' }}
-    steps:
-      - name: Deploy to GitHub pages
-        id: api
-        uses: actions/deploy-pages@v1
-  generate_python_api_document:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+      - name: Install cbindgen
+        uses: ./.github/actions/cargo-binstall-cbindgen
       - name: Create a venv
         uses: ./.github/actions/create-venv
       - name: pip install
         run: pip install -r ./crates/voicevox_core_python_api/requirements.txt
+      - name: Generate C header file
+        run: cbindgen --crate voicevox_core_c_api -o ./docs/apis/c_api/doxygen/voicevox_core.h
+      - name: mkdir public
+        run: mkdir -p public/apis/c_api
+      - name: cp docs/apis/index.html
+        run: cp docs/apis/index.html public/apis/
+      - name: Generate doxygen document
+        uses: mattnotmitt/doxygen-action@v1.9.4
+        with:
+          working-directory: "docs/apis/c_api/doxygen"
       - name: Build voicevox_core_python_api
         run: |
           cargo build -p voicevox_core_c_api -vv
           maturin develop --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
       - name: Generate Sphinx document
-        run: sphinx-build ./docs/apis/python_api/{source,build}
+        run: sphinx-build docs/apis/python_api public/apis/python_api
       - name: Uplaod api document
         uses: actions/upload-pages-artifact@v1
         with:
-          path: docs/apis/python_api/build
-  deploy_python_api_github_pages:
+          path: public
+  deploy_api_github_pages:
     runs-on: ubuntu-latest
     needs:
-      - generate_python_api_document
+      - generate_api_document
     permissions:
       pages: write
       id-token: write
     environment:
-      name: Python APIドキュメント
-      url: ${{ steps.api.outputs.page_url }}/apis/python_api
+      name: APIドキュメント
+      url: ${{ steps.api.outputs.page_url }}/apis
     if: ${{ github.ref_name == 'main' }}
     steps:
       - name: Deploy to GitHub pages
