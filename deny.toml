@@ -1,0 +1,39 @@
+targets = [
+    { triple = "x86_64-pc-windows-msvc" },
+    { triple = "i686-pc-windows-msvc" },
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "aarch64-apple-darwin" },
+    { triple = "x86_64-apple-darwin" },
+]
+
+[bans]
+multiple-versions = "allow"
+
+[sources]
+unknown-git = "allow"
+
+[licenses]
+allow = [
+    "Apache-2.0 WITH LLVM-exception",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "CC0-1.0",
+    "ISC", 
+    "MIT",
+    "MPL-2.0", 
+    "OpenSSL",
+    "Unicode-DFS-2016",
+]
+clarify = [
+    { name = "open_jtalk", expression = "BSD-3-Clause", license-files = [] },
+    { name = "open_jtalk-sys", expression = "LicenseRef-OpenJTalk", license-files = [] },
+    { name = "ring", expression = "MIT AND ISC AND OpenSSL", license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }] },
+    { name = "voicevox_core", expression = "MIT", license-files = [] },
+    { name = "voicevox_core_c_api", expression = "MIT", license-files = [] },
+    { name = "voicevox_core_python_api", expression = "MIT", license-files = [] },
+    { name = "xtask", expression = "MIT", license-files = [] },
+]
+exceptions = [
+    { name = "open_jtalk-sys", allow = ["LicenseRef-OpenJTalk"] },
+]
