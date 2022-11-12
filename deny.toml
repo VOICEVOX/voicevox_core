@@ -19,9 +19,9 @@ allow = [
     "BSD-2-Clause",
     "BSD-3-Clause",
     "CC0-1.0",
-    "ISC", 
+    "ISC",
     "MIT",
-    "MPL-2.0", 
+    "MPL-2.0",
     "OpenSSL",
     "Unicode-DFS-2016",
 ]
