@@ -13,3 +13,5 @@ jobs:
         run: cargo binstall cargo-deny@^0.13 --no-confirm --log-level debug
       - name: cargo-deny
         run: cargo deny --all-features check
+      - name: Ensure zstd-sys v1.6.3+zstd.1.5.2 is not in the normal dependency graph
+        run: ! cargo tree --edges normal | grep -F 'zstd-sys v1.6.3+zstd.1.5.2'
