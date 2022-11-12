@@ -133,7 +133,7 @@ allow-build-scripts = [
     # ```console
     # ❯ ! cargo tree --edges normal | grep -F 'zstd-sys v1.6.3+zstd.1.5.2'
     # ```
-    { name = "zstd-sys", version = "1.6.3+zstd.1.5.2" },
+    { name = "zstd-sys", version = "=1.6.3+zstd.1.5.2" },
 ]
 
 [sources]
