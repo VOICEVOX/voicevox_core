@@ -33,20 +33,17 @@ allow-build-scripts = [
     { name = "indexmap", version = "1" }, # https://docs.rs/crate/indexmap/1.0.0/source/build.rs
     { name = "isahc", version = "0.9" }, # https://docs.rs/crate/isahc/0.9.0/source/build.rs
     { name = "libc", version = "0.2" }, # https://docs.rs/crate/libc/0.2.0/source/
+    { name = "link-cplusplus", version = "1" }, # https://docs.rs/crate/link-cplusplus/1.0.0/source/build.rs
+    { name = "lock_api", version = "0.4" }, # https://docs.rs/crate/lock_api/0.4.0/source/
+    { name = "log", version = "0.4" }, # https://docs.rs/crate/log/0.4.0/source/
+    { name = "memchr", version = "2" }, # https://docs.rs/crate/memchr/2.0.0/source/
+    { name = "memoffset", version = "0.6.1" }, # https://docs.rs/crate/memoffset/0.6.1/source/build.rs
+    { name = "mime_guess", version = "2" }, # https://docs.rs/crate/mime_guess/2.0.0/source/build.rs
+    { name = "num-integer", version = "0.1.32" }, # https://docs.rs/crate/num-integer/0.1.32/source/
+    { name = "num-traits", version = "0.2" }, # https://docs.rs/crate/num-traits/0.2.0/source/
 
     # ↓ WIP
 
-    #{ name = "libz-sys", version = "1" }, # https://docs.rs/crate/libz-sys/1.0.0/source/build.rs
-    #{ name = "link-cplusplus", version = "1" }, # https://docs.rs/crate/link-cplusplus/1.0.0/source/build.rs
-    #{ name = "lock_api", version = "0.4" }, # https://docs.rs/crate/lock_api/0.4.0/source/build.rs
-    #{ name = "log", version = "0.4" }, # https://docs.rs/crate/log/0.4.0/source/build.rs
-    #{ name = "memchr", version = "2" }, # https://docs.rs/crate/memchr/2.0.0/source/build.rs
-    #{ name = "memoffset", version = "0.6" }, # https://docs.rs/crate/memoffset/0.6.0/source/build.rs
-    #{ name = "mime_guess", version = "2" }, # https://docs.rs/crate/mime_guess/2.0.0/source/build.rs
-    #{ name = "num-integer", version = "0.1" }, # https://docs.rs/crate/num-integer/0.1.0/source/build.rs
-    #{ name = "num-traits", version = "0.2" }, # https://docs.rs/crate/num-traits/0.2.0/source/build.rs
-    #{ name = "onnxruntime-sys", version = "0.0" }, # https://docs.rs/crate/onnxruntime-sys/0.0.0/source/build.rs
-    #{ name = "open_jtalk-sys", version = "0.16" }, # https://docs.rs/crate/open_jtalk-sys/0.16.0/source/build.rs
     #{ name = "openssl-sys", version = "0.9" }, # https://docs.rs/crate/openssl-sys/0.9.0/source/build.rs
     #{ name = "parking_lot_core", version = "0.9" }, # https://docs.rs/crate/parking_lot_core/0.9.0/source/build.rs
     #{ name = "polling", version = "2" }, # https://docs.rs/crate/polling/2.0.0/source/build.rs
@@ -85,11 +82,6 @@ allow-build-scripts = [
     #{ name = "zstd-safe", version = "4" }, # https://docs.rs/crate/zstd-safe/4.0.0/source/build.rs
     #{ name = "zstd-sys", version = "1" }, # https://docs.rs/crate/zstd-sys/1.0.0/source/build.rs
 
-    ## https://github.com/VOICEVOX/open_jtalk-rs/blob/c77112b470874a6a963426ed6c2fb21f12394a78/crates/open_jtalk-sys/build.rs
-    ##
-    ## Open JTalk is licensed under: https://github.com/VOICEVOX/open_jtalk/blob/1.11/src/COPYING
-    #{ name = "open_jtalk-sys", version = "=0.16.111" },
-
     # https://docs.rs/crate/bzip2-sys/0.1.11+1.0.8/source/build.rs
     #
     # bzip is licensed under: https://sourceware.org/git/?p=bzip2.git;a=blob;f=LICENSE;h=81a37eab7a5be1a34456f38adb74928cc9073e9b;hb=6a8690fc8d26c815e798c588f796eabe9d684cf0
@@ -109,6 +101,22 @@ allow-build-scripts = [
     #
     # libnghttp2 is licensed under `MIT` (https://docs.rs/crate/libnghttp2-sys/0.1.7+1.45.0/source/nghttp2/COPYING)
     { name = "libnghttp2-sys", version = "=0.45.0" },
+
+    # https://docs.rs/crate/libz-sys/1.1.8/source/build.rs
+    #
+    # zlib is licensed under `Zlib` (https://docs.rs/crate/libz-sys/1.1.8/source/src/zlib/zlib.h)
+    # zlib-ng is licensed under `Zlib` (https://docs.rs/crate/libz-sys/1.1.8/source/src/zlib-ng/LICENSE.md)
+    { name = "libz-sys", version = "=1.1.8" },
+
+    # https://github.com/VOICEVOX/onnxruntime-rs/blob/bee215aaf6d5e346d96e0724acd02a51f612a72e/onnxruntime-sys/build.rs
+    #
+    # ONNX Runtime is licensed under `MIT` (https://github.com/microsoft/onnxruntime/blob/v1.11.1/LICENSE)
+    { name = "onnxruntime-sys", version = "=0.0.25" },
+
+    # https://github.com/VOICEVOX/open_jtalk-rs/blob/c77112b470874a6a963426ed6c2fb21f12394a78/crates/open_jtalk-sys/build.rs
+    #
+    # Open JTalk is licensed under: https://github.com/VOICEVOX/open_jtalk/blob/1.11/src/COPYING
+    { name = "open_jtalk-sys", version = "=0.16.111" },
 ]
 
 [sources]
