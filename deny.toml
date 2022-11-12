@@ -128,7 +128,7 @@ allow-build-scripts = [
 
     # https://docs.rs/crate/zstd-sys/1.6.3+zstd.1.5.2/source/build.rs
     #
-    # zstd-sys is licensed under "BSD and GPLv2.", but is not linked with the our releases
+    # zstd-sys is licensed under "BSD and GPLv2.", but is not linked with our releases
     #
     # ```console
     # ❯ ! cargo tree --edges normal | grep -F 'zstd-sys v1.6.3+zstd.1.5.2'
