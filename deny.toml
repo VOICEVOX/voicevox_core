@@ -131,7 +131,7 @@ allow-build-scripts = [
     # zstd-sys is licensed under "BSD and GPLv2.", but is not linked with our releases
     #
     # ```console
-    # ❯ ! cargo tree --edges normal | grep -F 'zstd-sys v1.6.3+zstd.1.5.2'
+    # ❯ ! cargo tree -e normal | grep -F 'zstd-sys v1.6.3+zstd.1.5.2'
     # ```
     { name = "zstd-sys", version = "=1.6.3+zstd.1.5.2" },
 ]
