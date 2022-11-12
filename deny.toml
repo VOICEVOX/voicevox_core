@@ -133,7 +133,9 @@ allow-build-scripts = [
 ]
 
 [sources]
-unknown-git = "allow"
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-org = { github = ["VOICEVOX"] }
 
 [licenses]
 allow = [
