@@ -41,46 +41,39 @@ allow-build-scripts = [
     { name = "mime_guess", version = "2" }, # https://docs.rs/crate/mime_guess/2.0.0/source/build.rs
     { name = "num-integer", version = "0.1.32" }, # https://docs.rs/crate/num-integer/0.1.32/source/
     { name = "num-traits", version = "0.2" }, # https://docs.rs/crate/num-traits/0.2.0/source/
-
-    # ↓ WIP
-
-    #{ name = "openssl-sys", version = "0.9" }, # https://docs.rs/crate/openssl-sys/0.9.0/source/build.rs
-    #{ name = "parking_lot_core", version = "0.9" }, # https://docs.rs/crate/parking_lot_core/0.9.0/source/build.rs
-    #{ name = "polling", version = "2" }, # https://docs.rs/crate/polling/2.0.0/source/build.rs
-    #{ name = "proc-macro-error", version = "1" }, # https://docs.rs/crate/proc-macro-error/1.0.0/source/build.rs
-    #{ name = "proc-macro-error-attr", version = "1" }, # https://docs.rs/crate/proc-macro-error-attr/1.0.0/source/build.rs
-    #{ name = "proc-macro-hack", version = "0.5" }, # https://docs.rs/crate/proc-macro-hack/0.5.0/source/build.rs
-    #{ name = "proc-macro2", version = "1" }, # https://docs.rs/crate/proc-macro2/1.0.0/source/build.rs
-    #{ name = "pyo3", version = "0.17" }, # https://docs.rs/crate/pyo3/0.17.0/source/build.rs
-    #{ name = "pyo3-build-config", version = "0.17" }, # https://docs.rs/crate/pyo3-build-config/0.17.0/source/build.rs
-    #{ name = "pyo3-ffi", version = "0.17" }, # https://docs.rs/crate/pyo3-ffi/0.17.0/source/build.rs
-    #{ name = "quote", version = "1" }, # https://docs.rs/crate/quote/1.0.0/source/build.rs
-    #{ name = "ring", version = "0.16" }, # https://docs.rs/crate/ring/0.16.0/source/build.rs
-    #{ name = "rstest_macros", version = "0.14" }, # https://docs.rs/crate/rstest_macros/0.14.0/source/build.rs
-    #{ name = "rustls", version = "0.20" }, # https://docs.rs/crate/rustls/0.20.0/source/build.rs
-    #{ name = "semver", version = "1" }, # https://docs.rs/crate/semver/1.0.0/source/build.rs
-    #{ name = "serde", version = "1" }, # https://docs.rs/crate/serde/1.0.0/source/build.rs
-    #{ name = "serde_derive", version = "1" }, # https://docs.rs/crate/serde_derive/1.0.0/source/build.rs
-    #{ name = "serde_json", version = "1" }, # https://docs.rs/crate/serde_json/1.0.0/source/build.rs
-    #{ name = "slab", version = "0.4" }, # https://docs.rs/crate/slab/0.4.0/source/build.rs
-    #{ name = "standback", version = "0.2" }, # https://docs.rs/crate/standback/0.2.0/source/build.rs
-    #{ name = "syn", version = "1" }, # https://docs.rs/crate/syn/1.0.0/source/build.rs
-    #{ name = "target-lexicon", version = "0.12" }, # https://docs.rs/crate/target-lexicon/0.12.0/source/build.rs
-    #{ name = "thiserror", version = "1" }, # https://docs.rs/crate/thiserror/1.0.0/source/build.rs
-    #{ name = "time", version = "0.2" }, # https://docs.rs/crate/time/0.2.0/source/build.rs
-    #{ name = "typenum", version = "1" }, # https://docs.rs/crate/typenum/1.0.0/source/build.rs
-    #{ name = "unicase", version = "2" }, # https://docs.rs/crate/unicase/2.0.0/source/build.rs
-    #{ name = "value-bag", version = "1" }, # https://docs.rs/crate/value-bag/1.0.0/source/build.rs
-    #{ name = "voicevox_core", version = "0.0" }, # https://docs.rs/crate/voicevox_core/0.0.0/source/build.rs
-    #{ name = "voicevox_core_c_api", version = "0.0" }, # https://docs.rs/crate/voicevox_core_c_api/0.0.0/source/build.rs
-    #{ name = "wasm-bindgen", version = "0.2" }, # https://docs.rs/crate/wasm-bindgen/0.2.0/source/build.rs
-    #{ name = "wasm-bindgen-shared", version = "0.2" }, # https://docs.rs/crate/wasm-bindgen-shared/0.2.0/source/build.rs
-    #{ name = "wepoll-ffi", version = "0.1" }, # https://docs.rs/crate/wepoll-ffi/0.1.0/source/build.rs
-    #{ name = "winapi", version = "0.3" }, # https://docs.rs/crate/winapi/0.3.0/source/build.rs
-    #{ name = "windows_i686_msvc", version = "0.36" }, # https://docs.rs/crate/windows_i686_msvc/0.36.0/source/build.rs
-    #{ name = "windows_x86_64_msvc", version = "0.36" }, # https://docs.rs/crate/windows_x86_64_msvc/0.36.0/source/build.rs
-    #{ name = "zstd-safe", version = "4" }, # https://docs.rs/crate/zstd-safe/4.0.0/source/build.rs
-    #{ name = "zstd-sys", version = "1" }, # https://docs.rs/crate/zstd-sys/1.0.0/source/build.rs
+    { name = "parking_lot_core", version = "0.9" }, # https://docs.rs/crate/parking_lot_core/0.9.0/source/build.rs
+    { name = "polling", version = "2" }, # https://docs.rs/crate/polling/2.0.0/source/
+    { name = "proc-macro-error", version = "1" }, # https://docs.rs/crate/proc-macro-error/1.0.0/source/build.rs
+    { name = "proc-macro-error-attr", version = "1" }, # https://docs.rs/crate/proc-macro-error-attr/1.0.0/source/build.rs
+    { name = "proc-macro-hack", version = "0.5" }, # https://docs.rs/crate/proc-macro-hack/0.5.0/source/
+    { name = "proc-macro2", version = "1" }, # https://docs.rs/crate/proc-macro2/1.0.0/source/build.rs
+    { name = "pyo3", version = "0.17" }, # https://docs.rs/crate/pyo3/0.17.0/source/build.rs
+    { name = "pyo3-build-config", version = "0.17" }, # https://docs.rs/crate/pyo3-build-config/0.17.0/source/build.rs
+    { name = "pyo3-ffi", version = "0.17" }, # https://docs.rs/crate/pyo3-ffi/0.17.0/source/build.rs
+    { name = "quote", version = "1" }, # https://docs.rs/crate/quote/1.0.0/source/
+    { name = "rstest_macros", version = "0.14" }, # https://docs.rs/crate/rstest_macros/0.14.0/source/build.rs
+    { name = "rustls", version = "0.20" }, # https://docs.rs/crate/rustls/0.20.0/source/
+    { name = "semver", version = "1" }, # https://docs.rs/crate/semver/1.0.0/source/build.rs
+    { name = "serde", version = "1" }, # https://docs.rs/crate/serde/1.0.0/source/
+    { name = "serde_derive", version = "1" }, # https://docs.rs/crate/serde_derive/1.0.0/source/
+    { name = "serde_json", version = "1" }, # https://docs.rs/crate/serde_json/1.0.0/source/
+    { name = "slab", version = "0.4" }, # https://docs.rs/crate/slab/0.4.0/source/
+    { name = "standback", version = "0.2" }, # https://docs.rs/crate/standback/0.2.0/source/build.rs
+    { name = "syn", version = "1" }, # https://docs.rs/crate/syn/1.0.0/source/build.rs
+    { name = "target-lexicon", version = "0.12" }, # https://docs.rs/crate/target-lexicon/0.12.0/source/build.rs
+    { name = "thiserror", version = "1" }, # https://docs.rs/crate/thiserror/1.0.0/source/build.rs
+    { name = "time", version = "0.2" }, # https://docs.rs/crate/time/0.2.0/source/build.rs
+    { name = "typenum", version = "1" }, # https://docs.rs/crate/typenum/1.0.0/source/src/__private/build.rs
+    { name = "unicase", version = "2" }, # https://docs.rs/crate/unicase/2.0.0/source/build.rs
+    { name = "value-bag", version = "1.0.0-alpha.9" }, # https://docs.rs/crate/value-bag/1.0.0-alpha.9/source/build.rs
+    { name = "voicevox_core" }, # ./crates/voicevox_core/build.rs
+    { name = "voicevox_core_c_api" }, # ./crates/voicevox_core_c_api/build.rs
+    { name = "wasm-bindgen", version = "0.2" }, # https://docs.rs/crate/wasm-bindgen/0.2.0/source/
+    { name = "wasm-bindgen-shared", version = "0.2" }, # https://docs.rs/crate/wasm-bindgen-shared/0.2.0/source/build.rs
+    { name = "winapi", version = "0.3" }, # https://docs.rs/crate/winapi/0.3.0/source/build.rs
+    { name = "windows_i686_msvc", version = "0.36" }, # https://docs.rs/crate/windows_i686_msvc/0.36.0/source/build.rs
+    { name = "windows_x86_64_msvc", version = "0.36" }, # https://docs.rs/crate/windows_x86_64_msvc/0.36.0/source/build.rs
+    { name = "zstd-safe", version = "=4.1.6+zstd.1.5.2" }, # https://docs.rs/crate/zstd-safe/4.1.6+zstd.1.5.2/source/build.rs
 
     # https://docs.rs/crate/bzip2-sys/0.1.11+1.0.8/source/build.rs
     #
@@ -100,7 +93,7 @@ allow-build-scripts = [
     # https://docs.rs/crate/libnghttp2-sys/0.1.7+1.45.0/source/build.rs
     #
     # libnghttp2 is licensed under `MIT` (https://docs.rs/crate/libnghttp2-sys/0.1.7+1.45.0/source/nghttp2/COPYING)
-    { name = "libnghttp2-sys", version = "=0.45.0" },
+    { name = "libnghttp2-sys", version = "=0.1.7" },
 
     # https://docs.rs/crate/libz-sys/1.1.8/source/build.rs
     #
@@ -117,6 +110,26 @@ allow-build-scripts = [
     #
     # Open JTalk is licensed under: https://github.com/VOICEVOX/open_jtalk/blob/1.11/src/COPYING
     { name = "open_jtalk-sys", version = "=0.16.111" },
+
+    # https://docs.rs/crate/openssl-sys/0.9.76/source/build/main.rs
+    #
+    # OpenSSL is licensed under `OpenSSL` (https://github.com/sfackler/rust-openssl/blob/44528bb7c908884fe68f1622d968c295fcae2667/THIRD_PARTY)
+    { name = "openssl-sys", version = "=0.9.76" },
+
+    # https://docs.rs/crate/ring/0.16.0/source/build.rs
+    #
+    # ring inherits licenses of C libraries: https://docs.rs/crate/ring/0.16.0/source/LICENSE
+    { name = "ring", version = "0.16" },
+
+    # https://docs.rs/crate/wepoll-ffi/0.1.0/source/build.rs
+    #
+    # wepoll-ffi inherits licenses of C libraries: https://docs.rs/crate/wepoll-ffi/0.1.0/source/NOTICE
+    { name = "wepoll-ffi", version = "0.1" },
+
+    # https://docs.rs/crate/zstd-sys/1.6.3+zstd.1.5.2/source/build.rs
+    #
+    # zstd-sys is licensed under "BSD and GPLv2.", but is not linked
+    { name = "zstd-sys", version = "1.6.3+zstd.1.5.2" },
 ]
 
 [sources]
