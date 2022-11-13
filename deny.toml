@@ -85,7 +85,7 @@ allow-build-scripts = [
 
     # https://docs.rs/crate/curl-sys/0.4.0/source/build.rs
     #
-    # Curl is licensed under: `curl` (https://github.com/curl/curl/blob/curl-7_83_1/COPYING)
+    # Curl is licensed under `curl` (https://github.com/curl/curl/blob/curl-7_83_1/COPYING)
     { name = "curl-sys", version = "=0.4.56" },
 
     # https://docs.rs/crate/libnghttp2-sys/0.1.7+1.45.0/source/build.rs
@@ -121,7 +121,7 @@ allow-build-scripts = [
 
     # https://docs.rs/crate/pyo3-ffi/0.17.2/source/build.rs
     #
-    # It **dynamically** links Python, which is licensed under: https://docs.python.org/3/license.html
+    # pyo3-ffi **dynamically** links Python, which is licensed under: https://docs.python.org/3/license.html
     { name = "pyo3-ffi", version = "=0.17.2" },
 
     # https://docs.rs/crate/ring/0.16.0/source/build.rs
