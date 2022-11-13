@@ -33,7 +33,6 @@ allow-build-scripts = [
     { name = "indexmap", version = "1" }, # https://docs.rs/crate/indexmap/1.0.0/source/build.rs
     { name = "isahc", version = "0.9" }, # https://docs.rs/crate/isahc/0.9.0/source/build.rs
     { name = "libc", version = "0.2" }, # https://docs.rs/crate/libc/0.2.0/source/
-    { name = "link-cplusplus", version = "1" }, # https://docs.rs/crate/link-cplusplus/1.0.0/source/build.rs
     { name = "lock_api", version = "0.4" }, # https://docs.rs/crate/lock_api/0.4.0/source/
     { name = "log", version = "0.4" }, # https://docs.rs/crate/log/0.4.0/source/
     { name = "memchr", version = "2" }, # https://docs.rs/crate/memchr/2.0.0/source/
@@ -49,7 +48,6 @@ allow-build-scripts = [
     { name = "proc-macro2", version = "1" }, # https://docs.rs/crate/proc-macro2/1.0.0/source/build.rs
     { name = "pyo3", version = "0.17" }, # https://docs.rs/crate/pyo3/0.17.0/source/build.rs
     { name = "pyo3-build-config", version = "0.17" }, # https://docs.rs/crate/pyo3-build-config/0.17.0/source/build.rs
-    { name = "pyo3-ffi", version = "0.17" }, # https://docs.rs/crate/pyo3-ffi/0.17.0/source/build.rs
     { name = "quote", version = "1" }, # https://docs.rs/crate/quote/1.0.0/source/
     { name = "rstest_macros", version = "0.14" }, # https://docs.rs/crate/rstest_macros/0.14.0/source/build.rs
     { name = "rustls", version = "0.20" }, # https://docs.rs/crate/rustls/0.20.0/source/
@@ -101,6 +99,11 @@ allow-build-scripts = [
     # zlib-ng is licensed under `Zlib` (https://docs.rs/crate/libz-sys/1.1.8/source/src/zlib-ng/LICENSE.md)
     { name = "libz-sys", version = "=1.1.8" },
 
+    # https://docs.rs/crate/link-cplusplus/1.0.7/source/build.rs
+    #
+    # link-cplusplus links libc++ and libstdc++
+    { name = "link-cplusplus", version = "=1.0.7" },
+
     # https://github.com/VOICEVOX/onnxruntime-rs/blob/bee215aaf6d5e346d96e0724acd02a51f612a72e/onnxruntime-sys/build.rs
     #
     # ONNX Runtime is licensed under `MIT` (https://github.com/microsoft/onnxruntime/blob/v1.11.1/LICENSE)
@@ -115,6 +118,11 @@ allow-build-scripts = [
     #
     # OpenSSL is licensed under `OpenSSL` (https://github.com/sfackler/rust-openssl/blob/44528bb7c908884fe68f1622d968c295fcae2667/THIRD_PARTY)
     { name = "openssl-sys", version = "=0.9.76" },
+
+    # https://docs.rs/crate/pyo3-ffi/0.17.2/source/build.rs
+    #
+    # It **dynamically** links Python, which is licensed under: https://docs.python.org/3/license.html
+    { name = "pyo3-ffi", version = "=0.17.2" },
 
     # https://docs.rs/crate/ring/0.16.0/source/build.rs
     #
