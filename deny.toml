@@ -73,36 +73,36 @@ allow-build-scripts = [
     { name = "windows_x86_64_msvc", version = "0.36" }, # https://docs.rs/crate/windows_x86_64_msvc/0.36/source/build.rs
     { name = "zstd-safe", version = "4" }, # https://docs.rs/crate/zstd-safe/4/source/build.rs
 
-    # https://docs.rs/crate/bzip2-sys/0.1.11+1.0.8/source/build.rs
+    # https://docs.rs/crate/bzip2-sys/0.1/source/build.rs
     #
-    # bzip is licensed under: https://sourceware.org/git/?p=bzip2.git;a=blob;f=LICENSE;h=81a37eab7a5be1a34456f38adb74928cc9073e9b;hb=6a8690fc8d26c815e798c588f796eabe9d684cf0
-    { name = "bzip2-sys", version = "=0.1.11" },
+    # bzip is licensed under: https://sourceware.org/git/?p=bzip2.git;a=history;f=LICENSE
+    { name = "bzip2-sys", version = "0.1" },
 
-    # https://docs.rs/crate/clang-sys/1.4.0/source/build.rs
+    # https://docs.rs/crate/clang-sys/1/source/build.rs
     #
     # libclang is licensed under `Apache-2.0 WITH LLVM-exception` (https://raw.githubusercontent.com/llvm/llvm-project/main/llvm/LICENSE.TXT)
-    { name = "clang-sys", version = "=1.4.0" },
+    { name = "clang-sys", version = "1" },
 
     # https://docs.rs/crate/curl-sys/0.4.0/source/build.rs
     #
-    # Curl is licensed under `curl` (https://github.com/curl/curl/blob/curl-7_83_1/COPYING)
-    { name = "curl-sys", version = "=0.4.56" },
+    # Curl is licensed under `curl` (https://github.com/curl/curl/blob/master/COPYING)
+    { name = "curl-sys", version = "0.4" },
 
-    # https://docs.rs/crate/libnghttp2-sys/0.1.7+1.45.0/source/build.rs
+    # https://docs.rs/crate/libnghttp2-sys/0.1/source/build.rs
     #
-    # libnghttp2 is licensed under `MIT` (https://docs.rs/crate/libnghttp2-sys/0.1.7+1.45.0/source/nghttp2/COPYING)
-    { name = "libnghttp2-sys", version = "=0.1.7" },
+    # libnghttp2 is licensed under `MIT` (https://docs.rs/crate/libnghttp2-sys/0.1/source/nghttp2/COPYING)
+    { name = "libnghttp2-sys", version = "0.1" },
 
-    # https://docs.rs/crate/libz-sys/1.1.8/source/build.rs
+    # https://docs.rs/crate/libz-sys/1/source/build.rs
     #
-    # zlib is licensed under `Zlib` (https://docs.rs/crate/libz-sys/1.1.8/source/src/zlib/zlib.h)
-    # zlib-ng is licensed under `Zlib` (https://docs.rs/crate/libz-sys/1.1.8/source/src/zlib-ng/LICENSE.md)
-    { name = "libz-sys", version = "=1.1.8" },
+    # zlib is licensed under `Zlib` (https://docs.rs/crate/libz-sys/1/source/src/zlib/zlib.h)
+    # zlib-ng is licensed under `Zlib` (https://docs.rs/crate/libz-sys/1/source/src/zlib-ng/LICENSE.md)
+    { name = "libz-sys", version = "1" },
 
-    # https://docs.rs/crate/link-cplusplus/1.0.7/source/build.rs
+    # https://docs.rs/crate/link-cplusplus/1/source/build.rs
     #
     # link-cplusplus links libc++ and libstdc++
-    { name = "link-cplusplus", version = "=1.0.7" },
+    { name = "link-cplusplus", version = "1" },
 
     # https://github.com/VOICEVOX/onnxruntime-rs/blob/bee215aaf6d5e346d96e0724acd02a51f612a72e/onnxruntime-sys/build.rs
     #
@@ -112,17 +112,17 @@ allow-build-scripts = [
     # https://github.com/VOICEVOX/open_jtalk-rs/blob/c77112b470874a6a963426ed6c2fb21f12394a78/crates/open_jtalk-sys/build.rs
     #
     # Open JTalk is licensed under: https://github.com/VOICEVOX/open_jtalk/blob/1.11/src/COPYING
-    { name = "open_jtalk-sys", version = "=0.16.111" },
+    { name = "open_jtalk-sys", version = "0.16" },
 
-    # https://docs.rs/crate/openssl-sys/0.9.76/source/build/main.rs
+    # https://docs.rs/crate/openssl-sys/0.9/source/build/main.rs
     #
     # OpenSSL is licensed under `OpenSSL` (https://github.com/sfackler/rust-openssl/blob/44528bb7c908884fe68f1622d968c295fcae2667/THIRD_PARTY)
-    { name = "openssl-sys", version = "=0.9.76" },
+    { name = "openssl-sys", version = "0.9" },
 
-    # https://docs.rs/crate/pyo3-ffi/0.17.2/source/build.rs
+    # https://docs.rs/crate/pyo3-ffi/0.17/source/build.rs
     #
     # pyo3-ffi **dynamically** links Python, which is licensed under: https://docs.python.org/3/license.html
-    { name = "pyo3-ffi", version = "=0.17.2" },
+    { name = "pyo3-ffi", version = "0.17" },
 
     # https://docs.rs/crate/ring/0.16.0/source/build.rs
     #
@@ -134,10 +134,10 @@ allow-build-scripts = [
     # wepoll-ffi inherits licenses of C libraries: https://docs.rs/crate/wepoll-ffi/0.1.0/source/NOTICE
     { name = "wepoll-ffi", version = "0.1" },
 
-    # https://docs.rs/crate/zstd-sys/1.6.3+zstd.1.5.2/source/build.rs
+    # https://docs.rs/crate/zstd-sys/1/source/build.rs
     #
     # libzstd is licensed under `GPL-2.0+ OR BSD-3-Clause` (https://github.com/facebook/zstd/blob/v1.5.2/lib/zstd.h#L1-L9)
-    { name = "zstd-sys", version = "=1.6.3+zstd.1.5.2" },
+    { name = "zstd-sys", version = "1" },
 ]
 
 [sources]
