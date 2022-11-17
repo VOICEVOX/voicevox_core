@@ -8,6 +8,7 @@ targets = [
 
 [bans]
 multiple-versions = "allow"
+# 更新方法は https://github.com/VOICEVOX/voicevox_core/pull/328/files#r1024148598
 allow-build-scripts = [
     { name = "ahash", version = "0.7" }, # https://docs.rs/crate/ahash/0.7/source/build.rs
     { name = "anyhow", version = "1" }, # https://docs.rs/crate/anyhow/1/source/build.rs
