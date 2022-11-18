@@ -27,7 +27,7 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 ### Linux/macOS の場合
 
 ```bash
-curl -sSL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s
+curl-sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s
 ```
 
 詳細な Downloader の使い方については [こちら](./docs/downloads/download.md) を参照してください
