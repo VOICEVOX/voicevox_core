@@ -1,0 +1,15 @@
+name: cargo-deny
+on:
+  push:
+  pull_request:
+jobs:
+  cargo-deny:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+      - name: Install cargo-deny
+        run: cargo binstall cargo-deny@^0.13 --no-confirm --log-level debug
+      - name: cargo-deny
+        run: cargo deny --all-features check
