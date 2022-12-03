@@ -29,7 +29,7 @@ Param(
 	[Parameter()]
 	[bool]
 	# ダウンロードするライブラリを最小限にするように指定
-	$Min = $False
+	$Min = $False,
 
   [Parameter()]
   [ValidateSet("x86","x64")]
