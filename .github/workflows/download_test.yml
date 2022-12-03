@@ -30,6 +30,23 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
+          - name: CpuArch指定
+            os: windows-latest
+            download_command: ./scripts/downloads/Download.ps1 -CpuArch x86
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
           - name: output先指定ダウンロード
             os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Output other_output
