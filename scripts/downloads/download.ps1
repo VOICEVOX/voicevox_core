@@ -32,6 +32,7 @@ Param(
 	$Min = $False
 
   [Parameter()]
+  [ValidateSet("x86","x64")]
   [String]
   # CPUアーキテクチャの指定
   $CpuArch

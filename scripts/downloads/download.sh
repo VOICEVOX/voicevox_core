@@ -108,6 +108,7 @@ download_and_extract(){
   echo "${target}のファイルを展開完了しました。後続のファイルダウンロード処理を待ってください"
 }
 
+cpu_arch=""
 version="latest"
 additional_libraries_version="latest"
 accelerator=""
