@@ -30,6 +30,11 @@ Param(
 	[bool]
 	# ダウンロードするライブラリを最小限にするように指定
 	$Min = $False
+
+  [Parameter()]
+  [String]
+  # CPUアーキテクチャの指定
+  $CpuArch
 )
 mkdir -p $Output
 If (-Not(Split-Path $Output -IsAbsolute)){
@@ -111,8 +116,11 @@ Function Download-and-Extract($Target,$Url,$ExtractDir,$ArchiveFormat){
 }
 
 $Os=Target-Os
-$CpuArch=Target-Arch
 $OpenJtalkOutput= Join-Path $Output $OpenJtalkDictDirName
+
+If ( $CpuArch ){
+  $CpuArch=Target-Arch
+}
 
 If ( $Accelerator -eq "cpu" ){
 	$AdditionalLibrariesVersion=""
