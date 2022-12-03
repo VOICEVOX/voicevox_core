@@ -35,7 +35,7 @@ Param(
   [ValidateSet("x86","x64")]
   [String]
   # CPUアーキテクチャの指定
-  $CpuArch
+  $CpuArch = ""
 )
 mkdir -p $Output
 If (-Not(Split-Path $Output -IsAbsolute)){
@@ -119,7 +119,7 @@ Function Download-and-Extract($Target,$Url,$ExtractDir,$ArchiveFormat){
 $Os=Target-Os
 $OpenJtalkOutput= Join-Path $Output $OpenJtalkDictDirName
 
-If ( $CpuArch ){
+If ( [string]::IsNullOrEmpty($CpuArch) ){
   $CpuArch=Target-Arch
 }
 
