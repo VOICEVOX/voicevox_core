@@ -175,6 +175,23 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
+          - name: CPUArch指定
+            os: ubuntu-latest
+            download_command: ./scripts/downloads/download.sh --cpu-arch x64
+            download_dir: voicevox_core
+            check_items: |
+              libcore.so
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
           - name: output先指定ダウンロード
             os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh --output other_output

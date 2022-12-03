@@ -30,12 +30,11 @@ Param(
 	[bool]
 	# ダウンロードするライブラリを最小限にするように指定
 	$Min = $False,
-
-  [Parameter()]
-  [ValidateSet("x86","x64")]
-  [String]
-  # CPUアーキテクチャの指定
-  $CpuArch = ""
+	[Parameter()]
+	[ValidateSet("x86","x64")]
+	[String]
+	# CPUアーキテクチャの指定
+	$CpuArch = ""
 )
 mkdir -p $Output
 If (-Not(Split-Path $Output -IsAbsolute)){
