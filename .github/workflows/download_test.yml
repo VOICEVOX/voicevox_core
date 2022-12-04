@@ -235,7 +235,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}-${{ matrix.os }}
     env:
-      EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || 'latest' }}
+      EXPECTED_VOICEVOX_CORE_VERSION: latest
+      # See https://github.com/VOICEVOX/voicevox_core/issues/310
+      #EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || 'latest' }}
     steps:
       - uses: actions/checkout@v3
       - name: Execute download command
