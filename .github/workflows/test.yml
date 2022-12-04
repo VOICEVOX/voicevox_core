@@ -6,6 +6,36 @@ on:
       - "**/*"
   pull_request:
 jobs:
+  shellcheck:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+      - name: ShellCheck
+        run: git ls-files | grep -E '\.(ba)?sh' | xargs shellcheck
+
+  actionlint:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      - name: Install Pyflakes
+        run: pip install 'pyflakes>3,<4'
+      - name: actionlint
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint
+
   rust-lint:
     runs-on: windows-latest
     steps:
