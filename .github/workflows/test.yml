@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - name: Install ShellCheck
+      - name: Update ShellCheck
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - name: Install ShellCheck
+      - name: Update ShellCheck
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck
