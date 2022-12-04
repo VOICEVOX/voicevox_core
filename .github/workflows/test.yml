@@ -21,6 +21,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
+      # ShellCheckとPyflakesをインストールしておくと、shell: bashとshell: pythonのコードを検査してくれるようになる
+      #
+      # 参考:
+      # - https://github.com/rhysd/actionlint/blob/main/docs/checks.md#shellcheck-integration-for-run
+      # - https://github.com/rhysd/actionlint/blob/main/docs/checks.md#pyflakes-integration-for-run
       - name: Update ShellCheck
         run: |
           sudo apt-get update
