@@ -39,7 +39,7 @@ jobs:
       - name: actionlint
         run: |
           bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          ./actionlint
+          ./actionlint -color
 
   rust-lint:
     runs-on: windows-latest
