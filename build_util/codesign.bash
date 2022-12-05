@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # !!! コードサイニング証明書を取り扱うので取り扱い注意 !!!
 
 set -eu
