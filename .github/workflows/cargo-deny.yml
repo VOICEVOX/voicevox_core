@@ -12,4 +12,9 @@ jobs:
       - name: Install cargo-deny
         run: cargo binstall cargo-deny@^0.13 --no-confirm --log-level debug
       - name: cargo-deny
-        run: cargo deny --all-features check
+        run: |
+          if ${{ !!github.event.release }}; then
+            cargo deny --all-features check
+          else
+            cargo deny --all-features check -W denied
+          fi
