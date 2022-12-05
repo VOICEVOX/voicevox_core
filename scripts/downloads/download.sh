@@ -62,7 +62,7 @@ latest_voicevox_additional_libraries_version(){
 target_os(){
   if [ "$(uname)" == 'Darwin' ]; then
     echo "osx"
-  elif [ "$(uname -s | cut -c 1-5)" == 'Linux' ]; then
+  elif [[ "$(uname)" =~ Linux ]]; then
     echo "linux"
   else
     echo "$(uname)はサポートされていない環境です" >&2
