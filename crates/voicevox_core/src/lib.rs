@@ -16,9 +16,9 @@ mod test_util;
 #[cfg(test)]
 use test_util::*;
 
-pub use engine::AudioQueryModel;
-pub use error::*;
-pub use result::*;
+pub use self::engine::AudioQueryModel;
+pub use self::error::*;
+pub use self::result::*;
 
 use derive_getters::*;
 use derive_new::new;
