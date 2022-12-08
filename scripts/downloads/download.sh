@@ -48,7 +48,7 @@ voicevox_additional_libraries_url(){
 latest_version(){
   base_url=$1
   get_latest_url="$base_url/releases/tag"
-  echo -En $(curl -sSfI "$base_url/releases/latest"| grep "location:" | sed -e "s%location: $get_latest_url/%%" | sed 's/\r//g')
+  echo -En "$(curl -sSfI "$base_url/releases/latest"| grep "location:" | sed -e "s%location: $get_latest_url/%%" | sed 's/\r//g')"
 }
 
 latest_voicevox_core_version(){
@@ -62,7 +62,7 @@ latest_voicevox_additional_libraries_version(){
 target_os(){
   if [ "$(uname)" == 'Darwin' ]; then
     echo "osx"
-  elif [ "$(expr substr $(uname -s) 1 5)" == 'Linux' ]; then
+  elif [[ "$(uname)" =~ Linux ]]; then
     echo "linux"
   else
     echo "$(uname)はサポートされていない環境です" >&2

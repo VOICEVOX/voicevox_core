@@ -6,6 +6,41 @@ on:
       - "**/*"
   pull_request:
 jobs:
+  shellcheck:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Update ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+      - name: ShellCheck
+        run: git ls-files | grep -E '\.(ba)?sh' | xargs shellcheck
+
+  actionlint:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      # ShellCheckとPyflakesをインストールしておくと、shell: bashとshell: pythonのコードを検査してくれるようになる
+      #
+      # 参考:
+      # - https://github.com/rhysd/actionlint/blob/main/docs/checks.md#shellcheck-integration-for-run
+      # - https://github.com/rhysd/actionlint/blob/main/docs/checks.md#pyflakes-integration-for-run
+      - name: Update ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      - name: Install Pyflakes
+        run: pip install 'pyflakes>3,<4'
+      - name: actionlint
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+
   rust-lint:
     runs-on: windows-latest
     steps:
@@ -156,7 +191,9 @@ jobs:
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
       - name: '`maturin develop`でインストールした`voicevox_core_python_api`を実行'
         shell: python
-        run: import voicevox_core
+        run: |
+          import voicevox_core
+          print(voicevox_core)
 
 env:
   CARGO_TERM_COLOR: always

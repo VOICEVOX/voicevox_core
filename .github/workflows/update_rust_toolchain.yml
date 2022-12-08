@@ -17,7 +17,7 @@ jobs:
         run: |
           rust_version=$(rustup run stable rustc --version | sed -r "s/.*([0-9]+\.[0-9]+\.[0-9]+[^ ]*).*/\1/")
           echo "$rust_version" > ./rust-toolchain
-          echo "RUST_VERSION=$rust_version" >> $GITHUB_ENV
+          echo "RUST_VERSION=$rust_version" >> "$GITHUB_ENV"
       - name: create_pr
         id: update-rust-toolchain
         uses: peter-evans/create-pull-request@v4
