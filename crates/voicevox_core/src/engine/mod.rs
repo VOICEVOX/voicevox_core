@@ -8,9 +8,9 @@ mod synthesis_engine;
 
 use super::*;
 
+pub use self::acoustic_feature_extractor::*;
+pub use self::full_context_label::*;
+pub use self::kana_parser::*;
+pub use self::model::*;
 pub use self::open_jtalk::OpenJtalk;
-pub use acoustic_feature_extractor::*;
-pub use full_context_label::*;
-pub use kana_parser::*;
-pub use model::*;
-pub use synthesis_engine::*;
+pub use self::synthesis_engine::*;
