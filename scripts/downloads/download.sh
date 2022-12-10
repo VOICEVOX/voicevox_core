@@ -8,7 +8,7 @@ help(){
     -v|--version \$version                     ダウンロードするvoicevox_coreのバージョンの指定(default latest)
     --additional-libraries-version \$version   追加でダウンロードするライブラリのバージョン
     --accelerator \$accelerator                ダウンロードするacceleratorを指定する(cpu,cudaを指定可能.cudaはlinuxのみ)
-    --cpu-arch \$cpu-arch                      ダウンロードするcpuのアーキテクチャを指定する
+    --cpu-arch \$cpu_arch                      ダウンロードするcpuのアーキテクチャを指定する
     --min                                     ダウンロードするライブラリを最小限にするように指定
 EOM
   exit 2
