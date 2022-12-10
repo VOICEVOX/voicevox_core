@@ -8,6 +8,7 @@ help(){
     -v|--version \$version                     ダウンロードするvoicevox_coreのバージョンの指定(default latest)
     --additional-libraries-version \$version   追加でダウンロードするライブラリのバージョン
     --accelerator \$accelerator                ダウンロードするacceleratorを指定する(cpu,cudaを指定可能.cudaはlinuxのみ)
+    --cpu-arch \$cpu_arch                      ダウンロードするcpuのアーキテクチャを指定する
     --min                                     ダウンロードするライブラリを最小限にするように指定
 EOM
   exit 2
@@ -107,6 +108,7 @@ download_and_extract(){
   echo "${target}のファイルを展開完了しました。後続のファイルダウンロード処理を待ってください"
 }
 
+cpu_arch=""
 version="latest"
 additional_libraries_version="latest"
 accelerator=""
@@ -132,6 +134,9 @@ do
     --accelerator)
       accelerator="$2"
       shift;;
+    --cpu-arch)
+      cpu_arch="$2"
+      shift;;
     --min)
       min=true
       ;;
@@ -144,9 +149,11 @@ done
 
 
 os=$(target_os)
-cpu_arch=$(target_arch)
 open_jtalk_output="${output%/}/$open_jtalk_dict_dir_name"
 
+if [ -z "$cpu_arch" ];then
+  cpu_arch=$(target_arch)
+fi
 
 if [ "$accelerator" = "" ];then
   accelerator="cpu"
