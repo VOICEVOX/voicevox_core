@@ -70,7 +70,7 @@ impl SynthesisEngine {
                                     };
 
                                 MoraModel::new(
-                                    mora_to_text(&mora_text),
+                                    mora_to_text(mora_text),
                                     consonant,
                                     consonant_length,
                                     mora.vowel().phoneme().into(),
