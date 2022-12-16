@@ -192,7 +192,7 @@ impl SynthesisEngine {
         let mut base_start_accent_phrase_list = vec![0];
         let mut base_end_accent_phrase_list = vec![0];
         for accent_phrase in accent_phrases {
-            let mut accent: usize = if *accent_phrase.accent() == 1 { 0 } else { 1 };
+            let mut accent = usize::from(*accent_phrase.accent() != 1);
             SynthesisEngine::create_one_accent_list(
                 &mut base_start_accent_list,
                 accent_phrase,
@@ -456,8 +456,7 @@ impl SynthesisEngine {
         cur.write_all(&bytes_size.to_le_bytes()).unwrap();
 
         for value in wave {
-            // clip
-            let v = (value * volume_scale).max(-1.).min(1.);
+            let v = (value * volume_scale).clamp(-1., 1.);
             let data = (v * 0x7fff as f32) as i16;
             for _ in 0..repeat_count {
                 cur.write_all(&data.to_le_bytes()).unwrap();
