@@ -57,7 +57,7 @@ mod tests {
     fn check_audio_query_model_json_field_snake_case() {
         let audio_query_model =
             AudioQueryModel::new(vec![], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, false, "".into());
-        let val = serde_json::to_value(&audio_query_model).unwrap();
+        let val = serde_json::to_value(audio_query_model).unwrap();
         check_json_field_snake_case(&val);
     }
 

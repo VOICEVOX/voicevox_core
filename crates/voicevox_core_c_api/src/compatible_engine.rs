@@ -147,8 +147,7 @@ pub extern "C" fn decode_forward(
     );
     match result {
         Ok(output_vec) => {
-            let output_slice =
-                unsafe { std::slice::from_raw_parts_mut(output, (length as usize) * 256) };
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };
             output_slice.clone_from_slice(&output_vec);
             true
         }
