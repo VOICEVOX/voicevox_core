@@ -66,6 +66,12 @@ jobs:
             artifact_name: linux-x64-gpu
             whl_local_version: cuda
             use_cuda: true
+          - os: ubuntu-20.04
+            features: ""
+            target: aarch64-unknown-linux-gnu
+            artifact_name: linux-arm64-cpu
+            whl_local_version: cpu
+            use_cuda: false
           - os: macos-11
             features: ""
             target: aarch64-apple-darwin
@@ -90,6 +96,12 @@ jobs:
         uses: ./.github/actions/rust-toolchain-from-file
         with:
           targets: ${{ matrix.target }}
+      - name: Install cross compiler for aarch64-unknown-linux-gnu
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
