@@ -1,7 +1,7 @@
 /// cbindgen:ignore
 mod compatible_engine;
 mod helpers;
-use helpers::*;
+use self::helpers::*;
 use libc::c_void;
 use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};

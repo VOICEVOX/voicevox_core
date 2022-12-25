@@ -30,6 +30,23 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
+          - name: CpuArch指定
+            os: windows-latest
+            download_command: ./scripts/downloads/Download.ps1 -CpuArch x86
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
           - name: output先指定ダウンロード
             os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Output other_output
@@ -158,6 +175,23 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
+          - name: CPUArch指定
+            os: ubuntu-latest
+            download_command: ./scripts/downloads/download.sh --cpu-arch x64
+            download_dir: voicevox_core
+            check_items: |
+              libcore.so
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
           - name: output先指定ダウンロード
             os: ubuntu-latest
             download_command: ./scripts/downloads/download.sh --output other_output
@@ -235,7 +269,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}-${{ matrix.os }}
     env:
-      EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || 'latest' }}
+      EXPECTED_VOICEVOX_CORE_VERSION: latest
+      # See https://github.com/VOICEVOX/voicevox_core/issues/310
+      #EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || 'latest' }}
     steps:
       - uses: actions/checkout@v3
       - name: Execute download command
@@ -244,7 +280,7 @@ jobs:
         if: ${{ env.EXPECTED_VOICEVOX_CORE_VERSION == 'latest' }}
         shell: bash
         run: |
-          echo "EXPECTED_VOICEVOX_CORE_VERSION=$(curl -sSfI "https://github.com/VOICEVOX/voicevox_core/releases/latest"| grep "location:" | sed -e "s%location: https://github.com/VOICEVOX/voicevox_core/releases/tag/%%" | sed 's/\r//g')" >> $GITHUB_ENV
+          echo "EXPECTED_VOICEVOX_CORE_VERSION=$(curl -sSfI "https://github.com/VOICEVOX/voicevox_core/releases/latest"| grep "location:" | sed -e "s%location: https://github.com/VOICEVOX/voicevox_core/releases/tag/%%" | sed 's/\r//g')" >> "$GITHUB_ENV"
       - name: Check downloaded version
         shell: bash
         run: |
@@ -253,18 +289,20 @@ jobs:
       - name: Check downloaded files
         shell: bash
         run: |
-          items=($(echo -e "${{ matrix.check_items }}" | xargs))
+          mapfile -t items < <(echo -n '${{ matrix.check_items }}')
           for item in "${items[@]}"
           do
             echo "check exists ${{ matrix.download_dir }}/${item}..."
+            # shellcheck disable=SC2086
             [ -e "${{ matrix.download_dir }}"/${item} ]
           done
       - name: Check should not exists files
         shell: bash
         run: |
-          items=($(echo -e "${{ matrix.check_not_exists_items }}" | xargs))
+          mapfile -t items < <(echo -n '${{ matrix.check_not_exists_items }}')
           for item in "${items[@]}"
           do
             echo "check should not exists ${{ matrix.download_dir }}/${item}..."
+            # shellcheck disable=SC2086
             [ ! -e "${{ matrix.download_dir }}"/${item} ]
           done
