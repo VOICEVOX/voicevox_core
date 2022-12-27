@@ -5,10 +5,12 @@ use self::helpers::*;
 use libc::c_void;
 use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
+use std::io;
 use std::os::raw::c_char;
 use std::path::PathBuf;
 use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
+use tracing_subscriber::EnvFilter;
 use voicevox_core::AudioQueryModel;
 use voicevox_core::Result;
 use voicevox_core::VoicevoxCore;
@@ -18,7 +20,14 @@ use rstest::*;
 
 type Internal = VoicevoxCore;
 
-static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(Internal::new_with_mutex);
+static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .with_writer(io::stderr)
+        .try_init();
+
+    Internal::new_with_mutex()
+});
 
 pub(crate) fn lock_internal() -> MutexGuard<'static, Internal> {
     INTERNAL.lock().unwrap()
