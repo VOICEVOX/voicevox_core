@@ -33,6 +33,9 @@ impl VoicevoxCore {
     }
 
     fn new() -> Self {
+        #[cfg(windows)]
+        list_windows_video_cards();
+
         Self {
             synthesis_engine: SynthesisEngine::new(
                 InferenceCore::new(false, None),
@@ -604,6 +607,55 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
             "入力テキストをAquesTalkライクな読み仮名としてパースすることに失敗しました\0"
         }
         VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR => "無効なaudio_queryです\0",
+    }
+}
+
+#[cfg(windows)]
+fn list_windows_video_cards() {
+    use std::{ffi::OsString, os::windows::ffi::OsStringExt as _};
+
+    use humansize::BINARY;
+    use tracing::{error, info};
+    use windows::Win32::Graphics::Dxgi::{
+        CreateDXGIFactory, IDXGIFactory, DXGI_ADAPTER_DESC, DXGI_ERROR_NOT_FOUND,
+    };
+
+    info!("Video cards:");
+    if let Err(err) = list_windows_video_cards() {
+        error!("{err}");
+    }
+
+    fn list_windows_video_cards() -> windows::core::Result<()> {
+        #[allow(unsafe_code)]
+        unsafe {
+            let factory = CreateDXGIFactory::<IDXGIFactory>()?;
+            let mut i = 0;
+            loop {
+                let desc = &match factory.EnumAdapters(i) {
+                    Ok(adapter) => adapter,
+                    Err(err) => {
+                        break if err.code() == DXGI_ERROR_NOT_FOUND {
+                            Ok(())
+                        } else {
+                            Err(err)
+                        }
+                    }
+                }
+                .GetDesc()?;
+                show(desc);
+                i += 1;
+            }
+        }
+    }
+
+    fn show(desc: &DXGI_ADAPTER_DESC) {
+        let description = OsString::from_wide(trim_nul(&desc.Description));
+        let vram = humansize::format_size(desc.DedicatedVideoMemory, BINARY);
+        info!("  - {description:?} ({vram})");
+    }
+
+    fn trim_nul(s: &[u16]) -> &[u16] {
+        &s[..s.iter().position(|&c| c == 0x0000).unwrap_or(s.len())]
     }
 }
 
