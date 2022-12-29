@@ -197,12 +197,14 @@ impl Default for VoicevoxInitializeOptions {
 
 impl VoicevoxInitializeOptions {
     pub(crate) unsafe fn try_into_options(self) -> CApiResult<voicevox_core::InitializeOptions> {
-        let open_jtalk_dict_dir = ensure_utf8(CStr::from_ptr(self.open_jtalk_dict_dir))?;
+        let open_jtalk_dict_dir = (!self.open_jtalk_dict_dir.is_null())
+            .then(|| ensure_utf8(CStr::from_ptr(self.open_jtalk_dict_dir)).map(Into::into))
+            .transpose()?;
         Ok(voicevox_core::InitializeOptions {
             acceleration_mode: self.acceleration_mode.into(),
             cpu_num_threads: self.cpu_num_threads,
             load_all_models: self.load_all_models,
-            open_jtalk_dict_dir: Some(PathBuf::from(open_jtalk_dict_dir)),
+            open_jtalk_dict_dir,
         })
     }
 }
