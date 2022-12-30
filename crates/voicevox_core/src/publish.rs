@@ -621,37 +621,26 @@ fn list_windows_video_cards() {
     };
 
     info!("Video cards:");
-    if let Err(err) = list_windows_video_cards() {
-        error!("{err}");
+    match list_windows_video_cards() {
+        Ok(descs) => {
+            for desc in descs {
+                let description = OsString::from_wide(trim_nul(&desc.Description));
+                let vram = humansize::format_size(desc.DedicatedVideoMemory, BINARY);
+                info!("  - {description:?} ({vram})");
+            }
+        }
+        Err(err) => error!("{err}"),
     }
 
-    fn list_windows_video_cards() -> windows::core::Result<()> {
+    fn list_windows_video_cards() -> windows::core::Result<Vec<DXGI_ADAPTER_DESC>> {
         #[allow(unsafe_code)]
         unsafe {
             let factory = CreateDXGIFactory::<IDXGIFactory>()?;
-            let mut i = 0;
-            loop {
-                let desc = &match factory.EnumAdapters(i) {
-                    Ok(adapter) => adapter,
-                    Err(err) => {
-                        break if err.code() == DXGI_ERROR_NOT_FOUND {
-                            Ok(())
-                        } else {
-                            Err(err)
-                        }
-                    }
-                }
-                .GetDesc()?;
-                show(desc);
-                i += 1;
-            }
+            (0..)
+                .map(|i| factory.EnumAdapters(i)?.GetDesc())
+                .take_while(|r| !matches!(r, Err(e) if e.code() == DXGI_ERROR_NOT_FOUND))
+                .collect()
         }
-    }
-
-    fn show(desc: &DXGI_ADAPTER_DESC) {
-        let description = OsString::from_wide(trim_nul(&desc.Description));
-        let vram = humansize::format_size(desc.DedicatedVideoMemory, BINARY);
-        info!("  - {description:?} ({vram})");
     }
 
     fn trim_nul(s: &[u16]) -> &[u16] {
