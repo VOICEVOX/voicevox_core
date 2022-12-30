@@ -7,7 +7,6 @@ use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
 use std::io;
 use std::os::raw::c_char;
-use std::path::PathBuf;
 use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
 use tracing_subscriber::EnvFilter;

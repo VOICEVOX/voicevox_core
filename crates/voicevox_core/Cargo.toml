@@ -15,7 +15,7 @@ cfg-if = "1.0.0"
 derive-getters = "0.2.0"
 derive-new = "0.5.9"
 once_cell.workspace = true
-onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="b27a4f57da23e17274ad43342b7af55f1c1e4094" }
+onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="405f62fb53df1b59b0e69adafbd1c28e4d5c2787" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
