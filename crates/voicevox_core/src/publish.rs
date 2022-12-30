@@ -620,7 +620,7 @@ fn list_windows_video_cards() {
         CreateDXGIFactory, IDXGIFactory, DXGI_ADAPTER_DESC, DXGI_ERROR_NOT_FOUND,
     };
 
-    info!("Video cards:");
+    info!("利用可能なGPU (DirectMLには1番目のGPUが使われます):");
     match list_windows_video_cards() {
         Ok(descs) => {
             for desc in descs {
