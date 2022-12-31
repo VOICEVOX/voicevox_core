@@ -381,6 +381,9 @@ impl SynthesisEngine {
             let mut vowel_indexes_index = 0;
 
             for (i, phoneme_length) in phoneme_length_list.iter().enumerate() {
+                // VOICEVOX ENGINEと挙動を合わせるため、偶数丸めで`usize`に丸める
+                //
+                // https://github.com/VOICEVOX/voicevox_engine/issues/552
                 let phoneme_length = ((*phoneme_length * RATE).round_ties_even_() / speed_scale)
                     .round_ties_even_() as usize;
                 let phoneme_id = phoneme_data_list[i].phoneme_id();
