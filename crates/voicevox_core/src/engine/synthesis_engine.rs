@@ -5,6 +5,7 @@ use std::path::Path;
 use super::full_context_label::Utterance;
 use super::open_jtalk::OpenJtalk;
 use super::*;
+use crate::numerics::F32Ext as _;
 use crate::InferenceCore;
 
 const UNVOICED_MORA_PHONEME_LIST: &[&str] = &["A", "I", "U", "E", "O", "cl", "pau"];
@@ -380,8 +381,8 @@ impl SynthesisEngine {
             let mut vowel_indexes_index = 0;
 
             for (i, phoneme_length) in phoneme_length_list.iter().enumerate() {
-                let phoneme_length =
-                    ((*phoneme_length * RATE).round() / speed_scale).round() as usize;
+                let phoneme_length = ((*phoneme_length * RATE).round_ties_even_() / speed_scale)
+                    .round_ties_even_() as usize;
                 let phoneme_id = phoneme_data_list[i].phoneme_id();
 
                 for _ in 0..phoneme_length {

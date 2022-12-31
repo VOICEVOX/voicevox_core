@@ -14,6 +14,7 @@ anyhow.workspace = true
 cfg-if = "1.0.0"
 derive-getters = "0.2.0"
 derive-new = "0.5.9"
+easy-ext.workspace = true
 once_cell.workspace = true
 onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="b27a4f57da23e17274ad43342b7af55f1c1e4094" }
 serde.workspace = true
