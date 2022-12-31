@@ -41,6 +41,15 @@ jobs:
           bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
           ./actionlint -color
 
+  validate-cargo-lock:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-file
+      - name: Validate Cargo.lock
+        run: cargo metadata --locked --format-version 1 > /dev/null
+
   rust-lint:
     runs-on: windows-latest
     steps:
