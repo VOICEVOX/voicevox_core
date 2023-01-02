@@ -1,18 +1,18 @@
 [
   {
-    "name": "四国めたん",
+    "name": "dummy1",
     "styles": [
-      { "name": "あまあま", "id": 0 }
+      { "name": "style1", "id": 0 }
     ],
-    "speaker_uuid": "7ffcb7ce-00ec-4bdc-82cd-45a8889e43ff",
+    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
     "version": "0.0.1"
   },
   {
-    "name": "ずんだもん",
+    "name": "dummy2",
     "styles": [
-      { "name": "あまあま", "id": 1 }
+      { "name": "style2", "id": 1 }
     ],
-    "speaker_uuid": "388f246b-8c41-4ac1-8e2d-5d79f3ff56d9",
+    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
     "version": "0.0.1"
   }
 ]
