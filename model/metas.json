@@ -4,7 +4,7 @@
     "styles": [
       { "name": "style1", "id": 0 }
     ],
-    "speaker_uuid": "dummy1uuid",
+    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
     "version": "0.0.1"
   },
   {
@@ -12,7 +12,7 @@
     "styles": [
       { "name": "style2", "id": 1 }
     ],
-    "speaker_uuid": "dummy2uuid",
+    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
     "version": "0.0.1"
   }
 ]
