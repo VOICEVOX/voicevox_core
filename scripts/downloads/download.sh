@@ -10,6 +10,7 @@ help(){
     --accelerator \$accelerator                ダウンロードするacceleratorを指定する(cpu,cudaを指定可能.cudaはlinuxのみ)
     --cpu-arch \$cpu_arch                      ダウンロードするcpuのアーキテクチャを指定する
     --min                                     ダウンロードするライブラリを最小限にするように指定
+    --os                                      ダウンロードする対象のOSを指定する
 EOM
   exit 2
 }
@@ -108,6 +109,7 @@ download_and_extract(){
   echo "${target}のファイルを展開完了しました。後続のファイルダウンロード処理を待ってください"
 }
 
+os=""
 cpu_arch=""
 version="latest"
 additional_libraries_version="latest"
@@ -140,6 +142,9 @@ do
     --min)
       min=true
       ;;
+    --os)
+      os="$2"
+      shift;;
     *)
       echo "サポートされていないオプションです" >&2
       exit 1;;
@@ -147,9 +152,11 @@ do
   shift
 done
 
-
-os=$(target_os)
 open_jtalk_output="${output%/}/$open_jtalk_dict_dir_name"
+
+if [ -z "$os" ];then
+  os=$(target_os)
+fi
 
 if [ -z "$cpu_arch" ];then
   cpu_arch=$(target_arch)
