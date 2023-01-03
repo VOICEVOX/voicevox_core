@@ -2759,6 +2759,7 @@ dependencies = [
  "cfg-if",
  "derive-getters",
  "derive-new",
+ "easy-ext",
  "flate2",
  "heck",
  "once_cell",

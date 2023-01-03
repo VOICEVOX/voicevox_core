@@ -3,6 +3,7 @@
 /// cbindgen:ignore
 mod engine;
 mod error;
+mod numerics;
 mod publish;
 mod result;
 pub mod result_code;

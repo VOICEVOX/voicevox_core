@@ -15,7 +15,7 @@ crate-type = ["cdylib"]
 directml = ["voicevox_core/directml"]
 
 [dependencies]
-easy-ext = "1.0.1"
+easy-ext.workspace = true
 log = "0.4.17"
 numpy = "0.17.2"
 pyo3 = { version = "0.17.2", features = ["abi3-py38", "extension-module"] }
