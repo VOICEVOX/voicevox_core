@@ -1,4 +1,6 @@
+use self::model_file::ModelFileNames;
 use super::*;
+use anyhow::Context as _;
 use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment,
@@ -6,6 +8,10 @@ use onnxruntime::{
     GraphOptimizationLevel, LoggingLevel,
 };
 use serde::{Deserialize, Serialize};
+use std::{env, path::Path};
+use tracing::error;
+
+mod model_file;
 
 cfg_if! {
     if #[cfg(not(feature="directml"))]{
@@ -14,8 +20,13 @@ cfg_if! {
 }
 use std::collections::{BTreeMap, BTreeSet};
 
-#[allow(dead_code)]
-pub(crate) static VVM: Lazy<Vvm> = Lazy::new(Vvm::new);
+pub(crate) static VVM: Lazy<Vvm> = Lazy::new(|| {
+    let result = Vvm::new();
+    if let Err(err) = &result {
+        error!("ファイルを読み込めなかったためクラッシュします: {err}");
+    }
+    result.unwrap()
+});
 
 pub struct Status {
     models: StatusModels,
@@ -36,32 +47,77 @@ struct SessionOptions {
     use_gpu: bool,
 }
 
-#[allow(dead_code)]
 pub(crate) struct Vvm {
     pub(crate) speaker_id_map: BTreeMap<u32, (usize, u32)>,
     pub(crate) metas_str: String,
-    metas: Vec<Meta>,
     models: Vec<Model>,
 }
 
 impl Vvm {
-    /// # Panics
-    ///
-    /// ファイルが読めなかったりした場合panicする。
-    fn new() -> Self {
-        todo!();
+    fn new() -> anyhow::Result<Self> {
+        let path = {
+            let root_dir = if cfg!(test) {
+                Path::new(env!("CARGO_WORKSPACE_DIR")).join("model")
+            } else {
+                env::var(ROOT_DIR_ENV_NAME)
+                    .map(|root_dir| Ok(root_dir.into()))
+                    .unwrap_or_else(|_| {
+                        // FIXME: 親の実行ファイルじゃなくてvoicevox_core.dllの場所を取れないか?
+                        env::current_exe()
+                            .map(|p| p.parent().unwrap_or_else(|| "".as_ref()).join("model"))
+                    })
+                    .with_context(|| "Could not get the current executable")?
+            };
+
+            move |rel_path| root_dir.join(rel_path)
+        };
+
+        let load_model = |rel_path| -> anyhow::Result<_> {
+            let c = &fs_err::read(path(rel_path))?;
+            let m = model_file::decrypt(c)?;
+            Ok(m)
+        };
+
+        let metas_str = fs_err::read_to_string(path("metas.json"))?;
+
+        let models = model_file::MODEL_FILE_NAMES
+            .iter()
+            .map(
+                |&ModelFileNames {
+                     predict_duration_model,
+                     predict_intonation_model,
+                     decode_model,
+                 }| {
+                    let predict_duration_model = load_model(predict_duration_model)?;
+                    let predict_intonation_model = load_model(predict_intonation_model)?;
+                    let decode_model = load_model(decode_model)?;
+                    Ok(Model {
+                        predict_duration_model,
+                        predict_intonation_model,
+                        decode_model,
+                    })
+                },
+            )
+            .collect::<anyhow::Result<_>>()?;
+
+        return Ok(Self {
+            speaker_id_map: model_file::SPEAKER_ID_MAP.iter().copied().collect(),
+            metas_str,
+            models,
+        });
+
+        const ROOT_DIR_ENV_NAME: &str = "VV_MODELS_ROOT_DIR";
     }
 
-    #[allow(dead_code)]
     pub(crate) fn models_count(&self) -> usize {
         self.models.len()
     }
 }
 
 struct Model {
-    predict_duration_model: &'static [u8],
-    predict_intonation_model: &'static [u8],
-    decode_model: &'static [u8],
+    predict_duration_model: Vec<u8>,
+    predict_intonation_model: Vec<u8>,
+    decode_model: Vec<u8>,
 }
 
 #[derive(Deserialize, Getters)]
@@ -126,13 +182,6 @@ impl SupportedDevices {
 unsafe impl Send for Status {}
 
 impl Status {
-    const MODELS: &'static [Model] = &include!("include_models.rs");
-
-    pub const METAS_STR: &'static str =
-        include_str!(concat!(env!("CARGO_WORKSPACE_DIR"), "/model/metas.json"));
-
-    pub const MODELS_COUNT: usize = Self::MODELS.len();
-
     pub fn new(use_gpu: bool, cpu_num_threads: u16) -> Self {
         Self {
             models: StatusModels {
@@ -148,7 +197,7 @@ impl Status {
 
     pub fn load_metas(&mut self) -> Result<()> {
         let metas: Vec<Meta> =
-            serde_json::from_str(Self::METAS_STR).map_err(|e| Error::LoadMetas(e.into()))?;
+            serde_json::from_str(&VVM.metas_str).map_err(|e| Error::LoadMetas(e.into()))?;
 
         for meta in metas.iter() {
             for style in meta.styles().iter() {
@@ -160,16 +209,16 @@ impl Status {
     }
 
     pub fn load_model(&mut self, model_index: usize) -> Result<()> {
-        if model_index < Self::MODELS.len() {
-            let model = &Self::MODELS[model_index];
+        if model_index < VVM.models.len() {
+            let model = &VVM.models[model_index];
             let predict_duration_session = self
-                .new_session(model.predict_duration_model, &self.light_session_options)
+                .new_session(&model.predict_duration_model, &self.light_session_options)
                 .map_err(Error::LoadModel)?;
             let predict_intonation_session = self
-                .new_session(model.predict_intonation_model, &self.light_session_options)
+                .new_session(&model.predict_intonation_model, &self.light_session_options)
                 .map_err(Error::LoadModel)?;
             let decode_model = self
-                .new_session(model.decode_model, &self.heavy_session_options)
+                .new_session(&model.decode_model, &self.heavy_session_options)
                 .map_err(Error::LoadModel)?;
 
             self.models

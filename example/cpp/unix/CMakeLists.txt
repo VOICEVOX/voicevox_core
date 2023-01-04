@@ -11,3 +11,5 @@ target_link_directories(simple_tts PRIVATE ./voicevox_core)
 
 file(GLOB CORE_LIB ./voicevox_core/libvoicevox_core.so.* ./voicevox_core/libvoicevox_core.*.dylib)
 target_link_libraries(simple_tts voicevox_core)
+
+file(COPY ../../../model DESTINATION ./)

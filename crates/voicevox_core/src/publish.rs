@@ -8,13 +8,10 @@ use onnxruntime::{
     session::{AnyArray, NdArray},
 };
 use std::ffi::{CStr, CString};
+use std::path::PathBuf;
 use std::sync::Mutex;
-use std::{collections::BTreeMap, path::PathBuf};
 
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
-
-static SPEAKER_ID_MAP: Lazy<BTreeMap<u32, (usize, u32)>> =
-    Lazy::new(|| include!("include_speaker_id_map.rs").into_iter().collect());
 
 pub struct VoicevoxCore {
     synthesis_engine: SynthesisEngine,
@@ -284,7 +281,7 @@ impl InferenceCore {
             status.load_metas()?;
 
             if load_all_models {
-                for model_index in 0..Status::MODELS_COUNT {
+                for model_index in 0..VVM.models_count() {
                     status.load_model(model_index)?;
                 }
             }
@@ -363,7 +360,7 @@ impl InferenceCore {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= Status::MODELS_COUNT {
+        if model_index >= VVM.models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -416,7 +413,7 @@ impl InferenceCore {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= Status::MODELS_COUNT {
+        if model_index >= VVM.models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -474,7 +471,7 @@ impl InferenceCore {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= Status::MODELS_COUNT {
+        if model_index >= VVM.models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -563,9 +560,12 @@ impl InferenceCore {
     }
 }
 
-pub static METAS: &str = Status::METAS_STR;
+pub static METAS: &Lazy<&str> = {
+    static METAS: Lazy<&str> = Lazy::new(|| &VVM.metas_str);
+    &METAS
+};
 
-pub static METAS_CSTRING: Lazy<CString> = Lazy::new(|| CString::new(METAS).unwrap());
+pub static METAS_CSTRING: Lazy<CString> = Lazy::new(|| CString::new(&*VVM.metas_str).unwrap());
 
 pub static SUPPORTED_DEVICES: Lazy<SupportedDevices> =
     Lazy::new(|| SupportedDevices::get_supported_devices().unwrap());
@@ -574,7 +574,7 @@ pub static SUPPORTED_DEVICES_CSTRING: Lazy<CString> =
     Lazy::new(|| CString::new(SUPPORTED_DEVICES.to_json().to_string()).unwrap());
 
 fn get_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
-    SPEAKER_ID_MAP.get(&speaker_id).copied()
+    VVM.speaker_id_map.get(&speaker_id).copied()
 }
 
 pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
