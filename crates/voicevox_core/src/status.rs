@@ -62,7 +62,7 @@ impl ModelFileSet {
             } else {
                 process_path::get_dylib_path()
                     .or_else(process_path::get_executable_path)
-                    .with_context(|| "Could not get the current DLL/executable path")?
+                    .with_context(|| "Could not get the current dynamic library/executable path")?
                     .parent()
                     .unwrap_or_else(|| "".as_ref())
                     .join("model")
