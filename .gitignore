@@ -29,6 +29,9 @@ __pycache__/
 *.abi3.dylib
 *.abi3.so
 
+# Python API
+/crates/voicevox_core_python_api/python/voicevox_core/model/
+
 # CMake
 CMakeFiles/
 CMakeCache.txt
