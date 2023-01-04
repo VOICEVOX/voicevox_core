@@ -121,7 +121,7 @@ struct ModelFileNames {
 
 #[derive(thiserror::Error, Debug)]
 #[error("不正なモデルファイルです")]
-struct DecryptError;
+struct DecryptModelError;
 
 struct Model {
     predict_duration_model: Vec<u8>,
