@@ -10,7 +10,6 @@ TODO
 - voicevox_core_python_api の whl (`pip install`)
 - onnxruntime の DLL (/README.md と同様)
 - open_jtalk_dic_utf_8-1.11 (/README.md と同様)
-- modelディレクトリをこっちにコピーするか、環境変数を設定することを案内する
 
 ## 実行
 
