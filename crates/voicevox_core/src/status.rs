@@ -371,9 +371,7 @@ mod tests {
         let mut status = Status::new(true, 0);
         let result = status.load_metas();
         assert_eq!(Ok(()), result);
-        let mut expected = BTreeSet::new();
-        expected.insert(0);
-        expected.insert(1);
+        let expected = BTreeSet::from([0, 1, 2, 3]);
         assert_eq!(expected, status.supported_styles);
     }
 
