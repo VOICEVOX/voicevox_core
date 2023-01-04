@@ -1809,6 +1809,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "process_path"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f676f11eb0b3e2ea0fbaee218fa6b806689e2297b8c8adc5bf73df465c4f6171"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "pyo3"
 version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2789,6 +2799,7 @@ dependencies = [
  "onnxruntime",
  "open_jtalk",
  "pretty_assertions",
+ "process_path",
  "regex",
  "rstest",
  "serde",

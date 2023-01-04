@@ -18,6 +18,7 @@ easy-ext.workspace = true
 fs-err = "2.9.0"
 once_cell.workspace = true
 onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="405f62fb53df1b59b0e69adafbd1c28e4d5c2787" }
+process_path = "0.1.4"
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

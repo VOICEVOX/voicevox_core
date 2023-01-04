@@ -57,15 +57,15 @@ impl Vvm {
         let path = {
             let root_dir = if cfg!(test) {
                 Path::new(env!("CARGO_WORKSPACE_DIR")).join("model")
+            } else if let Some(root_dir) = env::var_os(ROOT_DIR_ENV_NAME) {
+                root_dir.into()
             } else {
-                env::var(ROOT_DIR_ENV_NAME)
-                    .map(|root_dir| Ok(root_dir.into()))
-                    .unwrap_or_else(|_| {
-                        // FIXME: 親の実行ファイルじゃなくてvoicevox_core.dllの場所を取れないか?
-                        env::current_exe()
-                            .map(|p| p.parent().unwrap_or_else(|| "".as_ref()).join("model"))
-                    })
-                    .with_context(|| "Could not get the current executable")?
+                process_path::get_dylib_path()
+                    .or_else(process_path::get_executable_path)
+                    .with_context(|| "Could not get the current DLL/executable path")?
+                    .parent()
+                    .unwrap_or_else(|| "".as_ref())
+                    .join("model")
             };
 
             move |rel_path| root_dir.join(rel_path)
