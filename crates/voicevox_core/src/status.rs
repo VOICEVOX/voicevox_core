@@ -1,4 +1,3 @@
-use self::model_file::ModelFileNames;
 use super::*;
 use anyhow::Context as _;
 use once_cell::sync::Lazy;
@@ -113,6 +112,16 @@ impl Vvm {
         self.models.len()
     }
 }
+
+struct ModelFileNames {
+    predict_duration_model: &'static str,
+    predict_intonation_model: &'static str,
+    decode_model: &'static str,
+}
+
+#[derive(thiserror::Error, Debug)]
+#[error("不正なモデルファイルです")]
+struct DecryptError;
 
 struct Model {
     predict_duration_model: Vec<u8>,

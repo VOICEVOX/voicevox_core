@@ -1,3 +1,5 @@
+use super::{DecryptError, ModelFileNames};
+
 pub(super) fn decrypt(content: &[u8]) -> std::result::Result<Vec<u8>, DecryptError> {
     Ok(content.to_owned())
 }
@@ -9,13 +11,3 @@ pub(super) const MODEL_FILE_NAMES: &[ModelFileNames] = &[ModelFileNames {
     predict_intonation_model: "predict_intonation.onnx",
     decode_model: "decode.onnx",
 }];
-
-pub(super) struct ModelFileNames {
-    pub(super) predict_duration_model: &'static str,
-    pub(super) predict_intonation_model: &'static str,
-    pub(super) decode_model: &'static str,
-}
-
-#[derive(thiserror::Error, Debug)]
-#[error("不正なモデルファイルです")]
-pub(super) struct DecryptError;
