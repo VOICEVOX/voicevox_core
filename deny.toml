@@ -34,6 +34,7 @@ allow-build-scripts = [
     { name = "indexmap", version = "1" }, # https://docs.rs/crate/indexmap/1/source/build.rs
     { name = "isahc", version = "0.9" }, # https://docs.rs/crate/isahc/0.9/source/build.rs
     { name = "libc", version = "0.2" }, # https://docs.rs/crate/libc/0.2/source/build.rs
+    { name = "libm", version = "0.2" }, # https://docs.rs/crate/libm/0.2.6/source/build.rs
     { name = "lock_api", version = "0.4" }, # https://docs.rs/crate/lock_api/0.4/source/build.rs
     { name = "log", version = "0.4" }, # https://docs.rs/crate/log/0.4/source/build.rs
     { name = "memchr", version = "2" }, # https://docs.rs/crate/memchr/2/source/build.rs
@@ -41,6 +42,7 @@ allow-build-scripts = [
     { name = "mime_guess", version = "2" }, # https://docs.rs/crate/mime_guess/2/source/build.rs
     { name = "num-integer", version = "0.1" }, # https://docs.rs/crate/num-integer/0.1/source/build.rs
     { name = "num-traits", version = "0.2" }, # https://docs.rs/crate/num-traits/0.2/source/build.rs
+    { name = "onnxruntime", version = "=0.1.0" }, # https://github.com/VOICEVOX/onnxruntime-rs/blob/405f62fb53df1b59b0e69adafbd1c28e4d5c2787/onnxruntime/build.rs
     { name = "parking_lot_core", version = "0.9" }, # https://docs.rs/crate/parking_lot_core/0.9/source/build.rs
     { name = "polling", version = "2" }, # https://docs.rs/crate/polling/2/source/build.rs
     { name = "proc-macro-error", version = "1" }, # https://docs.rs/crate/proc-macro-error/1/source/build.rs
@@ -71,7 +73,9 @@ allow-build-scripts = [
     { name = "wasm-bindgen-shared", version = "0.2" }, # https://docs.rs/crate/wasm-bindgen-shared/0.2/source/build.rs
     { name = "winapi", version = "0.3" }, # https://docs.rs/crate/winapi/0.3/source/build.rs
     { name = "windows_i686_msvc", version = "0.36" }, # https://docs.rs/crate/windows_i686_msvc/0.36/source/build.rs
+    { name = "windows_i686_msvc", version = "0.42" }, # https://docs.rs/crate/windows_i686_msvc/0.42.0/source/build.rs
     { name = "windows_x86_64_msvc", version = "0.36" }, # https://docs.rs/crate/windows_x86_64_msvc/0.36/source/build.rs
+    { name = "windows_x86_64_msvc", version = "0.42" }, # https://docs.rs/crate/windows_x86_64_msvc/0.42.0/source/build.rs
     { name = "zstd-safe", version = "4" }, # https://docs.rs/crate/zstd-safe/4/source/build.rs
 
     # https://docs.rs/crate/bzip2-sys/0.1/source/build.rs
