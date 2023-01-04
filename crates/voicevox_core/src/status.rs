@@ -19,8 +19,8 @@ cfg_if! {
 }
 use std::collections::{BTreeMap, BTreeSet};
 
-pub(crate) static VVM: Lazy<Vvm> = Lazy::new(|| {
-    let result = Vvm::new();
+pub(crate) static MODEL_FILE_SET: Lazy<ModelFileSet> = Lazy::new(|| {
+    let result = ModelFileSet::new();
     if let Err(err) = &result {
         error!("ファイルを読み込めなかったためクラッシュします: {err}");
     }
@@ -46,13 +46,13 @@ struct SessionOptions {
     use_gpu: bool,
 }
 
-pub(crate) struct Vvm {
+pub(crate) struct ModelFileSet {
     pub(crate) speaker_id_map: BTreeMap<u32, (usize, u32)>,
     pub(crate) metas_str: String,
     models: Vec<Model>,
 }
 
-impl Vvm {
+impl ModelFileSet {
     fn new() -> anyhow::Result<Self> {
         let path = {
             let root_dir = if cfg!(test) {
@@ -205,8 +205,8 @@ impl Status {
     }
 
     pub fn load_metas(&mut self) -> Result<()> {
-        let metas: Vec<Meta> =
-            serde_json::from_str(&VVM.metas_str).map_err(|e| Error::LoadMetas(e.into()))?;
+        let metas: Vec<Meta> = serde_json::from_str(&MODEL_FILE_SET.metas_str)
+            .map_err(|e| Error::LoadMetas(e.into()))?;
 
         for meta in metas.iter() {
             for style in meta.styles().iter() {
@@ -218,8 +218,8 @@ impl Status {
     }
 
     pub fn load_model(&mut self, model_index: usize) -> Result<()> {
-        if model_index < VVM.models.len() {
-            let model = &VVM.models[model_index];
+        if model_index < MODEL_FILE_SET.models.len() {
+            let model = &MODEL_FILE_SET.models[model_index];
             let predict_duration_session = self
                 .new_session(&model.predict_duration_model, &self.light_session_options)
                 .map_err(Error::LoadModel)?;

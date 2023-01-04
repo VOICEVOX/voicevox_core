@@ -281,7 +281,7 @@ impl InferenceCore {
             status.load_metas()?;
 
             if load_all_models {
-                for model_index in 0..VVM.models_count() {
+                for model_index in 0..MODEL_FILE_SET.models_count() {
                     status.load_model(model_index)?;
                 }
             }
@@ -360,7 +360,7 @@ impl InferenceCore {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= VVM.models_count() {
+        if model_index >= MODEL_FILE_SET.models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -413,7 +413,7 @@ impl InferenceCore {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= VVM.models_count() {
+        if model_index >= MODEL_FILE_SET.models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -471,7 +471,7 @@ impl InferenceCore {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= VVM.models_count() {
+        if model_index >= MODEL_FILE_SET.models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -561,11 +561,12 @@ impl InferenceCore {
 }
 
 pub static METAS: &Lazy<&str> = {
-    static METAS: Lazy<&str> = Lazy::new(|| &VVM.metas_str);
+    static METAS: Lazy<&str> = Lazy::new(|| &MODEL_FILE_SET.metas_str);
     &METAS
 };
 
-pub static METAS_CSTRING: Lazy<CString> = Lazy::new(|| CString::new(&*VVM.metas_str).unwrap());
+pub static METAS_CSTRING: Lazy<CString> =
+    Lazy::new(|| CString::new(&*MODEL_FILE_SET.metas_str).unwrap());
 
 pub static SUPPORTED_DEVICES: Lazy<SupportedDevices> =
     Lazy::new(|| SupportedDevices::get_supported_devices().unwrap());
@@ -574,7 +575,7 @@ pub static SUPPORTED_DEVICES_CSTRING: Lazy<CString> =
     Lazy::new(|| CString::new(SUPPORTED_DEVICES.to_json().to_string()).unwrap());
 
 fn get_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
-    VVM.speaker_id_map.get(&speaker_id).copied()
+    MODEL_FILE_SET.speaker_id_map.get(&speaker_id).copied()
 }
 
 pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
