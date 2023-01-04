@@ -203,6 +203,9 @@ jobs:
         run: |
           import voicevox_core
           print(voicevox_core)
+        env:
+          # FIXME: whl内に埋め込む
+          VV_MODELS_ROOT_DIR: ./model
 
 env:
   CARGO_TERM_COLOR: always
