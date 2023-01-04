@@ -14,6 +14,9 @@ cfg_if! {
 }
 use std::collections::{BTreeMap, BTreeSet};
 
+#[allow(dead_code)]
+pub(crate) static VVM: Lazy<Vvm> = Lazy::new(Vvm::new);
+
 pub struct Status {
     models: StatusModels,
     light_session_options: SessionOptions, // 軽いモデルはこちらを使う
@@ -31,6 +34,28 @@ struct StatusModels {
 struct SessionOptions {
     cpu_num_threads: u16,
     use_gpu: bool,
+}
+
+#[allow(dead_code)]
+pub(crate) struct Vvm {
+    pub(crate) speaker_id_map: BTreeMap<u32, (usize, u32)>,
+    pub(crate) metas_str: String,
+    metas: Vec<Meta>,
+    models: Vec<Model>,
+}
+
+impl Vvm {
+    /// # Panics
+    ///
+    /// ファイルが読めなかったりした場合panicする。
+    fn new() -> Self {
+        todo!();
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn models_count(&self) -> usize {
+        self.models.len()
+    }
 }
 
 struct Model {
