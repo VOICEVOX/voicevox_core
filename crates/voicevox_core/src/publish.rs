@@ -585,9 +585,7 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
         VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR => {
             "OpenJTalkの辞書が読み込まれていません\0"
         }
-        VOICEVOX_RESULT_LOAD_MODEL_ERROR => {
-            "modelデータ読み込み中にOnnxruntimeエラーが発生しました\0"
-        }
+        VOICEVOX_RESULT_LOAD_MODEL_ERROR => "modelデータ読み込みに失敗しました\0",
         VOICEVOX_RESULT_LOAD_METAS_ERROR => "メタデータ読み込みに失敗しました\0",
 
         VOICEVOX_RESULT_GPU_SUPPORT_ERROR => "GPU機能をサポートすることができません\0",

@@ -1,5 +1,5 @@
 use super::*;
-use anyhow::Context as _;
+use anyhow::{anyhow, Context as _};
 use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment,
@@ -7,7 +7,10 @@ use onnxruntime::{
     GraphOptimizationLevel, LoggingLevel,
 };
 use serde::{Deserialize, Serialize};
-use std::{env, path::Path};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 use tracing::error;
 
 mod model_file;
@@ -71,12 +74,6 @@ impl ModelFileSet {
             move |rel_path| root_dir.join(rel_path)
         };
 
-        let load_model = |rel_path| -> anyhow::Result<_> {
-            let c = &fs_err::read(path(rel_path))?;
-            let m = model_file::decrypt(c)?;
-            Ok(m)
-        };
-
         let metas_str = fs_err::read_to_string(path("metas.json"))?;
 
         let models = model_file::MODEL_FILE_NAMES
@@ -87,9 +84,9 @@ impl ModelFileSet {
                      predict_intonation_model,
                      decode_model,
                  }| {
-                    let predict_duration_model = load_model(predict_duration_model)?;
-                    let predict_intonation_model = load_model(predict_intonation_model)?;
-                    let decode_model = load_model(decode_model)?;
+                    let predict_duration_model = ModelFile::new(&path(predict_duration_model))?;
+                    let predict_intonation_model = ModelFile::new(&path(predict_intonation_model))?;
+                    let decode_model = ModelFile::new(&path(decode_model))?;
                     Ok(Model {
                         predict_duration_model,
                         predict_intonation_model,
@@ -124,9 +121,28 @@ struct ModelFileNames {
 struct DecryptModelError;
 
 struct Model {
-    predict_duration_model: Vec<u8>,
-    predict_intonation_model: Vec<u8>,
-    decode_model: Vec<u8>,
+    predict_duration_model: ModelFile,
+    predict_intonation_model: ModelFile,
+    decode_model: ModelFile,
+}
+
+struct ModelFile {
+    path: PathBuf,
+    content: Vec<u8>,
+}
+
+impl ModelFile {
+    fn new(path: &Path) -> anyhow::Result<Self> {
+        let content = fs_err::read(path)?;
+        Ok(Self {
+            path: path.to_owned(),
+            content,
+        })
+    }
+
+    fn decrypt(&self) -> anyhow::Result<Vec<u8>> {
+        model_file::decrypt(&self.content).map_err(|e| anyhow!("{e}: {}", self.path.display()))
+    }
 }
 
 #[derive(Deserialize, Getters)]
@@ -220,15 +236,12 @@ impl Status {
     pub fn load_model(&mut self, model_index: usize) -> Result<()> {
         if model_index < MODEL_FILE_SET.models.len() {
             let model = &MODEL_FILE_SET.models[model_index];
-            let predict_duration_session = self
-                .new_session(&model.predict_duration_model, &self.light_session_options)
-                .map_err(Error::LoadModel)?;
-            let predict_intonation_session = self
-                .new_session(&model.predict_intonation_model, &self.light_session_options)
-                .map_err(Error::LoadModel)?;
-            let decode_model = self
-                .new_session(&model.decode_model, &self.heavy_session_options)
-                .map_err(Error::LoadModel)?;
+            let predict_duration_session =
+                self.new_session(&model.predict_duration_model, &self.light_session_options)?;
+            let predict_intonation_session =
+                self.new_session(&model.predict_intonation_model, &self.light_session_options)?;
+            let decode_model =
+                self.new_session(&model.decode_model, &self.heavy_session_options)?;
 
             self.models
                 .predict_duration
@@ -251,9 +264,21 @@ impl Status {
             && self.models.decode.contains_key(&model_index)
     }
 
-    fn new_session<B: AsRef<[u8]>>(
+    fn new_session(
         &self,
-        model_bytes: B,
+        model_file: &ModelFile,
+        session_options: &SessionOptions,
+    ) -> Result<Session<'static>> {
+        self.new_session_from_bytes(|| model_file.decrypt(), session_options)
+            .map_err(|source| Error::LoadModel {
+                path: model_file.path.clone(),
+                source,
+            })
+    }
+
+    fn new_session_from_bytes(
+        &self,
+        model_bytes: impl FnOnce() -> anyhow::Result<Vec<u8>>,
         session_options: &SessionOptions,
     ) -> anyhow::Result<Session<'static>> {
         let session_builder = ENVIRONMENT
@@ -278,7 +303,7 @@ impl Status {
             session_builder
         };
 
-        Ok(session_builder.with_model_from_memory(model_bytes)?)
+        Ok(session_builder.with_model_from_memory(model_bytes()?)?)
     }
 
     pub fn validate_speaker_id(&self, speaker_id: u32) -> bool {
