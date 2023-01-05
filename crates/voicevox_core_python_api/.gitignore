@@ -1,0 +1,7 @@
+# build.rs
+/python/voicevox_core/model/
+
+# Maturin
+*.abi3.dll
+*.abi3.dylib
+*.abi3.so

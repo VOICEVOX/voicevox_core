@@ -15,11 +15,14 @@ cfg-if = "1.0.0"
 derive-getters = "0.2.0"
 derive-new = "0.5.9"
 easy-ext.workspace = true
+fs-err = "2.9.0"
 once_cell.workspace = true
 onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="405f62fb53df1b59b0e69adafbd1c28e4d5c2787" }
+process_path = "0.1.4"
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+tracing.workspace = true
 open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="9edab53f0bfa877dbb37224d17fd0f3efbe32abd" }
 regex = "1.6.0"
 
@@ -34,5 +37,4 @@ heck = "0.4.0"
 
 [target."cfg(windows)".dependencies]
 humansize = "2.1.2"
-tracing.workspace = true
 windows = { version = "0.43.0", features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
