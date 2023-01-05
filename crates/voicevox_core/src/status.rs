@@ -1,5 +1,5 @@
 use super::*;
-use anyhow::{anyhow, Context as _};
+use anyhow::Context as _;
 use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment,
@@ -139,10 +139,6 @@ impl ModelFile {
             content,
         })
     }
-
-    fn decrypt(&self) -> anyhow::Result<Vec<u8>> {
-        model_file::decrypt(&self.content).map_err(|e| anyhow!("{e}: {}", self.path.display()))
-    }
 }
 
 #[derive(Deserialize, Getters)]
@@ -269,7 +265,7 @@ impl Status {
         model_file: &ModelFile,
         session_options: &SessionOptions,
     ) -> Result<Session<'static>> {
-        self.new_session_from_bytes(|| model_file.decrypt(), session_options)
+        self.new_session_from_bytes(|| model_file::decrypt(&model_file.content), session_options)
             .map_err(|source| Error::LoadModel {
                 path: model_file.path.clone(),
                 source,
@@ -278,7 +274,7 @@ impl Status {
 
     fn new_session_from_bytes(
         &self,
-        model_bytes: impl FnOnce() -> anyhow::Result<Vec<u8>>,
+        model_bytes: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
         session_options: &SessionOptions,
     ) -> anyhow::Result<Session<'static>> {
         let session_builder = ENVIRONMENT
