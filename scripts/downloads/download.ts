@@ -39,9 +39,11 @@ async function main(): Promise<void> {
     .type("cpu-arch", new EnumType(["x64", "aarch64"]))
     .type("os", new EnumType(["windows", "linux", "osx"]))
     .option("--min", `Only Download ${CORE_DISPLAY_NAME}.`)
-    .option("-o, --output <output>", "Output to the directory.", {
-      default: DEFAULT_OUTPUT,
-    })
+    .option(
+      "-o, --output <output>",
+      "Output to the directory.",
+      { default: DEFAULT_OUTPUT },
+    )
     .option(
       "-v, --version <tag-or-latest>",
       `Version of ${CORE_DISPLAY_NAME}.`,
@@ -125,14 +127,12 @@ async function main(): Promise<void> {
   ];
 
   if (!min) {
-    promises.push(
-      download(
-        OPEN_JTALK_DIC_DISPLAY_NAME,
-        OPEN_JTALK_DIC_URL,
-        "tar-x",
-        output,
-      ),
-    );
+    promises.push(download(
+      OPEN_JTALK_DIC_DISPLAY_NAME,
+      OPEN_JTALK_DIC_URL,
+      "tar-x",
+      output,
+    ));
 
     if (additionalLibrariesAsset) {
       promises.push(download(
@@ -150,7 +150,14 @@ async function main(): Promise<void> {
 }
 
 function defaultArch(): "x64" | "aarch64" | undefined {
-  return arch == "x64" ? "x64" : arch == "arm64" ? "aarch64" : undefined;
+  switch (arch) {
+    case "x64":
+      return "x64";
+    case "arm64":
+      return "aarch64";
+    default:
+      return undefined;
+  }
 }
 
 function defaultOS(): "windows" | "linux" | "osx" {
