@@ -197,3 +197,30 @@ jobs:
           files: |-
             scripts/downloads/*
           target_commitish: ${{ github.sha }}
+  deploy_precompiled_downloader:
+    strategy:
+      matrix:
+        include:
+          - os: windows-2019
+            name: download.exe
+          - os: ubuntu-20.04
+            name: download-linux
+          - os: macos-11
+            name: download-macos
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      - name: Compile download.ts
+        run: deno compile --allow-net --allow-read --allow-write -o ${{ matrix.name }} ./scripts/downloads/download.ts
+      - name: Upload to Release
+        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: ${{ matrix.name }}
+          target_commitish: ${{ github.sha }}
