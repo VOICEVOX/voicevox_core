@@ -83,7 +83,7 @@ async function main(): Promise<void> {
 
   const octokit = new Octokit();
 
-  const coreAsset = await findRelease(
+  const coreAsset = await findGHAsset(
     octokit,
     CORE_REPO_NAME,
     version,
@@ -101,7 +101,7 @@ async function main(): Promise<void> {
 
   const additionalLibrariesAsset = accelerator == "cpu"
     ? undefined
-    : await findRelease(
+    : await findGHAsset(
       octokit,
       ADDITIONAL_LIBRARIES_REPO_NAME,
       additionalLibrariesVersion,
@@ -122,15 +122,18 @@ async function main(): Promise<void> {
     );
   }
 
-  const promises = [
-    download(CORE_DISPLAY_NAME, coreAsset.url, "unzip-j", output),
-  ];
+  const promises = [download(
+    CORE_DISPLAY_NAME,
+    coreAsset.url,
+    { accept: "application/octet-stream", format: "zip", junkPaths: true },
+    output,
+  )];
 
   if (!min) {
     promises.push(download(
       OPEN_JTALK_DIC_DISPLAY_NAME,
       OPEN_JTALK_DIC_URL,
-      "tar-x",
+      { accept: "application/x-gzip", format: "tgz", junkPaths: false },
       output,
     ));
 
@@ -138,7 +141,7 @@ async function main(): Promise<void> {
       promises.push(download(
         ADDITIONAL_LIBRARIES_DISPLAY_NAME,
         additionalLibrariesAsset.url,
-        "unzip-j",
+        { accept: "application/octet-stream", format: "zip", junkPaths: true },
         output,
       ));
     }
@@ -167,16 +170,16 @@ function defaultOS(): "windows" | "linux" | "osx" {
   return Deno.build.os;
 }
 
-async function findRelease(
+async function findGHAsset(
   octokit: Octokit,
   repo: string,
-  tagOrLatest: string,
+  gitTagOrLatest: string,
   assetName: (tag: string) => string,
 ): Promise<{ releaseTag: string; url: URL }> {
   // FIXME: どうにかして型付けできないか?
-  const endpoint = tagOrLatest == "latest"
+  const endpoint = gitTagOrLatest == "latest"
     ? `GET /repos/${ORGANIZATION_NAME}/${repo}/releases/latest`
-    : `GET /repos/${ORGANIZATION_NAME}/${repo}/releases/tags/${tagOrLatest}`;
+    : `GET /repos/${ORGANIZATION_NAME}/${repo}/releases/tags/${gitTagOrLatest}`;
   const { data: { html_url, tag_name, assets } } = await octokit.request(
     endpoint,
   );
@@ -191,30 +194,31 @@ async function findRelease(
 async function download(
   displayName: string,
   url: URL,
-  extractionMethod: "unzip-j" | "tar-x",
+  kind:
+    | { accept: "application/octet-stream"; format: "zip"; junkPaths: true }
+    | { accept: "application/x-gzip"; format: "tgz"; junkPaths: false },
   output: string,
 ): Promise<void> {
   status(`${displayName}をダウンロード`);
 
-  const res = await fetch(url, {
-    headers: { "Accept": "application/octet-stream" },
-  });
+  const res = await fetch(url, { headers: { "Accept": kind.accept } });
   if (res.status != 200) throw new Error(`Got ${res.status}: ${url}`);
   const archiveData = new Uint8Array(await res.arrayBuffer());
 
   status(`${displayName}をダウンロード: 解凍中`);
 
-  if (extractionMethod == "unzip-j") {
-    await extractZIPWithJunkPaths(archiveData, output);
+  if (kind.format == "zip") {
+    await extractZIP(archiveData, kind.junkPaths, output);
   } else {
-    await extractTGZ(archiveData, output);
+    await extractTGZ(archiveData, kind.junkPaths, output);
   }
 
   success(`${displayName}をダウンロード: 完了`);
 }
 
-async function extractZIPWithJunkPaths(
+async function extractZIP(
   archiveData: Uint8Array,
+  _junkPaths: true,
   output: string,
 ): Promise<void> {
   const zip = new ZipReader(new Uint8ArrayReader(archiveData));
@@ -232,6 +236,7 @@ async function extractZIPWithJunkPaths(
 
 async function extractTGZ(
   archiveData: Uint8Array,
+  _junkPaths: false,
   output: string,
 ): Promise<void> {
   const tempdir = await Deno.makeTempDir({ prefix: "download-" });
