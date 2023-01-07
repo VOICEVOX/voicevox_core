@@ -427,7 +427,7 @@ jobs:
       - name: Execute download command
         run: ${{ matrix.download_command }}
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Get latest version
         if: ${{ env.EXPECTED_VOICEVOX_CORE_VERSION == 'latest' }}
         shell: bash
