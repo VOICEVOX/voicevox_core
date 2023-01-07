@@ -6,7 +6,7 @@ import {
 } from "https://deno.land/x/cliffy@v0.25.7/command/mod.ts";
 import { tgz } from "https://deno.land/x/compress@v0.4.5/mod.ts";
 import { Octokit } from "https://cdn.skypack.dev/@octokit/rest?dts";
-import { basename, join } from "https://deno.land/std@0.171.0/path/mod.ts";
+import { dirname, join } from "https://deno.land/std@0.171.0/path/mod.ts";
 import { arch } from "https://deno.land/std@0.170.0/node/process.ts";
 import {
   Uint8ArrayReader,
@@ -228,12 +228,11 @@ async function extractZIP(
   const zip = new ZipReader(new Uint8ArrayReader(archiveData));
   const entries = await zip.getEntries();
 
-  await Deno.mkdir(output, { recursive: true });
-
   for (const entry of entries) {
     if (entry.directory) continue;
     const path = join(output, stripFirstDir(entry.filename));
     const content = await entry.getData(new Uint8ArrayWriter());
+    await Deno.mkdir(dirname(path), { recursive: true });
     await Deno.writeFile(path, content);
   }
 }
