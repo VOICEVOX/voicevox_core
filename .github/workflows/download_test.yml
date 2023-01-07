@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: 通常ダウンロード
+          - name: 通常ダウンロード (PowerShell)
             os: windows-latest
             download_command: ./scripts/downloads/Download.ps1
             download_dir: voicevox_core
@@ -30,7 +30,24 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
-          - name: CpuArch指定
+          - name: 通常ダウンロード (Deno)
+            os: windows-latest
+            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+          - name: CpuArch指定 (PowerShell)
             os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -CpuArch x86
             download_dir: voicevox_core
@@ -47,7 +64,24 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
-          - name: output先指定ダウンロード
+          - name: CpuArch指定 (Deno)
+            os: windows-latest
+            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --cpu-arch x86
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+          - name: output先指定ダウンロード (PowerShell)
             os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Output other_output
             download_dir: other_output
@@ -64,7 +98,24 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
-          - name: Min option確認
+          - name: output先指定ダウンロード (Deno)
+            os: windows-latest
+            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --output other_output
+            download_dir: other_output
+            check_items: |
+              core.dll
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+          - name: Min option確認 (PowerShell)
             os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Min $True
             download_dir: voicevox_core
@@ -81,7 +132,24 @@ jobs:
               *cufft*
               *curand*
               open_jtalk_dic_utf_8-1.11
-          - name: DirectML option確認
+          - name: Min option確認 (Deno)
+            os: windows-latest
+            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --min
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *onnxruntime*providers*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+              open_jtalk_dic_utf_8-1.11
+          - name: DirectML option確認 (PowerShell)
             os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Accelerator directml
             download_dir: voicevox_core
@@ -99,7 +167,25 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
-          - name: DirectMLかつMin option確認
+          - name: DirectML option確認 (Deno)
+            os: windows-latest
+            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator directml
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+              DirectML.dll
+              DirectML_LICENSE.txt
+            check_not_exists_items: |
+              *directml*
+              *cuda*
+              *cudnn*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+          - name: DirectMLかつMin option確認 (PowerShell)
             os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Accelerator directml -Min $true
             download_dir: voicevox_core
@@ -116,7 +202,24 @@ jobs:
               Directml.dll
               DirectML_LICENSE.txt
               open_jtalk_dic_utf_8-1.11
-          - name: cuda option確認
+          - name: DirectMLかつMin option確認 (Deno)
+            os: windows-latest
+            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator directml --min
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              README.txt
+            check_not_exists_items: |
+              *cuda*
+              *cudnn*
+              *eula*
+              *nvidia*
+              *cufft*
+              *curand*
+              Directml.dll
+              DirectML_LICENSE.txt
+              open_jtalk_dic_utf_8-1.11
+          - name: cuda option確認 (PowerShell)
             os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Accelerator cuda
             download_dir: voicevox_core
@@ -137,9 +240,51 @@ jobs:
               curand64_*.dll
             check_not_exists_items: |
               *directml*
-          - name: cudaかつmin option確認
+          - name: cuda option確認 (Deno)
+            os: windows-latest
+            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator cuda
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              open_jtalk_dic_utf_8-1.11
+              README.txt
+              EULA.txt
+              NVIDIA_SLA_cuDNN_Support.txt
+              cublas64_*.dll
+              cublasLt64_*.dll
+              cudart64_*.dll
+              cudnn64_*.dll
+              cudnn_adv_infer64_*.dll
+              cudnn_cnn_infer64_*.dll
+              cudnn_ops_infer64_*.dll
+              cufft64_*.dll
+              curand64_*.dll
+            check_not_exists_items: |
+              *directml*
+          - name: cudaかつmin option確認 (PowerShell)
             os: windows-latest
             download_command: ./scripts/downloads/Download.ps1 -Accelerator cuda -Min $true
+            download_dir: voicevox_core
+            check_items: |
+              core.dll
+              README.txt
+            check_not_exists_items: |
+              *directml*
+              EULA.txt
+              NVIDIA_SLA_cuDNN_Support.txt
+              cublas64_*.dll
+              cublasLt64_*.dll
+              cudart64_*.dll
+              cudnn64_*.dll
+              cudnn_adv_infer64_*.dll
+              cudnn_cnn_infer64_*.dll
+              cudnn_ops_infer64_*.dll
+              cufft64_*.dll
+              curand64_*.dll
+              open_jtalk_dic_utf_8-1.11
+          - name: cudaかつmin option確認 (Deno)
+            os: windows-latest
+            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator cuda --min
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -274,6 +419,11 @@ jobs:
       #EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || 'latest' }}
     steps:
       - uses: actions/checkout@v3
+      - name: Set up Deno
+        if: ${{ startsWith(matrix.download_command, 'deno ') }}
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
       - name: Execute download command
         run: ${{ matrix.download_command }}
       - name: Get latest version
