@@ -36,7 +36,7 @@ async function main(): Promise<void> {
     .name("download")
     .description(`Download ${CORE_DISPLAY_NAME} and other libraries.`)
     .type("accelerator", new EnumType(["cpu", "cuda", "directml"]))
-    .type("cpu-arch", new EnumType(["x64", "aarch64"]))
+    .type("cpu-arch", new EnumType(["x86", "x64", "aarch64"]))
     .type("os", new EnumType(["windows", "linux", "osx"]))
     .option("--min", `Only Download ${CORE_DISPLAY_NAME}.`)
     .option(
@@ -78,7 +78,7 @@ async function main(): Promise<void> {
   const { output, version, additionalLibrariesVersion } = options;
   const min = !!options.min;
   const accelerator = options.accelerator as "cpu" | "cuda" | "directml";
-  const cpuArch = options.cpuArch as "x64" | "aarch64";
+  const cpuArch = options.cpuArch as "x86" | "x64" | "aarch64";
   const os = options.os as "windows" | "linux" | "osx";
 
   const octokit = new Octokit();
@@ -156,8 +156,10 @@ async function main(): Promise<void> {
   success("全ての必要なファイルダウンロードが完了しました");
 }
 
-function defaultArch(): "x64" | "aarch64" | undefined {
+function defaultArch(): "x86" | "x64" | "aarch64" | undefined {
   switch (arch) {
+    case "x32":
+      return "x86";
     case "x64":
       return "x64";
     case "arm64":
