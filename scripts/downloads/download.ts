@@ -125,7 +125,7 @@ async function main(): Promise<void> {
   const promises = [download(
     CORE_DISPLAY_NAME,
     coreAsset.url,
-    { accept: "application/octet-stream", format: "zip", junkPaths: true },
+    { accept: "application/octet-stream", format: "zip", stripFirstDir: true },
     output,
   )];
 
@@ -133,7 +133,7 @@ async function main(): Promise<void> {
     promises.push(download(
       OPEN_JTALK_DIC_DISPLAY_NAME,
       OPEN_JTALK_DIC_URL,
-      { accept: "application/x-gzip", format: "tgz", junkPaths: false },
+      { accept: "application/x-gzip", format: "tgz", stripFirstDir: false },
       output,
     ));
 
@@ -141,7 +141,11 @@ async function main(): Promise<void> {
       promises.push(download(
         ADDITIONAL_LIBRARIES_DISPLAY_NAME,
         additionalLibrariesAsset.url,
-        { accept: "application/octet-stream", format: "zip", junkPaths: true },
+        {
+          accept: "application/octet-stream",
+          format: "zip",
+          stripFirstDir: true,
+        },
         output,
       ));
     }
@@ -195,8 +199,8 @@ async function download(
   displayName: string,
   url: URL,
   kind:
-    | { accept: "application/octet-stream"; format: "zip"; junkPaths: true }
-    | { accept: "application/x-gzip"; format: "tgz"; junkPaths: false },
+    | { accept: "application/octet-stream"; format: "zip"; stripFirstDir: true }
+    | { accept: "application/x-gzip"; format: "tgz"; stripFirstDir: false },
   output: string,
 ): Promise<void> {
   status(`${displayName}をダウンロード`);
@@ -208,9 +212,9 @@ async function download(
   status(`${displayName}をダウンロード: 解凍中`);
 
   if (kind.format == "zip") {
-    await extractZIP(archiveData, kind.junkPaths, output);
+    await extractZIP(archiveData, kind.stripFirstDir, output);
   } else {
-    await extractTGZ(archiveData, kind.junkPaths, output);
+    await extractTGZ(archiveData, kind.stripFirstDir, output);
   }
 
   success(`${displayName}をダウンロード: 完了`);
@@ -218,7 +222,7 @@ async function download(
 
 async function extractZIP(
   archiveData: Uint8Array,
-  _junkPaths: true,
+  _stripFirstDir: true,
   output: string,
 ): Promise<void> {
   const zip = new ZipReader(new Uint8ArrayReader(archiveData));
@@ -228,15 +232,19 @@ async function extractZIP(
 
   for (const entry of entries) {
     if (entry.directory) continue;
-    const path = join(output, basename(entry.filename));
+    const path = join(output, stripFirstDir(entry.filename));
     const content = await entry.getData(new Uint8ArrayWriter());
     await Deno.writeFile(path, content);
   }
 }
 
+function stripFirstDir(posixPath: string): string {
+  return posixPath.slice(posixPath.indexOf("/") + 1);
+}
+
 async function extractTGZ(
   archiveData: Uint8Array,
-  _junkPaths: false,
+  _stripFirstDir: false,
   output: string,
 ): Promise<void> {
   const tempdir = await Deno.makeTempDir({ prefix: "download-" });
