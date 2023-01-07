@@ -32,7 +32,7 @@ jobs:
               *curand*
           - name: 通常ダウンロード (Deno)
             os: windows-latest
-            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts
+            download_command: deno run --allow-env --allow-net --allow-read --allow-write ./scripts/downloads/download.ts
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -66,7 +66,7 @@ jobs:
               *curand*
           - name: CpuArch指定 (Deno)
             os: windows-latest
-            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --cpu-arch x86
+            download_command: deno run --allow-env --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --cpu-arch x86
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -100,7 +100,7 @@ jobs:
               *curand*
           - name: output先指定ダウンロード (Deno)
             os: windows-latest
-            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --output other_output
+            download_command: deno run --allow-env --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --output other_output
             download_dir: other_output
             check_items: |
               core.dll
@@ -134,7 +134,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: Min option確認 (Deno)
             os: windows-latest
-            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --min
+            download_command: deno run --allow-env --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --min
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -169,7 +169,7 @@ jobs:
               *curand*
           - name: DirectML option確認 (Deno)
             os: windows-latest
-            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator directml
+            download_command: deno run --allow-env --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator directml
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -204,7 +204,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: DirectMLかつMin option確認 (Deno)
             os: windows-latest
-            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator directml --min
+            download_command: deno run --allow-env --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator directml --min
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -242,7 +242,7 @@ jobs:
               *directml*
           - name: cuda option確認 (Deno)
             os: windows-latest
-            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator cuda
+            download_command: deno run --allow-env --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator cuda
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -284,7 +284,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: cudaかつmin option確認 (Deno)
             os: windows-latest
-            download_command: deno run --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator cuda --min
+            download_command: deno run --allow-env --allow-net --allow-read --allow-write ./scripts/downloads/download.ts --accelerator cuda --min
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -426,6 +426,8 @@ jobs:
           deno-version: v1.x
       - name: Execute download command
         run: ${{ matrix.download_command }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Get latest version
         if: ${{ env.EXPECTED_VOICEVOX_CORE_VERSION == 'latest' }}
         shell: bash

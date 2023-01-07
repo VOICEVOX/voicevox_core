@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-net --allow-read --allow-write
+#!/usr/bin/env -S deno run --allow-env --allow-net --allow-read --allow-write
 
 import {
   Command,
@@ -7,7 +7,7 @@ import {
 import { tgz } from "https://deno.land/x/compress@v0.4.5/mod.ts";
 import { Octokit } from "https://cdn.skypack.dev/@octokit/rest?dts";
 import { dirname, join } from "https://deno.land/std@0.171.0/path/mod.ts";
-import { arch } from "https://deno.land/std@0.170.0/node/process.ts";
+import { arch, env } from "https://deno.land/std@0.170.0/node/process.ts";
 import {
   Uint8ArrayReader,
   Uint8ArrayWriter,
@@ -81,7 +81,7 @@ async function main(): Promise<void> {
   const cpuArch = options.cpuArch as "x86" | "x64" | "aarch64";
   const os = options.os as "windows" | "linux" | "osx";
 
-  const octokit = new Octokit();
+  const octokit = new Octokit({ auth: env["GITHUB_TOKEN"] });
 
   const coreAsset = await findGHAsset(
     octokit,

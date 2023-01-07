@@ -215,7 +215,7 @@ jobs:
         with:
           deno-version: v1.x
       - name: Compile download.ts
-        run: deno compile --allow-net --allow-read --allow-write -o ${{ matrix.name }} ./scripts/downloads/download.ts
+        run: deno compile --allow-env --allow-net --allow-read --allow-write -o ${{ matrix.name }} ./scripts/downloads/download.ts
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
