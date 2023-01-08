@@ -62,7 +62,7 @@ async function main(): Promise<void> {
     .option(
       "--cpu-arch <cpu-arch:cpu-arch>",
       "CPU Architecture. Defaults to the current one.",
-      { default: defaultArch() },
+      { default: defaultCPUArch() },
     )
     .option(
       "--os <os:os>",
@@ -154,7 +154,7 @@ async function main(): Promise<void> {
   success("全ての必要なファイルダウンロードが完了しました");
 }
 
-function defaultArch(): "x86" | "x64" | "aarch64" | undefined {
+function defaultCPUArch(): "x86" | "x64" | "aarch64" | undefined {
   switch (process.arch) {
     case "x32":
       return "x86";
@@ -198,7 +198,7 @@ async function findGHAsset(
 async function downloadAndExtract(
   displayName: string,
   target:
-    | { octokit: Octokit; repo: string; tag: string; assetID: number }
+    | { octokit: Octokit; repo: string; assetID: number }
     | URL,
   extraction:
     | { format: "zip"; stripFirstDir: true }
