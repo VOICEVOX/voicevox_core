@@ -17,6 +17,19 @@ jobs:
       - name: ShellCheck
         run: git ls-files | grep -E '\.(ba)?sh' | xargs shellcheck
 
+  deno-lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      - name: deno-fmt
+        run: git ls-files | grep '\.ts$' | xargs deno fmt --check
+      - name: deno-lint
+        run: git ls-files | grep '\.ts$' | xargs deno lint
+
   actionlint:
     runs-on: ubuntu-22.04
     steps:
