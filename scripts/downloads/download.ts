@@ -114,38 +114,36 @@ async function main(): Promise<void> {
   info(`対象OS: ${os}`);
   info(`対象CPUアーキテクチャ: ${cpuArch}`);
   info(`ダウンロードアーティファクトタイプ: ${accelerator}`);
-  info(`ダウンロード${CORE_DISPLAY_NAME}バージョン: ${coreAsset.releaseTag}`);
+  info(`ダウンロード${CORE_DISPLAY_NAME}バージョン: ${coreAsset.tag}`);
   if (additionalLibrariesAsset) {
     info(
       `ダウンロード追加ライブラリバージョン: ` +
-        `${additionalLibrariesAsset.releaseTag}`,
+        `${additionalLibrariesAsset.tag}`,
     );
   }
 
-  const promises = [download(
-    CORE_DISPLAY_NAME,
-    coreAsset.url,
-    { accept: "application/octet-stream", format: "zip", stripFirstDir: true },
-    output,
-  )];
+  const promises = [
+    downloadAndExtract(
+      CORE_DISPLAY_NAME,
+      { octokit, ...coreAsset },
+      { format: "zip", stripFirstDir: true },
+      output,
+    ),
+  ];
 
   if (!min) {
-    promises.push(download(
+    promises.push(downloadAndExtract(
       OPEN_JTALK_DIC_DISPLAY_NAME,
       OPEN_JTALK_DIC_URL,
-      { accept: "application/x-gzip", format: "tgz", stripFirstDir: false },
+      { format: "tgz", stripFirstDir: false },
       output,
     ));
 
     if (additionalLibrariesAsset) {
-      promises.push(download(
+      promises.push(downloadAndExtract(
         ADDITIONAL_LIBRARIES_DISPLAY_NAME,
-        additionalLibrariesAsset.url,
-        {
-          accept: "application/octet-stream",
-          format: "zip",
-          stripFirstDir: true,
-        },
+        { octokit, ...additionalLibrariesAsset },
+        { format: "zip", stripFirstDir: true },
         output,
       ));
     }
@@ -181,7 +179,7 @@ async function findGHAsset(
   repo: string,
   gitTagOrLatest: string,
   assetName: (tag: string) => string,
-): Promise<{ releaseTag: string; url: URL }> {
+): Promise<{ repo: string; tag: string; assetID: number }> {
   // FIXME: どうにかして型付けできないか?
   const endpoint = gitTagOrLatest == "latest"
     ? `GET /repos/${ORGANIZATION_NAME}/${repo}/releases/latest`
@@ -194,29 +192,42 @@ async function findGHAsset(
   if (!asset) {
     throw new Error(`Could not find ${targetAssetName} in ${html_url}`);
   }
-  return { releaseTag: tag_name, url: new URL(asset.url) };
+  return { repo, tag: tag_name, assetID: asset.id };
 }
 
-async function download(
+async function downloadAndExtract(
   displayName: string,
-  url: URL,
-  kind:
-    | { accept: "application/octet-stream"; format: "zip"; stripFirstDir: true }
-    | { accept: "application/x-gzip"; format: "tgz"; stripFirstDir: false },
+  target:
+    | { octokit: Octokit; repo: string; tag: string; assetID: number }
+    | URL,
+  extraction:
+    | { format: "zip"; stripFirstDir: true }
+    | { format: "tgz"; stripFirstDir: false },
   output: string,
 ): Promise<void> {
   status(`${displayName}をダウンロード`);
 
-  const res = await fetch(url, { headers: { "Accept": kind.accept } });
-  if (res.status != 200) throw new Error(`Got ${res.status}: ${url}`);
-  const archiveData = new Uint8Array(await res.arrayBuffer());
+  let buf;
+  if ("octokit" in target) {
+    buf = (await target.octokit.rest.repos.getReleaseAsset({
+      owner: ORGANIZATION_NAME,
+      repo: target.repo,
+      asset_id: target.assetID,
+      headers: { "Accept": "application/octet-stream" },
+    })).data as ArrayBuffer;
+  } else {
+    const res = await fetch(target);
+    if (res.status != 200) throw new Error(`Got ${res.status}: ${target}`);
+    buf = await res.arrayBuffer();
+  }
+  const archiveData = new Uint8Array(buf);
 
   status(`${displayName}をダウンロード: 解凍中`);
 
-  if (kind.format == "zip") {
-    await extractZIP(archiveData, kind.stripFirstDir, output);
+  if (extraction.format == "zip") {
+    await extractZIP(archiveData, extraction.stripFirstDir, output);
   } else {
-    await extractTGZ(archiveData, kind.stripFirstDir, output);
+    await extractTGZ(archiveData, extraction.stripFirstDir, output);
   }
 
   success(`${displayName}をダウンロード: 完了`);
