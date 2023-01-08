@@ -232,11 +232,15 @@ async function extractZIP(
 
   for (const entry of entries) {
     if (entry.directory) continue;
-    const path = join(output, stripFirstDir(entry.filename));
+    const path = join(output, stripFirstDir(fixZipEntryPath(entry.filename)));
     const content = await entry.getData(new Uint8ArrayWriter());
     await Deno.mkdir(dirname(path), { recursive: true });
     await Deno.writeFile(path, content);
   }
+}
+
+function fixZipEntryPath(possiblyIllegalZipEntryPath: string): string {
+  return possiblyIllegalZipEntryPath.replaceAll("\\", "/");
 }
 
 function stripFirstDir(posixPath: string): string {
