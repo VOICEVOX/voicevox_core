@@ -122,14 +122,12 @@ async function main(): Promise<void> {
     );
   }
 
-  const promises = [
-    downloadAndExtract(
-      CORE_DISPLAY_NAME,
-      { octokit, ...coreAsset },
-      { format: "zip", stripFirstDir: true },
-      output,
-    ),
-  ];
+  const promises = [downloadAndExtract(
+    CORE_DISPLAY_NAME,
+    { octokit, ...coreAsset },
+    { format: "zip", stripFirstDir: true },
+    output,
+  )];
 
   if (!min) {
     promises.push(downloadAndExtract(
@@ -207,20 +205,11 @@ async function downloadAndExtract(
 ): Promise<void> {
   status(`${displayName}をダウンロード`);
 
-  let buf;
-  if ("octokit" in target) {
-    buf = (await target.octokit.rest.repos.getReleaseAsset({
-      owner: ORGANIZATION_NAME,
-      repo: target.repo,
-      asset_id: target.assetID,
-      headers: { "Accept": "application/octet-stream" },
-    })).data as ArrayBuffer;
-  } else {
-    const res = await fetch(target);
-    if (res.status != 200) throw new Error(`Got ${res.status}: ${target}`);
-    buf = await res.arrayBuffer();
-  }
-  const archiveData = new Uint8Array(buf);
+  const archiveData = new Uint8Array(
+    await ("octokit" in target
+      ? downloadArchiveFromGH(target)
+      : downloadArchiveFromURL(target)),
+  );
 
   status(`${displayName}をダウンロード: 解凍中`);
 
@@ -231,6 +220,23 @@ async function downloadAndExtract(
   }
 
   success(`${displayName}をダウンロード: 完了`);
+}
+
+async function downloadArchiveFromGH(
+  target: { octokit: Octokit; repo: string; assetID: number },
+): Promise<ArrayBuffer> {
+  return await target.octokit.rest.repos.getReleaseAsset({
+    owner: ORGANIZATION_NAME,
+    repo: target.repo,
+    asset_id: target.assetID,
+    headers: { "Accept": "application/octet-stream" },
+  });
+}
+
+async function downloadArchiveFromURL(target: URL): Promise<ArrayBuffer> {
+  const res = await fetch(target);
+  if (res.status != 200) throw new Error(`Got ${res.status}: ${target}`);
+  return await res.arrayBuffer();
 }
 
 async function extractZIP(
