@@ -103,7 +103,7 @@ Function Download-and-Extract($Target,$Url,$ExtractDir,$ArchiveFormat){
 			if ([string]::IsNullOrEmpty($_.Name)){
 				return
 			}
-			$NewFile=[IO.FileInfo]([IO.Path]::Combine($ExtractDir,$_.FullName.substring($_.FullName.IndexOf("/") + 1)))
+			$NewFile=[IO.FileInfo]([IO.Path]::Combine($ExtractDir,$_.FullName.SubString($_.FullName.IndexOf([System.IO.Path]::DirectorySeparatorChar) + 1)))
 			$NewFile.Directory.Create()
 			[System.IO.Compression.ZipFileExtensions]::ExtractToFile($_,$NewFile)
 		}
