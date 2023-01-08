@@ -4,10 +4,10 @@ import {
   Command,
   EnumType,
 } from "https://deno.land/x/cliffy@v0.25.7/command/mod.ts";
-import { tgz } from "https://deno.land/x/compress@v0.4.5/mod.ts";
+import * as compress from "https://deno.land/x/compress@v0.4.5/mod.ts";
 import { Octokit } from "https://cdn.skypack.dev/@octokit/rest?dts";
-import { dirname, join } from "https://deno.land/std@0.171.0/path/mod.ts";
-import { arch, env } from "https://deno.land/std@0.170.0/node/process.ts";
+import * as path from "https://deno.land/std@0.171.0/path/mod.ts";
+import * as process from "https://deno.land/std@0.170.0/node/process.ts";
 import {
   Uint8ArrayReader,
   Uint8ArrayWriter,
@@ -72,7 +72,7 @@ async function main(): Promise<void> {
     .parse(Deno.args);
 
   if (!options.cpuArch) {
-    throw new Error(`${arch}はサポートされていない環境です`);
+    throw new Error(`${process.arch}はサポートされていない環境です`);
   }
 
   const { output, version, additionalLibrariesVersion } = options;
@@ -81,7 +81,7 @@ async function main(): Promise<void> {
   const cpuArch = options.cpuArch as "x86" | "x64" | "aarch64";
   const os = options.os as "windows" | "linux" | "osx";
 
-  const octokit = new Octokit({ auth: env["GITHUB_TOKEN"] });
+  const octokit = new Octokit({ auth: process.env["GITHUB_TOKEN"] });
 
   const coreAsset = await findGHAsset(
     octokit,
@@ -155,7 +155,7 @@ async function main(): Promise<void> {
 }
 
 function defaultArch(): "x86" | "x64" | "aarch64" | undefined {
-  switch (arch) {
+  switch (process.arch) {
     case "x32":
       return "x86";
     case "x64":
@@ -243,15 +243,18 @@ async function extractZIP(
 
   for (const entry of entries) {
     if (entry.directory) continue;
-    const path = join(output, stripFirstDir(fixZipEntryPath(entry.filename)));
+    const dst = path.join(
+      output,
+      stripFirstDir(fixZipEntryFilename(entry.filename)),
+    );
     const content = await entry.getData(new Uint8ArrayWriter());
-    await Deno.mkdir(dirname(path), { recursive: true });
-    await Deno.writeFile(path, content);
+    await Deno.mkdir(path.dirname(dst), { recursive: true });
+    await Deno.writeFile(dst, content);
   }
 }
 
-function fixZipEntryPath(possiblyIllegalZipEntryPath: string): string {
-  return possiblyIllegalZipEntryPath.replaceAll("\\", "/");
+function fixZipEntryFilename(possiblyIllegalFilename: string): string {
+  return possiblyIllegalFilename.replaceAll("\\", "/");
 }
 
 function stripFirstDir(posixPath: string): string {
@@ -264,9 +267,9 @@ async function extractTGZ(
   output: string,
 ): Promise<void> {
   const tempdir = await Deno.makeTempDir({ prefix: "download-" });
-  const src = join(tempdir, "asset.tar.gz");
+  const src = path.join(tempdir, "asset.tar.gz");
   await Deno.writeFile(src, archiveData);
-  await tgz.uncompress(src, output);
+  await compress.tgz.uncompress(src, output);
 }
 
 function info(msg: string): void {
