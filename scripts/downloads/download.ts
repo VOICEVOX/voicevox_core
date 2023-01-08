@@ -225,12 +225,12 @@ async function downloadAndExtract(
 async function downloadArchiveFromGH(
   target: { octokit: Octokit; repo: string; assetID: number },
 ): Promise<ArrayBuffer> {
-  return await target.octokit.rest.repos.getReleaseAsset({
+  return (await target.octokit.rest.repos.getReleaseAsset({
     owner: ORGANIZATION_NAME,
     repo: target.repo,
     asset_id: target.assetID,
     headers: { "Accept": "application/octet-stream" },
-  });
+  })).data;
 }
 
 async function downloadArchiveFromURL(target: URL): Promise<ArrayBuffer> {
