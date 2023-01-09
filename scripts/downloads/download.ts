@@ -251,7 +251,7 @@ async function extractZIP(
     if (entry.directory) continue;
     const dst = path.join(
       output,
-      stripFirstDir(fixZipEntryFilename(entry.filename)),
+      stripFirstDir(fixZIPEntryFilename(entry.filename)),
     );
     const content = await entry.getData(new Uint8ArrayWriter());
     await Deno.mkdir(path.dirname(dst), { recursive: true });
@@ -259,7 +259,7 @@ async function extractZIP(
   }
 }
 
-function fixZipEntryFilename(possiblyIllegalFilename: string): string {
+function fixZIPEntryFilename(possiblyIllegalFilename: string): string {
   return possiblyIllegalFilename.replaceAll("\\", "/");
 }
 
