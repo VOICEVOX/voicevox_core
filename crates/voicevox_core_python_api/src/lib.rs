@@ -1,48 +1,32 @@
-use std::{fmt::Display, path::PathBuf};
+use std::{fmt::Display, path::PathBuf, sync::Arc};
 
 use easy_ext::ext;
 use log::debug;
-use numpy::{Ix1, PyArray};
 use pyo3::{
     create_exception,
     exceptions::PyException,
-    pyclass, pymethods, pymodule,
-    types::{PyBytes, PyModule},
-    FromPyObject as _, PyAny, PyResult, Python,
+    pyclass, pyfunction, pymethods, pymodule,
+    types::{PyBytes, PyList, PyModule},
+    wrap_pyfunction, FromPyObject as _, PyAny, PyResult, Python, ToPyObject,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use voicevox_core::{
-    AccelerationMode, AudioQueryModel, AudioQueryOptions, InitializeOptions, SynthesisOptions,
-    TtsOptions,
+    AccelerationMode, AccentPhraseModel, AudioQueryModel, AudioQueryOptions, InitializeOptions,
+    StyleId, SynthesisOptions, TtsOptions, VoiceModelId, VoiceModelMeta,
 };
+
+use tokio::{runtime::Handle, sync::Mutex};
 
 #[pymodule]
 #[pyo3(name = "_rust")]
-fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
+fn rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
 
-    module.add("METAS", {
-        let class = py.import("voicevox_core")?.getattr("Meta")?.cast_as()?;
-        let meta_from_json = |x: &serde_json::Value| to_pydantic_dataclass(x, class);
-        serde_json::from_str::<Vec<_>>(voicevox_core::METAS)
-            .into_py_result()?
-            .into_iter()
-            .map(|meta| meta_from_json(&meta))
-            .collect::<Result<Vec<_>, _>>()?
-    })?;
+    module.add("__version__", voicevox_core::get_version())?;
+    module.add_wrapped(wrap_pyfunction!(supported_devices))?;
 
-    module.add("SUPPORTED_DEVICES", {
-        let class = py
-            .import("voicevox_core")?
-            .getattr("SupportedDevices")?
-            .cast_as()?;
-        let supported_devices_from_json = |x: &serde_json::Value| to_pydantic_dataclass(x, class);
-        supported_devices_from_json(&voicevox_core::SUPPORTED_DEVICES.to_json())?
-    })?;
-
-    module.add("__version__", voicevox_core::VoicevoxCore::get_version())?;
-
-    module.add_class::<VoicevoxCore>()
+    module.add_class::<VoiceSynthesizer>()?;
+    module.add_class::<VoiceModel>()
 }
 
 create_exception!(
@@ -53,179 +37,336 @@ create_exception!(
 );
 
 #[pyclass]
-struct VoicevoxCore {
-    inner: voicevox_core::VoicevoxCore,
+#[derive(Clone)]
+struct VoiceModel {
+    model: voicevox_core::VoiceModel,
+}
+
+#[pyfunction]
+fn supported_devices(py: Python) -> PyResult<&PyAny> {
+    let class = py
+        .import("voicevox_core")?
+        .getattr("SupportedDevices")?
+        .downcast()?;
+    let s = voicevox_core::SupportedDevices::get_supported_devices().into_py_result()?;
+    to_pydantic_dataclass(s, class)
 }
 
 #[pymethods]
-impl VoicevoxCore {
+impl VoiceModel {
+    #[staticmethod]
+    fn from_path<'py>(py: Python<'py>, path: &str) -> PyResult<&'py PyAny> {
+        let path = path.to_owned();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let model = voicevox_core::VoiceModel::from_path(path)
+                .await
+                .into_py_result()?;
+            Ok(Self { model })
+        })
+    }
+
+    #[getter]
+    fn id(&self) -> &str {
+        self.model.id().raw_voice_model_id()
+    }
+
+    #[getter]
+    fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
+        to_pydantic_voice_model_meta(self.model.metas(), py).unwrap()
+    }
+}
+
+#[pyclass]
+#[derive(Clone)]
+struct OpenJtalk {
+    open_jtalk: Arc<voicevox_core::OpenJtalk>,
+}
+
+#[pymethods]
+impl OpenJtalk {
     #[new]
-    #[args(
-        acceleration_mode = "InitializeOptions::default().acceleration_mode",
-        cpu_num_threads = "InitializeOptions::default().cpu_num_threads",
-        load_all_models = "InitializeOptions::default().load_all_models",
-        open_jtalk_dict_dir = "None"
-    )]
     fn new(
+        #[pyo3(from_py_with = "from_optional_utf8_path")] open_jtalk_dict_dir: String,
+    ) -> PyResult<Self> {
+        Ok(Self {
+            open_jtalk: Arc::new(
+                voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)
+                    .into_py_result()?,
+            ),
+        })
+    }
+}
+
+#[pyclass]
+struct VoiceSynthesizer {
+    synthesizer: Arc<Mutex<voicevox_core::VoiceSynthesizer>>,
+}
+
+#[pymethods]
+impl VoiceSynthesizer {
+    #[staticmethod]
+    #[pyo3(signature =(
+        open_jtalk,
+        acceleration_mode = InitializeOptions::default().acceleration_mode,
+        cpu_num_threads = InitializeOptions::default().cpu_num_threads,
+        load_all_models = InitializeOptions::default().load_all_models,
+    ))]
+    fn new_with_initialize(
+        py: Python,
+        open_jtalk: OpenJtalk,
         #[pyo3(from_py_with = "from_acceleration_mode")] acceleration_mode: AccelerationMode,
         cpu_num_threads: u16,
         load_all_models: bool,
-        #[pyo3(from_py_with = "from_optional_utf8_path")] open_jtalk_dict_dir: Option<String>,
-    ) -> PyResult<Self> {
-        let inner = voicevox_core::VoicevoxCore::new_with_initialize(InitializeOptions {
-            acceleration_mode,
-            cpu_num_threads,
-            load_all_models,
-            open_jtalk_dict_dir: open_jtalk_dict_dir.map(Into::into),
+    ) -> PyResult<&PyAny> {
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let synthesizer = voicevox_core::VoiceSynthesizer::new_with_initialize(
+                open_jtalk.open_jtalk.clone(),
+                &InitializeOptions {
+                    acceleration_mode,
+                    cpu_num_threads,
+                    load_all_models,
+                },
+            )
+            .await
+            .into_py_result()?;
+            Ok(Self {
+                synthesizer: Arc::new(Mutex::new(synthesizer)),
+            })
         })
-        .into_py_result()?;
-        Ok(Self { inner })
     }
 
     fn __repr__(&self) -> &'static str {
-        "VoicevoxCore { .. }"
+        "VoiceSynthesizer { .. }"
     }
 
     #[getter]
     fn is_gpu_mode(&self) -> bool {
-        self.inner.is_gpu_mode()
+        Handle::current()
+            .block_on(self.synthesizer.lock())
+            .is_gpu_mode()
     }
 
-    fn load_model(&mut self, speaker_id: u32) -> PyResult<()> {
-        self.inner.load_model(speaker_id).into_py_result()
+    #[getter]
+    fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
+        to_pydantic_voice_model_meta(
+            Handle::current().block_on(self.synthesizer.lock()).metas(),
+            py,
+        )
+        .unwrap()
     }
 
-    fn is_model_loaded(&self, speaker_id: u32) -> bool {
-        self.inner.is_model_loaded(speaker_id)
+    fn load_model<'py>(&mut self, model: &'py PyAny, py: Python<'py>) -> PyResult<&'py PyAny> {
+        let model: VoiceModel = model.extract()?;
+        let synthesizer = self.synthesizer.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            synthesizer
+                .lock()
+                .await
+                .load_model(&model.model)
+                .await
+                .into_py_result()
+        })
     }
 
-    fn predict_duration<'py>(
-        &mut self,
-        phoneme_vector: &'py PyArray<i64, Ix1>,
-        speaker_id: u32,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyArray<f32, Ix1>> {
-        let duration = self
-            .inner
-            .predict_duration(&phoneme_vector.to_vec()?, speaker_id)
-            .into_py_result()?;
-        Ok(PyArray::from_vec(py, duration))
+    fn is_loaded_model(&self, model_id: &str) -> bool {
+        Handle::current()
+            .block_on(self.synthesizer.lock())
+            .is_loaded_model(&VoiceModelId::new(model_id.to_string()))
     }
 
-    #[allow(clippy::too_many_arguments)]
-    fn predict_intonation<'py>(
-        &mut self,
-        length: usize,
-        vowel_phoneme_vector: &'py PyArray<i64, Ix1>,
-        consonant_phoneme_vector: &'py PyArray<i64, Ix1>,
-        start_accent_vector: &'py PyArray<i64, Ix1>,
-        end_accent_vector: &'py PyArray<i64, Ix1>,
-        start_accent_phrase_vector: &'py PyArray<i64, Ix1>,
-        end_accent_phrase_vector: &'py PyArray<i64, Ix1>,
-        speaker_id: u32,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyArray<f32, Ix1>> {
-        let intonation = self
-            .inner
-            .predict_intonation(
-                length,
-                &vowel_phoneme_vector.to_vec()?,
-                &consonant_phoneme_vector.to_vec()?,
-                &start_accent_vector.to_vec()?,
-                &end_accent_vector.to_vec()?,
-                &start_accent_phrase_vector.to_vec()?,
-                &end_accent_phrase_vector.to_vec()?,
-                speaker_id,
-            )
-            .into_py_result()?;
-        Ok(PyArray::from_vec(py, intonation))
-    }
-
-    fn decode<'py>(
-        &mut self,
-        length: usize,
-        phoneme_size: usize,
-        f0: &'py PyArray<f32, Ix1>,
-        phoneme: &'py PyArray<f32, Ix1>,
-        speaker_id: u32,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyArray<f32, Ix1>> {
-        let decoded = self
-            .inner
-            .decode(
-                length,
-                phoneme_size,
-                &f0.to_vec()?,
-                &phoneme.to_vec()?,
-                speaker_id,
-            )
-            .into_py_result()?;
-        Ok(PyArray::from_vec(py, decoded))
-    }
-
-    #[args(kana = "AudioQueryOptions::default().kana")]
+    #[pyo3(signature=(text,style_id,kana = AudioQueryOptions::default().kana))]
     fn audio_query<'py>(
-        &mut self,
+        &self,
         text: &str,
-        speaker_id: u32,
+        style_id: u32,
         kana: bool,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
-        let audio_query = &self
-            .inner
-            .audio_query(text, speaker_id, AudioQueryOptions { kana })
-            .into_py_result()?;
-        to_pydantic_dataclass(
-            audio_query,
-            py.import("voicevox_core")?.getattr("AudioQuery")?,
+        let synthesizer = self.synthesizer.clone();
+        let text = text.to_owned();
+        pyo3_asyncio::tokio::future_into_py_with_locals(
+            py,
+            pyo3_asyncio::tokio::get_current_locals(py)?,
+            async move {
+                let audio_query = synthesizer
+                    .lock()
+                    .await
+                    .audio_query(&text, &StyleId::new(style_id), &AudioQueryOptions { kana })
+                    .await
+                    .into_py_result()?;
+
+                Python::with_gil(|py| {
+                    let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
+                    let ret = to_pydantic_dataclass(audio_query, class)?;
+                    Ok(ret.to_object(py))
+                })
+            },
         )
     }
 
-    #[args(enable_interrogative_upspeak = "TtsOptions::default().enable_interrogative_upspeak")]
-    fn synthesis<'py>(
-        &mut self,
-        #[pyo3(from_py_with = "from_dataclass")] audio_query: AudioQueryModel,
-        speaker_id: u32,
-        enable_interrogative_upspeak: bool,
+    fn create_accent_phrases<'py>(
+        &self,
+        text: &str,
+        style_id: u32,
         py: Python<'py>,
-    ) -> PyResult<&'py PyBytes> {
-        let wav = &self
-            .inner
-            .synthesis(
-                &audio_query,
-                speaker_id,
-                SynthesisOptions {
-                    enable_interrogative_upspeak,
-                },
-            )
-            .into_py_result()?;
-        Ok(PyBytes::new(py, wav))
+    ) -> PyResult<&'py PyAny> {
+        let synthesizer = self.synthesizer.clone();
+        let text = text.to_owned();
+        pyo3_asyncio::tokio::future_into_py_with_locals(
+            py,
+            pyo3_asyncio::tokio::get_current_locals(py)?,
+            async move {
+                let accent_phrases = synthesizer
+                    .lock()
+                    .await
+                    .create_accent_phrases(&text, &StyleId::new(style_id))
+                    .await
+                    .into_py_result()?;
+                Python::with_gil(|py| {
+                    let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
+                    let accent_phrases = accent_phrases
+                        .iter()
+                        .map(|ap| to_pydantic_dataclass(ap, class))
+                        .collect::<PyResult<Vec<_>>>();
+                    let list = PyList::new(py, accent_phrases.into_iter());
+                    Ok(list.to_object(py))
+                })
+            },
+        )
     }
 
-    #[args(
-        kana = "TtsOptions::default().kana",
-        enable_interrogative_upspeak = "TtsOptions::default().enable_interrogative_upspeak"
-    )]
+    fn replace_mora_data<'py>(
+        &self,
+        accent_phrases: &'py PyList,
+        style_id: u32,
+        py: Python<'py>,
+    ) -> PyResult<&'py PyAny> {
+        let accent_phrases: Vec<AccentPhraseModel> = accent_phrases
+            .into_iter()
+            .map(from_dataclass)
+            .collect::<PyResult<Vec<AccentPhraseModel>>>()?;
+        let synthesizer = self.synthesizer.clone();
+        pyo3_asyncio::tokio::future_into_py_with_locals(
+            py,
+            pyo3_asyncio::tokio::get_current_locals(py)?,
+            async move {
+                let accent_phrases = synthesizer
+                    .lock()
+                    .await
+                    .replace_mora_data(&accent_phrases, &StyleId::new(style_id))
+                    .await
+                    .into_py_result()?;
+                Python::with_gil(|py| {
+                    let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
+                    let accent_phrases = accent_phrases
+                        .iter()
+                        .map(|ap| to_pydantic_dataclass(ap, class))
+                        .collect::<PyResult<Vec<_>>>();
+                    let list = PyList::new(py, accent_phrases.into_iter());
+                    Ok(list.to_object(py))
+                })
+            },
+        )
+    }
+
+    fn replace_phoneme_length<'py>(
+        &self,
+        accent_phrases: &'py PyList,
+        style_id: u32,
+        py: Python<'py>,
+    ) -> PyResult<&'py PyAny> {
+        let accent_phrases: Vec<AccentPhraseModel> = accent_phrases
+            .into_iter()
+            .map(from_dataclass)
+            .collect::<PyResult<Vec<AccentPhraseModel>>>()?;
+        let synthesizer = self.synthesizer.clone();
+        pyo3_asyncio::tokio::future_into_py_with_locals(
+            py,
+            pyo3_asyncio::tokio::get_current_locals(py)?,
+            async move {
+                let accent_phrases = synthesizer
+                    .lock()
+                    .await
+                    .replace_phoneme_length(&accent_phrases, &StyleId::new(style_id))
+                    .await
+                    .into_py_result()?;
+                Python::with_gil(|py| {
+                    let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
+                    let accent_phrases = accent_phrases
+                        .iter()
+                        .map(|ap| to_pydantic_dataclass(ap, class))
+                        .collect::<PyResult<Vec<_>>>();
+                    let list = PyList::new(py, accent_phrases.into_iter());
+                    Ok(list.to_object(py))
+                })
+            },
+        )
+    }
+
+    #[pyo3(signature=(audio_query,style_id,enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak))]
+    fn synthesis<'py>(
+        &self,
+        #[pyo3(from_py_with = "from_dataclass")] audio_query: AudioQueryModel,
+        style_id: u32,
+        enable_interrogative_upspeak: bool,
+        py: Python<'py>,
+    ) -> PyResult<&'py PyAny> {
+        let synthesizer = self.synthesizer.clone();
+        pyo3_asyncio::tokio::future_into_py_with_locals(
+            py,
+            pyo3_asyncio::tokio::get_current_locals(py)?,
+            async move {
+                let wav = synthesizer
+                    .lock()
+                    .await
+                    .synthesis(
+                        &audio_query,
+                        &StyleId::new(style_id),
+                        &SynthesisOptions {
+                            enable_interrogative_upspeak,
+                        },
+                    )
+                    .await
+                    .into_py_result()?;
+                Python::with_gil(|py| Ok(PyBytes::new(py, &wav).to_object(py)))
+            },
+        )
+    }
+
+    #[pyo3(signature=(
+        text,
+        style_id,
+        kana = TtsOptions::default().kana,
+        enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+    ))]
     fn tts<'py>(
-        &mut self,
+        &self,
         text: &str,
-        speaker_id: u32,
+        style_id: u32,
         kana: bool,
         enable_interrogative_upspeak: bool,
         py: Python<'py>,
-    ) -> PyResult<&'py PyBytes> {
-        let wav = &self
-            .inner
-            .tts(
-                text,
-                speaker_id,
-                TtsOptions {
-                    kana,
-                    enable_interrogative_upspeak,
-                },
-            )
-            .into_py_result()?;
-        Ok(PyBytes::new(py, wav))
+    ) -> PyResult<&'py PyAny> {
+        let style_id = StyleId::new(style_id);
+        let options = TtsOptions {
+            kana,
+            enable_interrogative_upspeak,
+        };
+        let synthesizer = self.synthesizer.clone();
+        let text = text.to_owned();
+        pyo3_asyncio::tokio::future_into_py_with_locals(
+            py,
+            pyo3_asyncio::tokio::get_current_locals(py)?,
+            async move {
+                let wav = synthesizer
+                    .lock()
+                    .await
+                    .tts(&text, &style_id, &options)
+                    .await
+                    .into_py_result()?;
+                Python::with_gil(|py| Ok(PyBytes::new(py, &wav).to_object(py)))
+            },
+        )
     }
 }
 
@@ -246,15 +387,10 @@ fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
     }
 }
 
-fn from_optional_utf8_path(ob: &PyAny) -> PyResult<Option<String>> {
-    if ob.is_none() {
-        return Ok(None);
-    }
-
+fn from_optional_utf8_path(ob: &PyAny) -> PyResult<String> {
     PathBuf::extract(ob)?
         .into_os_string()
         .into_string()
-        .map(Some)
         .map_err(|s| VoicevoxError::new_err(format!("{s:?} cannot be encoded to UTF-8")))
 }
 
@@ -269,18 +405,32 @@ fn from_dataclass<T: DeserializeOwned>(ob: &PyAny) -> PyResult<T> {
     serde_json::from_str(json).into_py_result()
 }
 
+fn to_pydantic_voice_model_meta<'py>(
+    metas: &VoiceModelMeta,
+    py: Python<'py>,
+) -> PyResult<Vec<&'py PyAny>> {
+    let class = py
+        .import("voicevox_core")?
+        .getattr("SpeakerMeta")?
+        .downcast()?;
+
+    metas
+        .iter()
+        .map(|m| to_pydantic_dataclass(m, class))
+        .collect::<PyResult<Vec<_>>>()
+}
+
 fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {
     let py = class.py();
 
     let x = serde_json::to_string(&x).into_py_result()?;
-    let x = py.import("json")?.call_method1("loads", (x,))?.cast_as()?;
+    let x = py.import("json")?.call_method1("loads", (x,))?.downcast()?;
     class.call((), Some(x))
 }
 
-impl Drop for VoicevoxCore {
+impl Drop for VoiceSynthesizer {
     fn drop(&mut self) {
         debug!("Destructing a VoicevoxCore");
-        self.inner.finalize();
     }
 }
 

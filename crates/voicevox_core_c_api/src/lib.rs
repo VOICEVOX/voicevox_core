@@ -1,32 +1,34 @@
+mod c_impls;
 /// cbindgen:ignore
 mod compatible_engine;
 mod helpers;
 use self::helpers::*;
+use c_impls::*;
 use chrono::SecondsFormat;
 use is_terminal::IsTerminal;
-use libc::c_void;
+use libc::{c_void, free, malloc, memcpy};
 use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io::{self, Write};
+use std::mem::size_of;
 use std::os::raw::c_char;
-use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
+use tokio::runtime::Handle;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
-use voicevox_core::AudioQueryModel;
-use voicevox_core::Result;
-use voicevox_core::VoicevoxCore;
+use voicevox_core::StyleId;
+use voicevox_core::{
+    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, TtsOptions, VoiceModelId,
+};
+use voicevox_core::{SupportedDevices, SynthesisOptions};
 
 #[cfg(test)]
 use rstest::*;
 
-type Internal = VoicevoxCore;
-
-static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
+static _INTERNAL: Lazy<()> = Lazy::new(|| {
     let _ = init_logger();
-    return Internal::new_with_mutex();
 
     fn init_logger() -> std::result::Result<(), impl Sized> {
         tracing_subscriber::fmt()
@@ -63,16 +65,50 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
     }
 });
 
-pub(crate) fn lock_internal() -> MutexGuard<'static, Internal> {
-    INTERNAL.lock().unwrap()
-}
-
 /*
  * Cの関数として公開するための型や関数を定義するこれらの実装はvoicevox_core/publish.rsに定義してある対応する関数にある
  * この関数ではvoicevox_core/publish.rsにある対応する関数の呼び出しと、その戻り値をCの形式に変換する処理のみとする
  * これはC文脈の処理と実装をわけるためと、内部実装の変更がAPIに影響を与えにくくするためである
  * voicevox_core/publish.rsにある対応する関数とはこのファイルに定義してある公開関数からvoicevoxプレフィックスを取り除いた名前の関数である
  */
+
+/// 参照カウントで管理されたOpenJtalk
+pub struct OpenJtalkRc;
+
+/// 参照カウントで管理されたOpenJtalkを生成する
+///
+/// # Safety
+/// @out_open_jtalk 自動でheap領域が割り当てられるため :voicevox_open_jtalk_rc_delete で開放する必要がある
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
+    open_jtalk_dic_dir: *const c_char,
+    out_open_jtalk: *mut *mut OpenJtalkRc,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
+        let mut open_jtalk = COpenJtalkRc::new_with_initialize(open_jtalk_dic_dir)?;
+        let o = malloc(size_of::<COpenJtalkRc>());
+
+        memcpy(
+            o,
+            &mut open_jtalk as *mut COpenJtalkRc as *mut c_void,
+            size_of::<COpenJtalkRc>(),
+        );
+        *out_open_jtalk = o as *mut OpenJtalkRc;
+        Ok(())
+    })())
+}
+
+/// 参照カウントで管理されたOpenJtalkを削除する
+/// @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
+///
+/// # Safety
+/// @open_jtalk 有効な :OpenJtalkRc のポインタであること
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: *mut OpenJtalkRc) {
+    let _ = *(open_jtalk as *mut COpenJtalkRc);
+    free(open_jtalk as *mut c_void)
+}
 
 pub use voicevox_core::result_code::VoicevoxResultCode;
 
@@ -99,8 +135,6 @@ pub struct VoicevoxInitializeOptions {
     cpu_num_threads: u16,
     /// 全てのモデルを読み込む
     load_all_models: bool,
-    /// open_jtalkの辞書ディレクトリ
-    open_jtalk_dict_dir: *const c_char,
 }
 
 /// デフォルトの初期化オプションを生成する
@@ -110,20 +144,8 @@ pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitiali
     VoicevoxInitializeOptions::default()
 }
 
-/// 初期化する
-/// @param [in] options 初期化オプション
-/// @return 結果コード #VoicevoxResultCode
-#[no_mangle]
-pub extern "C" fn voicevox_initialize(options: VoicevoxInitializeOptions) -> VoicevoxResultCode {
-    into_result_code_with_error((|| {
-        let options = unsafe { options.try_into_options() }?;
-        lock_internal().initialize(options)?;
-        Ok(())
-    })())
-}
-
 static VOICEVOX_VERSION: once_cell::sync::Lazy<CString> =
-    once_cell::sync::Lazy::new(|| CString::new(Internal::get_version()).unwrap());
+    once_cell::sync::Lazy::new(|| CString::new(voicevox_core::get_version()).unwrap());
 
 /// voicevoxのバージョンを取得する
 /// @return SemVerでフォーマットされたバージョン
@@ -132,203 +154,233 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
     VOICEVOX_VERSION.as_ptr()
 }
 
-/// モデルを読み込む
-/// @param [in] speaker_id 読み込むモデルの話者ID
+/// 音声合成モデル
+#[repr(C)]
+pub struct VoicevoxVoiceModel;
+
+/// 音声合成モデルID
+pub type VoicevoxVoiceModelId = *const c_char;
+
+/// スタイルID
+pub type VoicevoxStyleId = u32;
+
+/// vvmファイルパスから音声モデルを生成する
+/// @param [in] path vvmファイルパス
+/// @param [out] out_model 新しく生成された音声モデルの出力先
 /// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param path null終端文字列であること
+/// @param out_model 自動でheapメモリが割り当てられるので ::voicevox_model_delete で解放する必要がある
+pub unsafe extern "C" fn voicevox_model_new_from_path(
+    path: *const c_char,
+    out_model: *mut *mut VoicevoxVoiceModel,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        unsafe {
+            let mut model = Handle::current()
+                .block_on(CVoiceModel::from_path(ensure_utf8(CStr::from_ptr(path))?))?;
+            let m = malloc(size_of::<CVoiceModel>());
+            memcpy(
+                m,
+                &mut model as *mut CVoiceModel as *mut c_void,
+                size_of::<CVoiceModel>(),
+            );
+            *out_model = m as *mut VoicevoxVoiceModel;
+        }
+        Ok(())
+    })())
+}
+
+/// 音声モデルのIDを取得する
+/// @param [in] model 音声モデル #VoicevoxVoiceModel
+/// @return 音声モデルID #VoicevoxVoiceModelId
+///
+/// # Safety
+/// @param model 有効な #VoicevoxVoiceModel へのポインタであること
+pub unsafe extern "C" fn voicevox_model_id(
+    model: *const VoicevoxVoiceModel,
+) -> VoicevoxVoiceModelId {
+    let model = &*(model as *const CVoiceModel);
+    model.id().as_ptr()
+}
+
+/// 音声モデルのメタ情報を取得する
+/// @param [in] model 音声モデル #VoicevoxVoiceModel
+/// @return メタ情報のjson文字列
+///
+/// # Safety
+/// @param model 有効な #VoicevoxVoiceModel へのポインタであること
+pub unsafe extern "C" fn voicevox_model_get_metas_json(
+    model: *const VoicevoxVoiceModel,
+) -> *const c_char {
+    let model = &*(model as *const CVoiceModel);
+    model.metas().as_ptr()
+}
+
+/// 音声モデルを破棄する
+/// @param [in] model 破棄する音声モデル #VoicevoxVoiceModel
+///
+/// # Safety
+/// @param model 有効な #VoicevoxVoiceModel へのポインタであること
+pub unsafe extern "C" fn voicevox_model_delete(model: *mut VoicevoxVoiceModel) {
+    let _ = *(model as *mut CVoiceModel);
+    free(model as *mut c_void);
+}
+
+#[repr(C)]
+pub struct VoicevoxVoiceSynthesizer;
+
+/// 音声シンセサイザを生成して初期化する
+/// @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
+/// @param [in] options 初期化オプション #VoicevoxInitializeOptions
+/// @param [out] out_synthesizer 新しく生成された音声シンセサイザの出力先 #VoicevoxVoiceSynthesizer
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param out_synthesizer 自動でheapメモリが割り当てられるので ::voicevox_synthesizer_delete で解放する必要がある
 #[no_mangle]
-pub extern "C" fn voicevox_load_model(speaker_id: u32) -> VoicevoxResultCode {
-    into_result_code_with_error(lock_internal().load_model(speaker_id).map_err(Into::into))
+pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
+    open_jtalk: *const OpenJtalkRc,
+    options: VoicevoxInitializeOptions,
+    out_synthesizer: *mut *mut VoicevoxVoiceSynthesizer,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let options = options.into();
+        let handle = Handle::current();
+        let open_jtalk = &*(open_jtalk as *const COpenJtalkRc);
+
+        let synthesizer =
+            handle.block_on(CVoiceSynthesizer::new_with_initialize(open_jtalk, &options))?;
+        unsafe {
+            let s = malloc(size_of::<CVoiceSynthesizer>());
+            memcpy(
+                s,
+                (&synthesizer as *const CVoiceSynthesizer) as *const c_void,
+                size_of::<CVoiceSynthesizer>(),
+            );
+            *out_synthesizer = s as *mut VoicevoxVoiceSynthesizer;
+        }
+        Ok(())
+    })())
+}
+
+/// 音声シンセサイザを破棄する
+/// @param [in] synthesizer 破棄する音声シンセサイザ #VoicevoxVoiceSynthesizer
+///
+/// # Safety
+/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: *mut VoicevoxVoiceSynthesizer) {
+    let _ = *(synthesizer as *const CVoiceSynthesizer);
+    free(synthesizer as *mut c_void);
+}
+
+/// モデルを読み込む
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] model 音声モデル
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+/// @param model 有効な #VoicevoxVoiceModel へのポインタであること
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_load_model(
+    synthesizer: *mut VoicevoxVoiceSynthesizer,
+    model: *const VoicevoxVoiceModel,
+) -> VoicevoxResultCode {
+    let synthesizer = &mut *(synthesizer as *mut CVoiceSynthesizer);
+    let model = &*(model as *const CVoiceModel);
+    into_result_code_with_error(
+        Handle::current()
+            .block_on(synthesizer.load_model(model.model()))
+            .map_err(Into::into),
+    )
+}
+
+/// モデルの読み込みを解除する
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] model_id 音声モデルID
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+/// @param model_id NULL終端文字列であること
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_unload_model(
+    synthesizer: *mut VoicevoxVoiceSynthesizer,
+    model_id: VoicevoxVoiceModelId,
+) -> VoicevoxResultCode {
+    let synthesizer = &mut *(synthesizer as *mut CVoiceSynthesizer);
+    into_result_code_with_error((|| {
+        let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) })?;
+        synthesizer
+            .unload_model(&VoiceModelId::new(raw_model_id.to_string()))
+            .map_err(Into::into)
+    })())
 }
 
 /// ハードウェアアクセラレーションがGPUモードか判定する
+/// @param [in] synthesizer 音声シンセサイザ
 /// @return GPUモードならtrue、そうでないならfalse
+///
+/// # Safety
+/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
 #[no_mangle]
-pub extern "C" fn voicevox_is_gpu_mode() -> bool {
-    lock_internal().is_gpu_mode()
+pub unsafe extern "C" fn voicevox_synthesizer_is_gpu_mode(
+    synthesizer: *const VoicevoxVoiceSynthesizer,
+) -> bool {
+    let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
+    synthesizer.synthesizer().is_gpu_mode()
 }
 
 /// 指定したspeaker_idのモデルが読み込まれているか判定する
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] model_id 音声モデルのID #VoicevoxVoiceModelId
 /// @return モデルが読み込まれているのであればtrue、そうでないならfalse
+///
+/// # Safety
+/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+/// @param model_id NULL終端文字列
 #[no_mangle]
-pub extern "C" fn voicevox_is_model_loaded(speaker_id: u32) -> bool {
-    lock_internal().is_model_loaded(speaker_id)
-}
-
-/// このライブラリの利用を終了し、確保しているリソースを解放する
-#[no_mangle]
-pub extern "C" fn voicevox_finalize() {
-    lock_internal().finalize()
+pub unsafe extern "C" fn voicevox_is_loaded_model(
+    synthesizer: *const VoicevoxVoiceSynthesizer,
+    model_id: VoicevoxVoiceModelId,
+) -> bool {
+    let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
+    let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) }).unwrap();
+    synthesizer
+        .synthesizer()
+        .is_loaded_model(&VoiceModelId::new(raw_model_id.into()))
 }
 
 /// メタ情報をjsonで取得する
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
 /// @return メタ情報のjson文字列
+///
+/// # Safety
+/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
 #[no_mangle]
-pub extern "C" fn voicevox_get_metas_json() -> *const c_char {
-    lock_internal().get_metas_json().as_ptr()
+pub unsafe extern "C" fn voicevox_synthesizer_get_metas_json(
+    synthesizer: *const VoicevoxVoiceSynthesizer,
+) -> *const c_char {
+    let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
+    synthesizer.metas().as_ptr()
 }
+
+static VOICEVOX_SUPPORTED_DEVICES_JSON: once_cell::sync::Lazy<CString> =
+    once_cell::sync::Lazy::new(|| {
+        CString::new(
+            serde_json::to_string(&SupportedDevices::get_supported_devices().unwrap()).unwrap(),
+        )
+        .unwrap()
+    });
 
 /// サポートデバイス情報をjsonで取得する
 /// @return サポートデバイス情報のjson文字列
 #[no_mangle]
 pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
-    lock_internal().get_supported_devices_json().as_ptr()
-}
-
-/// 音素ごとの長さを推論する
-/// @param [in] length phoneme_vector, output のデータ長
-/// @param [in] phoneme_vector  音素データ
-/// @param [in] speaker_id 話者ID
-/// @param [out] output_predict_duration_length 出力データのサイズ
-/// @param [out] output_predict_duration_data データの出力先
-/// @return 結果コード #VoicevoxResultCode
-///
-/// # Safety
-/// @param phoneme_vector 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param output_predict_duration_data_length uintptr_t 分のメモリ領域が割り当てられていること
-/// @param output_predict_duration_data 成功後にメモリ領域が割り当てられるので ::voicevox_predict_duration_data_free で解放する必要がある
-#[no_mangle]
-pub unsafe extern "C" fn voicevox_predict_duration(
-    length: usize,
-    phoneme_vector: *mut i64,
-    speaker_id: u32,
-    output_predict_duration_data_length: *mut usize,
-    output_predict_duration_data: *mut *mut f32,
-) -> VoicevoxResultCode {
-    into_result_code_with_error((|| {
-        let output_vec = lock_internal().predict_duration(
-            std::slice::from_raw_parts_mut(phoneme_vector, length),
-            speaker_id,
-        )?;
-        write_predict_duration_to_ptr(
-            output_predict_duration_data,
-            output_predict_duration_data_length,
-            &output_vec,
-        );
-        Ok(())
-    })())
-}
-
-/// ::voicevox_predict_durationで出力されたデータを解放する
-/// @param[in] predict_duration_data 確保されたメモリ領域
-///
-/// # Safety
-/// @param predict_duration_data 実行後に割り当てられたメモリ領域が解放される
-#[no_mangle]
-pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_data: *mut f32) {
-    libc::free(predict_duration_data as *mut c_void);
-}
-
-/// モーラごとのF0を推論する
-/// @param [in] length vowel_phoneme_vector, consonant_phoneme_vector, start_accent_vector, end_accent_vector, start_accent_phrase_vector, end_accent_phrase_vector, output のデータ長
-/// @param [in] vowel_phoneme_vector 母音の音素データ
-/// @param [in] consonant_phoneme_vector 子音の音素データ
-/// @param [in] start_accent_vector アクセントの開始位置のデータ
-/// @param [in] end_accent_vector アクセントの終了位置のデータ
-/// @param [in] start_accent_phrase_vector アクセント句の開始位置のデータ
-/// @param [in] end_accent_phrase_vector アクセント句の終了位置のデータ
-/// @param [in] speaker_id 話者ID
-/// @param [out] output_predict_intonation_data_length 出力データのサイズ
-/// @param [out] output_predict_intonation_data データの出力先
-/// @return 結果コード #VoicevoxResultCode
-///
-/// # Safety
-/// @param vowel_phoneme_vector 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param consonant_phoneme_vector 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param start_accent_vector 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param end_accent_vector 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param start_accent_phrase_vector 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param end_accent_phrase_vector 必ずlengthの長さだけデータがある状態で渡すこと
-/// @param output_predict_intonation_data_length uintptr_t 分のメモリ領域が割り当てられていること
-/// @param output_predict_intonation_data 成功後にメモリ領域が割り当てられるので ::voicevox_predict_intonation_data_free で解放する必要がある
-#[no_mangle]
-pub unsafe extern "C" fn voicevox_predict_intonation(
-    length: usize,
-    vowel_phoneme_vector: *mut i64,
-    consonant_phoneme_vector: *mut i64,
-    start_accent_vector: *mut i64,
-    end_accent_vector: *mut i64,
-    start_accent_phrase_vector: *mut i64,
-    end_accent_phrase_vector: *mut i64,
-    speaker_id: u32,
-    output_predict_intonation_data_length: *mut usize,
-    output_predict_intonation_data: *mut *mut f32,
-) -> VoicevoxResultCode {
-    into_result_code_with_error((|| {
-        let output_vec = lock_internal().predict_intonation(
-            length,
-            std::slice::from_raw_parts(vowel_phoneme_vector, length),
-            std::slice::from_raw_parts(consonant_phoneme_vector, length),
-            std::slice::from_raw_parts(start_accent_vector, length),
-            std::slice::from_raw_parts(end_accent_vector, length),
-            std::slice::from_raw_parts(start_accent_phrase_vector, length),
-            std::slice::from_raw_parts(end_accent_phrase_vector, length),
-            speaker_id,
-        )?;
-        write_predict_intonation_to_ptr(
-            output_predict_intonation_data,
-            output_predict_intonation_data_length,
-            &output_vec,
-        );
-        Ok(())
-    })())
-}
-
-/// ::voicevox_predict_intonationで出力されたデータを解放する
-/// @param[in] predict_intonation_data 確保されたメモリ領域
-///
-/// # Safety
-/// @param predict_intonation_data 実行後に割り当てられたメモリ領域が解放される
-#[no_mangle]
-pub unsafe extern "C" fn voicevox_predict_intonation_data_free(predict_intonation_data: *mut f32) {
-    libc::free(predict_intonation_data as *mut c_void);
-}
-
-/// decodeを実行する
-/// @param [in] length f0 , output のデータ長及び phoneme のデータ長に関連する
-/// @param [in] phoneme_size 音素のサイズ phoneme のデータ長に関連する
-/// @param [in] f0 基本周波数
-/// @param [in] phoneme_vector 音素データ
-/// @param [in] speaker_id 話者ID
-/// @param [out] output_decode_data_length 出力先データのサイズ
-/// @param [out] output_decode_data データ出力先
-/// @return 結果コード #VoicevoxResultCode
-///
-/// # Safety
-/// @param f0 必ず length の長さだけデータがある状態で渡すこと
-/// @param phoneme_vector 必ず length * phoneme_size の長さだけデータがある状態で渡すこと
-/// @param output_decode_data_length uintptr_t 分のメモリ領域が割り当てられていること
-/// @param output_decode_data 成功後にメモリ領域が割り当てられるので ::voicevox_decode_data_free で解放する必要がある
-#[no_mangle]
-pub unsafe extern "C" fn voicevox_decode(
-    length: usize,
-    phoneme_size: usize,
-    f0: *mut f32,
-    phoneme_vector: *mut f32,
-    speaker_id: u32,
-    output_decode_data_length: *mut usize,
-    output_decode_data: *mut *mut f32,
-) -> VoicevoxResultCode {
-    into_result_code_with_error((|| {
-        let output_vec = lock_internal().decode(
-            length,
-            phoneme_size,
-            std::slice::from_raw_parts(f0, length),
-            std::slice::from_raw_parts(phoneme_vector, phoneme_size * length),
-            speaker_id,
-        )?;
-        write_decode_to_ptr(output_decode_data, output_decode_data_length, &output_vec);
-        Ok(())
-    })())
-}
-
-/// ::voicevox_decodeで出力されたデータを解放する
-/// @param[in] decode_data 確保されたメモリ領域
-///
-/// # Safety
-/// @param decode_data 実行後に割り当てられたメモリ領域が解放される
-#[no_mangle]
-pub unsafe extern "C" fn voicevox_decode_data_free(decode_data: *mut f32) {
-    libc::free(decode_data as *mut c_void);
+    VOICEVOX_SUPPORTED_DEVICES_JSON.as_ptr()
 }
 
 /// Audio query のオプション
@@ -346,47 +398,155 @@ pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQu
 }
 
 /// AudioQuery を実行する
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
 /// @param [in] text テキスト
-/// @param [in] speaker_id 話者ID
-/// @param [in] options AudioQueryのオプション
+/// @param [in] style_id スタイルID #VoicevoxStyleId
+/// @param [in] options AudioQueryのオプション #VoicevoxAudioQueryOptions
 /// @param [out] output_audio_query_json AudioQuery を json でフォーマットしたもの
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
 /// @param text null終端文字列であること
-/// @param output_audio_query_json 自動でheapメモリが割り当てられるので ::voicevox_audio_query_json_free で解放する必要がある
+/// @param output_audio_query_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_audio_query(
+pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
+    synthesizer: *const VoicevoxVoiceSynthesizer,
     text: *const c_char,
-    speaker_id: u32,
+    style_id: VoicevoxStyleId,
     options: VoicevoxAudioQueryOptions,
     output_audio_query_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
+        let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
         let text = CStr::from_ptr(text);
-        let audio_query = &create_audio_query(text, speaker_id, Internal::audio_query, options)?;
-        write_json_to_ptr(output_audio_query_json, audio_query);
+        let japanese_or_kana = ensure_utf8(text)?;
+        let audio_query = Handle::current().block_on(synthesizer.synthesizer().audio_query(
+            japanese_or_kana,
+            &StyleId::new(style_id),
+            &AudioQueryOptions::from(options),
+        ))?;
+        let audio_query = CString::new(audio_query_model_to_json(&audio_query))
+            .expect("should not contain '\\0'");
+        write_json_to_ptr(output_audio_query_json, &audio_query);
         Ok(())
     })())
 }
 
-/// `voicevox_synthesis` のオプション
+/// create_accent_phrases を実行する
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] text テキスト
+/// @param [in] style_id スタイルID #VoicevoxStyleId
+/// @param [in] output_accent_phrases_json アクセントフレーズのjson文字列
+///
+/// # Safety
+/// @param text null終端文字列であること
+/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
+    synthesizer: *const VoicevoxVoiceSynthesizer,
+    text: *const c_char,
+    style_id: VoicevoxStyleId,
+    output_accent_phrases_json: *mut *mut c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
+        let text = ensure_utf8(CStr::from_ptr(text))?;
+        let accent_phrases = Handle::current().block_on(
+            synthesizer
+                .synthesizer()
+                .create_accent_phrases(text, &StyleId::new(style_id)),
+        )?;
+        let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
+            .expect("should not contain '\\0'");
+        write_json_to_ptr(output_accent_phrases_json, &accent_phrases);
+        Ok(())
+    })())
+}
+
+/// replace_mora_data を実行する
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
+/// @param [in] style_id スタイルID #VoicevoxStyleId
+/// @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
+///
+/// # Safety
+/// @param accent_phrases_json null終端文字列であること
+/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
+    synthesizer: *const VoicevoxVoiceSynthesizer,
+    accent_phrases_json: *const c_char,
+    style_id: VoicevoxStyleId,
+    output_accent_phrases_json: *mut *mut c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
+        let accent_phrases: Vec<AccentPhraseModel> =
+            serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
+                .expect("invalid json\0");
+        let accent_phrases = Handle::current().block_on(
+            synthesizer
+                .synthesizer()
+                .replace_mora_data(&accent_phrases, &StyleId::new(style_id)),
+        )?;
+        let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
+            .expect("should not contain '\\0'");
+        write_json_to_ptr(output_accent_phrases_json, &accent_phrases);
+        Ok(())
+    })())
+}
+
+/// replace_phoneme_length を実行する
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
+/// @param [in] style_id スタイルID #VoicevoxStyleId
+/// @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
+///
+/// # Safety
+/// @param accent_phrases_json null終端文字列であること
+/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
+    synthesizer: *const VoicevoxVoiceSynthesizer,
+    accent_phrases_json: *const c_char,
+    style_id: VoicevoxStyleId,
+    output_accent_phrases_json: *mut *mut c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
+        let accent_phrases: Vec<AccentPhraseModel> =
+            serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
+                .expect("invalid json\0");
+        let accent_phrases = Handle::current().block_on(
+            synthesizer
+                .synthesizer()
+                .replace_phoneme_length(&accent_phrases, &StyleId::new(style_id)),
+        )?;
+        let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
+            .expect("should not contain '\\0'");
+        write_json_to_ptr(output_accent_phrases_json, &accent_phrases);
+        Ok(())
+    })())
+}
+
+/// `voicevox_synthesizer_synthesis` のオプション
 #[repr(C)]
 pub struct VoicevoxSynthesisOptions {
     /// 疑問文の調整を有効にする
     enable_interrogative_upspeak: bool,
 }
 
-/// デフォルトの `voicevox_synthesis` のオプションを生成する
-/// @return デフォルト値が設定された `voicevox_synthesis` のオプション
+/// デフォルトの `voicevox_synthesizer_synthesis` のオプションを生成する
+/// @return デフォルト値が設定された `voicevox_synthesizer_synthesis` のオプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesisOptions {
     VoicevoxSynthesisOptions::default()
 }
 
 /// AudioQuery から音声合成する
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
 /// @param [in] audio_query_json jsonフォーマットされた AudioQuery
-/// @param [in] speaker_id  話者ID
+/// @param [in] style_id スタイルID #VoicevoxStyleId
 /// @param [in] options AudioQueryから音声合成オプション
 /// @param [out] output_wav_length 出力する wav データのサイズ
 /// @param [out] output_wav wav データの出力先
@@ -396,20 +556,26 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
 /// @param output_wav_length 出力先の領域が確保された状態でpointerに渡されていること
 /// @param output_wav 自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で解放する必要がある
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_synthesis(
+pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
+    synthesizer: *const VoicevoxVoiceSynthesizer,
     audio_query_json: *const c_char,
-    speaker_id: u32,
+    style_id: VoicevoxStyleId,
     options: VoicevoxSynthesisOptions,
     output_wav_length: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
+        let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
         let audio_query_json = CStr::from_ptr(audio_query_json)
             .to_str()
             .map_err(|_| CApiError::InvalidUtf8Input)?;
-        let audio_query =
-            &serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
-        let wav = &lock_internal().synthesis(audio_query, speaker_id, options.into())?;
+        let audio_query: AudioQueryModel =
+            serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
+        let wav = &Handle::current().block_on(synthesizer.synthesizer().synthesis(
+            &audio_query,
+            &StyleId::new(style_id),
+            &SynthesisOptions::from(options),
+        ))?;
         write_wav_to_ptr(output_wav, output_wav_length, wav);
         Ok(())
     })())
@@ -432,8 +598,9 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 }
 
 /// テキスト音声合成を実行する
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
 /// @param [in] text テキスト
-/// @param [in] speaker_id 話者ID
+/// @param [in] style_id スタイルID #VoicevoxStyleId
 /// @param [in] options テキスト音声合成オプション
 /// @param [out] output_wav_length 出力する wav データのサイズ
 /// @param [out] output_wav wav データの出力先
@@ -443,29 +610,35 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 /// @param output_wav_length 出力先の領域が確保された状態でpointerに渡されていること
 /// @param output_wav は自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で解放する必要がある
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_tts(
+pub unsafe extern "C" fn voicevox_synthesizer_tts(
+    synthesizer: *const VoicevoxVoiceSynthesizer,
     text: *const c_char,
-    speaker_id: u32,
+    style_id: VoicevoxStyleId,
     options: VoicevoxTtsOptions,
     output_wav_length: *mut usize,
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
+        let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
         let text = ensure_utf8(CStr::from_ptr(text))?;
-        let output = lock_internal().tts(text, speaker_id, options.into())?;
+        let output = Handle::current().block_on(synthesizer.synthesizer().tts(
+            text,
+            &StyleId::new(style_id),
+            &TtsOptions::from(options),
+        ))?;
         write_wav_to_ptr(output_wav, output_wav_length, output.as_slice());
         Ok(())
     })())
 }
 
 /// jsonフォーマットされた AudioQuery データのメモリを解放する
-/// @param [in] audio_query_json 解放する json フォーマットされた AudioQuery データ
+/// @param [in] json 解放する json データ
 ///
 /// # Safety
-/// @param wav 確保したメモリ領域が破棄される
+/// @param json 確保したメモリ領域が破棄される
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c_char) {
-    libc::free(audio_query_json as *mut c_void);
+pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
+    libc::free(json as *mut c_void);
 }
 
 /// wav データのメモリを解放する
@@ -485,7 +658,7 @@ pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    voicevox_core::error_result_to_message(result_code).as_ptr() as *const c_char
+    voicevox_core::result_code::error_result_to_message(result_code).as_ptr() as *const c_char
 }
 
 #[cfg(test)]
@@ -494,6 +667,7 @@ mod tests {
     use anyhow::anyhow;
     use pretty_assertions::assert_eq;
     use voicevox_core::Error;
+    use voicevox_core::Result;
 
     #[rstest]
     #[case(Ok(()), VoicevoxResultCode::VOICEVOX_RESULT_OK)]

@@ -4,14 +4,30 @@ from typing import Final, List, Literal, Union
 import numpy as np
 from numpy.typing import NDArray
 
-from voicevox_core import AccelerationMode, AudioQuery, Meta, SupportedDevices
+from voicevox_core import AccelerationMode, AudioQuery, SpeakerMeta, SupportedDevices, AccentPhrase
 
-METAS: Final[List[Meta]]
-SUPPORTED_DEVICES: Final[SupportedDevices]
 __version__: str
 
-class VoicevoxCore:
-    def __init__(
+def supported_devices()->SupportedDevices:...
+
+class VoiceModel:
+    @staticmethod
+    async def from_path(path:str)->VoiceModel:
+        """
+        Parameters
+        ----------
+        path
+            vvmファイルへのパス
+        """
+        ...
+    def id()->str:...
+    def metas()->List[SpeakerMeta]:...
+
+
+
+class VoiceSynthesizer:
+    @staticmethod
+    async def new_with_initialize(
         self,
         acceleration_mode: Union[
             AccelerationMode, Literal["AUTO", "CPU", "GPU"]
@@ -19,7 +35,7 @@ class VoicevoxCore:
         cpu_num_threads: int = 0,
         load_all_models: bool = False,
         open_jtalk_dict_dir: Union[Path, str, None] = None,
-    ) -> None:
+    ) -> VoicevoxSynthesizer:
         """
         Parameters
         ----------
@@ -43,111 +59,28 @@ class VoicevoxCore:
         GPUモードならtrue、そうでないならfalse
         """
         ...
-    def load_model(self, speaker_id: int) -> None:
+
+    async def load_model(self, model:VoiceModel) -> None:
         """モデルを読み込む。
 
         Parameters
         ----------
-        speaker_id
+        style_id
             読み込むモデルの話者ID。
         """
         ...
-    def is_model_loaded(self, speaker_id: int) -> bool:
-        """指定したspeaker_idのモデルが読み込まれているか判定する。
+    def is_model_loaded(self, model_id: str) -> bool:
+        """指定したmodel_idのモデルが読み込まれているか判定する。
 
         Returns
         -------
         モデルが読み込まれているのであればtrue、そうでないならfalse
         """
         ...
-    def predict_duration(
-        self,
-        phoneme_vector: NDArray[np.int64],
-        speaker_id: int,
-    ) -> NDArray[np.float32]:
-        """音素ごとの長さを推論する。
-
-        Parameters
-        ----------
-        phoneme_vector
-            音素データ。
-        speaker_id
-            話者ID。
-
-        Returns
-        -------
-        音素ごとの長さ
-        """
-        ...
-    def predict_intonation(
-        self,
-        length: int,
-        vowel_phoneme_vector: NDArray[np.int64],
-        consonant_phoneme_vector: NDArray[np.int64],
-        start_accent_vector: NDArray[np.int64],
-        end_accent_vector: NDArray[np.int64],
-        start_accent_phrase_vector: NDArray[np.int64],
-        end_accent_phrase_vector: NDArray[np.int64],
-        speaker_id: int,
-    ) -> NDArray[np.float32]:
-        """モーラごとのF0を推論する。
-
-        Parameters
-        ----------
-        length
-            vowel_phoneme_vector, consonant_phoneme_vector, start_accent_vector, end_accent_vector, start_accent_phrase_vector, end_accent_phrase_vector, output のデータ長。
-        vowel_phoneme_vector
-            母音の音素データ。
-        consonant_phoneme_vector
-            子音の音素データ。
-        start_accent_vector
-            アクセントの開始位置のデータ。
-        end_accent_vector
-            アクセントの終了位置のデータ。
-        start_accent_phrase_vector
-            アクセント句の開始位置のデータ。
-        end_accent_phrase_vector
-            アクセント句の終了位置のデータ。
-        speaker_id
-            話者ID。
-
-        Returns
-        -------
-        モーラごとのF0
-        """
-        ...
-    def decode(
-        self,
-        length: int,
-        phoneme_size: int,
-        f0: NDArray[np.float32],
-        phoneme: NDArray[np.float32],
-        speaker_id: int,
-    ) -> NDArray[np.float32]:
-        """decodeを実行する。
-
-        Parameters
-        ----------
-        length
-            f0 , output のデータ長及び phoneme のデータ長に関連する。
-        phoneme_size
-            音素のサイズ phoneme のデータ長に関連する。
-        f0
-            基本周波数。
-        phoneme_vector
-            音素データ。
-        speaker_id
-            話者ID。
-
-        Returns
-        -------
-        decode結果
-        """
-        ...
-    def audio_query(
+    async def audio_query(
         self,
         text: str,
-        speaker_id: int,
+        style_id: int,
         kana: bool = False,
     ) -> AudioQuery:
         """AudioQuery を実行する。
@@ -156,7 +89,7 @@ class VoicevoxCore:
         ----------
         text
             テキスト。
-        speaker_id
+        style_id
             話者ID。
         kana
             aquestalk形式のkanaとしてテキストを解釈する。
@@ -166,10 +99,65 @@ class VoicevoxCore:
         :class:`AudioQuery`
         """
         ...
-    def synthesis(
+
+    async def create_accent_phrases(
+        self,
+        text: str,
+        style_id: int,
+    ) -> List[AccentPhrase]:
+        """create_accent_phrases を実行する。
+
+        Parameters
+        ----------
+        text
+            テキスト。
+        style_id
+            話者ID。
+        Returns
+        -------
+        :class:`AudioQuery`
+        """
+        ...
+    async def replace_mora_data(
+        self,
+        accent_phrases: List[AccentPhrase],
+        style_id: int,
+    ) -> List[AccentPhrase]:
+        """replace_mora_data を実行する。
+
+        Parameters
+        ----------
+        accent_phrases
+            AccentPhraseのリスト
+        style_id
+            話者ID。
+        Returns
+        -------
+        :class:`AudioQuery`
+        """
+        ...
+    async def replace_phoneme_length(
+        self,
+        accent_phrases: List[AccentPhrase],
+        style_id: int,
+    ) -> List[AccentPhrase]:
+        """replace_phoneme_length を実行する。
+
+        Parameters
+        ----------
+        accent_phrases
+            AccentPhraseのリスト
+        style_id
+            話者ID。
+        Returns
+        -------
+        :class:`AudioQuery`
+        """
+        ...
+    async def synthesis(
         self,
         audio_query: AudioQuery,
-        speaker_id: int,
+        style_id: int,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """AudioQuery から音声合成する。
@@ -178,7 +166,7 @@ class VoicevoxCore:
         ----------
         audio_query
             AudioQuery。
-        speaker_id
+        style_id
             話者ID。
         enable_interrogative_upspeak
             疑問文の調整を有効にする。
@@ -188,10 +176,10 @@ class VoicevoxCore:
         wavデータ
         """
         ...
-    def tts(
+    async def tts(
         self,
         text: str,
-        speaker_id: int,
+        style_id: int,
         kana: bool = False,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
@@ -201,7 +189,7 @@ class VoicevoxCore:
         ----------
         text
             テキスト。
-        speaker_id
+        style_id
             話者ID。
         kana
             aquestalk形式のkanaとしてテキストを解釈する。

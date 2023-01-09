@@ -1,16 +1,12 @@
 use super::*;
-use anyhow::Context as _;
 use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment,
     session::{AnyArray, Session},
     GraphOptimizationLevel, LoggingLevel,
 };
-use serde::{Deserialize, Serialize};
-use std::{
-    env,
-    path::{Path, PathBuf},
-};
+use std::sync::Mutex;
+use std::{env, path::Path};
 use tracing::error;
 
 mod model_file;
@@ -20,27 +16,21 @@ cfg_if! {
         use onnxruntime::CudaProviderOptions;
     }
 }
-use std::collections::{BTreeMap, BTreeSet};
-
-pub(crate) static MODEL_FILE_SET: Lazy<ModelFileSet> = Lazy::new(|| {
-    let result = ModelFileSet::new();
-    if let Err(err) = &result {
-        error!("ファイルを読み込めなかったためクラッシュします: {err}");
-    }
-    result.unwrap()
-});
+use std::collections::BTreeMap;
 
 pub struct Status {
     models: StatusModels,
+    merged_metas: VoiceModelMeta,
     light_session_options: SessionOptions, // 軽いモデルはこちらを使う
     heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
-    supported_styles: BTreeSet<u32>,
+    id_relations: BTreeMap<StyleId, VoiceModelId>,
 }
 
 struct StatusModels {
-    predict_duration: BTreeMap<usize, Session<'static>>,
-    predict_intonation: BTreeMap<usize, Session<'static>>,
-    decode: BTreeMap<usize, Session<'static>>,
+    metas: BTreeMap<VoiceModelId, VoiceModelMeta>,
+    predict_duration: BTreeMap<VoiceModelId, Mutex<Session<'static>>>,
+    predict_intonation: BTreeMap<VoiceModelId, Mutex<Session<'static>>>,
+    decode: BTreeMap<VoiceModelId, Mutex<Session<'static>>>,
 }
 
 #[derive(new, Getters)]
@@ -49,107 +39,10 @@ struct SessionOptions {
     use_gpu: bool,
 }
 
-pub(crate) struct ModelFileSet {
-    pub(crate) speaker_id_map: BTreeMap<u32, (usize, u32)>,
-    pub(crate) metas_str: String,
-    models: Vec<Model>,
-}
-
-impl ModelFileSet {
-    fn new() -> anyhow::Result<Self> {
-        let path = {
-            let root_dir = if cfg!(test) {
-                Path::new(env!("CARGO_WORKSPACE_DIR")).join("model")
-            } else if let Some(root_dir) = env::var_os(ROOT_DIR_ENV_NAME) {
-                root_dir.into()
-            } else {
-                process_path::get_dylib_path()
-                    .or_else(process_path::get_executable_path)
-                    .with_context(|| "Could not get the current dynamic library/executable path")?
-                    .parent()
-                    .unwrap_or_else(|| "".as_ref())
-                    .join("model")
-            };
-
-            move |rel_path| root_dir.join(rel_path)
-        };
-
-        let metas_str = fs_err::read_to_string(path("metas.json"))?;
-
-        let models = model_file::MODEL_FILE_NAMES
-            .iter()
-            .map(
-                |&ModelFileNames {
-                     predict_duration_model,
-                     predict_intonation_model,
-                     decode_model,
-                 }| {
-                    let predict_duration_model = ModelFile::new(&path(predict_duration_model))?;
-                    let predict_intonation_model = ModelFile::new(&path(predict_intonation_model))?;
-                    let decode_model = ModelFile::new(&path(decode_model))?;
-                    Ok(Model {
-                        predict_duration_model,
-                        predict_intonation_model,
-                        decode_model,
-                    })
-                },
-            )
-            .collect::<anyhow::Result<_>>()?;
-
-        return Ok(Self {
-            speaker_id_map: model_file::SPEAKER_ID_MAP.iter().copied().collect(),
-            metas_str,
-            models,
-        });
-
-        const ROOT_DIR_ENV_NAME: &str = "VV_MODELS_ROOT_DIR";
-    }
-
-    pub(crate) fn models_count(&self) -> usize {
-        self.models.len()
-    }
-}
-
-struct ModelFileNames {
-    predict_duration_model: &'static str,
-    predict_intonation_model: &'static str,
-    decode_model: &'static str,
-}
-
 #[derive(thiserror::Error, Debug)]
 #[error("不正なモデルファイルです")]
 struct DecryptModelError;
 
-struct Model {
-    predict_duration_model: ModelFile,
-    predict_intonation_model: ModelFile,
-    decode_model: ModelFile,
-}
-
-struct ModelFile {
-    path: PathBuf,
-    content: Vec<u8>,
-}
-
-impl ModelFile {
-    fn new(path: &Path) -> anyhow::Result<Self> {
-        let content = fs_err::read(path)?;
-        Ok(Self {
-            path: path.to_owned(),
-            content,
-        })
-    }
-}
-
-#[derive(Deserialize, Getters)]
-struct Meta {
-    styles: Vec<Style>,
-}
-
-#[derive(Deserialize, Getters)]
-struct Style {
-    id: u64,
-}
 static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
     cfg_if! {
         if #[cfg(debug_assertions)]{
@@ -165,109 +58,140 @@ static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
         .unwrap()
 });
 
-#[derive(Getters, Debug, Serialize, Deserialize)]
-pub struct SupportedDevices {
-    cpu: bool,
-    cuda: bool,
-    dml: bool,
-}
-
-impl SupportedDevices {
-    pub fn get_supported_devices() -> Result<Self> {
-        let mut cuda_support = false;
-        let mut dml_support = false;
-        for provider in onnxruntime::session::get_available_providers()
-            .map_err(|e| Error::GetSupportedDevices(e.into()))?
-            .iter()
-        {
-            match provider.as_str() {
-                "CUDAExecutionProvider" => cuda_support = true,
-                "DmlExecutionProvider" => dml_support = true,
-                _ => {}
-            }
-        }
-
-        Ok(SupportedDevices {
-            cpu: true,
-            cuda: cuda_support,
-            dml: dml_support,
-        })
-    }
-
-    pub fn to_json(&self) -> serde_json::Value {
-        serde_json::to_value(self).expect("should not fail")
-    }
-}
-
 #[allow(unsafe_code)]
 unsafe impl Send for Status {}
+
+#[allow(unsafe_code)]
+unsafe impl Sync for Status {}
 
 impl Status {
     pub fn new(use_gpu: bool, cpu_num_threads: u16) -> Self {
         Self {
             models: StatusModels {
+                metas: BTreeMap::new(),
                 predict_duration: BTreeMap::new(),
                 predict_intonation: BTreeMap::new(),
                 decode: BTreeMap::new(),
             },
+            merged_metas: VoiceModelMeta::default(),
             light_session_options: SessionOptions::new(cpu_num_threads, false),
             heavy_session_options: SessionOptions::new(cpu_num_threads, use_gpu),
-            supported_styles: BTreeSet::default(),
+            id_relations: BTreeMap::default(),
         }
     }
 
-    pub fn load_metas(&mut self) -> Result<()> {
-        let metas: Vec<Meta> = serde_json::from_str(&MODEL_FILE_SET.metas_str)
-            .map_err(|e| Error::LoadMetas(e.into()))?;
-
-        for meta in metas.iter() {
-            for style in meta.styles().iter() {
-                self.supported_styles.insert(*style.id() as u32);
+    pub async fn load_model(&mut self, model: &VoiceModel) -> Result<()> {
+        async {
+            for speaker in model.metas().iter() {
+                for style in speaker.styles().iter() {
+                    if self.id_relations.contains_key(style.id()) {
+                        Err(Error::AlreadyLoadedModel {
+                            path: model.path().clone(),
+                        })?;
+                    }
+                }
             }
-        }
+            let models = model.read_inference_models().await?;
 
-        Ok(())
-    }
+            let predict_duration_session = self.new_session(
+                models.predict_duration_model(),
+                &self.light_session_options,
+                model.path(),
+            )?;
+            let predict_intonation_session = self.new_session(
+                models.predict_intonation_model(),
+                &self.light_session_options,
+                model.path(),
+            )?;
+            let decode_model = self.new_session(
+                models.decode_model(),
+                &self.heavy_session_options,
+                model.path(),
+            )?;
+            self.models
+                .metas
+                .insert(model.id().clone(), model.metas().clone());
 
-    pub fn load_model(&mut self, model_index: usize) -> Result<()> {
-        if model_index < MODEL_FILE_SET.models.len() {
-            let model = &MODEL_FILE_SET.models[model_index];
-            let predict_duration_session =
-                self.new_session(&model.predict_duration_model, &self.light_session_options)?;
-            let predict_intonation_session =
-                self.new_session(&model.predict_intonation_model, &self.light_session_options)?;
-            let decode_model =
-                self.new_session(&model.decode_model, &self.heavy_session_options)?;
+            for speaker in model.metas().iter() {
+                for style in speaker.styles().iter() {
+                    self.id_relations
+                        .insert(style.id().clone(), model.id().clone());
+                }
+            }
+            self.set_metas();
 
             self.models
                 .predict_duration
-                .insert(model_index, predict_duration_session);
+                .insert(model.id().clone(), Mutex::new(predict_duration_session));
             self.models
                 .predict_intonation
-                .insert(model_index, predict_intonation_session);
+                .insert(model.id().clone(), Mutex::new(predict_intonation_session));
 
-            self.models.decode.insert(model_index, decode_model);
+            self.models
+                .decode
+                .insert(model.id().clone(), Mutex::new(decode_model));
 
             Ok(())
+        }
+        .await
+    }
+
+    pub fn unload_model(&mut self, model_id: &VoiceModelId) -> Result<()> {
+        if self.is_loaded_model(model_id) {
+            self.models.predict_intonation.remove(model_id);
+            self.models.predict_duration.remove(model_id);
+            self.models.decode.remove(model_id);
+
+            let remove_style_ids = self
+                .id_relations
+                .iter()
+                .filter(|&(_, loaded_model_id)| loaded_model_id == model_id)
+                .map(|(style_id, _)| style_id.clone())
+                .collect::<Vec<_>>();
+
+            for style_id in remove_style_ids.iter() {
+                self.id_relations.remove(style_id);
+            }
+            self.set_metas();
+            Ok(())
         } else {
-            Err(Error::InvalidModelIndex { model_index })
+            Err(Error::UnloadedModel {
+                model_id: model_id.clone(),
+            })
         }
     }
 
-    pub fn is_model_loaded(&self, model_index: usize) -> bool {
-        self.models.predict_intonation.contains_key(&model_index)
-            && self.models.predict_duration.contains_key(&model_index)
-            && self.models.decode.contains_key(&model_index)
+    fn set_metas(&mut self) {
+        let mut meta = VoiceModelMeta::default();
+        for m in self.models.metas.values() {
+            meta.extend_from_slice(m);
+        }
+        self.merged_metas = meta;
+    }
+
+    pub fn metas(&self) -> &VoiceModelMeta {
+        &self.merged_metas
+    }
+
+    pub fn is_loaded_model(&self, model_id: &VoiceModelId) -> bool {
+        self.models.predict_duration.contains_key(model_id)
+            && self.models.predict_intonation.contains_key(model_id)
+            && self.models.decode.contains_key(model_id)
+    }
+
+    pub fn is_loaded_model_by_style_id(&self, style_id: &StyleId) -> bool {
+        self.id_relations.contains_key(style_id)
     }
 
     fn new_session(
         &self,
-        model_file: &ModelFile,
+        model: &[u8],
         session_options: &SessionOptions,
+        path: impl AsRef<Path>,
     ) -> Result<Session<'static>> {
-        self.new_session_from_bytes(|| model_file::decrypt(&model_file.content), session_options)
+        self.new_session_from_bytes(|| model_file::decrypt(model), session_options)
             .map_err(|source| Error::LoadModel {
-                path: model_file.path.clone(),
+                path: path.as_ref().into(),
                 source,
             })
     }
@@ -302,55 +226,79 @@ impl Status {
         Ok(session_builder.with_model_from_memory(model_bytes()?)?)
     }
 
-    pub fn validate_speaker_id(&self, speaker_id: u32) -> bool {
-        self.supported_styles.contains(&speaker_id)
+    pub fn validate_speaker_id(&self, style_id: &StyleId) -> bool {
+        self.id_relations.contains_key(style_id)
     }
 
     pub fn predict_duration_session_run(
-        &mut self,
-        model_index: usize,
+        &self,
+        style_id: &StyleId,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model) = self.models.predict_duration.get_mut(&model_index) {
-            if let Ok(output_tensors) = model.run(inputs) {
-                Ok(output_tensors[0].as_slice().unwrap().to_owned())
+        if let Some(model_id) = self.id_relations.get(style_id) {
+            if let Some(model) = self.models.predict_duration.get(model_id) {
+                if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
+                    Ok(output_tensors[0].as_slice().unwrap().to_owned())
+                } else {
+                    Err(Error::InferenceFailed)
+                }
             } else {
-                Err(Error::InferenceFailed)
+                Err(Error::InvalidStyleId {
+                    style_id: style_id.clone(),
+                })
             }
         } else {
-            Err(Error::InvalidModelIndex { model_index })
+            Err(Error::InvalidStyleId {
+                style_id: style_id.clone(),
+            })
         }
     }
 
     pub fn predict_intonation_session_run(
-        &mut self,
-        model_index: usize,
+        &self,
+        style_id: &StyleId,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model) = self.models.predict_intonation.get_mut(&model_index) {
-            if let Ok(output_tensors) = model.run(inputs) {
-                Ok(output_tensors[0].as_slice().unwrap().to_owned())
+        if let Some(model_id) = self.id_relations.get(style_id) {
+            if let Some(model) = self.models.predict_intonation.get(model_id) {
+                if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
+                    Ok(output_tensors[0].as_slice().unwrap().to_owned())
+                } else {
+                    Err(Error::InferenceFailed)
+                }
             } else {
-                Err(Error::InferenceFailed)
+                Err(Error::InvalidStyleId {
+                    style_id: style_id.clone(),
+                })
             }
         } else {
-            Err(Error::InvalidModelIndex { model_index })
+            Err(Error::InvalidStyleId {
+                style_id: style_id.clone(),
+            })
         }
     }
 
     pub fn decode_session_run(
-        &mut self,
-        model_index: usize,
+        &self,
+        style_id: &StyleId,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model) = self.models.decode.get_mut(&model_index) {
-            if let Ok(output_tensors) = model.run(inputs) {
-                Ok(output_tensors[0].as_slice().unwrap().to_owned())
+        if let Some(model_id) = self.id_relations.get(style_id) {
+            if let Some(model) = self.models.decode.get(model_id) {
+                if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
+                    Ok(output_tensors[0].as_slice().unwrap().to_owned())
+                } else {
+                    Err(Error::InferenceFailed)
+                }
             } else {
-                Err(Error::InferenceFailed)
+                Err(Error::InvalidStyleId {
+                    style_id: style_id.clone(),
+                })
             }
         } else {
-            Err(Error::InvalidModelIndex { model_index })
+            Err(Error::InvalidStyleId {
+                style_id: style_id.clone(),
+            })
         }
     }
 }
@@ -384,29 +332,14 @@ mod tests {
         assert!(status.models.predict_duration.is_empty());
         assert!(status.models.predict_intonation.is_empty());
         assert!(status.models.decode.is_empty());
-        assert!(status.supported_styles.is_empty());
+        assert!(status.id_relations.is_empty());
     }
 
     #[rstest]
-    fn status_load_metas_works() {
-        let mut status = Status::new(true, 0);
-        let result = status.load_metas();
-        assert_eq!(Ok(()), result);
-        let expected = BTreeSet::from([0, 1, 2, 3]);
-        assert_eq!(expected, status.supported_styles);
-    }
-
-    #[rstest]
-    fn supported_devices_get_supported_devices_works() {
-        let result = SupportedDevices::get_supported_devices();
-        // 環境によって結果が変わるので、関数呼び出しが成功するかどうかの確認のみ行う
-        assert!(result.is_ok(), "{result:?}");
-    }
-
-    #[rstest]
-    fn status_load_model_works() {
+    #[tokio::test]
+    async fn status_load_model_works() {
         let mut status = Status::new(false, 0);
-        let result = status.load_model(0);
+        let result = status.load_model(&open_default_vvm_file().await).await;
         assert_eq!(Ok(()), result);
         assert_eq!(1, status.models.predict_duration.len());
         assert_eq!(1, status.models.predict_intonation.len());
@@ -414,18 +347,16 @@ mod tests {
     }
 
     #[rstest]
-    fn status_is_model_loaded_works() {
+    #[tokio::test]
+    async fn status_is_model_loaded_works() {
         let mut status = Status::new(false, 0);
-        let model_index = 0;
+        let vvm = open_default_vvm_file().await;
         assert!(
-            !status.is_model_loaded(model_index),
+            !status.is_loaded_model(vvm.id()),
             "model should  not be loaded"
         );
-        let result = status.load_model(model_index);
+        let result = status.load_model(&vvm).await;
         assert_eq!(Ok(()), result);
-        assert!(
-            status.is_model_loaded(model_index),
-            "model should be loaded"
-        );
+        assert!(status.is_loaded_model(vvm.id()), "model should be loaded");
     }
 }

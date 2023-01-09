@@ -47,6 +47,12 @@ pub struct AudioQueryModel {
     kana: String,
 }
 
+impl AsRef<AudioQueryModel> for AudioQueryModel {
+    fn as_ref(&self) -> &Self {
+        self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

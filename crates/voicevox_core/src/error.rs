@@ -30,6 +30,21 @@ pub enum Error {
         #[source]
         source: anyhow::Error,
     },
+    #[error("{} ({})", base_error_message(VOICEVOX_ALREADY_LOADED_MODEL_ERROR), path.display())]
+    AlreadyLoadedModel { path: PathBuf },
+
+    #[error("{} ({model_id:?})", base_error_message(VOICEVOX_UNLOADED_MODEL_ERROR))]
+    UnloadedModel { model_id: VoiceModelId },
+
+    #[error("{}({path}):{source}", base_error_message(VOICEVOX_OPEN_FILE_ERROR))]
+    OpenFile {
+        path: PathBuf,
+        #[source]
+        source: anyhow::Error,
+    },
+
+    #[error("{},{filename}", base_error_message(VOICEVOX_VVM_MODEL_READ_ERROR))]
+    VvmRead { filename: String },
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_METAS_ERROR))]
     LoadMetas(#[source] anyhow::Error),
@@ -40,14 +55,11 @@ pub enum Error {
     )]
     GetSupportedDevices(#[source] anyhow::Error),
 
-    #[error("{}", base_error_message(VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR))]
-    UninitializedStatus,
-
     #[error(
-        "{}: {speaker_id}",
-        base_error_message(VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR)
+        "{}: {style_id:?}",
+        base_error_message(VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR)
     )]
-    InvalidSpeakerId { speaker_id: u32 },
+    InvalidStyleId { style_id: StyleId },
 
     #[error(
         "{}: {model_index}",
@@ -73,7 +85,6 @@ impl PartialEq for Error {
         match (self, other) {
             (Self::NotLoadedOpenjtalkDict, Self::NotLoadedOpenjtalkDict)
             | (Self::GpuSupport, Self::GpuSupport)
-            | (Self::UninitializedStatus, Self::UninitializedStatus)
             | (Self::InferenceFailed, Self::InferenceFailed) => true,
             (
                 Self::LoadModel {
@@ -90,11 +101,11 @@ impl PartialEq for Error {
                 e1.to_string() == e2.to_string()
             }
             (
-                Self::InvalidSpeakerId {
-                    speaker_id: speaker_id1,
+                Self::InvalidStyleId {
+                    style_id: speaker_id1,
                 },
-                Self::InvalidSpeakerId {
-                    speaker_id: speaker_id2,
+                Self::InvalidStyleId {
+                    style_id: speaker_id2,
                 },
             ) => speaker_id1 == speaker_id2,
             (
@@ -113,6 +124,6 @@ impl PartialEq for Error {
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
-    let c_message: &'static str = crate::error_result_to_message(result_code);
+    let c_message: &'static str = crate::result_code::error_result_to_message(result_code);
     &c_message[..(c_message.len() - 1)]
 }

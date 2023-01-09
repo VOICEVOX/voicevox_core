@@ -306,7 +306,7 @@ impl Utterance {
     }
 
     pub fn extract_full_context_label(
-        open_jtalk: &mut open_jtalk::OpenJtalk,
+        open_jtalk: &open_jtalk::OpenJtalk,
         text: impl AsRef<str>,
     ) -> Result<Self> {
         let labels = open_jtalk.extract_fullcontext(text)?;

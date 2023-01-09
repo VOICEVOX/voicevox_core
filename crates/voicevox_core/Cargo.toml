@@ -12,7 +12,7 @@ directml = ["onnxruntime/directml"]
 [dependencies]
 anyhow.workspace = true
 cfg-if = "1.0.0"
-derive-getters = "0.2.0"
+derive-getters.workspace = true
 derive-new = "0.5.9"
 easy-ext.workspace = true
 fs-err.workspace = true
@@ -25,15 +25,18 @@ thiserror.workspace = true
 tracing.workspace = true
 open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="9edab53f0bfa877dbb37224d17fd0f3efbe32abd" }
 regex = "1.6.0"
+async_zip = { version ="0.0.11",features=["full"]}
+futures = "0.3.26"
+nanoid = "0.4.0"
+tokio.workspace = true 
 
 [dev-dependencies]
 rstest = "0.15.0"
 pretty_assertions = "1.3.0"
-async-std = { version = "1.12.0", features = ["attributes"] }
-surf = "2.3.2"
 flate2 = "1.0.24"
 tar = "0.4.38"
 heck = "0.4.0"
+reqwest.workspace=true
 
 [target."cfg(windows)".dependencies]
 humansize = "2.1.2"
