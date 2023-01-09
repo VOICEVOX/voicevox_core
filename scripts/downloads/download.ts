@@ -81,7 +81,7 @@ async function main(): Promise<void> {
   const cpuArch = options.cpuArch as "x86" | "x64" | "aarch64";
   const os = options.os as "windows" | "linux" | "osx";
 
-  const octokit = new Octokit({ auth: process.env["GITHUB_TOKEN"] });
+  const octokit = new Octokit({ auth: Deno.env.get("GITHUB_TOKEN") });
 
   const coreAsset = await findGHAsset(
     octokit,
