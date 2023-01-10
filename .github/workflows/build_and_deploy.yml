@@ -114,7 +114,7 @@ jobs:
         if: ${{ env.VERSION != 'DEBUG' }}
         shell: bash
         run: |
-          cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude xtask
+          cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
           cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api
       - name: generate voicevox_core.h
         shell: bash
