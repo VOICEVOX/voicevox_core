@@ -165,7 +165,7 @@ jobs:
       - name: Archive artifact (Windows)
         if: contains(matrix.os, 'windows')
         run: |
-          powershell Compress-Archive -Path "artifact/${{ env.ASSET_NAME }}" -DestinationPath "${{ env.ASSET_NAME }}.zip"
+          7z a "${{ env.ASSET_NAME }}.zip" "artifact/${{ env.ASSET_NAME }}"
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
