@@ -294,8 +294,6 @@ async fn download(Download { target, pb }: Download) -> anyhow::Result<Vec<u8>> 
         }
         pb.finish();
 
-        fs_err::tokio::write("/tmp/a.zip", &downloaded).await?;
-
         Ok(downloaded)
     }
 
