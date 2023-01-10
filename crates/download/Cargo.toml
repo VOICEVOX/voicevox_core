@@ -1,0 +1,25 @@
+[package]
+name = "download"
+version = "0.0.0"
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+binstall-tar = "0.4.39"
+clap.workspace = true
+flate2 = "1.0.25"
+fs-err.workspace = true
+futures-util = "0.3.25"
+indicatif = "0.17.2"
+itertools = "0.10.5"
+octocrab = { git = "https://github.com/qryxip/octocrab.git", rev = "ad15d0b51ea3fac2f683be879fd640a4407d8a2e", features = ["stream"] }
+once_cell.workspace = true
+platforms = "3.0.2"
+reqwest = { version = "0.11.13", default-features = false }
+strum = { version = "0.24.1", features = ["derive"] }
+tokio = { version = "1.24.1", features = ["macros", "rt"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
+url = "2.3.0"
+async_zip = { version = "0.0.9", default-features = false, features = ["deflate"] }
