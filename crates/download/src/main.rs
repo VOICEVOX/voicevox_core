@@ -7,9 +7,11 @@ use std::{
 
 use anyhow::Context as _;
 use async_zip::read::seek::ZipFileReader;
+use bytes::Bytes;
 use clap::{Parser as _, ValueEnum};
 use flate2::read::GzDecoder;
-use futures_util::{StreamExt as _, TryFutureExt as _};
+use futures_core::Stream;
+use futures_util::{StreamExt as _, TryFutureExt as _, TryStreamExt as _};
 use indicatif::{MultiProgress, ProgressBar};
 use octocrab::{
     models::{
@@ -275,33 +277,36 @@ async fn download(Download { target, pb }: Download) -> anyhow::Result<Vec<u8>> 
         }: &GhAsset,
         pb: &ProgressBar,
     ) -> anyhow::Result<Vec<u8>> {
-        let mut stream = octocrab
+        let bytes_stream = octocrab
             .repos(ORGANIZATION_NAME, repo)
             .releases()
             .stream_asset(*id)
-            .await?;
+            .await?
+            .map_err(Into::into);
 
-        let mut downloaded = vec![];
-
-        while let Some(chunk) = stream.next().await.transpose()? {
-            downloaded.extend_from_slice(&chunk);
-            pb.set_position(downloaded.len() as _);
-        }
-        pb.finish();
-
-        Ok(downloaded)
+        download(bytes_stream, None, pb).await
     }
 
     async fn download_from_url(url: &Url, pb: &ProgressBar) -> anyhow::Result<Vec<u8>> {
-        let mut res = reqwest::get(url.clone()).await?.error_for_status()?;
+        let res = reqwest::get(url.clone()).await?.error_for_status()?;
+        let content_length = res.content_length();
+        let bytes_stream = res.bytes_stream().map_err(Into::into);
 
-        if let Some(content_length) = res.content_length() {
+        download(bytes_stream, content_length, pb).await
+    }
+
+    async fn download(
+        mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
+        content_length: Option<u64>,
+        pb: &ProgressBar,
+    ) -> anyhow::Result<Vec<u8>> {
+        if let Some(content_length) = content_length {
             pb.set_length(content_length);
         }
 
         let mut downloaded = vec![];
 
-        while let Some(chunk) = res.chunk().await? {
+        while let Some(chunk) = bytes_stream.next().await.transpose()? {
             downloaded.extend_from_slice(&chunk);
             pb.set_position(downloaded.len() as _);
         }
