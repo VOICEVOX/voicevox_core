@@ -9,7 +9,7 @@ use anyhow::Context as _;
 use async_zip::read::seek::ZipFileReader;
 use clap::{Parser as _, ValueEnum};
 use flate2::read::GzDecoder;
-use futures_util::StreamExt as _;
+use futures_util::{StreamExt as _, TryFutureExt as _};
 use indicatif::{MultiProgress, ProgressBar};
 use octocrab::{
     models::{
@@ -20,7 +20,6 @@ use octocrab::{
 };
 use once_cell::sync::Lazy;
 use strum::{Display, IntoStaticStr};
-use tokio::task::JoinSet;
 use tracing::info;
 use url::Url;
 
@@ -193,18 +192,14 @@ async fn main() -> anyhow::Result<()> {
         ));
     }
 
-    let archives = {
-        let extractions = targets.iter().map(|&(_, e)| e).collect::<Vec<_>>();
-        let mut tasks = JoinSet::new();
-        for (dl, _) in targets {
-            tasks.spawn(download(dl));
-        }
-        let mut archives = vec![];
-        while let Some(result) = tasks.join_next().await {
-            archives.push(result??);
-        }
-        itertools::zip_eq(archives, extractions).collect::<Vec<_>>()
-    };
+    let archives = futures_util::future::join_all(
+        targets
+            .into_iter()
+            .map(|(d, e)| download(d).map_ok(move |r| (r, e))),
+    )
+    .await
+    .into_iter()
+    .collect::<Result<Vec<_>, _>>()?;
 
     for (archive, extraction) in archives {
         extract(&archive, extraction, &output).await?;
