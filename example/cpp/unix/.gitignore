@@ -2,7 +2,7 @@
 *.dylib
 *.so
 *.so.*
-vocevox_core.h
+voicevox_core.h
 
 
 # OpenJTalk-dictionary's dir
