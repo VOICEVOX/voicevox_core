@@ -60,7 +60,7 @@ struct Args {
     additional_libraries_version: String,
 
     /// ダウンロードするacceleratorを指定する(cudaはlinuxのみ)
-    #[arg(value_enum, long, default_value("cpu"))]
+    #[arg(value_enum, long, default_value(<&str>::from(Accelerator::default())))]
     accelerator: Accelerator,
 
     /// ダウンロードするcpuのアーキテクチャを指定する
@@ -72,9 +72,10 @@ struct Args {
     os: Os,
 }
 
-#[derive(ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq)]
+#[derive(Default, ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq)]
 #[strum(serialize_all = "kebab-case")]
 enum Accelerator {
+    #[default]
     Cpu,
     Cuda,
     Directml,
