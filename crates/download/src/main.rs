@@ -90,8 +90,12 @@ enum CpuArch {
 
 impl CpuArch {
     fn default_str() -> &'static str {
-        // FIXME
-        "x64"
+        match env::consts::ARCH {
+            "x86_64" => Some("x64"),
+            "aarch64" => Some("aarch64"),
+            _ => None,
+        }
+        .unwrap_or_else(|| todo!())
     }
 }
 
