@@ -178,33 +178,36 @@ async fn main() -> anyhow::Result<()> {
 
     let mut targets = vec![(
         Download::gh(core, &progresses),
-        Extraction::ZipStrippingFirstDir,
+        ArchiveKind::Zip,
+        Stripping::FirstDir,
     )];
 
     if !min {
         if let Some(additional_libraries) = additional_libraries {
             targets.push((
                 Download::gh(additional_libraries, &progresses),
-                Extraction::ZipStrippingFirstDir,
+                ArchiveKind::Zip,
+                Stripping::FirstDir,
             ));
         }
         targets.push((
             Download::url(&OPEN_JTALK_DIC_URL, &progresses),
-            Extraction::Tgz,
+            ArchiveKind::Tgz,
+            Stripping::None,
         ));
     }
 
     let archives = futures_util::future::join_all(
         targets
             .into_iter()
-            .map(|(d, e)| download(d).map_ok(move |r| (r, e))),
+            .map(|(d, k, s)| download(d).map_ok(move |r| (r, k, s))),
     )
     .await
     .into_iter()
     .collect::<Result<Vec<_>, _>>()?;
 
-    for (archive, extraction) in archives {
-        extract(&archive, extraction, &output).await?;
+    for (archive, kind, stripping) in archives {
+        extract(&archive, kind, stripping, &output).await?;
     }
 
     info!("全ての必要なファイルダウンロードが完了しました");
@@ -316,13 +319,22 @@ async fn download(Download { target, pb }: Download) -> anyhow::Result<Vec<u8>> 
     }
 }
 
-async fn extract(archive: &[u8], kind: Extraction, output: &Path) -> anyhow::Result<()> {
+async fn extract(
+    archive: &[u8],
+    kind: ArchiveKind,
+    stripping: Stripping,
+    output: &Path,
+) -> anyhow::Result<()> {
     let files = match kind {
-        Extraction::ZipStrippingFirstDir => extract_zip_stripping_first_dir(archive).await,
-        Extraction::Tgz => extract_tgz(archive),
+        ArchiveKind::Zip => read_zip(archive).await,
+        ArchiveKind::Tgz => read_tgz(archive),
     }?;
 
     for (filename, content) in files {
+        let filename = &match stripping {
+            Stripping::FirstDir => filename.iter().skip(1).collect(),
+            Stripping::None => filename,
+        };
         let dst = &output.join(filename);
         if let Some(parent) = dst.parent() {
             fs_err::tokio::create_dir_all(parent).await?;
@@ -332,10 +344,7 @@ async fn extract(archive: &[u8], kind: Extraction, output: &Path) -> anyhow::Res
     }
     return Ok(());
 
-    async fn extract_zip_stripping_first_dir(
-        zip: &[u8],
-    ) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
-        // FIXME: voicevox_coreのZIPが読めない!
+    async fn read_zip(zip: &[u8]) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
         let mut files = vec![];
         let mut zip = ZipFileReader::new(Cursor::new(zip)).await?;
         for i in 0..zip.entries().len() {
@@ -349,18 +358,11 @@ async fn extract(archive: &[u8], kind: Extraction, output: &Path) -> anyhow::Res
         Ok(files)
     }
 
-    fn strip_first_dir(posix_path: &str) -> &str {
-        posix_path
-            .find('/')
-            .map(|ofs| &posix_path[ofs + 1..])
-            .unwrap_or(posix_path)
-    }
-
     fn fix_zip_entry_filename(possibly_illegal_filename: &str) -> String {
         possibly_illegal_filename.replace('\\', "/")
     }
 
-    fn extract_tgz(tgz: &[u8]) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
+    fn read_tgz(tgz: &[u8]) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
         binstall_tar::Archive::new(GzDecoder::new(tgz))
             .entries()?
             .map(|entry| {
@@ -380,6 +382,13 @@ async fn extract(archive: &[u8], kind: Extraction, output: &Path) -> anyhow::Res
         let mut buf = vec![];
         rdr.read_to_end(&mut buf)?;
         Ok(buf)
+    }
+
+    fn strip_first_dir(posix_path: &str) -> &str {
+        posix_path
+            .find('/')
+            .map(|ofs| &posix_path[ofs + 1..])
+            .unwrap_or(posix_path)
     }
 }
 
@@ -423,7 +432,13 @@ enum DownloadTarget {
 }
 
 #[derive(Clone, Copy)]
-enum Extraction {
-    ZipStrippingFirstDir,
+enum ArchiveKind {
+    Zip,
     Tgz,
+}
+
+#[derive(Clone, Copy)]
+enum Stripping {
+    None,
+    FirstDir,
 }
