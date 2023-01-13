@@ -50,7 +50,7 @@ voicevox_additional_libraries_url(){
 latest_version(){
   base_url=$1
   get_latest_url="$base_url/releases/tag"
-  echo -En "$(curl -sSfI "$base_url/releases/latest"| grep "location:" | sed -e "s%location: $get_latest_url/%%" | sed 's/\r//g')"
+  echo -En "$(curl -sSfI "$base_url/releases/latest"| grep -i "location:" | sed -e "s%location: $get_latest_url/%%i" | sed 's/\r//g')"
 }
 
 latest_voicevox_core_version(){
