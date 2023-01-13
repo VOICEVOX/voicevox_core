@@ -64,11 +64,11 @@ struct Args {
     accelerator: Accelerator,
 
     /// ダウンロードするcpuのアーキテクチャを指定する
-    #[arg(value_enum, long, default_value(CpuArch::default_str()))]
+    #[arg(value_enum, long, default_value(CpuArch::default_opt().map(<&str>::from)))]
     cpu_arch: CpuArch,
 
     /// ダウンロードする対象のOSを指定する
-    #[arg(value_enum, long, default_value(Os::DEFAULT_STR))]
+    #[arg(value_enum, long, default_value(Os::default_opt().map(<&str>::from)))]
     os: Os,
 }
 
@@ -89,17 +89,16 @@ enum CpuArch {
 }
 
 impl CpuArch {
-    fn default_str() -> &'static str {
+    fn default_opt() -> Option<Self> {
         match env::consts::ARCH {
-            "x86_64" => Some("x64"),
-            "aarch64" => Some("aarch64"),
+            "x86_64" => Some(Self::X64),
+            "aarch64" => Some(Self::Aarch64),
             _ => None,
         }
-        .unwrap_or_else(|| todo!())
     }
 }
 
-#[derive(ValueEnum, Display, Clone, Copy, PartialEq)]
+#[derive(ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq)]
 #[strum(serialize_all = "kebab-case")]
 enum Os {
     Windows,
@@ -108,17 +107,15 @@ enum Os {
 }
 
 impl Os {
-    const DEFAULT_STR: &str = if cfg!(windows) {
-        "windows"
-    } else if cfg!(target_os = "linux") {
-        "linux"
-    } else {
-        "macos"
-    };
+    fn default_opt() -> Option<Self> {
+        match env::consts::OS {
+            "windows" => Some(Self::Windows),
+            "linux" => Some(Self::Linux),
+            "macos" => Some(Self::Osx),
+            _ => None,
+        }
+    }
 }
-
-#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
-compile_error!("unsupported OS");
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
