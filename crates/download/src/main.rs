@@ -147,26 +147,25 @@ async fn main() -> anyhow::Result<()> {
     })
     .await?;
 
-    let additional_libraries = if accelerator != Accelerator::Cpu {
-        Some(
-            find_gh_asset(
-                octocrab,
-                ADDITIONAL_LIBRARIES_REPO_NAME,
-                &additional_libraries_version,
-                |_| {
-                    let accelerator = match accelerator {
-                        Accelerator::Cpu => unreachable!(),
-                        Accelerator::Cuda => "CUDA",
-                        Accelerator::Directml => "DirectML",
-                    };
-                    format!("{accelerator}-{os}-{cpu_arch}.zip")
-                },
-            )
-            .await?,
+    use futures_util::future::OptionFuture;
+
+    let additional_libraries = OptionFuture::from((accelerator != Accelerator::Cpu).then(|| {
+        find_gh_asset(
+            octocrab,
+            ADDITIONAL_LIBRARIES_REPO_NAME,
+            &additional_libraries_version,
+            |_| {
+                let accelerator = match accelerator {
+                    Accelerator::Cpu => unreachable!(),
+                    Accelerator::Cuda => "CUDA",
+                    Accelerator::Directml => "DirectML",
+                };
+                format!("{accelerator}-{os}-{cpu_arch}.zip")
+            },
         )
-    } else {
-        None
-    };
+    }))
+    .await
+    .transpose()?;
 
     info!("対象OS: {os}");
     info!("対象CPUアーキテクチャ: {cpu_arch}");
