@@ -10,7 +10,7 @@ use bytes::Bytes;
 use clap::{Parser as _, ValueEnum};
 use flate2::read::GzDecoder;
 use futures_core::Stream;
-use futures_util::{StreamExt as _, TryFutureExt as _, TryStreamExt as _};
+use futures_util::{future::OptionFuture, StreamExt as _, TryFutureExt as _, TryStreamExt as _};
 use indicatif::{MultiProgress, ProgressBar};
 use octocrab::{
     models::{
@@ -148,8 +148,6 @@ async fn main() -> anyhow::Result<()> {
     })
     .await?;
 
-    use futures_util::future::OptionFuture;
-
     let additional_libraries = OptionFuture::from((accelerator != Accelerator::Cpu).then(|| {
         find_gh_asset(
             octocrab,
@@ -213,7 +211,6 @@ async fn main() -> anyhow::Result<()> {
     }
 
     info!("全ての必要なファイルダウンロードが完了しました");
-
     Ok(())
 }
 
@@ -385,13 +382,6 @@ async fn extract(
         let mut buf = vec![];
         rdr.read_to_end(&mut buf)?;
         Ok(buf)
-    }
-
-    fn strip_first_dir(posix_path: &str) -> &str {
-        posix_path
-            .find('/')
-            .map(|ofs| &posix_path[ofs + 1..])
-            .unwrap_or(posix_path)
     }
 }
 
