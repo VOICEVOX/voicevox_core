@@ -946,7 +946,6 @@ dependencies = [
  "binstall-tar",
  "bytes 1.1.0",
  "clap 4.0.10",
- "either",
  "flate2",
  "fs-err",
  "futures-core",
