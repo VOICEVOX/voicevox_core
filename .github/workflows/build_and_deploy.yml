@@ -235,8 +235,8 @@ jobs:
         shell: bash
         run: |
           case "$OS" in
-            Windows) exe_suffix=.exe
-            Linux | macOS) exe_suffix=
+            Windows) exe_suffix=.exe;;
+            Linux | macOS) exe_suffix=;;
           esac
           mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
       - name: Upload to Release
