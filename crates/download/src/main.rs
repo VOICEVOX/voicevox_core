@@ -11,7 +11,7 @@ use clap::{Parser as _, ValueEnum};
 use flate2::read::GzDecoder;
 use futures_core::Stream;
 use futures_util::{future::OptionFuture, StreamExt as _, TryFutureExt as _, TryStreamExt as _};
-use indicatif::{MultiProgress, ProgressBar};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use octocrab::{
     models::{
         repos::{Asset, Release},
@@ -402,6 +402,7 @@ struct Download {
 impl Download {
     fn gh(asset: GhAsset, progresses: &MultiProgress) -> Self {
         let pb = progresses.add(ProgressBar::new(asset.size as _));
+        pb.set_style(PROGRESS_STYLE.clone());
         pb.set_prefix(asset.name.clone());
         let target = DownloadTarget::Gh(asset);
         Self { target, pb }
@@ -409,6 +410,7 @@ impl Download {
 
     fn url(url: &'static Url, progresses: &MultiProgress) -> Self {
         let pb = progresses.add(ProgressBar::new(0));
+        pb.set_style(PROGRESS_STYLE.clone());
         pb.set_prefix(
             url.path_segments()
                 .and_then(|s| s.last())
@@ -418,6 +420,13 @@ impl Download {
         Self { target, pb }
     }
 }
+
+static PROGRESS_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
+    ProgressStyle::with_template(
+        "{prefix:48} {bytes:12} {bytes_per_sec:14} {elapsed_precise} {bar:.cyan/blue} {percent:>3}%",
+    )
+    .unwrap()
+});
 
 enum DownloadTarget {
     Gh(GhAsset),
