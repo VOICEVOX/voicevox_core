@@ -6,7 +6,6 @@ use std::{
 };
 
 use anyhow::Context as _;
-use async_zip::read::seek::ZipFileReader;
 use bytes::Bytes;
 use clap::{Parser as _, ValueEnum};
 use flate2::read::GzDecoder;
@@ -21,9 +20,11 @@ use octocrab::{
     Octocrab,
 };
 use once_cell::sync::Lazy;
+use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
 use strum::{Display, IntoStaticStr};
 use tracing::info;
 use url::Url;
+use zip::ZipArchive;
 
 const DEFAULT_OUTPUT: &str = if cfg!(windows) {
     r".\voicevox_core"
@@ -327,7 +328,7 @@ async fn extract(
     output: &Path,
 ) -> anyhow::Result<()> {
     let files = match kind {
-        ArchiveKind::Zip => read_zip(archive).await,
+        ArchiveKind::Zip => read_zip(archive),
         ArchiveKind::Tgz => read_tgz(archive),
     }?;
 
@@ -345,22 +346,23 @@ async fn extract(
     }
     return Ok(());
 
-    async fn read_zip(zip: &[u8]) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
-        let mut files = vec![];
-        let mut zip = ZipFileReader::new(Cursor::new(zip)).await?;
-        for i in 0..zip.entries().len() {
-            let file = zip.entry_reader(i).await?;
-            let filename = fix_zip_entry_filename(file.entry().filename());
-            if !filename.ends_with('/') {
-                let content = file.read_to_end_crc().await?;
-                files.push((filename.into(), content));
-            }
-        }
-        Ok(files)
-    }
+    fn read_zip(zip: &[u8]) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
+        let zip = ZipArchive::new(Cursor::new(zip))?;
 
-    fn fix_zip_entry_filename(possibly_illegal_filename: &str) -> String {
-        possibly_illegal_filename.replace('\\', "/")
+        (0..zip.len())
+            .into_par_iter()
+            .map(|i| {
+                let mut zip = zip.clone();
+                let entry = zip.by_index(i)?;
+                if entry.is_dir() {
+                    return Ok(None);
+                }
+                let filename = entry.mangled_name();
+                let content = read_bytes(entry)?;
+                Ok(Some((filename, content)))
+            })
+            .flat_map(Result::transpose)
+            .collect()
     }
 
     fn read_tgz(tgz: &[u8]) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
