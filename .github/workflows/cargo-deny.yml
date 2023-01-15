@@ -5,7 +5,9 @@ on:
       - main
   pull_request:
     paths:
-      - '**.toml'
+      - '**/Cargo.*'
+      - deny.toml
+      - rust-toolchain
 jobs:
   cargo-deny:
     runs-on: ubuntu-20.04

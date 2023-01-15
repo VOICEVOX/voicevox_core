@@ -5,7 +5,10 @@ on:
       - main
   pull_request:
     paths:
-      - '**.rs'
+      - 'Cargo.*'
+      - crates/voicevox_core**
+      - docs/**
+      - rust-toolchain
 jobs:
   generate_api_document:
     runs-on: ubuntu-latest

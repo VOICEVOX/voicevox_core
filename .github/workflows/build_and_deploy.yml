@@ -14,8 +14,12 @@ on:
       - published
   pull_request:
     paths:
-      - '**.rs'
-      - '**.toml'
+      - build_util/**
+      - Cargo.*
+      - crates/voicevox_core**
+      - model/**
+      - rust-toolchain
+      - scripts/downloads/*
   push:
     branches: 
       - main
