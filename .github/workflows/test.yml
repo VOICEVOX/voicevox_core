@@ -38,10 +38,10 @@ jobs:
         with:
           python-version: "3.8"
       - name: Set up Rust (test only)
-        if: matrix.os != "windows-2022"
+        if: matrix.os != 'windows-2022'
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Rust (test and lint)
-        if: matrix.os == "windows-2022"
+        if: matrix.os == 'windows-2022'
         uses: ./.github/actions/rust-toolchain-from-file
         with:
           components: clippy,rustfmt
@@ -65,11 +65,11 @@ jobs:
         shell: bash
         run: cargo test -vv --features ,${{ matrix.features }}
       - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
-        if: matrix.os == "windows-2022"
+        if: matrix.os == 'windows-2022'
       - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
-        if: matrix.os == "windows-2022"
+        if: matrix.os == 'windows-2022'
       - run: cargo fmt -- --check
-        if: matrix.os == "windows-2022"
+        if: matrix.os == 'windows-2022'
       - name: venv作成
         uses: ./.github/actions/create-venv
       - shell: bash
