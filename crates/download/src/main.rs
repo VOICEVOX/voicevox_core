@@ -423,7 +423,7 @@ impl Download {
 
 static PROGRESS_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
     ProgressStyle::with_template(
-        "{prefix:48} {bytes:12} {bytes_per_sec:14} {elapsed_precise} {bar:.cyan/blue} {percent:>3}%",
+        "{prefix:55} {bytes:>11} {bytes_per_sec:>13} {elapsed_precise} {bar} {percent:>3}%",
     )
     .unwrap()
 });
