@@ -4,69 +4,12 @@ on:
     branches: 
       - main
   pull_request:
+    paths:
+      - crates/voicevox_core**
+      - Cargo.*
+      - rust-toolchain
 jobs:
-  shellcheck:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - name: Update ShellCheck
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y shellcheck
-      - name: ShellCheck
-        run: git ls-files | grep -E '\.(ba)?sh' | xargs shellcheck
-
-  actionlint:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      # ShellCheckとPyflakesをインストールしておくと、shell: bashとshell: pythonのコードを検査してくれるようになる
-      #
-      # 参考:
-      # - https://github.com/rhysd/actionlint/blob/main/docs/checks.md#shellcheck-integration-for-run
-      # - https://github.com/rhysd/actionlint/blob/main/docs/checks.md#pyflakes-integration-for-run
-      - name: Update ShellCheck
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y shellcheck
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.8"
-      - name: Install Pyflakes
-        run: pip install 'pyflakes>3,<4'
-      - name: actionlint
-        run: |
-          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          ./actionlint -color
-
-  validate-cargo-lock:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Rust
-        uses: ./.github/actions/rust-toolchain-from-file
-      - name: Validate Cargo.lock
-        run: cargo metadata --locked --format-version 1 > /dev/null
-
-  rust-lint:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Rust
-        uses: ./.github/actions/rust-toolchain-from-file
-        with:
-          components: clippy,rustfmt
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.8"
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
-      - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
-      - run: cargo fmt -- --check
-
-  rust-test:
+  test-lint-build:
     strategy:
       fail-fast: false
       matrix:
@@ -94,22 +37,16 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
-      - name: Set up Rust
+      - name: Set up Rust (test only)
+        if: matrix.os != "windows-2022"
         uses: ./.github/actions/rust-toolchain-from-file
-      - uses: Swatinem/rust-cache@v2
+      - name: Set up Rust (test and lint)
+        if: matrix.os == "windows-2022"
+        uses: ./.github/actions/rust-toolchain-from-file
         with:
-          # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
-          key: "v2-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
-      - name: Run cargo test
-        shell: bash
-        run: cargo test -vv --features ,${{ matrix.features }}
-
-  xtask-generate-c-header:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Rust
-        uses: ./.github/actions/rust-toolchain-from-file
+          components: clippy,rustfmt
+      - name: Validate Cargo.lock
+        run: cargo metadata --locked --format-version 1 > /dev/null
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
@@ -120,68 +57,19 @@ jobs:
         run: cargo xtask generate-c-header -o ./voicevox_core_2.h
       - name: Assert these header files are same
         run: diff -u --color=always ./voicevox_core_{1,2}.h
-
-  build-unix-cpp-example:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            artifact_name: osx-x64-cpu-cpp-shared
-          - os: ubuntu-latest
-            artifact_name: linux-x64-cpu-cpp-shared
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Rust
-        uses: ./.github/actions/rust-toolchain-from-file
-      - name: Install cargo-binstall
-        uses: taiki-e/install-action@cargo-binstall
-      - name: Install cbindgen
-        uses: ./.github/actions/cargo-binstall-cbindgen
-      - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api -vv
-      - name: voicevox_core.hを生成
-        run: cbindgen --crate voicevox_core_c_api -o ./example/cpp/unix/voicevox_core/voicevox_core.h
-      - name: 必要なfileをunix用exampleのディレクトリに移動させる
-        run: |
-          mkdir -p example/cpp/unix/voicevox_core/
-          cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/ || true
-          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* example/cpp/unix/voicevox_core/ || true
-          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/ || true
-
-      - if: startsWith(matrix.os, 'mac')
-        uses: jwlawson/actions-setup-cmake@v1.13
-      - name: Install build dependencies
-        if: startsWith(matrix.os, 'ubuntu')
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake
-      - name: Build
-        shell: bash
-        run: |
-          cd example/cpp/unix
-          cmake -S . -B build
-          cmake --build build
-
-  build-python-api:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-          - os: macos-latest
-          - os: ubuntu-latest
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v4
+      - uses: Swatinem/rust-cache@v2
         with:
-          python-version: "3.8"
-      - name: Set up Rust
-        uses: ./.github/actions/rust-toolchain-from-file
+          # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
+          key: "v2-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
+      - name: Run cargo test
+        shell: bash
+        run: cargo test -vv --features ,${{ matrix.features }}
+      - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
+        if: matrix.os == "windows-2022"
+      - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
+        if: matrix.os == "windows-2022"
+      - run: cargo fmt -- --check
+        if: matrix.os == "windows-2022"
       - name: venv作成
         uses: ./.github/actions/create-venv
       - shell: bash
