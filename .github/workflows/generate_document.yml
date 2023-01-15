@@ -4,6 +4,8 @@ on:
     branches:
       - main
   pull_request:
+    paths:
+      - '**.rs'
 jobs:
   generate_api_document:
     runs-on: ubuntu-latest

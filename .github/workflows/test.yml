@@ -1,9 +1,8 @@
 name: test workflow
 on:
   push:
-    branches:
-      - "*"
-      - "**/*"
+    branches: 
+      - main
   pull_request:
 jobs:
   shellcheck:

@@ -13,10 +13,12 @@ on:
     types:
       - published
   pull_request:
+    paths:
+      - '**.rs'
+      - '**.toml'
   push:
-    branches:
-      - "*"
-      - "**/*"
+    branches: 
+      - main
 env:
   # releaseタグ名か、workflow_dispatchでのバージョン名か、DEBUGが入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || 'DEBUG' }}
