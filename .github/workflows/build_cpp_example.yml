@@ -1,4 +1,4 @@
-name: test workflow
+name: Build C++ example
 on:
   push:
     branches: 
