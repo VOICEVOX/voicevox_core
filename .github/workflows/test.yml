@@ -5,7 +5,7 @@ on:
       - main
   pull_request:
     paths:
-      - crates/voicevox_core**
+      - crates/**
       - Cargo.*
       - rust-toolchain
 jobs:
