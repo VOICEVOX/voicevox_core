@@ -158,14 +158,9 @@ jobs:
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
       - name: Archive artifact
         shell: bash
-        if: (!contains(matrix.os , 'windows'))
         run: |
           cd artifact
-          zip -r "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
-      - name: Archive artifact (Windows)
-        if: contains(matrix.os, 'windows')
-        run: |
-          7z a "${{ env.ASSET_NAME }}.zip" "artifact/${{ env.ASSET_NAME }}"
+          7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
