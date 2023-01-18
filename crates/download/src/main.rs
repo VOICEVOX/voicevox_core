@@ -1,16 +1,18 @@
 use std::{
+    borrow::Cow,
     env,
+    future::Future,
     io::{self, Cursor, Read},
     path::{Path, PathBuf},
     sync::Arc,
 };
 
-use anyhow::Context as _;
+use anyhow::{bail, Context as _};
 use bytes::Bytes;
 use clap::{Parser as _, ValueEnum};
 use flate2::read::GzDecoder;
 use futures_core::Stream;
-use futures_util::{future::OptionFuture, StreamExt as _, TryFutureExt as _, TryStreamExt as _};
+use futures_util::{future::OptionFuture, StreamExt as _, TryStreamExt as _};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use octocrab::{
     models::{
@@ -22,6 +24,7 @@ use octocrab::{
 use once_cell::sync::Lazy;
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
 use strum::{Display, IntoStaticStr};
+use tokio::task::JoinSet;
 use tracing::info;
 use url::Url;
 use zip::ZipArchive;
@@ -119,7 +122,7 @@ impl Os {
     }
 }
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     setup_logger();
 
@@ -176,38 +179,35 @@ async fn main() -> anyhow::Result<()> {
 
     let progresses = MultiProgress::new();
 
-    let mut targets = vec![(
-        Download::gh(core, &progresses),
-        ArchiveKind::Zip,
+    let mut tasks = JoinSet::new();
+
+    tasks.spawn(download_and_extract_from_gh(
+        core,
         Stripping::FirstDir,
-    )];
+        &output,
+        &progresses,
+    )?);
 
     if !min {
         if let Some(additional_libraries) = additional_libraries {
-            targets.push((
-                Download::gh(additional_libraries, &progresses),
-                ArchiveKind::Zip,
+            tasks.spawn(download_and_extract_from_gh(
+                additional_libraries,
                 Stripping::FirstDir,
-            ));
+                &output,
+                &progresses,
+            )?);
         }
-        targets.push((
-            Download::url(&OPEN_JTALK_DIC_URL, &progresses),
-            ArchiveKind::Tgz,
+
+        tasks.spawn(download_and_extract_from_url(
+            &OPEN_JTALK_DIC_URL,
             Stripping::None,
-        ));
+            &output,
+            &progresses,
+        )?);
     }
 
-    let archives = futures_util::future::join_all(
-        targets
-            .into_iter()
-            .map(|(d, k, s)| download(d).map_ok(move |r| (r, k, s))),
-    )
-    .await
-    .into_iter()
-    .collect::<Result<Vec<_>, _>>()?;
-
-    for (archive, kind, stripping) in archives {
-        extract(&archive, kind, stripping, &output).await?;
+    while let Some(result) = tasks.join_next().await {
+        result??;
     }
 
     info!("全ての必要なファイルダウンロードが完了しました");
@@ -267,81 +267,136 @@ async fn find_gh_asset(
     })
 }
 
-async fn download(Download { target, pb }: Download) -> anyhow::Result<Vec<u8>> {
-    return match target {
-        DownloadTarget::Gh(asset) => download_from_gh(&asset, &pb).await,
-        DownloadTarget::Url(url) => download_from_url(url, &pb).await,
-    };
+fn download_and_extract_from_gh(
+    GhAsset {
+        octocrab,
+        repo,
+        id,
+        name,
+        size,
+        ..
+    }: GhAsset,
+    stripping: Stripping,
+    output: &Path,
+    progresses: &MultiProgress,
+) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
+    let output = output.to_owned();
+    let archive_kind = ArchiveKind::from_filename(&name)?;
+    let pb = new_pb(progresses, size as _, name);
 
-    async fn download_from_gh(
-        GhAsset {
-            octocrab, repo, id, ..
-        }: &GhAsset,
-        pb: &ProgressBar,
-    ) -> anyhow::Result<Vec<u8>> {
+    Ok(async move {
         let bytes_stream = octocrab
             .repos(ORGANIZATION_NAME, repo)
             .releases()
-            .stream_asset(*id)
+            .stream_asset(id)
             .await?
             .map_err(Into::into);
 
-        download(bytes_stream, None, pb).await
-    }
+        download_and_extract(
+            bytes_stream,
+            Some(size as _),
+            archive_kind,
+            stripping,
+            &output,
+            pb,
+        )
+        .await
+    })
+}
 
-    async fn download_from_url(url: &Url, pb: &ProgressBar) -> anyhow::Result<Vec<u8>> {
+fn download_and_extract_from_url(
+    url: &'static Url,
+    stripping: Stripping,
+    output: &Path,
+    progresses: &MultiProgress,
+) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
+    let output = output.to_owned();
+    let name = url
+        .path_segments()
+        .and_then(|s| s.last())
+        .unwrap_or_default();
+    let archive_kind = ArchiveKind::from_filename(name)?;
+    let pb = new_pb(progresses, 0, name);
+
+    Ok(async move {
         let res = reqwest::get(url.clone()).await?.error_for_status()?;
         let content_length = res.content_length();
         let bytes_stream = res.bytes_stream().map_err(Into::into);
 
-        download(bytes_stream, content_length, pb).await
-    }
+        download_and_extract(
+            bytes_stream,
+            content_length,
+            archive_kind,
+            stripping,
+            &output,
+            pb,
+        )
+        .await
+    })
+}
+
+fn new_pb(
+    progresses: &MultiProgress,
+    len: u64,
+    prefix: impl Into<Cow<'static, str>>,
+) -> ProgressBar {
+    let pb = progresses.add(ProgressBar::new(len));
+    pb.set_style(PROGRESS_STYLE.clone());
+    pb.set_prefix(prefix);
+    pb
+}
+
+async fn download_and_extract(
+    bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
+    content_length: Option<u64>,
+    archive_kind: ArchiveKind,
+    stripping: Stripping,
+    output: &Path,
+    pb: ProgressBar,
+) -> anyhow::Result<()> {
+    let archive = download(bytes_stream, content_length, pb.clone()).await?;
+
+    let files = &tokio::task::spawn_blocking(move || match archive_kind {
+        ArchiveKind::Zip => read_zip(&archive),
+        ArchiveKind::Tgz => read_tgz(&archive),
+    })
+    .await??;
+
+    return extract(files, stripping, output, pb).await;
 
     async fn download(
         mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
         content_length: Option<u64>,
-        pb: &ProgressBar,
+        pb: ProgressBar,
     ) -> anyhow::Result<Vec<u8>> {
         if let Some(content_length) = content_length {
             pb.set_length(content_length);
         }
 
-        let mut downloaded = vec![];
+        let (pos_tx, mut pos_rx) = tokio::sync::mpsc::unbounded_channel();
 
-        while let Some(chunk) = bytes_stream.next().await.transpose()? {
-            downloaded.extend_from_slice(&chunk);
-            pb.set_position(downloaded.len() as _);
-        }
-        pb.finish();
+        let (result1, result2) = futures_util::future::join(
+            tokio::task::spawn_blocking(move || {
+                while let Some(pos) = pos_rx.blocking_recv() {
+                    pb.set_position(pos);
+                }
+                pb.finish();
+            }),
+            async {
+                let mut downloaded = vec![];
+                while let Some(chunk) = bytes_stream.next().await.transpose()? {
+                    downloaded.extend_from_slice(&chunk);
+                    pos_tx.send(downloaded.len() as _)?;
+                }
+                drop(pos_tx);
+                Ok(downloaded)
+            },
+        )
+        .await;
 
-        Ok(downloaded)
+        result1?;
+        result2
     }
-}
-
-async fn extract(
-    archive: &[u8],
-    kind: ArchiveKind,
-    stripping: Stripping,
-    output: &Path,
-) -> anyhow::Result<()> {
-    let files = match kind {
-        ArchiveKind::Zip => read_zip(archive),
-        ArchiveKind::Tgz => read_tgz(archive),
-    }?;
-
-    for (filename, content) in files {
-        let filename = &match stripping {
-            Stripping::FirstDir => filename.iter().skip(1).collect(),
-            Stripping::None => filename,
-        };
-        let dst = &output.join(filename);
-        if let Some(parent) = dst.parent() {
-            fs_err::tokio::create_dir_all(parent).await?;
-        }
-        fs_err::tokio::write(dst, content).await?;
-        info!("Wrote `{}`", dst.display());
-    }
-    return Ok(());
 
     fn read_zip(zip: &[u8]) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
         let zip = ZipArchive::new(Cursor::new(zip))?;
@@ -383,6 +438,32 @@ async fn extract(
         rdr.read_to_end(&mut buf)?;
         Ok(buf)
     }
+
+    async fn extract(
+        files: &[(PathBuf, Vec<u8>)],
+        stripping: Stripping,
+        output: &Path,
+        pb: ProgressBar,
+    ) -> anyhow::Result<()> {
+        pb.set_length(files.len() as _);
+
+        for (filename, content) in files {
+            let filename = filename
+                .iter()
+                .skip(match stripping {
+                    Stripping::None => 0,
+                    Stripping::FirstDir => 1,
+                })
+                .collect::<PathBuf>();
+            let dst = &output.join(filename);
+            if let Some(parent) = dst.parent() {
+                fs_err::tokio::create_dir_all(parent).await?;
+            }
+            fs_err::tokio::write(dst, content).await?;
+            info!("Wrote `{}`", dst.display());
+        }
+        Ok(())
+    }
 }
 
 struct GhAsset {
@@ -394,33 +475,6 @@ struct GhAsset {
     size: usize,
 }
 
-struct Download {
-    target: DownloadTarget,
-    pb: ProgressBar,
-}
-
-impl Download {
-    fn gh(asset: GhAsset, progresses: &MultiProgress) -> Self {
-        let pb = progresses.add(ProgressBar::new(asset.size as _));
-        pb.set_style(PROGRESS_STYLE.clone());
-        pb.set_prefix(asset.name.clone());
-        let target = DownloadTarget::Gh(asset);
-        Self { target, pb }
-    }
-
-    fn url(url: &'static Url, progresses: &MultiProgress) -> Self {
-        let pb = progresses.add(ProgressBar::new(0));
-        pb.set_style(PROGRESS_STYLE.clone());
-        pb.set_prefix(
-            url.path_segments()
-                .and_then(|s| s.last())
-                .unwrap_or_default(),
-        );
-        let target = DownloadTarget::Url(url);
-        Self { target, pb }
-    }
-}
-
 static PROGRESS_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
     ProgressStyle::with_template(
         "{prefix:55} {bytes:>11} {bytes_per_sec:>13} {elapsed_precise} {bar} {percent:>3}%",
@@ -428,15 +482,22 @@ static PROGRESS_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
     .unwrap()
 });
 
-enum DownloadTarget {
-    Gh(GhAsset),
-    Url(&'static Url),
-}
-
 #[derive(Clone, Copy)]
 enum ArchiveKind {
     Zip,
     Tgz,
+}
+
+impl ArchiveKind {
+    fn from_filename(filename: &str) -> anyhow::Result<Self> {
+        if filename.ends_with(".zip") {
+            Ok(Self::Zip)
+        } else if filename.ends_with(".tar.gz") || filename.ends_with(".tgz") {
+            Ok(Self::Tgz)
+        } else {
+            bail!("unsupported filetype: {filename}");
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
