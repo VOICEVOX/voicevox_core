@@ -26,8 +26,6 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
     return Internal::new_with_mutex();
 
     fn init_logger() -> std::result::Result<(), impl Sized> {
-        let ansi = out().is_terminal() && env_allows_ansi();
-
         tracing_subscriber::fmt()
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
@@ -35,7 +33,7 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
                 "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
             })
             .with_writer(out)
-            .with_ansi(ansi)
+            .with_ansi(out().is_terminal() && env_allows_ansi())
             .try_init()
     }
 
