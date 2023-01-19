@@ -8,6 +8,7 @@ use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::io::{self, Write};
+use std::os::fd::AsRawFd;
 use std::os::raw::c_char;
 use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
@@ -32,13 +33,40 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
             } else {
                 "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
             })
-            .with_ansi(out().is_terminal() && env_allows_ansi())
+            .with_ansi(
+                virtual_terminal_processing_enabled() && out().is_terminal() && env_allows_ansi(),
+            )
             .with_writer(out)
             .try_init()
     }
 
-    fn out() -> impl IsTerminal + Write {
+    fn out() -> impl AsRawFd + IsTerminal + Write {
         io::stderr()
+    }
+
+    #[cfg(windows)]
+    fn virtual_terminal_processing_enabled() -> bool {
+        use std::ptr;
+
+        use windows::Win32::{
+            Foundation::HANDLE,
+            System::Console::{GetConsoleMode, CONSOLE_MODE},
+        };
+
+        #[allow(unsafe_code)]
+        return unsafe {
+            let mut mode = CONSOLE_MODE::default();
+            let result = GetConsoleMode(HANDLE(out().as_raw_fd() as _), ptr::addr_of!(mode));
+            result
+                && mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING == ENABLE_VIRTUAL_TERMINAL_PROCESSING
+        };
+
+        const ENABLE_VIRTUAL_TERMINAL_PROCESSING: CONSOLE_MODE = CONSOLE_MODE(0x0004);
+    }
+
+    #[cfg(not(windows))]
+    fn virtual_terminal_processing_enabled() -> bool {
+        true
     }
 
     fn env_allows_ansi() -> bool {
