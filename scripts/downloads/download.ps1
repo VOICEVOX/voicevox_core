@@ -79,7 +79,7 @@ Function Target-Os(){
 }
 
 Function Target-Arch(){
-	# TODO: cpu archtectureの判定を実装する
+	# TODO: cpu architectureの判定を実装する
 	"x64"
 }
 

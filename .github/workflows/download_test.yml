@@ -8,7 +8,7 @@ on:
       - "scripts/downloads/*"
       - ".github/workflows/download_test.yml"
 jobs:
-  downlaod-releases:
+  download-releases:
     strategy:
       fail-fast: false
       matrix:

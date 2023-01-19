@@ -16,20 +16,20 @@ pub async fn download_open_jtalk_dict_if_no_exists() -> PathBuf {
             .join(DIC_DIR_NAME);
         if !dic_dir.exists() {
             fs::create_dir_all(&dic_dir).await.unwrap();
-            downlaod_open_jtalk_dict(&dic_dir).await;
+            download_open_jtalk_dict(&dic_dir).await;
         }
         *open_jtalk_dic_dir = Some(dic_dir);
     }
     PathBuf::from(open_jtalk_dic_dir.as_ref().unwrap())
 }
 
-async fn downlaod_open_jtalk_dict(open_jtalk_dic_dir: impl AsRef<Path>) {
-    let downlaod_url = format!(
+async fn download_open_jtalk_dict(open_jtalk_dic_dir: impl AsRef<Path>) {
+    let download_url = format!(
         "https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/{}.tar.gz",
         DIC_DIR_NAME
     );
 
-    let req = surf::get(downlaod_url);
+    let req = surf::get(download_url);
     let client = surf::client().with(surf::middleware::Redirect::default());
     let mut res = client.send(req).await.unwrap();
     let mut body_bytes = Vec::with_capacity(100 * 1024 * 1024);
