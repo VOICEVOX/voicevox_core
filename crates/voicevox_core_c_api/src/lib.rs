@@ -32,12 +32,12 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
             } else {
                 "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
             })
-            .with_writer(out)
             .with_ansi(out().is_terminal() && env_allows_ansi())
+            .with_writer(out)
             .try_init()
     }
 
-    fn out() -> impl Write + IsTerminal {
+    fn out() -> impl IsTerminal + Write {
         io::stderr()
     }
 
