@@ -39,7 +39,7 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
             .try_init()
     }
 
-    fn out() -> impl Write + IsTerminal + 'static {
+    fn out() -> impl Write + IsTerminal {
         io::stderr()
     }
 
