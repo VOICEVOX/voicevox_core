@@ -8,7 +8,6 @@ use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::io::{self, Write};
-use std::os::fd::AsRawFd;
 use std::os::raw::c_char;
 use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
