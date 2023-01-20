@@ -38,6 +38,7 @@ pub(crate) fn lock_internal() -> MutexGuard<'static, Internal> {
     INTERNAL.lock().unwrap()
 }
 
+// C_APIに渡すために，VecやCStringのサイズを記憶しながら生ポインタを得るためのマネージャ
 static BUFFER_MANAGER: Lazy<Mutex<BufferManager>> = Lazy::new(|| Mutex::new(BufferManager::new()));
 
 /*

@@ -198,13 +198,13 @@ impl Default for VoicevoxSynthesisOptions {
 }
 
 pub(crate) struct BufferManager {
-    address_to_size_table: HashMap<usize, usize>,
+    address_to_length_table: HashMap<usize, usize>,
 }
 
 impl BufferManager {
     pub fn new() -> Self {
         Self {
-            address_to_size_table: HashMap::new(),
+            address_to_length_table: HashMap::new(),
         }
     }
 
@@ -219,7 +219,7 @@ impl BufferManager {
         let ptr = vec.leak().as_ptr();
         let addr = ptr as usize;
 
-        let not_occupied = self.address_to_size_table.insert(addr, size).is_none();
+        let not_occupied = self.address_to_length_table.insert(addr, size).is_none();
 
         assert!(not_occupied, "すでに値が入っている状態はおかしい");
 
@@ -232,7 +232,7 @@ impl BufferManager {
     pub unsafe fn restore_vec<T>(&mut self, buffer_ptr: *const T) -> Vec<T> {
         let addr = buffer_ptr as usize;
         let size = self
-            .address_to_size_table
+            .address_to_length_table
             .remove(&addr)
             .expect("管理されていないポインタを渡した");
 
