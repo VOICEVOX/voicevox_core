@@ -101,7 +101,10 @@ download_and_extract(){
   curl -sSLfo "$tmp_path" "$url"
   echo "${target}をダウンロード完了,${archive_format}形式で${extract_dir}に解凍します..."
   if [ "$archive_format" = "zip" ];then
-    unzip -j "$tmp_path" -d "$extract_dir"
+    top_dir=$(unzip -Z1 "$tmp_path" | head -n 1)
+    unzip "$tmp_path" -d "$extract_dir"
+    mv "$extract_dir/$top_dir"/* "$extract_dir"
+    rmdir "$extract_dir/$top_dir"
   elif  [ "$archive_format" = "tar.gz" ];then
     mkdir -p "$extract_dir"
     tar --strip-components 1 -xvzf "$tmp_path" -C "$extract_dir"
