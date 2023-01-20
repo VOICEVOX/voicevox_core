@@ -38,45 +38,7 @@ pub(crate) fn lock_internal() -> MutexGuard<'static, Internal> {
     INTERNAL.lock().unwrap()
 }
 
-static INTERNAL_BUFFER_VEC_LENGTH: Lazy<Mutex<HashMap<usize, usize>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
-
-// Vecのポインタとサイズを分解して取得する関数
-// 取り回しとして，INTERNAL_BUFFER_VEC_LENGTHにサイズを保存する
-fn leak_vec_and_store_length<T>(mut vec: Vec<T>) -> (*mut T, usize) {
-    assert!(
-        size_of::<T>() >= 1,
-        "サイズが0の値のVecはコーナーケースになりやすいためエラーにする"
-    );
-
-    let size = vec.len();
-    vec.shrink_to_fit();
-    let ptr = vec.leak().as_ptr();
-    let addr = ptr as usize;
-
-    let not_occupied = INTERNAL_BUFFER_VEC_LENGTH
-        .lock()
-        .unwrap()
-        .insert(addr, size)
-        .is_none();
-
-    assert!(not_occupied, "すでに値が入っている状態はおかしい");
-
-    (ptr as *mut T, size)
-}
-
-// ポインタからVecを復元する関数
-// 引数に渡されるポインタは`vec_leak_with_size`で作られた必要がある
-unsafe fn restore_vec<T>(buffer_ptr: *const T) -> Vec<T> {
-    let addr = buffer_ptr as usize;
-    let size = INTERNAL_BUFFER_VEC_LENGTH
-        .lock()
-        .unwrap()
-        .remove(&addr)
-        .expect("管理されていないポインタを渡した");
-
-    Vec::from_raw_parts(buffer_ptr as *mut T, size, size)
-}
+static BUFFER_MANAGER: Lazy<Mutex<BufferManager>> = Lazy::new(|| Mutex::new(BufferManager::new()));
 
 /*
  * Cの関数として公開するための型や関数を定義するこれらの実装はvoicevox_core/publish.rsに定義してある対応する関数にある
@@ -210,7 +172,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
             std::slice::from_raw_parts_mut(phoneme_vector, length),
             speaker_id,
         )?;
-        let (ptr, size) = leak_vec_and_store_length(output_vec);
+        let (ptr, size) = BUFFER_MANAGER.lock().unwrap().leak_vec(output_vec);
 
         output_predict_duration_data_length.write(size);
         output_predict_duration_data.write(ptr);
@@ -226,7 +188,12 @@ pub unsafe extern "C" fn voicevox_predict_duration(
 /// @param predict_duration_data 実行後に割り当てられたメモリ領域が解放される
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_data: *mut f32) {
-    drop(restore_vec(predict_duration_data as *const f32));
+    drop(
+        BUFFER_MANAGER
+            .lock()
+            .unwrap()
+            .restore_vec(predict_duration_data as *const f32),
+    );
 }
 
 /// モーラごとのF0を推論する
@@ -275,7 +242,7 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
             std::slice::from_raw_parts(end_accent_phrase_vector, length),
             speaker_id,
         )?;
-        let (ptr, len) = leak_vec_and_store_length(output_vec);
+        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().leak_vec(output_vec);
         output_predict_intonation_data.write(ptr);
         output_predict_intonation_data_length.write(len);
 
@@ -290,7 +257,12 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
 /// @param predict_intonation_data 実行後に割り当てられたメモリ領域が解放される
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_intonation_data_free(predict_intonation_data: *mut f32) {
-    drop(restore_vec(predict_intonation_data as *const f32));
+    drop(
+        BUFFER_MANAGER
+            .lock()
+            .unwrap()
+            .restore_vec(predict_intonation_data as *const f32),
+    );
 }
 
 /// decodeを実行する
@@ -326,7 +298,7 @@ pub unsafe extern "C" fn voicevox_decode(
             std::slice::from_raw_parts(phoneme_vector, phoneme_size * length),
             speaker_id,
         )?;
-        let (ptr, len) = leak_vec_and_store_length(output_vec);
+        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().leak_vec(output_vec);
         output_decode_data.write(ptr);
         output_decode_data_length.write(len);
         Ok(())
@@ -340,7 +312,7 @@ pub unsafe extern "C" fn voicevox_decode(
 /// @param decode_data 実行後に割り当てられたメモリ領域が解放される
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_decode_data_free(decode_data: *mut f32) {
-    drop(restore_vec(decode_data))
+    drop(BUFFER_MANAGER.lock().unwrap().restore_vec(decode_data))
 }
 
 /// Audio query のオプション
@@ -465,7 +437,7 @@ pub unsafe extern "C" fn voicevox_tts(
     into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let output = lock_internal().tts(text, speaker_id, options.into())?;
-        let (ptr, size) = leak_vec_and_store_length(output);
+        let (ptr, size) = BUFFER_MANAGER.lock().unwrap().leak_vec(output);
         output_wav.write(ptr);
         output_wav_length.write(size);
         Ok(())
@@ -489,7 +461,7 @@ pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c
 /// @param wav 確保したメモリ領域が破棄される
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
-    drop(restore_vec(wav));
+    drop(BUFFER_MANAGER.lock().unwrap().restore_vec(wav));
 }
 
 /// エラー結果をメッセージに変換する
@@ -499,7 +471,7 @@ pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    voicevox_core::error_result_to_message::<&'static CStr>(result_code).as_ptr() as *const c_char
+    voicevox_core::error_result_to_message(result_code).as_ptr() as *const c_char
 }
 
 #[cfg(test)]

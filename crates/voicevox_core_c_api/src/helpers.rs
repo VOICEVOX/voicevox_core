@@ -203,3 +203,46 @@ impl Default for VoicevoxSynthesisOptions {
         }
     }
 }
+
+pub(crate) struct BufferManager {
+    address_to_size_table: HashMap<usize, usize>,
+}
+
+impl BufferManager {
+    pub fn new() -> Self {
+        Self {
+            address_to_size_table: HashMap::new(),
+        }
+    }
+
+    pub fn leak_vec<T>(&mut self, mut vec: Vec<T>) -> (*mut T, usize) {
+        assert!(
+            size_of::<T>() >= 1,
+            "サイズが0の値のVecはコーナーケースになりやすいためエラーにする"
+        );
+
+        let size = vec.len();
+        vec.shrink_to_fit();
+        let ptr = vec.leak().as_ptr();
+        let addr = ptr as usize;
+
+        let not_occupied = self.address_to_size_table.insert(addr, size).is_none();
+
+        assert!(not_occupied, "すでに値が入っている状態はおかしい");
+
+        (ptr as *mut T, size)
+    }
+
+    /// leak_vecでリークしたポインタをVec<T>に戻す
+    /// # Safety
+    /// @param buffer_ptr 必ずleak_vecで取得したポインタを設定する
+    pub unsafe fn restore_vec<T>(&mut self, buffer_ptr: *const T) -> Vec<T> {
+        let addr = buffer_ptr as usize;
+        let size = self
+            .address_to_size_table
+            .remove(&addr)
+            .expect("管理されていないポインタを渡した");
+
+        Vec::from_raw_parts(buffer_ptr as *mut T, size, size)
+    }
+}
