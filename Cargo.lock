@@ -2903,6 +2903,7 @@ dependencies = [
  "thiserror",
  "tracing-subscriber",
  "voicevox_core",
+ "windows",
 ]
 
 [[package]]

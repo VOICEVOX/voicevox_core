@@ -24,3 +24,6 @@ tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 pretty_assertions = "1.3.0"
 anyhow.workspace = true
 rstest = "0.15.0"
+
+[target."cfg(windows)".dependencies]
+windows.workspace = true

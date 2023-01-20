@@ -37,4 +37,4 @@ heck = "0.4.0"
 
 [target."cfg(windows)".dependencies]
 humansize = "2.1.2"
-windows = { version = "0.43.0", features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
+windows.workspace = true
