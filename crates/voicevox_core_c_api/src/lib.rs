@@ -67,7 +67,7 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
         #[allow(unsafe_code)]
         let result = unsafe {
             let mut mode = CONSOLE_MODE::default();
-            GetConsoleMode(HANDLE(out().as_raw_handle() as _), ptr::addr_of!(mode)).into()
+            GetConsoleMode(HANDLE(out().as_raw_handle() as _), ptr::addr_of_mut!(mode)).into()
         };
         return result
             && mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING == ENABLE_VIRTUAL_TERMINAL_PROCESSING;
