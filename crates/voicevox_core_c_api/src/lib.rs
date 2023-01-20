@@ -348,8 +348,10 @@ pub unsafe extern "C" fn voicevox_audio_query(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let text = CStr::from_ptr(text);
-        let audio_query = &create_audio_query(text, speaker_id, Internal::audio_query, options)?;
-        write_json_to_ptr(output_audio_query_json, audio_query);
+        let audio_query = create_audio_query(text, speaker_id, Internal::audio_query, options)?;
+
+        let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(audio_query);
+        output_audio_query_json.write(ptr as *mut c_char);
         Ok(())
     })())
 }
@@ -451,7 +453,12 @@ pub unsafe extern "C" fn voicevox_tts(
 /// @param wav 確保したメモリ領域が破棄される
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c_char) {
-    libc::free(audio_query_json as *mut c_void);
+    drop(
+        BUFFER_MANAGER
+            .lock()
+            .unwrap()
+            .restore_c_string(audio_query_json as *const c_char),
+    );
 }
 
 /// wav データのメモリを解放する

@@ -78,13 +78,6 @@ fn audio_query_model_to_json(audio_query_model: &AudioQueryModel) -> String {
     serde_json::to_string(audio_query_model).expect("should be always valid")
 }
 
-pub(crate) unsafe fn write_json_to_ptr(output_ptr: *mut *mut c_char, json: &CStr) {
-    let n = json.to_bytes_with_nul().len();
-    let json_heap = libc::malloc(n);
-    libc::memcpy(json_heap, json.as_ptr() as *const c_void, n);
-    output_ptr.write(json_heap as *mut c_char);
-}
-
 pub(crate) unsafe fn write_wav_to_ptr(
     output_wav_ptr: *mut *mut u8,
     output_length_ptr: *mut usize,
@@ -244,5 +237,19 @@ impl BufferManager {
             .expect("管理されていないポインタを渡した");
 
         Vec::from_raw_parts(buffer_ptr as *mut T, size, size)
+    }
+
+    pub fn leak_c_string(&mut self, s: CString) -> (*const c_char, usize) {
+        let (ptr, size) = self.leak_vec(s.into_bytes_with_nul());
+
+        (ptr as *const c_char, size)
+    }
+
+    /// leak_c_stringでリークしたポインタをCStringに戻す
+    /// # Safety
+    /// @param buffer_ptr 必ずleak_c_stringで取得したポインタを設定する
+    pub unsafe fn restore_c_string(&mut self, buffer_ptr: *const c_char) -> CString {
+        let vec = self.restore_vec(buffer_ptr as *const u8);
+        CString::from_vec_unchecked(vec)
     }
 }
