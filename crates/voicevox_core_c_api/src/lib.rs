@@ -57,7 +57,7 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
 
     #[cfg(windows)]
     fn virtual_terminal_processing_enabled() -> bool {
-        use std::ptr;
+        use std::{os::windows::io::AsRawHandle as _, ptr};
 
         use windows::Win32::{
             Foundation::HANDLE,
