@@ -93,38 +93,6 @@ pub(crate) unsafe fn write_wav_to_ptr(
     write_data_to_ptr(output_wav_ptr, output_length_ptr, data);
 }
 
-pub(crate) unsafe fn write_predict_duration_to_ptr(
-    output_predict_duration_ptr: *mut *mut f32,
-    output_predict_duration_length_ptr: *mut usize,
-    data: &[f32],
-) {
-    write_data_to_ptr(
-        output_predict_duration_ptr,
-        output_predict_duration_length_ptr,
-        data,
-    );
-}
-
-pub(crate) unsafe fn write_predict_intonation_to_ptr(
-    output_predict_intonation_ptr: *mut *mut f32,
-    output_predict_intonation_length_ptr: *mut usize,
-    data: &[f32],
-) {
-    write_data_to_ptr(
-        output_predict_intonation_ptr,
-        output_predict_intonation_length_ptr,
-        data,
-    );
-}
-
-pub(crate) unsafe fn write_decode_to_ptr(
-    output_decode_ptr: *mut *mut f32,
-    output_decode_length_ptr: *mut usize,
-    data: &[f32],
-) {
-    write_data_to_ptr(output_decode_ptr, output_decode_length_ptr, data);
-}
-
 unsafe fn write_data_to_ptr<T>(
     output_data_ptr: *mut *mut T,
     output_length_ptr: *mut usize,
