@@ -193,7 +193,7 @@ fi
 
 
 voicevox_core_url=$(voicevox_core_releases_url "$os" "$cpu_arch" "$accelerator" "$version")
-voicevox_additional_laibraries_url=$(voicevox_additional_libraries_url "$os" "$cpu_arch" "$accelerator" "$additional_libraries_version")
+voicevox_additional_libraries_url=$(voicevox_additional_libraries_url "$os" "$cpu_arch" "$accelerator" "$additional_libraries_version")
 
 download_and_extract "voicevox_core" "$voicevox_core_url" "$output" &
 voicevox_core_download_task=$!
@@ -202,7 +202,7 @@ if [ "$min" != "true" ]; then
   open_jtalk_download_task=$!
 
   if [ "$additional_libraries_version" != "" ];then
-    download_and_extract "voicevox_additional_libraries" "$voicevox_additional_laibraries_url" "$output" &
+    download_and_extract "voicevox_additional_libraries" "$voicevox_additional_libraries_url" "$output" &
     additional_libraries_download_task=$!
     wait $additional_libraries_download_task
   fi
