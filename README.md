@@ -126,6 +126,15 @@ cargo xtask generate-c-header
 cargo test
 ```
 
+## タイポチェック
+
+[typos](https://github.com/crate-ci/typos) を使ってタイポのチェックを行っています。
+[typos をインストール](https://github.com/crate-ci/typos#install) した後
+
+```bash
+typos
+```
+
 ## 事例紹介
 
 **[voicevox.rb](https://github.com/sevenc-nanashi/voicevox.rb) [@sevenc-nanashi](https://github.com/sevenc-nanashi)** ･･･ VOICEVOX CORE の Ruby 向け FFI ラッパー  
