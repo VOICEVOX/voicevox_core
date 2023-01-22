@@ -2,7 +2,6 @@
 mod compatible_engine;
 mod helpers;
 use self::helpers::*;
-use libc::c_void;
 use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
 use std::mem::size_of;
@@ -395,8 +394,12 @@ pub unsafe extern "C" fn voicevox_synthesis(
             .map_err(|_| CApiError::InvalidUtf8Input)?;
         let audio_query =
             &serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
-        let wav = &lock_internal().synthesis(audio_query, speaker_id, options.into())?;
-        write_wav_to_ptr(output_wav, output_wav_length, wav);
+        let wav = lock_internal().synthesis(audio_query, speaker_id, options.into())?;
+
+        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().leak_vec(wav);
+        output_wav.write(ptr);
+        output_wav_length.write(len);
+
         Ok(())
     })())
 }
