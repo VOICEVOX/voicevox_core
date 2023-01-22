@@ -197,8 +197,28 @@ impl Default for VoicevoxSynthesisOptions {
     }
 }
 
+// privateでくくることにより，helper.rs内からもVecSizeInfoの中身の値を触れないようにする
+mod private {
+    pub(super) struct VecSizeInfo {
+        len: usize,
+        cap: usize,
+    }
+
+    impl VecSizeInfo {
+        pub(super) fn new(len: usize, cap: usize) -> Self {
+            Self { len, cap }
+        }
+        pub(super) fn len(&self) -> usize {
+            self.len
+        }
+        pub(super) fn cap(&self) -> usize {
+            self.cap
+        }
+    }
+}
+
 pub(crate) struct BufferManager {
-    address_to_length_table: HashMap<usize, usize>,
+    address_to_length_table: HashMap<usize, private::VecSizeInfo>,
 }
 
 impl BufferManager {
@@ -208,22 +228,26 @@ impl BufferManager {
         }
     }
 
-    pub fn leak_vec<T>(&mut self, mut vec: Vec<T>) -> (*mut T, usize) {
+    pub fn leak_vec<T>(&mut self, vec: Vec<T>) -> (*mut T, usize) {
         assert!(
             size_of::<T>() >= 1,
             "サイズが0の値のVecはコーナーケースになりやすいためエラーにする"
         );
 
-        let size = vec.len();
-        vec.shrink_to_fit();
+        let len = vec.len();
+        let cap = vec.capacity();
+        let size_info = private::VecSizeInfo::new(len, cap);
         let ptr = vec.leak().as_ptr();
         let addr = ptr as usize;
 
-        let not_occupied = self.address_to_length_table.insert(addr, size).is_none();
+        let not_occupied = self
+            .address_to_length_table
+            .insert(addr, size_info)
+            .is_none();
 
         assert!(not_occupied, "すでに値が入っている状態はおかしい");
 
-        (ptr as *mut T, size)
+        (ptr as *mut T, len)
     }
 
     /// leak_vecでリークしたポインタをVec<T>に戻す
@@ -231,12 +255,12 @@ impl BufferManager {
     /// @param buffer_ptr 必ずleak_vecで取得したポインタを設定する
     pub unsafe fn restore_vec<T>(&mut self, buffer_ptr: *const T) -> Vec<T> {
         let addr = buffer_ptr as usize;
-        let size = self
+        let size_info = self
             .address_to_length_table
             .remove(&addr)
             .expect("管理されていないポインタを渡した");
 
-        Vec::from_raw_parts(buffer_ptr as *mut T, size, size)
+        Vec::from_raw_parts(buffer_ptr as *mut T, size_info.len(), size_info.cap())
     }
 
     pub fn leak_c_string(&mut self, s: CString) -> (*const c_char, usize) {
