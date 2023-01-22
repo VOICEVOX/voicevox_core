@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fmt::Debug;
 
 use thiserror::Error;
@@ -218,13 +219,13 @@ mod private {
 }
 
 pub(crate) struct BufferManager {
-    address_to_length_table: HashMap<usize, private::VecSizeInfo>,
+    address_to_length_table: BTreeMap<usize, private::VecSizeInfo>,
 }
 
 impl BufferManager {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
-            address_to_length_table: HashMap::new(),
+            address_to_length_table: BTreeMap::new(),
         }
     }
 

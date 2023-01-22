@@ -4,7 +4,6 @@ mod helpers;
 use self::helpers::*;
 use libc::c_void;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::mem::size_of;
 use std::os::raw::c_char;
@@ -39,7 +38,7 @@ pub(crate) fn lock_internal() -> MutexGuard<'static, Internal> {
 }
 
 // C_APIに渡すために，VecやCStringのサイズを記憶しながら生ポインタを得るためのマネージャ
-static BUFFER_MANAGER: Lazy<Mutex<BufferManager>> = Lazy::new(|| Mutex::new(BufferManager::new()));
+static BUFFER_MANAGER: Mutex<BufferManager> = Mutex::new(BufferManager::new());
 
 /*
  * Cの関数として公開するための型や関数を定義するこれらの実装はvoicevox_core/publish.rsに定義してある対応する関数にある
