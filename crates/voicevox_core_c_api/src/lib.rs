@@ -184,7 +184,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
 /// @param[in] predict_duration_data 確保されたメモリ領域
 ///
 /// # Safety
-/// @param predict_duration_data 実行後に割り当てられたメモリ領域が解放される
+/// @param predict_duration_data voicevox_predict_durationで確保された，ポインタでありかつ，呼び出し側でバッファの変更が行われていないこと.
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_data: *mut f32) {
     drop(
@@ -254,6 +254,7 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
 ///
 /// # Safety
 /// @param predict_intonation_data 実行後に割り当てられたメモリ領域が解放される
+/// @param predict_duration_data voicevox_predict_intonationで確保された，ポインタでありかつ，呼び出し側でバッファの変更を行われていないこと.
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_intonation_data_free(predict_intonation_data: *mut f32) {
     drop(
@@ -308,7 +309,7 @@ pub unsafe extern "C" fn voicevox_decode(
 /// @param[in] decode_data 確保されたメモリ領域
 ///
 /// # Safety
-/// @param decode_data 実行後に割り当てられたメモリ領域が解放される
+/// @param decode_data voicevox_decodeで確保された，ポインタでありかつ，呼び出し側でバッファの変更を行われていないこと.
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_decode_data_free(decode_data: *mut f32) {
     drop(BUFFER_MANAGER.lock().unwrap().restore_vec(decode_data))
@@ -453,7 +454,7 @@ pub unsafe extern "C" fn voicevox_tts(
 /// @param [in] audio_query_json 解放する json フォーマットされた AudioQuery データ
 ///
 /// # Safety
-/// @param wav 確保したメモリ領域が破棄される
+/// @param voicevox_audio_query で確保された，ポインタでありかつ，呼び出し側でバッファの変更を行われていないこと.
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c_char) {
     drop(
@@ -468,7 +469,7 @@ pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c
 /// @param [in] wav 解放する wav データ
 ///
 /// # Safety
-/// @param wav 確保したメモリ領域が破棄される
+/// @param wav voicevox_tts,voicevox_synthesis で確保された，ポインタでありかつ，呼び出し側でバッファの変更を行われていないこと.
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
     drop(BUFFER_MANAGER.lock().unwrap().restore_vec(wav));
