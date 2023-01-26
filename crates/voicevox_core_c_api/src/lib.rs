@@ -43,8 +43,13 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
 
     fn env_allows_ansi() -> bool {
         // https://docs.rs/termcolor/1.2.0/src/termcolor/lib.rs.html#245-291
-        env::var_os("TERM").map_or(cfg!(windows), |term| term != "dumb")
-            && env::var_os("NO_COLOR").is_none()
+        // ただしWindowsではPowerShellっぽかったらそのまま許可する。
+        // ちゃんとやるなら`ENABLE_VIRTUAL_TERMINAL_PROCESSING`をチェックするなり、そもそも
+        // fwdansiとかでWin32の色に変換するべきだが、面倒。
+        env::var_os("TERM").map_or(
+            cfg!(windows) && env::var_os("PSModulePath").is_some(),
+            |term| term != "dumb",
+        ) && env::var_os("NO_COLOR").is_none()
     }
 });
 
