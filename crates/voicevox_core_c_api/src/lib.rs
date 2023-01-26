@@ -40,21 +40,9 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
             .try_init()
     }
 
-    fn out() -> impl AsWindowsRawHandle + IsTerminal + Write {
+    fn out() -> impl AsRawFd + IsTerminal + Write {
         io::stderr()
     }
-
-    #[cfg(windows)]
-    trait AsWindowsRawHandle: std::os::windows::io::AsRawHandle {}
-
-    #[cfg(windows)]
-    impl<H: std::os::windows::io::AsRawHandle> AsWindowsRawHandle for H {}
-
-    #[cfg(not(windows))]
-    trait AsWindowsRawHandle {}
-
-    #[cfg(not(windows))]
-    impl<T> AsWindowsRawHandle for T {}
 
     #[cfg(windows)]
     fn virtual_terminal_processing_enabled() -> bool {
@@ -68,7 +56,7 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
         #[allow(unsafe_code)]
         return unsafe {
             let mut mode = CONSOLE_MODE::default();
-            let result = GetConsoleMode(HANDLE(out().as_raw_handle() as _), ptr::addr_of!(mode));
+            let result = GetConsoleMode(HANDLE(out().as_raw_fd() as _), ptr::addr_of!(mode));
             result
                 && mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING == ENABLE_VIRTUAL_TERMINAL_PROCESSING
         };
