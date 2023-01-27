@@ -5,6 +5,7 @@ use std::{
     io::{self, Cursor, Read},
     path::{Path, PathBuf},
     sync::Arc,
+    time::Duration,
 };
 
 use anyhow::{bail, Context as _};
@@ -24,7 +25,7 @@ use octocrab::{
 use once_cell::sync::Lazy;
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
 use strum::{Display, IntoStaticStr};
-use tokio::task::JoinSet;
+use tokio::task::{JoinError, JoinSet};
 use tracing::info;
 use url::Url;
 use zip::ZipArchive;
@@ -342,8 +343,14 @@ fn new_pb(
 ) -> ProgressBar {
     let pb = progresses.add(ProgressBar::new(len));
     pb.set_style(PROGRESS_STYLE.clone());
+    pb.enable_steady_tick(INTERVAL);
     pb.set_prefix(prefix);
-    pb
+    return pb;
+
+    const INTERVAL: Duration = Duration::from_millis(100);
+
+    static PROGRESS_STYLE: Lazy<ProgressStyle> =
+        Lazy::new(|| ProgressStyle::with_template("{prefix}").unwrap());
 }
 
 async fn download_and_extract(
@@ -354,15 +361,33 @@ async fn download_and_extract(
     output: &Path,
     pb: ProgressBar,
 ) -> anyhow::Result<()> {
+    let pb = with_style(pb, &PROGRESS_STYLE1).await?;
     let archive = download(bytes_stream, content_length, pb.clone()).await?;
 
-    let files = &tokio::task::spawn_blocking(move || match archive_kind {
-        ArchiveKind::Zip => read_zip(&archive),
-        ArchiveKind::Tgz => read_tgz(&archive),
-    })
-    .await??;
-
+    let pb = with_style(pb, &PROGRESS_STYLE2).await?;
+    let files = &read_archive(archive, archive_kind, pb.clone()).await?;
     return extract(files, stripping, output, pb).await;
+
+    static PROGRESS_STYLE1: Lazy<ProgressStyle> = Lazy::new(|| {
+        ProgressStyle::with_template(
+            "{prefix:55} {bytes:>11} {bytes_per_sec:>13} {elapsed_precise} {bar} {percent:>3}%",
+        )
+        .unwrap()
+    });
+
+    static PROGRESS_STYLE2: Lazy<ProgressStyle> =
+        Lazy::new(|| ProgressStyle::with_template("{prefix:55} {spinner} {msg}").unwrap());
+
+    async fn with_style(
+        pb: ProgressBar,
+        style: &'static ProgressStyle,
+    ) -> Result<ProgressBar, JoinError> {
+        tokio::task::spawn_blocking(move || {
+            pb.set_style(style.clone());
+            pb
+        })
+        .await
+    }
 
     async fn download(
         mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
@@ -373,6 +398,22 @@ async fn download_and_extract(
             pb.set_length(content_length);
         }
 
+        with_progress(pb, |pos_tx| async move {
+            let mut downloaded = vec![];
+            while let Some(chunk) = bytes_stream.next().await.transpose()? {
+                downloaded.extend_from_slice(&chunk);
+                pos_tx.send(downloaded.len() as _)?;
+            }
+            Ok(downloaded)
+        })
+        .await
+    }
+
+    async fn with_progress<Fun, Fut, Out>(pb: ProgressBar, f: Fun) -> anyhow::Result<Out>
+    where
+        Fun: FnOnce(tokio::sync::mpsc::UnboundedSender<u64>) -> Fut,
+        Fut: Future<Output = anyhow::Result<Out>>,
+    {
         let (pos_tx, mut pos_rx) = tokio::sync::mpsc::unbounded_channel();
 
         let (result1, result2) = futures_util::future::join(
@@ -380,22 +421,27 @@ async fn download_and_extract(
                 while let Some(pos) = pos_rx.blocking_recv() {
                     pb.set_position(pos);
                 }
-                pb.finish();
             }),
-            async {
-                let mut downloaded = vec![];
-                while let Some(chunk) = bytes_stream.next().await.transpose()? {
-                    downloaded.extend_from_slice(&chunk);
-                    pos_tx.send(downloaded.len() as _)?;
-                }
-                drop(pos_tx);
-                Ok(downloaded)
-            },
+            f(pos_tx),
         )
         .await;
 
         result1?;
         result2
+    }
+
+    async fn read_archive(
+        archive: Vec<u8>,
+        archive_kind: ArchiveKind,
+        pb: ProgressBar,
+    ) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
+        tokio::task::spawn_blocking(move || pb.set_message("Inflating...")).await?;
+
+        tokio::task::spawn_blocking(move || match archive_kind {
+            ArchiveKind::Zip => read_zip(&archive),
+            ArchiveKind::Tgz => read_tgz(&archive),
+        })
+        .await?
     }
 
     fn read_zip(zip: &[u8]) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
@@ -445,7 +491,11 @@ async fn download_and_extract(
         output: &Path,
         pb: ProgressBar,
     ) -> anyhow::Result<()> {
-        pb.set_length(files.len() as _);
+        let pb = tokio::task::spawn_blocking(move || {
+            pb.set_message("Writing files...");
+            pb
+        })
+        .await?;
 
         for (filename, content) in files {
             let filename = filename
@@ -460,8 +510,9 @@ async fn download_and_extract(
                 fs_err::tokio::create_dir_all(parent).await?;
             }
             fs_err::tokio::write(dst, content).await?;
-            info!("Wrote `{}`", dst.display());
         }
+
+        tokio::task::spawn_blocking(move || pb.finish_with_message("Done!")).await?;
         Ok(())
     }
 }
@@ -474,13 +525,6 @@ struct GhAsset {
     name: String,
     size: usize,
 }
-
-static PROGRESS_STYLE: Lazy<ProgressStyle> = Lazy::new(|| {
-    ProgressStyle::with_template(
-        "{prefix:55} {bytes:>11} {bytes_per_sec:>13} {elapsed_precise} {bar} {percent:>3}%",
-    )
-    .unwrap()
-});
 
 #[derive(Clone, Copy)]
 enum ArchiveKind {

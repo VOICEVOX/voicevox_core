@@ -13,7 +13,7 @@ flate2 = "1.0.25"
 fs-err.workspace = true
 futures-core = "0.3.25"
 futures-util = "0.3.25"
-indicatif = "0.17.2"
+indicatif = "0.17.3"
 itertools = "0.10.5"
 octocrab = { git = "https://github.com/qryxip/octocrab.git", rev = "ad15d0b51ea3fac2f683be879fd640a4407d8a2e", default-features = false, features = ["rustls-tls", "stream"] }
 once_cell.workspace = true
