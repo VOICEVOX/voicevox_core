@@ -25,8 +25,7 @@ pub async fn download_open_jtalk_dict_if_no_exists() -> PathBuf {
 
 async fn download_open_jtalk_dict(open_jtalk_dic_dir: impl AsRef<Path>) {
     let download_url = format!(
-        "https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/{}.tar.gz",
-        DIC_DIR_NAME
+        "https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/{DIC_DIR_NAME}.tar.gz"
     );
 
     let req = surf::get(download_url);

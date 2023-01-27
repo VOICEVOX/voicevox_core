@@ -768,11 +768,11 @@ mod tests {
     fn supported_devices_works() {
         let internal = VoicevoxCore::new_with_mutex();
         let cstr_result = internal.lock().unwrap().get_supported_devices_json();
-        assert!(cstr_result.to_str().is_ok(), "{:?}", cstr_result);
+        assert!(cstr_result.to_str().is_ok(), "{cstr_result:?}");
 
         let json_result: std::result::Result<SupportedDevices, _> =
             serde_json::from_str(cstr_result.to_str().unwrap());
-        assert!(json_result.is_ok(), "{:?}", json_result);
+        assert!(json_result.is_ok(), "{json_result:?}");
     }
 
     #[rstest]
@@ -811,7 +811,7 @@ mod tests {
             .unwrap()
             .predict_duration(&phoneme_vector, 0);
 
-        assert!(result.is_ok(), "{:?}", result);
+        assert!(result.is_ok(), "{result:?}");
         assert_eq!(result.unwrap().len(), phoneme_vector.len());
     }
 
@@ -847,7 +847,7 @@ mod tests {
             0,
         );
 
-        assert!(result.is_ok(), "{:?}", result);
+        assert!(result.is_ok(), "{result:?}");
         assert_eq!(result.unwrap().len(), vowel_phoneme_vector.len());
     }
 
@@ -891,7 +891,7 @@ mod tests {
             .unwrap()
             .decode(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, 0);
 
-        assert!(result.is_ok(), "{:?}", result);
+        assert!(result.is_ok(), "{result:?}");
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
     }
 
