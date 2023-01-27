@@ -76,7 +76,7 @@ target_arch(){
   cpu_arch=$(uname -m)
   case "$cpu_arch" in
     "x86_64") echo "x64";;
-    "arm64") echo "aarch64";;
+    "arm64") echo "arm64";;
     *)
       echo "$cpu_archはサポートされていない環境です" >&2
       exit 1;;
