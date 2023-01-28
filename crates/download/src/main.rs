@@ -222,9 +222,15 @@ fn setup_logger() {
 
 fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
     let mut octocrab = Octocrab::builder();
+
+    // パーソナルトークン無しだと、GitHubのREST APIの利用に強い回数制限がかかる。
+    // そのためCI上では`${{ secrets.GITHUB_TOKEN }}`を使わないとかなりの確率で失敗するようになる。
+    // 手元の手動実行であってもやりすぎると制限に引っ掛かるので、手元でも`$GITHUB_TOKEN`を
+    // 与えられるようにする。
     if let Ok(github_token) = env::var("GITHUB_TOKEN") {
         octocrab = octocrab.personal_token(github_token);
     }
+
     octocrab.build().map(Arc::new)
 }
 
