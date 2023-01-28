@@ -64,9 +64,9 @@ struct Args {
     #[arg(long, default_value("latest"))]
     additional_libraries_version: String,
 
-    /// ダウンロードするacceleratorを指定する(cudaはlinuxのみ)
-    #[arg(value_enum, long, default_value(<&str>::from(Accelerator::default())))]
-    accelerator: Accelerator,
+    /// ダウンロードするデバイスを指定する(cudaはlinuxのみ)
+    #[arg(value_enum, long, default_value(<&str>::from(Device::default())))]
+    device: Device,
 
     /// ダウンロードするcpuのアーキテクチャを指定する
     #[arg(value_enum, long, default_value(CpuArch::default_opt().map(<&str>::from)))]
@@ -79,7 +79,7 @@ struct Args {
 
 #[derive(Default, ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq)]
 #[strum(serialize_all = "kebab-case")]
-enum Accelerator {
+enum Device {
     #[default]
     Cpu,
     Cuda,
@@ -132,7 +132,7 @@ async fn main() -> anyhow::Result<()> {
         output,
         version,
         additional_libraries_version,
-        accelerator,
+        device,
         cpu_arch,
         os,
     } = Args::parse();
@@ -140,26 +140,26 @@ async fn main() -> anyhow::Result<()> {
     let octocrab = &octocrab()?;
 
     let core = find_gh_asset(octocrab, CORE_REPO_NAME, &version, |tag| {
-        let accelerator = match (os, accelerator) {
-            (Os::Linux, Accelerator::Cuda) => "gpu",
+        let device = match (os, device) {
+            (Os::Linux, Device::Cuda) => "gpu",
             (_, accelerator) => accelerator.into(),
         };
-        format!("{CORE_REPO_NAME}-{os}-{cpu_arch}-{accelerator}-{tag}.zip")
+        format!("{CORE_REPO_NAME}-{os}-{cpu_arch}-{device}-{tag}.zip")
     })
     .await?;
 
-    let additional_libraries = OptionFuture::from((accelerator != Accelerator::Cpu).then(|| {
+    let additional_libraries = OptionFuture::from((device != Device::Cpu).then(|| {
         find_gh_asset(
             octocrab,
             ADDITIONAL_LIBRARIES_REPO_NAME,
             &additional_libraries_version,
             |_| {
-                let accelerator = match accelerator {
-                    Accelerator::Cpu => unreachable!(),
-                    Accelerator::Cuda => "CUDA",
-                    Accelerator::Directml => "DirectML",
+                let device = match device {
+                    Device::Cpu => unreachable!(),
+                    Device::Cuda => "CUDA",
+                    Device::Directml => "DirectML",
                 };
-                format!("{accelerator}-{os}-{cpu_arch}.zip")
+                format!("{device}-{os}-{cpu_arch}.zip")
             },
         )
     }))
@@ -168,7 +168,7 @@ async fn main() -> anyhow::Result<()> {
 
     info!("対象OS: {os}");
     info!("対象CPUアーキテクチャ: {cpu_arch}");
-    info!("ダウンロードアーティファクトタイプ: {accelerator}");
+    info!("ダウンロードデバイスタイプ: {device}");
     info!("ダウンロード{CORE_REPO_NAME}バージョン: {}", core.tag);
     if let Some(GhAsset { tag, .. }) = &additional_libraries {
         info!("ダウンロード追加ライブラリバージョン: {tag}");
