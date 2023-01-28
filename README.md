@@ -126,10 +126,20 @@ cargo xtask generate-c-header
 cargo test
 ```
 
+## タイポチェック
+
+[typos](https://github.com/crate-ci/typos) を使ってタイポのチェックを行っています。
+[typos をインストール](https://github.com/crate-ci/typos#install) した後
+
+```bash
+typos
+```
+
 ## 事例紹介
 
-**[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装  
+**[voicevox.rb](https://github.com/sevenc-nanashi/voicevox.rb) [@sevenc-nanashi](https://github.com/sevenc-nanashi)** ･･･ VOICEVOX CORE の Ruby 向け FFI ラッパー  
 **[Node VOICEVOX Engine](https://github.com/y-chan/node-voicevox-engine) [@y-chan](https://github.com/y-chan)** ･･･ VOICEVOX ENGINE の Node.js/C++ 実装
+**[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装  
 
 ## ライセンス
 

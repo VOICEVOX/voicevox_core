@@ -1,0 +1,28 @@
+[package]
+name = "download"
+version = "0.0.0"
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+binstall-tar = "0.4.39"
+bytes = "1.1.0"
+clap.workspace = true
+flate2 = "1.0.25"
+fs-err.workspace = true
+futures-core = "0.3.25"
+futures-util = "0.3.25"
+indicatif = "0.17.3"
+itertools = "0.10.5"
+octocrab = { git = "https://github.com/XAMPPRocky/octocrab.git", rev = "7db3611fce5a19c6e84ca60958da0631d54d3713", default-features = false, features = ["rustls-tls", "stream"] }
+once_cell.workspace = true
+platforms = "3.0.2"
+rayon = "1.6.1"
+reqwest = { version = "0.11.13", default-features = false, features = ["rustls-tls", "stream"] }
+strum = { version = "0.24.1", features = ["derive"] }
+tokio = { version = "1.24.1", features = ["macros", "rt-multi-thread", "sync"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
+url = "2.3.0"
+zip = "0.6.3"

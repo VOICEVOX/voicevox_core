@@ -79,7 +79,7 @@ Function Target-Os(){
 }
 
 Function Target-Arch(){
-	# TODO: cpu archtectureの判定を実装する
+	# TODO: cpu architectureの判定を実装する
 	"x64"
 }
 
@@ -103,7 +103,8 @@ Function Download-and-Extract($Target,$Url,$ExtractDir,$ArchiveFormat){
 			if ([string]::IsNullOrEmpty($_.Name)){
 				return
 			}
-      $NewFile=[IO.FileInfo]([IO.Path]::Combine($ExtractDir,$_.Name))
+			$FixedName=$_.FullName.Replace('\', '/')
+			$NewFile=[IO.FileInfo]([IO.Path]::Combine($ExtractDir,$FixedName.SubString($FixedName.IndexOf('/') + 1)))
 			$NewFile.Directory.Create()
 			[System.IO.Compression.ZipFileExtensions]::ExtractToFile($_,$NewFile)
 		}

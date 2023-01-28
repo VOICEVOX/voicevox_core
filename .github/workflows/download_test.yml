@@ -8,14 +8,14 @@ on:
       - "scripts/downloads/*"
       - ".github/workflows/download_test.yml"
 jobs:
-  downlaod-releases:
+  download-releases:
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: 通常ダウンロード
             os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1
+            download_command: cargo run -vv -p download
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -32,7 +32,7 @@ jobs:
               *curand*
           - name: CpuArch指定
             os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1 -CpuArch x86
+            download_command: cargo run -vv -p download -- --cpu-arch x86
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -49,7 +49,7 @@ jobs:
               *curand*
           - name: output先指定ダウンロード
             os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1 -Output other_output
+            download_command: cargo run -vv -p download -- -o other_output
             download_dir: other_output
             check_items: |
               core.dll
@@ -66,7 +66,7 @@ jobs:
               *curand*
           - name: Min option確認
             os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1 -Min $True
+            download_command: cargo run -vv -p download -- --min
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -83,7 +83,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: DirectML option確認
             os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1 -Accelerator directml
+            download_command: cargo run -vv -p download -- --accelerator directml
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -101,7 +101,7 @@ jobs:
               *curand*
           - name: DirectMLかつMin option確認
             os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1 -Accelerator directml -Min $true
+            download_command: cargo run -vv -p download -- --accelerator directml --min
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -118,7 +118,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: cuda option確認
             os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1 -Accelerator cuda
+            download_command: cargo run -vv -p download -- --accelerator cuda
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -139,7 +139,7 @@ jobs:
               *directml*
           - name: cudaかつmin option確認
             os: windows-latest
-            download_command: ./scripts/downloads/Download.ps1 -Accelerator cuda -Min $true
+            download_command: cargo run -vv -p download -- --accelerator cuda --min
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -274,8 +274,13 @@ jobs:
       #EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || 'latest' }}
     steps:
       - uses: actions/checkout@v3
+      - name: Set up Rust
+        if: ${{ startsWith(matrix.download_command, 'cargo ') }}
+        uses: ./.github/actions/rust-toolchain-from-file
       - name: Execute download command
         run: ${{ matrix.download_command }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Get latest version
         if: ${{ env.EXPECTED_VOICEVOX_CORE_VERSION == 'latest' }}
         shell: bash
