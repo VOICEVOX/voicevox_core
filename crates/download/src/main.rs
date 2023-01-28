@@ -285,7 +285,7 @@ fn download_and_extract_from_gh(
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
     let output = output.to_owned();
     let archive_kind = ArchiveKind::from_filename(&name)?;
-    let pb = new_pb(progresses, size as _, name);
+    let pb = add_progress_bar(progresses, size as _, name);
 
     Ok(async move {
         let bytes_stream = octocrab
@@ -319,7 +319,7 @@ fn download_and_extract_from_url(
         .and_then(|s| s.last())
         .unwrap_or_default();
     let archive_kind = ArchiveKind::from_filename(name)?;
-    let pb = new_pb(progresses, 0, name);
+    let pb = add_progress_bar(progresses, 0, name);
 
     Ok(async move {
         let res = reqwest::get(url.clone()).await?.error_for_status()?;
@@ -338,7 +338,7 @@ fn download_and_extract_from_url(
     })
 }
 
-fn new_pb(
+fn add_progress_bar(
     progresses: &MultiProgress,
     len: u64,
     prefix: impl Into<Cow<'static, str>>,
