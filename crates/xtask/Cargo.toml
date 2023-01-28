@@ -6,6 +6,6 @@ publish.workspace = true
 
 [dependencies]
 cbindgen = "0.24.3"
-clap = { version = "4.0.10", features = ["derive"] }
+clap.workspace = true
 color-eyre = "0.6.2"
 eyre = "0.6.8"

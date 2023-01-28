@@ -15,7 +15,7 @@ cfg-if = "1.0.0"
 derive-getters = "0.2.0"
 derive-new = "0.5.9"
 easy-ext.workspace = true
-fs-err = "2.9.0"
+fs-err.workspace = true
 once_cell.workspace = true
 onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="405f62fb53df1b59b0e69adafbd1c28e4d5c2787" }
 process_path = "0.1.4"
