@@ -395,7 +395,7 @@ async fn download_and_extract(
         }
 
         with_progress(pb, |pos_tx| async move {
-            let mut downloaded = vec![];
+            let mut downloaded = Vec::with_capacity(content_length.unwrap_or(0) as _);
             while let Some(chunk) = bytes_stream.next().await.transpose()? {
                 downloaded.extend_from_slice(&chunk);
                 pos_tx.send(downloaded.len() as _)?;
@@ -452,7 +452,8 @@ async fn download_and_extract(
                     return Ok(None);
                 }
                 let filename = entry.mangled_name();
-                let content = read_bytes(entry)?;
+                let size = entry.size() as _;
+                let content = read_bytes(entry, size)?;
                 Ok(Some((filename, content)))
             })
             .flat_map(Result::transpose)
@@ -468,15 +469,16 @@ async fn download_and_extract(
                     return Ok(None);
                 }
                 let path = entry.path()?.into_owned();
-                let content = read_bytes(entry)?;
+                let size = entry.size() as _;
+                let content = read_bytes(entry, size)?;
                 Ok(Some((path, content)))
             })
             .flat_map(Result::transpose)
             .collect()
     }
 
-    fn read_bytes(mut rdr: impl Read) -> io::Result<Vec<u8>> {
-        let mut buf = vec![];
+    fn read_bytes(mut rdr: impl Read, size: usize) -> io::Result<Vec<u8>> {
+        let mut buf = Vec::with_capacity(size);
         rdr.read_to_end(&mut buf)?;
         Ok(buf)
     }
