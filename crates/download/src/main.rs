@@ -91,14 +91,14 @@ enum Accelerator {
 enum CpuArch {
     X86,
     X64,
-    Aarch64,
+    Arm64,
 }
 
 impl CpuArch {
     fn default_opt() -> Option<Self> {
         match env::consts::ARCH {
             "x86_64" => Some(Self::X64),
-            "aarch64" => Some(Self::Aarch64),
+            "aarch64" => Some(Self::Arm64),
             _ => None,
         }
     }
@@ -140,10 +140,6 @@ async fn main() -> anyhow::Result<()> {
     let octocrab = &octocrab()?;
 
     let core = find_gh_asset(octocrab, CORE_REPO_NAME, &version, |tag| {
-        let cpu_arch = match (os, cpu_arch) {
-            (Os::Linux, CpuArch::Aarch64) => "arm64",
-            (_, cpu_arch) => cpu_arch.into(),
-        };
         let accelerator = match (os, accelerator) {
             (Os::Linux, Accelerator::Cuda) => "gpu",
             (_, accelerator) => accelerator.into(),
