@@ -142,7 +142,7 @@ async fn main() -> anyhow::Result<()> {
     let core = find_gh_asset(octocrab, CORE_REPO_NAME, &version, |tag| {
         let device = match (os, device) {
             (Os::Linux, Device::Cuda) => "gpu",
-            (_, accelerator) => accelerator.into(),
+            (_, device) => device.into(),
         };
         format!("{CORE_REPO_NAME}-{os}-{cpu_arch}-{device}-{tag}.zip")
     })
