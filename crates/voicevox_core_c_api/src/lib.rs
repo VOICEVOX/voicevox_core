@@ -2,13 +2,15 @@
 mod compatible_engine;
 mod helpers;
 use self::helpers::*;
+use is_terminal::IsTerminal;
 use libc::c_void;
 use once_cell::sync::Lazy;
+use std::env;
 use std::ffi::{CStr, CString};
+use std::io::{self, Write};
 use std::os::raw::c_char;
 use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
-use std::{env, io};
 use tracing_subscriber::EnvFilter;
 use voicevox_core::AudioQueryModel;
 use voicevox_core::Result;
@@ -20,16 +22,35 @@ use rstest::*;
 type Internal = VoicevoxCore;
 
 static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
-            EnvFilter::from_default_env()
-        } else {
-            "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
-        })
-        .with_writer(io::stderr)
-        .try_init();
+    let _ = init_logger();
+    return Internal::new_with_mutex();
 
-    Internal::new_with_mutex()
+    fn init_logger() -> std::result::Result<(), impl Sized> {
+        tracing_subscriber::fmt()
+            .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
+                EnvFilter::from_default_env()
+            } else {
+                "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
+            })
+            .with_ansi(out().is_terminal() && env_allows_ansi())
+            .with_writer(out)
+            .try_init()
+    }
+
+    fn out() -> impl IsTerminal + Write {
+        io::stderr()
+    }
+
+    fn env_allows_ansi() -> bool {
+        // https://docs.rs/termcolor/1.2.0/src/termcolor/lib.rs.html#245-291
+        // ただしWindowsではPowerShellっぽかったらそのまま許可する。
+        // ちゃんとやるなら`ENABLE_VIRTUAL_TERMINAL_PROCESSING`をチェックするなり、そもそも
+        // fwdansiとかでWin32の色に変換するべきだが、面倒。
+        env::var_os("TERM").map_or(
+            cfg!(windows) && env::var_os("PSModulePath").is_some(),
+            |term| term != "dumb",
+        ) && env::var_os("NO_COLOR").is_none()
+    }
 });
 
 pub(crate) fn lock_internal() -> MutexGuard<'static, Internal> {
