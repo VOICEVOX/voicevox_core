@@ -75,7 +75,7 @@ jobs:
           - os: macos-11
             features: ""
             target: aarch64-apple-darwin
-            artifact_name: osx-aarch64-cpu
+            artifact_name: osx-arm64-cpu
             whl_local_version: cpu
             use_cuda: false
           - os: macos-11
