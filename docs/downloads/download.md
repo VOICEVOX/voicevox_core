@@ -26,7 +26,7 @@ curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/do
 
 ```PowerShell
 Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
-./download.ps1 -Accelerator directml
+./download.ps1 -Device directml
 ```
 
 <a id="cuda"></a>
@@ -37,13 +37,13 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 
 ```PowerShell
 Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
-./download.ps1 -Accelerator cuda
+./download.ps1 -Device cuda
 ```
 
 ### Linux の場合
 
 ```bash
-curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s -- --accelerator cuda
+curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s -- --device cuda
 ```
 
 <a id="help"></a>
