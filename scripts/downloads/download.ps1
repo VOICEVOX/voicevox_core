@@ -24,8 +24,8 @@ Param(
 	[Parameter()]
 	[ValidateSet("cpu","cuda","directml")]
 	[string]
-	# ダウンロードするAcceleratorを指定する(cpu,cuda,directmlを指定可能)
-	$Accelerator = "cpu",
+	# ダウンロードするデバイスを指定する(cpu,cuda,directmlを指定可能)
+	$Device = "cpu",
 	[Parameter()]
 	[bool]
 	# ダウンロードするライブラリを最小限にするように指定
@@ -46,18 +46,18 @@ $VoicevoxAdditionalLibrariesBaseUrl="https://github.com/VOICEVOX/voicevox_additi
 $OpenJtalkDictUrl="https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
 $OpenJtalkDictDirName="open_jtalk_dic_utf_8-1.11"
 
-Function Voicevox-Core-Releases-Url($Os,$CpuArch,$Accelerator,$Version){
-	"${VoicevoxCoreRepositoryBaseUrl}/releases/download/${Version}/voicevox_core-${Os}-${CpuArch}-${Accelerator}-${Version}.zip"
+Function Voicevox-Core-Releases-Url($Os,$CpuArch,$Device,$Version){
+	"${VoicevoxCoreRepositoryBaseUrl}/releases/download/${Version}/voicevox_core-${Os}-${CpuArch}-${Device}-${Version}.zip"
 }
 
-Function Voicevox-Additional-Libraries-Releases-Url($Os,$CpuArch,$Accelerator,$Version){
-	If ( $Accelerator -eq "cuda" ){
-		$Accelerator="CUDA"
-	} ElseIf ( $Accelerator -eq "directml" ){
-		$Accelerator="DirectML"
+Function Voicevox-Additional-Libraries-Releases-Url($Os,$CpuArch,$Device,$Version){
+	If ( $Device -eq "cuda" ){
+		$Device="CUDA"
+	} ElseIf ( $Device -eq "directml" ){
+		$Device="DirectML"
 	}
 
-	"${VoicevoxAdditionalLibrariesBaseUrl}/releases/download/${Version}/${Accelerator}-${Os}-${CpuArch}.zip"
+	"${VoicevoxAdditionalLibrariesBaseUrl}/releases/download/${Version}/${Device}-${Os}-${CpuArch}.zip"
 }
 
 Function Latest-Version($BaseUrl){
@@ -123,7 +123,7 @@ If ( [string]::IsNullOrEmpty($CpuArch) ){
   $CpuArch=Target-Arch
 }
 
-If ( $Accelerator -eq "cpu" ){
+If ( $Device -eq "cpu" ){
 	$AdditionalLibrariesVersion=""
 }
 
@@ -138,11 +138,11 @@ If ( $AdditionalLibrariesVersion -eq "latest" ){
 echo "対象OS:$Os"
 echo "対象CPUアーキテクチャ:$cpu_arch"
 echo "ダウンロードvoicevox_coreバージョン:$version"
-echo "ダウンロードアーティファクトタイプ:$Accelerator"
+echo "ダウンロードアーティファクトタイプ:$Device"
 echo "出力先:$Output"
 
-$VoicevoxCoreUrl=Voicevox-Core-Releases-Url "$Os" "$CpuArch" "$Accelerator" "$Version"
-$VoicevoxAdditionalLibrariesUrl=Voicevox-Additional-Libraries-Releases-Url "$Os" "$CpuArch" "$Accelerator" "$AdditionalLibrariesVersion"
+$VoicevoxCoreUrl=Voicevox-Core-Releases-Url "$Os" "$CpuArch" "$Device" "$Version"
+$VoicevoxAdditionalLibrariesUrl=Voicevox-Additional-Libraries-Releases-Url "$Os" "$CpuArch" "$Device" "$AdditionalLibrariesVersion"
 
 Download-and-Extract "voicevox_core" "$VoicevoxCoreUrl" "$Output"
 

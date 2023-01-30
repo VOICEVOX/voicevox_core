@@ -83,7 +83,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: DirectML option確認
             os: windows-latest
-            download_command: cargo run -vv -p download -- --accelerator directml
+            download_command: cargo run -vv -p download -- --device directml
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -101,7 +101,7 @@ jobs:
               *curand*
           - name: DirectMLかつMin option確認
             os: windows-latest
-            download_command: cargo run -vv -p download -- --accelerator directml --min
+            download_command: cargo run -vv -p download -- --device directml --min
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -118,7 +118,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: cuda option確認
             os: windows-latest
-            download_command: cargo run -vv -p download -- --accelerator cuda
+            download_command: cargo run -vv -p download -- --device cuda
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -139,7 +139,7 @@ jobs:
               *directml*
           - name: cudaかつmin option確認
             os: windows-latest
-            download_command: cargo run -vv -p download -- --accelerator cuda --min
+            download_command: cargo run -vv -p download -- --device cuda --min
             download_dir: voicevox_core
             check_items: |
               core.dll
@@ -228,7 +228,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: cuda option確認
             os: ubuntu-latest
-            download_command: ./scripts/downloads/download.sh --accelerator cuda
+            download_command: ./scripts/downloads/download.sh --device cuda
             download_dir: voicevox_core
             check_items: |
               libcore.so
@@ -248,7 +248,7 @@ jobs:
               *directml*
           - name: cudaかつmin option確認
             os: ubuntu-latest
-            download_command: ./scripts/downloads/download.sh --accelerator cuda --min
+            download_command: ./scripts/downloads/download.sh --device cuda --min
             download_dir: voicevox_core
             check_items: |
               libcore.so

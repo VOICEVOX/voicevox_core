@@ -9,7 +9,7 @@ fn set_message(message: &str) {
     ERROR_MESSAGE
         .lock()
         .unwrap()
-        .replace_range(.., &format!("{}\0", message));
+        .replace_range(.., &format!("{message}\0"));
 }
 
 #[no_mangle]
@@ -25,7 +25,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
         ..Default::default()
     });
     if let Some(err) = result.err() {
-        set_message(&format!("{}", err));
+        set_message(&format!("{err}"));
         false
     } else {
         true
@@ -36,7 +36,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
 pub extern "C" fn load_model(speaker_id: i64) -> bool {
     let result = lock_internal().load_model(speaker_id as u32);
     if let Some(err) = result.err() {
-        set_message(&format!("{}", err));
+        set_message(&format!("{err}"));
         false
     } else {
         true
@@ -86,7 +86,7 @@ pub extern "C" fn yukarin_s_forward(
             true
         }
         Err(err) => {
-            set_message(&format!("{}", err));
+            set_message(&format!("{err}"));
             false
         }
     }
@@ -121,7 +121,7 @@ pub extern "C" fn yukarin_sa_forward(
             true
         }
         Err(err) => {
-            set_message(&format!("{}", err));
+            set_message(&format!("{err}"));
             false
         }
     }
@@ -152,7 +152,7 @@ pub extern "C" fn decode_forward(
             true
         }
         Err(err) => {
-            set_message(&format!("{}", err));
+            set_message(&format!("{err}"));
             false
         }
     }
