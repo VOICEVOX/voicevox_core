@@ -90,6 +90,7 @@ sudo apt install libgomp1
 現在このリポジトリでは次のサンプルが提供されています。実行方法についてはそれぞれのディレクトリ内にある README を参照してください
 
 - [Python](./example/python)
+- [Python(pip)](./example/pyo3)
 - [C++(UNIX CMake)](./example/cpp/unix)
 - [C++(Windows Visual Studio)](./example/cpp/windows)
 
