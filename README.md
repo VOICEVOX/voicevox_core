@@ -1,7 +1,5 @@
 # VOICEVOX CORE
 
-## **現在のmainブランチは工事中なので正しく動かないことがあります。[バージョン0.13.0](https://github.com/VOICEVOX/voicevox_core/tree/0.13.0)をご利用ください。**
-
 [![dependency status](https://deps.rs/repo/github/VOICEVOX/voicevox_core/status.svg)](https://deps.rs/repo/github/VOICEVOX/voicevox_core)
 
 [VOICEVOX](https://voicevox.hiroshiba.jp/) の音声合成コア。  
@@ -117,7 +115,7 @@ cargo build --release -p voicevox_core_c_api
 ```bash
 # DLL用のヘッダファイルvoicevox_core.hを生成
 # cbindgenが手元にインストールされているのならそちらでも可
-cargo xtask generate-c-header 
+cargo xtask generate-c-header
 ```
 
 ## コアライブラリのテスト
@@ -139,7 +137,7 @@ typos
 
 **[voicevox.rb](https://github.com/sevenc-nanashi/voicevox.rb) [@sevenc-nanashi](https://github.com/sevenc-nanashi)** ･･･ VOICEVOX CORE の Ruby 向け FFI ラッパー  
 **[Node VOICEVOX Engine](https://github.com/y-chan/node-voicevox-engine) [@y-chan](https://github.com/y-chan)** ･･･ VOICEVOX ENGINE の Node.js/C++ 実装
-**[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装  
+**[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装
 
 ## ライセンス
 
