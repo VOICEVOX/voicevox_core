@@ -79,8 +79,11 @@ Function Target-Os(){
 }
 
 Function Target-Arch(){
-	# TODO: cpu architectureの判定を実装する
-	"x64"
+	if ( $env:PROCESSOR_ARCHITECTURE -eq "x86" ){
+		"x86"
+	} else {
+		"x64"
+	}
 }
 
 Function Download-and-Extract($Target,$Url,$ExtractDir,$ArchiveFormat){
