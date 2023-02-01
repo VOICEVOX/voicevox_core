@@ -896,9 +896,55 @@ mod tests {
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
     }
 
+    // [([(テキスト, 母音, 子音), ...], アクセントの位置), ...] の形式
+    const TEXT_CONSONANT_VOWEL_DATA1: &[(&[(&str, &str, &str)], usize)] = &[
+        (&[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")], 3),
+        (
+            &[
+                ("テ", "t", "e"),
+                ("ス", "s", "U"),
+                ("ト", "t", "o"),
+                ("デ", "d", "e"),
+                ("ス", "s", "U"),
+            ],
+            1,
+        ),
+    ];
+
+    const TEXT_CONSONANT_VOWEL_DATA2: &[(&[(&str, &str, &str)], usize)] = &[
+        (&[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")], 1),
+        (
+            &[
+                ("テ", "t", "e"),
+                ("ス", "s", "U"),
+                ("ト", "t", "o"),
+                ("デ", "d", "e"),
+                ("ス", "s", "U"),
+            ],
+            3,
+        ),
+    ];
+
     #[rstest]
+    #[case(
+        "これはテストです",
+        false,
+        TEXT_CONSONANT_VOWEL_DATA1,
+        "コレワ'/テ'_ストデ_ス"
+    )]
+    #[case(
+        "コ'レワ/テ_スト'デ_ス",
+        true,
+        TEXT_CONSONANT_VOWEL_DATA2,
+        "コ'レワ/テ_スト'デ_ス"
+    )]
     #[async_std::test]
-    async fn audio_query_works() {
+    async fn audio_query_works(
+        #[case] input_text: &str,
+        #[case] input_kana_option: bool,
+        #[case] expected_text_consonant_vowel_data: &[(&[(&str, &str, &str)], usize)],
+        #[case] expected_kana_text: &str,
+    ) {
         let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
 
         let core = VoicevoxCore::new_with_mutex();
@@ -915,41 +961,55 @@ mod tests {
         let query = core
             .lock()
             .unwrap()
-            .audio_query("これはテストです", 0, Default::default())
+            .audio_query(
+                input_text,
+                0,
+                AudioQueryOptions {
+                    kana: input_kana_option,
+                    ..Default::default()
+                },
+            )
             .unwrap();
 
-        assert_eq!(query.accent_phrases().len(), 2);
+        assert_eq!(
+            query.accent_phrases().len(),
+            expected_text_consonant_vowel_data.len()
+        );
 
-        assert_eq!(query.accent_phrases()[0].moras().len(), 3);
-        for (i, (text, consonant, vowel)) in [("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")]
+        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in query
+            .accent_phrases()
             .iter()
-            .enumerate()
+            .zip(expected_text_consonant_vowel_data)
         {
-            let mora = query.accent_phrases()[0].moras().get(i).unwrap();
-            assert_eq!(mora.text(), text);
-            assert_eq!(mora.consonant(), &Some(consonant.to_string()));
-            assert_eq!(mora.vowel(), vowel);
+            assert_eq!(
+                accent_phrase.moras().len(),
+                text_consonant_vowel_slice.len()
+            );
+            assert_eq!(accent_phrase.accent(), accent_pos);
+            for (mora, (text, consonant, vowel)) in accent_phrase
+                .moras()
+                .iter()
+                .zip(*text_consonant_vowel_slice)
+            {
+                assert_eq!(mora.text(), text);
+                // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
+                assert_ne!(
+                    mora.consonant_length(),
+                    &Some(0.),
+                    "expected mora.consonant_length is not Some(0.0), but got Some(0.0)."
+                );
+                assert_eq!(mora.consonant(), &Some(consonant.to_string()));
+                assert_eq!(mora.vowel(), vowel);
+                // NOTE: 母音の長さが必ず非ゼロになるテストケースを想定している
+                assert_ne!(
+                    mora.vowel_length(),
+                    &0.,
+                    "expected mora.vowel_length is not 0.0, but got 0.0."
+                );
+            }
         }
-        assert_eq!(query.accent_phrases()[0].accent(), &3);
 
-        assert_eq!(query.accent_phrases()[1].moras().len(), 5);
-        for (i, (text, consonant, vowel)) in [
-            ("テ", "t", "e"),
-            ("ス", "s", "U"),
-            ("ト", "t", "o"),
-            ("デ", "d", "e"),
-            ("ス", "s", "U"),
-        ]
-        .iter()
-        .enumerate()
-        {
-            let mora = query.accent_phrases()[1].moras().get(i).unwrap();
-            assert_eq!(mora.text(), text);
-            assert_eq!(mora.consonant(), &Some(consonant.to_string()));
-            assert_eq!(mora.vowel(), vowel);
-        }
-        assert_eq!(query.accent_phrases()[1].accent(), &1);
-        assert_eq!(query.kana(), "コレワ'/テ'_ストデ_ス");
+        assert_eq!(query.kana(), expected_kana_text);
     }
 
     #[rstest]
