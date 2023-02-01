@@ -978,20 +978,17 @@ mod tests {
             expected_text_consonant_vowel_data.len()
         );
 
-        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in query
-            .accent_phrases()
-            .iter()
-            .zip(expected_text_consonant_vowel_data)
+        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in
+            std::iter::zip(query.accent_phrases(), expected_text_consonant_vowel_data)
         {
             assert_eq!(
                 accent_phrase.moras().len(),
                 text_consonant_vowel_slice.len()
             );
             assert_eq!(accent_phrase.accent(), accent_pos);
-            for (mora, (text, consonant, vowel)) in accent_phrase
-                .moras()
-                .iter()
-                .zip(*text_consonant_vowel_slice)
+
+            for (mora, (text, consonant, vowel)) in
+                std::iter::zip(accent_phrase.moras(), *text_consonant_vowel_slice)
             {
                 assert_eq!(mora.text(), text);
                 // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
