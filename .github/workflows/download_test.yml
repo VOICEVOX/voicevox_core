@@ -5,6 +5,8 @@ on:
       - main
   pull_request:
     paths:
+      - "Cargo.*"
+      - "crates/download/**"
       - "scripts/downloads/*"
       - ".github/workflows/download_test.yml"
 jobs:
