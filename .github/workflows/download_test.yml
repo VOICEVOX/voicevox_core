@@ -22,11 +22,11 @@ jobs:
               model/metas.json
               open_jtalk_dic_utf_8-1.11
               README.txt
+            # https://github.com/VOICEVOX/voicevox_core/pull/411#issuecomment-1412457592
             check_not_exists_items: |
               *directml*
               *cuda*
               *cudnn*
-              *onnxruntime*providers*
               *eula*
               *nvidia*
               *cufft*
@@ -44,7 +44,6 @@ jobs:
               *directml*
               *cuda*
               *cudnn*
-              *onnxruntime*providers*
               *eula*
               *nvidia*
               *cufft*
@@ -62,7 +61,6 @@ jobs:
               *directml*
               *cuda*
               *cudnn*
-              *onnxruntime*providers*
               *eula*
               *nvidia*
               *cufft*
@@ -79,7 +77,6 @@ jobs:
               *directml*
               *cuda*
               *cudnn*
-              *onnxruntime*providers*
               *eula*
               *nvidia*
               *cufft*
