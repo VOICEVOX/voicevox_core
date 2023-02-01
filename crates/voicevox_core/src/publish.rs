@@ -896,8 +896,11 @@ mod tests {
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
     }
 
+    type TextConsonantVowelData =
+        [(&'static [(&'static str, &'static str, &'static str)], usize)];
+
     // [([(テキスト, 母音, 子音), ...], アクセントの位置), ...] の形式
-    const TEXT_CONSONANT_VOWEL_DATA1: &[(&[(&str, &str, &str)], usize)] = &[
+    const TEXT_CONSONANT_VOWEL_DATA1: &TextConsonantVowelData = &[
         (&[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")], 3),
         (
             &[
@@ -911,7 +914,7 @@ mod tests {
         ),
     ];
 
-    const TEXT_CONSONANT_VOWEL_DATA2: &[(&[(&str, &str, &str)], usize)] = &[
+    const TEXT_CONSONANT_VOWEL_DATA2: &TextConsonantVowelData = &[
         (&[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")], 1),
         (
             &[
@@ -942,7 +945,7 @@ mod tests {
     async fn audio_query_works(
         #[case] input_text: &str,
         #[case] input_kana_option: bool,
-        #[case] expected_text_consonant_vowel_data: &[(&[(&str, &str, &str)], usize)],
+        #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
         #[case] expected_kana_text: &str,
     ) {
         let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
@@ -966,7 +969,6 @@ mod tests {
                 0,
                 AudioQueryOptions {
                     kana: input_kana_option,
-                    ..Default::default()
                 },
             )
             .unwrap();
