@@ -12,13 +12,13 @@ from ._rust import METAS, SUPPORTED_DEVICES, VoicevoxCore  # noqa: F401
 
 
 __all__ = [
+    "METAS",
+    "SUPPORTED_DEVICES",
     "AccelerationMode",
     "AccentPhrase",
     "AudioQuery",
-    "METAS",
     "Meta",
     "Mora",
-    "SUPPORTED_DEVICES",
     "SupportedDevices",
     "VoicevoxCore",
 ]
