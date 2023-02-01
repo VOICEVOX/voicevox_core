@@ -79,10 +79,10 @@ Function Target-Os(){
 }
 
 Function Target-Arch(){
-	if ( $env:PROCESSOR_ARCHITECTURE -eq "x86" ){
-		"x86"
-	} else {
+	if ( [Environment]::Is64BitProcess ){
 		"x64"
+	} else {
+		"x86"
 	}
 }
 
