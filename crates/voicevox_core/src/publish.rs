@@ -167,7 +167,8 @@ impl VoicevoxCore {
             return Err(Error::NotLoadedOpenjtalkDict);
         }
         let accent_phrases = if options.kana {
-            parse_kana(text)?
+            self.synthesis_engine
+                .replace_mora_data(&parse_kana(text)?, speaker_id)?
         } else {
             self.synthesis_engine
                 .create_accent_phrases(text, speaker_id)?
