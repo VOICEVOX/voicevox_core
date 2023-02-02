@@ -17,7 +17,7 @@ def main() -> None:
     )
     logger = logging.getLogger(__name__)
 
-    (acceleration_mode, open_jtalk_dict_dir, text, out) = parse_args()
+    (acceleration_mode, open_jtalk_dict_dir, text, out, SPEAKER_ID) = parse_args()
 
     logger.debug("%s", f"{voicevox_core.METAS=}")
     logger.debug("%s", f"{voicevox_core.SUPPORTED_DEVICES=}")
@@ -53,21 +53,30 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path]:
         help='モード ("AUTO", "CPU", "GPU")',
     )
     argparser.add_argument(
-        "open_jtalk_dict_dir",
+        "--dict",
+        default="./voicevox_core/open_jtalk_dic_utf_8-1.11",
         type=Path,
         help="Open JTalkの辞書ディレクトリ",
     )
     argparser.add_argument(
-        "text",
+        "--text",
+        default="この音声は ボイスボックスを使用して 出力されています。",
         help="読み上げさせたい文章",
     )
     argparser.add_argument(
-        "out",
+        "--out",
+        default="./output.wav",
         type=Path,
         help="出力wavファイルのパス",
     )
+    argparser.add_argument(
+        "--speekerid",
+        default=0,
+        type=int,
+        help="SPEEKER IDの数字を指定",
+    )
     args = argparser.parse_args()
-    return (args.mode, args.open_jtalk_dict_dir, args.text, args.out)
+    return (args.mode, args.dict, args.text, args.out, args.speekerid)
 
 
 def display_as_json(audio_query: AudioQuery) -> str:
