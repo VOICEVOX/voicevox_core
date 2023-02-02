@@ -193,6 +193,7 @@ jobs:
             scripts/downloads/*
           target_commitish: ${{ github.sha }}
   deploy_precompiled_downloader:
+    environment: ${{ github.event.inputs.code_signing == 'true' && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include:
@@ -234,6 +235,14 @@ jobs:
             Linux | macOS) exe_suffix=;;
           esac
           mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
+      - name: Code signing (Windows)
+        if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
+        shell: bash
+        run: |
+          bash build_util/codesign.bash ./${{ matrix.name }}
+        env:
+          CERT_BASE64: ${{ secrets.CERT_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
       - name: Upload to Release
         if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
