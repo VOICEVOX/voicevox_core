@@ -20,14 +20,15 @@ jobs:
             download_command: cargo run -vv -p download
             download_dir: voicevox_core
             check_items: |
-              core.dll
+              voicevox_core.dll
+              model/metas.json
               open_jtalk_dic_utf_8-1.11
               README.txt
+            # https://github.com/VOICEVOX/voicevox_core/pull/411#issuecomment-1412457592
             check_not_exists_items: |
               *directml*
               *cuda*
               *cudnn*
-              *onnxruntime*providers*
               *eula*
               *nvidia*
               *cufft*
@@ -37,14 +38,14 @@ jobs:
             download_command: cargo run -vv -p download -- --cpu-arch x86
             download_dir: voicevox_core
             check_items: |
-              core.dll
+              voicevox_core.dll
+              model/metas.json
               open_jtalk_dic_utf_8-1.11
               README.txt
             check_not_exists_items: |
               *directml*
               *cuda*
               *cudnn*
-              *onnxruntime*providers*
               *eula*
               *nvidia*
               *cufft*
@@ -54,14 +55,14 @@ jobs:
             download_command: cargo run -vv -p download -- -o other_output
             download_dir: other_output
             check_items: |
-              core.dll
+              voicevox_core.dll
+              model/metas.json
               open_jtalk_dic_utf_8-1.11
               README.txt
             check_not_exists_items: |
               *directml*
               *cuda*
               *cudnn*
-              *onnxruntime*providers*
               *eula*
               *nvidia*
               *cufft*
@@ -71,13 +72,13 @@ jobs:
             download_command: cargo run -vv -p download -- --min
             download_dir: voicevox_core
             check_items: |
-              core.dll
+              voicevox_core.dll
+              model/metas.json
               README.txt
             check_not_exists_items: |
               *directml*
               *cuda*
               *cudnn*
-              *onnxruntime*providers*
               *eula*
               *nvidia*
               *cufft*
@@ -88,7 +89,8 @@ jobs:
             download_command: cargo run -vv -p download -- --device directml
             download_dir: voicevox_core
             check_items: |
-              core.dll
+              voicevox_core.dll
+              model/metas.json
               open_jtalk_dic_utf_8-1.11
               README.txt
               DirectML.dll
@@ -106,7 +108,8 @@ jobs:
             download_command: cargo run -vv -p download -- --device directml --min
             download_dir: voicevox_core
             check_items: |
-              core.dll
+              voicevox_core.dll
+              model/metas.json
               README.txt
             check_not_exists_items: |
               *cuda*
@@ -123,7 +126,8 @@ jobs:
             download_command: cargo run -vv -p download -- --device cuda
             download_dir: voicevox_core
             check_items: |
-              core.dll
+              voicevox_core.dll
+              model/metas.json
               open_jtalk_dic_utf_8-1.11
               README.txt
               EULA.txt
@@ -144,7 +148,8 @@ jobs:
             download_command: cargo run -vv -p download -- --device cuda --min
             download_dir: voicevox_core
             check_items: |
-              core.dll
+              voicevox_core.dll
+              model/metas.json
               README.txt
             check_not_exists_items: |
               *directml*
@@ -165,7 +170,8 @@ jobs:
             download_command: ./scripts/downloads/download.sh
             download_dir: voicevox_core
             check_items: |
-              libcore.so
+              libvoicevox_core.so
+              model/metas.json
               open_jtalk_dic_utf_8-1.11
               README.txt
             check_not_exists_items: |
@@ -182,7 +188,8 @@ jobs:
             download_command: ./scripts/downloads/download.sh --cpu-arch x64
             download_dir: voicevox_core
             check_items: |
-              libcore.so
+              libvoicevox_core.so
+              model/metas.json
               open_jtalk_dic_utf_8-1.11
               README.txt
             check_not_exists_items: |
@@ -199,7 +206,8 @@ jobs:
             download_command: ./scripts/downloads/download.sh --output other_output
             download_dir: other_output
             check_items: |
-              libcore.so
+              libvoicevox_core.so
+              model/metas.json
               open_jtalk_dic_utf_8-1.11
               README.txt
             check_not_exists_items: |
@@ -216,7 +224,8 @@ jobs:
             download_command: ./scripts/downloads/download.sh --min
             download_dir: voicevox_core
             check_items: |
-              libcore.so
+              libvoicevox_core.so
+              model/metas.json
               README.txt
             check_not_exists_items: |
               *directml*
@@ -233,7 +242,8 @@ jobs:
             download_command: ./scripts/downloads/download.sh --device cuda
             download_dir: voicevox_core
             check_items: |
-              libcore.so
+              libvoicevox_core.so
+              model/metas.json
               open_jtalk_dic_utf_8-1.11
               README.txt
               EULA.txt
@@ -253,7 +263,8 @@ jobs:
             download_command: ./scripts/downloads/download.sh --device cuda --min
             download_dir: voicevox_core
             check_items: |
-              libcore.so
+              libvoicevox_core.so
+              model/metas.json
               README.txt
             check_not_exists_items: |
               *directml*
