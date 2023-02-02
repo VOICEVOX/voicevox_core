@@ -193,6 +193,7 @@ jobs:
             scripts/downloads/*
           target_commitish: ${{ github.sha }}
   deploy_precompiled_downloader:
+    environment: ${{ github.event.inputs.code_signing == 'true' && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include:
