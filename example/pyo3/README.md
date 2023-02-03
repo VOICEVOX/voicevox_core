@@ -9,12 +9,13 @@ TODO
 
 - Python インタプリタ ≧3.8 + venv
 - voicevox_core_python_api の whl (`pip install`)
-- onnxruntime の DLL (/README.md と同様)
-- open_jtalk_dic_utf_8-1.11 (/README.md と同様)
+- onnxruntime の DLL ([/README.md](https://github.com/VOICEVOX/voicevox_core#%E7%92%B0%E5%A2%83%E6%A7%8B%E7%AF%89) と同様)
+- open_jtalk_dic_utf_8-1.11 ([/README.md](https://github.com/VOICEVOX/voicevox_core#%E7%92%B0%E5%A2%83%E6%A7%8B%E7%AF%89) と同様)
 
 ## 実行
 
 Open JTalk 辞書ディレクトリ、読み上げさせたい文章、出力 wav ファイルのパスの 3 つを指定して run.py を実行します。
+
 
 ```console
 ❯ python ./run.py -h
@@ -30,9 +31,53 @@ optional arguments:
   --mode MODE          モード ("AUTO", "CPU", "GPU")
 ```
 
+## 実行例
+
+1. wheelパッケージのインストールをします。
+
 ```console
+❯ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/0.14.0/voicevox_core-0.14.0+cpu-cp38-abi3-linux_x86_64.whl
+```
+
+cpu-cp38-abi3-linux_x86_64のところはアーキテクチャやOSによって適宜読み替えてください。
+現在の組み合わせは以下のとおりです。
+
+* voicevox_core-0.14.0+cpu-cp38-abi3-linux_aarch64.whl
+* voicevox_core-0.14.0+cpu-cp38-abi3-linux_x86_64.whl
+* voicevox_core-0.14.0+cpu-cp38-abi3-macosx_10_7_x86_64.whl
+* voicevox_core-0.14.0+cpu-cp38-abi3-macosx_11_0_arm64.whl
+* voicevox_core-0.14.0+cpu-cp38-abi3-win32.whl
+* voicevox_core-0.14.0+cpu-cp38-abi3-win_amd64.whl
+* voicevox_core-0.14.0+cuda-cp38-abi3-linux_x86_64.whl
+* voicevox_core-0.14.0+cuda-cp38-abi3-win_amd64.whl 
+* voicevox_core-0.14.1+directml-cp38-abi3-win_amd64.whl 
+
+
+2. リポジトリを取得し環境構築します。
+
+```console
+❯ git clone https://github.com/VOICEVOX/voicevox_core.git
+```
+
+linux/macの場合
+
+```console
+❯ ./voicevox_core/scripts/downloads/download.sh
+```
+
+windowsの場合
+
+```console
+❯ ./voicevox_core/scripts/downloads/download.ps1
+```
+
+3. 実行
+
+
+```console
+❯ cd voicevox_core/example/pyo3
 ❯ # python ./run.py <Open JTalk辞書ディレクトリ> <読み上げさせたい文章> <出力wavファイルのパス>
-❯ python ./run.py ./open_jtalk_dic_utf_8-1.11 これはテストです ./audio.wav
+❯ python ./run.py ../../voicevox_core/open_jtalk_dic_utf_8-1.11/ これはテストです ./audio.wav
 [DEBUG] run.py: voicevox_core.METAS=[Meta(name='四国めたん', styles=[Style(name='あまあま', id=0)], speaker_uuid='7ffcb7ce-00ec-4bdc-82cd-45a8889e43ff', version='0.0.1'), Meta(name='ずんだもん', styles=[Style(name='あまあま', id=1)], speaker_uuid='388f246b-8c41-4ac1-8e2d-5d79f3ff56d9', version='0.0.1')]
 [DEBUG] run.py: voicevox_core.SUPPORTED_DEVICES=SupportedDevices(cpu=True, cuda=True, dml=False)
 [INFO] run.py: Initializing (acceleration_mode=<AccelerationMode.AUTO: 'AUTO'>, open_jtalk_dict_dir=PosixPath('open_jtalk_dic_utf_8-1.11'))
