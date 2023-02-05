@@ -132,6 +132,7 @@ impl OpenJtalk {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+    use test_util::OPEN_JTALK_DIC_DIR;
 
     use crate::*;
 
@@ -225,28 +226,21 @@ mod tests {
     #[rstest]
     #[case("",Err(OpenJtalkError::ExtractFullContext{text:"".into(),source:None}))]
     #[case("こんにちは、ヒホです。", Ok(testdata_hello_hiho()))]
-    #[async_std::test]
-    async fn extract_fullcontext_works(
-        #[case] text: &str,
-        #[case] expected: super::Result<Vec<String>>,
-    ) {
-        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
+    fn extract_fullcontext_works(#[case] text: &str, #[case] expected: super::Result<Vec<String>>) {
         let mut open_jtalk = OpenJtalk::initialize();
-        open_jtalk.load(&open_jtalk_dic_dir).unwrap();
+        open_jtalk.load(OPEN_JTALK_DIC_DIR).unwrap();
         let result = open_jtalk.extract_fullcontext(text);
         assert_eq!(expected, result);
     }
 
     #[rstest]
     #[case("こんにちは、ヒホです。", Ok(testdata_hello_hiho()))]
-    #[async_std::test]
-    async fn extract_fullcontext_loop_works(
+    fn extract_fullcontext_loop_works(
         #[case] text: &str,
         #[case] expected: super::Result<Vec<String>>,
     ) {
-        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
         let mut open_jtalk = OpenJtalk::initialize();
-        open_jtalk.load(&open_jtalk_dic_dir).unwrap();
+        open_jtalk.load(OPEN_JTALK_DIC_DIR).unwrap();
         for _ in 0..10 {
             let result = open_jtalk.extract_fullcontext(text);
             assert_eq!(expected, result);

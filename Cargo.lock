@@ -3177,6 +3177,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "test_util"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "flate2",
+ "surf",
+ "tar",
+]
+
+[[package]]
 name = "textwrap"
 version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3566,12 +3577,10 @@ name = "voicevox_core"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async-std",
  "cfg-if",
  "derive-getters",
  "derive-new",
  "easy-ext",
- "flate2",
  "fs-err",
  "heck",
  "humansize",
@@ -3584,8 +3593,7 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
- "surf",
- "tar",
+ "test_util",
  "thiserror",
  "tracing",
  "windows",
