@@ -14,7 +14,7 @@ Visual Studio Installerを使用しインストールしてください。
 
 出力フォルダを作成するために、一度ビルドします。「windows_example.sln」をVisual Studioで開き、メニューの「ビルド」→「ソリューションのビルド」を押します。
 この段階では、ビルドは失敗します。「bin」フォルダと「lib」フォルダが生成されていればOKです。  
-Releasesから「voicevox_core-windows-x64-cpu-{バージョン名}.zip」をダウンロードし、展開します。ダウンローダーを使うと便利です。  
+[Releases](https://github.com/VOICEVOX/voicevox_core/releases/latest)から「voicevox_core-windows-x64-cpu-{バージョン名}.zip」をダウンロードし、展開します。[ダウンローダー](https://github.com/VOICEVOX/voicevox_core/blob/main/docs/downloads/download.md)を使うと便利です。  
 展開してできたファイル・フォルダをそれぞれ下記のフォルダへ配置します。
 
 - simple_tts に配置
