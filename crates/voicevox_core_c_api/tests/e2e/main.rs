@@ -1,6 +1,6 @@
 use std::{ffi::c_char, path::Path};
 
-use assert_cmd::assert::Assert;
+use assert_cmd::assert::{Assert, AssertResult};
 use clap::{Parser as _, ValueEnum};
 use duct::cmd;
 use heck::ToSnakeCase as _;
@@ -72,7 +72,7 @@ impl Test {
         Ok(())
     }
 
-    fn assert_output(self, assert: Assert) {
+    fn assert_output(self, assert: Assert) -> AssertResult {
         match self {
             Self::VoicevoxGetVersion => operations::voicevox_get_version::assert_output(assert),
         }
@@ -89,7 +89,7 @@ impl From<Test> for Trial {
                 .args(["--exec-voicevox-c-api-e2e-test", test.into()])
                 .assert();
 
-            test.assert_output(assert);
+            test.assert_output(assert)?;
             Ok(())
         })
         .with_ignored_flag(true)

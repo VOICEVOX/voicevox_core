@@ -1,6 +1,6 @@
 use std::ffi::CStr;
 
-use assert_cmd::assert::Assert;
+use assert_cmd::assert::{Assert, AssertResult};
 
 use crate::Symbols;
 
@@ -15,6 +15,9 @@ pub(crate) unsafe fn exec(
     Ok(())
 }
 
-pub(crate) fn assert_output(assert: Assert) {
-    assert.success().stdout("Version: \"0.0.0\"\n").stderr("");
+pub(crate) fn assert_output(assert: Assert) -> AssertResult {
+    assert
+        .try_success()?
+        .try_stdout("Version: \"0.0.0\"\n")?
+        .try_stderr("")
 }
