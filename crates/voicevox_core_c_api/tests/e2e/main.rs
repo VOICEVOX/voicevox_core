@@ -49,11 +49,14 @@ struct ExecVoicevoxCApiE2eTest {
 #[derive(Clone, Copy, ValueEnum, IntoStaticStr)]
 #[strum(serialize_all = "kebab-case")]
 enum Test {
+    Metas,
     VoicevoxGetVersion,
 }
 
 impl Test {
     fn exec(self) -> anyhow::Result<()> {
+        use operations::*;
+
         let cdylib_path = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("..")
             .join("..")
@@ -66,15 +69,19 @@ impl Test {
             let symbols = Symbols::new(lib)?;
 
             match self {
-                Self::VoicevoxGetVersion => operations::voicevox_get_version::exec(symbols)?,
+                Self::VoicevoxGetVersion => voicevox_get_version::exec(symbols)?,
+                Self::Metas => metas::exec(symbols)?,
             }
         }
         Ok(())
     }
 
     fn assert_output(self, assert: Assert) -> AssertResult {
+        use operations::*;
+
         match self {
-            Self::VoicevoxGetVersion => operations::voicevox_get_version::assert_output(assert),
+            Self::VoicevoxGetVersion => voicevox_get_version::assert_output(assert),
+            Self::Metas => metas::assert_output(assert),
         }
     }
 }
@@ -87,6 +94,10 @@ impl From<Test> for Trial {
 
             let assert = assert_cmd::Command::new(current_exe)
                 .args(["--exec-voicevox-c-api-e2e-test", test.into()])
+                .env(
+                    "VV_MODELS_ROOT_DIR",
+                    Path::new(env!("CARGO_WORKSPACE_DIR")).join("model"),
+                )
                 .assert();
 
             test.assert_output(assert)?;
@@ -97,14 +108,17 @@ impl From<Test> for Trial {
 }
 
 struct Symbols<'lib> {
+    metas: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
     voicevox_get_version: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
 }
 
 impl<'lib> Symbols<'lib> {
     unsafe fn new(lib: &'lib Library) -> Result<Self, libloading::Error> {
+        let metas = lib.get(b"metas")?;
         let voicevox_get_version = lib.get(b"voicevox_get_version")?;
 
         Ok(Self {
+            metas,
             voicevox_get_version,
         })
     }

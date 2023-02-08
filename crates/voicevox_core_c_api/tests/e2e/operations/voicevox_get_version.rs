@@ -7,6 +7,7 @@ use crate::Symbols;
 pub(crate) unsafe fn exec(
     Symbols {
         voicevox_get_version,
+        ..
     }: Symbols<'_>,
 ) -> anyhow::Result<()> {
     let version = voicevox_get_version();
