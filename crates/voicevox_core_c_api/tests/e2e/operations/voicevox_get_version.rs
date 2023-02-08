@@ -15,6 +15,6 @@ pub(crate) unsafe fn exec(
     Ok(())
 }
 
-pub(crate) fn assert(assert: Assert) {
+pub(crate) fn assert_output(assert: Assert) {
     assert.success().stdout("Version: \"0.0.0\"\n").stderr("");
 }

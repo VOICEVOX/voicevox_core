@@ -72,9 +72,9 @@ impl Test {
         Ok(())
     }
 
-    fn assert(self, assert: Assert) {
+    fn assert_output(self, assert: Assert) {
         match self {
-            Self::VoicevoxGetVersion => operations::voicevox_get_version::assert(assert),
+            Self::VoicevoxGetVersion => operations::voicevox_get_version::assert_output(assert),
         }
     }
 }
@@ -89,7 +89,7 @@ impl From<Test> for Trial {
                 .args(["--exec-voicevox-c-api-e2e-test", test.into()])
                 .assert();
 
-            test.assert(assert);
+            test.assert_output(assert);
             Ok(())
         })
         .with_ignored_flag(true)
