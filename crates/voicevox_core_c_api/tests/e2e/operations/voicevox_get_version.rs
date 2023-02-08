@@ -11,13 +11,10 @@ pub(crate) unsafe fn exec(
 ) -> anyhow::Result<()> {
     let version = voicevox_get_version();
     let version = CStr::from_ptr(version).to_str()?;
-    println!("Version: {version:?}");
+    std::assert_eq!(env!("CARGO_PKG_VERSION"), version);
     Ok(())
 }
 
 pub(crate) fn assert_output(assert: Assert) -> AssertResult {
-    assert
-        .try_success()?
-        .try_stdout("Version: \"0.0.0\"\n")?
-        .try_stderr("")
+    assert.try_success()?.try_stdout("")?.try_stderr("")
 }
