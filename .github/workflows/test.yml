@@ -103,7 +103,11 @@ jobs:
           key: "v2-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
       - name: Run cargo test
         shell: bash
-        run: cargo test -vv --features ,${{ matrix.features }} -- --include-ignored
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then
+            cargo build -vvp voicevox_core_c_api --lib
+          fi
+          cargo test -vv --features ,${{ matrix.features }} -- --include-ignored
 
   xtask-generate-c-header:
     runs-on: ubuntu-latest
