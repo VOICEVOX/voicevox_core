@@ -1,15 +1,17 @@
 use std::{
     ffi::{c_char, c_int},
     path::Path,
-    process::Output,
+    process::{ExitStatus, Output},
 };
 
-use assert_cmd::assert::AssertResult;
+use assert_cmd::assert::{Assert, AssertResult, OutputAssertExt as _};
 use clap::{Parser as _, ValueEnum};
 use duct::cmd;
 use heck::ToSnakeCase as _;
 use libloading::{Library, Symbol};
-use libtest_mimic::Trial;
+use libtest_mimic::{Failed, Trial};
+use once_cell::sync::Lazy;
+use regex::Regex;
 use strum::IntoStaticStr;
 
 mod operations;
@@ -74,7 +76,7 @@ impl Test {
         Ok(())
     }
 
-    fn assert_output(self, output: Output) -> AssertResult {
+    fn assert_output(self, output: Utf8Output) -> AssertResult {
         use operations::*;
 
         match self {
@@ -96,12 +98,89 @@ impl From<Test> for Trial {
                     "VV_MODELS_ROOT_DIR",
                     Path::new(env!("CARGO_WORKSPACE_DIR")).join("model"),
                 )
-                .output()?;
+                .output()?
+                .try_into()?;
 
             test.assert_output(output)?;
             Ok(())
         })
         .with_ignored_flag(true)
+    }
+}
+
+struct Utf8Output {
+    status: ExitStatus,
+    stdout: String,
+    stderr: String,
+}
+
+impl Utf8Output {
+    fn assert(self) -> Assert {
+        Output::from(self).assert()
+    }
+
+    fn mask_timestamps(self) -> Self {
+        let stderr = TIMESTAMPS
+            .replace_all(&self.stderr, "{timestamp}")
+            .into_owned();
+
+        return Self { stderr, ..self };
+
+        static TIMESTAMPS: Lazy<Regex> = Lazy::new(|| {
+            "(?m)^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{6}Z"
+                .parse()
+                .unwrap()
+        });
+    }
+
+    fn mask_windows_video_cards(self) -> Self {
+        let stderr = WINDOWS_VIDEO_CARDS
+            .replace_all(&self.stderr, "{windows-video-cards}")
+            .into_owned();
+
+        return Self { stderr, ..self };
+
+        static WINDOWS_VIDEO_CARDS: Lazy<Regex> = Lazy::new(|| {
+            r#"(?m)^\{timestamp\}  INFO voicevox_core::publish: 検出されたGPU \(DirectMLには1番目のGPUが使われます\):(\n\{timestamp\}  INFO voicevox_core::publish:   - "[^"]+" \([a-zA-Z0-9 ]+\))+"#
+                .parse()
+                .unwrap()
+        });
+    }
+}
+
+impl TryFrom<Output> for Utf8Output {
+    type Error = Failed;
+
+    fn try_from(
+        Output {
+            status,
+            stdout,
+            stderr,
+        }: Output,
+    ) -> Result<Self, Self::Error> {
+        let stdout = String::from_utf8(stdout)?;
+        let stderr = String::from_utf8(stderr)?;
+        Ok(Self {
+            status,
+            stdout,
+            stderr,
+        })
+    }
+}
+
+impl From<Utf8Output> for Output {
+    fn from(
+        Utf8Output {
+            status,
+            stdout,
+            stderr,
+        }: Utf8Output,
+    ) -> Self {
+        Self {
+            status,
+            stdout: stdout.into(),
+            stderr: stderr.into(),
+        }
     }
 }
 

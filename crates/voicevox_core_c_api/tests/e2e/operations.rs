@@ -1,12 +1,13 @@
 use std::{
     fmt::{self, Debug},
-    process::Output,
     str,
 };
 
 use once_cell::sync::Lazy;
-use regex::Regex;
-use serde::{de::Error as _, Deserialize, Deserializer};
+use serde::{
+    de::{DeserializeOwned, Error as _},
+    Deserialize, Deserializer,
+};
 use sha2::{Digest as _, Sha256};
 
 pub(crate) mod compatible_engine;
@@ -18,6 +19,22 @@ static SNAPSHOTS: Lazy<Snapshots> =
 #[derive(Deserialize)]
 struct Snapshots {
     compatible_engine: compatible_engine::Snapshots,
+}
+
+fn deserialize_platform_specific_snapshot<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+where
+    T: DeserializeOwned,
+    D: Deserializer<'de>,
+{
+    let PlatformSpecificSnapshot { __value } = PlatformSpecificSnapshot::deserialize(deserializer)?;
+    return Ok(__value);
+
+    #[derive(Deserialize)]
+    struct PlatformSpecificSnapshot<T> {
+        #[cfg_attr(windows, serde(rename = "windows"))]
+        #[cfg_attr(unix, serde(rename = "unix"))]
+        __value: T,
+    }
 }
 
 #[derive(PartialEq)]
@@ -47,23 +64,4 @@ impl Debug for Sha256Sum {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&hex::encode(&self.0[..]))
     }
-}
-
-fn mask_timestamps(output: Output) -> Output {
-    let stderr = str::from_utf8(&output.stderr)
-        .map(|stderr| {
-            TIMESTAMPS
-                .replace_all(stderr, "{timestamp}")
-                .into_owned()
-                .into()
-        })
-        .unwrap_or(output.stderr);
-
-    return Output { stderr, ..output };
-
-    static TIMESTAMPS: Lazy<Regex> = Lazy::new(|| {
-        "(?m)^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{6}Z"
-            .parse()
-            .unwrap()
-    });
 }

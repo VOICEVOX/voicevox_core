@@ -1,8 +1,8 @@
-use std::{ffi::CStr, process::Output};
+use std::ffi::CStr;
 
-use assert_cmd::assert::{AssertResult, OutputAssertExt as _};
+use assert_cmd::assert::AssertResult;
 
-use crate::Symbols;
+use crate::{Symbols, Utf8Output};
 
 pub(crate) unsafe fn exec(
     Symbols {
@@ -16,7 +16,7 @@ pub(crate) unsafe fn exec(
     Ok(())
 }
 
-pub(crate) fn assert_output(output: Output) -> AssertResult {
+pub(crate) fn assert_output(output: Utf8Output) -> AssertResult {
     output
         .assert()
         .try_success()?

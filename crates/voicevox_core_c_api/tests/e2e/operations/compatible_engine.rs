@@ -1,9 +1,9 @@
-use std::{ffi::CStr, process::Output};
+use std::ffi::CStr;
 
-use assert_cmd::assert::{AssertResult, OutputAssertExt as _};
+use assert_cmd::assert::AssertResult;
 use serde::Deserialize;
 
-use crate::Symbols;
+use crate::{Symbols, Utf8Output};
 
 use super::{Sha256Sum, SNAPSHOTS};
 
@@ -62,11 +62,14 @@ pub(crate) unsafe fn exec(
 #[derive(Deserialize)]
 pub(super) struct Snapshots {
     yukarin_s_forward: Sha256Sum,
+    #[serde(deserialize_with = "super::deserialize_platform_specific_snapshot")]
     stderr: String,
 }
 
-pub(crate) fn assert_output(output: Output) -> AssertResult {
-    super::mask_timestamps(output)
+pub(crate) fn assert_output(output: Utf8Output) -> AssertResult {
+    output
+        .mask_timestamps()
+        .mask_windows_video_cards()
         .assert()
         .try_success()?
         .try_stdout("")?
