@@ -25,15 +25,9 @@ fn main() -> anyhow::Result<()> {
     let args = &libtest_mimic::Arguments::parse();
 
     if args.ignored || args.include_ignored {
-        cmd!(
-            env!("CARGO"),
-            "build",
-            "-p",
-            env!("CARGO_PKG_NAME"),
-            "--lib",
-        )
-        .env("ORT_OUT_DIR", "")
-        .run()?;
+        cmd!(env!("CARGO"), "build", "--lib")
+            .env("ORT_OUT_DIR", "")
+            .run()?;
     }
 
     let tests = Test::value_variants()
