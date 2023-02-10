@@ -1,6 +1,10 @@
-use std::{ffi::c_char, path::Path};
+use std::{
+    ffi::{c_char, c_int},
+    path::Path,
+    process::Output,
+};
 
-use assert_cmd::assert::{Assert, AssertResult};
+use assert_cmd::assert::AssertResult;
 use clap::{Parser as _, ValueEnum};
 use duct::cmd;
 use heck::ToSnakeCase as _;
@@ -49,7 +53,7 @@ struct ExecVoicevoxCApiE2eTest {
 #[derive(Clone, Copy, ValueEnum, IntoStaticStr)]
 #[strum(serialize_all = "kebab-case")]
 enum Test {
-    Metas,
+    CompatibleEngine,
     VoicevoxGetVersion,
 }
 
@@ -69,19 +73,19 @@ impl Test {
             let symbols = Symbols::new(lib)?;
 
             match self {
+                Self::CompatibleEngine => compatible_engine::exec(symbols)?,
                 Self::VoicevoxGetVersion => voicevox_get_version::exec(symbols)?,
-                Self::Metas => metas::exec(symbols)?,
             }
         }
         Ok(())
     }
 
-    fn assert_output(self, assert: Assert) -> AssertResult {
+    fn assert_output(self, output: Output) -> AssertResult {
         use operations::*;
 
         match self {
-            Self::VoicevoxGetVersion => voicevox_get_version::assert_output(assert),
-            Self::Metas => metas::assert_output(assert),
+            Self::CompatibleEngine => compatible_engine::assert_output(output),
+            Self::VoicevoxGetVersion => voicevox_get_version::assert_output(output),
         }
     }
 }
@@ -92,15 +96,15 @@ impl From<Test> for Trial {
             let current_exe = process_path::get_executable_path()
                 .ok_or("could not get the path of this process")?;
 
-            let assert = assert_cmd::Command::new(current_exe)
+            let output = assert_cmd::Command::new(current_exe)
                 .args(["--exec-voicevox-c-api-e2e-test", test.into()])
                 .env(
                     "VV_MODELS_ROOT_DIR",
                     Path::new(env!("CARGO_WORKSPACE_DIR")).join("model"),
                 )
-                .assert();
+                .output()?;
 
-            test.assert_output(assert)?;
+            test.assert_output(output)?;
             Ok(())
         })
         .with_ignored_flag(true)
@@ -108,18 +112,36 @@ impl From<Test> for Trial {
 }
 
 struct Symbols<'lib> {
-    metas: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
     voicevox_get_version: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
+    initialize: Symbol<'lib, unsafe extern "C" fn(bool, c_int, bool) -> bool>,
+    load_model: Symbol<'lib, unsafe extern "C" fn(i64) -> bool>,
+    is_model_loaded: Symbol<'lib, unsafe extern "C" fn(i64) -> bool>,
+    finalize: Symbol<'lib, unsafe extern "C" fn()>,
+    metas: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
+    supported_devices: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
+    yukarin_s_forward:
+        Symbol<'lib, unsafe extern "C" fn(i64, *mut i64, *mut i64, *mut f32) -> bool>,
 }
 
 impl<'lib> Symbols<'lib> {
     unsafe fn new(lib: &'lib Library) -> Result<Self, libloading::Error> {
-        let metas = lib.get(b"metas")?;
-        let voicevox_get_version = lib.get(b"voicevox_get_version")?;
+        macro_rules! new(($($name:ident),* $(,)?) => {
+            Self {
+                $(
+                    $name: lib.get(stringify!($name).as_ref())?,
+                )*
+            }
+        });
 
-        Ok(Self {
-            metas,
+        Ok(new!(
             voicevox_get_version,
-        })
+            initialize,
+            load_model,
+            is_model_loaded,
+            finalize,
+            metas,
+            supported_devices,
+            yukarin_s_forward,
+        ))
     }
 }

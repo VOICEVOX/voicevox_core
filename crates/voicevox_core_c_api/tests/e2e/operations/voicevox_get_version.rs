@@ -1,6 +1,6 @@
-use std::ffi::CStr;
+use std::{ffi::CStr, process::Output};
 
-use assert_cmd::assert::{Assert, AssertResult};
+use assert_cmd::assert::{AssertResult, OutputAssertExt as _};
 
 use crate::Symbols;
 
@@ -16,6 +16,10 @@ pub(crate) unsafe fn exec(
     Ok(())
 }
 
-pub(crate) fn assert_output(assert: Assert) -> AssertResult {
-    assert.try_success()?.try_stdout("")?.try_stderr("")
+pub(crate) fn assert_output(output: Output) -> AssertResult {
+    output
+        .assert()
+        .try_success()?
+        .try_stdout("")?
+        .try_stderr("")
 }

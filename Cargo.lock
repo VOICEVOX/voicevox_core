@@ -3812,6 +3812,7 @@ dependencies = [
  "once_cell",
  "pretty_assertions",
  "process_path",
+ "regex",
  "rstest",
  "serde",
  "serde_json",
