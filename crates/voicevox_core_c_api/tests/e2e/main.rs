@@ -25,13 +25,23 @@ fn main() -> anyhow::Result<()> {
     let args = &libtest_mimic::Arguments::parse();
 
     if args.ignored || args.include_ignored {
+        // 以下のworkaroundを今も続けていることをassertする
+        // https://github.com/VOICEVOX/onnxruntime-rs/issues/3
+        assert!(Path::new(env!("ORT_OUT_DIR"))
+            .ends_with(Path::new("target").join("debug").join("deps")));
+
         cmd!(
             env!("CARGO"),
             "build",
             "-p",
+            "voicevox_core",
+            "-p",
             env!("CARGO_PKG_NAME"),
             "--lib",
+            "--features",
+            "onnxruntime/disable-sys-build-script",
         )
+        .dir(Path::new("..").join(".."))
         .run()?;
     }
 
