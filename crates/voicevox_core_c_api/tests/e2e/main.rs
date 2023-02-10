@@ -61,8 +61,7 @@ impl Test {
     fn exec(self) -> anyhow::Result<()> {
         use operations::*;
 
-        let cdylib_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("..")
+        let cdylib_path = Path::new("..")
             .join("..")
             .join("target")
             .join("debug")
