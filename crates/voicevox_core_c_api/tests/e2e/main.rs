@@ -32,17 +32,7 @@ fn main() -> anyhow::Result<()> {
             env!("CARGO_PKG_NAME"),
             "--lib",
         )
-        .run()
-        .map_err(|err| {
-            let mut err = anyhow::Error::from(err);
-            if cfg!(windows) {
-                err = err.context(format!(
-                    "Windowsの場合、先に`cargo build -p {} --lib`を単体で実行して下さい",
-                    env!("CARGO_PKG_NAME"),
-                ));
-            }
-            err
-        })?;
+        .run()?;
     }
 
     let tests = Test::value_variants()
