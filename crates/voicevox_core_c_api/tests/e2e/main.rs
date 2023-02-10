@@ -32,6 +32,7 @@ fn main() -> anyhow::Result<()> {
             env!("CARGO_PKG_NAME"),
             "--lib",
         )
+        .env("ORT_OUT_DIR", "")
         .run()?;
     }
 
