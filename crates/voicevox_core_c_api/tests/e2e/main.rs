@@ -7,11 +7,12 @@ use std::{
 use assert_cmd::assert::{Assert, AssertResult, OutputAssertExt as _};
 use clap::{Parser as _, ValueEnum};
 use duct::cmd;
+use easy_ext::ext;
 use heck::ToSnakeCase as _;
 use libloading::{Library, Symbol};
 use libtest_mimic::{Failed, Trial};
 use once_cell::sync::Lazy;
-use regex::Regex;
+use regex::{Regex, Replacer};
 use strum::IntoStaticStr;
 
 mod operations;
@@ -96,7 +97,7 @@ impl From<Test> for Trial {
                 .args(["--exec-voicevox-c-api-e2e-test", test.into()])
                 .env(
                     "VV_MODELS_ROOT_DIR",
-                    Path::new(env!("CARGO_WORKSPACE_DIR")).join("model"),
+                    Path::new("..").join("..").join("model"),
                 )
                 .output()?
                 .try_into()?;
@@ -118,35 +119,44 @@ impl Utf8Output {
     fn assert(self) -> Assert {
         Output::from(self).assert()
     }
-
-    fn mask_timestamps(self) -> Self {
-        let stderr = TIMESTAMPS
-            .replace_all(&self.stderr, "{timestamp}")
-            .into_owned();
-
-        return Self { stderr, ..self };
-
-        static TIMESTAMPS: Lazy<Regex> = Lazy::new(|| {
-            "(?m)^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{6}Z"
-                .parse()
-                .unwrap()
-        });
-    }
-
-    fn mask_windows_video_cards(self) -> Self {
-        let stderr = WINDOWS_VIDEO_CARDS
-            .replace_all(&self.stderr, "{windows-video-cards}")
-            .into_owned();
-
-        return Self { stderr, ..self };
-
-        static WINDOWS_VIDEO_CARDS: Lazy<Regex> = Lazy::new(|| {
-            r#"(?m)^\{timestamp\}  INFO voicevox_core::publish: 検出されたGPU \(DirectMLには1番目のGPUが使われます\):(\n\{timestamp\}  INFO voicevox_core::publish:   - "[^"]+" \([a-zA-Z0-9 ]+\))+"#
-                .parse()
-                .unwrap()
-        });
-    }
 }
+
+const _: () = {
+    macro_rules! static_regex {
+        ($regex:expr $(,)?) => {{
+            static REGEX: Lazy<Regex> = Lazy::new(|| $regex.parse().unwrap());
+            &REGEX
+        }};
+    }
+
+    impl Utf8Output {
+        fn mask_timestamps(self) -> Self {
+            self.mask_stderr(
+                static_regex!(
+                    "(?m)^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{6}Z",
+                ),
+                "{timestamp}",
+            )
+        }
+
+        fn mask_windows_video_cards(self) -> Self {
+            self.mask_stderr(
+                static_regex!(
+                    r#"(?m)^\{timestamp\}  INFO voicevox_core::publish: 検出されたGPU \(DirectMLには1番目のGPUが使われます\):(\n\{timestamp\}  INFO voicevox_core::publish:   - "[^"]+" \([a-zA-Z0-9 ]+\))+"#,
+                ),
+                "{windows-video-cards}",
+            )
+        }
+    }
+
+    #[ext]
+    impl Utf8Output {
+        fn mask_stderr(self, regex: &Regex, rep: impl Replacer) -> Self {
+            let stderr = regex.replace_all(&self.stderr, rep).into_owned();
+            Self { stderr, ..self }
+        }
+    }
+};
 
 impl TryFrom<Output> for Utf8Output {
     type Error = Failed;

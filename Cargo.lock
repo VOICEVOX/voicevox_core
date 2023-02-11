@@ -3803,6 +3803,7 @@ dependencies = [
  "assert_cmd",
  "clap 4.0.10",
  "duct",
+ "easy-ext",
  "heck",
  "hex",
  "is-terminal",
