@@ -1,9 +1,10 @@
 use std::{
     ffi::{c_char, c_int},
-    path::Path,
+    path::{Path, PathBuf},
     process::{ExitStatus, Output},
 };
 
+use anyhow::ensure;
 use assert_cmd::assert::{Assert, AssertResult, OutputAssertExt as _};
 use clap::{Parser as _, ValueEnum};
 use duct::cmd;
@@ -40,6 +41,12 @@ fn main() -> anyhow::Result<()> {
             // DirectMLとCUDAは無効化
             .env("ORT_USE_CUDA", "0")
             .run()?;
+
+        ensure!(
+            CDYLIB_PATH.exists(),
+            "{} should exist",
+            CDYLIB_PATH.display(),
+        );
     }
 
     let tests = Test::value_variants()
@@ -67,14 +74,8 @@ impl Test {
     fn exec(self) -> anyhow::Result<()> {
         use operations::*;
 
-        let cdylib_path = Path::new("..")
-            .join("..")
-            .join("target")
-            .join("debug")
-            .join(libloading::library_filename("voicevox_core"));
-
         unsafe {
-            let lib = &Library::new(cdylib_path)?;
+            let lib = &Library::new(&*CDYLIB_PATH)?;
             let symbols = Symbols::new(lib)?;
 
             match self {
@@ -232,3 +233,11 @@ impl<'lib> Symbols<'lib> {
         ))
     }
 }
+
+static CDYLIB_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    Path::new("..")
+        .join("..")
+        .join("target")
+        .join("debug")
+        .join(libloading::library_filename("voicevox_core"))
+});
