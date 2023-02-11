@@ -27,6 +27,8 @@ fn main() -> anyhow::Result<()> {
 
     let args = &libtest_mimic::Arguments::parse();
 
+    // テスト対象が無いときに`cargo build`をスキップしたいが、判定部分がプライベート。
+    // そのためスキップするのはCLIオプションに`--ignored`か`--include-ignored`が無いときのみ
     if args.ignored || args.include_ignored {
         cmd!(env!("CARGO"), "build", "--lib")
             .env("ORT_OUT_DIR", "")
