@@ -11,7 +11,6 @@ use serde::{
 use sha2::{Digest as _, Sha256};
 
 pub(crate) mod compatible_engine;
-pub(crate) mod voicevox_get_version;
 
 static SNAPSHOTS: Lazy<Snapshots> =
     Lazy::new(|| toml::from_str(include_str!("./operations/snapshots.toml")).unwrap());

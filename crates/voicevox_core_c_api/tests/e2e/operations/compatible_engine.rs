@@ -16,7 +16,6 @@ pub(crate) unsafe fn exec(
         metas,
         supported_devices,
         yukarin_s_forward,
-        ..
     }: Symbols<'_>,
 ) -> anyhow::Result<()> {
     let metas_json = metas();

@@ -54,7 +54,6 @@ struct ExecVoicevoxCApiE2eTest {
 #[strum(serialize_all = "kebab-case")]
 enum Test {
     CompatibleEngine,
-    VoicevoxGetVersion,
 }
 
 impl Test {
@@ -73,7 +72,6 @@ impl Test {
 
             match self {
                 Self::CompatibleEngine => compatible_engine::exec(symbols)?,
-                Self::VoicevoxGetVersion => voicevox_get_version::exec(symbols)?,
             }
         }
         Ok(())
@@ -84,7 +82,6 @@ impl Test {
 
         match self {
             Self::CompatibleEngine => compatible_engine::assert_output(output),
-            Self::VoicevoxGetVersion => voicevox_get_version::assert_output(output),
         }
     }
 }
@@ -197,7 +194,6 @@ impl From<Utf8Output> for Output {
 }
 
 struct Symbols<'lib> {
-    voicevox_get_version: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
     initialize: Symbol<'lib, unsafe extern "C" fn(bool, c_int, bool) -> bool>,
     load_model: Symbol<'lib, unsafe extern "C" fn(i64) -> bool>,
     is_model_loaded: Symbol<'lib, unsafe extern "C" fn(i64) -> bool>,
@@ -219,7 +215,6 @@ impl<'lib> Symbols<'lib> {
         });
 
         Ok(new!(
-            voicevox_get_version,
             initialize,
             load_model,
             is_model_loaded,
