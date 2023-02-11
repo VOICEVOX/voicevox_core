@@ -37,6 +37,8 @@ fn main() -> anyhow::Result<()> {
             // featuresの差分を出さないように`cargo build`することができればonnxruntime-sysの
             // ビルド自体がされないのだが、このバイナリから`cargo build`の状況を知るのは無理に近い
             .env("ORT_OUT_DIR", "")
+            // DirectMLとCUDAは無効化
+            .env("ORT_USE_CUDA", "0")
             .run()?;
     }
 
