@@ -21,12 +21,15 @@ pub(crate) unsafe fn exec(
     let metas_json = metas();
     let metas_json = CStr::from_ptr(metas_json).to_str()?;
     std::assert_eq!(include_str!("../../../../../model/metas.json"), metas_json);
+    metas_json.parse::<serde_json::Value>()?;
 
     let supported_devices = supported_devices();
-    let supported_devices = CStr::from_ptr(supported_devices);
+    let supported_devices = CStr::from_ptr(supported_devices)
+        .to_str()?
+        .parse::<serde_json::Value>()?;
     std::assert_eq!(
-        **voicevox_core::SUPPORTED_DEVICES_CSTRING,
-        *supported_devices,
+        voicevox_core::SUPPORTED_DEVICES.to_json(),
+        supported_devices,
     );
 
     assert!(initialize(false, 0, false));
