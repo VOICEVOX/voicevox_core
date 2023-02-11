@@ -18,11 +18,11 @@ use strum::IntoStaticStr;
 mod operations;
 
 fn main() -> anyhow::Result<()> {
-    if let Ok(ExecVoicevoxCApiE2eTest {
-        exec_voicevox_c_api_e2e_test,
-    }) = ExecVoicevoxCApiE2eTest::try_parse()
+    if let Ok(ExecCApiE2eTest {
+        exec_c_api_e2e_test,
+    }) = ExecCApiE2eTest::try_parse()
     {
-        return exec_voicevox_c_api_e2e_test.exec();
+        return exec_c_api_e2e_test.exec();
     }
 
     let args = &libtest_mimic::Arguments::parse();
@@ -45,9 +45,9 @@ fn main() -> anyhow::Result<()> {
 }
 
 #[derive(clap::Parser)]
-struct ExecVoicevoxCApiE2eTest {
+struct ExecCApiE2eTest {
     #[arg(long, required(true))]
-    exec_voicevox_c_api_e2e_test: Test,
+    exec_c_api_e2e_test: Test,
 }
 
 #[derive(Clone, Copy, ValueEnum, IntoStaticStr)]
@@ -93,7 +93,7 @@ impl From<Test> for Trial {
                 .ok_or("could not get the path of this process")?;
 
             let output = assert_cmd::Command::new(current_exe)
-                .args(["--exec-voicevox-c-api-e2e-test", test.into()])
+                .args(["--exec-c-api-e2e-test", test.into()])
                 .env(
                     "VV_MODELS_ROOT_DIR",
                     Path::new("..").join("..").join("model"),
