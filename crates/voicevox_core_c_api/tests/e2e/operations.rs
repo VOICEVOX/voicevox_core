@@ -45,6 +45,15 @@ impl Sha256Sum {
         hasher.update(data);
         Self(hasher.finalize().into())
     }
+
+    fn le_bytes(values: &[f32]) -> Self {
+        let bytes = values
+            .iter()
+            .copied()
+            .flat_map(f32::to_le_bytes)
+            .collect::<Vec<_>>();
+        Self::new(bytes)
+    }
 }
 
 impl<'de> Deserialize<'de> for Sha256Sum {

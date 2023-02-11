@@ -45,24 +45,13 @@ pub(crate) unsafe fn exec(
     ));
     std::assert_eq!(
         SNAPSHOTS.compatible_engine.yukarin_s_forward,
-        Sha256Sum::new(to_le_bytes(&phoneme_length))
+        Sha256Sum::le_bytes(&phoneme_length),
     );
 
     finalize();
     return Ok(());
 
     const SPEAKER_ID: i64 = 0;
-
-    fn to_le_bytes(values: &[f32]) -> Vec<u8> {
-        values.iter().copied().flat_map(f32::to_le_bytes).collect()
-    }
-}
-
-#[derive(Deserialize)]
-pub(super) struct Snapshots {
-    yukarin_s_forward: Sha256Sum,
-    #[serde(deserialize_with = "super::deserialize_platform_specific_snapshot")]
-    stderr: String,
 }
 
 pub(crate) fn assert_output(output: Utf8Output) -> AssertResult {
@@ -73,4 +62,11 @@ pub(crate) fn assert_output(output: Utf8Output) -> AssertResult {
         .try_success()?
         .try_stdout("")?
         .try_stderr(&*SNAPSHOTS.compatible_engine.stderr)
+}
+
+#[derive(Deserialize)]
+pub(super) struct Snapshots {
+    yukarin_s_forward: Sha256Sum,
+    #[serde(deserialize_with = "super::deserialize_platform_specific_snapshot")]
+    stderr: String,
 }
