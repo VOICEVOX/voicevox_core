@@ -210,6 +210,24 @@ struct Symbols<'lib> {
     supported_devices: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
     yukarin_s_forward:
         Symbol<'lib, unsafe extern "C" fn(i64, *mut i64, *mut i64, *mut f32) -> bool>,
+    yukarin_sa_forward: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            i64,
+            *mut i64,
+            *mut i64,
+            *mut i64,
+            *mut i64,
+            *mut i64,
+            *mut i64,
+            *mut i64,
+            *mut f32,
+        ) -> bool,
+    >,
+    decode_forward: Symbol<
+        'lib,
+        unsafe extern "C" fn(i64, i64, *mut f32, *mut f32, *mut i64, *mut f32) -> bool,
+    >,
 }
 
 impl<'lib> Symbols<'lib> {
@@ -230,6 +248,8 @@ impl<'lib> Symbols<'lib> {
             metas,
             supported_devices,
             yukarin_s_forward,
+            yukarin_sa_forward,
+            decode_forward,
         ))
     }
 }

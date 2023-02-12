@@ -1,5 +1,7 @@
 [compatible_engine]
-yukarin_s_forward = "f5d931e1c4c0d3fa56880a5c932d1b87c43d2adaf7348b3a3295c2e9fe6594bb"
+yukarin_s_forward = "7630ea7fde5fab0c711ba229beb53b3ca96b6631f70c31908913d3a57ab1fa75"
+yukarin_sa_forward = "5bbd1bbdf5159b273fc23d447f4c109aa50211430a2a81d2469ea0e99927b427"
+decode_forward = "d5c7b0702dca519f02913d9e9b398996595d3c52241da9889c08963a0d85acbc"
 
 [compatible_engine.stderr]
 windows = '''

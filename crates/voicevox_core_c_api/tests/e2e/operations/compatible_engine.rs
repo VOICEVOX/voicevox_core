@@ -16,6 +16,8 @@ pub(crate) unsafe fn exec(
         metas,
         supported_devices,
         yukarin_s_forward,
+        yukarin_sa_forward,
+        decode_forward,
     }: Symbols<'_>,
 ) -> anyhow::Result<()> {
     let metas_json = metas();
@@ -38,11 +40,12 @@ pub(crate) unsafe fn exec(
     assert!(load_model(SPEAKER_ID));
     assert!(is_model_loaded(SPEAKER_ID));
 
-    let mut phoneme_list = [0];
-    let mut phoneme_length = [0.];
+    // "テスト"
+
+    let mut phoneme_length = [0.; 8];
     assert!(yukarin_s_forward(
-        phoneme_list.len() as _,
-        phoneme_list.as_mut_ptr(),
+        8,
+        [0, 37, 14, 35, 6, 37, 30, 0].as_mut_ptr(),
         &mut { SPEAKER_ID } as *mut i64,
         phoneme_length.as_mut_ptr(),
     ));
@@ -51,10 +54,66 @@ pub(crate) unsafe fn exec(
         Sha256Sum::le_bytes(&phoneme_length),
     );
 
+    let mut intonation_list = [0.; 5];
+    assert!(yukarin_sa_forward(
+        5,
+        [0, 14, 6, 30, 0].as_mut_ptr(),
+        [-1, 37, 35, 37, -1].as_mut_ptr(),
+        [0, 1, 0, 0, 0].as_mut_ptr(),
+        [0, 1, 0, 0, 0].as_mut_ptr(),
+        [0, 1, 0, 0, 0].as_mut_ptr(),
+        [0, 0, 0, 1, 0].as_mut_ptr(),
+        &mut { SPEAKER_ID } as *mut i64,
+        intonation_list.as_mut_ptr(),
+    ));
+    std::assert_eq!(
+        SNAPSHOTS.compatible_engine.yukarin_sa_forward,
+        Sha256Sum::le_bytes(&intonation_list),
+    );
+
+    let mut wave = [0.; 256 * F0_LENGTH];
+    assert!(decode_forward(
+        F0_LENGTH as _,
+        PHONEME_SIZE as _,
+        {
+            let mut f0 = [0.; 69];
+            f0[9..24].fill(5.905218);
+            f0[37..60].fill(5.565851);
+            f0
+        }
+        .as_mut_ptr(),
+        {
+            let mut phoneme = [0.; PHONEME_SIZE * F0_LENGTH];
+            let mut set_one = |index, range| {
+                for i in range {
+                    phoneme[i * PHONEME_SIZE + index] = 1.;
+                }
+            };
+            set_one(0, 0..9);
+            set_one(37, 9..13);
+            set_one(14, 13..24);
+            set_one(35, 24..30);
+            set_one(6, 30..37);
+            set_one(37, 37..45);
+            set_one(30, 45..60);
+            set_one(0, 60..69);
+            phoneme
+        }
+        .as_mut_ptr(),
+        &mut { SPEAKER_ID } as *mut i64,
+        wave.as_mut_ptr(),
+    ));
+    std::assert_eq!(
+        SNAPSHOTS.compatible_engine.decode_forward,
+        Sha256Sum::le_bytes(&wave),
+    );
+
     finalize();
     return Ok(());
 
     const SPEAKER_ID: i64 = 0;
+    const F0_LENGTH: usize = 69;
+    const PHONEME_SIZE: usize = 45;
 }
 
 pub(crate) fn assert_output(output: Utf8Output) -> AssertResult {
@@ -70,6 +129,8 @@ pub(crate) fn assert_output(output: Utf8Output) -> AssertResult {
 #[derive(Deserialize)]
 pub(super) struct Snapshots {
     yukarin_s_forward: Sha256Sum,
+    yukarin_sa_forward: Sha256Sum,
+    decode_forward: Sha256Sum,
     #[serde(deserialize_with = "super::deserialize_platform_specific_snapshot")]
     stderr: String,
 }
