@@ -1,6 +1,6 @@
 #pragma once
 #include <iostream>
-#include "core.h"
+#include "voicevox_core.h"
 
 std::string GetOpenJTalkDict();
 std::wstring GetWaveFileName();
