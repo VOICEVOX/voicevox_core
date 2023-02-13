@@ -149,7 +149,7 @@ const _: () = {
         fn mask_windows_video_cards(self) -> Self {
             self.mask_stderr(
                 static_regex!(
-                    r#"(?m)^\{timestamp\}  INFO voicevox_core::publish: 検出されたGPU \(DirectMLには1番目のGPUが使われます\):(\n\{timestamp\}  INFO voicevox_core::publish:   - "[^"]+" \([a-zA-Z0-9 ]+\))+"#,
+                    r#"(?m)^\{timestamp\}  INFO voicevox_core::publish: 検出されたGPU \(DirectMLには1番目のGPUが使われます\):(\n\{timestamp\}  INFO voicevox_core::publish:   - "[^"]+" \([0-9.]+ [a-zA-Z]+\))+"#,
                 ),
                 "{windows-video-cards}",
             )
