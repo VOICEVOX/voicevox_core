@@ -15,11 +15,6 @@ pub(crate) mod compatible_engine;
 static SNAPSHOTS: Lazy<Snapshots> =
     Lazy::new(|| toml::from_str(include_str!("./operations/snapshots.toml")).unwrap());
 
-#[derive(Deserialize)]
-struct Snapshots {
-    compatible_engine: compatible_engine::Snapshots,
-}
-
 fn deserialize_platform_specific_snapshot<'de, T, D>(deserializer: D) -> Result<T, D::Error>
 where
     T: DeserializeOwned,
@@ -34,6 +29,17 @@ where
         #[cfg_attr(unix, serde(rename = "unix"))]
         __value: T,
     }
+}
+
+#[derive(Deserialize)]
+struct Snapshots {
+    compatible_engine: compatible_engine::Snapshots,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct GhActionsWindows<T> {
+    gh_actions_windows: T,
 }
 
 #[derive(PartialEq)]
