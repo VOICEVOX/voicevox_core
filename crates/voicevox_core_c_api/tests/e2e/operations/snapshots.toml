@@ -1,7 +1,7 @@
 [compatible_engine]
 yukarin_s_forward.gh-actions-windows = "7630ea7fde5fab0c711ba229beb53b3ca96b6631f70c31908913d3a57ab1fa75"
 yukarin_sa_forward.gh-actions-windows = "5bbd1bbdf5159b273fc23d447f4c109aa50211430a2a81d2469ea0e99927b427"
-decode_forward.gh-actions-windows = "d5c7b0702dca519f02913d9e9b398996595d3c52241da9889c08963a0d85acbc"
+decode_forward.gh-actions-windows = "1b7fbd6ec8790be6a95a1e7b2a41b0e3cbf897ab7cb2729893694e450334cdeb"
 
 [compatible_engine.stderr]
 windows = '''
