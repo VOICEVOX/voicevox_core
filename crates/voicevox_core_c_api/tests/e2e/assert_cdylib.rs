@@ -12,7 +12,7 @@ use libloading::Library;
 use libtest_mimic::{Failed, Trial};
 use serde::{de::DeserializeOwned, Serialize};
 
-// assert_cmdのようにDLLをデストする。
+// assert_cmdのようにDLLをテストする。
 // ただしstdout/stderrをキャプチャするため、DLLの実行自体は別プロセスで行う。
 // テスト情報である`TestCase`をJSONにして本バイナリ自身を再帰的に呼ぶことで、プロセス分離を実現している。
 
