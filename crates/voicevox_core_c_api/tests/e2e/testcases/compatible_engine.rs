@@ -2,10 +2,7 @@ use std::{env, ffi::CStr};
 
 use assert_cmd::assert::AssertResult;
 
-use crate::{
-    snapshots::{Sha256Sum, SNAPSHOTS},
-    Symbols, Utf8Output,
-};
+use crate::{hash::Sha256Sum, snapshots::SNAPSHOTS, Symbols, Utf8Output};
 
 pub(crate) unsafe fn exec(
     Symbols {
