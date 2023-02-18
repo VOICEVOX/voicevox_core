@@ -29,7 +29,7 @@ regex.workspace = true
 [dev-dependencies]
 rstest = "0.15.0"
 pretty_assertions = "1.3.0"
-heck.workspace = true
+heck = "0.4.0"
 test_util.workspace = true
 
 [target."cfg(windows)".dependencies]

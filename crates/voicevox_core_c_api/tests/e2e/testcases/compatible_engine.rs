@@ -1,11 +1,11 @@
 use std::{env, ffi::CStr};
 
 use assert_cmd::assert::AssertResult;
-use serde::Deserialize;
 
-use crate::{Symbols, Utf8Output};
-
-use super::{GhActionsWindows, Sha256Sum, SNAPSHOTS};
+use crate::{
+    snapshots::{Sha256Sum, SNAPSHOTS},
+    Symbols, Utf8Output,
+};
 
 pub(crate) unsafe fn exec(
     Symbols {
@@ -75,7 +75,7 @@ pub(crate) unsafe fn exec(
             F0_LENGTH as _,
             PHONEME_SIZE as _,
             {
-                let mut f0 = [0.; 69];
+                let mut f0 = [0.; F0_LENGTH];
                 f0[9..24].fill(5.905218);
                 f0[37..60].fill(5.565851);
                 f0
@@ -154,13 +154,4 @@ pub(crate) fn assert_output(output: Utf8Output) -> AssertResult {
         .try_success()?
         .try_stdout("")?
         .try_stderr(&*SNAPSHOTS.compatible_engine.stderr)
-}
-
-#[derive(Deserialize)]
-pub(super) struct Snapshots {
-    yukarin_s_forward: GhActionsWindows<Sha256Sum>,
-    yukarin_sa_forward: GhActionsWindows<Sha256Sum>,
-    decode_forward: GhActionsWindows<Sha256Sum>,
-    #[serde(deserialize_with = "super::deserialize_platform_specific_snapshot")]
-    stderr: String,
 }
