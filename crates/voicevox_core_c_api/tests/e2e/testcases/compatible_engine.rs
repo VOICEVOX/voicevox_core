@@ -1,8 +1,8 @@
-use std::{env, ffi::CStr};
+use std::ffi::CStr;
 
 use assert_cmd::assert::AssertResult;
 
-use crate::{hash::Sha256Sum, snapshots::SNAPSHOTS, Symbols, Utf8Output};
+use crate::{snapshots::SNAPSHOTS, Symbols, Utf8Output};
 
 pub(crate) unsafe fn exec(
     Symbols {
@@ -109,31 +109,19 @@ pub(crate) unsafe fn exec(
         supported_devices,
     );
 
-    if cfg!(windows) && env::var_os("GITHUB_ACTION").is_some() {
-        std::assert_eq!(
-            SNAPSHOTS
-                .compatible_engine
-                .yukarin_s_forward
-                .gh_actions_windows,
-            Sha256Sum::le_bytes(&phoneme_length),
-        );
+    ndarray_linalg::assert::close_l1(
+        &ndarray::arr1(&phoneme_length),
+        &ndarray::arr1(&SNAPSHOTS.compatible_engine.yukarin_s_forward),
+        0.01,
+    );
 
-        std::assert_eq!(
-            SNAPSHOTS
-                .compatible_engine
-                .yukarin_sa_forward
-                .gh_actions_windows,
-            Sha256Sum::le_bytes(&intonation_list),
-        );
+    ndarray_linalg::assert::close_l1(
+        &ndarray::arr1(&intonation_list),
+        &ndarray::arr1(&SNAPSHOTS.compatible_engine.yukarin_sa_forward),
+        0.01,
+    );
 
-        std::assert_eq!(
-            SNAPSHOTS
-                .compatible_engine
-                .decode_forward
-                .gh_actions_windows,
-            Sha256Sum::le_bytes(&wave),
-        );
-    }
+    assert!(wave.iter().copied().all(f32::is_normal));
 
     finalize();
     return Ok(());

@@ -1,9 +1,6 @@
 [compatible_engine]
-# ハードウェアさえ固定すれば、各出力は**今はたまたま**決定的である。
-# そのためGitHub ActionsのWindowsでのみ出力のハッシュをチェックする
-yukarin_s_forward.gh-actions-windows = "7630ea7fde5fab0c711ba229beb53b3ca96b6631f70c31908913d3a57ab1fa75"
-yukarin_sa_forward.gh-actions-windows = "5bbd1bbdf5159b273fc23d447f4c109aa50211430a2a81d2469ea0e99927b427"
-decode_forward.gh-actions-windows = "1b7fbd6ec8790be6a95a1e7b2a41b0e3cbf897ab7cb2729893694e450334cdeb"
+yukarin_s_forward = [0.9537022, 0.046877652, 0.11338878, 0.06429571, 0.07507616, 0.08266081, 0.1571679, 0.64980185]
+yukarin_sa_forward = [5.0591826, 5.905218, 5.846999, 5.565851, 5.528879]
 
 [compatible_engine.stderr]
 windows = '''
