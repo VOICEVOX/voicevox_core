@@ -2,7 +2,7 @@ use std::ffi::CStr;
 
 use assert_cmd::assert::AssertResult;
 
-use crate::{snapshots::SNAPSHOTS, Symbols, Utf8Output};
+use crate::{float_assert, snapshots::SNAPSHOTS, Symbols, Utf8Output};
 
 pub(crate) unsafe fn exec(
     Symbols {
@@ -109,15 +109,15 @@ pub(crate) unsafe fn exec(
         supported_devices,
     );
 
-    ndarray_linalg::assert::close_l1(
-        &ndarray::arr1(&phoneme_length),
-        &ndarray::arr1(&SNAPSHOTS.compatible_engine.yukarin_s_forward),
+    float_assert::close_l1(
+        &phoneme_length,
+        &SNAPSHOTS.compatible_engine.yukarin_s_forward,
         0.01,
     );
 
-    ndarray_linalg::assert::close_l1(
-        &ndarray::arr1(&intonation_list),
-        &ndarray::arr1(&SNAPSHOTS.compatible_engine.yukarin_sa_forward),
+    float_assert::close_l1(
+        &intonation_list,
+        &SNAPSHOTS.compatible_engine.yukarin_sa_forward,
         0.01,
     );
 

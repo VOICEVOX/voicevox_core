@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use self::assert_cdylib::Utf8Output;
 
 mod assert_cdylib;
+mod float_assert;
 mod mask;
 mod snapshots;
 mod testcases;
