@@ -47,8 +47,9 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
         );
     }
 
-    let tests = T::testcases()
-        .into_iter()
+    let tests = T::TESTCASES
+        .iter()
+        .copied()
         .map(T::build_test)
         .collect::<Result<_, _>>()?;
 
@@ -89,14 +90,14 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
 }
 
 pub(crate) trait TestSuite {
-    type TestCase: Serialize + DeserializeOwned + Send + 'static;
+    type TestCase: Copy + Serialize + DeserializeOwned + Send + 'static;
 
     const TARGET_DIR: &'static str;
     const CDYLIB_NAME: &'static str;
     const BUILD_ENVS: &'static [(&'static str, &'static str)];
     const RUNTIME_ENVS: &'static [(&'static str, &'static str)];
+    const TESTCASES: &'static [Self::TestCase];
 
-    fn testcases() -> Vec<Self::TestCase>;
     unsafe fn exec(testcase: Self::TestCase, lib: &Library) -> anyhow::Result<()>;
     fn assert_output(testcase: Self::TestCase, output: Utf8Output) -> AssertResult;
 }

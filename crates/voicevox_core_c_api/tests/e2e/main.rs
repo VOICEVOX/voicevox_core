@@ -22,7 +22,9 @@ fn main() -> anyhow::Result<()> {
         type TestCase = TestCase;
 
         const TARGET_DIR: &'static str = "../../target";
+
         const CDYLIB_NAME: &'static str = "voicevox_core";
+
         const BUILD_ENVS: &'static [(&'static str, &'static str)] = &[
             // 他の単体テストが動いているときにonnxruntime-sysの初回ビルドを行うと、Windows環境だと
             // `$ORT_OUT_DIR`のハックが問題を起こす。そのためこのハック自体を無効化する
@@ -33,12 +35,11 @@ fn main() -> anyhow::Result<()> {
             // DirectMLとCUDAは無効化
             ("ORT_USE_CUDA", "0"),
         ];
+
         const RUNTIME_ENVS: &'static [(&'static str, &'static str)] =
             &[("VV_MODELS_ROOT_DIR", "../../model")];
 
-        fn testcases() -> Vec<Self::TestCase> {
-            vec![TestCase::CompatibleEngine]
-        }
+        const TESTCASES: &'static [Self::TestCase] = &[TestCase::CompatibleEngine];
 
         unsafe fn exec(testcase: Self::TestCase, lib: &Library) -> anyhow::Result<()> {
             use self::testcases::*;
