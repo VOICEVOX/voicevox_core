@@ -35,7 +35,7 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
     // そのためスキップするのはCLIオプションに`--ignored`か`--include-ignored`が無いときのみ
     if args.ignored || args.include_ignored {
         let mut cmd = cmd!(env!("CARGO"), "build", "--lib");
-        for (k, v) in T::build_envs() {
+        for (k, v) in T::BUILD_ENVS {
             cmd = cmd.env(k, v);
         }
         cmd.run()?;
@@ -76,7 +76,7 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
             Ok(Trial::test(json.to_string(), move || {
                 let output = assert_cmd::Command::new(current_exe)
                     .args(["--exec-c-api-e2e-test", &json])
-                    .envs(Self::runtime_envs().iter().copied())
+                    .envs(Self::RUNTIME_ENVS.iter().copied())
                     .output()?
                     .try_into()?;
 
@@ -93,9 +93,9 @@ pub(crate) trait TestSuite {
 
     const TARGET_DIR: &'static str;
     const CDYLIB_NAME: &'static str;
+    const BUILD_ENVS: &'static [(&'static str, &'static str)];
+    const RUNTIME_ENVS: &'static [(&'static str, &'static str)];
 
-    fn build_envs() -> &'static [(&'static str, &'static str)];
-    fn runtime_envs() -> &'static [(&'static str, &'static str)];
     fn testcases() -> Vec<Self::TestCase>;
     unsafe fn exec(testcase: Self::TestCase, lib: &Library) -> anyhow::Result<()>;
     fn assert_output(testcase: Self::TestCase, output: Utf8Output) -> AssertResult;
