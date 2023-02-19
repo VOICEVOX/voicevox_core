@@ -21,6 +21,7 @@ fn main() -> anyhow::Result<()> {
     impl assert_cdylib::TestSuite for TestSuite {
         type TestCase = TestCase;
 
+        const TARGET_DIR: &'static str = "../../target";
         const CDYLIB_NAME: &'static str = "voicevox_core";
 
         fn build_envs() -> &'static [(&'static str, &'static str)] {

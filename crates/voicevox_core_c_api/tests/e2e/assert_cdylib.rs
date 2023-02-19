@@ -63,9 +63,7 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
     #[ext]
     impl<T: TestSuite> T {
         fn cdylib_path() -> PathBuf {
-            Path::new("..")
-                .join("..")
-                .join("target")
+            Path::new(Self::TARGET_DIR)
                 .join("debug")
                 .join(libloading::library_filename(Self::CDYLIB_NAME))
         }
@@ -93,6 +91,7 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
 pub(crate) trait TestSuite {
     type TestCase: Serialize + DeserializeOwned + Send + 'static;
 
+    const TARGET_DIR: &'static str;
     const CDYLIB_NAME: &'static str;
 
     fn build_envs() -> &'static [(&'static str, &'static str)];
