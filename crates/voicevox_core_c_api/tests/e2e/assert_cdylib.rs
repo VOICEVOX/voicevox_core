@@ -3,7 +3,7 @@ use std::{
     process::{ExitStatus, Output},
 };
 
-use anyhow::{anyhow, ensure};
+use anyhow::{ensure, Context as _};
 use assert_cmd::assert::{Assert, AssertResult, OutputAssertExt as _};
 use clap::Parser as _;
 use duct::cmd;
@@ -71,7 +71,7 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
         fn build_test(testcase: Self::TestCase) -> anyhow::Result<Trial> {
             let json = serde_json::to_string(&testcase)?;
             let current_exe = process_path::get_executable_path()
-                .ok_or_else(|| anyhow!("could not get the path of this process"))?;
+                .with_context(|| "could not get the path of this process")?;
 
             Ok(Trial::test(json.to_string(), move || {
                 let output = assert_cmd::Command::new(current_exe)
