@@ -14,7 +14,7 @@
 #include <vector>
 #include <fstream>
 
-#include "core.h"
+#include "voicevox_core.h"
 
 #define OPENJTALK_DICT_NAME L"open_jtalk_dic_utf_8-1.11"
 
@@ -28,26 +28,26 @@ int main() {
   std::wcin >> speak_words;
 
   std::wcout << L"coreの初期化中" << std::endl;
-  if (!initialize(false, 0, true)) {
-    std::wcout << L"coreの初期化に失敗しました" << std::endl;
-    return 0;
-  }
+  VoicevoxInitializeOptions  initializeOptions = voicevox_make_default_initialize_options();
+  std::string dict = GetOpenJTalkDict();
+  initializeOptions.open_jtalk_dict_dir = dict.c_str();
+  initializeOptions.load_all_models = true;
 
-  VoicevoxResultCode result = VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED;
-
-  std::wcout << L"openjtalk辞書の読み込み" << std::endl;
-  result = voicevox_load_openjtalk_dict(GetOpenJTalkDict().c_str());
-  if (result != VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED) {
+  VoicevoxResultCode result = VoicevoxResultCode::VOICEVOX_RESULT_OK;
+  result = voicevox_initialize(initializeOptions);
+  if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
     OutErrorMessage(result);
     return 0;
   }
 
   std::wcout << L"音声生成中" << std::endl;
-  int64_t speaker_id = 0;
-  int output_binary_size = 0;
+  int32_t speaker_id = 0;
+  uintptr_t output_binary_size = 0;
   uint8_t* output_wav = nullptr;
-  result = voicevox_tts(wide_to_utf8_cppapi(speak_words).c_str(), speaker_id, &output_binary_size, &output_wav);
-  if (result != VoicevoxResultCode::VOICEVOX_RESULT_SUCCEED) {
+  VoicevoxTtsOptions ttsOptions = voicevox_make_default_tts_options();
+
+  result = voicevox_tts(wide_to_utf8_cppapi(speak_words).c_str(), speaker_id, ttsOptions, &output_binary_size, &output_wav);
+  if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
     OutErrorMessage(result);
     return 0;
   }
@@ -64,6 +64,8 @@ int main() {
 
   std::wcout << L"音声データの開放" << std::endl;
   voicevox_wav_free(output_wav);
+
+  voicevox_finalize();
 
 }
 
