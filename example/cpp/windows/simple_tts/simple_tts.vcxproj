@@ -101,7 +101,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Shlwapi.lib;Pathcch.lib;Winmm.lib;core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Shlwapi.lib;Pathcch.lib;Winmm.lib;voicevox_core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)lib\$(Platform)\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -120,7 +120,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Shlwapi.lib;Pathcch.lib;Winmm.lib;core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Shlwapi.lib;Pathcch.lib;Winmm.lib;voicevox_core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)lib\$(Platform)\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -135,7 +135,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Shlwapi.lib;Pathcch.lib;Winmm.lib;core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Shlwapi.lib;Pathcch.lib;Winmm.lib;voicevox_core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)lib\$(Platform)\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -154,7 +154,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Shlwapi.lib;Pathcch.lib;Winmm.lib;core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Shlwapi.lib;Pathcch.lib;Winmm.lib;voicevox_core.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)lib\$(Platform)\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

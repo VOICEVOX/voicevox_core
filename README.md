@@ -89,8 +89,7 @@ sudo apt install libgomp1
 
 現在このリポジトリでは次のサンプルが提供されています。実行方法についてはそれぞれのディレクトリ内にある README を参照してください
 
-- [Python](./example/python)
-- [Python(pip)](./example/pyo3)
+- [Python(pip)](./example/python)
 - [C++(UNIX CMake)](./example/cpp/unix)
 - [C++(Windows Visual Studio)](./example/cpp/windows)
 
@@ -138,7 +137,8 @@ typos
 
 **[voicevox.rb](https://github.com/sevenc-nanashi/voicevox.rb) [@sevenc-nanashi](https://github.com/sevenc-nanashi)** ･･･ VOICEVOX CORE の Ruby 向け FFI ラッパー  
 **[Node VOICEVOX Engine](https://github.com/y-chan/node-voicevox-engine) [@y-chan](https://github.com/y-chan)** ･･･ VOICEVOX ENGINE の Node.js/C++ 実装  
-**[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装
+**[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装  
+**[voicevoxcore4s](https://github.com/windymelt/voicevoxcore4s) [@windymelt](https://github.com/windymelt)** ･･･ VOICEVOX CORE の Scala(JVM) 向け FFI ラッパー
 
 ## ライセンス
 
