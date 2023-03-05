@@ -3596,6 +3596,7 @@ name = "voicevox_core_c_api"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "is-terminal",
  "libc",
  "once_cell",

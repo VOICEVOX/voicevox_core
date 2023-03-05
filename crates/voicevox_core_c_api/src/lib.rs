@@ -7,10 +7,12 @@ use libc::c_void;
 use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
+use std::fmt;
 use std::io::{self, Write};
 use std::os::raw::c_char;
 use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
+use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use voicevox_core::AudioQueryModel;
 use voicevox_core::Result;
@@ -32,9 +34,14 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
             } else {
                 "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
             })
+            .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(out().is_terminal() && env_allows_ansi())
             .with_writer(out)
             .try_init()
+    }
+
+    fn local_time(wtr: &mut Writer<'_>) -> fmt::Result {
+        wtr.write_str(&chrono::Local::now().to_rfc3339())
     }
 
     fn out() -> impl IsTerminal + Write {
