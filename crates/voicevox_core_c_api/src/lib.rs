@@ -2,6 +2,7 @@
 mod compatible_engine;
 mod helpers;
 use self::helpers::*;
+use chrono::SecondsFormat;
 use is_terminal::IsTerminal;
 use libc::c_void;
 use once_cell::sync::Lazy;
@@ -41,7 +42,8 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
     }
 
     fn local_time(wtr: &mut Writer<'_>) -> fmt::Result {
-        wtr.write_str(&chrono::Local::now().to_rfc3339())
+        // https://github.com/tokio-rs/tracing/blob/tracing-subscriber-0.3.16/tracing-subscriber/src/fmt/time/datetime.rs#L235-L241
+        wtr.write_str(&chrono::Local::now().to_rfc3339_opts(SecondsFormat::Micros, false))
     }
 
     fn out() -> impl IsTerminal + Write {
