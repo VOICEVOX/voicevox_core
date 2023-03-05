@@ -43,3 +43,4 @@ process_path.workspace = true
 regex.workspace = true
 serde.workspace = true
 toml = "0.7.2"
+typetag = "0.2.5"

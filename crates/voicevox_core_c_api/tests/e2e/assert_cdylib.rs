@@ -10,7 +10,6 @@ use duct::cmd;
 use easy_ext::ext;
 use libloading::Library;
 use libtest_mimic::{Failed, Trial};
-use serde::{de::DeserializeOwned, Serialize};
 
 // assert_cmdのようにDLLをテストする。
 // ただしstdout/stderrをキャプチャするため、DLLの実行自体は別プロセスで行う。
@@ -21,11 +20,11 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
         exec_c_api_e2e_test,
     }) = clap::Parser::try_parse()
     {
-        let exec_c_api_e2e_test = serde_json::from_str(&exec_c_api_e2e_test)?;
+        let exec_c_api_e2e_test = serde_json::from_str::<Box<dyn TestCase>>(&exec_c_api_e2e_test)?;
 
         return unsafe {
             let lib = &Library::new(T::cdylib_path())?;
-            T::exec(exec_c_api_e2e_test, lib)
+            exec_c_api_e2e_test.exec(lib)
         };
     }
 
@@ -69,7 +68,7 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
                 .join(libloading::library_filename(Self::CDYLIB_NAME))
         }
 
-        fn build_test(testcase: Self::TestCase) -> anyhow::Result<Trial> {
+        fn build_test(testcase: &'static dyn TestCase) -> anyhow::Result<Trial> {
             let json = serde_json::to_string(&testcase)?;
             let current_exe = process_path::get_executable_path()
                 .with_context(|| "could not get the path of this process")?;
@@ -81,7 +80,7 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
                     .output()?
                     .try_into()?;
 
-                Self::assert_output(testcase, output)?;
+                testcase.assert_output(output)?;
                 Ok(())
             })
             .with_ignored_flag(true))
@@ -90,16 +89,17 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
 }
 
 pub(crate) trait TestSuite {
-    type TestCase: Copy + Serialize + DeserializeOwned + Send + 'static;
-
     const TARGET_DIR: &'static str;
     const CDYLIB_NAME: &'static str;
     const BUILD_ENVS: &'static [(&'static str, &'static str)];
     const RUNTIME_ENVS: &'static [(&'static str, &'static str)];
-    const TESTCASES: &'static [Self::TestCase];
+    const TESTCASES: &'static [&'static dyn TestCase];
+}
 
-    unsafe fn exec(testcase: Self::TestCase, lib: &Library) -> anyhow::Result<()>;
-    fn assert_output(testcase: Self::TestCase, output: Utf8Output) -> AssertResult;
+#[typetag::serde(tag = "type")]
+pub(crate) trait TestCase: Sync {
+    unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()>;
+    fn assert_output(&self, output: Utf8Output) -> AssertResult;
 }
 
 pub(crate) struct Utf8Output {
