@@ -37,7 +37,7 @@ pub(crate) unsafe fn exec(
     assert!(load_model(SPEAKER_ID));
     assert!(is_model_loaded(SPEAKER_ID));
 
-    // "テスト"
+    // テスト用テキストは"t e s u t o"
 
     let phoneme_length = {
         let mut phoneme_length = [0.; 8];
