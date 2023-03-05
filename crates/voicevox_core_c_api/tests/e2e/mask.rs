@@ -13,7 +13,9 @@ macro_rules! static_regex {
 impl Utf8Output {
     pub(crate) fn mask_timestamps(self) -> Self {
         self.mask_stderr(
-            static_regex!("(?m)^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{6}Z"),
+            static_regex!(
+                r"(?m)^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{6}\+[0-9]{2}:[0-9]{2}",
+            ),
             "{timestamp}",
         )
     }
