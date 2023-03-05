@@ -42,6 +42,7 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
     }
 
     fn local_time(wtr: &mut Writer<'_>) -> fmt::Result {
+        // ローカル時刻で表示はするが、そのフォーマットはtracing-subscriber本来のものに近いようにする。
         // https://github.com/tokio-rs/tracing/blob/tracing-subscriber-0.3.16/tracing-subscriber/src/fmt/time/datetime.rs#L235-L241
         wtr.write_str(&chrono::Local::now().to_rfc3339_opts(SecondsFormat::Micros, false))
     }
