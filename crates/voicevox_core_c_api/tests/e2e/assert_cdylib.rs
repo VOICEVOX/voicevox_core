@@ -99,6 +99,9 @@ pub(crate) trait TestCase: Sync {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()>;
     fn assert_output(&self, output: Utf8Output) -> AssertResult;
 }
+//
+// これに登録された構造体が実行される。
+inventory::collect!(&'static dyn TestCase);
 
 pub(crate) struct Utf8Output {
     pub(crate) status: ExitStatus,

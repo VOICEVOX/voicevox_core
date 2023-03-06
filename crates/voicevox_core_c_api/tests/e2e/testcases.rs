@@ -11,9 +11,6 @@ use crate::{
     symbols::Symbols,
 };
 
-// これに登録された構造体が実行される。
-inventory::collect!(&'static dyn TestCase);
-
 #[derive(Serialize, Deserialize)]
 struct CompatibleEngine;
 
