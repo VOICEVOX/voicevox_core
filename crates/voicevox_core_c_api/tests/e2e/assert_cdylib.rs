@@ -15,7 +15,7 @@ use libtest_mimic::{Failed, Trial};
 // ただしstdout/stderrをキャプチャするため、DLLの実行自体は別プロセスで行う。
 // テスト情報である`TestCase`をJSONにして本バイナリ自身を再帰的に呼ぶことで、プロセス分離を実現している。
 
-pub(crate) fn exec<T: TestContext>() -> anyhow::Result<()> {
+pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
     if let Ok(AlternativeArguments {
         exec_c_api_e2e_test,
     }) = clap::Parser::try_parse()
@@ -23,7 +23,7 @@ pub(crate) fn exec<T: TestContext>() -> anyhow::Result<()> {
         let exec_c_api_e2e_test = serde_json::from_str::<Box<dyn TestCase>>(&exec_c_api_e2e_test)?;
 
         return unsafe {
-            let lib = &Library::new(T::cdylib_path())?;
+            let lib = &Library::new(C::cdylib_path())?;
             exec_c_api_e2e_test.exec(lib)
         };
     }
@@ -34,21 +34,21 @@ pub(crate) fn exec<T: TestContext>() -> anyhow::Result<()> {
     // そのためスキップするのはCLIオプションに`--ignored`か`--include-ignored`が無いときのみ
     if args.ignored || args.include_ignored {
         let mut cmd = cmd!(env!("CARGO"), "build", "--lib");
-        for (k, v) in T::BUILD_ENVS {
+        for (k, v) in C::BUILD_ENVS {
             cmd = cmd.env(k, v);
         }
         cmd.run()?;
 
         ensure!(
-            T::cdylib_path().exists(),
+            C::cdylib_path().exists(),
             "{} should exist",
-            T::cdylib_path().display(),
+            C::cdylib_path().display(),
         );
     }
 
     let tests = inventory::iter()
         .copied()
-        .map(T::build_test)
+        .map(C::build_test)
         .collect::<Result<_, _>>()?;
 
     libtest_mimic::run(args, tests).exit();
