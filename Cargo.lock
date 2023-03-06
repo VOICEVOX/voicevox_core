@@ -3891,6 +3891,7 @@ dependencies = [
  "easy-ext",
  "hex",
  "indoc 2.0.0",
+ "inventory",
  "is-terminal",
  "libc",
  "libloading",

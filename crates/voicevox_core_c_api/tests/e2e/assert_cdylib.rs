@@ -46,8 +46,7 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
         );
     }
 
-    let tests = T::TESTCASES
-        .iter()
+    let tests = inventory::iter()
         .copied()
         .map(T::build_test)
         .collect::<Result<_, _>>()?;
@@ -93,7 +92,6 @@ pub(crate) trait TestSuite {
     const CDYLIB_NAME: &'static str;
     const BUILD_ENVS: &'static [(&'static str, &'static str)];
     const RUNTIME_ENVS: &'static [(&'static str, &'static str)];
-    const TESTCASES: &'static [&'static dyn TestCase];
 }
 
 #[typetag::serde(tag = "type")]
