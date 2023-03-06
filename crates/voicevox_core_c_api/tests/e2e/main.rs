@@ -17,11 +17,11 @@ mod testcases;
 // 3. structの値を`inventory::collect!`で登録する。
 
 fn main() -> anyhow::Result<()> {
-    return assert_cdylib::exec::<TestSuite>();
+    return assert_cdylib::exec::<TestContext>();
 
-    enum TestSuite {}
+    enum TestContext {}
 
-    impl assert_cdylib::TestSuite for TestSuite {
+    impl assert_cdylib::TestContext for TestContext {
         const TARGET_DIR: &'static str = "../../target";
         const CDYLIB_NAME: &'static str = "voicevox_core";
         const BUILD_ENVS: &'static [(&'static str, &'static str)] = &[

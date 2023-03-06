@@ -15,7 +15,7 @@ use libtest_mimic::{Failed, Trial};
 // ただしstdout/stderrをキャプチャするため、DLLの実行自体は別プロセスで行う。
 // テスト情報である`TestCase`をJSONにして本バイナリ自身を再帰的に呼ぶことで、プロセス分離を実現している。
 
-pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
+pub(crate) fn exec<T: TestContext>() -> anyhow::Result<()> {
     if let Ok(AlternativeArguments {
         exec_c_api_e2e_test,
     }) = clap::Parser::try_parse()
@@ -60,7 +60,7 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
     }
 
     #[ext]
-    impl<T: TestSuite> T {
+    impl<T: TestContext> T {
         fn cdylib_path() -> PathBuf {
             Path::new(Self::TARGET_DIR)
                 .join("debug")
@@ -87,7 +87,7 @@ pub(crate) fn exec<T: TestSuite>() -> anyhow::Result<()> {
     }
 }
 
-pub(crate) trait TestSuite {
+pub(crate) trait TestContext {
     const TARGET_DIR: &'static str;
     const CDYLIB_NAME: &'static str;
     const BUILD_ENVS: &'static [(&'static str, &'static str)];
