@@ -11,10 +11,10 @@ use crate::{
     symbols::Symbols,
 };
 
+inventory::submit!(&CompatibleEngine as &dyn TestCase);
+
 #[derive(Serialize, Deserialize)]
 struct CompatibleEngine;
-
-inventory::submit!(&CompatibleEngine as &dyn TestCase);
 
 #[typetag::serde]
 impl TestCase for CompatibleEngine {
