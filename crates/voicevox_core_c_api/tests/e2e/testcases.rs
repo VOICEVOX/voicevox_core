@@ -29,6 +29,7 @@ impl TestCase for CompatibleEngine {
             yukarin_s_forward,
             yukarin_sa_forward,
             decode_forward,
+            ..
         } = Symbols::new(lib)?;
 
         let metas_json = {
@@ -153,5 +154,41 @@ impl TestCase for CompatibleEngine {
             .try_success()?
             .try_stdout("")?
             .try_stderr(&*SNAPSHOTS.compatible_engine.stderr)
+    }
+}
+
+inventory::submit!(&CompatibleEngineLoadModelBeforeInitialize as &dyn TestCase);
+
+#[derive(Serialize, Deserialize)]
+struct CompatibleEngineLoadModelBeforeInitialize;
+
+#[typetag::serde]
+impl TestCase for CompatibleEngineLoadModelBeforeInitialize {
+    unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
+        let Symbols {
+            load_model,
+            last_error_message,
+            ..
+        } = Symbols::new(lib)?;
+
+        assert!(!load_model(0));
+        let last_error_message = last_error_message();
+        let last_error_message = CStr::from_ptr(last_error_message).to_str()?;
+
+        std::assert_eq!(
+            SNAPSHOTS
+                .compatible_engine_load_model_before_initialize
+                .last_error_message,
+            last_error_message,
+        );
+        Ok(())
+    }
+
+    fn assert_output(&self, output: Utf8Output) -> AssertResult {
+        output.assert().try_success()?.try_stdout("")?.try_stderr(
+            &*SNAPSHOTS
+                .compatible_engine_load_model_before_initialize
+                .stderr,
+        )
     }
 }

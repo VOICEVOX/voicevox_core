@@ -9,12 +9,21 @@ pub(crate) static SNAPSHOTS: Lazy<Snapshots> =
 #[derive(Deserialize)]
 pub(crate) struct Snapshots {
     pub(crate) compatible_engine: CompatibleEngine,
+    pub(crate) compatible_engine_load_model_before_initialize:
+        CompatibleEngineLoadModelBeforeInitialize,
 }
 
 #[derive(Deserialize)]
 pub(crate) struct CompatibleEngine {
     pub(crate) yukarin_s_forward: [f32; 8],
     pub(crate) yukarin_sa_forward: [f32; 5],
+    #[serde(deserialize_with = "deserialize_platform_specific_snapshot")]
+    pub(crate) stderr: String,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct CompatibleEngineLoadModelBeforeInitialize {
+    pub(crate) last_error_message: String,
     #[serde(deserialize_with = "deserialize_platform_specific_snapshot")]
     pub(crate) stderr: String,
 }

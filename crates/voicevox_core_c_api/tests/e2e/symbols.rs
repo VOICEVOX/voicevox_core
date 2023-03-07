@@ -8,6 +8,7 @@ pub(crate) struct Symbols<'lib> {
     pub(crate) is_model_loaded: Symbol<'lib, unsafe extern "C" fn(i64) -> bool>,
     pub(crate) finalize: Symbol<'lib, unsafe extern "C" fn()>,
     pub(crate) metas: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
+    pub(crate) last_error_message: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
     pub(crate) supported_devices: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
     pub(crate) yukarin_s_forward:
         Symbol<'lib, unsafe extern "C" fn(i64, *mut i64, *mut i64, *mut f32) -> bool>,
@@ -47,6 +48,7 @@ impl<'lib> Symbols<'lib> {
             is_model_loaded,
             finalize,
             metas,
+            last_error_message,
             supported_devices,
             yukarin_s_forward,
             yukarin_sa_forward,
