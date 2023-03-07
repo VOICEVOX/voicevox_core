@@ -60,7 +60,7 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
     }
 
     #[ext]
-    impl<T: TestContext> T {
+    impl<C: TestContext> C {
         fn cdylib_path() -> PathBuf {
             Path::new(Self::TARGET_DIR)
                 .join("debug")
