@@ -1,4 +1,3 @@
-use indoc::indoc;
 use ndarray::Array;
 use ndarray_stats::DeviationExt as _;
 
@@ -11,11 +10,9 @@ pub(crate) fn close_l1(test: &[f32], truth: &[f32], tol: f32) {
     let dev = test.l1_dist(truth).unwrap() / test.l1_dist(&Array::zeros(test.len())).unwrap();
     if dev > tol {
         panic!(
-            indoc! {"
-                Too large deviation in L1-norm: {dev} > {tol}
-                Expected: {truth}
-                Actual:   {test}
-            "},
+            "Too large deviation in L1-norm: {dev} > {tol}
+Expected: {truth}
+Actual:   {test}",
             dev = dev,
             tol = tol,
             truth = truth,
