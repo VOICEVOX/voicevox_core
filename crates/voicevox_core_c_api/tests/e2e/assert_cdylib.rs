@@ -101,7 +101,7 @@ pub(crate) trait TestContext {
 }
 
 #[typetag::serde(tag = "name")]
-pub(crate) trait TestCase: Sync + Send {
+pub(crate) trait TestCase: Send {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()>;
     fn assert_output(&self, output: Utf8Output) -> AssertResult;
 }
