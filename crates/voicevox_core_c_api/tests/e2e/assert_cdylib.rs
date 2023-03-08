@@ -17,7 +17,9 @@ use libtest_mimic::{Failed, Trial};
 
 macro_rules! case {
     ($testcase:expr $(,)?) => {
-        ::inventory::submit!(crate::assert_cdylib::FnBoxTestCase(|| Box::new($testcase)));
+        ::inventory::submit!(crate::assert_cdylib::TestCaseSubmission(|| Box::new(
+            $testcase,
+        )));
     };
 }
 pub(crate) use case;
@@ -54,7 +56,7 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
     }
 
     let tests = inventory::iter()
-        .map(|FnBoxTestCase(testcase)| C::build_test(testcase()))
+        .map(|TestCaseSubmission(testcase)| C::build_test(testcase()))
         .collect::<Result<_, _>>()?;
 
     libtest_mimic::run(args, tests).exit();
@@ -106,10 +108,10 @@ pub(crate) trait TestCase: Send {
     fn assert_output(&self, output: Utf8Output) -> AssertResult;
 }
 
-pub(crate) struct FnBoxTestCase(pub(crate) fn() -> Box<dyn TestCase>);
+pub(crate) struct TestCaseSubmission(pub(crate) fn() -> Box<dyn TestCase>);
 
 // これに登録された構造体が実行される。
-inventory::collect!(FnBoxTestCase);
+inventory::collect!(TestCaseSubmission);
 
 pub(crate) struct Utf8Output {
     pub(crate) status: ExitStatus,
