@@ -94,7 +94,7 @@ pub(crate) trait TestContext {
     const RUNTIME_ENVS: &'static [(&'static str, &'static str)];
 }
 
-#[typetag::serde(tag = "type")]
+#[typetag::serde(tag = "name")]
 pub(crate) trait TestCase: Sync {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()>;
     fn assert_output(&self, output: Utf8Output) -> AssertResult;

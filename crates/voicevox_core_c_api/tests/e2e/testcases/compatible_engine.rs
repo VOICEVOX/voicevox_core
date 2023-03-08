@@ -6,18 +6,18 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    assert_cdylib::{TestCase, Utf8Output},
+    assert_cdylib::{self, Utf8Output},
     float_assert, snapshots,
     symbols::Symbols,
 };
 
-inventory::submit!(&CompatibleEngine as &dyn TestCase);
+inventory::submit!(&TestCase as &dyn assert_cdylib::TestCase);
 
 #[derive(Serialize, Deserialize)]
-struct CompatibleEngine;
+struct TestCase;
 
-#[typetag::serde]
-impl TestCase for CompatibleEngine {
+#[typetag::serde(name = "compatible_engine")]
+impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
             initialize,
