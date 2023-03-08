@@ -8,5 +8,7 @@ stderr.unix = ""
 
 [compatible_engine_load_model_before_initialize]
 last_error_message = "Statusが初期化されていません"
-stderr.windows = ""
+stderr.windows = '''
+{windows-video-cards}
+'''
 stderr.unix = ""

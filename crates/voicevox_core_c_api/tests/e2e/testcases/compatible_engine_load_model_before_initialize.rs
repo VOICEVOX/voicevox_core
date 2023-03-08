@@ -35,6 +35,8 @@ impl TestCase for CompatibleEngineLoadModelBeforeInitialize {
 
     fn assert_output(&self, output: Utf8Output) -> AssertResult {
         output
+            .mask_timestamps()
+            .mask_windows_video_cards()
             .assert()
             .try_success()?
             .try_stdout("")?
