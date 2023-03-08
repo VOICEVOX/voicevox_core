@@ -13,10 +13,6 @@ pub(crate) fn close_l1(test: &[f32], truth: &[f32], tol: f32) {
             "Too large deviation in L1-norm: {dev} > {tol}
 Expected: {truth}
 Actual:   {test}",
-            dev = dev,
-            tol = tol,
-            truth = truth,
-            test = test,
         );
     }
 }
