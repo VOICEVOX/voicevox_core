@@ -33,7 +33,6 @@ assert_cmd = { version = "2.0.8", features = ["color-auto"] }
 clap.workspace = true
 duct = "0.13.6"
 easy-ext.workspace = true
-hex = "0.4.3"
 libloading = "0.7.3"
 libtest-mimic = "0.6.0"
 ndarray = "0.15.6"
