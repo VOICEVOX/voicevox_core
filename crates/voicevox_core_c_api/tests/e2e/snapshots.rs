@@ -5,12 +5,12 @@ use serde::{de::DeserializeOwned, Deserialize, Deserializer};
 macro_rules! section {
     ($section_name:ident $(,)?) => {{
         #[derive(::serde::Deserialize)]
-        struct __Snapshots<T> {
+        struct Snapshots<T> {
             $section_name: T,
         }
 
         ::once_cell::sync::Lazy::new(|| {
-            let __Snapshots { $section_name } =
+            let Snapshots { $section_name } =
                 ::toml::from_str(crate::snapshots::SNAPSHOTS_TOML).unwrap();
             $section_name
         })
