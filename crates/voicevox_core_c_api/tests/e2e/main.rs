@@ -14,8 +14,8 @@ mod testcases;
 // テストを追加する場合:
 // 1. testcases/{テスト名}.rsを追加し、testcases.rsでマウントする。
 // 2. testcases/{テスト名}.rsに`struct TestCase`を追加する。
-// 3. `TestCase`に`assert_cdylib::TestCase`を、`#[typetag::serde(name = "…")]`の形でimplする。
-// 4. `TestCase`の具体値を`inventory::submit!`で登録する。
+// 3. `struct TestCase`に`trait assert_cdylib::TestCase`を、`#[typetag::serde(name = "…")]`の形でimplする。
+// 4. `struct TestCase`の具体値を`case!`で登録する。
 
 fn main() -> anyhow::Result<()> {
     return assert_cdylib::exec::<TestContext>();

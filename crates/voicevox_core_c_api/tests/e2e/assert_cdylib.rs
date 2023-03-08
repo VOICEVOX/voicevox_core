@@ -15,6 +15,13 @@ use libtest_mimic::{Failed, Trial};
 // ただしstdout/stderrをキャプチャするため、DLLの実行自体は別プロセスで行う。
 // テスト情報である`TestCase`をJSONにして本バイナリ自身を再帰的に呼ぶことで、プロセス分離を実現している。
 
+macro_rules! case {
+    ($testcase:expr $(,)?) => {
+        ::inventory::submit!(crate::assert_cdylib::FnBoxTestCase(|| Box::new($testcase)));
+    };
+}
+pub(crate) use case;
+
 pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
     if let Ok(AlternativeArguments {
         exec_c_api_e2e_test,
@@ -47,8 +54,7 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
     }
 
     let tests = inventory::iter()
-        .copied()
-        .map(C::build_test)
+        .map(|FnBoxTestCase(testcase)| C::build_test(testcase()))
         .collect::<Result<_, _>>()?;
 
     libtest_mimic::run(args, tests).exit();
@@ -67,7 +73,7 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
                 .join(libloading::library_filename(Self::CDYLIB_NAME))
         }
 
-        fn build_test(testcase: &'static dyn TestCase) -> anyhow::Result<Trial> {
+        fn build_test(testcase: Box<dyn TestCase>) -> anyhow::Result<Trial> {
             let json = serde_json::to_string(&testcase)?;
             let current_exe = process_path::get_executable_path()
                 .with_context(|| "could not get the path of this process")?;
@@ -95,13 +101,15 @@ pub(crate) trait TestContext {
 }
 
 #[typetag::serde(tag = "name")]
-pub(crate) trait TestCase: Sync {
+pub(crate) trait TestCase: Sync + Send {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()>;
     fn assert_output(&self, output: Utf8Output) -> AssertResult;
 }
 
+pub(crate) struct FnBoxTestCase(pub(crate) fn() -> Box<dyn TestCase>);
+
 // これに登録された構造体が実行される。
-inventory::collect!(&'static dyn TestCase);
+inventory::collect!(FnBoxTestCase);
 
 pub(crate) struct Utf8Output {
     pub(crate) status: ExitStatus,

@@ -6,12 +6,12 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    assert_cdylib::{self, Utf8Output},
+    assert_cdylib::{self, case, Utf8Output},
     float_assert, snapshots,
     symbols::Symbols,
 };
 
-inventory::submit!(&TestCase as &dyn assert_cdylib::TestCase);
+case!(TestCase);
 
 #[derive(Serialize, Deserialize)]
 struct TestCase;
