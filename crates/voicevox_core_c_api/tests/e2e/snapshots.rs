@@ -1,34 +1,28 @@
 use std::str;
 
-use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Deserializer};
 
-pub(crate) static SNAPSHOTS: Lazy<Snapshots> =
-    Lazy::new(|| toml::from_str(include_str!("./snapshots.toml")).unwrap());
+macro_rules! section {
+    ($section_name:ident $(,)?) => {{
+        #[derive(::serde::Deserialize)]
+        struct __Snapshots<T> {
+            $section_name: T,
+        }
 
-#[derive(Deserialize)]
-pub(crate) struct Snapshots {
-    pub(crate) compatible_engine: CompatibleEngine,
-    pub(crate) compatible_engine_load_model_before_initialize:
-        CompatibleEngineLoadModelBeforeInitialize,
+        ::once_cell::sync::Lazy::new(|| {
+            let __Snapshots { $section_name } =
+                ::toml::from_str(crate::snapshots::SNAPSHOTS_TOML).unwrap();
+            $section_name
+        })
+    }};
 }
+pub(crate) use section;
 
-#[derive(Deserialize)]
-pub(crate) struct CompatibleEngine {
-    pub(crate) yukarin_s_forward: [f32; 8],
-    pub(crate) yukarin_sa_forward: [f32; 5],
-    #[serde(deserialize_with = "deserialize_platform_specific_snapshot")]
-    pub(crate) stderr: String,
-}
+pub(crate) static SNAPSHOTS_TOML: &str = include_str!("./snapshots.toml");
 
-#[derive(Deserialize)]
-pub(crate) struct CompatibleEngineLoadModelBeforeInitialize {
-    pub(crate) last_error_message: String,
-    #[serde(deserialize_with = "deserialize_platform_specific_snapshot")]
-    pub(crate) stderr: String,
-}
-
-fn deserialize_platform_specific_snapshot<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+pub(crate) fn deserialize_platform_specific_snapshot<'de, T, D>(
+    deserializer: D,
+) -> Result<T, D::Error>
 where
     T: DeserializeOwned,
     D: Deserializer<'de>,

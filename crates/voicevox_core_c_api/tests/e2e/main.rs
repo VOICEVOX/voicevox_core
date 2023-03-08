@@ -12,9 +12,10 @@ mod testcases;
 // 2. 1.によってコンパイルが通らなくなったら、適宜修正する。
 //
 // テストを追加する場合:
-// 1. テストケースを表わすstructをtestcases.rsに追加する。
-// 2. structに`TestCase`をimplする (`#[typetag::serde]`を使うこと)。
-// 3. structの値を`inventory::collect!`で登録する。
+// 1. testcases/{テスト名}.rsを追加し、testcases.rsでマウントする。
+// 2. テストケースを表わすstructをtestcases/{テスト名}.rsに追加する。
+// 3. structに`TestCase`をimplする (`#[typetag::serde]`を使うこと)。
+// 4. structの値を`inventory::collect!`で登録する。
 
 fn main() -> anyhow::Result<()> {
     return assert_cdylib::exec::<TestContext>();
