@@ -1,3 +1,5 @@
+// エンジンを起動してyukarin_s・yukarin_sa・decodeの推論を行う
+
 use std::ffi::CStr;
 
 use assert_cmd::assert::AssertResult;
