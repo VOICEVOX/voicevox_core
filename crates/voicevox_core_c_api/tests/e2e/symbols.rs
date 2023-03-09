@@ -2,6 +2,7 @@ use std::ffi::{c_char, c_int};
 
 use libloading::{Library, Symbol};
 
+/// voicevox\_core\_c\_apiのcdylibのシンボルを集めたもの。
 pub(crate) struct Symbols<'lib> {
     pub(crate) initialize: Symbol<'lib, unsafe extern "C" fn(bool, c_int, bool) -> bool>,
     pub(crate) load_model: Symbol<'lib, unsafe extern "C" fn(i64) -> bool>,

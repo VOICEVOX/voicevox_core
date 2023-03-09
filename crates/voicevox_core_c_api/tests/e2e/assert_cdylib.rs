@@ -24,6 +24,7 @@ macro_rules! case {
 }
 pub(crate) use case;
 
+/// テストを実行する。
 pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
     if let Ok(AlternativeArguments {
         exec_c_api_e2e_test,
@@ -102,9 +103,16 @@ pub(crate) trait TestContext {
     const RUNTIME_ENVS: &'static [(&'static str, &'static str)];
 }
 
+/// テストケース。
 #[typetag::serde(tag = "name")]
 pub(crate) trait TestCase: Send {
+    /// cdylibに対して操作を行う。
+    ///
+    /// `exec`は独立したプロセスで実行されるため、stdout/stderrへの出力をしたりグローバルな状態に
+    /// 依存してもよい。
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()>;
+
+    /// 別プロセスで実行された`exec`の結果をチェックする。
     fn assert_output(&self, output: Utf8Output) -> AssertResult;
 }
 
