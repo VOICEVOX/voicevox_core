@@ -1,6 +1,6 @@
 mod assert_cdylib;
 mod float_assert;
-mod mask;
+mod log_mask;
 mod snapshots;
 mod symbols;
 mod testcases;
