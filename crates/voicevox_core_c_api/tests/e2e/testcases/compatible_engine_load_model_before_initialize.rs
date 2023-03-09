@@ -1,3 +1,5 @@
+// initialize前にモデルを読み込むとエラーになるテスト
+
 use std::ffi::CStr;
 
 use assert_cmd::assert::AssertResult;
