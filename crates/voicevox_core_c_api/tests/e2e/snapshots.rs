@@ -2,9 +2,7 @@ use std::str;
 
 use serde::{de::DeserializeOwned, Deserialize, Deserializer};
 
-/// snapshots.tomlの一部を`deserialize`する。
-///
-/// jqで言うと`.[$section_name]`を抽出する。
+/// snapshots.tomlの`[$section_name]`部分を`deserialize`する。
 macro_rules! section {
     ($section_name:ident $(,)?) => {{
         #[derive(::serde::Deserialize)]
