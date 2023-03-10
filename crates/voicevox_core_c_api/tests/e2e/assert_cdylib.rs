@@ -24,7 +24,7 @@ macro_rules! case {
 }
 pub(crate) use case;
 
-/// テストを実行する。
+/// 全てのテストを実行する。
 pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
     if let Ok(AlternativeArguments {
         exec_c_api_e2e_test,
