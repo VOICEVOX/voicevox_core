@@ -103,7 +103,7 @@ pub(crate) trait TestContext {
     const RUNTIME_ENVS: &'static [(&'static str, &'static str)];
 }
 
-/// テストケース。
+/// 個別のテストケースのインターフェイス。
 #[typetag::serde(tag = "name")]
 pub(crate) trait TestCase: Send {
     /// cdylibに対して操作を行う。
