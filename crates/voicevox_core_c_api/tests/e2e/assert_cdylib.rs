@@ -15,6 +15,9 @@ use libtest_mimic::{Failed, Trial};
 // ただしstdout/stderrをキャプチャするため、DLLの実行自体は別プロセスで行う。
 // テスト情報である`TestCase`をJSONにして本バイナリ自身を再帰的に呼ぶことで、プロセス分離を実現している。
 
+/// `TestCase`の具体値をグローバルに登録する。
+///
+/// 式はconstでなくてもよい。
 macro_rules! case {
     ($testcase:expr $(,)?) => {
         ::inventory::submit!(crate::assert_cdylib::TestCaseSubmission(|| Box::new(
