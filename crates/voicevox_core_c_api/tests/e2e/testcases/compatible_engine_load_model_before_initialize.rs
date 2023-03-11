@@ -31,7 +31,7 @@ impl assert_cdylib::TestCase for TestCase {
         let last_error_message = last_error_message();
         let last_error_message = CStr::from_ptr(last_error_message).to_str()?;
 
-        std::assert_eq!(SNAPSHOTS.last_error_message, last_error_message,);
+        std::assert_eq!(SNAPSHOTS.last_error_message, last_error_message);
         Ok(())
     }
 
