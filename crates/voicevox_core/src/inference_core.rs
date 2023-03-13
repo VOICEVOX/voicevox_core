@@ -21,7 +21,7 @@ impl InferenceCore {
             let mut status = Status::new(use_gpu, cpu_num_threads);
 
             if load_all_models {
-                for model in VoiceModel::get_all_models().await?.iter() {
+                for model in &VoiceModel::get_all_models().await? {
                     status.load_model(model).await?;
                 }
             }
