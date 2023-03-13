@@ -89,8 +89,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
         let open_jtalk = COpenJtalkRc::new_with_initialize(open_jtalk_dic_dir)?;
         let o = malloc(size_of::<COpenJtalkRc>()) as *mut COpenJtalkRc;
-
-        *o = open_jtalk;
+        o.write(open_jtalk);
         out_open_jtalk.write(o as *mut OpenJtalkRc);
         Ok(())
     })())
@@ -176,7 +175,7 @@ pub unsafe extern "C" fn voicevox_model_new_from_path(
     into_result_code_with_error((|| {
         let model = RUNTIME.block_on(CVoiceModel::from_path(ensure_utf8(CStr::from_ptr(path))?))?;
         let m = malloc(size_of::<CVoiceModel>()) as *mut CVoiceModel;
-        *m = model;
+        m.write(model);
         out_model.write(m as *mut VoicevoxVoiceModel);
         Ok(())
     })())
@@ -242,7 +241,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
         let synthesizer =
             RUNTIME.block_on(CVoiceSynthesizer::new_with_initialize(open_jtalk, &options))?;
         let s = malloc(size_of::<CVoiceSynthesizer>()) as *mut CVoiceSynthesizer;
-        *s = synthesizer;
+        s.write(synthesizer);
         out_synthesizer.write(s as *mut VoicevoxVoiceSynthesizer);
         Ok(())
     })())
