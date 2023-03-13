@@ -94,7 +94,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
             &mut open_jtalk as *mut COpenJtalkRc as *mut c_void,
             size_of::<COpenJtalkRc>(),
         );
-        *out_open_jtalk = o as *mut OpenJtalkRc;
+        out_open_jtalk.write(o as *mut OpenJtalkRc);
         Ok(())
     })())
 }
