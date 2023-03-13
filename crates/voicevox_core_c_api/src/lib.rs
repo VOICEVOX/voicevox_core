@@ -15,7 +15,7 @@ use std::io::{self, Write};
 use std::mem::size_of;
 use std::os::raw::c_char;
 use std::sync::{Mutex, MutexGuard};
-use tokio::runtime::Handle;
+use tokio::runtime::{Handle, Runtime};
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use voicevox_core::StyleId;
@@ -27,7 +27,7 @@ use voicevox_core::{SupportedDevices, SynthesisOptions};
 #[cfg(test)]
 use rstest::*;
 
-static _INTERNAL: Lazy<()> = Lazy::new(|| {
+static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
     let _ = init_logger();
 
     fn init_logger() -> std::result::Result<(), impl Sized> {
@@ -63,6 +63,7 @@ static _INTERNAL: Lazy<()> = Lazy::new(|| {
             |term| term != "dumb",
         ) && env::var_os("NO_COLOR").is_none()
     }
+    Runtime::new().unwrap()
 });
 
 /*
@@ -178,8 +179,8 @@ pub unsafe extern "C" fn voicevox_model_new_from_path(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         unsafe {
-            let mut model = Handle::current()
-                .block_on(CVoiceModel::from_path(ensure_utf8(CStr::from_ptr(path))?))?;
+            let mut model =
+                RUNTIME.block_on(CVoiceModel::from_path(ensure_utf8(CStr::from_ptr(path))?))?;
             let m = malloc(size_of::<CVoiceModel>());
             memcpy(
                 m,
@@ -247,11 +248,10 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let options = options.into();
-        let handle = Handle::current();
         let open_jtalk = &*(open_jtalk as *const COpenJtalkRc);
 
         let synthesizer =
-            handle.block_on(CVoiceSynthesizer::new_with_initialize(open_jtalk, &options))?;
+            RUNTIME.block_on(CVoiceSynthesizer::new_with_initialize(open_jtalk, &options))?;
         unsafe {
             let s = malloc(size_of::<CVoiceSynthesizer>());
             memcpy(
@@ -292,7 +292,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_load_model(
     let synthesizer = &mut *(synthesizer as *mut CVoiceSynthesizer);
     let model = &*(model as *const CVoiceModel);
     into_result_code_with_error(
-        Handle::current()
+        RUNTIME
             .block_on(synthesizer.load_model(model.model()))
             .map_err(Into::into),
     )
@@ -420,7 +420,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
         let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
         let text = CStr::from_ptr(text);
         let japanese_or_kana = ensure_utf8(text)?;
-        let audio_query = Handle::current().block_on(synthesizer.synthesizer().audio_query(
+        let audio_query = RUNTIME.block_on(synthesizer.synthesizer().audio_query(
             japanese_or_kana,
             &StyleId::new(style_id),
             &AudioQueryOptions::from(options),
@@ -451,7 +451,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     into_result_code_with_error((|| {
         let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
         let text = ensure_utf8(CStr::from_ptr(text))?;
-        let accent_phrases = Handle::current().block_on(
+        let accent_phrases = RUNTIME.block_on(
             synthesizer
                 .synthesizer()
                 .create_accent_phrases(text, &StyleId::new(style_id)),
@@ -484,7 +484,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .expect("invalid json\0");
-        let accent_phrases = Handle::current().block_on(
+        let accent_phrases = RUNTIME.block_on(
             synthesizer
                 .synthesizer()
                 .replace_mora_data(&accent_phrases, &StyleId::new(style_id)),
@@ -517,7 +517,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .expect("invalid json\0");
-        let accent_phrases = Handle::current().block_on(
+        let accent_phrases = RUNTIME.block_on(
             synthesizer
                 .synthesizer()
                 .replace_phoneme_length(&accent_phrases, &StyleId::new(style_id)),
@@ -571,7 +571,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
             .map_err(|_| CApiError::InvalidUtf8Input)?;
         let audio_query: AudioQueryModel =
             serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
-        let wav = &Handle::current().block_on(synthesizer.synthesizer().synthesis(
+        let wav = &RUNTIME.block_on(synthesizer.synthesizer().synthesis(
             &audio_query,
             &StyleId::new(style_id),
             &SynthesisOptions::from(options),
@@ -621,7 +621,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
     into_result_code_with_error((|| {
         let synthesizer = &*(synthesizer as *const CVoiceSynthesizer);
         let text = ensure_utf8(CStr::from_ptr(text))?;
-        let output = Handle::current().block_on(synthesizer.synthesizer().tts(
+        let output = RUNTIME.block_on(synthesizer.synthesizer().tts(
             text,
             &StyleId::new(style_id),
             &TtsOptions::from(options),
