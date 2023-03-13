@@ -87,14 +87,10 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
-        let mut open_jtalk = COpenJtalkRc::new_with_initialize(open_jtalk_dic_dir)?;
-        let o = malloc(size_of::<COpenJtalkRc>());
+        let open_jtalk = COpenJtalkRc::new_with_initialize(open_jtalk_dic_dir)?;
+        let o = malloc(size_of::<COpenJtalkRc>()) as *mut COpenJtalkRc;
 
-        memcpy(
-            o,
-            &mut open_jtalk as *mut COpenJtalkRc as *mut c_void,
-            size_of::<COpenJtalkRc>(),
-        );
+        *o = open_jtalk;
         out_open_jtalk.write(o as *mut OpenJtalkRc);
         Ok(())
     })())
@@ -178,17 +174,10 @@ pub unsafe extern "C" fn voicevox_model_new_from_path(
     out_model: *mut *mut VoicevoxVoiceModel,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        unsafe {
-            let mut model =
-                RUNTIME.block_on(CVoiceModel::from_path(ensure_utf8(CStr::from_ptr(path))?))?;
-            let m = malloc(size_of::<CVoiceModel>());
-            memcpy(
-                m,
-                &mut model as *mut CVoiceModel as *mut c_void,
-                size_of::<CVoiceModel>(),
-            );
-            out_model.write(m as *mut VoicevoxVoiceModel);
-        }
+        let model = RUNTIME.block_on(CVoiceModel::from_path(ensure_utf8(CStr::from_ptr(path))?))?;
+        let m = malloc(size_of::<CVoiceModel>()) as *mut CVoiceModel;
+        *m = model;
+        out_model.write(m as *mut VoicevoxVoiceModel);
         Ok(())
     })())
 }
@@ -252,15 +241,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
 
         let synthesizer =
             RUNTIME.block_on(CVoiceSynthesizer::new_with_initialize(open_jtalk, &options))?;
-        unsafe {
-            let s = malloc(size_of::<CVoiceSynthesizer>());
-            memcpy(
-                s,
-                (&synthesizer as *const CVoiceSynthesizer) as *const c_void,
-                size_of::<CVoiceSynthesizer>(),
-            );
-            out_synthesizer.write(s as *mut VoicevoxVoiceSynthesizer);
-        }
+        let s = malloc(size_of::<CVoiceSynthesizer>()) as *mut CVoiceSynthesizer;
+        *s = synthesizer;
+        out_synthesizer.write(s as *mut VoicevoxVoiceSynthesizer);
         Ok(())
     })())
 }
