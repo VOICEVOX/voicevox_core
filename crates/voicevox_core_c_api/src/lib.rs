@@ -186,7 +186,7 @@ pub unsafe extern "C" fn voicevox_model_new_from_path(
                 &mut model as *mut CVoiceModel as *mut c_void,
                 size_of::<CVoiceModel>(),
             );
-            *out_model = m as *mut VoicevoxVoiceModel;
+            out_model.write(m as *mut VoicevoxVoiceModel);
         }
         Ok(())
     })())
