@@ -140,17 +140,16 @@ impl VvmEntryReader {
     }
     async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> Result<T> {
         let bytes = self.read_vvm_entry(filename).await?;
-        serde_json::from_slice(&bytes).map_err(|e| {
-            println!("{e:?}");
-            Error::VvmRead {
-                filename: filename.into(),
-            }
+        serde_json::from_slice(&bytes).map_err(|e| Error::VvmRead {
+            filename: filename.into(),
+            source: Some(e.into()),
         })
     }
 
     async fn read_vvm_entry(&self, filename: &str) -> Result<Vec<u8>> {
         let me = self.entry_map.get(filename).ok_or(Error::VvmRead {
             filename: filename.into(),
+            source: None,
         })?;
         let mut manifest_reader =
             self.reader
@@ -158,6 +157,7 @@ impl VvmEntryReader {
                 .await
                 .map_err(|_| Error::VvmRead {
                     filename: filename.into(),
+                    source: None,
                 })?;
         let mut buf = Vec::with_capacity(me.entry.uncompressed_size() as usize);
         manifest_reader
@@ -165,6 +165,7 @@ impl VvmEntryReader {
             .await
             .map_err(|_| Error::VvmRead {
                 filename: filename.into(),
+                source: None,
             })?;
         Ok(buf)
     }

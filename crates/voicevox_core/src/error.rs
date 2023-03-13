@@ -44,7 +44,11 @@ pub enum Error {
     },
 
     #[error("{},{filename}", base_error_message(VOICEVOX_VVM_MODEL_READ_ERROR))]
-    VvmRead { filename: String },
+    VvmRead {
+        filename: String,
+        #[source]
+        source: Option<anyhow::Error>,
+    },
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_METAS_ERROR))]
     LoadMetas(#[source] anyhow::Error),
@@ -121,11 +125,17 @@ impl PartialEq for Error {
             (
                 Self::VvmRead {
                     filename: filename1,
+                    source: source1,
                 },
                 Self::VvmRead {
                     filename: filename2,
+                    source: source2,
                 },
-            ) => filename1 == filename2,
+            ) => {
+                filename1 == filename2
+                    && source1.as_ref().map(|s| s.to_string())
+                        == source2.as_ref().map(|s| s.to_string())
+            }
             (
                 Self::OpenFile {
                     path: path1,
