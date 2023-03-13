@@ -259,7 +259,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
                 (&synthesizer as *const CVoiceSynthesizer) as *const c_void,
                 size_of::<CVoiceSynthesizer>(),
             );
-            *out_synthesizer = s as *mut VoicevoxVoiceSynthesizer;
+            out_synthesizer.write(s as *mut VoicevoxVoiceSynthesizer);
         }
         Ok(())
     })())
