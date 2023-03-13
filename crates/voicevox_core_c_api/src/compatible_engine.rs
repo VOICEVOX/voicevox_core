@@ -40,8 +40,7 @@ static VOICE_MODEL_SET: Lazy<Mutex<VoiceModelSet>> = Lazy::new(|| {
 });
 
 fn voice_model_set() -> MutexGuard<'static, VoiceModelSet> {
-    let mut vm = VOICE_MODEL_SET.lock().unwrap();
-    vm
+    VOICE_MODEL_SET.lock().unwrap()
 }
 
 static SYNTHESIZER: Lazy<Mutex<Option<voicevox_core::VoiceSynthesizer>>> =
@@ -118,7 +117,7 @@ pub extern "C" fn finalize() {
 #[no_mangle]
 pub extern "C" fn metas() -> *const c_char {
     let model_set = voice_model_set();
-    model_set.unwrap().all_metas_json.as_ptr()
+    model_set.all_metas_json.as_ptr()
 }
 
 #[no_mangle]
