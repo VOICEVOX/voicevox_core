@@ -118,6 +118,24 @@ impl PartialEq for Error {
             ) => model_index1 == model_index2,
             (Self::ExtractFullContextLabel(e1), Self::ExtractFullContextLabel(e2)) => e1 == e2,
             (Self::ParseKana(e1), Self::ParseKana(e2)) => e1 == e2,
+            (
+                Self::VvmRead {
+                    filename: filename1,
+                },
+                Self::VvmRead {
+                    filename: filename2,
+                },
+            ) => filename1 == filename2,
+            (
+                Self::OpenFile {
+                    path: path1,
+                    source: source1,
+                },
+                Self::OpenFile {
+                    path: path2,
+                    source: source2,
+                },
+            ) => path1 == path2 && source1.to_string() == source2.to_string(),
             _ => false,
         }
     }
