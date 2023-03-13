@@ -352,7 +352,10 @@ mod tests {
     async fn load_model_works(#[case] expected_result_at_initialized: Result<()>) {
         let mut syntesizer = VoiceSynthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
-            &InitializeOptions::default(),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
@@ -387,7 +390,10 @@ mod tests {
         let style_id = StyleId::new(style_id);
         let mut syntesizer = VoiceSynthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
-            &InitializeOptions::default(),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
@@ -413,7 +419,10 @@ mod tests {
     async fn predict_duration_works() {
         let mut syntesizer = VoiceSynthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
-            &InitializeOptions::default(),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
@@ -442,7 +451,10 @@ mod tests {
     async fn predict_intonation_works() {
         let mut syntesizer = VoiceSynthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
-            &InitializeOptions::default(),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
@@ -481,7 +493,10 @@ mod tests {
     async fn decode_works() {
         let mut syntesizer = VoiceSynthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
-            &InitializeOptions::default(),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            },
         )
         .await
         .unwrap();
