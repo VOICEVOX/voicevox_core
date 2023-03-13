@@ -6,7 +6,7 @@ use self::helpers::*;
 use c_impls::*;
 use chrono::SecondsFormat;
 use is_terminal::IsTerminal;
-use libc::{c_void, free, malloc, memcpy};
+use libc::{c_void, free, malloc};
 use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
