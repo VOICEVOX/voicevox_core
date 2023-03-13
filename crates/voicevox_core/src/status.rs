@@ -81,59 +81,56 @@ impl Status {
     }
 
     pub async fn load_model(&mut self, model: &VoiceModel) -> Result<()> {
-        async {
-            for speaker in model.metas().iter() {
-                for style in speaker.styles().iter() {
-                    if self.id_relations.contains_key(style.id()) {
-                        Err(Error::AlreadyLoadedModel {
-                            path: model.path().clone(),
-                        })?;
-                    }
+        for speaker in model.metas().iter() {
+            for style in speaker.styles().iter() {
+                if self.id_relations.contains_key(style.id()) {
+                    Err(Error::AlreadyLoadedModel {
+                        path: model.path().clone(),
+                    })?;
                 }
             }
-            let models = model.read_inference_models().await?;
-
-            let predict_duration_session = self.new_session(
-                models.predict_duration_model(),
-                &self.light_session_options,
-                model.path(),
-            )?;
-            let predict_intonation_session = self.new_session(
-                models.predict_intonation_model(),
-                &self.light_session_options,
-                model.path(),
-            )?;
-            let decode_model = self.new_session(
-                models.decode_model(),
-                &self.heavy_session_options,
-                model.path(),
-            )?;
-            self.models
-                .metas
-                .insert(model.id().clone(), model.metas().clone());
-
-            for speaker in model.metas().iter() {
-                for style in speaker.styles().iter() {
-                    self.id_relations
-                        .insert(style.id().clone(), model.id().clone());
-                }
-            }
-            self.set_metas();
-
-            self.models
-                .predict_duration
-                .insert(model.id().clone(), Mutex::new(predict_duration_session));
-            self.models
-                .predict_intonation
-                .insert(model.id().clone(), Mutex::new(predict_intonation_session));
-
-            self.models
-                .decode
-                .insert(model.id().clone(), Mutex::new(decode_model));
-
-            Ok(())
         }
-        .await
+        let models = model.read_inference_models().await?;
+
+        let predict_duration_session = self.new_session(
+            models.predict_duration_model(),
+            &self.light_session_options,
+            model.path(),
+        )?;
+        let predict_intonation_session = self.new_session(
+            models.predict_intonation_model(),
+            &self.light_session_options,
+            model.path(),
+        )?;
+        let decode_model = self.new_session(
+            models.decode_model(),
+            &self.heavy_session_options,
+            model.path(),
+        )?;
+        self.models
+            .metas
+            .insert(model.id().clone(), model.metas().clone());
+
+        for speaker in model.metas().iter() {
+            for style in speaker.styles().iter() {
+                self.id_relations
+                    .insert(style.id().clone(), model.id().clone());
+            }
+        }
+        self.set_metas();
+
+        self.models
+            .predict_duration
+            .insert(model.id().clone(), Mutex::new(predict_duration_session));
+        self.models
+            .predict_intonation
+            .insert(model.id().clone(), Mutex::new(predict_intonation_session));
+
+        self.models
+            .decode
+            .insert(model.id().clone(), Mutex::new(decode_model));
+
+        Ok(())
     }
 
     pub fn unload_model(&mut self, model_id: &VoiceModelId) -> Result<()> {
