@@ -14,34 +14,33 @@ struct VoiceModelSet {
     model_map: BTreeMap<VoiceModelId, VoiceModel>,
 }
 
-static VOICE_MODEL_SET: Lazy<Mutex<Option<VoiceModelSet>>> = Lazy::new(|| Mutex::new(None));
-
-fn voice_model_set() -> MutexGuard<'static, Option<VoiceModelSet>> {
-    let mut vm = VOICE_MODEL_SET.lock().unwrap();
-    if vm.is_none() {
-        let all_vvms = Handle::current()
-            .block_on(VoiceModel::get_all_models())
-            .unwrap();
-        let model_map: BTreeMap<_, _> = all_vvms
-            .iter()
-            .map(|vvm| (vvm.id().clone(), vvm.clone()))
-            .collect();
-        let metas: Vec<_> = all_vvms.iter().flat_map(|vvm| vvm.metas()).collect();
-        let mut style_model_map = BTreeMap::default();
-        for vvm in all_vvms.iter() {
-            for meta in vvm.metas().iter() {
-                for style in meta.styles().iter() {
-                    style_model_map.insert(style.id().clone(), vvm.id().clone());
-                }
+static VOICE_MODEL_SET: Lazy<Mutex<VoiceModelSet>> = Lazy::new(|| {
+    let all_vvms = Handle::current()
+        .block_on(VoiceModel::get_all_models())
+        .unwrap();
+    let model_map: BTreeMap<_, _> = all_vvms
+        .iter()
+        .map(|vvm| (vvm.id().clone(), vvm.clone()))
+        .collect();
+    let metas: Vec<_> = all_vvms.iter().flat_map(|vvm| vvm.metas()).collect();
+    let mut style_model_map = BTreeMap::default();
+    for vvm in all_vvms.iter() {
+        for meta in vvm.metas().iter() {
+            for style in meta.styles().iter() {
+                style_model_map.insert(style.id().clone(), vvm.id().clone());
             }
         }
-
-        *vm = Some(VoiceModelSet {
-            all_metas_json: CString::new(serde_json::to_string(&metas).unwrap()).unwrap(),
-            style_model_map,
-            model_map,
-        })
     }
+
+    Mutex::new(VoiceModelSet {
+        all_metas_json: CString::new(serde_json::to_string(&metas).unwrap()).unwrap(),
+        style_model_map,
+        model_map,
+    })
+});
+
+fn voice_model_set() -> MutexGuard<'static, VoiceModelSet> {
+    let mut vm = VOICE_MODEL_SET.lock().unwrap();
     vm
 }
 
@@ -87,8 +86,8 @@ pub extern "C" fn load_model(style_id: i64) -> bool {
     let handle = Handle::current();
     let style_id = StyleId::new(style_id as u32);
     let model_set = voice_model_set();
-    if let Some(model_id) = model_set.as_ref().unwrap().style_model_map.get(&style_id) {
-        let vvm = model_set.as_ref().unwrap().model_map.get(model_id).unwrap();
+    if let Some(model_id) = model_set.style_model_map.get(&style_id) {
+        let vvm = model_set.model_map.get(model_id).unwrap();
         let mut synthesizer = lock_synthesizer();
         let result = handle.block_on(synthesizer.as_mut().unwrap().load_model(vvm));
         if let Some(err) = result.err() {
@@ -119,7 +118,7 @@ pub extern "C" fn finalize() {
 #[no_mangle]
 pub extern "C" fn metas() -> *const c_char {
     let model_set = voice_model_set();
-    model_set.as_ref().unwrap().all_metas_json.as_ptr()
+    model_set.unwrap().all_metas_json.as_ptr()
 }
 
 #[no_mangle]
