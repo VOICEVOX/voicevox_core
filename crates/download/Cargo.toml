@@ -21,7 +21,7 @@ platforms = "3.0.2"
 rayon = "1.6.1"
 reqwest.workspace=true
 strum = { version = "0.24.1", features = ["derive"] }
-tokio = { version = "1.24.1", features = ["macros", "rt-multi-thread", "sync"] }
+tokio.workspace=true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 url = "2.3.0"
