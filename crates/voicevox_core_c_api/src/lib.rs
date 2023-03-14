@@ -613,7 +613,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
     })())
 }
 
-/// jsonフォーマットされた AudioQuery データのメモリを解放する
+/// jsonフォーマットされたデータのメモリを解放する
 /// @param [in] json 解放する json データ
 ///
 /// # Safety
