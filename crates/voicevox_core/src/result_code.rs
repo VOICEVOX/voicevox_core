@@ -70,7 +70,9 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
         VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR => "無効なaudio_queryです\0",
         VOICEVOX_OPEN_FILE_ERROR => "ファイルオープンに失敗しました\0",
         VOICEVOX_VVM_MODEL_READ_ERROR => "Modelを読み込めませんでした\0",
-        VOICEVOX_ALREADY_LOADED_MODEL_ERROR => "すでに読み込まれているModelを読み込もうとしました\0",
+        VOICEVOX_ALREADY_LOADED_MODEL_ERROR => {
+            "すでに読み込まれているModelを読み込もうとしました\0"
+        }
         VOICEVOX_UNLOADED_MODEL_ERROR => "Modelが読み込まれていません\0",
     }
 }
