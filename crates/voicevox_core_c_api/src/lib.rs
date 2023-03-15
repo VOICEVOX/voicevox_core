@@ -6,13 +6,12 @@ use self::helpers::*;
 use c_impls::*;
 use chrono::SecondsFormat;
 use is_terminal::IsTerminal;
-use libc::{c_void, free, malloc};
+use libc::c_void;
 use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io::{self, Write};
-use std::mem::size_of;
 use std::os::raw::c_char;
 use std::sync::{Mutex, MutexGuard};
 use tokio::runtime::{Handle, Runtime};
@@ -88,9 +87,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     into_result_code_with_error((|| {
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
         let open_jtalk = COpenJtalkRc::new_with_initialize(open_jtalk_dic_dir)?;
-        let o = malloc(size_of::<COpenJtalkRc>()) as *mut COpenJtalkRc;
-        o.write(open_jtalk);
-        out_open_jtalk.write(o as *mut OpenJtalkRc);
+        out_open_jtalk.write(Box::into_raw(Box::new(open_jtalk)) as *mut OpenJtalkRc);
         Ok(())
     })())
 }
@@ -102,8 +99,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 /// @open_jtalk 有効な :OpenJtalkRc のポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: *mut OpenJtalkRc) {
-    let _ = *(open_jtalk as *mut COpenJtalkRc);
-    free(open_jtalk as *mut c_void)
+    let _ = Box::from_raw(open_jtalk as *mut COpenJtalkRc);
 }
 
 pub use voicevox_core::result_code::VoicevoxResultCode;
@@ -174,9 +170,7 @@ pub unsafe extern "C" fn voicevox_model_new_from_path(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let model = RUNTIME.block_on(CVoiceModel::from_path(ensure_utf8(CStr::from_ptr(path))?))?;
-        let m = malloc(size_of::<CVoiceModel>()) as *mut CVoiceModel;
-        m.write(model);
-        out_model.write(m as *mut VoicevoxVoiceModel);
+        out_model.write(Box::into_raw(Box::new(model)) as *mut VoicevoxVoiceModel);
         Ok(())
     })())
 }
@@ -213,8 +207,7 @@ pub unsafe extern "C" fn voicevox_model_get_metas_json(
 /// # Safety
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 pub unsafe extern "C" fn voicevox_model_delete(model: *mut VoicevoxVoiceModel) {
-    let _ = *(model as *mut CVoiceModel);
-    free(model as *mut c_void);
+    let _ = Box::from_raw(model as *mut CVoiceModel);
 }
 
 #[repr(C)]
@@ -240,9 +233,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
 
         let synthesizer =
             RUNTIME.block_on(CVoiceSynthesizer::new_with_initialize(open_jtalk, &options))?;
-        let s = malloc(size_of::<CVoiceSynthesizer>()) as *mut CVoiceSynthesizer;
-        s.write(synthesizer);
-        out_synthesizer.write(s as *mut VoicevoxVoiceSynthesizer);
+        out_synthesizer
+            .write(Box::into_raw(Box::new(synthesizer)) as *mut VoicevoxVoiceSynthesizer);
         Ok(())
     })())
 }
@@ -254,8 +246,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
 /// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: *mut VoicevoxVoiceSynthesizer) {
-    let _ = *(synthesizer as *const CVoiceSynthesizer);
-    free(synthesizer as *mut c_void);
+    let _ = Box::from_raw(synthesizer as *mut CVoiceSynthesizer);
 }
 
 /// モデルを読み込む
