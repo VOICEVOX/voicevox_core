@@ -2,6 +2,8 @@ use std::path::{Path, PathBuf};
 
 use ::open_jtalk::*;
 
+use crate::macros::partialeq;
+
 #[derive(thiserror::Error, Debug)]
 pub enum OpenJtalkError {
     #[error("open_jtalk load error")]
@@ -14,33 +16,14 @@ pub enum OpenJtalkError {
     },
 }
 
-impl PartialEq for OpenJtalkError {
-    fn eq(&self, other: &Self) -> bool {
-        return match (self, other) {
-            (
-                Self::Load {
-                    mecab_dict_dir: mecab_dict_dir1,
-                },
-                Self::Load {
-                    mecab_dict_dir: mecab_dict_dir2,
-                },
-            ) => mecab_dict_dir1 == mecab_dict_dir2,
-            (
-                Self::ExtractFullContext {
-                    text: text1,
-                    source: source1,
-                },
-                Self::ExtractFullContext {
-                    text: text2,
-                    source: source2,
-                },
-            ) => (text1, by_display(source1)) == (text2, by_display(source2)),
-            _ => false,
-        };
-
-        fn by_display(source: &Option<anyhow::Error>) -> impl PartialEq {
-            source.as_ref().map(|e| e.to_string())
-        }
+partialeq! {
+    for OpenJtalkError {
+        unit: {},
+        unnamed: {},
+        named: {
+            Load { mecab_dict_dir },
+            ExtractFullContext { text, #[stringify] source },
+        },
     }
 }
 
