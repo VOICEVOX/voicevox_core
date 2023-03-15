@@ -48,8 +48,8 @@ macro_rules! partialeq {
                                     == ::paste::paste!([<$unnamed_field _2>])
                             )*
                             $(
-                                && __OptionalAnyhowError::to_option_string(::paste::paste!([<$unnamed_source _1>]))
-                                    == __OptionalAnyhowError::to_option_string(::paste::paste!([<$unnamed_source _2>]))
+                                && crate::macros::OptionalAnyhowError::to_option_string(::paste::paste!([<$unnamed_source _1>]))
+                                    == crate::macros::OptionalAnyhowError::to_option_string(::paste::paste!([<$unnamed_source _2>]))
                             )*,
                     )*
                     $(
@@ -62,8 +62,8 @@ macro_rules! partialeq {
                                     == ::paste::paste!([<$named_field _2>])
                             )*
                             $(
-                                && __OptionalAnyhowError::to_option_string(::paste::paste!([<$named_source _1>]))
-                                    == __OptionalAnyhowError::to_option_string(::paste::paste!([<$named_source _2>]))
+                                && crate::macros::OptionalAnyhowError::to_option_string(::paste::paste!([<$named_source _1>]))
+                                    == crate::macros::OptionalAnyhowError::to_option_string(::paste::paste!([<$named_source _2>]))
                             )*,
                     )*
                     _ => false,
@@ -79,24 +79,24 @@ macro_rules! partialeq {
                         $(| This::$named_variant_ident { .. })* => {}
                     }
                 };
-
-                trait __OptionalAnyhowError {
-                    fn to_option_string(&self) -> Option<String>;
-                }
-
-                impl __OptionalAnyhowError for anyhow::Error {
-                    fn to_option_string(&self) -> Option<String> {
-                        Some(self.to_string())
-                    }
-                }
-
-                impl __OptionalAnyhowError for Option<anyhow::Error> {
-                    fn to_option_string(&self) -> Option<String> {
-                        self.as_ref().map(|e| e.to_string())
-                    }
-                }
             }
         }
     };
 }
 pub(crate) use partialeq;
+
+pub(crate) trait OptionalAnyhowError {
+    fn to_option_string(&self) -> Option<String>;
+}
+
+impl OptionalAnyhowError for anyhow::Error {
+    fn to_option_string(&self) -> Option<String> {
+        Some(self.to_string())
+    }
+}
+
+impl OptionalAnyhowError for Option<anyhow::Error> {
+    fn to_option_string(&self) -> Option<String> {
+        self.as_ref().map(|e| e.to_string())
+    }
+}
