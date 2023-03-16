@@ -651,6 +651,8 @@ fn list_windows_video_cards() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::macros::tests::assert_result;
+    use assert_matches::assert_matches;
     use pretty_assertions::assert_eq;
 
     #[rstest]
@@ -660,7 +662,7 @@ mod tests {
             .lock()
             .unwrap()
             .initialize(InitializeOptions::default());
-        assert_eq!(Ok(()), result);
+        assert_matches!(result, Ok(()));
         internal.lock().unwrap().finalize();
         assert_eq!(
             false,
@@ -684,17 +686,17 @@ mod tests {
     }
 
     #[rstest]
-    #[case(0, Err(Error::UninitializedStatus), Ok(()))]
-    #[case(1, Err(Error::UninitializedStatus), Ok(()))]
-    #[case(999, Err(Error::UninitializedStatus), Err(Error::InvalidSpeakerId{speaker_id:999}))]
+    #[case(0, assert_result!(Err(Error::UninitializedStatus)), assert_result!(Ok(())))]
+    #[case(1, assert_result!(Err(Error::UninitializedStatus)), assert_result!(Ok(())))]
+    #[case(999, assert_result!(Err(Error::UninitializedStatus)), assert_result!(Err(Error::InvalidSpeakerId{ speaker_id: 999 })))]
     fn load_model_works(
         #[case] speaker_id: u32,
-        #[case] expected_result_at_uninitialized: Result<()>,
-        #[case] expected_result_at_initialized: Result<()>,
+        #[case] assert_result_at_uninitialized: fn(Result<()>),
+        #[case] assert_result_at_initialized: fn(Result<()>),
     ) {
         let internal = VoicevoxCore::new_with_mutex();
         let result = internal.lock().unwrap().load_model(speaker_id);
-        assert_eq!(expected_result_at_uninitialized, result);
+        assert_result_at_uninitialized(result);
 
         internal
             .lock()
@@ -705,10 +707,7 @@ mod tests {
             })
             .unwrap();
         let result = internal.lock().unwrap().load_model(speaker_id);
-        assert_eq!(
-            expected_result_at_initialized, result,
-            "got load_model result"
-        );
+        assert_result_at_initialized(result);
     }
 
     #[rstest]

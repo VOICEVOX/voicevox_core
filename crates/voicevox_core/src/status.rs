@@ -359,6 +359,7 @@ impl Status {
 mod tests {
 
     use super::*;
+    use assert_matches::assert_matches;
     use pretty_assertions::assert_eq;
 
     #[rstest]
@@ -391,7 +392,7 @@ mod tests {
     fn status_load_metas_works() {
         let mut status = Status::new(true, 0);
         let result = status.load_metas();
-        assert_eq!(Ok(()), result);
+        assert_matches!(result, Ok(()));
         let expected = BTreeSet::from([0, 1, 2, 3]);
         assert_eq!(expected, status.supported_styles);
     }
@@ -407,7 +408,7 @@ mod tests {
     fn status_load_model_works() {
         let mut status = Status::new(false, 0);
         let result = status.load_model(0);
-        assert_eq!(Ok(()), result);
+        assert_matches!(result, Ok(()));
         assert_eq!(1, status.models.predict_duration.len());
         assert_eq!(1, status.models.predict_intonation.len());
         assert_eq!(1, status.models.decode.len());
@@ -422,7 +423,7 @@ mod tests {
             "model should  not be loaded"
         );
         let result = status.load_model(model_index);
-        assert_eq!(Ok(()), result);
+        assert_matches!(result, Ok(()));
         assert!(
             status.is_model_loaded(model_index),
             "model should be loaded"

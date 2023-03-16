@@ -644,6 +644,7 @@ fn make_interrogative_mora(last_mora: &MoraModel) -> MoraModel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert_matches::assert_matches;
     use pretty_assertions::assert_eq;
 
     use crate::*;
@@ -656,10 +657,10 @@ mod tests {
         let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
 
         let result = synthesis_engine.load_openjtalk_dict(&open_jtalk_dic_dir);
-        assert_eq!(result, Ok(()));
+        assert_matches!(result, Ok(()));
 
         let result = synthesis_engine.load_openjtalk_dict("");
-        assert_eq!(result, Err(Error::NotLoadedOpenjtalkDict));
+        assert_matches!(result, Err(Error::NotLoadedOpenjtalkDict));
     }
 
     #[rstest]
