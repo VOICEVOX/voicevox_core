@@ -2,7 +2,7 @@
 pub(crate) mod tests {
     use std::fmt::{self, Debug};
 
-    use pretty_assertions::Comparison;
+    use pretty_assertions::StrComparison;
 
     /// 2つの`"{:#?}"`が等しいかを、pretty\_assertions風にassertする。
     ///
@@ -27,7 +27,8 @@ pub(crate) mod tests {
         right: &T,
         args: Option<fmt::Arguments<'_>>,
     ) {
-        if format!("{left:#?}") != format!("{right:#?}") {
+        let (left, right) = (format!("{left:#?}"), format!("{right:#?}"));
+        if left != right {
             panic!(
                 r#"assertion failed: `("{{left:#?}}" == "{{right:#?}}")`{}
 
@@ -37,7 +38,7 @@ pub(crate) mod tests {
                     Some(args) => format!(": {args}"),
                     None => "".to_owned(),
                 },
-                Comparison::new(left, right),
+                StrComparison::new(&left, &right),
             );
         }
     }
