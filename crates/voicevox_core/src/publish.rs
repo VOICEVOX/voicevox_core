@@ -651,6 +651,7 @@ fn list_windows_video_cards() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::macros::tests::assert_debug_fmt_eq;
     use pretty_assertions::assert_eq;
 
     #[rstest]
@@ -660,7 +661,7 @@ mod tests {
             .lock()
             .unwrap()
             .initialize(InitializeOptions::default());
-        assert_eq!(Ok(()), result);
+        assert_debug_fmt_eq!(Ok(()), result);
         internal.lock().unwrap().finalize();
         assert_eq!(
             false,
@@ -694,7 +695,7 @@ mod tests {
     ) {
         let internal = VoicevoxCore::new_with_mutex();
         let result = internal.lock().unwrap().load_model(speaker_id);
-        assert_eq!(expected_result_at_uninitialized, result);
+        assert_debug_fmt_eq!(expected_result_at_uninitialized, result);
 
         internal
             .lock()
@@ -705,9 +706,10 @@ mod tests {
             })
             .unwrap();
         let result = internal.lock().unwrap().load_model(speaker_id);
-        assert_eq!(
-            expected_result_at_initialized, result,
-            "got load_model result"
+        assert_debug_fmt_eq!(
+            expected_result_at_initialized,
+            result,
+            "got load_model result",
         );
     }
 

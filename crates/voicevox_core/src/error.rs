@@ -68,50 +68,6 @@ pub enum Error {
     ParseKana(#[from] KanaParseError),
 }
 
-impl PartialEq for Error {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::NotLoadedOpenjtalkDict, Self::NotLoadedOpenjtalkDict)
-            | (Self::GpuSupport, Self::GpuSupport)
-            | (Self::UninitializedStatus, Self::UninitializedStatus)
-            | (Self::InferenceFailed, Self::InferenceFailed) => true,
-            (
-                Self::LoadModel {
-                    path: path1,
-                    source: source1,
-                },
-                Self::LoadModel {
-                    path: path2,
-                    source: source2,
-                },
-            ) => (path1, source1.to_string()) == (path2, source2.to_string()),
-            (Self::LoadMetas(e1), Self::LoadMetas(e2))
-            | (Self::GetSupportedDevices(e1), Self::GetSupportedDevices(e2)) => {
-                e1.to_string() == e2.to_string()
-            }
-            (
-                Self::InvalidSpeakerId {
-                    speaker_id: speaker_id1,
-                },
-                Self::InvalidSpeakerId {
-                    speaker_id: speaker_id2,
-                },
-            ) => speaker_id1 == speaker_id2,
-            (
-                Self::InvalidModelIndex {
-                    model_index: model_index1,
-                },
-                Self::InvalidModelIndex {
-                    model_index: model_index2,
-                },
-            ) => model_index1 == model_index2,
-            (Self::ExtractFullContextLabel(e1), Self::ExtractFullContextLabel(e2)) => e1 == e2,
-            (Self::ParseKana(e1), Self::ParseKana(e2)) => e1 == e2,
-            _ => false,
-        }
-    }
-}
-
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
     let c_message: &'static str = crate::error_result_to_message(result_code);
     &c_message[..(c_message.len() - 1)]

@@ -4,7 +4,7 @@ use super::*;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum FullContextLabelError {
     #[error("label parse error label:{label}")]
     LabelParse { label: String },

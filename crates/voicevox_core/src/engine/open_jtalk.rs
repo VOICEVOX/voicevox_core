@@ -14,36 +14,6 @@ pub enum OpenJtalkError {
     },
 }
 
-impl PartialEq for OpenJtalkError {
-    fn eq(&self, other: &Self) -> bool {
-        return match (self, other) {
-            (
-                Self::Load {
-                    mecab_dict_dir: mecab_dict_dir1,
-                },
-                Self::Load {
-                    mecab_dict_dir: mecab_dict_dir2,
-                },
-            ) => mecab_dict_dir1 == mecab_dict_dir2,
-            (
-                Self::ExtractFullContext {
-                    text: text1,
-                    source: source1,
-                },
-                Self::ExtractFullContext {
-                    text: text2,
-                    source: source2,
-                },
-            ) => (text1, by_display(source1)) == (text2, by_display(source2)),
-            _ => false,
-        };
-
-        fn by_display(source: &Option<anyhow::Error>) -> impl PartialEq {
-            source.as_ref().map(|e| e.to_string())
-        }
-    }
-}
-
 pub type Result<T> = std::result::Result<T, OpenJtalkError>;
 
 pub struct OpenJtalk {
@@ -131,9 +101,8 @@ impl OpenJtalk {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pretty_assertions::assert_eq;
 
-    use crate::*;
+    use crate::{macros::tests::assert_debug_fmt_eq, *};
 
     fn testdata_hello_hiho() -> Vec<String> {
         // こんにちは、ヒホです。の期待値
@@ -234,7 +203,7 @@ mod tests {
         let mut open_jtalk = OpenJtalk::initialize();
         open_jtalk.load(&open_jtalk_dic_dir).unwrap();
         let result = open_jtalk.extract_fullcontext(text);
-        assert_eq!(expected, result);
+        assert_debug_fmt_eq!(expected, result);
     }
 
     #[rstest]
@@ -249,7 +218,7 @@ mod tests {
         open_jtalk.load(&open_jtalk_dic_dir).unwrap();
         for _ in 0..10 {
             let result = open_jtalk.extract_fullcontext(text);
-            assert_eq!(expected, result);
+            assert_debug_fmt_eq!(expected, result);
         }
     }
 }

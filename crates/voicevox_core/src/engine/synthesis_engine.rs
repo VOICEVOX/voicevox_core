@@ -646,7 +646,7 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
 
-    use crate::*;
+    use crate::{macros::tests::assert_debug_fmt_eq, *};
 
     #[rstest]
     #[async_std::test]
@@ -656,10 +656,10 @@ mod tests {
         let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
 
         let result = synthesis_engine.load_openjtalk_dict(&open_jtalk_dic_dir);
-        assert_eq!(result, Ok(()));
+        assert_debug_fmt_eq!(result, Ok(()));
 
         let result = synthesis_engine.load_openjtalk_dict("");
-        assert_eq!(result, Err(Error::NotLoadedOpenjtalkDict));
+        assert_debug_fmt_eq!(result, Err(Error::NotLoadedOpenjtalkDict));
     }
 
     #[rstest]
