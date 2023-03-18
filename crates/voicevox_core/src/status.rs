@@ -133,16 +133,16 @@ impl Status {
         Ok(())
     }
 
-    pub fn unload_model(&mut self, model_id: &VoiceModelId) -> Result<()> {
-        if self.is_loaded_model(model_id) {
-            self.models.predict_intonation.remove(model_id);
-            self.models.predict_duration.remove(model_id);
-            self.models.decode.remove(model_id);
+    pub fn unload_model(&mut self, voice_model_id: &VoiceModelId) -> Result<()> {
+        if self.is_loaded_model(voice_model_id) {
+            self.models.predict_intonation.remove(voice_model_id);
+            self.models.predict_duration.remove(voice_model_id);
+            self.models.decode.remove(voice_model_id);
 
             let remove_style_ids = self
                 .id_relations
                 .iter()
-                .filter(|&(_, loaded_model_id)| loaded_model_id == model_id)
+                .filter(|&(_, loaded_model_id)| loaded_model_id == voice_model_id)
                 .map(|(style_id, _)| style_id.clone())
                 .collect::<Vec<_>>();
 
@@ -153,7 +153,7 @@ impl Status {
             Ok(())
         } else {
             Err(Error::UnloadedModel {
-                model_id: model_id.clone(),
+                model_id: voice_model_id.clone(),
             })
         }
     }
@@ -170,10 +170,10 @@ impl Status {
         &self.merged_metas
     }
 
-    pub fn is_loaded_model(&self, model_id: &VoiceModelId) -> bool {
-        self.models.predict_duration.contains_key(model_id)
-            && self.models.predict_intonation.contains_key(model_id)
-            && self.models.decode.contains_key(model_id)
+    pub fn is_loaded_model(&self, voice_model_id: &VoiceModelId) -> bool {
+        self.models.predict_duration.contains_key(voice_model_id)
+            && self.models.predict_intonation.contains_key(voice_model_id)
+            && self.models.decode.contains_key(voice_model_id)
     }
 
     pub fn is_loaded_model_by_style_id(&self, style_id: &StyleId) -> bool {

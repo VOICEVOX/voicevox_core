@@ -2,6 +2,7 @@ use std::{fmt::Display, path::PathBuf, sync::Arc};
 
 use easy_ext::ext;
 use log::debug;
+use once_cell::sync::Lazy;
 use pyo3::{
     create_exception,
     exceptions::PyException,
@@ -10,12 +11,13 @@ use pyo3::{
     wrap_pyfunction, FromPyObject as _, PyAny, PyResult, Python, ToPyObject,
 };
 use serde::{de::DeserializeOwned, Serialize};
+use tokio::{runtime::Runtime, sync::Mutex};
 use voicevox_core::{
     AccelerationMode, AccentPhraseModel, AudioQueryModel, AudioQueryOptions, InitializeOptions,
     StyleId, SynthesisOptions, TtsOptions, VoiceModelId, VoiceModelMeta,
 };
 
-use tokio::{runtime::Handle, sync::Mutex};
+static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
 
 #[pymodule]
 #[pyo3(name = "_rust")]
@@ -25,7 +27,7 @@ fn rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add("__version__", voicevox_core::get_version())?;
     module.add_wrapped(wrap_pyfunction!(supported_devices))?;
 
-    module.add_class::<VoiceSynthesizer>()?;
+    module.add_class::<Synthesizer>()?;
     module.add_class::<VoiceModel>()
 }
 
@@ -98,12 +100,12 @@ impl OpenJtalk {
 }
 
 #[pyclass]
-struct VoiceSynthesizer {
-    synthesizer: Arc<Mutex<voicevox_core::VoiceSynthesizer>>,
+struct Synthesizer {
+    synthesizer: Arc<Mutex<voicevox_core::Synthesizer>>,
 }
 
 #[pymethods]
-impl VoiceSynthesizer {
+impl Synthesizer {
     #[staticmethod]
     #[pyo3(signature =(
         open_jtalk,
@@ -119,7 +121,7 @@ impl VoiceSynthesizer {
         load_all_models: bool,
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let synthesizer = voicevox_core::VoiceSynthesizer::new_with_initialize(
+            let synthesizer = voicevox_core::Synthesizer::new_with_initialize(
                 open_jtalk.open_jtalk.clone(),
                 &InitializeOptions {
                     acceleration_mode,
@@ -141,37 +143,42 @@ impl VoiceSynthesizer {
 
     #[getter]
     fn is_gpu_mode(&self) -> bool {
-        Handle::current()
-            .block_on(self.synthesizer.lock())
-            .is_gpu_mode()
+        RUNTIME.block_on(self.synthesizer.lock()).is_gpu_mode()
     }
 
     #[getter]
     fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
-        to_pydantic_voice_model_meta(
-            Handle::current().block_on(self.synthesizer.lock()).metas(),
-            py,
-        )
-        .unwrap()
+        to_pydantic_voice_model_meta(RUNTIME.block_on(self.synthesizer.lock()).metas(), py).unwrap()
     }
 
-    fn load_model<'py>(&mut self, model: &'py PyAny, py: Python<'py>) -> PyResult<&'py PyAny> {
+    fn load_voice_model<'py>(
+        &mut self,
+        model: &'py PyAny,
+        py: Python<'py>,
+    ) -> PyResult<&'py PyAny> {
         let model: VoiceModel = model.extract()?;
         let synthesizer = self.synthesizer.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             synthesizer
                 .lock()
                 .await
-                .load_model(&model.model)
+                .load_voice_model(&model.model)
                 .await
                 .into_py_result()
         })
     }
 
-    fn is_loaded_model(&self, model_id: &str) -> bool {
-        Handle::current()
+    fn unload_voice_model(&mut self, voice_model_id: &str) -> PyResult<()> {
+        RUNTIME
             .block_on(self.synthesizer.lock())
-            .is_loaded_model(&VoiceModelId::new(model_id.to_string()))
+            .unload_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
+            .into_py_result()
+    }
+
+    fn is_loaded_voice_model(&self, voice_model_id: &str) -> bool {
+        RUNTIME
+            .block_on(self.synthesizer.lock())
+            .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
     }
 
     #[pyo3(signature=(text,style_id,kana = AudioQueryOptions::default().kana))]
@@ -428,7 +435,7 @@ fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {
     class.call((), Some(x))
 }
 
-impl Drop for VoiceSynthesizer {
+impl Drop for Synthesizer {
     fn drop(&mut self) {
         debug!("Destructing a VoicevoxCore");
     }

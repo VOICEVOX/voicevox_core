@@ -25,6 +25,8 @@ tracing.workspace = true
 voicevox_core.workspace = true
 pyo3-asyncio = { version="0.18.0", features=["tokio-runtime"] }
 tokio.workspace = true
+once_cell.workspace = true
+
 
 [build-dependencies]
 anyhow.workspace = true

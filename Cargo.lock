@@ -2798,6 +2798,7 @@ dependencies = [
  "easy-ext",
  "fs_extra",
  "log",
+ "once_cell",
  "pyo3",
  "pyo3-asyncio",
  "pyo3-log",

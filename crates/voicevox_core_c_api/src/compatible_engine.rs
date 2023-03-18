@@ -43,10 +43,10 @@ fn voice_model_set() -> MutexGuard<'static, VoiceModelSet> {
     VOICE_MODEL_SET.lock().unwrap()
 }
 
-static SYNTHESIZER: Lazy<Mutex<Option<voicevox_core::VoiceSynthesizer>>> =
+static SYNTHESIZER: Lazy<Mutex<Option<voicevox_core::Synthesizer>>> =
     Lazy::new(|| Mutex::new(None));
 
-fn lock_synthesizer() -> MutexGuard<'static, Option<voicevox_core::VoiceSynthesizer>> {
+fn lock_synthesizer() -> MutexGuard<'static, Option<voicevox_core::Synthesizer>> {
     SYNTHESIZER.lock().unwrap()
 }
 
@@ -60,7 +60,7 @@ fn set_message(message: &str) {
 #[no_mangle]
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
     let handle = Handle::current();
-    let result = handle.block_on(voicevox_core::VoiceSynthesizer::new_with_initialize(
+    let result = handle.block_on(voicevox_core::Synthesizer::new_with_initialize(
         Arc::new(OpenJtalk::new_without_dic()),
         &voicevox_core::InitializeOptions {
             acceleration_mode: if use_gpu {
@@ -88,7 +88,7 @@ pub extern "C" fn load_model(style_id: i64) -> bool {
     if let Some(model_id) = model_set.style_model_map.get(&style_id) {
         let vvm = model_set.model_map.get(model_id).unwrap();
         let mut synthesizer = lock_synthesizer();
-        let result = handle.block_on(synthesizer.as_mut().unwrap().load_model(vvm));
+        let result = handle.block_on(synthesizer.as_mut().unwrap().load_voice_model(vvm));
         if let Some(err) = result.err() {
             set_message(&format!("{err}"));
             false

@@ -25,7 +25,7 @@ class VoiceModel:
 
 
 
-class VoiceSynthesizer:
+class Synthesizer:
     @staticmethod
     async def new_with_initialize(
         self,
@@ -60,7 +60,7 @@ class VoiceSynthesizer:
         """
         ...
 
-    async def load_model(self, model:VoiceModel) -> None:
+    async def load_voice_model(self, model:VoiceModel) -> None:
         """モデルを読み込む。
 
         Parameters
@@ -69,14 +69,18 @@ class VoiceSynthesizer:
             読み込むモデルの話者ID。
         """
         ...
-    def is_model_loaded(self, model_id: str) -> bool:
-        """指定したmodel_idのモデルが読み込まれているか判定する。
+    def is_loaded_voice_model(self, voice_model_id: str) -> bool:
+        """指定したvoice_model_idのモデルが読み込まれているか判定する。
 
         Returns
         -------
         モデルが読み込まれているのであればtrue、そうでないならfalse
         """
         ...
+    def unload_voice_model(self,voice_model_id:str)->None:
+        """指定したvoice_model_idのモデルがを破棄する
+        """
+
     async def audio_query(
         self,
         text: str,

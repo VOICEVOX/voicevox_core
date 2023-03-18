@@ -47,8 +47,8 @@ impl InferenceCore {
         self.status.load_model(model).await
     }
 
-    pub fn unload_model(&mut self, model_id: &VoiceModelId) -> Result<()> {
-        self.status.unload_model(model_id)
+    pub fn unload_model(&mut self, voice_model_id: &VoiceModelId) -> Result<()> {
+        self.status.unload_model(voice_model_id)
     }
     pub fn metas(&self) -> &VoiceModelMeta {
         self.status.metas()
