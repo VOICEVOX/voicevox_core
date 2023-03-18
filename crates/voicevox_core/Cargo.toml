@@ -17,13 +17,14 @@ derive-new = "0.5.9"
 easy-ext.workspace = true
 fs-err.workspace = true
 once_cell.workspace = true
-onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="405f62fb53df1b59b0e69adafbd1c28e4d5c2787" }
-process_path = "0.1.4"
+onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="09dc0c764e6f1d5c4bdcb8a96cfc3c41789e66bc" }
+# FIXME: 最新のコミットでのみAndroidのビルドが通るため
+process_path = {git = "https://github.com/wesleywiser/process_path.git", rev = "ff028326505f7198ce528feecead9a367a43adc4" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
-open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="9edab53f0bfa877dbb37224d17fd0f3efbe32abd" }
+open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="aa50be1c372a4733e9b5eed79902af1d4b3f155a" }
 regex = "1.6.0"
 
 [dev-dependencies]
