@@ -155,7 +155,7 @@ class VoicevoxCore:
         Parameters
         ----------
         text
-            テキスト。
+            テキスト。文字コードはUTF-8。
         speaker_id
             話者ID。
         kana
@@ -200,7 +200,7 @@ class VoicevoxCore:
         Parameters
         ----------
         text
-            テキスト。
+            テキスト。文字コードはUTF-8。
         speaker_id
             話者ID。
         kana
