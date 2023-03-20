@@ -131,7 +131,7 @@ jobs:
         shell: bash
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
-          cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api
+          if ${{ matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
       - name: generate voicevox_core.h
         shell: bash
         run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
