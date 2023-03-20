@@ -76,7 +76,6 @@ jobs:
             features: ""
             target: aarch64-linux-android
             artifact_name: linux-arm64-cpu
-            whl_local_version: ""
             use_cuda: false
           - os: macos-11
             features: ""
@@ -94,7 +93,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.8
-        if: matrix.target != 'aarch64-linux-android'
+        if: matrix.whl_local_version
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
@@ -141,7 +140,7 @@ jobs:
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_python_api
-        if: matrix.target != 'aarch64-linux-android'
+        if: matrix.whl_local_version
         id: build-voicevox-core-python-api
         shell: bash
         run: |
