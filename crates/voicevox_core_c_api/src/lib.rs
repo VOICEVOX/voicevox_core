@@ -346,7 +346,7 @@ pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQu
 }
 
 /// AudioQuery を実行する
-/// @param [in] text テキスト
+/// @param [in] text テキスト。文字コードはUTF-8
 /// @param [in] speaker_id 話者ID
 /// @param [in] options AudioQueryのオプション
 /// @param [out] output_audio_query_json AudioQuery を json でフォーマットしたもの
@@ -432,7 +432,7 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 }
 
 /// テキスト音声合成を実行する
-/// @param [in] text テキスト
+/// @param [in] text テキスト。文字コードはUTF-8
 /// @param [in] speaker_id 話者ID
 /// @param [in] options テキスト音声合成オプション
 /// @param [out] output_wav_length 出力する wav データのサイズ
