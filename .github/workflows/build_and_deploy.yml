@@ -188,7 +188,7 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
-        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.target != 'aarch64-linux-android'
+        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.whl_local_version
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
