@@ -167,6 +167,7 @@ unknown-git = "deny"
 allow-org = { github = [
     "XAMPPRocky", # https://github.com/VOICEVOX/voicevox_core/pull/375#discussion_r1089642845
     "VOICEVOX",
+    "wesleywiser", # https://github.com/VOICEVOX/voicevox_core/issues/437#issuecomment-1465078889
 ] }
 
 [licenses]
