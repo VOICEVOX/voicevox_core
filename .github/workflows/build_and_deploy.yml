@@ -72,6 +72,11 @@ jobs:
             artifact_name: linux-arm64-cpu
             whl_local_version: cpu
             use_cuda: false
+          - os: ubuntu-20.04
+            features: ""
+            target: aarch64-linux-android
+            artifact_name: linux-arm64-cpu
+            use_cuda: false
           - os: macos-11
             features: ""
             target: aarch64-apple-darwin
@@ -88,6 +93,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.8
+        if: matrix.whl_local_version
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
@@ -102,6 +108,16 @@ jobs:
         run: |
           sudo apt update
           sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+      - uses: nttld/setup-ndk@v1
+        if: matrix.target == 'aarch64-linux-android'
+        with:
+          ndk-version: r25b
+      - name: Set path for android
+        if: matrix.target == 'aarch64-linux-android'
+        shell: bash
+        run: |
+          echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
+          echo "AR_aarch64_linux_android=llvm-ar" >> "$GITHUB_ENV"
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
@@ -115,7 +131,7 @@ jobs:
         shell: bash
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
-          cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api
+          if ${{ matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
       - name: generate voicevox_core.h
         shell: bash
         run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
@@ -124,6 +140,7 @@ jobs:
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_python_api
+        if: matrix.whl_local_version
         id: build-voicevox-core-python-api
         shell: bash
         run: |
@@ -171,7 +188,7 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
-        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.whl_local_version
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
