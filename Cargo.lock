@@ -2184,7 +2184,7 @@ checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 [[package]]
 name = "onnxruntime"
 version = "0.1.0"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=405f62fb53df1b59b0e69adafbd1c28e4d5c2787#405f62fb53df1b59b0e69adafbd1c28e4d5c2787"
+source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=09dc0c764e6f1d5c4bdcb8a96cfc3c41789e66bc#09dc0c764e6f1d5c4bdcb8a96cfc3c41789e66bc"
 dependencies = [
  "lazy_static",
  "ndarray",
@@ -2196,7 +2196,7 @@ dependencies = [
 [[package]]
 name = "onnxruntime-sys"
 version = "0.0.25"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=405f62fb53df1b59b0e69adafbd1c28e4d5c2787#405f62fb53df1b59b0e69adafbd1c28e4d5c2787"
+source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=09dc0c764e6f1d5c4bdcb8a96cfc3c41789e66bc#09dc0c764e6f1d5c4bdcb8a96cfc3c41789e66bc"
 dependencies = [
  "flate2",
  "once_cell",
@@ -2214,7 +2214,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "open_jtalk"
 version = "0.1.25"
-source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=9edab53f0bfa877dbb37224d17fd0f3efbe32abd#9edab53f0bfa877dbb37224d17fd0f3efbe32abd"
+source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=aa50be1c372a4733e9b5eed79902af1d4b3f155a#aa50be1c372a4733e9b5eed79902af1d4b3f155a"
 dependencies = [
  "open_jtalk-sys",
  "thiserror",
@@ -2223,7 +2223,7 @@ dependencies = [
 [[package]]
 name = "open_jtalk-sys"
 version = "0.16.111"
-source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=9edab53f0bfa877dbb37224d17fd0f3efbe32abd#9edab53f0bfa877dbb37224d17fd0f3efbe32abd"
+source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=aa50be1c372a4733e9b5eed79902af1d4b3f155a#aa50be1c372a4733e9b5eed79902af1d4b3f155a"
 dependencies = [
  "bindgen",
  "cmake",
@@ -2523,8 +2523,7 @@ dependencies = [
 [[package]]
 name = "process_path"
 version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f676f11eb0b3e2ea0fbaee218fa6b806689e2297b8c8adc5bf73df465c4f6171"
+source = "git+https://github.com/wesleywiser/process_path.git?rev=ff028326505f7198ce528feecead9a367a43adc4#ff028326505f7198ce528feecead9a367a43adc4"
 dependencies = [
  "libc",
  "winapi",
