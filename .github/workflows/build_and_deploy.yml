@@ -75,7 +75,7 @@ jobs:
           - os: ubuntu-20.04
             features: ""
             target: aarch64-linux-android
-            artifact_name: linux-arm64-cpu
+            artifact_name: android-arm64-cpu
             use_cuda: false
           - os: macos-11
             features: ""
