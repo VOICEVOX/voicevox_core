@@ -18,7 +18,7 @@ on:
       - "*"
       - "**/*"
 env:
-  # releaseタグ名か、workflow_dispatchでのバージョン名か、0.0.0が入る
+  # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
 
   # Raw character weights are not public.
