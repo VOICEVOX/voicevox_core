@@ -46,7 +46,7 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
     // テスト対象が無いときに`cargo build`をスキップしたいが、判定部分がプライベート。
     // そのためスキップするのはCLIオプションに`--ignored`か`--include-ignored`が無いときのみ
     if args.ignored || args.include_ignored {
-        let mut cmd = cmd!(env!("CARGO"), "build", "--lib");
+        let mut cmd = cmd!(env!("CARGO"), "build", "--release", "--lib");
         for (k, v) in C::BUILD_ENVS {
             cmd = cmd.env(k, v);
         }
@@ -75,7 +75,7 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
     impl<C: TestContext> C {
         fn cdylib_path() -> PathBuf {
             Path::new(Self::TARGET_DIR)
-                .join("debug")
+                .join("release")
                 .join(libloading::library_filename(Self::CDYLIB_NAME))
         }
 
