@@ -61,14 +61,20 @@ cpu-cp38-abi3-linux_x86_64のところはアーキテクチャやOSによって�
 
 linux/macの場合
 
+download-linux-x64のところはアーキテクチャやOSによって適宜読み替えてください。
+
 ```console
-❯ ./voicevox_core/scripts/downloads/download.sh
+❯ binary=download-linux-x64
+❯ curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/${binary} -o download
+❯ chmod +x download
+❯ ./download
 ```
 
 windowsの場合
 
 ```console
-❯ ./voicevox_core/scripts/downloads/download.ps1
+❯ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download-windows-x64.exe -OutFile ./download.exe
+❯ ./download
 ```
 
 3. 実行
