@@ -18,8 +18,8 @@ on:
       - "*"
       - "**/*"
 env:
-  # releaseタグ名か、workflow_dispatchでのバージョン名か、DEBUGが入る
-  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || 'DEBUG' }}
+  # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
+  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
 
   # Raw character weights are not public.
   # Skip uploading to GitHub Release on public repo.
@@ -75,7 +75,7 @@ jobs:
           - os: ubuntu-20.04
             features: ""
             target: aarch64-linux-android
-            artifact_name: linux-arm64-cpu
+            artifact_name: android-arm64-cpu
             use_cuda: false
           - os: macos-11
             features: ""
@@ -123,15 +123,13 @@ jobs:
       - name: Install cbindgen
         uses: ./.github/actions/cargo-binstall-cbindgen
       - name: Install cargo-edit
-        if: ${{ env.VERSION != 'DEBUG' }}
         shell: bash
         run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
       - name: set cargo version
-        if: ${{ env.VERSION != 'DEBUG' }}
         shell: bash
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
-          if ${{ matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
+          if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
       - name: generate voicevox_core.h
         shell: bash
         run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
@@ -179,7 +177,7 @@ jobs:
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -188,7 +186,7 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
-        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.whl_local_version
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.whl_local_version
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -201,7 +199,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Upload to Release
-        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -261,7 +259,7 @@ jobs:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
       - name: Upload to Release
-        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
