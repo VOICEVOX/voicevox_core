@@ -36,21 +36,21 @@ optional arguments:
 1. wheelパッケージのインストールをします。
 
 ```console
-❯ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/0.14.0/voicevox_core-0.14.0+cpu-cp38-abi3-linux_x86_64.whl
+❯ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/0.14.3/voicevox_core-0.14.3+cpu-cp38-abi3-linux_x86_64.whl
 ```
 
 cpu-cp38-abi3-linux_x86_64のところはアーキテクチャやOSによって適宜読み替えてください。
 現在の組み合わせは以下のとおりです。
 
-* voicevox_core-0.14.0+cpu-cp38-abi3-linux_aarch64.whl
-* voicevox_core-0.14.0+cpu-cp38-abi3-linux_x86_64.whl
-* voicevox_core-0.14.0+cpu-cp38-abi3-macosx_10_7_x86_64.whl
-* voicevox_core-0.14.0+cpu-cp38-abi3-macosx_11_0_arm64.whl
-* voicevox_core-0.14.0+cpu-cp38-abi3-win32.whl
-* voicevox_core-0.14.0+cpu-cp38-abi3-win_amd64.whl
-* voicevox_core-0.14.0+cuda-cp38-abi3-linux_x86_64.whl
-* voicevox_core-0.14.0+cuda-cp38-abi3-win_amd64.whl 
-* voicevox_core-0.14.1+directml-cp38-abi3-win_amd64.whl 
+* voicevox_core-0.14.3+cpu-cp38-abi3-linux_aarch64.whl
+* voicevox_core-0.14.3+cpu-cp38-abi3-linux_x86_64.whl
+* voicevox_core-0.14.3+cpu-cp38-abi3-macosx_10_7_x86_64.whl
+* voicevox_core-0.14.3+cpu-cp38-abi3-macosx_11_0_arm64.whl
+* voicevox_core-0.14.3+cpu-cp38-abi3-win32.whl
+* voicevox_core-0.14.3+cpu-cp38-abi3-win_amd64.whl
+* voicevox_core-0.14.3+cuda-cp38-abi3-linux_x86_64.whl
+* voicevox_core-0.14.3+cuda-cp38-abi3-win_amd64.whl 
+* voicevox_core-0.14.3+directml-cp38-abi3-win_amd64.whl 
 
 
 2. リポジトリを取得し環境構築します。
