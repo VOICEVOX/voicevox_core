@@ -40,17 +40,7 @@ optional arguments:
 ```
 
 cpu-cp38-abi3-linux_x86_64のところはアーキテクチャやOSによって適宜読み替えてください。
-現在の組み合わせは以下のとおりです。
-
-* voicevox_core-0.14.3+cpu-cp38-abi3-linux_aarch64.whl
-* voicevox_core-0.14.3+cpu-cp38-abi3-linux_x86_64.whl
-* voicevox_core-0.14.3+cpu-cp38-abi3-macosx_10_7_x86_64.whl
-* voicevox_core-0.14.3+cpu-cp38-abi3-macosx_11_0_arm64.whl
-* voicevox_core-0.14.3+cpu-cp38-abi3-win32.whl
-* voicevox_core-0.14.3+cpu-cp38-abi3-win_amd64.whl
-* voicevox_core-0.14.3+cuda-cp38-abi3-linux_x86_64.whl
-* voicevox_core-0.14.3+cuda-cp38-abi3-win_amd64.whl 
-* voicevox_core-0.14.3+directml-cp38-abi3-win_amd64.whl 
+https://github.com/VOICEVOX/voicevox_core/releases/tag/0.14.3
 
 
 2. リポジトリを取得し環境構築します。
@@ -62,6 +52,7 @@ cpu-cp38-abi3-linux_x86_64のところはアーキテクチャやOSによって�
 linux/macの場合
 
 download-linux-x64のところはアーキテクチャやOSによって適宜読み替えてください。
+https://github.com/VOICEVOX/voicevox_core/releases/tag/0.14.3#%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%80
 
 ```console
 ❯ binary=download-linux-x64
