@@ -18,23 +18,19 @@ easy-ext.workspace = true
 fs-err.workspace = true
 once_cell.workspace = true
 onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="09dc0c764e6f1d5c4bdcb8a96cfc3c41789e66bc" }
-# FIXME: 最新のコミットでのみAndroidのビルドが通るため
-process_path = {git = "https://github.com/wesleywiser/process_path.git", rev = "ff028326505f7198ce528feecead9a367a43adc4" }
+process_path.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="aa50be1c372a4733e9b5eed79902af1d4b3f155a" }
-regex = "1.6.0"
+regex.workspace = true
 
 [dev-dependencies]
 rstest = "0.15.0"
 pretty_assertions = "1.3.0"
-async-std = { version = "1.12.0", features = ["attributes"] }
-surf = "2.3.2"
-flate2 = "1.0.24"
-tar = "0.4.38"
 heck = "0.4.0"
+test_util.workspace = true
 
 [target."cfg(windows)".dependencies]
 humansize = "2.1.2"
