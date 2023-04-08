@@ -12,6 +12,7 @@
 ## 環境構築
 
 Downloader を用いて環境構築を行う場合
+
 ### Windows の場合
 
 PowerShell で下記コマンドを実行してください
@@ -24,14 +25,14 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 ### Linux/macOS の場合
 
 [最新のリリース](https://github.com/VOICEVOX/voicevox_core/releases/latest)から環境に合わせてダウンローダーのバイナリをダウンロードしてください。
-現在利用可能なのは以下の4つです。
+現在利用可能なのは以下の 4 つです。
 
-* download-linux-arm64
-* download-linux-x64
-* download-osx-arm64
-* download-osx-x64
+- download-linux-arm64
+- download-linux-x64
+- download-osx-arm64
+- download-osx-x64
 
-以下はLinuxのx64での実行例です。
+以下は Linux の x64 での実行例です。
 
 ```bash
 binary=download-linux-x64
@@ -107,6 +108,8 @@ sudo apt install libgomp1
 
 ### その他の言語
 
+- [Go(Windows)](https://github.com/yerrowTail/voicevox_core_go_sample) @yerrowTail
+
 サンプルコードを実装された際はぜひお知らせください。こちらに追記させて頂きます。
 
 ## API
@@ -150,8 +153,8 @@ typos
 **[voicevox.rb](https://github.com/sevenc-nanashi/voicevox.rb) [@sevenc-nanashi](https://github.com/sevenc-nanashi)** ･･･ VOICEVOX CORE の Ruby 向け FFI ラッパー  
 **[Node VOICEVOX Engine](https://github.com/y-chan/node-voicevox-engine) [@y-chan](https://github.com/y-chan)** ･･･ VOICEVOX ENGINE の Node.js/C++ 実装  
 **[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装  
-**[voicevoxcore4s](https://github.com/windymelt/voicevoxcore4s) [@windymelt](https://github.com/windymelt)** ･･･ VOICEVOX CORE の Scala(JVM) 向け FFI ラッパー
-
+**[voicevoxcore4s](https://github.com/windymelt/voicevoxcore4s) [@windymelt](https://github.com/windymelt)** ･･･ VOICEVOX CORE の Scala(JVM) 向け FFI ラッパー  
+**[voicevox_flutter](https://github.com/char5742/voicevox_flutter) [@char5742](https://github.com/char5742)** ･･･ VOICEVOX CORE の Flutter 向け FFI ラッパー  
 ## ライセンス
 
 ソースコードのライセンスは [MIT LICENSE](./LICENSE) です。

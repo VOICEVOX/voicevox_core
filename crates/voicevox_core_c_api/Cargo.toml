@@ -8,6 +8,10 @@ publish.workspace = true
 name = "voicevox_core"
 crate-type = ["cdylib"]
 
+[[test]]
+name = "e2e"
+harness = false
+
 [features]
 directml = ["voicevox_core/directml"]
 
@@ -25,3 +29,17 @@ tracing-subscriber.workspace = true
 pretty_assertions = "1.3.0"
 anyhow.workspace = true
 rstest = "0.15.0"
+assert_cmd = { version = "2.0.8", features = ["color-auto"] }
+clap.workspace = true
+duct = "0.13.6"
+easy-ext.workspace = true
+libloading = "0.7.3"
+libtest-mimic = "0.6.0"
+ndarray = "0.15.6"
+ndarray-stats = "0.5.1"
+process_path.workspace = true
+regex.workspace = true
+serde.workspace = true
+toml = "0.7.2"
+typetag = "0.2.5"
+inventory = "0.3.4"

@@ -12,12 +12,6 @@ mod status;
 
 pub use self::publish::*;
 
-#[cfg(test)]
-mod test_util;
-
-#[cfg(test)]
-use self::test_util::*;
-
 pub use self::engine::AudioQueryModel;
 pub use self::error::*;
 pub use self::result::*;
