@@ -1,6 +1,9 @@
 # VOICEVOX CORE
 
+[![releases](https://img.shields.io/github/v/release/VOICEVOX/voicevox_core?label=release)](https://github.com/VOICEVOX/voicevox_core/releases)
+[![test](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml/badge.svg)](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml)
 [![dependency status](https://deps.rs/repo/github/VOICEVOX/voicevox_core/status.svg)](https://deps.rs/repo/github/VOICEVOX/voicevox_core)
+[![discord](https://img.shields.io/discord/879570910208733277?color=5865f2&label=&logo=discord&logoColor=ffffff)](https://discord.gg/WMwWetrzuh)
 
 [VOICEVOX](https://voicevox.hiroshiba.jp/) の音声合成コア。  
 [Releases](https://github.com/VOICEVOX/voicevox_core/releases) にビルド済みのコアライブラリ（.so/.dll/.dylib）があります。
@@ -8,6 +11,12 @@
 （エディターは [VOICEVOX](https://github.com/VOICEVOX/voicevox/) 、
 エンジンは [VOICEVOX ENGINE](https://github.com/VOICEVOX/voicevox_engine/) 、
 全体構成は [こちら](https://github.com/VOICEVOX/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
+
+## 貢献者の方へ
+Issue を解決するプルリクエストを作成される際は、別の方と同じ Issue に取り組むことを避けるため、
+Issue 側で取り組み始めたことを伝えるか、最初に Draft プルリクエストを作成してください。
+
+[VOICEVOX 非公式 Discord サーバー](https://discord.gg/WMwWetrzuh)にて、開発の議論や雑談を行っています。気軽にご参加ください。
 
 ## 環境構築
 
