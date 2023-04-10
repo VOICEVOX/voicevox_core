@@ -647,7 +647,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use test_util::OPEN_JTALK_DIC_DIR;
 
-    use crate::*;
+    use crate::{macros::tests::assert_debug_fmt_eq, *};
 
     #[rstest]
     fn load_openjtalk_dict_works() {
@@ -655,10 +655,10 @@ mod tests {
         let mut synthesis_engine = SynthesisEngine::new(core, OpenJtalk::initialize());
 
         let result = synthesis_engine.load_openjtalk_dict(OPEN_JTALK_DIC_DIR);
-        assert_eq!(result, Ok(()));
+        assert_debug_fmt_eq!(result, Ok(()));
 
         let result = synthesis_engine.load_openjtalk_dict("");
-        assert_eq!(result, Err(Error::NotLoadedOpenjtalkDict));
+        assert_debug_fmt_eq!(result, Err(Error::NotLoadedOpenjtalkDict));
     }
 
     #[rstest]
