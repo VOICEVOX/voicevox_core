@@ -93,19 +93,16 @@ jobs:
             features: ""
             target: aarch64-apple-ios
             artifact_name: ios-arm64-cpu
-            whl_local_version: cpu
             use_cuda: false
           - os: macos-12
             features: ""
             target: aarch64-apple-ios-sim
             artifact_name: ios-arm64-cpu-sim
-            whl_local_version: cpu
             use_cuda: false
           - os: macos-12
             features: ""
             target: x86_64-apple-ios
             artifact_name: ios-x64-cpu
-            whl_local_version: cpu
             use_cuda: false
     runs-on: ${{ matrix.os }}
     steps:
