@@ -4,7 +4,7 @@ use super::*;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-#[derive(thiserror::Error, Debug, PartialEq)]
+#[derive(thiserror::Error, Debug)]
 pub enum FullContextLabelError {
     #[error("label parse error label:{label}")]
     LabelParse { label: String },
@@ -13,7 +13,7 @@ pub enum FullContextLabelError {
     TooLongMora { mora_phonemes: Vec<Phoneme> },
 
     #[error("invalid mora:{mora:?}")]
-    InvalidMora { mora: Mora },
+    InvalidMora { mora: Box<Mora> },
 
     #[error(transparent)]
     OpenJtalk(#[from] open_jtalk::OpenJtalkError),
@@ -151,9 +151,13 @@ impl AccentPhrase {
             .vowel()
             .contexts()
             .get("f2")
-            .ok_or_else(|| FullContextLabelError::InvalidMora { mora: mora.clone() })?
+            .ok_or_else(|| FullContextLabelError::InvalidMora {
+                mora: mora.clone().into(),
+            })?
             .parse()
-            .map_err(|_| FullContextLabelError::InvalidMora { mora: mora.clone() })?;
+            .map_err(|_| FullContextLabelError::InvalidMora {
+                mora: mora.clone().into(),
+            })?;
 
         let is_interrogative = moras
             .last()

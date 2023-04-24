@@ -1,49 +1,69 @@
 # VOICEVOX CORE Downloader
+VOICEVOX COREの実行にはモデルやOpen JTalkなどの外部ライブラリのダウンロードが必要になります。
+VOICEVOX CORE Downloaderは環境に合わせてそれらをダウンロードします。
 
-<a id="default"></a>
-<a id="cpu"></a>
 
-## デフォルト(CPU 版)をダウンロードする場合
+# ダウンローダーの入手
 
 ### Windows の場合
 
 PowerShell で下記コマンドを実行してください
 
 ```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
-./download.ps1
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download-windows-x64.exe -OutFile ./download.exe
 ```
 
 ### Linux/macOS の場合
 
+[最新のリリース](https://github.com/VOICEVOX/voicevox_core/releases/latest)から環境に合わせてダウンローダーのバイナリをダウンロードしてください。
+現在利用可能なのは以下の4つです。
+
+* download-linux-arm64
+* download-linux-x64
+* download-osx-arm64
+* download-osx-x64
+
+以下はLinuxのx64での実行例です。
+
 ```bash
-curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s
+binary=download-linux-x64
+curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/${binary} -o download
+chmod +x download
+```
+
+# ダウンローダーの使い方
+
+
+<a id="default"></a>
+<a id="cpu"></a>
+
+## デフォルト(CPU 版)をダウンロードする場合
+
+
+```
+download
+```
+
+または
+
+```
+download --device cpu
 ```
 
 <a id="directml"></a>
 
 ## DirectML 版をダウンロードする場合
 
-```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
-./download.ps1 -Accelerator directml
+```
+download --device directml
 ```
 
 <a id="cuda"></a>
 
 ## CUDA 版をダウンロードする場合
 
-### Windows の場合
-
-```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
-./download.ps1 -Accelerator cuda
 ```
-
-### Linux の場合
-
-```bash
-curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s -- --accelerator cuda
+download --device cuda
 ```
 
 <a id="help"></a>
@@ -53,15 +73,6 @@ curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/do
 スクリプトにヘルプ表示機能があります。
 以下のようにしてヘルプを表示できます。
 
-### Windows の場合
-
-```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
-Get-Help ./download.ps1 -full
 ```
-
-### Linux/macOS の場合
-
-```bash
-curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s -- --help
+download --help
 ```

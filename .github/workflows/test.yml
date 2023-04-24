@@ -103,7 +103,7 @@ jobs:
           key: "v2-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
       - name: Run cargo test
         shell: bash
-        run: cargo test -vv --features ,${{ matrix.features }}
+        run: cargo test -vv --features ,${{ matrix.features }} -- --include-ignored
 
   xtask-generate-c-header:
     runs-on: ubuntu-latest
@@ -165,6 +165,43 @@ jobs:
           cd example/cpp/unix
           cmake -S . -B build
           cmake --build build
+
+  build-windows-cpp-example:
+    strategy:
+      fail-fast: false
+    runs-on: windows-latest
+    env:
+      # Path to the solution file relative to the root of the project.
+      SOLUTION_FILE_PATH: example\cpp\windows\windows_example.sln
+      # Configuration type to build.
+      BUILD_CONFIGURATION: Debug
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-file
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+      - name: Install cbindgen
+        uses: ./.github/actions/cargo-binstall-cbindgen
+      - name: build voicevox_core_c_api
+        run: cargo build -p voicevox_core_c_api -vv
+      - name: voicevox_core.hを生成
+        run: cbindgen --crate voicevox_core_c_api -o ./example/cpp/windows/simple_tts/voicevox_core.h
+      - name: 必要なfileをexampleのディレクトリに移動させる
+        run: |
+          mkdir example/cpp/windows/simple_tts/lib/x64
+          cp target/debug/voicevox_core.dll.lib example/cpp/windows/simple_tts/lib/x64/voicevox_core.lib
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
+      - name: Restore NuGet packages
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: nuget restore ${{env.SOLUTION_FILE_PATH}}
+
+      - name: Build
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
 
   build-python-api:
     strategy:

@@ -19,19 +19,25 @@ allow-build-scripts = [
     { name = "cbindgen", version = "0.24" }, # https://docs.rs/crate/cbindgen/0.24/source/build.rs
     { name = "const_fn", version = "0.4" }, # https://docs.rs/crate/const_fn/0.4/source/build.rs
     { name = "cookie", version = "0.14" }, # https://docs.rs/crate/cookie/0.14/source/build.rs
+    { name = "core-foundation-sys", version = "0.8" }, # https://docs.rs/crate/core-foundation-sys/0.8.3/source/build.rs
     { name = "crc32fast", version = "1" }, # https://docs.rs/crate/crc32fast/1/source/build.rs
+    { name = "crossbeam-epoch", version = "0.9" }, # https://docs.rs/crate/crossbeam-epoch/0.9.13/source/build.rs
     { name = "crossbeam-utils", version = "0.8" }, # https://docs.rs/crate/crossbeam-utils/0.8/source/build.rs
     { name = "curl", version = "0.4" }, # https://docs.rs/crate/curl/0.4/source/build.rs
+    { name = "doc-comment", version = "0.3" }, # https://docs.rs/crate/doc-comment/0.3.3/source/build.rs
     { name = "encoding_rs", version = "0.8" }, # https://docs.rs/crate/encoding_rs/0.8/source/build.rs
     { name = "eyre", version = "0.6" }, # https://docs.rs/crate/eyre/0.6/source/build.rs
     { name = "futures-channel", version = "0.3" }, # https://docs.rs/crate/futures-channel/0.3/source/build.rs
     { name = "futures-core", version = "0.3" }, # https://docs.rs/crate/futures-core/0.3/source/build.rs
     { name = "futures-task", version = "0.3" }, # https://docs.rs/crate/futures-task/0.3/source/build.rs
     { name = "futures-util", version = "0.3" }, # https://docs.rs/crate/futures-util/0.3/source/build.rs
+    { name = "httparse", version = "1" }, # https://docs.rs/crate/httparse/1.8.0/source/build.rs
+    { name = "hyperx", version = "1" }, # https://docs.rs/crate/hyperx/1.4.0/source/build.rs
     { name = "generic-array", version = "0.14" }, # https://docs.rs/crate/generic-array/0.14/source/build.rs
     { name = "getrandom", version = "0.1" }, # https://docs.rs/crate/getrandom/0.1/source/build.rs
     { name = "http-types", version = "2" }, # https://docs.rs/crate/http-types/2/source/build.rs
     { name = "indexmap", version = "1" }, # https://docs.rs/crate/indexmap/1/source/build.rs
+    { name = "io-lifetimes", version = "1" }, # https://docs.rs/crate/io-lifetimes/1.0.4/source/build.rs
     { name = "isahc", version = "0.9" }, # https://docs.rs/crate/isahc/0.9/source/build.rs
     { name = "libc", version = "0.2" }, # https://docs.rs/crate/libc/0.2/source/build.rs
     { name = "libm", version = "0.2" }, # https://docs.rs/crate/libm/0.2.6/source/build.rs
@@ -39,12 +45,16 @@ allow-build-scripts = [
     { name = "log", version = "0.4" }, # https://docs.rs/crate/log/0.4/source/build.rs
     { name = "memchr", version = "2" }, # https://docs.rs/crate/memchr/2/source/build.rs
     { name = "memoffset", version = "0.6" }, # https://docs.rs/crate/memoffset/0.6/source/build.rs
+    { name = "memoffset", version = "0.7" }, # https://docs.rs/crate/memoffset/0.7.1/source/build.rs
     { name = "mime_guess", version = "2" }, # https://docs.rs/crate/mime_guess/2/source/build.rs
+    { name = "num-bigint", version = "0.4" }, # https://docs.rs/crate/num-bigint/0.4.3/source/build.rs
     { name = "num-integer", version = "0.1" }, # https://docs.rs/crate/num-integer/0.1/source/build.rs
     { name = "num-traits", version = "0.2" }, # https://docs.rs/crate/num-traits/0.2/source/build.rs
     { name = "onnxruntime", version = "=0.1.0" }, # https://github.com/VOICEVOX/onnxruntime-rs/blob/405f62fb53df1b59b0e69adafbd1c28e4d5c2787/onnxruntime/build.rs
     { name = "parking_lot_core", version = "0.9" }, # https://docs.rs/crate/parking_lot_core/0.9/source/build.rs
+    { name = "platforms", version = "3" }, # https://docs.rs/crate/platforms/3.0.2/source/build.rs
     { name = "polling", version = "2" }, # https://docs.rs/crate/polling/2/source/build.rs
+    { name = "portable-atomic", version = "0.3" }, # https://docs.rs/crate/portable-atomic/0.3.19/source/build.rs
     { name = "proc-macro-error", version = "1" }, # https://docs.rs/crate/proc-macro-error/1/source/build.rs
     { name = "proc-macro-error-attr", version = "1" }, # https://docs.rs/crate/proc-macro-error-attr/1/source/build.rs
     { name = "proc-macro-hack", version = "0.5" }, # https://docs.rs/crate/proc-macro-hack/0.5/source/build.rs
@@ -52,8 +62,11 @@ allow-build-scripts = [
     { name = "pyo3", version = "0.17" }, # https://docs.rs/crate/pyo3/0.17/source/build.rs
     { name = "pyo3-build-config", version = "0.17" }, # https://docs.rs/crate/pyo3-build-config/0.17/source/build.rs
     { name = "quote", version = "1" }, # https://docs.rs/crate/quote/1/source/build.rs
+    { name = "rayon-core", version = "1" }, # https://docs.rs/crate/rayon-core/1.10.1/source/build.rs
     { name = "rstest_macros", version = "0.14" }, # https://docs.rs/crate/rstest_macros/0.14/source/build.rs
+    { name = "rustix", version = "0.36" }, # https://docs.rs/crate/rustix/0.36.7/source/build.rs
     { name = "rustls", version = "0.20" }, # https://docs.rs/crate/rustls/0.20/source/build.rs
+    { name = "rustversion", version = "1" }, # https://docs.rs/crate/rustversion/1.0.11/source/build/build.rs
     { name = "semver", version = "1" }, # https://docs.rs/crate/semver/1/source/build.rs
     { name = "serde", version = "1" }, # https://docs.rs/crate/serde/1/source/build.rs
     { name = "serde_derive", version = "1" }, # https://docs.rs/crate/serde_derive/1/source/build.rs
@@ -64,11 +77,13 @@ allow-build-scripts = [
     { name = "target-lexicon", version = "0.12" }, # https://docs.rs/crate/target-lexicon/0.12.0/source/build.rs
     { name = "thiserror", version = "1" }, # https://docs.rs/crate/thiserror/1.0.0/source/build.rs
     { name = "time", version = "0.2" }, # https://docs.rs/crate/time/0.2/source/build.rs
+    { name = "tokio", version = "1" }, # https://docs.rs/crate/tokio/1.24.1/source/build.rs
     { name = "typenum", version = "1" }, # https://docs.rs/crate/typenum/1/source/src/__private/build.rs
     { name = "unicase", version = "2" }, # https://docs.rs/crate/unicase/2/source/build.rs
     { name = "value-bag", version = "1.0.0-alpha.9" }, # https://docs.rs/crate/value-bag/1.0.0-alpha.9/source/build.rs
     { name = "voicevox_core" }, # ./crates/voicevox_core/build.rs
     { name = "voicevox_core_c_api" }, # ./crates/voicevox_core_c_api/build.rs
+    { name = "voicevox_core_python_api" }, # ./crates/voicevox_core_python_api/build.rs
     { name = "wasm-bindgen", version = "0.2" }, # https://docs.rs/crate/wasm-bindgen/0.2/source/build.rs
     { name = "wasm-bindgen-shared", version = "0.2" }, # https://docs.rs/crate/wasm-bindgen-shared/0.2/source/build.rs
     { name = "winapi", version = "0.3" }, # https://docs.rs/crate/winapi/0.3/source/build.rs
@@ -76,7 +91,8 @@ allow-build-scripts = [
     { name = "windows_i686_msvc", version = "0.42" }, # https://docs.rs/crate/windows_i686_msvc/0.42.0/source/build.rs
     { name = "windows_x86_64_msvc", version = "0.36" }, # https://docs.rs/crate/windows_x86_64_msvc/0.36/source/build.rs
     { name = "windows_x86_64_msvc", version = "0.42" }, # https://docs.rs/crate/windows_x86_64_msvc/0.42.0/source/build.rs
-    { name = "zstd-safe", version = "4" }, # https://docs.rs/crate/zstd-safe/4/source/build.rs
+    { name = "winreg", version = "0.10" }, # https://docs.rs/crate/winreg/0.10.1/source/build.rs
+    { name = "zstd-safe", version = "5" }, # https://docs.rs/crate/zstd-safe/5.0.2/source/build.rs
 
     # https://docs.rs/crate/bzip2-sys/0.1/source/build.rs
     #
@@ -142,13 +158,16 @@ allow-build-scripts = [
     # https://docs.rs/crate/zstd-sys/1/source/build.rs
     #
     # libzstd is licensed under `GPL-2.0+ OR BSD-3-Clause` (https://github.com/facebook/zstd/blob/v1.5.2/lib/zstd.h#L1-L9)
-    { name = "zstd-sys", version = "1" },
+    { name = "zstd-sys", version = "2" },
 ]
 
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
-allow-org = { github = ["VOICEVOX"] }
+allow-org = { github = [
+    "VOICEVOX",
+    "wesleywiser", # https://github.com/VOICEVOX/voicevox_core/issues/437#issuecomment-1465078889
+] }
 
 [licenses]
 allow = [
@@ -167,6 +186,7 @@ clarify = [
     { name = "ring", version = "0.16", expression = "MIT AND ISC AND OpenSSL", license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }] },
 
     # TODO: `package.license`を書く
+    { name = "download", expression = "MIT", license-files = [] },
     { name = "open_jtalk", expression = "BSD-3-Clause", license-files = [] },
     { name = "open_jtalk-sys", expression = "BSD-3-Clause", license-files = [] },
     { name = "voicevox_core", expression = "MIT", license-files = [] },

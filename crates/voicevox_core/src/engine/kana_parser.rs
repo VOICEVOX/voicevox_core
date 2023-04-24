@@ -74,14 +74,12 @@ fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhraseModel> {
         if letter == ACCENT_SYMBOL {
             if index == 0 {
                 return Err(KanaParseError(format!(
-                    "accent cannot be set at beginning of accent phrase: {}",
-                    phrase
+                    "accent cannot be set at beginning of accent phrase: {phrase}"
                 )));
             }
             if accent_index.is_some() {
                 return Err(KanaParseError(format!(
-                    "second accent cannot be set at an accent phrase: {}",
-                    phrase
+                    "second accent cannot be set at an accent phrase: {phrase}"
                 )));
             }
             accent_index = Some(moras.len());
@@ -104,8 +102,7 @@ fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhraseModel> {
             stack.clear();
         } else {
             return Err(KanaParseError(format!(
-                "unknown text in accent phrase: {}",
-                phrase
+                "unknown text in accent phrase: {phrase}"
             )));
         }
         if loop_count > LOOP_LIMIT {
@@ -114,8 +111,7 @@ fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhraseModel> {
     }
     if accent_index.is_none() {
         return Err(KanaParseError(format!(
-            "accent not found in accent phrase: {}",
-            phrase
+            "accent not found in accent phrase: {phrase}"
         )));
     }
     Ok(AccentPhraseModel::new(
@@ -145,8 +141,7 @@ pub fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> {
                     != phrase.len() - WIDE_INTERROGATION_MARK.len_utf8()
                 {
                     return Err(KanaParseError(format!(
-                        "interrogative mark cannot be set at not end of accent phrase: {}",
-                        phrase
+                        "interrogative mark cannot be set at not end of accent phrase: {phrase}"
                     )));
                 }
                 phrase.pop(); // remove WIDE_INTERROGATION_MARK
