@@ -2,15 +2,18 @@
 mod compatible_engine;
 mod helpers;
 use self::helpers::*;
+use chrono::SecondsFormat;
 use is_terminal::IsTerminal;
 use libc::c_void;
 use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
+use std::fmt;
 use std::io::{self, Write};
 use std::os::raw::c_char;
 use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
+use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use voicevox_core::AudioQueryModel;
 use voicevox_core::Result;
@@ -32,9 +35,16 @@ static INTERNAL: Lazy<Mutex<Internal>> = Lazy::new(|| {
             } else {
                 "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
             })
+            .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(out().is_terminal() && env_allows_ansi())
             .with_writer(out)
             .try_init()
+    }
+
+    fn local_time(wtr: &mut Writer<'_>) -> fmt::Result {
+        // ローカル時刻で表示はするが、そのフォーマットはtracing-subscriber本来のものに近いようにする。
+        // https://github.com/tokio-rs/tracing/blob/tracing-subscriber-0.3.16/tracing-subscriber/src/fmt/time/datetime.rs#L235-L241
+        wtr.write_str(&chrono::Local::now().to_rfc3339_opts(SecondsFormat::Micros, false))
     }
 
     fn out() -> impl IsTerminal + Write {
@@ -336,7 +346,7 @@ pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQu
 }
 
 /// AudioQuery を実行する
-/// @param [in] text テキスト
+/// @param [in] text テキスト。文字コードはUTF-8
 /// @param [in] speaker_id 話者ID
 /// @param [in] options AudioQueryのオプション
 /// @param [out] output_audio_query_json AudioQuery を json でフォーマットしたもの
@@ -422,7 +432,7 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 }
 
 /// テキスト音声合成を実行する
-/// @param [in] text テキスト
+/// @param [in] text テキスト。文字コードはUTF-8
 /// @param [in] speaker_id 話者ID
 /// @param [in] options テキスト音声合成オプション
 /// @param [out] output_wav_length 出力する wav データのサイズ
