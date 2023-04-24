@@ -2157,7 +2157,7 @@ checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 [[package]]
 name = "onnxruntime"
 version = "0.1.0"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=c322c6ac8f4d58afbbe6412ad674c59a01933620#c322c6ac8f4d58afbbe6412ad674c59a01933620"
+source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=ebb9dcb9b26ee681889b52b6db3b4f642b04a250#ebb9dcb9b26ee681889b52b6db3b4f642b04a250"
 dependencies = [
  "lazy_static",
  "ndarray",
@@ -2169,7 +2169,7 @@ dependencies = [
 [[package]]
 name = "onnxruntime-sys"
 version = "0.0.25"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=c322c6ac8f4d58afbbe6412ad674c59a01933620#c322c6ac8f4d58afbbe6412ad674c59a01933620"
+source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=ebb9dcb9b26ee681889b52b6db3b4f642b04a250#ebb9dcb9b26ee681889b52b6db3b4f642b04a250"
 dependencies = [
  "flate2",
  "once_cell",
@@ -2187,7 +2187,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "open_jtalk"
 version = "0.1.25"
-source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=4a812570bb792be1579148c5adce0d047e22aa94#4a812570bb792be1579148c5adce0d047e22aa94"
+source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=d766a52bad4ccafe18597e57bd6842f59dca881e#d766a52bad4ccafe18597e57bd6842f59dca881e"
 dependencies = [
  "open_jtalk-sys",
  "thiserror",
@@ -2196,7 +2196,7 @@ dependencies = [
 [[package]]
 name = "open_jtalk-sys"
 version = "0.16.111"
-source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=4a812570bb792be1579148c5adce0d047e22aa94#4a812570bb792be1579148c5adce0d047e22aa94"
+source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=d766a52bad4ccafe18597e57bd6842f59dca881e#d766a52bad4ccafe18597e57bd6842f59dca881e"
 dependencies = [
  "bindgen",
  "cmake",
