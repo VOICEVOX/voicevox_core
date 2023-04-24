@@ -645,31 +645,28 @@ fn make_interrogative_mora(last_mora: &MoraModel) -> MoraModel {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+    use test_util::OPEN_JTALK_DIC_DIR;
 
-    use crate::*;
+    use crate::{macros::tests::assert_debug_fmt_eq, *};
 
     #[rstest]
-    #[async_std::test]
-    async fn load_openjtalk_dict_works() {
+    fn load_openjtalk_dict_works() {
         let core = InferenceCore::new(false, None);
         let mut synthesis_engine = SynthesisEngine::new(core, OpenJtalk::initialize());
-        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
 
-        let result = synthesis_engine.load_openjtalk_dict(&open_jtalk_dic_dir);
-        assert_eq!(result, Ok(()));
+        let result = synthesis_engine.load_openjtalk_dict(OPEN_JTALK_DIC_DIR);
+        assert_debug_fmt_eq!(result, Ok(()));
 
         let result = synthesis_engine.load_openjtalk_dict("");
-        assert_eq!(result, Err(Error::NotLoadedOpenjtalkDict));
+        assert_debug_fmt_eq!(result, Err(Error::NotLoadedOpenjtalkDict));
     }
 
     #[rstest]
-    #[async_std::test]
-    async fn is_openjtalk_dict_loaded_works() {
+    fn is_openjtalk_dict_loaded_works() {
         let core = InferenceCore::new(false, None);
         let mut synthesis_engine = SynthesisEngine::new(core, OpenJtalk::initialize());
-        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
 
-        let _ = synthesis_engine.load_openjtalk_dict(&open_jtalk_dic_dir);
+        let _ = synthesis_engine.load_openjtalk_dict(OPEN_JTALK_DIC_DIR);
         assert_eq!(synthesis_engine.is_openjtalk_dict_loaded(), true);
 
         let _ = synthesis_engine.load_openjtalk_dict("");
@@ -677,14 +674,12 @@ mod tests {
     }
 
     #[rstest]
-    #[async_std::test]
-    async fn create_accent_phrases_works() {
+    fn create_accent_phrases_works() {
         let mut core = InferenceCore::new(true, None);
         core.initialize(false, 0, true).unwrap();
         let mut synthesis_engine = SynthesisEngine::new(core, OpenJtalk::initialize());
-        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
 
-        let _ = synthesis_engine.load_openjtalk_dict(&open_jtalk_dic_dir);
+        let _ = synthesis_engine.load_openjtalk_dict(OPEN_JTALK_DIC_DIR);
         let accent_phrases = synthesis_engine
             .create_accent_phrases("同じ、文章、です。完全に、同一です。", 0)
             .unwrap();

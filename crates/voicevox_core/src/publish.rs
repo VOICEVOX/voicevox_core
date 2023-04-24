@@ -651,7 +651,9 @@ fn list_windows_video_cards() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::macros::tests::assert_debug_fmt_eq;
     use pretty_assertions::assert_eq;
+    use test_util::OPEN_JTALK_DIC_DIR;
 
     #[rstest]
     fn finalize_works() {
@@ -660,7 +662,7 @@ mod tests {
             .lock()
             .unwrap()
             .initialize(InitializeOptions::default());
-        assert_eq!(Ok(()), result);
+        assert_debug_fmt_eq!(Ok(()), result);
         internal.lock().unwrap().finalize();
         assert_eq!(
             false,
@@ -694,7 +696,7 @@ mod tests {
     ) {
         let internal = VoicevoxCore::new_with_mutex();
         let result = internal.lock().unwrap().load_model(speaker_id);
-        assert_eq!(expected_result_at_uninitialized, result);
+        assert_debug_fmt_eq!(expected_result_at_uninitialized, result);
 
         internal
             .lock()
@@ -705,9 +707,10 @@ mod tests {
             })
             .unwrap();
         let result = internal.lock().unwrap().load_model(speaker_id);
-        assert_eq!(
-            expected_result_at_initialized, result,
-            "got load_model result"
+        assert_debug_fmt_eq!(
+            expected_result_at_initialized,
+            result,
+            "got load_model result",
         );
     }
 
@@ -941,22 +944,19 @@ mod tests {
         TEXT_CONSONANT_VOWEL_DATA2,
         "コ'レワ/テ_スト'デ_ス"
     )]
-    #[async_std::test]
-    async fn audio_query_works(
+    fn audio_query_works(
         #[case] input_text: &str,
         #[case] input_kana_option: bool,
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
         #[case] expected_kana_text: &str,
     ) {
-        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
-
         let core = VoicevoxCore::new_with_mutex();
         core.lock()
             .unwrap()
             .initialize(InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 load_all_models: true,
-                open_jtalk_dict_dir: Some(open_jtalk_dic_dir),
+                open_jtalk_dict_dir: Some(OPEN_JTALK_DIC_DIR.into()),
                 ..Default::default()
             })
             .unwrap();
