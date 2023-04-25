@@ -137,8 +137,8 @@ jobs:
         shell: bash
         run: |
           echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
-          UNDERSCORED_TRIPLE=$(sed 's/-/_/g' <<< "${{ matrix.target }}")
-          echo "AR_$UNDERSCORED_TRIPLE=llvm-ar" >> "$GITHUB_ENV"
+          TRIPLE="${{ matrix.target }}"
+          echo "AR_${TRIPLE//-/-}=llvm-ar" >> "$GITHUB_ENV"
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
