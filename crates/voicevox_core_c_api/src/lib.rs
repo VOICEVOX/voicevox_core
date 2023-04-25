@@ -215,7 +215,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
 /// @param[in] predict_duration_data 確保されたメモリ領域
 ///
 /// # Safety
-/// @param predict_duration_data voicevox_predict_durationで確保された，ポインタでありかつ，呼び出し側でバッファの変更が行われていないこと.
+/// @param predict_duration_data voicevox_predict_durationで確保されたポインタであり、かつ呼び出し側でバッファの変更が行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_data: *mut f32) {
     drop(
