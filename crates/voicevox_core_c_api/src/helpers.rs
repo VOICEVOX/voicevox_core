@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fmt::Debug;
 
 use thiserror::Error;
@@ -76,66 +77,6 @@ pub(crate) fn create_audio_query(
 
 fn audio_query_model_to_json(audio_query_model: &AudioQueryModel) -> String {
     serde_json::to_string(audio_query_model).expect("should be always valid")
-}
-
-pub(crate) unsafe fn write_json_to_ptr(output_ptr: *mut *mut c_char, json: &CStr) {
-    let n = json.to_bytes_with_nul().len();
-    let json_heap = libc::malloc(n);
-    libc::memcpy(json_heap, json.as_ptr() as *const c_void, n);
-    output_ptr.write(json_heap as *mut c_char);
-}
-
-pub(crate) unsafe fn write_wav_to_ptr(
-    output_wav_ptr: *mut *mut u8,
-    output_length_ptr: *mut usize,
-    data: &[u8],
-) {
-    write_data_to_ptr(output_wav_ptr, output_length_ptr, data);
-}
-
-pub(crate) unsafe fn write_predict_duration_to_ptr(
-    output_predict_duration_ptr: *mut *mut f32,
-    output_predict_duration_length_ptr: *mut usize,
-    data: &[f32],
-) {
-    write_data_to_ptr(
-        output_predict_duration_ptr,
-        output_predict_duration_length_ptr,
-        data,
-    );
-}
-
-pub(crate) unsafe fn write_predict_intonation_to_ptr(
-    output_predict_intonation_ptr: *mut *mut f32,
-    output_predict_intonation_length_ptr: *mut usize,
-    data: &[f32],
-) {
-    write_data_to_ptr(
-        output_predict_intonation_ptr,
-        output_predict_intonation_length_ptr,
-        data,
-    );
-}
-
-pub(crate) unsafe fn write_decode_to_ptr(
-    output_decode_ptr: *mut *mut f32,
-    output_decode_length_ptr: *mut usize,
-    data: &[f32],
-) {
-    write_data_to_ptr(output_decode_ptr, output_decode_length_ptr, data);
-}
-
-unsafe fn write_data_to_ptr<T>(
-    output_data_ptr: *mut *mut T,
-    output_length_ptr: *mut usize,
-    data: &[T],
-) {
-    output_length_ptr.write(data.len());
-    use std::mem;
-    let num_bytes = mem::size_of_val(data);
-    let data_heap = libc::malloc(num_bytes);
-    libc::memcpy(data_heap, data.as_ptr() as *const c_void, num_bytes);
-    output_data_ptr.write(data_heap as *mut T);
 }
 
 pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
@@ -233,5 +174,86 @@ impl Default for VoicevoxSynthesisOptions {
         Self {
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
         }
+    }
+}
+
+// privateでくくることにより，helper.rs内からもVecSizeInfoの中身の値を触れないようにする
+mod private {
+    pub(super) struct VecSizeInfo {
+        len: usize,
+        cap: usize,
+    }
+
+    impl VecSizeInfo {
+        pub(super) fn new(len: usize, cap: usize) -> Self {
+            Self { len, cap }
+        }
+        pub(super) fn len(&self) -> usize {
+            self.len
+        }
+        pub(super) fn cap(&self) -> usize {
+            self.cap
+        }
+    }
+}
+
+pub(crate) struct BufferManager {
+    address_to_length_table: BTreeMap<usize, private::VecSizeInfo>,
+}
+
+impl BufferManager {
+    pub const fn new() -> Self {
+        Self {
+            address_to_length_table: BTreeMap::new(),
+        }
+    }
+
+    pub fn leak_vec<T>(&mut self, vec: Vec<T>) -> (*mut T, usize) {
+        assert!(
+            size_of::<T>() >= 1,
+            "サイズが0の値のVecはコーナーケースになりやすいためエラーにする"
+        );
+
+        let len = vec.len();
+        let cap = vec.capacity();
+        let size_info = private::VecSizeInfo::new(len, cap);
+        let ptr = vec.leak().as_ptr();
+        let addr = ptr as usize;
+
+        let not_occupied = self
+            .address_to_length_table
+            .insert(addr, size_info)
+            .is_none();
+
+        assert!(not_occupied, "すでに値が入っている状態はおかしい");
+
+        (ptr as *mut T, len)
+    }
+
+    /// leak_vecでリークしたポインタをVec<T>に戻す
+    /// # Safety
+    /// @param buffer_ptr 必ずleak_vecで取得したポインタを設定する
+    pub unsafe fn restore_vec<T>(&mut self, buffer_ptr: *const T) -> Vec<T> {
+        let addr = buffer_ptr as usize;
+        let size_info = self
+            .address_to_length_table
+            .remove(&addr)
+            .expect("管理されていないポインタを渡した");
+
+        Vec::from_raw_parts(buffer_ptr as *mut T, size_info.len(), size_info.cap())
+    }
+
+    pub fn leak_c_string(&mut self, s: CString) -> (*const c_char, usize) {
+        let (ptr, size) = self.leak_vec(s.into_bytes_with_nul());
+
+        (ptr as *const c_char, size)
+    }
+
+    /// leak_c_stringでリークしたポインタをCStringに戻す
+    /// # Safety
+    /// @param buffer_ptr 必ずleak_c_stringで取得したポインタを設定する
+    pub unsafe fn restore_c_string(&mut self, buffer_ptr: *const c_char) -> CString {
+        let vec = self.restore_vec(buffer_ptr as *const u8);
+        CString::from_vec_unchecked(vec)
     }
 }
