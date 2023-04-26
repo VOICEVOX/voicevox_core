@@ -135,7 +135,7 @@ jobs:
       - name: Set path for android
         if: endsWith(matrix.target, '-linux-android')
         shell: bash
-        run: : |
+        run: |
           echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
       - name: Install cargo-binstall
