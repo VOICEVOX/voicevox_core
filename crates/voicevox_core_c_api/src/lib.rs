@@ -6,12 +6,12 @@ use self::helpers::*;
 use c_impls::*;
 use chrono::SecondsFormat;
 use is_terminal::IsTerminal;
-use libc::c_void;
 use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io::{self, Write};
+use std::mem::size_of;
 use std::os::raw::c_char;
 use std::sync::{Mutex, MutexGuard};
 use tokio::runtime::{Handle, Runtime};
@@ -64,6 +64,9 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
     }
     Runtime::new().unwrap()
 });
+
+// C_APIに渡すために，VecやCStringのサイズを記憶しながら生ポインタを得るためのマネージャ
+static BUFFER_MANAGER: Mutex<BufferManager> = Mutex::new(BufferManager::new());
 
 /*
  * Cの関数として公開するための型や関数を定義するこれらの実装はvoicevox_core/publish.rsに定義してある対応する関数にある
@@ -399,7 +402,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
         ))?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
-        write_json_to_ptr(output_audio_query_json, &audio_query);
+        let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(audio_query);
+        output_audio_query_json.write(ptr as *mut c_char);
         Ok(())
     })())
 }
@@ -430,7 +434,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        write_json_to_ptr(output_accent_phrases_json, &accent_phrases);
+        let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(accent_phrases);
+        output_accent_phrases_json.write(ptr as *mut c_char);
         Ok(())
     })())
 }
@@ -463,7 +468,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        write_json_to_ptr(output_accent_phrases_json, &accent_phrases);
+        let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(accent_phrases);
+        output_accent_phrases_json.write(ptr as *mut c_char);
         Ok(())
     })())
 }
@@ -496,7 +502,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        write_json_to_ptr(output_accent_phrases_json, &accent_phrases);
+        let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(accent_phrases);
+        output_accent_phrases_json.write(ptr as *mut c_char);
         Ok(())
     })())
 }
@@ -543,12 +550,14 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
             .map_err(|_| CApiError::InvalidUtf8Input)?;
         let audio_query: AudioQueryModel =
             serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
-        let wav = &RUNTIME.block_on(synthesizer.synthesizer().synthesis(
+        let wav = RUNTIME.block_on(synthesizer.synthesizer().synthesis(
             &audio_query,
             &StyleId::new(style_id),
             &SynthesisOptions::from(options),
         ))?;
-        write_wav_to_ptr(output_wav, output_wav_length, wav);
+        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().leak_vec(wav);
+        output_wav.write(ptr);
+        output_wav_length.write(len);
         Ok(())
     })())
 }
@@ -598,7 +607,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
             &StyleId::new(style_id),
             &TtsOptions::from(options),
         ))?;
-        write_wav_to_ptr(output_wav, output_wav_length, output.as_slice());
+        let (ptr, size) = BUFFER_MANAGER.lock().unwrap().leak_vec(output);
+        output_wav.write(ptr);
+        output_wav_length.write(size);
         Ok(())
     })())
 }
@@ -607,20 +618,25 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// @param [in] json 解放する json データ
 ///
 /// # Safety
-/// @param json 確保したメモリ領域が破棄される
+/// @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
-    libc::free(json as *mut c_void);
+    drop(
+        BUFFER_MANAGER
+            .lock()
+            .unwrap()
+            .restore_c_string(json as *const c_char),
+    );
 }
 
 /// wav データのメモリを解放する
 /// @param [in] wav 解放する wav データ
 ///
 /// # Safety
-/// @param wav 確保したメモリ領域が破棄される
+/// @param wav voicevox_tts,voicevox_synthesis で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
-    libc::free(wav as *mut c_void);
+    drop(BUFFER_MANAGER.lock().unwrap().restore_vec(wav));
 }
 
 /// エラー結果をメッセージに変換する

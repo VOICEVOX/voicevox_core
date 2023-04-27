@@ -17,13 +17,13 @@ derive-new = "0.5.9"
 easy-ext.workspace = true
 fs-err.workspace = true
 once_cell.workspace = true
-onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="c322c6ac8f4d58afbbe6412ad674c59a01933620" }
+onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="ebb9dcb9b26ee681889b52b6db3b4f642b04a250" }
 process_path.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
-open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="4a812570bb792be1579148c5adce0d047e22aa94" }
+open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="d766a52bad4ccafe18597e57bd6842f59dca881e" }
 regex.workspace = true
 async_zip = { version ="0.0.11",features=["full"]}
 futures = "0.3.26"
