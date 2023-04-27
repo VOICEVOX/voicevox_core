@@ -344,7 +344,8 @@ fn list_windows_video_cards() {
 mod tests {
 
     use super::*;
-    use pretty_assertions::assert_eq;
+    use crate::macros::tests::assert_debug_fmt_eq;
+    use ::test_util::OPEN_JTALK_DIC_DIR;
 
     #[rstest]
     #[case(Ok(()))]
@@ -364,9 +365,10 @@ mod tests {
             .load_voice_model(&open_default_vvm_file().await)
             .await;
 
-        assert_eq!(
-            expected_result_at_initialized, result,
-            "got load_model result"
+        assert_debug_fmt_eq!(
+            expected_result_at_initialized,
+            result,
+            "got load_model result",
         );
     }
 
@@ -540,10 +542,8 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn audio_query_works() {
-        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
-
         let syntesizer = Synthesizer::new_with_initialize(
-            Arc::new(OpenJtalk::new_with_initialize(open_jtalk_dic_dir).unwrap()),
+            Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 load_all_models: true,

@@ -5,6 +5,7 @@ mod devices;
 mod engine;
 mod error;
 mod inference_core;
+mod macros;
 mod manifest;
 mod metas;
 mod numerics;

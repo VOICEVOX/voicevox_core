@@ -17,14 +17,14 @@ derive-new = "0.5.9"
 easy-ext.workspace = true
 fs-err.workspace = true
 once_cell.workspace = true
-onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="405f62fb53df1b59b0e69adafbd1c28e4d5c2787" }
-process_path = "0.1.4"
+onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="c322c6ac8f4d58afbbe6412ad674c59a01933620" }
+process_path.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
-open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="9edab53f0bfa877dbb37224d17fd0f3efbe32abd" }
-regex = "1.6.0"
+open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="4a812570bb792be1579148c5adce0d047e22aa94" }
+regex.workspace = true
 async_zip = { version ="0.0.11",features=["full"]}
 futures = "0.3.26"
 nanoid = "0.4.0"
@@ -36,7 +36,7 @@ pretty_assertions = "1.3.0"
 flate2 = "1.0.24"
 tar = "0.4.38"
 heck = "0.4.0"
-reqwest.workspace=true
+test_util.workspace = true
 
 [target."cfg(windows)".dependencies]
 humansize = "2.1.2"

@@ -15,11 +15,11 @@ futures-core = "0.3.25"
 futures-util = "0.3.25"
 indicatif = "0.17.3"
 itertools = "0.10.5"
-octocrab = { git = "https://github.com/XAMPPRocky/octocrab.git", rev = "7db3611fce5a19c6e84ca60958da0631d54d3713", default-features = false, features = ["rustls-tls", "stream"] }
+octocrab = { version = "0.19.0", default-features = false, features = ["rustls-tls", "stream"] }
 once_cell.workspace = true
 platforms = "3.0.2"
 rayon = "1.6.1"
-reqwest.workspace=true
+reqwest = { version = "0.11.13", default-features = false, features = ["rustls-tls", "stream"] }
 strum = { version = "0.24.1", features = ["derive"] }
 tokio.workspace=true
 tracing.workspace = true

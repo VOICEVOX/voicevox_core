@@ -651,6 +651,7 @@ fn make_interrogative_mora(last_mora: &MoraModel) -> MoraModel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ::test_util::OPEN_JTALK_DIC_DIR;
     use pretty_assertions::assert_eq;
 
     use crate::*;
@@ -661,10 +662,9 @@ mod tests {
         let core = InferenceCore::new_with_initialize(false, 0, false)
             .await
             .unwrap();
-        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
         let synthesis_engine = SynthesisEngine::new(
             core,
-            OpenJtalk::new_with_initialize(open_jtalk_dic_dir)
+            OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR)
                 .unwrap()
                 .into(),
         );
@@ -678,10 +678,9 @@ mod tests {
         let core = InferenceCore::new_with_initialize(false, 0, true)
             .await
             .unwrap();
-        let open_jtalk_dic_dir = download_open_jtalk_dict_if_no_exists().await;
         let synthesis_engine = SynthesisEngine::new(
             core,
-            OpenJtalk::new_with_initialize(&open_jtalk_dic_dir)
+            OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR)
                 .unwrap()
                 .into(),
         );
