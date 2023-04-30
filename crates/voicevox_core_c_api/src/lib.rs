@@ -15,9 +15,9 @@ use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
-use voicevox_core::AudioQueryModel;
 use voicevox_core::Result;
 use voicevox_core::VoicevoxCore;
+use voicevox_core::{AccentPhraseModel, AudioQueryModel};
 
 #[cfg(test)]
 use rstest::*;
@@ -387,6 +387,47 @@ pub unsafe extern "C" fn voicevox_audio_query(
     })())
 }
 
+/// `accent_phrases` のオプション
+#[repr(C)]
+pub struct VoicevoxAccentPhrasesOptions {
+    /// aquestalk形式のkanaとしてテキストを解釈する
+    kana: bool,
+}
+
+/// デフォルトの `accent_phrases` のオプションを生成する
+/// @return デフォルト値が設定された `accent_phrases` のオプション
+#[no_mangle]
+pub extern "C" fn voicevox_make_default_accent_phrases_options() -> VoicevoxAccentPhrasesOptions {
+    voicevox_core::AccentPhrasesOptions::default().into()
+}
+
+/// `accent_phrases` を実行する
+/// @param [in] text テキスト。文字コードはUTF-8
+/// @param [in] speaker_id 話者ID
+/// @param [in] options `accent_phrases`のオプション
+/// @param [out] output_accent_phrases_json AccentPhrase の配列を json でフォーマットしたもの
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param text null終端文字列であること
+/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_accent_phrases_json_free で解放する必要がある
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_accent_phrases(
+    text: *const c_char,
+    speaker_id: u32,
+    options: VoicevoxAccentPhrasesOptions,
+    output_accent_phrases_json: *mut *mut c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let text = CStr::from_ptr(text);
+        let accent_phrases = create_accent_phrases(text, speaker_id, Internal::accent_phrases, options)?;
+
+        let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(accent_phrases);
+        output_accent_phrases_json.write(ptr as *mut c_char);
+        Ok(())
+    })())
+}
+
 /// `voicevox_synthesis` のオプション
 #[repr(C)]
 pub struct VoicevoxSynthesisOptions {
@@ -494,6 +535,16 @@ pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c
             .unwrap()
             .restore_c_string(audio_query_json as *const c_char),
     );
+}
+
+/// jsonフォーマットされた AccnetPhrase データのメモリを解放する
+/// @param [in] accented_phrase_json 解放する json フォーマットされた AccnetPhrase データ
+///
+/// # Safety
+/// @param voicevox_accent_phrases で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_accent_phrases_json_free(accented_phrase_json: *mut c_char) {
+    voicevox_audio_query_json_free(accented_phrase_json);
 }
 
 /// wav データのメモリを解放する

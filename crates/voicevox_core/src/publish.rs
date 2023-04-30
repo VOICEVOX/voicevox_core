@@ -283,12 +283,18 @@ pub struct AudioQueryOptions {
     pub kana: bool,
 }
 
+impl From<&TtsOptions> for AudioQueryOptions {
+    fn from(options: &TtsOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+
 #[derive(Default)]
 pub struct AccentPhrasesOptions {
     pub kana: bool,
 }
 
-impl From<&TtsOptions> for AudioQueryOptions {
+impl From<&TtsOptions> for AccentPhrasesOptions {
     fn from(options: &TtsOptions) -> Self {
         Self { kana: options.kana }
     }
