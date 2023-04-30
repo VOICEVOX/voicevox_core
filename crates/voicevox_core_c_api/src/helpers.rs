@@ -203,9 +203,11 @@ impl BufferManager {
         (ptr, len)
     }
 
-    /// vec_into_rawでC API利用側に貸し出したポインタに対し、デアロケートする
+    /// `vec_into_raw`でC API利用側に貸し出したポインタに対し、デアロケートする。
+    ///
     /// # Safety
-    /// @param buffer_ptr 必ずvec_into_rawで取得したポインタを設定する
+    ///
+    /// - `buffer_ptr`は`vec_into_raw`で取得したものであること。
     pub unsafe fn dealloc_slice<T: Copy>(&mut self, buffer_ptr: *const T) {
         let addr = buffer_ptr as usize;
         let layout = self.address_to_layout_table.remove(&addr).expect(
@@ -227,9 +229,11 @@ impl BufferManager {
         s.into_raw() as *const c_char
     }
 
-    /// c_string_into_rawでリークしたポインタをCStringに戻す
+    /// `c_string_into_raw`でリークしたポインタをCStringに戻す。
+    ///
     /// # Safety
-    /// @param s 必ずc_string_into_rawで取得したポインタを設定する
+    ///
+    /// - `s` は`c_string_into_raw`で取得したものであること。
     pub unsafe fn dealloc_c_string(&mut self, s: *const c_char) {
         // SAFETY:
         // - `s`は`CString::into_raw`で得たものである
