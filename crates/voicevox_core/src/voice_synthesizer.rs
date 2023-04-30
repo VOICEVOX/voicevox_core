@@ -384,7 +384,7 @@ mod tests {
         )
         .await
         .unwrap();
-        assert_eq!(false, syntesizer.is_gpu_mode());
+        assert!(!syntesizer.is_gpu_mode());
     }
 
     #[rstest]
