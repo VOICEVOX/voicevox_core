@@ -428,7 +428,7 @@ pub unsafe extern "C" fn voicevox_accent_phrases(
         Ok(())
     })())
 }
-
+///
 /// アクセント句の音素長を変更する
 /// @param [in] accent_phrases_json アクセント句の配列を json でフォーマットしたもの
 /// @param [in] speaker_id 話者ID
@@ -458,6 +458,74 @@ pub unsafe extern "C" fn voicevox_mora_length(
             .lock()
             .unwrap()
             .leak_c_string(accent_phrases_with_mora_length);
+        output_accent_phrases_json.write(ptr as *mut c_char);
+        Ok(())
+    })())
+}
+
+/// アクセント句の音高を変更する
+/// @param [in] accent_phrases_json アクセント句の配列を json でフォーマットしたもの
+/// @param [in] speaker_id 話者ID
+/// @param [out] output_accent_phrases_json 音高が変更されたアクセント句の情報の配列を json でフォーマットしたもの
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param accent_phrases_json null終端文字列であること
+/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_accent_phrases_json_free で解放する必要がある
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_mora_pitch(
+    accent_phrases_json: *const c_char,
+    speaker_id: u32,
+    output_accent_phrases_json: *mut *mut c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let accent_phrases_json = CStr::from_ptr(accent_phrases_json)
+            .to_str()
+            .map_err(|_| CApiError::InvalidUtf8Input)?;
+        let accent_phrases: Vec<AccentPhraseModel> =
+            serde_json::from_str(accent_phrases_json).map_err(CApiError::InvalidAccentPhrase)?;
+
+        let accent_phrases_with_mora_pitch =
+            modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_pitch)?;
+
+        let (ptr, _) = BUFFER_MANAGER
+            .lock()
+            .unwrap()
+            .leak_c_string(accent_phrases_with_mora_pitch);
+        output_accent_phrases_json.write(ptr as *mut c_char);
+        Ok(())
+    })())
+}
+
+/// アクセント句の音高・音素長を変更する
+/// @param [in] accent_phrases_json アクセント句の配列を json でフォーマットしたもの
+/// @param [in] speaker_id 話者ID
+/// @param [out] output_accent_phrases_json 音高・音素長が変更されたアクセント句の情報の配列を json でフォーマットしたもの
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param accent_phrases_json null終端文字列であること
+/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_accent_phrases_json_free で解放する必要がある
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_mora_data(
+    accent_phrases_json: *const c_char,
+    speaker_id: u32,
+    output_accent_phrases_json: *mut *mut c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let accent_phrases_json = CStr::from_ptr(accent_phrases_json)
+            .to_str()
+            .map_err(|_| CApiError::InvalidUtf8Input)?;
+        let accent_phrases: Vec<AccentPhraseModel> =
+            serde_json::from_str(accent_phrases_json).map_err(CApiError::InvalidAccentPhrase)?;
+
+        let accent_phrases_with_mora_data =
+            modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_data)?;
+
+        let (ptr, _) = BUFFER_MANAGER
+            .lock()
+            .unwrap()
+            .leak_c_string(accent_phrases_with_mora_data);
         output_accent_phrases_json.write(ptr as *mut c_char);
         Ok(())
     })())
