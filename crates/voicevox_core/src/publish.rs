@@ -1093,6 +1093,73 @@ mod tests {
     }
 
     #[rstest]
+    #[case("これはテストです", false, TEXT_CONSONANT_VOWEL_DATA1)]
+    #[case("コ'レワ/テ_スト'デ_ス", true, TEXT_CONSONANT_VOWEL_DATA2)]
+    fn accent_phrases_works(
+        #[case] input_text: &str,
+        #[case] input_kana_option: bool,
+        #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
+    ) {
+        let core = VoicevoxCore::new_with_mutex();
+        core.lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                open_jtalk_dict_dir: Some(OPEN_JTALK_DIC_DIR.into()),
+                ..Default::default()
+            })
+            .unwrap();
+
+        let accent_phrases = core
+            .lock()
+            .unwrap()
+            .accent_phrases(
+                input_text,
+                0,
+                AccentPhrasesOptions {
+                    kana: input_kana_option,
+                },
+            )
+            .unwrap();
+
+        assert_eq!(
+            accent_phrases.len(),
+            expected_text_consonant_vowel_data.len()
+        );
+
+        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in
+            std::iter::zip(accent_phrases, expected_text_consonant_vowel_data)
+        {
+            assert_eq!(
+                accent_phrase.moras().len(),
+                text_consonant_vowel_slice.len()
+            );
+            assert_eq!(accent_phrase.accent(), accent_pos);
+
+            for (mora, (text, consonant, vowel)) in
+                std::iter::zip(accent_phrase.moras(), *text_consonant_vowel_slice)
+            {
+                assert_eq!(mora.text(), text);
+                // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
+                assert_ne!(
+                    mora.consonant_length(),
+                    &Some(0.),
+                    "expected mora.consonant_length is not Some(0.0), but got Some(0.0)."
+                );
+                assert_eq!(mora.consonant(), &Some(consonant.to_string()));
+                assert_eq!(mora.vowel(), vowel);
+                // NOTE: 母音の長さが必ず非ゼロになるテストケースを想定している
+                assert_ne!(
+                    mora.vowel_length(),
+                    &0.,
+                    "expected mora.vowel_length is not 0.0, but got 0.0."
+                );
+            }
+        }
+    }
+
+    #[rstest]
     fn get_version_works() {
         assert_eq!("0.0.0", VoicevoxCore::get_version());
     }
