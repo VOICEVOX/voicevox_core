@@ -9,7 +9,6 @@ use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io::{self, Write};
-use std::mem::size_of;
 use std::os::raw::c_char;
 use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
@@ -202,7 +201,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
             std::slice::from_raw_parts_mut(phoneme_vector, length),
             speaker_id,
         )?;
-        let (ptr, size) = BUFFER_MANAGER.lock().unwrap().leak_vec(output_vec);
+        let (ptr, size) = BUFFER_MANAGER.lock().unwrap().vec_into_raw(output_vec);
 
         output_predict_duration_data_length.write(size);
         output_predict_duration_data.write(ptr);
@@ -218,12 +217,10 @@ pub unsafe extern "C" fn voicevox_predict_duration(
 /// @param predict_duration_data voicevox_predict_durationで確保されたポインタであり、かつ呼び出し側でバッファの変更が行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_data: *mut f32) {
-    drop(
-        BUFFER_MANAGER
-            .lock()
-            .unwrap()
-            .restore_vec(predict_duration_data as *const f32),
-    );
+    BUFFER_MANAGER
+        .lock()
+        .unwrap()
+        .dealloc_slice(predict_duration_data as *const f32);
 }
 
 /// モーラごとのF0を推論する
@@ -272,7 +269,7 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
             std::slice::from_raw_parts(end_accent_phrase_vector, length),
             speaker_id,
         )?;
-        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().leak_vec(output_vec);
+        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().vec_into_raw(output_vec);
         output_predict_intonation_data.write(ptr);
         output_predict_intonation_data_length.write(len);
 
@@ -288,12 +285,10 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
 /// @param predict_duration_data voicevox_predict_intonationで確保された，ポインタでありかつ，呼び出し側でバッファの変更を行われていないこと.
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_intonation_data_free(predict_intonation_data: *mut f32) {
-    drop(
-        BUFFER_MANAGER
-            .lock()
-            .unwrap()
-            .restore_vec(predict_intonation_data as *const f32),
-    );
+    BUFFER_MANAGER
+        .lock()
+        .unwrap()
+        .dealloc_slice(predict_intonation_data as *const f32);
 }
 
 /// decodeを実行する
@@ -329,7 +324,7 @@ pub unsafe extern "C" fn voicevox_decode(
             std::slice::from_raw_parts(phoneme_vector, phoneme_size * length),
             speaker_id,
         )?;
-        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().leak_vec(output_vec);
+        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().vec_into_raw(output_vec);
         output_decode_data.write(ptr);
         output_decode_data_length.write(len);
         Ok(())
@@ -343,7 +338,7 @@ pub unsafe extern "C" fn voicevox_decode(
 /// @param decode_data voicevox_decodeで確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_decode_data_free(decode_data: *mut f32) {
-    drop(BUFFER_MANAGER.lock().unwrap().restore_vec(decode_data))
+    BUFFER_MANAGER.lock().unwrap().dealloc_slice(decode_data);
 }
 
 /// Audio query のオプション
@@ -431,7 +426,7 @@ pub unsafe extern "C" fn voicevox_synthesis(
             &serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
         let wav = lock_internal().synthesis(audio_query, speaker_id, options.into())?;
 
-        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().leak_vec(wav);
+        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().vec_into_raw(wav);
         output_wav.write(ptr);
         output_wav_length.write(len);
 
@@ -477,7 +472,7 @@ pub unsafe extern "C" fn voicevox_tts(
     into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let output = lock_internal().tts(text, speaker_id, options.into())?;
-        let (ptr, size) = BUFFER_MANAGER.lock().unwrap().leak_vec(output);
+        let (ptr, size) = BUFFER_MANAGER.lock().unwrap().vec_into_raw(output);
         output_wav.write(ptr);
         output_wav_length.write(size);
         Ok(())
@@ -504,7 +499,7 @@ pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c
 /// @param wav voicevox_tts,voicevox_synthesis で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
-    drop(BUFFER_MANAGER.lock().unwrap().restore_vec(wav));
+    BUFFER_MANAGER.lock().unwrap().dealloc_slice(wav);
 }
 
 /// エラー結果をメッセージに変換する

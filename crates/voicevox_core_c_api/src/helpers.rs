@@ -1,3 +1,4 @@
+use std::alloc::Layout;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
@@ -177,70 +178,49 @@ impl Default for VoicevoxSynthesisOptions {
     }
 }
 
-// privateでくくることにより，helper.rs内からもVecSizeInfoの中身の値を触れないようにする
-mod private {
-    pub(super) struct VecSizeInfo {
-        len: usize,
-        cap: usize,
-    }
-
-    impl VecSizeInfo {
-        pub(super) fn new(len: usize, cap: usize) -> Self {
-            Self { len, cap }
-        }
-        pub(super) fn len(&self) -> usize {
-            self.len
-        }
-        pub(super) fn cap(&self) -> usize {
-            self.cap
-        }
-    }
-}
-
 pub(crate) struct BufferManager {
-    address_to_length_table: BTreeMap<usize, private::VecSizeInfo>,
+    address_to_layout_table: BTreeMap<usize, Layout>,
 }
 
 impl BufferManager {
     pub const fn new() -> Self {
         Self {
-            address_to_length_table: BTreeMap::new(),
+            address_to_layout_table: BTreeMap::new(),
         }
     }
 
-    pub fn leak_vec<T>(&mut self, vec: Vec<T>) -> (*mut T, usize) {
-        assert!(
-            size_of::<T>() >= 1,
-            "サイズが0の値のVecはコーナーケースになりやすいためエラーにする"
-        );
-
-        let len = vec.len();
-        let cap = vec.capacity();
-        let size_info = private::VecSizeInfo::new(len, cap);
-        let ptr = vec.leak().as_ptr();
+    pub fn vec_into_raw<T: Copy>(&mut self, vec: Vec<T>) -> (*mut T, usize) {
+        let slice = Box::leak(vec.into_boxed_slice());
+        let layout = Layout::for_value(slice);
+        let len = slice.len();
+        let ptr = slice.as_mut_ptr();
         let addr = ptr as usize;
 
-        let not_occupied = self
-            .address_to_length_table
-            .insert(addr, size_info)
-            .is_none();
+        let not_occupied = self.address_to_layout_table.insert(addr, layout).is_none();
 
         assert!(not_occupied, "すでに値が入っている状態はおかしい");
 
-        (ptr as *mut T, len)
+        (ptr, len)
     }
 
-    /// leak_vecでリークしたポインタをVec<T>に戻す
+    /// vec_into_rawでC API利用側に貸し出したポインタに対し、デアロケートする
     /// # Safety
-    /// @param buffer_ptr 必ずleak_vecで取得したポインタを設定する
-    pub unsafe fn restore_vec<T>(&mut self, buffer_ptr: *const T) -> Vec<T> {
+    /// @param buffer_ptr 必ずvec_into_rawで取得したポインタを設定する
+    pub unsafe fn dealloc_slice<T: Copy>(&mut self, buffer_ptr: *const T) {
         let addr = buffer_ptr as usize;
-        let size_info = self
-            .address_to_length_table
+        let layout = self
+            .address_to_layout_table
             .remove(&addr)
             .expect("管理されていないポインタを渡した");
 
-        Vec::from_raw_parts(buffer_ptr as *mut T, size_info.len(), size_info.cap())
+        if layout.size() > 0 {
+            // `T: Copy`より、`T: !Drop`であるため`drop_in_place`は不要
+
+            // SAFETY:
+            // - `addr`と`layout`は対応したものである
+            // - `layout.size() > 0`より、`addr`はダングリングではない有効なポインタである
+            std::alloc::dealloc(addr as *mut u8, layout);
+        }
     }
 
     pub fn c_string_into_raw(&mut self, s: CString) -> *const c_char {
@@ -251,6 +231,8 @@ impl BufferManager {
     /// # Safety
     /// @param s 必ずc_string_into_rawで取得したポインタを設定する
     pub unsafe fn dealloc_c_string(&mut self, s: *const c_char) {
+        // SAFETY:
+        // - `s`は`CString::into_raw`で得たものである
         drop(CString::from_raw(s as *mut c_char));
     }
 }
