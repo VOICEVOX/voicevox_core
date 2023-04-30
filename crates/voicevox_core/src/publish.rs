@@ -195,32 +195,68 @@ impl VoicevoxCore {
         text: &str,
         speaker_id: u32,
         options: AccentPhrasesOptions,
-    ) -> Result<AccentPhraseModel> {
-        todo!()
-    }
+    ) -> Result<Vec<AccentPhraseModel>> {
+        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
+            return Err(Error::NotLoadedOpenjtalkDict);
+        }
 
-    pub fn mora_data(
-        &mut self,
-        speaker_id: u32,
-        accent_phrase: &AccentPhraseModel,
-    ) -> Result<AccentPhraseModel> {
-        todo!()
+        let accent_phrases = if options.kana {
+            self.synthesis_engine
+                .replace_mora_data(&parse_kana(text)?, speaker_id)?
+        } else {
+            self.synthesis_engine
+                .create_accent_phrases(text, speaker_id)?
+        };
+
+        Ok(accent_phrases)
     }
 
     pub fn mora_length(
         &mut self,
         speaker_id: u32,
-        accent_phrase: &AccentPhraseModel,
-    ) -> Result<AccentPhraseModel> {
-        todo!()
+        accent_phrases: &[AccentPhraseModel],
+    ) -> Result<Vec<AccentPhraseModel>> {
+        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
+            return Err(Error::NotLoadedOpenjtalkDict);
+        }
+
+        let accent_phrases = self
+            .synthesis_engine
+            .replace_phoneme_length(accent_phrases, speaker_id)?;
+
+        Ok(accent_phrases)
     }
 
     pub fn mora_pitch(
         &mut self,
         speaker_id: u32,
-        accent_phrase: &AccentPhraseModel,
-    ) -> Result<AccentPhraseModel> {
-        todo!()
+        accent_phrases: &[AccentPhraseModel],
+    ) -> Result<Vec<AccentPhraseModel>> {
+        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
+            return Err(Error::NotLoadedOpenjtalkDict);
+        }
+
+        let accent_phrases = self
+            .synthesis_engine
+            .replace_mora_pitch(accent_phrases, speaker_id)?;
+
+        Ok(accent_phrases)
+    }
+
+    pub fn mora_data(
+        &mut self,
+        speaker_id: u32,
+        accent_phrases: &[AccentPhraseModel],
+    ) -> Result<Vec<AccentPhraseModel>> {
+        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
+            return Err(Error::NotLoadedOpenjtalkDict);
+        }
+
+        let accent_phrases = self
+            .synthesis_engine
+            .replace_mora_data(accent_phrases, speaker_id)?;
+
+        Ok(accent_phrases)
     }
 
     pub fn synthesis(
