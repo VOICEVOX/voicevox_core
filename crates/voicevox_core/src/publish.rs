@@ -190,6 +190,39 @@ impl VoicevoxCore {
         ))
     }
 
+    pub fn accent_phrases(
+        &mut self,
+        text: &str,
+        speaker_id: u32,
+        options: AccentPhrasesOptions,
+    ) -> Result<AccentPhraseModel> {
+        todo!()
+    }
+
+    pub fn mora_data(
+        &mut self,
+        speaker_id: u32,
+        accent_phrase: &AccentPhraseModel,
+    ) -> Result<AccentPhraseModel> {
+        todo!()
+    }
+
+    pub fn mora_length(
+        &mut self,
+        speaker_id: u32,
+        accent_phrase: &AccentPhraseModel,
+    ) -> Result<AccentPhraseModel> {
+        todo!()
+    }
+
+    pub fn mora_pitch(
+        &mut self,
+        speaker_id: u32,
+        accent_phrase: &AccentPhraseModel,
+    ) -> Result<AccentPhraseModel> {
+        todo!()
+    }
+
     pub fn synthesis(
         &mut self,
         audio_query: &AudioQueryModel,
@@ -211,6 +244,11 @@ impl VoicevoxCore {
 
 #[derive(Default)]
 pub struct AudioQueryOptions {
+    pub kana: bool,
+}
+
+#[derive(Default)]
+pub struct AccentPhrasesOptions {
     pub kana: bool,
 }
 
