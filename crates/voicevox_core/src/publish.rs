@@ -1202,6 +1202,88 @@ mod tests {
     }
 
     #[rstest]
+    fn mora_pitch_works() {
+        let core = VoicevoxCore::new_with_mutex();
+        core.lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                open_jtalk_dict_dir: Some(OPEN_JTALK_DIC_DIR.into()),
+                ..Default::default()
+            })
+            .unwrap();
+
+        let accent_phrases = core
+            .lock()
+            .unwrap()
+            .accent_phrases("これはテストです", 0, AccentPhrasesOptions { kana: false })
+            .unwrap();
+
+        let modified_accent_phrases = core.lock().unwrap().mora_pitch(1, &accent_phrases).unwrap();
+
+        // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
+        for (before_phrase, after_phrase) in
+            accent_phrases.iter().zip(modified_accent_phrases.iter())
+        {
+            for (before_mora, after_mora) in before_phrase
+                .moras()
+                .iter()
+                .zip(after_phrase.moras().iter())
+            {
+                if before_mora.pitch() != after_mora.pitch() {
+                    return;
+                }
+            }
+        }
+        panic!("mora_pitch() does not work: all mora.pitch() are same.");
+    }
+
+    #[rstest]
+    fn mora_data_works() {
+        let core = VoicevoxCore::new_with_mutex();
+        core.lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                open_jtalk_dict_dir: Some(OPEN_JTALK_DIC_DIR.into()),
+                ..Default::default()
+            })
+            .unwrap();
+
+        let accent_phrases = core
+            .lock()
+            .unwrap()
+            .accent_phrases("これはテストです", 0, AccentPhrasesOptions { kana: false })
+            .unwrap();
+
+        let modified_accent_phrases = core.lock().unwrap().mora_data(1, &accent_phrases).unwrap();
+
+        let mut pitch_modified = false;
+        let mut vowel_length_modified = false;
+        // NOTE: 一つでも音高/母音の長さが変わっていれば、動作しているとみなす
+        for (before_phrase, after_phrase) in
+            accent_phrases.iter().zip(modified_accent_phrases.iter())
+        {
+            for (before_mora, after_mora) in before_phrase
+                .moras()
+                .iter()
+                .zip(after_phrase.moras().iter())
+            {
+                if before_mora.vowel_length() != after_mora.vowel_length() {
+                    vowel_length_modified = true;
+                }
+                if before_mora.pitch() != after_mora.pitch() {
+                    pitch_modified = true;
+                }
+            }
+        }
+        assert!(pitch_modified);
+        assert!(vowel_length_modified);
+    }
+
+    #[rstest]
     fn get_version_works() {
         assert_eq!("0.0.0", VoicevoxCore::get_version());
     }
