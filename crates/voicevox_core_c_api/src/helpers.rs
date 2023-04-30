@@ -37,6 +37,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(ParseKana(_))) => VOICEVOX_RESULT_PARSE_KANA_ERROR,
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
+            Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
         }
     }
 }
@@ -51,6 +52,8 @@ pub(crate) enum CApiError {
     InvalidUtf8Input,
     #[error("無効なAudioQueryです: {0}")]
     InvalidAudioQuery(serde_json::Error),
+    #[error("無効なAccentPhraseです: {0}")]
+    InvalidAccentPhrase(serde_json::Error),
 }
 
 pub(crate) fn create_audio_query(
@@ -104,6 +107,16 @@ pub(crate) fn create_accent_phrases(
 
 fn accent_phrases_model_to_json(accent_phrases_model: &[AccentPhraseModel]) -> String {
     serde_json::to_string(accent_phrases_model).expect("should be always valid")
+}
+
+pub(crate) fn modify_accent_phrases(
+    accent_phrases: &[AccentPhraseModel],
+    speaker_id: u32,
+    method: fn(&mut Internal, u32, &[AccentPhraseModel]) -> Result<Vec<AccentPhraseModel>>,
+) -> CApiResult<CString> {
+    let accent_phrases = method(&mut lock_internal(), speaker_id, accent_phrases)?;
+    Ok(CString::new(accent_phrases_model_to_json(&accent_phrases))
+        .expect("should not contain '\\0'"))
 }
 
 pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {

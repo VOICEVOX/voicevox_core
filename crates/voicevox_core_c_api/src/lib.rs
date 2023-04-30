@@ -405,7 +405,7 @@ pub extern "C" fn voicevox_make_default_accent_phrases_options() -> VoicevoxAcce
 /// @param [in] text テキスト。文字コードはUTF-8
 /// @param [in] speaker_id 話者ID
 /// @param [in] options `accent_phrases`のオプション
-/// @param [out] output_accent_phrases_json AccentPhrase の配列を json でフォーマットしたもの
+/// @param [out] output_accent_phrases_json アクセント句の情報の配列を json でフォーマットしたもの
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
@@ -420,9 +420,44 @@ pub unsafe extern "C" fn voicevox_accent_phrases(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let text = CStr::from_ptr(text);
-        let accent_phrases = create_accent_phrases(text, speaker_id, Internal::accent_phrases, options)?;
+        let accent_phrases =
+            create_accent_phrases(text, speaker_id, Internal::accent_phrases, options)?;
 
         let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(accent_phrases);
+        output_accent_phrases_json.write(ptr as *mut c_char);
+        Ok(())
+    })())
+}
+
+/// アクセント句の音素長を変更する
+/// @param [in] accent_phrases_json アクセント句の配列を json でフォーマットしたもの
+/// @param [in] speaker_id 話者ID
+/// @param [out] output_accent_phrases_json 音素長が変更されたアクセント句の情報の配列を json でフォーマットしたもの
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param accent_phrases_json null終端文字列であること
+/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_accent_phrases_json_free で解放する必要がある
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_mora_length(
+    accent_phrases_json: *const c_char,
+    speaker_id: u32,
+    output_accent_phrases_json: *mut *mut c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let accent_phrases_json = CStr::from_ptr(accent_phrases_json)
+            .to_str()
+            .map_err(|_| CApiError::InvalidUtf8Input)?;
+        let accent_phrases: Vec<AccentPhraseModel> =
+            serde_json::from_str(accent_phrases_json).map_err(CApiError::InvalidAccentPhrase)?;
+
+        let accent_phrases_with_mora_length =
+            modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_length)?;
+
+        let (ptr, _) = BUFFER_MANAGER
+            .lock()
+            .unwrap()
+            .leak_c_string(accent_phrases_with_mora_length);
         output_accent_phrases_json.write(ptr as *mut c_char);
         Ok(())
     })())
