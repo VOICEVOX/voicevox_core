@@ -216,10 +216,6 @@ impl VoicevoxCore {
         speaker_id: u32,
         accent_phrases: &[AccentPhraseModel],
     ) -> Result<Vec<AccentPhraseModel>> {
-        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
-            return Err(Error::NotLoadedOpenjtalkDict);
-        }
-
         let accent_phrases = self
             .synthesis_engine
             .replace_phoneme_length(accent_phrases, speaker_id)?;
@@ -232,10 +228,6 @@ impl VoicevoxCore {
         speaker_id: u32,
         accent_phrases: &[AccentPhraseModel],
     ) -> Result<Vec<AccentPhraseModel>> {
-        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
-            return Err(Error::NotLoadedOpenjtalkDict);
-        }
-
         let accent_phrases = self
             .synthesis_engine
             .replace_mora_pitch(accent_phrases, speaker_id)?;
@@ -248,10 +240,6 @@ impl VoicevoxCore {
         speaker_id: u32,
         accent_phrases: &[AccentPhraseModel],
     ) -> Result<Vec<AccentPhraseModel>> {
-        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
-            return Err(Error::NotLoadedOpenjtalkDict);
-        }
-
         let accent_phrases = self
             .synthesis_engine
             .replace_mora_data(accent_phrases, speaker_id)?;
