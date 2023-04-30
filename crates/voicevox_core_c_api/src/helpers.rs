@@ -236,3 +236,71 @@ impl BufferManager {
         drop(CString::from_raw(s as *mut c_char));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn buffer_manager_works() {
+        let mut buffer_manager = BufferManager::new();
+
+        unsafe {
+            let (ptr, len) = buffer_manager.vec_into_raw(vec![()]);
+            assert_eq!(1, len);
+            buffer_manager.dealloc_slice(ptr);
+        }
+
+        unsafe {
+            let (ptr, len) = buffer_manager.vec_into_raw(Vec::<u8>::new());
+            assert_eq!(0, len);
+            buffer_manager.dealloc_slice(ptr);
+        }
+
+        unsafe {
+            let (ptr, len) = buffer_manager.vec_into_raw(vec![0u8]);
+            assert_eq!(1, len);
+            buffer_manager.dealloc_slice(ptr);
+        }
+
+        unsafe {
+            let mut vec = Vec::with_capacity(2);
+            vec.push(0u8);
+            let (ptr, len) = buffer_manager.vec_into_raw(vec);
+            assert_eq!(1, len);
+            buffer_manager.dealloc_slice(ptr);
+        }
+
+        unsafe {
+            let (ptr, len) = buffer_manager.vec_into_raw(Vec::<f32>::new());
+            assert_eq!(0, len);
+            buffer_manager.dealloc_slice(ptr);
+        }
+
+        unsafe {
+            let (ptr, len) = buffer_manager.vec_into_raw(vec![0f32]);
+            assert_eq!(1, len);
+            buffer_manager.dealloc_slice(ptr);
+        }
+
+        unsafe {
+            let mut vec = Vec::with_capacity(2);
+            vec.push(0f32);
+            let (ptr, len) = buffer_manager.vec_into_raw(vec);
+            assert_eq!(1, len);
+            buffer_manager.dealloc_slice(ptr);
+        }
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "解放しようとしたポインタはvoicevox_coreの管理下にありません。誤ったポインタであるか、二重解放になっていることが考えられます"
+    )]
+    fn buffer_manager_denies_unknown_ptr() {
+        let mut buffer_manager = BufferManager::new();
+        unsafe {
+            let x = 42;
+            buffer_manager.dealloc_slice(&x as *const i32);
+        }
+    }
+}
