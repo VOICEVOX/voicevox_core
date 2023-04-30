@@ -243,17 +243,14 @@ impl BufferManager {
         Vec::from_raw_parts(buffer_ptr as *mut T, size_info.len(), size_info.cap())
     }
 
-    pub fn leak_c_string(&mut self, s: CString) -> (*const c_char, usize) {
-        let (ptr, size) = self.leak_vec(s.into_bytes_with_nul());
-
-        (ptr as *const c_char, size)
+    pub fn c_string_into_raw(&mut self, s: CString) -> *const c_char {
+        s.into_raw() as *const c_char
     }
 
-    /// leak_c_stringでリークしたポインタをCStringに戻す
+    /// c_string_into_rawでリークしたポインタをCStringに戻す
     /// # Safety
-    /// @param buffer_ptr 必ずleak_c_stringで取得したポインタを設定する
-    pub unsafe fn restore_c_string(&mut self, buffer_ptr: *const c_char) -> CString {
-        let vec = self.restore_vec(buffer_ptr as *const u8);
-        CString::from_vec_unchecked(vec)
+    /// @param s 必ずc_string_into_rawで取得したポインタを設定する
+    pub unsafe fn dealloc_c_string(&mut self, s: *const c_char) {
+        drop(CString::from_raw(s as *mut c_char));
     }
 }
