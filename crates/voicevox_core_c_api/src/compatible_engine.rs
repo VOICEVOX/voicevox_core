@@ -6,6 +6,18 @@ use libc::c_int;
 pub use voicevox_core::result_code::VoicevoxResultCode;
 use voicevox_core::{OpenJtalk, StyleId, VoiceModel};
 
+macro_rules! ensure_initialized {
+    ($synthesizer:expr $(,)?) => {
+        match $synthesizer {
+            Some(synthesizer) => synthesizer,
+            None => {
+                set_message("Statusが初期化されていません");
+                return false;
+            }
+        }
+    };
+}
+
 static ERROR_MESSAGE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
 
 struct VoiceModelSet {
@@ -15,9 +27,7 @@ struct VoiceModelSet {
 }
 
 static VOICE_MODEL_SET: Lazy<Mutex<VoiceModelSet>> = Lazy::new(|| {
-    let all_vvms = Handle::current()
-        .block_on(VoiceModel::get_all_models())
-        .unwrap();
+    let all_vvms = RUNTIME.block_on(VoiceModel::get_all_models()).unwrap();
     let model_map: BTreeMap<_, _> = all_vvms
         .iter()
         .map(|vvm| (vvm.id().clone(), vvm.clone()))
@@ -59,8 +69,7 @@ fn set_message(message: &str) {
 
 #[no_mangle]
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
-    let handle = Handle::current();
-    let result = handle.block_on(voicevox_core::Synthesizer::new_with_initialize(
+    let result = RUNTIME.block_on(voicevox_core::Synthesizer::new_with_initialize(
         Arc::new(OpenJtalk::new_without_dic()),
         &voicevox_core::InitializeOptions {
             acceleration_mode: if use_gpu {
@@ -72,23 +81,26 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
             load_all_models,
         },
     ));
-    if let Some(err) = result.err() {
-        set_message(&format!("{err}"));
-        false
-    } else {
-        true
+    match result {
+        Ok(synthesizer) => {
+            *lock_synthesizer() = Some(synthesizer);
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
     }
 }
 
 #[no_mangle]
 pub extern "C" fn load_model(style_id: i64) -> bool {
-    let handle = Handle::current();
     let style_id = StyleId::new(style_id as u32);
     let model_set = voice_model_set();
     if let Some(model_id) = model_set.style_model_map.get(&style_id) {
         let vvm = model_set.model_map.get(model_id).unwrap();
-        let mut synthesizer = lock_synthesizer();
-        let result = handle.block_on(synthesizer.as_mut().unwrap().load_voice_model(vvm));
+        let synthesizer = &mut *lock_synthesizer();
+        let result = RUNTIME.block_on(ensure_initialized!(synthesizer).load_voice_model(vvm));
         if let Some(err) = result.err() {
             set_message(&format!("{err}"));
             false
@@ -103,9 +115,7 @@ pub extern "C" fn load_model(style_id: i64) -> bool {
 
 #[no_mangle]
 pub extern "C" fn is_model_loaded(speaker_id: i64) -> bool {
-    lock_synthesizer()
-        .as_ref()
-        .unwrap()
+    ensure_initialized!(&*lock_synthesizer())
         .is_loaded_model_by_style_id(&StyleId::new(speaker_id as u32))
 }
 
@@ -137,8 +147,8 @@ pub extern "C" fn yukarin_s_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let synthesizer = lock_synthesizer();
-    let result = Handle::current().block_on(synthesizer.as_ref().unwrap().predict_duration(
+    let synthesizer = &*lock_synthesizer();
+    let result = RUNTIME.block_on(ensure_initialized!(synthesizer).predict_duration(
         unsafe { std::slice::from_raw_parts_mut(phoneme_list, length as usize) },
         &StyleId::new(unsafe { *speaker_id as u32 }),
     ));
@@ -167,8 +177,8 @@ pub extern "C" fn yukarin_sa_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let synthesizer = lock_synthesizer();
-    let result = Handle::current().block_on(synthesizer.as_ref().unwrap().predict_intonation(
+    let synthesizer = &*lock_synthesizer();
+    let result = RUNTIME.block_on(ensure_initialized!(synthesizer).predict_intonation(
         length as usize,
         unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length as usize) },
         unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length as usize) },
@@ -202,8 +212,8 @@ pub extern "C" fn decode_forward(
 ) -> bool {
     let length = length as usize;
     let phoneme_size = phoneme_size as usize;
-    let synthesizer = lock_synthesizer();
-    let result = Handle::current().block_on(synthesizer.as_ref().unwrap().decode(
+    let synthesizer = &*lock_synthesizer();
+    let result = RUNTIME.block_on(ensure_initialized!(synthesizer).decode(
         length,
         phoneme_size,
         unsafe { std::slice::from_raw_parts(f0, length) },

@@ -14,7 +14,7 @@ use std::io::{self, Write};
 use std::mem::size_of;
 use std::os::raw::c_char;
 use std::sync::{Mutex, MutexGuard};
-use tokio::runtime::{Handle, Runtime};
+use tokio::runtime::Runtime;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use voicevox_core::StyleId;
