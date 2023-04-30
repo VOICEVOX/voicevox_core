@@ -1172,21 +1172,11 @@ mod tests {
             .mora_length(1, &accent_phrases)
             .unwrap();
 
-        // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
-        for (before_phrase, after_phrase) in
-            accent_phrases.iter().zip(modified_accent_phrases.iter())
-        {
-            for (before_mora, after_mora) in before_phrase
-                .moras()
-                .iter()
-                .zip(after_phrase.moras().iter())
-            {
-                if before_mora.vowel_length() != after_mora.vowel_length() {
-                    return;
-                }
-            }
-        }
-        panic!("mora_length() does not work: all mora.vowel_length() are same.");
+        // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::pitch),
+            "mora_pitch() does not work: mora.pitch() is not changed."
+        );
     }
 
     #[rstest]
@@ -1210,21 +1200,11 @@ mod tests {
 
         let modified_accent_phrases = core.lock().unwrap().mora_pitch(1, &accent_phrases).unwrap();
 
-        // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
-        for (before_phrase, after_phrase) in
-            accent_phrases.iter().zip(modified_accent_phrases.iter())
-        {
-            for (before_mora, after_mora) in before_phrase
-                .moras()
-                .iter()
-                .zip(after_phrase.moras().iter())
-            {
-                if before_mora.pitch() != after_mora.pitch() {
-                    return;
-                }
-            }
-        }
-        panic!("mora_pitch() does not work: all mora.pitch() are same.");
+        // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::vowel_length),
+            "mora_length() does not work: mora.vowel_length() is not changed."
+        );
     }
 
     #[rstest]
@@ -1248,27 +1228,27 @@ mod tests {
 
         let modified_accent_phrases = core.lock().unwrap().mora_data(1, &accent_phrases).unwrap();
 
-        let mut pitch_modified = false;
-        let mut vowel_length_modified = false;
-        // NOTE: 一つでも音高/母音の長さが変わっていれば、動作しているとみなす
-        for (before_phrase, after_phrase) in
-            accent_phrases.iter().zip(modified_accent_phrases.iter())
-        {
-            for (before_mora, after_mora) in before_phrase
-                .moras()
-                .iter()
-                .zip(after_phrase.moras().iter())
-            {
-                if before_mora.vowel_length() != after_mora.vowel_length() {
-                    vowel_length_modified = true;
-                }
-                if before_mora.pitch() != after_mora.pitch() {
-                    pitch_modified = true;
-                }
-            }
-        }
-        assert!(pitch_modified);
-        assert!(vowel_length_modified);
+        // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::vowel),
+            "mora_data() does not work: mora.vowel() is not changed."
+        );
+        // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::vowel_length),
+            "mora_data() does not work: mora.vowel_length() is not changed."
+        );
+
+    }
+
+    fn any_mora_param_changed<T: PartialEq>(
+        before: &[AccentPhraseModel],
+        after: &[AccentPhraseModel],
+        param: fn(&MoraModel) -> &T,
+    ) -> bool {
+        std::iter::zip(before, after)
+            .flat_map(move |(before, after)| std::iter::zip(before.moras(), after.moras()))
+            .any(|(before, after)| param(before) != param(after))
     }
 
     #[rstest]
