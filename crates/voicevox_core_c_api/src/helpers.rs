@@ -208,10 +208,10 @@ impl BufferManager {
     /// @param buffer_ptr 必ずvec_into_rawで取得したポインタを設定する
     pub unsafe fn dealloc_slice<T: Copy>(&mut self, buffer_ptr: *const T) {
         let addr = buffer_ptr as usize;
-        let layout = self
-            .address_to_layout_table
-            .remove(&addr)
-            .expect("管理されていないポインタを渡した");
+        let layout = self.address_to_layout_table.remove(&addr).expect(
+            "解放しようとしたポインタはvoicevox_coreの管理下にありません。\
+             誤ったポインタであるか、二重解放になっていることが考えられます",
+        );
 
         if layout.size() > 0 {
             // `T: Copy`より、`T: !Drop`であるため`drop_in_place`は不要
