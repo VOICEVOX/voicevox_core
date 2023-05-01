@@ -1246,7 +1246,6 @@ mod tests {
             ),
             "mora_data() does not work: mora.vowel_length() is not changed."
         );
-
     }
 
     fn any_mora_param_changed<T: PartialEq>(
