@@ -163,17 +163,11 @@ impl VoicevoxCore {
         speaker_id: u32,
         options: AudioQueryOptions,
     ) -> Result<AudioQueryModel> {
-        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
-            return Err(Error::NotLoadedOpenjtalkDict);
-        }
-        let accent_phrases = if options.kana {
-            self.synthesis_engine
-                .replace_mora_data(&parse_kana(text)?, speaker_id)?
-        } else {
-            self.synthesis_engine
-                .create_accent_phrases(text, speaker_id)?
-        };
-
+        let accent_phrases = self.accent_phrases(
+            text,
+            speaker_id,
+            AccentPhrasesOptions { kana: options.kana },
+        )?;
         let kana = create_kana(&accent_phrases);
 
         Ok(AudioQueryModel::new(
