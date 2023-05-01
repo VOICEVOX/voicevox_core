@@ -1,3 +1,4 @@
+use std::alloc::Layout;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
@@ -228,83 +229,102 @@ impl Default for VoicevoxSynthesisOptions {
     }
 }
 
-// privateでくくることにより，helper.rs内からもVecSizeInfoの中身の値を触れないようにする
-mod private {
-    pub(super) struct VecSizeInfo {
-        len: usize,
-        cap: usize,
-    }
+// libcのmallocで追加のアロケーションを行うことなく、`Vec<u8>`や`Vec<f32>`の内容を直接Cの世界に貸し出す。
 
-    impl VecSizeInfo {
-        pub(super) fn new(len: usize, cap: usize) -> Self {
-            Self { len, cap }
-        }
-        pub(super) fn len(&self) -> usize {
-            self.len
-        }
-        pub(super) fn cap(&self) -> usize {
-            self.cap
-        }
-    }
-}
-
+/// Rustの世界の`Box<[impl Copy]>`をCの世界に貸し出すため、アドレスとレイアウトを管理するもの。
 pub(crate) struct BufferManager {
-    address_to_length_table: BTreeMap<usize, private::VecSizeInfo>,
+    address_to_layout_table: BTreeMap<usize, Layout>,
 }
 
 impl BufferManager {
     pub const fn new() -> Self {
         Self {
-            address_to_length_table: BTreeMap::new(),
+            address_to_layout_table: BTreeMap::new(),
         }
     }
 
-    pub fn leak_vec<T>(&mut self, vec: Vec<T>) -> (*mut T, usize) {
-        assert!(
-            size_of::<T>() >= 1,
-            "サイズが0の値のVecはコーナーケースになりやすいためエラーにする"
-        );
-
-        let len = vec.len();
-        let cap = vec.capacity();
-        let size_info = private::VecSizeInfo::new(len, cap);
-        let ptr = vec.leak().as_ptr();
+    pub fn vec_into_raw<T: Copy>(&mut self, vec: Vec<T>) -> (*mut T, usize) {
+        let slice = Box::leak(vec.into_boxed_slice());
+        let layout = Layout::for_value(slice);
+        let len = slice.len();
+        let ptr = slice.as_mut_ptr();
         let addr = ptr as usize;
 
-        let not_occupied = self
-            .address_to_length_table
-            .insert(addr, size_info)
-            .is_none();
+        let not_occupied = self.address_to_layout_table.insert(addr, layout).is_none();
 
         assert!(not_occupied, "すでに値が入っている状態はおかしい");
 
-        (ptr as *mut T, len)
+        (ptr, len)
     }
 
-    /// leak_vecでリークしたポインタをVec<T>に戻す
+    /// `vec_into_raw`でC API利用側に貸し出したポインタに対し、デアロケートする。
+    ///
     /// # Safety
-    /// @param buffer_ptr 必ずleak_vecで取得したポインタを設定する
-    pub unsafe fn restore_vec<T>(&mut self, buffer_ptr: *const T) -> Vec<T> {
+    ///
+    /// - `buffer_ptr`は`vec_into_raw`で取得したものであること。
+    pub unsafe fn dealloc_slice<T: Copy>(&mut self, buffer_ptr: *const T) {
         let addr = buffer_ptr as usize;
-        let size_info = self
-            .address_to_length_table
-            .remove(&addr)
-            .expect("管理されていないポインタを渡した");
+        let layout = self.address_to_layout_table.remove(&addr).expect(
+            "解放しようとしたポインタはvoicevox_coreの管理下にありません。\
+             誤ったポインタであるか、二重解放になっていることが考えられます",
+        );
 
-        Vec::from_raw_parts(buffer_ptr as *mut T, size_info.len(), size_info.cap())
+        if layout.size() > 0 {
+            // `T: Copy`より、`T: !Drop`であるため`drop_in_place`は不要
+
+            // SAFETY:
+            // - `addr`と`layout`は対応したものである
+            // - `layout.size() > 0`より、`addr`はダングリングではない有効なポインタである
+            std::alloc::dealloc(addr as *mut u8, layout);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn buffer_manager_works() {
+        let mut buffer_manager = BufferManager::new();
+
+        rent_and_dealloc(&mut buffer_manager, vec::<()>(0, &[]));
+        rent_and_dealloc(&mut buffer_manager, vec(0, &[()]));
+        rent_and_dealloc(&mut buffer_manager, vec(2, &[()]));
+
+        rent_and_dealloc(&mut buffer_manager, vec::<u8>(0, &[]));
+        rent_and_dealloc(&mut buffer_manager, vec(0, &[0u8]));
+        rent_and_dealloc(&mut buffer_manager, vec(2, &[0u8]));
+
+        rent_and_dealloc(&mut buffer_manager, vec::<f32>(0, &[]));
+        rent_and_dealloc(&mut buffer_manager, vec(0, &[0f32]));
+        rent_and_dealloc(&mut buffer_manager, vec(2, &[0f32]));
+
+        fn rent_and_dealloc(buffer_manager: &mut BufferManager, vec: Vec<impl Copy>) {
+            let expected_len = vec.len();
+            let (ptr, len) = buffer_manager.vec_into_raw(vec);
+            assert_eq!(expected_len, len);
+            unsafe {
+                buffer_manager.dealloc_slice(ptr);
+            }
+        }
+
+        fn vec<T: Copy>(initial_cap: usize, elems: &[T]) -> Vec<T> {
+            let mut vec = Vec::with_capacity(initial_cap);
+            vec.extend_from_slice(elems);
+            vec
+        }
     }
 
-    pub fn leak_c_string(&mut self, s: CString) -> (*const c_char, usize) {
-        let (ptr, size) = self.leak_vec(s.into_bytes_with_nul());
-
-        (ptr as *const c_char, size)
-    }
-
-    /// leak_c_stringでリークしたポインタをCStringに戻す
-    /// # Safety
-    /// @param buffer_ptr 必ずleak_c_stringで取得したポインタを設定する
-    pub unsafe fn restore_c_string(&mut self, buffer_ptr: *const c_char) -> CString {
-        let vec = self.restore_vec(buffer_ptr as *const u8);
-        CString::from_vec_unchecked(vec)
+    #[test]
+    #[should_panic(
+        expected = "解放しようとしたポインタはvoicevox_coreの管理下にありません。誤ったポインタであるか、二重解放になっていることが考えられます"
+    )]
+    fn buffer_manager_denies_unknown_ptr() {
+        let mut buffer_manager = BufferManager::new();
+        unsafe {
+            let x = 42;
+            buffer_manager.dealloc_slice(&x as *const i32);
+        }
     }
 }
