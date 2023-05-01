@@ -8,14 +8,14 @@ use voicevox_core::{OpenJtalk, StyleId, VoiceModel};
 
 macro_rules! ensure_initialized {
     ($synthesizer:expr $(,)?) => {{
-        // 以前の挙動を維持するため、`UNINITIALIZED_STATUS_ERROR`の場合でも`init_logger`および
+        // 以前の挙動を維持するため、`UNINITIALIZED_STATUS_ERROR`相当の場合でも`init_logger`および
         // `list_windows_video_cards`が呼ばれるようにする
         let _ = RUNTIME;
 
         match $synthesizer {
             Some(synthesizer) => synthesizer,
             None => {
-                set_message("Statusが初期化されていません");
+                set_message("Statusが初期化されていません"); // 以前の`UNINITIALIZED_STATUS_ERROR`のメッセージ
                 return false;
             }
         }
