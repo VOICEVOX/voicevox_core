@@ -229,6 +229,9 @@ impl Default for VoicevoxSynthesisOptions {
     }
 }
 
+// libcのmallocで追加のアロケーションを行うことなく、`Vec<u8>`や`Vec<f32>`の内容を直接Cの世界に貸し出す。
+
+/// Rustの世界の`Box<[impl Copy]>`をCの世界に貸し出すため、アドレスとレイアウトを管理するもの。
 pub(crate) struct BufferManager {
     address_to_layout_table: BTreeMap<usize, Layout>,
 }
