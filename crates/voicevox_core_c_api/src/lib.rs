@@ -376,11 +376,7 @@ pub unsafe extern "C" fn voicevox_audio_query(
         let text = CStr::from_ptr(text);
         let audio_query = create_audio_query(text, speaker_id, Internal::audio_query, options)?;
 
-        let ptr = BUFFER_MANAGER
-            .lock()
-            .unwrap()
-            .c_string_into_raw(audio_query);
-        output_audio_query_json.write(ptr as *mut c_char);
+        output_audio_query_json.write(audio_query.into_raw());
         Ok(())
     })())
 }
@@ -421,11 +417,7 @@ pub unsafe extern "C" fn voicevox_accent_phrases(
         let accent_phrases =
             create_accent_phrases(text, speaker_id, Internal::accent_phrases, options)?;
 
-        let ptr = BUFFER_MANAGER
-            .lock()
-            .unwrap()
-            .c_string_into_raw(accent_phrases);
-        output_accent_phrases_json.write(ptr as *mut c_char);
+        output_accent_phrases_json.write(accent_phrases.into_raw());
         Ok(())
     })())
 }
@@ -455,11 +447,7 @@ pub unsafe extern "C" fn voicevox_mora_length(
         let accent_phrases_with_mora_length =
             modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_length)?;
 
-        let ptr = BUFFER_MANAGER
-            .lock()
-            .unwrap()
-            .c_string_into_raw(accent_phrases_with_mora_length);
-        output_accent_phrases_json.write(ptr as *mut c_char);
+        output_accent_phrases_json.write(accent_phrases_with_mora_length.into_raw());
         Ok(())
     })())
 }
@@ -489,11 +477,7 @@ pub unsafe extern "C" fn voicevox_mora_pitch(
         let accent_phrases_with_mora_pitch =
             modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_pitch)?;
 
-        let ptr = BUFFER_MANAGER
-            .lock()
-            .unwrap()
-            .c_string_into_raw(accent_phrases_with_mora_pitch);
-        output_accent_phrases_json.write(ptr as *mut c_char);
+        output_accent_phrases_json.write(accent_phrases_with_mora_pitch.into_raw());
         Ok(())
     })())
 }
@@ -523,11 +507,7 @@ pub unsafe extern "C" fn voicevox_mora_data(
         let accent_phrases_with_mora_data =
             modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_data)?;
 
-        let ptr = BUFFER_MANAGER
-            .lock()
-            .unwrap()
-            .c_string_into_raw(accent_phrases_with_mora_data);
-        output_accent_phrases_json.write(ptr as *mut c_char);
+        output_accent_phrases_json.write(accent_phrases_with_mora_data.into_raw());
         Ok(())
     })())
 }
@@ -633,10 +613,7 @@ pub unsafe extern "C" fn voicevox_tts(
 /// @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c_char) {
-    BUFFER_MANAGER
-        .lock()
-        .unwrap()
-        .dealloc_c_string(audio_query_json as *const c_char);
+    drop(CString::from_raw(audio_query_json));
 }
 
 /// jsonフォーマットされた AccnetPhrase データのメモリを解放する
@@ -646,7 +623,7 @@ pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c
 /// @param voicevox_accent_phrases で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_accent_phrases_json_free(accented_phrase_json: *mut c_char) {
-    voicevox_audio_query_json_free(accented_phrase_json);
+    drop(CString::from_raw(accented_phrase_json));
 }
 
 /// wav データのメモリを解放する

@@ -278,21 +278,6 @@ impl BufferManager {
             std::alloc::dealloc(addr as *mut u8, layout);
         }
     }
-
-    pub fn c_string_into_raw(&mut self, s: CString) -> *const c_char {
-        s.into_raw() as *const c_char
-    }
-
-    /// `c_string_into_raw`でリークしたポインタをCStringに戻す。
-    ///
-    /// # Safety
-    ///
-    /// - `s` は`c_string_into_raw`で取得したものであること。
-    pub unsafe fn dealloc_c_string(&mut self, s: *const c_char) {
-        // SAFETY:
-        // - `s`は`CString::into_raw`で得たものである
-        drop(CString::from_raw(s as *mut c_char));
-    }
 }
 
 #[cfg(test)]
