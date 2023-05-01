@@ -4,15 +4,21 @@ from typing import Final, List, Literal, Union
 import numpy as np
 from numpy.typing import NDArray
 
-from voicevox_core import AccelerationMode, AudioQuery, SpeakerMeta, SupportedDevices, AccentPhrase
+from voicevox_core import (
+    AccelerationMode,
+    AudioQuery,
+    SpeakerMeta,
+    SupportedDevices,
+    AccentPhrase,
+)
 
 __version__: str
 
-def supported_devices()->SupportedDevices:...
+def supported_devices() -> SupportedDevices: ...
 
 class VoiceModel:
     @staticmethod
-    async def from_path(path:str)->VoiceModel:
+    async def from_path(path: str) -> VoiceModel:
         """
         Parameters
         ----------
@@ -20,10 +26,8 @@ class VoiceModel:
             vvmファイルへのパス
         """
         ...
-    def id()->str:...
-    def metas()->List[SpeakerMeta]:...
-
-
+    def id() -> str: ...
+    def metas() -> List[SpeakerMeta]: ...
 
 class Synthesizer:
     @staticmethod
@@ -59,8 +63,7 @@ class Synthesizer:
         GPUモードならtrue、そうでないならfalse
         """
         ...
-
-    async def load_voice_model(self, model:VoiceModel) -> None:
+    async def load_voice_model(self, model: VoiceModel) -> None:
         """モデルを読み込む。
 
         Parameters
@@ -77,10 +80,8 @@ class Synthesizer:
         モデルが読み込まれているのであればtrue、そうでないならfalse
         """
         ...
-    def unload_voice_model(self,voice_model_id:str)->None:
-        """指定したvoice_model_idのモデルがを破棄する
-        """
-
+    def unload_voice_model(self, voice_model_id: str) -> None:
+        """指定したvoice_model_idのモデルがを破棄する"""
     async def audio_query(
         self,
         text: str,
@@ -103,7 +104,6 @@ class Synthesizer:
         :class:`AudioQuery`
         """
         ...
-
     async def create_accent_phrases(
         self,
         text: str,

@@ -8,7 +8,7 @@ from ._models import (  # noqa: F401
     Mora,
     SupportedDevices,
 )
-from ._rust import  Synthesizer,VoiceModel,supported_devices  # noqa: F401
+from ._rust import Synthesizer, VoiceModel, supported_devices  # noqa: F401
 
 
 __all__ = [
