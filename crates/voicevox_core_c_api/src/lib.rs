@@ -421,7 +421,10 @@ pub unsafe extern "C" fn voicevox_accent_phrases(
         let accent_phrases =
             create_accent_phrases(text, speaker_id, Internal::accent_phrases, options)?;
 
-        let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(accent_phrases);
+        let ptr = BUFFER_MANAGER
+            .lock()
+            .unwrap()
+            .c_string_into_raw(accent_phrases);
         output_accent_phrases_json.write(ptr as *mut c_char);
         Ok(())
     })())
@@ -452,10 +455,10 @@ pub unsafe extern "C" fn voicevox_mora_length(
         let accent_phrases_with_mora_length =
             modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_length)?;
 
-        let (ptr, _) = BUFFER_MANAGER
+        let ptr = BUFFER_MANAGER
             .lock()
             .unwrap()
-            .leak_c_string(accent_phrases_with_mora_length);
+            .c_string_into_raw(accent_phrases_with_mora_length);
         output_accent_phrases_json.write(ptr as *mut c_char);
         Ok(())
     })())
@@ -486,10 +489,10 @@ pub unsafe extern "C" fn voicevox_mora_pitch(
         let accent_phrases_with_mora_pitch =
             modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_pitch)?;
 
-        let (ptr, _) = BUFFER_MANAGER
+        let ptr = BUFFER_MANAGER
             .lock()
             .unwrap()
-            .leak_c_string(accent_phrases_with_mora_pitch);
+            .c_string_into_raw(accent_phrases_with_mora_pitch);
         output_accent_phrases_json.write(ptr as *mut c_char);
         Ok(())
     })())
@@ -520,10 +523,10 @@ pub unsafe extern "C" fn voicevox_mora_data(
         let accent_phrases_with_mora_data =
             modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_data)?;
 
-        let (ptr, _) = BUFFER_MANAGER
+        let ptr = BUFFER_MANAGER
             .lock()
             .unwrap()
-            .leak_c_string(accent_phrases_with_mora_data);
+            .c_string_into_raw(accent_phrases_with_mora_data);
         output_accent_phrases_json.write(ptr as *mut c_char);
         Ok(())
     })())
