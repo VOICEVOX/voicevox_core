@@ -12,7 +12,7 @@ mod status;
 
 pub use self::publish::*;
 
-pub use self::engine::AudioQueryModel;
+pub use self::engine::{AccentPhraseModel, AudioQueryModel};
 pub use self::error::*;
 pub use self::result::*;
 

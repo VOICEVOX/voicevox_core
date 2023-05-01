@@ -38,6 +38,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(ParseKana(_))) => VOICEVOX_RESULT_PARSE_KANA_ERROR,
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
+            Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
         }
     }
 }
@@ -52,6 +53,8 @@ pub(crate) enum CApiError {
     InvalidUtf8Input,
     #[error("無効なAudioQueryです: {0}")]
     InvalidAudioQuery(serde_json::Error),
+    #[error("無効なAccentPhraseです: {0}")]
+    InvalidAccentPhrase(serde_json::Error),
 }
 
 pub(crate) fn create_audio_query(
@@ -80,6 +83,43 @@ fn audio_query_model_to_json(audio_query_model: &AudioQueryModel) -> String {
     serde_json::to_string(audio_query_model).expect("should be always valid")
 }
 
+pub(crate) fn create_accent_phrases(
+    japanese_or_kana: &CStr,
+    speaker_id: u32,
+    method: fn(
+        &mut Internal,
+        &str,
+        u32,
+        voicevox_core::AccentPhrasesOptions,
+    ) -> Result<Vec<AccentPhraseModel>>,
+    options: VoicevoxAccentPhrasesOptions,
+) -> CApiResult<CString> {
+    let japanese_or_kana = ensure_utf8(japanese_or_kana)?;
+
+    let accent_phrases = method(
+        &mut lock_internal(),
+        japanese_or_kana,
+        speaker_id,
+        options.into(),
+    )?;
+    Ok(CString::new(accent_phrases_model_to_json(&accent_phrases))
+        .expect("should not contain '\\0'"))
+}
+
+fn accent_phrases_model_to_json(accent_phrases_model: &[AccentPhraseModel]) -> String {
+    serde_json::to_string(accent_phrases_model).expect("should be always valid")
+}
+
+pub(crate) fn modify_accent_phrases(
+    accent_phrases: &[AccentPhraseModel],
+    speaker_id: u32,
+    method: fn(&mut Internal, u32, &[AccentPhraseModel]) -> Result<Vec<AccentPhraseModel>>,
+) -> CApiResult<CString> {
+    let accent_phrases = method(&mut lock_internal(), speaker_id, accent_phrases)?;
+    Ok(CString::new(accent_phrases_model_to_json(&accent_phrases))
+        .expect("should not contain '\\0'"))
+}
+
 pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
     s.to_str().map_err(|_| CApiError::InvalidUtf8Input)
 }
@@ -91,6 +131,17 @@ impl From<voicevox_core::AudioQueryOptions> for VoicevoxAudioQueryOptions {
 }
 impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
     fn from(options: VoicevoxAudioQueryOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+
+impl From<voicevox_core::AccentPhrasesOptions> for VoicevoxAccentPhrasesOptions {
+    fn from(options: voicevox_core::AccentPhrasesOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+impl From<VoicevoxAccentPhrasesOptions> for voicevox_core::AccentPhrasesOptions {
+    fn from(options: VoicevoxAccentPhrasesOptions) -> Self {
         Self { kana: options.kana }
     }
 }
