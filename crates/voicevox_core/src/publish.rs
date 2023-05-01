@@ -163,17 +163,11 @@ impl VoicevoxCore {
         speaker_id: u32,
         options: AudioQueryOptions,
     ) -> Result<AudioQueryModel> {
-        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
-            return Err(Error::NotLoadedOpenjtalkDict);
-        }
-        let accent_phrases = if options.kana {
-            self.synthesis_engine
-                .replace_mora_data(&parse_kana(text)?, speaker_id)?
-        } else {
-            self.synthesis_engine
-                .create_accent_phrases(text, speaker_id)?
-        };
-
+        let accent_phrases = self.accent_phrases(
+            text,
+            speaker_id,
+            AccentPhrasesOptions { kana: options.kana },
+        )?;
         let kana = create_kana(&accent_phrases);
 
         Ok(AudioQueryModel::new(
@@ -188,6 +182,63 @@ impl VoicevoxCore {
             false,
             kana,
         ))
+    }
+
+    pub fn accent_phrases(
+        &mut self,
+        text: &str,
+        speaker_id: u32,
+        options: AccentPhrasesOptions,
+    ) -> Result<Vec<AccentPhraseModel>> {
+        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
+            return Err(Error::NotLoadedOpenjtalkDict);
+        }
+
+        let accent_phrases = if options.kana {
+            self.synthesis_engine
+                .replace_mora_data(&parse_kana(text)?, speaker_id)?
+        } else {
+            self.synthesis_engine
+                .create_accent_phrases(text, speaker_id)?
+        };
+
+        Ok(accent_phrases)
+    }
+
+    pub fn mora_length(
+        &mut self,
+        speaker_id: u32,
+        accent_phrases: &[AccentPhraseModel],
+    ) -> Result<Vec<AccentPhraseModel>> {
+        let accent_phrases = self
+            .synthesis_engine
+            .replace_phoneme_length(accent_phrases, speaker_id)?;
+
+        Ok(accent_phrases)
+    }
+
+    pub fn mora_pitch(
+        &mut self,
+        speaker_id: u32,
+        accent_phrases: &[AccentPhraseModel],
+    ) -> Result<Vec<AccentPhraseModel>> {
+        let accent_phrases = self
+            .synthesis_engine
+            .replace_mora_pitch(accent_phrases, speaker_id)?;
+
+        Ok(accent_phrases)
+    }
+
+    pub fn mora_data(
+        &mut self,
+        speaker_id: u32,
+        accent_phrases: &[AccentPhraseModel],
+    ) -> Result<Vec<AccentPhraseModel>> {
+        let accent_phrases = self
+            .synthesis_engine
+            .replace_mora_data(accent_phrases, speaker_id)?;
+
+        Ok(accent_phrases)
     }
 
     pub fn synthesis(
@@ -215,6 +266,17 @@ pub struct AudioQueryOptions {
 }
 
 impl From<&TtsOptions> for AudioQueryOptions {
+    fn from(options: &TtsOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+
+#[derive(Default)]
+pub struct AccentPhrasesOptions {
+    pub kana: bool,
+}
+
+impl From<&TtsOptions> for AccentPhrasesOptions {
     fn from(options: &TtsOptions) -> Self {
         Self { kana: options.kana }
     }
@@ -607,6 +669,7 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
             "入力テキストをAquesTalkライクな読み仮名としてパースすることに失敗しました\0"
         }
         VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR => "無効なaudio_queryです\0",
+        VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR => "無効なaccent_phraseです\0",
     }
 }
 
@@ -1009,6 +1072,184 @@ mod tests {
         }
 
         assert_eq!(query.kana(), expected_kana_text);
+    }
+
+    #[rstest]
+    #[case("これはテストです", false, TEXT_CONSONANT_VOWEL_DATA1)]
+    #[case("コ'レワ/テ_スト'デ_ス", true, TEXT_CONSONANT_VOWEL_DATA2)]
+    fn accent_phrases_works(
+        #[case] input_text: &str,
+        #[case] input_kana_option: bool,
+        #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
+    ) {
+        let core = VoicevoxCore::new_with_mutex();
+        core.lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                open_jtalk_dict_dir: Some(OPEN_JTALK_DIC_DIR.into()),
+                ..Default::default()
+            })
+            .unwrap();
+
+        let accent_phrases = core
+            .lock()
+            .unwrap()
+            .accent_phrases(
+                input_text,
+                0,
+                AccentPhrasesOptions {
+                    kana: input_kana_option,
+                },
+            )
+            .unwrap();
+
+        assert_eq!(
+            accent_phrases.len(),
+            expected_text_consonant_vowel_data.len()
+        );
+
+        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in
+            std::iter::zip(accent_phrases, expected_text_consonant_vowel_data)
+        {
+            assert_eq!(
+                accent_phrase.moras().len(),
+                text_consonant_vowel_slice.len()
+            );
+            assert_eq!(accent_phrase.accent(), accent_pos);
+
+            for (mora, (text, consonant, vowel)) in
+                std::iter::zip(accent_phrase.moras(), *text_consonant_vowel_slice)
+            {
+                assert_eq!(mora.text(), text);
+                // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
+                assert_ne!(
+                    mora.consonant_length(),
+                    &Some(0.),
+                    "expected mora.consonant_length is not Some(0.0), but got Some(0.0)."
+                );
+                assert_eq!(mora.consonant(), &Some(consonant.to_string()));
+                assert_eq!(mora.vowel(), vowel);
+                // NOTE: 母音の長さが必ず非ゼロになるテストケースを想定している
+                assert_ne!(
+                    mora.vowel_length(),
+                    &0.,
+                    "expected mora.vowel_length is not 0.0, but got 0.0."
+                );
+            }
+        }
+    }
+
+    #[rstest]
+    fn mora_length_works() {
+        let core = VoicevoxCore::new_with_mutex();
+        core.lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                open_jtalk_dict_dir: Some(OPEN_JTALK_DIC_DIR.into()),
+                ..Default::default()
+            })
+            .unwrap();
+
+        let accent_phrases = core
+            .lock()
+            .unwrap()
+            .accent_phrases("これはテストです", 0, AccentPhrasesOptions { kana: false })
+            .unwrap();
+
+        let modified_accent_phrases = core
+            .lock()
+            .unwrap()
+            .mora_length(1, &accent_phrases)
+            .unwrap();
+
+        // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(
+                &accent_phrases,
+                &modified_accent_phrases,
+                MoraModel::vowel_length
+            ),
+            "mora_length() does not work: mora.vowel_length() is not changed."
+        );
+    }
+
+    #[rstest]
+    fn mora_pitch_works() {
+        let core = VoicevoxCore::new_with_mutex();
+        core.lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                open_jtalk_dict_dir: Some(OPEN_JTALK_DIC_DIR.into()),
+                ..Default::default()
+            })
+            .unwrap();
+
+        let accent_phrases = core
+            .lock()
+            .unwrap()
+            .accent_phrases("これはテストです", 0, AccentPhrasesOptions { kana: false })
+            .unwrap();
+
+        let modified_accent_phrases = core.lock().unwrap().mora_pitch(1, &accent_phrases).unwrap();
+
+        // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::pitch),
+            "mora_pitch() does not work: mora.pitch() is not changed."
+        );
+    }
+
+    #[rstest]
+    fn mora_data_works() {
+        let core = VoicevoxCore::new_with_mutex();
+        core.lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                open_jtalk_dict_dir: Some(OPEN_JTALK_DIC_DIR.into()),
+                ..Default::default()
+            })
+            .unwrap();
+
+        let accent_phrases = core
+            .lock()
+            .unwrap()
+            .accent_phrases("これはテストです", 0, AccentPhrasesOptions { kana: false })
+            .unwrap();
+
+        let modified_accent_phrases = core.lock().unwrap().mora_data(1, &accent_phrases).unwrap();
+
+        // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::pitch),
+            "mora_data() does not work: mora.pitch() is not changed."
+        );
+        // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(
+                &accent_phrases,
+                &modified_accent_phrases,
+                MoraModel::vowel_length
+            ),
+            "mora_data() does not work: mora.vowel_length() is not changed."
+        );
+    }
+
+    fn any_mora_param_changed<T: PartialEq>(
+        before: &[AccentPhraseModel],
+        after: &[AccentPhraseModel],
+        param: fn(&MoraModel) -> &T,
+    ) -> bool {
+        std::iter::zip(before, after)
+            .flat_map(move |(before, after)| std::iter::zip(before.moras(), after.moras()))
+            .any(|(before, after)| param(before) != param(after))
     }
 
     #[rstest]
