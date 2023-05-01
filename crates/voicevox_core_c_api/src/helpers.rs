@@ -288,50 +288,31 @@ mod tests {
     fn buffer_manager_works() {
         let mut buffer_manager = BufferManager::new();
 
-        unsafe {
-            let (ptr, len) = buffer_manager.vec_into_raw(vec![()]);
-            assert_eq!(1, len);
-            buffer_manager.dealloc_slice(ptr);
-        }
+        rent_and_dealloc(&mut buffer_manager, vec::<()>(0, &[]));
+        rent_and_dealloc(&mut buffer_manager, vec(0, &[()]));
+        rent_and_dealloc(&mut buffer_manager, vec(2, &[()]));
 
-        unsafe {
-            let (ptr, len) = buffer_manager.vec_into_raw(Vec::<u8>::new());
-            assert_eq!(0, len);
-            buffer_manager.dealloc_slice(ptr);
-        }
+        rent_and_dealloc(&mut buffer_manager, vec::<u8>(0, &[]));
+        rent_and_dealloc(&mut buffer_manager, vec(0, &[0u8]));
+        rent_and_dealloc(&mut buffer_manager, vec(2, &[0u8]));
 
-        unsafe {
-            let (ptr, len) = buffer_manager.vec_into_raw(vec![0u8]);
-            assert_eq!(1, len);
-            buffer_manager.dealloc_slice(ptr);
-        }
+        rent_and_dealloc(&mut buffer_manager, vec::<f32>(0, &[]));
+        rent_and_dealloc(&mut buffer_manager, vec(0, &[0f32]));
+        rent_and_dealloc(&mut buffer_manager, vec(2, &[0f32]));
 
-        unsafe {
-            let mut vec = Vec::with_capacity(2);
-            vec.push(0u8);
+        fn rent_and_dealloc(buffer_manager: &mut BufferManager, vec: Vec<impl Copy>) {
+            let expected_len = vec.len();
             let (ptr, len) = buffer_manager.vec_into_raw(vec);
-            assert_eq!(1, len);
-            buffer_manager.dealloc_slice(ptr);
+            assert_eq!(expected_len, len);
+            unsafe {
+                buffer_manager.dealloc_slice(ptr);
+            }
         }
 
-        unsafe {
-            let (ptr, len) = buffer_manager.vec_into_raw(Vec::<f32>::new());
-            assert_eq!(0, len);
-            buffer_manager.dealloc_slice(ptr);
-        }
-
-        unsafe {
-            let (ptr, len) = buffer_manager.vec_into_raw(vec![0f32]);
-            assert_eq!(1, len);
-            buffer_manager.dealloc_slice(ptr);
-        }
-
-        unsafe {
-            let mut vec = Vec::with_capacity(2);
-            vec.push(0f32);
-            let (ptr, len) = buffer_manager.vec_into_raw(vec);
-            assert_eq!(1, len);
-            buffer_manager.dealloc_slice(ptr);
+        fn vec<T: Copy>(initial_cap: usize, elems: &[T]) -> Vec<T> {
+            let mut vec = Vec::with_capacity(initial_cap);
+            vec.extend_from_slice(elems);
+            vec
         }
     }
 
