@@ -1174,7 +1174,11 @@ mod tests {
 
         // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
         assert!(
-            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::vowel_length),
+            any_mora_param_changed(
+                &accent_phrases,
+                &modified_accent_phrases,
+                MoraModel::vowel_length
+            ),
             "mora_length() does not work: mora.vowel_length() is not changed."
         );
     }
@@ -1235,7 +1239,11 @@ mod tests {
         );
         // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
         assert!(
-            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::vowel_length),
+            any_mora_param_changed(
+                &accent_phrases,
+                &modified_accent_phrases,
+                MoraModel::vowel_length
+            ),
             "mora_data() does not work: mora.vowel_length() is not changed."
         );
 
