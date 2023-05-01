@@ -10,7 +10,7 @@ macro_rules! ensure_initialized {
     ($synthesizer:expr $(,)?) => {{
         // 以前の挙動を維持するため、`UNINITIALIZED_STATUS_ERROR`相当の場合でも`init_logger`および
         // `list_windows_video_cards`が呼ばれるようにする
-        let _ = RUNTIME;
+        let _ = *RUNTIME;
 
         match $synthesizer {
             Some(synthesizer) => synthesizer,
