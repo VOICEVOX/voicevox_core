@@ -108,6 +108,7 @@ class Synthesizer:
         self,
         text: str,
         style_id: int,
+        kana: bool = False,
     ) -> List[AccentPhrase]:
         """create_accent_phrases を実行する。
 
@@ -117,6 +118,9 @@ class Synthesizer:
             テキスト。
         style_id
             話者ID。
+        kana
+            aquestalk形式のkanaとしてテキストを解釈する。
+
         Returns
         -------
         :class:`AudioQuery`

@@ -11,7 +11,6 @@ use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io::{self, Write};
-use std::mem::size_of;
 use std::os::raw::c_char;
 use std::sync::{Mutex, MutexGuard};
 use tokio::runtime::Runtime;
@@ -402,10 +401,23 @@ pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
         ))?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
-        let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(audio_query);
-        output_audio_query_json.write(ptr as *mut c_char);
+        output_audio_query_json.write(audio_query.into_raw());
         Ok(())
     })())
+}
+
+/// `accent_phrases` のオプション
+#[repr(C)]
+pub struct VoicevoxAccentPhrasesOptions {
+    /// aquestalk形式のkanaとしてテキストを解釈する
+    kana: bool,
+}
+
+/// デフォルトの `accent_phrases` のオプションを生成する
+/// @return デフォルト値が設定された `accent_phrases` のオプション
+#[no_mangle]
+pub extern "C" fn voicevox_make_default_accent_phrases_options() -> VoicevoxAccentPhrasesOptions {
+    voicevox_core::AccentPhrasesOptions::default().into()
 }
 
 /// create_accent_phrases を実行する
@@ -422,20 +434,20 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     synthesizer: *const VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
+    options: VoicevoxAccentPhrasesOptions,
     output_accent_phrases_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let synthesizer = &*(synthesizer as *const CSynthesizer);
         let text = ensure_utf8(CStr::from_ptr(text))?;
-        let accent_phrases = RUNTIME.block_on(
-            synthesizer
-                .synthesizer()
-                .create_accent_phrases(text, &StyleId::new(style_id)),
-        )?;
+        let accent_phrases = RUNTIME.block_on(synthesizer.synthesizer().create_accent_phrases(
+            text,
+            &StyleId::new(style_id),
+            &options.into(),
+        ))?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(accent_phrases);
-        output_accent_phrases_json.write(ptr as *mut c_char);
+        output_accent_phrases_json.write(accent_phrases.into_raw());
         Ok(())
     })())
 }
@@ -460,7 +472,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
         let synthesizer = &*(synthesizer as *const CSynthesizer);
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
-                .expect("invalid json\0");
+                .map_err(CApiError::InvalidAccentPhrase)?;
         let accent_phrases = RUNTIME.block_on(
             synthesizer
                 .synthesizer()
@@ -468,8 +480,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(accent_phrases);
-        output_accent_phrases_json.write(ptr as *mut c_char);
+        output_accent_phrases_json.write(accent_phrases.into_raw());
         Ok(())
     })())
 }
@@ -494,7 +505,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
         let synthesizer = &*(synthesizer as *const CSynthesizer);
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
-                .expect("invalid json\0");
+                .map_err(CApiError::InvalidAccentPhrase)?;
         let accent_phrases = RUNTIME.block_on(
             synthesizer
                 .synthesizer()
@@ -502,8 +513,40 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        let (ptr, _) = BUFFER_MANAGER.lock().unwrap().leak_c_string(accent_phrases);
-        output_accent_phrases_json.write(ptr as *mut c_char);
+        output_accent_phrases_json.write(accent_phrases.into_raw());
+        Ok(())
+    })())
+}
+
+/// replace_mora_pitch を実行する
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
+/// @param [in] style_id スタイルID #VoicevoxStyleId
+/// @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
+///
+/// # Safety
+/// @param accent_phrases_json null終端文字列であること
+/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
+    synthesizer: *const VoicevoxSynthesizer,
+    accent_phrases_json: *const c_char,
+    style_id: VoicevoxStyleId,
+    output_accent_phrases_json: *mut *mut c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let synthesizer = &*(synthesizer as *const CSynthesizer);
+        let accent_phrases: Vec<AccentPhraseModel> =
+            serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
+                .map_err(CApiError::InvalidAccentPhrase)?;
+        let accent_phrases = RUNTIME.block_on(
+            synthesizer
+                .synthesizer()
+                .replace_mora_pitch(&accent_phrases, &StyleId::new(style_id)),
+        )?;
+        let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
+            .expect("should not contain '\\0'");
+        output_accent_phrases_json.write(accent_phrases.into_raw());
         Ok(())
     })())
 }
@@ -555,7 +598,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
             &StyleId::new(style_id),
             &SynthesisOptions::from(options),
         ))?;
-        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().leak_vec(wav);
+        let (ptr, len) = BUFFER_MANAGER.lock().unwrap().vec_into_raw(wav);
         output_wav.write(ptr);
         output_wav_length.write(len);
         Ok(())
@@ -607,7 +650,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
             &StyleId::new(style_id),
             &TtsOptions::from(options),
         ))?;
-        let (ptr, size) = BUFFER_MANAGER.lock().unwrap().leak_vec(output);
+        let (ptr, size) = BUFFER_MANAGER.lock().unwrap().vec_into_raw(output);
         output_wav.write(ptr);
         output_wav_length.write(size);
         Ok(())
@@ -621,12 +664,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
-    drop(
-        BUFFER_MANAGER
-            .lock()
-            .unwrap()
-            .restore_c_string(json as *const c_char),
-    );
+    drop(CString::from_raw(json));
 }
 
 /// wav データのメモリを解放する
@@ -636,7 +674,7 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
 /// @param wav voicevox_tts,voicevox_synthesis で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
-    drop(BUFFER_MANAGER.lock().unwrap().restore_vec(wav));
+    BUFFER_MANAGER.lock().unwrap().dealloc_slice(wav);
 }
 
 /// エラー結果をメッセージに変換する

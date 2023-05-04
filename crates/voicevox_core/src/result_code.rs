@@ -31,14 +31,16 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_PARSE_KANA_ERROR = 13,
     /// 無効なAudioQuery
     VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR = 14,
+    /// 無効なAccentPhrase
+    VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR = 15,
     /// ファイルオープンエラー
-    VOICEVOX_OPEN_FILE_ERROR = 15,
+    VOICEVOX_OPEN_FILE_ERROR = 16,
     /// Modelを読み込めなかった
-    VOICEVOX_VVM_MODEL_READ_ERROR = 16,
+    VOICEVOX_VVM_MODEL_READ_ERROR = 17,
     /// すでに読み込まれているModelを読み込もうとした
-    VOICEVOX_ALREADY_LOADED_MODEL_ERROR = 17,
+    VOICEVOX_ALREADY_LOADED_MODEL_ERROR = 18,
     /// Modelが読み込まれていない
-    VOICEVOX_UNLOADED_MODEL_ERROR = 18,
+    VOICEVOX_UNLOADED_MODEL_ERROR = 19,
 }
 
 pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
@@ -68,6 +70,7 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
             "入力テキストをAquesTalkライクな読み仮名としてパースすることに失敗しました\0"
         }
         VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR => "無効なaudio_queryです\0",
+        VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR => "無効なaccent_phraseです\0",
         VOICEVOX_OPEN_FILE_ERROR => "ファイルオープンに失敗しました\0",
         VOICEVOX_VVM_MODEL_READ_ERROR => "Modelを読み込めませんでした\0",
         VOICEVOX_ALREADY_LOADED_MODEL_ERROR => {

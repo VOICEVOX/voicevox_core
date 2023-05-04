@@ -23,14 +23,13 @@ impl From<&TtsOptions> for SynthesisOptions {
 }
 
 #[derive(Default)]
-pub struct AudioQueryOptions {
+pub struct AccentPhrasesOptions {
     pub kana: bool,
 }
 
-impl AsRef<AudioQueryOptions> for AudioQueryOptions {
-    fn as_ref(&self) -> &Self {
-        self
-    }
+#[derive(Default)]
+pub struct AudioQueryOptions {
+    pub kana: bool,
 }
 
 impl From<&TtsOptions> for AudioQueryOptions {
@@ -228,13 +227,20 @@ impl Synthesizer {
         &self,
         text: &str,
         style_id: &StyleId,
+        options: &AccentPhrasesOptions,
     ) -> Result<Vec<AccentPhraseModel>> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
             return Err(Error::NotLoadedOpenjtalkDict);
         }
-        self.synthesis_engine
-            .create_accent_phrases(text, style_id)
-            .await
+        if options.kana {
+            self.synthesis_engine
+                .replace_mora_data(&parse_kana(text)?, style_id)
+                .await
+        } else {
+            self.synthesis_engine
+                .create_accent_phrases(text, style_id)
+                .await
+        }
     }
 
     pub async fn replace_mora_data(
@@ -257,22 +263,25 @@ impl Synthesizer {
             .await
     }
 
+    pub async fn replace_mora_pitch(
+        &self,
+        accent_phrases: &[AccentPhraseModel],
+        style_id: &StyleId,
+    ) -> Result<Vec<AccentPhraseModel>> {
+        self.synthesis_engine
+            .replace_mora_pitch(accent_phrases, style_id)
+            .await
+    }
+
     pub async fn audio_query(
         &self,
         text: &str,
         style_id: &StyleId,
         options: &AudioQueryOptions,
     ) -> Result<AudioQueryModel> {
-        if !self.synthesis_engine.is_openjtalk_dict_loaded() {
-            return Err(Error::NotLoadedOpenjtalkDict);
-        }
-        let accent_phrases = if options.kana {
-            parse_kana(text)?
-        } else {
-            self.synthesis_engine
-                .create_accent_phrases(text, style_id)
-                .await?
-        };
+        let accent_phrases = self
+            .create_accent_phrases(text, style_id, &AccentPhrasesOptions { kana: options.kana })
+            .await?;
         let kana = create_kana(&accent_phrases);
         Ok(AudioQueryModel::new(
             accent_phrases,
@@ -344,7 +353,7 @@ fn list_windows_video_cards() {
 mod tests {
 
     use super::*;
-    use crate::macros::tests::assert_debug_fmt_eq;
+    use crate::{engine::MoraModel, macros::tests::assert_debug_fmt_eq};
     use ::test_util::OPEN_JTALK_DIC_DIR;
 
     #[rstest]
@@ -539,9 +548,58 @@ mod tests {
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
     }
 
+    type TextConsonantVowelData =
+        [(&'static [(&'static str, &'static str, &'static str)], usize)];
+
+    // [([(テキスト, 母音, 子音), ...], アクセントの位置), ...] の形式
+    const TEXT_CONSONANT_VOWEL_DATA1: &TextConsonantVowelData = &[
+        (&[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")], 3),
+        (
+            &[
+                ("テ", "t", "e"),
+                ("ス", "s", "U"),
+                ("ト", "t", "o"),
+                ("デ", "d", "e"),
+                ("ス", "s", "U"),
+            ],
+            1,
+        ),
+    ];
+
+    const TEXT_CONSONANT_VOWEL_DATA2: &TextConsonantVowelData = &[
+        (&[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")], 1),
+        (
+            &[
+                ("テ", "t", "e"),
+                ("ス", "s", "U"),
+                ("ト", "t", "o"),
+                ("デ", "d", "e"),
+                ("ス", "s", "U"),
+            ],
+            3,
+        ),
+    ];
+
     #[rstest]
+    #[case(
+        "これはテストです",
+        false,
+        TEXT_CONSONANT_VOWEL_DATA1,
+        "コレワ'/テ'_ストデ_ス"
+    )]
+    #[case(
+        "コ'レワ/テ_スト'デ_ス",
+        true,
+        TEXT_CONSONANT_VOWEL_DATA2,
+        "コ'レワ/テ_スト'デ_ス"
+    )]
     #[tokio::test]
-    async fn audio_query_works() {
+    async fn audio_query_works(
+        #[case] input_text: &str,
+        #[case] input_kana_option: bool,
+        #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
+        #[case] expected_kana_text: &str,
+    ) {
         let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
@@ -555,44 +613,245 @@ mod tests {
 
         let query = syntesizer
             .audio_query(
-                "これはテストです",
-                &StyleId::new(1),
-                &AudioQueryOptions::default(),
+                input_text,
+                &StyleId::new(0),
+                &AudioQueryOptions {
+                    kana: input_kana_option,
+                },
             )
             .await
             .unwrap();
 
-        assert_eq!(query.accent_phrases().len(), 2);
+        assert_eq!(
+            query.accent_phrases().len(),
+            expected_text_consonant_vowel_data.len()
+        );
 
-        assert_eq!(query.accent_phrases()[0].moras().len(), 3);
-        for (i, (text, consonant, vowel)) in [("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")]
-            .iter()
-            .enumerate()
+        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in
+            std::iter::zip(query.accent_phrases(), expected_text_consonant_vowel_data)
         {
-            let mora = query.accent_phrases()[0].moras().get(i).unwrap();
-            assert_eq!(mora.text(), text);
-            assert_eq!(mora.consonant(), &Some(consonant.to_string()));
-            assert_eq!(mora.vowel(), vowel);
-        }
-        assert_eq!(query.accent_phrases()[0].accent(), &3);
+            assert_eq!(
+                accent_phrase.moras().len(),
+                text_consonant_vowel_slice.len()
+            );
+            assert_eq!(accent_phrase.accent(), accent_pos);
 
-        assert_eq!(query.accent_phrases()[1].moras().len(), 5);
-        for (i, (text, consonant, vowel)) in [
-            ("テ", "t", "e"),
-            ("ス", "s", "U"),
-            ("ト", "t", "o"),
-            ("デ", "d", "e"),
-            ("ス", "s", "U"),
-        ]
-        .iter()
-        .enumerate()
-        {
-            let mora = query.accent_phrases()[1].moras().get(i).unwrap();
-            assert_eq!(mora.text(), text);
-            assert_eq!(mora.consonant(), &Some(consonant.to_string()));
-            assert_eq!(mora.vowel(), vowel);
+            for (mora, (text, consonant, vowel)) in
+                std::iter::zip(accent_phrase.moras(), *text_consonant_vowel_slice)
+            {
+                assert_eq!(mora.text(), text);
+                // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
+                assert_ne!(
+                    mora.consonant_length(),
+                    &Some(0.),
+                    "expected mora.consonant_length is not Some(0.0), but got Some(0.0)."
+                );
+                assert_eq!(mora.consonant(), &Some(consonant.to_string()));
+                assert_eq!(mora.vowel(), vowel);
+                // NOTE: 母音の長さが必ず非ゼロになるテストケースを想定している
+                assert_ne!(
+                    mora.vowel_length(),
+                    &0.,
+                    "expected mora.vowel_length is not 0.0, but got 0.0."
+                );
+            }
         }
-        assert_eq!(query.accent_phrases()[1].accent(), &1);
-        assert_eq!(query.kana(), "コレワ'/テ'_ストデ_ス");
+
+        assert_eq!(query.kana(), expected_kana_text);
+    }
+
+    #[rstest]
+    #[case("これはテストです", false, TEXT_CONSONANT_VOWEL_DATA1)]
+    #[case("コ'レワ/テ_スト'デ_ス", true, TEXT_CONSONANT_VOWEL_DATA2)]
+    #[tokio::test]
+    async fn accent_phrases_works(
+        #[case] input_text: &str,
+        #[case] input_kana_option: bool,
+        #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
+    ) {
+        let syntesizer = Synthesizer::new_with_initialize(
+            Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        let accent_phrases = syntesizer
+            .create_accent_phrases(
+                input_text,
+                &StyleId::new(0),
+                &AccentPhrasesOptions {
+                    kana: input_kana_option,
+                },
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(
+            accent_phrases.len(),
+            expected_text_consonant_vowel_data.len()
+        );
+
+        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in
+            std::iter::zip(accent_phrases, expected_text_consonant_vowel_data)
+        {
+            assert_eq!(
+                accent_phrase.moras().len(),
+                text_consonant_vowel_slice.len()
+            );
+            assert_eq!(accent_phrase.accent(), accent_pos);
+
+            for (mora, (text, consonant, vowel)) in
+                std::iter::zip(accent_phrase.moras(), *text_consonant_vowel_slice)
+            {
+                assert_eq!(mora.text(), text);
+                // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
+                assert_ne!(
+                    mora.consonant_length(),
+                    &Some(0.),
+                    "expected mora.consonant_length is not Some(0.0), but got Some(0.0)."
+                );
+                assert_eq!(mora.consonant(), &Some(consonant.to_string()));
+                assert_eq!(mora.vowel(), vowel);
+                // NOTE: 母音の長さが必ず非ゼロになるテストケースを想定している
+                assert_ne!(
+                    mora.vowel_length(),
+                    &0.,
+                    "expected mora.vowel_length is not 0.0, but got 0.0."
+                );
+            }
+        }
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn mora_length_works() {
+        let syntesizer = Synthesizer::new_with_initialize(
+            Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        let accent_phrases = syntesizer
+            .create_accent_phrases(
+                "これはテストです",
+                &StyleId::new(0),
+                &AccentPhrasesOptions { kana: false },
+            )
+            .await
+            .unwrap();
+
+        let modified_accent_phrases = syntesizer
+            .replace_phoneme_length(&accent_phrases, &StyleId::new(1))
+            .await
+            .unwrap();
+
+        // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(
+                &accent_phrases,
+                &modified_accent_phrases,
+                MoraModel::vowel_length
+            ),
+            "mora_length() does not work: mora.vowel_length() is not changed."
+        );
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn mora_pitch_works() {
+        let syntesizer = Synthesizer::new_with_initialize(
+            Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        let accent_phrases = syntesizer
+            .create_accent_phrases(
+                "これはテストです",
+                &StyleId::new(0),
+                &AccentPhrasesOptions { kana: false },
+            )
+            .await
+            .unwrap();
+
+        let modified_accent_phrases = syntesizer
+            .replace_mora_pitch(&accent_phrases, &StyleId::new(1))
+            .await
+            .unwrap();
+
+        // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::pitch),
+            "mora_pitch() does not work: mora.pitch() is not changed."
+        );
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn mora_data_works() {
+        let syntesizer = Synthesizer::new_with_initialize(
+            Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                load_all_models: true,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        let accent_phrases = syntesizer
+            .create_accent_phrases(
+                "これはテストです",
+                &StyleId::new(0),
+                &AccentPhrasesOptions { kana: false },
+            )
+            .await
+            .unwrap();
+
+        let modified_accent_phrases = syntesizer
+            .replace_mora_data(&accent_phrases, &StyleId::new(1))
+            .await
+            .unwrap();
+
+        // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::pitch),
+            "mora_data() does not work: mora.pitch() is not changed."
+        );
+        // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
+        assert!(
+            any_mora_param_changed(
+                &accent_phrases,
+                &modified_accent_phrases,
+                MoraModel::vowel_length
+            ),
+            "mora_data() does not work: mora.vowel_length() is not changed."
+        );
+    }
+
+    fn any_mora_param_changed<T: PartialEq>(
+        before: &[AccentPhraseModel],
+        after: &[AccentPhraseModel],
+        param: fn(&MoraModel) -> &T,
+    ) -> bool {
+        std::iter::zip(before, after)
+            .flat_map(move |(before, after)| std::iter::zip(before.moras(), after.moras()))
+            .any(|(before, after)| param(before) != param(after))
     }
 }

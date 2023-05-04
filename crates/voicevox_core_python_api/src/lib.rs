@@ -13,8 +13,8 @@ use pyo3::{
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::{runtime::Runtime, sync::Mutex};
 use voicevox_core::{
-    AccelerationMode, AccentPhraseModel, AudioQueryModel, AudioQueryOptions, InitializeOptions,
-    StyleId, SynthesisOptions, TtsOptions, VoiceModelId, VoiceModelMeta,
+    AccelerationMode, AccentPhraseModel, AccentPhrasesOptions, AudioQueryModel, AudioQueryOptions,
+    InitializeOptions, StyleId, SynthesisOptions, TtsOptions, VoiceModelId, VoiceModelMeta,
 };
 
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
@@ -211,10 +211,12 @@ impl Synthesizer {
         )
     }
 
+    #[pyo3(signature=(text, style_id, kana = AccentPhrasesOptions::default().kana))]
     fn create_accent_phrases<'py>(
         &self,
         text: &str,
         style_id: u32,
+        kana: bool,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let synthesizer = self.synthesizer.clone();
@@ -226,7 +228,11 @@ impl Synthesizer {
                 let accent_phrases = synthesizer
                     .lock()
                     .await
-                    .create_accent_phrases(&text, &StyleId::new(style_id))
+                    .create_accent_phrases(
+                        &text,
+                        &StyleId::new(style_id),
+                        &AccentPhrasesOptions { kana },
+                    )
                     .await
                     .into_py_result()?;
                 Python::with_gil(|py| {
