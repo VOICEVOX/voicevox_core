@@ -5,34 +5,6 @@ voicevox_core ライブラリ の Python バインディングを使った音声
 
 ## 準備
 
-TODO
-
-- Python インタプリタ ≧3.8 + venv
-- voicevox_core_python_api の whl (`pip install`)
-- onnxruntime の DLL ([/README.md](https://github.com/VOICEVOX/voicevox_core#%E7%92%B0%E5%A2%83%E6%A7%8B%E7%AF%89) と同様)
-- open_jtalk_dic_utf_8-1.11 ([/README.md](https://github.com/VOICEVOX/voicevox_core#%E7%92%B0%E5%A2%83%E6%A7%8B%E7%AF%89) と同様)
-
-## 実行
-
-Open JTalk 辞書ディレクトリ、読み上げさせたい文章、出力 wav ファイルのパスの 3 つを指定して run.py を実行します。
-
-
-```console
-❯ python ./run.py -h
-usage: run.py [-h] [--mode MODE] open_jtalk_dict_dir text out
-
-positional arguments:
-  open_jtalk_dict_dir  Open JTalkの辞書ディレクトリ
-  text                 読み上げさせたい文章
-  out                  出力wavファイルのパス
-
-optional arguments:
-  -h, --help           show this help message and exit
-  --mode MODE          モード ("AUTO", "CPU", "GPU")
-```
-
-## 実行例
-
 1. wheelパッケージのインストールをします。
 
 ```console
@@ -68,8 +40,29 @@ windowsの場合
 ❯ ./download
 ```
 
-3. 実行
+TODO:
 
+- Python インタプリタ ≧3.8 + venv
+
+## 実行
+
+Open JTalk 辞書ディレクトリ、読み上げさせたい文章、出力 wav ファイルのパスの 3 つを指定して run.py を実行します。
+
+```console
+❯ python ./run.py -h
+usage: run.py [-h] [--mode MODE] open_jtalk_dict_dir text out
+
+positional arguments:
+  open_jtalk_dict_dir  Open JTalkの辞書ディレクトリ
+  text                 読み上げさせたい文章
+  out                  出力wavファイルのパス
+
+optional arguments:
+  -h, --help           show this help message and exit
+  --mode MODE          モード ("AUTO", "CPU", "GPU")
+```
+
+## 実行例
 
 ```console
 ❯ cd voicevox_core/example/python
