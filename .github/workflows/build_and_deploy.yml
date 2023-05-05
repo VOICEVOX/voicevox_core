@@ -109,6 +109,11 @@ jobs:
             target: x86_64-apple-ios
             artifact_name: ios-x64-cpu
             use_cuda: false
+          - os: macos-12
+            features: ""
+            target: apple-ios
+            artifact_name: ios
+            use_cuda: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -154,9 +159,17 @@ jobs:
         shell: bash
         run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
       - name: build voicevox_core_c_api
+        if: matrix.target != 'apple-ios'
         run: cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
+      - name: build voicevox_core_c_api for XCFramework
+        if: matrix.target == 'apple-ios'
+        shell: bash
+        run: |
+          cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target x86_64-apple-ios --release
+          cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target aarch64-apple-ios-sim --release
+          cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target aarch64-apple-ios --release
       - name: build voicevox_core_python_api
         if: matrix.whl_local_version
         id: build-voicevox-core-python-api
@@ -170,7 +183,12 @@ jobs:
       - name: Set ASSET_NAME env var
         shell: bash
         run: echo "ASSET_NAME=voicevox_core-${{ matrix.artifact_name }}-${{ env.VERSION }}" >> "$GITHUB_ENV"
+      - name: Set ONNXRUNTIME_ASSET_NAME env var
+        if: matrix.target == 'apple-ios'
+        shell: bash
+        run: echo "ONNXRUNTIME_ASSET_NAME=onnxruntime-${{ matrix.artifact_name }}-${{ env.VERSION }}" >> "$GITHUB_ENV"
       - name: Organize artifact
+        if: matrix.target != 'apple-ios'
         shell: bash
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
@@ -182,6 +200,39 @@ jobs:
           rm -f artifact/${{ env.ASSET_NAME }}/libonnxruntime.{so,dylib}
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
           cp -vr model "artifact/${{ env.ASSET_NAME }}/"
+          echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
+      - name: Organize artifact for XCFramework
+        if: matrix.target == 'apple-ios'
+        shell: bash
+        run: |
+          mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          mkdir -p "artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}"
+          mkdir -p "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios"
+          mkdir -p "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim"
+          mkdir -p "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios"
+          mkdir -p "temp/${{ env.ASSET_NAME }}/ios-sim"
+          mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios"
+          mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim"
+          mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios"
+          mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/ios-sim"
+          cp -v voicevox_core.h "temp/${{ env.ASSET_NAME }}"
+          cp -v target/x86_64-apple-ios/release/*voicevox_core.dylib "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios" || true
+          cp -v target/aarch64-apple-ios-sim/release/*voicevox_core.dylib "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim" || true
+          cp -v target/aarch64-apple-ios/release/*voicevox_core.dylib "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios" || true
+          cp -v -n target/x86_64-apple-ios/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.dylib "artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios" || true
+          cp -v -n target/aarch64-apple-ios-sim/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.dylib "artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim" || true
+          cp -v -n target/aarch64-apple-ios/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.dylib "artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios" || true
+          # ファイル名を得ておく
+          ASSET_BASENAME=`basename temp/${{ env.ASSET_NAME }}/x86_64-apple-ios/*.dylib`
+          ONNXRUNTIME_ASSET_BASENAME=`basename temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios/*.dylib`
+          # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
+          rm -f artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}/*/libonnxruntime.dylib
+          $ Simulator向けライブラリをFat binaryにする
+          lipo -create "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios/*" "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim/*" -output "temp/${{ env.ASSET_NAME }}/apple-ios-sim/$ASSET_BASENAME"
+          lipo -create "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios/*" "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim/*" -output "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim/$ONNXRUNTIME_ASSET_BASENAME"
+          xcodebuild -create-xcframework -library "temp/${{ env.ASSET_NAME }}/apple-ios-sim/*" -headers "temp/${{ env.ASSET_NAME }}/voicevox_core.h" -library "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios/*" -headers "temp/${{ env.ASSET_NAME }}/voicevox_core.h" -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
+          xcodebuild -create-xcframework -library "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim/*" -library "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios/*" -output "artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}/onnxruntime.xcframework"
+          cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
@@ -196,14 +247,25 @@ jobs:
         run: |
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
+          7z a "../${{ env.ONNXRUNTIME_ASSET_NAME }}.zip" "${{ env.ONNXRUNTIME_ASSET_NAME }}" || true
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.target != 'apple-ios'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
           files: |-
             ${{ env.ASSET_NAME }}.zip
+          target_commitish: ${{ github.sha }}
+      - name: Upload to Release
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.target == 'apple-ios'
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ env.ASSET_NAME }}.zip
+            ${{ env.ONNXRUNTIME_ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
         if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.whl_local_version
