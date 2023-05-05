@@ -5,11 +5,10 @@ from ._models import (  # noqa: F401
     AccentPhrase,
     AudioQuery,
     Mora,
-    OpenJtalk,
     SpeakerMeta,
     SupportedDevices,
 )
-from ._rust import Synthesizer, VoiceModel, supported_devices  # noqa: F401
+from ._rust import OpenJtalk, Synthesizer, VoiceModel, supported_devices  # noqa: F401
 
 
 __all__ = [
