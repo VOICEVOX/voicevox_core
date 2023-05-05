@@ -22,24 +22,27 @@ pub enum OpenJtalkError {
 pub type Result<T> = std::result::Result<T, OpenJtalkError>;
 
 pub struct OpenJtalk {
-    mecab: Mutex<ManagedResource<Mecab>>,
-    njd: Mutex<ManagedResource<Njd>>,
-    jpcommon: Mutex<ManagedResource<JpCommon>>,
+    resources: Mutex<Resources>,
     dict_loaded: bool,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for OpenJtalk {}
+struct Resources {
+    mecab: ManagedResource<Mecab>,
+    njd: ManagedResource<Njd>,
+    jpcommon: ManagedResource<JpCommon>,
+}
 
 #[allow(unsafe_code)]
-unsafe impl Sync for OpenJtalk {}
+unsafe impl Send for Resources {}
 
 impl OpenJtalk {
     pub fn new_without_dic() -> Self {
         Self {
-            mecab: Mutex::new(ManagedResource::initialize()),
-            njd: Mutex::new(ManagedResource::initialize()),
-            jpcommon: Mutex::new(ManagedResource::initialize()),
+            resources: Mutex::new(Resources {
+                mecab: ManagedResource::initialize(),
+                njd: ManagedResource::initialize(),
+                jpcommon: ManagedResource::initialize(),
+            }),
             dict_loaded: false,
         }
     }
@@ -53,9 +56,11 @@ impl OpenJtalk {
     }
 
     pub fn extract_fullcontext(&self, text: impl AsRef<str>) -> Result<Vec<String>> {
-        let mut jpcommon = self.jpcommon.lock().unwrap();
-        let mut njd = self.njd.lock().unwrap();
-        let mut mecab = self.mecab.lock().unwrap();
+        let Resources {
+            mecab,
+            njd,
+            jpcommon,
+        } = &mut *self.resources.lock().unwrap();
 
         jpcommon.refresh();
         njd.refresh();
@@ -82,7 +87,7 @@ impl OpenJtalk {
             njd.set_accent_type();
             njd.set_unvoiced_vowel();
             njd.set_long_vowel();
-            jpcommon.njd2jpcommon(&njd);
+            jpcommon.njd2jpcommon(njd);
             jpcommon.make_label();
             jpcommon
                 .get_label_feature_to_iter()
@@ -101,9 +106,10 @@ impl OpenJtalk {
 
     fn load(&mut self, open_jtalk_dict_dir: impl AsRef<Path>) -> Result<()> {
         let result = self
-            .mecab
+            .resources
             .lock()
             .unwrap()
+            .mecab
             .load(open_jtalk_dict_dir.as_ref());
         if result {
             self.dict_loaded = true;
