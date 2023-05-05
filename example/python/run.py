@@ -12,9 +12,7 @@ SPEAKER_ID = 0
 
 
 def main() -> None:
-    logging.basicConfig(
-        format="[%(levelname)s] %(filename)s: %(message)s", level="DEBUG"
-    )
+    logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s", level="DEBUG")
     logger = logging.getLogger(__name__)
 
     (acceleration_mode, open_jtalk_dict_dir, text, out) = parse_args()
