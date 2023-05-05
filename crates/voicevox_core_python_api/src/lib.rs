@@ -316,6 +316,40 @@ impl Synthesizer {
         )
     }
 
+    fn replace_mora_pitch<'py>(
+        &self,
+        accent_phrases: &'py PyList,
+        style_id: u32,
+        py: Python<'py>,
+    ) -> PyResult<&'py PyAny> {
+        let accent_phrases: Vec<AccentPhraseModel> = accent_phrases
+            .into_iter()
+            .map(from_dataclass)
+            .collect::<PyResult<Vec<AccentPhraseModel>>>()?;
+        let synthesizer = self.synthesizer.clone();
+        pyo3_asyncio::tokio::future_into_py_with_locals(
+            py,
+            pyo3_asyncio::tokio::get_current_locals(py)?,
+            async move {
+                let accent_phrases = synthesizer
+                    .lock()
+                    .await
+                    .replace_mora_pitch(&accent_phrases, StyleId::new(style_id))
+                    .await
+                    .into_py_result()?;
+                Python::with_gil(|py| {
+                    let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
+                    let accent_phrases = accent_phrases
+                        .iter()
+                        .map(|ap| to_pydantic_dataclass(ap, class))
+                        .collect::<PyResult<Vec<_>>>();
+                    let list = PyList::new(py, accent_phrases.into_iter());
+                    Ok(list.to_object(py))
+                })
+            },
+        )
+    }
+
     #[pyo3(signature=(audio_query,style_id,enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak))]
     fn synthesis<'py>(
         &self,

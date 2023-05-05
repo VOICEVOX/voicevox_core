@@ -185,6 +185,24 @@ class Synthesizer:
         :class:`AudioQuery`
         """
         ...
+    async def replace_mora_pitch(
+        self,
+        accent_phrases: List[AccentPhrase],
+        style_id: int,
+    ) -> List[AccentPhrase]:
+        """replace_mora_pitch を実行する。
+
+        Parameters
+        ----------
+        accent_phrases
+            AccentPhraseのリスト
+        style_id
+            話者ID。
+        Returns
+        -------
+        :class:`AudioQuery`
+        """
+        ...
     async def synthesis(
         self,
         audio_query: AudioQuery,
