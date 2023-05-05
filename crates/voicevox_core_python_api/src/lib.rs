@@ -28,6 +28,7 @@ fn rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_wrapped(wrap_pyfunction!(supported_devices))?;
 
     module.add_class::<Synthesizer>()?;
+    module.add_class::<OpenJtalk>()?;
     module.add_class::<VoiceModel>()
 }
 
