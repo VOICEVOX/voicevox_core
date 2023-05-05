@@ -1,9 +1,6 @@
 use std::str;
 
-use serde::{
-    de::{DeserializeOwned, Error as _},
-    Deserialize, Deserializer,
-};
+use serde::{de::DeserializeOwned, Deserialize, Deserializer};
 
 /// snapshots.tomlの`[$section_name]`部分を`deserialize`する。
 macro_rules! section {
@@ -23,16 +20,6 @@ macro_rules! section {
 pub(crate) use section;
 
 pub(crate) static SNAPSHOTS_TOML: &str = include_str!("./snapshots.toml");
-
-pub(crate) fn deserialize_json_value_from_str<'de, D>(
-    deserializer: D,
-) -> Result<serde_json::Value, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = &String::deserialize(deserializer)?;
-    serde_json::from_str(s).map_err(D::Error::custom)
-}
 
 pub(crate) fn deserialize_platform_specific_snapshot<'de, T, D>(
     deserializer: D,

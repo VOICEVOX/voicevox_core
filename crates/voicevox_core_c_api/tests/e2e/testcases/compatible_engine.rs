@@ -38,7 +38,7 @@ impl assert_cdylib::TestCase for TestCase {
         let metas_json = {
             let metas_json = metas();
             let metas_json = CStr::from_ptr(metas_json).to_str()?;
-            metas_json.parse::<serde_json::Value>()?
+            serde_json::to_string_pretty(&metas_json.parse::<serde_json::Value>()?).unwrap()
         };
 
         let supported_devices = {
@@ -153,8 +153,7 @@ static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(compatible_engine);
 
 #[derive(Deserialize)]
 struct Snapshots {
-    #[serde(deserialize_with = "snapshots::deserialize_json_value_from_str")]
-    metas: serde_json::Value,
+    metas: String,
     pub(crate) yukarin_s_forward: [f32; 8],
     pub(crate) yukarin_sa_forward: [f32; 5],
     #[serde(deserialize_with = "snapshots::deserialize_platform_specific_snapshot")]
