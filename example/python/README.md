@@ -72,7 +72,7 @@ windowsの場合
 
 
 ```console
-❯ cd voicevox_core/example/pyo3
+❯ cd voicevox_core/example/python
 ❯ # python ./run.py <Open JTalk辞書ディレクトリ> <読み上げさせたい文章> <出力wavファイルのパス>
 ❯ python ./run.py ../../voicevox_core/open_jtalk_dic_utf_8-1.11/ これはテストです ./audio.wav
 [DEBUG] run.py: voicevox_core.METAS=[Meta(name='四国めたん', styles=[Style(name='あまあま', id=0)], speaker_uuid='7ffcb7ce-00ec-4bdc-82cd-45a8889e43ff', version='0.0.1'), Meta(name='ずんだもん', styles=[Style(name='あまあま', id=1)], speaker_uuid='388f246b-8c41-4ac1-8e2d-5d79f3ff56d9', version='0.0.1')]
