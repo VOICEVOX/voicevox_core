@@ -87,9 +87,7 @@ struct OpenJtalk {
 #[pymethods]
 impl OpenJtalk {
     #[new]
-    fn new(
-        #[pyo3(from_py_with = "from_optional_utf8_path")] open_jtalk_dict_dir: String,
-    ) -> PyResult<Self> {
+    fn new(#[pyo3(from_py_with = "from_utf8_path")] open_jtalk_dict_dir: String) -> PyResult<Self> {
         Ok(Self {
             open_jtalk: Arc::new(
                 voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)
@@ -434,7 +432,7 @@ fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
     }
 }
 
-fn from_optional_utf8_path(ob: &PyAny) -> PyResult<String> {
+fn from_utf8_path(ob: &PyAny) -> PyResult<String> {
     PathBuf::extract(ob)?
         .into_os_string()
         .into_string()
