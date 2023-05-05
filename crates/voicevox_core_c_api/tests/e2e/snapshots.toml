@@ -49,3 +49,17 @@ stderr.unix = ""
 [compatible_engine_load_model_before_initialize]
 last_error_message = "Statusが初期化されていません"
 stderr = ""
+
+[simple_tts]
+output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
+stderr.windows = '''
+{windows-video-cards}
+'''
+stderr.unix = ""
+
+[tts_via_audio_query]
+output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
+stderr.windows = '''
+{windows-video-cards}
+'''
+stderr.unix = ""
