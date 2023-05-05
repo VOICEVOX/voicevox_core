@@ -15,9 +15,10 @@ __all__ = [
     "AccelerationMode",
     "AccentPhrase",
     "AudioQuery",
-    "SpeakerMeta",
     "Mora",
+    "SpeakerMeta",
     "SupportedDevices",
-    "VoicevoxCore",
+    "Synthesizer",
+    "VoiceModel",
     "supported_devices",
 ]
