@@ -5,6 +5,7 @@ from ._models import (  # noqa: F401
     AccentPhrase,
     AudioQuery,
     Mora,
+    OpenJtalk,
     SpeakerMeta,
     SupportedDevices,
 )
@@ -16,6 +17,7 @@ __all__ = [
     "AccentPhrase",
     "AudioQuery",
     "Mora",
+    "OpenJtalk",
     "SpeakerMeta",
     "SupportedDevices",
     "Synthesizer",

@@ -18,7 +18,7 @@ def supported_devices() -> SupportedDevices: ...
 
 class VoiceModel:
     @staticmethod
-    async def from_path(path: str) -> VoiceModel:
+    async def from_path(path: str) -> "VoiceModel":
         """
         Parameters
         ----------
@@ -26,31 +26,41 @@ class VoiceModel:
             vvmファイルへのパス
         """
         ...
-    def id() -> str: ...
-    def metas() -> List[SpeakerMeta]: ...
+    @property
+    def id(self) -> str: ...
+    @property
+    def metas(self) -> List[SpeakerMeta]: ...
+
+class OpenJtalk:
+    def __init__(self, open_jtalk_dict_dir: Union[Path, str]) -> None:
+        """
+        Parameters
+        ----------
+        open_jtalk_dict_dir
+            open_jtalkの辞書ディレクトリ。
+        """
+        ...
 
 class Synthesizer:
     @staticmethod
     async def new_with_initialize(
-        self,
+        open_jtalk: OpenJtalk,
         acceleration_mode: Union[
             AccelerationMode, Literal["AUTO", "CPU", "GPU"]
         ] = AccelerationMode.AUTO,
         cpu_num_threads: int = 0,
         load_all_models: bool = False,
-        open_jtalk_dict_dir: Union[Path, str, None] = None,
-    ) -> VoicevoxSynthesizer:
+    ) -> "Synthesizer":
         """
         Parameters
         ----------
+        open_jtalk
         acceleration_mode
             ハードウェアアクセラレーションモード。
         cpu_num_threads
             CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
         load_all_models
             全てのモデルを読み込む。
-        open_jtalk_dict_dir
-            open_jtalkの辞書ディレクトリ。
         """
         ...
     def __repr__(self) -> str: ...
@@ -63,6 +73,10 @@ class Synthesizer:
         GPUモードならtrue、そうでないならfalse
         """
         ...
+    @property
+    def metas(self) -> SpeakerMeta:
+        """メタ情報を取得する。"""
+        ...
     async def load_voice_model(self, model: VoiceModel) -> None:
         """モデルを読み込む。
 
@@ -70,6 +84,15 @@ class Synthesizer:
         ----------
         style_id
             読み込むモデルの話者ID。
+        """
+        ...
+    def unload_voice_model(self, voice_model_id: str) -> None:
+        """モデルの読み込みを解除する。
+
+        Parameters
+        ----------
+        voice_model_id
+            音声モデルID。
         """
         ...
     def is_loaded_voice_model(self, voice_model_id: str) -> bool:
