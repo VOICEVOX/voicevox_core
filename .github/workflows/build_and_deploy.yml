@@ -124,9 +124,15 @@ jobs:
           python-version: "3.8"
           architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
       - name: set up ${{ matrix.target }}
+        if: matrix.target != 'apple-ios'
         uses: ./.github/actions/rust-toolchain-from-file
         with:
           targets: ${{ matrix.target }}
+      - name: set up ${{ matrix.target }} for XCFramework
+        if: matrix.target == 'apple-ios'
+        uses: ./.github/actions/rust-toolchain-from-file
+        with:
+          targets: aarch64-apple-ios, aarch64-apple-ios-sim, x86_64-apple-ios
       - name: Install cross compiler for aarch64-unknown-linux-gnu
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         shell: bash
@@ -228,8 +234,8 @@ jobs:
           # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
           rm -f artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}/*/libonnxruntime.dylib
           $ Simulator向けライブラリをFat binaryにする
-          lipo -create "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios/*" "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim/*" -output "temp/${{ env.ASSET_NAME }}/apple-ios-sim/$ASSET_BASENAME"
-          lipo -create "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios/*" "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim/*" -output "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim/$ONNXRUNTIME_ASSET_BASENAME"
+          lipo -create "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios/*" "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim/*" -output "temp/${{ env.ASSET_NAME }}/apple-ios-sim/${ASSET_BASENAME}"
+          lipo -create "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios/*" "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim/*" -output "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim/${ONNXRUNTIME_ASSET_BASENAME}"
           xcodebuild -create-xcframework -library "temp/${{ env.ASSET_NAME }}/apple-ios-sim/*" -headers "temp/${{ env.ASSET_NAME }}/voicevox_core.h" -library "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios/*" -headers "temp/${{ env.ASSET_NAME }}/voicevox_core.h" -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
           xcodebuild -create-xcframework -library "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim/*" -library "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios/*" -output "artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}/onnxruntime.xcframework"
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
