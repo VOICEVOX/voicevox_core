@@ -53,7 +53,7 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path, int]:
         help='モード ("AUTO", "CPU", "GPU")',
     )
     argparser.add_argument(
-        "--dict_dir",
+        "--dict-dir",
         default="./voicevox_core/open_jtalk_dic_utf_8-1.11",
         type=Path,
         help="Open JTalkの辞書ディレクトリ",
@@ -70,7 +70,7 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path, int]:
         help="出力wavファイルのパス",
     )
     argparser.add_argument(
-        "--speeker_id",
+        "--speeker-id",
         default=0,
         type=int,
         help="話者IDを指定",
