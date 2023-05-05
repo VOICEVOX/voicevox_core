@@ -198,7 +198,7 @@ impl Synthesizer {
                 let audio_query = synthesizer
                     .lock()
                     .await
-                    .audio_query(&text, &StyleId::new(style_id), &AudioQueryOptions { kana })
+                    .audio_query(&text, StyleId::new(style_id), &AudioQueryOptions { kana })
                     .await
                     .into_py_result()?;
 
@@ -230,7 +230,7 @@ impl Synthesizer {
                     .await
                     .create_accent_phrases(
                         &text,
-                        &StyleId::new(style_id),
+                        StyleId::new(style_id),
                         &AccentPhrasesOptions { kana },
                     )
                     .await
@@ -266,7 +266,7 @@ impl Synthesizer {
                 let accent_phrases = synthesizer
                     .lock()
                     .await
-                    .replace_mora_data(&accent_phrases, &StyleId::new(style_id))
+                    .replace_mora_data(&accent_phrases, StyleId::new(style_id))
                     .await
                     .into_py_result()?;
                 Python::with_gil(|py| {
@@ -300,7 +300,7 @@ impl Synthesizer {
                 let accent_phrases = synthesizer
                     .lock()
                     .await
-                    .replace_phoneme_length(&accent_phrases, &StyleId::new(style_id))
+                    .replace_phoneme_length(&accent_phrases, StyleId::new(style_id))
                     .await
                     .into_py_result()?;
                 Python::with_gil(|py| {
@@ -334,7 +334,7 @@ impl Synthesizer {
                     .await
                     .synthesis(
                         &audio_query,
-                        &StyleId::new(style_id),
+                        StyleId::new(style_id),
                         &SynthesisOptions {
                             enable_interrogative_upspeak,
                         },
@@ -374,7 +374,7 @@ impl Synthesizer {
                 let wav = synthesizer
                     .lock()
                     .await
-                    .tts(&text, &style_id, &options)
+                    .tts(&text, style_id, &options)
                     .await
                     .into_py_result()?;
                 Python::with_gil(|py| Ok(PyBytes::new(py, &wav).to_object(py)))

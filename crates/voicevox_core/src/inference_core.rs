@@ -58,23 +58,21 @@ impl InferenceCore {
         self.status.is_loaded_model(model_id)
     }
 
-    pub fn is_model_loaded_by_style_id(&self, style_id: &StyleId) -> bool {
+    pub fn is_model_loaded_by_style_id(&self, style_id: StyleId) -> bool {
         self.status.is_loaded_model_by_style_id(style_id)
     }
 
     pub async fn predict_duration(
         &self,
         phoneme_vector: &[i64],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<f32>> {
         if !self.status.validate_speaker_id(style_id) {
-            return Err(Error::InvalidStyleId {
-                style_id: style_id.clone(),
-            });
+            return Err(Error::InvalidStyleId { style_id });
         }
 
         let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
-        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[*style_id.raw_id() as i64]));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[style_id.raw_id() as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
             vec![&mut phoneme_vector_array, &mut speaker_id_array];
@@ -102,12 +100,10 @@ impl InferenceCore {
         end_accent_vector: &[i64],
         start_accent_phrase_vector: &[i64],
         end_accent_phrase_vector: &[i64],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<f32>> {
         if !self.status.validate_speaker_id(style_id) {
-            return Err(Error::InvalidStyleId {
-                style_id: style_id.clone(),
-            });
+            return Err(Error::InvalidStyleId { style_id });
         }
 
         let mut length_array = NdArray::new(ndarray::arr0(length as i64));
@@ -120,7 +116,7 @@ impl InferenceCore {
             NdArray::new(ndarray::arr1(start_accent_phrase_vector));
         let mut end_accent_phrase_vector_array =
             NdArray::new(ndarray::arr1(end_accent_phrase_vector));
-        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[*style_id.raw_id() as i64]));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[style_id.raw_id() as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> = vec![
             &mut length_array,
@@ -143,12 +139,10 @@ impl InferenceCore {
         phoneme_size: usize,
         f0: &[f32],
         phoneme_vector: &[f32],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<f32>> {
         if !self.status.validate_speaker_id(style_id) {
-            return Err(Error::InvalidStyleId {
-                style_id: style_id.clone(),
-            });
+            return Err(Error::InvalidStyleId { style_id });
         }
 
         // 音が途切れてしまうのを避けるworkaround処理が入っている
@@ -177,7 +171,7 @@ impl InferenceCore {
                 .into_shape([length_with_padding, phoneme_size])
                 .unwrap(),
         );
-        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[*style_id.raw_id() as i64]));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[style_id.raw_id() as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
             vec![&mut f0_array, &mut phoneme_array, &mut speaker_id_array];

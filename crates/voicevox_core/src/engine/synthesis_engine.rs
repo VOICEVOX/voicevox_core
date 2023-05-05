@@ -37,7 +37,7 @@ impl SynthesisEngine {
     pub async fn create_accent_phrases(
         &self,
         text: &str,
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
         if text.is_empty() {
             return Ok(Vec::new());
@@ -114,7 +114,7 @@ impl SynthesisEngine {
     pub async fn replace_mora_data(
         &self,
         accent_phrases: &[AccentPhraseModel],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
         let accent_phrases = self
             .replace_phoneme_length(accent_phrases, style_id)
@@ -125,7 +125,7 @@ impl SynthesisEngine {
     pub async fn replace_phoneme_length(
         &self,
         accent_phrases: &[AccentPhraseModel],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
         let (_, phoneme_data_list) = SynthesisEngine::initial_process(accent_phrases);
 
@@ -187,7 +187,7 @@ impl SynthesisEngine {
     pub async fn replace_mora_pitch(
         &self,
         accent_phrases: &[AccentPhraseModel],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
         let (_, phoneme_data_list) = SynthesisEngine::initial_process(accent_phrases);
 
@@ -317,7 +317,7 @@ impl SynthesisEngine {
     pub async fn synthesis(
         &self,
         query: &AudioQueryModel,
-        style_id: &StyleId,
+        style_id: StyleId,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<f32>> {
         let speed_scale = *query.speed_scale();
@@ -429,7 +429,7 @@ impl SynthesisEngine {
     pub async fn synthesis_wave_format(
         &self,
         query: &AudioQueryModel,
-        style_id: &StyleId,
+        style_id: StyleId,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<u8>> {
         async {
@@ -686,7 +686,7 @@ mod tests {
         );
 
         let accent_phrases = synthesis_engine
-            .create_accent_phrases("同じ、文章、です。完全に、同一です。", &StyleId::new(1))
+            .create_accent_phrases("同じ、文章、です。完全に、同一です。", StyleId::new(1))
             .await
             .unwrap();
         assert_eq!(accent_phrases.len(), 5);

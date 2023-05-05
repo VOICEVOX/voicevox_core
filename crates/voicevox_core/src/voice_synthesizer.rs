@@ -146,7 +146,7 @@ impl Synthesizer {
     }
 
     #[doc(hidden)]
-    pub fn is_loaded_model_by_style_id(&self, style_id: &StyleId) -> bool {
+    pub fn is_loaded_model_by_style_id(&self, style_id: StyleId) -> bool {
         self.synthesis_engine
             .inference_core()
             .is_model_loaded_by_style_id(style_id)
@@ -161,7 +161,7 @@ impl Synthesizer {
     pub async fn synthesis(
         &self,
         audio_query: &AudioQueryModel,
-        style_id: &StyleId,
+        style_id: StyleId,
         options: &SynthesisOptions,
     ) -> Result<Vec<u8>> {
         self.synthesis_engine
@@ -173,7 +173,7 @@ impl Synthesizer {
     pub async fn predict_duration(
         &self,
         phoneme_vector: &[i64],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core()
@@ -192,7 +192,7 @@ impl Synthesizer {
         end_accent_vector: &[i64],
         start_accent_phrase_vector: &[i64],
         end_accent_phrase_vector: &[i64],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core()
@@ -215,7 +215,7 @@ impl Synthesizer {
         phoneme_size: usize,
         f0: &[f32],
         phoneme_vector: &[f32],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core()
@@ -226,7 +226,7 @@ impl Synthesizer {
     pub async fn create_accent_phrases(
         &self,
         text: &str,
-        style_id: &StyleId,
+        style_id: StyleId,
         options: &AccentPhrasesOptions,
     ) -> Result<Vec<AccentPhraseModel>> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
@@ -246,7 +246,7 @@ impl Synthesizer {
     pub async fn replace_mora_data(
         &self,
         accent_phrases: &[AccentPhraseModel],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
         self.synthesis_engine
             .replace_mora_data(accent_phrases, style_id)
@@ -256,7 +256,7 @@ impl Synthesizer {
     pub async fn replace_phoneme_length(
         &self,
         accent_phrases: &[AccentPhraseModel],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
         self.synthesis_engine
             .replace_phoneme_length(accent_phrases, style_id)
@@ -266,7 +266,7 @@ impl Synthesizer {
     pub async fn replace_mora_pitch(
         &self,
         accent_phrases: &[AccentPhraseModel],
-        style_id: &StyleId,
+        style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
         self.synthesis_engine
             .replace_mora_pitch(accent_phrases, style_id)
@@ -276,7 +276,7 @@ impl Synthesizer {
     pub async fn audio_query(
         &self,
         text: &str,
-        style_id: &StyleId,
+        style_id: StyleId,
         options: &AudioQueryOptions,
     ) -> Result<AudioQueryModel> {
         let accent_phrases = self
@@ -300,7 +300,7 @@ impl Synthesizer {
     pub async fn tts(
         &self,
         text: &str,
-        style_id: &StyleId,
+        style_id: StyleId,
         options: &TtsOptions,
     ) -> Result<Vec<u8>> {
         let audio_query = &self
@@ -411,7 +411,7 @@ mod tests {
         .await
         .unwrap();
         assert!(
-            !syntesizer.is_loaded_model_by_style_id(&style_id),
+            !syntesizer.is_loaded_model_by_style_id(style_id),
             "expected is_model_loaded to return false, but got true",
         );
         syntesizer
@@ -420,7 +420,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            syntesizer.is_loaded_model_by_style_id(&style_id),
+            syntesizer.is_loaded_model_by_style_id(style_id),
             expected,
             "expected is_model_loaded return value against style_id `{style_id}` is `{expected}`, but got `{}`",
             !expected
@@ -452,7 +452,7 @@ mod tests {
         ];
 
         let result = syntesizer
-            .predict_duration(&phoneme_vector, &StyleId::new(1))
+            .predict_duration(&phoneme_vector, StyleId::new(1))
             .await;
 
         assert!(result.is_ok(), "{result:?}");
@@ -493,7 +493,7 @@ mod tests {
                 &end_accent_vector,
                 &start_accent_phrase_vector,
                 &end_accent_phrase_vector,
-                &StyleId::new(1),
+                StyleId::new(1),
             )
             .await;
 
@@ -541,7 +541,7 @@ mod tests {
         set_one(0, 60..69);
 
         let result = syntesizer
-            .decode(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, &StyleId::new(1))
+            .decode(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, StyleId::new(1))
             .await;
 
         assert!(result.is_ok(), "{result:?}");
@@ -614,7 +614,7 @@ mod tests {
         let query = syntesizer
             .audio_query(
                 input_text,
-                &StyleId::new(0),
+                StyleId::new(0),
                 &AudioQueryOptions {
                     kana: input_kana_option,
                 },
@@ -683,7 +683,7 @@ mod tests {
         let accent_phrases = syntesizer
             .create_accent_phrases(
                 input_text,
-                &StyleId::new(0),
+                StyleId::new(0),
                 &AccentPhrasesOptions {
                     kana: input_kana_option,
                 },
@@ -744,14 +744,14 @@ mod tests {
         let accent_phrases = syntesizer
             .create_accent_phrases(
                 "これはテストです",
-                &StyleId::new(0),
+                StyleId::new(0),
                 &AccentPhrasesOptions { kana: false },
             )
             .await
             .unwrap();
 
         let modified_accent_phrases = syntesizer
-            .replace_phoneme_length(&accent_phrases, &StyleId::new(1))
+            .replace_phoneme_length(&accent_phrases, StyleId::new(1))
             .await
             .unwrap();
 
@@ -783,14 +783,14 @@ mod tests {
         let accent_phrases = syntesizer
             .create_accent_phrases(
                 "これはテストです",
-                &StyleId::new(0),
+                StyleId::new(0),
                 &AccentPhrasesOptions { kana: false },
             )
             .await
             .unwrap();
 
         let modified_accent_phrases = syntesizer
-            .replace_mora_pitch(&accent_phrases, &StyleId::new(1))
+            .replace_mora_pitch(&accent_phrases, StyleId::new(1))
             .await
             .unwrap();
 
@@ -818,14 +818,14 @@ mod tests {
         let accent_phrases = syntesizer
             .create_accent_phrases(
                 "これはテストです",
-                &StyleId::new(0),
+                StyleId::new(0),
                 &AccentPhrasesOptions { kana: false },
             )
             .await
             .unwrap();
 
         let modified_accent_phrases = syntesizer
-            .replace_mora_data(&accent_phrases, &StyleId::new(1))
+            .replace_mora_data(&accent_phrases, StyleId::new(1))
             .await
             .unwrap();
 

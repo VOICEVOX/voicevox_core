@@ -37,7 +37,7 @@ static VOICE_MODEL_SET: Lazy<Mutex<VoiceModelSet>> = Lazy::new(|| {
     for vvm in all_vvms.iter() {
         for meta in vvm.metas().iter() {
             for style in meta.styles().iter() {
-                style_model_map.insert(style.id().clone(), vvm.id().clone());
+                style_model_map.insert(*style.id(), vvm.id().clone());
             }
         }
     }
@@ -116,7 +116,7 @@ pub extern "C" fn load_model(style_id: i64) -> bool {
 #[no_mangle]
 pub extern "C" fn is_model_loaded(speaker_id: i64) -> bool {
     ensure_initialized!(&*lock_synthesizer())
-        .is_loaded_model_by_style_id(&StyleId::new(speaker_id as u32))
+        .is_loaded_model_by_style_id(StyleId::new(speaker_id as u32))
 }
 
 #[no_mangle]
@@ -150,7 +150,7 @@ pub extern "C" fn yukarin_s_forward(
     let synthesizer = &*lock_synthesizer();
     let result = RUNTIME.block_on(ensure_initialized!(synthesizer).predict_duration(
         unsafe { std::slice::from_raw_parts_mut(phoneme_list, length as usize) },
-        &StyleId::new(unsafe { *speaker_id as u32 }),
+        StyleId::new(unsafe { *speaker_id as u32 }),
     ));
     match result {
         Ok(output_vec) => {
@@ -186,7 +186,7 @@ pub extern "C" fn yukarin_sa_forward(
         unsafe { std::slice::from_raw_parts(end_accent_list, length as usize) },
         unsafe { std::slice::from_raw_parts(start_accent_phrase_list, length as usize) },
         unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length as usize) },
-        &StyleId::new(unsafe { *speaker_id as u32 }),
+        StyleId::new(unsafe { *speaker_id as u32 }),
     ));
     match result {
         Ok(output_vec) => {
@@ -218,7 +218,7 @@ pub extern "C" fn decode_forward(
         phoneme_size,
         unsafe { std::slice::from_raw_parts(f0, length) },
         unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) },
-        &StyleId::new(unsafe { *speaker_id as u32 }),
+        StyleId::new(unsafe { *speaker_id as u32 }),
     ));
     match result {
         Ok(output_vec) => {

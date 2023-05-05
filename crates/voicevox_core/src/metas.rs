@@ -7,12 +7,12 @@ use serde::{Deserialize, Serialize};
 /// スタイルIdの実体
 pub type RawStyleId = u32;
 /// スタイルId
-#[derive(PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
 pub struct StyleId(RawStyleId);
 
 impl StyleId {
-    pub fn raw_id(&self) -> &RawStyleId {
-        &self.0
+    pub fn raw_id(self) -> RawStyleId {
+        self.0
     }
 }
 

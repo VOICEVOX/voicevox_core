@@ -396,7 +396,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
         let japanese_or_kana = ensure_utf8(text)?;
         let audio_query = RUNTIME.block_on(synthesizer.synthesizer().audio_query(
             japanese_or_kana,
-            &StyleId::new(style_id),
+            StyleId::new(style_id),
             &AudioQueryOptions::from(options),
         ))?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
@@ -442,7 +442,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let accent_phrases = RUNTIME.block_on(synthesizer.synthesizer().create_accent_phrases(
             text,
-            &StyleId::new(style_id),
+            StyleId::new(style_id),
             &options.into(),
         ))?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
@@ -476,7 +476,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
         let accent_phrases = RUNTIME.block_on(
             synthesizer
                 .synthesizer()
-                .replace_mora_data(&accent_phrases, &StyleId::new(style_id)),
+                .replace_mora_data(&accent_phrases, StyleId::new(style_id)),
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
@@ -509,7 +509,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
         let accent_phrases = RUNTIME.block_on(
             synthesizer
                 .synthesizer()
-                .replace_phoneme_length(&accent_phrases, &StyleId::new(style_id)),
+                .replace_phoneme_length(&accent_phrases, StyleId::new(style_id)),
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
@@ -542,7 +542,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
         let accent_phrases = RUNTIME.block_on(
             synthesizer
                 .synthesizer()
-                .replace_mora_pitch(&accent_phrases, &StyleId::new(style_id)),
+                .replace_mora_pitch(&accent_phrases, StyleId::new(style_id)),
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
@@ -595,7 +595,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
             serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
         let wav = RUNTIME.block_on(synthesizer.synthesizer().synthesis(
             &audio_query,
-            &StyleId::new(style_id),
+            StyleId::new(style_id),
             &SynthesisOptions::from(options),
         ))?;
         let (ptr, len) = BUFFER_MANAGER.lock().unwrap().vec_into_raw(wav);
@@ -647,7 +647,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let output = RUNTIME.block_on(synthesizer.synthesizer().tts(
             text,
-            &StyleId::new(style_id),
+            StyleId::new(style_id),
             &TtsOptions::from(options),
         ))?;
         let (ptr, size) = BUFFER_MANAGER.lock().unwrap().vec_into_raw(output);

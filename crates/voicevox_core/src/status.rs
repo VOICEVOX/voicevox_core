@@ -113,8 +113,7 @@ impl Status {
 
         for speaker in model.metas().iter() {
             for style in speaker.styles().iter() {
-                self.id_relations
-                    .insert(style.id().clone(), model.id().clone());
+                self.id_relations.insert(*style.id(), model.id().clone());
             }
         }
         self.set_metas();
@@ -143,7 +142,7 @@ impl Status {
                 .id_relations
                 .iter()
                 .filter(|&(_, loaded_model_id)| loaded_model_id == voice_model_id)
-                .map(|(style_id, _)| style_id.clone())
+                .map(|(&style_id, _)| style_id)
                 .collect::<Vec<_>>();
 
             for style_id in remove_style_ids.iter() {
@@ -176,8 +175,8 @@ impl Status {
             && self.models.decode.contains_key(voice_model_id)
     }
 
-    pub fn is_loaded_model_by_style_id(&self, style_id: &StyleId) -> bool {
-        self.id_relations.contains_key(style_id)
+    pub fn is_loaded_model_by_style_id(&self, style_id: StyleId) -> bool {
+        self.id_relations.contains_key(&style_id)
     }
 
     fn new_session(
@@ -223,16 +222,16 @@ impl Status {
         Ok(session_builder.with_model_from_memory(model_bytes()?)?)
     }
 
-    pub fn validate_speaker_id(&self, style_id: &StyleId) -> bool {
-        self.id_relations.contains_key(style_id)
+    pub fn validate_speaker_id(&self, style_id: StyleId) -> bool {
+        self.id_relations.contains_key(&style_id)
     }
 
     pub fn predict_duration_session_run(
         &self,
-        style_id: &StyleId,
+        style_id: StyleId,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model_id) = self.id_relations.get(style_id) {
+        if let Some(model_id) = self.id_relations.get(&style_id) {
             if let Some(model) = self.models.predict_duration.get(model_id) {
                 if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
                     Ok(output_tensors[0].as_slice().unwrap().to_owned())
@@ -240,23 +239,19 @@ impl Status {
                     Err(Error::InferenceFailed)
                 }
             } else {
-                Err(Error::InvalidStyleId {
-                    style_id: style_id.clone(),
-                })
+                Err(Error::InvalidStyleId { style_id })
             }
         } else {
-            Err(Error::InvalidStyleId {
-                style_id: style_id.clone(),
-            })
+            Err(Error::InvalidStyleId { style_id })
         }
     }
 
     pub fn predict_intonation_session_run(
         &self,
-        style_id: &StyleId,
+        style_id: StyleId,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model_id) = self.id_relations.get(style_id) {
+        if let Some(model_id) = self.id_relations.get(&style_id) {
             if let Some(model) = self.models.predict_intonation.get(model_id) {
                 if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
                     Ok(output_tensors[0].as_slice().unwrap().to_owned())
@@ -264,23 +259,19 @@ impl Status {
                     Err(Error::InferenceFailed)
                 }
             } else {
-                Err(Error::InvalidStyleId {
-                    style_id: style_id.clone(),
-                })
+                Err(Error::InvalidStyleId { style_id })
             }
         } else {
-            Err(Error::InvalidStyleId {
-                style_id: style_id.clone(),
-            })
+            Err(Error::InvalidStyleId { style_id })
         }
     }
 
     pub fn decode_session_run(
         &self,
-        style_id: &StyleId,
+        style_id: StyleId,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model_id) = self.id_relations.get(style_id) {
+        if let Some(model_id) = self.id_relations.get(&style_id) {
             if let Some(model) = self.models.decode.get(model_id) {
                 if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
                     Ok(output_tensors[0].as_slice().unwrap().to_owned())
@@ -288,14 +279,10 @@ impl Status {
                     Err(Error::InferenceFailed)
                 }
             } else {
-                Err(Error::InvalidStyleId {
-                    style_id: style_id.clone(),
-                })
+                Err(Error::InvalidStyleId { style_id })
             }
         } else {
-            Err(Error::InvalidStyleId {
-                style_id: style_id.clone(),
-            })
+            Err(Error::InvalidStyleId { style_id })
         }
     }
 }
