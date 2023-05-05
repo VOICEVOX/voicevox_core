@@ -166,6 +166,7 @@ pub type VoicevoxStyleId = u32;
 /// # Safety
 /// @param path null終端文字列であること
 /// @param out_model 自動でheapメモリが割り当てられるので ::voicevox_voice_model_delete で解放する必要がある
+#[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
     path: *const c_char,
     out_model: *mut *mut VoicevoxVoiceModel,
@@ -183,6 +184,7 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
 ///
 /// # Safety
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
+#[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_id(
     model: *const VoicevoxVoiceModel,
 ) -> VoicevoxVoiceModelId {
@@ -196,6 +198,7 @@ pub unsafe extern "C" fn voicevox_voice_model_id(
 ///
 /// # Safety
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
+#[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_get_metas_json(
     model: *const VoicevoxVoiceModel,
 ) -> *const c_char {
@@ -208,6 +211,7 @@ pub unsafe extern "C" fn voicevox_voice_model_get_metas_json(
 ///
 /// # Safety
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
+#[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_delete(model: *mut VoicevoxVoiceModel) {
     let _ = Box::from_raw(model as *mut CVoiceModel);
 }
