@@ -57,8 +57,10 @@ fn supported_devices(py: Python) -> PyResult<&PyAny> {
 #[pymethods]
 impl VoiceModel {
     #[staticmethod]
-    fn from_path<'py>(py: Python<'py>, path: &str) -> PyResult<&'py PyAny> {
-        let path = path.to_owned();
+    fn from_path(
+        py: Python<'_>,
+        #[pyo3(from_py_with = "from_utf8_path")] path: String,
+    ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let model = voicevox_core::VoiceModel::from_path(path)
                 .await

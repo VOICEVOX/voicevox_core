@@ -18,7 +18,7 @@ def supported_devices() -> SupportedDevices: ...
 
 class VoiceModel:
     @staticmethod
-    async def from_path(path: str) -> "VoiceModel":
+    async def from_path(path: Union[Path, str]) -> "VoiceModel":
         """
         Parameters
         ----------
