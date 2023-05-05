@@ -4,8 +4,8 @@ from ._models import (  # noqa: F401
     AccelerationMode,
     AccentPhrase,
     AudioQuery,
-    SpeakerMeta,
     Mora,
+    SpeakerMeta,
     SupportedDevices,
 )
 from ._rust import Synthesizer, VoiceModel, supported_devices  # noqa: F401

@@ -6,10 +6,10 @@ from numpy.typing import NDArray
 
 from voicevox_core import (
     AccelerationMode,
+    AccentPhrase,
     AudioQuery,
     SpeakerMeta,
     SupportedDevices,
-    AccentPhrase,
 )
 
 __version__: str
