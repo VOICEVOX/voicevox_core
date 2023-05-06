@@ -210,23 +210,9 @@ impl VoicevoxCore {
         speaker_id: u32,
         py: Python<'py>,
     ) -> PyResult<Vec<&'py PyAny>> {
-        let rust_accent_phrases = accent_phrases
-            .iter()
-            .map(|a| from_dataclass::<AccentPhraseModel>(a))
-            .collect::<PyResult<Vec<_>>>()?;
-        let replaced_accent_phrases = &self
-            .inner
-            .mora_length(speaker_id, &rust_accent_phrases)
-            .into_py_result()?;
-        replaced_accent_phrases
-            .iter()
-            .map(|accent_phrase| {
-                to_pydantic_dataclass(
-                    accent_phrase,
-                    py.import("voicevox_core")?.getattr("AccentPhrase")?,
-                )
-            })
-            .collect()
+        modify_accent_phrases(accent_phrases, speaker_id, py, |a, s| {
+            self.inner.mora_length(a, s)
+        })
     }
 
     fn mora_pitch<'py>(
@@ -235,23 +221,9 @@ impl VoicevoxCore {
         speaker_id: u32,
         py: Python<'py>,
     ) -> PyResult<Vec<&'py PyAny>> {
-        let rust_accent_phrases = accent_phrases
-            .iter()
-            .map(|a| from_dataclass::<AccentPhraseModel>(a))
-            .collect::<PyResult<Vec<_>>>()?;
-        let replaced_accent_phrases = &self
-            .inner
-            .mora_pitch(speaker_id, &rust_accent_phrases)
-            .into_py_result()?;
-        replaced_accent_phrases
-            .iter()
-            .map(|accent_phrase| {
-                to_pydantic_dataclass(
-                    accent_phrase,
-                    py.import("voicevox_core")?.getattr("AccentPhrase")?,
-                )
-            })
-            .collect()
+        modify_accent_phrases(accent_phrases, speaker_id, py, |a, s| {
+            self.inner.mora_pitch(a, s)
+        })
     }
 
     fn mora_data<'py>(
@@ -260,23 +232,9 @@ impl VoicevoxCore {
         speaker_id: u32,
         py: Python<'py>,
     ) -> PyResult<Vec<&'py PyAny>> {
-        let rust_accent_phrases = accent_phrases
-            .iter()
-            .map(|a| from_dataclass::<AccentPhraseModel>(a))
-            .collect::<PyResult<Vec<_>>>()?;
-        let replaced_accent_phrases = &self
-            .inner
-            .mora_data(speaker_id, &rust_accent_phrases)
-            .into_py_result()?;
-        replaced_accent_phrases
-            .iter()
-            .map(|accent_phrase| {
-                to_pydantic_dataclass(
-                    accent_phrase,
-                    py.import("voicevox_core")?.getattr("AccentPhrase")?,
-                )
-            })
-            .collect()
+        modify_accent_phrases(accent_phrases, speaker_id, py, |a, s| {
+            self.inner.mora_data(a, s)
+        })
     }
 
     #[args(enable_interrogative_upspeak = "TtsOptions::default().enable_interrogative_upspeak")]
@@ -373,6 +331,31 @@ fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {
     let x = serde_json::to_string(&x).into_py_result()?;
     let x = py.import("json")?.call_method1("loads", (x,))?.cast_as()?;
     class.call((), Some(x))
+}
+
+fn modify_accent_phrases<'py, F>(
+    accent_phrases: Vec<&'py PyAny>,
+    speaker_id: u32,
+    py: Python<'py>,
+    mut method: F,
+) -> PyResult<Vec<&'py PyAny>>
+where
+    F: FnMut(u32, &[AccentPhraseModel]) -> Result<Vec<AccentPhraseModel>, voicevox_core::Error>,
+{
+    let rust_accent_phrases = accent_phrases
+        .iter()
+        .map(|a| from_dataclass::<AccentPhraseModel>(a))
+        .collect::<PyResult<Vec<_>>>()?;
+    let replaced_accent_phrases = method(speaker_id, &rust_accent_phrases).into_py_result()?;
+    replaced_accent_phrases
+        .iter()
+        .map(move |accent_phrase| {
+            to_pydantic_dataclass(
+                accent_phrase,
+                py.import("voicevox_core")?.getattr("AccentPhrase")?,
+            )
+        })
+        .collect()
 }
 
 impl Drop for VoicevoxCore {
