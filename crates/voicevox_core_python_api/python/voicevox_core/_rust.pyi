@@ -4,7 +4,7 @@ from typing import Final, List, Literal, Union
 import numpy as np
 from numpy.typing import NDArray
 
-from voicevox_core import AccelerationMode, AudioQuery, Meta, SupportedDevices
+from voicevox_core import AccelerationMode, AccentPhrase, AudioQuery, Meta, SupportedDevices
 
 METAS: Final[List[Meta]]
 SUPPORTED_DEVICES: Final[SupportedDevices]
@@ -164,6 +164,82 @@ class VoicevoxCore:
         Returns
         -------
         :class:`AudioQuery`
+        """
+        ...
+    def accent_phrases(
+        self,
+        text: str,
+        speaker_id: int,
+        kana: bool = False,
+    ) -> List[AccentPhrase]:
+        """`accent_phrases` を実行する。
+
+        Parameters
+        ----------
+        text
+            テキスト。文字コードはUTF-8。
+        speaker_id
+            話者ID。
+        kana
+            aquestalk形式のkanaとしてテキストを解釈する。
+
+        Returns
+        -------
+        :class:`List` [:class:`AccentPhrase`]
+        """
+        ...
+    def mora_length( self,
+        accent_phrases: List[AccentPhrase],
+        speaker_id: int,
+    ) -> List[AccentPhrase]:
+        """アクセント句の音素長を変更する
+
+        Parameters
+        ----------
+        accent_phrases
+            変更元のアクセント句。
+        speaker_id
+            話者ID。
+
+        Returns
+        -------
+        :class:`List` [:class:`AccentPhrase`]
+        """
+        ...
+    def mora_pitch( self,
+        accent_phrases: List[AccentPhrase],
+        speaker_id: int,
+    ) -> List[AccentPhrase]:
+        """アクセント句の音高を変更する
+
+        Parameters
+        ----------
+        accent_phrases
+            変更元のアクセント句。
+        speaker_id
+            話者ID。
+
+        Returns
+        -------
+        :class:`List` [:class:`AccentPhrase`]
+        """
+        ...
+    def mora_data( self,
+        accent_phrases: List[AccentPhrase],
+        speaker_id: int,
+    ) -> List[AccentPhrase]:
+        """アクセント句の音高・音素長を変更する
+
+        Parameters
+        ----------
+        accent_phrases
+            変更元のアクセント句。
+        speaker_id
+            話者ID。
+
+        Returns
+        -------
+        :class:`List` [:class:`AccentPhrase`]
         """
         ...
     def synthesis(
