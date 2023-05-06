@@ -12,8 +12,8 @@ use pyo3::{
 };
 use serde::{de::DeserializeOwned, Serialize};
 use voicevox_core::{
-    AccelerationMode, AudioQueryModel, AudioQueryOptions, InitializeOptions, SynthesisOptions,
-    TtsOptions,
+    AccelerationMode, AccentPhraseModel, AccentPhrasesOptions, AudioQueryModel, AudioQueryOptions,
+    InitializeOptions, SynthesisOptions, TtsOptions,
 };
 
 #[pymodule]
@@ -179,6 +179,29 @@ impl VoicevoxCore {
             audio_query,
             py.import("voicevox_core")?.getattr("AudioQuery")?,
         )
+    }
+
+    #[args(kana = "AccentPhrasesOptions::default().kana")]
+    fn accent_phrases<'py>(
+        &mut self,
+        text: &str,
+        speaker_id: u32,
+        kana: bool,
+        py: Python<'py>,
+    ) -> PyResult<Vec<&'py PyAny>> {
+        let accent_phrases = &self
+            .inner
+            .accent_phrases(text, speaker_id, AccentPhrasesOptions { kana })
+            .into_py_result()?;
+        accent_phrases
+            .iter()
+            .map(|accent_phrase| {
+                to_pydantic_dataclass(
+                    accent_phrase,
+                    py.import("voicevox_core")?.getattr("AccentPhrase")?,
+                )
+            })
+            .collect::<PyResult<Vec<_>>>()
     }
 
     #[args(enable_interrogative_upspeak = "TtsOptions::default().enable_interrogative_upspeak")]
