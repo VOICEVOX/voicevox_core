@@ -33,4 +33,6 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_PARSE_KANA_ERROR = 12,
     /// 無効なAudioQuery
     VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR = 13,
+    /// 無効なAccentPhrase
+    VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR = 14,
 }
