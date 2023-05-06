@@ -12,10 +12,11 @@ SPEAKER_ID = 0
 
 
 def main() -> None:
-    logging.basicConfig(
-        format="[%(levelname)s] %(filename)s: %(message)s", level="DEBUG"
-    )
+    logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s")
     logger = logging.getLogger(__name__)
+    logger.setLevel("DEBUG")
+    logging.getLogger("voicevox_core_python_api").setLevel("DEBUG")
+    logging.getLogger("voicevox_core").setLevel("DEBUG")
 
     (acceleration_mode, open_jtalk_dict_dir, text, out) = parse_args()
 
