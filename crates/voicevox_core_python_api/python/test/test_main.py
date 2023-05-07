@@ -122,3 +122,48 @@ def check_accent_phrases(
             if mora.consonant_length is not None:
                 assert mora.consonant_length > 0
             assert mora.vowel_length > 0
+
+
+def test_mora_length(core: VoicevoxCore):
+    accent_phrases = core.accent_phrases("これはテストです", 0, False)
+    with_mora_length_replaced = core.mora_length(accent_phrases, 1)
+
+    # 一つでも母音の長さが変わっていれば、動作しているとみなす
+    check_any_mora_param_changed(
+        accent_phrases, with_mora_length_replaced, "vowel_length"
+    )
+
+
+def test_mora_pitch(core: VoicevoxCore):
+    accent_phrases = core.accent_phrases("これはテストです", 0, False)
+    with_mora_length_replaced = core.mora_pitch(accent_phrases, 1)
+
+    # 一つでも音高が変わっていれば、動作しているとみなす
+    check_any_mora_param_changed(accent_phrases, with_mora_length_replaced, "pitch")
+
+
+def test_mora_data(core: VoicevoxCore):
+    accent_phrases = core.accent_phrases("これはテストです", 0, False)
+    with_mora_length_replaced = core.mora_data(accent_phrases, 1)
+
+
+    check_any_mora_param_changed(accent_phrases, with_mora_length_replaced, "pitch")
+    check_any_mora_param_changed(
+        accent_phrases, with_mora_length_replaced, "vowel_length"
+    )
+
+
+def check_any_mora_param_changed(
+    before: List[voicevox_core.AccentPhrase],
+    after: List[voicevox_core.AccentPhrase],
+    attr: str,
+):
+    assert len(before) == len(after)
+    for before_accent_phrase, after_accent_phrase in zip(before, after):
+        for before_mora, after_mora in zip(
+            before_accent_phrase.moras, after_accent_phrase.moras
+        ):
+            if getattr(before_mora, attr) != getattr(after_mora, attr):
+                return
+
+    assert False, f"no mora.{attr} changed"

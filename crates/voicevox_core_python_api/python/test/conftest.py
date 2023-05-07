@@ -32,5 +32,6 @@ def core(open_jtalk_dict_dir):
     import voicevox_core
     core = voicevox_core.VoicevoxCore(open_jtalk_dict_dir=open_jtalk_dict_dir)
     core.load_model(0)
+    core.load_model(1)
     return core
 
