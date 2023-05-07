@@ -245,7 +245,7 @@ jobs:
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             ORT_PATH=$( find . -name onnxruntime.dll )
-          elif [ "${{ matrix.os }} = "macos-latest" ]; then
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
             ORT_PATH=$( find . -name libonnxruntime.*.dylib )
           else
             ORT_PATH=$( find . -name libonnxruntime.so.* )
