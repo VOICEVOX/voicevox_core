@@ -240,6 +240,12 @@ jobs:
         run: |
           import voicevox_core
           print(voicevox_core)
+      - name: 'pytestを実行'
+        shell: bash
+        run: |
+          cd crates/voicevox_core_python_api
+          pip install -r requirements-test.txt
+          pytest
 
 env:
   CARGO_TERM_COLOR: always
