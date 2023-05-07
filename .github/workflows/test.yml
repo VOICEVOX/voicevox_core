@@ -235,20 +235,20 @@ jobs:
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll . || true
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* . || true
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
-      - name: '`maturin develop`でインストールした`voicevox_core_python_api`を実行'
+      - name: "`maturin develop`でインストールした`voicevox_core_python_api`を実行"
         shell: python
         run: |
           import voicevox_core
           print(voicevox_core)
-      - name: 'pytestを実行'
+      - name: "pytestを実行"
         shell: bash
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            export ORT_PATH=$( find . -name "onnxruntime.dll" )
+            export ORT_PATH="$(find ~+ -name "onnxruntime.dll")"
           elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-            export ORT_PATH=$( find . -name "libonnxruntime.*.dylib" )
+            export ORT_PATH="$(find ~+ -name "libonnxruntime.*.dylib")"
           else
-            export ORT_PATH=$( find . -name "libonnxruntime.so.*" )
+            export ORT_PATH="$(find ~+ -name "libonnxruntime.so.*")"
           fi
           cd crates/voicevox_core_python_api
           pip install -r requirements-test.txt
