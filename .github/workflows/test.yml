@@ -244,12 +244,13 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            export ORT_PATH="$(find ~+ -name "onnxruntime.dll")"
+            ORT_PATH="$(find ~+ -name "onnxruntime.dll")"
           elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-            export ORT_PATH="$(find ~+ -name "libonnxruntime.*.dylib")"
+            ORT_PATH="$(find ~+ -name "libonnxruntime.*.dylib")"
           else
-            export ORT_PATH="$(find ~+ -name "libonnxruntime.so.*")"
+            ORT_PATH="$(find ~+ -name "libonnxruntime.so.*")"
           fi
+          export ORT_PATH
           cd crates/voicevox_core_python_api
           pip install -r requirements-test.txt
           pytest
