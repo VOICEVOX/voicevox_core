@@ -11,6 +11,10 @@ from data import (
     example_end_accent_phrase_vector,
     TEXT_CONSONANT_VOWEL_DATA1,
     TEXT_CONSONANT_VOWEL_DATA2,
+    example_f0,
+    example_phoneme,
+    example_f0_length,
+    example_phoneme_size,
 )
 from typing import List, Tuple
 
@@ -56,8 +60,25 @@ def test_audio_query(
             assert mora.vowel_length > 0
 
 
+def test_decode(core: VoicevoxCore):
+    result = core.decode(
+        example_f0_length, example_phoneme_size, example_f0, example_phoneme, 0
+    )
+    assert len(result) == len(example_f0) * 256
+
+
 def test_tts(core: VoicevoxCore):
-    core.tts("テストです", 0)
+    result = core.tts("テストです", 0)
+    assert len(result) > 0
+
+
+def test_synthesis(core: VoicevoxCore):
+    query = core.audio_query("テストです", 0, False)
+    result = core.synthesis(
+        query,
+        0,
+    )
+    assert len(result) > 0
 
 
 def test_predict_duration(core: VoicevoxCore):
