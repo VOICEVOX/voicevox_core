@@ -216,11 +216,11 @@ jobs:
           mkdir -p "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios"
           mkdir -p "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim"
           mkdir -p "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios"
-          mkdir -p "temp/${{ env.ASSET_NAME }}/ios-sim"
+          mkdir -p "temp/${{ env.ASSET_NAME }}/apple-ios-sim"
           mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios"
           mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim"
           mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios"
-          mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/ios-sim"
+          mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim"
           cp -v voicevox_core.h "temp/${{ env.ASSET_NAME }}"
           cp -v target/x86_64-apple-ios/release/*voicevox_core.dylib "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios" || true
           cp -v target/aarch64-apple-ios-sim/release/*voicevox_core.dylib "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim" || true
