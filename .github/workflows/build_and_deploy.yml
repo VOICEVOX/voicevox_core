@@ -228,11 +228,11 @@ jobs:
           cp -v -n target/x86_64-apple-ios/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.dylib "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios" || true
           cp -v -n target/aarch64-apple-ios-sim/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.dylib "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim" || true
           cp -v -n target/aarch64-apple-ios/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.dylib "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios" || true
-          # ファイル名を得ておく
-          ASSET_BASENAME="$(basename $(find temp/${{ env.ASSET_NAME }}/x86_64-apple-ios -type f))"
-          ONNXRUNTIME_ASSET_BASENAME="$(basename $(find temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios -type f))"
           # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
-          rm -f artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}/*/libonnxruntime.dylib
+          rm -f temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/*/libonnxruntime.dylib
+          # ファイル名を得ておく
+          read -r ASSET_BASENAME <<< "$(basename $(find temp/${{ env.ASSET_NAME }}/x86_64-apple-ios -type f))"
+          read -r ONNXRUNTIME_ASSET_BASENAME <<< "$(basename $(find temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios -type f))"
           $ Simulator向けライブラリをFat binaryにする
           echo "Create Fat binary"
           lipo -create "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios/*" "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim/*" -output "temp/${{ env.ASSET_NAME }}/apple-ios-sim/${ASSET_BASENAME}"
