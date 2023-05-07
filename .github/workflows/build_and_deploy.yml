@@ -234,12 +234,11 @@ jobs:
           ASSET_BASENAME=$(basename "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios/*")
           ONNXRUNTIME_ASSET_BASENAME=$(basename "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios/*")
           # Simulator向けライブラリをFat binaryにする
-          echo "Create Fat binary"
-          lipo -create "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios/*" "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim/*" -output "temp/${{ env.ASSET_NAME }}/apple-ios-sim/${ASSET_BASENAME}"
-          lipo -create "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios/*" "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim/*" -output "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim/${ONNXRUNTIME_ASSET_BASENAME}"
-          echo "Create XCFramework"
-          xcodebuild -create-xcframework -library "temp/${{ env.ASSET_NAME }}/apple-ios-sim/*" -headers "temp/${{ env.ASSET_NAME }}/voicevox_core.h" -library "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios/*" -headers "temp/${{ env.ASSET_NAME }}/voicevox_core.h" -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
-          xcodebuild -create-xcframework -library "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim/*" -library "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios/*" -output "artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}/onnxruntime.xcframework"
+          lipo -create "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios/${ASSET_BASENAME}" "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim/${ASSET_BASENAME}" -output "temp/${{ env.ASSET_NAME }}/apple-ios-sim/${ASSET_BASENAME}"
+          lipo -create "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios/${ONNXRUNTIME_ASSET_BASENAME}" "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim/${ONNXRUNTIME_ASSET_BASENAME}" -output "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim/${ONNXRUNTIME_ASSET_BASENAME}"
+          # XCFrameworkを作成する
+          xcodebuild -create-xcframework -library "temp/${{ env.ASSET_NAME }}/apple-ios-sim/${ASSET_BASENAME}" -headers "temp/${{ env.ASSET_NAME }}/voicevox_core.h" -library "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios/${ASSET_BASENAME}" -headers "temp/${{ env.ASSET_NAME }}/voicevox_core.h" -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
+          xcodebuild -create-xcframework -library "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim/${ONNXRUNTIME_ASSET_BASENAME}" -library "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios/${ONNXRUNTIME_ASSET_BASENAME}" -output "artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}/onnxruntime.xcframework"
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
       - name: Code signing (Windows)
