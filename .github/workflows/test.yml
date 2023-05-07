@@ -244,11 +244,11 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            ORT_PATH="$(ls ~*/onnxruntime.dll | head -1)"
+            ORT_PATH="$(find ~+ -name onnxruntime.dll -quit -maxdepth 1)"
           elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-            ORT_PATH="$(ls ~+/libonnxruntime.*.dylib | head -1)"
+            ORT_PATH="$(find ~+ -name libonnxruntime.*.dylib -quit -maxdepth 1)"
           else
-            ORT_PATH="$(ls ~+/libonnxruntime.so.* | head -1)"
+            ORT_PATH="$(find ~+ -name libonnxruntime.so.* -quit -maxdepth 1)"
           fi
           export ORT_PATH
           cd crates/voicevox_core_python_api
