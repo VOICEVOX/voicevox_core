@@ -17,47 +17,11 @@ from data import (
     example_phoneme_size,
 )
 from typing import List, Tuple
+import voicevox_core
 
 
 def test_initialize(open_jtalk_dict_dir: str):
     VoicevoxCore(open_jtalk_dict_dir=open_jtalk_dict_dir)
-
-
-@pytest.mark.parametrize(
-    "input_text,input_kana_option,expected_text_consonant_vowel_data,expected_kana_text",
-    [
-        ("これはテストです", False, TEXT_CONSONANT_VOWEL_DATA1, "コレワ'/テ'_ストデ_ス"),
-        ("コ'レワ/テ_スト'デ_ス", True, TEXT_CONSONANT_VOWEL_DATA2, "コ'レワ/テ_スト'デ_ス"),
-    ],
-)
-def test_audio_query(
-    core: VoicevoxCore,
-    input_text: str,
-    input_kana_option: bool,
-    expected_text_consonant_vowel_data: List[Tuple[List[Tuple[str, str, str]], int]],
-    expected_kana_text: str,
-):
-    result = core.audio_query(input_text, 0, input_kana_option)
-
-    assert len(result.accent_phrases) == len(expected_text_consonant_vowel_data)
-    assert result.kana == expected_kana_text
-
-    for accent_phrase, (text_consonant_vowels, accent_pos) in zip(
-        result.accent_phrases, expected_text_consonant_vowel_data
-    ):
-        assert len(accent_phrase.moras) == len(text_consonant_vowels)
-        assert accent_phrase.accent == accent_pos
-        for mora, (text, consonant, vowel) in zip(
-            accent_phrase.moras, text_consonant_vowels
-        ):
-            assert mora.text == text
-            assert mora.consonant == consonant
-            assert mora.vowel == vowel
-
-            # 母音・子音の長さが0以上になるテストケースを想定している
-            if mora.consonant_length is not None:
-                assert mora.consonant_length > 0
-            assert mora.vowel_length > 0
 
 
 def test_decode(core: VoicevoxCore):
@@ -98,3 +62,63 @@ def test_predict_intonation(core: VoicevoxCore):
         0,
     )
     assert len(result) == len(example_vowel_phoneme_vector)
+
+
+@pytest.mark.parametrize(
+    "input_text,input_kana_option,expected_text_consonant_vowel_data,expected_kana_text",
+    [
+        ("これはテストです", False, TEXT_CONSONANT_VOWEL_DATA1, "コレワ'/テ'_ストデ_ス"),
+        ("コ'レワ/テ_スト'デ_ス", True, TEXT_CONSONANT_VOWEL_DATA2, "コ'レワ/テ_スト'デ_ス"),
+    ],
+)
+def test_audio_query(
+    core: VoicevoxCore,
+    input_text: str,
+    input_kana_option: bool,
+    expected_text_consonant_vowel_data: List[Tuple[List[Tuple[str, str, str]], int]],
+    expected_kana_text: str,
+):
+    result = core.audio_query(input_text, 0, input_kana_option)
+    check_accent_phrases(result.accent_phrases, expected_text_consonant_vowel_data)
+
+    assert result.kana == expected_kana_text
+
+
+@pytest.mark.parametrize(
+    "input_text,input_kana_option,expected_text_consonant_vowel_data",
+    [
+        ("これはテストです", False, TEXT_CONSONANT_VOWEL_DATA1),
+        ("コ'レワ/テ_スト'デ_ス", True, TEXT_CONSONANT_VOWEL_DATA2),
+    ],
+)
+def test_accent_phrases(
+    core: VoicevoxCore,
+    input_text: str,
+    input_kana_option: bool,
+    expected_text_consonant_vowel_data: List[Tuple[List[Tuple[str, str, str]], int]],
+):
+    result = core.accent_phrases(input_text, 0, input_kana_option)
+    check_accent_phrases(result, expected_text_consonant_vowel_data)
+
+
+def check_accent_phrases(
+    accent_phrases: List[voicevox_core.AccentPhrase],
+    expected_text_consonant_vowel_data: List[Tuple[List[Tuple[str, str, str]], int]],
+):
+    assert len(accent_phrases) == len(expected_text_consonant_vowel_data)
+    for accent_phrase, (text_consonant_vowels, accent_pos) in zip(
+        accent_phrases, expected_text_consonant_vowel_data
+    ):
+        assert len(accent_phrase.moras) == len(text_consonant_vowels)
+        assert accent_phrase.accent == accent_pos
+        for mora, (text, consonant, vowel) in zip(
+            accent_phrase.moras, text_consonant_vowels
+        ):
+            assert mora.text == text
+            assert mora.consonant == consonant
+            assert mora.vowel == vowel
+
+            # 母音・子音の長さが0以上になるテストケースを想定している
+            if mora.consonant_length is not None:
+                assert mora.consonant_length > 0
+            assert mora.vowel_length > 0
