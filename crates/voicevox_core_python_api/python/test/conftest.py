@@ -4,6 +4,11 @@ import pytest
 import requests
 import tarfile
 
+# onnxruntimeを最初に読み込んでおく
+if ort_path := os.getenv("ORT_PATH"):
+    import ctypes
+    ctypes.cdll.LoadLibrary(ort_path)
+
 root_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -21,3 +26,11 @@ def open_jtalk_dict_dir():
         tar.extractall(root_dir)
     os.remove(root_dir / "open_jtalk_dic_utf_8-1.11.tar.gz")
     return root_dir / "open_jtalk_dic_utf_8-1.11"
+
+@pytest.fixture(scope="session")
+def core(open_jtalk_dict_dir):
+    import voicevox_core
+    core = voicevox_core.VoicevoxCore(open_jtalk_dict_dir=open_jtalk_dict_dir)
+    core.load_model(0)
+    return core
+
