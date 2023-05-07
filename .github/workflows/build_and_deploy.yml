@@ -231,8 +231,10 @@ jobs:
           # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
           rm -f temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/*/libonnxruntime.dylib
           # ファイル名を得ておく
-          read -r ASSET_BASENAME <<< "$(basename $(find temp/${{ env.ASSET_NAME }}/x86_64-apple-ios -type f))"
-          read -r ONNXRUNTIME_ASSET_BASENAME <<< "$(basename $(find temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios -type f))"
+          read -ra arg <<< "$(find temp/${{ env.ASSET_NAME }}/x86_64-apple-ios -type f)"
+          ASSET_BASENAME="$(basename "${ arg[0] }")"
+          read -ra arg <<< "$(find temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios -type f)"
+          ONNXRUNTIME_ASSET_BASENAME="$(basename "${ arg[0] }")"
           $ Simulator向けライブラリをFat binaryにする
           echo "Create Fat binary"
           lipo -create "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios/*" "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim/*" -output "temp/${{ env.ASSET_NAME }}/apple-ios-sim/${ASSET_BASENAME}"
