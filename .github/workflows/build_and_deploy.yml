@@ -250,28 +250,33 @@ jobs:
         with:
           name: ${{ env.ASSET_NAME }}-aarch64-apple-ios
           path: artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios
+      - name: Set basename env var
+        shell: bash
+        run: |
+          ASSET_BASENAME=$(find "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios" -type f -name '*voicevox_core.dylib' -exec basename {} \;)"
+          ONNXRUNTIME_BASENAME=$(find "artifact/onnxruntime-x86_64-apple-ios" -type f -name '*onnxruntime*.dylib' -exec basename {} \;)"
+          echo "ASSET_BASENAME=$ASSET_BASENAME" >> "$GITHUB_ENV"
+          echo "ONNXRUNTIME_BASENAME=$ONNXRUNTIME_BASENAME" >> "$GITHUB_ENV"
       - name: Create fat binary
         shell: bash
         run: |
           mkdir -p "artifact/voicevox_core-sim"
           mkdir -p "artifact/onnxruntime-sim"
-          ASSET_BASENAME=$(find "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios" -type f -name '*voicevox_core.dylib' -exec basename {} \;)
-          ONNXRUNTIME_BASENAME=$(find "artifact/onnxruntime-x86_64-apple-ios" -type f -name '*onnxruntime*.dylib' -exec basename {} \;)
-          lipo -create "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios/${{ ASSET_BASENAME }}" "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios-sim/${{ ASSET_BASENAME }}" -output "artifact/voicevox_core-sim/${{ ASSET_BASENAME }}"
-          lipo -create "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios/${{ ONNXRUNTIME_BASENAME }}" "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios-sim/${{ ONNXRUNTIME_BASENAME }}" -output "artifact/onnxruntime-sim/${{ ONNXRUNTIME_BASENAME }}"
+          lipo -create "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios/${{ env.ASSET_BASENAME }}" "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios-sim/${{ env.ASSET_BASENAME }}" -output "artifact/voicevox_core-sim/${{ env.ASSET_BASENAME }}"
+          lipo -create "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios/${{ env.ONNXRUNTIME_BASENAME }}" "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios-sim/${{ env.ONNXRUNTIME_BASENAME }}" -output "artifact/onnxruntime-sim/${{ env.ONNXRUNTIME_BASENAME }}"
       - name: Create XCFramework
         shell: bash
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}-xcframework"
           xcodebuild -create-xcframework \
-            -library "artifact/voicevox_core-sim/${{ ASSET_BASENAME }}" \
-            -headers "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios/${{ ASSET_BASENAME }}/voicevox_core.h" \
-            -library "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios/${{ ASSET_BASENAME }}" \
-            -headers "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios/${{ ASSET_BASENAME }}/voicevox_core.h" \
+            -library "artifact/voicevox_core-sim/${{ env.ASSET_BASENAME }}" \
+            -headers "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios/voicevox_core.h" \
+            -library "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios/${{ env.ASSET_BASENAME }}" \
+            -headers "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios/voicevox_core.h" \
             -output "artifact/${{ env.ASSET_NAME }}-xcframework/voicevox_core.xcframework"
           xcodebuild -create-xcframework \
-            -library "artifact/onnxruntime-sim/${{ ONNXRUNTIME_BASENAME }}" \
-            -library "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios/${{ ONNXRUNTIME_BASENAME }}" \
+            -library "artifact/onnxruntime-sim/${{ env.ONNXRUNTIME_BASENAME }}" \
+            -library "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios/${{ env.ONNXRUNTIME_BASENAME }}" \
             -output "artifact/${{ env.ASSET_NAME }}-xcframework/onnxruntime.xcframework"
       - name: Archive artifact
         shell: bash
