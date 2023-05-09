@@ -206,7 +206,7 @@ jobs:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
       - name: Upload artifact to build XCFramework
-        if: matrix.build_for_xcframework == 'true'
+        if: matrix.build_for_xcframework
         uses: actions/upload-artifact@v2
         with:
           name: voicevox_core-${{ matrix.target }}
