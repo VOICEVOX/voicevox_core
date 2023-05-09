@@ -253,8 +253,8 @@ jobs:
       - name: Set basename env var
         shell: bash
         run: |
-          echo "ASSET_BASENAME=$(find artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios -type f -name *voicevox_core.dylib | xargs basename)" >> "$GITHUB_ENV"
-          echo "ONNXRUNTIME_BASENAME=$(find artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios -type f -name *onnxruntime*.dylib | xargs basename)" >> "$GITHUB_ENV"
+          echo "ASSET_BASENAME=$(find artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios -type f -name *voicevox_core.dylib -exec basename {} \;)" >> "$GITHUB_ENV"
+          echo "ONNXRUNTIME_BASENAME=$(find artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios -type f -name *onnxruntime*.dylib -exec basename {} \;)" >> "$GITHUB_ENV"
       - name: Create fat binary
         shell: bash
         run: |
