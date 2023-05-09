@@ -19,6 +19,7 @@ pub struct AccentPhraseModel {
     moras: Vec<MoraModel>,
     accent: usize,
     pause_mora: Option<MoraModel>,
+    #[serde(default)]
     is_interrogative: bool,
 }
 
@@ -44,6 +45,7 @@ pub struct AudioQueryModel {
     post_phoneme_length: f32,
     output_sampling_rate: u32,
     output_stereo: bool,
+    #[serde(default)]
     kana: String,
 }
 
