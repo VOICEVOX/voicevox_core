@@ -36,84 +36,93 @@ jobs:
             artifact_name: windows-x64-cpu
             whl_local_version: cpu
             use_cuda: false
+            build_for_xcframework: false
           - os: windows-2019
             features: directml
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-directml
             whl_local_version: directml
             use_cuda: false
+            build_for_xcframework: false
           - os: windows-2019
             features: ""
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cuda
             whl_local_version: cuda
             use_cuda: true
+            build_for_xcframework: false
           - os: windows-2019
             features: ""
             target: i686-pc-windows-msvc
             artifact_name: windows-x86-cpu
             whl_local_version: cpu
             use_cuda: false
+            build_for_xcframework: false
           - os: ubuntu-20.04
             features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-cpu
             whl_local_version: cpu
             use_cuda: false
+            build_for_xcframework: false
           - os: ubuntu-20.04
             features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-gpu
             whl_local_version: cuda
             use_cuda: true
+            build_for_xcframework: false
           - os: ubuntu-20.04
             features: ""
             target: aarch64-unknown-linux-gnu
             artifact_name: linux-arm64-cpu
             whl_local_version: cpu
             use_cuda: false
+            build_for_xcframework: false
           - os: ubuntu-20.04
             features: ""
             target: aarch64-linux-android
             artifact_name: android-arm64-cpu
             use_cuda: false
+            build_for_xcframework: false
           - os: ubuntu-20.04
             features: ""
             target: x86_64-linux-android
             artifact_name: android-x86_64-cpu
             use_cuda: false
+            build_for_xcframework: false
           - os: macos-11
             features: ""
             target: aarch64-apple-darwin
             artifact_name: osx-arm64-cpu
             whl_local_version: cpu
             use_cuda: false
+            build_for_xcframework: false
           - os: macos-11
             features: ""
             target: x86_64-apple-darwin
             artifact_name: osx-x64-cpu
             whl_local_version: cpu
             use_cuda: false
+            build_for_xcframework: false
           - os: macos-12
             features: ""
             target: aarch64-apple-ios
             artifact_name: ios-arm64-cpu
             use_cuda: false
+            build_for_xcframework: true
           - os: macos-12
             features: ""
             target: aarch64-apple-ios-sim
             artifact_name: ios-arm64-cpu-sim
             use_cuda: false
+            build_for_xcframework: true
           - os: macos-12
             features: ""
             target: x86_64-apple-ios
             artifact_name: ios-x64-cpu
             use_cuda: false
-          - os: macos-12
-            features: ""
-            target: apple-ios
-            artifact_name: ios
-            use_cuda: false
+            build_for_xcframework: true
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -124,15 +133,9 @@ jobs:
           python-version: "3.8"
           architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
       - name: set up ${{ matrix.target }}
-        if: matrix.target != 'apple-ios'
         uses: ./.github/actions/rust-toolchain-from-file
         with:
           targets: ${{ matrix.target }}
-      - name: set up ${{ matrix.target }} for XCFramework
-        if: matrix.target == 'apple-ios'
-        uses: ./.github/actions/rust-toolchain-from-file
-        with:
-          targets: aarch64-apple-ios, aarch64-apple-ios-sim, x86_64-apple-ios
       - name: Install cross compiler for aarch64-unknown-linux-gnu
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         shell: bash
@@ -165,17 +168,9 @@ jobs:
         shell: bash
         run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
       - name: build voicevox_core_c_api
-        if: matrix.target != 'apple-ios'
         run: cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
-      - name: build voicevox_core_c_api for XCFramework
-        if: matrix.target == 'apple-ios'
-        shell: bash
-        run: |
-          cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target x86_64-apple-ios --release
-          cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target aarch64-apple-ios-sim --release
-          cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target aarch64-apple-ios --release
       - name: build voicevox_core_python_api
         if: matrix.whl_local_version
         id: build-voicevox-core-python-api
@@ -189,12 +184,7 @@ jobs:
       - name: Set ASSET_NAME env var
         shell: bash
         run: echo "ASSET_NAME=voicevox_core-${{ matrix.artifact_name }}-${{ env.VERSION }}" >> "$GITHUB_ENV"
-      - name: Set ONNXRUNTIME_ASSET_NAME env var
-        if: matrix.target == 'apple-ios'
-        shell: bash
-        run: echo "ONNXRUNTIME_ASSET_NAME=onnxruntime-${{ matrix.artifact_name }}-${{ env.VERSION }}" >> "$GITHUB_ENV"
       - name: Organize artifact
-        if: matrix.target != 'apple-ios'
         shell: bash
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
@@ -207,40 +197,6 @@ jobs:
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
           cp -vr model "artifact/${{ env.ASSET_NAME }}/"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
-      - name: Organize artifact for XCFramework
-        if: matrix.target == 'apple-ios'
-        shell: bash
-        run: |
-          mkdir -p "artifact/${{ env.ASSET_NAME }}"
-          mkdir -p "artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}"
-          mkdir -p "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios"
-          mkdir -p "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim"
-          mkdir -p "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios"
-          mkdir -p "temp/${{ env.ASSET_NAME }}/apple-ios-sim"
-          mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios"
-          mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim"
-          mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios"
-          mkdir -p "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim"
-          cp -v voicevox_core.h "temp/${{ env.ASSET_NAME }}"
-          cp -v target/x86_64-apple-ios/release/*voicevox_core.dylib "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios" || true
-          cp -v target/aarch64-apple-ios-sim/release/*voicevox_core.dylib "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim" || true
-          cp -v target/aarch64-apple-ios/release/*voicevox_core.dylib "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios" || true
-          cp -v -n target/x86_64-apple-ios/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.dylib "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios" || true
-          cp -v -n target/aarch64-apple-ios-sim/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.dylib "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim" || true
-          cp -v -n target/aarch64-apple-ios/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.dylib "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios" || true
-          # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
-          rm -f temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/*/libonnxruntime.dylib
-          # ファイル名を得ておく
-          ASSET_BASENAME=$(find "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios" -type f -exec basename {} \;)
-          ONNXRUNTIME_ASSET_BASENAME=$(find "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios" -type f -exec basename {} \;)
-          # Simulator向けライブラリをFat binaryにする
-          lipo -create "temp/${{ env.ASSET_NAME }}/x86_64-apple-ios/${ASSET_BASENAME}" "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios-sim/${ASSET_BASENAME}" -output "temp/${{ env.ASSET_NAME }}/apple-ios-sim/${ASSET_BASENAME}"
-          lipo -create "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/x86_64-apple-ios/${ONNXRUNTIME_ASSET_BASENAME}" "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios-sim/${ONNXRUNTIME_ASSET_BASENAME}" -output "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim/${ONNXRUNTIME_ASSET_BASENAME}"
-          # XCFrameworkを作成する
-          xcodebuild -create-xcframework -library "temp/${{ env.ASSET_NAME }}/apple-ios-sim/${ASSET_BASENAME}" -headers "temp/${{ env.ASSET_NAME }}/voicevox_core.h" -library "temp/${{ env.ASSET_NAME }}/aarch64-apple-ios/${ASSET_BASENAME}" -headers "temp/${{ env.ASSET_NAME }}/voicevox_core.h" -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
-          xcodebuild -create-xcframework -library "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/apple-ios-sim/${ONNXRUNTIME_ASSET_BASENAME}" -library "temp/${{ env.ONNXRUNTIME_ASSET_NAME }}/aarch64-apple-ios/${ONNXRUNTIME_ASSET_BASENAME}" -output "artifact/${{ env.ONNXRUNTIME_ASSET_NAME }}/onnxruntime.xcframework"
-          cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
-          echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
         shell: bash
@@ -249,30 +205,25 @@ jobs:
         env:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+      - name: Upload artifact to build XCFramework
+        if: matrix.build_for_xcframework == 'true'
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.ASSET_NAME }}-${{ matrix.target }}
+          path: artifact/${{ env.ASSET_NAME }}
       - name: Archive artifact
         shell: bash
         run: |
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
-          7z a "../${{ env.ONNXRUNTIME_ASSET_NAME }}.zip" "${{ env.ONNXRUNTIME_ASSET_NAME }}" || true
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.target != 'apple-ios'
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
           files: |-
             ${{ env.ASSET_NAME }}.zip
-          target_commitish: ${{ github.sha }}
-      - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.target == 'apple-ios'
-        uses: softprops/action-gh-release@v1
-        with:
-          prerelease: true
-          tag_name: ${{ env.VERSION }}
-          files: |-
-            ${{ env.ASSET_NAME }}.zip
-            ${{ env.ONNXRUNTIME_ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
         if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.whl_local_version
@@ -282,6 +233,59 @@ jobs:
           tag_name: ${{ env.VERSION }}
           files: |-
             ${{ steps.build-voicevox-core-python-api.outputs.whl }}
+          target_commitish: ${{ github.sha }}
+  build_xcframework:
+    needs: build_and_deploy
+    runs-on: macos12
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: ${{ env.ASSET_NAME }}-x86_64-apple-ios
+          path: artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios
+      - uses: actions/download-artifact@v2
+        with:
+          name: ${{ env.ASSET_NAME }}-aarch64-apple-ios-sim
+          path: artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios-sim
+      - uses: actions/download-artifact@v2
+        with:
+          name: ${{ env.ASSET_NAME }}-aarch64-apple-ios
+          path: artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios
+      - name: Create fat binary
+        shell: bash
+        run: |
+          mkdir -p "artifact/voicevox_core-sim"
+          mkdir -p "artifact/onnxruntime-sim"
+          ASSET_BASENAME=$(find "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios" -type f -name '*voicevox_core.dylib' -exec basename {} \;)
+          ONNXRUNTIME_BASENAME=$(find "artifact/onnxruntime-x86_64-apple-ios" -type f -name '*onnxruntime*.dylib' -exec basename {} \;)
+          lipo -create "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios/${{ ASSET_BASENAME }}" "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios-sim/${{ ASSET_BASENAME }}" -output "artifact/voicevox_core-sim/${{ ASSET_BASENAME }}"
+          lipo -create "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios/${{ ONNXRUNTIME_BASENAME }}" "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios-sim/${{ ONNXRUNTIME_BASENAME }}" -output "artifact/onnxruntime-sim/${{ ONNXRUNTIME_BASENAME }}"
+      - name: Create XCFramework
+        shell: bash
+        run: |
+          mkdir -p "artifact/${{ env.ASSET_NAME }}-xcframework"
+          xcodebuild -create-xcframework \
+            -library "artifact/voicevox_core-sim/${{ ASSET_BASENAME }}" \
+            -headers "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios/${{ ASSET_BASENAME }}/voicevox_core.h" \
+            -library "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios/${{ ASSET_BASENAME }}" \
+            -headers "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios/${{ ASSET_BASENAME }}/voicevox_core.h" \
+            -output "artifact/${{ env.ASSET_NAME }}-xcframework/voicevox_core.xcframework"
+          xcodebuild -create-xcframework \
+            -library "artifact/onnxruntime-sim/${{ ONNXRUNTIME_BASENAME }}" \
+            -library "artifact/${{ env.ASSET_NAME }}-aarch64-apple-ios/${{ ONNXRUNTIME_BASENAME }}" \
+            -output "artifact/${{ env.ASSET_NAME }}-xcframework/onnxruntime.xcframework"
+      - name: Archive artifact
+        shell: bash
+        run: |
+          cd artifact
+          7z a "../${{ env.ASSET_NAME }}-xcframework.zip" "${{ env.ASSET_NAME }}-xcframework"
+      - name: Upload to Release
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ env.ASSET_NAME }}-xcframework.zip
           target_commitish: ${{ github.sha }}
   deploy_downloader:
     runs-on: ubuntu-latest
