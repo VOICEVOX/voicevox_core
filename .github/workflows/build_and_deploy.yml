@@ -236,7 +236,7 @@ jobs:
           target_commitish: ${{ github.sha }}
   build_xcframework:
     needs: build_and_deploy
-    runs-on: macos12
+    runs-on: macos-12
     steps:
       - uses: actions/download-artifact@v2
         with:
@@ -253,10 +253,8 @@ jobs:
       - name: Set basename env var
         shell: bash
         run: |
-          ASSET_BASENAME=$(find "artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios" -type f -name '*voicevox_core.dylib' -exec basename {} \;)"
-          ONNXRUNTIME_BASENAME=$(find "artifact/onnxruntime-x86_64-apple-ios" -type f -name '*onnxruntime*.dylib' -exec basename {} \;)"
-          echo "ASSET_BASENAME=$ASSET_BASENAME" >> "$GITHUB_ENV"
-          echo "ONNXRUNTIME_BASENAME=$ONNXRUNTIME_BASENAME" >> "$GITHUB_ENV"
+          echo "ASSET_BASENAME=$(find artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios -type f -name *voicevox_core.dylib | xargs basename)" >> "$GITHUB_ENV"
+          echo "ONNXRUNTIME_BASENAME=$(find artifact/${{ env.ASSET_NAME }}-x86_64-apple-ios -type f -name *onnxruntime*.dylib | xargs basename)" >> "$GITHUB_ENV"
       - name: Create fat binary
         shell: bash
         run: |
