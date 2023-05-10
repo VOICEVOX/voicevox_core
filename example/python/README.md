@@ -7,9 +7,10 @@ voicevox_core ライブラリ の Python バインディングを使った音声
 
 1. wheelパッケージのインストールをします。
 
+`[バージョン]`の部分は適宜書き換えてください。
+
 ```console
-❯ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/0.14.3/voicevox_core-0.14.3+cpu-cp38-abi3-linux_x86_64.whl
-```
+❯ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/[バージョン]/voicevox_core-[バージョン]+cpu-cp38-abi3-linux_x86_64.whl
 
 cpu-cp38-abi3-linux_x86_64のところはアーキテクチャやOSによって適宜読み替えてください。
 https://github.com/VOICEVOX/voicevox_core/releases/latest
