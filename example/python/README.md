@@ -25,7 +25,7 @@ https://github.com/VOICEVOX/voicevox_core/releases/latest
 linux/macの場合
 
 download-linux-x64のところはアーキテクチャやOSによって適宜読み替えてください。
-https://github.com/VOICEVOX/voicevox_core/releases/tag/0.14.3#%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%80
+https://github.com/VOICEVOX/voicevox_core/releases/latest#%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%80
 
 ```console
 ❯ binary=download-linux-x64
