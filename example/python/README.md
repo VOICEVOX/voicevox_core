@@ -16,11 +16,7 @@ cpu-cp38-abi3-linux_x86_64のところはアーキテクチャやOSによって�
 https://github.com/VOICEVOX/voicevox_core/releases/latest
 
 
-2. リポジトリを取得し環境構築します。
-
-```console
-❯ git clone https://github.com/VOICEVOX/voicevox_core.git
-```
+2. ダウンローダーを使って環境構築します。
 
 linux/macの場合
 
