@@ -36,93 +36,79 @@ jobs:
             artifact_name: windows-x64-cpu
             whl_local_version: cpu
             use_cuda: false
-            build_for_xcframework: false
           - os: windows-2019
             features: directml
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-directml
             whl_local_version: directml
             use_cuda: false
-            build_for_xcframework: false
           - os: windows-2019
             features: ""
             target: x86_64-pc-windows-msvc
             artifact_name: windows-x64-cuda
             whl_local_version: cuda
             use_cuda: true
-            build_for_xcframework: false
           - os: windows-2019
             features: ""
             target: i686-pc-windows-msvc
             artifact_name: windows-x86-cpu
             whl_local_version: cpu
             use_cuda: false
-            build_for_xcframework: false
           - os: ubuntu-20.04
             features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-cpu
             whl_local_version: cpu
             use_cuda: false
-            build_for_xcframework: false
           - os: ubuntu-20.04
             features: ""
             target: x86_64-unknown-linux-gnu
             artifact_name: linux-x64-gpu
             whl_local_version: cuda
             use_cuda: true
-            build_for_xcframework: false
           - os: ubuntu-20.04
             features: ""
             target: aarch64-unknown-linux-gnu
             artifact_name: linux-arm64-cpu
             whl_local_version: cpu
             use_cuda: false
-            build_for_xcframework: false
           - os: ubuntu-20.04
             features: ""
             target: aarch64-linux-android
             artifact_name: android-arm64-cpu
             use_cuda: false
-            build_for_xcframework: false
           - os: ubuntu-20.04
             features: ""
             target: x86_64-linux-android
             artifact_name: android-x86_64-cpu
             use_cuda: false
-            build_for_xcframework: false
           - os: macos-11
             features: ""
             target: aarch64-apple-darwin
             artifact_name: osx-arm64-cpu
             whl_local_version: cpu
             use_cuda: false
-            build_for_xcframework: false
           - os: macos-11
             features: ""
             target: x86_64-apple-darwin
             artifact_name: osx-x64-cpu
             whl_local_version: cpu
             use_cuda: false
-            build_for_xcframework: false
           - os: macos-12
             features: ""
             target: aarch64-apple-ios
             artifact_name: ios-arm64-cpu
             use_cuda: false
-            build_for_xcframework: true
           - os: macos-12
             features: ""
             target: aarch64-apple-ios-sim
             artifact_name: ios-arm64-cpu-sim
             use_cuda: false
-            build_for_xcframework: true
           - os: macos-12
             features: ""
             target: x86_64-apple-ios
             artifact_name: ios-x64-cpu
             use_cuda: false
-            build_for_xcframework: true
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -206,7 +192,7 @@ jobs:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
       - name: Upload artifact to build XCFramework
-        if: matrix.build_for_xcframework
+        if: contains(matrix.target, 'ios') 
         uses: actions/upload-artifact@v2
         with:
           name: voicevox_core-${{ matrix.target }}
@@ -257,14 +243,11 @@ jobs:
         shell: bash
         run: |
           echo "ASSET_BASENAME=$(find artifact/voicevox_core-x86_64-apple-ios -type f -name '*voicevox_core.dylib' -exec basename {} \;)" >> "$GITHUB_ENV"
-          echo "ONNXRUNTIME_BASENAME=$(find artifact/voicevox_core-x86_64-apple-ios -type f -name '*onnxruntime*.dylib' -exec basename {} \;)" >> "$GITHUB_ENV"
       - name: Create fat binary
         shell: bash
         run: |
           mkdir -p "artifact/voicevox_core-sim"
-          mkdir -p "artifact/onnxruntime-sim"
           lipo -create "artifact/voicevox_core-x86_64-apple-ios/${{ env.ASSET_BASENAME }}" "artifact/voicevox_core-aarch64-apple-ios-sim/${{ env.ASSET_BASENAME }}" -output "artifact/voicevox_core-sim/${{ env.ASSET_BASENAME }}"
-          lipo -create "artifact/voicevox_core-x86_64-apple-ios/${{ env.ONNXRUNTIME_BASENAME }}" "artifact/voicevox_core-aarch64-apple-ios-sim/${{ env.ONNXRUNTIME_BASENAME }}" -output "artifact/onnxruntime-sim/${{ env.ONNXRUNTIME_BASENAME }}"
       - name: Create XCFramework
         shell: bash
         run: |
@@ -275,10 +258,6 @@ jobs:
             -library "artifact/voicevox_core-aarch64-apple-ios/${{ env.ASSET_BASENAME }}" \
             -headers "artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h" \
             -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
-          xcodebuild -create-xcframework \
-            -library "artifact/onnxruntime-sim/${{ env.ONNXRUNTIME_BASENAME }}" \
-            -library "artifact/voicevox_core-aarch64-apple-ios/${{ env.ONNXRUNTIME_BASENAME }}" \
-            -output "artifact/${{ env.ASSET_NAME }}/onnxruntime.xcframework"
       - name: Archive artifact
         shell: bash
         run: |
