@@ -261,8 +261,8 @@ jobs:
       - name: Archive artifact
         shell: bash
         run: |
-          cd artifact
-          7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
+          cd artifact/${{ env.ASSET_NAME }}
+          7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
         if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
