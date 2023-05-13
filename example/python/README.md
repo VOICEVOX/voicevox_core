@@ -11,6 +11,7 @@ voicevox_core ライブラリ の Python バインディングを使った音声
 
 ```console
 ❯ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/[バージョン]/voicevox_core-[バージョン]+cpu-cp38-abi3-linux_x86_64.whl
+```
 
 cpu-cp38-abi3-linux_x86_64のところはアーキテクチャやOSによって適宜読み替えてください。
 https://github.com/VOICEVOX/voicevox_core/releases/latest
