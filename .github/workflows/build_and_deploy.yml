@@ -239,23 +239,19 @@ jobs:
         with:
           name: voicevox_core-aarch64-apple-ios
           path: artifact/voicevox_core-aarch64-apple-ios
-      - name: Set basename env var
-        shell: bash
-        run: |
-          echo "ASSET_BASENAME=$(find artifact/voicevox_core-x86_64-apple-ios -type f -name '*voicevox_core.dylib' -exec basename {} \;)" >> "$GITHUB_ENV"
       - name: Create fat binary
         shell: bash
         run: |
           mkdir -p "artifact/voicevox_core-sim"
-          lipo -create "artifact/voicevox_core-x86_64-apple-ios/${{ env.ASSET_BASENAME }}" "artifact/voicevox_core-aarch64-apple-ios-sim/${{ env.ASSET_BASENAME }}" -output "artifact/voicevox_core-sim/${{ env.ASSET_BASENAME }}"
+          lipo -create "artifact/voicevox_core-x86_64-apple-ios/libvoicevox_core.dylib" "artifact/voicevox_core-aarch64-apple-ios-sim/libvoicevox_core.dylib" -output "artifact/voicevox_core-sim/libvoicevox_core.dylib"
       - name: Create XCFramework
         shell: bash
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
           xcodebuild -create-xcframework \
-            -library "artifact/voicevox_core-sim/${{ env.ASSET_BASENAME }}" \
+            -library "artifact/voicevox_core-sim/libvoicevox_core.dylib" \
             -headers "artifact/voicevox_core-x86_64-apple-ios/voicevox_core.h" \
-            -library "artifact/voicevox_core-aarch64-apple-ios/${{ env.ASSET_BASENAME }}" \
+            -library "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib" \
             -headers "artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h" \
             -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
       - name: Archive artifact
