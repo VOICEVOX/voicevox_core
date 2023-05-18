@@ -1,1 +1,1 @@
-pub(crate) mod generate_c_header;
+pub(crate) mod update_c_header;
