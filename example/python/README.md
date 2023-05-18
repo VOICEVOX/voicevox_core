@@ -38,7 +38,8 @@ windowsの場合
 ```console
 ❯ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download-windows-x64.exe -OutFile ./download.exe
 ❯ ./download -o ./example/python
-❯ Remove-Item -Recurse ./example/python/model,./example/python/VERSION,./example/python/*voicevox_core*
+❯ # いくつかのファイルは不要なので消すことができます
+❯ #Remove-Item -Recurse ./example/python/model,./example/python/VERSION,./example/python/*voicevox_core*
 ```
 
 TODO:
