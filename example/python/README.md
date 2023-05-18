@@ -29,7 +29,8 @@ https://github.com/VOICEVOX/voicevox_core/releases/latest#%E3%83%80%E3%82%A6%E3%
 ❯ curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/${binary} -o download
 ❯ chmod +x download
 ❯ ./download -o ./example/python
-❯ rm -r ./example/python/{model,VERSION,*voicevox_core*}
+❯ # いくつかのファイルは不要なので消すことができます
+❯ #rm -r ./example/python/{model,VERSION,*voicevox_core*}
 ```
 
 windowsの場合
