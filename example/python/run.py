@@ -25,7 +25,14 @@ async def main() -> None:
     logging.getLogger("voicevox_core_python_api").setLevel("DEBUG")
     logging.getLogger("voicevox_core").setLevel("DEBUG")
 
-    (acceleration_mode, vvm_path, open_jtalk_dict_dir, text, out, speaker_id) = parse_args()
+    (
+        acceleration_mode,
+        vvm_path,
+        open_jtalk_dict_dir,
+        text,
+        out,
+        speaker_id,
+    ) = parse_args()
 
     logger.debug("%s", f"{voicevox_core.supported_devices()=}")
 
