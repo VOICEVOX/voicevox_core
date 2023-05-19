@@ -8,8 +8,6 @@ from typing import Tuple
 import voicevox_core
 from voicevox_core import AccelerationMode, AudioQuery, VoicevoxCore
 
-SPEAKER_ID = 0
-
 
 def main() -> None:
     logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s")
