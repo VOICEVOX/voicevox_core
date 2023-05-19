@@ -14,56 +14,37 @@ TODO
 
 ## 実行
 
-VVMファイル、Open JTalk 辞書ディレクトリ、読み上げさせたい文章、出力 wav ファイルのパスの 4 つを指定して run.py を実行します。
+run.py を実行します。 Open JTalk 辞書ディレクトリ、読み上げさせたい文章、出力 wav ファイルのパスをオプションで指定することができます。
 
 ```console
 ❯ python ./run.py -h
-usage: run.py [-h] [--mode MODE] vvm open_jtalk_dict_dir text out
+usage: run.py [-h] [--mode MODE] [--dict-dir DICT_DIR] [--text TEXT] [--out OUT] [--speeker-id SPEEKER_ID] vvm
 
 positional arguments:
-  vvm                  vvmファイルへのパス
-  open_jtalk_dict_dir  Open JTalkの辞書ディレクトリ
-  text                 読み上げさせたい文章
-  out                  出力wavファイルのパス
+  vvm                   vvmファイルへのパス
 
 optional arguments:
-  -h, --help           show this help message and exit
-  --mode MODE          モード ("AUTO", "CPU", "GPU")
+  -h, --help            show this help message and exit
+  --mode MODE           モード ("AUTO", "CPU", "GPU")
+  --dict-dir DICT_DIR   Open JTalkの辞書ディレクトリ
+  --text TEXT           読み上げさせたい文章
+  --out OUT             出力wavファイルのパス
+  --speeker-id SPEEKER_ID
+                        話者IDを指定
 ```
 
 ```console
-❯ # python ./run.py <VVMファイル> <Open JTalk辞書ディレクトリ> <読み上げさせたい文章> <出力wavファイルのパス>
-❯ python ./run.py ../../model/sample.vvm ./open_jtalk_dic_utf_8-1.11 これはテストです ./audio.wav
-[DEBUG] run.py: voicevox_core.supported_devices()=SupportedDevices(cpu=True, cuda=False, dml=False)
-[INFO] run.py: Initializing (acceleration_mode=<AccelerationMode.AUTO: 'AUTO'>, open_jtalk_dict_dir=PosixPath('open_jtalk_dic_utf_8-1.11'))
-[DEBUG] run.py: synthesizer.metas=[]
-[DEBUG] run.py: synthesizer.is_gpu_mode=False
-[INFO] run.py: Loading `../../model/sample.vvm`
-[DEBUG] mod.rs: Locate EOCDR
-[DEBUG] mod.rs: EOCDR: EndOfCentralDirectoryHeader { disk_num: 0, start_cent_dir_disk: 0, num_of_entries_disk: 5, num_of_entries: 5, size_cent_dir: 308, cent_dir_offset: 53489411, file_comm_length: 0 }
-[DEBUG] mod.rs: Zip64EOCDR: None
-[DEBUG] mod.rs: Combined directory: CombinedCentralDirectoryRecord { version_made_by: None, version_needed_to_extract: None, disk_number: 0, disk_number_start_of_cd: 0, num_entries_in_directory_on_disk: 5, num_entries_in_directory: 5, directory_size: 308, offset_of_start_of_directory: 53489411, file_comment_length: 0 }
-[DEBUG] mod.rs: Read central directory
-[DEBUG] mod.rs: Entry: ZipEntry { filename: "metas.json", compression: Deflate, compression_level: Default, crc32: 1124046543, uncompressed_size: 651, compressed_size: 218, attribute_compatibility: Unix, last_modification_date: ZipDateTime { date: 0, time: 0 }, internal_file_attribute: 0, external_file_attribute: 0, extra_fields: [], comment: "" }, offset 0
-[DEBUG] mod.rs: Entry: ZipEntry { filename: "predict_intonation.onnx", compression: Deflate, compression_level: Default, crc32: 2603102279, uncompressed_size: 30803, compressed_size: 25591, attribute_compatibility: Unix, last_modification_date: ZipDateTime { date: 0, time: 0 }, internal_file_attribute: 0, external_file_attribute: 0, extra_fields: [], comment: "" }, offset 274
-[DEBUG] mod.rs: Entry: ZipEntry { filename: "decode.onnx", compression: Deflate, compression_level: Default, crc32: 1207829611, uncompressed_size: 57149888, compressed_size: 53414353, attribute_compatibility: Unix, last_modification_date: ZipDateTime { date: 0, time: 0 }, internal_file_attribute: 0, external_file_attribute: 0, extra_fields: [], comment: "" }, offset 25934
-[DEBUG] mod.rs: Entry: ZipEntry { filename: "predict_duration.onnx", compression: Deflate, compression_level: Default, crc32: 4236608546, uncompressed_size: 53381, compressed_size: 48835, attribute_compatibility: Unix, last_modification_date: ZipDateTime { date: 0, time: 0 }, internal_file_attribute: 0, external_file_attribute: 0, extra_fields: [], comment: "" }, offset 53440344
-[DEBUG] mod.rs: Entry: ZipEntry { filename: "manifest.json", compression: Deflate, compression_level: Default, crc32: 64471537, uncompressed_size: 220, compressed_size: 106, attribute_compatibility: Unix, last_modification_date: ZipDateTime { date: 0, time: 0 }, internal_file_attribute: 0, external_file_attribute: 0, extra_fields: [], comment: "" }, offset 53489246
-[DEBUG] mod.rs: Locate EOCDR
-[DEBUG] mod.rs: EOCDR: EndOfCentralDirectoryHeader { disk_num: 0, start_cent_dir_disk: 0, num_of_entries_disk: 5, num_of_entries: 5, size_cent_dir: 308, cent_dir_offset: 53489411, file_comm_length: 0 }
-[DEBUG] mod.rs: Zip64EOCDR: None
-[DEBUG] mod.rs: Combined directory: CombinedCentralDirectoryRecord { version_made_by: None, version_needed_to_extract: None, disk_number: 0, disk_number_start_of_cd: 0, num_entries_in_directory_on_disk: 5, num_entries_in_directory: 5, directory_size: 308, offset_of_start_of_directory: 53489411, file_comment_length: 0 }
-[DEBUG] mod.rs: Read central directory
-[DEBUG] mod.rs: Entry: ZipEntry { filename: "metas.json", compression: Deflate, compression_level: Default, crc32: 1124046543, uncompressed_size: 651, compressed_size: 218, attribute_compatibility: Unix, last_modification_date: ZipDateTime { date: 0, time: 0 }, internal_file_attribute: 0, external_file_attribute: 0, extra_fields: [], comment: "" }, offset 0
-[DEBUG] mod.rs: Entry: ZipEntry { filename: "predict_intonation.onnx", compression: Deflate, compression_level: Default, crc32: 2603102279, uncompressed_size: 30803, compressed_size: 25591, attribute_compatibility: Unix, last_modification_date: ZipDateTime { date: 0, time: 0 }, internal_file_attribute: 0, external_file_attribute: 0, extra_fields: [], comment: "" }, offset 274
-[DEBUG] mod.rs: Entry: ZipEntry { filename: "decode.onnx", compression: Deflate, compression_level: Default, crc32: 1207829611, uncompressed_size: 57149888, compressed_size: 53414353, attribute_compatibility: Unix, last_modification_date: ZipDateTime { date: 0, time: 0 }, internal_file_attribute: 0, external_file_attribute: 0, extra_fields: [], comment: "" }, offset 25934
-[DEBUG] mod.rs: Entry: ZipEntry { filename: "predict_duration.onnx", compression: Deflate, compression_level: Default, crc32: 4236608546, uncompressed_size: 53381, compressed_size: 48835, attribute_compatibility: Unix, last_modification_date: ZipDateTime { date: 0, time: 0 }, internal_file_attribute: 0, external_file_attribute: 0, extra_fields: [], comment: "" }, offset 53440344
-[DEBUG] mod.rs: Entry: ZipEntry { filename: "manifest.json", compression: Deflate, compression_level: Default, crc32: 64471537, uncompressed_size: 220, compressed_size: 106, attribute_compatibility: Unix, last_modification_date: ZipDateTime { date: 0, time: 0 }, internal_file_attribute: 0, external_file_attribute: 0, extra_fields: [], comment: "" }, offset 53489246
-[INFO] run.py: Creating an AudioQuery from 'これはテストです'
-[INFO] run.py: Synthesizing with {"accent_phrases": [{"moras": [{"text": "コ", "consonant": "k", "consonant_length": 0.063058704, "vowel": "o", "vowel_length": 0.08937682, "pitch": 5.5699606}, {"text": "レ", "consonant": "r", "consonant_length": 0.047547057, "vowel": "e", "vowel_length": 0.07596417, "pitch": 5.6643105}, {"text": "ワ", "consonant": "w", "consonant_length": 0.053706698, "vowel": "a", "vowel_length": 0.10348523, "pitch": 5.7773266}], "accent": 3, "pause_mora": null, "is_interrogative": false}, {"moras": [{"text": "テ", "consonant": "t", "consonant_length": 0.06311223, "vowel": "e", "vowel_length": 0.07596652, "pitch": 5.8817406}, {"text": "ス", "consonant": "s", "consonant_length": 0.038565055, "vowel": "U", "vowel_length": 0.050694168, "pitch": 0.0}, {"text": "ト", "consonant": "t", "consonant_length": 0.06685759, "vowel": "o", "vowel_length": 0.0753997, "pitch": 5.7373238}, {"text": "デ", "consonant": "d", "consonant_length": 0.058399618, "vowel": "e", "vowel_length": 0.09201351, "pitch": 5.474717}, {"text": "ス", "consonant": "s", "consonant_length": 0.08852549, "vowel": "U", "vowel_length": 0.1281984, "pitch": 0.0}], "accent": 1, "pause_mora": null, "is_interrogative": false}], "speed_scale": 1.0, "pitch_scale": 0.0, "intonation_scale": 1.0, "volume_scale": 1.0, "pre_phoneme_length": 0.1, "post_phoneme_length": 0.1, "output_sampling_rate": 24000, "output_stereo": false, "kana": "コレワ'/テ'_ストデ_ス"}
-[INFO] run.py: Wrote `audio.wav`
-[DEBUG] lib.rs: Destructing a VoicevoxCore
+❯ python ./run.py ../../model/sample.vvm
+[DEBUG] __main__: voicevox_core.supported_devices()=SupportedDevices(cpu=True, cuda=False, dml=False)
+[INFO] __main__: Initializing (acceleration_mode=<AccelerationMode.AUTO: 'AUTO'>, open_jtalk_dict_dir=PosixPath('voicevox_core/open_jtalk_dic_utf_8-1.11'))
+[DEBUG] __main__: synthesizer.metas=[]
+[DEBUG] __main__: synthesizer.is_gpu_mode=False
+[INFO] __main__: Loading `../../model/sample.vvm`
+[INFO] __main__: Creating an AudioQuery from 'この音声は、ボイスボックスを使用して、出力されています。'
+[INFO] __main__: Synthesizing with {"accent_phrases": [{"moras": [{"text": "コ", "consonant": "k", "consonant_length": 0.0556899, "vowel": "o", "vowel_length": 0.075180575, "pitch": 5.542309}, {"text": "ノ", "consonant": "n", "consonant_length": 0.06551014, "vowel": "o", "vowel_length": 0.09984577, "pitch": 5.6173983}], "accent": 2, "pause_mora": null, "is_interrogative": false}, {"moras": [{"text": "オ", "consonant": null, "consonant_length": null, "vowel": "o", "vowel_length": 0.116150305, "pitch": 5.7063766}, {"text": "ン", "consonant": null, "consonant_length": null, "vowel": "N", "vowel_length": 0.044380233, "pitch": 5.785717}, {"text": "セ", "consonant": "s", "consonant_length": 0.07719758, "vowel": "e", "vowel_length": 0.08653869, "pitch": 5.662092}, {"text": "エ", "consonant": null, "consonant_length": null, "vowel": "e", "vowel_length": 0.08311573, "pitch": 5.532917}, {"text": "ワ", "consonant": "w", "consonant_length": 0.06373148, "vowel": "a", "vowel_length": 0.16219379, "pitch": 5.293258}], "accent": 1, "pause_mora": {"text": "、", "consonant": null, "consonant_length": null, "vowel": "pau", "vowel_length": 0.35826492, "pitch": 0.0}, "is_interrogative": false}, {"moras": [{"text": "ボ", "consonant": "b", "consonant_length": 0.047082342, "vowel": "o", "vowel_length": 0.12611786, "pitch": 5.583892}, {"text": "イ", "consonant": null, "consonant_length": null, "vowel": "i", "vowel_length": 0.059451744, "pitch": 5.7947493}, {"text": "ス", "consonant": "s", "consonant_length": 0.089278996, "vowel": "u", "vowel_length": 0.11847979, "pitch": 5.818695}, {"text": "ボ", "consonant": "b", "consonant_length": 0.06535433, "vowel": "o", "vowel_length": 0.120458946, "pitch": 5.7965107}, {"text": "ッ", "consonant": null, "consonant_length": null, "vowel": "cl", "vowel_length": 0.06940381, "pitch": 0.0}, {"text": "ク", "consonant": "k", "consonant_length": 0.053739145, "vowel": "U", "vowel_length": 0.05395376, "pitch": 0.0}, {"text": "ス", "consonant": "s", "consonant_length": 0.10222931, "vowel": "u", "vowel_length": 0.071811065, "pitch": 5.8024883}, {"text": "オ", "consonant": null, "consonant_length": null, "vowel": "o", "vowel_length": 0.11092262, "pitch": 5.5036163}], "accent": 4, "pause_mora": null, "is_interrogative": false}, {"moras": [{"text": "シ", "consonant": "sh", "consonant_length": 0.09327768, "vowel": "i", "vowel_length": 0.09126951, "pitch": 5.369444}, {"text": "ヨ", "consonant": "y", "consonant_length": 0.06251812, "vowel": "o", "vowel_length": 0.07805054, "pitch": 5.5021667}, {"text": "オ", "consonant": null, "consonant_length": null, "vowel": "o", "vowel_length": 0.09904325, "pitch": 5.5219536}], "accent": 3, "pause_mora": null, "is_interrogative": false}, {"moras": [{"text": "シ", "consonant": "sh", "consonant_length": 0.04879771, "vowel": "I", "vowel_length": 0.06514315, "pitch": 0.0}, {"text": "テ", "consonant": "t", "consonant_length": 0.0840496, "vowel": "e", "vowel_length": 0.19438823, "pitch": 5.4875555}], "accent": 2, "pause_mora": {"text": "、", "consonant": null, "consonant_length": null, "vowel": "pau", "vowel_length": 0.35208154, "pitch": 0.0}, "is_interrogative": false}, {"moras": [{"text": "シュ", "consonant": "sh", "consonant_length": 0.05436731, "vowel": "U", "vowel_length": 0.06044446, "pitch": 0.0}, {"text": "ツ", "consonant": "ts", "consonant_length": 0.102865085, "vowel": "u", "vowel_length": 0.057028636, "pitch": 5.6402535}, {"text": "リョ", "consonant": "ry", "consonant_length": 0.058293864, "vowel": "o", "vowel_length": 0.080050275, "pitch": 5.6997967}, {"text": "ク", "consonant": "k", "consonant_length": 0.054767884, "vowel": "U", "vowel_length": 0.042932786, "pitch": 0.0}], "accent": 2, "pause_mora": null, "is_interrogative": false}, {"moras": [{"text": "サ", "consonant": "s", "consonant_length": 0.08067487, "vowel": "a", "vowel_length": 0.07377973, "pitch": 5.652378}, {"text": "レ", "consonant": "r", "consonant_length": 0.040600352, "vowel": "e", "vowel_length": 0.079322875, "pitch": 5.6290326}, {"text": "テ", "consonant": "t", "consonant_length": 0.06773268, "vowel": "e", "vowel_length": 0.08347456, "pitch": 5.6427326}], "accent": 3, "pause_mora": null, "is_interrogative": false}, {"moras": [{"text": "イ", "consonant": null, "consonant_length": null, "vowel": "i", "vowel_length": 0.07542324, "pitch": 5.641289}, {"text": "マ", "consonant": "m", "consonant_length": 0.066299975, "vowel": "a", "vowel_length": 0.107257664, "pitch": 5.6201453}, {"text": "ス", "consonant": "s", "consonant_length": 0.07186453, "vowel": "U", "vowel_length": 0.1163103, "pitch": 0.0}], "accent": 2, "pause_mora": null, "is_interrogative": false}], "speed_scale": 1.0, "pitch_scale": 0.0, "intonation_scale": 1.0, "volume_scale": 1.0, "pre_phoneme_length": 0.1, "post_phoneme_length": 0.1, "output_sampling_rate": 24000, "output_stereo": false, "kana": "コノ'/オ'ンセエワ、ボイスボ'ッ_クスオ/シヨオ'/_シテ'、_シュツ'リョ_ク/サレテ'/イマ'_ス"}
+[INFO] __main__: Wrote `output.wav`
+[DEBUG] voicevox_core_python_api: Destructing a VoicevoxCore
 ```
 
 正常に実行されれば音声合成の結果である wav ファイルが生成されます。
-この例の場合、`"これはテストです"`という読み上げの wav ファイルが audio.wav という名前で生成されます。
+この例の場合、`"この音声は、ボイスボックスを使用して、出力されています。"`という読み上げの wav ファイルが output.wav という名前で生成されます。
