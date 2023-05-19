@@ -9,3 +9,4 @@ cbindgen = "0.24.3"
 clap.workspace = true
 color-eyre = "0.6.2"
 eyre = "0.6.8"
+fs-err.workspace = true

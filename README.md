@@ -136,17 +136,21 @@ model フォルダにある onnx モデルはダミーのため、ノイズの�
 cargo build --release -p voicevox_core_c_api
 ```
 
-```bash
-# DLL用のヘッダファイルvoicevox_core.hを生成
-# cbindgenが手元にインストールされているのならそちらでも可
-cargo xtask generate-c-header
-```
+DLL用のヘッダファイルは [crates/voicevox\_core\_c\_api/include/voicevox\_core.h](https://github.com/VOICEVOX/voicevox_core/tree/main/crates/voicevox_core_c_api/include/voicevox_core.h) にあります。
 
 ## コアライブラリのテスト
 
 ```bash
 cargo test
 ```
+
+## ヘッダファイルの更新
+
+```bash
+cargo xtask update-c-header
+```
+
+[cbindgen](https://crates.io/crates/cbindgen) が手元にインストールされているなら、それを使いヘッダファイルを生成することもできます。
 
 ## タイポチェック
 
