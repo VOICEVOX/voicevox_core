@@ -65,6 +65,7 @@ jobs:
           python-version: "3.8"
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
+      - uses: Swatinem/rust-cache@v2
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
           key: "v2-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
