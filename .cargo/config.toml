@@ -10,3 +10,9 @@ ORT_OUT_DIR = { value = "target/debug/deps", relative = true }
 
 [target.aarch64-unknown-linux-gnu]
 linker = "aarch64-linux-gnu-gcc"
+
+[target.aarch64-linux-android]
+linker = "aarch64-linux-android29-clang"
+
+[target.x86_64-linux-android]
+linker = "x86_64-linux-android29-clang"

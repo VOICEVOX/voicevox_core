@@ -1,8 +1,9 @@
 # VOICEVOX CORE
 
-## **現在のmainブランチは工事中なので正しく動かないことがあります。[バージョン0.13.0](https://github.com/VOICEVOX/voicevox_core/tree/0.13.0)をご利用ください。**
-
+[![releases](https://img.shields.io/github/v/release/VOICEVOX/voicevox_core?label=release)](https://github.com/VOICEVOX/voicevox_core/releases)
+[![test](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml/badge.svg)](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml)
 [![dependency status](https://deps.rs/repo/github/VOICEVOX/voicevox_core/status.svg)](https://deps.rs/repo/github/VOICEVOX/voicevox_core)
+[![discord](https://img.shields.io/discord/879570910208733277?color=5865f2&label=&logo=discord&logoColor=ffffff)](https://discord.gg/WMwWetrzuh)
 
 [VOICEVOX](https://voicevox.hiroshiba.jp/) の音声合成コア。  
 [Releases](https://github.com/VOICEVOX/voicevox_core/releases) にビルド済みのコアライブラリ（.so/.dll/.dylib）があります。
@@ -10,6 +11,12 @@
 （エディターは [VOICEVOX](https://github.com/VOICEVOX/voicevox/) 、
 エンジンは [VOICEVOX ENGINE](https://github.com/VOICEVOX/voicevox_engine/) 、
 全体構成は [こちら](https://github.com/VOICEVOX/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
+
+## 貢献者の方へ
+Issue を解決するプルリクエストを作成される際は、別の方と同じ Issue に取り組むことを避けるため、
+Issue 側で取り組み始めたことを伝えるか、最初に Draft プルリクエストを作成してください。
+
+[VOICEVOX 非公式 Discord サーバー](https://discord.gg/WMwWetrzuh)にて、開発の議論や雑談を行っています。気軽にご参加ください。
 
 ## 環境構築
 
@@ -20,14 +27,27 @@ Downloader を用いて環境構築を行う場合
 PowerShell で下記コマンドを実行してください
 
 ```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.ps1 -OutFile ./download.ps1
-./download.ps1
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download-windows-x64.exe -OutFile ./download.exe
+./download.exe
 ```
 
 ### Linux/macOS の場合
 
+[最新のリリース](https://github.com/VOICEVOX/voicevox_core/releases/latest)から環境に合わせてダウンローダーのバイナリをダウンロードしてください。
+現在利用可能なのは以下の 4 つです。
+
+- download-linux-arm64
+- download-linux-x64
+- download-osx-arm64
+- download-osx-x64
+
+以下は Linux の x64 での実行例です。
+
 ```bash
-curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download.sh | bash -s
+binary=download-linux-x64
+curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/${binary} -o download
+chmod +x download
+./download
 ```
 
 詳細な Downloader の使い方については [こちら](./docs/downloads/download.md) を参照してください
@@ -91,11 +111,13 @@ sudo apt install libgomp1
 
 現在このリポジトリでは次のサンプルが提供されています。実行方法についてはそれぞれのディレクトリ内にある README を参照してください
 
-- [Python](./example/python)
+- [Python(pip)](./example/python)
 - [C++(UNIX CMake)](./example/cpp/unix)
 - [C++(Windows Visual Studio)](./example/cpp/windows)
 
 ### その他の言語
+
+- [Go(Windows)](https://github.com/yerrowTail/voicevox_core_go_sample) @yerrowTail
 
 サンプルコードを実装された際はぜひお知らせください。こちらに追記させて頂きます。
 
@@ -114,11 +136,7 @@ model フォルダにある onnx モデルはダミーのため、ノイズの�
 cargo build --release -p voicevox_core_c_api
 ```
 
-```bash
-# DLL用のヘッダファイルvoicevox_core.hを生成
-# cbindgenが手元にインストールされているのならそちらでも可
-cargo xtask generate-c-header 
-```
+DLL用のヘッダファイルは [crates/voicevox\_core\_c\_api/include/voicevox\_core.h](https://github.com/VOICEVOX/voicevox_core/tree/main/crates/voicevox_core_c_api/include/voicevox_core.h) にあります。
 
 ## コアライブラリのテスト
 
@@ -126,11 +144,30 @@ cargo xtask generate-c-header
 cargo test
 ```
 
+## ヘッダファイルの更新
+
+```bash
+cargo xtask update-c-header
+```
+
+[cbindgen](https://crates.io/crates/cbindgen) が手元にインストールされているなら、それを使いヘッダファイルを生成することもできます。
+
+## タイポチェック
+
+[typos](https://github.com/crate-ci/typos) を使ってタイポのチェックを行っています。
+[typos をインストール](https://github.com/crate-ci/typos#install) した後
+
+```bash
+typos
+```
+
 ## 事例紹介
 
+**[voicevox.rb](https://github.com/sevenc-nanashi/voicevox.rb) [@sevenc-nanashi](https://github.com/sevenc-nanashi)** ･･･ VOICEVOX CORE の Ruby 向け FFI ラッパー  
+**[Node VOICEVOX Engine](https://github.com/y-chan/node-voicevox-engine) [@y-chan](https://github.com/y-chan)** ･･･ VOICEVOX ENGINE の Node.js/C++ 実装  
 **[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装  
-**[Node VOICEVOX Engine](https://github.com/y-chan/node-voicevox-engine) [@y-chan](https://github.com/y-chan)** ･･･ VOICEVOX ENGINE の Node.js/C++ 実装
-
+**[voicevoxcore4s](https://github.com/windymelt/voicevoxcore4s) [@windymelt](https://github.com/windymelt)** ･･･ VOICEVOX CORE の Scala(JVM) 向け FFI ラッパー  
+**[voicevox_flutter](https://github.com/char5742/voicevox_flutter) [@char5742](https://github.com/char5742)** ･･･ VOICEVOX CORE の Flutter 向け FFI ラッパー  
 ## ライセンス
 
 ソースコードのライセンスは [MIT LICENSE](./LICENSE) です。

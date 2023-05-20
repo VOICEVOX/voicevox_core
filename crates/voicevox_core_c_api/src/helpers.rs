@@ -1,3 +1,5 @@
+use std::alloc::Layout;
+use std::collections::BTreeMap;
 use std::fmt::Debug;
 
 use thiserror::Error;
@@ -36,6 +38,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(ParseKana(_))) => VOICEVOX_RESULT_PARSE_KANA_ERROR,
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
+            Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
         }
     }
 }
@@ -50,6 +53,8 @@ pub(crate) enum CApiError {
     InvalidUtf8Input,
     #[error("無効なAudioQueryです: {0}")]
     InvalidAudioQuery(serde_json::Error),
+    #[error("無効なAccentPhraseです: {0}")]
+    InvalidAccentPhrase(serde_json::Error),
 }
 
 pub(crate) fn create_audio_query(
@@ -78,64 +83,41 @@ fn audio_query_model_to_json(audio_query_model: &AudioQueryModel) -> String {
     serde_json::to_string(audio_query_model).expect("should be always valid")
 }
 
-pub(crate) unsafe fn write_json_to_ptr(output_ptr: *mut *mut c_char, json: &CStr) {
-    let n = json.to_bytes_with_nul().len();
-    let json_heap = libc::malloc(n);
-    libc::memcpy(json_heap, json.as_ptr() as *const c_void, n);
-    output_ptr.write(json_heap as *mut c_char);
+pub(crate) fn create_accent_phrases(
+    japanese_or_kana: &CStr,
+    speaker_id: u32,
+    method: fn(
+        &mut Internal,
+        &str,
+        u32,
+        voicevox_core::AccentPhrasesOptions,
+    ) -> Result<Vec<AccentPhraseModel>>,
+    options: VoicevoxAccentPhrasesOptions,
+) -> CApiResult<CString> {
+    let japanese_or_kana = ensure_utf8(japanese_or_kana)?;
+
+    let accent_phrases = method(
+        &mut lock_internal(),
+        japanese_or_kana,
+        speaker_id,
+        options.into(),
+    )?;
+    Ok(CString::new(accent_phrases_model_to_json(&accent_phrases))
+        .expect("should not contain '\\0'"))
 }
 
-pub(crate) unsafe fn write_wav_to_ptr(
-    output_wav_ptr: *mut *mut u8,
-    output_length_ptr: *mut usize,
-    data: &[u8],
-) {
-    write_data_to_ptr(output_wav_ptr, output_length_ptr, data);
+fn accent_phrases_model_to_json(accent_phrases_model: &[AccentPhraseModel]) -> String {
+    serde_json::to_string(accent_phrases_model).expect("should be always valid")
 }
 
-pub(crate) unsafe fn write_predict_duration_to_ptr(
-    output_predict_duration_ptr: *mut *mut f32,
-    output_predict_duration_length_ptr: *mut usize,
-    data: &[f32],
-) {
-    write_data_to_ptr(
-        output_predict_duration_ptr,
-        output_predict_duration_length_ptr,
-        data,
-    );
-}
-
-pub(crate) unsafe fn write_predict_intonation_to_ptr(
-    output_predict_intonation_ptr: *mut *mut f32,
-    output_predict_intonation_length_ptr: *mut usize,
-    data: &[f32],
-) {
-    write_data_to_ptr(
-        output_predict_intonation_ptr,
-        output_predict_intonation_length_ptr,
-        data,
-    );
-}
-
-pub(crate) unsafe fn write_decode_to_ptr(
-    output_decode_ptr: *mut *mut f32,
-    output_decode_length_ptr: *mut usize,
-    data: &[f32],
-) {
-    write_data_to_ptr(output_decode_ptr, output_decode_length_ptr, data);
-}
-
-unsafe fn write_data_to_ptr<T>(
-    output_data_ptr: *mut *mut T,
-    output_length_ptr: *mut usize,
-    data: &[T],
-) {
-    output_length_ptr.write(data.len());
-    use std::mem;
-    let num_bytes = mem::size_of_val(data);
-    let data_heap = libc::malloc(num_bytes);
-    libc::memcpy(data_heap, data.as_ptr() as *const c_void, num_bytes);
-    output_data_ptr.write(data_heap as *mut T);
+pub(crate) fn modify_accent_phrases(
+    accent_phrases: &[AccentPhraseModel],
+    speaker_id: u32,
+    method: fn(&mut Internal, u32, &[AccentPhraseModel]) -> Result<Vec<AccentPhraseModel>>,
+) -> CApiResult<CString> {
+    let accent_phrases = method(&mut lock_internal(), speaker_id, accent_phrases)?;
+    Ok(CString::new(accent_phrases_model_to_json(&accent_phrases))
+        .expect("should not contain '\\0'"))
 }
 
 pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
@@ -149,6 +131,17 @@ impl From<voicevox_core::AudioQueryOptions> for VoicevoxAudioQueryOptions {
 }
 impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
     fn from(options: VoicevoxAudioQueryOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+
+impl From<voicevox_core::AccentPhrasesOptions> for VoicevoxAccentPhrasesOptions {
+    fn from(options: voicevox_core::AccentPhrasesOptions) -> Self {
+        Self { kana: options.kana }
+    }
+}
+impl From<VoicevoxAccentPhrasesOptions> for voicevox_core::AccentPhrasesOptions {
+    fn from(options: VoicevoxAccentPhrasesOptions) -> Self {
         Self { kana: options.kana }
     }
 }
@@ -232,6 +225,106 @@ impl Default for VoicevoxSynthesisOptions {
         let options = voicevox_core::TtsOptions::default();
         Self {
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+        }
+    }
+}
+
+// libcのmallocで追加のアロケーションを行うことなく、`Vec<u8>`や`Vec<f32>`の内容を直接Cの世界に貸し出す。
+
+/// Rustの世界の`Box<[impl Copy]>`をCの世界に貸し出すため、アドレスとレイアウトを管理するもの。
+pub(crate) struct BufferManager {
+    address_to_layout_table: BTreeMap<usize, Layout>,
+}
+
+impl BufferManager {
+    pub const fn new() -> Self {
+        Self {
+            address_to_layout_table: BTreeMap::new(),
+        }
+    }
+
+    pub fn vec_into_raw<T: Copy>(&mut self, vec: Vec<T>) -> (*mut T, usize) {
+        let slice = Box::leak(vec.into_boxed_slice());
+        let layout = Layout::for_value(slice);
+        let len = slice.len();
+        let ptr = slice.as_mut_ptr();
+        let addr = ptr as usize;
+
+        let not_occupied = self.address_to_layout_table.insert(addr, layout).is_none();
+
+        assert!(not_occupied, "すでに値が入っている状態はおかしい");
+
+        (ptr, len)
+    }
+
+    /// `vec_into_raw`でC API利用側に貸し出したポインタに対し、デアロケートする。
+    ///
+    /// # Safety
+    ///
+    /// - `buffer_ptr`は`vec_into_raw`で取得したものであること。
+    pub unsafe fn dealloc_slice<T: Copy>(&mut self, buffer_ptr: *const T) {
+        let addr = buffer_ptr as usize;
+        let layout = self.address_to_layout_table.remove(&addr).expect(
+            "解放しようとしたポインタはvoicevox_coreの管理下にありません。\
+             誤ったポインタであるか、二重解放になっていることが考えられます",
+        );
+
+        if layout.size() > 0 {
+            // `T: Copy`より、`T: !Drop`であるため`drop_in_place`は不要
+
+            // SAFETY:
+            // - `addr`と`layout`は対応したものである
+            // - `layout.size() > 0`より、`addr`はダングリングではない有効なポインタである
+            std::alloc::dealloc(addr as *mut u8, layout);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn buffer_manager_works() {
+        let mut buffer_manager = BufferManager::new();
+
+        rent_and_dealloc(&mut buffer_manager, vec::<()>(0, &[]));
+        rent_and_dealloc(&mut buffer_manager, vec(0, &[()]));
+        rent_and_dealloc(&mut buffer_manager, vec(2, &[()]));
+
+        rent_and_dealloc(&mut buffer_manager, vec::<u8>(0, &[]));
+        rent_and_dealloc(&mut buffer_manager, vec(0, &[0u8]));
+        rent_and_dealloc(&mut buffer_manager, vec(2, &[0u8]));
+
+        rent_and_dealloc(&mut buffer_manager, vec::<f32>(0, &[]));
+        rent_and_dealloc(&mut buffer_manager, vec(0, &[0f32]));
+        rent_and_dealloc(&mut buffer_manager, vec(2, &[0f32]));
+
+        fn rent_and_dealloc(buffer_manager: &mut BufferManager, vec: Vec<impl Copy>) {
+            let expected_len = vec.len();
+            let (ptr, len) = buffer_manager.vec_into_raw(vec);
+            assert_eq!(expected_len, len);
+            unsafe {
+                buffer_manager.dealloc_slice(ptr);
+            }
+        }
+
+        fn vec<T: Copy>(initial_cap: usize, elems: &[T]) -> Vec<T> {
+            let mut vec = Vec::with_capacity(initial_cap);
+            vec.extend_from_slice(elems);
+            vec
+        }
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "解放しようとしたポインタはvoicevox_coreの管理下にありません。誤ったポインタであるか、二重解放になっていることが考えられます"
+    )]
+    fn buffer_manager_denies_unknown_ptr() {
+        let mut buffer_manager = BufferManager::new();
+        unsafe {
+            let x = 42;
+            buffer_manager.dealloc_slice(&x as *const i32);
         }
     }
 }

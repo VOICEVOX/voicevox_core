@@ -8,6 +8,7 @@ on:
 jobs:
   update-rust-toolchain:
     runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'VOICEVOX' }}
     steps:
       - uses: actions/checkout@v3
       - name: set up stable rust

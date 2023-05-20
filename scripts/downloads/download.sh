@@ -7,7 +7,7 @@ help(){
     -o|--output \$directory                    出力先の指定(default ./voicevox_core)
     -v|--version \$version                     ダウンロードするvoicevox_coreのバージョンの指定(default latest)
     --additional-libraries-version \$version   追加でダウンロードするライブラリのバージョン
-    --accelerator \$accelerator                ダウンロードするacceleratorを指定する(cpu,cudaを指定可能.cudaはlinuxのみ)
+    --device \$device                          ダウンロードするデバイスを指定する(cpu,cudaを指定可能.cudaはlinuxのみ)
     --cpu-arch \$cpu_arch                      ダウンロードするcpuのアーキテクチャを指定する
     --min                                     ダウンロードするライブラリを最小限にするように指定
     --os                                      ダウンロードする対象のOSを指定する
@@ -23,34 +23,34 @@ open_jtalk_dict_dir_name="open_jtalk_dic_utf_8-1.11"
 voicevox_core_releases_url(){
   os=$1
   cpu_arch=$2
-  accelerator=$3
+  device=$3
   version=$4
 
-  if [ "$os" = "linux" ] && [ "$accelerator" = "cuda" ];then
-    accelerator="gpu"
+  if [ "$os" = "linux" ] && [ "$device" = "cuda" ];then
+    device="gpu"
   fi
-  url="$voicevox_core_repository_base_url/releases/download/$version/voicevox_core-$os-$cpu_arch-$accelerator-$version.zip"
+  url="$voicevox_core_repository_base_url/releases/download/$version/voicevox_core-$os-$cpu_arch-$device-$version.zip"
   echo "$url"
 }
 
 voicevox_additional_libraries_url(){
   os=$1
   cpu_arch=$2
-  accelerator=$3
+  device=$3
   version=$4
-  if [ "$accelerator" = "cuda" ];then
-    accelerator="CUDA"
-  elif [ "$accelerator" = "directml" ];then
-    accelerator="DirectML"
+  if [ "$device" = "cuda" ];then
+    device="CUDA"
+  elif [ "$device" = "directml" ];then
+    device="DirectML"
   fi
-  url="${voicevox_additional_libraries_base_url}/releases/download/${version}/${accelerator}-${os}-${cpu_arch}.zip"
+  url="${voicevox_additional_libraries_base_url}/releases/download/${version}/${device}-${os}-${cpu_arch}.zip"
   echo "$url"
 }
 
 latest_version(){
   base_url=$1
   get_latest_url="$base_url/releases/tag"
-  echo -En "$(curl -sSfI "$base_url/releases/latest"| grep "location:" | sed -e "s%location: $get_latest_url/%%" | sed 's/\r//g')"
+  echo -En "$(curl -sSfI "$base_url/releases/latest"| grep -i "location:" | sed -e "s%location: $get_latest_url/%%i" | sed 's/\r//g')"
 }
 
 latest_voicevox_core_version(){
@@ -76,7 +76,7 @@ target_arch(){
   cpu_arch=$(uname -m)
   case "$cpu_arch" in
     "x86_64") echo "x64";;
-    "arm64") echo "aarch64";;
+    "arm64") echo "arm64";;
     *)
       echo "$cpu_archはサポートされていない環境です" >&2
       exit 1;;
@@ -101,7 +101,10 @@ download_and_extract(){
   curl -sSLfo "$tmp_path" "$url"
   echo "${target}をダウンロード完了,${archive_format}形式で${extract_dir}に解凍します..."
   if [ "$archive_format" = "zip" ];then
-    unzip -j "$tmp_path" -d "$extract_dir"
+    top_dir=$(unzip -Z1 "$tmp_path" | head -n 1)
+    unzip "$tmp_path" -d "$extract_dir"
+    mv "$extract_dir/$top_dir"/* "$extract_dir"
+    rmdir "$extract_dir/$top_dir"
   elif  [ "$archive_format" = "tar.gz" ];then
     mkdir -p "$extract_dir"
     tar --strip-components 1 -xvzf "$tmp_path" -C "$extract_dir"
@@ -113,7 +116,7 @@ os=""
 cpu_arch=""
 version="latest"
 additional_libraries_version="latest"
-accelerator=""
+device=""
 output="./voicevox_core"
 min=""
 
@@ -133,8 +136,8 @@ do
     --additional-libraries-version)
       additional_libraries_version="$2"
       shift;;
-    --accelerator)
-      accelerator="$2"
+    --device)
+      device="$2"
       shift;;
     --cpu-arch)
       cpu_arch="$2"
@@ -162,11 +165,11 @@ if [ -z "$cpu_arch" ];then
   cpu_arch=$(target_arch)
 fi
 
-if [ "$accelerator" = "" ];then
-  accelerator="cpu"
+if [ "$device" = "" ];then
+  device="cpu"
 fi
 
-if [ "$accelerator" = "cpu" ];then
+if [ "$device" = "cpu" ];then
   additional_libraries_version=""
 fi
 
@@ -182,15 +185,15 @@ fi
 echo "対象OS:$os"
 echo "対象CPUアーキテクチャ:$cpu_arch"
 echo "ダウンロードvoicevox_coreバージョン:$version"
-echo "ダウンロードアーティファクトタイプ:$accelerator"
+echo "ダウンロードデバイスタイプ:$device"
 
 if [ "$additional_libraries_version" != "" ];then
   echo "ダウンロード追加ライブラリバージョン:$additional_libraries_version"
 fi
 
 
-voicevox_core_url=$(voicevox_core_releases_url "$os" "$cpu_arch" "$accelerator" "$version")
-voicevox_additional_laibraries_url=$(voicevox_additional_libraries_url "$os" "$cpu_arch" "$accelerator" "$additional_libraries_version")
+voicevox_core_url=$(voicevox_core_releases_url "$os" "$cpu_arch" "$device" "$version")
+voicevox_additional_libraries_url=$(voicevox_additional_libraries_url "$os" "$cpu_arch" "$device" "$additional_libraries_version")
 
 download_and_extract "voicevox_core" "$voicevox_core_url" "$output" &
 voicevox_core_download_task=$!
@@ -199,7 +202,7 @@ if [ "$min" != "true" ]; then
   open_jtalk_download_task=$!
 
   if [ "$additional_libraries_version" != "" ];then
-    download_and_extract "voicevox_additional_libraries" "$voicevox_additional_laibraries_url" "$output" &
+    download_and_extract "voicevox_additional_libraries" "$voicevox_additional_libraries_url" "$output" &
     additional_libraries_download_task=$!
     wait $additional_libraries_download_task
   fi

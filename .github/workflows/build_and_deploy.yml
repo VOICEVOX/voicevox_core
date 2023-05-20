@@ -24,8 +24,8 @@ on:
     branches: 
       - main
 env:
-  # releaseタグ名か、workflow_dispatchでのバージョン名か、DEBUGが入る
-  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || 'DEBUG' }}
+  # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
+  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
 
   # Raw character weights are not public.
   # Skip uploading to GitHub Release on public repo.
@@ -78,10 +78,20 @@ jobs:
             artifact_name: linux-arm64-cpu
             whl_local_version: cpu
             use_cuda: false
+          - os: ubuntu-20.04
+            features: ""
+            target: aarch64-linux-android
+            artifact_name: android-arm64-cpu
+            use_cuda: false
+          - os: ubuntu-20.04
+            features: ""
+            target: x86_64-linux-android
+            artifact_name: android-x86_64-cpu
+            use_cuda: false
           - os: macos-11
             features: ""
             target: aarch64-apple-darwin
-            artifact_name: osx-aarch64-cpu
+            artifact_name: osx-arm64-cpu
             whl_local_version: cpu
             use_cuda: false
           - os: macos-11
@@ -90,10 +100,26 @@ jobs:
             artifact_name: osx-x64-cpu
             whl_local_version: cpu
             use_cuda: false
+          - os: macos-12
+            features: ""
+            target: aarch64-apple-ios
+            artifact_name: ios-arm64-cpu
+            use_cuda: false
+          - os: macos-12
+            features: ""
+            target: aarch64-apple-ios-sim
+            artifact_name: ios-arm64-cpu-sim
+            use_cuda: false
+          - os: macos-12
+            features: ""
+            target: x86_64-apple-ios
+            artifact_name: ios-x64-cpu
+            use_cuda: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.8
+        if: matrix.whl_local_version
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
@@ -108,28 +134,32 @@ jobs:
         run: |
           sudo apt update
           sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+      - uses: nttld/setup-ndk@v1
+        if: endsWith(matrix.target, '-linux-android')
+        with:
+          ndk-version: r25b
+      - name: Set path for android
+        if: endsWith(matrix.target, '-linux-android')
+        shell: bash
+        run: |
+          echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
+          echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
-      - name: Install cbindgen
-        uses: ./.github/actions/cargo-binstall-cbindgen
       - name: Install cargo-edit
-        if: ${{ env.VERSION != 'DEBUG' }}
         shell: bash
         run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
       - name: set cargo version
-        if: ${{ env.VERSION != 'DEBUG' }}
         shell: bash
         run: |
-          cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude xtask
-          cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api
-      - name: generate voicevox_core.h
-        shell: bash
-        run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
+          cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
+          if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
       - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_python_api
+        if: matrix.whl_local_version
         id: build-voicevox-core-python-api
         shell: bash
         run: |
@@ -145,7 +175,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
-          cp -v voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
+          cp -v crates/voicevox_core_c_api/include/voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
           cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
           cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
@@ -162,18 +192,19 @@ jobs:
         env:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+      - name: Upload artifact to build XCFramework
+        if: contains(matrix.target, 'ios') 
+        uses: actions/upload-artifact@v2
+        with:
+          name: voicevox_core-${{ matrix.target }}
+          path: artifact/${{ env.ASSET_NAME }}
       - name: Archive artifact
         shell: bash
-        if: (!contains(matrix.os , 'windows'))
         run: |
           cd artifact
-          zip -r "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
-      - name: Archive artifact (Windows)
-        if: contains(matrix.os, 'windows')
-        run: |
-          7z a "${{ env.ASSET_NAME }}.zip" "artifact/${{ env.ASSET_NAME }}"
+          7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && !contains(matrix.target, 'ios')
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -182,7 +213,7 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
-        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.whl_local_version
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -190,16 +221,123 @@ jobs:
           files: |-
             ${{ steps.build-voicevox-core-python-api.outputs.whl }}
           target_commitish: ${{ github.sha }}
+  build_xcframework:
+    needs: build_and_deploy
+    runs-on: macos-12
+    steps:
+      - name: Set ASSET_NAME env var
+        shell: bash
+        run: echo "ASSET_NAME=voicevox_core-ios-xcframework-cpu-${{ env.VERSION }}" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v2
+        with:
+          name: voicevox_core-x86_64-apple-ios
+          path: artifact/voicevox_core-x86_64-apple-ios
+      - uses: actions/download-artifact@v2
+        with:
+          name: voicevox_core-aarch64-apple-ios-sim
+          path: artifact/voicevox_core-aarch64-apple-ios-sim
+      - uses: actions/download-artifact@v2
+        with:
+          name: voicevox_core-aarch64-apple-ios
+          path: artifact/voicevox_core-aarch64-apple-ios
+      - name: Create fat binary
+        shell: bash
+        run: |
+          mkdir -p "artifact/voicevox_core-sim"
+          lipo -create "artifact/voicevox_core-x86_64-apple-ios/libvoicevox_core.dylib" "artifact/voicevox_core-aarch64-apple-ios-sim/libvoicevox_core.dylib" -output "artifact/voicevox_core-sim/libvoicevox_core.dylib"
+      - name: Create XCFramework
+        shell: bash
+        run: |
+          mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          xcodebuild -create-xcframework \
+            -library "artifact/voicevox_core-sim/libvoicevox_core.dylib" \
+            -headers "artifact/voicevox_core-x86_64-apple-ios/voicevox_core.h" \
+            -library "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib" \
+            -headers "artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h" \
+            -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
+      - name: Archive artifact
+        shell: bash
+        run: |
+          cd artifact/${{ env.ASSET_NAME }}
+          7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
+      - name: Upload to Release
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ env.ASSET_NAME }}.zip
+          target_commitish: ${{ github.sha }}
   deploy_downloader:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Upload to Release
-        if: env.VERSION != 'DEBUG' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
           files: |-
             scripts/downloads/*
+          target_commitish: ${{ github.sha }}
+  deploy_precompiled_downloader:
+    environment: ${{ github.event.inputs.code_signing == 'true' && 'code_signing' || '' }} # コード署名用のenvironment
+    strategy:
+      matrix:
+        include:
+          - name: download-windows-x64.exe
+            target: x86_64-pc-windows-msvc
+            os: windows-2019
+          - name: download-linux-x64
+            target: x86_64-unknown-linux-gnu
+            os: ubuntu-20.04
+          - name: download-linux-arm64
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-20.04
+          - name: download-osx-x64
+            target: x86_64-apple-darwin
+            os: macos-11
+          - name: download-osx-arm64
+            target: aarch64-apple-darwin
+            os: macos-11
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install cross compiler for aarch64-unknown-linux-gnu
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+      - name: Set up ${{ matrix.target }}
+        uses: ./.github/actions/rust-toolchain-from-file
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build downloader
+        run: cargo build -vv --release -p download --target ${{ matrix.target }}
+      - name: Rename the binary
+        shell: bash
+        run: |
+          case "$OS" in
+            Windows) exe_suffix=.exe;;
+            Linux | macOS) exe_suffix=;;
+          esac
+          mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
+      - name: Code signing (Windows)
+        if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
+        shell: bash
+        run: |
+          bash build_util/codesign.bash ./${{ matrix.name }}
+        env:
+          CERT_BASE64: ${{ secrets.CERT_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+      - name: Upload to Release
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: ${{ matrix.name }}
           target_commitish: ${{ github.sha }}
