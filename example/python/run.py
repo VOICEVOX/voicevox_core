@@ -69,13 +69,13 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path, int]:
         help="出力wavファイルのパス",
     )
     argparser.add_argument(
-        "--speeker-id",
+        "--speaker-id",
         default=0,
         type=int,
         help="話者IDを指定",
     )
     args = argparser.parse_args()
-    return (args.mode, args.dict_dir, args.text, args.out, args.speeker_id)
+    return (args.mode, args.dict_dir, args.text, args.out, args.speaker_id)
 
 
 def display_as_json(audio_query: AudioQuery) -> str:
