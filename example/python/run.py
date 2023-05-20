@@ -73,7 +73,7 @@ def parse_args() -> Tuple[AccelerationMode, Path, Path, str, Path, int]:
     )
     argparser.add_argument(
         "--dict-dir",
-        default="./voicevox_core/open_jtalk_dic_utf_8-1.11",
+        default="./open_jtalk_dic_utf_8-1.11",
         type=Path,
         help="Open JTalkの辞書ディレクトリ",
     )
