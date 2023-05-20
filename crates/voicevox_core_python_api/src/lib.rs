@@ -1,4 +1,4 @@
-use std::{fmt::Display, path::PathBuf, sync::Arc};
+use std::{fmt::Display, future::Future, path::PathBuf, sync::Arc};
 
 use easy_ext::ext;
 use log::debug;
@@ -255,31 +255,12 @@ impl Synthesizer {
         style_id: u32,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
-        let accent_phrases: Vec<AccentPhraseModel> = accent_phrases
-            .into_iter()
-            .map(from_dataclass)
-            .collect::<PyResult<Vec<AccentPhraseModel>>>()?;
         let synthesizer = self.synthesizer.clone();
-        pyo3_asyncio::tokio::future_into_py_with_locals(
+        modify_accent_phrases(
+            accent_phrases,
+            StyleId::new(style_id),
             py,
-            pyo3_asyncio::tokio::get_current_locals(py)?,
-            async move {
-                let accent_phrases = synthesizer
-                    .lock()
-                    .await
-                    .replace_mora_data(&accent_phrases, StyleId::new(style_id))
-                    .await
-                    .into_py_result()?;
-                Python::with_gil(|py| {
-                    let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
-                    let accent_phrases = accent_phrases
-                        .iter()
-                        .map(|ap| to_pydantic_dataclass(ap, class))
-                        .collect::<PyResult<Vec<_>>>();
-                    let list = PyList::new(py, accent_phrases.into_iter());
-                    Ok(list.to_object(py))
-                })
-            },
+            |a, s| async move { synthesizer.lock().await.replace_mora_data(&a, s).await },
         )
     }
 
@@ -289,31 +270,12 @@ impl Synthesizer {
         style_id: u32,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
-        let accent_phrases: Vec<AccentPhraseModel> = accent_phrases
-            .into_iter()
-            .map(from_dataclass)
-            .collect::<PyResult<Vec<AccentPhraseModel>>>()?;
         let synthesizer = self.synthesizer.clone();
-        pyo3_asyncio::tokio::future_into_py_with_locals(
+        modify_accent_phrases(
+            accent_phrases,
+            StyleId::new(style_id),
             py,
-            pyo3_asyncio::tokio::get_current_locals(py)?,
-            async move {
-                let accent_phrases = synthesizer
-                    .lock()
-                    .await
-                    .replace_phoneme_length(&accent_phrases, StyleId::new(style_id))
-                    .await
-                    .into_py_result()?;
-                Python::with_gil(|py| {
-                    let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
-                    let accent_phrases = accent_phrases
-                        .iter()
-                        .map(|ap| to_pydantic_dataclass(ap, class))
-                        .collect::<PyResult<Vec<_>>>();
-                    let list = PyList::new(py, accent_phrases.into_iter());
-                    Ok(list.to_object(py))
-                })
-            },
+            |a, s| async move { synthesizer.lock().await.replace_phoneme_length(&a, s).await },
         )
     }
 
@@ -323,31 +285,12 @@ impl Synthesizer {
         style_id: u32,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
-        let accent_phrases: Vec<AccentPhraseModel> = accent_phrases
-            .into_iter()
-            .map(from_dataclass)
-            .collect::<PyResult<Vec<AccentPhraseModel>>>()?;
         let synthesizer = self.synthesizer.clone();
-        pyo3_asyncio::tokio::future_into_py_with_locals(
+        modify_accent_phrases(
+            accent_phrases,
+            StyleId::new(style_id),
             py,
-            pyo3_asyncio::tokio::get_current_locals(py)?,
-            async move {
-                let accent_phrases = synthesizer
-                    .lock()
-                    .await
-                    .replace_mora_pitch(&accent_phrases, StyleId::new(style_id))
-                    .await
-                    .into_py_result()?;
-                Python::with_gil(|py| {
-                    let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
-                    let accent_phrases = accent_phrases
-                        .iter()
-                        .map(|ap| to_pydantic_dataclass(ap, class))
-                        .collect::<PyResult<Vec<_>>>();
-                    let list = PyList::new(py, accent_phrases.into_iter());
-                    Ok(list.to_object(py))
-                })
-            },
+            |a, s| async move { synthesizer.lock().await.replace_mora_pitch(&a, s).await },
         )
     }
 
@@ -474,6 +417,44 @@ fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {
     let x = serde_json::to_string(&x).into_py_result()?;
     let x = py.import("json")?.call_method1("loads", (x,))?.downcast()?;
     class.call((), Some(x))
+}
+
+fn modify_accent_phrases<'py, Fun, Fut>(
+    accent_phrases: &'py PyList,
+    speaker_id: StyleId,
+    py: Python<'py>,
+    method: Fun,
+) -> PyResult<&'py PyAny>
+where
+    Fun: FnOnce(Vec<AccentPhraseModel>, StyleId) -> Fut + Send + 'static,
+    Fut: Future<Output = voicevox_core::Result<Vec<AccentPhraseModel>>> + Send + 'static,
+{
+    let rust_accent_phrases = accent_phrases
+        .iter()
+        .map(from_dataclass)
+        .collect::<PyResult<Vec<AccentPhraseModel>>>()?;
+    pyo3_asyncio::tokio::future_into_py_with_locals(
+        py,
+        pyo3_asyncio::tokio::get_current_locals(py)?,
+        async move {
+            let replaced_accent_phrases = method(rust_accent_phrases, speaker_id)
+                .await
+                .into_py_result()?;
+            Python::with_gil(|py| {
+                let replaced_accent_phrases = replaced_accent_phrases
+                    .iter()
+                    .map(move |accent_phrase| {
+                        to_pydantic_dataclass(
+                            accent_phrase,
+                            py.import("voicevox_core")?.getattr("AccentPhrase")?,
+                        )
+                    })
+                    .collect::<PyResult<Vec<_>>>()?;
+                let replaced_accent_phrases = PyList::new(py, replaced_accent_phrases);
+                Ok(replaced_accent_phrases.to_object(py))
+            })
+        },
+    )
 }
 
 impl Drop for Synthesizer {

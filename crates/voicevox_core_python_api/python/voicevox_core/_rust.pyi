@@ -138,7 +138,7 @@ class Synthesizer:
         Parameters
         ----------
         text
-            テキスト。
+            テキスト。文字コードはUTF-8。
         style_id
             話者ID。
         kana
@@ -146,7 +146,7 @@ class Synthesizer:
 
         Returns
         -------
-        :class:`AudioQuery`
+        :class:`List` [:class:`AccentPhrase`]
         """
         ...
     async def replace_mora_data(
@@ -154,17 +154,17 @@ class Synthesizer:
         accent_phrases: List[AccentPhrase],
         style_id: int,
     ) -> List[AccentPhrase]:
-        """replace_mora_data を実行する。
+        """アクセント句の音高・音素長を変更する。
 
         Parameters
         ----------
         accent_phrases
-            AccentPhraseのリスト
+            変更元のアクセント句。
         style_id
             話者ID。
         Returns
         -------
-        :class:`AudioQuery`
+        :class:`List` [:class:`AccentPhrase`]
         """
         ...
     async def replace_phoneme_length(
@@ -172,17 +172,17 @@ class Synthesizer:
         accent_phrases: List[AccentPhrase],
         style_id: int,
     ) -> List[AccentPhrase]:
-        """replace_phoneme_length を実行する。
+        """アクセント句の音素長を変更する。
 
         Parameters
         ----------
         accent_phrases
-            AccentPhraseのリスト
+            変更元のアクセント句。
         style_id
             話者ID。
         Returns
         -------
-        :class:`AudioQuery`
+        :class:`List` [:class:`AccentPhrase`]
         """
         ...
     async def replace_mora_pitch(
@@ -190,17 +190,17 @@ class Synthesizer:
         accent_phrases: List[AccentPhrase],
         style_id: int,
     ) -> List[AccentPhrase]:
-        """replace_mora_pitch を実行する。
+        """アクセント句の音高を変更する。
 
         Parameters
         ----------
         accent_phrases
-            AccentPhraseのリスト
+            変更元のアクセント句。
         style_id
             話者ID。
         Returns
         -------
-        :class:`AudioQuery`
+        :class:`List` [:class:`AccentPhrase`]
         """
         ...
     async def synthesis(
