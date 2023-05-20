@@ -226,7 +226,7 @@ jobs:
     steps:
       - name: Set ASSET_NAME env var
         shell: bash
-        run: echo "ASSET_NAME=voicevox_core-xcframework-${{ env.VERSION }}" >> "$GITHUB_ENV"
+        run: echo "ASSET_NAME=voicevox_core-ios-xcframework-${{ env.VERSION }}" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v2
         with:
           name: voicevox_core-x86_64-apple-ios
