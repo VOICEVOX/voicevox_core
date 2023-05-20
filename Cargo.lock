@@ -4328,6 +4328,7 @@ dependencies = [
  "clap 4.0.10",
  "color-eyre",
  "eyre",
+ "fs-err",
 ]
 
 [[package]]

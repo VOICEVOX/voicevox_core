@@ -140,8 +140,6 @@ jobs:
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
-      - name: Install cbindgen
-        uses: ./.github/actions/cargo-binstall-cbindgen
       - name: Install cargo-edit
         shell: bash
         run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
@@ -150,9 +148,6 @@ jobs:
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
           if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
-      - name: generate voicevox_core.h
-        shell: bash
-        run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
       - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
         env:
@@ -174,7 +169,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
-          cp -v voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
+          cp -v crates/voicevox_core_c_api/include/voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
           cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
           cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
