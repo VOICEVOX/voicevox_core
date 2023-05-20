@@ -186,13 +186,19 @@ jobs:
         env:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+      - name: Upload artifact to build XCFramework
+        if: contains(matrix.target, 'ios') 
+        uses: actions/upload-artifact@v2
+        with:
+          name: voicevox_core-${{ matrix.target }}
+          path: artifact/${{ env.ASSET_NAME }}
       - name: Archive artifact
         shell: bash
         run: |
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && !contains(matrix.target, 'ios')
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -208,6 +214,54 @@ jobs:
           tag_name: ${{ env.VERSION }}
           files: |-
             ${{ steps.build-voicevox-core-python-api.outputs.whl }}
+          target_commitish: ${{ github.sha }}
+  build_xcframework:
+    needs: build_and_deploy
+    runs-on: macos-12
+    steps:
+      - name: Set ASSET_NAME env var
+        shell: bash
+        run: echo "ASSET_NAME=voicevox_core-ios-xcframework-cpu-${{ env.VERSION }}" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v2
+        with:
+          name: voicevox_core-x86_64-apple-ios
+          path: artifact/voicevox_core-x86_64-apple-ios
+      - uses: actions/download-artifact@v2
+        with:
+          name: voicevox_core-aarch64-apple-ios-sim
+          path: artifact/voicevox_core-aarch64-apple-ios-sim
+      - uses: actions/download-artifact@v2
+        with:
+          name: voicevox_core-aarch64-apple-ios
+          path: artifact/voicevox_core-aarch64-apple-ios
+      - name: Create fat binary
+        shell: bash
+        run: |
+          mkdir -p "artifact/voicevox_core-sim"
+          lipo -create "artifact/voicevox_core-x86_64-apple-ios/libvoicevox_core.dylib" "artifact/voicevox_core-aarch64-apple-ios-sim/libvoicevox_core.dylib" -output "artifact/voicevox_core-sim/libvoicevox_core.dylib"
+      - name: Create XCFramework
+        shell: bash
+        run: |
+          mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          xcodebuild -create-xcframework \
+            -library "artifact/voicevox_core-sim/libvoicevox_core.dylib" \
+            -headers "artifact/voicevox_core-x86_64-apple-ios/voicevox_core.h" \
+            -library "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib" \
+            -headers "artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h" \
+            -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
+      - name: Archive artifact
+        shell: bash
+        run: |
+          cd artifact/${{ env.ASSET_NAME }}
+          7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
+      - name: Upload to Release
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
   deploy_downloader:
     runs-on: ubuntu-latest
