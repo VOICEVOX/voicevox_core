@@ -1,5 +1,4 @@
 from . import _load_dlls  # noqa: F401
-
 from ._models import (  # noqa: F401
     AccelerationMode,
     AccentPhrase,
@@ -9,7 +8,6 @@ from ._models import (  # noqa: F401
     SupportedDevices,
 )
 from ._rust import OpenJtalk, Synthesizer, VoiceModel, supported_devices  # noqa: F401
-
 
 __all__ = [
     "AccelerationMode",
