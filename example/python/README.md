@@ -52,7 +52,7 @@ run.py を実行します。 Open JTalk 辞書ディレクトリ、読み上げ�
 
 ```console
 ❯ python ./run.py -h
-usage: run.py [-h] [--mode MODE] [--dict-dir DICT_DIR] [--text TEXT] [--out OUT] [--speaker-id SPEEKER_ID]
+usage: run.py [-h] [--mode MODE] [--dict-dir DICT_DIR] [--text TEXT] [--out OUT] [--speaker-id SPEAKER_ID]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -60,7 +60,7 @@ optional arguments:
   --dict-dir DICT_DIR   Open JTalkの辞書ディレクトリ
   --text TEXT           読み上げさせたい文章
   --out OUT             出力wavファイルのパス
-  --speaker-id SPEEKER_ID
+  --speaker-id SPEAKER_ID
                         話者IDを指定
 ```
 
