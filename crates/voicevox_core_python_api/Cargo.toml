@@ -23,10 +23,9 @@ serde.workspace = true
 serde_json.workspace = true
 tracing.workspace = true
 voicevox_core.workspace = true
-pyo3-asyncio = { version="0.18.0", features=["tokio-runtime"] }
+pyo3-asyncio = { version = "0.18.0", features = ["tokio-runtime"] }
 tokio.workspace = true
 once_cell.workspace = true
-
 
 [build-dependencies]
 anyhow.workspace = true
