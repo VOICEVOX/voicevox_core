@@ -1,6 +1,6 @@
 use derive_new::new;
 use std::io::{Cursor, Write};
-use std::path::Path;
+use std::sync::Arc;
 
 use super::full_context_label::Utterance;
 use super::open_jtalk::OpenJtalk;
@@ -17,7 +17,7 @@ const MORA_PHONEME_LIST: &[&str] = &[
 #[derive(new)]
 pub struct SynthesisEngine {
     inference_core: InferenceCore,
-    open_jtalk: OpenJtalk,
+    open_jtalk: Arc<OpenJtalk>,
 }
 
 #[allow(unsafe_code)]
@@ -34,16 +34,16 @@ impl SynthesisEngine {
         &mut self.inference_core
     }
 
-    pub fn create_accent_phrases(
-        &mut self,
-        text: impl AsRef<str>,
-        speaker_id: u32,
+    pub async fn create_accent_phrases(
+        &self,
+        text: &str,
+        style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
-        if text.as_ref().is_empty() {
+        if text.is_empty() {
             return Ok(Vec::new());
         }
 
-        let utterance = Utterance::extract_full_context_label(&mut self.open_jtalk, text.as_ref())?;
+        let utterance = Utterance::extract_full_context_label(&self.open_jtalk, text)?;
 
         let accent_phrases: Vec<AccentPhraseModel> = utterance
             .breath_groups()
@@ -108,22 +108,24 @@ impl SynthesisEngine {
                 accum_vec
             });
 
-        self.replace_mora_data(&accent_phrases, speaker_id)
+        self.replace_mora_data(&accent_phrases, style_id).await
     }
 
-    pub fn replace_mora_data(
-        &mut self,
+    pub async fn replace_mora_data(
+        &self,
         accent_phrases: &[AccentPhraseModel],
-        speaker_id: u32,
+        style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
-        let accent_phrases = self.replace_phoneme_length(accent_phrases, speaker_id)?;
-        self.replace_mora_pitch(&accent_phrases, speaker_id)
+        let accent_phrases = self
+            .replace_phoneme_length(accent_phrases, style_id)
+            .await?;
+        self.replace_mora_pitch(&accent_phrases, style_id).await
     }
 
-    pub fn replace_phoneme_length(
-        &mut self,
+    pub async fn replace_phoneme_length(
+        &self,
         accent_phrases: &[AccentPhraseModel],
-        speaker_id: u32,
+        style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
         let (_, phoneme_data_list) = SynthesisEngine::initial_process(accent_phrases);
 
@@ -134,8 +136,9 @@ impl SynthesisEngine {
             .map(|phoneme_data| phoneme_data.phoneme_id())
             .collect();
         let phoneme_length = self
-            .inference_core_mut()
-            .predict_duration(&phoneme_list_s, speaker_id)?;
+            .inference_core()
+            .predict_duration(&phoneme_list_s, style_id)
+            .await?;
 
         let mut index = 0;
         let new_accent_phrases = accent_phrases
@@ -181,10 +184,10 @@ impl SynthesisEngine {
         Ok(new_accent_phrases)
     }
 
-    pub fn replace_mora_pitch(
-        &mut self,
+    pub async fn replace_mora_pitch(
+        &self,
         accent_phrases: &[AccentPhraseModel],
-        speaker_id: u32,
+        style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
         let (_, phoneme_data_list) = SynthesisEngine::initial_process(accent_phrases);
 
@@ -246,16 +249,19 @@ impl SynthesisEngine {
             end_accent_phrase_list.push(base_end_accent_phrase_list[vowel_index as usize]);
         }
 
-        let mut f0_list = self.inference_core_mut().predict_intonation(
-            vowel_phoneme_list.len(),
-            &vowel_phoneme_list,
-            &consonant_phoneme_list,
-            &start_accent_list,
-            &end_accent_list,
-            &start_accent_phrase_list,
-            &end_accent_phrase_list,
-            speaker_id,
-        )?;
+        let mut f0_list = self
+            .inference_core()
+            .predict_intonation(
+                vowel_phoneme_list.len(),
+                &vowel_phoneme_list,
+                &consonant_phoneme_list,
+                &start_accent_list,
+                &end_accent_list,
+                &start_accent_phrase_list,
+                &end_accent_phrase_list,
+                style_id,
+            )
+            .await?;
 
         for i in 0..vowel_phoneme_data_list.len() {
             if UNVOICED_MORA_PHONEME_LIST
@@ -308,10 +314,10 @@ impl SynthesisEngine {
         Ok(new_accent_phrases)
     }
 
-    pub fn synthesis(
-        &mut self,
+    pub async fn synthesis(
+        &self,
         query: &AudioQueryModel,
-        speaker_id: u32,
+        style_id: StyleId,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<f32>> {
         let speed_scale = *query.speed_scale();
@@ -409,27 +415,31 @@ impl SynthesisEngine {
         // 2次元のvectorを1次元に変換し、アドレスを連続させる
         let flatten_phoneme = phoneme.into_iter().flatten().collect::<Vec<_>>();
 
-        self.inference_core_mut().decode(
-            f0.len(),
-            OjtPhoneme::num_phoneme(),
-            &f0,
-            &flatten_phoneme,
-            speaker_id,
-        )
+        self.inference_core()
+            .decode(
+                f0.len(),
+                OjtPhoneme::num_phoneme(),
+                &f0,
+                &flatten_phoneme,
+                style_id,
+            )
+            .await
     }
 
-    pub fn synthesis_wave_format(
-        &mut self,
+    pub async fn synthesis_wave_format(
+        &self,
         query: &AudioQueryModel,
-        speaker_id: u32,
+        style_id: StyleId,
         enable_interrogative_upspeak: bool,
     ) -> Result<Vec<u8>> {
-        let wave = self.synthesis(query, speaker_id, enable_interrogative_upspeak)?;
-
+        let wave = self
+            .synthesis(query, style_id, enable_interrogative_upspeak)
+            .await?;
         let volume_scale = *query.volume_scale();
         let output_stereo = *query.output_stereo();
-        // TODO: 44.1kHzなどの対応
         let output_sampling_rate = *query.output_sampling_rate();
+
+        // TODO: 44.1kHzなどの対応
 
         let num_channels: u16 = if output_stereo { 2 } else { 1 };
         let bit_depth: u16 = 16;
@@ -468,12 +478,6 @@ impl SynthesisEngine {
         }
 
         Ok(cur.into_inner())
-    }
-
-    pub fn load_openjtalk_dict(&mut self, mecab_dict_dir: impl AsRef<Path>) -> Result<()> {
-        self.open_jtalk
-            .load(mecab_dict_dir)
-            .map_err(|_| Error::NotLoadedOpenjtalkDict)
     }
 
     pub fn is_openjtalk_dict_loaded(&self) -> bool {
@@ -644,44 +648,43 @@ fn make_interrogative_mora(last_mora: &MoraModel) -> MoraModel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ::test_util::OPEN_JTALK_DIC_DIR;
     use pretty_assertions::assert_eq;
-    use test_util::OPEN_JTALK_DIC_DIR;
 
-    use crate::{macros::tests::assert_debug_fmt_eq, *};
-
-    #[rstest]
-    fn load_openjtalk_dict_works() {
-        let core = InferenceCore::new(false, None);
-        let mut synthesis_engine = SynthesisEngine::new(core, OpenJtalk::initialize());
-
-        let result = synthesis_engine.load_openjtalk_dict(OPEN_JTALK_DIC_DIR);
-        assert_debug_fmt_eq!(result, Ok(()));
-
-        let result = synthesis_engine.load_openjtalk_dict("");
-        assert_debug_fmt_eq!(result, Err(Error::NotLoadedOpenjtalkDict));
-    }
+    use crate::*;
 
     #[rstest]
-    fn is_openjtalk_dict_loaded_works() {
-        let core = InferenceCore::new(false, None);
-        let mut synthesis_engine = SynthesisEngine::new(core, OpenJtalk::initialize());
+    #[tokio::test]
+    async fn is_openjtalk_dict_loaded_works() {
+        let core = InferenceCore::new_with_initialize(false, 0, false)
+            .await
+            .unwrap();
+        let synthesis_engine = SynthesisEngine::new(
+            core,
+            OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR)
+                .unwrap()
+                .into(),
+        );
 
-        let _ = synthesis_engine.load_openjtalk_dict(OPEN_JTALK_DIC_DIR);
         assert_eq!(synthesis_engine.is_openjtalk_dict_loaded(), true);
-
-        let _ = synthesis_engine.load_openjtalk_dict("");
-        assert_eq!(synthesis_engine.is_openjtalk_dict_loaded(), false);
     }
 
     #[rstest]
-    fn create_accent_phrases_works() {
-        let mut core = InferenceCore::new(true, None);
-        core.initialize(false, 0, true).unwrap();
-        let mut synthesis_engine = SynthesisEngine::new(core, OpenJtalk::initialize());
+    #[tokio::test]
+    async fn create_accent_phrases_works() {
+        let core = InferenceCore::new_with_initialize(false, 0, true)
+            .await
+            .unwrap();
+        let synthesis_engine = SynthesisEngine::new(
+            core,
+            OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR)
+                .unwrap()
+                .into(),
+        );
 
-        let _ = synthesis_engine.load_openjtalk_dict(OPEN_JTALK_DIC_DIR);
         let accent_phrases = synthesis_engine
-            .create_accent_phrases("同じ、文章、です。完全に、同一です。", 0)
+            .create_accent_phrases("同じ、文章、です。完全に、同一です。", StyleId::new(1))
+            .await
             .unwrap();
         assert_eq!(accent_phrases.len(), 5);
 

@@ -5,17 +5,17 @@ import pydantic
 
 
 @pydantic.dataclasses.dataclass
-class Style:
+class StyleMeta:
     name: str
     id: int
 
 
 @pydantic.dataclasses.dataclass
-class Meta:
+class SpeakerMeta:
     """メタ情報。"""
 
     name: str
-    styles: List[Style]
+    styles: List[StyleMeta]
     speaker_uuid: str
     version: str
 

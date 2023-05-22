@@ -52,6 +52,5 @@ static SNAPSHOTS: Lazy<Snapshots> =
 #[derive(Deserialize)]
 struct Snapshots {
     last_error_message: String,
-    #[serde(deserialize_with = "snapshots::deserialize_platform_specific_snapshot")]
     stderr: String,
 }

@@ -17,13 +17,15 @@ directml = ["voicevox_core/directml"]
 [dependencies]
 easy-ext.workspace = true
 log = "0.4.17"
-numpy = "0.17.2"
-pyo3 = { version = "0.17.2", features = ["abi3-py38", "extension-module"] }
-pyo3-log = "0.7.0"
+pyo3 = { version = "0.18.0", features = ["abi3-py38", "extension-module"] }
+pyo3-log = "0.8.0"
 serde.workspace = true
 serde_json.workspace = true
 tracing.workspace = true
 voicevox_core.workspace = true
+pyo3-asyncio = { version = "0.18.0", features = ["tokio-runtime"] }
+tokio.workspace = true
+once_cell.workspace = true
 
 [build-dependencies]
 anyhow.workspace = true

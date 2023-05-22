@@ -5,6 +5,7 @@ use std::fmt::Debug;
 use thiserror::Error;
 
 use super::*;
+use voicevox_core::AccentPhraseModel;
 
 pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxResultCode {
     if let Err(err) = &result {
@@ -28,13 +29,16 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(LoadModel { .. })) => VOICEVOX_RESULT_LOAD_MODEL_ERROR,
             Err(RustApi(LoadMetas(_))) => VOICEVOX_RESULT_LOAD_METAS_ERROR,
             Err(RustApi(GetSupportedDevices(_))) => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
-            Err(RustApi(UninitializedStatus)) => VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR,
-            Err(RustApi(InvalidSpeakerId { .. })) => VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR,
+            Err(RustApi(InvalidStyleId { .. })) => VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR,
             Err(RustApi(InvalidModelIndex { .. })) => VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR,
             Err(RustApi(InferenceFailed)) => VOICEVOX_RESULT_INFERENCE_ERROR,
             Err(RustApi(ExtractFullContextLabel(_))) => {
                 VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR
             }
+            Err(RustApi(UnloadedModel { .. })) => VOICEVOX_UNLOADED_MODEL_ERROR,
+            Err(RustApi(AlreadyLoadedModel { .. })) => VOICEVOX_ALREADY_LOADED_MODEL_ERROR,
+            Err(RustApi(OpenFile { .. })) => VOICEVOX_OPEN_FILE_ERROR,
+            Err(RustApi(VvmRead { .. })) => VOICEVOX_VVM_MODEL_READ_ERROR,
             Err(RustApi(ParseKana(_))) => VOICEVOX_RESULT_PARSE_KANA_ERROR,
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
@@ -57,67 +61,12 @@ pub(crate) enum CApiError {
     InvalidAccentPhrase(serde_json::Error),
 }
 
-pub(crate) fn create_audio_query(
-    japanese_or_kana: &CStr,
-    speaker_id: u32,
-    method: fn(
-        &mut Internal,
-        &str,
-        u32,
-        voicevox_core::AudioQueryOptions,
-    ) -> Result<AudioQueryModel>,
-    options: VoicevoxAudioQueryOptions,
-) -> CApiResult<CString> {
-    let japanese_or_kana = ensure_utf8(japanese_or_kana)?;
-
-    let audio_query = method(
-        &mut lock_internal(),
-        japanese_or_kana,
-        speaker_id,
-        options.into(),
-    )?;
-    Ok(CString::new(audio_query_model_to_json(&audio_query)).expect("should not contain '\\0'"))
-}
-
-fn audio_query_model_to_json(audio_query_model: &AudioQueryModel) -> String {
+pub(crate) fn audio_query_model_to_json(audio_query_model: &AudioQueryModel) -> String {
     serde_json::to_string(audio_query_model).expect("should be always valid")
 }
 
-pub(crate) fn create_accent_phrases(
-    japanese_or_kana: &CStr,
-    speaker_id: u32,
-    method: fn(
-        &mut Internal,
-        &str,
-        u32,
-        voicevox_core::AccentPhrasesOptions,
-    ) -> Result<Vec<AccentPhraseModel>>,
-    options: VoicevoxAccentPhrasesOptions,
-) -> CApiResult<CString> {
-    let japanese_or_kana = ensure_utf8(japanese_or_kana)?;
-
-    let accent_phrases = method(
-        &mut lock_internal(),
-        japanese_or_kana,
-        speaker_id,
-        options.into(),
-    )?;
-    Ok(CString::new(accent_phrases_model_to_json(&accent_phrases))
-        .expect("should not contain '\\0'"))
-}
-
-fn accent_phrases_model_to_json(accent_phrases_model: &[AccentPhraseModel]) -> String {
-    serde_json::to_string(accent_phrases_model).expect("should be always valid")
-}
-
-pub(crate) fn modify_accent_phrases(
-    accent_phrases: &[AccentPhraseModel],
-    speaker_id: u32,
-    method: fn(&mut Internal, u32, &[AccentPhraseModel]) -> Result<Vec<AccentPhraseModel>>,
-) -> CApiResult<CString> {
-    let accent_phrases = method(&mut lock_internal(), speaker_id, accent_phrases)?;
-    Ok(CString::new(accent_phrases_model_to_json(&accent_phrases))
-        .expect("should not contain '\\0'"))
+pub(crate) fn accent_phrases_to_json(audio_query_model: &[AccentPhraseModel]) -> String {
+    serde_json::to_string(audio_query_model).expect("should be always valid")
 }
 
 pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
@@ -183,22 +132,17 @@ impl Default for VoicevoxInitializeOptions {
             acceleration_mode: options.acceleration_mode.into(),
             cpu_num_threads: options.cpu_num_threads,
             load_all_models: options.load_all_models,
-            open_jtalk_dict_dir: null(),
         }
     }
 }
 
-impl VoicevoxInitializeOptions {
-    pub(crate) unsafe fn try_into_options(self) -> CApiResult<voicevox_core::InitializeOptions> {
-        let open_jtalk_dict_dir = (!self.open_jtalk_dict_dir.is_null())
-            .then(|| ensure_utf8(CStr::from_ptr(self.open_jtalk_dict_dir)).map(Into::into))
-            .transpose()?;
-        Ok(voicevox_core::InitializeOptions {
-            acceleration_mode: self.acceleration_mode.into(),
-            cpu_num_threads: self.cpu_num_threads,
-            load_all_models: self.load_all_models,
-            open_jtalk_dict_dir,
-        })
+impl From<VoicevoxInitializeOptions> for voicevox_core::InitializeOptions {
+    fn from(value: VoicevoxInitializeOptions) -> Self {
+        voicevox_core::InitializeOptions {
+            acceleration_mode: value.acceleration_mode.into(),
+            cpu_num_threads: value.cpu_num_threads,
+            load_all_models: value.load_all_models,
+        }
     }
 }
 

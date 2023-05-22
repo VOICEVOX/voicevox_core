@@ -19,11 +19,19 @@ int main(int argc, char *argv[]) {
 
   auto initialize_options = voicevox_make_default_initialize_options();
   initialize_options.load_all_models = true;
-  initialize_options.open_jtalk_dict_dir = open_jtalk_dict_path.c_str();
-  if (voicevox_initialize(initialize_options) != VOICEVOX_RESULT_OK) {
-    std::cout << "coreの初期化に失敗しました" << std::endl;
+  OpenJtalkRc* open_jtalk;
+  auto result = voicevox_open_jtalk_rc_new(open_jtalk_dict_path.c_str(),&open_jtalk);
+  if (result != VOICEVOX_RESULT_OK){
+    std::cerr << voicevox_error_result_to_message(result) << std::endl;
     return 1;
   }
+  VoicevoxSynthesizer* synthesizer;
+  result = voicevox_synthesizer_new_with_initialize(open_jtalk,initialize_options,&synthesizer);
+  if (result != VOICEVOX_RESULT_OK) {
+    std::cerr << voicevox_error_result_to_message(result) << std::endl;
+    return 1;
+  }
+  voicevox_open_jtalk_rc_delete(open_jtalk);
 
   std::cout << "音声生成中..." << std::endl;
 
@@ -31,11 +39,11 @@ int main(int argc, char *argv[]) {
   size_t output_wav_size = 0;
   uint8_t *output_wav = nullptr;
 
-  auto result = voicevox_tts(text.c_str(), speaker_id,
+  result = voicevox_synthesizer_tts(synthesizer,text.c_str(), speaker_id,
                              voicevox_make_default_tts_options(),
                              &output_wav_size, &output_wav);
   if (result != VOICEVOX_RESULT_OK) {
-    std::cout << voicevox_error_result_to_message(result) << std::endl;
+    std::cerr << voicevox_error_result_to_message(result) << std::endl;
     return 1;
   }
 
@@ -46,6 +54,8 @@ int main(int argc, char *argv[]) {
   voicevox_wav_free(output_wav);
 
   std::cout << "音声ファイル保存完了 (" << OUTPUT_WAV_NAME << ")" << std::endl;
+
+  voicevox_synthesizer_delete(synthesizer);
 
   return 0;
 }
