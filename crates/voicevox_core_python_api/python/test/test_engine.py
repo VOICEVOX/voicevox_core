@@ -1,13 +1,5 @@
 import numpy as np
 from voicevox_core import VoicevoxCore
-from data import (
-    example_f0_length,
-    example_phoneme_size,
-    example_f0,
-    example_phoneme,
-    example_duration,
-    example_intonation,
-)
 
 SPEAKER_ID = 0
 
@@ -16,7 +8,7 @@ SPEAKER_ID = 0
 # crates/voicevox_core_c_api/tests/e2e/testcases/compatible_engine_load_model_before_initialize.rs
 # （コア初期化前にモデルをロードするとエラーになる）は、コアを初期化せずにモデルをロードすることが出来ないため、
 # Python API版でのテストはしない。
-def test_engine():
+def test_engine(example_data):
     core = VoicevoxCore()
     assert not core.is_model_loaded(SPEAKER_ID)
     core.load_model(SPEAKER_ID)
@@ -40,15 +32,15 @@ def test_engine():
     )
 
     wave = core.decode(
-        example_f0_length,
-        example_phoneme_size,
-        example_f0,
-        example_phoneme,
+        example_data.f0_length,
+        example_data.phoneme_size,
+        example_data.f0,
+        example_data.phoneme,
         SPEAKER_ID,
     )
 
-    check_float_array_near(duration, example_duration, 0.01)
-    check_float_array_near(intonation, example_intonation, 0.01)
+    check_float_array_near(duration, example_data.duration, 0.01)
+    check_float_array_near(intonation, example_data.intonation, 0.01)
 
     assert not np.isnan(wave).any()
     assert not np.isinf(wave).any()
