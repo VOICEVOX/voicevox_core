@@ -5,7 +5,6 @@ use self::helpers::*;
 use chrono::SecondsFormat;
 use is_terminal::IsTerminal;
 use once_cell::sync::Lazy;
-use std::collections::HashSet;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
@@ -13,7 +12,6 @@ use std::io::{self, Write};
 use std::os::raw::c_char;
 use std::ptr::null;
 use std::sync::{Mutex, MutexGuard};
-use strum::IntoEnumIterator as _;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use voicevox_core::Result;
@@ -72,19 +70,7 @@ pub(crate) fn lock_internal() -> MutexGuard<'static, Internal> {
 fn buffer_manager() -> MutexGuard<'static, BufferManager> {
     return BUFFER_MANAGER.lock().unwrap();
 
-    static BUFFER_MANAGER: Mutex<BufferManager> = Mutex::new(BufferManager::new(static_str_addrs));
-
-    fn static_str_addrs() -> HashSet<usize> {
-        itertools::chain(
-            [
-                voicevox_get_version() as _,
-                voicevox_get_metas_json() as _,
-                voicevox_get_supported_devices_json() as _,
-            ],
-            VoicevoxResultCode::iter().map(|c| voicevox_error_result_to_message(c) as _),
-        )
-        .collect()
-    }
+    static BUFFER_MANAGER: Mutex<BufferManager> = Mutex::new(BufferManager::new());
 }
 
 /*
@@ -149,7 +135,7 @@ static VOICEVOX_VERSION: once_cell::sync::Lazy<CString> =
 /// @return SemVerでフォーマットされたバージョン
 #[no_mangle]
 pub extern "C" fn voicevox_get_version() -> *const c_char {
-    VOICEVOX_VERSION.as_ptr()
+    buffer_manager().memorize_static_str(VOICEVOX_VERSION.as_ptr())
 }
 
 /// モデルを読み込む
@@ -184,14 +170,14 @@ pub extern "C" fn voicevox_finalize() {
 /// @return メタ情報のjson文字列
 #[no_mangle]
 pub extern "C" fn voicevox_get_metas_json() -> *const c_char {
-    lock_internal().get_metas_json().as_ptr()
+    buffer_manager().memorize_static_str(lock_internal().get_metas_json().as_ptr())
 }
 
 /// サポートデバイス情報をjsonで取得する
 /// @return サポートデバイス情報のjson文字列
 #[no_mangle]
 pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
-    lock_internal().get_supported_devices_json().as_ptr()
+    buffer_manager().memorize_static_str(lock_internal().get_supported_devices_json().as_ptr())
 }
 
 /// 音素ごとの長さを推論する
@@ -658,7 +644,9 @@ pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    voicevox_core::error_result_to_message(result_code).as_ptr() as *const c_char
+    buffer_manager().memorize_static_str(
+        voicevox_core::error_result_to_message(result_code).as_ptr() as *const c_char,
+    )
 }
 
 #[cfg(test)]

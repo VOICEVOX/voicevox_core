@@ -19,11 +19,9 @@ directml = ["voicevox_core/directml"]
 voicevox_core.workspace = true
 chrono = { version = "0.4.23", default-features = false, features = ["clock"] } # https://github.com/chronotope/chrono/issues/602
 is-terminal = "0.4.2"
-itertools.workspace = true
 libc = "0.2.134"
 once_cell.workspace = true
 serde_json.workspace = true
-strum.workspace = true
 thiserror.workspace = true
 tracing-subscriber.workspace = true
 

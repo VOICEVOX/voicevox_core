@@ -14,13 +14,13 @@ fs-err.workspace = true
 futures-core = "0.3.25"
 futures-util = "0.3.25"
 indicatif = "0.17.3"
-itertools.workspace = true
+itertools = "0.10.5"
 octocrab = { version = "0.19.0", default-features = false, features = ["rustls-tls", "stream"] }
 once_cell.workspace = true
 platforms = "3.0.2"
 rayon = "1.6.1"
 reqwest = { version = "0.11.13", default-features = false, features = ["rustls-tls", "stream"] }
-strum.workspace = true
+strum = { version = "0.24.1", features = ["derive"] }
 tokio = { version = "1.24.1", features = ["macros", "rt-multi-thread", "sync"] }
 tracing.workspace = true
 tracing-subscriber.workspace = true
