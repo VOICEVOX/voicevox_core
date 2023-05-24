@@ -239,7 +239,7 @@ pub(crate) struct BufferManager {
 }
 
 impl BufferManager {
-    pub fn new(static_str_addrs: fn() -> HashSet<usize>) -> Self {
+    pub const fn new(static_str_addrs: fn() -> HashSet<usize>) -> Self {
         Self {
             address_to_layout_table: BTreeMap::new(),
             json_addrs: BTreeSet::new(),

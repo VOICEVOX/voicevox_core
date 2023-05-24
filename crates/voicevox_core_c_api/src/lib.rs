@@ -72,8 +72,7 @@ pub(crate) fn lock_internal() -> MutexGuard<'static, Internal> {
 fn buffer_manager() -> MutexGuard<'static, BufferManager> {
     return BUFFER_MANAGER.lock().unwrap();
 
-    static BUFFER_MANAGER: Lazy<Mutex<BufferManager>> =
-        Lazy::new(|| Mutex::new(BufferManager::new(static_str_addrs)));
+    static BUFFER_MANAGER: Mutex<BufferManager> = Mutex::new(BufferManager::new(static_str_addrs));
 
     fn static_str_addrs() -> HashSet<usize> {
         itertools::chain(
