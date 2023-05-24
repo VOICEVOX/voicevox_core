@@ -1,5 +1,5 @@
 use std::alloc::Layout;
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
 use thiserror::Error;
@@ -233,16 +233,16 @@ impl Default for VoicevoxSynthesisOptions {
 
 /// Rustの世界の`Box<[impl Copy]>`をCの世界に貸し出すため、アドレスとレイアウトを管理するもの。
 pub(crate) struct BufferManager {
-    address_to_layout_table: BTreeMap<usize, Layout>,
-    json_addrs: BTreeSet<usize>,
+    address_to_layout_table: HashMap<usize, Layout>,
+    json_addrs: HashSet<usize>,
     static_str_addrs: fn() -> HashSet<usize>,
 }
 
 impl BufferManager {
     pub fn new(static_str_addrs: fn() -> HashSet<usize>) -> Self {
         Self {
-            address_to_layout_table: BTreeMap::new(),
-            json_addrs: BTreeSet::new(),
+            address_to_layout_table: HashMap::new(),
+            json_addrs: HashSet::new(),
             static_str_addrs,
         }
     }
