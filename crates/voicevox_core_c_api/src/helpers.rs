@@ -1,5 +1,5 @@
 use std::alloc::Layout;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fmt::Debug;
 
 use thiserror::Error;
@@ -234,12 +234,16 @@ impl Default for VoicevoxSynthesisOptions {
 /// Rustの世界の`Box<[impl Copy]>`をCの世界に貸し出すため、アドレスとレイアウトを管理するもの。
 pub(crate) struct BufferManager {
     address_to_layout_table: BTreeMap<usize, Layout>,
+    json_addrs: BTreeSet<usize>,
+    static_str_addrs: fn() -> HashSet<usize>,
 }
 
 impl BufferManager {
-    pub const fn new() -> Self {
+    pub fn new(static_str_addrs: fn() -> HashSet<usize>) -> Self {
         Self {
             address_to_layout_table: BTreeMap::new(),
+            json_addrs: BTreeSet::new(),
+            static_str_addrs,
         }
     }
 
@@ -278,6 +282,34 @@ impl BufferManager {
             std::alloc::dealloc(addr as *mut u8, layout);
         }
     }
+
+    pub fn c_string_into_raw(&mut self, s: CString) -> *mut c_char {
+        let ptr = s.into_raw();
+        self.json_addrs.insert(ptr as _);
+        ptr
+    }
+
+    /// `c_string_into_raw`でC API利用側に貸し出したポインタに対し、デアロケートする。
+    ///
+    /// # Safety
+    ///
+    /// - `ptr`は`c_string_into_raw`で取得したものであること。
+    pub unsafe fn dealloc_c_string(&mut self, ptr: *mut c_char) {
+        if !self.json_addrs.remove(&(ptr as _)) {
+            if (self.static_str_addrs)().contains(&(ptr as _)) {
+                panic!(
+                    "解放しようとしたポインタはvoicevox_core管理下のものですが、\
+                     voicevox_coreがアンロードされるまで永続する文字列に対するものです。\
+                     解放することはできません",
+                )
+            }
+            panic!(
+                "解放しようとしたポインタはvoicevox_coreの管理下にありません。\
+                 誤ったポインタであるか、二重解放になっていることが考えられます",
+            );
+        }
+        drop(CString::from_raw(ptr));
+    }
 }
 
 #[cfg(test)]
@@ -286,7 +318,7 @@ mod tests {
 
     #[test]
     fn buffer_manager_works() {
-        let mut buffer_manager = BufferManager::new();
+        let mut buffer_manager = BufferManager::new(|| unreachable!());
 
         rent_and_dealloc(&mut buffer_manager, vec::<()>(0, &[]));
         rent_and_dealloc(&mut buffer_manager, vec(0, &[()]));
@@ -320,11 +352,36 @@ mod tests {
     #[should_panic(
         expected = "解放しようとしたポインタはvoicevox_coreの管理下にありません。誤ったポインタであるか、二重解放になっていることが考えられます"
     )]
-    fn buffer_manager_denies_unknown_ptr() {
-        let mut buffer_manager = BufferManager::new();
+    fn buffer_manager_denies_unknown_slice_ptr() {
+        let mut buffer_manager = BufferManager::new(|| [].into());
         unsafe {
             let x = 42;
             buffer_manager.dealloc_slice(&x as *const i32);
         }
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "解放しようとしたポインタはvoicevox_coreの管理下にありません。誤ったポインタであるか、二重解放になっていることが考えられます"
+    )]
+    fn buffer_manager_denies_unknown_char_ptr() {
+        let mut buffer_manager = BufferManager::new(|| [].into());
+        unsafe {
+            let s = CStr::from_bytes_with_nul(b"\0").unwrap().to_owned();
+            buffer_manager.dealloc_c_string(s.into_raw());
+        }
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "解放しようとしたポインタはvoicevox_core管理下のものですが、voicevox_coreがアンロードされるまで永続する文字列に対するものです。解放することはできません"
+    )]
+    fn buffer_manager_denies_known_static_char_ptr() {
+        let mut buffer_manager = BufferManager::new(|| [STATIC.as_ptr() as _].into());
+        unsafe {
+            buffer_manager.dealloc_c_string(STATIC.as_ptr() as *mut c_char);
+        }
+
+        static STATIC: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"\0") };
     }
 }

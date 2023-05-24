@@ -1,6 +1,8 @@
+use strum::EnumIter;
+
 /// 処理結果を示す結果コード
 #[repr(i32)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, EnumIter)]
 #[allow(non_camel_case_types)]
 pub enum VoicevoxResultCode {
     // C でのenum定義に合わせて大文字で定義している

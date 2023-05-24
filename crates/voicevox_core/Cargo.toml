@@ -21,6 +21,7 @@ onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="ebb
 process_path.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+strum.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="d766a52bad4ccafe18597e57bd6842f59dca881e" }
