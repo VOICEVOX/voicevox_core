@@ -382,11 +382,9 @@ mod tests {
         expected = "解放しようとしたポインタはvoicevox_core管理下のものですが、voicevox_coreがアンロードされるまで永続する文字列に対するものです。解放することはできません"
     )]
     fn buffer_manager_denies_known_static_char_ptr() {
-        let mut buffer_manager = BufferManager {
-            static_str_addrs: [STATIC.as_ptr() as _].into(),
-            ..BufferManager::new()
-        };
+        let mut buffer_manager = BufferManager::new();
         unsafe {
+            buffer_manager.memorize_static_str(STATIC.as_ptr() as _);
             buffer_manager.dealloc_c_string(STATIC.as_ptr() as *mut c_char);
         }
 
