@@ -222,7 +222,7 @@ pub struct VoicevoxSynthesizer;
 /// 音声シンセサイザを生成して初期化する
 /// @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
 /// @param [in] options 初期化オプション #VoicevoxInitializeOptions
-/// @param [out] out_synthesizer 新しく生成された音声シンセサイザの出力先 #VoicevoxVoiceSynthesizer
+/// @param [out] out_synthesizer 新しく生成された音声シンセサイザの出力先 #VoicevoxSynthesizer
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
@@ -245,10 +245,10 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
 }
 
 /// 音声シンセサイザを破棄する
-/// @param [in] synthesizer 破棄する音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] synthesizer 破棄する音声シンセサイザ #VoicevoxSynthesizer
 ///
 /// # Safety
-/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: *mut VoicevoxSynthesizer) {
     let _ = Box::from_raw(synthesizer as *mut CSynthesizer);
@@ -260,7 +260,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: *mut VoicevoxS
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
-/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_load_voice_model(
@@ -282,7 +282,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_load_voice_model(
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
-/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 /// @param model_id NULL終端文字列であること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
@@ -303,7 +303,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
 /// @return GPUモードならtrue、そうでないならfalse
 ///
 /// # Safety
-/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_is_gpu_mode(
     synthesizer: *const VoicevoxSynthesizer,
@@ -313,12 +313,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_gpu_mode(
 }
 
 /// 指定したspeaker_idのモデルが読み込まれているか判定する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
 /// @param [in] model_id 音声モデルのID #VoicevoxVoiceModelId
 /// @return モデルが読み込まれているのであればtrue、そうでないならfalse
 ///
 /// # Safety
-/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 /// @param model_id NULL終端文字列
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_is_loaded_voice_model(
@@ -333,11 +333,11 @@ pub unsafe extern "C" fn voicevox_is_loaded_voice_model(
 }
 
 /// メタ情報をjsonで取得する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
 /// @return メタ情報のjson文字列
 ///
 /// # Safety
-/// @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_get_metas_json(
     synthesizer: *const VoicevoxSynthesizer,
@@ -376,7 +376,7 @@ pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQu
 }
 
 /// AudioQuery を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
 /// @param [in] text テキスト。文字コードはUTF-8
 /// @param [in] style_id スタイルID #VoicevoxStyleId
 /// @param [in] options AudioQueryのオプション #VoicevoxAudioQueryOptions
@@ -425,7 +425,7 @@ pub extern "C" fn voicevox_make_default_accent_phrases_options() -> VoicevoxAcce
 }
 
 /// create_accent_phrases を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
 /// @param [in] text テキスト
 /// @param [in] style_id スタイルID #VoicevoxStyleId
 /// @param [in] output_accent_phrases_json アクセントフレーズのjson文字列
@@ -457,7 +457,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
 }
 
 /// replace_mora_data を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
 /// @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
 /// @param [in] style_id スタイルID #VoicevoxStyleId
 /// @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
@@ -490,7 +490,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
 }
 
 /// replace_phoneme_length を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
 /// @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
 /// @param [in] style_id スタイルID #VoicevoxStyleId
 /// @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
@@ -523,7 +523,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
 }
 
 /// replace_mora_pitch を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
 /// @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
 /// @param [in] style_id スタイルID #VoicevoxStyleId
 /// @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
@@ -570,7 +570,7 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
 }
 
 /// AudioQuery から音声合成する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
 /// @param [in] audio_query_json jsonフォーマットされた AudioQuery
 /// @param [in] style_id スタイルID #VoicevoxStyleId
 /// @param [in] options AudioQueryから音声合成オプション
@@ -626,7 +626,7 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 }
 
 /// テキスト音声合成を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
 /// @param [in] text テキスト。文字コードはUTF-8
 /// @param [in] style_id スタイルID #VoicevoxStyleId
 /// @param [in] options テキスト音声合成オプション
