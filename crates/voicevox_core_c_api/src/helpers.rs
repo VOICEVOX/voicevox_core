@@ -234,7 +234,7 @@ impl Default for VoicevoxSynthesisOptions {
 /// Rustの世界の`Box<[impl Copy]>`をCの世界に貸し出すため、アドレスとレイアウトを管理するもの。
 pub(crate) struct BufferManager {
     address_to_layout_table: BTreeMap<usize, Layout>,
-    json_addrs: BTreeSet<usize>,
+    owned_str_addrs: BTreeSet<usize>,
     static_str_addrs: BTreeSet<usize>,
 }
 
@@ -242,7 +242,7 @@ impl BufferManager {
     pub const fn new() -> Self {
         Self {
             address_to_layout_table: BTreeMap::new(),
-            json_addrs: BTreeSet::new(),
+            owned_str_addrs: BTreeSet::new(),
             static_str_addrs: BTreeSet::new(),
         }
     }
@@ -285,7 +285,7 @@ impl BufferManager {
 
     pub fn c_string_into_raw(&mut self, s: CString) -> *mut c_char {
         let ptr = s.into_raw();
-        self.json_addrs.insert(ptr as _);
+        self.owned_str_addrs.insert(ptr as _);
         ptr
     }
 
@@ -295,7 +295,7 @@ impl BufferManager {
     ///
     /// - `ptr`は`c_string_into_raw`で取得したものであること。
     pub unsafe fn dealloc_c_string(&mut self, ptr: *mut c_char) {
-        if !self.json_addrs.remove(&(ptr as _)) {
+        if !self.owned_str_addrs.remove(&(ptr as _)) {
             if self.static_str_addrs.contains(&(ptr as _)) {
                 panic!(
                     "解放しようとしたポインタはvoicevox_core管理下のものですが、\
