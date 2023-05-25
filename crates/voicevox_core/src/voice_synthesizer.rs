@@ -122,7 +122,7 @@ impl Synthesizer {
         self.use_gpu
     }
 
-    /// 音声合成モデルを読み込む
+    /// 音声モデルを読み込む
     pub async fn load_voice_model(&mut self, model: &VoiceModel) -> Result<()> {
         self.synthesis_engine
             .inference_core_mut()
@@ -131,14 +131,14 @@ impl Synthesizer {
         Ok(())
     }
 
-    /// 指定したモデルIdの音声合成モデルを開放する
+    /// 指定したモデルIdの音声モデルを開放する
     pub fn unload_voice_model(&mut self, voice_model_id: &VoiceModelId) -> Result<()> {
         self.synthesis_engine
             .inference_core_mut()
             .unload_model(voice_model_id)
     }
 
-    /// 指定したモデルIdの音声合成モデルが読み込まれているか判定する
+    /// 指定したモデルIdの音声モデルが読み込まれているか判定する
     pub fn is_loaded_voice_model(&self, voice_model_id: &VoiceModelId) -> bool {
         self.synthesis_engine
             .inference_core()
@@ -152,7 +152,7 @@ impl Synthesizer {
             .is_model_loaded_by_style_id(style_id)
     }
 
-    /// 今読み込んでいる音声合成モデルのメタ情報を返す
+    /// 今読み込んでいる音声モデルのメタ情報を返す
     pub fn metas(&self) -> &VoiceModelMeta {
         self.synthesis_engine.inference_core().metas()
     }

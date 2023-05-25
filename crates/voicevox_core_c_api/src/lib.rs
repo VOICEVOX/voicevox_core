@@ -148,11 +148,11 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
     VOICEVOX_VERSION.as_ptr()
 }
 
-/// 音声合成モデル
+/// 音声モデル
 #[repr(C)]
 pub struct VoicevoxVoiceModel;
 
-/// 音声合成モデルID
+/// 音声モデルID
 pub type VoicevoxVoiceModelId = *const c_char;
 
 /// スタイルID
