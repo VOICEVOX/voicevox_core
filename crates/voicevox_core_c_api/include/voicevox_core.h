@@ -145,14 +145,14 @@ typedef struct VoicevoxInitializeOptions {
 } VoicevoxInitializeOptions;
 
 /**
- * 音声合成モデル
+ * 音声モデル
  */
 typedef struct VoicevoxVoiceModel {
 
 } VoicevoxVoiceModel;
 
 /**
- * 音声合成モデルID
+ * 音声モデルID
  */
 typedef const char *VoicevoxVoiceModelId;
 
@@ -320,7 +320,7 @@ void voicevox_voice_model_delete(struct VoicevoxVoiceModel *model);
  * 音声シンセサイザを生成して初期化する
  * @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
  * @param [in] options 初期化オプション #VoicevoxInitializeOptions
- * @param [out] out_synthesizer 新しく生成された音声シンセサイザの出力先 #VoicevoxVoiceSynthesizer
+ * @param [out] out_synthesizer 新しく生成された音声シンセサイザの出力先 #VoicevoxSynthesizer
  * @return 結果コード #VoicevoxResultCode
  *
  * # Safety
@@ -336,10 +336,10 @@ VoicevoxResultCode voicevox_synthesizer_new_with_initialize(const struct OpenJta
 
 /**
  * 音声シンセサイザを破棄する
- * @param [in] synthesizer 破棄する音声シンセサイザ #VoicevoxVoiceSynthesizer
+ * @param [in] synthesizer 破棄する音声シンセサイザ #VoicevoxSynthesizer
  *
  * # Safety
- * @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -354,7 +354,7 @@ void voicevox_synthesizer_delete(struct VoicevoxSynthesizer *synthesizer);
  * @return 結果コード #VoicevoxResultCode
  *
  * # Safety
- * @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
  * @param model 有効な #VoicevoxVoiceModel へのポインタであること
  */
 #ifdef _WIN32
@@ -371,7 +371,7 @@ VoicevoxResultCode voicevox_synthesizer_load_voice_model(struct VoicevoxSynthesi
  * @return 結果コード #VoicevoxResultCode
  *
  * # Safety
- * @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
  * @param model_id NULL終端文字列であること
  */
 #ifdef _WIN32
@@ -387,7 +387,7 @@ VoicevoxResultCode voicevox_synthesizer_unload_voice_model(struct VoicevoxSynthe
  * @return GPUモードならtrue、そうでないならfalse
  *
  * # Safety
- * @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -397,12 +397,12 @@ bool voicevox_synthesizer_is_gpu_mode(const struct VoicevoxSynthesizer *synthesi
 
 /**
  * 指定したspeaker_idのモデルが読み込まれているか判定する
- * @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @param [in] model_id 音声モデルのID #VoicevoxVoiceModelId
  * @return モデルが読み込まれているのであればtrue、そうでないならfalse
  *
  * # Safety
- * @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
  * @param model_id NULL終端文字列
  */
 #ifdef _WIN32
@@ -414,11 +414,11 @@ bool voicevox_is_loaded_voice_model(const struct VoicevoxSynthesizer *synthesize
 
 /**
  * メタ情報をjsonで取得する
- * @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @return メタ情報のjson文字列
  *
  * # Safety
- * @param synthesizer 有効な #VoicevoxVoiceSynthesizer へのポインタであること
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -447,7 +447,7 @@ struct VoicevoxAudioQueryOptions voicevox_make_default_audio_query_options(void)
 
 /**
  * AudioQuery を実行する
- * @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @param [in] text テキスト。文字コードはUTF-8
  * @param [in] style_id スタイルID #VoicevoxStyleId
  * @param [in] options AudioQueryのオプション #VoicevoxAudioQueryOptions
@@ -480,7 +480,7 @@ struct VoicevoxAccentPhrasesOptions voicevox_make_default_accent_phrases_options
 
 /**
  * create_accent_phrases を実行する
- * @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @param [in] text テキスト
  * @param [in] style_id スタイルID #VoicevoxStyleId
  * @param [in] output_accent_phrases_json アクセントフレーズのjson文字列
@@ -501,7 +501,7 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct Voice
 
 /**
  * replace_mora_data を実行する
- * @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
  * @param [in] style_id スタイルID #VoicevoxStyleId
  * @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
@@ -521,7 +521,7 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_data(const struct VoicevoxS
 
 /**
  * replace_phoneme_length を実行する
- * @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
  * @param [in] style_id スタイルID #VoicevoxStyleId
  * @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
@@ -541,7 +541,7 @@ VoicevoxResultCode voicevox_synthesizer_replace_phoneme_length(const struct Voic
 
 /**
  * replace_mora_pitch を実行する
- * @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
  * @param [in] style_id スタイルID #VoicevoxStyleId
  * @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
@@ -571,7 +571,7 @@ struct VoicevoxSynthesisOptions voicevox_make_default_synthesis_options(void);
 
 /**
  * AudioQuery から音声合成する
- * @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @param [in] audio_query_json jsonフォーマットされた AudioQuery
  * @param [in] style_id スタイルID #VoicevoxStyleId
  * @param [in] options AudioQueryから音声合成オプション
@@ -606,7 +606,7 @@ struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
 
 /**
  * テキスト音声合成を実行する
- * @param [in] synthesizer 音声シンセサイザ #VoicevoxVoiceSynthesizer
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @param [in] text テキスト。文字コードはUTF-8
  * @param [in] style_id スタイルID #VoicevoxStyleId
  * @param [in] options テキスト音声合成オプション
