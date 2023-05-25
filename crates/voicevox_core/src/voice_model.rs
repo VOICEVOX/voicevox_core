@@ -9,16 +9,16 @@ use std::{
     path::{Path, PathBuf},
 };
 
-/// 音声合成モデルIdの実体
+/// 音声モデルIdの実体
 pub type RawVoiceModelId = String;
 
-/// 音声合成モデルId (型を強く分けるためにこうしている)
+/// 音声モデルId (型を強く分けるためにこうしている)
 #[derive(PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, new, Getters, Debug)]
 pub struct VoiceModelId {
     raw_voice_model_id: RawVoiceModelId,
 }
 
-/// 音声合成モデル
+/// 音声モデル
 #[derive(Getters, Clone)]
 pub struct VoiceModel {
     id: VoiceModelId,

@@ -139,7 +139,7 @@ impl Synthesizer {
     }
 
     fn __repr__(&self) -> &'static str {
-        "VoiceSynthesizer { .. }"
+        "Synthesizer { .. }"
     }
 
     #[getter]

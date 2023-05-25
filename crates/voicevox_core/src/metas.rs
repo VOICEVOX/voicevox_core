@@ -39,7 +39,7 @@ impl Display for StyleVersion {
     }
 }
 
-/// 音声合成モデルのメタ情報
+/// 音声モデルのメタ情報
 pub type VoiceModelMeta = Vec<SpeakerMeta>;
 
 /// スピーカーのメタ情報
