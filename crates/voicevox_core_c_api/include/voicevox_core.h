@@ -428,12 +428,17 @@ const char *voicevox_synthesizer_get_metas_json(const struct VoicevoxSynthesizer
 
 /**
  * サポートデバイス情報をjsonで取得する
- * @return サポートデバイス情報のjson文字列
+ * @param [out] output_supported_devices_json サポートデバイス情報のjson文字列
+ * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param output_supported_devices_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
- const char *voicevox_get_supported_devices_json(void);
+
+VoicevoxResultCode voicevox_get_supported_devices_json(char **output_supported_devices_json);
 
 /**
  * デフォルトの AudioQuery のオプションを生成する
