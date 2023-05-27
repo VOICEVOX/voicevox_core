@@ -1,4 +1,4 @@
-include!(concat!(env!("OUT_DIR"), "/decl_version_macro.rs"));
+include!(concat!(env!("OUT_DIR"), "/version_macro.rs"));
 
 #[cfg(test)]
 mod tests {

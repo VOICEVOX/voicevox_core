@@ -1655,12 +1655,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adab1eaa3408fb7f0c777a73e7465fd5656136fc93b670eb6df3c88c2c1344e3"
 
 [[package]]
-name = "indoc"
-version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f2cb48b81b1dc9f39676bf99f5499babfec7cd8fe14307f7b3d747208fb5690"
-
-[[package]]
 name = "infer"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2541,7 +2535,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3b1ac5b3731ba34fdaa9785f8d74d17448cd18f30cf19e0c7e7b1fdb5272109"
 dependencies = [
  "cfg-if",
- "indoc 1.0.7",
+ "indoc",
  "libc",
  "memoffset 0.8.0",
  "parking_lot",
@@ -3873,7 +3867,6 @@ dependencies = [
  "futures",
  "heck",
  "humansize",
- "indoc 2.0.1",
  "nanoid",
  "once_cell",
  "onnxruntime",
