@@ -1,13 +1,10 @@
-pub const fn get_version() -> &'static str {
-    env!("CARGO_PKG_VERSION")
-}
+include!(concat!(env!("OUT_DIR"), "/decl_version_macro.rs"));
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::*;
     #[rstest]
     fn get_version_works() {
-        assert_eq!("0.0.0", get_version());
+        assert_eq!("0.0.0", version!());
     }
 }

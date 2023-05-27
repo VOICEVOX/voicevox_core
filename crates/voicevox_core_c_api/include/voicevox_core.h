@@ -213,6 +213,8 @@ typedef struct VoicevoxTtsOptions {
 extern "C" {
 #endif // __cplusplus
 
+extern const char *voicevox_version;
+
 /**
  * 参照カウントで管理されたOpenJtalkを生成する
  *
@@ -248,15 +250,6 @@ __declspec(dllimport)
 #endif
 
 struct VoicevoxInitializeOptions voicevox_make_default_initialize_options(void);
-
-/**
- * voicevoxのバージョンを取得する
- * @return SemVerでフォーマットされたバージョン
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
- const char *voicevox_get_version(void);
 
 /**
  * vvmファイルパスから音声モデルを生成する

@@ -138,15 +138,17 @@ pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitiali
     VoicevoxInitializeOptions::default()
 }
 
-static VOICEVOX_VERSION: once_cell::sync::Lazy<CString> =
-    once_cell::sync::Lazy::new(|| CString::new(voicevox_core::get_version()).unwrap());
-
-/// voicevoxのバージョンを取得する
-/// @return SemVerでフォーマットされたバージョン
+/// voicevoxのバージョン
 #[no_mangle]
-pub extern "C" fn voicevox_get_version() -> *const c_char {
-    VOICEVOX_VERSION.as_ptr()
-}
+pub static voicevox_version: &c_char = {
+    const VOICEVOX_VERSION: &CStr = unsafe {
+        // SAFETY: `voicevox_core::version!()` is a semver, so it should not contain '\0'
+        CStr::from_bytes_with_nul_unchecked(concat!(voicevox_core::version!(), '\0').as_bytes())
+    };
+
+    // SAFETY: A `CStr` is non-empty
+    unsafe { &*VOICEVOX_VERSION.as_ptr() }
+};
 
 /// 音声モデル
 #[repr(C)]
