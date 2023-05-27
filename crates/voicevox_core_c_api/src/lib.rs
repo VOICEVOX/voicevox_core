@@ -142,11 +142,11 @@ pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitiali
 #[no_mangle]
 pub static voicevox_version: &c_char = {
     const VOICEVOX_VERSION: &CStr = unsafe {
-        // SAFETY: `voicevox_core::version!()` is a semver, so it should not contain '\0'
+        // SAFETY: `voicevox_core::version!()` is a SemVer, so it should not contain '\0'
         CStr::from_bytes_with_nul_unchecked(concat!(voicevox_core::version!(), '\0').as_bytes())
     };
 
-    // SAFETY: A `CStr` is non-empty
+    // SAFETY: `CStr::as_ptr` always returns a valid pointer.
     unsafe { &*VOICEVOX_VERSION.as_ptr() }
 };
 
