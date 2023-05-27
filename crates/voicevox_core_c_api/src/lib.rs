@@ -67,11 +67,7 @@ pub(crate) fn lock_internal() -> MutexGuard<'static, Internal> {
 }
 
 // C_APIに渡すために，VecやCStringのサイズを記憶しながら生ポインタを得るためのマネージャ
-fn buffer_manager() -> MutexGuard<'static, BufferManager> {
-    return BUFFER_MANAGER.lock().unwrap();
-
-    static BUFFER_MANAGER: Mutex<BufferManager> = Mutex::new(BufferManager::new());
-}
+static BUFFER_MANAGER: BufferManager = BufferManager::new();
 
 /*
  * Cの関数として公開するための型や関数を定義するこれらの実装はvoicevox_core/publish.rsに定義してある対応する関数にある
@@ -135,7 +131,7 @@ static VOICEVOX_VERSION: once_cell::sync::Lazy<CString> =
 /// @return SemVerでフォーマットされたバージョン
 #[no_mangle]
 pub extern "C" fn voicevox_get_version() -> *const c_char {
-    buffer_manager().memorize_static_str(VOICEVOX_VERSION.as_ptr())
+    BUFFER_MANAGER.memorize_static_str(VOICEVOX_VERSION.as_ptr())
 }
 
 /// モデルを読み込む
@@ -170,14 +166,14 @@ pub extern "C" fn voicevox_finalize() {
 /// @return メタ情報のjson文字列
 #[no_mangle]
 pub extern "C" fn voicevox_get_metas_json() -> *const c_char {
-    buffer_manager().memorize_static_str(lock_internal().get_metas_json().as_ptr())
+    BUFFER_MANAGER.memorize_static_str(lock_internal().get_metas_json().as_ptr())
 }
 
 /// サポートデバイス情報をjsonで取得する
 /// @return サポートデバイス情報のjson文字列
 #[no_mangle]
 pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
-    buffer_manager().memorize_static_str(lock_internal().get_supported_devices_json().as_ptr())
+    BUFFER_MANAGER.memorize_static_str(lock_internal().get_supported_devices_json().as_ptr())
 }
 
 /// 音素ごとの長さを推論する
@@ -205,7 +201,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
             std::slice::from_raw_parts_mut(phoneme_vector, length),
             speaker_id,
         )?;
-        let (ptr, size) = buffer_manager().vec_into_raw(output_vec);
+        let (ptr, size) = BUFFER_MANAGER.vec_into_raw(output_vec);
 
         output_predict_duration_data_length.write(size);
         output_predict_duration_data.write(ptr);
@@ -221,7 +217,7 @@ pub unsafe extern "C" fn voicevox_predict_duration(
 /// @param predict_duration_data voicevox_predict_durationで確保されたポインタであり、かつ呼び出し側でバッファの変更が行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_duration_data_free(predict_duration_data: *mut f32) {
-    buffer_manager().dealloc_slice(predict_duration_data as *const f32);
+    BUFFER_MANAGER.dealloc_slice(predict_duration_data as *const f32);
 }
 
 /// モーラごとのF0を推論する
@@ -270,7 +266,7 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
             std::slice::from_raw_parts(end_accent_phrase_vector, length),
             speaker_id,
         )?;
-        let (ptr, len) = buffer_manager().vec_into_raw(output_vec);
+        let (ptr, len) = BUFFER_MANAGER.vec_into_raw(output_vec);
         output_predict_intonation_data.write(ptr);
         output_predict_intonation_data_length.write(len);
 
@@ -286,7 +282,7 @@ pub unsafe extern "C" fn voicevox_predict_intonation(
 /// @param predict_duration_data voicevox_predict_intonationで確保された，ポインタでありかつ，呼び出し側でバッファの変更を行われていないこと.
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_predict_intonation_data_free(predict_intonation_data: *mut f32) {
-    buffer_manager().dealloc_slice(predict_intonation_data as *const f32);
+    BUFFER_MANAGER.dealloc_slice(predict_intonation_data as *const f32);
 }
 
 /// decodeを実行する
@@ -322,7 +318,7 @@ pub unsafe extern "C" fn voicevox_decode(
             std::slice::from_raw_parts(phoneme_vector, phoneme_size * length),
             speaker_id,
         )?;
-        let (ptr, len) = buffer_manager().vec_into_raw(output_vec);
+        let (ptr, len) = BUFFER_MANAGER.vec_into_raw(output_vec);
         output_decode_data.write(ptr);
         output_decode_data_length.write(len);
         Ok(())
@@ -336,7 +332,7 @@ pub unsafe extern "C" fn voicevox_decode(
 /// @param decode_data voicevox_decodeで確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_decode_data_free(decode_data: *mut f32) {
-    buffer_manager().dealloc_slice(decode_data);
+    BUFFER_MANAGER.dealloc_slice(decode_data);
 }
 
 /// Audio query のオプション
@@ -374,7 +370,7 @@ pub unsafe extern "C" fn voicevox_audio_query(
         let text = CStr::from_ptr(text);
         let audio_query = create_audio_query(text, speaker_id, Internal::audio_query, options)?;
 
-        output_audio_query_json.write(buffer_manager().c_string_into_raw(audio_query));
+        output_audio_query_json.write(BUFFER_MANAGER.c_string_into_raw(audio_query));
         Ok(())
     })())
 }
@@ -415,7 +411,7 @@ pub unsafe extern "C" fn voicevox_accent_phrases(
         let accent_phrases =
             create_accent_phrases(text, speaker_id, Internal::accent_phrases, options)?;
 
-        output_accent_phrases_json.write(buffer_manager().c_string_into_raw(accent_phrases));
+        output_accent_phrases_json.write(BUFFER_MANAGER.c_string_into_raw(accent_phrases));
         Ok(())
     })())
 }
@@ -446,7 +442,7 @@ pub unsafe extern "C" fn voicevox_mora_length(
             modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_length)?;
 
         output_accent_phrases_json
-            .write(buffer_manager().c_string_into_raw(accent_phrases_with_mora_length));
+            .write(BUFFER_MANAGER.c_string_into_raw(accent_phrases_with_mora_length));
         Ok(())
     })())
 }
@@ -477,7 +473,7 @@ pub unsafe extern "C" fn voicevox_mora_pitch(
             modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_pitch)?;
 
         output_accent_phrases_json
-            .write(buffer_manager().c_string_into_raw(accent_phrases_with_mora_pitch));
+            .write(BUFFER_MANAGER.c_string_into_raw(accent_phrases_with_mora_pitch));
         Ok(())
     })())
 }
@@ -508,7 +504,7 @@ pub unsafe extern "C" fn voicevox_mora_data(
             modify_accent_phrases(&accent_phrases, speaker_id, Internal::mora_data)?;
 
         output_accent_phrases_json
-            .write(buffer_manager().c_string_into_raw(accent_phrases_with_mora_data));
+            .write(BUFFER_MANAGER.c_string_into_raw(accent_phrases_with_mora_data));
         Ok(())
     })())
 }
@@ -554,7 +550,7 @@ pub unsafe extern "C" fn voicevox_synthesis(
             &serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
         let wav = lock_internal().synthesis(audio_query, speaker_id, options.into())?;
 
-        let (ptr, len) = buffer_manager().vec_into_raw(wav);
+        let (ptr, len) = BUFFER_MANAGER.vec_into_raw(wav);
         output_wav.write(ptr);
         output_wav_length.write(len);
 
@@ -600,7 +596,7 @@ pub unsafe extern "C" fn voicevox_tts(
     into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let output = lock_internal().tts(text, speaker_id, options.into())?;
-        let (ptr, size) = buffer_manager().vec_into_raw(output);
+        let (ptr, size) = BUFFER_MANAGER.vec_into_raw(output);
         output_wav.write(ptr);
         output_wav_length.write(size);
         Ok(())
@@ -614,7 +610,7 @@ pub unsafe extern "C" fn voicevox_tts(
 /// @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c_char) {
-    buffer_manager().dealloc_c_string(audio_query_json);
+    BUFFER_MANAGER.dealloc_c_string(audio_query_json);
 }
 
 /// jsonフォーマットされた AccnetPhrase データのメモリを解放する
@@ -624,7 +620,7 @@ pub unsafe extern "C" fn voicevox_audio_query_json_free(audio_query_json: *mut c
 /// @param voicevox_accent_phrases で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_accent_phrases_json_free(accented_phrase_json: *mut c_char) {
-    buffer_manager().dealloc_c_string(accented_phrase_json);
+    BUFFER_MANAGER.dealloc_c_string(accented_phrase_json);
 }
 
 /// wav データのメモリを解放する
@@ -634,7 +630,7 @@ pub unsafe extern "C" fn voicevox_accent_phrases_json_free(accented_phrase_json:
 /// @param wav voicevox_tts,voicevox_synthesis で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
-    buffer_manager().dealloc_slice(wav);
+    BUFFER_MANAGER.dealloc_slice(wav);
 }
 
 /// エラー結果をメッセージに変換する
@@ -644,8 +640,8 @@ pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    buffer_manager().memorize_static_str(
-        voicevox_core::error_result_to_message(result_code).as_ptr() as *const c_char,
+    BUFFER_MANAGER.memorize_static_str(
+        voicevox_core::error_result_to_message(result_code).as_ptr() as *const c_char
     )
 }
 
