@@ -18,6 +18,8 @@ on:
       - "*"
       - "**/*"
 env:
+  VOICEVOX_RESOURCE_VERSION: "0.15.0-preview.1"
+  VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-preview.0"
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
 jobs:
@@ -134,6 +136,26 @@ jobs:
         run: |
           echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
+      - name: Checkout VOICEVOX RESOURCE
+        if: github.event.inputs.is_production == 'true'
+        uses: actions/checkout@v3
+        with:
+          repository: VOICEVOX/voicevox_resource
+          ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
+          path: download/resource
+      - name: Checkout VOICEVOX FAT RESOURCE
+        if: github.event.inputs.is_production == 'true'
+        uses: actions/checkout@v3
+        with:
+          repository: VOICEVOX/voicevox_fat_resource
+          ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
+          path: download/fat_resource
+      - name: Raplace resource
+        if: github.event.inputs.is_production == 'true'
+        shell: bash
+        run: |
+          mv -f download/resource/core/README.md ./README.md
+          rm -r ./model; mv core/model ./model
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
