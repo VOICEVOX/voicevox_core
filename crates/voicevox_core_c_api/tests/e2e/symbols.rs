@@ -6,6 +6,7 @@ use voicevox_core::result_code::VoicevoxResultCode;
 /// voicevox\_core\_c\_apiのcdylibのシンボルを集めたもの。
 #[allow(dead_code)] // TODO: WIP
 pub(crate) struct Symbols<'lib> {
+    pub(crate) voicevox_version: Symbol<'lib, &'lib &'lib c_char>,
     pub(crate) voicevox_open_jtalk_rc_new: Symbol<
         'lib,
         unsafe extern "C" fn(*const c_char, *mut *mut OpenJtalkRc) -> VoicevoxResultCode,
@@ -13,7 +14,6 @@ pub(crate) struct Symbols<'lib> {
     pub(crate) voicevox_open_jtalk_rc_delete: Symbol<'lib, unsafe extern "C" fn(*mut OpenJtalkRc)>,
     pub(crate) voicevox_make_default_initialize_options:
         Symbol<'lib, unsafe extern "C" fn() -> VoicevoxInitializeOptions>,
-    pub(crate) voicevox_get_version: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
     pub(crate) voicevox_voice_model_new_from_path: Symbol<
         'lib,
         unsafe extern "C" fn(*const c_char, *mut *mut VoicevoxVoiceModel) -> VoicevoxResultCode,
@@ -138,10 +138,10 @@ impl<'lib> Symbols<'lib> {
         });
 
         Ok(new!(
+            voicevox_version,
             voicevox_open_jtalk_rc_new,
             voicevox_open_jtalk_rc_delete,
             voicevox_make_default_initialize_options,
-            voicevox_get_version,
             voicevox_voice_model_new_from_path,
             voicevox_voice_model_id,
             voicevox_voice_model_get_metas_json,
