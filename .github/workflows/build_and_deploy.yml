@@ -5,8 +5,8 @@ on:
       version:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
         required: true
-      code_signing:
-        description: "コード署名する"
+      is_production:
+        description: "製品版をビルドする"
         type: boolean
         required: false
   release:
@@ -20,13 +20,9 @@ on:
 env:
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
-
-  # Raw character weights are not public.
-  # Skip uploading to GitHub Release on public repo.
-  SKIP_UPLOADING_RELEASE_ASSET: ${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }}
 jobs:
   build_and_deploy:
-    environment: ${{ github.event.inputs.code_signing == 'true' && 'code_signing' || '' }} # コード署名用のenvironment
+    environment: ${{ github.event.inputs.is_production == 'true' && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include:
@@ -184,7 +180,7 @@ jobs:
           cp -vr model "artifact/${{ env.ASSET_NAME }}/"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
       - name: Code signing (Windows)
-        if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
+        if: startsWith(matrix.os, 'windows') && github.event.inputs.is_production == 'true'
         shell: bash
         run: |
           bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
@@ -197,7 +193,7 @@ jobs:
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -206,7 +202,7 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.whl_local_version
+        if: env.VERSION != '0.0.0' && matrix.whl_local_version
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -219,7 +215,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -228,7 +224,7 @@ jobs:
             scripts/downloads/*
           target_commitish: ${{ github.sha }}
   deploy_precompiled_downloader:
-    environment: ${{ github.event.inputs.code_signing == 'true' && 'code_signing' || '' }} # コード署名用のenvironment
+    environment: ${{ github.event.inputs.is_production == 'true' && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include:
@@ -271,7 +267,7 @@ jobs:
           esac
           mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
       - name: Code signing (Windows)
-        if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
+        if: startsWith(matrix.os, 'windows') && github.event.inputs.is_production == 'true'
         shell: bash
         run: |
           bash build_util/codesign.bash ./${{ matrix.name }}
@@ -279,7 +275,7 @@ jobs:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
