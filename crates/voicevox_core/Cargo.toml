@@ -12,8 +12,10 @@ directml = ["onnxruntime/directml"]
 [dependencies]
 anyhow.workspace = true
 cfg-if = "1.0.0"
+const-default.workspace = true
 derive-getters.workspace = true
 derive-new = "0.5.9"
+duplicate = "1.0.0"
 easy-ext.workspace = true
 fs-err.workspace = true
 once_cell.workspace = true
