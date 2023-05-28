@@ -1,12 +1,12 @@
-use std::{env, path::Path};
+use std::{env, path::PathBuf};
 
 use once_cell::sync::Lazy;
 use quote::quote;
 
 fn main() -> anyhow::Result<()> {
-    let out_dir = &env::var("OUT_DIR").unwrap();
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-    fs_err::write(Path::new(out_dir).join("version_macro.rs"), &*VERSION_MACRO)?;
+    fs_err::write(out_dir.join("version_macro.rs"), &*VERSION_MACRO)?;
     Ok(())
 }
 

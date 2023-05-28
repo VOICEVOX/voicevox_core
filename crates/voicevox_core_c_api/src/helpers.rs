@@ -76,8 +76,8 @@ pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
 
 impl ConstDefault for VoicevoxAudioQueryOptions {
     const DEFAULT: Self = {
-        let voicevox_core::AudioQueryOptions { kana } = ConstDefault::DEFAULT;
-        Self { kana }
+        let options = voicevox_core::AudioQueryOptions::DEFAULT;
+        Self { kana: options.kana }
     };
 }
 impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
@@ -88,8 +88,8 @@ impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
 
 impl ConstDefault for VoicevoxAccentPhrasesOptions {
     const DEFAULT: Self = {
-        let voicevox_core::AccentPhrasesOptions { kana } = ConstDefault::DEFAULT;
-        Self { kana }
+        let options = voicevox_core::AccentPhrasesOptions::DEFAULT;
+        Self { kana: options.kana }
     };
 }
 impl From<VoicevoxAccentPhrasesOptions> for voicevox_core::AccentPhrasesOptions {
@@ -110,20 +110,18 @@ impl VoicevoxAccelerationMode {
     const fn from_rust(mode: voicevox_core::AccelerationMode) -> Self {
         use voicevox_core::AccelerationMode::*;
 
-        use VoicevoxAccelerationMode::*;
-
         match mode {
-            Auto => VOICEVOX_ACCELERATION_MODE_AUTO,
-            Cpu => VOICEVOX_ACCELERATION_MODE_CPU,
-            Gpu => VOICEVOX_ACCELERATION_MODE_GPU,
+            Auto => Self::VOICEVOX_ACCELERATION_MODE_AUTO,
+            Cpu => Self::VOICEVOX_ACCELERATION_MODE_CPU,
+            Gpu => Self::VOICEVOX_ACCELERATION_MODE_GPU,
         }
     }
 }
 impl From<VoicevoxAccelerationMode> for voicevox_core::AccelerationMode {
-    fn from(value: VoicevoxAccelerationMode) -> Self {
+    fn from(mode: VoicevoxAccelerationMode) -> Self {
         use VoicevoxAccelerationMode::*;
 
-        match value {
+        match mode {
             VOICEVOX_ACCELERATION_MODE_AUTO => Self::Auto,
             VOICEVOX_ACCELERATION_MODE_CPU => Self::Cpu,
             VOICEVOX_ACCELERATION_MODE_GPU => Self::Gpu,
@@ -133,16 +131,12 @@ impl From<VoicevoxAccelerationMode> for voicevox_core::AccelerationMode {
 
 impl ConstDefault for VoicevoxInitializeOptions {
     const DEFAULT: Self = {
-        let voicevox_core::InitializeOptions {
-            acceleration_mode,
-            cpu_num_threads,
-            load_all_models,
-        } = ConstDefault::DEFAULT;
+        let options = voicevox_core::InitializeOptions::DEFAULT;
 
         Self {
-            acceleration_mode: VoicevoxAccelerationMode::from_rust(acceleration_mode),
-            cpu_num_threads,
-            load_all_models,
+            acceleration_mode: VoicevoxAccelerationMode::from_rust(options.acceleration_mode),
+            cpu_num_threads: options.cpu_num_threads,
+            load_all_models: options.load_all_models,
         }
     };
 }
