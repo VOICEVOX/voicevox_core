@@ -48,4 +48,5 @@ windows = { version = "0.43.0", features = ["Win32_Foundation", "Win32_Graphics_
 [build-dependencies]
 anyhow.workspace = true
 fs-err.workspace = true
+once_cell.workspace = true
 quote = { version = "1.0.28", default-features = false }
