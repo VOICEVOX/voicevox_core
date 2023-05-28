@@ -42,10 +42,8 @@ impl assert_cdylib::TestCase for TestCase {
 
         for result_code in VoicevoxResultCode::iter() {
             std::assert_eq!(
-                voicevox_core::result_code::error_result_to_message(result_code)
-                    .strip_suffix('\0')
-                    .unwrap(),
-                CStr::from_ptr(voicevox_error_result_to_message(result_code)).to_str()?,
+                voicevox_core::result_code::error_result_to_message(result_code).as_bytes(),
+                CStr::from_ptr(voicevox_error_result_to_message(result_code)).to_bytes_with_nul(),
             );
         }
         Ok(())
