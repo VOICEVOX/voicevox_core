@@ -132,7 +132,6 @@ impl From<VoicevoxAccelerationMode> for voicevox_core::AccelerationMode {
 impl ConstDefault for VoicevoxInitializeOptions {
     const DEFAULT: Self = {
         let options = voicevox_core::InitializeOptions::DEFAULT;
-
         Self {
             acceleration_mode: VoicevoxAccelerationMode::from_rust(options.acceleration_mode),
             cpu_num_threads: options.cpu_num_threads,
