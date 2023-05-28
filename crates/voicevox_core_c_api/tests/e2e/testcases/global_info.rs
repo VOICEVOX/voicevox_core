@@ -33,9 +33,12 @@ impl assert_cdylib::TestCase for TestCase {
             CStr::from_ptr(**voicevox_version).to_str()?,
         );
 
-        serde_json::from_str::<SupportedDevices>(
-            CStr::from_ptr(voicevox_get_supported_devices_json()).to_str()?,
-        )?;
+        std::assert_eq!(
+            SupportedDevices::get_supported_devices()?.to_json(),
+            CStr::from_ptr(voicevox_get_supported_devices_json())
+                .to_str()?
+                .parse::<serde_json::Value>()?,
+        );
 
         for result_code in VoicevoxResultCode::iter() {
             std::assert_eq!(
