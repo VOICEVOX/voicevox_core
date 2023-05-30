@@ -36,5 +36,4 @@ voicevox_core = { path = "crates/voicevox_core" }
 opt-level = "z"
 lto = true
 codegen-units = 1
-panic = "abort"
 strip = true
