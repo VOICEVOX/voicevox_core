@@ -8,7 +8,6 @@ publish.workspace = true
 default = []
 directml = ["onnxruntime/directml"]
 
-
 [dependencies]
 anyhow.workspace = true
 cfg-if = "1.0.0"
@@ -17,19 +16,25 @@ derive-new = "0.5.9"
 easy-ext.workspace = true
 fs-err.workspace = true
 once_cell.workspace = true
-onnxruntime = { git = "https://github.com/VOICEVOX/onnxruntime-rs.git", rev="ebb9dcb9b26ee681889b52b6db3b4f642b04a250" }
 process_path.workspace = true
+regex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
-open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="d766a52bad4ccafe18597e57bd6842f59dca881e" }
-regex.workspace = true
+
+[dependencies.onnxruntime]
+git = "https://github.com/VOICEVOX/onnxruntime-rs.git"
+rev = "ebb9dcb9b26ee681889b52b6db3b4f642b04a250"
+
+[dependencies.open_jtalk]
+git = "https://github.com/VOICEVOX/open_jtalk-rs.git"
+rev = "d766a52bad4ccafe18597e57bd6842f59dca881e"
 
 [dev-dependencies]
-rstest = "0.15.0"
-pretty_assertions = "1.3.0"
 heck = "0.4.0"
+pretty_assertions = "1.3.0"
+rstest = "0.15.0"
 test_util.workspace = true
 
 [target."cfg(windows)".dependencies]
