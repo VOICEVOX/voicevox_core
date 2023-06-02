@@ -3840,7 +3840,6 @@ dependencies = [
  "duct",
  "easy-ext",
  "inventory",
- "is-terminal",
  "libc",
  "libloading",
  "libtest-mimic",
