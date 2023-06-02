@@ -24,7 +24,7 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
 fn rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
 
-    module.add("__version__", voicevox_core::get_version())?;
+    module.add("__version__", env!("CARGO_PKG_VERSION"))?;
     module.add_wrapped(wrap_pyfunction!(supported_devices))?;
 
     module.add_class::<Synthesizer>()?;

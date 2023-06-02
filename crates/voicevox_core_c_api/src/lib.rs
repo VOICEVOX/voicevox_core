@@ -139,7 +139,7 @@ pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitiali
 }
 
 static VOICEVOX_VERSION: once_cell::sync::Lazy<CString> =
-    once_cell::sync::Lazy::new(|| CString::new(voicevox_core::get_version()).unwrap());
+    once_cell::sync::Lazy::new(|| CString::new(env!("CARGO_PKG_VERSION")).unwrap());
 
 /// voicevoxのバージョンを取得する
 /// @return SemVerでフォーマットされたバージョン
