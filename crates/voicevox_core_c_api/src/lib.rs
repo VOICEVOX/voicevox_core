@@ -140,8 +140,8 @@ pub static voicevox_default_initialize_options: VoicevoxInitializeOptions = Cons
 #[no_mangle]
 pub static voicevox_version: &c_char = {
     const VOICEVOX_VERSION: &CStr = unsafe {
-        // SAFETY: `voicevox_core::version!()` is a SemVer, so it should not contain '\0'
-        CStr::from_bytes_with_nul_unchecked(concat!(voicevox_core::version!(), '\0').as_bytes())
+        // SAFETY: The package version is a SemVer, so it should not contain '\0'
+        CStr::from_bytes_with_nul_unchecked(concat!(env!("CARGO_PKG_VERSION"), '\0').as_bytes())
     };
 
     // SAFETY: `CStr::as_ptr` always returns a valid pointer.
