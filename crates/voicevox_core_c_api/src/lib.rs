@@ -358,7 +358,9 @@ pub unsafe extern "C" fn voicevox_get_supported_devices_json(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let supported_devices = CString::new(
-            serde_json::to_string(&SupportedDevices::get_supported_devices()?).unwrap(),
+            SupportedDevices::get_supported_devices()?
+                .to_json()
+                .to_string(),
         )
         .unwrap();
         output_supported_devices_json.write(supported_devices.into_raw());
