@@ -140,13 +140,7 @@ pub extern "C" fn supported_devices() -> *const c_char {
     return SUPPORTED_DEVICES.as_ptr();
 
     static SUPPORTED_DEVICES: Lazy<CString> = Lazy::new(|| {
-        CString::new(
-            SupportedDevices::get_supported_devices()
-                .unwrap()
-                .to_json()
-                .to_string(),
-        )
-        .unwrap()
+        CString::new(SupportedDevices::create().unwrap().to_json().to_string()).unwrap()
     });
 }
 

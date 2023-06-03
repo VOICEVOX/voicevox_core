@@ -353,16 +353,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_get_metas_json(
 /// # Safety
 /// @param output_supported_devices_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_get_supported_devices_json(
+pub unsafe extern "C" fn voicevox_create_supported_devices_json(
     output_supported_devices_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let supported_devices = CString::new(
-            SupportedDevices::get_supported_devices()?
-                .to_json()
-                .to_string(),
-        )
-        .unwrap();
+        let supported_devices =
+            CString::new(SupportedDevices::create()?.to_json().to_string()).unwrap();
         output_supported_devices_json.write(supported_devices.into_raw());
         Ok(())
     })())

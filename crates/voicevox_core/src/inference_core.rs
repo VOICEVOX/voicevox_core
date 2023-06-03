@@ -32,7 +32,7 @@ impl InferenceCore {
     }
 
     fn can_support_gpu_feature() -> Result<bool> {
-        let supported_devices = SupportedDevices::get_supported_devices()?;
+        let supported_devices = SupportedDevices::create()?;
 
         cfg_if! {
             if #[cfg(feature = "directml")]{

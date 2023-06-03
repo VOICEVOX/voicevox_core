@@ -438,7 +438,7 @@ const char *voicevox_synthesizer_get_metas_json(const struct VoicevoxSynthesizer
 __declspec(dllimport)
 #endif
 
-VoicevoxResultCode voicevox_get_supported_devices_json(char **output_supported_devices_json);
+VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supported_devices_json);
 
 /**
  * デフォルトの AudioQuery のオプションを生成する

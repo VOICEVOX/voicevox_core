@@ -121,7 +121,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         std::assert_eq!(SNAPSHOTS.metas, metas_json);
         std::assert_eq!(
-            SupportedDevices::get_supported_devices().unwrap().to_json(),
+            SupportedDevices::create().unwrap().to_json(),
             supported_devices,
         );
 

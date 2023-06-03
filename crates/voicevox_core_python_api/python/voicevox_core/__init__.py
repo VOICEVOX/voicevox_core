@@ -7,7 +7,12 @@ from ._models import (  # noqa: F401
     SpeakerMeta,
     SupportedDevices,
 )
-from ._rust import OpenJtalk, Synthesizer, VoiceModel, supported_devices  # noqa: F401
+from ._rust import (  # noqa: F401
+    OpenJtalk,
+    Synthesizer,
+    VoiceModel,
+    create_supported_devices,
+)
 
 __all__ = [
     "AccelerationMode",

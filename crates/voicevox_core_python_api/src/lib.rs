@@ -25,7 +25,7 @@ fn rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
 
     module.add("__version__", voicevox_core::get_version())?;
-    module.add_wrapped(wrap_pyfunction!(supported_devices))?;
+    module.add_wrapped(wrap_pyfunction!(create_supported_devices))?;
 
     module.add_class::<Synthesizer>()?;
     module.add_class::<OpenJtalk>()?;
@@ -46,12 +46,12 @@ struct VoiceModel {
 }
 
 #[pyfunction]
-fn supported_devices(py: Python) -> PyResult<&PyAny> {
+fn create_supported_devices(py: Python) -> PyResult<&PyAny> {
     let class = py
         .import("voicevox_core")?
         .getattr("SupportedDevices")?
         .downcast()?;
-    let s = voicevox_core::SupportedDevices::get_supported_devices().into_py_result()?;
+    let s = voicevox_core::SupportedDevices::create().into_py_result()?;
     to_pydantic_dataclass(s, class)
 }
 

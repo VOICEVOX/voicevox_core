@@ -14,7 +14,7 @@ from voicevox_core import (
 
 __version__: str
 
-def supported_devices() -> SupportedDevices: ...
+def create_supported_devices() -> SupportedDevices: ...
 
 class VoiceModel:
     @staticmethod
