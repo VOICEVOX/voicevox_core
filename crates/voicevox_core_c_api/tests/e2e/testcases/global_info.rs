@@ -29,7 +29,7 @@ impl assert_cdylib::TestCase for TestCase {
         } = Symbols::new(lib)?;
 
         std::assert_eq!(
-            voicevox_core::version!(),
+            env!("CARGO_PKG_VERSION"),
             CStr::from_ptr(**voicevox_version).to_str()?,
         );
 

@@ -44,9 +44,3 @@ test_util.workspace = true
 [target."cfg(windows)".dependencies]
 humansize = "2.1.2"
 windows = { version = "0.43.0", features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
-
-[build-dependencies]
-anyhow.workspace = true
-fs-err.workspace = true
-once_cell.workspace = true
-quote = { version = "1.0.26", default-features = false }
