@@ -25,12 +25,12 @@ impl From<&TtsOptions> for SynthesisOptions {
     }
 }
 
-#[derive(Default, ConstDefault)]
+#[derive(ConstDefault)]
 pub struct AccentPhrasesOptions {
     pub kana: bool,
 }
 
-#[derive(Default, ConstDefault)]
+#[derive(ConstDefault)]
 pub struct AudioQueryOptions {
     pub kana: bool,
 }
@@ -70,7 +70,7 @@ impl ConstDefault for AccelerationMode {
     const DEFAULT: Self = Self::Auto;
 }
 
-#[derive(Default, ConstDefault)]
+#[derive(ConstDefault)]
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
     pub cpu_num_threads: u16,
@@ -79,8 +79,11 @@ pub struct InitializeOptions {
 
 #[duplicate_item(
     T;
+    [ AccentPhrasesOptions ];
+    [ AudioQueryOptions ];
     [ TtsOptions ];
     [ AccelerationMode ];
+    [ InitializeOptions ];
 )]
 impl Default for T {
     fn default() -> Self {
