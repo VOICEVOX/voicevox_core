@@ -32,7 +32,7 @@ async def main() -> None:
         speaker_id,
     ) = parse_args()
 
-    logger.debug("%s", f"{voicevox_core.create_supported_devices()=}")
+    logger.debug("%s", f"{voicevox_core.supported_devices()=}")
 
     logger.info("%s", f"Initializing ({acceleration_mode=}, {open_jtalk_dict_dir=})")
     synthesizer = await Synthesizer.new_with_initialize(
