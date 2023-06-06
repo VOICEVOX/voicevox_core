@@ -23,7 +23,7 @@ impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
             voicevox_version,
-            voicevox_get_supported_devices_json,
+            voicevox_create_supported_devices_json,
             voicevox_error_result_to_message,
             ..
         } = Symbols::new(lib)?;
@@ -34,8 +34,8 @@ impl assert_cdylib::TestCase for TestCase {
         );
 
         std::assert_eq!(
-            SupportedDevices::get_supported_devices()?.to_json(),
-            CStr::from_ptr(voicevox_get_supported_devices_json())
+            SupportedDevices::create()?.to_json(),
+            CStr::from_ptr(voicevox_create_supported_devices_json())
                 .to_str()?
                 .parse::<serde_json::Value>()?,
         );

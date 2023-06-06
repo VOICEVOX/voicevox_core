@@ -346,19 +346,22 @@ pub unsafe extern "C" fn voicevox_synthesizer_get_metas_json(
     synthesizer.metas().as_ptr()
 }
 
-static VOICEVOX_SUPPORTED_DEVICES_JSON: once_cell::sync::Lazy<CString> =
-    once_cell::sync::Lazy::new(|| {
-        CString::new(
-            serde_json::to_string(&SupportedDevices::get_supported_devices().unwrap()).unwrap(),
-        )
-        .unwrap()
-    });
-
 /// サポートデバイス情報をjsonで取得する
-/// @return サポートデバイス情報のjson文字列
+/// @param [out] output_supported_devices_json サポートデバイス情報のjson文字列
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param output_supported_devices_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
-pub extern "C" fn voicevox_get_supported_devices_json() -> *const c_char {
-    VOICEVOX_SUPPORTED_DEVICES_JSON.as_ptr()
+pub unsafe extern "C" fn voicevox_create_supported_devices_json(
+    output_supported_devices_json: *mut *mut c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let supported_devices =
+            CString::new(SupportedDevices::create()?.to_json().to_string()).unwrap();
+        output_supported_devices_json.write(supported_devices.into_raw());
+        Ok(())
+    })())
 }
 
 /// Audio query のオプション

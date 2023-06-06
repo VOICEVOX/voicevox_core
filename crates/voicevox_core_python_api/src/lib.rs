@@ -51,7 +51,7 @@ fn supported_devices(py: Python) -> PyResult<&PyAny> {
         .import("voicevox_core")?
         .getattr("SupportedDevices")?
         .downcast()?;
-    let s = voicevox_core::SupportedDevices::get_supported_devices().into_py_result()?;
+    let s = voicevox_core::SupportedDevices::create().into_py_result()?;
     to_pydantic_dataclass(s, class)
 }
 
