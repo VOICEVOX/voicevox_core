@@ -137,7 +137,11 @@ pub extern "C" fn last_error_message() -> *const c_char {
 
 #[no_mangle]
 pub extern "C" fn supported_devices() -> *const c_char {
-    voicevox_get_supported_devices_json()
+    return SUPPORTED_DEVICES.as_ptr();
+
+    static SUPPORTED_DEVICES: Lazy<CString> = Lazy::new(|| {
+        CString::new(SupportedDevices::create().unwrap().to_json().to_string()).unwrap()
+    });
 }
 
 #[no_mangle]

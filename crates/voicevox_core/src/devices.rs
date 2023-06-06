@@ -11,7 +11,7 @@ pub struct SupportedDevices {
 
 impl SupportedDevices {
     /// サポートされているデバイス情報を取得する
-    pub fn get_supported_devices() -> Result<Self> {
+    pub fn create() -> Result<Self> {
         let mut cuda_support = false;
         let mut dml_support = false;
         for provider in onnxruntime::session::get_available_providers()
@@ -41,8 +41,8 @@ impl SupportedDevices {
 mod tests {
     use super::*;
     #[rstest]
-    fn supported_devices_get_supported_devices_works() {
-        let result = SupportedDevices::get_supported_devices();
+    fn supported_devices_create_works() {
+        let result = SupportedDevices::create();
         // 環境によって結果が変わるので、関数呼び出しが成功するかどうかの確認のみ行う
         assert!(result.is_ok(), "{result:?}");
     }

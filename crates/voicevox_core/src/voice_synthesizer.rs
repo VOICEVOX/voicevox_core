@@ -89,7 +89,7 @@ impl Synthesizer {
         list_windows_video_cards();
         let use_gpu = match options.acceleration_mode {
             AccelerationMode::Auto => {
-                let supported_devices = SupportedDevices::get_supported_devices()?;
+                let supported_devices = SupportedDevices::create()?;
 
                 cfg_if! {
                     if #[cfg(feature="directml")]{
