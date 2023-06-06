@@ -56,7 +56,7 @@ pub(crate) struct Symbols<'lib> {
     pub(crate) voicevox_synthesizer_get_metas_json:
         Symbol<'lib, unsafe extern "C" fn(*const VoicevoxSynthesizer) -> *const c_char>,
     pub(crate) voicevox_create_supported_devices_json:
-        Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
+        Symbol<'lib, unsafe extern "C" fn(*mut *mut c_char) -> VoicevoxResultCode>,
     pub(crate) voicevox_synthesizer_audio_query: Symbol<
         'lib,
         unsafe extern "C" fn(
