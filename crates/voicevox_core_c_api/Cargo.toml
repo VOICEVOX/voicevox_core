@@ -18,6 +18,7 @@ directml = ["voicevox_core/directml"]
 [dependencies]
 voicevox_core.workspace = true
 chrono = { version = "0.4.23", default-features = false, features = ["clock"] } # https://github.com/chronotope/chrono/issues/602
+const-default.workspace = true
 is-terminal = "0.4.2"
 libc = "0.2.134"
 once_cell.workspace = true
@@ -42,6 +43,7 @@ ndarray-stats = "0.5.1"
 process_path.workspace = true
 regex.workspace = true
 serde.workspace = true
+strum.workspace = true
 test_util.workspace = true
 toml = "0.7.2"
 typetag = "0.2.5"

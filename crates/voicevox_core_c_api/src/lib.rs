@@ -5,6 +5,7 @@ mod helpers;
 use self::helpers::*;
 use c_impls::*;
 use chrono::SecondsFormat;
+use const_default::ConstDefault;
 use is_terminal::IsTerminal;
 use once_cell::sync::Lazy;
 use std::env;
@@ -131,22 +132,21 @@ pub struct VoicevoxInitializeOptions {
     load_all_models: bool,
 }
 
-/// デフォルトの初期化オプションを生成する
-/// @return デフォルト値が設定された初期化オプション
+/// デフォルトの初期化オプション
 #[no_mangle]
-pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitializeOptions {
-    VoicevoxInitializeOptions::default()
-}
+pub static voicevox_default_initialize_options: VoicevoxInitializeOptions = ConstDefault::DEFAULT;
 
-static VOICEVOX_VERSION: once_cell::sync::Lazy<CString> =
-    once_cell::sync::Lazy::new(|| CString::new(env!("CARGO_PKG_VERSION")).unwrap());
-
-/// voicevoxのバージョンを取得する
-/// @return SemVerでフォーマットされたバージョン
+/// voicevoxのバージョン
 #[no_mangle]
-pub extern "C" fn voicevox_get_version() -> *const c_char {
-    VOICEVOX_VERSION.as_ptr()
-}
+pub static voicevox_version: &c_char = {
+    const VOICEVOX_VERSION: &CStr = unsafe {
+        // SAFETY: The package version is a SemVer, so it should not contain '\0'
+        CStr::from_bytes_with_nul_unchecked(concat!(env!("CARGO_PKG_VERSION"), '\0').as_bytes())
+    };
+
+    // SAFETY: `CStr::as_ptr` always returns a valid pointer.
+    unsafe { &*VOICEVOX_VERSION.as_ptr() }
+};
 
 /// 音声モデル
 #[repr(C)]
@@ -371,12 +371,9 @@ pub struct VoicevoxAudioQueryOptions {
     kana: bool,
 }
 
-/// デフォルトの AudioQuery のオプションを生成する
-/// @return デフォルト値が設定された AudioQuery オプション
+/// デフォルトの AudioQuery のオプション
 #[no_mangle]
-pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQueryOptions {
-    voicevox_core::AudioQueryOptions::default().into()
-}
+pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = ConstDefault::DEFAULT;
 
 /// AudioQuery を実行する
 /// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
@@ -420,12 +417,10 @@ pub struct VoicevoxAccentPhrasesOptions {
     kana: bool,
 }
 
-/// デフォルトの `accent_phrases` のオプションを生成する
-/// @return デフォルト値が設定された `accent_phrases` のオプション
+/// デフォルトの `accent_phrases` のオプション
 #[no_mangle]
-pub extern "C" fn voicevox_make_default_accent_phrases_options() -> VoicevoxAccentPhrasesOptions {
-    voicevox_core::AccentPhrasesOptions::default().into()
-}
+pub static voicevox_default_accent_phrases_options: VoicevoxAccentPhrasesOptions =
+    ConstDefault::DEFAULT;
 
 /// create_accent_phrases を実行する
 /// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
@@ -565,12 +560,9 @@ pub struct VoicevoxSynthesisOptions {
     enable_interrogative_upspeak: bool,
 }
 
-/// デフォルトの `voicevox_synthesizer_synthesis` のオプションを生成する
-/// @return デフォルト値が設定された `voicevox_synthesizer_synthesis` のオプション
+/// デフォルトの `voicevox_synthesizer_synthesis` のオプション
 #[no_mangle]
-pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesisOptions {
-    VoicevoxSynthesisOptions::default()
-}
+pub static voicevox_default_synthesis_options: VoicevoxSynthesisOptions = ConstDefault::DEFAULT;
 
 /// AudioQuery から音声合成する
 /// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
@@ -621,12 +613,9 @@ pub struct VoicevoxTtsOptions {
     enable_interrogative_upspeak: bool,
 }
 
-/// デフォルトのテキスト音声合成オプションを生成する
-/// @return テキスト音声合成オプション
+/// デフォルトのテキスト音声合成オプション
 #[no_mangle]
-pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
-    voicevox_core::TtsOptions::default().into()
-}
+pub static voicevox_default_tts_options: VoicevoxTtsOptions = ConstDefault::DEFAULT;
 
 /// テキスト音声合成を実行する
 /// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer

@@ -28,7 +28,7 @@ int main() {
   std::wcin >> speak_words;
 
   std::wcout << L"coreの初期化中" << std::endl;
-  VoicevoxInitializeOptions  initializeOptions = voicevox_make_default_initialize_options();
+  VoicevoxInitializeOptions  initializeOptions = voicevox_default_initialize_options;
   std::string dict = GetOpenJTalkDict();
   initializeOptions.load_all_models = true;
 
@@ -50,7 +50,7 @@ int main() {
   int32_t speaker_id = 0;
   uintptr_t output_binary_size = 0;
   uint8_t* output_wav = nullptr;
-  VoicevoxTtsOptions ttsOptions = voicevox_make_default_tts_options();
+  VoicevoxTtsOptions ttsOptions = voicevox_default_tts_options;
 
   result = voicevox_synthesizer_tts(synthesizer,wide_to_utf8_cppapi(speak_words).c_str(), speaker_id, ttsOptions, &output_binary_size, &output_wav);
   if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
