@@ -125,12 +125,12 @@ typedef int32_t VoicevoxResultCode;
  */
 typedef struct OpenJtalkRc OpenJtalkRc;
 
+typedef struct VoicevoxSynthesizer VoicevoxSynthesizer;
+
 /**
  * 音声モデル
  */
-typedef struct VoicevoxVoiceModel {
-
-} VoicevoxVoiceModel;
+typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
 
 /**
  * 音声モデルID
@@ -155,10 +155,6 @@ typedef struct VoicevoxInitializeOptions {
    */
   bool load_all_models;
 } VoicevoxInitializeOptions;
-
-typedef struct VoicevoxSynthesizer {
-
-} VoicevoxSynthesizer;
 
 /**
  * スタイルID

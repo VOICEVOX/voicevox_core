@@ -1,4 +1,3 @@
-use derive_getters::Getters;
 use std::{
     ffi::{CStr, CString},
     path::Path,
@@ -7,11 +6,9 @@ use std::{
 
 use voicevox_core::{InitializeOptions, OpenJtalk, Result, Synthesizer, VoiceModel, VoiceModelId};
 
-pub(crate) struct COpenJtalkRc {
-    open_jtalk: Arc<OpenJtalk>,
-}
+use crate::{OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
 
-impl COpenJtalkRc {
+impl OpenJtalkRc {
     pub(crate) fn new_with_initialize(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
             open_jtalk: Arc::new(OpenJtalk::new_with_initialize(open_jtalk_dic_dir)?),
@@ -19,15 +16,9 @@ impl COpenJtalkRc {
     }
 }
 
-#[derive(Getters)]
-pub(crate) struct CSynthesizer {
-    synthesizer: Synthesizer,
-    metas_cstring: CString,
-}
-
-impl CSynthesizer {
+impl VoicevoxSynthesizer {
     pub(crate) async fn new_with_initialize(
-        open_jtalk: &COpenJtalkRc,
+        open_jtalk: &OpenJtalkRc,
         options: &InitializeOptions,
     ) -> Result<Self> {
         Ok(Self {
@@ -56,14 +47,7 @@ impl CSynthesizer {
     }
 }
 
-#[derive(Getters)]
-pub(crate) struct CVoiceModel {
-    model: VoiceModel,
-    id: CString,
-    metas: CString,
-}
-
-impl CVoiceModel {
+impl VoicevoxVoiceModel {
     pub(crate) async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
         let model = VoiceModel::from_path(path).await?;
         let id = CString::new(model.id().raw_voice_model_id().as_str()).unwrap();
