@@ -12,6 +12,7 @@ use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io::{self, Write};
+use std::mem::MaybeUninit;
 use std::os::raw::c_char;
 use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::runtime::Runtime;
@@ -87,12 +88,12 @@ pub struct OpenJtalkRc {
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     open_jtalk_dic_dir: *const c_char,
-    out_open_jtalk: *mut *mut OpenJtalkRc,
+    out_open_jtalk: &mut MaybeUninit<Box<OpenJtalkRc>>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
         let open_jtalk = OpenJtalkRc::new_with_initialize(open_jtalk_dic_dir)?;
-        out_open_jtalk.write(Box::into_raw(Box::new(open_jtalk)));
+        out_open_jtalk.write(Box::new(open_jtalk));
         Ok(())
     })())
 }
@@ -103,8 +104,8 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 /// # Safety
 /// @open_jtalk 有効な :OpenJtalkRc のポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: *mut OpenJtalkRc) {
-    let _ = Box::from_raw(open_jtalk);
+pub unsafe extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: Box<OpenJtalkRc>) {
+    drop(open_jtalk);
 }
 
 pub use voicevox_core::result_code::VoicevoxResultCode;
@@ -175,13 +176,13 @@ pub type VoicevoxStyleId = u32;
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
     path: *const c_char,
-    out_model: *mut *mut VoicevoxVoiceModel,
+    out_model: &mut MaybeUninit<Box<VoicevoxVoiceModel>>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let model = RUNTIME.block_on(VoicevoxVoiceModel::from_path(ensure_utf8(
             CStr::from_ptr(path),
         )?))?;
-        out_model.write(Box::into_raw(Box::new(model)));
+        out_model.write(Box::new(model));
         Ok(())
     })())
 }
@@ -194,9 +195,8 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_id(
-    model: *const VoicevoxVoiceModel,
+    model: &VoicevoxVoiceModel,
 ) -> VoicevoxVoiceModelId {
-    let model = &*model;
     model.id().as_ptr()
 }
 
@@ -208,9 +208,8 @@ pub unsafe extern "C" fn voicevox_voice_model_id(
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_get_metas_json(
-    model: *const VoicevoxVoiceModel,
+    model: &VoicevoxVoiceModel,
 ) -> *const c_char {
-    let model = &*model;
     model.metas().as_ptr()
 }
 
@@ -220,8 +219,8 @@ pub unsafe extern "C" fn voicevox_voice_model_get_metas_json(
 /// # Safety
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_voice_model_delete(model: *mut VoicevoxVoiceModel) {
-    let _ = Box::from_raw(model);
+pub unsafe extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
+    drop(model);
 }
 
 #[derive(Getters)]
@@ -240,18 +239,17 @@ pub struct VoicevoxSynthesizer {
 /// @param out_synthesizer 自動でheapメモリが割り当てられるので ::voicevox_synthesizer_delete で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
-    open_jtalk: *const OpenJtalkRc,
+    open_jtalk: &OpenJtalkRc,
     options: VoicevoxInitializeOptions,
-    out_synthesizer: *mut *mut VoicevoxSynthesizer,
+    out_synthesizer: &mut MaybeUninit<Box<VoicevoxSynthesizer>>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let options = options.into();
-        let open_jtalk = &*open_jtalk;
 
         let synthesizer = RUNTIME.block_on(VoicevoxSynthesizer::new_with_initialize(
             open_jtalk, &options,
         ))?;
-        out_synthesizer.write(Box::into_raw(Box::new(synthesizer)));
+        out_synthesizer.write(Box::new(synthesizer));
         Ok(())
     })())
 }
@@ -262,8 +260,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
 /// # Safety
 /// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: *mut VoicevoxSynthesizer) {
-    let _ = Box::from_raw(synthesizer);
+pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesizer>) {
+    drop(synthesizer);
 }
 
 /// モデルを読み込む
@@ -276,11 +274,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: *mut VoicevoxS
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_load_voice_model(
-    synthesizer: *mut VoicevoxSynthesizer,
-    model: *const VoicevoxVoiceModel,
+    synthesizer: &mut VoicevoxSynthesizer,
+    model: &VoicevoxVoiceModel,
 ) -> VoicevoxResultCode {
-    let synthesizer = &mut *synthesizer;
-    let model = &*model;
     into_result_code_with_error(
         RUNTIME
             .block_on(synthesizer.load_voice_model(model.model()))
@@ -298,10 +294,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_load_voice_model(
 /// @param model_id NULL終端文字列であること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
-    synthesizer: *mut VoicevoxSynthesizer,
+    synthesizer: &mut VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> VoicevoxResultCode {
-    let synthesizer = &mut *synthesizer;
     into_result_code_with_error((|| {
         let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) })?;
         synthesizer
@@ -318,9 +313,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
 /// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_is_gpu_mode(
-    synthesizer: *const VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
 ) -> bool {
-    let synthesizer = &*synthesizer;
     synthesizer.synthesizer().is_gpu_mode()
 }
 
@@ -334,10 +328,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_gpu_mode(
 /// @param model_id NULL終端文字列
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_is_loaded_voice_model(
-    synthesizer: *const VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> bool {
-    let synthesizer = &*synthesizer;
     let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) }).unwrap();
     synthesizer
         .synthesizer()
@@ -352,9 +345,8 @@ pub unsafe extern "C" fn voicevox_is_loaded_voice_model(
 /// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_get_metas_json(
-    synthesizer: *const VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
 ) -> *const c_char {
-    let synthesizer = &*synthesizer;
     synthesizer.metas().as_ptr()
 }
 
@@ -366,7 +358,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_get_metas_json(
 /// @param output_supported_devices_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_create_supported_devices_json(
-    output_supported_devices_json: *mut *mut c_char,
+    output_supported_devices_json: &mut MaybeUninit<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let supported_devices =
@@ -400,14 +392,13 @@ pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = Con
 /// @param output_audio_query_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
-    synthesizer: *const VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
     options: VoicevoxAudioQueryOptions,
-    output_audio_query_json: *mut *mut c_char,
+    output_audio_query_json: &mut MaybeUninit<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*synthesizer;
         let text = CStr::from_ptr(text);
         let japanese_or_kana = ensure_utf8(text)?;
         let audio_query = RUNTIME.block_on(synthesizer.synthesizer().audio_query(
@@ -445,14 +436,13 @@ pub static voicevox_default_accent_phrases_options: VoicevoxAccentPhrasesOptions
 /// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
-    synthesizer: *const VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
     options: VoicevoxAccentPhrasesOptions,
-    output_accent_phrases_json: *mut *mut c_char,
+    output_accent_phrases_json: &mut MaybeUninit<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*synthesizer;
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let accent_phrases = RUNTIME.block_on(synthesizer.synthesizer().create_accent_phrases(
             text,
@@ -477,13 +467,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
 /// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
-    synthesizer: *const VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     accent_phrases_json: *const c_char,
     style_id: VoicevoxStyleId,
-    output_accent_phrases_json: *mut *mut c_char,
+    output_accent_phrases_json: &mut MaybeUninit<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*synthesizer;
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
@@ -510,13 +499,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
 /// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
-    synthesizer: *const VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     accent_phrases_json: *const c_char,
     style_id: VoicevoxStyleId,
-    output_accent_phrases_json: *mut *mut c_char,
+    output_accent_phrases_json: &mut MaybeUninit<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*synthesizer;
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
@@ -543,13 +531,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
 /// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
-    synthesizer: *const VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     accent_phrases_json: *const c_char,
     style_id: VoicevoxStyleId,
-    output_accent_phrases_json: *mut *mut c_char,
+    output_accent_phrases_json: &mut MaybeUninit<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*synthesizer;
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
@@ -590,15 +577,14 @@ pub static voicevox_default_synthesis_options: VoicevoxSynthesisOptions = ConstD
 /// @param output_wav 自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
-    synthesizer: *const VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     audio_query_json: *const c_char,
     style_id: VoicevoxStyleId,
     options: VoicevoxSynthesisOptions,
-    output_wav_length: *mut usize,
-    output_wav: *mut *mut u8,
+    output_wav_length: &mut MaybeUninit<usize>,
+    output_wav: &mut MaybeUninit<*mut u8>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*synthesizer;
         let audio_query_json = CStr::from_ptr(audio_query_json)
             .to_str()
             .map_err(|_| CApiError::InvalidUtf8Input)?;
@@ -643,15 +629,14 @@ pub static voicevox_default_tts_options: VoicevoxTtsOptions = ConstDefault::DEFA
 /// @param output_wav は自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_tts(
-    synthesizer: *const VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
     options: VoicevoxTtsOptions,
-    output_wav_length: *mut usize,
-    output_wav: *mut *mut u8,
+    output_wav_length: &mut MaybeUninit<usize>,
+    output_wav: &mut MaybeUninit<*mut u8>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*synthesizer;
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let output = RUNTIME.block_on(synthesizer.synthesizer().tts(
             text,
