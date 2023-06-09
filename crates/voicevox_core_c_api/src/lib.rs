@@ -3,9 +3,9 @@ mod c_impls;
 mod compatible_engine;
 mod helpers;
 use self::helpers::*;
-use c_impls::*;
 use chrono::SecondsFormat;
 use const_default::ConstDefault;
+use derive_getters::Getters;
 use is_terminal::IsTerminal;
 use once_cell::sync::Lazy;
 use std::env;
@@ -13,15 +13,15 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io::{self, Write};
 use std::os::raw::c_char;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::runtime::Runtime;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
-use voicevox_core::StyleId;
 use voicevox_core::{
-    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, TtsOptions, VoiceModelId,
+    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, VoiceModel,
+    VoiceModelId,
 };
-use voicevox_core::{SupportedDevices, SynthesisOptions};
+use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions, Synthesizer};
 
 #[cfg(test)]
 use rstest::*;
@@ -76,7 +76,9 @@ static BUFFER_MANAGER: Mutex<BufferManager> = Mutex::new(BufferManager::new());
  */
 
 /// 参照カウントで管理されたOpenJtalk
-pub struct OpenJtalkRc;
+pub struct OpenJtalkRc {
+    open_jtalk: Arc<OpenJtalk>,
+}
 
 /// 参照カウントで管理されたOpenJtalkを生成する
 ///
@@ -89,8 +91,8 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
-        let open_jtalk = COpenJtalkRc::new_with_initialize(open_jtalk_dic_dir)?;
-        out_open_jtalk.write(Box::into_raw(Box::new(open_jtalk)) as *mut OpenJtalkRc);
+        let open_jtalk = OpenJtalkRc::new_with_initialize(open_jtalk_dic_dir)?;
+        out_open_jtalk.write(Box::into_raw(Box::new(open_jtalk)));
         Ok(())
     })())
 }
@@ -102,7 +104,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 /// @open_jtalk 有効な :OpenJtalkRc のポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: *mut OpenJtalkRc) {
-    let _ = Box::from_raw(open_jtalk as *mut COpenJtalkRc);
+    let _ = Box::from_raw(open_jtalk);
 }
 
 pub use voicevox_core::result_code::VoicevoxResultCode;
@@ -149,8 +151,12 @@ pub static voicevox_version: &c_char = {
 };
 
 /// 音声モデル
-#[repr(C)]
-pub struct VoicevoxVoiceModel;
+#[derive(Getters)]
+pub struct VoicevoxVoiceModel {
+    model: VoiceModel,
+    id: CString,
+    metas: CString,
+}
 
 /// 音声モデルID
 pub type VoicevoxVoiceModelId = *const c_char;
@@ -172,8 +178,10 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
     out_model: *mut *mut VoicevoxVoiceModel,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let model = RUNTIME.block_on(CVoiceModel::from_path(ensure_utf8(CStr::from_ptr(path))?))?;
-        out_model.write(Box::into_raw(Box::new(model)) as *mut VoicevoxVoiceModel);
+        let model = RUNTIME.block_on(VoicevoxVoiceModel::from_path(ensure_utf8(
+            CStr::from_ptr(path),
+        )?))?;
+        out_model.write(Box::into_raw(Box::new(model)));
         Ok(())
     })())
 }
@@ -188,7 +196,7 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
 pub unsafe extern "C" fn voicevox_voice_model_id(
     model: *const VoicevoxVoiceModel,
 ) -> VoicevoxVoiceModelId {
-    let model = &*(model as *const CVoiceModel);
+    let model = &*model;
     model.id().as_ptr()
 }
 
@@ -202,7 +210,7 @@ pub unsafe extern "C" fn voicevox_voice_model_id(
 pub unsafe extern "C" fn voicevox_voice_model_get_metas_json(
     model: *const VoicevoxVoiceModel,
 ) -> *const c_char {
-    let model = &*(model as *const CVoiceModel);
+    let model = &*model;
     model.metas().as_ptr()
 }
 
@@ -213,11 +221,14 @@ pub unsafe extern "C" fn voicevox_voice_model_get_metas_json(
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_delete(model: *mut VoicevoxVoiceModel) {
-    let _ = Box::from_raw(model as *mut CVoiceModel);
+    let _ = Box::from_raw(model);
 }
 
-#[repr(C)]
-pub struct VoicevoxSynthesizer;
+#[derive(Getters)]
+pub struct VoicevoxSynthesizer {
+    synthesizer: Synthesizer,
+    metas_cstring: CString,
+}
 
 /// 音声シンセサイザを生成して初期化する
 /// @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
@@ -235,11 +246,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let options = options.into();
-        let open_jtalk = &*(open_jtalk as *const COpenJtalkRc);
+        let open_jtalk = &*open_jtalk;
 
-        let synthesizer =
-            RUNTIME.block_on(CSynthesizer::new_with_initialize(open_jtalk, &options))?;
-        out_synthesizer.write(Box::into_raw(Box::new(synthesizer)) as *mut VoicevoxSynthesizer);
+        let synthesizer = RUNTIME.block_on(VoicevoxSynthesizer::new_with_initialize(
+            open_jtalk, &options,
+        ))?;
+        out_synthesizer.write(Box::into_raw(Box::new(synthesizer)));
         Ok(())
     })())
 }
@@ -251,7 +263,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
 /// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: *mut VoicevoxSynthesizer) {
-    let _ = Box::from_raw(synthesizer as *mut CSynthesizer);
+    let _ = Box::from_raw(synthesizer);
 }
 
 /// モデルを読み込む
@@ -267,8 +279,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_load_voice_model(
     synthesizer: *mut VoicevoxSynthesizer,
     model: *const VoicevoxVoiceModel,
 ) -> VoicevoxResultCode {
-    let synthesizer = &mut *(synthesizer as *mut CSynthesizer);
-    let model = &*(model as *const CVoiceModel);
+    let synthesizer = &mut *synthesizer;
+    let model = &*model;
     into_result_code_with_error(
         RUNTIME
             .block_on(synthesizer.load_voice_model(model.model()))
@@ -289,7 +301,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
     synthesizer: *mut VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> VoicevoxResultCode {
-    let synthesizer = &mut *(synthesizer as *mut CSynthesizer);
+    let synthesizer = &mut *synthesizer;
     into_result_code_with_error((|| {
         let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) })?;
         synthesizer
@@ -308,7 +320,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
 pub unsafe extern "C" fn voicevox_synthesizer_is_gpu_mode(
     synthesizer: *const VoicevoxSynthesizer,
 ) -> bool {
-    let synthesizer = &*(synthesizer as *const CSynthesizer);
+    let synthesizer = &*synthesizer;
     synthesizer.synthesizer().is_gpu_mode()
 }
 
@@ -325,7 +337,7 @@ pub unsafe extern "C" fn voicevox_is_loaded_voice_model(
     synthesizer: *const VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> bool {
-    let synthesizer = &*(synthesizer as *const CSynthesizer);
+    let synthesizer = &*synthesizer;
     let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) }).unwrap();
     synthesizer
         .synthesizer()
@@ -342,7 +354,7 @@ pub unsafe extern "C" fn voicevox_is_loaded_voice_model(
 pub unsafe extern "C" fn voicevox_synthesizer_get_metas_json(
     synthesizer: *const VoicevoxSynthesizer,
 ) -> *const c_char {
-    let synthesizer = &*(synthesizer as *const CSynthesizer);
+    let synthesizer = &*synthesizer;
     synthesizer.metas().as_ptr()
 }
 
@@ -395,7 +407,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
     output_audio_query_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*(synthesizer as *const CSynthesizer);
+        let synthesizer = &*synthesizer;
         let text = CStr::from_ptr(text);
         let japanese_or_kana = ensure_utf8(text)?;
         let audio_query = RUNTIME.block_on(synthesizer.synthesizer().audio_query(
@@ -440,7 +452,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     output_accent_phrases_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*(synthesizer as *const CSynthesizer);
+        let synthesizer = &*synthesizer;
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let accent_phrases = RUNTIME.block_on(synthesizer.synthesizer().create_accent_phrases(
             text,
@@ -471,7 +483,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     output_accent_phrases_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*(synthesizer as *const CSynthesizer);
+        let synthesizer = &*synthesizer;
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
@@ -504,7 +516,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
     output_accent_phrases_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*(synthesizer as *const CSynthesizer);
+        let synthesizer = &*synthesizer;
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
@@ -537,7 +549,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
     output_accent_phrases_json: *mut *mut c_char,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*(synthesizer as *const CSynthesizer);
+        let synthesizer = &*synthesizer;
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
@@ -586,7 +598,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*(synthesizer as *const CSynthesizer);
+        let synthesizer = &*synthesizer;
         let audio_query_json = CStr::from_ptr(audio_query_json)
             .to_str()
             .map_err(|_| CApiError::InvalidUtf8Input)?;
@@ -639,7 +651,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
     output_wav: *mut *mut u8,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let synthesizer = &*(synthesizer as *const CSynthesizer);
+        let synthesizer = &*synthesizer;
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let output = RUNTIME.block_on(synthesizer.synthesizer().tts(
             text,
