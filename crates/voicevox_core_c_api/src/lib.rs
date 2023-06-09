@@ -104,7 +104,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 /// # Safety
 /// @open_jtalk 有効な :OpenJtalkRc のポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: Box<OpenJtalkRc>) {
+pub extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: Box<OpenJtalkRc>) {
     drop(open_jtalk);
 }
 
@@ -194,9 +194,7 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
 /// # Safety
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_voice_model_id(
-    model: &VoicevoxVoiceModel,
-) -> VoicevoxVoiceModelId {
+pub extern "C" fn voicevox_voice_model_id(model: &VoicevoxVoiceModel) -> VoicevoxVoiceModelId {
     model.id().as_ptr()
 }
 
@@ -207,9 +205,7 @@ pub unsafe extern "C" fn voicevox_voice_model_id(
 /// # Safety
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_voice_model_get_metas_json(
-    model: &VoicevoxVoiceModel,
-) -> *const c_char {
+pub extern "C" fn voicevox_voice_model_get_metas_json(model: &VoicevoxVoiceModel) -> *const c_char {
     model.metas().as_ptr()
 }
 
@@ -219,7 +215,7 @@ pub unsafe extern "C" fn voicevox_voice_model_get_metas_json(
 /// # Safety
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
+pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
     drop(model);
 }
 
@@ -238,7 +234,7 @@ pub struct VoicevoxSynthesizer {
 /// # Safety
 /// @param out_synthesizer 自動でheapメモリが割り当てられるので ::voicevox_synthesizer_delete で解放する必要がある
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
+pub extern "C" fn voicevox_synthesizer_new_with_initialize(
     open_jtalk: &OpenJtalkRc,
     options: VoicevoxInitializeOptions,
     out_synthesizer: &mut MaybeUninit<Box<VoicevoxSynthesizer>>,
@@ -260,7 +256,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
 /// # Safety
 /// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesizer>) {
+pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesizer>) {
     drop(synthesizer);
 }
 
@@ -273,7 +269,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSy
 /// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_synthesizer_load_voice_model(
+pub extern "C" fn voicevox_synthesizer_load_voice_model(
     synthesizer: &mut VoicevoxSynthesizer,
     model: &VoicevoxVoiceModel,
 ) -> VoicevoxResultCode {
@@ -312,9 +308,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
 /// # Safety
 /// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_synthesizer_is_gpu_mode(
-    synthesizer: &VoicevoxSynthesizer,
-) -> bool {
+pub extern "C" fn voicevox_synthesizer_is_gpu_mode(synthesizer: &VoicevoxSynthesizer) -> bool {
     synthesizer.synthesizer().is_gpu_mode()
 }
 
@@ -344,7 +338,7 @@ pub unsafe extern "C" fn voicevox_is_loaded_voice_model(
 /// # Safety
 /// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_synthesizer_get_metas_json(
+pub extern "C" fn voicevox_synthesizer_get_metas_json(
     synthesizer: &VoicevoxSynthesizer,
 ) -> *const c_char {
     synthesizer.metas().as_ptr()
@@ -357,7 +351,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_get_metas_json(
 /// # Safety
 /// @param output_supported_devices_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_create_supported_devices_json(
+pub extern "C" fn voicevox_create_supported_devices_json(
     output_supported_devices_json: &mut MaybeUninit<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
