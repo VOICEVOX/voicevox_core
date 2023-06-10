@@ -28,7 +28,7 @@ thiserror.workspace = true
 tracing.workspace = true
 open_jtalk = { git = "https://github.com/VOICEVOX/open_jtalk-rs.git", rev="d766a52bad4ccafe18597e57bd6842f59dca881e" }
 regex.workspace = true
-async_zip = { version = "0.0.11", features = ["full"] }
+async_zip.workspace = true
 futures = "0.3.26"
 nanoid = "0.4.0"
 tokio.workspace = true 

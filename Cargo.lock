@@ -3437,9 +3437,12 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-std",
+ "async_zip",
  "flate2",
+ "once_cell",
  "surf",
  "tar",
+ "tokio",
 ]
 
 [[package]]
