@@ -299,6 +299,8 @@ jobs:
         shell: bash
         run: |
           echo "EXPECTED_VOICEVOX_CORE_VERSION=$(curl -sSfI "https://github.com/VOICEVOX/voicevox_core/releases/latest"| grep "location:" | sed -e "s%location: https://github.com/VOICEVOX/voicevox_core/releases/tag/%%" | sed 's/\r//g')" >> "$GITHUB_ENV"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Check downloaded version
         shell: bash
         run: |
