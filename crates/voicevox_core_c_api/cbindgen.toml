@@ -25,6 +25,7 @@ prefix = """
 #ifdef _WIN32
 __declspec(dllimport)
 #endif"""
+args = "vertical"
 
 [enum]
 rename_variants = "ScreamingSnakeCase"

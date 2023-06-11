@@ -204,7 +204,8 @@ VoicevoxResultCode voicevox_initialize(struct VoicevoxInitializeOptions options)
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif const char *voicevox_get_version(void);
+#endif
+const char *voicevox_get_version(void);
 
 /**
  * モデルを読み込む
@@ -222,7 +223,8 @@ VoicevoxResultCode voicevox_load_model(uint32_t speaker_id);
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif bool voicevox_is_gpu_mode(void);
+#endif
+bool voicevox_is_gpu_mode(void);
 
 /**
  * 指定したspeaker_idのモデルが読み込まれているか判定する
@@ -230,14 +232,16 @@ __declspec(dllimport)
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif bool voicevox_is_model_loaded(uint32_t speaker_id);
+#endif
+bool voicevox_is_model_loaded(uint32_t speaker_id);
 
 /**
  * このライブラリの利用を終了し、確保しているリソースを解放する
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif void voicevox_finalize(void);
+#endif
+void voicevox_finalize(void);
 
 /**
  * メタ情報をjsonで取得する
@@ -245,7 +249,8 @@ __declspec(dllimport)
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif const char *voicevox_get_metas_json(void);
+#endif
+const char *voicevox_get_metas_json(void);
 
 /**
  * サポートデバイス情報をjsonで取得する
@@ -253,7 +258,8 @@ __declspec(dllimport)
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif const char *voicevox_get_supported_devices_json(void);
+#endif
+const char *voicevox_get_supported_devices_json(void);
 
 /**
  * 音素ごとの長さを推論する
