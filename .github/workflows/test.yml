@@ -113,7 +113,7 @@ jobs:
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
-      - name: Extract the cbindgen version
+      - name: Extract the of cbindgen that xtask depends on
         id: cbindgen-version
         run: |
           metadata=$(cargo metadata --format-version 1)
