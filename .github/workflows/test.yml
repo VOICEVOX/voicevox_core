@@ -113,8 +113,27 @@ jobs:
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
-      - name: Install cbindgen
-        uses: ./.github/actions/cargo-binstall-cbindgen
+      - name: Extract the cbindgen version
+        id: cbindgen-version
+        run: |
+          metadata=$(cargo metadata --format-version 1)
+          version=$(
+              jq -r '
+                (.workspace_members[] | select(startswith("xtask "))) as $xtask
+                  | (.resolve.nodes[] | select(.id == $xtask).deps[] | select(.name == "cbindgen").pkg) as $cbindgen
+                  | .packages[] | select(.id == $cbindgen).version
+                ' <<< "$metadata"
+          )
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Install cbindgen v${{ steps.cbindgen-version.outputs.version }}
+        run: |
+          cargo binstall \
+            cbindgen@${{ steps.cbindgen-version.outputs.version }} \
+            --pkg-url 'https://github.com/alsuren/cargo-quickinstall/releases/download/{ name }-{ version }-{ target }/{ name }-{ version }-{ target }.tar.gz' \
+            --pkg-fmt tgz \
+            --bin-dir '{ bin }{ binary-ext }' \
+            --no-confirm \
+            --log-level debug
       - name: Assert voicevox_core.h is up to date
         run: |
           cbindgen --crate voicevox_core_c_api -o /tmp/voicevox_core.h
@@ -140,15 +159,12 @@ jobs:
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
-      - name: Install cbindgen
-        uses: ./.github/actions/cargo-binstall-cbindgen
       - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api -vv
-      - name: voicevox_core.hを生成
-        run: cbindgen --crate voicevox_core_c_api -o ./example/cpp/unix/voicevox_core/voicevox_core.h
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
           mkdir -p example/cpp/unix/voicevox_core/
+          cp -v crates/voicevox_core_c_api/include/voicevox_core.h example/cpp/unix/voicevox_core/
           cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/ || true
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* example/cpp/unix/voicevox_core/ || true
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/ || true
@@ -184,15 +200,12 @@ jobs:
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
-      - name: Install cbindgen
-        uses: ./.github/actions/cargo-binstall-cbindgen
       - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api -vv
-      - name: voicevox_core.hを生成
-        run: cbindgen --crate voicevox_core_c_api -o ./example/cpp/windows/simple_tts/voicevox_core.h
       - name: 必要なfileをexampleのディレクトリに移動させる
         run: |
           mkdir example/cpp/windows/simple_tts/lib/x64
+          cp -v crates/voicevox_core_c_api/include/voicevox_core.h example/cpp/windows/simple_tts/
           cp target/debug/voicevox_core.dll.lib example/cpp/windows/simple_tts/lib/x64/voicevox_core.lib
 
       - name: Add MSBuild to PATH
