@@ -24,8 +24,7 @@ documentation_style = "doxy"
 prefix = """
 #ifdef _WIN32
 __declspec(dllimport)
-#endif
-"""
+#endif"""
 
 [enum]
 rename_variants = "ScreamingSnakeCase"

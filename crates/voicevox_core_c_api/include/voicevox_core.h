@@ -186,7 +186,6 @@ extern "C" {
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 struct VoicevoxInitializeOptions voicevox_make_default_initialize_options(void);
 
 /**
@@ -197,7 +196,6 @@ struct VoicevoxInitializeOptions voicevox_make_default_initialize_options(void);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_initialize(struct VoicevoxInitializeOptions options);
 
 /**
@@ -206,8 +204,7 @@ VoicevoxResultCode voicevox_initialize(struct VoicevoxInitializeOptions options)
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif
- const char *voicevox_get_version(void);
+#endif const char *voicevox_get_version(void);
 
 /**
  * モデルを読み込む
@@ -217,7 +214,6 @@ __declspec(dllimport)
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_load_model(uint32_t speaker_id);
 
 /**
@@ -226,8 +222,7 @@ VoicevoxResultCode voicevox_load_model(uint32_t speaker_id);
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif
- bool voicevox_is_gpu_mode(void);
+#endif bool voicevox_is_gpu_mode(void);
 
 /**
  * 指定したspeaker_idのモデルが読み込まれているか判定する
@@ -235,16 +230,14 @@ __declspec(dllimport)
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif
- bool voicevox_is_model_loaded(uint32_t speaker_id);
+#endif bool voicevox_is_model_loaded(uint32_t speaker_id);
 
 /**
  * このライブラリの利用を終了し、確保しているリソースを解放する
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif
- void voicevox_finalize(void);
+#endif void voicevox_finalize(void);
 
 /**
  * メタ情報をjsonで取得する
@@ -252,8 +245,7 @@ __declspec(dllimport)
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif
- const char *voicevox_get_metas_json(void);
+#endif const char *voicevox_get_metas_json(void);
 
 /**
  * サポートデバイス情報をjsonで取得する
@@ -261,8 +253,7 @@ __declspec(dllimport)
  */
 #ifdef _WIN32
 __declspec(dllimport)
-#endif
- const char *voicevox_get_supported_devices_json(void);
+#endif const char *voicevox_get_supported_devices_json(void);
 
 /**
  * 音素ごとの長さを推論する
@@ -281,7 +272,6 @@ __declspec(dllimport)
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_predict_duration(uintptr_t length,
                                              int64_t *phoneme_vector,
                                              uint32_t speaker_id,
@@ -298,7 +288,6 @@ VoicevoxResultCode voicevox_predict_duration(uintptr_t length,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 void voicevox_predict_duration_data_free(float *predict_duration_data);
 
 /**
@@ -328,7 +317,6 @@ void voicevox_predict_duration_data_free(float *predict_duration_data);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_predict_intonation(uintptr_t length,
                                                int64_t *vowel_phoneme_vector,
                                                int64_t *consonant_phoneme_vector,
@@ -351,7 +339,6 @@ VoicevoxResultCode voicevox_predict_intonation(uintptr_t length,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 void voicevox_predict_intonation_data_free(float *predict_intonation_data);
 
 /**
@@ -374,7 +361,6 @@ void voicevox_predict_intonation_data_free(float *predict_intonation_data);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_decode(uintptr_t length,
                                    uintptr_t phoneme_size,
                                    float *f0,
@@ -393,7 +379,6 @@ VoicevoxResultCode voicevox_decode(uintptr_t length,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 void voicevox_decode_data_free(float *decode_data);
 
 /**
@@ -403,7 +388,6 @@ void voicevox_decode_data_free(float *decode_data);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 struct VoicevoxAudioQueryOptions voicevox_make_default_audio_query_options(void);
 
 /**
@@ -421,7 +405,6 @@ struct VoicevoxAudioQueryOptions voicevox_make_default_audio_query_options(void)
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_audio_query(const char *text,
                                         uint32_t speaker_id,
                                         struct VoicevoxAudioQueryOptions options,
@@ -434,7 +417,6 @@ VoicevoxResultCode voicevox_audio_query(const char *text,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 struct VoicevoxAccentPhrasesOptions voicevox_make_default_accent_phrases_options(void);
 
 /**
@@ -452,7 +434,6 @@ struct VoicevoxAccentPhrasesOptions voicevox_make_default_accent_phrases_options
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_accent_phrases(const char *text,
                                            uint32_t speaker_id,
                                            struct VoicevoxAccentPhrasesOptions options,
@@ -473,7 +454,6 @@ VoicevoxResultCode voicevox_accent_phrases(const char *text,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_mora_length(const char *accent_phrases_json,
                                         uint32_t speaker_id,
                                         char **output_accent_phrases_json);
@@ -492,7 +472,6 @@ VoicevoxResultCode voicevox_mora_length(const char *accent_phrases_json,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_mora_pitch(const char *accent_phrases_json,
                                        uint32_t speaker_id,
                                        char **output_accent_phrases_json);
@@ -511,7 +490,6 @@ VoicevoxResultCode voicevox_mora_pitch(const char *accent_phrases_json,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_mora_data(const char *accent_phrases_json,
                                       uint32_t speaker_id,
                                       char **output_accent_phrases_json);
@@ -523,7 +501,6 @@ VoicevoxResultCode voicevox_mora_data(const char *accent_phrases_json,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 struct VoicevoxSynthesisOptions voicevox_make_default_synthesis_options(void);
 
 /**
@@ -542,7 +519,6 @@ struct VoicevoxSynthesisOptions voicevox_make_default_synthesis_options(void);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_synthesis(const char *audio_query_json,
                                       uint32_t speaker_id,
                                       struct VoicevoxSynthesisOptions options,
@@ -556,7 +532,6 @@ VoicevoxResultCode voicevox_synthesis(const char *audio_query_json,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
 
 /**
@@ -575,7 +550,6 @@ struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_tts(const char *text,
                                 uint32_t speaker_id,
                                 struct VoicevoxTtsOptions options,
@@ -592,7 +566,6 @@ VoicevoxResultCode voicevox_tts(const char *text,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 void voicevox_audio_query_json_free(char *audio_query_json);
 
 /**
@@ -605,7 +578,6 @@ void voicevox_audio_query_json_free(char *audio_query_json);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 void voicevox_accent_phrases_json_free(char *accented_phrase_json);
 
 /**
@@ -618,7 +590,6 @@ void voicevox_accent_phrases_json_free(char *accented_phrase_json);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 void voicevox_wav_free(uint8_t *wav);
 
 /**
@@ -629,7 +600,6 @@ void voicevox_wav_free(uint8_t *wav);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
 
 #ifdef __cplusplus
