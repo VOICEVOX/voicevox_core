@@ -1,7 +1,13 @@
 name: cargo-deny
 on:
   push:
+    branches: 
+      - main
   pull_request:
+    paths:
+      - '**/Cargo.*'
+      - deny.toml
+      - rust-toolchain
 jobs:
   cargo-deny:
     runs-on: ubuntu-20.04

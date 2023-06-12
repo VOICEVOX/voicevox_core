@@ -13,10 +13,16 @@ on:
     types:
       - published
   pull_request:
+    paths:
+      - build_util/**
+      - Cargo.*
+      - crates/voicevox_core**
+      - model/**
+      - rust-toolchain
+      - scripts/downloads/*
   push:
-    branches:
-      - "*"
-      - "**/*"
+    branches: 
+      - main
 env:
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}

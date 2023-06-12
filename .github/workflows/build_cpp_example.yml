@@ -1,0 +1,56 @@
+name: Build C++ example
+on:
+  push:
+    branches: 
+      - main
+  pull_request:
+    paths:
+      - crates/voicevox_core**
+      - '!crates/voicevox_core_python_api/**'
+      - model/**
+      - example/cpp/unix/**
+
+jobs:
+  build-unix-cpp-example:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifact_name: osx-x64-cpu-cpp-shared
+          - os: ubuntu-latest
+            artifact_name: linux-x64-cpu-cpp-shared
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-file
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+      - name: Install cbindgen
+        uses: ./.github/actions/cargo-binstall-cbindgen
+      - name: build voicevox_core_c_api
+        run: cargo build -p voicevox_core_c_api -vv
+      - name: voicevox_core.hを生成
+        run: cbindgen --crate voicevox_core_c_api -o ./example/cpp/unix/voicevox_core/voicevox_core.h
+      - name: 必要なfileをunix用exampleのディレクトリに移動させる
+        run: |
+          mkdir -p example/cpp/unix/voicevox_core/
+          cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/ || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* example/cpp/unix/voicevox_core/ || true
+          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/ || true
+
+      - if: startsWith(matrix.os, 'mac')
+        uses: jwlawson/actions-setup-cmake@v1.13
+      - name: Install build dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+      - name: Build
+        shell: bash
+        run: |
+          cd example/cpp/unix
+          cmake -S . -B build
+          cmake --build build
