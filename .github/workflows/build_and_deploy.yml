@@ -151,6 +151,7 @@ jobs:
       - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
         env:
+          RUSTFLAGS: -C panic=abort
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_python_api
         if: matrix.whl_local_version

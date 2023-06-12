@@ -3,6 +3,8 @@
 #ifndef VOICEVOX_CORE_INCLUDE_GUARD
 #define VOICEVOX_CORE_INCLUDE_GUARD
 
+/* Generated with cbindgen:0.24.3 */
+
 #ifdef __cplusplus
 #include <cstdint>
 #else // __cplusplus
@@ -230,7 +232,6 @@ extern const struct VoicevoxTtsOptions voicevox_default_tts_options;
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
                                               struct OpenJtalkRc **out_open_jtalk);
 
@@ -244,7 +245,6 @@ VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 void voicevox_open_jtalk_rc_delete(struct OpenJtalkRc *open_jtalk);
 
 /**
@@ -260,7 +260,6 @@ void voicevox_open_jtalk_rc_delete(struct OpenJtalkRc *open_jtalk);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_voice_model_new_from_path(const char *path,
                                                       struct VoicevoxVoiceModel **out_model);
 
@@ -275,7 +274,6 @@ VoicevoxResultCode voicevox_voice_model_new_from_path(const char *path,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxVoiceModelId voicevox_voice_model_id(const struct VoicevoxVoiceModel *model);
 
 /**
@@ -289,7 +287,6 @@ VoicevoxVoiceModelId voicevox_voice_model_id(const struct VoicevoxVoiceModel *mo
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 const char *voicevox_voice_model_get_metas_json(const struct VoicevoxVoiceModel *model);
 
 /**
@@ -302,7 +299,6 @@ const char *voicevox_voice_model_get_metas_json(const struct VoicevoxVoiceModel 
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 void voicevox_voice_model_delete(struct VoicevoxVoiceModel *model);
 
 /**
@@ -318,7 +314,6 @@ void voicevox_voice_model_delete(struct VoicevoxVoiceModel *model);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_synthesizer_new_with_initialize(const struct OpenJtalkRc *open_jtalk,
                                                             struct VoicevoxInitializeOptions options,
                                                             struct VoicevoxSynthesizer **out_synthesizer);
@@ -333,7 +328,6 @@ VoicevoxResultCode voicevox_synthesizer_new_with_initialize(const struct OpenJta
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 void voicevox_synthesizer_delete(struct VoicevoxSynthesizer *synthesizer);
 
 /**
@@ -349,7 +343,6 @@ void voicevox_synthesizer_delete(struct VoicevoxSynthesizer *synthesizer);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_synthesizer_load_voice_model(struct VoicevoxSynthesizer *synthesizer,
                                                          const struct VoicevoxVoiceModel *model);
 
@@ -366,7 +359,6 @@ VoicevoxResultCode voicevox_synthesizer_load_voice_model(struct VoicevoxSynthesi
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_synthesizer_unload_voice_model(struct VoicevoxSynthesizer *synthesizer,
                                                            VoicevoxVoiceModelId model_id);
 
@@ -381,7 +373,6 @@ VoicevoxResultCode voicevox_synthesizer_unload_voice_model(struct VoicevoxSynthe
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 bool voicevox_synthesizer_is_gpu_mode(const struct VoicevoxSynthesizer *synthesizer);
 
 /**
@@ -397,7 +388,6 @@ bool voicevox_synthesizer_is_gpu_mode(const struct VoicevoxSynthesizer *synthesi
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 bool voicevox_is_loaded_voice_model(const struct VoicevoxSynthesizer *synthesizer,
                                     VoicevoxVoiceModelId model_id);
 
@@ -412,7 +402,6 @@ bool voicevox_is_loaded_voice_model(const struct VoicevoxSynthesizer *synthesize
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 const char *voicevox_synthesizer_get_metas_json(const struct VoicevoxSynthesizer *synthesizer);
 
 /**
@@ -426,7 +415,6 @@ const char *voicevox_synthesizer_get_metas_json(const struct VoicevoxSynthesizer
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supported_devices_json);
 
 /**
@@ -445,7 +433,6 @@ VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supporte
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_synthesizer_audio_query(const struct VoicevoxSynthesizer *synthesizer,
                                                     const char *text,
                                                     VoicevoxStyleId style_id,
@@ -466,7 +453,6 @@ VoicevoxResultCode voicevox_synthesizer_audio_query(const struct VoicevoxSynthes
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct VoicevoxSynthesizer *synthesizer,
                                                               const char *text,
                                                               VoicevoxStyleId style_id,
@@ -487,7 +473,6 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct Voice
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_synthesizer_replace_mora_data(const struct VoicevoxSynthesizer *synthesizer,
                                                           const char *accent_phrases_json,
                                                           VoicevoxStyleId style_id,
@@ -507,7 +492,6 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_data(const struct VoicevoxS
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_synthesizer_replace_phoneme_length(const struct VoicevoxSynthesizer *synthesizer,
                                                                const char *accent_phrases_json,
                                                                VoicevoxStyleId style_id,
@@ -527,7 +511,6 @@ VoicevoxResultCode voicevox_synthesizer_replace_phoneme_length(const struct Voic
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_synthesizer_replace_mora_pitch(const struct VoicevoxSynthesizer *synthesizer,
                                                            const char *accent_phrases_json,
                                                            VoicevoxStyleId style_id,
@@ -550,7 +533,6 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_pitch(const struct Voicevox
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesizer *synthesizer,
                                                   const char *audio_query_json,
                                                   VoicevoxStyleId style_id,
@@ -575,7 +557,6 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *synthesizer,
                                             const char *text,
                                             VoicevoxStyleId style_id,
@@ -593,7 +574,6 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 void voicevox_json_free(char *json);
 
 /**
@@ -606,7 +586,6 @@ void voicevox_json_free(char *json);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 void voicevox_wav_free(uint8_t *wav);
 
 /**
@@ -617,7 +596,6 @@ void voicevox_wav_free(uint8_t *wav);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
 
 #ifdef __cplusplus
