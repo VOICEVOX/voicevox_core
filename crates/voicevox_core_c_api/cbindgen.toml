@@ -5,6 +5,7 @@ language = "C"
 header = "/// @file"
 include_guard = "VOICEVOX_CORE_INCLUDE_GUARD"
 no_includes = true
+include_version = true
 cpp_compat = true
 after_includes = """
 #ifdef __cplusplus
