@@ -284,7 +284,6 @@ impl BufferManager {
         drop(CString::from_raw(ptr));
     }
 
-    #[allow(dead_code)] // FIXME: これの代わりに、定数全部をコンストラクタに与える形にする
     pub fn memorize_static_str(&self, ptr: *const c_char) -> *const c_char {
         let BufferManagerInner {
             static_str_addrs, ..

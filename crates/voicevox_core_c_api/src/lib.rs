@@ -670,7 +670,9 @@ pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    voicevox_core::result_code::error_result_to_message(result_code).as_ptr() as *const c_char
+    BUFFER_MANAGER.memorize_static_str(
+        voicevox_core::result_code::error_result_to_message(result_code).as_ptr() as *const c_char,
+    )
 }
 
 #[cfg(test)]
