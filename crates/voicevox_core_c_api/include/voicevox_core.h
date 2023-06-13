@@ -388,8 +388,8 @@ bool voicevox_synthesizer_is_gpu_mode(const struct VoicevoxSynthesizer *synthesi
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-bool voicevox_is_loaded_voice_model(const struct VoicevoxSynthesizer *synthesizer,
-                                    VoicevoxVoiceModelId model_id);
+bool voicevox_synthesizer_is_loaded_voice_model(const struct VoicevoxSynthesizer *synthesizer,
+                                                VoicevoxVoiceModelId model_id);
 
 /**
  * メタ情報をjsonで取得する

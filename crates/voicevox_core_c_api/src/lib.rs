@@ -320,7 +320,7 @@ pub extern "C" fn voicevox_synthesizer_is_gpu_mode(synthesizer: &VoicevoxSynthes
 /// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
 /// @param model_id NULL終端文字列
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_is_loaded_voice_model(
+pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
     synthesizer: &VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> bool {
