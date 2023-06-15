@@ -6,13 +6,13 @@ use std::{
     sync::Mutex,
 };
 
+/// Cの世界に貸し出す`CStr`の所有者。
+///
+/// `Mutex`による内部可変性を持ち、すべての操作は共有参照から行うことができる。
 pub(crate) static C_STRING_OWNER: CStringOwner = CStringOwner::new();
 
 pub(crate) struct CStringOwner(Mutex<CStringOwnerInner>);
 
-/// Cの世界に貸し出す`CStr`の所有者。
-///
-/// `Mutex`による内部可変性を持ち、すべての操作は共有参照から行うことができる。
 struct CStringOwnerInner {
     owned_c_strings: BTreeMap<usize, UnsafeCell<CString>>,
     static_str_addrs: BTreeSet<usize>,
