@@ -644,7 +644,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// # Safety
 /// @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
+pub extern "C" fn voicevox_json_free(json: *mut c_char) {
     C_STRING_OWNER.delete(json);
 }
 
@@ -654,7 +654,7 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
 /// # Safety
 /// @param wav voicevox_tts,voicevox_synthesis で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
+pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
     U8_SLICE_OWNER.delete(wav);
 }
 
