@@ -26,7 +26,7 @@ impl CStringOwner {
         }))
     }
 
-    /// `CString`を所有し、そのポインタと長さを参照としてC API利用者に与える。
+    /// `CString`を所有し、そのポインタを参照としてC API利用者に与える。
     pub(crate) fn own_and_lend(&self, s: CString, out: &mut MaybeUninit<*mut c_char>) {
         let CStringOwnerInner {
             owned_c_strings, ..
