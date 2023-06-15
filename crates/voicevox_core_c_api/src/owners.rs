@@ -1,3 +1,7 @@
+//! `Box<[u8]>`や`CString`といったバッファの所有者(owner)。
+//!
+//! libcのmallocで追加のアロケーションを行うことなく、バッファを直接Cの世界に貸し出すことができる。
+
 mod c_string;
 mod slice;
 

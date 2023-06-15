@@ -1,5 +1,8 @@
 use std::{cell::UnsafeCell, collections::BTreeMap, mem::MaybeUninit, sync::Mutex};
 
+/// Cの世界に貸し出す`[u8]`の所有者。
+///
+/// `Mutex`による内部可変性を持ち、すべての操作は共有参照から行うことができる。
 pub(crate) static U8_SLICE_OWNER: SliceOwner<u8> = SliceOwner::new();
 
 pub(crate) struct SliceOwner<T> {
@@ -13,6 +16,7 @@ impl<T> SliceOwner<T> {
         }
     }
 
+    /// `Box<[T]>`を所有し、その先頭ポインタと長さを参照としてC API利用者に与える。
     pub(crate) fn own_and_lend(
         &self,
         slice: impl Into<Box<[T]>>,
@@ -32,6 +36,11 @@ impl<T> SliceOwner<T> {
         out_len.write(len);
     }
 
+    /// `own_and_lend`でC API利用者に貸し出したポインタに対応する`Box<[u8]>`をデストラクトする。
+    ///
+    /// # Panics
+    ///
+    /// `ptr`が`own_and_lend`で貸し出されたポインタではないとき、パニックする。
     pub(crate) fn delete(&self, ptr: *mut T) {
         let mut slices = self.slices.lock().unwrap();
 
