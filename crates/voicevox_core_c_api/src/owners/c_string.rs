@@ -11,16 +11,16 @@ use std::{
 /// `Mutex`による内部可変性を持ち、すべての操作は共有参照から行うことができる。
 pub(crate) static C_STRING_OWNER: CStringOwner = CStringOwner::new();
 
-pub(crate) struct CStringOwner(Mutex<CStringOwnerInner>);
+pub(crate) struct CStringOwner(Mutex<Inner>);
 
-struct CStringOwnerInner {
+struct Inner {
     owned_c_strings: BTreeMap<usize, UnsafeCell<CString>>,
     static_str_addrs: BTreeSet<usize>,
 }
 
 impl CStringOwner {
     const fn new() -> Self {
-        Self(Mutex::new(CStringOwnerInner {
+        Self(Mutex::new(Inner {
             owned_c_strings: BTreeMap::new(),
             static_str_addrs: BTreeSet::new(),
         }))
@@ -28,7 +28,7 @@ impl CStringOwner {
 
     /// `CString`を所有し、そのポインタを参照としてC API利用者に与える。
     pub(crate) fn own_and_lend(&self, s: CString, out: &mut MaybeUninit<*mut c_char>) {
-        let CStringOwnerInner {
+        let Inner {
             owned_c_strings, ..
         } = &mut *self.0.lock().unwrap();
 
@@ -46,7 +46,7 @@ impl CStringOwner {
     ///
     /// `ptr`が`own_and_lend`で貸し出されたポインタではないとき、パニックする。
     pub(crate) fn delete(&self, ptr: *mut c_char) {
-        let CStringOwnerInner {
+        let Inner {
             owned_c_strings,
             static_str_addrs,
             ..
@@ -72,7 +72,7 @@ impl CStringOwner {
     ///
     /// 記憶したポインタは`delete`でのパニックメッセージの切り替えに使われる。
     pub(crate) fn memorize_static(&self, s: &'static CStr) -> *const c_char {
-        let CStringOwnerInner {
+        let Inner {
             static_str_addrs, ..
         } = &mut *self.0.lock().unwrap();
 
