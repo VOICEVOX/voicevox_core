@@ -25,7 +25,9 @@ impl<T> SliceOwner<T> {
         let ptr = slice.as_ptr() as *mut T;
         let len = slice.len();
 
-        slices.insert(ptr as usize, slice.into());
+        let duplicated = slices.insert(ptr as usize, slice.into()).is_some();
+        assert!(!duplicated, "duplicated");
+
         out_ptr.write(ptr);
         out_len.write(len);
     }

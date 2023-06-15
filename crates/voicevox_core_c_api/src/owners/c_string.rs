@@ -30,7 +30,9 @@ impl CStringOwner {
 
         let ptr = s.as_ptr() as *mut c_char;
 
-        owned_c_strings.insert(ptr as usize, s.into());
+        let duplicated = owned_c_strings.insert(ptr as usize, s.into()).is_some();
+        assert!(!duplicated, "duplicated");
+
         out.write(ptr);
     }
 
