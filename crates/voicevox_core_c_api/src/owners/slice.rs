@@ -41,7 +41,7 @@ impl<T> SliceOwner<T> {
     /// # Panics
     ///
     /// `ptr`が`own_and_lend`で貸し出されたポインタではないとき、パニックする。
-    pub(crate) fn delete(&self, ptr: *mut T) {
+    pub(crate) fn drop_for(&self, ptr: *mut T) {
         let mut slices = self.slices.lock().unwrap();
 
         slices.remove(&(ptr as usize)).expect(
@@ -81,7 +81,7 @@ mod tests {
                 (ptr.assume_init(), len.assume_init())
             };
             assert_eq!(expected_len, len);
-            owner.delete(ptr);
+            owner.drop_for(ptr);
         }
 
         fn vec<T: Clone>(initial_cap: usize, elems: &[T]) -> Vec<T> {
@@ -98,6 +98,6 @@ mod tests {
     fn it_denies_unknown_ptr() {
         let owner = SliceOwner::<i32>::new();
         let x = 42;
-        owner.delete(&x as *const i32 as *mut i32);
+        owner.drop_for(&x as *const i32 as *mut i32);
     }
 }

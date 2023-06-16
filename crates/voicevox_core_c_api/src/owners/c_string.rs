@@ -45,7 +45,7 @@ impl CStringOwner {
     /// # Panics
     ///
     /// `ptr`が`own_and_lend`で貸し出されたポインタではないとき、パニックする。
-    pub(crate) fn delete(&self, ptr: *mut c_char) {
+    pub(crate) fn drop_for(&self, ptr: *mut c_char) {
         let Inner {
             owned_c_strings,
             static_str_addrs,
@@ -95,7 +95,7 @@ mod tests {
     fn it_denies_unknown_char_ptr() {
         let owner = CStringOwner::new();
         let s = CStr::from_bytes_with_nul(b"\0").unwrap().to_owned();
-        owner.delete(s.into_raw());
+        owner.drop_for(s.into_raw());
     }
 
     #[test]
@@ -105,7 +105,7 @@ mod tests {
     fn it_denies_known_static_char_ptr() {
         let owner = CStringOwner::new();
         owner.memorize_static(STATIC);
-        owner.delete(STATIC.as_ptr() as *mut c_char);
+        owner.drop_for(STATIC.as_ptr() as *mut c_char);
 
         static STATIC: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"\0") };
     }
