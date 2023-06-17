@@ -176,7 +176,7 @@ jobs:
         shell: bash
         run: |
           mv -f download/resource/core/README.md ./README.md
-          rm -r ./model; mv core/model ./model
+          rm -r ./model; mv download/fat_resource/core/model ./model
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cbindgen
