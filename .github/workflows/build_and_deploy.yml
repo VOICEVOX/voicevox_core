@@ -24,7 +24,7 @@ env:
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
 jobs:
   build_and_deploy:
-    environment: ${{ github.event.inputs.is_production == 'true' && 'code_signing' || '' }} # コード署名用のenvironment
+    environment: ${{ github.event.inputs.is_production == 'true' && 'production' || '' }} # 製品版のenvironment
     strategy:
       matrix:
         include:
@@ -109,7 +109,22 @@ jobs:
             use_cuda: false
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v3 # 製品版ではない場合
+        if: ${{ github.event.inputs.is_production != 'true' }}
+      - uses: actions/checkout@v3 # 製品版の場合
+        if: ${{ github.event.inputs.is_production == 'true' }}
+        with:
+          fetch-depth: 0 # 全履歴取得
+          token: ${{ secrets.PRODUCTION_GITHUB_TOKEN }}
+      - name: Merge production branch
+        if: github.event.inputs.is_production == 'true'
+        shell: bash
+        run: |
+          (
+            git remote add private ${{ secrets.PRODUCTION_REPOSITORY_URL }}
+            git fetch private refs/tags/${{ secrets.PRODUCTION_REPOSITORY_TAG }}
+            git -c user.name=dummy -c user.email=dummy@dummy.dummy merge FETCH_HEAD
+          ) > /dev/null 2>&1
       - name: Set up Python 3.8
         if: matrix.whl_local_version
         uses: actions/setup-python@v4
@@ -172,7 +187,12 @@ jobs:
         shell: bash
         run: cbindgen --crate voicevox_core_c_api -o ./voicevox_core.h
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+        run: |
+          if [[ "${{ github.event.inputs.is_production }}" != "true" ]]; then
+            cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+          else
+            cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release > /dev/null 2>&1
+          fi
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_python_api
@@ -181,7 +201,11 @@ jobs:
         shell: bash
         run: |
           pip install -r ./crates/voicevox_core_python_api/requirements.txt
-          maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+          if [[ "${{ github.event.inputs.is_production }}" != "true" ]]; then
+            maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+          else
+            maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release > /dev/null 2>&1
+          fi
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
