@@ -11,13 +11,13 @@ on:
       version:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
         required: true
-      is_production:
-        description: "製品版をビルドする"
+      code_signing:
+        description: "コード署名する"
         type: boolean
         required: false
         default: false
-      code_signing:
-        description: "コード署名する"
+      is_production:
+        description: "製品版をビルドする"
         type: boolean
         required: false
         default: false
