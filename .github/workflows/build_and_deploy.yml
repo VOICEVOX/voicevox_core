@@ -24,6 +24,9 @@ env:
   # Raw character weights are not public.
   # Skip uploading to GitHub Release on public repo.
   SKIP_UPLOADING_RELEASE_ASSET: ${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }}
+defaults:
+  run:
+    shell: bash
 jobs:
   build_and_deploy:
     environment: ${{ github.event.inputs.code_signing == 'true' && 'code_signing' || '' }} # コード署名用のenvironment
@@ -124,7 +127,6 @@ jobs:
           targets: ${{ matrix.target }}
       - name: Install cross compiler for aarch64-unknown-linux-gnu
         if: matrix.target == 'aarch64-unknown-linux-gnu'
-        shell: bash
         run: |
           sudo apt update
           sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
@@ -134,17 +136,14 @@ jobs:
           ndk-version: r25b
       - name: Set path for android
         if: endsWith(matrix.target, '-linux-android')
-        shell: bash
         run: |
           echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-edit
-        shell: bash
         run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
       - name: set cargo version
-        shell: bash
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
           if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
@@ -156,7 +155,6 @@ jobs:
       - name: build voicevox_core_python_api
         if: matrix.whl_local_version
         id: build-voicevox-core-python-api
-        shell: bash
         run: |
           pip install -r ./crates/voicevox_core_python_api/requirements.txt
           maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
@@ -164,10 +162,8 @@ jobs:
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: Set ASSET_NAME env var
-        shell: bash
         run: echo "ASSET_NAME=voicevox_core-${{ matrix.artifact_name }}-${{ env.VERSION }}" >> "$GITHUB_ENV"
       - name: Organize artifact
-        shell: bash
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
           cp -v crates/voicevox_core_c_api/include/voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
@@ -181,7 +177,6 @@ jobs:
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
-        shell: bash
         run: |
           bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
         env:
@@ -194,7 +189,6 @@ jobs:
           name: voicevox_core-${{ matrix.target }}
           path: artifact/${{ env.ASSET_NAME }}
       - name: Archive artifact
-        shell: bash
         run: |
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
@@ -221,7 +215,6 @@ jobs:
     runs-on: macos-12
     steps:
       - name: Set ASSET_NAME env var
-        shell: bash
         run: echo "ASSET_NAME=voicevox_core-ios-xcframework-cpu-${{ env.VERSION }}" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v2
         with:
@@ -236,12 +229,10 @@ jobs:
           name: voicevox_core-aarch64-apple-ios
           path: artifact/voicevox_core-aarch64-apple-ios
       - name: Create fat binary
-        shell: bash
         run: |
           mkdir -p "artifact/voicevox_core-sim"
           lipo -create "artifact/voicevox_core-x86_64-apple-ios/libvoicevox_core.dylib" "artifact/voicevox_core-aarch64-apple-ios-sim/libvoicevox_core.dylib" -output "artifact/voicevox_core-sim/libvoicevox_core.dylib"
       - name: Create XCFramework
-        shell: bash
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
           xcodebuild -create-xcframework \
@@ -251,7 +242,6 @@ jobs:
             -headers "artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h" \
             -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
       - name: Archive artifact
-        shell: bash
         run: |
           cd artifact/${{ env.ASSET_NAME }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
@@ -302,7 +292,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install cross compiler for aarch64-unknown-linux-gnu
         if: matrix.target == 'aarch64-unknown-linux-gnu'
-        shell: bash
         run: |
           sudo apt update
           sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
@@ -313,7 +302,6 @@ jobs:
       - name: Build downloader
         run: cargo build -vv --release -p download --target ${{ matrix.target }}
       - name: Rename the binary
-        shell: bash
         run: |
           case "$OS" in
             Windows) exe_suffix=.exe;;
@@ -322,7 +310,6 @@ jobs:
           mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
-        shell: bash
         run: |
           bash build_util/codesign.bash ./${{ matrix.name }}
         env:

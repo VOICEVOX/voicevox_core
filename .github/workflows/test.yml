@@ -5,6 +5,9 @@ on:
       - "*"
       - "**/*"
   pull_request:
+defaults:
+  run:
+    shell: bash
 jobs:
   shellcheck:
     runs-on: ubuntu-22.04
@@ -102,7 +105,6 @@ jobs:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
           key: "v2-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
       - name: Run cargo test
-        shell: bash
         run: cargo test -vv --features ,${{ matrix.features }} -- --include-ignored
 
   c-header:
@@ -173,12 +175,10 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v1.13
       - name: Install build dependencies
         if: startsWith(matrix.os, 'ubuntu')
-        shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake
       - name: Build
-        shell: bash
         run: |
           cd example/cpp/unix
           cmake -S . -B build
@@ -237,14 +237,10 @@ jobs:
         uses: ./.github/actions/rust-toolchain-from-file
       - name: venv作成
         uses: ./.github/actions/create-venv
-      - shell: bash
-        run: pip install -r ./crates/voicevox_core_python_api/requirements.txt
-      - shell: bash
-        run: cargo build -p voicevox_core_c_api -vv
-      - shell: bash
-        run: maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
-      - shell: bash
-        run: maturin develop --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
+      - run: pip install -r ./crates/voicevox_core_python_api/requirements.txt
+      - run: cargo build -p voicevox_core_c_api -vv
+      - run: maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
+      - run: maturin develop --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
       - name: 必要なDLLをカレントディレクトリにコピー
         run: |
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll . || true
