@@ -9,6 +9,12 @@ on:
         description: "製品版をビルドする"
         type: boolean
         required: false
+        default: false
+      code_signing:
+        description: "コード署名する"
+        type: boolean
+        required: false
+        default: false
   release:
     types:
       - published
@@ -226,7 +232,7 @@ jobs:
           cp -vr model "artifact/${{ env.ASSET_NAME }}/"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
       - name: Code signing (Windows)
-        if: startsWith(matrix.os, 'windows') && github.event.inputs.is_production == 'true'
+        if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
         shell: bash
         run: |
           bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
@@ -313,7 +319,7 @@ jobs:
           esac
           mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
       - name: Code signing (Windows)
-        if: startsWith(matrix.os, 'windows') && github.event.inputs.is_production == 'true'
+        if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
         shell: bash
         run: |
           bash build_util/codesign.bash ./${{ matrix.name }}
