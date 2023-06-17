@@ -1,10 +1,12 @@
 mod c_impls;
 /// cbindgen:ignore
 mod compatible_engine;
+mod drop_check;
 mod helpers;
-mod owners;
+mod slice_owner;
+use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::*;
-use self::owners::{C_STRING_OWNER, U8_SLICE_OWNER};
+use self::slice_owner::U8_SLICE_OWNER;
 use chrono::SecondsFormat;
 use const_default::ConstDefault;
 use derive_getters::Getters;
@@ -355,7 +357,11 @@ pub extern "C" fn voicevox_create_supported_devices_json(
     into_result_code_with_error((|| {
         let supported_devices =
             CString::new(SupportedDevices::create()?.to_json().to_string()).unwrap();
-        C_STRING_OWNER.own_and_lend(supported_devices, output_supported_devices_json);
+        output_supported_devices_json.write(
+            C_STRING_DROP_CHECKER
+                .whitelist(supported_devices)
+                .into_raw(),
+        );
         Ok(())
     })())
 }
@@ -400,7 +406,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
         ))?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
-        C_STRING_OWNER.own_and_lend(audio_query, output_audio_query_json);
+        output_audio_query_json.write(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
         Ok(())
     })())
 }
@@ -443,7 +449,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
         ))?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        C_STRING_OWNER.own_and_lend(accent_phrases, output_accent_phrases_json);
+        output_accent_phrases_json
+            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -475,7 +482,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        C_STRING_OWNER.own_and_lend(accent_phrases, output_accent_phrases_json);
+        output_accent_phrases_json
+            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -507,7 +515,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        C_STRING_OWNER.own_and_lend(accent_phrases, output_accent_phrases_json);
+        output_accent_phrases_json
+            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -539,7 +548,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        C_STRING_OWNER.own_and_lend(accent_phrases, output_accent_phrases_json);
+        output_accent_phrases_json
+            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -644,8 +654,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// # Safety
 /// @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
-pub extern "C" fn voicevox_json_free(json: *mut c_char) {
-    C_STRING_OWNER.drop_for(json);
+pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
+    drop(CString::from_raw(C_STRING_DROP_CHECKER.check(json)));
 }
 
 /// wav データのメモリを解放する
@@ -665,12 +675,12 @@ pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    C_STRING_OWNER.memorize_static(
-        CStr::from_bytes_with_nul(
-            voicevox_core::result_code::error_result_to_message(result_code).as_ref(),
-        )
-        .unwrap(),
+    let message = CStr::from_bytes_with_nul(
+        voicevox_core::result_code::error_result_to_message(result_code).as_ref(),
     )
+    .expect("`error_result_to_message` should always return NUL-terminated string");
+
+    C_STRING_DROP_CHECKER.blacklist(message).as_ptr()
 }
 
 #[cfg(test)]

@@ -1,8 +1,18 @@
 use std::{cell::UnsafeCell, collections::BTreeMap, mem::MaybeUninit, sync::Mutex};
 
-/// Cの世界に貸し出す`[u8]`の所有者。
+/// Cの世界に貸し出す`[u8]`の所有者(owner)。
 ///
 /// `Mutex`による内部可変性を持ち、すべての操作は共有参照から行うことができる。
+///
+/// # Motivation
+///
+/// 本クレートが提供するAPIとして、バイト列の生成(create)とその解放(free)がある。APIとしては"生成
+/// "時に`Box<[u8]>`のownershipがC側に渡され、"解放"時にはそのownershipがRust側に返されるといった形
+/// となる。
+///
+/// しかし実装としては`Box<impl Sized>`の場合とは異なり、何かしらの情報をRust側で保持し続けなくては
+/// ならない。実態としてはRust側がバッファの所有者(owner)であり続け、C側にはその参照が渡される形にな
+/// る。この構造体はその"所有者"であり、実際にRustのオブジェクトを保持し続ける。
 pub(crate) static U8_SLICE_OWNER: SliceOwner<u8> = SliceOwner::new();
 
 pub(crate) struct SliceOwner<T> {
