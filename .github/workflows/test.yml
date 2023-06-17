@@ -204,7 +204,7 @@ jobs:
         run: cargo build -p voicevox_core_c_api -vv
       - name: 必要なfileをexampleのディレクトリに移動させる
         run: |
-          mkdir example/cpp/windows/simple_tts/lib/x64
+          mkdir -p example/cpp/windows/simple_tts/lib/x64
           cp -v crates/voicevox_core_c_api/include/voicevox_core.h example/cpp/windows/simple_tts/
           cp target/debug/voicevox_core.dll.lib example/cpp/windows/simple_tts/lib/x64/voicevox_core.lib
 
