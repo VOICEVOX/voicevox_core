@@ -5,41 +5,45 @@ edition.workspace = true
 publish.workspace = true
 
 [lib]
-name = "voicevox_core"
 crate-type = ["cdylib"]
+name = "voicevox_core"
 
 [[test]]
-name = "e2e"
 harness = false
+name = "e2e"
 
 [features]
 directml = ["voicevox_core/directml"]
 
 [dependencies]
-voicevox_core.workspace = true
-chrono = { version = "0.4.23", default-features = false, features = ["clock"] } # https://github.com/chronotope/chrono/issues/602
-is-terminal = "0.4.2"
 libc = "0.2.134"
 once_cell.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tracing-subscriber.workspace = true
+voicevox_core.workspace = true
+
+# https://github.com/chronotope/chrono/issues/602
+[dependencies.chrono]
+version = "0.4.23"
+default-features = false
+features = ["clock"]
 
 [dev-dependencies]
-pretty_assertions = "1.3.0"
 anyhow.workspace = true
-rstest = "0.15.0"
 assert_cmd = { version = "2.0.8", features = ["color-auto"] }
 clap.workspace = true
 duct = "0.13.6"
 easy-ext.workspace = true
+inventory = "0.3.4"
 libloading = "0.7.3"
 libtest-mimic = "0.6.0"
 ndarray = "0.15.6"
 ndarray-stats = "0.5.1"
+pretty_assertions = "1.3.0"
 process_path.workspace = true
 regex.workspace = true
+rstest = "0.15.0"
 serde.workspace = true
 toml = "0.7.2"
 typetag = "0.2.5"
-inventory = "0.3.4"

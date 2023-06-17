@@ -1,17 +1,12 @@
 [workspace]
 members = [
-  "crates/download",
-  "crates/test_util",
-  "crates/voicevox_core",
-  "crates/voicevox_core_c_api",
-  "crates/voicevox_core_python_api",
-  "crates/xtask",
+    "crates/download",
+    "crates/test_util",
+    "crates/voicevox_core",
+    "crates/voicevox_core_c_api",
+    "crates/voicevox_core_python_api",
+    "crates/xtask"
 ]
-
-[workspace.package]
-version = "0.0.0"
-edition = "2021"
-publish = false
 
 [workspace.dependencies]
 anyhow = "1.0.65"
@@ -19,8 +14,6 @@ clap = { version = "4.0.10", features = ["derive"] }
 easy-ext = "1.0.1"
 fs-err = { version = "2.9.0", features = ["tokio"] }
 once_cell = "1.15.0"
-# FIXME: iOS対応のpull request(https://github.com/wesleywiser/process_path/pull/16)がマージされる見込みが無いため
-process_path = { git = "https://github.com/VOICEVOX/process_path.git", rev = "de226a26e8e18edbdb1d6f986afe37bbbf35fbf4" }
 regex = "1.6.0"
 serde = { version = "1.0.145", features = ["derive"] }
 serde_json = "1.0.85"
@@ -30,11 +23,20 @@ tracing = { version = "0.1.37", features = ["log"] }
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 voicevox_core = { path = "crates/voicevox_core" }
 
+# FIXME: iOS対応のpull request(https://github.com/wesleywiser/process_path/pull/16)がマージされる見込みが無いため
+[workspace.dependencies.process_path]
+git = "https://github.com/VOICEVOX/process_path.git"
+rev = "de226a26e8e18edbdb1d6f986afe37bbbf35fbf4"
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+publish = false
+
 # min-sized-rustを元にrelease buildのサイズが小さくなるようにした
 # https://github.com/johnthagen/min-sized-rust
 [profile.release]
 opt-level = "z"
 lto = true
 codegen-units = 1
-panic = "abort"
 strip = true

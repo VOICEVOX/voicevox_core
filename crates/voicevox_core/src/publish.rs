@@ -180,7 +180,7 @@ impl VoicevoxCore {
             0.1,
             SynthesisEngine::DEFAULT_SAMPLING_RATE,
             false,
-            kana,
+            Some(kana),
         ))
     }
 
@@ -1071,7 +1071,7 @@ mod tests {
             }
         }
 
-        assert_eq!(query.kana(), expected_kana_text);
+        assert_eq!(query.kana().as_deref(), Some(expected_kana_text));
     }
 
     #[rstest]
