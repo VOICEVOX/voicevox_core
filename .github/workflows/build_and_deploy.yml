@@ -34,7 +34,7 @@ env:
   VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-preview.0"
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
-  PRODUCTION_REPOSITORY_TAG: "production-check-tag" # 製品版のタグ名
+  PRODUCTION_REPOSITORY_TAG: "0.15.0-preview.0" # 製品版のタグ名
 jobs:
   build_and_deploy:
     environment: ${{ github.event.inputs.is_production == 'true' && 'production' || '' }} # 製品版のenvironment
