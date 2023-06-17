@@ -5,6 +5,7 @@ language = "C"
 header = "/// @file"
 include_guard = "VOICEVOX_CORE_INCLUDE_GUARD"
 no_includes = true
+include_version = true
 cpp_compat = true
 after_includes = """
 #ifdef __cplusplus
@@ -24,8 +25,8 @@ documentation_style = "doxy"
 prefix = """
 #ifdef _WIN32
 __declspec(dllimport)
-#endif
-"""
+#endif"""
+args = "vertical"
 
 [enum]
 rename_variants = "ScreamingSnakeCase"

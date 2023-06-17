@@ -8,8 +8,6 @@ from typing import Tuple
 import voicevox_core
 from voicevox_core import AccelerationMode, AudioQuery, VoicevoxCore
 
-SPEAKER_ID = 0
-
 
 def main() -> None:
     logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s")
@@ -55,7 +53,7 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path, int]:
     )
     argparser.add_argument(
         "--dict-dir",
-        default="./voicevox_core/open_jtalk_dic_utf_8-1.11",
+        default="./open_jtalk_dic_utf_8-1.11",
         type=Path,
         help="Open JTalkの辞書ディレクトリ",
     )
@@ -71,13 +69,13 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path, int]:
         help="出力wavファイルのパス",
     )
     argparser.add_argument(
-        "--speeker-id",
+        "--speaker-id",
         default=0,
         type=int,
         help="話者IDを指定",
     )
     args = argparser.parse_args()
-    return (args.mode, args.dict_dir, args.text, args.out, args.speeker_id)
+    return (args.mode, args.dict_dir, args.text, args.out, args.speaker_id)
 
 
 def display_as_json(audio_query: AudioQuery) -> str:

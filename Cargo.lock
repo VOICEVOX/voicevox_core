@@ -3840,7 +3840,6 @@ dependencies = [
  "duct",
  "easy-ext",
  "inventory",
- "is-terminal",
  "libc",
  "libloading",
  "libtest-mimic",
@@ -4201,6 +4200,7 @@ dependencies = [
  "clap 4.0.10",
  "color-eyre",
  "eyre",
+ "fs-err",
 ]
 
 [[package]]

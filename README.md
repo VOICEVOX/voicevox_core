@@ -136,17 +136,21 @@ model フォルダにある onnx モデルはダミーのため、ノイズの�
 cargo build --release -p voicevox_core_c_api
 ```
 
-```bash
-# DLL用のヘッダファイルvoicevox_core.hを生成
-# cbindgenが手元にインストールされているのならそちらでも可
-cargo xtask generate-c-header
-```
+DLL用のヘッダファイルは [crates/voicevox\_core\_c\_api/include/voicevox\_core.h](https://github.com/VOICEVOX/voicevox_core/tree/main/crates/voicevox_core_c_api/include/voicevox_core.h) にあります。
 
 ## コアライブラリのテスト
 
 ```bash
 cargo test
 ```
+
+## ヘッダファイルの更新
+
+```bash
+cargo xtask update-c-header
+```
+
+[cbindgen](https://crates.io/crates/cbindgen) が手元にインストールされているなら、それを使いヘッダファイルを生成することもできます。
 
 ## タイポチェック
 
@@ -164,6 +168,7 @@ typos
 **[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装  
 **[voicevoxcore4s](https://github.com/windymelt/voicevoxcore4s) [@windymelt](https://github.com/windymelt)** ･･･ VOICEVOX CORE の Scala(JVM) 向け FFI ラッパー  
 **[voicevox_flutter](https://github.com/char5742/voicevox_flutter) [@char5742](https://github.com/char5742)** ･･･ VOICEVOX CORE の Flutter 向け FFI ラッパー  
+**[voicevoxcore.go](https://github.com/sh1ma/voicevoxcore.go) [@sh1ma](https://github.com/sh1ma)** ･･･ VOICEVOX CORE の Go 言語 向け FFI ラッパー  
 ## ライセンス
 
 ソースコードのライセンスは [MIT LICENSE](./LICENSE) です。

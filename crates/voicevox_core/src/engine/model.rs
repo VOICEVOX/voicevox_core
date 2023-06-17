@@ -19,6 +19,7 @@ pub struct AccentPhraseModel {
     moras: Vec<MoraModel>,
     accent: usize,
     pause_mora: Option<MoraModel>,
+    #[serde(default)]
     is_interrogative: bool,
 }
 
@@ -44,7 +45,7 @@ pub struct AudioQueryModel {
     post_phoneme_length: f32,
     output_sampling_rate: u32,
     output_stereo: bool,
-    kana: String,
+    kana: Option<String>,
 }
 
 #[cfg(test)]
@@ -56,7 +57,7 @@ mod tests {
     #[rstest]
     fn check_audio_query_model_json_field_snake_case() {
         let audio_query_model =
-            AudioQueryModel::new(vec![], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, false, "".into());
+            AudioQueryModel::new(vec![], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, false, None);
         let val = serde_json::to_value(audio_query_model).unwrap();
         check_json_field_snake_case(&val);
     }
