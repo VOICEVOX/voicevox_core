@@ -4,7 +4,7 @@ use std::{
     sync::Mutex,
 };
 
-/// `*mut c_char`を`CString`としてdropしていいかチェックする。
+/// dropして良い`*mut c_char`を把握し、チェックする。
 ///
 /// `Mutex`による内部可変性を持ち、すべての操作は共有参照から行うことができる。
 ///
