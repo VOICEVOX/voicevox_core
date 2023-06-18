@@ -193,6 +193,9 @@ jobs:
       SOLUTION_FILE_PATH: example\cpp\windows\windows_example.sln
       # Configuration type to build.
       BUILD_CONFIGURATION: Debug
+    defaults:
+      run:
+        shell: pwsh
 
     steps:
       - uses: actions/checkout@v3
