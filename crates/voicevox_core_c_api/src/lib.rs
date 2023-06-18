@@ -678,7 +678,7 @@ pub extern "C" fn voicevox_error_result_to_message(
     let message = CStr::from_bytes_with_nul(
         voicevox_core::result_code::error_result_to_message(result_code).as_ref(),
     )
-    .expect("`error_result_to_message` should always return NUL-terminated string");
+    .expect("`error_result_to_message`が返す文字列はヌル終端であるはずである");
 
     C_STRING_DROP_CHECKER.blacklist(message).as_ptr()
 }
