@@ -200,10 +200,10 @@ jobs:
           function build() {
             cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
           }
-          if ${{ github.event.inputs.is_production }}; then
-            build > /dev/null 2>&1
-          else
+          if ${{ github.event.inputs.is_production != 'true' }}; then
             build
+          else
+            build > /dev/null 2>&1
           fi
         env:
           RUSTFLAGS: -C panic=abort
@@ -217,10 +217,10 @@ jobs:
           function build() {
             maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
           }
-          if ${{ github.event.inputs.is_production }}; then
-            build > /dev/null 2>&1
-          else
+          if ${{ github.event.inputs.is_production != 'true' }}; then
             build
+          else
+            build > /dev/null 2>&1
           fi
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
         env:
