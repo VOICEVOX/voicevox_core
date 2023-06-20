@@ -4,6 +4,9 @@ on:
     branches:
       - main
   pull_request:
+defaults:
+  run:
+    shell: bash
 jobs:
   generate_api_document:
     runs-on: ubuntu-latest
@@ -19,18 +22,16 @@ jobs:
           python-version: "3.8"
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
-      - name: Install cbindgen
-        uses: ./.github/actions/cargo-binstall-cbindgen
       - name: Create a venv
         uses: ./.github/actions/create-venv
       - name: pip install
         run: pip install -r ./crates/voicevox_core_python_api/requirements.txt
-      - name: Generate C header file
-        run: cbindgen --crate voicevox_core_c_api -o ./docs/apis/c_api/doxygen/voicevox_core.h
       - name: mkdir public
         run: mkdir -p public/apis/c_api
       - name: cp docs/apis/index.html
         run: cp docs/apis/index.html public/apis/
+      - name: cp crates/voicevox_core_c_api/include/voicevox_core.h
+        run: cp crates/voicevox_core_c_api/include/voicevox_core.h docs/apis/c_api/doxygen/
       - name: Generate doxygen document
         uses: mattnotmitt/doxygen-action@v1.9.4
         with:
