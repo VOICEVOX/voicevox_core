@@ -1,8 +1,12 @@
 mod c_impls;
 /// cbindgen:ignore
 mod compatible_engine;
+mod drop_check;
 mod helpers;
+mod slice_owner;
+use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::*;
+use self::slice_owner::U8_SLICE_OWNER;
 use chrono::SecondsFormat;
 use const_default::ConstDefault;
 use derive_getters::Getters;
@@ -64,9 +68,6 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
     }
     Runtime::new().unwrap()
 });
-
-// C_APIに渡すために，VecやCStringのサイズを記憶しながら生ポインタを得るためのマネージャ
-static BUFFER_MANAGER: BufferManager = BufferManager::new();
 
 /*
  * Cの関数として公開するための型や関数を定義するこれらの実装はvoicevox_core/publish.rsに定義してある対応する関数にある
@@ -356,7 +357,11 @@ pub extern "C" fn voicevox_create_supported_devices_json(
     into_result_code_with_error((|| {
         let supported_devices =
             CString::new(SupportedDevices::create()?.to_json().to_string()).unwrap();
-        output_supported_devices_json.write(BUFFER_MANAGER.c_string_into_raw(supported_devices));
+        output_supported_devices_json.write(
+            C_STRING_DROP_CHECKER
+                .whitelist(supported_devices)
+                .into_raw(),
+        );
         Ok(())
     })())
 }
@@ -401,7 +406,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
         ))?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
-        output_audio_query_json.write(BUFFER_MANAGER.c_string_into_raw(audio_query));
+        output_audio_query_json.write(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
         Ok(())
     })())
 }
@@ -444,7 +449,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
         ))?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        output_accent_phrases_json.write(BUFFER_MANAGER.c_string_into_raw(accent_phrases));
+        output_accent_phrases_json
+            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -476,7 +482,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        output_accent_phrases_json.write(BUFFER_MANAGER.c_string_into_raw(accent_phrases));
+        output_accent_phrases_json
+            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -508,7 +515,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        output_accent_phrases_json.write(BUFFER_MANAGER.c_string_into_raw(accent_phrases));
+        output_accent_phrases_json
+            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -540,7 +548,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
         )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        output_accent_phrases_json.write(BUFFER_MANAGER.c_string_into_raw(accent_phrases));
+        output_accent_phrases_json
+            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -588,9 +597,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
             StyleId::new(style_id),
             &SynthesisOptions::from(options),
         ))?;
-        let (ptr, len) = BUFFER_MANAGER.vec_into_raw(wav);
-        output_wav.write(ptr);
-        output_wav_length.write(len);
+        U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length);
         Ok(())
     })())
 }
@@ -636,9 +643,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
             StyleId::new(style_id),
             &TtsOptions::from(options),
         ))?;
-        let (ptr, size) = BUFFER_MANAGER.vec_into_raw(output);
-        output_wav.write(ptr);
-        output_wav_length.write(size);
+        U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length);
         Ok(())
     })())
 }
@@ -650,7 +655,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
-    BUFFER_MANAGER.dealloc_c_string(json);
+    drop(CString::from_raw(C_STRING_DROP_CHECKER.check(json)));
 }
 
 /// wav データのメモリを解放する
@@ -659,8 +664,8 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
 /// # Safety
 /// @param wav voicevox_tts,voicevox_synthesis で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
-    BUFFER_MANAGER.dealloc_slice(wav);
+pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
+    U8_SLICE_OWNER.drop_for(wav);
 }
 
 /// エラー結果をメッセージに変換する
@@ -670,9 +675,12 @@ pub unsafe extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    BUFFER_MANAGER.memorize_static_str(
-        voicevox_core::result_code::error_result_to_message(result_code).as_ptr() as *const c_char,
+    let message = CStr::from_bytes_with_nul(
+        voicevox_core::result_code::error_result_to_message(result_code).as_ref(),
     )
+    .expect("`error_result_to_message`が返す文字列はヌル終端であるはずである");
+
+    C_STRING_DROP_CHECKER.blacklist(message).as_ptr()
 }
 
 #[cfg(test)]
