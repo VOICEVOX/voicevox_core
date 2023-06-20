@@ -1,4 +1,10 @@
 name: build and deploy workflow
+
+# 製品版もビルドできる。製品版ビルド時の違いは以下の3点
+# 1. production環境を使う
+# 2. 製品版リポジトリのコードをmergeする
+# 3. RESOURCEリポジトリからモデルをダウンロードして置き換える
+
 on:
   workflow_dispatch:
     inputs:
@@ -9,6 +15,12 @@ on:
         description: "コード署名する"
         type: boolean
         required: false
+        default: false
+      is_production:
+        description: "製品版をビルドする"
+        type: boolean
+        required: false
+        default: false
   release:
     types:
       - published
@@ -18,18 +30,17 @@ on:
       - "*"
       - "**/*"
 env:
+  VOICEVOX_RESOURCE_VERSION: "0.15.0-preview.1"
+  VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-preview.0"
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
-
-  # Raw character weights are not public.
-  # Skip uploading to GitHub Release on public repo.
-  SKIP_UPLOADING_RELEASE_ASSET: ${{ secrets.SKIP_UPLOADING_RELEASE_ASSET || '1' }}
+  PRODUCTION_REPOSITORY_TAG: "0.15.0-preview.0" # 製品版のタグ名
 defaults:
   run:
     shell: bash
 jobs:
   build_and_deploy:
-    environment: ${{ github.event.inputs.code_signing == 'true' && 'code_signing' || '' }} # コード署名用のenvironment
+    environment: ${{ github.event.inputs.is_production == 'true' && 'production' || '' }} # 製品版のenvironment
     strategy:
       matrix:
         include:
@@ -114,7 +125,22 @@ jobs:
             use_cuda: false
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v3 # 製品版ではない場合
+        if: ${{ github.event.inputs.is_production != 'true' }}
+      - uses: actions/checkout@v3 # 製品版の場合
+        if: ${{ github.event.inputs.is_production == 'true' }}
+        with:
+          fetch-depth: 0 # 全履歴取得
+          token: ${{ secrets.PRODUCTION_GITHUB_TOKEN }}
+      - name: Merge production branch
+        if: github.event.inputs.is_production == 'true'
+        shell: bash
+        run: |
+          (
+            git remote add private ${{ secrets.PRODUCTION_REPOSITORY_URL }}
+            git fetch private refs/tags/${{ env.PRODUCTION_REPOSITORY_TAG }}
+            git -c user.name=dummy -c user.email=dummy@dummy.dummy merge FETCH_HEAD
+          ) > /dev/null 2>&1
       - name: Set up Python 3.8
         if: matrix.whl_local_version
         uses: actions/setup-python@v4
@@ -139,6 +165,26 @@ jobs:
         run: |
           echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
+      - name: Checkout VOICEVOX RESOURCE
+        if: github.event.inputs.is_production == 'true'
+        uses: actions/checkout@v3
+        with:
+          repository: VOICEVOX/voicevox_resource
+          ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
+          path: download/resource
+      - name: Checkout VOICEVOX FAT RESOURCE
+        if: github.event.inputs.is_production == 'true'
+        uses: actions/checkout@v3
+        with:
+          repository: VOICEVOX/voicevox_fat_resource
+          ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
+          path: download/fat_resource
+      - name: Raplace resource
+        if: github.event.inputs.is_production == 'true'
+        shell: bash
+        run: |
+          mv -f download/resource/core/README.md ./README.md
+          rm -r ./model; mv download/fat_resource/core/model ./model
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-edit
@@ -148,7 +194,16 @@ jobs:
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
           if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+        shell: bash
+        run: |
+          function build() {
+            cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+          }
+          if ${{ github.event.inputs.is_production != 'true' }}; then
+            build
+          else
+            build > /dev/null 2>&1
+          fi
         env:
           RUSTFLAGS: -C panic=abort
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
@@ -157,7 +212,14 @@ jobs:
         id: build-voicevox-core-python-api
         run: |
           pip install -r ./crates/voicevox_core_python_api/requirements.txt
-          maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+          function build() {
+            maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+          }
+          if ${{ github.event.inputs.is_production != 'true' }}; then
+            build
+          else
+            build > /dev/null 2>&1
+          fi
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
@@ -183,7 +245,7 @@ jobs:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
       - name: Upload artifact to build XCFramework
-        if: contains(matrix.target, 'ios') 
+        if: contains(matrix.target, 'ios')
         uses: actions/upload-artifact@v2
         with:
           name: voicevox_core-${{ matrix.target }}
@@ -202,7 +264,7 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && matrix.whl_local_version
+        if: env.VERSION != '0.0.0' && matrix.whl_local_version
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -259,7 +321,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -268,7 +330,7 @@ jobs:
             scripts/downloads/*
           target_commitish: ${{ github.sha }}
   deploy_precompiled_downloader:
-    environment: ${{ github.event.inputs.code_signing == 'true' && 'code_signing' || '' }} # コード署名用のenvironment
+    environment: ${{ github.event.inputs.is_production == 'true' && 'production' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include:
@@ -316,7 +378,7 @@ jobs:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
