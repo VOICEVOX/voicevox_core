@@ -5,6 +5,3 @@
 *.abi3.dll
 *.abi3.dylib
 *.abi3.so
-
-# OpenJTalk Dictionary
-/python/test/open_jtalk_dic_utf_8-1.11
