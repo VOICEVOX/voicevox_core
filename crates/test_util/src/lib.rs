@@ -6,8 +6,10 @@ pub const OPEN_JTALK_DIC_DIR: &str = concat!(
     "/data/open_jtalk_dic_utf_8-1.11"
 );
 
-pub const EXAMPLE_DATA_JSON: &str =
-    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/data/example_data.json"));
+pub const EXAMPLE_DATA_JSON: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/data/example_data.json"
+));
 
 impl ExampleData {
     pub fn load() -> ExampleData {
