@@ -45,6 +45,7 @@ fn generate_snapshot_json(out_dir: &Path) -> anyhow::Result<()> {
 
         duration: DurationTestData {
             length: 8,
+            // 「t e s u t o」
             phoneme_vector: vec![0, 37, 14, 35, 6, 37, 30, 0],
             result: vec![
                 0.9537022,

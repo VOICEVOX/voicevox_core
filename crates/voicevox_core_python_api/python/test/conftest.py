@@ -1,11 +1,11 @@
-from dataclasses import dataclass
-import numpy as np
+import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
+from typing import List, TypedDict
+
+import numpy as np
 import pytest
-import requests
-import tarfile
-import toml
 
 # onnxruntimeを最初に読み込んでおく
 if ort_path := os.getenv("ORT_PATH"):
@@ -16,65 +16,42 @@ if ort_path := os.getenv("ORT_PATH"):
 root_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 
-@pytest.fixture(scope="session")
-def open_jtalk_dict_dir():
-    return root_dir.parent.parent.parent / "test_util/data/open_jtalk_dic_utf_8-1.11"
+class DurationTestData(TypedDict):
+    length: int
+    phoneme_vector: List[int]
+    result: List[float]
 
 
-@dataclass
-class ExampleData:
-    f0: np.ndarray
-    phoneme: np.ndarray
-    duration: np.ndarray
-    intonation: np.ndarray
+class IntonationTestData(TypedDict):
+    length: int
+    vowel_phoneme_vector: List[int]
+    consonant_phoneme_vector: List[int]
+    start_accent_vector: List[int]
+    end_accent_vector: List[int]
+    start_accent_phrase_vector: List[int]
+    end_accent_phrase_vector: List[int]
+    result: List[float]
+
+
+class DecodeTestData(TypedDict):
     f0_length: int
     phoneme_size: int
+    f0_vector: List[float]
+    phoneme_vector: List[float]
+
+
+class TestData(TypedDict):
+    speaker_id: int
+    duration: DurationTestData
+    intonation: IntonationTestData
+    decode: DecodeTestData
 
 
 @pytest.fixture(scope="session")
-def example_data():
-    example_f0_length = 69
-    example_phoneme_size = 45
+def testdata() -> TestData:
+    with (
+        root_dir.parent.parent.parent / "test_util" / "data" / "testdata.json"
+    ).open() as f:
+        testdata = json.load(f)
 
-    example_f0 = np.zeros((example_f0_length,), dtype=np.float32)
-    example_f0[9:24] = 5.905128
-    example_f0[37:60] = 5.565851
-    example_phoneme = np.zeros(
-        (example_phoneme_size * example_f0_length,), dtype=np.float32
-    )
-    for index, range_start, range_end in [
-        (0, 0, 9),
-        (37, 9, 13),
-        (14, 13, 24),
-        (35, 24, 30),
-        (6, 30, 37),
-        (37, 37, 45),
-        (30, 45, 60),
-        (0, 60, 69),
-    ]:
-        for i in range(range_start, range_end):
-            example_phoneme[i * example_phoneme_size + index] = 1.0
-
-    snapshots = toml.load(
-        root_dir.parent.parent.parent
-        / "voicevox_core_c_api"
-        / "tests"
-        / "e2e"
-        / "snapshots.toml"
-    )
-
-    example_duration = np.array(
-        snapshots["compatible_engine"]["yukarin_s_forward"], dtype=np.float32
-    )
-    example_intonation = np.array(
-        snapshots["compatible_engine"]["yukarin_sa_forward"], dtype=np.float32
-    )
-
-    return ExampleData(
-        f0=example_f0,
-        phoneme=example_phoneme,
-        duration=example_duration,
-        intonation=example_intonation,
-        f0_length=example_f0_length,
-        phoneme_size=example_phoneme_size,
-    )
+    return testdata

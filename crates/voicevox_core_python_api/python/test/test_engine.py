@@ -1,46 +1,50 @@
 import numpy as np
 from voicevox_core import VoicevoxCore
 
-SPEAKER_ID = 0
+from conftest import TestData
 
 
 # crates/voicevox_core_c_api/tests/e2e/testcases/compatible_engine.rs と同じ。
 # crates/voicevox_core_c_api/tests/e2e/testcases/compatible_engine_load_model_before_initialize.rs
 # （コア初期化前にモデルをロードするとエラーになる）は、コアを初期化せずにモデルをロードすることが出来ないため、
 # Python API版でのテストはしない。
-def test_engine(example_data):
+def test_engine(testdata: TestData):
     core = VoicevoxCore()
-    assert not core.is_model_loaded(SPEAKER_ID)
-    core.load_model(SPEAKER_ID)
-    assert core.is_model_loaded(SPEAKER_ID)
+    speaker_id = testdata["speaker_id"]
+    assert not core.is_model_loaded(speaker_id)
+    core.load_model(speaker_id)
+    assert core.is_model_loaded(speaker_id)
 
     duration = core.predict_duration(
-        # 「t e s u t o」
-        np.array([0, 37, 14, 35, 6, 37, 30, 0], dtype=np.int64),
-        SPEAKER_ID,
+        np.array(testdata["duration"]["phoneme_vector"], dtype=np.int64),
+        speaker_id,
     )
 
     intonation = core.predict_intonation(
-        5,
-        np.array([0, 14, 6, 30, 0], dtype=np.int64),
-        np.array([-1, 37, 35, 37, -1], dtype=np.int64),
-        np.array([0, 1, 0, 0, 0], dtype=np.int64),
-        np.array([0, 1, 0, 0, 0], dtype=np.int64),
-        np.array([0, 1, 0, 0, 0], dtype=np.int64),
-        np.array([0, 0, 0, 1, 0], dtype=np.int64),
-        SPEAKER_ID,
+        testdata["intonation"]["length"],
+        np.array(testdata["intonation"]["vowel_phoneme_vector"], dtype=np.int64),
+        np.array(testdata["intonation"]["consonant_phoneme_vector"], dtype=np.int64),
+        np.array(testdata["intonation"]["start_accent_vector"], dtype=np.int64),
+        np.array(testdata["intonation"]["end_accent_vector"], dtype=np.int64),
+        np.array(testdata["intonation"]["start_accent_phrase_vector"], dtype=np.int64),
+        np.array(testdata["intonation"]["end_accent_phrase_vector"], dtype=np.int64),
+        speaker_id,
     )
 
     wave = core.decode(
-        example_data.f0_length,
-        example_data.phoneme_size,
-        example_data.f0,
-        example_data.phoneme,
-        SPEAKER_ID,
+        testdata["decode"]["f0_length"],
+        testdata["decode"]["phoneme_size"],
+        np.array(testdata["decode"]["f0_vector"], dtype=np.float32),
+        np.array(testdata["decode"]["phoneme_vector"], dtype=np.float32),
+        speaker_id,
     )
 
-    check_float_array_near(duration, example_data.duration, 0.01)
-    check_float_array_near(intonation, example_data.intonation, 0.01)
+    check_float_array_near(
+        duration, np.array(testdata["duration"]["result"], dtype=np.float32), 0.01
+    )
+    check_float_array_near(
+        intonation, np.array(testdata["intonation"]["result"], dtype=np.float32), 0.01
+    )
 
     assert not np.isnan(wave).any()
     assert not np.isinf(wave).any()

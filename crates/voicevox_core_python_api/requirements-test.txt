@@ -1,3 +1,4 @@
+dataclasses==0.6
 pytest==7.3.1
 requests==2.30.0
 numpy==1.24.3
