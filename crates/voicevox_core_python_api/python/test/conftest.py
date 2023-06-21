@@ -16,13 +16,13 @@ if ort_path := os.getenv("ORT_PATH"):
 root_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 
-class DurationTestData(TypedDict):
+class DurationExampleData(TypedDict):
     length: int
     phoneme_vector: List[int]
     result: List[float]
 
 
-class IntonationTestData(TypedDict):
+class IntonationExampleData(TypedDict):
     length: int
     vowel_phoneme_vector: List[int]
     consonant_phoneme_vector: List[int]
@@ -33,25 +33,23 @@ class IntonationTestData(TypedDict):
     result: List[float]
 
 
-class DecodeTestData(TypedDict):
+class DecodeExampleData(TypedDict):
     f0_length: int
     phoneme_size: int
     f0_vector: List[float]
     phoneme_vector: List[float]
 
 
-class TestData(TypedDict):
+class ExampleData(TypedDict):
     speaker_id: int
-    duration: DurationTestData
-    intonation: IntonationTestData
-    decode: DecodeTestData
+    duration: DurationExampleData
+    intonation: IntonationExampleData
+    decode: DecodeExampleData
 
 
 @pytest.fixture(scope="session")
-def testdata() -> TestData:
+def example_data() -> ExampleData:
     with (
-        root_dir.parent.parent.parent / "test_util" / "data" / "testdata.json"
+        root_dir.parent.parent.parent / "test_util" / "data" / "example_data.json"
     ).open() as f:
-        testdata = json.load(f)
-
-    return testdata
+        return json.load(f)

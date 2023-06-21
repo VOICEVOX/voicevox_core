@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DurationTestData {
+pub struct DurationExampleData {
    pub length: i64,
 
    pub phoneme_vector: Vec<i64>,
@@ -10,7 +10,7 @@ pub struct DurationTestData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct IntonationTestData {
+pub struct IntonationExampleData {
    pub length: i64,
 
    pub vowel_phoneme_vector: Vec<i64>,
@@ -24,7 +24,7 @@ pub struct IntonationTestData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DecodeTestData {
+pub struct DecodeExampleData {
    pub f0_length: i64,
    pub phoneme_size: i64,
    pub f0_vector: Vec<f32>,
@@ -32,10 +32,10 @@ pub struct DecodeTestData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TestData {
+pub struct ExampleData {
    pub speaker_id: i64,
 
-   pub duration: DurationTestData,
-   pub intonation: IntonationTestData,
-   pub decode: DecodeTestData,
+   pub duration: DurationExampleData,
+   pub intonation: IntonationExampleData,
+   pub decode: DecodeExampleData,
 }

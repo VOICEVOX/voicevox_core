@@ -7,7 +7,7 @@ use libloading::Library;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use test_util::TestData;
+use test_util::ExampleData;
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
@@ -43,7 +43,7 @@ impl assert_cdylib::TestCase for TestCase {
             metas_json
         };
 
-        let mut testdata = TestData::load();
+        let mut testdata = ExampleData::load();
 
         let supported_devices = {
             let supported_devices = supported_devices();
