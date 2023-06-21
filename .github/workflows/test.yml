@@ -250,15 +250,10 @@ jobs:
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll $target_dir || true
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* $target_dir || true
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib $target_dir || true
-      - name: "`maturin develop`でインストールした`voicevox_core_python_api`を実行"
-        shell: python
-        run: |
-          import voicevox_core
-          print(voicevox_core)
       - name: "pytestを実行"
         shell: bash
+        working-directory: crates/voicevox_core_python_api
         run: |
-          cd crates/voicevox_core_python_api
           pip install -r requirements-test.txt
           pytest
 
