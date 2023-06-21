@@ -4,9 +4,17 @@ use super::*;
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
-/// スタイルIdの実体
+/// [`StyleId`]の実体。
+///
+/// [`StyleId`]: StyleId
 pub type RawStyleId = u32;
-/// スタイルId
+
+/// スタイルID。
+///
+/// VOICEVOXにおける、ある[話者(speaker)]のある[スタイル(style)] (i.e. 声(voice))を指す。
+///
+/// [話者(speaker)]: SpeakerMeta
+/// [スタイル(style)]: StyleMeta
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
 pub struct StyleId(RawStyleId);
 
@@ -22,8 +30,12 @@ impl Display for StyleId {
     }
 }
 
+/// [`StyleVersion`]の実体。
+///
+/// [`StyleVersion`]: StyleVersion
 pub type RawStyleVersion = String;
 
+/// スタイルのバージョン。
 #[derive(PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
 pub struct StyleVersion(RawStyleVersion);
 
@@ -39,21 +51,30 @@ impl Display for StyleVersion {
     }
 }
 
-/// 音声モデルのメタ情報
+/// 音声モデルのメタ情報。
 pub type VoiceModelMeta = Vec<SpeakerMeta>;
 
-/// スピーカーのメタ情報
+/// 話者のメタ情報。
 #[derive(Deserialize, Serialize, Getters, Clone)]
 pub struct SpeakerMeta {
+    /// 話者名。
     name: String,
+
+    /// 話者に属するスタイル。
     styles: Vec<StyleMeta>,
+
+    /// 話者のバージョン。
     version: StyleVersion,
+
+    /// 話者のUUID。
     speaker_uuid: String,
 }
 
-/// スタイルのメタ情報
+/// スタイルのメタ情報。
 #[derive(Deserialize, Serialize, Getters, Clone)]
 pub struct StyleMeta {
+    /// スタイルID。
     id: StyleId,
+    /// スタイル名。
     name: String,
 }

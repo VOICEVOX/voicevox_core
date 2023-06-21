@@ -76,15 +76,43 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
  * voicevox_core/publish.rsにある対応する関数とはこのファイルに定義してある公開関数からvoicevoxプレフィックスを取り除いた名前の関数である
  */
 
-/// 参照カウントで管理されたOpenJtalk
+/// テキスト解析器としてのOpen JTalk。
+///
+/// コンストラクトは ::voicevox_open_jtalk_rc_new で行い、デストラクトは ::voicevox_open_jtalk_rc_delete で行う。
+///
+/// 参照カウント方式のスマートポインタ (reference-counted smart pointer)
+///
+/// ## Example
+///
+/// ```c
+/// OpenJtalkRc *open_jtalk;
+/// voicevox_open_jtalk_rc_new("./open_jtalk_dic_utf_8-1.11", &open_jtalk);
+/// voicevox_open_jtalk_rc_delete(open_jtalk);
+/// ```
 pub struct OpenJtalkRc {
     open_jtalk: Arc<OpenJtalk>,
 }
 
-/// 参照カウントで管理されたOpenJtalkを生成する
+/// ::OpenJtalkRc をコンストラクトする。
 ///
-/// # Safety
-/// @out_open_jtalk 自動でheap領域が割り当てられるため :voicevox_open_jtalk_rc_delete で開放する必要がある
+/// 解放は ::voicevox_open_jtalk_rc_delete で行う。
+///
+/// @param [in] open_jtalk_dic_dir 辞書ディレクトリを指すUTF-8のパス
+/// @param [out] out_open_jtalk 生成先
+///
+/// @returns 結果コード
+///
+/// ## Example
+///
+/// ```c
+/// OpenJtalkRc *open_jtalk;
+/// voicevox_open_jtalk_rc_new("./open_jtalk_dic_utf_8-1.11", &open_jtalk);
+/// ```
+///
+/// ## Safety
+///
+/// - `open_jtalk_dic_dir`は有効なヌル終端文字列を指していなければならない。
+/// - `out_open_jtalk`はアラインメントに沿っていなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     open_jtalk_dic_dir: *const c_char,
@@ -98,11 +126,19 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     })())
 }
 
-/// 参照カウントで管理されたOpenJtalkを削除する
-/// @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
+/// ::OpenJtalkRc をデストラクトする。
 ///
-/// # Safety
-/// @open_jtalk 有効な :OpenJtalkRc のポインタであること
+/// @param [in] open_jtalk デストラクト対象
+///
+/// ## Example
+///
+/// ```c
+/// voicevox_open_jtalk_rc_delete(open_jtalk);
+/// ```
+///
+/// ## Safety
+///
+/// - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならず、また既にこの関数で解放されていてはいけない。
 #[no_mangle]
 pub extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: Box<OpenJtalkRc>) {
     drop(open_jtalk);
@@ -110,7 +146,7 @@ pub extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: Box<OpenJtalkRc>) {
 
 pub use voicevox_core::result_code::VoicevoxResultCode;
 
-/// ハードウェアアクセラレーションモードを設定する設定値
+/// ハードウェアアクセラレーションモードを設定する設定値。
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
@@ -123,7 +159,7 @@ pub enum VoicevoxAccelerationMode {
     VOICEVOX_ACCELERATION_MODE_GPU = 2,
 }
 
-/// 初期化オプション
+/// ::voicevox_synthesizer_new_with_initialize のオプション。
 #[repr(C)]
 pub struct VoicevoxInitializeOptions {
     /// ハードウェアアクセラレーションモード
@@ -135,11 +171,11 @@ pub struct VoicevoxInitializeOptions {
     load_all_models: bool,
 }
 
-/// デフォルトの初期化オプション
+/// ::VoicevoxInitializeOptions のデフォルト値。
 #[no_mangle]
 pub static voicevox_default_initialize_options: VoicevoxInitializeOptions = ConstDefault::DEFAULT;
 
-/// voicevoxのバージョン
+/// voicevoxのバージョン。
 #[no_mangle]
 pub static voicevox_version: &c_char = {
     const VOICEVOX_VERSION: &CStr = unsafe {
@@ -151,7 +187,9 @@ pub static voicevox_version: &c_char = {
     unsafe { &*VOICEVOX_VERSION.as_ptr() }
 };
 
-/// 音声モデル
+/// 音声モデル。
+///
+/// コンストラクトは ::voicevox_voice_model_new_from_path で行い、デストラクトは ::voicevox_voice_model_delete で行う。
 #[derive(Getters)]
 pub struct VoicevoxVoiceModel {
     model: VoiceModel,
@@ -159,20 +197,25 @@ pub struct VoicevoxVoiceModel {
     metas: CString,
 }
 
-/// 音声モデルID
+/// 音声モデルID。
 pub type VoicevoxVoiceModelId = *const c_char;
 
-/// スタイルID
+/// スタイルID。
+///
+/// VOICEVOXにおける、ある話者(speaker)のあるスタイル(style) (i.e. 声(voice))を指す。
 pub type VoicevoxStyleId = u32;
 
-/// vvmファイルパスから音声モデルを生成する
-/// @param [in] path vvmファイルパス
-/// @param [out] out_model 新しく生成された音声モデルの出力先
-/// @return 結果コード #VoicevoxResultCode
+/// VVMファイルから ::VoicevoxVoiceModel をコンストラクトする。
 ///
-/// # Safety
-/// @param path null終端文字列であること
-/// @param out_model 自動でheapメモリが割り当てられるので ::voicevox_voice_model_delete で解放する必要がある
+/// @param [in] path vvmファイルへのUTF-8のファイルパス
+/// @param [out] out_model 生成先
+///
+/// @returns 結果コード
+///
+/// ## Safety
+///
+/// - `path`は有効なヌル終端文字列を指す。
+/// - `out_model`はアラインメントに沿っていなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
     path: *const c_char,
@@ -187,52 +230,66 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
     })())
 }
 
-/// 音声モデルのIDを取得する
-/// @param [in] model 音声モデル #VoicevoxVoiceModel
-/// @return 音声モデルID #VoicevoxVoiceModelId
+/// ::VoicevoxVoiceModel からIDを取得する。
 ///
-/// # Safety
-/// @param model 有効な #VoicevoxVoiceModel へのポインタであること
+/// @param [in] model 音声モデル
+///
+/// @returns 音声モデルID
+///
+/// ## Safety
+///
+/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_id(model: &VoicevoxVoiceModel) -> VoicevoxVoiceModelId {
     model.id().as_ptr()
 }
 
-/// 音声モデルのメタ情報を取得する
-/// @param [in] model 音声モデル #VoicevoxVoiceModel
-/// @return メタ情報のjson文字列
+/// ::VoicevoxVoiceModel からメタ情報を取得する。
 ///
-/// # Safety
-/// @param model 有効な #VoicevoxVoiceModel へのポインタであること
+/// @param [in] model 音声モデル
+///
+/// @returns メタ情報のJSON文字列
+///
+/// ## Safety
+///
+/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_get_metas_json(model: &VoicevoxVoiceModel) -> *const c_char {
     model.metas().as_ptr()
 }
 
-/// 音声モデルを破棄する
-/// @param [in] model 破棄する音声モデル #VoicevoxVoiceModel
+/// ::VoicevoxVoiceModel をデストラクトする。
 ///
-/// # Safety
-/// @param model 有効な #VoicevoxVoiceModel へのポインタであること
+/// @param [in] model 破棄する音声モデル
+///
+/// ## Safety
+///
+/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また既にこの関数で解放されていてはいけない。
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
     drop(model);
 }
 
+/// 音声シンセサイザ。
+///
+/// コンストラクトは ::voicevox_synthesizer_new_with_initialize で行い、デストラクトは ::voicevox_synthesizer_delete で行う。
 #[derive(Getters)]
 pub struct VoicevoxSynthesizer {
     synthesizer: Synthesizer,
     metas_cstring: CString,
 }
 
-/// 音声シンセサイザを生成して初期化する
-/// @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
-/// @param [in] options 初期化オプション #VoicevoxInitializeOptions
-/// @param [out] out_synthesizer 新しく生成された音声シンセサイザの出力先 #VoicevoxSynthesizer
-/// @return 結果コード #VoicevoxResultCode
+/// ::VoicevoxSynthesizer をコンストラクトする。
 ///
-/// # Safety
-/// @param out_synthesizer 自動でheapメモリが割り当てられるので ::voicevox_synthesizer_delete で解放する必要がある
+/// @param [in] open_jtalk Open JTalkのオブジェクト
+/// @param [in] options オプション
+/// @param [out] out_synthesizer 生成先
+///
+/// @returns 結果コード
+///
+/// ## Safety
+///
+/// - `open_jtalk`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_new_with_initialize(
     open_jtalk: &OpenJtalkRc,
@@ -250,24 +307,29 @@ pub extern "C" fn voicevox_synthesizer_new_with_initialize(
     })())
 }
 
-/// 音声シンセサイザを破棄する
-/// @param [in] synthesizer 破棄する音声シンセサイザ #VoicevoxSynthesizer
+/// ::VoicevoxSynthesizer をデストラクトする。
 ///
-/// # Safety
-/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
+/// @param [in] synthesizer デストラクト対象
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また既にこの関数で解放されていてはいけない。
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesizer>) {
     drop(synthesizer);
 }
 
-/// モデルを読み込む
+/// 音声モデルを読み込む。
+///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] model 音声モデル
-/// @return 結果コード #VoicevoxResultCode
 ///
-/// # Safety
-/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
-/// @param model 有効な #VoicevoxVoiceModel へのポインタであること
+/// @returns 結果コード
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_load_voice_model(
     synthesizer: &mut VoicevoxSynthesizer,
@@ -280,14 +342,17 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
     )
 }
 
-/// モデルの読み込みを解除する
+/// 音声モデルの読み込みを解除する。
+///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] model_id 音声モデルID
-/// @return 結果コード #VoicevoxResultCode
 ///
-/// # Safety
-/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
-/// @param model_id NULL終端文字列であること
+/// @returns 結果コード
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `model_id`は有効なヌル終端文字列を指していなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
     synthesizer: &mut VoicevoxSynthesizer,
@@ -301,25 +366,31 @@ pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
     })())
 }
 
-/// ハードウェアアクセラレーションがGPUモードか判定する
-/// @param [in] synthesizer 音声シンセサイザ
-/// @return GPUモードならtrue、そうでないならfalse
+/// ハードウェアアクセラレーションがGPUモードか判定する。
 ///
-/// # Safety
-/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
+/// @param [in] synthesizer 音声シンセサイザ
+///
+/// @returns GPUモードかどうか
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_is_gpu_mode(synthesizer: &VoicevoxSynthesizer) -> bool {
     synthesizer.synthesizer().is_gpu_mode()
 }
 
-/// 指定したspeaker_idのモデルが読み込まれているか判定する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
-/// @param [in] model_id 音声モデルのID #VoicevoxVoiceModelId
-/// @return モデルが読み込まれているのであればtrue、そうでないならfalse
+/// 指定したIDの音声モデルが読み込まれているか判定する。
 ///
-/// # Safety
-/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
-/// @param model_id NULL終端文字列
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] model_id 音声モデルID
+///
+/// @returns モデルが読み込まれているかどうか
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `model_id`は有効なヌル終端文字列を指していなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
     synthesizer: &VoicevoxSynthesizer,
@@ -331,12 +402,15 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
         .is_loaded_voice_model(&VoiceModelId::new(raw_model_id.into()))
 }
 
-/// メタ情報をjsonで取得する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
-/// @return メタ情報のjson文字列
+/// 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
 ///
-/// # Safety
-/// @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
+/// @param [in] synthesizer 音声シンセサイザ
+///
+/// @return メタ情報のJSON文字列
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_get_metas_json(
     synthesizer: &VoicevoxSynthesizer,
@@ -344,12 +418,20 @@ pub extern "C" fn voicevox_synthesizer_get_metas_json(
     synthesizer.metas().as_ptr()
 }
 
-/// サポートデバイス情報をjsonで取得する
-/// @param [out] output_supported_devices_json サポートデバイス情報のjson文字列
-/// @return 結果コード #VoicevoxResultCode
+/// このライブラリで利用可能なデバイスの情報を、JSONで取得する。
 ///
-/// # Safety
-/// @param output_supported_devices_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+/// JSONの解放は ::voicevox_json_free で行う。
+///
+/// @param [out] output_supported_devices_json サポートデバイス情報のJSON文字列
+///
+/// @returns 結果コード
+///
+/// ## Example
+///
+/// ```c
+/// char *supported_devices;
+/// VoicevoxResultCode result = voicevox_create_supported_devices_json(&supported_devices);
+/// ```
 #[no_mangle]
 pub extern "C" fn voicevox_create_supported_devices_json(
     output_supported_devices_json: &mut MaybeUninit<*mut c_char>,
@@ -366,28 +448,51 @@ pub extern "C" fn voicevox_create_supported_devices_json(
     })())
 }
 
-/// Audio query のオプション
+/// ::voicevox_synthesizer_audio_query のオプション。
 #[repr(C)]
 pub struct VoicevoxAudioQueryOptions {
     /// aquestalk形式のkanaとしてテキストを解釈する
     kana: bool,
 }
 
-/// デフォルトの AudioQuery のオプション
+/// ::VoicevoxAudioQueryOptions のデフォルト値。
 #[no_mangle]
 pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = ConstDefault::DEFAULT;
 
-/// AudioQuery を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
-/// @param [in] text テキスト。文字コードはUTF-8
-/// @param [in] style_id スタイルID #VoicevoxStyleId
-/// @param [in] options AudioQueryのオプション #VoicevoxAudioQueryOptions
-/// @param [out] output_audio_query_json AudioQuery を json でフォーマットしたもの
-/// @return 結果コード #VoicevoxResultCode
+/// AudioQueryをJSONとして生成する。
 ///
-/// # Safety
-/// @param text null終端文字列であること
-/// @param output_audio_query_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
+/// @param [in] style_id スタイルID
+/// @param [in] options オプション
+/// @param [out] output_audio_query_json 生成先
+///
+/// @returns 結果コード
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `text`は有効なヌル終端文字列を指していなければならない。
+///
+/// ## Examples
+///
+/// ```c
+/// char *audio_query;
+/// voicevox_synthesizer_audio_query(synthesizer,
+///                                  "こんにちは",  // 日本語テキスト
+///                                  2,  // "四国めたん (ノーマル)"
+///                                  (VoicevoxAudioQueryOptions){.kana = false},
+///                                  &audio_query);
+/// ```
+///
+/// ```c
+/// char *audio_query;
+/// voicevox_synthesizer_audio_query(synthesizer,
+///                                  "コンニチワ'",  // AquesTalk形式のkana
+///                                  2,  // "四国めたん (ノーマル)"
+///                                  (VoicevoxAudioQueryOptions){.kana = true},
+///                                  &audio_query);
+/// ```
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
     synthesizer: &VoicevoxSynthesizer,
@@ -411,27 +516,54 @@ pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
     })())
 }
 
-/// `accent_phrases` のオプション
+/// ::voicevox_synthesizer_create_accent_phrases のオプション。
 #[repr(C)]
 pub struct VoicevoxAccentPhrasesOptions {
-    /// aquestalk形式のkanaとしてテキストを解釈する
+    /// AquesTalk形式のkanaとしてテキストを解釈する
     kana: bool,
 }
 
-/// デフォルトの `accent_phrases` のオプション
+/// デフォルトの ::VoicevoxAccentPhrasesOptions。
 #[no_mangle]
 pub static voicevox_default_accent_phrases_options: VoicevoxAccentPhrasesOptions =
     ConstDefault::DEFAULT;
 
-/// create_accent_phrases を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
-/// @param [in] text テキスト
-/// @param [in] style_id スタイルID #VoicevoxStyleId
-/// @param [in] output_accent_phrases_json アクセントフレーズのjson文字列
+/// AccentPhrase (アクセント句)の列をJSON形式で生成する。
 ///
-/// # Safety
-/// @param text null終端文字列であること
-/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
+/// @param [in] style_id スタイルID
+/// @param [in] options オプション
+/// @param [out] output_accent_phrases_json 生成先
+///
+/// @returns 結果コード
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `text`は有効なヌル終端文字列を指していなければならない。
+///
+/// ## Examples
+///
+/// ```c
+/// char *accent_phrases;
+/// voicevox_synthesizer_create_accent_phrases(
+///     synthesizer,
+///     "こんにちは",  // 日本語テキスト
+///     2,             // "四国めたん (ノーマル)"
+///     voicevox_default_accent_phrases_options, &accent_phrases);
+/// ```
+///
+/// ```c
+/// char *accent_phrases;
+/// voicevox_synthesizer_create_accent_phrases(
+///     synthesizer,
+///     "コンニチワ'",  // AquesTalk形式のkana
+///     2,              // "四国めたん (ノーマル)"
+///     (VoicevoxAccentPhrasesOptions){.kana = true}, &accent_phrases);
+/// ```
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     synthesizer: &VoicevoxSynthesizer,
@@ -455,15 +587,21 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     })())
 }
 
-/// replace_mora_data を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
-/// @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
-/// @param [in] style_id スタイルID #VoicevoxStyleId
-/// @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
+/// AccentPhraseの列の音高・音素長を、特定の声で生成しなおす。
 ///
-/// # Safety
-/// @param accent_phrases_json null終端文字列であること
-/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] accent_phrases_json AccentPhraseの列のJSON文字列
+/// @param [in] style_id スタイルID
+/// @param [out] output_accent_phrases_json 生成先
+///
+/// @returns 結果コード
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     synthesizer: &VoicevoxSynthesizer,
@@ -488,15 +626,21 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     })())
 }
 
-/// replace_phoneme_length を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
-/// @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
-/// @param [in] style_id スタイルID #VoicevoxStyleId
-/// @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
+/// AccentPhraseの列の音素長を、特定の声で生成しなおす。
 ///
-/// # Safety
-/// @param accent_phrases_json null終端文字列であること
-/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] accent_phrases_json AccentPhraseの列のJSON文字列
+/// @param [in] style_id スタイルID
+/// @param [out] output_accent_phrases_json 生成先
+///
+/// @returns 結果コード
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
     synthesizer: &VoicevoxSynthesizer,
@@ -521,15 +665,21 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
     })())
 }
 
-/// replace_mora_pitch を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
-/// @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
-/// @param [in] style_id スタイルID #VoicevoxStyleId
-/// @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
+/// AccentPhraseの列の音高を、特定の声で生成しなおす。
 ///
-/// # Safety
-/// @param accent_phrases_json null終端文字列であること
-/// @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] accent_phrases_json AccentPhraseの列のJSON文字列
+/// @param [in] style_id スタイルID
+/// @param [out] output_accent_phrases_json 生成先
+///
+/// @returns 結果コード
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
     synthesizer: &VoicevoxSynthesizer,
@@ -554,29 +704,36 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
     })())
 }
 
-/// `voicevox_synthesizer_synthesis` のオプション
+/// ::voicevox_synthesizer_synthesis のオプション。
 #[repr(C)]
 pub struct VoicevoxSynthesisOptions {
     /// 疑問文の調整を有効にする
     enable_interrogative_upspeak: bool,
 }
 
-/// デフォルトの `voicevox_synthesizer_synthesis` のオプション
+/// ::VoicevoxSynthesisOptions のデフォルト値。
 #[no_mangle]
 pub static voicevox_default_synthesis_options: VoicevoxSynthesisOptions = ConstDefault::DEFAULT;
 
-/// AudioQuery から音声合成する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
-/// @param [in] audio_query_json jsonフォーマットされた AudioQuery
-/// @param [in] style_id スタイルID #VoicevoxStyleId
-/// @param [in] options AudioQueryから音声合成オプション
-/// @param [out] output_wav_length 出力する wav データのサイズ
-/// @param [out] output_wav wav データの出力先
-/// @return 結果コード #VoicevoxResultCode
+/// AudioQueryから音声合成を行う。
 ///
-/// # Safety
-/// @param output_wav_length 出力先の領域が確保された状態でpointerに渡されていること
-/// @param output_wav 自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で解放する必要がある
+/// 生成したwavを解放するには ::voicevox_wav_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] audio_query_json AudioQueryのJSON文字列
+/// @param [in] style_id スタイルID
+/// @param [in] options オプション
+/// @param [out] output_wav_length 出力のバイト長
+/// @param [out] output_wav 出力先
+///
+/// @returns 結果コード
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `audio_query_json`は有効なヌル終端文字列を指していなければならない。
+/// - `output_wav_length`はアラインメントに沿っていなければならない。
+/// - `output_wav`はアラインメントに沿っていなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     synthesizer: &VoicevoxSynthesizer,
@@ -602,31 +759,38 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     })())
 }
 
-/// テキスト音声合成オプション
+/// ::voicevox_synthesizer_tts のオプション。
 #[repr(C)]
 pub struct VoicevoxTtsOptions {
-    /// aquestalk形式のkanaとしてテキストを解釈する
+    /// AquesTalk形式のkanaとしてテキストを解釈する
     kana: bool,
     /// 疑問文の調整を有効にする
     enable_interrogative_upspeak: bool,
 }
 
-/// デフォルトのテキスト音声合成オプション
+/// ::VoicevoxTtsOptions のデフォルト値
 #[no_mangle]
 pub static voicevox_default_tts_options: VoicevoxTtsOptions = ConstDefault::DEFAULT;
 
-/// テキスト音声合成を実行する
-/// @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
-/// @param [in] text テキスト。文字コードはUTF-8
-/// @param [in] style_id スタイルID #VoicevoxStyleId
-/// @param [in] options テキスト音声合成オプション
-/// @param [out] output_wav_length 出力する wav データのサイズ
-/// @param [out] output_wav wav データの出力先
-/// @return 結果コード #VoicevoxResultCode
+/// テキスト音声合成を行う。
 ///
-/// # Safety
-/// @param output_wav_length 出力先の領域が確保された状態でpointerに渡されていること
-/// @param output_wav は自動で output_wav_length 分のデータが割り当てられるので ::voicevox_wav_free で解放する必要がある
+/// 生成したwavを解放するには ::voicevox_wav_free を使う。
+///
+/// @param [in] synthesizer
+/// @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
+/// @param [in] style_id スタイルID
+/// @param [in] options オプション
+/// @param [out] output_wav_length 出力のバイト長
+/// @param [out] output_wav 出力先
+///
+/// @returns 結果コード
+///
+/// ## Safety
+///
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `text`は有効なヌル終端文字列を指していなければならない。
+/// - `output_wav_length`はアラインメントに沿っていなければならない。
+/// - `output_wav`はアラインメントに沿っていなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_tts(
     synthesizer: &VoicevoxSynthesizer,
@@ -648,29 +812,54 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
     })())
 }
 
-/// jsonフォーマットされたデータのメモリを解放する
-/// @param [in] json 解放する json データ
+/// JSON文字列を解放する。
 ///
-/// # Safety
-/// @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
+/// @param [in] json 解放するJSON文字列
+///
+/// ## Safety
+///
+/// - `json`は以下のAPIで得られたポインタでなくてはいけない。
+///     -
+/// - 文字列の長さは生成時より変更されていてはならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
     drop(CString::from_raw(C_STRING_DROP_CHECKER.check(json)));
 }
 
-/// wav データのメモリを解放する
-/// @param [in] wav 解放する wav データ
+/// wavデータを解放する。
 ///
-/// # Safety
-/// @param wav voicevox_tts,voicevox_synthesis で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
+/// @param [in] wav 解放するwavデータ
+///
+/// ## Safety
+///
+/// - `wav`は以下のAPIで得られたポインタでなくてはいけない。
+///     - ::voicevox_synthesizer_synthesis
+///     - ::voicevox_synthesizer_tts
 #[no_mangle]
 pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
     U8_SLICE_OWNER.drop_for(wav);
 }
 
-/// エラー結果をメッセージに変換する
-/// @param [in] result_code メッセージに変換する result_code
-/// @return 結果コードを元に変換されたメッセージ文字列
+/// 結果コードに対応したメッセージ文字列を取得する。
+///
+/// @param [in] result_code 結果コード
+///
+/// @returns 結果コードに対応したメッセージ文字列
+///
+/// ## Examples
+///
+/// ```c
+/// const char *actual = voicevox_error_result_to_message(VOICEVOX_RESULT_OK);
+/// const char *EXPECTED = "エラーが発生しませんでした";
+/// assert(strcmp(actual, EXPECTED) == 0);
+/// ```
+///
+/// ```c
+/// const char *actual =
+///     voicevox_error_result_to_message(VOICEVOX_RESULT_LOAD_MODEL_ERROR);
+/// const char *EXPECTED = "modelデータ読み込みに失敗しました";
+/// assert(strcmp(actual, EXPECTED) == 0);
+/// ```
 #[no_mangle]
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,

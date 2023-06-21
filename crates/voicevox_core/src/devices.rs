@@ -2,15 +2,33 @@ use serde::{Deserialize, Serialize};
 
 use super::*;
 
+/// このライブラリで利用可能なデバイスの情報。
 #[derive(Getters, Debug, Serialize, Deserialize)]
 pub struct SupportedDevices {
+    /// CPUが利用可能。
+    ///
+    /// 常に`true`。
     cpu: bool,
+    /// [CUDA Execution Provider] (`CUDAExecutionProvider`)が利用可能。
+    ///
+    /// [CUDA Execution Provider]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
     cuda: bool,
+    /// [DirectML Execution Provider] (`DmlExecutionProvider`)が利用可能。
+    ///
+    /// [DirectML Execution Provider]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
     dml: bool,
 }
 
 impl SupportedDevices {
-    /// サポートされているデバイス情報を取得する
+    /// `SupportedDevices`をコンストラクトする。
+    ///
+    /// ```
+    /// use voicevox_core::SupportedDevices;
+    ///
+    /// let supported_devices = SupportedDevices::create()?;
+    /// #
+    /// # Result::<_, anyhow::Error>::Ok(())
+    /// ```
     pub fn create() -> Result<Self> {
         let mut cuda_support = false;
         let mut dml_support = false;

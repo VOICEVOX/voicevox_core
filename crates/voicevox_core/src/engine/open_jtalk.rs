@@ -21,6 +21,7 @@ pub enum OpenJtalkError {
 
 pub type Result<T> = std::result::Result<T, OpenJtalkError>;
 
+/// テキスト解析器としてのOpen JTalk。
 pub struct OpenJtalk {
     resources: Mutex<Resources>,
     dict_loaded: bool,

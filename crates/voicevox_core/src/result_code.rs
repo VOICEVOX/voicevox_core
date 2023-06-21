@@ -1,6 +1,6 @@
 use strum::EnumIter;
 
-/// 処理結果を示す結果コード
+/// 処理結果を示す結果コード。
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, EnumIter)]
 #[allow(non_camel_case_types)]
