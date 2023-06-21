@@ -128,6 +128,33 @@ pub extern "C" fn yukarin_sa_forward(
 }
 
 #[no_mangle]
+pub extern "C" fn yukarin_sosf_forward(
+    length: i64,
+    f0_discrete: *mut f32,
+    phoneme: *mut i64,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    let result = lock_internal().predict_contour(
+        length as usize,
+        unsafe { std::slice::from_raw_parts(f0_discrete, length as usize) },
+        unsafe { std::slice::from_raw_parts(phoneme, length as usize) },
+        unsafe { *speaker_id as u32 },
+    );
+    match result {
+        Ok(output_vec) => {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
+            output_slice.clone_from_slice(&output_vec);
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn decode_forward(
     length: i64,
     phoneme_size: i64,
