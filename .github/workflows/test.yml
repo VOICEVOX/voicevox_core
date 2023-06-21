@@ -251,7 +251,6 @@ jobs:
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* $target_dir || true
           cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib $target_dir || true
       - name: "pytestを実行"
-        shell: bash
         working-directory: crates/voicevox_core_python_api
         run: |
           pip install -r requirements-test.txt
