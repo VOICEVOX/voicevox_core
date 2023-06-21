@@ -64,7 +64,7 @@ impl assert_cdylib::TestCase for TestCase {
             assert!(yukarin_s_forward(
                 testdata.duration.length,
                 testdata.duration.phoneme_vector.as_mut_ptr(),
-                testdata.speaker_id as *mut i64,
+                &mut { testdata.speaker_id } as *mut i64,
                 phoneme_length.as_mut_ptr(),
             ));
             phoneme_length
@@ -80,7 +80,7 @@ impl assert_cdylib::TestCase for TestCase {
                 testdata.intonation.end_accent_vector.as_mut_ptr(),
                 testdata.intonation.start_accent_phrase_vector.as_mut_ptr(),
                 testdata.intonation.end_accent_phrase_vector.as_mut_ptr(),
-                testdata.speaker_id as *mut i64,
+                &mut { testdata.speaker_id } as *mut i64,
                 intonation_list.as_mut_ptr(),
             ));
             intonation_list
@@ -93,7 +93,7 @@ impl assert_cdylib::TestCase for TestCase {
                 testdata.decode.phoneme_size,
                 testdata.decode.f0_vector.as_mut_ptr(),
                 testdata.decode.phoneme_vector.as_mut_ptr(),
-                testdata.speaker_id as *mut i64,
+                &mut { testdata.speaker_id } as *mut i64,
                 wave.as_mut_ptr(),
             ));
             wave
