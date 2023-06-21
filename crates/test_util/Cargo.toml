@@ -16,4 +16,3 @@ tar = "0.4.38"
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
-once_cell.workspace = true
