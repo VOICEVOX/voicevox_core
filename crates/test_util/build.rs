@@ -17,10 +17,11 @@ async fn main() -> anyhow::Result<()> {
     let mut out_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
     out_dir.push("data");
     download_open_jtalk_dict(&out_dir).await?;
-    generate_snapshot_json(&out_dir)?;
+    generate_example_data_json(&out_dir)?;
     Ok(())
 }
 
+/// OpenJTalkの辞書をダウンロードして展開する。
 async fn download_open_jtalk_dict(out_dir: &Path) -> anyhow::Result<()> {
     let download_url = format!(
         "https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/{DIC_DIR_NAME}.tar.gz"
@@ -39,7 +40,8 @@ async fn download_open_jtalk_dict(out_dir: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn generate_snapshot_json(out_dir: &Path) -> anyhow::Result<()> {
+/// テストデータのJSONを生成する。
+fn generate_example_data_json(out_dir: &Path) -> anyhow::Result<()> {
     let test_data = ExampleData {
         speaker_id: 0,
 
