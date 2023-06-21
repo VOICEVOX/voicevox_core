@@ -8,5 +8,12 @@ publish.workspace = true
 anyhow.workspace = true
 async-std = { version = "1.12.0", features = ["attributes"] }
 flate2 = "1.0.24"
+serde.workspace = true
+serde_json.workspace = true
 surf = "2.3.2"
 tar = "0.4.38"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+once_cell.workspace = true

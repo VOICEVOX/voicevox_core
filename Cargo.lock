@@ -3346,6 +3346,9 @@ dependencies = [
  "anyhow",
  "async-std",
  "flate2",
+ "once_cell",
+ "serde",
+ "serde_json",
  "surf",
  "tar",
 ]
@@ -3852,6 +3855,7 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
+ "test_util",
  "thiserror",
  "toml 0.7.2",
  "tracing-subscriber",
@@ -3872,6 +3876,7 @@ dependencies = [
  "pyo3-log",
  "serde",
  "serde_json",
+ "test_util",
  "tracing",
  "voicevox_core",
 ]

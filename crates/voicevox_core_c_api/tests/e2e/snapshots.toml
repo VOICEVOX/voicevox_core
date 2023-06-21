@@ -1,6 +1,4 @@
 [compatible_engine]
-yukarin_s_forward = [0.9537022, 0.046877652, 0.11338878, 0.06429571, 0.07507616, 0.08266081, 0.1571679, 0.64980185]
-yukarin_sa_forward = [5.0591826, 5.905218, 5.846999, 5.565851, 5.528879]
 stderr.windows = '''
 {windows-video-cards}
 '''
