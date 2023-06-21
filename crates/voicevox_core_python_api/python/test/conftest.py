@@ -7,12 +7,6 @@ from typing import List, TypedDict
 import numpy as np
 import pytest
 
-# onnxruntimeを最初に読み込んでおく
-if ort_path := os.getenv("ORT_PATH"):
-    import ctypes
-
-    ctypes.cdll.LoadLibrary(ort_path)
-
 root_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 
