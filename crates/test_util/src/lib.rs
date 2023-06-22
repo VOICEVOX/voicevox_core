@@ -1,5 +1,6 @@
 mod typing;
 pub use typing::*;
+use once_cell::sync::Lazy;
 
 pub const OPEN_JTALK_DIC_DIR: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -12,7 +13,7 @@ pub const EXAMPLE_DATA_JSON: &str = include_str!(concat!(
 ));
 
 impl ExampleData {
-    pub fn load() -> ExampleData {
+    pub fn new() -> ExampleData {
         serde_json::from_str(EXAMPLE_DATA_JSON).unwrap()
     }
 }

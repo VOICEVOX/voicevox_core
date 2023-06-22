@@ -43,7 +43,7 @@ impl assert_cdylib::TestCase for TestCase {
             metas_json
         };
 
-        let mut testdata = ExampleData::load();
+        let mut testdata = ExampleData::new();
 
         let supported_devices = {
             let supported_devices = supported_devices();
