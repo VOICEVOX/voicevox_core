@@ -140,6 +140,21 @@ impl VoicevoxCore {
             )
     }
 
+    pub fn predict_contour(
+        &mut self,
+        length: usize,
+        f0_discrete: &[f32],
+        phoneme_vector: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        self.synthesis_engine.inference_core_mut().predict_contour(
+            length,
+            f0_discrete,
+            phoneme_vector,
+            speaker_id,
+        )
+    }
+
     pub fn decode(
         &mut self,
         length: usize,
@@ -371,15 +386,15 @@ impl InferenceCore {
         let input_tensors: Vec<&mut dyn AnyArray> =
             vec![&mut phoneme_vector_array, &mut speaker_id_array];
 
-        let mut output = status.predict_duration_session_run(model_index, input_tensors)?;
+        let mut duration = status.predict_duration_session_run(model_index, input_tensors)?;
 
-        for output_item in output.iter_mut() {
-            if *output_item < PHONEME_LENGTH_MINIMAL {
-                *output_item = PHONEME_LENGTH_MINIMAL;
+        for duration_item in duration.iter_mut() {
+            if *duration_item < PHONEME_LENGTH_MINIMAL {
+                *duration_item = PHONEME_LENGTH_MINIMAL;
             }
         }
 
-        Ok(output)
+        Ok(duration)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -442,6 +457,59 @@ impl InferenceCore {
         ];
 
         status.predict_intonation_session_run(model_index, input_tensors)
+    }
+
+    pub fn predict_contour(
+        &mut self,
+        length: usize,
+        f0_discrete: &[f32],
+        phoneme_vector: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) =
+            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
+                (model_index, speaker_id)
+            } else {
+                return Err(Error::InvalidSpeakerId { speaker_id });
+            };
+
+        if model_index >= MODEL_FILE_SET.models_count() {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        let mut f0_discrete_array =
+            NdArray::new(ndarray::arr1(f0_discrete).into_shape([length, 1]).unwrap());
+        let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> = vec![
+            &mut f0_discrete_array,
+            &mut phoneme_vector_array,
+            &mut speaker_id_array,
+        ];
+
+        let (mut f0_contour, voiced) =
+            status.predict_contour_session_run(model_index, input_tensors)?;
+        for (f0_contour_item, voiced_item) in f0_contour.iter_mut().zip(voiced.iter()) {
+            if *voiced_item < 0.0 {
+                *f0_contour_item = 0.0;
+            }
+        }
+
+        Ok(f0_contour)
     }
 
     pub fn decode(
@@ -598,6 +666,7 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
         VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR => "Statusが初期化されていません\0",
         VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR => "無効なspeaker_idです\0",
         VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR => "無効なmodel_indexです\0",
+        VOICEVOX_RESULT_UNSUPPORTED_MODEL_ERROR => "未対応なモデルです\0",
         VOICEVOX_RESULT_INFERENCE_ERROR => "推論に失敗しました\0",
         VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR => {
             "入力テキストからのフルコンテキストラベル抽出に失敗しました\0"
@@ -850,6 +919,44 @@ mod tests {
 
         assert!(result.is_ok(), "{result:?}");
         assert_eq!(result.unwrap().len(), vowel_phoneme_vector.len());
+    }
+
+    #[rstest]
+    fn predict_contour_works() {
+        let internal = VoicevoxCore::new_with_mutex();
+        internal
+            .lock()
+            .unwrap()
+            .initialize(InitializeOptions {
+                load_all_models: true,
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            })
+            .unwrap();
+
+        // 「テスト」という文章に対応する入力
+        const F0_LENGTH: usize = 69;
+        let mut f0_discrete = [0.; F0_LENGTH];
+        f0_discrete[9..24].fill(5.905218);
+        f0_discrete[37..60].fill(5.565851);
+
+        let mut phoneme = [0; F0_LENGTH];
+        phoneme[0..9].fill(0);
+        phoneme[9..13].fill(37);
+        phoneme[13..24].fill(14);
+        phoneme[24..30].fill(35);
+        phoneme[30..37].fill(6);
+        phoneme[37..45].fill(37);
+        phoneme[45..60].fill(30);
+        phoneme[60..69].fill(0);
+
+        let result = internal
+            .lock()
+            .unwrap()
+            .predict_contour(F0_LENGTH, &f0_discrete, &phoneme, 2);
+
+        assert!(result.is_ok(), "{result:?}");
+        assert_eq!(result.unwrap().len(), F0_LENGTH);
     }
 
     #[rstest]

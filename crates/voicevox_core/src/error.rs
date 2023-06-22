@@ -55,6 +55,9 @@ pub enum Error {
     )]
     InvalidModelIndex { model_index: usize },
 
+    #[error("{}", base_error_message(VOICEVOX_RESULT_UNSUPPORTED_MODEL_ERROR))]
+    UnsupportedModel,
+
     #[error("{}", base_error_message(VOICEVOX_RESULT_INFERENCE_ERROR))]
     InferenceFailed,
 

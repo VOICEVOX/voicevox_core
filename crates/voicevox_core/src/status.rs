@@ -40,6 +40,7 @@ pub struct Status {
 struct StatusModels {
     predict_duration: BTreeMap<usize, Session<'static>>,
     predict_intonation: BTreeMap<usize, Session<'static>>,
+    predict_contour: BTreeMap<usize, Option<Session<'static>>>,
     decode: BTreeMap<usize, Session<'static>>,
 }
 
@@ -82,14 +83,19 @@ impl ModelFileSet {
                 |&ModelFileNames {
                      predict_duration_model,
                      predict_intonation_model,
+                     predict_contour_model,
                      decode_model,
                  }| {
                     let predict_duration_model = ModelFile::new(&path(predict_duration_model))?;
                     let predict_intonation_model = ModelFile::new(&path(predict_intonation_model))?;
+                    let predict_contour_model = predict_contour_model
+                        .map(|s| ModelFile::new(&path(s)))
+                        .transpose()?;
                     let decode_model = ModelFile::new(&path(decode_model))?;
                     Ok(Model {
                         predict_duration_model,
                         predict_intonation_model,
+                        predict_contour_model,
                         decode_model,
                     })
                 },
@@ -113,6 +119,7 @@ impl ModelFileSet {
 struct ModelFileNames {
     predict_duration_model: &'static str,
     predict_intonation_model: &'static str,
+    predict_contour_model: Option<&'static str>,
     decode_model: &'static str,
 }
 
@@ -123,6 +130,7 @@ struct DecryptModelError;
 struct Model {
     predict_duration_model: ModelFile,
     predict_intonation_model: ModelFile,
+    predict_contour_model: Option<ModelFile>,
     decode_model: ModelFile,
 }
 
@@ -208,6 +216,7 @@ impl Status {
             models: StatusModels {
                 predict_duration: BTreeMap::new(),
                 predict_intonation: BTreeMap::new(),
+                predict_contour: BTreeMap::new(),
                 decode: BTreeMap::new(),
             },
             light_session_options: SessionOptions::new(cpu_num_threads, false),
@@ -236,6 +245,11 @@ impl Status {
                 self.new_session(&model.predict_duration_model, &self.light_session_options)?;
             let predict_intonation_session =
                 self.new_session(&model.predict_intonation_model, &self.light_session_options)?;
+            let predict_contour_session = if let Some(model) = &model.predict_contour_model {
+                Some(self.new_session(model, &self.light_session_options)?)
+            } else {
+                None
+            };
             let decode_model =
                 self.new_session(&model.decode_model, &self.heavy_session_options)?;
 
@@ -245,6 +259,9 @@ impl Status {
             self.models
                 .predict_intonation
                 .insert(model_index, predict_intonation_session);
+            self.models
+                .predict_contour
+                .insert(model_index, predict_contour_session);
 
             self.models.decode.insert(model_index, decode_model);
 
@@ -255,8 +272,9 @@ impl Status {
     }
 
     pub fn is_model_loaded(&self, model_index: usize) -> bool {
-        self.models.predict_intonation.contains_key(&model_index)
-            && self.models.predict_duration.contains_key(&model_index)
+        self.models.predict_duration.contains_key(&model_index)
+            && self.models.predict_intonation.contains_key(&model_index)
+            && self.models.predict_contour.contains_key(&model_index)
             && self.models.decode.contains_key(&model_index)
     }
 
@@ -338,6 +356,29 @@ impl Status {
         }
     }
 
+    pub fn predict_contour_session_run(
+        &mut self,
+        model_index: usize,
+        inputs: Vec<&mut dyn AnyArray>,
+    ) -> Result<(Vec<f32>, Vec<f32>)> {
+        if let Some(model) = self.models.predict_contour.get_mut(&model_index) {
+            if let Some(model) = model {
+                if let Ok(output_tensors) = model.run(inputs) {
+                    Ok((
+                        output_tensors[0].as_slice().unwrap().to_owned(),
+                        output_tensors[1].as_slice().unwrap().to_owned(),
+                    ))
+                } else {
+                    Err(Error::InferenceFailed)
+                }
+            } else {
+                Err(Error::UnsupportedModel)
+            }
+        } else {
+            Err(Error::InvalidModelIndex { model_index })
+        }
+    }
+
     pub fn decode_session_run(
         &mut self,
         model_index: usize,
@@ -383,6 +424,7 @@ mod tests {
         );
         assert!(status.models.predict_duration.is_empty());
         assert!(status.models.predict_intonation.is_empty());
+        assert!(status.models.predict_contour.is_empty());
         assert!(status.models.decode.is_empty());
         assert!(status.supported_styles.is_empty());
     }
@@ -410,6 +452,7 @@ mod tests {
         assert_eq!(Ok(()), result);
         assert_eq!(1, status.models.predict_duration.len());
         assert_eq!(1, status.models.predict_intonation.len());
+        assert_eq!(1, status.models.predict_contour.len());
         assert_eq!(1, status.models.decode.len());
     }
 
