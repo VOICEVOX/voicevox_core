@@ -23,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
 }
 
 /// OpenJTalkの辞書をダウンロードして展開する。
-async fn download_open_jtalk_dict(out_dir: &Path) -> anyhow::Result<()> {
+async fn download_open_jtalk_dict(dist: &Path) -> anyhow::Result<()> {
     let download_url = format!(
         "https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/{DIC_DIR_NAME}.tar.gz"
     );
@@ -37,12 +37,12 @@ async fn download_open_jtalk_dict(out_dir: &Path) -> anyhow::Result<()> {
     let dict_tar = GzDecoder::new(&body_bytes[..]);
 
     let mut dict_archive = Archive::new(dict_tar);
-    dict_archive.unpack(out_dir)?;
+    dict_archive.unpack(dist)?;
     Ok(())
 }
 
 /// テストデータのJSONを生成する。
-fn generate_example_data_json(out_dir: &Path) -> anyhow::Result<()> {
+fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
     let test_data = ExampleData {
         speaker_id: 0,
 
@@ -105,7 +105,7 @@ fn generate_example_data_json(out_dir: &Path) -> anyhow::Result<()> {
     };
 
     std::fs::write(
-        out_dir.join("example_data.json"),
+        dist.join("example_data.json"),
         serde_json::to_string(&test_data)?,
     )?;
 
