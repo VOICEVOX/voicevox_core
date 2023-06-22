@@ -11,11 +11,13 @@ pub(super) const MODEL_FILE_NAMES: &[ModelFileNames] = &[
     ModelFileNames {
         predict_duration_model: "predict_duration-0.onnx",
         predict_intonation_model: "predict_intonation-0.onnx",
+        predict_contour_model: None,
         decode_model: "decode-0.onnx",
     },
     ModelFileNames {
         predict_duration_model: "predict_duration-1.onnx",
         predict_intonation_model: "predict_intonation-1.onnx",
+        predict_contour_model: Some("predict_contour-1.onnx"),
         decode_model: "decode-1.onnx",
     },
 ];
