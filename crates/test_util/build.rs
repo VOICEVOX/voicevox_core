@@ -8,7 +8,8 @@ use async_std::io::ReadExt as _;
 use flate2::read::GzDecoder;
 use tar::Archive;
 
-include!("./src/typing.rs");
+#[path = "src/typing.rs"]
+mod typing;
 
 const DIC_DIR_NAME: &str = "open_jtalk_dic_utf_8-1.11";
 
