@@ -15,10 +15,10 @@ const DIC_DIR_NAME: &str = "open_jtalk_dic_utf_8-1.11";
 
 #[async_std::main]
 async fn main() -> anyhow::Result<()> {
-    let mut out_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
-    out_dir.push("data");
-    download_open_jtalk_dict(&out_dir).await?;
-    generate_example_data_json(&out_dir)?;
+    let mut dist = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
+    dist.push("data");
+    download_open_jtalk_dict(&dist).await?;
+    generate_example_data_json(&dist)?;
     Ok(())
 }
 
