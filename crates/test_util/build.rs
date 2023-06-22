@@ -43,10 +43,10 @@ async fn download_open_jtalk_dict(dist: &Path) -> anyhow::Result<()> {
 
 /// テストデータのJSONを生成する。
 fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
-    let test_data = ExampleData {
+    let test_data = typing::ExampleData {
         speaker_id: 0,
 
-        duration: DurationExampleData {
+        duration: typing::DurationExampleData {
             length: 8,
             // 「t e s u t o」
             phoneme_vector: vec![0, 37, 14, 35, 6, 37, 30, 0],
@@ -61,7 +61,7 @@ fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
                 0.64980185,
             ],
         },
-        intonation: IntonationExampleData {
+        intonation: typing::IntonationExampleData {
             length: 5,
 
             vowel_phoneme_vector: vec![0, 14, 6, 30, 0],
@@ -75,7 +75,7 @@ fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
 
             result: vec![5.0591826, 5.905218, 5.846999, 5.565851, 5.528879],
         },
-        decode: DecodeExampleData {
+        decode: typing::DecodeExampleData {
             f0_length: 69,
             phoneme_size: 45,
             f0_vector: {
