@@ -1,6 +1,5 @@
 mod typing;
 pub use typing::*;
-use once_cell::sync::Lazy;
 
 pub const OPEN_JTALK_DIC_DIR: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
