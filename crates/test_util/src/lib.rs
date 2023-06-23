@@ -1,4 +1,5 @@
 mod typing;
+use once_cell::sync::Lazy;
 pub use typing::*;
 
 pub const OPEN_JTALK_DIC_DIR: &str = concat!(
@@ -11,14 +12,6 @@ pub const EXAMPLE_DATA_JSON: &str = include_str!(concat!(
     "/data/example_data.json"
 ));
 
-impl ExampleData {
-    pub fn new() -> ExampleData {
-        serde_json::from_str(EXAMPLE_DATA_JSON).unwrap()
-    }
-}
-
-impl Default for ExampleData {
-    fn default() -> Self {
-        ExampleData::new()
-    }
-}
+pub static EXAMPLE_DATA: Lazy<ExampleData> = Lazy::new(|| {
+    serde_json::from_str(EXAMPLE_DATA_JSON).expect("failed to parse example_data.json")
+});

@@ -7,7 +7,7 @@ use libloading::Library;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use test_util::ExampleData;
+use test_util::EXAMPLE_DATA;
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
@@ -43,8 +43,6 @@ impl assert_cdylib::TestCase for TestCase {
             metas_json
         };
 
-        let mut testdata = ExampleData::new();
-
         let supported_devices = {
             let supported_devices = supported_devices();
             CStr::from_ptr(supported_devices)
@@ -54,17 +52,17 @@ impl assert_cdylib::TestCase for TestCase {
 
         assert!(initialize(false, 0, false));
 
-        assert!(!is_model_loaded(testdata.speaker_id));
-        assert!(load_model(testdata.speaker_id));
-        assert!(is_model_loaded(testdata.speaker_id));
+        assert!(!is_model_loaded(EXAMPLE_DATA.speaker_id));
+        assert!(load_model(EXAMPLE_DATA.speaker_id));
+        assert!(is_model_loaded(EXAMPLE_DATA.speaker_id));
 
         // テスト用テキストは"t e s u t o"
         let phoneme_length = {
             let mut phoneme_length = [0.; 8];
             assert!(yukarin_s_forward(
-                testdata.duration.length,
-                testdata.duration.phoneme_vector.as_mut_ptr(),
-                &mut { testdata.speaker_id } as *mut i64,
+                EXAMPLE_DATA.duration.length,
+                EXAMPLE_DATA.duration.phoneme_vector.as_ptr() as *mut i64,
+                &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
                 phoneme_length.as_mut_ptr(),
             ));
             phoneme_length
@@ -73,27 +71,27 @@ impl assert_cdylib::TestCase for TestCase {
         let intonation_list = {
             let mut intonation_list = [0.; 5];
             assert!(yukarin_sa_forward(
-                testdata.intonation.length,
-                testdata.intonation.vowel_phoneme_vector.as_mut_ptr(),
-                testdata.intonation.consonant_phoneme_vector.as_mut_ptr(),
-                testdata.intonation.start_accent_vector.as_mut_ptr(),
-                testdata.intonation.end_accent_vector.as_mut_ptr(),
-                testdata.intonation.start_accent_phrase_vector.as_mut_ptr(),
-                testdata.intonation.end_accent_phrase_vector.as_mut_ptr(),
-                &mut { testdata.speaker_id } as *mut i64,
+                EXAMPLE_DATA.intonation.length,
+                EXAMPLE_DATA.intonation.vowel_phoneme_vector.as_ptr() as *mut i64,
+                EXAMPLE_DATA.intonation.consonant_phoneme_vector.as_ptr() as *mut i64,
+                EXAMPLE_DATA.intonation.start_accent_vector.as_ptr() as *mut i64,
+                EXAMPLE_DATA.intonation.end_accent_vector.as_ptr() as *mut i64,
+                EXAMPLE_DATA.intonation.start_accent_phrase_vector.as_ptr() as *mut i64,
+                EXAMPLE_DATA.intonation.end_accent_phrase_vector.as_ptr() as *mut i64,
+                &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
                 intonation_list.as_mut_ptr(),
             ));
             intonation_list
         };
 
         let wave = {
-            let mut wave = vec![0.; 256 * testdata.decode.f0_length as usize];
+            let mut wave = vec![0.; 256 * EXAMPLE_DATA.decode.f0_length as usize];
             assert!(decode_forward(
-                testdata.decode.f0_length,
-                testdata.decode.phoneme_size,
-                testdata.decode.f0_vector.as_mut_ptr(),
-                testdata.decode.phoneme_vector.as_mut_ptr(),
-                &mut { testdata.speaker_id } as *mut i64,
+                EXAMPLE_DATA.decode.f0_length,
+                EXAMPLE_DATA.decode.phoneme_size,
+                EXAMPLE_DATA.decode.f0_vector.as_ptr() as *mut f32,
+                EXAMPLE_DATA.decode.phoneme_vector.as_ptr() as *mut f32,
+                &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
                 wave.as_mut_ptr(),
             ));
             wave
@@ -105,8 +103,8 @@ impl assert_cdylib::TestCase for TestCase {
             supported_devices,
         );
 
-        float_assert::close_l1(&phoneme_length, &testdata.duration.result, 0.01);
-        float_assert::close_l1(&intonation_list, &testdata.intonation.result, 0.01);
+        float_assert::close_l1(&phoneme_length, &EXAMPLE_DATA.duration.result, 0.01);
+        float_assert::close_l1(&intonation_list, &EXAMPLE_DATA.intonation.result, 0.01);
 
         assert!(wave.iter().copied().all(f32::is_normal));
 
