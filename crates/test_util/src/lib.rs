@@ -16,3 +16,9 @@ impl ExampleData {
         serde_json::from_str(EXAMPLE_DATA_JSON).unwrap()
     }
 }
+
+impl Default for ExampleData {
+    fn default() -> Self {
+        ExampleData::new()
+    }
+}
