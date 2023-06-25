@@ -124,7 +124,8 @@ impl Synthesizer {
     ///
     /// # Example
     ///
-    /// ```
+    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
     /// # use test_util::OPEN_JTALK_DIC_DIR;
@@ -297,7 +298,8 @@ impl Synthesizer {
     ///
     /// # Examples
     ///
-    /// ```
+    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
     /// # let syntesizer = {
@@ -341,7 +343,8 @@ impl Synthesizer {
     /// # }
     /// ```
     ///
-    /// ```
+    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
     /// # let syntesizer = {
@@ -446,7 +449,8 @@ impl Synthesizer {
     ///
     /// # Examples
     ///
-    /// ```
+    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
     /// # let syntesizer = {
@@ -490,7 +494,8 @@ impl Synthesizer {
     /// # }
     /// ```
     ///
-    /// ```
+    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
     /// # let syntesizer = {

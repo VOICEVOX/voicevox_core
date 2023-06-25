@@ -22,7 +22,8 @@ pub struct SupportedDevices {
 impl SupportedDevices {
     /// `SupportedDevices`をコンストラクトする。
     ///
-    /// ```
+    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(not(windows), doc = "```")]
     /// use voicevox_core::SupportedDevices;
     ///
     /// let supported_devices = SupportedDevices::create()?;
