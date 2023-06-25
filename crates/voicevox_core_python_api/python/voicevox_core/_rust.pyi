@@ -187,7 +187,7 @@ class Synthesizer:
         :param style_id: スタイルID。
         :param enable_interrogative_upspeak: 疑問文の調整を有効にする。
 
-        :returnes: WAVデータ。
+        :returns: WAVデータ。
         """
         ...
     async def tts(
@@ -205,6 +205,6 @@ class Synthesizer:
         :param kana: ``text`` をAquesTalk形式のkanaとして解釈する。
         :param enable_interrogative_upspeak: 疑問文の調整を有効にする。
 
-        :returnes: WAVデータ。
+        :returns: WAVデータ。
         """
         ...
