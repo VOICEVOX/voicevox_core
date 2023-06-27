@@ -31,7 +31,7 @@ on:
       - "**/*"
 env:
   VOICEVOX_RESOURCE_VERSION: "0.15.0-preview.1"
-  VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-projects.1"
+  VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-projects.0"
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
   PRODUCTION_REPOSITORY_TAG: "0.15.0-projects.0" # 製品版のタグ名
