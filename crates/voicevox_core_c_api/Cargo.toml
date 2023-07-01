@@ -45,6 +45,6 @@ process_path.workspace = true
 regex.workspace = true
 rstest = "0.15.0"
 serde.workspace = true
-test_util = { path = "../test_util" }
+test_util.workspace = true
 toml = "0.7.2"
 typetag = "0.2.5"
