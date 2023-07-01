@@ -1,7 +1,6 @@
 import numpy as np
-from voicevox_core import VoicevoxCore
-
 from conftest import ExampleData
+from voicevox_core import VoicevoxCore
 
 
 # crates/voicevox_core_c_api/tests/e2e/testcases/compatible_engine.rs と同じ。
@@ -23,11 +22,17 @@ def test_engine(example_data: ExampleData):
     intonation = core.predict_intonation(
         example_data["intonation"]["length"],
         np.array(example_data["intonation"]["vowel_phoneme_vector"], dtype=np.int64),
-        np.array(example_data["intonation"]["consonant_phoneme_vector"], dtype=np.int64),
+        np.array(
+            example_data["intonation"]["consonant_phoneme_vector"], dtype=np.int64
+        ),
         np.array(example_data["intonation"]["start_accent_vector"], dtype=np.int64),
         np.array(example_data["intonation"]["end_accent_vector"], dtype=np.int64),
-        np.array(example_data["intonation"]["start_accent_phrase_vector"], dtype=np.int64),
-        np.array(example_data["intonation"]["end_accent_phrase_vector"], dtype=np.int64),
+        np.array(
+            example_data["intonation"]["start_accent_phrase_vector"], dtype=np.int64
+        ),
+        np.array(
+            example_data["intonation"]["end_accent_phrase_vector"], dtype=np.int64
+        ),
         speaker_id,
     )
 
@@ -43,7 +48,9 @@ def test_engine(example_data: ExampleData):
         duration, np.array(example_data["duration"]["result"], dtype=np.float32), 0.01
     )
     check_float_array_near(
-        intonation, np.array(example_data["intonation"]["result"], dtype=np.float32), 0.01
+        intonation,
+        np.array(example_data["intonation"]["result"], dtype=np.float32),
+        0.01,
     )
 
     assert not np.isnan(wave).any()
