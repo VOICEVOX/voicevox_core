@@ -15,8 +15,8 @@ use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io::{self, IsTerminal, Write};
-use std::mem::MaybeUninit;
 use std::os::raw::c_char;
+use std::ptr::NonNull;
 use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::runtime::Runtime;
 use tracing_subscriber::fmt::format::Writer;
@@ -88,12 +88,12 @@ pub struct OpenJtalkRc {
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     open_jtalk_dic_dir: *const c_char,
-    out_open_jtalk: &mut MaybeUninit<Box<OpenJtalkRc>>,
+    out_open_jtalk: NonNull<Box<OpenJtalkRc>>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
-        let open_jtalk = OpenJtalkRc::new_with_initialize(open_jtalk_dic_dir)?;
-        out_open_jtalk.write(Box::new(open_jtalk));
+        let open_jtalk = OpenJtalkRc::new_with_initialize(open_jtalk_dic_dir)?.into();
+        out_open_jtalk.as_ptr().write_unaligned(open_jtalk);
         Ok(())
     })())
 }
@@ -176,13 +176,14 @@ pub type VoicevoxStyleId = u32;
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
     path: *const c_char,
-    out_model: &mut MaybeUninit<Box<VoicevoxVoiceModel>>,
+    out_model: NonNull<Box<VoicevoxVoiceModel>>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let model = RUNTIME.block_on(VoicevoxVoiceModel::from_path(ensure_utf8(
-            CStr::from_ptr(path),
-        )?))?;
-        out_model.write(Box::new(model));
+        let path = ensure_utf8(CStr::from_ptr(path))?;
+        let model = RUNTIME
+            .block_on(VoicevoxVoiceModel::from_path(path))?
+            .into();
+        out_model.as_ptr().write_unaligned(model);
         Ok(())
     })())
 }
@@ -234,18 +235,20 @@ pub struct VoicevoxSynthesizer {
 /// # Safety
 /// @param out_synthesizer 自動でheapメモリが割り当てられるので ::voicevox_synthesizer_delete で解放する必要がある
 #[no_mangle]
-pub extern "C" fn voicevox_synthesizer_new_with_initialize(
+pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
     open_jtalk: &OpenJtalkRc,
     options: VoicevoxInitializeOptions,
-    out_synthesizer: &mut MaybeUninit<Box<VoicevoxSynthesizer>>,
+    out_synthesizer: NonNull<Box<VoicevoxSynthesizer>>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let options = options.into();
 
-        let synthesizer = RUNTIME.block_on(VoicevoxSynthesizer::new_with_initialize(
-            open_jtalk, &options,
-        ))?;
-        out_synthesizer.write(Box::new(synthesizer));
+        let synthesizer = RUNTIME
+            .block_on(VoicevoxSynthesizer::new_with_initialize(
+                open_jtalk, &options,
+            ))?
+            .into();
+        out_synthesizer.as_ptr().write_unaligned(synthesizer);
         Ok(())
     })())
 }
@@ -351,13 +354,13 @@ pub extern "C" fn voicevox_synthesizer_get_metas_json(
 /// # Safety
 /// @param output_supported_devices_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
-pub extern "C" fn voicevox_create_supported_devices_json(
-    output_supported_devices_json: &mut MaybeUninit<*mut c_char>,
+pub unsafe extern "C" fn voicevox_create_supported_devices_json(
+    output_supported_devices_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let supported_devices =
             CString::new(SupportedDevices::create()?.to_json().to_string()).unwrap();
-        output_supported_devices_json.write(
+        output_supported_devices_json.as_ptr().write_unaligned(
             C_STRING_DROP_CHECKER
                 .whitelist(supported_devices)
                 .into_raw(),
@@ -394,7 +397,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
     text: *const c_char,
     style_id: VoicevoxStyleId,
     options: VoicevoxAudioQueryOptions,
-    output_audio_query_json: &mut MaybeUninit<*mut c_char>,
+    output_audio_query_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let text = CStr::from_ptr(text);
@@ -406,7 +409,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
         ))?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
-        output_audio_query_json.write(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
+        output_audio_query_json
+            .as_ptr()
+            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
         Ok(())
     })())
 }
@@ -438,7 +443,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     text: *const c_char,
     style_id: VoicevoxStyleId,
     options: VoicevoxAccentPhrasesOptions,
-    output_accent_phrases_json: &mut MaybeUninit<*mut c_char>,
+    output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;
@@ -450,7 +455,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+            .as_ptr()
+            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -469,7 +475,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     synthesizer: &VoicevoxSynthesizer,
     accent_phrases_json: *const c_char,
     style_id: VoicevoxStyleId,
-    output_accent_phrases_json: &mut MaybeUninit<*mut c_char>,
+    output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let accent_phrases: Vec<AccentPhraseModel> =
@@ -483,7 +489,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+            .as_ptr()
+            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -502,7 +509,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
     synthesizer: &VoicevoxSynthesizer,
     accent_phrases_json: *const c_char,
     style_id: VoicevoxStyleId,
-    output_accent_phrases_json: &mut MaybeUninit<*mut c_char>,
+    output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let accent_phrases: Vec<AccentPhraseModel> =
@@ -516,7 +523,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+            .as_ptr()
+            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -535,7 +543,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
     synthesizer: &VoicevoxSynthesizer,
     accent_phrases_json: *const c_char,
     style_id: VoicevoxStyleId,
-    output_accent_phrases_json: &mut MaybeUninit<*mut c_char>,
+    output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let accent_phrases: Vec<AccentPhraseModel> =
@@ -549,7 +557,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .write(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+            .as_ptr()
+            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
 }
@@ -583,8 +592,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     audio_query_json: *const c_char,
     style_id: VoicevoxStyleId,
     options: VoicevoxSynthesisOptions,
-    output_wav_length: &mut MaybeUninit<usize>,
-    output_wav: &mut MaybeUninit<*mut u8>,
+    output_wav_length: NonNull<usize>,
+    output_wav: NonNull<*mut u8>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let audio_query_json = CStr::from_ptr(audio_query_json)
@@ -633,8 +642,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
     text: *const c_char,
     style_id: VoicevoxStyleId,
     options: VoicevoxTtsOptions,
-    output_wav_length: &mut MaybeUninit<usize>,
-    output_wav: &mut MaybeUninit<*mut u8>,
+    output_wav_length: NonNull<usize>,
+    output_wav: NonNull<*mut u8>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;

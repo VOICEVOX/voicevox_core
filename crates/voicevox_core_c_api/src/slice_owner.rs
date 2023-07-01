@@ -1,4 +1,4 @@
-use std::{cell::UnsafeCell, collections::BTreeMap, mem::MaybeUninit, sync::Mutex};
+use std::{cell::UnsafeCell, collections::BTreeMap, ptr::NonNull, sync::Mutex};
 
 /// Cの世界に貸し出す`[u8]`の所有者(owner)。
 ///
@@ -27,11 +27,16 @@ impl<T> SliceOwner<T> {
     }
 
     /// `Box<[T]>`を所有し、その先頭ポインタと長さを参照としてC API利用者に与える。
-    pub(crate) fn own_and_lend(
+    ///
+    /// # Safety
+    ///
+    /// - `out_ptr`は書き込みについて有効でなければならない(ただし`*mut T`は有効である必要は無い)。
+    /// - `out_len`は書き込みについて有効でなければならない。
+    pub(crate) unsafe fn own_and_lend(
         &self,
         slice: impl Into<Box<[T]>>,
-        out_ptr: &mut MaybeUninit<*mut T>,
-        out_len: &mut MaybeUninit<usize>,
+        out_ptr: NonNull<*mut T>,
+        out_len: NonNull<usize>,
     ) {
         let mut slices = self.slices.lock().unwrap();
 
@@ -42,8 +47,8 @@ impl<T> SliceOwner<T> {
         let duplicated = slices.insert(ptr as usize, slice.into()).is_some();
         assert!(!duplicated, "duplicated");
 
-        out_ptr.write(ptr);
-        out_len.write(len);
+        out_ptr.as_ptr().write_volatile(ptr);
+        out_len.as_ptr().write_volatile(len);
     }
 
     /// `own_and_lend`でC API利用者に貸し出したポインタに対応する`Box<[u8]>`をデストラクトする。
@@ -63,7 +68,7 @@ impl<T> SliceOwner<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::mem::MaybeUninit;
+    use std::{mem::MaybeUninit, ptr::NonNull};
 
     use super::SliceOwner;
 
@@ -87,7 +92,11 @@ mod tests {
             let (ptr, len) = unsafe {
                 let mut ptr = MaybeUninit::uninit();
                 let mut len = MaybeUninit::uninit();
-                owner.own_and_lend(vec, &mut ptr, &mut len);
+                owner.own_and_lend(
+                    vec,
+                    NonNull::new(ptr.as_mut_ptr()).unwrap(),
+                    NonNull::new(len.as_mut_ptr()).unwrap(),
+                );
                 (ptr.assume_init(), len.assume_init())
             };
             assert_eq!(expected_len, len);
