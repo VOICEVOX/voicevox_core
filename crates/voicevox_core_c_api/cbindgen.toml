@@ -2,7 +2,12 @@ language = "C"
 
 # Options for wrapping the contents of the header:
 
-header = "/// @file"
+header = """
+/**
+ * @file voicevox_core.h
+ *
+ * 無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。
+ */"""
 include_guard = "VOICEVOX_CORE_INCLUDE_GUARD"
 no_includes = true
 include_version = true

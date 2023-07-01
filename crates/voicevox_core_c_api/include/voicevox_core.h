@@ -1,4 +1,8 @@
-/// @file
+/**
+ * @file voicevox_core.h
+ *
+ * 無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。
+ */
 
 #ifndef VOICEVOX_CORE_INCLUDE_GUARD
 #define VOICEVOX_CORE_INCLUDE_GUARD
