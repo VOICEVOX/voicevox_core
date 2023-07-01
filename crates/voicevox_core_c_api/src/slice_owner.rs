@@ -30,8 +30,8 @@ impl<T> SliceOwner<T> {
     ///
     /// # Safety
     ///
-    /// - `out_ptr`は有効でなければならない(ただし`*mut T`は有効である必要は無い)。
-    /// - `out_len`は有効でなければならない。
+    /// - `out_ptr`は書き込みについて有効でなければならない(ただし`*mut T`は有効である必要は無い)。
+    /// - `out_len`は書き込みについて有効でなければならない。
     pub(crate) unsafe fn own_and_lend(
         &self,
         slice: impl Into<Box<[T]>>,
