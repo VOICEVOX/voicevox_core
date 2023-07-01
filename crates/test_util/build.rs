@@ -104,7 +104,7 @@ fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
         },
     };
 
-    std::fs::write(
+    fs_err::write(
         dist.join("example_data.json"),
         serde_json::to_string(&test_data)?,
     )?;

@@ -3346,6 +3346,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "flate2",
+ "fs-err",
  "once_cell",
  "serde",
  "serde_json",

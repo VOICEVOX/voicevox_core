@@ -12,6 +12,7 @@ once_cell.workspace = true
 [build-dependencies]
 anyhow.workspace = true
 async-std = { version = "1.12.0", features = ["attributes"] }
+fs-err.workspace = true
 flate2 = "1.0.24"
 serde.workspace = true
 serde_json.workspace = true
