@@ -2,6 +2,27 @@
  * @file voicevox_core.h
  *
  * 無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。
+ *
+ * <h2 id="voicevox-core-safety">
+ *   <a href="#voicevox-core-safety">Safety</a>
+ * </h2>
+ *
+ * このライブラリの使用にあたっては次の条件を遵守しなければならない。違反は<b>未定義動作</b>(_undefined behavior_)である。
+ *
+ * - 「読み込みについて有効」と説明されているポインタは次の条件を満たしていなければならない。
+ *     - <b>間接参照可能</b>(_dereferenceable_)である。
+ *     - 参照先のメモリは他スレッドから書き込み中ではない。
+ * - 「書き込みについて有効」と説明されているポインタは次の条件を満たしていなければならない。
+ *     - 参照先のメモリは有効である (ただしメモリアラインメントに沿っている必要は無い)。
+ *     - 参照先のメモリは他スレッドからアクセス中ではない。
+ * - このライブラリで生成したオブジェクトの解放は、このライブラリが提供するAPIで行わなくてはならない(<code>free</code>や<code>HeapFree</code>で行ってはならない)。
+ *
+ * 次のことに注意すること。
+ *
+ * - 次のポインタは読み込みにおいても書き込みにおいても有効ではない。
+ *     - ヌルポインタ。
+ *     - 解放されたポインタ。
+ * - voicevox_coreをアンロードする場合、voicevox_coreが生成したポインタが有効であり続けることは保証されない。
  */
 
 #ifndef VOICEVOX_CORE_INCLUDE_GUARD
@@ -267,8 +288,8 @@ extern const struct VoicevoxTtsOptions voicevox_default_tts_options;
  *
  * ## Safety
  *
- * - `open_jtalk_dic_dir`は有効なヌル終端文字列を指していなければならない。
- * - `out_open_jtalk`は書き込みについて有効でなければならない。
+ * - `open_jtalk_dic_dir`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `out_open_jtalk`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -290,6 +311,7 @@ VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
  * ## Safety
  *
  * - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならず、また既にこの関数で解放されていてはいけない。
+ * - `open_jtalk`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -306,8 +328,8 @@ void voicevox_open_jtalk_rc_delete(struct OpenJtalkRc *open_jtalk);
  *
  * ## Safety
  *
- * - `path`は有効なヌル終端文字列を指す。
- * - `out_model`は書き込みについて有効でなければならない。
+ * - `path`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `out_model`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -355,6 +377,7 @@ const char *voicevox_voice_model_get_metas_json(const struct VoicevoxVoiceModel 
  * ## Safety
  *
  * - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また既にこの関数で解放されていてはいけない。
+ * - `model`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -373,7 +396,7 @@ void voicevox_voice_model_delete(struct VoicevoxVoiceModel *model);
  * ## Safety
  *
  * - `open_jtalk`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
- * - `out_synthesizer`は書き込みについて有効でなければならない。
+ * - `out_synthesizer`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -390,6 +413,7 @@ VoicevoxResultCode voicevox_synthesizer_new_with_initialize(const struct OpenJta
  * ## Safety
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また既にこの関数で解放されていてはいけない。
+ * - `synthesizer`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -426,7 +450,7 @@ VoicevoxResultCode voicevox_synthesizer_load_voice_model(struct VoicevoxSynthesi
  * ## Safety
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - `model_id`は有効なヌル終端文字列を指していなければならない。
+ * - `model_id`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -461,7 +485,7 @@ bool voicevox_synthesizer_is_gpu_mode(const struct VoicevoxSynthesizer *synthesi
  * ## Safety
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - `model_id`は有効なヌル終端文字列を指していなければならない。
+ * - `model_id`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -503,7 +527,7 @@ const char *voicevox_synthesizer_get_metas_json(const struct VoicevoxSynthesizer
  *
  * ## Safety
  *
- * - `output_supported_devices_json`は書き込みについて有効でなければならない。
+ * - `output_supported_devices_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -524,8 +548,8 @@ VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supporte
  * ## Safety
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - `text`は有効なヌル終端文字列を指していなければならない。
- * - `output_audio_query_json`は書き込みについて有効でなければならない。
+ * - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  *
  * ## Examples
  *
@@ -572,8 +596,8 @@ VoicevoxResultCode voicevox_synthesizer_audio_query(const struct VoicevoxSynthes
  * ## Safety
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - `text`は有効なヌル終端文字列を指していなければならない。
- * - `output_audio_query_json`は書き込みについて有効でなければならない。
+ * - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  *
  * ## Examples
  *
@@ -619,8 +643,8 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct Voice
  * ## Safety
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
- * - `output_audio_query_json`は書き込みについて有効でなければならない。
+ * - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -645,8 +669,8 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_data(const struct VoicevoxS
  * ## Safety
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
- * - `output_audio_query_json`は書き込みについて有効でなければならない。
+ * - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -671,8 +695,8 @@ VoicevoxResultCode voicevox_synthesizer_replace_phoneme_length(const struct Voic
  * ## Safety
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
- * - `output_audio_query_json`は書き込みについて有効でなければならない。
+ * - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -699,9 +723,9 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_pitch(const struct Voicevox
  * ## Safety
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - `audio_query_json`は有効なヌル終端文字列を指していなければならない。
- * - `output_wav_length`は書き込みについて有効でなければならない。
- * - `output_wav`は書き込みについて有効でなければならない。
+ * - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -730,9 +754,9 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
  * ## Safety
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - `text`は有効なヌル終端文字列を指していなければならない。
- * - `output_wav_length`は書き込みについて有効でなければならない。
- * - `output_wav`は書き込みについて有効でなければならない。
+ * - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -754,6 +778,8 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  * - `json`は以下のAPIで得られたポインタでなくてはいけない。
  *     -
  * - 文字列の長さは生成時より変更されていてはならない。
+ * - `json`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+ * - `json`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -770,6 +796,8 @@ void voicevox_json_free(char *json);
  * - `wav`は以下のAPIで得られたポインタでなくてはいけない。
  *     - ::voicevox_synthesizer_synthesis
  *     - ::voicevox_synthesizer_tts
+ * - `wav`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+ * - `wav`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
