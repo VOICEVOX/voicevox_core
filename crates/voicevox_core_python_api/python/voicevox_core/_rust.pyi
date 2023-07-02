@@ -3,8 +3,13 @@ from typing import Final, List, Literal, Union
 
 import numpy as np
 from numpy.typing import NDArray
-
-from voicevox_core import AccelerationMode, AccentPhrase, AudioQuery, Meta, SupportedDevices
+from voicevox_core import (
+    AccelerationMode,
+    AccentPhrase,
+    AudioQuery,
+    Meta,
+    SupportedDevices,
+)
 
 METAS: Final[List[Meta]]
 SUPPORTED_DEVICES: Final[SupportedDevices]
@@ -188,7 +193,8 @@ class VoicevoxCore:
         :class:`List` [:class:`AccentPhrase`]
         """
         ...
-    def mora_length( self,
+    def mora_length(
+        self,
         accent_phrases: List[AccentPhrase],
         speaker_id: int,
     ) -> List[AccentPhrase]:
@@ -206,7 +212,8 @@ class VoicevoxCore:
         :class:`List` [:class:`AccentPhrase`]
         """
         ...
-    def mora_pitch( self,
+    def mora_pitch(
+        self,
         accent_phrases: List[AccentPhrase],
         speaker_id: int,
     ) -> List[AccentPhrase]:
@@ -224,7 +231,8 @@ class VoicevoxCore:
         :class:`List` [:class:`AccentPhrase`]
         """
         ...
-    def mora_data( self,
+    def mora_data(
+        self,
         accent_phrases: List[AccentPhrase],
         speaker_id: int,
     ) -> List[AccentPhrase]:

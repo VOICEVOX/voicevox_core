@@ -24,6 +24,7 @@ serde.workspace = true
 serde_json.workspace = true
 tracing.workspace = true
 voicevox_core.workspace = true
+test_util.workspace = true
 
 [build-dependencies]
 anyhow.workspace = true
