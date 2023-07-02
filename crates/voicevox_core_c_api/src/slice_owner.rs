@@ -30,8 +30,10 @@ impl<T> SliceOwner<T> {
     ///
     /// # Safety
     ///
-    /// - `out_ptr`は書き込みについて有効でなければならない(ただし`*mut T`は有効である必要は無い)。
-    /// - `out_len`は書き込みについて有効でなければならない。
+    /// - `out_ptr`は書き込みについて[有効]でなければならない。
+    /// - `out_len`は書き込みについて[有効]でなければならない。
+    ///
+    /// [有効]: https://doc.rust-lang.org/stable/std/ptr/index.html#safety
     pub(crate) unsafe fn own_and_lend(
         &self,
         slice: impl Into<Box<[T]>>,
@@ -47,8 +49,8 @@ impl<T> SliceOwner<T> {
         let duplicated = slices.insert(ptr as usize, slice.into()).is_some();
         assert!(!duplicated, "duplicated");
 
-        out_ptr.as_ptr().write_volatile(ptr);
-        out_len.as_ptr().write_volatile(len);
+        out_ptr.as_ptr().write_unaligned(ptr);
+        out_len.as_ptr().write_unaligned(len);
     }
 
     /// `own_and_lend`でC API利用者に貸し出したポインタに対応する`Box<[u8]>`をデストラクトする。
