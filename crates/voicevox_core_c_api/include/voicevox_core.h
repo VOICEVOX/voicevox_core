@@ -268,7 +268,7 @@ extern const struct VoicevoxTtsOptions voicevox_default_tts_options;
  * ## Safety
  *
  * - `open_jtalk_dic_dir`は有効なヌル終端文字列を指していなければならない。
- * - `out_open_jtalk`はアラインメントに沿っていなければならない。
+ * - `out_open_jtalk`は書き込みについて有効でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -307,7 +307,7 @@ void voicevox_open_jtalk_rc_delete(struct OpenJtalkRc *open_jtalk);
  * ## Safety
  *
  * - `path`は有効なヌル終端文字列を指す。
- * - `out_model`はアラインメントに沿っていなければならない。
+ * - `out_model`は書き込みについて有効でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -373,6 +373,7 @@ void voicevox_voice_model_delete(struct VoicevoxVoiceModel *model);
  * ## Safety
  *
  * - `open_jtalk`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
+ * - `out_synthesizer`は書き込みについて有効でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -499,6 +500,10 @@ const char *voicevox_synthesizer_get_metas_json(const struct VoicevoxSynthesizer
  * char *supported_devices;
  * VoicevoxResultCode result = voicevox_create_supported_devices_json(&supported_devices);
  * ```
+ *
+ * ## Safety
+ *
+ * - `output_supported_devices_json`は書き込みについて有効でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -520,6 +525,7 @@ VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supporte
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `text`は有効なヌル終端文字列を指していなければならない。
+ * - `output_audio_query_json`は書き込みについて有効でなければならない。
  *
  * ## Examples
  *
@@ -567,6 +573,7 @@ VoicevoxResultCode voicevox_synthesizer_audio_query(const struct VoicevoxSynthes
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `text`は有効なヌル終端文字列を指していなければならない。
+ * - `output_audio_query_json`は書き込みについて有効でなければならない。
  *
  * ## Examples
  *
@@ -613,6 +620,7 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct Voice
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
+ * - `output_audio_query_json`は書き込みについて有効でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -638,6 +646,7 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_data(const struct VoicevoxS
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
+ * - `output_audio_query_json`は書き込みについて有効でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -663,6 +672,7 @@ VoicevoxResultCode voicevox_synthesizer_replace_phoneme_length(const struct Voic
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
+ * - `output_audio_query_json`は書き込みについて有効でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -690,8 +700,8 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_pitch(const struct Voicevox
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `audio_query_json`は有効なヌル終端文字列を指していなければならない。
- * - `output_wav_length`はアラインメントに沿っていなければならない。
- * - `output_wav`はアラインメントに沿っていなければならない。
+ * - `output_wav_length`は書き込みについて有効でなければならない。
+ * - `output_wav`は書き込みについて有効でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -721,8 +731,8 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
  *
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `text`は有効なヌル終端文字列を指していなければならない。
- * - `output_wav_length`はアラインメントに沿っていなければならない。
- * - `output_wav`はアラインメントに沿っていなければならない。
+ * - `output_wav_length`は書き込みについて有効でなければならない。
+ * - `output_wav`は書き込みについて有効でなければならない。
  */
 #ifdef _WIN32
 __declspec(dllimport)
