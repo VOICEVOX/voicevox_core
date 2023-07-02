@@ -112,7 +112,7 @@ pub struct OpenJtalkRc {
 /// ## Safety
 ///
 /// - `open_jtalk_dic_dir`は有効なヌル終端文字列を指していなければならない。
-/// - `out_open_jtalk`はアラインメントに沿っていなければならない。
+/// - `out_open_jtalk`は書き込みについて有効でなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     open_jtalk_dic_dir: *const c_char,
@@ -215,7 +215,7 @@ pub type VoicevoxStyleId = u32;
 /// ## Safety
 ///
 /// - `path`は有効なヌル終端文字列を指す。
-/// - `out_model`はアラインメントに沿っていなければならない。
+/// - `out_model`は書き込みについて有効でなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
     path: *const c_char,
@@ -291,6 +291,7 @@ pub struct VoicevoxSynthesizer {
 /// ## Safety
 ///
 /// - `open_jtalk`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
+/// - `out_synthesizer`は書き込みについて有効でなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
     open_jtalk: &OpenJtalkRc,
@@ -435,6 +436,10 @@ pub extern "C" fn voicevox_synthesizer_get_metas_json(
 /// char *supported_devices;
 /// VoicevoxResultCode result = voicevox_create_supported_devices_json(&supported_devices);
 /// ```
+///
+/// ## Safety
+///
+/// - `output_supported_devices_json`は書き込みについて有効でなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_create_supported_devices_json(
     output_supported_devices_json: NonNull<*mut c_char>,
@@ -476,6 +481,7 @@ pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = Con
 ///
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
 /// - `text`は有効なヌル終端文字列を指していなければならない。
+/// - `output_audio_query_json`は書き込みについて有効でなければならない。
 ///
 /// ## Examples
 ///
@@ -549,6 +555,7 @@ pub static voicevox_default_accent_phrases_options: VoicevoxAccentPhrasesOptions
 ///
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
 /// - `text`は有効なヌル終端文字列を指していなければならない。
+/// - `output_audio_query_json`は書き込みについて有効でなければならない。
 ///
 /// ## Examples
 ///
@@ -608,6 +615,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
 ///
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
 /// - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
+/// - `output_audio_query_json`は書き込みについて有効でなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     synthesizer: &VoicevoxSynthesizer,
@@ -648,6 +656,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
 ///
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
 /// - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
+/// - `output_audio_query_json`は書き込みについて有効でなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
     synthesizer: &VoicevoxSynthesizer,
@@ -688,6 +697,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
 ///
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
 /// - `accent_phrases_json`は有効なヌル終端文字列を指していなければならない。
+/// - `output_audio_query_json`は書き込みについて有効でなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
     synthesizer: &VoicevoxSynthesizer,
@@ -741,8 +751,8 @@ pub static voicevox_default_synthesis_options: VoicevoxSynthesisOptions = ConstD
 ///
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
 /// - `audio_query_json`は有効なヌル終端文字列を指していなければならない。
-/// - `output_wav_length`はアラインメントに沿っていなければならない。
-/// - `output_wav`はアラインメントに沿っていなければならない。
+/// - `output_wav_length`は書き込みについて有効でなければならない。
+/// - `output_wav`は書き込みについて有効でなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     synthesizer: &VoicevoxSynthesizer,
@@ -798,8 +808,8 @@ pub static voicevox_default_tts_options: VoicevoxTtsOptions = ConstDefault::DEFA
 ///
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
 /// - `text`は有効なヌル終端文字列を指していなければならない。
-/// - `output_wav_length`はアラインメントに沿っていなければならない。
-/// - `output_wav`はアラインメントに沿っていなければならない。
+/// - `output_wav_length`は書き込みについて有効でなければならない。
+/// - `output_wav`は書き込みについて有効でなければならない。
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_tts(
     synthesizer: &VoicevoxSynthesizer,
