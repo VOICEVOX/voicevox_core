@@ -7,6 +7,9 @@ dependencies = ["numpy", "pydantic>=1.9.2,<2"]
 requires = ["maturin>=0.13.2,<0.14"]
 build-backend = "maturin"
 
+[tool.isort]
+profile = "black"
+
 [tool.maturin]
 bindings = "pyo3"
 skip-auditwheel = true # Linuxでlibonnxruntime.so.*の不在を許してもらう

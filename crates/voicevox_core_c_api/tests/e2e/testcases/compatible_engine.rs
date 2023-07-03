@@ -8,6 +8,8 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use voicevox_core::SupportedDevices;
 
+use test_util::EXAMPLE_DATA;
+
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     float_assert, snapshots,
@@ -50,18 +52,17 @@ impl assert_cdylib::TestCase for TestCase {
 
         assert!(initialize(false, 0, false));
 
-        assert!(!is_model_loaded(SPEAKER_ID));
-        assert!(load_model(SPEAKER_ID));
-        assert!(is_model_loaded(SPEAKER_ID));
+        assert!(!is_model_loaded(EXAMPLE_DATA.speaker_id));
+        assert!(load_model(EXAMPLE_DATA.speaker_id));
+        assert!(is_model_loaded(EXAMPLE_DATA.speaker_id));
 
         // テスト用テキストは"t e s u t o"
-
         let phoneme_length = {
             let mut phoneme_length = [0.; 8];
             assert!(yukarin_s_forward(
-                8,
-                [0, 37, 14, 35, 6, 37, 30, 0].as_mut_ptr(),
-                &mut { SPEAKER_ID } as *mut i64,
+                EXAMPLE_DATA.duration.length,
+                EXAMPLE_DATA.duration.phoneme_vector.as_ptr() as *mut i64,
+                &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
                 phoneme_length.as_mut_ptr(),
             ));
             phoneme_length
@@ -70,50 +71,27 @@ impl assert_cdylib::TestCase for TestCase {
         let intonation_list = {
             let mut intonation_list = [0.; 5];
             assert!(yukarin_sa_forward(
-                5,
-                [0, 14, 6, 30, 0].as_mut_ptr(),
-                [-1, 37, 35, 37, -1].as_mut_ptr(),
-                [0, 1, 0, 0, 0].as_mut_ptr(),
-                [0, 1, 0, 0, 0].as_mut_ptr(),
-                [0, 1, 0, 0, 0].as_mut_ptr(),
-                [0, 0, 0, 1, 0].as_mut_ptr(),
-                &mut { SPEAKER_ID } as *mut i64,
+                EXAMPLE_DATA.intonation.length,
+                EXAMPLE_DATA.intonation.vowel_phoneme_vector.as_ptr() as *mut i64,
+                EXAMPLE_DATA.intonation.consonant_phoneme_vector.as_ptr() as *mut i64,
+                EXAMPLE_DATA.intonation.start_accent_vector.as_ptr() as *mut i64,
+                EXAMPLE_DATA.intonation.end_accent_vector.as_ptr() as *mut i64,
+                EXAMPLE_DATA.intonation.start_accent_phrase_vector.as_ptr() as *mut i64,
+                EXAMPLE_DATA.intonation.end_accent_phrase_vector.as_ptr() as *mut i64,
+                &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
                 intonation_list.as_mut_ptr(),
             ));
             intonation_list
         };
 
         let wave = {
-            let mut wave = [0.; 256 * F0_LENGTH];
+            let mut wave = vec![0.; 256 * EXAMPLE_DATA.decode.f0_length as usize];
             assert!(decode_forward(
-                F0_LENGTH as _,
-                PHONEME_SIZE as _,
-                {
-                    let mut f0 = [0.; F0_LENGTH];
-                    f0[9..24].fill(5.905218);
-                    f0[37..60].fill(5.565851);
-                    f0
-                }
-                .as_mut_ptr(),
-                {
-                    let mut phoneme = [0.; PHONEME_SIZE * F0_LENGTH];
-                    let mut set_one = |index, range| {
-                        for i in range {
-                            phoneme[i * PHONEME_SIZE + index] = 1.;
-                        }
-                    };
-                    set_one(0, 0..9);
-                    set_one(37, 9..13);
-                    set_one(14, 13..24);
-                    set_one(35, 24..30);
-                    set_one(6, 30..37);
-                    set_one(37, 37..45);
-                    set_one(30, 45..60);
-                    set_one(0, 60..69);
-                    phoneme
-                }
-                .as_mut_ptr(),
-                &mut { SPEAKER_ID } as *mut i64,
+                EXAMPLE_DATA.decode.f0_length,
+                EXAMPLE_DATA.decode.phoneme_size,
+                EXAMPLE_DATA.decode.f0_vector.as_ptr() as *mut f32,
+                EXAMPLE_DATA.decode.phoneme_vector.as_ptr() as *mut f32,
+                &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
                 wave.as_mut_ptr(),
             ));
             wave
@@ -125,17 +103,13 @@ impl assert_cdylib::TestCase for TestCase {
             supported_devices,
         );
 
-        float_assert::close_l1(&phoneme_length, &SNAPSHOTS.yukarin_s_forward, 0.01);
-        float_assert::close_l1(&intonation_list, &SNAPSHOTS.yukarin_sa_forward, 0.01);
+        float_assert::close_l1(&phoneme_length, &EXAMPLE_DATA.duration.result, 0.01);
+        float_assert::close_l1(&intonation_list, &EXAMPLE_DATA.intonation.result, 0.01);
 
         assert!(wave.iter().copied().all(f32::is_normal));
 
         finalize();
-        return Ok(());
-
-        const SPEAKER_ID: i64 = 0;
-        const F0_LENGTH: usize = 69;
-        const PHONEME_SIZE: usize = 45;
+        Ok(())
     }
 
     fn assert_output(&self, output: Utf8Output) -> AssertResult {
@@ -154,8 +128,6 @@ static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(compatible_engine);
 #[derive(Deserialize)]
 struct Snapshots {
     metas: String,
-    pub(crate) yukarin_s_forward: [f32; 8],
-    pub(crate) yukarin_sa_forward: [f32; 5],
     #[serde(deserialize_with = "snapshots::deserialize_platform_specific_snapshot")]
     stderr: String,
 }
