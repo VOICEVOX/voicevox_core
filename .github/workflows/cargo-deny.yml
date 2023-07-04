@@ -2,6 +2,9 @@ name: cargo-deny
 on:
   push:
   pull_request:
+defaults:
+  run:
+    shell: bash
 jobs:
   cargo-deny:
     runs-on: ubuntu-20.04

@@ -3,7 +3,6 @@ from typing import Final, List, Literal, Union
 
 import numpy as np
 from numpy.typing import NDArray
-
 from voicevox_core import (
     AccelerationMode,
     AccentPhrase,

@@ -7,11 +7,16 @@ publish.workspace = true
 [dependencies]
 async_zip.workspace = true
 once_cell.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 tokio.workspace = true
 
 [build-dependencies]
 anyhow.workspace = true
 async-std = { version = "1.12.0", features = ["attributes"] }
+fs-err.workspace = true
 flate2 = "1.0.24"
+serde.workspace = true
+serde_json.workspace = true
 surf = "2.3.2"
 tar = "0.4.38"

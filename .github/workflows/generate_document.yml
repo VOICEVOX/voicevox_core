@@ -4,6 +4,9 @@ on:
     branches:
       - main
   pull_request:
+defaults:
+  run:
+    shell: bash
 jobs:
   generate_api_document:
     runs-on: ubuntu-latest
