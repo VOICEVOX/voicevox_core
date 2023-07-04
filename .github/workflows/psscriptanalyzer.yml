@@ -6,6 +6,9 @@ on:
     paths:
       - '**.ps1'
       - '.github/workflows/psscriptanalyzer.yml'
+defaults:
+  run:
+    shell: bash
 jobs:
   psscriptanalyzer:
     runs-on: ubuntu-22.04
