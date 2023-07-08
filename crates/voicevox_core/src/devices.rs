@@ -27,7 +27,7 @@ impl SupportedDevices {
     ///
     /// # Example
     ///
-    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
     #[cfg_attr(not(windows), doc = "```")]
     /// use voicevox_core::SupportedDevices;
     ///

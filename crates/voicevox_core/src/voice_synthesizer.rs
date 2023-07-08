@@ -124,7 +124,7 @@ impl Synthesizer {
     ///
     /// # Example
     ///
-    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
     #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
@@ -298,7 +298,7 @@ impl Synthesizer {
     ///
     /// # Examples
     ///
-    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
     #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
@@ -343,7 +343,7 @@ impl Synthesizer {
     /// # }
     /// ```
     ///
-    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
     #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
@@ -449,7 +449,7 @@ impl Synthesizer {
     ///
     /// # Examples
     ///
-    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
     #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
@@ -494,7 +494,7 @@ impl Synthesizer {
     /// # }
     /// ```
     ///
-    #[cfg_attr(windows, doc = "```no_run")]
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
     #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
