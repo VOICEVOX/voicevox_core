@@ -13,9 +13,12 @@ from voicevox_core import (
 __version__: str
 
 def supported_devices() -> SupportedDevices:
-    """このライブラリで利用可能なデバイスの情報を取得する。
+    """
+    このライブラリで利用可能なデバイスの情報を取得する。
 
     .. code-block::
+
+       import voicevox_core
 
        supported_devices = voicevox_core.supported_devices()
     """

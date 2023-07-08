@@ -6,7 +6,7 @@ import pydantic
 
 @pydantic.dataclasses.dataclass
 class StyleMeta:
-    """スタイルのメタ情報。"""
+    """**スタイル** (_style_)のメタ情報。"""
 
     name: str
     """スタイル名。"""
@@ -17,7 +17,7 @@ class StyleMeta:
 
 @pydantic.dataclasses.dataclass
 class SpeakerMeta:
-    """話者のメタ情報。"""
+    """**話者** (*speaker*)のメタ情報。"""
 
     name: str
     """話者名。"""
@@ -34,7 +34,12 @@ class SpeakerMeta:
 
 @pydantic.dataclasses.dataclass
 class SupportedDevices:
-    """このライブラリで利用可能なデバイスの情報。"""
+    """
+    このライブラリで利用可能なデバイスの情報。
+
+    あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても
+    ``cuda`` や ``dml`` は ``True`` を示す。
+    """
 
     cpu: bool
     """

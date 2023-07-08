@@ -54,7 +54,7 @@ impl Display for StyleVersion {
 /// 音声モデルのメタ情報。
 pub type VoiceModelMeta = Vec<SpeakerMeta>;
 
-/// 話者のメタ情報。
+/// **話者**(_speaker_)のメタ情報。
 #[derive(Deserialize, Serialize, Getters, Clone)]
 pub struct SpeakerMeta {
     /// 話者名。
@@ -70,7 +70,7 @@ pub struct SpeakerMeta {
     speaker_uuid: String,
 }
 
-/// スタイルのメタ情報。
+/// **スタイル**(_style_)のメタ情報。
 #[derive(Deserialize, Serialize, Getters, Clone)]
 pub struct StyleMeta {
     /// スタイルID。

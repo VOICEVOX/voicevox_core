@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 use super::*;
 
 /// このライブラリで利用可能なデバイスの情報。
+///
+/// あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったと
+/// しても`cuda`や`dml`は`true`を示す。
 #[derive(Getters, Debug, Serialize, Deserialize)]
 pub struct SupportedDevices {
     /// CPUが利用可能。
@@ -21,6 +24,8 @@ pub struct SupportedDevices {
 
 impl SupportedDevices {
     /// `SupportedDevices`をコンストラクトする。
+    ///
+    /// # Example
     ///
     #[cfg_attr(windows, doc = "```no_run")]
     #[cfg_attr(not(windows), doc = "```")]

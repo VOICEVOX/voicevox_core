@@ -514,6 +514,8 @@ const char *voicevox_synthesizer_get_metas_json(const struct VoicevoxSynthesizer
  *
  * JSONの解放は ::voicevox_json_free で行う。
  *
+ * あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示す。
+ *
  * @param [out] output_supported_devices_json サポートデバイス情報のJSON文字列
  *
  * @returns 結果コード
