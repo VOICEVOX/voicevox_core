@@ -5,7 +5,7 @@ use super::*;
 /// このライブラリで利用可能なデバイスの情報。
 ///
 /// あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったと
-/// しても`cuda`や`dml`は`true`を示す。
+/// しても`cuda`や`dml`は`true`を示しうる。
 #[derive(Getters, Debug, Serialize, Deserialize)]
 pub struct SupportedDevices {
     /// CPUが利用可能。
