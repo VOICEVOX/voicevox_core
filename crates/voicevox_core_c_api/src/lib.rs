@@ -765,7 +765,6 @@ pub extern "C" fn voicevox_dict_add_word(
 /// @param [in] user_dict VoicevoxUserDictのポインタ
 /// @param [in] word_uuid 更新する単語のUUID
 /// @param [in] word 新しい単語のデータ
-/// @param [out] altered 単語が更新されたかどうか
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
@@ -775,7 +774,6 @@ pub extern "C" fn voicevox_dict_alter_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: *const u8,
     word: NonNull<*mut VoicevoxUserDictWord>,
-    altered: NonNull<*mut bool>,
 ) -> VoicevoxResultCode {
     todo!()
 }
@@ -783,13 +781,11 @@ pub extern "C" fn voicevox_dict_alter_word(
 /// ユーザー辞書から単語を削除する
 /// @param [in] user_dict VoicevoxUserDictのポインタ
 /// @param [in] word_uuid 削除する単語のUUID
-/// @param [out] deleted 単語が削除されたかどうか
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
 pub extern "C" fn voicevox_dict_delete_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: *const u8,
-    deleted: NonNull<*mut bool>,
 ) -> VoicevoxResultCode {
     todo!()
 }
