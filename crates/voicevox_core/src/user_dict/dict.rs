@@ -1,10 +1,11 @@
 use derive_getters::Getters;
-use std::{collections::HashMap, fs::File};
+use std::{collections::HashMap, fs::File, io::Write};
 use uuid::Uuid;
 
 use super::word::*;
 use crate::{Error, Result};
 
+/// ユーザー辞書。
 #[derive(Clone, Debug, Getters)]
 pub struct UserDict {
     store_path: String,
@@ -12,23 +13,30 @@ pub struct UserDict {
 }
 
 impl UserDict {
+    /// ユーザー辞書をロードする。
+    /// ファイルが存在しない場合は空の辞書を作成する。
+    /// ファイルが存在する場合は、その内容を読み込む。
+    /// ファイルの内容が不正な場合はエラーを返す。
     pub fn new(store_path: &str) -> Result<Self> {
         if std::path::Path::new(store_path).exists() {
-            let store_file = File::open(store_path).map_err(|_| Error::InvalidDictFile)?;
+            let store_file = File::open(store_path).map_err(|_| Error::UserDictRead)?;
             let words: HashMap<String, UserDictWord> =
-                serde_json::from_reader(store_file).map_err(|_| Error::InvalidDictFile)?;
+                serde_json::from_reader(store_file).map_err(|_| Error::UserDictRead)?;
             Ok(Self {
                 store_path: store_path.to_string(),
                 words,
             })
         } else {
-            Ok(Self {
+            let dict = Self {
                 store_path: store_path.to_string(),
                 words: HashMap::new(),
-            })
+            };
+            dict.save()?;
+            Ok(dict)
         }
     }
 
+    /// ユーザー辞書に単語を追加する。
     pub fn add_word(&mut self, word: UserDictWord) -> Result<String> {
         let word_uuid = Uuid::new_v4().to_string();
         self.words.insert(word_uuid.clone(), word);
@@ -36,15 +44,17 @@ impl UserDict {
         Ok(word_uuid)
     }
 
+    /// ユーザー辞書から単語を削除する。
     pub fn remove_word(&mut self, word_uuid: &str) -> Result<Option<UserDictWord>> {
         let word = self.words.remove(word_uuid);
         self.save()?;
         Ok(word)
     }
 
+    /// ユーザー辞書を保存する。
     fn save(&self) -> Result<()> {
-        let mut file = File::create(&self.store_path).map_err(|_| Error::InvalidDictFile)?;
-        serde_json::to_writer(&mut file, &self.words).map_err(|_| Error::InvalidDictFile)?;
+        let mut file = File::create(&self.store_path).map_err(|_| Error::UserDictWrite)?;
+        serde_json::to_writer(&mut file, &self.words).map_err(|_| Error::UserDictWrite)?;
         Ok(())
     }
 }

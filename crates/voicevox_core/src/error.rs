@@ -83,8 +83,11 @@ pub enum Error {
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_PARSE_KANA_ERROR))]
     ParseKana(#[from] KanaParseError),
 
-    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_DICT_FILE_ERROR))]
-    InvalidDictFile
+    #[error("{},{0}", base_error_message(VOICEVOX_USER_DICT_READ_ERROR))]
+    UserDictRead,
+
+    #[error("{},{0}", base_error_message(VOICEVOX_USER_DICT_WRITE_ERROR))]
+    UserDictWrite,
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {

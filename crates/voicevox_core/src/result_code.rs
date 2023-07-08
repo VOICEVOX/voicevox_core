@@ -43,10 +43,12 @@ pub enum VoicevoxResultCode {
     VOICEVOX_ALREADY_LOADED_MODEL_ERROR = 18,
     /// Modelが読み込まれていない
     VOICEVOX_UNLOADED_MODEL_ERROR = 19,
-    /// 無効な辞書ファイルが指定された
-    VOICEVOX_RESULT_INVALID_DICT_FILE_ERROR = 20,
+    /// 辞書を読み込めなかった
+    VOICEVOX_USER_DICT_READ_ERROR = 20,
+    /// 辞書を書き込めなかった
+    VOICEVOX_USER_DICT_WRITE_ERROR = 21,
     /// 辞書に単語が見つからなかった
-    VOICEVOX_RESULT_WORD_NOT_FOUND_ERROR = 21,
+    VOICEVOX_WORD_NOT_FOUND_ERROR = 22,
 }
 
 pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
@@ -83,7 +85,8 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
             "すでに読み込まれているModelを読み込もうとしました\0"
         }
         VOICEVOX_UNLOADED_MODEL_ERROR => "Modelが読み込まれていません\0",
-        VOICEVOX_RESULT_INVALID_DICT_FILE_ERROR => "無効な辞書ファイルが指定されました\0",
-        VOICEVOX_RESULT_WORD_NOT_FOUND_ERROR => "辞書に単語が見つかりませんでした\0",
+        VOICEVOX_USER_DICT_READ_ERROR => "辞書を読み込めませんでした\0",
+        VOICEVOX_USER_DICT_WRITE_ERROR => "辞書を書き込めませんでした\0",
+        VOICEVOX_WORD_NOT_FOUND_ERROR => "辞書に単語が見つかりませんでした\0",
     }
 }
