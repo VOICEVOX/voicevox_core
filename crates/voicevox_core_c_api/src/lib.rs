@@ -866,7 +866,15 @@ pub extern "C" fn voicevox_dict_merge(
     user_dict: &VoicevoxUserDict,
     other_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
-    todo!()
+    into_result_code_with_error((|| {
+        {
+            let mut dict = user_dict.dict.lock().expect("lock failed");
+            let other_dict = other_dict.dict.lock().expect("lock failed");
+            dict.merge(&other_dict)?;
+        };
+
+        Ok(())
+    })())
 }
 
 #[cfg(test)]

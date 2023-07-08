@@ -63,6 +63,15 @@ impl UserDict {
         Ok(word)
     }
 
+    /// 2つのユーザー辞書をマージする。
+    pub fn merge(&mut self, other: &Self) -> Result<()> {
+        for (word_uuid, word) in &other.words {
+            self.words.insert(word_uuid.clone(), word.clone());
+        }
+        self.save()?;
+        Ok(())
+    }
+
     /// ユーザー辞書を保存する。
     fn save(&self) -> Result<()> {
         let mut file = File::create(&self.store_path).map_err(|_| Error::UserDictWrite)?;
