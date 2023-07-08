@@ -34,6 +34,7 @@ pub use devices::*;
 pub use manifest::*;
 pub use version::*;
 pub use voice_synthesizer::*;
+pub use user_dict::*;
 
 use derive_getters::*;
 use derive_new::new;

@@ -22,8 +22,8 @@ use tokio::runtime::Runtime;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use voicevox_core::{
-    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, VoiceModel,
-    VoiceModelId,
+    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, UserDict,
+    VoiceModel, VoiceModelId,
 };
 use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions, Synthesizer};
 
@@ -690,6 +690,105 @@ pub extern "C" fn voicevox_error_result_to_message(
     .expect("`error_result_to_message`が返す文字列はヌル終端であるはずである");
 
     C_STRING_DROP_CHECKER.blacklist(message).as_ptr()
+}
+
+/// ユーザー辞書
+pub struct VoicevoxUserDict {
+    dict: Arc<voicevox_core::UserDict>,
+}
+
+pub struct VoicevoxUserDictWord {
+    surface: *const c_char,
+    pronunciation: *const c_char,
+    accent_type: i32,
+    word_type: VoicevoxUserDictWordType,
+    priority: i32,
+}
+
+#[repr(i32)]
+#[allow(non_camel_case_types)]
+pub enum VoicevoxUserDictWordType {
+    VOICEVOX_PROPER_NOUN = 0,
+    VOICEVOX_COMMON_NOUN = 1,
+    VOICEVOX_VERB = 2,
+    VOICEVOX_ADJECTIVE = 3,
+    VOICEVOX_SUFFIX = 4,
+}
+
+/// ユーザー辞書をロードまたは新規作成する
+/// @param [in] dict_path ユーザー辞書のパス
+/// @param [out] user_dict VoicevoxUserDictのポインタ
+/// @return 結果コード #VoicevoxResultCode
+#[no_mangle]
+pub extern "C" fn voicevox_dict_new(
+    dict_path: *const c_char,
+    user_dict: NonNull<*mut UserDict>,
+) -> VoicevoxResultCode {
+    todo!()
+}
+
+/// ユーザー辞書に単語を追加する
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] word 追加する単語
+/// @param [out] word_uuid 追加した単語のUUID
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+/// @param word_uuid は呼び出し側で解放する必要がある
+///
+#[no_mangle]
+pub extern "C" fn voicevox_dict_add_word(
+    user_dict: &VoicevoxUserDict,
+    word: &VoicevoxUserDictWord,
+    word_uuid: NonNull<*mut u8>,
+) -> VoicevoxResultCode {
+    todo!()
+}
+
+/// ユーザー辞書の単語を更新する
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] word_uuid 更新する単語のUUID
+/// @param [in] word 新しい単語のデータ
+/// @param [out] altered 単語が更新されたかどうか
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+#[no_mangle]
+pub extern "C" fn voicevox_dict_alter_word(
+    user_dict: &VoicevoxUserDict,
+    word_uuid: *const u8,
+    word: NonNull<*mut VoicevoxUserDictWord>,
+    altered: NonNull<*mut bool>,
+) -> VoicevoxResultCode {
+    todo!()
+}
+
+/// ユーザー辞書から単語を削除する
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] word_uuid 削除する単語のUUID
+/// @param [out] deleted 単語が削除されたかどうか
+/// @return 結果コード #VoicevoxResultCode
+#[no_mangle]
+pub extern "C" fn voicevox_dict_delete_word(
+    user_dict: &VoicevoxUserDict,
+    word_uuid: *const u8,
+    deleted: NonNull<*mut bool>,
+) -> VoicevoxResultCode {
+    todo!()
+}
+
+/// ユーザー辞書の単語をJSON形式で出力する
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [out] json JSON形式の文字列
+/// @return 結果コード #VoicevoxResultCode
+#[no_mangle]
+pub extern "C" fn voicevox_dict_export_json(
+    user_dict: &VoicevoxUserDict,
+    json: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
+    todo!()
 }
 
 #[cfg(test)]
