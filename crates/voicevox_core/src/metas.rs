@@ -11,10 +11,10 @@ pub type RawStyleId = u32;
 
 /// スタイルID。
 ///
-/// VOICEVOXにおける、ある[話者(speaker)]のある[スタイル(style)]を指す。
+/// VOICEVOXにおける、ある[**話者**(_speaker_)]のある[**スタイル**(_style_)]を指す。
 ///
-/// [話者(speaker)]: SpeakerMeta
-/// [スタイル(style)]: StyleMeta
+/// [**話者**(_speaker_)]: SpeakerMeta
+/// [**スタイル**(_style_)]: StyleMeta
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
 pub struct StyleId(RawStyleId);
 

@@ -205,7 +205,7 @@ pub type VoicevoxVoiceModelId = *const c_char;
 
 /// スタイルID。
 ///
-/// VOICEVOXにおける、ある話者(speaker)のあるスタイル(style)を指す。
+/// VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
 pub type VoicevoxStyleId = u32;
 
 /// VVMファイルから ::VoicevoxVoiceModel をコンストラクトする。
