@@ -6,6 +6,7 @@ use assert_cmd::assert::AssertResult;
 use libloading::Library;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use voicevox_core::SupportedDevices;
 
 use test_util::EXAMPLE_DATA;
 
@@ -39,8 +40,7 @@ impl assert_cdylib::TestCase for TestCase {
         let metas_json = {
             let metas_json = metas();
             let metas_json = CStr::from_ptr(metas_json).to_str()?;
-            metas_json.parse::<serde_json::Value>()?;
-            metas_json
+            serde_json::to_string_pretty(&metas_json.parse::<serde_json::Value>()?).unwrap()
         };
 
         let supported_devices = {
@@ -97,9 +97,9 @@ impl assert_cdylib::TestCase for TestCase {
             wave
         };
 
-        std::assert_eq!(include_str!("../../../../../model/metas.json"), metas_json);
+        std::assert_eq!(SNAPSHOTS.metas, metas_json);
         std::assert_eq!(
-            voicevox_core::SUPPORTED_DEVICES.to_json(),
+            SupportedDevices::create().unwrap().to_json(),
             supported_devices,
         );
 
@@ -127,6 +127,7 @@ static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(compatible_engine);
 
 #[derive(Deserialize)]
 struct Snapshots {
+    metas: String,
     #[serde(deserialize_with = "snapshots::deserialize_platform_specific_snapshot")]
     stderr: String,
 }

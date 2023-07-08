@@ -28,25 +28,31 @@ int main() {
   std::wcin >> speak_words;
 
   std::wcout << L"coreの初期化中" << std::endl;
-  VoicevoxInitializeOptions  initializeOptions = voicevox_make_default_initialize_options();
+  VoicevoxInitializeOptions  initializeOptions = voicevox_default_initialize_options;
   std::string dict = GetOpenJTalkDict();
-  initializeOptions.open_jtalk_dict_dir = dict.c_str();
   initializeOptions.load_all_models = true;
 
-  VoicevoxResultCode result = VoicevoxResultCode::VOICEVOX_RESULT_OK;
-  result = voicevox_initialize(initializeOptions);
+  OpenJtalkRc* open_jtalk;
+  auto result = voicevox_open_jtalk_rc_new(dict.c_str(),&open_jtalk);
   if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
     OutErrorMessage(result);
     return 0;
   }
+  VoicevoxSynthesizer* synthesizer;
+  result = voicevox_synthesizer_new_with_initialize(open_jtalk,initializeOptions,&synthesizer);
+  if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
+    OutErrorMessage(result);
+    return 0;
+  }
+  voicevox_open_jtalk_rc_delete(open_jtalk);
 
   std::wcout << L"音声生成中" << std::endl;
   int32_t speaker_id = 0;
   uintptr_t output_binary_size = 0;
   uint8_t* output_wav = nullptr;
-  VoicevoxTtsOptions ttsOptions = voicevox_make_default_tts_options();
+  VoicevoxTtsOptions ttsOptions = voicevox_default_tts_options;
 
-  result = voicevox_tts(wide_to_utf8_cppapi(speak_words).c_str(), speaker_id, ttsOptions, &output_binary_size, &output_wav);
+  result = voicevox_synthesizer_tts(synthesizer,wide_to_utf8_cppapi(speak_words).c_str(), speaker_id, ttsOptions, &output_binary_size, &output_wav);
   if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
     OutErrorMessage(result);
     return 0;
@@ -65,8 +71,7 @@ int main() {
   std::wcout << L"音声データの開放" << std::endl;
   voicevox_wav_free(output_wav);
 
-  voicevox_finalize();
-
+  voicevox_synthesizer_delete(synthesizer);
 }
 
 /// <summary>

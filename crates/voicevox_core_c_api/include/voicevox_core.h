@@ -70,45 +70,74 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_LOAD_METAS_ERROR = 5,
   /**
-   * ステータスが初期化されていない
+   * 無効なstyle_idが指定された
    */
-  VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR = 6,
-  /**
-   * 無効なspeaker_idが指定された
-   */
-  VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR = 7,
+  VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR = 6,
   /**
    * 無効なmodel_indexが指定された
    */
-  VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR = 8,
+  VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR = 7,
   /**
    * 推論に失敗した
    */
-  VOICEVOX_RESULT_INFERENCE_ERROR = 9,
+  VOICEVOX_RESULT_INFERENCE_ERROR = 8,
   /**
    * コンテキストラベル出力に失敗した
    */
-  VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR = 10,
+  VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR = 11,
   /**
    * 無効なutf8文字列が入力された
    */
-  VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR = 11,
+  VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR = 12,
   /**
    * aquestalk形式のテキストの解析に失敗した
    */
-  VOICEVOX_RESULT_PARSE_KANA_ERROR = 12,
+  VOICEVOX_RESULT_PARSE_KANA_ERROR = 13,
   /**
    * 無効なAudioQuery
    */
-  VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR = 13,
+  VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR = 14,
   /**
    * 無効なAccentPhrase
    */
-  VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR = 14,
+  VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR = 15,
+  /**
+   * ファイルオープンエラー
+   */
+  VOICEVOX_OPEN_FILE_ERROR = 16,
+  /**
+   * Modelを読み込めなかった
+   */
+  VOICEVOX_VVM_MODEL_READ_ERROR = 17,
+  /**
+   * すでに読み込まれているModelを読み込もうとした
+   */
+  VOICEVOX_ALREADY_LOADED_MODEL_ERROR = 18,
+  /**
+   * Modelが読み込まれていない
+   */
+  VOICEVOX_UNLOADED_MODEL_ERROR = 19,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
 #endif // __cplusplus
+
+/**
+ * 参照カウントで管理されたOpenJtalk
+ */
+typedef struct OpenJtalkRc OpenJtalkRc;
+
+typedef struct VoicevoxSynthesizer VoicevoxSynthesizer;
+
+/**
+ * 音声モデル
+ */
+typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
+
+/**
+ * 音声モデルID
+ */
+typedef const char *VoicevoxVoiceModelId;
 
 /**
  * 初期化オプション
@@ -127,11 +156,12 @@ typedef struct VoicevoxInitializeOptions {
    * 全てのモデルを読み込む
    */
   bool load_all_models;
-  /**
-   * open_jtalkの辞書ディレクトリ
-   */
-  const char *open_jtalk_dict_dir;
 } VoicevoxInitializeOptions;
+
+/**
+ * スタイルID
+ */
+typedef uint32_t VoicevoxStyleId;
 
 /**
  * Audio query のオプション
@@ -154,7 +184,7 @@ typedef struct VoicevoxAccentPhrasesOptions {
 } VoicevoxAccentPhrasesOptions;
 
 /**
- * `voicevox_synthesis` のオプション
+ * `voicevox_synthesizer_synthesis` のオプション
  */
 typedef struct VoicevoxSynthesisOptions {
   /**
@@ -181,340 +211,316 @@ typedef struct VoicevoxTtsOptions {
 extern "C" {
 #endif // __cplusplus
 
+extern const struct VoicevoxInitializeOptions voicevox_default_initialize_options;
+
+extern const char *voicevox_version;
+
+extern const struct VoicevoxAudioQueryOptions voicevox_default_audio_query_options;
+
+extern const struct VoicevoxAccentPhrasesOptions voicevox_default_accent_phrases_options;
+
+extern const struct VoicevoxSynthesisOptions voicevox_default_synthesis_options;
+
+extern const struct VoicevoxTtsOptions voicevox_default_tts_options;
+
 /**
- * デフォルトの初期化オプションを生成する
- * @return デフォルト値が設定された初期化オプション
+ * 参照カウントで管理されたOpenJtalkを生成する
+ *
+ * # Safety
+ * @out_open_jtalk 自動でheap領域が割り当てられるため :voicevox_open_jtalk_rc_delete で開放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-struct VoicevoxInitializeOptions voicevox_make_default_initialize_options(void);
+VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
+                                              struct OpenJtalkRc **out_open_jtalk);
 
 /**
- * 初期化する
- * @param [in] options 初期化オプション
+ * 参照カウントで管理されたOpenJtalkを削除する
+ * @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
+ *
+ * # Safety
+ * @open_jtalk 有効な :OpenJtalkRc のポインタであること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_open_jtalk_rc_delete(struct OpenJtalkRc *open_jtalk);
+
+/**
+ * vvmファイルパスから音声モデルを生成する
+ * @param [in] path vvmファイルパス
+ * @param [out] out_model 新しく生成された音声モデルの出力先
  * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param path null終端文字列であること
+ * @param out_model 自動でheapメモリが割り当てられるので ::voicevox_voice_model_delete で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_initialize(struct VoicevoxInitializeOptions options);
+VoicevoxResultCode voicevox_voice_model_new_from_path(const char *path,
+                                                      struct VoicevoxVoiceModel **out_model);
 
 /**
- * voicevoxのバージョンを取得する
- * @return SemVerでフォーマットされたバージョン
+ * 音声モデルのIDを取得する
+ * @param [in] model 音声モデル #VoicevoxVoiceModel
+ * @return 音声モデルID #VoicevoxVoiceModelId
+ *
+ * # Safety
+ * @param model 有効な #VoicevoxVoiceModel へのポインタであること
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-const char *voicevox_get_version(void);
+VoicevoxVoiceModelId voicevox_voice_model_id(const struct VoicevoxVoiceModel *model);
+
+/**
+ * 音声モデルのメタ情報を取得する
+ * @param [in] model 音声モデル #VoicevoxVoiceModel
+ * @return メタ情報のjson文字列
+ *
+ * # Safety
+ * @param model 有効な #VoicevoxVoiceModel へのポインタであること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+const char *voicevox_voice_model_get_metas_json(const struct VoicevoxVoiceModel *model);
+
+/**
+ * 音声モデルを破棄する
+ * @param [in] model 破棄する音声モデル #VoicevoxVoiceModel
+ *
+ * # Safety
+ * @param model 有効な #VoicevoxVoiceModel へのポインタであること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_voice_model_delete(struct VoicevoxVoiceModel *model);
+
+/**
+ * 音声シンセサイザを生成して初期化する
+ * @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
+ * @param [in] options 初期化オプション #VoicevoxInitializeOptions
+ * @param [out] out_synthesizer 新しく生成された音声シンセサイザの出力先 #VoicevoxSynthesizer
+ * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param out_synthesizer 自動でheapメモリが割り当てられるので ::voicevox_synthesizer_delete で解放する必要がある
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_new_with_initialize(const struct OpenJtalkRc *open_jtalk,
+                                                            struct VoicevoxInitializeOptions options,
+                                                            struct VoicevoxSynthesizer **out_synthesizer);
+
+/**
+ * 音声シンセサイザを破棄する
+ * @param [in] synthesizer 破棄する音声シンセサイザ #VoicevoxSynthesizer
+ *
+ * # Safety
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_synthesizer_delete(struct VoicevoxSynthesizer *synthesizer);
 
 /**
  * モデルを読み込む
- * @param [in] speaker_id 読み込むモデルの話者ID
+ * @param [in] synthesizer 音声シンセサイザ
+ * @param [in] model 音声モデル
  * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
+ * @param model 有効な #VoicevoxVoiceModel へのポインタであること
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_load_model(uint32_t speaker_id);
+VoicevoxResultCode voicevox_synthesizer_load_voice_model(struct VoicevoxSynthesizer *synthesizer,
+                                                         const struct VoicevoxVoiceModel *model);
+
+/**
+ * モデルの読み込みを解除する
+ * @param [in] synthesizer 音声シンセサイザ
+ * @param [in] model_id 音声モデルID
+ * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
+ * @param model_id NULL終端文字列であること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_unload_voice_model(struct VoicevoxSynthesizer *synthesizer,
+                                                           VoicevoxVoiceModelId model_id);
 
 /**
  * ハードウェアアクセラレーションがGPUモードか判定する
+ * @param [in] synthesizer 音声シンセサイザ
  * @return GPUモードならtrue、そうでないならfalse
+ *
+ * # Safety
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-bool voicevox_is_gpu_mode(void);
+bool voicevox_synthesizer_is_gpu_mode(const struct VoicevoxSynthesizer *synthesizer);
 
 /**
  * 指定したspeaker_idのモデルが読み込まれているか判定する
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
+ * @param [in] model_id 音声モデルのID #VoicevoxVoiceModelId
  * @return モデルが読み込まれているのであればtrue、そうでないならfalse
+ *
+ * # Safety
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
+ * @param model_id NULL終端文字列
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-bool voicevox_is_model_loaded(uint32_t speaker_id);
-
-/**
- * このライブラリの利用を終了し、確保しているリソースを解放する
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-void voicevox_finalize(void);
+bool voicevox_synthesizer_is_loaded_voice_model(const struct VoicevoxSynthesizer *synthesizer,
+                                                VoicevoxVoiceModelId model_id);
 
 /**
  * メタ情報をjsonで取得する
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @return メタ情報のjson文字列
+ *
+ * # Safety
+ * @param synthesizer 有効な #VoicevoxSynthesizer へのポインタであること
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-const char *voicevox_get_metas_json(void);
+const char *voicevox_synthesizer_get_metas_json(const struct VoicevoxSynthesizer *synthesizer);
 
 /**
  * サポートデバイス情報をjsonで取得する
- * @return サポートデバイス情報のjson文字列
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-const char *voicevox_get_supported_devices_json(void);
-
-/**
- * 音素ごとの長さを推論する
- * @param [in] length phoneme_vector, output のデータ長
- * @param [in] phoneme_vector  音素データ
- * @param [in] speaker_id 話者ID
- * @param [out] output_predict_duration_length 出力データのサイズ
- * @param [out] output_predict_duration_data データの出力先
+ * @param [out] output_supported_devices_json サポートデバイス情報のjson文字列
  * @return 結果コード #VoicevoxResultCode
  *
  * # Safety
- * @param phoneme_vector 必ずlengthの長さだけデータがある状態で渡すこと
- * @param output_predict_duration_data_length uintptr_t 分のメモリ領域が割り当てられていること
- * @param output_predict_duration_data 成功後にメモリ領域が割り当てられるので ::voicevox_predict_duration_data_free で解放する必要がある
+ * @param output_supported_devices_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_predict_duration(uintptr_t length,
-                                             int64_t *phoneme_vector,
-                                             uint32_t speaker_id,
-                                             uintptr_t *output_predict_duration_data_length,
-                                             float **output_predict_duration_data);
-
-/**
- * ::voicevox_predict_durationで出力されたデータを解放する
- * @param[in] predict_duration_data 確保されたメモリ領域
- *
- * # Safety
- * @param predict_duration_data voicevox_predict_durationで確保されたポインタであり、かつ呼び出し側でバッファの変更が行われていないこと
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-void voicevox_predict_duration_data_free(float *predict_duration_data);
-
-/**
- * モーラごとのF0を推論する
- * @param [in] length vowel_phoneme_vector, consonant_phoneme_vector, start_accent_vector, end_accent_vector, start_accent_phrase_vector, end_accent_phrase_vector, output のデータ長
- * @param [in] vowel_phoneme_vector 母音の音素データ
- * @param [in] consonant_phoneme_vector 子音の音素データ
- * @param [in] start_accent_vector アクセントの開始位置のデータ
- * @param [in] end_accent_vector アクセントの終了位置のデータ
- * @param [in] start_accent_phrase_vector アクセント句の開始位置のデータ
- * @param [in] end_accent_phrase_vector アクセント句の終了位置のデータ
- * @param [in] speaker_id 話者ID
- * @param [out] output_predict_intonation_data_length 出力データのサイズ
- * @param [out] output_predict_intonation_data データの出力先
- * @return 結果コード #VoicevoxResultCode
- *
- * # Safety
- * @param vowel_phoneme_vector 必ずlengthの長さだけデータがある状態で渡すこと
- * @param consonant_phoneme_vector 必ずlengthの長さだけデータがある状態で渡すこと
- * @param start_accent_vector 必ずlengthの長さだけデータがある状態で渡すこと
- * @param end_accent_vector 必ずlengthの長さだけデータがある状態で渡すこと
- * @param start_accent_phrase_vector 必ずlengthの長さだけデータがある状態で渡すこと
- * @param end_accent_phrase_vector 必ずlengthの長さだけデータがある状態で渡すこと
- * @param output_predict_intonation_data_length uintptr_t 分のメモリ領域が割り当てられていること
- * @param output_predict_intonation_data 成功後にメモリ領域が割り当てられるので ::voicevox_predict_intonation_data_free で解放する必要がある
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-VoicevoxResultCode voicevox_predict_intonation(uintptr_t length,
-                                               int64_t *vowel_phoneme_vector,
-                                               int64_t *consonant_phoneme_vector,
-                                               int64_t *start_accent_vector,
-                                               int64_t *end_accent_vector,
-                                               int64_t *start_accent_phrase_vector,
-                                               int64_t *end_accent_phrase_vector,
-                                               uint32_t speaker_id,
-                                               uintptr_t *output_predict_intonation_data_length,
-                                               float **output_predict_intonation_data);
-
-/**
- * ::voicevox_predict_intonationで出力されたデータを解放する
- * @param[in] predict_intonation_data 確保されたメモリ領域
- *
- * # Safety
- * @param predict_intonation_data 実行後に割り当てられたメモリ領域が解放される
- * @param predict_duration_data voicevox_predict_intonationで確保された，ポインタでありかつ，呼び出し側でバッファの変更を行われていないこと.
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-void voicevox_predict_intonation_data_free(float *predict_intonation_data);
-
-/**
- * decodeを実行する
- * @param [in] length f0 , output のデータ長及び phoneme のデータ長に関連する
- * @param [in] phoneme_size 音素のサイズ phoneme のデータ長に関連する
- * @param [in] f0 基本周波数
- * @param [in] phoneme_vector 音素データ
- * @param [in] speaker_id 話者ID
- * @param [out] output_decode_data_length 出力先データのサイズ
- * @param [out] output_decode_data データ出力先
- * @return 結果コード #VoicevoxResultCode
- *
- * # Safety
- * @param f0 必ず length の長さだけデータがある状態で渡すこと
- * @param phoneme_vector 必ず length * phoneme_size の長さだけデータがある状態で渡すこと
- * @param output_decode_data_length uintptr_t 分のメモリ領域が割り当てられていること
- * @param output_decode_data 成功後にメモリ領域が割り当てられるので ::voicevox_decode_data_free で解放する必要がある
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-VoicevoxResultCode voicevox_decode(uintptr_t length,
-                                   uintptr_t phoneme_size,
-                                   float *f0,
-                                   float *phoneme_vector,
-                                   uint32_t speaker_id,
-                                   uintptr_t *output_decode_data_length,
-                                   float **output_decode_data);
-
-/**
- * ::voicevox_decodeで出力されたデータを解放する
- * @param[in] decode_data 確保されたメモリ領域
- *
- * # Safety
- * @param decode_data voicevox_decodeで確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-void voicevox_decode_data_free(float *decode_data);
-
-/**
- * デフォルトの AudioQuery のオプションを生成する
- * @return デフォルト値が設定された AudioQuery オプション
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-struct VoicevoxAudioQueryOptions voicevox_make_default_audio_query_options(void);
+VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supported_devices_json);
 
 /**
  * AudioQuery を実行する
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @param [in] text テキスト。文字コードはUTF-8
- * @param [in] speaker_id 話者ID
- * @param [in] options AudioQueryのオプション
+ * @param [in] style_id スタイルID #VoicevoxStyleId
+ * @param [in] options AudioQueryのオプション #VoicevoxAudioQueryOptions
  * @param [out] output_audio_query_json AudioQuery を json でフォーマットしたもの
  * @return 結果コード #VoicevoxResultCode
  *
  * # Safety
  * @param text null終端文字列であること
- * @param output_audio_query_json 自動でheapメモリが割り当てられるので ::voicevox_audio_query_json_free で解放する必要がある
+ * @param output_audio_query_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_audio_query(const char *text,
-                                        uint32_t speaker_id,
-                                        struct VoicevoxAudioQueryOptions options,
-                                        char **output_audio_query_json);
+VoicevoxResultCode voicevox_synthesizer_audio_query(const struct VoicevoxSynthesizer *synthesizer,
+                                                    const char *text,
+                                                    VoicevoxStyleId style_id,
+                                                    struct VoicevoxAudioQueryOptions options,
+                                                    char **output_audio_query_json);
 
 /**
- * デフォルトの `accent_phrases` のオプションを生成する
- * @return デフォルト値が設定された `accent_phrases` のオプション
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-struct VoicevoxAccentPhrasesOptions voicevox_make_default_accent_phrases_options(void);
-
-/**
- * `accent_phrases` を実行する
- * @param [in] text テキスト。文字コードはUTF-8
- * @param [in] speaker_id 話者ID
- * @param [in] options `accent_phrases`のオプション
- * @param [out] output_accent_phrases_json アクセント句の情報の配列を json でフォーマットしたもの
- * @return 結果コード #VoicevoxResultCode
+ * create_accent_phrases を実行する
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
+ * @param [in] text テキスト
+ * @param [in] style_id スタイルID #VoicevoxStyleId
+ * @param [in] output_accent_phrases_json アクセントフレーズのjson文字列
  *
  * # Safety
  * @param text null終端文字列であること
- * @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_accent_phrases_json_free で解放する必要がある
+ * @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_accent_phrases(const char *text,
-                                           uint32_t speaker_id,
-                                           struct VoicevoxAccentPhrasesOptions options,
-                                           char **output_accent_phrases_json);
+VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct VoicevoxSynthesizer *synthesizer,
+                                                              const char *text,
+                                                              VoicevoxStyleId style_id,
+                                                              struct VoicevoxAccentPhrasesOptions options,
+                                                              char **output_accent_phrases_json);
 
 /**
- *
- * アクセント句の音素長を変更する
- * @param [in] accent_phrases_json アクセント句の配列を json でフォーマットしたもの
- * @param [in] speaker_id 話者ID
- * @param [out] output_accent_phrases_json 音素長が変更されたアクセント句の情報の配列を json でフォーマットしたもの
- * @return 結果コード #VoicevoxResultCode
- *
- * # Safety
- * @param accent_phrases_json null終端文字列であること
- * @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_accent_phrases_json_free で解放する必要がある
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-VoicevoxResultCode voicevox_mora_length(const char *accent_phrases_json,
-                                        uint32_t speaker_id,
-                                        char **output_accent_phrases_json);
-
-/**
- * アクセント句の音高を変更する
- * @param [in] accent_phrases_json アクセント句の配列を json でフォーマットしたもの
- * @param [in] speaker_id 話者ID
- * @param [out] output_accent_phrases_json 音高が変更されたアクセント句の情報の配列を json でフォーマットしたもの
- * @return 結果コード #VoicevoxResultCode
+ * replace_mora_data を実行する
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
+ * @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
+ * @param [in] style_id スタイルID #VoicevoxStyleId
+ * @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
  *
  * # Safety
  * @param accent_phrases_json null終端文字列であること
- * @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_accent_phrases_json_free で解放する必要がある
+ * @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_mora_pitch(const char *accent_phrases_json,
-                                       uint32_t speaker_id,
-                                       char **output_accent_phrases_json);
+VoicevoxResultCode voicevox_synthesizer_replace_mora_data(const struct VoicevoxSynthesizer *synthesizer,
+                                                          const char *accent_phrases_json,
+                                                          VoicevoxStyleId style_id,
+                                                          char **output_accent_phrases_json);
 
 /**
- * アクセント句の音高・音素長を変更する
- * @param [in] accent_phrases_json アクセント句の配列を json でフォーマットしたもの
- * @param [in] speaker_id 話者ID
- * @param [out] output_accent_phrases_json 音高・音素長が変更されたアクセント句の情報の配列を json でフォーマットしたもの
- * @return 結果コード #VoicevoxResultCode
+ * replace_phoneme_length を実行する
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
+ * @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
+ * @param [in] style_id スタイルID #VoicevoxStyleId
+ * @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
  *
  * # Safety
  * @param accent_phrases_json null終端文字列であること
- * @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_accent_phrases_json_free で解放する必要がある
+ * @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_mora_data(const char *accent_phrases_json,
-                                      uint32_t speaker_id,
-                                      char **output_accent_phrases_json);
+VoicevoxResultCode voicevox_synthesizer_replace_phoneme_length(const struct VoicevoxSynthesizer *synthesizer,
+                                                               const char *accent_phrases_json,
+                                                               VoicevoxStyleId style_id,
+                                                               char **output_accent_phrases_json);
 
 /**
- * デフォルトの `voicevox_synthesis` のオプションを生成する
- * @return デフォルト値が設定された `voicevox_synthesis` のオプション
+ * replace_mora_pitch を実行する
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
+ * @param [in] accent_phrases_json 変換前のアクセントフレーズのjson文字列
+ * @param [in] style_id スタイルID #VoicevoxStyleId
+ * @param [in] output_accent_phrases_json 変換後のアクセントフレーズのjson文字列
+ *
+ * # Safety
+ * @param accent_phrases_json null終端文字列であること
+ * @param output_accent_phrases_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-struct VoicevoxSynthesisOptions voicevox_make_default_synthesis_options(void);
+VoicevoxResultCode voicevox_synthesizer_replace_mora_pitch(const struct VoicevoxSynthesizer *synthesizer,
+                                                           const char *accent_phrases_json,
+                                                           VoicevoxStyleId style_id,
+                                                           char **output_accent_phrases_json);
 
 /**
  * AudioQuery から音声合成する
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @param [in] audio_query_json jsonフォーマットされた AudioQuery
- * @param [in] speaker_id  話者ID
+ * @param [in] style_id スタイルID #VoicevoxStyleId
  * @param [in] options AudioQueryから音声合成オプション
  * @param [out] output_wav_length 出力する wav データのサイズ
  * @param [out] output_wav wav データの出力先
@@ -527,25 +533,18 @@ struct VoicevoxSynthesisOptions voicevox_make_default_synthesis_options(void);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_synthesis(const char *audio_query_json,
-                                      uint32_t speaker_id,
-                                      struct VoicevoxSynthesisOptions options,
-                                      uintptr_t *output_wav_length,
-                                      uint8_t **output_wav);
-
-/**
- * デフォルトのテキスト音声合成オプションを生成する
- * @return テキスト音声合成オプション
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
+VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesizer *synthesizer,
+                                                  const char *audio_query_json,
+                                                  VoicevoxStyleId style_id,
+                                                  struct VoicevoxSynthesisOptions options,
+                                                  uintptr_t *output_wav_length,
+                                                  uint8_t **output_wav);
 
 /**
  * テキスト音声合成を実行する
+ * @param [in] synthesizer 音声シンセサイザ #VoicevoxSynthesizer
  * @param [in] text テキスト。文字コードはUTF-8
- * @param [in] speaker_id 話者ID
+ * @param [in] style_id スタイルID #VoicevoxStyleId
  * @param [in] options テキスト音声合成オプション
  * @param [out] output_wav_length 出力する wav データのサイズ
  * @param [out] output_wav wav データの出力先
@@ -558,15 +557,16 @@ struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_tts(const char *text,
-                                uint32_t speaker_id,
-                                struct VoicevoxTtsOptions options,
-                                uintptr_t *output_wav_length,
-                                uint8_t **output_wav);
+VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *synthesizer,
+                                            const char *text,
+                                            VoicevoxStyleId style_id,
+                                            struct VoicevoxTtsOptions options,
+                                            uintptr_t *output_wav_length,
+                                            uint8_t **output_wav);
 
 /**
- * jsonフォーマットされた AudioQuery データのメモリを解放する
- * @param [in] audio_query_json 解放する json フォーマットされた AudioQuery データ
+ * jsonフォーマットされたデータのメモリを解放する
+ * @param [in] json 解放する json データ
  *
  * # Safety
  * @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
@@ -574,19 +574,7 @@ VoicevoxResultCode voicevox_tts(const char *text,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-void voicevox_audio_query_json_free(char *audio_query_json);
-
-/**
- * jsonフォーマットされた AccnetPhrase データのメモリを解放する
- * @param [in] accented_phrase_json 解放する json フォーマットされた AccnetPhrase データ
- *
- * # Safety
- * @param voicevox_accent_phrases で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-void voicevox_accent_phrases_json_free(char *accented_phrase_json);
+void voicevox_json_free(char *json);
 
 /**
  * wav データのメモリを解放する
