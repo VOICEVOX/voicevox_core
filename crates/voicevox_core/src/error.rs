@@ -5,7 +5,7 @@ use super::*;
 use std::path::PathBuf;
 use thiserror::Error;
 
-/// エラー。
+/// VOICEVOX COREのエラー。
 #[derive(Error, Debug)]
 pub enum Error {
     /*
