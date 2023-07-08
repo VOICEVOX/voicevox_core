@@ -98,6 +98,21 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     })())
 }
 
+/// OpenJtalkにユーザー辞書を読み込ませる
+/// @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
+/// @param [in] user_dict ユーザー辞書
+///
+/// # Safety
+/// @open_jtalk 有効な :OpenJtalkRc のポインタであること
+/// @user_dict 有効な :VoicevoxUserDict のポインタであること
+#[no_mangle]
+pub extern "C" fn voicevox_open_jtalk_rc_load_user_dictionary(
+    open_jtalk: &mut OpenJtalkRc,
+    user_dict: &VoicevoxUserDict,
+) -> VoicevoxResultCode {
+    todo!()
+}
+
 /// 参照カウントで管理されたOpenJtalkを削除する
 /// @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
 ///
