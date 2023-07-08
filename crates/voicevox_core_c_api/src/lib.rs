@@ -737,7 +737,7 @@ pub enum VoicevoxUserDictWordType {
 #[no_mangle]
 pub extern "C" fn voicevox_dict_new(
     dict_path: *const c_char,
-    user_dict: NonNull<*mut UserDict>,
+    user_dict: NonNull<*mut VoicevoxUserDict>,
 ) -> VoicevoxResultCode {
     todo!()
 }

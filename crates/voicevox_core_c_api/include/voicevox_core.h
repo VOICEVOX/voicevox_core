@@ -131,8 +131,6 @@ typedef int32_t VoicevoxResultCode;
  */
 typedef struct OpenJtalkRc OpenJtalkRc;
 
-typedef struct UserDict UserDict;
-
 typedef struct VoicevoxSynthesizer VoicevoxSynthesizer;
 
 /**
@@ -636,7 +634,7 @@ const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
 __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_dict_new(const char *dict_path,
-                                     struct UserDict **user_dict);
+                                     struct VoicevoxUserDict **user_dict);
 
 /**
  * ユーザー辞書に単語を追加する
