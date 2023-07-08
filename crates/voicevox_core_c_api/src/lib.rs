@@ -847,7 +847,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// ## Safety
 ///
 /// - `json`は以下のAPIで得られたポインタでなくてはいけない。
-///     -
+///     - ::voicevox_create_supported_devices_json
+///     - ::voicevox_synthesizer_audio_query
+///     - ::voicevox_synthesizer_create_accent_phrases
+///     - ::voicevox_synthesizer_replace_mora_data
+///     - ::voicevox_synthesizer_replace_phoneme_length
+///     - ::voicevox_synthesizer_replace_mora_pitch
 /// - 文字列の長さは生成時より変更されていてはならない。
 /// - `json`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
 /// - `json`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
