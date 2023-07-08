@@ -152,13 +152,15 @@ typedef int32_t VoicevoxResultCode;
  *
  * コンストラクトは ::voicevox_open_jtalk_rc_new で行い、デストラクトは ::voicevox_open_jtalk_rc_delete で行う。
  *
- * 参照カウント方式のスマートポインタ (reference-counted smart pointer)
+ * 参照カウント方式のスマートポインタ(reference-counted smart pointer)であり、
+ * ::voicevox_synthesizer_new_with_initialize に渡されるときには参照カウンタがインクリメントされる形でオブジェクトの共有が行われる。
  *
  * ## Example
  *
  * ```c
  * OpenJtalkRc *open_jtalk;
  * voicevox_open_jtalk_rc_new("./open_jtalk_dic_utf_8-1.11", &open_jtalk);
+ * // ⋮
  * voicevox_open_jtalk_rc_delete(open_jtalk);
  * ```
  */
