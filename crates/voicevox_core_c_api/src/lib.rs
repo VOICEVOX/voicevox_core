@@ -799,7 +799,7 @@ pub extern "C" fn voicevox_dict_delete_word(
 /// @param [out] json JSON形式の文字列
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
-pub extern "C" fn voicevox_dict_export_json(
+pub extern "C" fn voicevox_dict_get_words_json(
     user_dict: &VoicevoxUserDict,
     json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
