@@ -9,6 +9,7 @@ mod publish;
 mod result;
 pub mod result_code;
 mod status;
+mod user_dict;
 
 pub use self::publish::*;
 

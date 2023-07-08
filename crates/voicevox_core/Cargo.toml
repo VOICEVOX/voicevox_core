@@ -22,6 +22,7 @@ serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+uuid = { version = "1.4.0", features = ["v4"] }
 
 [dependencies.onnxruntime]
 git = "https://github.com/VOICEVOX/onnxruntime-rs.git"

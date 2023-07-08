@@ -66,6 +66,9 @@ pub enum Error {
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_PARSE_KANA_ERROR))]
     ParseKana(#[from] KanaParseError),
+
+    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_INVALID_DICT_STORE_ERROR))]
+    InvalidDictStore
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
