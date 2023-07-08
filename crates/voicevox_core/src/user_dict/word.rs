@@ -1,6 +1,7 @@
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
+/// ユーザー辞書の単語。
 #[derive(Clone, Debug, Getters, Serialize, Deserialize)]
 pub struct UserDictWord {
     surface: String,
@@ -10,12 +11,18 @@ pub struct UserDictWord {
     priority: i32,
 }
 
+/// ユーザー辞書の単語の種類。
 #[derive(Clone, Debug, PartialEq)]
 pub enum UserDictWordType {
+    /// 固有名詞。
     ProperNoun,
+    /// 一般名詞。
     CommonNoun,
+    /// 動詞。
     Verb,
+    /// 形容詞。
     Adjective,
+    /// 接尾辞。
     Suffix,
 }
 
@@ -59,16 +66,25 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    fn serialize_works() {
-        let word_type = super::UserDictWordType::ProperNoun;
+    #[case(crate::UserDictWordType::ProperNoun, "PROPER_NOUN")]
+    #[case(crate::UserDictWordType::CommonNoun, "COMMON_NOUN")]
+    #[case(crate::UserDictWordType::Verb, "VERB")]
+    #[case(crate::UserDictWordType::Adjective, "ADJECTIVE")]
+    #[case(crate::UserDictWordType::Suffix, "SUFFIX")]
+    fn serialize_works(#[case] word_type: super::UserDictWordType, #[case] expected: &str) {
         let serialized = serde_json::to_string(&word_type).unwrap();
-        assert_eq!(serialized, "\"PROPER_NOUN\"");
+        assert_eq!(serialized, format!("\"{}\"", expected));
     }
 
     #[rstest]
-    fn deserialize_works() {
-        let serialized = "\"PROPER_NOUN\"";
-        let word_type: super::UserDictWordType = serde_json::from_str(serialized).unwrap();
-        assert_eq!(word_type, super::UserDictWordType::ProperNoun);
+    #[case("PROPER_NOUN", crate::UserDictWordType::ProperNoun)]
+    #[case("COMMON_NOUN", crate::UserDictWordType::CommonNoun)]
+    #[case("VERB", crate::UserDictWordType::Verb)]
+    #[case("ADJECTIVE", crate::UserDictWordType::Adjective)]
+    #[case("SUFFIX", crate::UserDictWordType::Suffix)]
+    fn deserialize_works(#[case] serialized: &str, #[case] expected: super::UserDictWordType) {
+        let word_type: super::UserDictWordType =
+            serde_json::from_str(format!("\"{}\"", serialized).as_str()).unwrap();
+        assert_eq!(word_type, expected);
     }
 }

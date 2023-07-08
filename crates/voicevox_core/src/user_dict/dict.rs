@@ -1,5 +1,5 @@
 use derive_getters::Getters;
-use std::{collections::HashMap, fs::File, io::Write};
+use std::{collections::HashMap, fs::File};
 use uuid::Uuid;
 
 use super::word::*;
