@@ -802,7 +802,7 @@ pub static voicevox_default_tts_options: VoicevoxTtsOptions = ConstDefault::DEFA
 
 /// テキスト音声合成を行う。
 ///
-/// 生成したwavを解放するには ::voicevox_wav_free を使う。
+/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
 ///
 /// @param [in] synthesizer
 /// @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
