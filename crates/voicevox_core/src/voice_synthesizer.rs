@@ -291,7 +291,7 @@ impl Synthesizer {
             .await
     }
 
-    /// AccentPhrase (アクセント句)の列を生成する。
+    /// AccentPhrase (アクセント句)の配列を生成する。
     ///
     /// `text`は[`options.kana`]が有効化されているときにはAquesTalk形式のkanaとして、そうでないと
     /// きには日本語のテキストとして解釈される。
@@ -409,7 +409,7 @@ impl Synthesizer {
         }
     }
 
-    /// AccentPhraseの列の音高・音素長を、特定の声で生成しなおす。
+    /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
     pub async fn replace_mora_data(
         &self,
         accent_phrases: &[AccentPhraseModel],
@@ -420,7 +420,7 @@ impl Synthesizer {
             .await
     }
 
-    /// AccentPhraseの列の音素長を、特定の声で生成しなおす。
+    /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
     pub async fn replace_phoneme_length(
         &self,
         accent_phrases: &[AccentPhraseModel],
@@ -431,7 +431,7 @@ impl Synthesizer {
             .await
     }
 
-    /// AccentPhraseの列の音高を、特定の声で生成しなおす。
+    /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
     pub async fn replace_mora_pitch(
         &self,
         accent_phrases: &[AccentPhraseModel],

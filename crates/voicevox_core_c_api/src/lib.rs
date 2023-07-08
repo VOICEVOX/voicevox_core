@@ -548,7 +548,7 @@ pub struct VoicevoxAccentPhrasesOptions {
 pub static voicevox_default_accent_phrases_options: VoicevoxAccentPhrasesOptions =
     ConstDefault::DEFAULT;
 
-/// AccentPhrase (アクセント句)の列をJSON形式で生成する。
+/// AccentPhrase (アクセント句)の配列をJSON形式で生成する。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
@@ -609,12 +609,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     })())
 }
 
-/// AccentPhraseの列の音高・音素長を、特定の声で生成しなおす。
+/// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
-/// @param [in] accent_phrases_json AccentPhraseの列のJSON文字列
+/// @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
 /// @param [in] style_id スタイルID
 /// @param [out] output_accent_phrases_json 生成先
 ///
@@ -650,12 +650,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     })())
 }
 
-/// AccentPhraseの列の音素長を、特定の声で生成しなおす。
+/// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
-/// @param [in] accent_phrases_json AccentPhraseの列のJSON文字列
+/// @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
 /// @param [in] style_id スタイルID
 /// @param [out] output_accent_phrases_json 生成先
 ///
@@ -691,12 +691,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
     })())
 }
 
-/// AccentPhraseの列の音高を、特定の声で生成しなおす。
+/// AccentPhraseの配列の音高を、特定の声で生成しなおす。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
-/// @param [in] accent_phrases_json AccentPhraseの列のJSON文字列
+/// @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
 /// @param [in] style_id スタイルID
 /// @param [out] output_accent_phrases_json 生成先
 ///

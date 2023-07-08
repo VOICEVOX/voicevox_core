@@ -106,7 +106,7 @@ class AccentPhrase:
     """AccentPhrase (アクセント句ごとの情報)。"""
 
     moras: List[Mora]
-    """モーラの列。"""
+    """モーラの配列。"""
 
     accent: int
     """アクセント箇所。"""
@@ -123,7 +123,7 @@ class AudioQuery:
     """AudioQuery (音声合成用のクエリ)。"""
 
     accent_phrases: List[AccentPhrase]
-    """アクセント句の列。"""
+    """アクセント句の配列。"""
 
     speed_scale: float
     """全体の話速。"""

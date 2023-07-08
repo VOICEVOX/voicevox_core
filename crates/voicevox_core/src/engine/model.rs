@@ -24,7 +24,7 @@ pub struct MoraModel {
 /// AccentPhrase (アクセント句ごとの情報)。
 #[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
 pub struct AccentPhraseModel {
-    /// モーラの列。
+    /// モーラの配列。
     moras: Vec<MoraModel>,
     /// アクセント箇所。
     accent: usize,
@@ -49,7 +49,7 @@ impl AccentPhraseModel {
 #[allow(clippy::too_many_arguments)]
 #[derive(Clone, new, Getters, Deserialize, Serialize)]
 pub struct AudioQueryModel {
-    /// アクセント句の列。
+    /// アクセント句の配列。
     accent_phrases: Vec<AccentPhraseModel>,
     /// 全体の話速。
     speed_scale: f32,

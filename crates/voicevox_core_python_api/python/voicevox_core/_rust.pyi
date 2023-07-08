@@ -132,13 +132,13 @@ class Synthesizer:
         kana: bool = False,
     ) -> List[AccentPhrase]:
         """
-        AccentPhrase (アクセント句)の列を生成する。
+        AccentPhrase (アクセント句)の配列を生成する。
 
         :param text: UTF-8の日本語テキストまたはAquesTalk形式のkana。
         :param style_id: スタイルID。
         :param kana: ``text`` をAquesTalk形式のkanaとして解釈する。
 
-        :returns: :class:`AccentPhrase` の列。
+        :returns: :class:`AccentPhrase` の配列。
         """
         ...
     async def replace_mora_data(
