@@ -712,6 +712,7 @@ pub struct VoicevoxUserDict {
     dict: Arc<voicevox_core::UserDict>,
 }
 
+/// ユーザー辞書の単語
 pub struct VoicevoxUserDictWord {
     surface: *const c_char,
     pronunciation: *const c_char,
@@ -720,13 +721,19 @@ pub struct VoicevoxUserDictWord {
     priority: i32,
 }
 
+/// ユーザー辞書の単語の種類
 #[repr(i32)]
 #[allow(non_camel_case_types)]
 pub enum VoicevoxUserDictWordType {
+    /// 固有名詞。
     VOICEVOX_PROPER_NOUN = 0,
+    /// 一般名詞。
     VOICEVOX_COMMON_NOUN = 1,
+    /// 動詞。
     VOICEVOX_VERB = 2,
+    /// 形容詞。
     VOICEVOX_ADJECTIVE = 3,
+    /// 接尾辞。
     VOICEVOX_SUFFIX = 4,
 }
 
