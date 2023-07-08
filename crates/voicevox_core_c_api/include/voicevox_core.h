@@ -118,9 +118,17 @@ enum VoicevoxResultCode
    */
   VOICEVOX_UNLOADED_MODEL_ERROR = 19,
   /**
-   * 無効な辞書ファイルが指定された
+   * 辞書を読み込めなかった
    */
-  VOICEVOX_RESULT_INVALID_DICT_FILE_ERROR = 20,
+  VOICEVOX_USER_DICT_READ_ERROR = 20,
+  /**
+   * 辞書を書き込めなかった
+   */
+  VOICEVOX_USER_DICT_WRITE_ERROR = 21,
+  /**
+   * 辞書に単語が見つからなかった
+   */
+  VOICEVOX_WORD_NOT_FOUND_ERROR = 22,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
@@ -138,6 +146,9 @@ typedef struct VoicevoxSynthesizer VoicevoxSynthesizer;
  */
 typedef struct VoicevoxUserDict VoicevoxUserDict;
 
+/**
+ * ユーザー辞書の単語
+ */
 typedef struct VoicevoxUserDictWord VoicevoxUserDictWord;
 
 /**
@@ -627,20 +638,24 @@ const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
 /**
  * ユーザー辞書をロードまたは新規作成する
  * @param [in] dict_path ユーザー辞書のパス
- * @param [out] user_dict VoicevoxUserDictのポインタ
+ * @param [out] out_user_dict VoicevoxUserDictのポインタ
  * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param dict_path パスが有効な文字列を指していること
+ * @param user_dict VoicevoxUserDictのポインタが有効な領域を指していること
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_dict_new(const char *dict_path,
-                                     struct VoicevoxUserDict **user_dict);
+                                     struct VoicevoxUserDict **out_user_dict);
 
 /**
  * ユーザー辞書に単語を追加する
  * @param [in] user_dict VoicevoxUserDictのポインタ
  * @param [in] word 追加する単語
- * @param [out] word_uuid 追加した単語のUUID
+ * @param [out] out_word_uuid 追加した単語のUUID
  * @return 結果コード #VoicevoxResultCode
  *
  * # Safety
@@ -653,14 +668,13 @@ __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_dict_add_word(const struct VoicevoxUserDict *user_dict,
                                           const struct VoicevoxUserDictWord *word,
-                                          uint8_t **word_uuid);
+                                          char **out_word_uuid);
 
 /**
  * ユーザー辞書の単語を更新する
  * @param [in] user_dict VoicevoxUserDictのポインタ
  * @param [in] word_uuid 更新する単語のUUID
  * @param [in] word 新しい単語のデータ
- * @param [out] altered 単語が更新されたかどうか
  * @return 結果コード #VoicevoxResultCode
  *
  * # Safety
@@ -671,22 +685,19 @@ __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_dict_alter_word(const struct VoicevoxUserDict *user_dict,
                                             const uint8_t *word_uuid,
-                                            struct VoicevoxUserDictWord **word,
-                                            bool **altered);
+                                            const struct VoicevoxUserDictWord *word);
 
 /**
  * ユーザー辞書から単語を削除する
  * @param [in] user_dict VoicevoxUserDictのポインタ
  * @param [in] word_uuid 削除する単語のUUID
- * @param [out] deleted 単語が削除されたかどうか
  * @return 結果コード #VoicevoxResultCode
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_dict_delete_word(const struct VoicevoxUserDict *user_dict,
-                                             const uint8_t *word_uuid,
-                                             bool **deleted);
+VoicevoxResultCode voicevox_dict_remove_word(const struct VoicevoxUserDict *user_dict,
+                                             const uint8_t *word_uuid);
 
 /**
  * ユーザー辞書の単語をJSON形式で出力する
@@ -697,8 +708,20 @@ VoicevoxResultCode voicevox_dict_delete_word(const struct VoicevoxUserDict *user
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_dict_export_json(const struct VoicevoxUserDict *user_dict,
-                                             char **json);
+VoicevoxResultCode voicevox_dict_get_words_json(const struct VoicevoxUserDict *user_dict,
+                                                char **json);
+
+/**
+ * 2つのユーザー辞書をマージする
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ * @param [in] other_dict マージするユーザー辞書のポインタ
+ * @return 結果コード #VoicevoxResultCode
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_dict_merge(const struct VoicevoxUserDict *user_dict,
+                                       const struct VoicevoxUserDict *other_dict);
 
 #ifdef __cplusplus
 } // extern "C"

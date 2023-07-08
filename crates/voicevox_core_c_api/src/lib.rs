@@ -824,11 +824,19 @@ pub unsafe extern "C" fn voicevox_dict_alter_word(
 /// @param [in] word_uuid 削除する単語のUUID
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
-pub extern "C" fn voicevox_dict_delete_word(
+pub extern "C" fn voicevox_dict_remove_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: *const u8,
 ) -> VoicevoxResultCode {
-    todo!()
+    into_result_code_with_error((|| {
+        let word_uuid = ensure_utf8(unsafe { CStr::from_ptr(word_uuid as *const c_char) })?;
+        {
+            let mut dict = user_dict.dict.lock().expect("lock failed");
+            dict.remove_word(word_uuid)?;
+        };
+
+        Ok(())
+    })())
 }
 
 /// ユーザー辞書の単語をJSON形式で出力する

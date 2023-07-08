@@ -88,6 +88,9 @@ pub enum Error {
 
     #[error("{},{0}", base_error_message(VOICEVOX_USER_DICT_WRITE_ERROR))]
     UserDictWrite,
+
+    #[error("{},{0}", base_error_message(VOICEVOX_WORD_NOT_FOUND_ERROR))]
+    WordNotFound,
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
