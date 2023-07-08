@@ -861,9 +861,9 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
     drop(CString::from_raw(C_STRING_DROP_CHECKER.check(json)));
 }
 
-/// wavデータを解放する。
+/// WAVデータを解放する。
 ///
-/// @param [in] wav 解放するwavデータ
+/// @param [in] wav 解放するWAVデータ
 ///
 /// ## Safety
 ///
