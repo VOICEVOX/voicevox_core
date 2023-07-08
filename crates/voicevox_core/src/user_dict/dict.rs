@@ -13,18 +13,14 @@ pub struct UserDict {
 
 impl UserDict {
     pub fn new(store_path: &str) -> Result<Self> {
-        let store_file = File::open(store_path).map_err(|_| Error::InvalidDictStore)?;
+        let store_file = File::open(store_path).map_err(|_| Error::InvalidDictFile)?;
         let words: HashMap<String, UserDictWord> =
-            serde_json::from_reader(store_file).map_err(|_| Error::InvalidDictStore)?;
+            serde_json::from_reader(store_file).map_err(|_| Error::InvalidDictFile)?;
 
         Ok(Self {
             store_path: store_path.to_string(),
             words,
         })
-    }
-
-    pub fn to_json(&self) -> Result<String> {
-        serde_json::to_string(&self.words).map_err(|_| Error::InvalidDictStore)
     }
 
     pub fn add_word(&mut self, word: UserDictWord) -> String {

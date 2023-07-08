@@ -670,6 +670,8 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
         }
         VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR => "無効なaudio_queryです\0",
         VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR => "無効なaccent_phraseです\0",
+
+        VOICEVOX_RESULT_INVALID_DICT_FILE_ERROR => "無効な辞書ファイルです\0",
     }
 }
 

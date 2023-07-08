@@ -36,5 +36,5 @@ pub enum VoicevoxResultCode {
     /// 無効なAccentPhrase
     VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR = 14,
     /// 無効な辞書ファイル
-    VOICEVOX_RESULT_INVALID_DICT_STORE_ERROR = 15,
+    VOICEVOX_RESULT_INVALID_DICT_FILE_ERROR = 15,
 }

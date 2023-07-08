@@ -10,7 +10,7 @@ pub struct UserDictWord {
     priority: i32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum UserDictWordType {
     ProperNoun,
     CommonNoun,
@@ -51,5 +51,24 @@ impl<'de> Deserialize<'de> for UserDictWordType {
                 s
             ))),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    #[rstest]
+    fn serialize_works() {
+        let word_type = super::UserDictWordType::ProperNoun;
+        let serialized = serde_json::to_string(&word_type).unwrap();
+        assert_eq!(serialized, "\"PROPER_NOUN\"");
+    }
+
+    #[rstest]
+    fn deserialize_works() {
+        let serialized = "\"PROPER_NOUN\"";
+        let word_type: super::UserDictWordType = serde_json::from_str(serialized).unwrap();
+        assert_eq!(word_type, super::UserDictWordType::ProperNoun);
     }
 }
