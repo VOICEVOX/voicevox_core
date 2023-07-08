@@ -715,7 +715,7 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_pitch(const struct Voicevox
 /**
  * AudioQueryから音声合成を行う。
  *
- * 生成したwavを解放するには ::voicevox_wav_free を使う。
+ * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] audio_query_json AudioQueryのJSON文字列
@@ -746,7 +746,7 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
 /**
  * テキスト音声合成を行う。
  *
- * 生成したwavを解放するには ::voicevox_wav_free を使う。
+ * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
  *
  * @param [in] synthesizer
  * @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
@@ -798,9 +798,9 @@ __declspec(dllimport)
 void voicevox_json_free(char *json);
 
 /**
- * wavデータを解放する。
+ * WAVデータを解放する。
  *
- * @param [in] wav 解放するwavデータ
+ * @param [in] wav 解放するWAVデータ
  *
  * ## Safety
  *
