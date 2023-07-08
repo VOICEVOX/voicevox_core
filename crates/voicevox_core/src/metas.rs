@@ -11,7 +11,7 @@ pub type RawStyleId = u32;
 
 /// スタイルID。
 ///
-/// VOICEVOXにおける、ある[話者(speaker)]のある[スタイル(style)] (i.e. 声(voice))を指す。
+/// VOICEVOXにおける、ある[話者(speaker)]のある[スタイル(style)]を指す。
 ///
 /// [話者(speaker)]: SpeakerMeta
 /// [スタイル(style)]: StyleMeta
