@@ -476,6 +476,8 @@ pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = Con
 
 /// AudioQueryをJSONとして生成する。
 ///
+/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
 /// @param [in] style_id スタイルID
