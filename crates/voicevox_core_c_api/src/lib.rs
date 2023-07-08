@@ -745,7 +745,7 @@ pub static voicevox_default_synthesis_options: VoicevoxSynthesisOptions = ConstD
 
 /// AudioQueryから音声合成を行う。
 ///
-/// 生成したwavを解放するには ::voicevox_wav_free を使う。
+/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] audio_query_json AudioQueryのJSON文字列
