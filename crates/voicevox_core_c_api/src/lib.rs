@@ -802,12 +802,21 @@ pub unsafe extern "C" fn voicevox_dict_add_word(
 /// # Safety
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
 #[no_mangle]
-pub extern "C" fn voicevox_dict_alter_word(
+pub unsafe extern "C" fn voicevox_dict_alter_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: *const u8,
-    word: NonNull<*mut VoicevoxUserDictWord>,
+    word: &VoicevoxUserDictWord,
 ) -> VoicevoxResultCode {
-    todo!()
+    into_result_code_with_error((|| {
+        let word_uuid = ensure_utf8(unsafe { CStr::from_ptr(word_uuid as *const c_char) })?;
+        let word = word.to_word()?;
+        {
+            let mut dict = user_dict.dict.lock().expect("lock failed");
+            dict.alter_word(word_uuid, word)?;
+        };
+
+        Ok(())
+    })())
 }
 
 /// ユーザー辞書から単語を削除する

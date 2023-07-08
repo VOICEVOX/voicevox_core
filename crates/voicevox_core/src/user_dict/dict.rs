@@ -44,6 +44,13 @@ impl UserDict {
         Ok(word_uuid)
     }
 
+    /// ユーザー辞書の単語を変更する。
+    pub fn alter_word(&mut self, word_uuid: &str, new_word: UserDictWord) -> Result<()> {
+        self.words.insert(word_uuid.to_string(), new_word);
+        self.save()?;
+        Ok(())
+    }
+
     /// ユーザー辞書から単語を削除する。
     pub fn remove_word(&mut self, word_uuid: &str) -> Result<Option<UserDictWord>> {
         let word = self.words.remove(word_uuid);
