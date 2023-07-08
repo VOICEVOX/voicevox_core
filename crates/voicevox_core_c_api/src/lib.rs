@@ -746,7 +746,10 @@ pub extern "C" fn voicevox_dict_new(
     dict_path: *const c_char,
     user_dict: NonNull<*mut VoicevoxUserDict>,
 ) -> VoicevoxResultCode {
-    todo!()
+    into_result_code_with_error(|| {
+        let dict_path = ensure_utf8(unsafe { CStr::from_ptr(dict_path) })?;
+        let dict = voicevox_core::UserDict::new(dict_path)?;
+    })
 }
 
 /// ユーザー辞書に単語を追加する
