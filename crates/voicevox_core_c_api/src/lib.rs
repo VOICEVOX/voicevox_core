@@ -841,14 +841,20 @@ pub extern "C" fn voicevox_dict_remove_word(
 
 /// ユーザー辞書の単語をJSON形式で出力する
 /// @param [in] user_dict VoicevoxUserDictのポインタ
-/// @param [out] json JSON形式の文字列
+/// @param [out] out_json JSON形式の文字列
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
-pub extern "C" fn voicevox_dict_get_words_json(
+pub unsafe extern "C" fn voicevox_dict_get_words_json(
     user_dict: &VoicevoxUserDict,
-    json: NonNull<*mut c_char>,
+    out_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    todo!()
+    let dict = user_dict.dict.lock().expect("lock failed");
+    let json = serde_json::to_string(&dict.words()).expect("should be always valid");
+    let json = CString::new(json).expect("\\0を含まない文字列であることが保証されている");
+    out_json
+        .as_ptr()
+        .write_unaligned(C_STRING_DROP_CHECKER.whitelist(json).into_raw());
+    VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 
 /// 2つのユーザー辞書をマージする
