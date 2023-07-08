@@ -709,7 +709,7 @@ pub extern "C" fn voicevox_error_result_to_message(
 
 /// ユーザー辞書
 pub struct VoicevoxUserDict {
-    dict: Arc<voicevox_core::UserDict>,
+    dict: Arc<Mutex<voicevox_core::UserDict>>,
 }
 
 /// ユーザー辞書の単語
@@ -739,23 +739,33 @@ pub enum VoicevoxUserDictWordType {
 
 /// ユーザー辞書をロードまたは新規作成する
 /// @param [in] dict_path ユーザー辞書のパス
-/// @param [out] user_dict VoicevoxUserDictのポインタ
+/// @param [out] out_user_dict VoicevoxUserDictのポインタ
 /// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param dict_path パスが有効な文字列を指していること
+/// @param user_dict VoicevoxUserDictのポインタが有効な領域を指していること
 #[no_mangle]
-pub extern "C" fn voicevox_dict_new(
+pub unsafe extern "C" fn voicevox_dict_new(
     dict_path: *const c_char,
-    user_dict: NonNull<*mut VoicevoxUserDict>,
+    out_user_dict: NonNull<Box<VoicevoxUserDict>>,
 ) -> VoicevoxResultCode {
-    into_result_code_with_error(|| {
+    into_result_code_with_error((|| {
         let dict_path = ensure_utf8(unsafe { CStr::from_ptr(dict_path) })?;
         let dict = voicevox_core::UserDict::new(dict_path)?;
-    })
+        let user_dict = Box::new(VoicevoxUserDict {
+            dict: Arc::new(Mutex::new(dict)),
+        });
+        out_user_dict.as_ptr().write(user_dict);
+
+        Ok(())
+    })())
 }
 
 /// ユーザー辞書に単語を追加する
 /// @param [in] user_dict VoicevoxUserDictのポインタ
 /// @param [in] word 追加する単語
-/// @param [out] word_uuid 追加した単語のUUID
+/// @param [out] out_word_uuid 追加した単語のUUID
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
@@ -763,12 +773,24 @@ pub extern "C" fn voicevox_dict_new(
 /// @param word_uuid は呼び出し側で解放する必要がある
 ///
 #[no_mangle]
-pub extern "C" fn voicevox_dict_add_word(
+pub unsafe extern "C" fn voicevox_dict_add_word(
     user_dict: &VoicevoxUserDict,
     word: &VoicevoxUserDictWord,
-    word_uuid: NonNull<*mut u8>,
+    out_word_uuid: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    todo!()
+    into_result_code_with_error((|| {
+        let word = word.to_word()?;
+        let uuid = {
+            let mut dict = user_dict.dict.lock().expect("lock failed");
+            dict.add_word(word)?
+        };
+        let uuid = CString::new(uuid).expect("\\0を含まない文字列であることが保証されている");
+        out_word_uuid
+            .as_ptr()
+            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(uuid).into_raw());
+
+        Ok(())
+    })())
 }
 
 /// ユーザー辞書の単語を更新する

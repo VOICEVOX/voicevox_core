@@ -4,10 +4,15 @@ use serde::{Deserialize, Serialize};
 /// ユーザー辞書の単語。
 #[derive(Clone, Debug, Getters, Serialize, Deserialize)]
 pub struct UserDictWord {
+    /// 単語の表記。
     surface: String,
+    /// 単語の読み。
     pronunciation: String,
+    /// アクセントの位置。
     accent_type: i32,
+    /// 単語の種類。
     word_type: UserDictWordType,
+    /// 単語の優先度。
     priority: i32,
 }
 
