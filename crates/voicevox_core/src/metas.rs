@@ -59,13 +59,10 @@ pub type VoiceModelMeta = Vec<SpeakerMeta>;
 pub struct SpeakerMeta {
     /// 話者名。
     name: String,
-
     /// 話者に属するスタイル。
     styles: Vec<StyleMeta>,
-
     /// 話者のバージョン。
     version: StyleVersion,
-
     /// 話者のUUID。
     speaker_uuid: String,
 }
