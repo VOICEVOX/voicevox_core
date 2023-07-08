@@ -802,6 +802,18 @@ pub extern "C" fn voicevox_dict_get_words_json(
     todo!()
 }
 
+/// 2つのユーザー辞書をマージする
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] other_dict マージするユーザー辞書のポインタ
+/// @return 結果コード #VoicevoxResultCode
+#[no_mangle]
+pub extern "C" fn voicevox_dict_merge(
+    user_dict: &VoicevoxUserDict,
+    other_dict: &VoicevoxUserDict,
+) -> VoicevoxResultCode {
+    todo!()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
