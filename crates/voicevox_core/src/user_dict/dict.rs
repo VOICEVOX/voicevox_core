@@ -14,7 +14,7 @@ pub struct UserDict {
 impl UserDict {
     pub fn new(store_path: &str) -> Result<Self> {
         if std::path::Path::new(store_path).exists() {
-            let store_file = File::open(store_path).map_err(|_| Error::InvalidDictFile)?;
+            let mut store_file = File::open(store_path).map_err(|_| Error::InvalidDictFile)?;
             let words: HashMap<String, UserDictWord> =
                 serde_json::from_reader(store_file).map_err(|_| Error::InvalidDictFile)?;
             serde_json::to_writer(&mut store_file, &words).map_err(|_| Error::InvalidDictFile)?;
