@@ -161,7 +161,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(global_info);
+static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(user_dict);
 
 #[derive(Deserialize)]
 struct Snapshots {
