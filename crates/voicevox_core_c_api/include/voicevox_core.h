@@ -270,7 +270,7 @@ typedef struct VoicevoxUserDictWord {
    */
   const char *pronunciation;
   /**
-   * アクセントの位置
+   * アクセント型
    */
   int32_t accent_type;
   /**
@@ -690,6 +690,14 @@ __declspec(dllimport)
 const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
 
 /**
+ * ユーザー辞書の単語のデフォルト値
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxUserDictWord voicevox_default_user_dict_word(void);
+
+/**
  * ユーザー辞書をロードまたは新規作成する
  * @param [in] dict_path ユーザー辞書のパス
  * @param [out] out_user_dict VoicevoxUserDictのポインタ
@@ -737,9 +745,9 @@ VoicevoxResultCode voicevox_dict_add_word(const struct VoicevoxUserDict *user_di
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_dict_alter_word(const struct VoicevoxUserDict *user_dict,
-                                            const uint8_t *word_uuid,
-                                            const struct VoicevoxUserDictWord *word);
+VoicevoxResultCode voicevox_dict_update_word(const struct VoicevoxUserDict *user_dict,
+                                             const uint8_t *word_uuid,
+                                             const struct VoicevoxUserDictWord *word);
 
 /**
  * ユーザー辞書から単語を削除する
@@ -758,6 +766,9 @@ VoicevoxResultCode voicevox_dict_remove_word(const struct VoicevoxUserDict *user
  * @param [in] user_dict VoicevoxUserDictのポインタ
  * @param [out] out_json JSON形式の文字列
  * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param user_dict は有効な :VoicevoxUserDict のポインタであること
  */
 #ifdef _WIN32
 __declspec(dllimport)
