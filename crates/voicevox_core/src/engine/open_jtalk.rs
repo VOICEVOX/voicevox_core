@@ -65,6 +65,8 @@ impl OpenJtalk {
             .as_ref()
             .and_then(|dict_dir| dict_dir.to_str())
             .ok_or(Error::NotLoadedOpenjtalkDict)?;
+
+        // ユーザー辞書用のcsvを作成
         let mut temp_csv = NamedTempFile::new().map_err(|e| Error::UserDictLoad(e.to_string()))?;
         temp_csv
             .write_all(user_dict.to_mecab_format().as_bytes())
