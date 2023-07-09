@@ -10,11 +10,11 @@ pub struct UserDictWord {
     /// 単語の読み。
     pub pronunciation: String,
     /// アクセント型。
-    pub accent_type: i32,
+    pub accent_type: usize,
     /// 単語の種類。
     pub word_type: UserDictWordType,
     /// 単語の優先度。
-    pub priority: i32,
+    pub priority: u32,
 }
 
 /// ユーザー辞書の単語の種類。
