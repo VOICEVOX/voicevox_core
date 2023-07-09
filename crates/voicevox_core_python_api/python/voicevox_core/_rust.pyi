@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Final, List, Literal, Union
+from typing import Dict, Final, List, Literal, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -9,6 +9,7 @@ from voicevox_core import (
     AudioQuery,
     SpeakerMeta,
     SupportedDevices,
+    UserDictWord,
 )
 
 __version__: str
@@ -243,5 +244,73 @@ class Synthesizer:
             aquestalk形式のkanaとしてテキストを解釈する。
         enable_interrogative_upspeak
             疑問文の調整を有効にする。
+        """
+        ...
+
+class UserDict:
+    """ユーザー辞書。
+
+    Attributes
+    ----------
+    words
+        エントリーのリスト。
+    """
+
+    words: Dict[str, UserDictWord]
+    def __init__(self, store_path: str) -> None:
+        """ユーザー辞書を読み込み、または新規作成する。
+
+        store_path に指定したファイルが存在しない場合、新規作成される。
+        store_path に指定したファイルが存在する場合、そのファイルを読み込む。
+        もし、ファイルが存在するが、ユーザー辞書のJSONとして不正な場合、
+        例外が発生する。ただし、ファイルが空の場合は、空のユーザー辞書として
+        読み込まれる。
+
+        Parameters
+        ----------
+        store_path
+            ユーザー辞書のパス。
+        """
+        ...
+    def add_word(self, word: UserDictWord) -> str:
+        """単語を追加する。
+
+        Parameters
+        ----------
+        word
+            追加する単語。
+
+        Returns
+        -------
+        単語のUUID。
+        """
+        ...
+    def update_word(self, word_uuid: str, word: UserDictWord) -> None:
+        """単語を更新する。
+
+        Parameters
+        ----------
+        word_uuid
+            更新する単語のUUID。
+        word
+            新しい単語のデータ。
+        """
+        ...
+    def remove_word(self, word: UserDictWord) -> None:
+        """単語を削除する。
+
+        Parameters
+        ----------
+        word
+            削除する単語。
+        """
+        ...
+    def merge(self, other: UserDict) -> None:
+        """2つのユーザー辞書をマージする。
+
+        Parameters
+        ----------
+        other
+            マージするユーザー辞書。
         """
         ...

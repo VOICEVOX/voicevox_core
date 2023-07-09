@@ -23,7 +23,7 @@ use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use voicevox_core::{
     AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, VoiceModel,
-    VoiceModelId,
+    VoiceModelId, UserDictWord,
 };
 use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions, Synthesizer};
 
@@ -757,9 +757,9 @@ pub extern "C" fn voicevox_default_user_dict_word() -> VoicevoxUserDictWord {
     VoicevoxUserDictWord {
         surface: std::ptr::null(),
         pronunciation: std::ptr::null(),
-        accent_type: 0,
-        word_type: VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN,
-        priority: 5,
+        accent_type: UserDictWord::default().accent_type as i32,
+        word_type: UserDictWord::default().word_type.into(),
+        priority: UserDictWord::default().priority as i32,
     }
 }
 

@@ -33,6 +33,7 @@ fn rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_class::<OpenJtalk>()?;
     module.add_class::<VoiceModel>()?;
     module.add_class::<UserDict>()?;
+    module.add_class::<UserDictWord>()?;
     Ok(())
 }
 
@@ -404,6 +405,11 @@ impl UserDict {
         Ok(())
     }
 
+    fn merge(&mut self, other: &UserDict) -> PyResult<()> {
+        self.dict.merge(&other.dict).into_py_result()?;
+        Ok(())
+    }
+
     #[getter]
     fn words(&self) -> PyResult<HashMap<String, UserDictWord>> {
         Ok(HashMap::<String, UserDictWord>::from_iter(
@@ -428,6 +434,13 @@ pub struct UserDictWord {
 #[pymethods]
 impl UserDictWord {
     #[new]
+    #[pyo3(signature =(
+            surface,
+            pronunciation,
+            accent_type = voicevox_core::UserDictWord::default().accent_type,
+            word_type = voicevox_core::UserDictWord::default().word_type,
+            priority = voicevox_core::UserDictWord::default().priority
+    ))]
     pub fn new(
         surface: String,
         pronunciation: String,

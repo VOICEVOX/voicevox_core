@@ -77,12 +77,3 @@ class UserDictWordType(str, Enum):
     VERB = "VERB"
     ADJECTIVE = "ADJECTIVE"
     SUFFIX = "SUFFIX"
-
-
-@pydantic.dataclasses.dataclass
-class UserDictWord:
-    surface: str
-    pronunciation: str
-    accent_type: int
-    word_type: UserDictWordType
-    priority: int

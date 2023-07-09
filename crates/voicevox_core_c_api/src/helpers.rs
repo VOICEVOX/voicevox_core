@@ -205,3 +205,21 @@ impl From<VoicevoxUserDictWordType> for voicevox_core::UserDictWordType {
         }
     }
 }
+
+impl From<voicevox_core::UserDictWordType> for VoicevoxUserDictWordType {
+    fn from(value: voicevox_core::UserDictWordType) -> Self {
+        match value {
+            voicevox_core::UserDictWordType::ProperNoun => {
+                Self::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN
+            }
+            voicevox_core::UserDictWordType::CommonNoun => {
+                Self::VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN
+            }
+            voicevox_core::UserDictWordType::Verb => Self::VOICEVOX_USER_DICT_WORD_TYPE_VERB,
+            voicevox_core::UserDictWordType::Adjective => {
+                Self::VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE
+            }
+            voicevox_core::UserDictWordType::Suffix => Self::VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX,
+        }
+    }
+}

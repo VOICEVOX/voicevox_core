@@ -28,6 +28,19 @@ pub struct UserDictWord {
 
 static PRONUNCIATION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
 
+impl Default for UserDictWord {
+    fn default() -> Self {
+        Self {
+            surface: "".to_string(),
+            pronunciation: "".to_string(),
+            accent_type: 0,
+            word_type: UserDictWordType::CommonNoun,
+            priority: 0,
+            mora_count: 0,
+        }
+    }
+}
+
 impl UserDictWord {
     pub fn new(
         surface: String,

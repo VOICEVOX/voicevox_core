@@ -6,8 +6,16 @@ from ._models import (  # noqa: F401
     Mora,
     SpeakerMeta,
     SupportedDevices,
+    UserDictWordType,
 )
-from ._rust import OpenJtalk, Synthesizer, VoiceModel, supported_devices  # noqa: F401
+from ._rust import (
+    OpenJtalk,
+    Synthesizer,
+    VoiceModel,
+    UserDict,
+    UserDictWord,
+    supported_devices,
+)  # noqa: F401
 
 __all__ = [
     "AccelerationMode",
@@ -20,4 +28,7 @@ __all__ = [
     "Synthesizer",
     "VoiceModel",
     "supported_devices",
+    "UserDict",
+    "UserDictWord",
+    "UserDictWordType",
 ]

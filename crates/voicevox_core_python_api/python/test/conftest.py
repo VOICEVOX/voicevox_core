@@ -9,6 +9,11 @@ import pytest
 
 root_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
+open_jtalk_dic_dir = (
+    root_dir.parent.parent.parent / "test_util" / "data" / "open_jtalk_dic_utf_8-1.11"
+)
+model_dir = root_dir.parent.parent.parent.parent / "model" / "sample.vvm"
+
 
 class DurationExampleData(TypedDict):
     length: int
