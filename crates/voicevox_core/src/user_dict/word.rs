@@ -1,5 +1,11 @@
-use crate::user_dict::part_of_speech_data::word_type_to_part_of_speech_detail;
+use crate::result::Result;
+use crate::user_dict::part_of_speech_data::{
+    priority2cost, MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL,
+};
+use crate::Error;
 use derive_getters::Getters;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 /// ユーザー辞書の単語。
@@ -15,10 +21,104 @@ pub struct UserDictWord {
     pub word_type: UserDictWordType,
     /// 単語の優先度。
     pub priority: u32,
+
+    /// モーラ数。
+    mora_count: usize,
+}
+
+static PRONUNCIATION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
+
+impl UserDictWord {
+    pub fn new(
+        surface: String,
+        pronunciation: String,
+        accent_type: usize,
+        word_type: UserDictWordType,
+        priority: u32,
+    ) -> Result<Self> {
+        if MIN_PRIORITY > priority || priority > MAX_PRIORITY {
+            return Err(Error::InvalidWord(format!(
+                "優先度は{}以上{}以下である必要があります。",
+                MIN_PRIORITY, MAX_PRIORITY
+            )));
+        }
+        Self::validate_pronunciation(&pronunciation[..])?;
+        let mora_count = Self::calculate_mora_count(&pronunciation[..], accent_type)?;
+        Ok(Self {
+            surface,
+            pronunciation,
+            accent_type,
+            word_type,
+            priority,
+            mora_count,
+        })
+    }
+
+    fn validate_pronunciation(pronunciation: &str) -> Result<()> {
+        if !PRONUNCIATION_REGEX.is_match(pronunciation) {
+            return Err(Error::InvalidWord(
+                "発音は有効なカタカナである必要があります。".to_string(),
+            ));
+        }
+        let sutegana = ['ァ', 'ィ', 'ゥ', 'ェ', 'ォ', 'ャ', 'ュ', 'ョ', 'ヮ', 'ッ'];
+
+        let pronunciation_chars = pronunciation.chars().collect::<Vec<_>>();
+
+        for i in 0..pronunciation_chars.len() {
+            // 「キャット」のように、捨て仮名が連続する可能性が考えられるので、
+            // 「ッ」に関しては「ッ」そのものが連続している場合と、「ッ」の後にほかの捨て仮名が連続する場合のみ無効とする
+            if sutegana.contains(pronunciation_chars.get(i).unwrap())
+                && i < pronunciation_chars.len() - 1
+                && (sutegana[..sutegana.len() - 1]
+                    .contains(pronunciation_chars.get(i + 1).unwrap())
+                    || (pronunciation_chars.get(i).unwrap() == &'ッ'
+                        && sutegana.contains(pronunciation_chars.get(i + 1).unwrap())))
+            {
+                return Err(Error::InvalidWord(
+                    "無効な発音です。(捨て仮名の連続)".to_string(),
+                ));
+            }
+
+            if pronunciation_chars.get(i).unwrap() == &'ヮ'
+                && i != 0
+                && !['ク', 'グ'].contains(pronunciation_chars.get(i - 1).unwrap())
+            {
+                return Err(Error::InvalidWord(
+                    "無効な発音です。(「くゎ」「ぐゎ」以外の「ゎ」の使用)".to_string(),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn calculate_mora_count(pronunciation: &str, accent_type: usize) -> Result<usize> {
+        let rule_others =
+            r#"[イ][ェ]|[ヴ][ャュョ]|[トド][ゥ]|[テデ][ィャュョ]|[デ][ェ]|[クグ][ヮ]"#;
+        let rule_line_i = r#"[キシチニヒミリギジビピ][ェャュョ]"#;
+        let rule_line_u = r#"[ツフヴ][ァ]|[ウスツフヴズ][ィ]|[ウツフヴ][ェォ]"#;
+        let rule_one_mora = r#"[ァ-ヴー]"#;
+
+        let mora_count = regex::Regex::new(&format!(
+            r#"(?:{}|{}|{}|{})"#,
+            rule_others, rule_line_i, rule_line_u, rule_one_mora
+        ))
+        .unwrap()
+        .find_iter(pronunciation)
+        .count();
+
+        if accent_type > mora_count {
+            return Err(Error::InvalidWord(format!(
+                "誤ったアクセント型です({})。 expect: 0 <= accent_type <= {}",
+                accent_type, mora_count
+            )));
+        }
+
+        Ok(mora_count)
+    }
 }
 
 /// ユーザー辞書の単語の種類。
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UserDictWordType {
     /// 固有名詞。
@@ -35,23 +135,25 @@ pub enum UserDictWordType {
 
 impl UserDictWord {
     pub fn to_mecab_format(&self) -> String {
-        let pos = word_type_to_part_of_speech_detail(&self.word_type);
-        vec![
-            self.surface.clone(),
-            self.surface.clone(),
-            self.priority.to_string(),
+        let pos = PART_OF_SPEECH_DETAIL.get(&self.word_type).unwrap();
+        format!(
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{}/{}{}\n",
+            self.surface,
+            pos.context_id,
+            pos.context_id,
+            priority2cost(pos.context_id, self.priority),
             pos.part_of_speech,
             pos.part_of_speech_detail_1,
             pos.part_of_speech_detail_2,
             pos.part_of_speech_detail_3,
-            "*".to_string(), // pos.inflectional_type,
-            "*".to_string(), // pos.inflectional_form,
-            self.pronunciation.clone(),
-            self.pronunciation.clone(),
-            self.accent_type.to_string(),
-            self.pronunciation.chars().count().to_string(),
-            "0".to_string(),
-        ]
-        .join(",")
+            "*",                // inflectional_type
+            "*",                // inflectional_form
+            "*",                // stem
+            self.pronunciation, // yomi
+            self.pronunciation,
+            self.accent_type,
+            self.mora_count,
+            "*" // accent_associative_rule
+        )
     }
 }

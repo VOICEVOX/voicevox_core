@@ -64,7 +64,7 @@ impl OpenJtalk {
 
         let Some(dict_dir) = dict_dir.to_str() else {
             return Err(Error::NotLoadedOpenjtalkDict);
-                       };
+        };
         let mut temp_csv = NamedTempFile::new().map_err(|_| Error::UserDictLoad)?;
         temp_csv
             .write_all(user_dict.to_mecab_format().as_bytes())

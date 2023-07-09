@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use voicevox_core::UserDictWord;
 
 use const_default::ConstDefault;
 use thiserror::Error;
@@ -43,6 +44,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(UserDictWrite)) => VOICEVOX_USER_DICT_WRITE_ERROR,
             Err(RustApi(WordNotFound)) => VOICEVOX_WORD_NOT_FOUND_ERROR,
             Err(RustApi(UserDictLoad)) => VOICEVOX_USER_DICT_LOAD_ERROR,
+            Err(RustApi(InvalidWord(_))) => VOICEVOX_INVALID_WORD_ERROR,
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
             Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
@@ -182,13 +184,13 @@ impl ConstDefault for VoicevoxSynthesisOptions {
 
 impl VoicevoxUserDictWord {
     pub(crate) unsafe fn try_into_word(&self) -> CApiResult<voicevox_core::UserDictWord> {
-        Ok(voicevox_core::UserDictWord {
-            surface: ensure_utf8(CStr::from_ptr(self.surface))?.to_string(),
-            pronunciation: ensure_utf8(CStr::from_ptr(self.pronunciation))?.to_string(),
-            accent_type: self.accent_type,
-            word_type: self.word_type.into(),
-            priority: self.priority,
-        })
+        Ok(UserDictWord::new(
+            ensure_utf8(CStr::from_ptr(self.surface))?.to_string(),
+            ensure_utf8(CStr::from_ptr(self.pronunciation))?.to_string(),
+            self.accent_type as usize,
+            self.word_type.into(),
+            self.priority as u32,
+        )?)
     }
 }
 

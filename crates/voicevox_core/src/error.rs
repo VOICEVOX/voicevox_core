@@ -94,6 +94,9 @@ pub enum Error {
 
     #[error("{},{0}", base_error_message(VOICEVOX_USER_DICT_LOAD_ERROR))]
     UserDictLoad,
+
+    #[error("{}: {0}", base_error_message(VOICEVOX_INVALID_WORD_ERROR))]
+    InvalidWord(String),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {

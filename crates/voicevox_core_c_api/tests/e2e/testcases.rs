@@ -4,3 +4,4 @@ mod global_info;
 mod simple_tts;
 mod tts_via_audio_query;
 mod user_dict;
+mod user_dict_manipulate;
