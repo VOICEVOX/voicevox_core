@@ -69,3 +69,20 @@ class AudioQuery:
     output_sampling_rate: int
     output_stereo: bool
     kana: Optional[str]
+
+
+class UserDictWordType(str, Enum):
+    PROPER_NOUN = "PROPER_NOUN"
+    COMMON_NOUN = "COMMON_NOUN"
+    VERB = "VERB"
+    ADJECTIVE = "ADJECTIVE"
+    SUFFIX = "SUFFIX"
+
+
+@pydantic.dataclasses.dataclass
+class UserDictWord:
+    surface: str
+    pronunciation: str
+    accent_type: int
+    word_type: UserDictWordType
+    priority: int

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::{fmt::Display, future::Future, path::PathBuf, sync::Arc};
 
 use easy_ext::ext;
@@ -14,7 +15,8 @@ use serde::{de::DeserializeOwned, Serialize};
 use tokio::{runtime::Runtime, sync::Mutex};
 use voicevox_core::{
     AccelerationMode, AccentPhraseModel, AccentPhrasesOptions, AudioQueryModel, AudioQueryOptions,
-    InitializeOptions, StyleId, SynthesisOptions, TtsOptions, VoiceModelId, VoiceModelMeta,
+    InitializeOptions, StyleId, SynthesisOptions, TtsOptions, UserDictWordType, VoiceModelId,
+    VoiceModelMeta,
 };
 
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
@@ -29,7 +31,9 @@ fn rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
 
     module.add_class::<Synthesizer>()?;
     module.add_class::<OpenJtalk>()?;
-    module.add_class::<VoiceModel>()
+    module.add_class::<VoiceModel>()?;
+    module.add_class::<UserDict>()?;
+    Ok(())
 }
 
 create_exception!(
@@ -97,6 +101,12 @@ impl OpenJtalk {
                     .into_py_result()?,
             ),
         })
+    }
+
+    fn load_user_dict(&self, user_dict: UserDict) -> PyResult<()> {
+        self.open_jtalk
+            .load_user_dict(&user_dict.dict)
+            .into_py_result()
     }
 }
 
@@ -361,6 +371,106 @@ impl Synthesizer {
     }
 }
 
+#[pyclass]
+#[derive(Debug, Clone)]
+struct UserDict {
+    dict: voicevox_core::UserDict,
+}
+
+#[pymethods]
+impl UserDict {
+    #[new]
+    fn new(store_path: &str) -> PyResult<Self> {
+        Ok(Self {
+            dict: voicevox_core::UserDict::new(store_path).into_py_result()?,
+        })
+    }
+
+    fn add_word(&mut self, word: UserDictWord) -> PyResult<String> {
+        self.dict
+            .add_word(word.try_into().into_py_result()?)
+            .into_py_result()
+    }
+
+    fn update_word(&mut self, word_uuid: &str, word: UserDictWord) -> PyResult<()> {
+        self.dict
+            .update_word(word_uuid, word.try_into().into_py_result()?)
+            .into_py_result()?;
+        Ok(())
+    }
+
+    fn remove_word(&mut self, word_uuid: &str) -> PyResult<()> {
+        self.dict.remove_word(word_uuid).into_py_result()?;
+        Ok(())
+    }
+
+    #[getter]
+    fn words(&self) -> PyResult<HashMap<String, UserDictWord>> {
+        Ok(HashMap::<String, UserDictWord>::from_iter(
+            self.dict
+                .words()
+                .iter()
+                .map(|(k, v)| (k.to_owned(), v.to_owned().into())),
+        ))
+    }
+}
+
+#[pyclass]
+#[derive(Clone, Debug)]
+pub struct UserDictWord {
+    pub surface: String,
+    pub pronunciation: String,
+    pub accent_type: usize,
+    pub word_type: UserDictWordType,
+    pub priority: u32,
+}
+
+#[pymethods]
+impl UserDictWord {
+    #[new]
+    pub fn new(
+        surface: String,
+        pronunciation: String,
+        accent_type: usize,
+        #[pyo3(from_py_with = "from_word_type")] word_type: UserDictWordType,
+        priority: u32,
+    ) -> Self {
+        Self {
+            surface,
+            pronunciation,
+            accent_type,
+            word_type,
+            priority,
+        }
+    }
+}
+
+impl From<voicevox_core::UserDictWord> for UserDictWord {
+    fn from(word: voicevox_core::UserDictWord) -> Self {
+        Self {
+            surface: word.surface,
+            pronunciation: word.pronunciation,
+            accent_type: word.accent_type,
+            word_type: word.word_type,
+            priority: word.priority,
+        }
+    }
+}
+
+impl TryFrom<UserDictWord> for voicevox_core::UserDictWord {
+    type Error = voicevox_core::Error;
+
+    fn try_from(word: UserDictWord) -> voicevox_core::Result<Self> {
+        voicevox_core::UserDictWord::new(
+            word.surface.clone(),
+            word.pronunciation.clone(),
+            word.accent_type,
+            word.word_type.clone(),
+            word.priority,
+        )
+    }
+}
+
 fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
     let py = ob.py();
 
@@ -375,6 +485,30 @@ fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
         Ok(AccelerationMode::Gpu)
     } else {
         unreachable!("{} should be one of {{AUTO, CPU, GPU}}", mode.repr()?);
+    }
+}
+
+fn from_word_type(ob: &PyAny) -> PyResult<UserDictWordType> {
+    let py = ob.py();
+
+    let class = py.import("voicevox_core")?.getattr("UserDictWordType")?;
+    let mode = class.get_item(ob)?;
+
+    if mode.eq(class.getattr("PROPER_NOUN")?)? {
+        Ok(UserDictWordType::ProperNoun)
+    } else if mode.eq(class.getattr("COMMON_NOUN")?)? {
+        Ok(UserDictWordType::CommonNoun)
+    } else if mode.eq(class.getattr("VERB")?)? {
+        Ok(UserDictWordType::Verb)
+    } else if mode.eq(class.getattr("ADJECTIVE")?)? {
+        Ok(UserDictWordType::Adjective)
+    } else if mode.eq(class.getattr("SUFFIX")?)? {
+        Ok(UserDictWordType::Suffix)
+    } else {
+        unreachable!(
+            "{} should be one of {{PROPER_NOUN, COMMON_NOUN, VERB, ADJECTIVE, SUFFIX}}",
+            mode.repr()?
+        );
     }
 }
 
