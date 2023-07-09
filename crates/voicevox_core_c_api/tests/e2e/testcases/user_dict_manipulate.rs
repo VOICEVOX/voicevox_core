@@ -6,7 +6,7 @@ use std::{
     ffi::{CStr, CString},
     mem::MaybeUninit,
 };
-use tempfile::NamedTempFile;
+use tempfile::{NamedTempFile, TempPath};
 use voicevox_core::result_code::VoicevoxResultCode;
 
 use libloading::Library;
@@ -45,10 +45,15 @@ impl assert_cdylib::TestCase for TestCase {
             CStr::from_ptr(json).to_str().unwrap()
         };
 
+        let dict_path = temp_dict_path();
         let dict = {
             let mut dict = MaybeUninit::uninit();
-            let path = temp_dict_path();
-            assert_ok(voicevox_dict_new(path.as_ptr(), dict.as_mut_ptr()));
+            assert_ok(voicevox_dict_new(
+                CString::new(dict_path.to_str().unwrap())
+                    .unwrap()
+                    .into_raw(),
+                dict.as_mut_ptr(),
+            ));
             dict.assume_init()
         };
 
@@ -87,10 +92,15 @@ impl assert_cdylib::TestCase for TestCase {
         assert!(json.contains("フガ"));
         assert!(json.contains(word_uuid));
 
+        let other_dict_path = temp_dict_path();
         let other_dict = {
             let mut dict = MaybeUninit::uninit();
-            let path = temp_dict_path();
-            assert_ok(voicevox_dict_new(path.as_ptr(), dict.as_mut_ptr()));
+            assert_ok(voicevox_dict_new(
+                CString::new(other_dict_path.as_os_str().to_str().unwrap())
+                    .unwrap()
+                    .into_raw(),
+                dict.as_mut_ptr(),
+            ));
             dict.assume_init()
         };
 
@@ -135,9 +145,8 @@ impl assert_cdylib::TestCase for TestCase {
             std::assert_eq!(VoicevoxResultCode::VOICEVOX_RESULT_OK, result_code);
         }
 
-        unsafe fn temp_dict_path() -> CString {
-            let temp_dict_path = NamedTempFile::new().unwrap().into_temp_path();
-            CString::new(temp_dict_path.to_str().unwrap()).unwrap()
+        fn temp_dict_path() -> TempPath {
+            NamedTempFile::new().unwrap().into_temp_path()
         }
     }
 
