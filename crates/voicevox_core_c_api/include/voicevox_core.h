@@ -129,6 +129,14 @@ enum VoicevoxResultCode
    * 辞書に単語が見つからなかった
    */
   VOICEVOX_WORD_NOT_FOUND_ERROR = 22,
+  /**
+   * 辞書をOpenJTalkに読み込ませることができなかった
+   */
+  VOICEVOX_USER_DICT_LOAD_ERROR = 23,
+  /**
+   * 単語のバリデーションに失敗した
+   */
+  VOICEVOX_INVALID_WORD_ERROR = 24,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
@@ -323,8 +331,8 @@ VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_open_jtalk_rc_load_user_dictionary(struct OpenJtalkRc *open_jtalk,
-                                                               const struct VoicevoxUserDict *user_dict);
+VoicevoxResultCode voicevox_open_jtalk_rc_load_user_dict(struct OpenJtalkRc *open_jtalk,
+                                                         const struct VoicevoxUserDict *user_dict);
 
 /**
  * 参照カウントで管理されたOpenJtalkを削除する
