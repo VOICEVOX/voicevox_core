@@ -1,11 +1,13 @@
+use std::io::Write;
 use std::{
     path::{Path, PathBuf},
     sync::Mutex,
 };
+use tempfile::NamedTempFile;
 
 use ::open_jtalk::*;
 
-use crate::Error;
+use crate::{Error, UserDict};
 
 #[derive(thiserror::Error, Debug)]
 pub enum OpenJtalkError {
@@ -17,13 +19,15 @@ pub enum OpenJtalkError {
         #[source]
         source: Option<anyhow::Error>,
     },
+    #[error("open_jtalk load user dict error")]
+    LoadUserDict { text: String },
 }
 
 pub type Result<T> = std::result::Result<T, OpenJtalkError>;
 
 pub struct OpenJtalk {
     resources: Mutex<Resources>,
-    dict_loaded: bool,
+    dict_dir: Option<PathBuf>,
 }
 
 struct Resources {
@@ -43,7 +47,7 @@ impl OpenJtalk {
                 njd: ManagedResource::initialize(),
                 jpcommon: ManagedResource::initialize(),
             }),
-            dict_loaded: false,
+            dict_dir: None,
         }
     }
     pub fn new_with_initialize(
@@ -53,6 +57,56 @@ impl OpenJtalk {
         s.load(open_jtalk_dict_dir)
             .map_err(|_| Error::NotLoadedOpenjtalkDict)?;
         Ok(s)
+    }
+
+    pub fn load_user_dict(&self, user_dict: UserDict) -> Result<()> {
+        let Some(dict_dir) = &self.dict_dir else {
+            return Err(OpenJtalkError::LoadUserDict {
+                text: "dict_dir is not set.".to_string(),
+            });
+        };
+
+        let Some(dict_dir) = dict_dir.to_str() else {
+            return Err(OpenJtalkError::LoadUserDict {
+                text: "dict_dir is not valid.".to_string(),
+            });
+        };
+        let mut temp_csv = NamedTempFile::new().map_err(|_| OpenJtalkError::Load {
+            mecab_dict_dir: self.dict_dir.clone().unwrap_or_default(),
+        })?;
+        temp_csv
+            .write_all(user_dict.to_mecab_format().as_bytes())
+            .map_err(|_| OpenJtalkError::Load {
+                mecab_dict_dir: self.dict_dir.clone().unwrap_or_default(),
+            })?;
+        let temp_csv_path = temp_csv.into_temp_path();
+        let temp_dict = NamedTempFile::new().map_err(|_| OpenJtalkError::Load {
+            mecab_dict_dir: self.dict_dir.clone().unwrap_or_default(),
+        })?;
+        let temp_dict_path = temp_dict.into_temp_path();
+
+        // TODO: エラー（SEGV）を良い感じに処理する
+        mecab_dict_index(&[
+            "mecab-dict-index",
+            "-d",
+            dict_dir,
+            "-u",
+            temp_dict_path.to_str().unwrap(),
+            "-f",
+            "utf-8",
+            "-t",
+            "utf-8",
+            temp_csv_path.to_str().unwrap(),
+        ]);
+
+        let Resources {
+            mecab,
+            ..
+        } = &mut *self.resources.lock().unwrap();
+
+        // TODO: ユーザー辞書読み込み処理
+
+        Ok(())
     }
 
     pub fn extract_fullcontext(&self, text: impl AsRef<str>) -> Result<Vec<String>> {
@@ -112,10 +166,10 @@ impl OpenJtalk {
             .mecab
             .load(open_jtalk_dict_dir.as_ref());
         if result {
-            self.dict_loaded = true;
+            self.dict_dir = Some(open_jtalk_dict_dir.as_ref().into());
             Ok(())
         } else {
-            self.dict_loaded = false;
+            self.dict_dir = None;
             Err(OpenJtalkError::Load {
                 mecab_dict_dir: open_jtalk_dict_dir.as_ref().into(),
             })
@@ -123,7 +177,7 @@ impl OpenJtalk {
     }
 
     pub fn dict_loaded(&self) -> bool {
-        self.dict_loaded
+        self.dict_dir.is_some()
     }
 }
 

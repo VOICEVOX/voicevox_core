@@ -1,3 +1,4 @@
+use crate::user_dict::part_of_speech_data::word_type_to_part_of_speech_detail;
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
@@ -30,4 +31,27 @@ pub enum UserDictWordType {
     Adjective,
     /// 接尾辞。
     Suffix,
+}
+
+impl UserDictWord {
+    pub fn to_mecab_format(&self) -> String {
+        let pos = word_type_to_part_of_speech_detail(&self.word_type);
+        vec![
+            self.surface.clone(),
+            self.surface.clone(),
+            self.priority.to_string(),
+            pos.part_of_speech,
+            pos.part_of_speech_detail_1,
+            pos.part_of_speech_detail_2,
+            pos.part_of_speech_detail_3,
+            "*".to_string(), // pos.inflectional_type,
+            "*".to_string(), // pos.inflectional_form,
+            self.pronunciation.clone(),
+            self.pronunciation.clone(),
+            self.accent_type.to_string(),
+            self.pronunciation.chars().count().to_string(),
+            "0".to_string(),
+        ]
+        .join(",")
+    }
 }

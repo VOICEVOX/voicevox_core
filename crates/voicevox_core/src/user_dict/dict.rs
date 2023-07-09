@@ -87,4 +87,13 @@ impl UserDict {
         serde_json::to_writer(&mut file, &self.words).map_err(|_| Error::UserDictWrite)?;
         Ok(())
     }
+
+    /// MeCabで使用する形式に変換する。
+    pub(crate) fn to_mecab_format(&self) -> String {
+        let mut lines = Vec::new();
+        for word in self.words.values() {
+            lines.push(word.to_mecab_format());
+        }
+        lines.join("\n")
+    }
 }
