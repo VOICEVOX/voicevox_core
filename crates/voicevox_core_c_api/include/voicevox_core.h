@@ -796,6 +796,18 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_dict_merge(const struct VoicevoxUserDict *user_dict,
                                        const struct VoicevoxUserDict *other_dict);
 
+/**
+ * ユーザー辞書を削除する
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ *
+ * # Safety
+ * @param user_dict は有効な :VoicevoxUserDict のポインタであること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_dict_delete(struct VoicevoxUserDict *user_dict);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif // __cplusplus

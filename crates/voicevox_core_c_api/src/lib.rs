@@ -906,6 +906,16 @@ pub extern "C" fn voicevox_dict_merge(
     })())
 }
 
+/// ユーザー辞書を削除する
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_dict_delete(user_dict: Box<VoicevoxUserDict>) {
+    drop(user_dict);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

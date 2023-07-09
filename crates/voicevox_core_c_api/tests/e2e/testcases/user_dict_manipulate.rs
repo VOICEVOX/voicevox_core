@@ -31,6 +31,7 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_dict_remove_word,
             voicevox_dict_get_words_json,
             voicevox_dict_merge,
+            voicevox_dict_delete,
             ..
         } = Symbols::new(lib)?;
 
@@ -122,6 +123,9 @@ impl assert_cdylib::TestCase for TestCase {
 
         let json = get_json(&dict);
         assert!(!json.contains(word_uuid));
+
+        voicevox_dict_delete(dict);
+        voicevox_dict_delete(other_dict);
 
         return Ok(());
 

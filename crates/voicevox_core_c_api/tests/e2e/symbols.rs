@@ -163,6 +163,10 @@ pub(crate) struct Symbols<'lib> {
             *const VoicevoxUserDict,
         ) -> VoicevoxResultCode,
     >,
+    pub(crate) voicevox_dict_delete: Symbol<
+        'lib,
+        unsafe extern "C" fn(*mut VoicevoxUserDict) -> VoicevoxResultCode,
+    >,
 }
 
 impl<'lib> Symbols<'lib> {
@@ -219,6 +223,7 @@ impl<'lib> Symbols<'lib> {
             voicevox_dict_remove_word,
             voicevox_dict_get_words_json,
             voicevox_dict_merge,
+            voicevox_dict_delete,
         ))
     }
 }

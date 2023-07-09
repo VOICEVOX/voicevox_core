@@ -37,7 +37,7 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_default_user_dict_word,
             voicevox_dict_new,
             voicevox_dict_add_word,
-
+            voicevox_dict_delete,
             voicevox_default_initialize_options,
             voicevox_default_audio_query_options,
             voicevox_open_jtalk_rc_new,
@@ -140,6 +140,7 @@ impl assert_cdylib::TestCase for TestCase {
         voicevox_voice_model_delete(model);
         voicevox_open_jtalk_rc_delete(openjtalk);
         voicevox_synthesizer_delete(synthesizer);
+        voicevox_dict_delete(dict);
 
         return Ok(());
 
