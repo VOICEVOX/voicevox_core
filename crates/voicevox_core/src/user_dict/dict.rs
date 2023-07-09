@@ -30,7 +30,8 @@ impl UserDict {
             let words: HashMap<String, UserDictWord> = if content.is_empty() {
                 HashMap::new()
             } else {
-                serde_json::from_str(&content[..]).map_err(|e| Error::UserDictRead(e.to_string()))?
+                serde_json::from_str(&content[..])
+                    .map_err(|e| Error::UserDictRead(e.to_string()))?
             };
             Ok(Self {
                 store_path: store_path.to_string(),
