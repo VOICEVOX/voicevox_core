@@ -42,6 +42,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(UserDictRead)) => VOICEVOX_USER_DICT_READ_ERROR,
             Err(RustApi(UserDictWrite)) => VOICEVOX_USER_DICT_WRITE_ERROR,
             Err(RustApi(WordNotFound)) => VOICEVOX_WORD_NOT_FOUND_ERROR,
+            Err(RustApi(UserDictLoad)) => VOICEVOX_USER_DICT_LOAD_ERROR,
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
             Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,

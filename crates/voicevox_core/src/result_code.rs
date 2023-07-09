@@ -49,6 +49,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_USER_DICT_WRITE_ERROR = 21,
     /// 辞書に単語が見つからなかった
     VOICEVOX_WORD_NOT_FOUND_ERROR = 22,
+    /// 辞書をOpenJTalkに読み込ませることができなかった
+    VOICEVOX_USER_DICT_LOAD_ERROR = 23,
 }
 
 pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
@@ -88,5 +90,6 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
         VOICEVOX_USER_DICT_READ_ERROR => "辞書を読み込めませんでした\0",
         VOICEVOX_USER_DICT_WRITE_ERROR => "辞書を書き込めませんでした\0",
         VOICEVOX_WORD_NOT_FOUND_ERROR => "辞書に単語が見つかりませんでした\0",
+        VOICEVOX_USER_DICT_LOAD_ERROR => "辞書をOpenJTalkに読み込ませることができませんでした\0",
     }
 }

@@ -106,11 +106,18 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 /// @open_jtalk 有効な :OpenJtalkRc のポインタであること
 /// @user_dict 有効な :VoicevoxUserDict のポインタであること
 #[no_mangle]
-pub extern "C" fn voicevox_open_jtalk_rc_load_user_dictionary(
+pub extern "C" fn voicevox_open_jtalk_rc_load_user_dict(
     open_jtalk: &mut OpenJtalkRc,
     user_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
-    todo!()
+    into_result_code_with_error((|| {
+        let user_dict = user_dict.to_owned();
+        {
+            let dict = user_dict.dict.as_ref().lock().expect("lock failed");
+            open_jtalk.open_jtalk.load_user_dict(&dict)?;
+        }
+        Ok(())
+    })())
 }
 
 /// 参照カウントで管理されたOpenJtalkを削除する

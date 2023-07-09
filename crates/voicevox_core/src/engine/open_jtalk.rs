@@ -19,8 +19,6 @@ pub enum OpenJtalkError {
         #[source]
         source: Option<anyhow::Error>,
     },
-    #[error("open_jtalk load user dict error")]
-    LoadUserDict { text: String },
 }
 
 pub type Result<T> = std::result::Result<T, OpenJtalkError>;
@@ -59,30 +57,20 @@ impl OpenJtalk {
         Ok(s)
     }
 
-    pub fn load_user_dict(&self, user_dict: UserDict) -> Result<()> {
+    pub fn load_user_dict(&self, user_dict: &UserDict) -> crate::result::Result<()> {
         let Some(dict_dir) = &self.dict_dir else {
-            return Err(OpenJtalkError::LoadUserDict {
-                text: "dict_dir is not set.".to_string(),
-            });
+            return Err(Error::NotLoadedOpenjtalkDict)
         };
 
         let Some(dict_dir) = dict_dir.to_str() else {
-            return Err(OpenJtalkError::LoadUserDict {
-                text: "dict_dir is not valid.".to_string(),
-            });
-        };
-        let mut temp_csv = NamedTempFile::new().map_err(|_| OpenJtalkError::Load {
-            mecab_dict_dir: self.dict_dir.clone().unwrap_or_default(),
-        })?;
+            return Err(Error::NotLoadedOpenjtalkDict);
+                       };
+        let mut temp_csv = NamedTempFile::new().map_err(|_| Error::UserDictLoad)?;
         temp_csv
             .write_all(user_dict.to_mecab_format().as_bytes())
-            .map_err(|_| OpenJtalkError::Load {
-                mecab_dict_dir: self.dict_dir.clone().unwrap_or_default(),
-            })?;
+            .map_err(|_| Error::UserDictLoad)?;
         let temp_csv_path = temp_csv.into_temp_path();
-        let temp_dict = NamedTempFile::new().map_err(|_| OpenJtalkError::Load {
-            mecab_dict_dir: self.dict_dir.clone().unwrap_or_default(),
-        })?;
+        let temp_dict = NamedTempFile::new().map_err(|_| Error::UserDictLoad)?;
         let temp_dict_path = temp_dict.into_temp_path();
 
         // TODO: エラー（SEGV）を良い感じに処理する
@@ -105,9 +93,7 @@ impl OpenJtalk {
         let result = mecab.load_with_userdic(dict_dir, temp_dict_path.to_str().unwrap());
 
         if !result {
-            return Err(OpenJtalkError::LoadUserDict {
-                text: "failed to load user dict.".to_string(),
-            });
+            return Err(Error::UserDictLoad);
         }
 
         Ok(())
