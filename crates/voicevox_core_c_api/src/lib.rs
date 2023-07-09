@@ -22,8 +22,8 @@ use tokio::runtime::Runtime;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use voicevox_core::{
-    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, UserDict,
-    VoiceModel, VoiceModelId,
+    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, VoiceModel,
+    VoiceModelId,
 };
 use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions, Synthesizer};
 
@@ -713,28 +713,47 @@ pub struct VoicevoxUserDict {
 }
 
 /// ユーザー辞書の単語
+#[repr(C)]
 pub struct VoicevoxUserDictWord {
+    /// 表記
     surface: *const c_char,
+    /// 読み
     pronunciation: *const c_char,
+    /// アクセント型
     accent_type: i32,
+    /// 単語の種類
     word_type: VoicevoxUserDictWordType,
+    /// 優先度
     priority: i32,
 }
 
 /// ユーザー辞書の単語の種類
 #[repr(i32)]
 #[allow(non_camel_case_types)]
+#[derive(Copy, Clone)]
 pub enum VoicevoxUserDictWordType {
     /// 固有名詞。
-    VOICEVOX_PROPER_NOUN = 0,
+    VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN = 0,
     /// 一般名詞。
-    VOICEVOX_COMMON_NOUN = 1,
+    VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN = 1,
     /// 動詞。
-    VOICEVOX_VERB = 2,
+    VOICEVOX_USER_DICT_WORD_TYPE_VERB = 2,
     /// 形容詞。
-    VOICEVOX_ADJECTIVE = 3,
+    VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE = 3,
     /// 接尾辞。
-    VOICEVOX_SUFFIX = 4,
+    VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX = 4,
+}
+
+/// ユーザー辞書の単語のデフォルト値
+#[no_mangle]
+pub extern "C" fn voicevox_default_user_dict_word() -> VoicevoxUserDictWord {
+    VoicevoxUserDictWord {
+        surface: std::ptr::null(),
+        pronunciation: std::ptr::null(),
+        accent_type: 0,
+        word_type: VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN,
+        priority: 5,
+    }
 }
 
 /// ユーザー辞書をロードまたは新規作成する
@@ -779,7 +798,7 @@ pub unsafe extern "C" fn voicevox_dict_add_word(
     out_word_uuid: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let word = word.to_word()?;
+        let word = word.try_into_word()?;
         let uuid = {
             let mut dict = user_dict.dict.lock().expect("lock failed");
             dict.add_word(word)?
@@ -809,7 +828,7 @@ pub unsafe extern "C" fn voicevox_dict_alter_word(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let word_uuid = ensure_utf8(unsafe { CStr::from_ptr(word_uuid as *const c_char) })?;
-        let word = word.to_word()?;
+        let word = word.try_into_word()?;
         {
             let mut dict = user_dict.dict.lock().expect("lock failed");
             dict.alter_word(word_uuid, word)?;
@@ -843,6 +862,9 @@ pub extern "C" fn voicevox_dict_remove_word(
 /// @param [in] user_dict VoicevoxUserDictのポインタ
 /// @param [out] out_json JSON形式の文字列
 /// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_dict_get_words_json(
     user_dict: &VoicevoxUserDict,

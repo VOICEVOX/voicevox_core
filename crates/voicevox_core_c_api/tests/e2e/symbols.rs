@@ -121,6 +121,48 @@ pub(crate) struct Symbols<'lib> {
         'lib,
         unsafe extern "C" fn(i64, i64, *mut f32, *mut f32, *mut i64, *mut f32) -> bool,
     >,
+
+    pub(crate) voicevox_default_user_dict_word: Symbol<'lib, unsafe extern "C" fn() -> VoicevoxUserDictWord>,
+    pub(crate) voicevox_dict_new: Symbol<
+        'lib,
+        unsafe extern "C" fn(*const c_char, *mut *mut VoicevoxUserDict) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_dict_add_word: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxUserDict,
+            *const VoicevoxUserDictWord,
+            *mut *mut c_char,
+        ) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_dict_alter_word: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxUserDict,
+            *const VoicevoxUserDictWord,
+        ) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_dict_remove_word: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxUserDict,
+            *const c_char,
+        ) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_dict_get_words_json: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxUserDict,
+            *mut *mut c_char,
+        ) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_dict_merge: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxUserDict,
+            *const VoicevoxUserDict,
+        ) -> VoicevoxResultCode,
+    >,
 }
 
 impl<'lib> Symbols<'lib> {
@@ -169,6 +211,13 @@ impl<'lib> Symbols<'lib> {
             yukarin_s_forward,
             yukarin_sa_forward,
             decode_forward,
+            voicevox_default_user_dict_word,
+            voicevox_dict_new,
+            voicevox_dict_add_word,
+            voicevox_dict_alter_word,
+            voicevox_dict_remove_word,
+            voicevox_dict_get_words_json,
+            voicevox_dict_merge,
         ))
     }
 }
@@ -209,4 +258,28 @@ pub(crate) struct VoicevoxSynthesisOptions {
 pub(crate) struct VoicevoxTtsOptions {
     _kana: bool,
     _enable_interrogative_upspeak: bool,
+}
+
+#[repr(C)]
+pub(crate) struct VoicevoxUserDict {
+    _private: [u8; 0],
+}
+
+#[repr(C)]
+pub(crate) struct VoicevoxUserDictWord {
+    pub(crate) surface: *const c_char,
+    pub(crate) pronunciation: *const c_char,
+    pub(crate) accent_type: i32,
+    pub(crate) word_type: VoicevoxUserDictWordType,
+    pub(crate) priority: i32,
+}
+
+#[repr(i32)]
+#[allow(non_camel_case_types)]
+pub(crate) enum VoicevoxUserDictWordType {
+    VOICEVOX_USER_DICT_WORD_TYPE_NOUN = 0,
+    VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE = 1,
+    VOICEVOX_USER_DICT_WORD_TYPE_VERB = 2,
+    VOICEVOX_USER_DICT_WORD_TYPE_AUXILIARY_VERB = 3,
+    VOICEVOX_USER_DICT_WORD_TYPE_OTHER = 4,
 }

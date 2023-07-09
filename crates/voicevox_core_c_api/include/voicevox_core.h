@@ -135,6 +135,39 @@ typedef int32_t VoicevoxResultCode;
 #endif // __cplusplus
 
 /**
+ * ユーザー辞書の単語の種類
+ */
+enum VoicevoxUserDictWordType
+#ifdef __cplusplus
+  : int32_t
+#endif // __cplusplus
+ {
+  /**
+   * 固有名詞。
+   */
+  VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN = 0,
+  /**
+   * 一般名詞。
+   */
+  VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN = 1,
+  /**
+   * 動詞。
+   */
+  VOICEVOX_USER_DICT_WORD_TYPE_VERB = 2,
+  /**
+   * 形容詞。
+   */
+  VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE = 3,
+  /**
+   * 接尾辞。
+   */
+  VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX = 4,
+};
+#ifndef __cplusplus
+typedef int32_t VoicevoxUserDictWordType;
+#endif // __cplusplus
+
+/**
  * 参照カウントで管理されたOpenJtalk
  */
 typedef struct OpenJtalkRc OpenJtalkRc;
@@ -145,11 +178,6 @@ typedef struct VoicevoxSynthesizer VoicevoxSynthesizer;
  * ユーザー辞書
  */
 typedef struct VoicevoxUserDict VoicevoxUserDict;
-
-/**
- * ユーザー辞書の単語
- */
-typedef struct VoicevoxUserDictWord VoicevoxUserDictWord;
 
 /**
  * 音声モデル
@@ -228,6 +256,32 @@ typedef struct VoicevoxTtsOptions {
    */
   bool enable_interrogative_upspeak;
 } VoicevoxTtsOptions;
+
+/**
+ * ユーザー辞書の単語
+ */
+typedef struct VoicevoxUserDictWord {
+  /**
+   * 表記
+   */
+  const char *surface;
+  /**
+   * 読み
+   */
+  const char *pronunciation;
+  /**
+   * アクセントの位置
+   */
+  int32_t accent_type;
+  /**
+   * 単語の種類
+   */
+  VoicevoxUserDictWordType word_type;
+  /**
+   * 優先度
+   */
+  int32_t priority;
+} VoicevoxUserDictWord;
 
 #ifdef __cplusplus
 extern "C" {
@@ -702,14 +756,14 @@ VoicevoxResultCode voicevox_dict_remove_word(const struct VoicevoxUserDict *user
 /**
  * ユーザー辞書の単語をJSON形式で出力する
  * @param [in] user_dict VoicevoxUserDictのポインタ
- * @param [out] json JSON形式の文字列
+ * @param [out] out_json JSON形式の文字列
  * @return 結果コード #VoicevoxResultCode
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_dict_get_words_json(const struct VoicevoxUserDict *user_dict,
-                                                char **json);
+                                                char **out_json);
 
 /**
  * 2つのユーザー辞書をマージする

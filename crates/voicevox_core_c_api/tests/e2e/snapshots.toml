@@ -64,3 +64,6 @@ stderr.windows = '''
 {windows-video-cards}
 '''
 stderr.unix = ""
+
+[user_dict]
+stderr = ""

@@ -41,6 +41,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(ParseKana(_))) => VOICEVOX_RESULT_PARSE_KANA_ERROR,
             Err(RustApi(UserDictRead)) => VOICEVOX_USER_DICT_READ_ERROR,
             Err(RustApi(UserDictWrite)) => VOICEVOX_USER_DICT_WRITE_ERROR,
+            Err(RustApi(WordNotFound)) => VOICEVOX_WORD_NOT_FOUND_ERROR,
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
             Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
@@ -179,7 +180,7 @@ impl ConstDefault for VoicevoxSynthesisOptions {
 }
 
 impl VoicevoxUserDictWord {
-    pub unsafe fn to_word(&self) -> CApiResult<voicevox_core::UserDictWord> {
+    pub(crate) unsafe fn try_into_word(&self) -> CApiResult<voicevox_core::UserDictWord> {
         Ok(voicevox_core::UserDictWord {
             surface: ensure_utf8(&CStr::from_ptr(self.surface))?.to_string(),
             pronunciation: ensure_utf8(&CStr::from_ptr(self.pronunciation))?.to_string(),
@@ -193,11 +194,11 @@ impl VoicevoxUserDictWord {
 impl From<VoicevoxUserDictWordType> for voicevox_core::UserDictWordType {
     fn from(value: VoicevoxUserDictWordType) -> Self {
         match value {
-            VoicevoxUserDictWordType::VOICEVOX_PROPER_NOUN => Self::ProperNoun,
-            VoicevoxUserDictWordType::VOICEVOX_COMMON_NOUN => Self::CommonNoun,
-            VoicevoxUserDictWordType::VOICEVOX_VERB => Self::Verb,
-            VoicevoxUserDictWordType::VOICEVOX_ADJECTIVE => Self::Adjective,
-            VoicevoxUserDictWordType::VOICEVOX_SUFFIX => Self::Suffix,
+            VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN => Self::ProperNoun,
+            VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN => Self::CommonNoun,
+            VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_VERB => Self::Verb,
+            VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE => Self::Adjective,
+            VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX => Self::Suffix,
         }
     }
 }

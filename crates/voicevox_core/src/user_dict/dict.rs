@@ -1,4 +1,5 @@
 use derive_getters::Getters;
+use std::io::Read;
 use std::{collections::HashMap, fs::File};
 use uuid::Uuid;
 
@@ -15,13 +16,21 @@ pub struct UserDict {
 impl UserDict {
     /// ユーザー辞書をロードする。
     /// ファイルが存在しない場合は空の辞書を作成する。
-    /// ファイルが存在する場合は、その内容を読み込む。
+    /// ファイルが存在する場合は、その内容を読み込む。ファイルの中身が無い場合は空の辞書を作成する。
     /// ファイルの内容が不正な場合はエラーを返す。
     pub fn new(store_path: &str) -> Result<Self> {
         if std::path::Path::new(store_path).exists() {
-            let store_file = File::open(store_path).map_err(|_| Error::UserDictRead)?;
-            let words: HashMap<String, UserDictWord> =
-                serde_json::from_reader(store_file).map_err(|_| Error::UserDictRead)?;
+            let mut store_file = File::open(store_path).map_err(|_| Error::UserDictRead)?;
+            let mut content = String::new();
+            store_file
+                .read_to_string(&mut content)
+                .map_err(|_| Error::UserDictRead)?;
+
+            let words: HashMap<String, UserDictWord> = if content.is_empty() {
+                HashMap::new()
+            } else {
+                serde_json::from_str(&content[..]).map_err(|_| Error::UserDictRead)?
+            };
             Ok(Self {
                 store_path: store_path.to_string(),
                 words,
