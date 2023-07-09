@@ -22,8 +22,8 @@ use tokio::runtime::Runtime;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use voicevox_core::{
-    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, VoiceModel,
-    VoiceModelId, UserDictWord,
+    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, UserDictWord,
+    VoiceModel, VoiceModelId,
 };
 use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions, Synthesizer};
 
