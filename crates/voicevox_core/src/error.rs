@@ -83,17 +83,17 @@ pub enum Error {
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_PARSE_KANA_ERROR))]
     ParseKana(#[from] KanaParseError),
 
-    #[error("{},{0}", base_error_message(VOICEVOX_USER_DICT_READ_ERROR))]
-    UserDictRead,
+    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_READ_ERROR))]
+    UserDictRead(String),
 
-    #[error("{},{0}", base_error_message(VOICEVOX_USER_DICT_WRITE_ERROR))]
-    UserDictWrite,
+    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_WRITE_ERROR))]
+    UserDictWrite(String),
 
-    #[error("{},{0}", base_error_message(VOICEVOX_WORD_NOT_FOUND_ERROR))]
-    WordNotFound,
+    #[error("{}: {0}", base_error_message(VOICEVOX_WORD_NOT_FOUND_ERROR))]
+    WordNotFound(String),
 
-    #[error("{},{0}", base_error_message(VOICEVOX_USER_DICT_LOAD_ERROR))]
-    UserDictLoad,
+    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_LOAD_ERROR))]
+    UserDictLoad(String),
 
     #[error("{}: {0}", base_error_message(VOICEVOX_INVALID_WORD_ERROR))]
     InvalidWord(String),
