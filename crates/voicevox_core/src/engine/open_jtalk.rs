@@ -75,6 +75,7 @@ impl OpenJtalk {
         let temp_dict = NamedTempFile::new().map_err(|e| Error::UserDictLoad(e.to_string()))?;
         let temp_dict_path = temp_dict.into_temp_path();
 
+        // Mecabでユーザー辞書をコンパイル
         // TODO: エラー（SEGV）を良い感じに処理する
         mecab_dict_index(&[
             "mecab-dict-index",
