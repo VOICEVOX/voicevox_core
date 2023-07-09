@@ -97,6 +97,7 @@ impl OpenJtalk {
             "-t",
             "utf-8",
             temp_csv_path.to_str().unwrap(),
+            "-q",
         ]);
 
         let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
