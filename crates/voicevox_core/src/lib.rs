@@ -32,9 +32,9 @@ pub use self::result::*;
 pub use self::voice_model::*;
 pub use devices::*;
 pub use manifest::*;
+pub use user_dict::*;
 pub use version::*;
 pub use voice_synthesizer::*;
-pub use user_dict::*;
 
 use derive_getters::*;
 use derive_new::new;

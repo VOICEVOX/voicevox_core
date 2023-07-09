@@ -182,8 +182,8 @@ impl ConstDefault for VoicevoxSynthesisOptions {
 impl VoicevoxUserDictWord {
     pub(crate) unsafe fn try_into_word(&self) -> CApiResult<voicevox_core::UserDictWord> {
         Ok(voicevox_core::UserDictWord {
-            surface: ensure_utf8(&CStr::from_ptr(self.surface))?.to_string(),
-            pronunciation: ensure_utf8(&CStr::from_ptr(self.pronunciation))?.to_string(),
+            surface: ensure_utf8(CStr::from_ptr(self.surface))?.to_string(),
+            pronunciation: ensure_utf8(CStr::from_ptr(self.pronunciation))?.to_string(),
             accent_type: self.accent_type,
             word_type: self.word_type.into(),
             priority: self.priority,
