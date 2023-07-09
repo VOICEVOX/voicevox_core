@@ -149,5 +149,6 @@ static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(user_dict_manipulate);
 
 #[derive(Deserialize)]
 struct Snapshots {
+    #[serde(deserialize_with = "snapshots::deserialize_platform_specific_snapshot")]
     stderr: String,
 }
