@@ -72,7 +72,4 @@ stderr.windows = '''
 stderr.unix = ""
 
 [user_dict_manipulate]
-stderr.windows = '''
-{windows-video-cards}
-'''
-stderr.unix = ""
+stderr = ""
