@@ -1,4 +1,5 @@
-// ユーザー辞書の登録によってAudioQueryが変化することを確認するテスト
+// ユーザー辞書の登録によって読みが変化することを確認するテスト。
+// 辞書ロード前後でAudioQueryのkanaが変化するかどうかで確認する。
 
 use crate::symbols::VoicevoxInitializeOptions;
 use assert_cmd::assert::AssertResult;
@@ -89,8 +90,6 @@ impl assert_cdylib::TestCase for TestCase {
             openjtalk.assume_init()
         };
 
-        assert_ok(voicevox_open_jtalk_rc_load_user_dict(openjtalk, dict));
-
         let synthesizer = {
             let mut synthesizer = MaybeUninit::uninit();
             assert_ok(voicevox_synthesizer_new_with_initialize(
@@ -117,6 +116,8 @@ impl assert_cdylib::TestCase for TestCase {
         let audio_query_without_dict = serde_json::from_str::<serde_json::Value>(
             &CString::from_raw(audio_query_without_dict).into_string()?,
         )?;
+
+        assert_ok(voicevox_open_jtalk_rc_load_user_dict(openjtalk, dict));
 
         let mut audio_query_with_dict = std::ptr::null_mut();
         assert_ok(voicevox_synthesizer_audio_query(

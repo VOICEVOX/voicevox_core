@@ -45,7 +45,7 @@ impl UserDictWord {
         Self::validate_pronunciation(&pronunciation[..])?;
         let mora_count = Self::calculate_mora_count(&pronunciation[..], accent_type)?;
         Ok(Self {
-            surface,
+            surface: Self::to_zenkaku(&surface[..]),
             pronunciation,
             accent_type,
             word_type,
@@ -115,6 +115,19 @@ impl UserDictWord {
 
         Ok(mora_count)
     }
+
+    fn to_zenkaku(surface: &str) -> String {
+        let mut result = String::new();
+        for c in surface.chars() {
+            let i = c as u32;
+            result.push(if (0x21..=0x7e).contains(&i) {
+                char::from_u32(0xfee0 + i).unwrap_or(c)
+            } else {
+                c
+            });
+        }
+        result
+    }
 }
 
 /// ユーザー辞書の単語の種類。
@@ -137,7 +150,7 @@ impl UserDictWord {
     pub fn to_mecab_format(&self) -> String {
         let pos = PART_OF_SPEECH_DETAIL.get(&self.word_type).unwrap();
         format!(
-            "{},{},{},{},{},{},{},{},{},{},{},{},{},{}/{}{}\n",
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{}/{},{}\n",
             self.surface,
             pos.context_id,
             pos.context_id,
@@ -155,5 +168,19 @@ impl UserDictWord {
             self.mora_count,
             "*" // accent_associative_rule
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+    use super::*;
+
+    #[rstest]
+    #[case("abcdefg", "ａｂｃｄｅｆｇ")]
+    #[case("あいうえお", "あいうえお")]
+    #[case("a_b_c_d_e_f_g", "ａ＿ｂ＿ｃ＿ｄ＿ｅ＿ｆ＿ｇ")]
+    fn to_zenkaku_works(#[case] before: &str, #[case] after: &str) {
+        assert_eq!(UserDictWord::to_zenkaku(before), after);
     }
 }

@@ -60,7 +60,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         let json = get_json(&dict);
 
-        assert!(json.contains("hoge"));
+        assert!(json.contains("ｈｏｇｅ"));
         assert!(json.contains("ホゲ"));
         assert!(json.contains(word_uuid));
 
@@ -76,9 +76,9 @@ impl assert_cdylib::TestCase for TestCase {
 
         let json = get_json(&dict);
 
-        assert!(!json.contains("hoge"));
+        assert!(!json.contains("ｈｏｇｅ"));
         assert!(!json.contains("ホゲ"));
-        assert!(json.contains("fuga"));
+        assert!(json.contains("ｆｕｇａ"));
         assert!(json.contains("フガ"));
         assert!(json.contains(word_uuid));
 
@@ -108,10 +108,10 @@ impl assert_cdylib::TestCase for TestCase {
         assert_ok(voicevox_dict_merge(dict, other_dict));
 
         let json = get_json(&dict);
-        assert!(json.contains("fuga"));
+        assert!(json.contains("ｆｕｇａ"));
         assert!(json.contains("フガ"));
         assert!(json.contains(word_uuid));
-        assert!(json.contains("piyo"));
+        assert!(json.contains("ｐｉｙｏ"));
         assert!(json.contains("ピヨ"));
         assert!(json.contains(other_word_uuid));
 
