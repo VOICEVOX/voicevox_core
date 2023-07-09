@@ -2,7 +2,10 @@
 
 use assert_cmd::assert::AssertResult;
 use once_cell::sync::Lazy;
-use std::ffi::{CStr, CString};
+use std::{
+    ffi::{CStr, CString},
+    mem::MaybeUninit,
+};
 use tempfile::NamedTempFile;
 use voicevox_core::result_code::VoicevoxResultCode;
 
@@ -35,7 +38,6 @@ impl assert_cdylib::TestCase for TestCase {
             ..
         } = Symbols::new(lib)?;
 
-        let mut dict = std::ptr::null_mut();
         let get_json = |dict: &*mut VoicevoxUserDict| -> &str {
             let mut json = std::ptr::null_mut();
             assert_ok(voicevox_dict_get_words_json((*dict) as *const _, &mut json));
@@ -43,10 +45,12 @@ impl assert_cdylib::TestCase for TestCase {
             CStr::from_ptr(json).to_str().unwrap()
         };
 
-        let temp_dict_path = NamedTempFile::new()?.into_temp_path();
-        let temp_dict_path_cstr =
-            CStr::from_bytes_with_nul_unchecked(temp_dict_path.to_str().unwrap().as_bytes());
-        assert_ok(voicevox_dict_new(temp_dict_path_cstr.as_ptr(), &mut dict));
+        let dict = {
+            let mut dict = MaybeUninit::uninit();
+            let path = temp_dict_path();
+            assert_ok(voicevox_dict_new(path, dict.as_mut_ptr()));
+            dict.assume_init()
+        };
 
         let mut word = voicevox_default_user_dict_word();
         let mut word_uuid = std::ptr::null_mut();
@@ -83,14 +87,12 @@ impl assert_cdylib::TestCase for TestCase {
         assert!(json.contains("フガ"));
         assert!(json.contains(word_uuid));
 
-        let other_dict_path = NamedTempFile::new()?.into_temp_path();
-        let other_dict_path_cstr =
-            CStr::from_bytes_with_nul_unchecked(other_dict_path.to_str().unwrap().as_bytes());
-        let mut other_dict = std::ptr::null_mut();
-        assert_ok(voicevox_dict_new(
-            other_dict_path_cstr.as_ptr(),
-            &mut other_dict,
-        ));
+        let other_dict = {
+            let mut dict = MaybeUninit::uninit();
+            let path = temp_dict_path();
+            assert_ok(voicevox_dict_new(path, dict.as_mut_ptr()));
+            dict.assume_init()
+        };
 
         let mut other_word = voicevox_default_user_dict_word();
         let mut other_word_uuid = std::ptr::null_mut();
@@ -131,6 +133,12 @@ impl assert_cdylib::TestCase for TestCase {
 
         fn assert_ok(result_code: VoicevoxResultCode) {
             std::assert_eq!(VoicevoxResultCode::VOICEVOX_RESULT_OK, result_code);
+        }
+
+        unsafe fn temp_dict_path() -> *const i8 {
+            let temp_dict_path = NamedTempFile::new().unwrap().into_temp_path();
+            CStr::from_bytes_with_nul_unchecked(temp_dict_path.to_str().unwrap().as_bytes())
+                .as_ptr()
         }
     }
 
