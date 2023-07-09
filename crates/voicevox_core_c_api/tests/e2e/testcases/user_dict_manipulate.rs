@@ -48,7 +48,7 @@ impl assert_cdylib::TestCase for TestCase {
         let dict = {
             let mut dict = MaybeUninit::uninit();
             let path = temp_dict_path();
-            assert_ok(voicevox_dict_new(path, dict.as_mut_ptr()));
+            assert_ok(voicevox_dict_new(path.as_ptr(), dict.as_mut_ptr()));
             dict.assume_init()
         };
 
@@ -90,7 +90,7 @@ impl assert_cdylib::TestCase for TestCase {
         let other_dict = {
             let mut dict = MaybeUninit::uninit();
             let path = temp_dict_path();
-            assert_ok(voicevox_dict_new(path, dict.as_mut_ptr()));
+            assert_ok(voicevox_dict_new(path.as_ptr(), dict.as_mut_ptr()));
             dict.assume_init()
         };
 
@@ -135,10 +135,9 @@ impl assert_cdylib::TestCase for TestCase {
             std::assert_eq!(VoicevoxResultCode::VOICEVOX_RESULT_OK, result_code);
         }
 
-        unsafe fn temp_dict_path() -> *const i8 {
+        unsafe fn temp_dict_path() -> CString {
             let temp_dict_path = NamedTempFile::new().unwrap().into_temp_path();
-            CStr::from_bytes_with_nul_unchecked(temp_dict_path.to_str().unwrap().as_bytes())
-                .as_ptr()
+            CString::new(temp_dict_path.to_str().unwrap()).unwrap()
         }
     }
 
