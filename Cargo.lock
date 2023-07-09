@@ -2238,7 +2238,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "open_jtalk"
 version = "0.1.25"
-source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=d766a52bad4ccafe18597e57bd6842f59dca881e#d766a52bad4ccafe18597e57bd6842f59dca881e"
+source = "git+https://github.com/sevenc-nanashi/open_jtalk-rs.git?rev=9ed62d9ab73a565e5024afa2300afd27eca4bd13#9ed62d9ab73a565e5024afa2300afd27eca4bd13"
 dependencies = [
  "open_jtalk-sys",
  "thiserror",
@@ -2247,7 +2247,7 @@ dependencies = [
 [[package]]
 name = "open_jtalk-sys"
 version = "0.16.111"
-source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=d766a52bad4ccafe18597e57bd6842f59dca881e#d766a52bad4ccafe18597e57bd6842f59dca881e"
+source = "git+https://github.com/sevenc-nanashi/open_jtalk-rs.git?rev=9ed62d9ab73a565e5024afa2300afd27eca4bd13#9ed62d9ab73a565e5024afa2300afd27eca4bd13"
 dependencies = [
  "bindgen",
  "cmake",

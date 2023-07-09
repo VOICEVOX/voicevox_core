@@ -99,12 +99,15 @@ impl OpenJtalk {
             temp_csv_path.to_str().unwrap(),
         ]);
 
-        let Resources {
-            mecab,
-            ..
-        } = &mut *self.resources.lock().unwrap();
+        let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
 
-        // TODO: ユーザー辞書読み込み処理
+        let result = mecab.load_with_userdic(dict_dir, temp_dict_path.to_str().unwrap());
+
+        if !result {
+            return Err(OpenJtalkError::LoadUserDict {
+                text: "failed to load user dict.".to_string(),
+            });
+        }
 
         Ok(())
     }
