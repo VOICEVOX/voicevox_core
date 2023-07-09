@@ -54,7 +54,7 @@ impl UserDict {
     }
 
     /// ユーザー辞書の単語を変更する。
-    pub fn alter_word(&mut self, word_uuid: &str, new_word: UserDictWord) -> Result<()> {
+    pub fn update_word(&mut self, word_uuid: &str, new_word: UserDictWord) -> Result<()> {
         if !self.words.contains_key(word_uuid) {
             return Err(Error::WordNotFound);
         }

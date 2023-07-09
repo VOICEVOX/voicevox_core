@@ -821,7 +821,7 @@ pub unsafe extern "C" fn voicevox_dict_add_word(
 /// # Safety
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_dict_alter_word(
+pub unsafe extern "C" fn voicevox_dict_update_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: *const u8,
     word: &VoicevoxUserDictWord,
@@ -831,7 +831,7 @@ pub unsafe extern "C" fn voicevox_dict_alter_word(
         let word = word.try_into_word()?;
         {
             let mut dict = user_dict.dict.lock().expect("lock failed");
-            dict.alter_word(word_uuid, word)?;
+            dict.update_word(word_uuid, word)?;
         };
 
         Ok(())

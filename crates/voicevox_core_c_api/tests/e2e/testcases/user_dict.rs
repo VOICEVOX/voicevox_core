@@ -27,7 +27,7 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_default_user_dict_word,
             voicevox_dict_new,
             voicevox_dict_add_word,
-            voicevox_dict_alter_word,
+            voicevox_dict_update_word,
             voicevox_dict_remove_word,
             voicevox_dict_get_words_json,
             voicevox_dict_merge,
