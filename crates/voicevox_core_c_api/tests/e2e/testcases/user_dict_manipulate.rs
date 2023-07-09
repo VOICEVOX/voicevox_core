@@ -46,6 +46,7 @@ impl assert_cdylib::TestCase for TestCase {
         let temp_dict_path = NamedTempFile::new()?.into_temp_path();
         let temp_dict_path_cstr =
             CStr::from_bytes_with_nul_unchecked(temp_dict_path.to_str().unwrap().as_bytes());
+        println!("temp_dict_path: {:?}", temp_dict_path);
         assert_ok(voicevox_dict_new(temp_dict_path_cstr.as_ptr(), &mut dict));
 
         let mut word = voicevox_default_user_dict_word();
@@ -86,6 +87,7 @@ impl assert_cdylib::TestCase for TestCase {
         let other_dict_path = NamedTempFile::new()?.into_temp_path();
         let other_dict_path_cstr =
             CStr::from_bytes_with_nul_unchecked(other_dict_path.to_str().unwrap().as_bytes());
+        println!("other_dict_path: {:?}", other_dict_path);
         let mut other_dict = std::ptr::null_mut();
         assert_ok(voicevox_dict_new(
             other_dict_path_cstr.as_ptr(),
