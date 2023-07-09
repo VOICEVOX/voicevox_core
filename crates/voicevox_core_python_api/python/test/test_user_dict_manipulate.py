@@ -21,7 +21,7 @@ async def test_user_dict_manipulate() -> None:
         "this_word_should_not_exist_in_default_dictionary", style_id=0, kana=False
     )
 
-    temp_dict_path = tempfile.mkstemp()[1]
+    temp_dict_fd, temp_dict_path = tempfile.mkstemp()
 
     temp_dict = voicevox_core.UserDict(temp_dict_path)
     temp_dict.add_word(
@@ -39,6 +39,7 @@ async def test_user_dict_manipulate() -> None:
 
     del temp_dict
 
+    os.close(temp_dict_fd)
     os.remove(temp_dict_path)
 
     assert audio_query_without_dict != audio_query_with_dict

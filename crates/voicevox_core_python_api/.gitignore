@@ -5,3 +5,7 @@
 *.abi3.dll
 *.abi3.dylib
 *.abi3.so
+
+*.pyd
+*.so
+*.dll
