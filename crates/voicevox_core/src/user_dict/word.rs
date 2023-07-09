@@ -173,8 +173,8 @@ impl UserDictWord {
 
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
     use super::*;
+    use rstest::rstest;
 
     #[rstest]
     #[case("abcdefg", "ａｂｃｄｅｆｇ")]
