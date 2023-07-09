@@ -139,6 +139,7 @@ pub(crate) struct Symbols<'lib> {
         'lib,
         unsafe extern "C" fn(
             *const VoicevoxUserDict,
+            *const c_char,
             *const VoicevoxUserDictWord,
         ) -> VoicevoxResultCode,
     >,
@@ -277,9 +278,9 @@ pub(crate) struct VoicevoxUserDictWord {
 #[repr(i32)]
 #[allow(non_camel_case_types)]
 pub(crate) enum VoicevoxUserDictWordType {
-    VOICEVOX_USER_DICT_WORD_TYPE_NOUN = 0,
-    VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE = 1,
+    VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN = 0,
+    VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN = 1,
     VOICEVOX_USER_DICT_WORD_TYPE_VERB = 2,
-    VOICEVOX_USER_DICT_WORD_TYPE_AUXILIARY_VERB = 3,
-    VOICEVOX_USER_DICT_WORD_TYPE_OTHER = 4,
+    VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE = 3,
+    VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX = 4,
 }

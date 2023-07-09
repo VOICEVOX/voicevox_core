@@ -2,7 +2,7 @@
 
 use assert_cmd::assert::AssertResult;
 use once_cell::sync::Lazy;
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use tempfile::NamedTempFile;
 use voicevox_core::result_code::VoicevoxResultCode;
 
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     snapshots,
-    symbols::Symbols,
+    symbols::{Symbols, VoicevoxUserDict, VoicevoxUserDictWordType},
 };
 
 case!(TestCase);
@@ -35,17 +35,93 @@ impl assert_cdylib::TestCase for TestCase {
         } = Symbols::new(lib)?;
 
         let mut dict = std::ptr::null_mut();
+        let get_json = |dict: &*mut VoicevoxUserDict| -> &str {
+            let mut json = std::ptr::null_mut();
+            assert_ok(voicevox_dict_get_words_json((*dict) as *const _, &mut json));
+
+            CStr::from_ptr(json).to_str().unwrap()
+        };
 
         let temp_dict_path = NamedTempFile::new()?.into_temp_path();
-        assert_ok(voicevox_dict_new(
-            temp_dict_path.to_str().unwrap().as_ptr() as *const i8,
-            &mut dict,
-        ));
+        let temp_dict_path_cstr =
+            CStr::from_bytes_with_nul_unchecked(temp_dict_path.to_str().unwrap().as_bytes());
+        assert_ok(voicevox_dict_new(temp_dict_path_cstr.as_ptr(), &mut dict));
 
-        let word = voicevox_default_user_dict_word();
+        let mut word = voicevox_default_user_dict_word();
         let mut word_uuid = std::ptr::null_mut();
 
+        word.surface = CString::new("hoge").unwrap().into_raw();
+        word.pronunciation = CString::new("ホゲ").unwrap().into_raw();
+        word.word_type = VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;
+
         assert_ok(voicevox_dict_add_word(dict, &word, &mut word_uuid));
+
+        let word_uuid = CStr::from_ptr(word_uuid).to_str().unwrap();
+
+        let json = get_json(&dict);
+
+        assert!(json.contains("hoge"));
+        assert!(json.contains("ホゲ"));
+        assert!(json.contains(word_uuid));
+
+        word.surface = CString::new("fuga").unwrap().into_raw();
+        word.pronunciation = CString::new("フガ").unwrap().into_raw();
+        word.word_type = VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN;
+
+        assert_ok(voicevox_dict_update_word(
+            dict,
+            word_uuid.as_bytes().as_ptr() as *const i8,
+            &word,
+        ));
+
+        let json = get_json(&dict);
+
+        assert!(!json.contains("hoge"));
+        assert!(!json.contains("ホゲ"));
+        assert!(json.contains("fuga"));
+        assert!(json.contains("フガ"));
+        assert!(json.contains(word_uuid));
+
+        let other_dict_path = NamedTempFile::new()?.into_temp_path();
+        let other_dict_path_cstr =
+            CStr::from_bytes_with_nul_unchecked(other_dict_path.to_str().unwrap().as_bytes());
+        let mut other_dict = std::ptr::null_mut();
+        assert_ok(voicevox_dict_new(
+            other_dict_path_cstr.as_ptr(),
+            &mut other_dict,
+        ));
+
+        let mut other_word = voicevox_default_user_dict_word();
+        let mut other_word_uuid = std::ptr::null_mut();
+
+        other_word.surface = CString::new("piyo").unwrap().into_raw();
+        other_word.pronunciation = CString::new("ピヨ").unwrap().into_raw();
+
+        assert_ok(voicevox_dict_add_word(
+            other_dict,
+            &other_word,
+            &mut other_word_uuid as *mut *mut i8,
+        ));
+
+        let other_word_uuid = CStr::from_ptr(other_word_uuid).to_str().unwrap();
+
+        assert_ok(voicevox_dict_merge(dict, other_dict));
+
+        let json = get_json(&dict);
+        assert!(json.contains("fuga"));
+        assert!(json.contains("フガ"));
+        assert!(json.contains(word_uuid));
+        assert!(json.contains("piyo"));
+        assert!(json.contains("ピヨ"));
+        assert!(json.contains(other_word_uuid));
+
+        assert_ok(voicevox_dict_remove_word(
+            dict,
+            word_uuid.as_bytes().as_ptr() as *const i8,
+        ));
+
+        let json = get_json(&dict);
+        assert!(!json.contains(word_uuid));
 
         return Ok(());
 
