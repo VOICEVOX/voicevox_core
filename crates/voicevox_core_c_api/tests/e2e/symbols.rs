@@ -128,11 +128,11 @@ pub(crate) struct Symbols<'lib> {
 
     pub(crate) voicevox_default_user_dict_word:
         Symbol<'lib, unsafe extern "C" fn() -> VoicevoxUserDictWord>,
-    pub(crate) voicevox_dict_new: Symbol<
+    pub(crate) voicevox_user_dict_new: Symbol<
         'lib,
         unsafe extern "C" fn(*const c_char, *mut *mut VoicevoxUserDict) -> VoicevoxResultCode,
     >,
-    pub(crate) voicevox_dict_add_word: Symbol<
+    pub(crate) voicevox_user_dict_add_word: Symbol<
         'lib,
         unsafe extern "C" fn(
             *const VoicevoxUserDict,
@@ -140,7 +140,7 @@ pub(crate) struct Symbols<'lib> {
             *mut *mut c_char,
         ) -> VoicevoxResultCode,
     >,
-    pub(crate) voicevox_dict_update_word: Symbol<
+    pub(crate) voicevox_user_dict_update_word: Symbol<
         'lib,
         unsafe extern "C" fn(
             *const VoicevoxUserDict,
@@ -148,22 +148,22 @@ pub(crate) struct Symbols<'lib> {
             *const VoicevoxUserDictWord,
         ) -> VoicevoxResultCode,
     >,
-    pub(crate) voicevox_dict_remove_word: Symbol<
+    pub(crate) voicevox_user_dict_remove_word: Symbol<
         'lib,
         unsafe extern "C" fn(*const VoicevoxUserDict, *const c_char) -> VoicevoxResultCode,
     >,
-    pub(crate) voicevox_dict_get_words_json: Symbol<
+    pub(crate) voicevox_user_dict_get_words_json: Symbol<
         'lib,
         unsafe extern "C" fn(*const VoicevoxUserDict, *mut *mut c_char) -> VoicevoxResultCode,
     >,
-    pub(crate) voicevox_dict_merge: Symbol<
+    pub(crate) voicevox_user_dict_merge: Symbol<
         'lib,
         unsafe extern "C" fn(
             *const VoicevoxUserDict,
             *const VoicevoxUserDict,
         ) -> VoicevoxResultCode,
     >,
-    pub(crate) voicevox_dict_delete:
+    pub(crate) voicevox_user_dict_delete:
         Symbol<'lib, unsafe extern "C" fn(*mut VoicevoxUserDict) -> VoicevoxResultCode>,
 }
 
@@ -215,13 +215,13 @@ impl<'lib> Symbols<'lib> {
             yukarin_sa_forward,
             decode_forward,
             voicevox_default_user_dict_word,
-            voicevox_dict_new,
-            voicevox_dict_add_word,
-            voicevox_dict_update_word,
-            voicevox_dict_remove_word,
-            voicevox_dict_get_words_json,
-            voicevox_dict_merge,
-            voicevox_dict_delete,
+            voicevox_user_dict_new,
+            voicevox_user_dict_add_word,
+            voicevox_user_dict_update_word,
+            voicevox_user_dict_remove_word,
+            voicevox_user_dict_get_words_json,
+            voicevox_user_dict_merge,
+            voicevox_user_dict_delete,
         ))
     }
 }
