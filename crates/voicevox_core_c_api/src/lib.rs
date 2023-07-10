@@ -906,7 +906,7 @@ pub extern "C" fn voicevox_user_dict_merge(
     })())
 }
 
-/// ユーザー辞書を削除する
+/// ユーザー辞書を廃棄する。
 /// @param [in] user_dict VoicevoxUserDictのポインタ
 ///
 /// # Safety
