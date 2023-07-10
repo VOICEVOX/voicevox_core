@@ -92,7 +92,11 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
         VOICEVOX_USER_DICT_READ_ERROR => "ユーザー辞書を読み込めませんでした\0",
         VOICEVOX_USER_DICT_WRITE_ERROR => "ユーザー辞書を書き込めませんでした\0",
         VOICEVOX_USER_DICT_WORD_NOT_FOUND_ERROR => "ユーザー辞書に単語が見つかりませんでした\0",
-        VOICEVOX_USER_DICT_LOAD_ERROR => "ユーザー辞書をOpenJTalkに読み込ませることができませんでした\0",
-        VOICEVOX_USER_DICT_INVALID_WORD_ERROR => "ユーザー辞書の単語のバリデーションに失敗しました\0",
+        VOICEVOX_USER_DICT_LOAD_ERROR => {
+            "ユーザー辞書をOpenJTalkに読み込ませることができませんでした\0"
+        }
+        VOICEVOX_USER_DICT_INVALID_WORD_ERROR => {
+            "ユーザー辞書の単語のバリデーションに失敗しました\0"
+        }
     }
 }
