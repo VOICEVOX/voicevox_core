@@ -41,7 +41,7 @@ rev = "ebb9dcb9b26ee681889b52b6db3b4f642b04a250"
 # rev = "d766a52bad4ccafe18597e57bd6842f59dca881e"
 # TODO: https://github.com/VOICEVOX/open_jtalk-rs/pull/15 がマージされたら追従する。
 git = "https://github.com/sevenc-nanashi/open_jtalk-rs.git"
-rev = "9ed62d9ab73a565e5024afa2300afd27eca4bd13"
+rev = "4af5c15e351f96b2190291ccd9854f90c0384af1"
 
 [dev-dependencies]
 flate2 = "1.0.24"
