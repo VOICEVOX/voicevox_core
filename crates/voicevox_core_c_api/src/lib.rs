@@ -772,7 +772,7 @@ pub extern "C" fn voicevox_default_user_dict_word() -> VoicevoxUserDictWord {
 /// @param dict_path パスが有効な文字列を指していること
 /// @param user_dict VoicevoxUserDictのポインタが有効な領域を指していること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_dict_new(
+pub unsafe extern "C" fn voicevox_user_dict_new(
     dict_path: *const c_char,
     out_user_dict: NonNull<Box<VoicevoxUserDict>>,
 ) -> VoicevoxResultCode {
@@ -799,7 +799,7 @@ pub unsafe extern "C" fn voicevox_dict_new(
 /// @param word_uuid は呼び出し側で解放する必要がある
 ///
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_dict_add_word(
+pub unsafe extern "C" fn voicevox_user_dict_add_word(
     user_dict: &VoicevoxUserDict,
     word: &VoicevoxUserDictWord,
     out_word_uuid: NonNull<*mut c_char>,
@@ -828,7 +828,7 @@ pub unsafe extern "C" fn voicevox_dict_add_word(
 /// # Safety
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_dict_update_word(
+pub unsafe extern "C" fn voicevox_user_dict_update_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: *const u8,
     word: &VoicevoxUserDictWord,
@@ -850,7 +850,7 @@ pub unsafe extern "C" fn voicevox_dict_update_word(
 /// @param [in] word_uuid 削除する単語のUUID
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
-pub extern "C" fn voicevox_dict_remove_word(
+pub extern "C" fn voicevox_user_dict_remove_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: *const u8,
 ) -> VoicevoxResultCode {
@@ -873,7 +873,7 @@ pub extern "C" fn voicevox_dict_remove_word(
 /// # Safety
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_dict_get_words_json(
+pub unsafe extern "C" fn voicevox_user_dict_get_words_json(
     user_dict: &VoicevoxUserDict,
     out_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
@@ -891,7 +891,7 @@ pub unsafe extern "C" fn voicevox_dict_get_words_json(
 /// @param [in] other_dict マージするユーザー辞書のポインタ
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
-pub extern "C" fn voicevox_dict_merge(
+pub extern "C" fn voicevox_user_dict_merge(
     user_dict: &VoicevoxUserDict,
     other_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
@@ -912,7 +912,7 @@ pub extern "C" fn voicevox_dict_merge(
 /// # Safety
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_dict_delete(user_dict: Box<VoicevoxUserDict>) {
+pub unsafe extern "C" fn voicevox_user_dict_delete(user_dict: Box<VoicevoxUserDict>) {
     drop(user_dict);
 }
 

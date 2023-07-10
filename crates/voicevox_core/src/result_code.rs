@@ -43,16 +43,16 @@ pub enum VoicevoxResultCode {
     VOICEVOX_ALREADY_LOADED_MODEL_ERROR = 18,
     /// Modelが読み込まれていない
     VOICEVOX_UNLOADED_MODEL_ERROR = 19,
-    /// 辞書を読み込めなかった
+    /// ユーザー辞書を読み込めなかった
     VOICEVOX_USER_DICT_READ_ERROR = 20,
-    /// 辞書を書き込めなかった
+    /// ユーザー辞書を書き込めなかった
     VOICEVOX_USER_DICT_WRITE_ERROR = 21,
-    /// 辞書に単語が見つからなかった
-    VOICEVOX_WORD_NOT_FOUND_ERROR = 22,
-    /// 辞書をOpenJTalkに読み込ませることができなかった
+    /// ユーザー辞書に単語が見つからなかった
+    VOICEVOX_USER_DICT_WORD_NOT_FOUND_ERROR = 22,
+    /// ユーザー辞書をOpenJTalkに読み込ませることができなかった
     VOICEVOX_USER_DICT_LOAD_ERROR = 23,
-    /// 単語のバリデーションに失敗した
-    VOICEVOX_INVALID_WORD_ERROR = 24,
+    /// ユーザー辞書の単語のバリデーションに失敗した
+    VOICEVOX_USER_DICT_INVALID_WORD_ERROR = 24,
 }
 
 pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
@@ -89,10 +89,10 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
             "すでに読み込まれているModelを読み込もうとしました\0"
         }
         VOICEVOX_UNLOADED_MODEL_ERROR => "Modelが読み込まれていません\0",
-        VOICEVOX_USER_DICT_READ_ERROR => "辞書を読み込めませんでした\0",
-        VOICEVOX_USER_DICT_WRITE_ERROR => "辞書を書き込めませんでした\0",
-        VOICEVOX_WORD_NOT_FOUND_ERROR => "辞書に単語が見つかりませんでした\0",
-        VOICEVOX_USER_DICT_LOAD_ERROR => "辞書をOpenJTalkに読み込ませることができませんでした\0",
-        VOICEVOX_INVALID_WORD_ERROR => "単語のバリデーションに失敗しました\0",
+        VOICEVOX_USER_DICT_READ_ERROR => "ユーザー辞書を読み込めませんでした\0",
+        VOICEVOX_USER_DICT_WRITE_ERROR => "ユーザー辞書を書き込めませんでした\0",
+        VOICEVOX_USER_DICT_WORD_NOT_FOUND_ERROR => "ユーザー辞書に単語が見つかりませんでした\0",
+        VOICEVOX_USER_DICT_LOAD_ERROR => "ユーザー辞書をOpenJTalkに読み込ませることができませんでした\0",
+        VOICEVOX_USER_DICT_INVALID_WORD_ERROR => "ユーザー辞書の単語のバリデーションに失敗しました\0",
     }
 }

@@ -89,13 +89,13 @@ pub enum Error {
     #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_WRITE_ERROR))]
     UserDictWrite(String),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_WORD_NOT_FOUND_ERROR))]
+    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_WORD_NOT_FOUND_ERROR))]
     WordNotFound(String),
 
     #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_LOAD_ERROR))]
     UserDictLoad(String),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_INVALID_WORD_ERROR))]
+    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_INVALID_WORD_ERROR))]
     InvalidWord(String),
 }
 
