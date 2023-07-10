@@ -86,7 +86,7 @@ pub static PART_OF_SPEECH_DETAIL: Lazy<HashMap<UserDictWordType, PartOfSpeechDet
                     cost_candidates: vec![
                         1527, 3266, 3561, 3857, 4153, 4449, 5149, 5849, 6549, 7250, 10001,
                     ],
-                    accent_associative_rules: ["*"],
+                    accent_associative_rules: vec!["*"],
                 },
             ),
             (

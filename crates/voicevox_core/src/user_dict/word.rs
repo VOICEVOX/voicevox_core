@@ -67,6 +67,7 @@ impl UserDictWord {
         })
     }
 
+    // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L190-L236
     fn validate_pronunciation(pronunciation: &str) -> Result<()> {
         if !PRONUNCIATION_REGEX.is_match(pronunciation) {
             return Err(Error::InvalidWord(
@@ -129,6 +130,7 @@ impl UserDictWord {
         Ok(mora_count)
     }
 
+    // 元実装：https://github.com/VOICEVOX/voicevox/blob/69898f5dd001d28d4de355a25766acb0e0833ec2/src/components/DictionaryManageDialog.vue#L379-L387
     fn to_zenkaku(surface: &str) -> String {
         let mut result = String::new();
         for c in surface.chars() {
