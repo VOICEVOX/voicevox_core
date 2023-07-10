@@ -305,12 +305,12 @@ class UserDict:
             削除する単語。
         """
         ...
-    def merge(self, other: UserDict) -> None:
-        """2つのユーザー辞書をマージする。
+    def import_dict(self, other: UserDict) -> None:
+        """ユーザー辞書をインポートする。
 
         Parameters
         ----------
         other
-            マージするユーザー辞書。
+            インポートするユーザー辞書。
         """
         ...

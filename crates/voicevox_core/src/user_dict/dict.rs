@@ -73,7 +73,7 @@ impl UserDict {
         self.save()?;
         Ok(word)
     }
-
+import
     /// 2つのユーザー辞書をマージする。
     pub fn merge(&mut self, other: &Self) -> Result<()> {
         for (word_uuid, word) in &other.words {

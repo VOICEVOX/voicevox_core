@@ -886,12 +886,12 @@ pub unsafe extern "C" fn voicevox_user_dict_get_words_json(
     VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 
-/// 2つのユーザー辞書をマージする
+/// 他のユーザー辞書をインポートする
 /// @param [in] user_dict VoicevoxUserDictのポインタ
-/// @param [in] other_dict マージするユーザー辞書のポインタ
+/// @param [in] other_dict インポートするユーザー辞書
 /// @return 結果コード #VoicevoxResultCode
 #[no_mangle]
-pub extern "C" fn voicevox_user_dict_merge(
+pub extern "C" fn voicevox_user_dict_import(
     user_dict: &VoicevoxUserDict,
     other_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
@@ -899,7 +899,7 @@ pub extern "C" fn voicevox_user_dict_merge(
         {
             let mut dict = user_dict.dict.lock().expect("lock failed");
             let other_dict = other_dict.dict.lock().expect("lock failed");
-            dict.merge(&other_dict)?;
+            dict.import(&other_dict)?;
         };
 
         Ok(())

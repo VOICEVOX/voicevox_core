@@ -405,8 +405,8 @@ impl UserDict {
         Ok(())
     }
 
-    fn merge(&mut self, other: &UserDict) -> PyResult<()> {
-        self.dict.merge(&other.dict).into_py_result()?;
+    fn import_dict(&mut self, other: &UserDict) -> PyResult<()> {
+        self.dict.import(&other.dict).into_py_result()?;
         Ok(())
     }
 
