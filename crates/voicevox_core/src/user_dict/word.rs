@@ -141,6 +141,8 @@ impl UserDictWord {
             let i = c as u32;
             result.push(if (0x21..=0x7e).contains(&i) {
                 char::from_u32(0xfee0 + i).unwrap_or(c)
+            } else if i == 0x20 {
+                '　'
             } else {
                 c
             });
@@ -199,6 +201,7 @@ mod tests {
     #[case("abcdefg", "ａｂｃｄｅｆｇ")]
     #[case("あいうえお", "あいうえお")]
     #[case("a_b_c_d_e_f_g", "ａ＿ｂ＿ｃ＿ｄ＿ｅ＿ｆ＿ｇ")]
+    #[case("a b c d e f g", "ａ　ｂ　ｃ　ｄ　ｅ　ｆ　ｇ")]
     fn to_zenkaku_works(#[case] before: &str, #[case] after: &str) {
         assert_eq!(UserDictWord::to_zenkaku(before), after);
     }
