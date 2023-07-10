@@ -381,10 +381,20 @@ struct UserDict {
 #[pymethods]
 impl UserDict {
     #[new]
-    fn new(store_path: &str) -> PyResult<Self> {
-        Ok(Self {
-            dict: voicevox_core::UserDict::new(store_path).into_py_result()?,
-        })
+    fn new() -> Self {
+        Self {
+            dict: voicevox_core::UserDict::new(),
+        }
+    }
+
+    fn load(&mut self, path: &str) -> PyResult<()> {
+        self.dict.load(path).into_py_result()?;
+        Ok(())
+    }
+
+    fn save(&self, path: &str) -> PyResult<()> {
+        self.dict.save(path).into_py_result()?;
+        Ok(())
     }
 
     fn add_word(&mut self, word: UserDictWord) -> PyResult<String> {
