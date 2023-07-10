@@ -67,8 +67,9 @@ impl UserDictWord {
         })
     }
 
-    // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L190-L236
+    /// カタカナの文字列が発音として有効かどうかを判定する。
     fn validate_pronunciation(pronunciation: &str) -> Result<()> {
+        // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L190-L210
         if !PRONUNCIATION_REGEX.is_match(pronunciation) {
             return Err(Error::InvalidWord(
                 "発音は有効なカタカナである必要があります。".to_string(),
@@ -105,7 +106,9 @@ impl UserDictWord {
         Ok(())
     }
 
+    /// カタカナの発音からモーラ数を計算する。
     fn calculate_mora_count(pronunciation: &str, accent_type: usize) -> Result<usize> {
+        // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L212-L236
         let rule_others =
             r#"[イ][ェ]|[ヴ][ャュョ]|[トド][ゥ]|[テデ][ィャュョ]|[デ][ェ]|[クグ][ヮ]"#;
         let rule_line_i = r#"[キシチニヒミリギジビピ][ェャュョ]"#;
@@ -130,8 +133,9 @@ impl UserDictWord {
         Ok(mora_count)
     }
 
-    // 元実装：https://github.com/VOICEVOX/voicevox/blob/69898f5dd001d28d4de355a25766acb0e0833ec2/src/components/DictionaryManageDialog.vue#L379-L387
+    /// ASCII文字を全角文字に変換する。
     fn to_zenkaku(surface: &str) -> String {
+        // 元実装：https://github.com/VOICEVOX/voicevox/blob/69898f5dd001d28d4de355a25766acb0e0833ec2/src/components/DictionaryManageDialog.vue#L379-L387
         let mut result = String::new();
         for c in surface.chars() {
             let i = c as u32;
