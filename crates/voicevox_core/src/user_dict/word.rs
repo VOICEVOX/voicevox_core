@@ -202,4 +202,21 @@ mod tests {
     fn to_zenkaku_works(#[case] before: &str, #[case] after: &str) {
         assert_eq!(UserDictWord::to_zenkaku(before), after);
     }
+
+    #[rstest]
+    fn to_mecab_format_works() {
+        // テストの期待値は、VOICEVOX Engineが一時的に出力するcsvの内容を使用した。
+        let word = UserDictWord::new(
+            "単語".to_string(),
+            "ヨミ".to_string(),
+            0,
+            UserDictWordType::ProperNoun,
+            5,
+        )
+        .unwrap();
+        assert_eq!(
+            word.to_mecab_format(),
+            "単語,1348,1348,8609,名詞,固有名詞,一般,*,*,*,*,ヨミ,ヨミ,0/2,*\n"
+        );
+    }
 }
