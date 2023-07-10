@@ -187,9 +187,9 @@ impl VoicevoxUserDictWord {
         Ok(UserDictWord::new(
             ensure_utf8(CStr::from_ptr(self.surface))?.to_string(),
             ensure_utf8(CStr::from_ptr(self.pronunciation))?.to_string(),
-            self.accent_type as usize,
+            self.accent_type,
             self.word_type.into(),
-            self.priority as u32,
+            self.priority,
         )?)
     }
 }

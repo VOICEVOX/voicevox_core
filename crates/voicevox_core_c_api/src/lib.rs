@@ -727,11 +727,11 @@ pub struct VoicevoxUserDictWord {
     /// 読み
     pronunciation: *const c_char,
     /// アクセント型
-    accent_type: i32,
+    accent_type: usize,
     /// 単語の種類
     word_type: VoicevoxUserDictWordType,
     /// 優先度
-    priority: i32,
+    priority: u32,
 }
 
 /// ユーザー辞書の単語の種類
@@ -757,9 +757,9 @@ pub extern "C" fn voicevox_default_user_dict_word() -> VoicevoxUserDictWord {
     VoicevoxUserDictWord {
         surface: std::ptr::null(),
         pronunciation: std::ptr::null(),
-        accent_type: UserDictWord::default().accent_type as i32,
+        accent_type: UserDictWord::default().accent_type,
         word_type: UserDictWord::default().word_type.into(),
-        priority: UserDictWord::default().priority as i32,
+        priority: UserDictWord::default().priority,
     }
 }
 
