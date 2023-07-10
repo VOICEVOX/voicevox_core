@@ -320,7 +320,8 @@ VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
                                               struct OpenJtalkRc **out_open_jtalk);
 
 /**
- * OpenJtalkにユーザー辞書を読み込ませる
+ * OpenJtalkにユーザー辞書を読み込ませる。
+ * この関数を呼び出した後にユーザー辞書を変更した場合、再度この関数を呼び出す必要がある。
  * @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
  * @param [in] user_dict ユーザー辞書
  *
