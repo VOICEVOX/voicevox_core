@@ -59,6 +59,7 @@ impl OpenJtalk {
 
     /// ユーザー辞書を読み込む。
     /// 先に [`Self::load`] を呼ぶ必要がある。
+    /// この関数を読んだ後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
     pub fn load_user_dict(&self, user_dict: &UserDict) -> crate::result::Result<()> {
         let dict_dir = self
             .dict_dir

@@ -9,6 +9,7 @@ from voicevox_core import (
     AudioQuery,
     SpeakerMeta,
     SupportedDevices,
+    UserDict,
     UserDictWord,
 )
 
@@ -38,6 +39,17 @@ class OpenJtalk:
         ----------
         open_jtalk_dict_dir
             open_jtalkの辞書ディレクトリ。
+        """
+        ...
+    def load_user_dict(self, user_dict: UserDict) -> None:
+        """ユーザー辞書を読み込む。
+
+        この関数を読んだ後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
+
+        Parameters
+        ----------
+        user_dict
+            ユーザー辞書。
         """
         ...
 
