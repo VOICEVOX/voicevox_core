@@ -128,9 +128,11 @@ pub(crate) struct Symbols<'lib> {
 
     pub(crate) voicevox_default_user_dict_word:
         Symbol<'lib, unsafe extern "C" fn() -> VoicevoxUserDictWord>,
-    pub(crate) voicevox_user_dict_new: Symbol<
+    pub(crate) voicevox_user_dict_new:
+        Symbol<'lib, unsafe extern "C" fn(*mut *mut VoicevoxUserDict) -> VoicevoxResultCode>,
+    pub(crate) voicevox_user_dict_load: Symbol<
         'lib,
-        unsafe extern "C" fn(*const c_char, *mut *mut VoicevoxUserDict) -> VoicevoxResultCode,
+        unsafe extern "C" fn(*const VoicevoxUserDict, *const c_char) -> VoicevoxResultCode,
     >,
     pub(crate) voicevox_user_dict_add_word: Symbol<
         'lib,
@@ -152,7 +154,7 @@ pub(crate) struct Symbols<'lib> {
         'lib,
         unsafe extern "C" fn(*const VoicevoxUserDict, *const c_char) -> VoicevoxResultCode,
     >,
-    pub(crate) voicevox_user_dict_get_words_json: Symbol<
+    pub(crate) voicevox_user_dict_get_json: Symbol<
         'lib,
         unsafe extern "C" fn(*const VoicevoxUserDict, *mut *mut c_char) -> VoicevoxResultCode,
     >,
@@ -162,6 +164,10 @@ pub(crate) struct Symbols<'lib> {
             *const VoicevoxUserDict,
             *const VoicevoxUserDict,
         ) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_user_dict_save: Symbol<
+        'lib,
+        unsafe extern "C" fn(*const VoicevoxUserDict, *const c_char) -> VoicevoxResultCode,
     >,
     pub(crate) voicevox_user_dict_delete:
         Symbol<'lib, unsafe extern "C" fn(*mut VoicevoxUserDict) -> VoicevoxResultCode>,
@@ -216,11 +222,13 @@ impl<'lib> Symbols<'lib> {
             decode_forward,
             voicevox_default_user_dict_word,
             voicevox_user_dict_new,
+            voicevox_user_dict_load,
             voicevox_user_dict_add_word,
             voicevox_user_dict_update_word,
             voicevox_user_dict_remove_word,
-            voicevox_user_dict_get_words_json,
+            voicevox_user_dict_get_json,
             voicevox_user_dict_import,
+            voicevox_user_dict_save,
             voicevox_user_dict_delete,
         ))
     }
@@ -273,9 +281,9 @@ pub(crate) struct VoicevoxUserDict {
 pub(crate) struct VoicevoxUserDictWord {
     pub(crate) surface: *const c_char,
     pub(crate) pronunciation: *const c_char,
-    pub(crate) accent_type: i32,
+    pub(crate) accent_type: usize,
     pub(crate) word_type: VoicevoxUserDictWordType,
-    pub(crate) priority: i32,
+    pub(crate) priority: u32,
 }
 
 #[repr(i32)]

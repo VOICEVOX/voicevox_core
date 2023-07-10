@@ -763,26 +763,42 @@ pub extern "C" fn voicevox_default_user_dict_word() -> VoicevoxUserDictWord {
     }
 }
 
-/// ユーザー辞書をロードまたは新規作成する
-/// @param [in] dict_path ユーザー辞書のパス
+/// ユーザー辞書を作成する
 /// @param [out] out_user_dict VoicevoxUserDictのポインタ
 /// @return 結果コード #VoicevoxResultCode
 ///
 /// # Safety
-/// @param dict_path パスが有効な文字列を指していること
-/// @param user_dict VoicevoxUserDictのポインタが有効な領域を指していること
+/// @param out_user_dict VoicevoxUserDictのポインタが有効な領域を指していること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_new(
-    dict_path: *const c_char,
     out_user_dict: NonNull<Box<VoicevoxUserDict>>,
+) -> VoicevoxResultCode {
+    let dict = voicevox_core::UserDict::new();
+    let user_dict = Box::new(VoicevoxUserDict {
+        dict: Arc::new(Mutex::new(dict)),
+    });
+    out_user_dict.as_ptr().write(user_dict);
+
+    VoicevoxResultCode::VOICEVOX_RESULT_OK
+}
+
+/// ユーザー辞書にファイルを読み込ませる
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] dict_path 読み込む辞書ファイルのパス
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+/// @param dict_path パスが有効な文字列を指していること
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_user_dict_load(
+    user_dict: &VoicevoxUserDict,
+    dict_path: *const c_char,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let dict_path = ensure_utf8(unsafe { CStr::from_ptr(dict_path) })?;
-        let dict = voicevox_core::UserDict::new(dict_path)?;
-        let user_dict = Box::new(VoicevoxUserDict {
-            dict: Arc::new(Mutex::new(dict)),
-        });
-        out_user_dict.as_ptr().write(user_dict);
+        let mut dict = user_dict.dict.lock().unwrap();
+        dict.load(dict_path)?;
 
         Ok(())
     })())
@@ -873,7 +889,7 @@ pub extern "C" fn voicevox_user_dict_remove_word(
 /// # Safety
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_user_dict_get_words_json(
+pub unsafe extern "C" fn voicevox_user_dict_get_json(
     user_dict: &VoicevoxUserDict,
     out_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
@@ -900,6 +916,29 @@ pub extern "C" fn voicevox_user_dict_import(
             let mut dict = user_dict.dict.lock().expect("lock failed");
             let other_dict = other_dict.dict.lock().expect("lock failed");
             dict.import(&other_dict)?;
+        };
+
+        Ok(())
+    })())
+}
+
+/// ユーザー辞書をファイルに保存する
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] path 保存先のファイルパス
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+/// @param path は有効なUTF-8文字列であること
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_user_dict_save(
+    user_dict: &VoicevoxUserDict,
+    path: *const c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let path = ensure_utf8(CStr::from_ptr(path))?;
+        {
+            let dict = user_dict.dict.lock().expect("lock failed");
+            dict.save(path)?;
         };
 
         Ok(())

@@ -6,7 +6,6 @@ use assert_cmd::assert::AssertResult;
 use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
 use std::mem::MaybeUninit;
-use tempfile::NamedTempFile;
 use test_util::OPEN_JTALK_DIC_DIR;
 use voicevox_core::result_code::VoicevoxResultCode;
 
@@ -35,9 +34,9 @@ impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
             voicevox_default_user_dict_word,
-            voicevox_dict_new,
-            voicevox_dict_add_word,
-            voicevox_dict_delete,
+            voicevox_user_dict_new,
+            voicevox_user_dict_add_word,
+            voicevox_user_dict_delete,
             voicevox_default_initialize_options,
             voicevox_default_audio_query_options,
             voicevox_open_jtalk_rc_new,
@@ -52,24 +51,27 @@ impl assert_cdylib::TestCase for TestCase {
             ..
         } = Symbols::new(lib)?;
 
-        let mut dict = std::ptr::null_mut();
+        let dict = {
+            let mut dict = MaybeUninit::uninit();
+            assert_ok(voicevox_user_dict_new(dict.as_mut_ptr()));
+            dict.assume_init()
+        };
 
-        let temp_dict_path = NamedTempFile::new()?.into_temp_path();
-        let temp_dict_path_cstr =
-            CStr::from_bytes_with_nul_unchecked(temp_dict_path.to_str().unwrap().as_bytes());
-        assert_ok(voicevox_dict_new(temp_dict_path_cstr.as_ptr(), &mut dict));
-
-        let mut word = voicevox_default_user_dict_word();
         let mut word_uuid = std::ptr::null_mut();
 
-        word.surface = CString::new("this_word_should_not_exist_in_default_dictionary")
-            .unwrap()
-            .into_raw();
-        word.pronunciation = CString::new("アイウエオ").unwrap().into_raw();
-        word.word_type = VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;
-        word.priority = 10;
+        let word = {
+            let mut word = voicevox_default_user_dict_word();
+            word.surface = CString::new("this_word_should_not_exist_in_default_dictionary")
+                .unwrap()
+                .into_raw();
+            word.pronunciation = CString::new("アイウエオ").unwrap().into_raw();
+            word.word_type = VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;
+            word.priority = 10;
 
-        assert_ok(voicevox_dict_add_word(dict, &word, &mut word_uuid));
+            word
+        };
+
+        assert_ok(voicevox_user_dict_add_word(dict, &word, &mut word_uuid));
 
         let model = {
             let mut model = MaybeUninit::uninit();
@@ -140,7 +142,7 @@ impl assert_cdylib::TestCase for TestCase {
         voicevox_voice_model_delete(model);
         voicevox_open_jtalk_rc_delete(openjtalk);
         voicevox_synthesizer_delete(synthesizer);
-        voicevox_dict_delete(dict);
+        voicevox_user_dict_delete(dict);
 
         return Ok(());
 
