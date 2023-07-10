@@ -68,12 +68,14 @@ impl OpenJtalk {
             .ok_or(Error::NotLoadedOpenjtalkDict)?;
 
         // ユーザー辞書用のcsvを作成
-        let mut temp_csv = NamedTempFile::new().map_err(|e| Error::OpenjtalkLoadUserDict(e.to_string()))?;
+        let mut temp_csv =
+            NamedTempFile::new().map_err(|e| Error::OpenjtalkLoadUserDict(e.to_string()))?;
         temp_csv
             .write_all(user_dict.to_mecab_format().as_bytes())
             .map_err(|e| Error::OpenjtalkLoadUserDict(e.to_string()))?;
         let temp_csv_path = temp_csv.into_temp_path();
-        let temp_dict = NamedTempFile::new().map_err(|e| Error::OpenjtalkLoadUserDict(e.to_string()))?;
+        let temp_dict =
+            NamedTempFile::new().map_err(|e| Error::OpenjtalkLoadUserDict(e.to_string()))?;
         let temp_dict_path = temp_dict.into_temp_path();
 
         // Mecabでユーザー辞書をコンパイル
