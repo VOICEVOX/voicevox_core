@@ -2,10 +2,11 @@
 /python/voicevox_core/model/
 
 # Maturin
-*.abi3.dll
+*.pyd
 *.abi3.dylib
 *.abi3.so
 
-*.pyd
-*.so
-*.dll
+# onnxruntime
+onnxruntime*.dll
+onnxruntime*.so
+onnxruntime*.dylib
