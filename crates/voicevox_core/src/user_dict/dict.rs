@@ -30,13 +30,13 @@ impl UserDict {
     pub fn load(&mut self, store_path: &str) -> Result<()> {
         let store_path = std::path::Path::new(store_path);
         if !store_path.exists() {
-            return Err(Error::UserDictRead("ファイルが存在しません".to_string()));
+            return Err(Error::UserDictLoad("ファイルが存在しません".to_string()));
         }
 
-        let store_file = File::open(store_path).map_err(|e| Error::UserDictRead(e.to_string()))?;
+        let store_file = File::open(store_path).map_err(|e| Error::UserDictLoad(e.to_string()))?;
 
         let words: HashMap<String, UserDictWord> =
-            serde_json::from_reader(store_file).map_err(|e| Error::UserDictRead(e.to_string()))?;
+            serde_json::from_reader(store_file).map_err(|e| Error::UserDictLoad(e.to_string()))?;
 
         self.words.extend(words.into_iter());
         Ok(())
@@ -76,9 +76,9 @@ impl UserDict {
 
     /// ユーザー辞書を保存する。
     pub fn save(&self, store_path: &str) -> Result<()> {
-        let mut file = File::create(store_path).map_err(|e| Error::UserDictWrite(e.to_string()))?;
+        let mut file = File::create(store_path).map_err(|e| Error::UserDictSave(e.to_string()))?;
         serde_json::to_writer(&mut file, &self.words)
-            .map_err(|e| Error::UserDictWrite(e.to_string()))?;
+            .map_err(|e| Error::UserDictSave(e.to_string()))?;
         Ok(())
     }
 

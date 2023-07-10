@@ -68,12 +68,12 @@ impl OpenJtalk {
             .ok_or(Error::NotLoadedOpenjtalkDict)?;
 
         // ユーザー辞書用のcsvを作成
-        let mut temp_csv = NamedTempFile::new().map_err(|e| Error::UserDictLoad(e.to_string()))?;
+        let mut temp_csv = NamedTempFile::new().map_err(|e| Error::OpenjtalkLoadUserDict(e.to_string()))?;
         temp_csv
             .write_all(user_dict.to_mecab_format().as_bytes())
-            .map_err(|e| Error::UserDictLoad(e.to_string()))?;
+            .map_err(|e| Error::OpenjtalkLoadUserDict(e.to_string()))?;
         let temp_csv_path = temp_csv.into_temp_path();
-        let temp_dict = NamedTempFile::new().map_err(|e| Error::UserDictLoad(e.to_string()))?;
+        let temp_dict = NamedTempFile::new().map_err(|e| Error::OpenjtalkLoadUserDict(e.to_string()))?;
         let temp_dict_path = temp_dict.into_temp_path();
 
         // Mecabでユーザー辞書をコンパイル
@@ -97,7 +97,7 @@ impl OpenJtalk {
         let result = mecab.load_with_userdic(dict_dir, temp_dict_path.to_str().unwrap());
 
         if !result {
-            return Err(Error::UserDictLoad(
+            return Err(Error::OpenjtalkLoadUserDict(
                 "辞書のコンパイルに失敗しました".to_string(),
             ));
         }

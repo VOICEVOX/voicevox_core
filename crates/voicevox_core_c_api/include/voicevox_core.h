@@ -120,11 +120,11 @@ enum VoicevoxResultCode
   /**
    * ユーザー辞書を読み込めなかった
    */
-  VOICEVOX_USER_DICT_READ_ERROR = 20,
+  VOICEVOX_USER_DICT_LOAD_ERROR = 20,
   /**
    * ユーザー辞書を書き込めなかった
    */
-  VOICEVOX_USER_DICT_WRITE_ERROR = 21,
+  VOICEVOX_USER_DICT_SAVE_ERROR = 21,
   /**
    * ユーザー辞書に単語が見つからなかった
    */
@@ -132,7 +132,7 @@ enum VoicevoxResultCode
   /**
    * ユーザー辞書をOpenJTalkに読み込ませることができなかった
    */
-  VOICEVOX_USER_DICT_LOAD_ERROR = 23,
+  VOICEVOX_OPEN_JTALK_LOAD_USER_DICT_ERROR = 23,
   /**
    * ユーザー辞書の単語のバリデーションに失敗した
    */

@@ -83,17 +83,23 @@ pub enum Error {
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_PARSE_KANA_ERROR))]
     ParseKana(#[from] KanaParseError),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_READ_ERROR))]
-    UserDictRead(String),
+    #[error(
+        "{}: {0}",
+        base_error_message(VOICEVOX_OPEN_JTALK_LOAD_USER_DICT_ERROR)
+    )]
+    UserDictLoad(String),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_WRITE_ERROR))]
-    UserDictWrite(String),
+    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_SAVE_ERROR))]
+    UserDictSave(String),
 
     #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_WORD_NOT_FOUND_ERROR))]
     WordNotFound(String),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_LOAD_ERROR))]
-    UserDictLoad(String),
+    #[error(
+        "{}: {0}",
+        base_error_message(VOICEVOX_OPEN_JTALK_LOAD_USER_DICT_ERROR)
+    )]
+    OpenjtalkLoadUserDict(String),
 
     #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_INVALID_WORD_ERROR))]
     InvalidWord(String),
