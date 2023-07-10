@@ -1,4 +1,5 @@
-# FIXME: ちゃんとしたテストを用意する
+# ユーザー辞書の単語が反映されるかをテストする。
+# AudioQueryのkanaを比較して変化するかどうかで判断する。
 
 import os
 import pytest
@@ -8,7 +9,7 @@ import voicevox_core  # noqa: F401
 
 
 @pytest.mark.asyncio
-async def test_user_dict_manipulate() -> None:
+async def test_user_dict_load() -> None:
     open_jtalk = voicevox_core.OpenJtalk(conftest.open_jtalk_dic_dir)
     model = await voicevox_core.VoiceModel.from_path(conftest.model_dir)
     synthesizer = await voicevox_core.Synthesizer.new_with_initialize(
