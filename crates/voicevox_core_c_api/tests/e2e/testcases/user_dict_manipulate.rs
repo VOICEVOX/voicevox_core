@@ -63,7 +63,6 @@ impl assert_cdylib::TestCase for TestCase {
             ));
 
             let ret = CStr::from_ptr(word_uuid).to_str().unwrap().to_owned();
-            dbg!(&ret);
 
             voicevox_user_dict_uuid_free(word_uuid);
 
