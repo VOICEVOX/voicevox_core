@@ -6,23 +6,15 @@ use super::word::*;
 use crate::{Error, Result};
 
 /// ユーザー辞書。
-#[derive(Clone, Debug, Getters)]
+#[derive(Clone, Debug, Default, Getters)]
 pub struct UserDict {
     words: HashMap<String, UserDictWord>,
-}
-
-impl Default for UserDict {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl UserDict {
     /// ユーザー辞書を作成する。
     pub fn new() -> Self {
-        Self {
-            words: HashMap::new(),
-        }
+        Default::default()
     }
 
     /// ユーザー辞書をファイルから読み込む。
