@@ -781,7 +781,7 @@ VoicevoxResultCode voicevox_user_dict_update_word(const struct VoicevoxUserDict 
 __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_user_dict_remove_word(const struct VoicevoxUserDict *user_dict,
-                                                  const uint8_t *word_uuid);
+                                                  const char *word_uuid);
 
 /**
  * ユーザー辞書の単語をJSON形式で出力する
