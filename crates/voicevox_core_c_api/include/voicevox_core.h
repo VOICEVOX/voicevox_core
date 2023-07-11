@@ -677,18 +677,6 @@ __declspec(dllimport)
 void voicevox_json_free(char *json);
 
 /**
- * uuid文字列のメモリを解放する
- * @param [in] uuid 解放する uuid 文字列
- *
- * # Safety
- * @param ライブラリ側で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-void voicevox_uuid_free(char *uuid);
-
-/**
  * wav データのメモリを解放する
  * @param [in] wav 解放する wav データ
  *
@@ -756,7 +744,7 @@ VoicevoxResultCode voicevox_user_dict_load(const struct VoicevoxUserDict *user_d
  *
  * # Safety
  * @param user_dict は有効な :VoicevoxUserDict のポインタであること
- * @param output_word_uuid 自動でheapメモリが割り当てられるので ::voicevox_uuid_free で解放する必要がある
+ * @param output_word_uuid 自動でheapメモリが割り当てられるので ::voicevox_user_dict_uuid_free で解放する必要がある
  *
  */
 #ifdef _WIN32
@@ -849,6 +837,18 @@ VoicevoxResultCode voicevox_user_dict_save(const struct VoicevoxUserDict *user_d
 __declspec(dllimport)
 #endif
 void voicevox_user_dict_delete(struct VoicevoxUserDict *user_dict);
+
+/**
+ * uuid文字列のメモリを解放する
+ * @param [in] uuid 解放する uuid 文字列
+ *
+ * # Safety
+ * @param ライブラリ側で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_user_dict_uuid_free(char *uuid);
 
 #ifdef __cplusplus
 } // extern "C"

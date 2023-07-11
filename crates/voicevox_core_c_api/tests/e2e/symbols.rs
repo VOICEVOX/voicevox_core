@@ -171,6 +171,7 @@ pub(crate) struct Symbols<'lib> {
     >,
     pub(crate) voicevox_user_dict_delete:
         Symbol<'lib, unsafe extern "C" fn(*mut VoicevoxUserDict) -> VoicevoxResultCode>,
+    pub(crate) voicevox_user_dict_uuid_free: Symbol<'lib, unsafe extern "C" fn(*mut c_char)>,
 }
 
 impl<'lib> Symbols<'lib> {
@@ -230,6 +231,7 @@ impl<'lib> Symbols<'lib> {
             voicevox_user_dict_import,
             voicevox_user_dict_save,
             voicevox_user_dict_delete,
+            voicevox_user_dict_uuid_free,
         ))
     }
 }

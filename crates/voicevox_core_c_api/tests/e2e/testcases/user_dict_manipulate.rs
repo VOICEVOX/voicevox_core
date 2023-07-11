@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     snapshots,
-    symbols::{Symbols, VoicevoxUserDict, VoicevoxUserDictWordType},
+    symbols::{Symbols, VoicevoxUserDict, VoicevoxUserDictWord, VoicevoxUserDictWordType},
 };
 
 case!(TestCase);
@@ -37,14 +37,36 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_user_dict_load,
             voicevox_user_dict_save,
             voicevox_user_dict_delete,
+            voicevox_user_dict_uuid_free,
+            voicevox_json_free,
             ..
         } = Symbols::new(lib)?;
 
-        let get_json = |dict: &*mut VoicevoxUserDict| -> &str {
+        let get_json = |dict: &*mut VoicevoxUserDict| -> String {
             let mut json = std::ptr::null_mut();
             assert_ok(voicevox_user_dict_get_json((*dict) as *const _, &mut json));
 
-            CStr::from_ptr(json).to_str().unwrap()
+            let ret = CStr::from_ptr(json).to_str().unwrap().to_owned();
+
+            voicevox_json_free(json);
+
+            ret
+        };
+
+        let add_word = |dict: &*mut VoicevoxUserDict, word: &VoicevoxUserDictWord| {
+            let mut word_uuid = std::ptr::null_mut();
+
+            assert_ok(voicevox_user_dict_add_word(
+                (*dict) as *const _,
+                word as *const _,
+                &mut word_uuid,
+            ));
+
+            let ret = CStr::from_ptr(word_uuid).to_str().unwrap().to_owned();
+
+            voicevox_user_dict_uuid_free(word_uuid);
+
+            ret
         };
 
         // テスト用の辞書ファイルを作成
@@ -55,8 +77,6 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         // 単語の追加のテスト
-        let mut word_uuid = std::ptr::null_mut();
-
         let word = {
             let mut word = voicevox_default_user_dict_word();
             word.surface = CString::new("hoge").unwrap().into_raw();
@@ -66,15 +86,13 @@ impl assert_cdylib::TestCase for TestCase {
             word
         };
 
-        assert_ok(voicevox_user_dict_add_word(dict, &word, &mut word_uuid));
-
-        let word_uuid = CStr::from_ptr(word_uuid).to_str().unwrap();
+        let word_uuid = add_word(&dict, &word);
 
         let json = get_json(&dict);
 
         assert!(json.contains("ｈｏｇｅ"));
         assert!(json.contains("ホゲ"));
-        assert!(json.contains(word_uuid));
+        assert!(json.contains(word_uuid.as_str()));
 
         // 単語の変更のテスト
         let word = {
@@ -98,7 +116,7 @@ impl assert_cdylib::TestCase for TestCase {
         assert!(!json.contains("ホゲ"));
         assert!(json.contains("ｆｕｇａ"));
         assert!(json.contains("フガ"));
-        assert!(json.contains(word_uuid));
+        assert!(json.contains(word_uuid.as_str()));
 
         // 辞書のインポートのテスト。
         let other_dict = {
@@ -106,8 +124,6 @@ impl assert_cdylib::TestCase for TestCase {
             assert_ok(voicevox_user_dict_new(dict.as_mut_ptr()));
             dict.assume_init()
         };
-
-        let mut other_word_uuid = std::ptr::null_mut();
 
         let other_word = {
             let mut word = voicevox_default_user_dict_word();
@@ -117,23 +133,17 @@ impl assert_cdylib::TestCase for TestCase {
             word
         };
 
-        assert_ok(voicevox_user_dict_add_word(
-            other_dict,
-            &other_word,
-            &mut other_word_uuid as *mut *mut i8,
-        ));
-
-        let other_word_uuid = CStr::from_ptr(other_word_uuid).to_str().unwrap();
+        let other_word_uuid = add_word(&other_dict, &other_word);
 
         assert_ok(voicevox_user_dict_import(dict, other_dict));
 
         let json = get_json(&dict);
         assert!(json.contains("ｆｕｇａ"));
         assert!(json.contains("フガ"));
-        assert!(json.contains(word_uuid));
+        assert!(json.contains(word_uuid.as_str()));
         assert!(json.contains("ｐｉｙｏ"));
         assert!(json.contains("ピヨ"));
-        assert!(json.contains(other_word_uuid));
+        assert!(json.contains(other_word_uuid.as_str()));
 
         // 単語の削除のテスト
         assert_ok(voicevox_user_dict_remove_word(
@@ -142,14 +152,13 @@ impl assert_cdylib::TestCase for TestCase {
         ));
 
         let json = get_json(&dict);
-        assert!(!json.contains(word_uuid));
+        assert!(!json.contains(word_uuid.as_str()));
         // 他の単語は残っている
-        assert!(json.contains(other_word_uuid));
+        assert!(json.contains(other_word_uuid.as_str()));
 
         // 辞書のセーブ・ロードのテスト
         let temp_path = NamedTempFile::new().unwrap().into_temp_path();
         let temp_path = CString::new(temp_path.to_str().unwrap()).unwrap();
-        let mut word_uuid = std::ptr::null_mut();
         let word = {
             let mut word = voicevox_default_user_dict_word();
             word.surface = CString::new("foo").unwrap().into_raw();
@@ -158,9 +167,7 @@ impl assert_cdylib::TestCase for TestCase {
 
             word
         };
-        assert_ok(voicevox_user_dict_add_word(dict, &word, &mut word_uuid));
-
-        let word_uuid = CStr::from_ptr(word_uuid).to_str().unwrap();
+        let word_uuid = add_word(&dict, &word);
 
         assert_ok(voicevox_user_dict_save(
             dict,
@@ -172,8 +179,8 @@ impl assert_cdylib::TestCase for TestCase {
         ));
 
         let json = get_json(&other_dict);
-        assert!(json.contains(word_uuid));
-        assert!(json.contains(other_word_uuid));
+        assert!(json.contains(word_uuid.as_str()));
+        assert!(json.contains(other_word_uuid.as_str()));
 
         voicevox_user_dict_delete(dict);
         voicevox_user_dict_delete(other_dict);

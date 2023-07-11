@@ -690,16 +690,6 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
     drop(CString::from_raw(C_STRING_DROP_CHECKER.check(json)));
 }
 
-/// uuid文字列のメモリを解放する
-/// @param [in] uuid 解放する uuid 文字列
-///
-/// # Safety
-/// @param ライブラリ側で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
-#[no_mangle]
-pub unsafe extern "C" fn voicevox_uuid_free(uuid: *mut c_char) {
-    voicevox_json_free(uuid);
-}
-
 /// wav データのメモリを解放する
 /// @param [in] wav 解放する wav データ
 ///
@@ -823,7 +813,7 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
 ///
 /// # Safety
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
-/// @param output_word_uuid 自動でheapメモリが割り当てられるので ::voicevox_uuid_free で解放する必要がある
+/// @param output_word_uuid 自動でheapメモリが割り当てられるので ::voicevox_user_dict_uuid_free で解放する必要がある
 ///
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_add_word(
@@ -879,7 +869,7 @@ pub unsafe extern "C" fn voicevox_user_dict_update_word(
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_remove_word(
     user_dict: &VoicevoxUserDict,
-    word_uuid: *const u8,
+    word_uuid: *const c_char,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let word_uuid = ensure_utf8(unsafe { CStr::from_ptr(word_uuid as *const c_char) })?;
@@ -965,6 +955,16 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_delete(user_dict: Box<VoicevoxUserDict>) {
     drop(user_dict);
+}
+
+/// uuid文字列のメモリを解放する
+/// @param [in] uuid 解放する uuid 文字列
+///
+/// # Safety
+/// @param ライブラリ側で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_user_dict_uuid_free(uuid: *mut c_char) {
+    voicevox_json_free(uuid);
 }
 
 #[cfg(test)]
