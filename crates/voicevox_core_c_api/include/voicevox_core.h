@@ -669,12 +669,24 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  * @param [in] json 解放する json データ
  *
  * # Safety
- * @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
+ * @param ライブラリ側で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
 void voicevox_json_free(char *json);
+
+/**
+ * uuid文字列のメモリを解放する
+ * @param [in] uuid 解放する uuid 文字列
+ *
+ * # Safety
+ * @param ライブラリ側で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_uuid_free(char *uuid);
 
 /**
  * wav データのメモリを解放する
@@ -739,12 +751,12 @@ VoicevoxResultCode voicevox_user_dict_load(const struct VoicevoxUserDict *user_d
  * ユーザー辞書に単語を追加する
  * @param [in] user_dict VoicevoxUserDictのポインタ
  * @param [in] word 追加する単語
- * @param [out] out_word_uuid 追加した単語のUUID
+ * @param [out] output_word_uuid 追加した単語のUUID
  * @return 結果コード #VoicevoxResultCode
  *
  * # Safety
  * @param user_dict は有効な :VoicevoxUserDict のポインタであること
- * @param word_uuid は呼び出し側で解放する必要がある
+ * @param output_word_uuid 自動でheapメモリが割り当てられるので ::voicevox_uuid_free で解放する必要がある
  *
  */
 #ifdef _WIN32
@@ -752,7 +764,7 @@ __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_user_dict_add_word(const struct VoicevoxUserDict *user_dict,
                                                const struct VoicevoxUserDictWord *word,
-                                               char **out_word_uuid);
+                                               char **output_word_uuid);
 
 /**
  * ユーザー辞書の単語を更新する
@@ -786,17 +798,18 @@ VoicevoxResultCode voicevox_user_dict_remove_word(const struct VoicevoxUserDict 
 /**
  * ユーザー辞書の単語をJSON形式で出力する
  * @param [in] user_dict VoicevoxUserDictのポインタ
- * @param [out] out_json JSON形式の文字列
+ * @param [out] output_json JSON形式の文字列
  * @return 結果コード #VoicevoxResultCode
  *
  * # Safety
  * @param user_dict は有効な :VoicevoxUserDict のポインタであること
+ * @param output_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_user_dict_get_json(const struct VoicevoxUserDict *user_dict,
-                                               char **out_json);
+                                               char **output_json);
 
 /**
  * 他のユーザー辞書をインポートする
