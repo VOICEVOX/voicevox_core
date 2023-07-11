@@ -62,7 +62,7 @@ impl assert_cdylib::TestCase for TestCase {
                 &mut word_uuid,
             ));
 
-            let ret = CStr::from_ptr(word_uuid).to_str().unwrap().to_owned();
+            let ret = CStr::from_ptr(word_uuid).to_str().unwrap().to_string();
 
             voicevox_user_dict_uuid_free(word_uuid);
 
