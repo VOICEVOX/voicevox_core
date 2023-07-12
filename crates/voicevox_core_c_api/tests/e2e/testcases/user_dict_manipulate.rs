@@ -56,6 +56,8 @@ impl assert_cdylib::TestCase for TestCase {
 
             voicevox_json_free(json.assume_init());
 
+            serde_json::from_str::<serde_json::Value>(&ret).expect("invalid json");
+
             ret
         };
 
