@@ -154,10 +154,7 @@ impl assert_cdylib::TestCase for TestCase {
         assert_contains_cstring(&json, &other_word_uuid);
 
         // 単語の削除のテスト
-        assert_ok(voicevox_user_dict_remove_word(
-            dict,
-            word_uuid.as_ptr(),
-        ));
+        assert_ok(voicevox_user_dict_remove_word(dict, word_uuid.as_ptr()));
 
         let json = get_json(&dict);
         assert_not_contains_cstring(&json, &word_uuid);
