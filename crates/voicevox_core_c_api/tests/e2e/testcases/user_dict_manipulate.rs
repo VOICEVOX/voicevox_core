@@ -46,7 +46,7 @@ impl assert_cdylib::TestCase for TestCase {
             let mut json = std::ptr::null_mut();
             assert_ok(voicevox_user_dict_get_json((*dict) as *const _, &mut json));
 
-            let ret = CStr::from_ptr(json).to_str().unwrap().to_owned();
+            let ret = CStr::from_ptr(json).to_str().unwrap().to_owned().clone()
 
             voicevox_json_free(json);
 
@@ -62,7 +62,9 @@ impl assert_cdylib::TestCase for TestCase {
                 &mut word_uuid,
             ));
 
-            let ret = CStr::from_ptr(word_uuid).to_str().unwrap().to_string();
+            let ret = CStr::from_ptr(word_uuid).to_str().unwrap().to_owned().clone();
+
+            voicevox_user_dict_uuid_free(json);
 
             ret
         };
