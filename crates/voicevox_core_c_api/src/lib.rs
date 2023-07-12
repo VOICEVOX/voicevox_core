@@ -108,7 +108,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 /// @user_dict 有効な :VoicevoxUserDict のポインタであること
 #[no_mangle]
 pub extern "C" fn voicevox_open_jtalk_rc_load_user_dict(
-    open_jtalk: &mut OpenJtalkRc,
+    open_jtalk: &OpenJtalkRc,
     user_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
