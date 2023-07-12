@@ -174,14 +174,8 @@ impl assert_cdylib::TestCase for TestCase {
         };
         let word_uuid = add_word(&dict, &word);
 
-        assert_ok(voicevox_user_dict_save(
-            dict,
-            temp_path.as_ptr() as *const i8,
-        ));
-        assert_ok(voicevox_user_dict_load(
-            other_dict,
-            temp_path.as_ptr() as *const i8,
-        ));
+        assert_ok(voicevox_user_dict_save(dict, temp_path.as_ptr()));
+        assert_ok(voicevox_user_dict_load(other_dict, temp_path.as_ptr()));
 
         let json = get_json(&other_dict);
         assert_contains_cstring(&json, &word_uuid);
