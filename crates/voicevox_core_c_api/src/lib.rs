@@ -778,7 +778,7 @@ pub unsafe extern "C" fn voicevox_user_dict_new(
     let user_dict = Box::new(VoicevoxUserDict {
         dict: Arc::new(Mutex::new(dict)),
     });
-    out_user_dict.as_ptr().write(user_dict);
+    out_user_dict.as_ptr().write_unaligned(user_dict);
 
     VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
