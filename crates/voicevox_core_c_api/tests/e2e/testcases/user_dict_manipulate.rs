@@ -64,7 +64,7 @@ impl assert_cdylib::TestCase for TestCase {
 
             let ret = CStr::from_ptr(word_uuid).to_str().unwrap().to_owned().clone();
 
-            voicevox_user_dict_uuid_free(json);
+            voicevox_user_dict_uuid_free(word_uuid);
 
             ret
         };
