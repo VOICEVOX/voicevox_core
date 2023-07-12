@@ -43,28 +43,37 @@ impl assert_cdylib::TestCase for TestCase {
         } = Symbols::new(lib)?;
 
         let get_json = |dict: &*mut VoicevoxUserDict| -> String {
-            let mut json = std::ptr::null_mut();
-            assert_ok(voicevox_user_dict_get_json((*dict) as *const _, &mut json));
+            let mut json = MaybeUninit::uninit();
+            assert_ok(voicevox_user_dict_get_json(
+                (*dict) as *const _,
+                json.as_mut_ptr(),
+            ));
 
-            let ret = CStr::from_ptr(json).to_str().unwrap().to_string();
+            let ret = CStr::from_ptr(json.assume_init())
+                .to_str()
+                .unwrap()
+                .to_string();
 
-            voicevox_json_free(json);
+            voicevox_json_free(json.assume_init());
 
             ret
         };
 
         let add_word = |dict: &*mut VoicevoxUserDict, word: &VoicevoxUserDictWord| {
-            let mut word_uuid = std::ptr::null_mut();
+            let mut word_uuid = MaybeUninit::uninit();
 
             assert_ok(voicevox_user_dict_add_word(
                 (*dict) as *const _,
                 word as *const _,
-                &mut word_uuid,
+                word_uuid.as_mut_ptr(),
             ));
 
-            let ret = CStr::from_ptr(word_uuid).to_str().unwrap().to_string();
+            let ret = CStr::from_ptr(word_uuid.assume_init())
+                .to_str()
+                .unwrap()
+                .to_string();
 
-            voicevox_user_dict_uuid_free(word_uuid);
+            voicevox_user_dict_uuid_free(word_uuid.assume_init());
 
             ret
         };
