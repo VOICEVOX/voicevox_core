@@ -67,11 +67,11 @@ impl assert_cdylib::TestCase for TestCase {
             ret
         };
 
-        let add_word = |dict: &*mut VoicevoxUserDict, word: &VoicevoxUserDictWord| -> CString {
+        let add_word = |dict: *const VoicevoxUserDict, word: &VoicevoxUserDictWord| -> CString {
             let mut word_uuid = MaybeUninit::uninit();
 
             assert_ok(voicevox_user_dict_add_word(
-                (*dict) as *const _,
+                dict,
                 word as *const _,
                 word_uuid.as_mut_ptr(),
             ));
@@ -93,7 +93,7 @@ impl assert_cdylib::TestCase for TestCase {
         // 単語の追加のテスト
         let word = voicevox_user_dict_word_make(cstr!("hoge").as_ptr(), cstr!("ホゲ").as_ptr());
 
-        let word_uuid = add_word(&dict, &word);
+        let word_uuid = add_word(dict, &word);
 
         let json = get_json(&dict);
 
@@ -128,7 +128,7 @@ impl assert_cdylib::TestCase for TestCase {
         let other_word =
             voicevox_user_dict_word_make(cstr!("piyo").as_ptr(), cstr!("ピヨ").as_ptr());
 
-        let other_word_uuid = add_word(&other_dict, &other_word);
+        let other_word_uuid = add_word(other_dict, &other_word);
 
         assert_ok(voicevox_user_dict_import(dict, other_dict));
 
@@ -152,7 +152,7 @@ impl assert_cdylib::TestCase for TestCase {
         let temp_path = NamedTempFile::new().unwrap().into_temp_path();
         let temp_path = CString::new(temp_path.to_str().unwrap()).unwrap();
         let word = voicevox_user_dict_word_make(cstr!("hoge").as_ptr(), cstr!("ホゲ").as_ptr());
-        let word_uuid = add_word(&dict, &word);
+        let word_uuid = add_word(dict, &word);
 
         assert_ok(voicevox_user_dict_save(dict, temp_path.as_ptr()));
         assert_ok(voicevox_user_dict_load(other_dict, temp_path.as_ptr()));
