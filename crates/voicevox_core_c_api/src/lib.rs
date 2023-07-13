@@ -684,7 +684,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// @param [in] json 解放する json データ
 ///
 /// # Safety
-/// @param ライブラリ側で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
+/// @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
     drop(CString::from_raw(C_STRING_DROP_CHECKER.check(json)));
