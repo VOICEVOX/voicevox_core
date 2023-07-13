@@ -96,7 +96,7 @@ impl OpenJtalk {
 
         let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
 
-        let result = mecab.load_with_userdic(dict_dir, temp_dict_path.to_str().unwrap());
+        let result = mecab.load_with_userdic(Path::new(dict_dir), Some(Path::new(&temp_dict_path)));
 
         if !result {
             return Err(Error::OpenjtalkLoadUserDict(
