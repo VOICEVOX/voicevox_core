@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     snapshots,
-    symbols::{Symbols, VoicevoxUserDict, VoicevoxUserDictWord, VoicevoxUserDictWordType},
+    symbols::{Symbols, VoicevoxUserDict, VoicevoxUserDictWord},
 };
 
 case!(TestCase);
@@ -23,11 +23,17 @@ case!(TestCase);
 #[derive(Serialize, Deserialize)]
 struct TestCase;
 
+macro_rules! cstr {
+    ($s:literal $(,)?) => {
+        CStr::from_bytes_with_nul(concat!($s, '\0').as_ref()).unwrap()
+    };
+}
+
 #[typetag::serde(name = "user_dict_manipulate")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
-            voicevox_default_user_dict_word,
+            voicevox_user_dict_word_make,
             voicevox_user_dict_new,
             voicevox_user_dict_add_word,
             voicevox_user_dict_update_word,
@@ -85,14 +91,7 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         // 単語の追加のテスト
-        let word = {
-            let mut word = voicevox_default_user_dict_word();
-            word.surface = CString::new("hoge").unwrap().into_raw();
-            word.pronunciation = CString::new("ホゲ").unwrap().into_raw();
-            word.word_type = VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;
-
-            word
-        };
+        let word = voicevox_user_dict_word_make(cstr!("hoge").as_ptr(), cstr!("ホゲ").as_ptr());
 
         let word_uuid = add_word(&dict, &word);
 
@@ -103,14 +102,7 @@ impl assert_cdylib::TestCase for TestCase {
         assert_contains_cstring(&json, &word_uuid);
 
         // 単語の変更のテスト
-        let word = {
-            let mut word = voicevox_default_user_dict_word();
-            word.surface = CString::new("fuga").unwrap().into_raw();
-            word.pronunciation = CString::new("フガ").unwrap().into_raw();
-            word.word_type = VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN;
-
-            word
-        };
+        let word = voicevox_user_dict_word_make(cstr!("fuga").as_ptr(), cstr!("フガ").as_ptr());
 
         assert_ok(voicevox_user_dict_update_word(
             dict,
@@ -133,13 +125,8 @@ impl assert_cdylib::TestCase for TestCase {
             dict.assume_init()
         };
 
-        let other_word = {
-            let mut word = voicevox_default_user_dict_word();
-            word.surface = CString::new("piyo").unwrap().into_raw();
-            word.pronunciation = CString::new("ピヨ").unwrap().into_raw();
-
-            word
-        };
+        let other_word =
+            voicevox_user_dict_word_make(cstr!("piyo").as_ptr(), cstr!("ピヨ").as_ptr());
 
         let other_word_uuid = add_word(&other_dict, &other_word);
 
@@ -164,14 +151,7 @@ impl assert_cdylib::TestCase for TestCase {
         // 辞書のセーブ・ロードのテスト
         let temp_path = NamedTempFile::new().unwrap().into_temp_path();
         let temp_path = CString::new(temp_path.to_str().unwrap()).unwrap();
-        let word = {
-            let mut word = voicevox_default_user_dict_word();
-            word.surface = CString::new("foo").unwrap().into_raw();
-            word.pronunciation = CString::new("フー").unwrap().into_raw();
-            word.word_type = VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;
-
-            word
-        };
+        let word = voicevox_user_dict_word_make(cstr!("hoge").as_ptr(), cstr!("ホゲ").as_ptr());
         let word_uuid = add_word(&dict, &word);
 
         assert_ok(voicevox_user_dict_save(dict, temp_path.as_ptr()));

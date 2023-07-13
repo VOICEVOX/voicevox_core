@@ -33,7 +33,7 @@ struct TestCase;
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
-            voicevox_default_user_dict_word,
+            voicevox_user_dict_word_make,
             voicevox_user_dict_new,
             voicevox_user_dict_add_word,
             voicevox_user_dict_delete,
@@ -61,11 +61,12 @@ impl assert_cdylib::TestCase for TestCase {
         let mut word_uuid = std::ptr::null_mut();
 
         let word = {
-            let mut word = voicevox_default_user_dict_word();
-            word.surface = CString::new("this_word_should_not_exist_in_default_dictionary")
-                .unwrap()
-                .into_raw();
-            word.pronunciation = CString::new("アイウエオ").unwrap().into_raw();
+            let mut word = voicevox_user_dict_word_make(
+                CString::new("this_word_should_not_exist_in_default_dictionary")
+                    .unwrap()
+                    .into_raw(),
+                CString::new("アイウエオ").unwrap().into_raw(),
+            );
             word.word_type = VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;
             word.priority = 10;
 

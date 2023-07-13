@@ -752,12 +752,21 @@ pub enum VoicevoxUserDictWordType {
     VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX = 4,
 }
 
-/// ユーザー辞書の単語のデフォルト値
+/// VoicevoxUserDictWordを最低限のパラメータで作成する。
+/// @param [in] surface 表記
+/// @param [in] pronunciation 読み
+/// @return VoicevoxUserDictWord
+///
+/// # Safety
+/// @param surface, pronunciation は有効な文字列へのポインタであること
 #[no_mangle]
-pub extern "C" fn voicevox_default_user_dict_word() -> VoicevoxUserDictWord {
+pub extern "C" fn voicevox_user_dict_word_make(
+    surface: *const c_char,
+    pronunciation: *const c_char,
+) -> VoicevoxUserDictWord {
     VoicevoxUserDictWord {
-        surface: std::ptr::null(),
-        pronunciation: std::ptr::null(),
+        surface,
+        pronunciation,
         accent_type: UserDictWord::default().accent_type,
         word_type: UserDictWord::default().word_type.into(),
         priority: UserDictWord::default().priority,

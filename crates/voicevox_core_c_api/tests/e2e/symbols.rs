@@ -126,8 +126,8 @@ pub(crate) struct Symbols<'lib> {
         unsafe extern "C" fn(i64, i64, *mut f32, *mut f32, *mut i64, *mut f32) -> bool,
     >,
 
-    pub(crate) voicevox_default_user_dict_word:
-        Symbol<'lib, unsafe extern "C" fn() -> VoicevoxUserDictWord>,
+    pub(crate) voicevox_user_dict_word_make:
+        Symbol<'lib, unsafe extern "C" fn(*const c_char, *const c_char) -> VoicevoxUserDictWord>,
     pub(crate) voicevox_user_dict_new:
         Symbol<'lib, unsafe extern "C" fn(*mut *mut VoicevoxUserDict) -> VoicevoxResultCode>,
     pub(crate) voicevox_user_dict_load: Symbol<
@@ -221,7 +221,7 @@ impl<'lib> Symbols<'lib> {
             yukarin_s_forward,
             yukarin_sa_forward,
             decode_forward,
-            voicevox_default_user_dict_word,
+            voicevox_user_dict_word_make,
             voicevox_user_dict_new,
             voicevox_user_dict_load,
             voicevox_user_dict_add_word,
@@ -292,5 +292,4 @@ pub(crate) struct VoicevoxUserDictWord {
 #[allow(non_camel_case_types)]
 pub(crate) enum VoicevoxUserDictWordType {
     VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN = 0,
-    VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN = 1,
 }

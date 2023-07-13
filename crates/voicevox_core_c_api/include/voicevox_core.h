@@ -332,7 +332,7 @@ VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_open_jtalk_rc_load_user_dict(struct OpenJtalkRc *open_jtalk,
+VoicevoxResultCode voicevox_open_jtalk_rc_load_user_dict(const struct OpenJtalkRc *open_jtalk,
                                                          const struct VoicevoxUserDict *user_dict);
 
 /**
@@ -699,12 +699,19 @@ __declspec(dllimport)
 const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
 
 /**
- * ユーザー辞書の単語のデフォルト値
+ * VoicevoxUserDictWordを最低限のパラメータで作成する。
+ * @param [in] surface 表記
+ * @param [in] pronunciation 読み
+ * @return VoicevoxUserDictWord
+ *
+ * # Safety
+ * @param surface, pronunciation は有効な文字列へのポインタであること
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-struct VoicevoxUserDictWord voicevox_default_user_dict_word(void);
+struct VoicevoxUserDictWord voicevox_user_dict_word_make(const char *surface,
+                                                         const char *pronunciation);
 
 /**
  * ユーザー辞書を作成する
