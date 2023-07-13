@@ -42,7 +42,7 @@ impl assert_cdylib::TestCase for TestCase {
             ..
         } = Symbols::new(lib)?;
 
-        let get_json = |dict: *const VoicevoxUserDict| -> String {
+        let get_json = |dict: &*mut VoicevoxUserDict| -> String {
             let mut json = MaybeUninit::uninit();
             assert_ok(voicevox_user_dict_get_json(
                 (*dict) as *const _,
