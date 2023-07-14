@@ -8,5 +8,5 @@
 
 # onnxruntime
 onnxruntime*.dll
-onnxruntime*.so
-onnxruntime*.dylib
+libonnxruntime.so*
+libonnxruntime.dylib*
