@@ -1,3 +1,4 @@
+use pyo3::IntoPy;
 use std::{fmt::Display, future::Future, path::PathBuf, sync::Arc};
 
 use easy_ext::ext;
@@ -8,7 +9,7 @@ use pyo3::{
     exceptions::PyException,
     pyclass, pyfunction, pymethods, pymodule,
     types::{PyBytes, PyDict, PyList, PyModule},
-    wrap_pyfunction, FromPyObject as _, PyAny, PyCell, PyObject, PyResult, Python, ToPyObject,
+    wrap_pyfunction, FromPyObject as _, PyAny, PyObject, PyResult, Python, ToPyObject,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::{runtime::Runtime, sync::Mutex};
@@ -431,7 +432,7 @@ impl UserDict {
         for (uuid, word) in self.dict.words() {
             let uuid = to_py_uuid(py, uuid.to_owned())?;
             let word: UserDictWord = UserDictWord::from(word.clone());
-            dict.set_item(uuid, PyCell::new(py, word)?)?;
+            dict.set_item(uuid, word.into_py(py))?;
         }
         Ok(dict)
     }
@@ -440,11 +441,15 @@ impl UserDict {
 #[pyclass]
 #[derive(Clone, Debug)]
 pub struct UserDictWord {
-    pub surface: String,
-    pub pronunciation: String,
-    pub accent_type: usize,
-    pub word_type: UserDictWordType,
-    pub priority: u32,
+    #[pyo3(get, set)]
+    surface: String,
+    #[pyo3(get, set)]
+    pronunciation: String,
+    #[pyo3(get, set)]
+    accent_type: usize,
+    word_type: UserDictWordType,
+    #[pyo3(get, set)]
+    priority: u32,
 }
 
 #[pymethods]
@@ -471,6 +476,17 @@ impl UserDictWord {
             word_type,
             priority,
         }
+    }
+
+    #[getter]
+    fn word_type<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
+        Ok(to_word_type(py, self.word_type.clone()))
+    }
+
+    #[setter]
+    fn set_word_type(&mut self, word_type: &PyAny) -> PyResult<()> {
+        self.word_type = from_word_type(word_type)?;
+        Ok(())
     }
 }
 
@@ -538,6 +554,21 @@ fn from_word_type(ob: &PyAny) -> PyResult<UserDictWordType> {
             "{} should be one of {{PROPER_NOUN, COMMON_NOUN, VERB, ADJECTIVE, SUFFIX}}",
             mode.repr()?
         );
+    }
+}
+fn to_word_type(py: Python<'_>, word_type: UserDictWordType) -> &PyAny {
+    let class = py
+        .import("voicevox_core")
+        .unwrap()
+        .getattr("UserDictWordType")
+        .unwrap();
+
+    match word_type {
+        UserDictWordType::ProperNoun => class.getattr("PROPER_NOUN").unwrap(),
+        UserDictWordType::CommonNoun => class.getattr("COMMON_NOUN").unwrap(),
+        UserDictWordType::Verb => class.getattr("VERB").unwrap(),
+        UserDictWordType::Adjective => class.getattr("ADJECTIVE").unwrap(),
+        UserDictWordType::Suffix => class.getattr("SUFFIX").unwrap(),
     }
 }
 
@@ -622,7 +653,7 @@ where
 
 fn to_rust_uuid(py: Python, ob: &PyObject) -> PyResult<Uuid> {
     let ob = ob.as_ref(py);
-    let uuid = ob.getattr("hex")?.call0()?.extract::<String>()?;
+    let uuid = ob.getattr("hex")?.extract::<String>()?;
     Uuid::parse_str(&uuid).into_py_result()
 }
 fn to_py_uuid(py: Python, uuid: Uuid) -> PyResult<PyObject> {

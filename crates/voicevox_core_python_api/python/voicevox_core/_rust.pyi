@@ -268,18 +268,24 @@ class UserDict:
     """
 
     words: Dict[UUID, UserDictWord]
-    def __init__(self, store_path: str) -> None:
-        """ユーザー辞書を読み込み、または新規作成する。
-
-        store_path に指定したファイルが存在しない場合、新規作成される。
-        store_path に指定したファイルが存在する場合、そのファイルを読み込む。
-        もし、ファイルが存在するが、ユーザー辞書のJSONとして不正な場合、
-        例外が発生する。ただし、ファイルが空の場合は、空のユーザー辞書として
-        読み込まれる。
+    def __init__(self) -> None:
+        """ユーザー辞書をまたは新規作成する。"""
+        ...
+    def load(self, path: str) -> None:
+        """ファイルに保存されたユーザー辞書を読み込む。
 
         Parameters
         ----------
-        store_path
+        path
+            ユーザー辞書のパス。
+        """
+        ...
+    def save(self, path: str) -> None:
+        """ユーザー辞書をファイルに保存する。
+
+        Parameters
+        ----------
+        path
             ユーザー辞書のパス。
         """
         ...
