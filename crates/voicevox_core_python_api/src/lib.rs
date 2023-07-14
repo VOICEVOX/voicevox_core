@@ -654,7 +654,7 @@ where
 fn to_rust_uuid(py: Python, ob: &PyObject) -> PyResult<Uuid> {
     let ob = ob.as_ref(py);
     let uuid = ob.getattr("hex")?.extract::<String>()?;
-    Uuid::parse_str(&uuid).into_py_result()
+    uuid.parse().into_py_result()
 }
 fn to_py_uuid(py: Python, uuid: Uuid) -> PyResult<PyObject> {
     let uuid = uuid.hyphenated().to_string();
