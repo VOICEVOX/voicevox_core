@@ -4,6 +4,7 @@ use super::*;
 //use engine::
 use std::path::PathBuf;
 use thiserror::Error;
+use uuid::Uuid;
 
 /*
  * 新しいエラーを定義したら、必ずresult_code.rsにあるVoicevoxResultCodeに対応するコードを定義し、
@@ -93,7 +94,7 @@ pub enum Error {
     UserDictSave(String),
 
     #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_WORD_NOT_FOUND_ERROR))]
-    WordNotFound(String),
+    WordNotFound(Uuid),
 
     #[error(
         "{}: {0}",
