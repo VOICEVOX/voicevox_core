@@ -139,7 +139,7 @@ pub(crate) struct Symbols<'lib> {
         unsafe extern "C" fn(
             *const VoicevoxUserDict,
             *const VoicevoxUserDictWord,
-            *mut [u8; 16]
+            *mut [u8; 16],
         ) -> VoicevoxResultCode,
     >,
     pub(crate) voicevox_user_dict_update_word: Symbol<
