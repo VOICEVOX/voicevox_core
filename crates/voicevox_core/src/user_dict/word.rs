@@ -38,6 +38,7 @@ static MORA_REGEX: Lazy<Regex> = Lazy::new(|| {
     ))
     .unwrap()
 });
+static SPACE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"\p{Z}").unwrap());
 
 impl Default for UserDictWord {
     fn default() -> Self {
@@ -135,18 +136,15 @@ impl UserDictWord {
     /// ASCII文字を全角文字に変換する。
     fn to_zenkaku(surface: &str) -> String {
         // 元実装：https://github.com/VOICEVOX/voicevox/blob/69898f5dd001d28d4de355a25766acb0e0833ec2/src/components/DictionaryManageDialog.vue#L379-L387
-        let mut result = String::new();
-        for c in surface.chars() {
-            let i = c as u32;
-            result.push(if (0x21..=0x7e).contains(&i) {
-                char::from_u32(0xfee0 + i).unwrap_or(c)
-            } else if i == 0x20 {
-                '　'
-            } else {
-                c
-            });
-        }
-        result
+        SPACE_REGEX
+            // " "などの目に見えない文字をまとめて全角スペース(0x3000)に置き換える
+            .replace_all(surface, "\u{3000}")
+            .chars()
+            .map(|c| match u32::from(c) {
+                i @ 0x21..=0x7e => char::from_u32(0xfee0 + i).unwrap_or(c),
+                _ => c,
+            })
+            .collect()
     }
 }
 
