@@ -1,5 +1,6 @@
 use derive_getters::Getters;
-use std::{collections::HashMap, fs::File};
+use fs_err::File;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::word::*;
@@ -62,7 +63,7 @@ impl UserDict {
     /// 他のユーザー辞書をインポートする。
     pub fn import(&mut self, other: &Self) -> Result<()> {
         for (word_uuid, word) in &other.words {
-            self.words.insert(word_uuid.to_owned(), word.clone());
+            self.words.insert(*word_uuid, word.clone());
         }
         Ok(())
     }
