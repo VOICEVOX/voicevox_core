@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Dict, Final, List, Literal, Union
+from uuid import UUID
 
 import numpy as np
 from numpy.typing import NDArray
@@ -115,8 +116,6 @@ class Synthesizer:
         モデルが読み込まれているのであればtrue、そうでないならfalse
         """
         ...
-    def unload_voice_model(self, voice_model_id: str) -> None:
-        """指定したvoice_model_idのモデルがを破棄する"""
     async def audio_query(
         self,
         text: str,
@@ -284,7 +283,7 @@ class UserDict:
             ユーザー辞書のパス。
         """
         ...
-    def add_word(self, word: UserDictWord) -> str:
+    def add_word(self, word: UserDictWord) -> UUID:
         """単語を追加する。
 
         Parameters
@@ -297,7 +296,7 @@ class UserDict:
         単語のUUID。
         """
         ...
-    def update_word(self, word_uuid: str, word: UserDictWord) -> None:
+    def update_word(self, word_uuid: UUID, word: UserDictWord) -> None:
         """単語を更新する。
 
         Parameters
@@ -308,13 +307,13 @@ class UserDict:
             新しい単語のデータ。
         """
         ...
-    def remove_word(self, word: UserDictWord) -> None:
+    def remove_word(self, word_uuid: UUID) -> None:
         """単語を削除する。
 
         Parameters
         ----------
-        word
-            削除する単語。
+        word_uuid
+            削除する単語のUUID。
         """
         ...
     def import_dict(self, other: UserDict) -> None:

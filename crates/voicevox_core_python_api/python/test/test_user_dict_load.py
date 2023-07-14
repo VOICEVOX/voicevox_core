@@ -1,7 +1,7 @@
 # ユーザー辞書の単語が反映されるかをテストする。
 # AudioQueryのkanaを比較して変化するかどうかで判断する。
 
-import os
+from uuid import UUID
 import pytest
 import conftest  # noqa: F401
 import voicevox_core  # noqa: F401
@@ -22,12 +22,13 @@ async def test_user_dict_load() -> None:
     )
 
     temp_dict = voicevox_core.UserDict()
-    temp_dict.add_word(
+    uuid = temp_dict.add_word(
         voicevox_core.UserDictWord(
             surface="this_word_should_not_exist_in_default_dictionary",
             pronunciation="アイウエオ",
         )
     )
+    assert isinstance(uuid, UUID)
 
     open_jtalk.load_user_dict(temp_dict)
 

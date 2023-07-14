@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::{fmt::Display, future::Future, path::PathBuf, sync::Arc};
 
 use easy_ext::ext;
@@ -8,11 +7,12 @@ use pyo3::{
     create_exception,
     exceptions::PyException,
     pyclass, pyfunction, pymethods, pymodule,
-    types::{PyBytes, PyList, PyModule},
-    wrap_pyfunction, FromPyObject as _, PyAny, PyResult, Python, ToPyObject,
+    types::{PyBytes, PyDict, PyList, PyModule},
+    wrap_pyfunction, FromPyObject as _, PyAny, PyCell, PyObject, PyResult, Python, ToPyObject,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::{runtime::Runtime, sync::Mutex};
+use uuid::Uuid;
 use voicevox_core::{
     AccelerationMode, AccentPhraseModel, AccentPhrasesOptions, AudioQueryModel, AudioQueryOptions,
     InitializeOptions, StyleId, SynthesisOptions, TtsOptions, UserDictWordType, VoiceModelId,
@@ -397,20 +397,25 @@ impl UserDict {
         Ok(())
     }
 
-    fn add_word(&mut self, word: UserDictWord) -> PyResult<String> {
-        self.dict
+    fn add_word(&mut self, word: UserDictWord) -> PyResult<PyObject> {
+        let uuid = self
+            .dict
             .add_word(word.try_into().into_py_result()?)
-            .into_py_result()
+            .into_py_result()?;
+
+        Python::with_gil(|py| to_py_uuid(py, uuid))
     }
 
-    fn update_word(&mut self, word_uuid: &str, word: UserDictWord) -> PyResult<()> {
+    fn update_word(&mut self, word_uuid: PyObject, word: UserDictWord) -> PyResult<()> {
+        let word_uuid = Python::with_gil(|py| to_rust_uuid(py, &word_uuid))?;
         self.dict
             .update_word(word_uuid, word.try_into().into_py_result()?)
             .into_py_result()?;
         Ok(())
     }
 
-    fn remove_word(&mut self, word_uuid: &str) -> PyResult<()> {
+    fn remove_word(&mut self, word_uuid: PyObject) -> PyResult<()> {
+        let word_uuid = Python::with_gil(|py| to_rust_uuid(py, &word_uuid))?;
         self.dict.remove_word(word_uuid).into_py_result()?;
         Ok(())
     }
@@ -421,13 +426,14 @@ impl UserDict {
     }
 
     #[getter]
-    fn words(&self) -> PyResult<HashMap<String, UserDictWord>> {
-        Ok(HashMap::<String, UserDictWord>::from_iter(
-            self.dict
-                .words()
-                .iter()
-                .map(|(k, v)| (k.to_owned(), v.to_owned().into())),
-        ))
+    fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
+        let dict = PyDict::new(py);
+        for (uuid, word) in self.dict.words() {
+            let uuid = to_py_uuid(py, uuid.to_owned().into())?;
+            let word: UserDictWord = UserDictWord::from(word.clone());
+            dict.set_item(uuid, PyCell::new(py, word)?)?;
+        }
+        Ok(dict)
     }
 }
 
@@ -612,6 +618,17 @@ where
             })
         },
     )
+}
+
+fn to_rust_uuid(py: Python, ob: &PyObject) -> PyResult<Uuid> {
+    let ob = ob.as_ref(py);
+    let uuid = ob.getattr("hex")?.call0()?.extract::<String>()?;
+    Uuid::parse_str(&uuid).into_py_result()
+}
+fn to_py_uuid(py: Python, uuid: Uuid) -> PyResult<PyObject> {
+    let uuid = uuid.hyphenated().to_string();
+    let uuid = py.import("uuid")?.call_method1("UUID", (uuid,))?;
+    Ok(uuid.to_object(py))
 }
 
 impl Drop for Synthesizer {

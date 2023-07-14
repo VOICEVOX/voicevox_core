@@ -25,6 +25,7 @@ test_util = { path = "crates/test_util" }
 thiserror = "1.0.37"
 tracing = { version = "0.1.37", features = ["log"] }
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+uuid = { version = "1.4.0", features = ["v4"] }
 voicevox_core = { path = "crates/voicevox_core" }
 tokio = { version = "1.25.0", features = ["rt", "rt-multi-thread", "macros", "sync"] }
 derive-getters = "0.2.0"

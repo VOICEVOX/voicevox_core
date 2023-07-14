@@ -669,7 +669,7 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  * @param [in] json 解放する json データ
  *
  * # Safety
- * @param ライブラリ側で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
+ * @param voicevox_audio_query で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -775,7 +775,7 @@ VoicevoxResultCode voicevox_user_dict_add_word(const struct VoicevoxUserDict *us
 __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_user_dict_update_word(const struct VoicevoxUserDict *user_dict,
-                                                  const uint8_t *word_uuid,
+                                                  const char *word_uuid,
                                                   const struct VoicevoxUserDictWord *word);
 
 /**

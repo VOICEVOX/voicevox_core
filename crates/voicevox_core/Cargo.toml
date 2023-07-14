@@ -25,12 +25,13 @@ process_path.workspace = true
 regex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+serde_with = "3.0.0"
 strum.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
-uuid = { version = "1.4.0", features = ["v4"] }
+uuid.workspace = true
 
 [dependencies.onnxruntime]
 git = "https://github.com/VOICEVOX/onnxruntime-rs.git"

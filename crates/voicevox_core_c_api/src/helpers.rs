@@ -64,6 +64,8 @@ pub(crate) enum CApiError {
     InvalidAudioQuery(serde_json::Error),
     #[error("無効なAccentPhraseです: {0}")]
     InvalidAccentPhrase(serde_json::Error),
+    #[error("無効なUUIDです: {0}")]
+    InvalidUuid(uuid::Error),
 }
 
 pub(crate) fn audio_query_model_to_json(audio_query_model: &AudioQueryModel) -> String {

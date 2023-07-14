@@ -21,6 +21,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::runtime::Runtime;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
+use uuid::Uuid;
 use voicevox_core::{
     AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, UserDictWord,
     VoiceModel, VoiceModelId,
@@ -822,13 +823,12 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
 ///
 /// # Safety
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
-/// @param output_word_uuid 自動でheapメモリが割り当てられるので ::voicevox_user_dict_uuid_free で解放する必要がある
 ///
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_add_word(
     user_dict: &VoicevoxUserDict,
     word: &VoicevoxUserDictWord,
-    output_word_uuid: NonNull<*mut c_char>,
+    output_word_uuid: NonNull<[u8; 16]>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let word = word.try_into_word()?;
@@ -836,10 +836,7 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
             let mut dict = user_dict.dict.lock().expect("lock failed");
             dict.add_word(word)?
         };
-        let uuid = CString::new(uuid).expect("\\0を含まない文字列であることが保証されている");
-        output_word_uuid
-            .as_ptr()
-            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(uuid).into_raw());
+        output_word_uuid.as_ptr().copy_from(uuid.as_bytes(), 16);
 
         Ok(())
     })())
@@ -856,11 +853,11 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_update_word(
     user_dict: &VoicevoxUserDict,
-    word_uuid: *const u8,
+    word_uuid: [u8; 16],
     word: &VoicevoxUserDictWord,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let word_uuid = ensure_utf8(unsafe { CStr::from_ptr(word_uuid as *const c_char) })?;
+        let word_uuid = Uuid::from_slice(&word_uuid).map_err(CApiError::InvalidUuid)?;
         let word = word.try_into_word()?;
         {
             let mut dict = user_dict.dict.lock().expect("lock failed");
@@ -878,10 +875,10 @@ pub unsafe extern "C" fn voicevox_user_dict_update_word(
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_remove_word(
     user_dict: &VoicevoxUserDict,
-    word_uuid: *const c_char,
+    word_uuid: [u8; 16],
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let word_uuid = ensure_utf8(unsafe { CStr::from_ptr(word_uuid as *const c_char) })?;
+        let word_uuid = Uuid::from_slice(&word_uuid).map_err(CApiError::InvalidUuid)?;
         {
             let mut dict = user_dict.dict.lock().expect("lock failed");
             dict.remove_word(word_uuid)?;
