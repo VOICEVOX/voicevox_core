@@ -1,5 +1,6 @@
 use derive_getters::Getters;
 use fs_err::File;
+use itertools::join;
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -78,10 +79,6 @@ impl UserDict {
 
     /// MeCabで使用する形式に変換する。
     pub(crate) fn to_mecab_format(&self) -> String {
-        let mut lines = Vec::new();
-        for word in self.words.values() {
-            lines.push(word.to_mecab_format());
-        }
-        lines.join("\n")
+        join(self.words.values().map(UserDictWord::to_mecab_format), "\n")
     }
 }
