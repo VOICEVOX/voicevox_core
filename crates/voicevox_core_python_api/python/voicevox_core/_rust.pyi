@@ -267,7 +267,7 @@ class UserDict:
         エントリーのリスト。
     """
 
-    words: Dict[str, UserDictWord]
+    words: Dict[UUID, UserDictWord]
     def __init__(self, store_path: str) -> None:
         """ユーザー辞書を読み込み、または新規作成する。
 
