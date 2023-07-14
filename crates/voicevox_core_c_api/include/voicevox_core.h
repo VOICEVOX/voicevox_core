@@ -137,6 +137,10 @@ enum VoicevoxResultCode
    * ユーザー辞書の単語のバリデーションに失敗した
    */
   VOICEVOX_USER_DICT_INVALID_WORD_ERROR = 24,
+  /**
+   * UUIDの変換に失敗した
+   */
+  VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
@@ -759,6 +763,35 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_user_dict_add_word(const struct VoicevoxUserDict *user_dict,
                                                const struct VoicevoxUserDictWord *word,
                                                uint8_t (*output_word_uuid)[16]);
+
+/**
+ * ユーザー辞書の単語を更新する
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ * @param [in] word_uuid 更新する単語のUUID
+ * @param [in] word 新しい単語のデータ
+ * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param user_dict は有効な :VoicevoxUserDict のポインタであること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_user_dict_update_word(const struct VoicevoxUserDict *user_dict,
+                                                  const uint8_t (*word_uuid)[16],
+                                                  const struct VoicevoxUserDictWord *word);
+
+/**
+ * ユーザー辞書から単語を削除する
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ * @param [in] word_uuid 削除する単語のUUID
+ * @return 結果コード #VoicevoxResultCode
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_user_dict_remove_word(const struct VoicevoxUserDict *user_dict,
+                                                  const uint8_t (*word_uuid)[16]);
 
 /**
  * ユーザー辞書の単語をJSON形式で出力する
