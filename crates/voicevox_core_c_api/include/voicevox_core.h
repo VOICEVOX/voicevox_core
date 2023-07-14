@@ -751,7 +751,6 @@ VoicevoxResultCode voicevox_user_dict_load(const struct VoicevoxUserDict *user_d
  *
  * # Safety
  * @param user_dict は有効な :VoicevoxUserDict のポインタであること
- * @param output_word_uuid 自動でheapメモリが割り当てられるので ::voicevox_user_dict_uuid_free で解放する必要がある
  *
  */
 #ifdef _WIN32
@@ -759,36 +758,7 @@ __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_user_dict_add_word(const struct VoicevoxUserDict *user_dict,
                                                const struct VoicevoxUserDictWord *word,
-                                               char **output_word_uuid);
-
-/**
- * ユーザー辞書の単語を更新する
- * @param [in] user_dict VoicevoxUserDictのポインタ
- * @param [in] word_uuid 更新する単語のUUID
- * @param [in] word 新しい単語のデータ
- * @return 結果コード #VoicevoxResultCode
- *
- * # Safety
- * @param user_dict は有効な :VoicevoxUserDict のポインタであること
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-VoicevoxResultCode voicevox_user_dict_update_word(const struct VoicevoxUserDict *user_dict,
-                                                  const char *word_uuid,
-                                                  const struct VoicevoxUserDictWord *word);
-
-/**
- * ユーザー辞書から単語を削除する
- * @param [in] user_dict VoicevoxUserDictのポインタ
- * @param [in] word_uuid 削除する単語のUUID
- * @return 結果コード #VoicevoxResultCode
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-VoicevoxResultCode voicevox_user_dict_remove_word(const struct VoicevoxUserDict *user_dict,
-                                                  const char *word_uuid);
+                                               uint8_t (*output_word_uuid)[16]);
 
 /**
  * ユーザー辞書の単語をJSON形式で出力する
@@ -844,18 +814,6 @@ VoicevoxResultCode voicevox_user_dict_save(const struct VoicevoxUserDict *user_d
 __declspec(dllimport)
 #endif
 void voicevox_user_dict_delete(struct VoicevoxUserDict *user_dict);
-
-/**
- * uuid文字列のメモリを解放する
- * @param [in] uuid 解放する uuid 文字列
- *
- * # Safety
- * @param ライブラリ側で確保されたポインタであり、かつ呼び出し側でバッファの変更を行われていないこと
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-void voicevox_user_dict_uuid_free(char *uuid);
 
 #ifdef __cplusplus
 } // extern "C"

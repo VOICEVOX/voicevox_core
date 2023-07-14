@@ -48,6 +48,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
             Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
+            Err(InvalidUuid(_)) => VOICEVOX_RESULT_INVALID_UUID_ERROR,
         }
     }
 }

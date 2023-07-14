@@ -139,20 +139,20 @@ pub(crate) struct Symbols<'lib> {
         unsafe extern "C" fn(
             *const VoicevoxUserDict,
             *const VoicevoxUserDictWord,
-            *mut *mut c_char,
+            *mut [u8; 16]
         ) -> VoicevoxResultCode,
     >,
     pub(crate) voicevox_user_dict_update_word: Symbol<
         'lib,
         unsafe extern "C" fn(
             *const VoicevoxUserDict,
-            *const c_char,
+            *const [u8; 16],
             *const VoicevoxUserDictWord,
         ) -> VoicevoxResultCode,
     >,
     pub(crate) voicevox_user_dict_remove_word: Symbol<
         'lib,
-        unsafe extern "C" fn(*const VoicevoxUserDict, *const c_char) -> VoicevoxResultCode,
+        unsafe extern "C" fn(*const VoicevoxUserDict, *const [u8; 16]) -> VoicevoxResultCode,
     >,
     pub(crate) voicevox_user_dict_get_json: Symbol<
         'lib,
@@ -171,7 +171,6 @@ pub(crate) struct Symbols<'lib> {
     >,
     pub(crate) voicevox_user_dict_delete:
         Symbol<'lib, unsafe extern "C" fn(*mut VoicevoxUserDict) -> VoicevoxResultCode>,
-    pub(crate) voicevox_user_dict_uuid_free: Symbol<'lib, unsafe extern "C" fn(*mut c_char)>,
 }
 
 impl<'lib> Symbols<'lib> {
@@ -231,7 +230,6 @@ impl<'lib> Symbols<'lib> {
             voicevox_user_dict_import,
             voicevox_user_dict_save,
             voicevox_user_dict_delete,
-            voicevox_user_dict_uuid_free,
         ))
     }
 }

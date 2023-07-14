@@ -37,7 +37,6 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_user_dict_new,
             voicevox_user_dict_add_word,
             voicevox_user_dict_delete,
-            voicevox_user_dict_uuid_free,
             voicevox_default_initialize_options,
             voicevox_default_audio_query_options,
             voicevox_open_jtalk_rc_new,
@@ -58,7 +57,7 @@ impl assert_cdylib::TestCase for TestCase {
             dict.assume_init()
         };
 
-        let mut word_uuid = std::ptr::null_mut();
+        let mut word_uuid = [0u8; 16];
 
         let word = {
             let mut word = voicevox_user_dict_word_make(
@@ -74,8 +73,6 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         assert_ok(voicevox_user_dict_add_word(dict, &word, &mut word_uuid));
-
-        voicevox_user_dict_uuid_free(word_uuid);
 
         let model = {
             let mut model = MaybeUninit::uninit();

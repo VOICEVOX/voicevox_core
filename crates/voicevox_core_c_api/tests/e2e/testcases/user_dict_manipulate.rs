@@ -7,6 +7,7 @@ use std::{
     mem::MaybeUninit,
 };
 use tempfile::NamedTempFile;
+use uuid::Uuid;
 use voicevox_core::result_code::VoicevoxResultCode;
 
 use libloading::Library;
@@ -43,7 +44,6 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_user_dict_load,
             voicevox_user_dict_save,
             voicevox_user_dict_delete,
-            voicevox_user_dict_uuid_free,
             voicevox_json_free,
             ..
         } = Symbols::new(lib)?;
@@ -67,20 +67,16 @@ impl assert_cdylib::TestCase for TestCase {
             ret
         };
 
-        let add_word = |dict: *const VoicevoxUserDict, word: &VoicevoxUserDictWord| -> CString {
-            let mut word_uuid = MaybeUninit::uninit();
+        let add_word = |dict: *const VoicevoxUserDict, word: &VoicevoxUserDictWord| -> Uuid {
+            let mut word_uuid = [0u8; 16];
 
             assert_ok(voicevox_user_dict_add_word(
                 dict,
                 word as *const _,
-                word_uuid.as_mut_ptr(),
+                &mut word_uuid,
             ));
 
-            let ret = CStr::from_ptr(word_uuid.assume_init()).to_owned();
-
-            voicevox_user_dict_uuid_free(word_uuid.assume_init());
-
-            ret
+            Uuid::from_slice(&word_uuid).expect("invalid uuid")
         };
 
         // テスト用の辞書ファイルを作成
@@ -99,14 +95,14 @@ impl assert_cdylib::TestCase for TestCase {
 
         assert!(json.contains("ｈｏｇｅ"));
         assert!(json.contains("ホゲ"));
-        assert_contains_cstring(&json, &word_uuid);
+        assert_contains_uuid(&json, &word_uuid);
 
         // 単語の変更のテスト
         let word = voicevox_user_dict_word_make(cstr!("fuga").as_ptr(), cstr!("フガ").as_ptr());
 
         assert_ok(voicevox_user_dict_update_word(
             dict,
-            word_uuid.as_ptr(),
+            &word_uuid.into_bytes(),
             &word,
         ));
 
@@ -116,7 +112,7 @@ impl assert_cdylib::TestCase for TestCase {
         assert!(!json.contains("ホゲ"));
         assert!(json.contains("ｆｕｇａ"));
         assert!(json.contains("フガ"));
-        assert_contains_cstring(&json, &word_uuid);
+        assert_contains_uuid(&json, &word_uuid);
 
         // 辞書のインポートのテスト。
         let other_dict = {
@@ -135,18 +131,21 @@ impl assert_cdylib::TestCase for TestCase {
         let json = get_json(&dict);
         assert!(json.contains("ｆｕｇａ"));
         assert!(json.contains("フガ"));
-        assert_contains_cstring(&json, &word_uuid);
+        assert_contains_uuid(&json, &word_uuid);
         assert!(json.contains("ｐｉｙｏ"));
         assert!(json.contains("ピヨ"));
-        assert_contains_cstring(&json, &other_word_uuid);
+        assert_contains_uuid(&json, &other_word_uuid);
 
         // 単語の削除のテスト
-        assert_ok(voicevox_user_dict_remove_word(dict, word_uuid.as_ptr()));
+        assert_ok(voicevox_user_dict_remove_word(
+            dict,
+            &word_uuid.into_bytes(),
+        ));
 
         let json = get_json(&dict);
-        assert_not_contains_cstring(&json, &word_uuid);
+        assert_not_contains_uuid(&json, &word_uuid);
         // 他の単語は残っている
-        assert_contains_cstring(&json, &other_word_uuid);
+        assert_contains_uuid(&json, &other_word_uuid);
 
         // 辞書のセーブ・ロードのテスト
         let temp_path = NamedTempFile::new().unwrap().into_temp_path();
@@ -158,8 +157,8 @@ impl assert_cdylib::TestCase for TestCase {
         assert_ok(voicevox_user_dict_load(other_dict, temp_path.as_ptr()));
 
         let json = get_json(&other_dict);
-        assert_contains_cstring(&json, &word_uuid);
-        assert_contains_cstring(&json, &other_word_uuid);
+        assert_contains_uuid(&json, &word_uuid);
+        assert_contains_uuid(&json, &other_word_uuid);
 
         voicevox_user_dict_delete(dict);
         voicevox_user_dict_delete(other_dict);
@@ -170,12 +169,12 @@ impl assert_cdylib::TestCase for TestCase {
             std::assert_eq!(VoicevoxResultCode::VOICEVOX_RESULT_OK, result_code);
         }
 
-        fn assert_contains_cstring(text: &str, pattern: &CString) {
-            assert!(text.contains(pattern.to_str().unwrap()));
+        fn assert_contains_uuid(text: &str, pattern: &Uuid) {
+            assert!(text.contains(pattern.to_string().as_str()));
         }
 
-        fn assert_not_contains_cstring(text: &str, pattern: &CString) {
-            assert!(!text.contains(pattern.to_str().unwrap()));
+        fn assert_not_contains_uuid(text: &str, pattern: &Uuid) {
+            assert!(!text.contains(pattern.to_string().as_str()));
         }
     }
 

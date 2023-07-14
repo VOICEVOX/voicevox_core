@@ -429,7 +429,7 @@ impl UserDict {
     fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
         let dict = PyDict::new(py);
         for (uuid, word) in self.dict.words() {
-            let uuid = to_py_uuid(py, uuid.to_owned().into())?;
+            let uuid = to_py_uuid(py, uuid.to_owned())?;
             let word: UserDictWord = UserDictWord::from(word.clone());
             dict.set_item(uuid, PyCell::new(py, word)?)?;
         }

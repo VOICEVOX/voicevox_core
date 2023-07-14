@@ -24,6 +24,7 @@ serde_json.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing-subscriber.workspace = true
+uuid.workspace = true
 voicevox_core.workspace = true
 
 [dependencies.chrono]
@@ -52,4 +53,3 @@ tempfile.workspace = true
 test_util.workspace = true
 toml = "0.7.2"
 typetag = "0.2.5"
-uuid.workspace = true
