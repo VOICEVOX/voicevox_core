@@ -27,6 +27,17 @@ pub struct UserDictWord {
 }
 
 static PRONUNCIATION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
+static MORA_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(concat!(
+        "(?:",
+        "[イ][ェ]|[ヴ][ャュョ]|[トド][ゥ]|[テデ][ィャュョ]|[デ][ェ]|[クグ][ヮ]|", // rule_others
+        "[キシチニヒミリギジビピ][ェャュョ]|",                                    // rule_line_i
+        "[ツフヴ][ァ]|[ウスツフヴズ][ィ]|[ウツフヴ][ェォ]|",                      // rule_line_u
+        "[ァ-ヴー]",                                                              // rule_one_mora
+        ")",
+    ))
+    .unwrap()
+});
 
 impl Default for UserDictWord {
     fn default() -> Self {
@@ -109,19 +120,7 @@ impl UserDictWord {
     /// カタカナの発音からモーラ数を計算する。
     fn calculate_mora_count(pronunciation: &str, accent_type: usize) -> Result<usize> {
         // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L212-L236
-        let rule_others =
-            r#"[イ][ェ]|[ヴ][ャュョ]|[トド][ゥ]|[テデ][ィャュョ]|[デ][ェ]|[クグ][ヮ]"#;
-        let rule_line_i = r#"[キシチニヒミリギジビピ][ェャュョ]"#;
-        let rule_line_u = r#"[ツフヴ][ァ]|[ウスツフヴズ][ィ]|[ウツフヴ][ェォ]"#;
-        let rule_one_mora = r#"[ァ-ヴー]"#;
-
-        let mora_count = regex::Regex::new(&format!(
-            r#"(?:{}|{}|{}|{})"#,
-            rule_others, rule_line_i, rule_line_u, rule_one_mora
-        ))
-        .unwrap()
-        .find_iter(pronunciation)
-        .count();
+        let mora_count = MORA_REGEX.find_iter(pronunciation).count();
 
         if accent_type > mora_count {
             return Err(Error::InvalidWord(format!(
