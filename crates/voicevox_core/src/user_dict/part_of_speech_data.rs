@@ -109,7 +109,7 @@ pub static PART_OF_SPEECH_DETAIL: Lazy<HashMap<UserDictWordType, PartOfSpeechDet
 fn search_cost_candidates(context_id: i32) -> Vec<i32> {
     PART_OF_SPEECH_DETAIL
         .values()
-        .find(|&x| x.context_id == context_id)
+        .find(|x| x.context_id == context_id)
         .expect("品詞IDが不正です")
         .cost_candidates
         .clone()

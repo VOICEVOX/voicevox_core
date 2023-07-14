@@ -18,6 +18,7 @@ impl UserDict {
     }
 
     /// ユーザー辞書をファイルから読み込む。
+    ///
     /// ファイルが存在しない、または内容が不正の場合はエラーを返す。
     pub fn load(&mut self, store_path: &str) -> Result<()> {
         let store_path = std::path::Path::new(store_path);
