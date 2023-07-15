@@ -387,13 +387,11 @@ impl UserDict {
     }
 
     fn load(&mut self, path: &str) -> PyResult<()> {
-        self.dict.load(path).into_py_result()?;
-        Ok(())
+        self.dict.load(path).into_py_result()
     }
 
     fn save(&self, path: &str) -> PyResult<()> {
-        self.dict.save(path).into_py_result()?;
-        Ok(())
+        self.dict.save(path).into_py_result()
     }
 
     fn add_word(
