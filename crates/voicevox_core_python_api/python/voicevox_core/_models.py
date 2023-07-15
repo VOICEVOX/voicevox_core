@@ -45,7 +45,7 @@ class SupportedDevices:
     """
     CPUが利用可能。
 
-    常に ``true`` 。
+    常に ``True`` 。
     """
 
     cuda: bool
