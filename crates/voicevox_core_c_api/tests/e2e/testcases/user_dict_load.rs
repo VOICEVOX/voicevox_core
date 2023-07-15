@@ -51,11 +51,7 @@ impl assert_cdylib::TestCase for TestCase {
             ..
         } = Symbols::new(lib)?;
 
-        let dict = {
-            let mut dict = MaybeUninit::uninit();
-            assert_ok(voicevox_user_dict_new(dict.as_mut_ptr()));
-            dict.assume_init()
-        };
+        let dict = voicevox_user_dict_new();
 
         let mut word_uuid = [0u8; 16];
 

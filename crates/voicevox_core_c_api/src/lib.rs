@@ -720,6 +720,13 @@ pub extern "C" fn voicevox_error_result_to_message(
 pub struct VoicevoxUserDict {
     dict: Arc<Mutex<voicevox_core::UserDict>>,
 }
+impl Default for VoicevoxUserDict {
+    fn default() -> Self {
+        Self {
+            dict: Arc::new(Mutex::new(voicevox_core::UserDict::default())),
+        }
+    }
+}
 
 /// ユーザー辞書の単語
 #[repr(C)]
@@ -775,22 +782,13 @@ pub extern "C" fn voicevox_user_dict_word_make(
 }
 
 /// ユーザー辞書を作成する
-/// @param [out] out_user_dict VoicevoxUserDictのポインタ
-/// @return 結果コード #VoicevoxResultCode
+/// @return VoicevoxUserDict
 ///
 /// # Safety
-/// @param out_user_dict VoicevoxUserDictのポインタが有効な領域を指していること
+/// @return 自動で開放されることはないので、呼び出し側で :voicevox_user_dict_delete で開放する必要がある
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_user_dict_new(
-    out_user_dict: NonNull<Box<VoicevoxUserDict>>,
-) -> VoicevoxResultCode {
-    let dict = voicevox_core::UserDict::new();
-    let user_dict = Box::new(VoicevoxUserDict {
-        dict: Arc::new(Mutex::new(dict)),
-    });
-    out_user_dict.as_ptr().write_unaligned(user_dict);
-
-    VoicevoxResultCode::VOICEVOX_RESULT_OK
+pub extern "C" fn voicevox_user_dict_new() -> Box<VoicevoxUserDict> {
+    Default::default()
 }
 
 /// ユーザー辞書にファイルを読み込ませる

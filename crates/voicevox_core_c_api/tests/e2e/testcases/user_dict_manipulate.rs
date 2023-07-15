@@ -80,11 +80,7 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         // テスト用の辞書ファイルを作成
-        let dict = {
-            let mut dict = MaybeUninit::uninit();
-            assert_ok(voicevox_user_dict_new(dict.as_mut_ptr()));
-            dict.assume_init()
-        };
+        let dict = voicevox_user_dict_new();
 
         // 単語の追加のテスト
         let word = voicevox_user_dict_word_make(cstr!("hoge").as_ptr(), cstr!("ホゲ").as_ptr());
@@ -115,11 +111,7 @@ impl assert_cdylib::TestCase for TestCase {
         assert_contains_uuid(&json, &word_uuid);
 
         // 辞書のインポートのテスト。
-        let other_dict = {
-            let mut dict = MaybeUninit::uninit();
-            assert_ok(voicevox_user_dict_new(dict.as_mut_ptr()));
-            dict.assume_init()
-        };
+        let other_dict = voicevox_user_dict_new();
 
         let other_word =
             voicevox_user_dict_word_make(cstr!("piyo").as_ptr(), cstr!("ピヨ").as_ptr());

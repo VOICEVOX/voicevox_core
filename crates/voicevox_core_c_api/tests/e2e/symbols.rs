@@ -129,7 +129,7 @@ pub(crate) struct Symbols<'lib> {
     pub(crate) voicevox_user_dict_word_make:
         Symbol<'lib, unsafe extern "C" fn(*const c_char, *const c_char) -> VoicevoxUserDictWord>,
     pub(crate) voicevox_user_dict_new:
-        Symbol<'lib, unsafe extern "C" fn(*mut *mut VoicevoxUserDict) -> VoicevoxResultCode>,
+        Symbol<'lib, unsafe extern "C" fn() -> *mut VoicevoxUserDict>,
     pub(crate) voicevox_user_dict_load: Symbol<
         'lib,
         unsafe extern "C" fn(*const VoicevoxUserDict, *const c_char) -> VoicevoxResultCode,

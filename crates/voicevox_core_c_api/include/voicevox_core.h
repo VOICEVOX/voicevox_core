@@ -719,16 +719,15 @@ struct VoicevoxUserDictWord voicevox_user_dict_word_make(const char *surface,
 
 /**
  * ユーザー辞書を作成する
- * @param [out] out_user_dict VoicevoxUserDictのポインタ
- * @return 結果コード #VoicevoxResultCode
+ * @return VoicevoxUserDict
  *
  * # Safety
- * @param out_user_dict VoicevoxUserDictのポインタが有効な領域を指していること
+ * @return 自動で開放されることはないので、呼び出し側で :voicevox_user_dict_delete で開放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_user_dict_new(struct VoicevoxUserDict **out_user_dict);
+struct VoicevoxUserDict *voicevox_user_dict_new(void);
 
 /**
  * ユーザー辞書にファイルを読み込ませる
