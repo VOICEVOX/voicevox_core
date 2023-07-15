@@ -57,10 +57,8 @@ impl assert_cdylib::TestCase for TestCase {
 
         let word = {
             let mut word = voicevox_user_dict_word_make(
-                CString::new("this_word_should_not_exist_in_default_dictionary")
-                    .unwrap()
-                    .into_raw(),
-                CString::new("アイウエオ").unwrap().into_raw(),
+                cstr!("this_word_should_not_exist_in_default_dictionary").as_ptr(),
+                cstr!("アイウエオ").as_ptr(),
             );
             word.word_type = VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;
             word.priority = 10;
