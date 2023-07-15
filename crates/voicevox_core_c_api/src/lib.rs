@@ -717,15 +717,9 @@ pub extern "C" fn voicevox_error_result_to_message(
 }
 
 /// ユーザー辞書
+#[derive(Default)]
 pub struct VoicevoxUserDict {
     dict: Arc<Mutex<voicevox_core::UserDict>>,
-}
-impl Default for VoicevoxUserDict {
-    fn default() -> Self {
-        Self {
-            dict: Arc::new(Mutex::new(voicevox_core::UserDict::default())),
-        }
-    }
 }
 
 /// ユーザー辞書の単語
