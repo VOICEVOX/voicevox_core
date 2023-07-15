@@ -30,7 +30,7 @@ async def test_user_dict_load() -> None:
     )
     assert isinstance(uuid, UUID)
 
-    open_jtalk.load_user_dict(temp_dict)
+    open_jtalk.set_user_dict(temp_dict)
 
     audio_query_with_dict = await synthesizer.audio_query(
         "this_word_should_not_exist_in_default_dictionary", style_id=0, kana=False

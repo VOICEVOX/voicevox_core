@@ -130,9 +130,9 @@ enum VoicevoxResultCode
    */
   VOICEVOX_USER_DICT_WORD_NOT_FOUND_ERROR = 22,
   /**
-   * ユーザー辞書をOpenJTalkに読み込ませることができなかった
+   * OpenJTalkのユーザー辞書の設定に失敗した
    */
-  VOICEVOX_OPEN_JTALK_LOAD_USER_DICT_ERROR = 23,
+  VOICEVOX_OPEN_JTALK_SET_USER_DICT_ERROR = 23,
   /**
    * ユーザー辞書の単語のバリデーションに失敗した
    */
@@ -324,7 +324,7 @@ VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
                                               struct OpenJtalkRc **out_open_jtalk);
 
 /**
- * OpenJtalkにユーザー辞書を読み込ませる。
+ * OpenJtalkの使うユーザー辞書を設定する
  * この関数を呼び出した後にユーザー辞書を変更した場合、再度この関数を呼び出す必要がある。
  * @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
  * @param [in] user_dict ユーザー辞書
@@ -336,8 +336,8 @@ VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_open_jtalk_rc_load_user_dict(const struct OpenJtalkRc *open_jtalk,
-                                                         const struct VoicevoxUserDict *user_dict);
+VoicevoxResultCode voicevox_open_jtalk_rc_set_user_dict(const struct OpenJtalkRc *open_jtalk,
+                                                        const struct VoicevoxUserDict *user_dict);
 
 /**
  * 参照カウントで管理されたOpenJtalkを削除する

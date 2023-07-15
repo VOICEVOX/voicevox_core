@@ -15,7 +15,7 @@ pub(crate) struct Symbols<'lib> {
         'lib,
         unsafe extern "C" fn(*const c_char, *mut *mut OpenJtalkRc) -> VoicevoxResultCode,
     >,
-    pub(crate) voicevox_open_jtalk_rc_load_user_dict: Symbol<
+    pub(crate) voicevox_open_jtalk_rc_set_user_dict: Symbol<
         'lib,
         unsafe extern "C" fn(*mut OpenJtalkRc, *const VoicevoxUserDict) -> VoicevoxResultCode,
     >,
@@ -190,7 +190,7 @@ impl<'lib> Symbols<'lib> {
             voicevox_default_synthesis_options,
             voicevox_default_tts_options,
             voicevox_open_jtalk_rc_new,
-            voicevox_open_jtalk_rc_load_user_dict,
+            voicevox_open_jtalk_rc_set_user_dict,
             voicevox_open_jtalk_rc_delete,
             voicevox_voice_model_new_from_path,
             voicevox_voice_model_id,

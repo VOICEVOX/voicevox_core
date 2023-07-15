@@ -99,7 +99,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     })())
 }
 
-/// OpenJtalkにユーザー辞書を読み込ませる。
+/// OpenJtalkの使うユーザー辞書を設定する
 /// この関数を呼び出した後にユーザー辞書を変更した場合、再度この関数を呼び出す必要がある。
 /// @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
 /// @param [in] user_dict ユーザー辞書
@@ -108,7 +108,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 /// @open_jtalk 有効な :OpenJtalkRc のポインタであること
 /// @user_dict 有効な :VoicevoxUserDict のポインタであること
 #[no_mangle]
-pub extern "C" fn voicevox_open_jtalk_rc_load_user_dict(
+pub extern "C" fn voicevox_open_jtalk_rc_set_user_dict(
     open_jtalk: &OpenJtalkRc,
     user_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
@@ -116,7 +116,7 @@ pub extern "C" fn voicevox_open_jtalk_rc_load_user_dict(
         let user_dict = user_dict.to_owned();
         {
             let dict = user_dict.dict.as_ref().lock().expect("lock failed");
-            open_jtalk.open_jtalk.load_user_dict(&dict)?;
+            open_jtalk.open_jtalk.set_user_dict(&dict)?;
         }
         Ok(())
     })())

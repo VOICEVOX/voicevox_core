@@ -49,8 +49,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_USER_DICT_SAVE_ERROR = 21,
     /// ユーザー辞書に単語が見つからなかった
     VOICEVOX_USER_DICT_WORD_NOT_FOUND_ERROR = 22,
-    /// ユーザー辞書をOpenJTalkに読み込ませることができなかった
-    VOICEVOX_OPEN_JTALK_LOAD_USER_DICT_ERROR = 23,
+    /// OpenJTalkのユーザー辞書の設定に失敗した
+    VOICEVOX_OPEN_JTALK_SET_USER_DICT_ERROR = 23,
     /// ユーザー辞書の単語のバリデーションに失敗した
     VOICEVOX_USER_DICT_INVALID_WORD_ERROR = 24,
     /// UUIDの変換に失敗した
@@ -94,9 +94,7 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
         VOICEVOX_USER_DICT_LOAD_ERROR => "ユーザー辞書を読み込めませんでした\0",
         VOICEVOX_USER_DICT_SAVE_ERROR => "ユーザー辞書を書き込めませんでした\0",
         VOICEVOX_USER_DICT_WORD_NOT_FOUND_ERROR => "ユーザー辞書に単語が見つかりませんでした\0",
-        VOICEVOX_OPEN_JTALK_LOAD_USER_DICT_ERROR => {
-            "ユーザー辞書をOpenJTalkに読み込ませることができませんでした\0"
-        }
+        VOICEVOX_OPEN_JTALK_SET_USER_DICT_ERROR => "OpenJTalkのユーザー辞書の設定に失敗しました\0",
         VOICEVOX_USER_DICT_INVALID_WORD_ERROR => {
             "ユーザー辞書の単語のバリデーションに失敗しました\0"
         }
