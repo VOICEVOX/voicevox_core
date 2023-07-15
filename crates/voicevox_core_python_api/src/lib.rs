@@ -7,7 +7,7 @@ use pyo3::{
     create_exception,
     exceptions::PyException,
     pyclass, pyfunction, pymethods, pymodule,
-    types::{PyBytes, PyDict, PyList, PyModule},
+    types::{PyBytes, PyDict, PyList, PyModule, IntoPyDict as _},
     wrap_pyfunction, FromPyObject as _, PyAny, PyObject, PyResult, Python, ToPyObject,
 };
 use serde::{de::DeserializeOwned, Serialize};
