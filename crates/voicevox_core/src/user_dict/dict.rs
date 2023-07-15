@@ -9,6 +9,7 @@ use super::word::*;
 use crate::{Error, Result};
 
 /// ユーザー辞書。
+/// 単語はJSONとの相互変換のために挿入された順序を保つ。
 #[derive(Clone, Debug, Default, Getters)]
 pub struct UserDict {
     words: IndexMap<Uuid, UserDictWord>,
