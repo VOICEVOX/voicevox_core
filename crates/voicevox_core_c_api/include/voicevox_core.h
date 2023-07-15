@@ -120,11 +120,11 @@ enum VoicevoxResultCode
   /**
    * ユーザー辞書を読み込めなかった
    */
-  VOICEVOX_USER_DICT_LOAD_ERROR = 20,
+  VOICEVOX_LOAD_USER_DICT_ERROR = 20,
   /**
    * ユーザー辞書を書き込めなかった
    */
-  VOICEVOX_USER_DICT_SAVE_ERROR = 21,
+  VOICEVOX_SAVE_USER_DICT_ERROR = 21,
   /**
    * ユーザー辞書に単語が見つからなかった
    */
@@ -132,11 +132,11 @@ enum VoicevoxResultCode
   /**
    * OpenJTalkのユーザー辞書の設定に失敗した
    */
-  VOICEVOX_OPEN_JTALK_SET_USER_DICT_ERROR = 23,
+  VOICEVOX_SET_USER_DICT_ERROR = 23,
   /**
    * ユーザー辞書の単語のバリデーションに失敗した
    */
-  VOICEVOX_USER_DICT_INVALID_WORD_ERROR = 24,
+  VOICEVOX_INVALID_USER_DICT_WORD_ERROR = 24,
   /**
    * UUIDの変換に失敗した
    */
@@ -336,7 +336,7 @@ VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_open_jtalk_rc_set_user_dict(const struct OpenJtalkRc *open_jtalk,
+VoicevoxResultCode voicevox_open_jtalk_rc_use_user_dict(const struct OpenJtalkRc *open_jtalk,
                                                         const struct VoicevoxUserDict *user_dict);
 
 /**

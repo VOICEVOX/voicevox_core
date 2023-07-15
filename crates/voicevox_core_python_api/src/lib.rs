@@ -103,9 +103,9 @@ impl OpenJtalk {
         })
     }
 
-    fn set_user_dict(&self, user_dict: UserDict) -> PyResult<()> {
+    fn use_user_dict(&self, user_dict: UserDict) -> PyResult<()> {
         self.open_jtalk
-            .set_user_dict(&user_dict.dict)
+            .use_user_dict(&user_dict.dict)
             .into_py_result()
     }
 }

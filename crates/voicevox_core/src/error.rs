@@ -84,19 +84,19 @@ pub enum Error {
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_PARSE_KANA_ERROR))]
     ParseKana(#[from] KanaParseError),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_LOAD_ERROR))]
-    UserDictLoad(String),
+    #[error("{}: {0}", base_error_message(VOICEVOX_LOAD_USER_DICT_ERROR))]
+    LoadUserDict(String),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_SAVE_ERROR))]
-    UserDictSave(String),
+    #[error("{}: {0}", base_error_message(VOICEVOX_SAVE_USER_DICT_ERROR))]
+    SaveUserDict(String),
 
     #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_WORD_NOT_FOUND_ERROR))]
     WordNotFound(Uuid),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_OPEN_JTALK_SET_USER_DICT_ERROR))]
-    OpenjtalkSetUserDict(String),
+    #[error("{}: {0}", base_error_message(VOICEVOX_SET_USER_DICT_ERROR))]
+    SetUserDict(String),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_INVALID_WORD_ERROR))]
+    #[error("{}: {0}", base_error_message(VOICEVOX_INVALID_USER_DICT_WORD_ERROR))]
     InvalidWord(String),
 }
 
