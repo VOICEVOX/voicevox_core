@@ -1,5 +1,6 @@
 use derive_getters::Getters;
 use fs_err::File;
+use indexmap::IndexMap;
 use itertools::join;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -10,7 +11,7 @@ use crate::{Error, Result};
 /// ユーザー辞書。
 #[derive(Clone, Debug, Default, Getters)]
 pub struct UserDict {
-    words: HashMap<Uuid, UserDictWord>,
+    words: IndexMap<Uuid, UserDictWord>,
 }
 
 impl UserDict {
