@@ -6,6 +6,7 @@ from ._models import (  # noqa: F401
     Mora,
     SpeakerMeta,
     SupportedDevices,
+    UserDictWord,
     UserDictWordType,
 )
 from ._rust import (
@@ -13,7 +14,6 @@ from ._rust import (
     Synthesizer,
     VoiceModel,
     UserDict,
-    UserDictWord,
     supported_devices,
 )  # noqa: F401
 

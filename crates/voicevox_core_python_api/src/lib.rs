@@ -1,4 +1,3 @@
-use pyo3::IntoPy;
 use std::{fmt::Display, future::Future, path::PathBuf, sync::Arc};
 
 use easy_ext::ext;
@@ -16,8 +15,8 @@ use tokio::{runtime::Runtime, sync::Mutex};
 use uuid::Uuid;
 use voicevox_core::{
     AccelerationMode, AccentPhraseModel, AccentPhrasesOptions, AudioQueryModel, AudioQueryOptions,
-    InitializeOptions, StyleId, SynthesisOptions, TtsOptions, UserDictWordType, VoiceModelId,
-    VoiceModelMeta,
+    InitializeOptions, StyleId, SynthesisOptions, TtsOptions, UserDictWord, UserDictWordType,
+    VoiceModelId, VoiceModelMeta,
 };
 
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
@@ -34,7 +33,6 @@ fn rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_class::<OpenJtalk>()?;
     module.add_class::<VoiceModel>()?;
     module.add_class::<UserDict>()?;
-    module.add_class::<UserDictWord>()?;
     Ok(())
 }
 
@@ -398,25 +396,29 @@ impl UserDict {
         Ok(())
     }
 
-    fn add_word(&mut self, word: UserDictWord) -> PyResult<PyObject> {
-        let uuid = self
-            .dict
-            .add_word(word.try_into().into_py_result()?)
-            .into_py_result()?;
+    fn add_word(
+        &mut self,
+        #[pyo3(from_py_with = "to_rust_user_dict_word")] word: UserDictWord,
+        py: Python,
+    ) -> PyResult<PyObject> {
+        let uuid = self.dict.add_word(word).into_py_result()?;
 
-        Python::with_gil(|py| to_py_uuid(py, uuid))
+        to_py_uuid(py, uuid)
     }
 
-    fn update_word(&mut self, word_uuid: PyObject, word: UserDictWord) -> PyResult<()> {
-        let word_uuid = Python::with_gil(|py| to_rust_uuid(py, &word_uuid))?;
-        self.dict
-            .update_word(word_uuid, word.try_into().into_py_result()?)
-            .into_py_result()?;
+    fn update_word(
+        &mut self,
+        #[pyo3(from_py_with = "to_rust_uuid")] word_uuid: Uuid,
+        #[pyo3(from_py_with = "to_rust_user_dict_word")] word: UserDictWord,
+    ) -> PyResult<()> {
+        self.dict.update_word(word_uuid, word).into_py_result()?;
         Ok(())
     }
 
-    fn remove_word(&mut self, word_uuid: PyObject) -> PyResult<()> {
-        let word_uuid = Python::with_gil(|py| to_rust_uuid(py, &word_uuid))?;
+    fn remove_word(
+        &mut self,
+        #[pyo3(from_py_with = "to_rust_uuid")] word_uuid: Uuid,
+    ) -> PyResult<()> {
         self.dict.remove_word(word_uuid).into_py_result()?;
         Ok(())
     }
@@ -431,88 +433,10 @@ impl UserDict {
         let dict = PyDict::new(py);
         for (uuid, word) in self.dict.words() {
             let uuid = to_py_uuid(py, uuid.to_owned())?;
-            let word: UserDictWord = UserDictWord::from(word.clone());
-            dict.set_item(uuid, word.into_py(py))?;
+            let word: UserDictWord = word.clone();
+            dict.set_item(uuid, to_py_user_dict_word(py, &word)?)?;
         }
         Ok(dict)
-    }
-}
-
-#[pyclass]
-#[derive(Clone, Debug)]
-pub struct UserDictWord {
-    #[pyo3(get, set)]
-    surface: String,
-    #[pyo3(get, set)]
-    pronunciation: String,
-    #[pyo3(get, set)]
-    accent_type: usize,
-    word_type: UserDictWordType,
-    #[pyo3(get, set)]
-    priority: u32,
-}
-
-#[pymethods]
-impl UserDictWord {
-    #[new]
-    #[pyo3(signature =(
-            surface,
-            pronunciation,
-            accent_type = voicevox_core::UserDictWord::default().accent_type,
-            word_type = voicevox_core::UserDictWord::default().word_type,
-            priority = voicevox_core::UserDictWord::default().priority
-    ))]
-    pub fn new(
-        surface: String,
-        pronunciation: String,
-        accent_type: usize,
-        #[pyo3(from_py_with = "from_word_type")] word_type: UserDictWordType,
-        priority: u32,
-    ) -> Self {
-        Self {
-            surface,
-            pronunciation,
-            accent_type,
-            word_type,
-            priority,
-        }
-    }
-
-    #[getter]
-    fn word_type<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
-        Ok(to_word_type(py, self.word_type.clone()))
-    }
-
-    #[setter]
-    fn set_word_type(&mut self, word_type: &PyAny) -> PyResult<()> {
-        self.word_type = from_word_type(word_type)?;
-        Ok(())
-    }
-}
-
-impl From<voicevox_core::UserDictWord> for UserDictWord {
-    fn from(word: voicevox_core::UserDictWord) -> Self {
-        Self {
-            surface: word.surface,
-            pronunciation: word.pronunciation,
-            accent_type: word.accent_type,
-            word_type: word.word_type,
-            priority: word.priority,
-        }
-    }
-}
-
-impl TryFrom<UserDictWord> for voicevox_core::UserDictWord {
-    type Error = voicevox_core::Error;
-
-    fn try_from(word: UserDictWord) -> voicevox_core::Result<Self> {
-        voicevox_core::UserDictWord::new(
-            word.surface.clone(),
-            word.pronunciation.clone(),
-            word.accent_type,
-            word.word_type.clone(),
-            word.priority,
-        )
     }
 }
 
@@ -530,45 +454,6 @@ fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
         Ok(AccelerationMode::Gpu)
     } else {
         unreachable!("{} should be one of {{AUTO, CPU, GPU}}", mode.repr()?);
-    }
-}
-
-fn from_word_type(ob: &PyAny) -> PyResult<UserDictWordType> {
-    let py = ob.py();
-
-    let class = py.import("voicevox_core")?.getattr("UserDictWordType")?;
-    let mode = class.get_item(ob)?;
-
-    if mode.eq(class.getattr("PROPER_NOUN")?)? {
-        Ok(UserDictWordType::ProperNoun)
-    } else if mode.eq(class.getattr("COMMON_NOUN")?)? {
-        Ok(UserDictWordType::CommonNoun)
-    } else if mode.eq(class.getattr("VERB")?)? {
-        Ok(UserDictWordType::Verb)
-    } else if mode.eq(class.getattr("ADJECTIVE")?)? {
-        Ok(UserDictWordType::Adjective)
-    } else if mode.eq(class.getattr("SUFFIX")?)? {
-        Ok(UserDictWordType::Suffix)
-    } else {
-        unreachable!(
-            "{} should be one of {{PROPER_NOUN, COMMON_NOUN, VERB, ADJECTIVE, SUFFIX}}",
-            mode.repr()?
-        );
-    }
-}
-fn to_word_type(py: Python<'_>, word_type: UserDictWordType) -> &PyAny {
-    let class = py
-        .import("voicevox_core")
-        .unwrap()
-        .getattr("UserDictWordType")
-        .unwrap();
-
-    match word_type {
-        UserDictWordType::ProperNoun => class.getattr("PROPER_NOUN").unwrap(),
-        UserDictWordType::CommonNoun => class.getattr("COMMON_NOUN").unwrap(),
-        UserDictWordType::Verb => class.getattr("VERB").unwrap(),
-        UserDictWordType::Adjective => class.getattr("ADJECTIVE").unwrap(),
-        UserDictWordType::Suffix => class.getattr("SUFFIX").unwrap(),
     }
 }
 
@@ -651,8 +536,7 @@ where
     )
 }
 
-fn to_rust_uuid(py: Python, ob: &PyObject) -> PyResult<Uuid> {
-    let ob = ob.as_ref(py);
+fn to_rust_uuid(ob: &PyAny) -> PyResult<Uuid> {
     let uuid = ob.getattr("hex")?.extract::<String>()?;
     uuid.parse().into_py_result()
 }
@@ -660,6 +544,42 @@ fn to_py_uuid(py: Python, uuid: Uuid) -> PyResult<PyObject> {
     let uuid = uuid.hyphenated().to_string();
     let uuid = py.import("uuid")?.call_method1("UUID", (uuid,))?;
     Ok(uuid.to_object(py))
+}
+fn to_rust_user_dict_word(ob: &PyAny) -> PyResult<voicevox_core::UserDictWord> {
+    voicevox_core::UserDictWord::new(
+        ob.getattr("surface")?.extract()?,
+        ob.getattr("pronunciation")?.extract()?,
+        ob.getattr("accent_type")?.extract()?,
+        to_rust_word_type(ob.getattr("word_type")?.extract()?),
+        ob.getattr("priority")?.extract()?,
+    )
+    .into_py_result()
+}
+fn to_py_user_dict_word<'py>(
+    py: Python<'py>,
+    word: &voicevox_core::UserDictWord,
+) -> PyResult<&'py PyAny> {
+    let class = py
+        .import("voicevox_core")?
+        .getattr("UserDictWord")?
+        .downcast()?;
+    to_pydantic_dataclass(word, class)
+}
+fn to_rust_word_type(word_type: &PyAny) -> UserDictWordType {
+    let name = word_type
+        .getattr("name")
+        .unwrap()
+        .extract::<String>()
+        .unwrap();
+
+    match name.as_str() {
+        "PROPER_NOUN" => UserDictWordType::ProperNoun,
+        "COMMON_NOUN" => UserDictWordType::CommonNoun,
+        "VERB" => UserDictWordType::Verb,
+        "ADJECTIVE" => UserDictWordType::Adjective,
+        "SUFFIX" => UserDictWordType::Suffix,
+        _ => unreachable!(),
+    }
 }
 
 impl Drop for Synthesizer {
