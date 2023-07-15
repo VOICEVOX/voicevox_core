@@ -428,13 +428,17 @@ impl UserDict {
 
     #[getter]
     fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
-        let dict = PyDict::new(py);
-        for (uuid, word) in self.dict.words() {
-            let uuid = to_py_uuid(py, uuid.to_owned())?;
-            let word: UserDictWord = word.clone();
-            dict.set_item(uuid, to_py_user_dict_word(py, &word)?)?;
-        }
-        Ok(dict)
+        let words = self
+            .dict
+            .words()
+            .iter()
+            .map(|(&uuid, word)| {
+                let uuid = to_py_uuid(py, uuid)?;
+                let word = to_py_user_dict_word(py, word)?;
+                Ok((uuid, word))
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        Ok(words.into_py_dict(py))
     }
 }
 
