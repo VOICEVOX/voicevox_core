@@ -7,7 +7,7 @@ use pyo3::{
     create_exception,
     exceptions::PyException,
     pyclass, pyfunction, pymethods, pymodule,
-    types::{PyBytes, PyDict, PyList, PyModule, IntoPyDict as _},
+    types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyModule},
     wrap_pyfunction, FromPyObject as _, PyAny, PyObject, PyResult, Python, ToPyObject,
 };
 use serde::{de::DeserializeOwned, Serialize};
@@ -372,7 +372,7 @@ impl Synthesizer {
 }
 
 #[pyclass]
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 struct UserDict {
     dict: voicevox_core::UserDict,
 }
@@ -381,9 +381,7 @@ struct UserDict {
 impl UserDict {
     #[new]
     fn new() -> Self {
-        Self {
-            dict: voicevox_core::UserDict::new(),
-        }
+        Self::default()
     }
 
     fn load(&mut self, path: &str) -> PyResult<()> {
