@@ -2,7 +2,6 @@ use derive_getters::Getters;
 use fs_err::File;
 use indexmap::IndexMap;
 use itertools::join;
-use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::word::*;
@@ -32,7 +31,7 @@ impl UserDict {
 
         let store_file = File::open(store_path).map_err(|e| Error::LoadUserDict(e.to_string()))?;
 
-        let words: HashMap<Uuid, UserDictWord> =
+        let words: IndexMap<Uuid, UserDictWord> =
             serde_json::from_reader(store_file).map_err(|e| Error::LoadUserDict(e.to_string()))?;
 
         self.words.extend(words.into_iter());
