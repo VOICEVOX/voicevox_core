@@ -85,7 +85,7 @@ pub struct OpenJtalkRc {
 /// 参照カウントで管理されたOpenJtalkを生成する
 ///
 /// # Safety
-/// @out_open_jtalk 自動でheap領域が割り当てられるため :voicevox_open_jtalk_rc_delete で開放する必要がある
+/// @out_open_jtalk 自動でheap領域が割り当てられるため :voicevox_open_jtalk_rc_delete で解放する必要がある
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     open_jtalk_dic_dir: *const c_char,
@@ -779,7 +779,7 @@ pub extern "C" fn voicevox_user_dict_word_make(
 /// @return VoicevoxUserDict
 ///
 /// # Safety
-/// @return 自動で開放されることはないので、呼び出し側で :voicevox_user_dict_delete で開放する必要がある
+/// @return 自動で解放されることはないので、呼び出し側で :voicevox_user_dict_delete で解放する必要がある
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_new() -> Box<VoicevoxUserDict> {
     Default::default()

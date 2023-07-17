@@ -315,7 +315,7 @@ extern const struct VoicevoxTtsOptions voicevox_default_tts_options;
  * 参照カウントで管理されたOpenJtalkを生成する
  *
  * # Safety
- * @out_open_jtalk 自動でheap領域が割り当てられるため :voicevox_open_jtalk_rc_delete で開放する必要がある
+ * @out_open_jtalk 自動でheap領域が割り当てられるため :voicevox_open_jtalk_rc_delete で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -722,7 +722,7 @@ struct VoicevoxUserDictWord voicevox_user_dict_word_make(const char *surface,
  * @return VoicevoxUserDict
  *
  * # Safety
- * @return 自動で開放されることはないので、呼び出し側で :voicevox_user_dict_delete で開放する必要がある
+ * @return 自動で解放されることはないので、呼び出し側で :voicevox_user_dict_delete で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
