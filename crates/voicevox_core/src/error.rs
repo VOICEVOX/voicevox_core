@@ -90,11 +90,11 @@ pub enum Error {
     #[error("{}: {0}", base_error_message(VOICEVOX_SAVE_USER_DICT_ERROR))]
     SaveUserDict(String),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_USER_DICT_UNKNOWN_WORD_ERROR))]
+    #[error("{}: {0}", base_error_message(VOICEVOX_UNKNOWN_USER_DICT_WORD_ERROR))]
     UnknownWord(Uuid),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_SET_USER_DICT_ERROR))]
-    SetUserDict(String),
+    #[error("{}: {0}", base_error_message(VOICEVOX_USE_USER_DICT_ERROR))]
+    UseUserDict(String),
 
     #[error("{}: {0}", base_error_message(VOICEVOX_INVALID_USER_DICT_WORD_ERROR))]
     InvalidWord(String),

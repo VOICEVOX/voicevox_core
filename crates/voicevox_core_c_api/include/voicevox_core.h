@@ -128,11 +128,11 @@ enum VoicevoxResultCode
   /**
    * ユーザー辞書に単語が見つからなかった
    */
-  VOICEVOX_USER_DICT_UNKNOWN_WORD_ERROR = 22,
+  VOICEVOX_UNKNOWN_USER_DICT_WORD_ERROR = 22,
   /**
    * OpenJTalkのユーザー辞書の設定に失敗した
    */
-  VOICEVOX_SET_USER_DICT_ERROR = 23,
+  VOICEVOX_USE_USER_DICT_ERROR = 23,
   /**
    * ユーザー辞書の単語のバリデーションに失敗した
    */
