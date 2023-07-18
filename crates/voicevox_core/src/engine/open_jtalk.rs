@@ -77,7 +77,7 @@ impl OpenJtalk {
         let temp_dict_path = temp_dict.into_temp_path();
 
         // Mecabでユーザー辞書をコンパイル
-        // TODO: エラー（SEGV）を良い感じに処理する
+        // TODO: エラー（SEGV）が出るパターンを把握し、それをRust側で防ぐ。
         mecab_dict_index(&[
             "mecab-dict-index",
             "-d",
