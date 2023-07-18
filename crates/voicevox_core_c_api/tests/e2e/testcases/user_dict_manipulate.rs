@@ -39,7 +39,7 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_user_dict_add_word,
             voicevox_user_dict_update_word,
             voicevox_user_dict_remove_word,
-            voicevox_user_dict_get_json,
+            voicevox_user_dict_to_json,
             voicevox_user_dict_import,
             voicevox_user_dict_load,
             voicevox_user_dict_save,
@@ -50,7 +50,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         let get_json = |dict: &*mut VoicevoxUserDict| -> String {
             let mut json = MaybeUninit::uninit();
-            assert_ok(voicevox_user_dict_get_json(
+            assert_ok(voicevox_user_dict_to_json(
                 (*dict) as *const _,
                 json.as_mut_ptr(),
             ));

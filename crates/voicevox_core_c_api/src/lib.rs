@@ -889,7 +889,7 @@ pub extern "C" fn voicevox_user_dict_remove_word(
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
 /// @param output_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_user_dict_get_json(
+pub unsafe extern "C" fn voicevox_user_dict_to_json(
     user_dict: &VoicevoxUserDict,
     output_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
