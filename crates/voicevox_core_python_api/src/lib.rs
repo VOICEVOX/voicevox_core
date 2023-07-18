@@ -551,7 +551,7 @@ fn to_rust_user_dict_word(ob: &PyAny) -> PyResult<voicevox_core::UserDictWord> {
         ob.getattr("surface")?.extract()?,
         ob.getattr("pronunciation")?.extract()?,
         ob.getattr("accent_type")?.extract()?,
-        to_rust_word_type(ob.getattr("word_type")?.extract()?),
+        to_rust_word_type(ob.getattr("word_type")?.extract()?)?,
         ob.getattr("priority")?.extract()?,
     )
     .into_py_result()
@@ -566,14 +566,14 @@ fn to_py_user_dict_word<'py>(
         .downcast()?;
     to_pydantic_dataclass(word, class)
 }
-fn to_rust_word_type(word_type: &PyAny) -> UserDictWordType {
+fn to_rust_word_type(word_type: &PyAny) -> PyResult<UserDictWordType> {
     let name = word_type
         .getattr("name")
         .unwrap()
         .extract::<String>()
         .unwrap();
 
-    serde_json::from_value::<UserDictWordType>(json!(name)).unwrap()
+    serde_json::from_value::<UserDictWordType>(json!(name)).into_py_result()
 }
 
 impl Drop for Synthesizer {
