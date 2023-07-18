@@ -11,6 +11,7 @@ use pyo3::{
     wrap_pyfunction, FromPyObject as _, PyAny, PyObject, PyResult, Python, ToPyObject,
 };
 use serde::{de::DeserializeOwned, Serialize};
+use serde_json::json;
 use tokio::{runtime::Runtime, sync::Mutex};
 use uuid::Uuid;
 use voicevox_core::{
@@ -572,14 +573,7 @@ fn to_rust_word_type(word_type: &PyAny) -> UserDictWordType {
         .extract::<String>()
         .unwrap();
 
-    match name.as_str() {
-        "PROPER_NOUN" => UserDictWordType::ProperNoun,
-        "COMMON_NOUN" => UserDictWordType::CommonNoun,
-        "VERB" => UserDictWordType::Verb,
-        "ADJECTIVE" => UserDictWordType::Adjective,
-        "SUFFIX" => UserDictWordType::Suffix,
-        _ => unreachable!(),
-    }
+    serde_json::from_value::<UserDictWordType>(json!(name)).unwrap()
 }
 
 impl Drop for Synthesizer {
