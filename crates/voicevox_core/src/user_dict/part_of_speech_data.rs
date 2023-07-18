@@ -21,7 +21,8 @@ pub struct PartOfSpeechDetail {
     /// 品詞細分類3
     pub part_of_speech_detail_3: &'static str,
     /// 文脈IDは辞書の左・右文脈IDのこと
-    /// 参考: https://github.com/VOICEVOX/open_jtalk/blob/427cfd761b78efb6094bea3c5bb8c968f0d711ab/src/mecab-naist-jdic/_left-id.def
+    ///
+    /// 参考: <https://github.com/VOICEVOX/open_jtalk/blob/427cfd761b78efb6094bea3c5bb8c968f0d711ab/src/mecab-naist-jdic/_left-id.def>
     pub context_id: i32,
     /// コストのパーセンタイル
     pub cost_candidates: Vec<i32>,
