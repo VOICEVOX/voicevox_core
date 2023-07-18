@@ -805,8 +805,8 @@ VoicevoxResultCode voicevox_user_dict_remove_word(const struct VoicevoxUserDict 
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_user_dict_get_json(const struct VoicevoxUserDict *user_dict,
-                                               char **output_json);
+VoicevoxResultCode voicevox_user_dict_to_json(const struct VoicevoxUserDict *user_dict,
+                                              char **output_json);
 
 /**
  * 他のユーザー辞書をインポートする
