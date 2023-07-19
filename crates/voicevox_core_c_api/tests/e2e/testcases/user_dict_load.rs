@@ -111,7 +111,7 @@ impl assert_cdylib::TestCase for TestCase {
             &mut audio_query_without_dict,
         ));
         let audio_query_without_dict = serde_json::from_str::<serde_json::Value>(
-            &CString::from_raw(audio_query_without_dict).into_string()?,
+            CStr::from_ptr(audio_query_without_dict).to_str()?,
         )?;
 
         assert_ok(voicevox_open_jtalk_rc_use_user_dict(openjtalk, dict));
@@ -126,7 +126,7 @@ impl assert_cdylib::TestCase for TestCase {
         ));
 
         let audio_query_with_dict = serde_json::from_str::<serde_json::Value>(
-            &CString::from_raw(audio_query_with_dict).into_string()?,
+            CStr::from_ptr(audio_query_with_dict).to_str()?,
         )?;
 
         assert_ne!(
