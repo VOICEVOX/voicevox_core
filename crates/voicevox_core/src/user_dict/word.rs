@@ -1,5 +1,9 @@
-use crate::user_dict::part_of_speech_data::{
-    priority2cost, MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL,
+use crate::{
+    error::Error,
+    result::Result,
+    user_dict::part_of_speech_data::{
+        priority2cost, MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL,
+    },
 };
 use derive_getters::Getters;
 use once_cell::sync::Lazy;
@@ -96,12 +100,15 @@ impl UserDictWord {
         accent_type: usize,
         word_type: UserDictWordType,
         priority: u32,
-    ) -> InvalidWordResult<Self> {
+    ) -> Result<Self> {
         if MIN_PRIORITY > priority || priority > MAX_PRIORITY {
-            return Err(InvalidWordError::InvalidPriority(priority));
+            return Err(Error::InvalidWord(InvalidWordError::InvalidPriority(
+                priority,
+            )));
         }
-        Self::validate_pronunciation(&pronunciation[..])?;
-        let mora_count = Self::calculate_mora_count(&pronunciation[..], accent_type)?;
+        Self::validate_pronunciation(&pronunciation[..]).map_err(Error::InvalidWord)?;
+        let mora_count = Self::calculate_mora_count(&pronunciation[..], accent_type)
+            .map_err(Error::InvalidWord)?;
         Ok(Self {
             surface: Self::to_zenkaku(&surface[..]),
             pronunciation,
