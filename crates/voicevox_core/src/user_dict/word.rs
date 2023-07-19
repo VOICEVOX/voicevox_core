@@ -1,15 +1,14 @@
-use crate::result::Result;
 use crate::user_dict::part_of_speech_data::{
     priority2cost, MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL,
 };
-use crate::Error;
 use derive_getters::Getters;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use serde::{Deserialize, Serialize};
+use serde::{de::Error as _, Deserialize, Serialize};
+use std::ops::RangeToInclusive;
 
 /// ユーザー辞書の単語。
-#[derive(Clone, Debug, Getters, Serialize, Deserialize)]
+#[derive(Clone, Debug, Getters, Serialize)]
 pub struct UserDictWord {
     /// 単語の表記。
     pub surface: String,
@@ -25,6 +24,43 @@ pub struct UserDictWord {
     /// モーラ数。
     mora_count: usize,
 }
+
+impl<'de> Deserialize<'de> for UserDictWord {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = UserDictWord::deserialize(deserializer)?;
+        return Self::new(
+            raw.surface,
+            raw.pronunciation,
+            raw.accent_type,
+            raw.word_type,
+            raw.priority,
+        )
+        .map_err(D::Error::custom);
+
+        #[derive(Deserialize)]
+        struct UserDictWord {
+            surface: String,
+            pronunciation: String,
+            accent_type: usize,
+            word_type: UserDictWordType,
+            priority: u32,
+        }
+    }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum InvalidWordError {
+    #[error("無効な発音です({1}): {0:?}")]
+    InvalidPronunciation(String, &'static str),
+    #[error("優先度は{MIN_PRIORITY}以上{MAX_PRIORITY}以下である必要があります: {0}")]
+    InvalidPriority(u32),
+    #[error("誤ったアクセント型です({1:?}の範囲から外れています): {0}")]
+    InvalidAccentType(usize, RangeToInclusive<usize>),
+}
+type InvalidWordResult<T> = std::result::Result<T, InvalidWordError>;
 
 static PRONUNCIATION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
 static MORA_REGEX: Lazy<Regex> = Lazy::new(|| {
@@ -60,12 +96,9 @@ impl UserDictWord {
         accent_type: usize,
         word_type: UserDictWordType,
         priority: u32,
-    ) -> Result<Self> {
+    ) -> InvalidWordResult<Self> {
         if MIN_PRIORITY > priority || priority > MAX_PRIORITY {
-            return Err(Error::InvalidWord(format!(
-                "優先度は{}以上{}以下である必要があります。",
-                MIN_PRIORITY, MAX_PRIORITY
-            )));
+            return Err(InvalidWordError::InvalidPriority(priority));
         }
         Self::validate_pronunciation(&pronunciation[..])?;
         let mora_count = Self::calculate_mora_count(&pronunciation[..], accent_type)?;
@@ -80,11 +113,12 @@ impl UserDictWord {
     }
 
     /// カタカナの文字列が発音として有効かどうかを判定する。
-    fn validate_pronunciation(pronunciation: &str) -> Result<()> {
+    fn validate_pronunciation(pronunciation: &str) -> InvalidWordResult<()> {
         // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L190-L210
         if !PRONUNCIATION_REGEX.is_match(pronunciation) {
-            return Err(Error::InvalidWord(
-                "発音は有効なカタカナである必要があります。".to_string(),
+            return Err(InvalidWordError::InvalidPronunciation(
+                pronunciation.to_string(),
+                "カタカナ以外の文字",
             ));
         }
         let sutegana = ['ァ', 'ィ', 'ゥ', 'ェ', 'ォ', 'ャ', 'ュ', 'ョ', 'ヮ', 'ッ'];
@@ -101,8 +135,9 @@ impl UserDictWord {
                     || (pronunciation_chars.get(i).unwrap() == &'ッ'
                         && sutegana.contains(pronunciation_chars.get(i + 1).unwrap())))
             {
-                return Err(Error::InvalidWord(
-                    "無効な発音です。(捨て仮名の連続)".to_string(),
+                return Err(InvalidWordError::InvalidPronunciation(
+                    pronunciation.to_string(),
+                    "捨て仮名の連続",
                 ));
             }
 
@@ -110,8 +145,9 @@ impl UserDictWord {
                 && i != 0
                 && !['ク', 'グ'].contains(pronunciation_chars.get(i - 1).unwrap())
             {
-                return Err(Error::InvalidWord(
-                    "無効な発音です。(「くゎ」「ぐゎ」以外の「ゎ」の使用)".to_string(),
+                return Err(InvalidWordError::InvalidPronunciation(
+                    pronunciation.to_string(),
+                    "「くゎ」「ぐゎ」以外の「ゎ」の使用",
                 ));
             }
         }
@@ -119,15 +155,15 @@ impl UserDictWord {
     }
 
     /// カタカナの発音からモーラ数を計算する。
-    fn calculate_mora_count(pronunciation: &str, accent_type: usize) -> Result<usize> {
+    fn calculate_mora_count(pronunciation: &str, accent_type: usize) -> InvalidWordResult<usize> {
         // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L212-L236
         let mora_count = MORA_REGEX.find_iter(pronunciation).count();
 
         if accent_type > mora_count {
-            return Err(Error::InvalidWord(format!(
-                "誤ったアクセント型です({})。 expect: 0 <= accent_type <= {}",
-                accent_type, mora_count
-            )));
+            return Err(InvalidWordError::InvalidAccentType(
+                accent_type,
+                ..=mora_count,
+            ));
         }
 
         Ok(mora_count)
