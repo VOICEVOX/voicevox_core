@@ -105,7 +105,7 @@ jobs:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
           key: "v2-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
       - name: Run cargo test
-        run: cargo test -vv --features ,${{ matrix.features }} -- --include-ignored
+        run: RUST_BACKTRACE=full cargo test -vv --features ,${{ matrix.features }} -- --include-ignored
 
   c-header:
     runs-on: ubuntu-latest
