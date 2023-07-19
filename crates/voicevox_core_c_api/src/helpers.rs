@@ -193,7 +193,8 @@ impl VoicevoxUserDictWord {
             self.accent_type,
             self.word_type.into(),
             self.priority,
-        )?)
+        )
+        .map_err(voicevox_core::Error::InvalidWord)?)
     }
 }
 

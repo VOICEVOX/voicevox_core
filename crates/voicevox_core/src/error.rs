@@ -97,7 +97,7 @@ pub enum Error {
     UseUserDict(String),
 
     #[error("{}: {0}", base_error_message(VOICEVOX_INVALID_USER_DICT_WORD_ERROR))]
-    InvalidWord(String),
+    InvalidWord(InvalidWordError),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
