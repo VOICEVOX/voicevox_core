@@ -51,7 +51,7 @@ impl<'de> Deserialize<'de> for UserDictWord {
     }
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, PartialEq)]
 pub enum InvalidWordError {
     #[error("無効な発音です({1}): {0:?}")]
     InvalidPronunciation(String, &'static str),
@@ -258,5 +258,32 @@ mod tests {
             word.to_mecab_format(),
             "単語,1348,1348,8609,名詞,固有名詞,一般,*,*,*,*,ヨミ,ヨミ,0/2,*\n"
         );
+    }
+
+    #[rstest]
+    #[case("ヨミ", None)]
+    #[case("漢字", Some("カタカナ以外の文字"))]
+    #[case("ひらがな", Some("カタカナ以外の文字"))]
+    #[case("ッッッ", Some("捨て仮名の連続"))]
+    #[case("ァァァァ", Some("捨て仮名の連続"))]
+    #[case("ヌヮ", Some("「くゎ」「ぐゎ」以外の「ゎ」の使用"))]
+    fn pronunciation_validation_works(
+        #[case] pronunciation: &str,
+        #[case] expected_error_message: Option<&str>,
+    ) {
+        let result = UserDictWord::validate_pronunciation(pronunciation);
+
+        if let Some(expected_error_message) = expected_error_message {
+            match result {
+                Ok(_) => unreachable!(),
+                Err(InvalidWordError::InvalidPronunciation(err_pronunciation, err_message)) => {
+                    assert_eq!(err_pronunciation, pronunciation);
+                    assert_eq!(err_message, expected_error_message);
+                }
+                Err(_) => unreachable!(),
+            }
+        } else {
+            assert!(result.is_ok());
+        }
     }
 }
