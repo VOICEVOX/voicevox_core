@@ -22,12 +22,9 @@ impl UserDict {
 
     /// ユーザー辞書をファイルから読み込む。
     ///
-    /// ファイルが存在しない、または内容が不正の場合はエラーを返す。
+    /// ファイルが読めなかった、または内容が不正だった場合はエラーを返す。
     pub fn load(&mut self, store_path: &str) -> Result<()> {
         let store_path = std::path::Path::new(store_path);
-        if !store_path.exists() {
-            return Err(Error::LoadUserDict("ファイルが存在しません".to_string()));
-        }
 
         let store_file = File::open(store_path).map_err(|e| Error::LoadUserDict(e.to_string()))?;
 
