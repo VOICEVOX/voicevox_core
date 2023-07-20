@@ -106,11 +106,11 @@ impl UserDictWord {
                 priority,
             )));
         }
-        Self::validate_pronunciation(&pronunciation[..]).map_err(Error::InvalidWord)?;
-        let mora_count = Self::calculate_mora_count(&pronunciation[..], accent_type)
+        Self::validate_pronunciation(&pronunciation).map_err(Error::InvalidWord)?;
+        let mora_count = Self::calculate_mora_count(&pronunciation, accent_type)
             .map_err(Error::InvalidWord)?;
         Ok(Self {
-            surface: Self::to_zenkaku(&surface[..]),
+            surface: Self::to_zenkaku(&surface),
             pronunciation,
             accent_type,
             word_type,
