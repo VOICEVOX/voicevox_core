@@ -135,7 +135,7 @@ impl UserDictWord {
         for i in 0..pronunciation_chars.len() {
             // 「キャット」のように、捨て仮名が連続する可能性が考えられるので、
             // 「ッ」に関しては「ッ」そのものが連続している場合と、「ッ」の後にほかの捨て仮名が連続する場合のみ無効とする
-            if sutegana.contains(pronunciation_chars.get(i).unwrap())
+            if sutegana.contains(&pronunciation_chars[i])
                 && i < pronunciation_chars.len() - 1
                 && (sutegana[..sutegana.len() - 1]
                     .contains(pronunciation_chars.get(i + 1).unwrap())
@@ -150,7 +150,7 @@ impl UserDictWord {
 
             if pronunciation_chars.get(i).unwrap() == &'ヮ'
                 && i != 0
-                && !['ク', 'グ'].contains(pronunciation_chars.get(i - 1).unwrap())
+                && !['ク', 'グ'].contains(&pronunciation_chars[i - 1])
             {
                 return Err(InvalidWordError::InvalidPronunciation(
                     pronunciation.to_string(),
