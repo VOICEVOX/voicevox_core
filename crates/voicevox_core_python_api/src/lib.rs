@@ -567,11 +567,7 @@ fn to_py_user_dict_word<'py>(
     to_pydantic_dataclass(word, class)
 }
 fn to_rust_word_type(word_type: &PyAny) -> PyResult<UserDictWordType> {
-    let name = word_type
-        .getattr("name")
-        .unwrap()
-        .extract::<String>()
-        .unwrap();
+    let name = word_type.getattr("name")?.extract::<String>()?;
 
     serde_json::from_value::<UserDictWordType>(json!(name)).into_py_result()
 }
