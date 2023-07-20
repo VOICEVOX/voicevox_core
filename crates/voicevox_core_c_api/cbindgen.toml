@@ -12,11 +12,17 @@ header = """
  *   <a href="#voicevox-core-safety">Safety</a>
  * </h2>
  *
- * このライブラリを正しく使用するためには、いくつかの不変条件が守られている必要がある。本ドキュメントではこの不変条件を<b>安全性要件</b>(_safety
+ * このライブラリの利用にあたっては、いくつかの不変条件が守られている必要がある。本ドキュメントではこの不変条件を<b>安全性要件</b>(_safety
  * requirements_)と呼び、"Safety"というセクションの下に安全性要件を示す。
  *
- * 安全性要件の違反は本ライブラリにおける<b>未定義動作</b>(_undefined
- * behavior_)である。未定義動作が発生した場合、<b>それにより何が起きるかの保証もされない</b>。
+ * 安全性要件の違反は[Rust言語における<b>未定義動作</b>(_undefined behavior_; 通称<em>UB</em>)](
+ * https://doc.rust-lang.org/reference/behavior-considered-undefined.html)を引き起こす。
+ * Rustの未定義動作は、Cのそれや[C++のそれ](
+ * https://cpprefjp.github.io/implementation-compliance.html#nasal-demon)や[Zigのそれ](
+ * https://ziglang.org/documentation/0.10.1/#Undefined-Behavior)などとおおよそ同じである。プログラム全体のどこかに未定義動作が含まれるなら、処理系はそれについて何をしてもよいとされる。[変数は同時にtrueでもfalseでもあってもよいし](
+ * https://markshroyer.com/2012/06/c-both-true-and-false/)、あなたの鼻から悪魔が飛び出してもよい。このことは通称<b>鼻から悪魔</b>(_nasal
+ * demons_)と呼ばれる。「鼻から悪魔」は、このライブラリの呼び出し側も含めたプログラム全体に影響する。<b>運が良ければ</b>、<b>セグメンテーション違反</b>(_segmentation
+ * fault_)などで異常終了するだけだが、そうでない場合は挙動の予測やデバッグは困難である。ゆえに未定義動作は普通、引き起こしてはならないものとされる。
  *
  * `voicevox_core`全体における安全性要件は以下の通りである。
  *
