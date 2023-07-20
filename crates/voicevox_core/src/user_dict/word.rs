@@ -106,11 +106,11 @@ impl UserDictWord {
                 priority,
             )));
         }
-        Self::validate_pronunciation(&pronunciation).map_err(Error::InvalidWord)?;
-        let mora_count = Self::calculate_mora_count(&pronunciation, accent_type)
-            .map_err(Error::InvalidWord)?;
+        validate_pronunciation(&pronunciation).map_err(Error::InvalidWord)?;
+        let mora_count =
+            calculate_mora_count(&pronunciation, accent_type).map_err(Error::InvalidWord)?;
         Ok(Self {
-            surface: Self::to_zenkaku(&surface),
+            surface: to_zenkaku(&surface),
             pronunciation,
             accent_type,
             word_type,
@@ -118,83 +118,81 @@ impl UserDictWord {
             mora_count,
         })
     }
-
-    /// カタカナの文字列が発音として有効かどうかを判定する。
-    fn validate_pronunciation(pronunciation: &str) -> InvalidWordResult<()> {
-        // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L190-L210
-        if !PRONUNCIATION_REGEX.is_match(pronunciation) {
-            return Err(InvalidWordError::InvalidPronunciation(
-                pronunciation.to_string(),
-                "カタカナ以外の文字",
-            ));
-        }
-        let sutegana = ['ァ', 'ィ', 'ゥ', 'ェ', 'ォ', 'ャ', 'ュ', 'ョ', 'ヮ', 'ッ'];
-
-        let pronunciation_chars = pronunciation.chars().collect::<Vec<_>>();
-
-        for i in 0..pronunciation_chars.len() {
-            // 「キャット」のように、捨て仮名が連続する可能性が考えられるので、
-            // 「ッ」に関しては「ッ」そのものが連続している場合と、「ッ」の後にほかの捨て仮名が連続する場合のみ無効とする
-            if sutegana.contains(&pronunciation_chars[i])
-                && i < pronunciation_chars.len() - 1
-                && (sutegana[..sutegana.len() - 1]
-                    .contains(pronunciation_chars.get(i + 1).unwrap())
-                    || (pronunciation_chars.get(i).unwrap() == &'ッ'
-                        && sutegana.contains(pronunciation_chars.get(i + 1).unwrap())))
-            {
-                return Err(InvalidWordError::InvalidPronunciation(
-                    pronunciation.to_string(),
-                    "捨て仮名の連続",
-                ));
-            }
-
-            if pronunciation_chars.get(i).unwrap() == &'ヮ'
-                && i != 0
-                && !['ク', 'グ'].contains(&pronunciation_chars[i - 1])
-            {
-                return Err(InvalidWordError::InvalidPronunciation(
-                    pronunciation.to_string(),
-                    "「くゎ」「ぐゎ」以外の「ゎ」の使用",
-                ));
-            }
-        }
-        Ok(())
-    }
-
-    /// カタカナの発音からモーラ数を計算する。
-    fn calculate_mora_count(pronunciation: &str, accent_type: usize) -> InvalidWordResult<usize> {
-        // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L212-L236
-        let mora_count = MORA_REGEX.find_iter(pronunciation).count();
-
-        if accent_type > mora_count {
-            return Err(InvalidWordError::InvalidAccentType(
-                accent_type,
-                ..=mora_count,
-            ));
-        }
-
-        Ok(mora_count)
-    }
-
-    /// 一部の種類の文字を、全角文字に置き換える。
-    ///
-    /// 具体的には
-    /// - "!"から"~"までの範囲の文字(数字やアルファベット)は、対応する全角文字に
-    /// - " "などの目に見えない文字は、まとめて全角スペース(0x3000)に
-    /// 変換する。
-    fn to_zenkaku(surface: &str) -> String {
-        // 元実装：https://github.com/VOICEVOX/voicevox/blob/69898f5dd001d28d4de355a25766acb0e0833ec2/src/components/DictionaryManageDialog.vue#L379-L387
-        SPACE_REGEX
-            .replace_all(surface, "\u{3000}")
-            .chars()
-            .map(|c| match u32::from(c) {
-                i @ 0x21..=0x7e => char::from_u32(0xfee0 + i).unwrap_or(c),
-                _ => c,
-            })
-            .collect()
-    }
 }
 
+/// カタカナの文字列が発音として有効かどうかを判定する。
+fn validate_pronunciation(pronunciation: &str) -> InvalidWordResult<()> {
+    // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L190-L210
+    if !PRONUNCIATION_REGEX.is_match(pronunciation) {
+        return Err(InvalidWordError::InvalidPronunciation(
+            pronunciation.to_string(),
+            "カタカナ以外の文字",
+        ));
+    }
+    let sutegana = ['ァ', 'ィ', 'ゥ', 'ェ', 'ォ', 'ャ', 'ュ', 'ョ', 'ヮ', 'ッ'];
+
+    let pronunciation_chars = pronunciation.chars().collect::<Vec<_>>();
+
+    for i in 0..pronunciation_chars.len() {
+        // 「キャット」のように、捨て仮名が連続する可能性が考えられるので、
+        // 「ッ」に関しては「ッ」そのものが連続している場合と、「ッ」の後にほかの捨て仮名が連続する場合のみ無効とする
+        if sutegana.contains(&pronunciation_chars[i])
+            && i < pronunciation_chars.len() - 1
+            && (sutegana[..sutegana.len() - 1].contains(pronunciation_chars.get(i + 1).unwrap())
+                || (pronunciation_chars.get(i).unwrap() == &'ッ'
+                    && sutegana.contains(pronunciation_chars.get(i + 1).unwrap())))
+        {
+            return Err(InvalidWordError::InvalidPronunciation(
+                pronunciation.to_string(),
+                "捨て仮名の連続",
+            ));
+        }
+
+        if pronunciation_chars.get(i).unwrap() == &'ヮ'
+            && i != 0
+            && !['ク', 'グ'].contains(&pronunciation_chars[i - 1])
+        {
+            return Err(InvalidWordError::InvalidPronunciation(
+                pronunciation.to_string(),
+                "「くゎ」「ぐゎ」以外の「ゎ」の使用",
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// カタカナの発音からモーラ数を計算する。
+fn calculate_mora_count(pronunciation: &str, accent_type: usize) -> InvalidWordResult<usize> {
+    // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L212-L236
+    let mora_count = MORA_REGEX.find_iter(pronunciation).count();
+
+    if accent_type > mora_count {
+        return Err(InvalidWordError::InvalidAccentType(
+            accent_type,
+            ..=mora_count,
+        ));
+    }
+
+    Ok(mora_count)
+}
+
+/// 一部の種類の文字を、全角文字に置き換える。
+///
+/// 具体的には
+/// - "!"から"~"までの範囲の文字(数字やアルファベット)は、対応する全角文字に
+/// - " "などの目に見えない文字は、まとめて全角スペース(0x3000)に
+/// 変換する。
+fn to_zenkaku(surface: &str) -> String {
+    // 元実装：https://github.com/VOICEVOX/voicevox/blob/69898f5dd001d28d4de355a25766acb0e0833ec2/src/components/DictionaryManageDialog.vue#L379-L387
+    SPACE_REGEX
+        .replace_all(surface, "\u{3000}")
+        .chars()
+        .map(|c| match u32::from(c) {
+            i @ 0x21..=0x7e => char::from_u32(0xfee0 + i).unwrap_or(c),
+            _ => c,
+        })
+        .collect()
+}
 /// ユーザー辞書の単語の種類。
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
