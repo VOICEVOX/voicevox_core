@@ -34,7 +34,7 @@ impl UserDict {
         let words: IndexMap<Uuid, UserDictWord> =
             serde_json::from_reader(store_file).map_err(|e| Error::LoadUserDict(e.to_string()))?;
 
-        self.words.extend(words.into_iter());
+        self.words.extend(words);
         Ok(())
     }
 
