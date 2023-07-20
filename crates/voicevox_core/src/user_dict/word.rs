@@ -36,7 +36,7 @@ impl<'de> Deserialize<'de> for UserDictWord {
     {
         let raw = UserDictWord::deserialize(deserializer)?;
         return Self::new(
-            raw.surface,
+            &raw.surface,
             raw.pronunciation,
             raw.accent_type,
             raw.word_type,
@@ -95,7 +95,7 @@ impl Default for UserDictWord {
 
 impl UserDictWord {
     pub fn new(
-        surface: String,
+        surface: &str,
         pronunciation: String,
         accent_type: usize,
         word_type: UserDictWordType,
@@ -110,7 +110,7 @@ impl UserDictWord {
         let mora_count =
             calculate_mora_count(&pronunciation, accent_type).map_err(Error::InvalidWord)?;
         Ok(Self {
-            surface: to_zenkaku(&surface),
+            surface: to_zenkaku(surface),
             pronunciation,
             accent_type,
             word_type,
@@ -252,7 +252,7 @@ mod tests {
     fn to_mecab_format_works() {
         // テストの期待値は、VOICEVOX Engineが一時的に出力するcsvの内容を使用した。
         let word = UserDictWord::new(
-            "単語".to_string(),
+            "単語",
             "ヨミ".to_string(),
             0,
             UserDictWordType::ProperNoun,
