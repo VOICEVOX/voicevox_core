@@ -26,4 +26,5 @@ serde_json.workspace = true
 test_util.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+uuid.workspace = true
 voicevox_core.workspace = true

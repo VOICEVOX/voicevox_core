@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use voicevox_core::UserDictWord;
 
 use const_default::ConstDefault;
 use thiserror::Error;
@@ -39,9 +40,15 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(OpenFile { .. })) => VOICEVOX_OPEN_FILE_ERROR,
             Err(RustApi(VvmRead { .. })) => VOICEVOX_VVM_MODEL_READ_ERROR,
             Err(RustApi(ParseKana(_))) => VOICEVOX_RESULT_PARSE_KANA_ERROR,
+            Err(RustApi(LoadUserDict(_))) => VOICEVOX_LOAD_USER_DICT_ERROR,
+            Err(RustApi(SaveUserDict(_))) => VOICEVOX_SAVE_USER_DICT_ERROR,
+            Err(RustApi(UnknownWord(_))) => VOICEVOX_UNKNOWN_USER_DICT_WORD_ERROR,
+            Err(RustApi(UseUserDict(_))) => VOICEVOX_USE_USER_DICT_ERROR,
+            Err(RustApi(InvalidWord(_))) => VOICEVOX_INVALID_USER_DICT_WORD_ERROR,
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
             Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
+            Err(InvalidUuid(_)) => VOICEVOX_RESULT_INVALID_UUID_ERROR,
         }
     }
 }
@@ -58,6 +65,8 @@ pub(crate) enum CApiError {
     InvalidAudioQuery(serde_json::Error),
     #[error("無効なAccentPhraseです: {0}")]
     InvalidAccentPhrase(serde_json::Error),
+    #[error("無効なUUIDです: {0}")]
+    InvalidUuid(uuid::Error),
 }
 
 pub(crate) fn audio_query_model_to_json(audio_query_model: &AudioQueryModel) -> String {
@@ -174,4 +183,46 @@ impl ConstDefault for VoicevoxSynthesisOptions {
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
         }
     };
+}
+
+impl VoicevoxUserDictWord {
+    pub(crate) unsafe fn try_into_word(&self) -> CApiResult<voicevox_core::UserDictWord> {
+        Ok(UserDictWord::new(
+            ensure_utf8(CStr::from_ptr(self.surface))?,
+            ensure_utf8(CStr::from_ptr(self.pronunciation))?.to_string(),
+            self.accent_type,
+            self.word_type.into(),
+            self.priority,
+        )?)
+    }
+}
+
+impl From<VoicevoxUserDictWordType> for voicevox_core::UserDictWordType {
+    fn from(value: VoicevoxUserDictWordType) -> Self {
+        match value {
+            VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN => Self::ProperNoun,
+            VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN => Self::CommonNoun,
+            VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_VERB => Self::Verb,
+            VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE => Self::Adjective,
+            VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX => Self::Suffix,
+        }
+    }
+}
+
+impl From<voicevox_core::UserDictWordType> for VoicevoxUserDictWordType {
+    fn from(value: voicevox_core::UserDictWordType) -> Self {
+        match value {
+            voicevox_core::UserDictWordType::ProperNoun => {
+                Self::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN
+            }
+            voicevox_core::UserDictWordType::CommonNoun => {
+                Self::VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN
+            }
+            voicevox_core::UserDictWordType::Verb => Self::VOICEVOX_USER_DICT_WORD_TYPE_VERB,
+            voicevox_core::UserDictWordType::Adjective => {
+                Self::VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE
+            }
+            voicevox_core::UserDictWordType::Suffix => Self::VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX,
+        }
+    }
 }

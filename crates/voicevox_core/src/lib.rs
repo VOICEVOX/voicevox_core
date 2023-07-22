@@ -12,6 +12,7 @@ mod numerics;
 mod result;
 pub mod result_code;
 mod status;
+mod user_dict;
 mod version;
 mod voice_model;
 mod voice_synthesizer;
@@ -31,6 +32,7 @@ pub use self::result::*;
 pub use self::voice_model::*;
 pub use devices::*;
 pub use manifest::*;
+pub use user_dict::*;
 pub use version::*;
 pub use voice_synthesizer::*;
 

@@ -7,14 +7,17 @@ use pyo3::{
     create_exception,
     exceptions::PyException,
     pyclass, pyfunction, pymethods, pymodule,
-    types::{PyBytes, PyList, PyModule},
-    wrap_pyfunction, FromPyObject as _, PyAny, PyResult, Python, ToPyObject,
+    types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyModule},
+    wrap_pyfunction, FromPyObject as _, PyAny, PyObject, PyResult, Python, ToPyObject,
 };
 use serde::{de::DeserializeOwned, Serialize};
+use serde_json::json;
 use tokio::{runtime::Runtime, sync::Mutex};
+use uuid::Uuid;
 use voicevox_core::{
     AccelerationMode, AccentPhraseModel, AccentPhrasesOptions, AudioQueryModel, AudioQueryOptions,
-    InitializeOptions, StyleId, SynthesisOptions, TtsOptions, VoiceModelId, VoiceModelMeta,
+    InitializeOptions, StyleId, SynthesisOptions, TtsOptions, UserDictWord, UserDictWordType,
+    VoiceModelId, VoiceModelMeta,
 };
 
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
@@ -29,7 +32,9 @@ fn rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
 
     module.add_class::<Synthesizer>()?;
     module.add_class::<OpenJtalk>()?;
-    module.add_class::<VoiceModel>()
+    module.add_class::<VoiceModel>()?;
+    module.add_class::<UserDict>()?;
+    Ok(())
 }
 
 create_exception!(
@@ -97,6 +102,12 @@ impl OpenJtalk {
                     .into_py_result()?,
             ),
         })
+    }
+
+    fn use_user_dict(&self, user_dict: UserDict) -> PyResult<()> {
+        self.open_jtalk
+            .use_user_dict(&user_dict.dict)
+            .into_py_result()
     }
 }
 
@@ -361,6 +372,75 @@ impl Synthesizer {
     }
 }
 
+#[pyclass]
+#[derive(Default, Debug, Clone)]
+struct UserDict {
+    dict: voicevox_core::UserDict,
+}
+
+#[pymethods]
+impl UserDict {
+    #[new]
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn load(&mut self, path: &str) -> PyResult<()> {
+        self.dict.load(path).into_py_result()
+    }
+
+    fn save(&self, path: &str) -> PyResult<()> {
+        self.dict.save(path).into_py_result()
+    }
+
+    fn add_word(
+        &mut self,
+        #[pyo3(from_py_with = "to_rust_user_dict_word")] word: UserDictWord,
+        py: Python,
+    ) -> PyResult<PyObject> {
+        let uuid = self.dict.add_word(word).into_py_result()?;
+
+        to_py_uuid(py, uuid)
+    }
+
+    fn update_word(
+        &mut self,
+        #[pyo3(from_py_with = "to_rust_uuid")] word_uuid: Uuid,
+        #[pyo3(from_py_with = "to_rust_user_dict_word")] word: UserDictWord,
+    ) -> PyResult<()> {
+        self.dict.update_word(word_uuid, word).into_py_result()?;
+        Ok(())
+    }
+
+    fn remove_word(
+        &mut self,
+        #[pyo3(from_py_with = "to_rust_uuid")] word_uuid: Uuid,
+    ) -> PyResult<()> {
+        self.dict.remove_word(word_uuid).into_py_result()?;
+        Ok(())
+    }
+
+    fn import_dict(&mut self, other: &UserDict) -> PyResult<()> {
+        self.dict.import(&other.dict).into_py_result()?;
+        Ok(())
+    }
+
+    #[getter]
+    fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
+        let words = self
+            .dict
+            .words()
+            .iter()
+            .map(|(&uuid, word)| {
+                let uuid = to_py_uuid(py, uuid)?;
+                let word = to_py_user_dict_word(py, word)?;
+                Ok((uuid, word))
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        Ok(words.into_py_dict(py))
+    }
+}
+
 fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
     let py = ob.py();
 
@@ -455,6 +535,41 @@ where
             })
         },
     )
+}
+
+fn to_rust_uuid(ob: &PyAny) -> PyResult<Uuid> {
+    let uuid = ob.getattr("hex")?.extract::<String>()?;
+    uuid.parse().into_py_result()
+}
+fn to_py_uuid(py: Python, uuid: Uuid) -> PyResult<PyObject> {
+    let uuid = uuid.hyphenated().to_string();
+    let uuid = py.import("uuid")?.call_method1("UUID", (uuid,))?;
+    Ok(uuid.to_object(py))
+}
+fn to_rust_user_dict_word(ob: &PyAny) -> PyResult<voicevox_core::UserDictWord> {
+    voicevox_core::UserDictWord::new(
+        ob.getattr("surface")?.extract()?,
+        ob.getattr("pronunciation")?.extract()?,
+        ob.getattr("accent_type")?.extract()?,
+        to_rust_word_type(ob.getattr("word_type")?.extract()?)?,
+        ob.getattr("priority")?.extract()?,
+    )
+    .into_py_result()
+}
+fn to_py_user_dict_word<'py>(
+    py: Python<'py>,
+    word: &voicevox_core::UserDictWord,
+) -> PyResult<&'py PyAny> {
+    let class = py
+        .import("voicevox_core")?
+        .getattr("UserDictWord")?
+        .downcast()?;
+    to_pydantic_dataclass(word, class)
+}
+fn to_rust_word_type(word_type: &PyAny) -> PyResult<UserDictWordType> {
+    let name = word_type.getattr("name")?.extract::<String>()?;
+
+    serde_json::from_value::<UserDictWordType>(json!(name)).into_py_result()
 }
 
 impl Drop for Synthesizer {

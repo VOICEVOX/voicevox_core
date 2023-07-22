@@ -1,3 +1,4 @@
+import dataclasses
 from enum import Enum
 from typing import List, Optional
 
@@ -69,3 +70,22 @@ class AudioQuery:
     output_sampling_rate: int
     output_stereo: bool
     kana: Optional[str]
+
+
+class UserDictWordType(str, Enum):
+    PROPER_NOUN = "PROPER_NOUN"
+    COMMON_NOUN = "COMMON_NOUN"
+    VERB = "VERB"
+    ADJECTIVE = "ADJECTIVE"
+    SUFFIX = "SUFFIX"
+
+
+@pydantic.dataclasses.dataclass
+class UserDictWord:
+    surface: str
+    pronunciation: str
+    accent_type: int = dataclasses.field(default=0)
+    word_type: UserDictWordType = dataclasses.field(
+        default=UserDictWordType.COMMON_NOUN
+    )
+    priority: int = dataclasses.field(default=5)

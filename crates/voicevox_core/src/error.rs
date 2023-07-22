@@ -4,6 +4,7 @@ use super::*;
 //use engine::
 use std::path::PathBuf;
 use thiserror::Error;
+use uuid::Uuid;
 
 /*
  * 新しいエラーを定義したら、必ずresult_code.rsにあるVoicevoxResultCodeに対応するコードを定義し、
@@ -82,6 +83,21 @@ pub enum Error {
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_PARSE_KANA_ERROR))]
     ParseKana(#[from] KanaParseError),
+
+    #[error("{}: {0}", base_error_message(VOICEVOX_LOAD_USER_DICT_ERROR))]
+    LoadUserDict(String),
+
+    #[error("{}: {0}", base_error_message(VOICEVOX_SAVE_USER_DICT_ERROR))]
+    SaveUserDict(String),
+
+    #[error("{}: {0}", base_error_message(VOICEVOX_UNKNOWN_USER_DICT_WORD_ERROR))]
+    UnknownWord(Uuid),
+
+    #[error("{}: {0}", base_error_message(VOICEVOX_USE_USER_DICT_ERROR))]
+    UseUserDict(String),
+
+    #[error("{}: {0}", base_error_message(VOICEVOX_INVALID_USER_DICT_WORD_ERROR))]
+    InvalidWord(InvalidWordError),
 }
 
 fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {

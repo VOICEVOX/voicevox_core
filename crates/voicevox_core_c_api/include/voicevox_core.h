@@ -117,9 +117,66 @@ enum VoicevoxResultCode
    * Modelが読み込まれていない
    */
   VOICEVOX_UNLOADED_MODEL_ERROR = 19,
+  /**
+   * ユーザー辞書を読み込めなかった
+   */
+  VOICEVOX_LOAD_USER_DICT_ERROR = 20,
+  /**
+   * ユーザー辞書を書き込めなかった
+   */
+  VOICEVOX_SAVE_USER_DICT_ERROR = 21,
+  /**
+   * ユーザー辞書に単語が見つからなかった
+   */
+  VOICEVOX_UNKNOWN_USER_DICT_WORD_ERROR = 22,
+  /**
+   * OpenJTalkのユーザー辞書の設定に失敗した
+   */
+  VOICEVOX_USE_USER_DICT_ERROR = 23,
+  /**
+   * ユーザー辞書の単語のバリデーションに失敗した
+   */
+  VOICEVOX_INVALID_USER_DICT_WORD_ERROR = 24,
+  /**
+   * UUIDの変換に失敗した
+   */
+  VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
+#endif // __cplusplus
+
+/**
+ * ユーザー辞書の単語の種類
+ */
+enum VoicevoxUserDictWordType
+#ifdef __cplusplus
+  : int32_t
+#endif // __cplusplus
+ {
+  /**
+   * 固有名詞。
+   */
+  VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN = 0,
+  /**
+   * 一般名詞。
+   */
+  VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN = 1,
+  /**
+   * 動詞。
+   */
+  VOICEVOX_USER_DICT_WORD_TYPE_VERB = 2,
+  /**
+   * 形容詞。
+   */
+  VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE = 3,
+  /**
+   * 接尾辞。
+   */
+  VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX = 4,
+};
+#ifndef __cplusplus
+typedef int32_t VoicevoxUserDictWordType;
 #endif // __cplusplus
 
 /**
@@ -128,6 +185,11 @@ typedef int32_t VoicevoxResultCode;
 typedef struct OpenJtalkRc OpenJtalkRc;
 
 typedef struct VoicevoxSynthesizer VoicevoxSynthesizer;
+
+/**
+ * ユーザー辞書
+ */
+typedef struct VoicevoxUserDict VoicevoxUserDict;
 
 /**
  * 音声モデル
@@ -207,6 +269,32 @@ typedef struct VoicevoxTtsOptions {
   bool enable_interrogative_upspeak;
 } VoicevoxTtsOptions;
 
+/**
+ * ユーザー辞書の単語
+ */
+typedef struct VoicevoxUserDictWord {
+  /**
+   * 表記
+   */
+  const char *surface;
+  /**
+   * 読み
+   */
+  const char *pronunciation;
+  /**
+   * アクセント型
+   */
+  uintptr_t accent_type;
+  /**
+   * 単語の種類
+   */
+  VoicevoxUserDictWordType word_type;
+  /**
+   * 優先度
+   */
+  uint32_t priority;
+} VoicevoxUserDictWord;
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -227,13 +315,29 @@ extern const struct VoicevoxTtsOptions voicevox_default_tts_options;
  * 参照カウントで管理されたOpenJtalkを生成する
  *
  * # Safety
- * @out_open_jtalk 自動でheap領域が割り当てられるため :voicevox_open_jtalk_rc_delete で開放する必要がある
+ * @out_open_jtalk 自動でheap領域が割り当てられるため :voicevox_open_jtalk_rc_delete で解放する必要がある
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
                                               struct OpenJtalkRc **out_open_jtalk);
+
+/**
+ * OpenJtalkの使うユーザー辞書を設定する
+ * この関数を呼び出した後にユーザー辞書を変更した場合、再度この関数を呼び出す必要がある。
+ * @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
+ * @param [in] user_dict ユーザー辞書
+ *
+ * # Safety
+ * @open_jtalk 有効な :OpenJtalkRc のポインタであること
+ * @user_dict 有効な :VoicevoxUserDict のポインタであること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_open_jtalk_rc_use_user_dict(const struct OpenJtalkRc *open_jtalk,
+                                                        const struct VoicevoxUserDict *user_dict);
 
 /**
  * 参照カウントで管理されたOpenJtalkを削除する
@@ -597,6 +701,151 @@ void voicevox_wav_free(uint8_t *wav);
 __declspec(dllimport)
 #endif
 const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
+
+/**
+ * VoicevoxUserDictWordを最低限のパラメータで作成する。
+ * @param [in] surface 表記
+ * @param [in] pronunciation 読み
+ * @return VoicevoxUserDictWord
+ *
+ * # Safety
+ * @param surface, pronunciation は有効な文字列へのポインタであること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxUserDictWord voicevox_user_dict_word_make(const char *surface,
+                                                         const char *pronunciation);
+
+/**
+ * ユーザー辞書を作成する
+ * @return VoicevoxUserDict
+ *
+ * # Safety
+ * @return 自動で解放されることはないので、呼び出し側で :voicevox_user_dict_delete で解放する必要がある
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxUserDict *voicevox_user_dict_new(void);
+
+/**
+ * ユーザー辞書にファイルを読み込ませる
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ * @param [in] dict_path 読み込む辞書ファイルのパス
+ * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param user_dict は有効な :VoicevoxUserDict のポインタであること
+ * @param dict_path パスが有効な文字列を指していること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_user_dict_load(const struct VoicevoxUserDict *user_dict,
+                                           const char *dict_path);
+
+/**
+ * ユーザー辞書に単語を追加する
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ * @param [in] word 追加する単語
+ * @param [out] output_word_uuid 追加した単語のUUID
+ * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param user_dict は有効な :VoicevoxUserDict のポインタであること
+ *
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_user_dict_add_word(const struct VoicevoxUserDict *user_dict,
+                                               const struct VoicevoxUserDictWord *word,
+                                               uint8_t (*output_word_uuid)[16]);
+
+/**
+ * ユーザー辞書の単語を更新する
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ * @param [in] word_uuid 更新する単語のUUID
+ * @param [in] word 新しい単語のデータ
+ * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param user_dict は有効な :VoicevoxUserDict のポインタであること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_user_dict_update_word(const struct VoicevoxUserDict *user_dict,
+                                                  const uint8_t (*word_uuid)[16],
+                                                  const struct VoicevoxUserDictWord *word);
+
+/**
+ * ユーザー辞書から単語を削除する
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ * @param [in] word_uuid 削除する単語のUUID
+ * @return 結果コード #VoicevoxResultCode
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_user_dict_remove_word(const struct VoicevoxUserDict *user_dict,
+                                                  const uint8_t (*word_uuid)[16]);
+
+/**
+ * ユーザー辞書の単語をJSON形式で出力する
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ * @param [out] output_json JSON形式の文字列
+ * @return 結果コード #VoicevoxResultCode
+ *
+ * # Safety
+ * @param user_dict は有効な :VoicevoxUserDict のポインタであること
+ * @param output_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_user_dict_to_json(const struct VoicevoxUserDict *user_dict,
+                                              char **output_json);
+
+/**
+ * 他のユーザー辞書をインポートする
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ * @param [in] other_dict インポートするユーザー辞書
+ * @return 結果コード #VoicevoxResultCode
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_user_dict_import(const struct VoicevoxUserDict *user_dict,
+                                             const struct VoicevoxUserDict *other_dict);
+
+/**
+ * ユーザー辞書をファイルに保存する
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ * @param [in] path 保存先のファイルパス
+ *
+ * # Safety
+ * @param user_dict は有効な :VoicevoxUserDict のポインタであること
+ * @param path は有効なUTF-8文字列であること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_user_dict_save(const struct VoicevoxUserDict *user_dict,
+                                           const char *path);
+
+/**
+ * ユーザー辞書を廃棄する。
+ * @param [in] user_dict VoicevoxUserDictのポインタ
+ *
+ * # Safety
+ * @param user_dict は有効な :VoicevoxUserDict のポインタであること
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_user_dict_delete(struct VoicevoxUserDict *user_dict);
 
 #ifdef __cplusplus
 } // extern "C"
