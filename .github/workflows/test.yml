@@ -80,7 +80,7 @@ jobs:
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
           key: "v1-cargo-unit-test-cache"
-      - name: Run cargo test
+      - name: Run cargo unit test
         run: RUST_BACKTRACE=full cargo test --lib --bins -vv --features , -- --include-ignored
 
   rust-e2e-test:
@@ -117,7 +117,7 @@ jobs:
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
           key: "v1-cargo-e2e-test-cache-${{ matrix.features }}-${{ matrix.os }}"
-      - name: Run cargo test
+      - name: Run cargo e2e test
         run: RUST_BACKTRACE=full cargo test --test "*" -vv --features ,${{ matrix.features }} -- --include-ignored
 
   c-header:
