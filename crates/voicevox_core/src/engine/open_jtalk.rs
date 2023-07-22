@@ -1,6 +1,11 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 use ::open_jtalk::*;
+
+use crate::Error;
 
 #[derive(thiserror::Error, Debug)]
 pub enum OpenJtalkError {
@@ -17,55 +22,74 @@ pub enum OpenJtalkError {
 pub type Result<T> = std::result::Result<T, OpenJtalkError>;
 
 pub struct OpenJtalk {
-    mecab: ManagedResource<Mecab>,
-    njd: ManagedResource<Njd>,
-    jpcommon: ManagedResource<JpCommon>,
+    resources: Mutex<Resources>,
     dict_loaded: bool,
 }
 
+struct Resources {
+    mecab: ManagedResource<Mecab>,
+    njd: ManagedResource<Njd>,
+    jpcommon: ManagedResource<JpCommon>,
+}
+
+#[allow(unsafe_code)]
+unsafe impl Send for Resources {}
+
 impl OpenJtalk {
-    pub fn initialize() -> Self {
+    pub fn new_without_dic() -> Self {
         Self {
-            mecab: ManagedResource::initialize(),
-            njd: ManagedResource::initialize(),
-            jpcommon: ManagedResource::initialize(),
+            resources: Mutex::new(Resources {
+                mecab: ManagedResource::initialize(),
+                njd: ManagedResource::initialize(),
+                jpcommon: ManagedResource::initialize(),
+            }),
             dict_loaded: false,
         }
     }
-
-    pub fn extract_fullcontext(&mut self, text: impl AsRef<str>) -> Result<Vec<String>> {
-        let result = self.extract_fullcontext_non_reflesh(text);
-        self.jpcommon.refresh();
-        self.njd.refresh();
-        self.mecab.refresh();
-        result
+    pub fn new_with_initialize(
+        open_jtalk_dict_dir: impl AsRef<Path>,
+    ) -> crate::result::Result<Self> {
+        let mut s = Self::new_without_dic();
+        s.load(open_jtalk_dict_dir)
+            .map_err(|_| Error::NotLoadedOpenjtalkDict)?;
+        Ok(s)
     }
 
-    fn extract_fullcontext_non_reflesh(&mut self, text: impl AsRef<str>) -> Result<Vec<String>> {
+    pub fn extract_fullcontext(&self, text: impl AsRef<str>) -> Result<Vec<String>> {
+        let Resources {
+            mecab,
+            njd,
+            jpcommon,
+        } = &mut *self.resources.lock().unwrap();
+
+        jpcommon.refresh();
+        njd.refresh();
+        mecab.refresh();
+
         let mecab_text =
             text2mecab(text.as_ref()).map_err(|e| OpenJtalkError::ExtractFullContext {
                 text: text.as_ref().into(),
                 source: Some(e.into()),
             })?;
-        if self.mecab.analysis(mecab_text) {
-            self.njd.mecab2njd(
-                self.mecab
+        if mecab.analysis(mecab_text) {
+            njd.mecab2njd(
+                mecab
                     .get_feature()
                     .ok_or(OpenJtalkError::ExtractFullContext {
                         text: text.as_ref().into(),
                         source: None,
                     })?,
-                self.mecab.get_size(),
+                mecab.get_size(),
             );
-            self.njd.set_pronunciation();
-            self.njd.set_digit();
-            self.njd.set_accent_phrase();
-            self.njd.set_accent_type();
-            self.njd.set_unvoiced_vowel();
-            self.njd.set_long_vowel();
-            self.jpcommon.njd2jpcommon(&self.njd);
-            self.jpcommon.make_label();
-            self.jpcommon
+            njd.set_pronunciation();
+            njd.set_digit();
+            njd.set_accent_phrase();
+            njd.set_accent_type();
+            njd.set_unvoiced_vowel();
+            njd.set_long_vowel();
+            jpcommon.njd2jpcommon(njd);
+            jpcommon.make_label();
+            jpcommon
                 .get_label_feature_to_iter()
                 .ok_or_else(|| OpenJtalkError::ExtractFullContext {
                     text: text.as_ref().into(),
@@ -80,15 +104,20 @@ impl OpenJtalk {
         }
     }
 
-    pub fn load(&mut self, mecab_dict_dir: impl AsRef<Path>) -> Result<()> {
-        let result = self.mecab.load(mecab_dict_dir.as_ref());
+    fn load(&mut self, open_jtalk_dict_dir: impl AsRef<Path>) -> Result<()> {
+        let result = self
+            .resources
+            .lock()
+            .unwrap()
+            .mecab
+            .load(open_jtalk_dict_dir.as_ref());
         if result {
             self.dict_loaded = true;
             Ok(())
         } else {
             self.dict_loaded = false;
             Err(OpenJtalkError::Load {
-                mecab_dict_dir: mecab_dict_dir.as_ref().into(),
+                mecab_dict_dir: open_jtalk_dict_dir.as_ref().into(),
             })
         }
     }
@@ -101,7 +130,7 @@ impl OpenJtalk {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_util::OPEN_JTALK_DIC_DIR;
+    use ::test_util::OPEN_JTALK_DIC_DIR;
 
     use crate::{macros::tests::assert_debug_fmt_eq, *};
 
@@ -196,8 +225,7 @@ mod tests {
     #[case("",Err(OpenJtalkError::ExtractFullContext{text:"".into(),source:None}))]
     #[case("こんにちは、ヒホです。", Ok(testdata_hello_hiho()))]
     fn extract_fullcontext_works(#[case] text: &str, #[case] expected: super::Result<Vec<String>>) {
-        let mut open_jtalk = OpenJtalk::initialize();
-        open_jtalk.load(OPEN_JTALK_DIC_DIR).unwrap();
+        let open_jtalk = OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap();
         let result = open_jtalk.extract_fullcontext(text);
         assert_debug_fmt_eq!(expected, result);
     }
@@ -208,8 +236,7 @@ mod tests {
         #[case] text: &str,
         #[case] expected: super::Result<Vec<String>>,
     ) {
-        let mut open_jtalk = OpenJtalk::initialize();
-        open_jtalk.load(OPEN_JTALK_DIC_DIR).unwrap();
+        let open_jtalk = OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap();
         for _ in 0..10 {
             let result = open_jtalk.extract_fullcontext(text);
             assert_debug_fmt_eq!(expected, result);

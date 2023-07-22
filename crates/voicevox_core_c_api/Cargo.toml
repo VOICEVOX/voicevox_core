@@ -16,14 +16,16 @@ name = "e2e"
 directml = ["voicevox_core/directml"]
 
 [dependencies]
+const-default.workspace = true
+derive-getters.workspace = true
 libc = "0.2.134"
 once_cell.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+tokio.workspace = true
 tracing-subscriber.workspace = true
 voicevox_core.workspace = true
 
-# https://github.com/chronotope/chrono/issues/602
 [dependencies.chrono]
 version = "0.4.23"
 default-features = false
@@ -45,6 +47,7 @@ process_path.workspace = true
 regex.workspace = true
 rstest = "0.15.0"
 serde.workspace = true
+strum.workspace = true
 test_util.workspace = true
 toml = "0.7.2"
 typetag = "0.2.5"

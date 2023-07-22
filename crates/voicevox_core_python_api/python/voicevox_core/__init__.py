@@ -3,20 +3,21 @@ from ._models import (  # noqa: F401
     AccelerationMode,
     AccentPhrase,
     AudioQuery,
-    Meta,
     Mora,
+    SpeakerMeta,
     SupportedDevices,
 )
-from ._rust import METAS, SUPPORTED_DEVICES, VoicevoxCore  # noqa: F401
+from ._rust import OpenJtalk, Synthesizer, VoiceModel, supported_devices  # noqa: F401
 
 __all__ = [
-    "METAS",
-    "SUPPORTED_DEVICES",
     "AccelerationMode",
     "AccentPhrase",
     "AudioQuery",
-    "Meta",
     "Mora",
+    "OpenJtalk",
+    "SpeakerMeta",
     "SupportedDevices",
-    "VoicevoxCore",
+    "Synthesizer",
+    "VoiceModel",
+    "supported_devices",
 ]

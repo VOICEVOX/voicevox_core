@@ -1,0 +1,39 @@
+[
+  {
+    "name": "dummy1",
+    "styles": [
+      {
+        "name": "style1",
+        "id": 0
+      }
+    ],
+    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+    "version": "0.0.1"
+  },
+  {
+    "name": "dummy2",
+    "styles": [
+      {
+        "name": "style2",
+        "id": 1
+      }
+    ],
+    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
+    "version": "0.0.1"
+  },
+  {
+    "name": "dummy3",
+    "styles": [
+      {
+        "name": "style3-1",
+        "id": 2
+      },
+      {
+        "name": "style3-2",
+        "id": 3
+      }
+    ],
+    "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
+    "version": "0.0.1"
+  }
+]
