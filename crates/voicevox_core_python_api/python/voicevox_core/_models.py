@@ -4,6 +4,8 @@ from typing import List, Optional
 
 import pydantic
 
+from ._rust import _validate_pronunciation
+
 
 @pydantic.dataclasses.dataclass
 class StyleMeta:
@@ -89,3 +91,8 @@ class UserDictWord:
         default=UserDictWordType.COMMON_NOUN
     )
     priority: int = dataclasses.field(default=5)
+
+    @pydantic.validator("pronunciation")
+    def validate_pronunciation(cls, v):
+        _validate_pronunciation(v)
+        return v

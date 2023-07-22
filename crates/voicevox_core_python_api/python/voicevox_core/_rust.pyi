@@ -331,3 +331,6 @@ class UserDict:
             インポートするユーザー辞書。
         """
         ...
+
+def _validate_pronunciation(pronunciation: str) -> None:
+    ...

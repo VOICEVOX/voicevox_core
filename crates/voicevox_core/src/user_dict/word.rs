@@ -121,7 +121,7 @@ impl UserDictWord {
 }
 
 /// カタカナの文字列が発音として有効かどうかを判定する。
-fn validate_pronunciation(pronunciation: &str) -> InvalidWordResult<()> {
+pub fn validate_pronunciation(pronunciation: &str) -> InvalidWordResult<()> {
     // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L190-L210
     if !PRONUNCIATION_REGEX.is_match(pronunciation) {
         return Err(InvalidWordError::InvalidPronunciation(

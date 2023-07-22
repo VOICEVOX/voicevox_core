@@ -13,6 +13,7 @@ from ._rust import (
     OpenJtalk,
     Synthesizer,
     VoiceModel,
+    VoicevoxError,
     UserDict,
     supported_devices,
 )  # noqa: F401
@@ -26,6 +27,7 @@ __all__ = [
     "SpeakerMeta",
     "SupportedDevices",
     "Synthesizer",
+    "VoicevoxError",
     "VoiceModel",
     "supported_devices",
     "UserDict",

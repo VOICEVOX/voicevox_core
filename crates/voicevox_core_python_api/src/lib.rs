@@ -22,16 +22,18 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
 
 #[pymodule]
 #[pyo3(name = "_rust")]
-fn rust(_py: Python<'_>, module: &PyModule) -> PyResult<()> {
+fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
 
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
     module.add_wrapped(wrap_pyfunction!(supported_devices))?;
+    module.add_wrapped(wrap_pyfunction!(_validate_pronunciation))?;
 
     module.add_class::<Synthesizer>()?;
     module.add_class::<OpenJtalk>()?;
     module.add_class::<VoiceModel>()?;
     module.add_class::<UserDict>()?;
+    module.add("VoicevoxError", py.get_type::<VoicevoxError>())?;
     Ok(())
 }
 
@@ -368,6 +370,11 @@ impl Synthesizer {
             },
         )
     }
+}
+
+#[pyfunction]
+fn _validate_pronunciation(pronunciation: &str) -> PyResult<()> {
+    voicevox_core::validate_pronunciation(pronunciation).into_py_result()
 }
 
 #[pyclass]
