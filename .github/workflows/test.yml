@@ -70,7 +70,20 @@ jobs:
       - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
       - run: cargo fmt -- --check
 
-  rust-test:
+  rust-unit-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-file
+      - uses: Swatinem/rust-cache@v2
+        with:
+          # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
+          key: "v1-cargo-unit-test-cache"
+      - name: Run cargo test
+        run: RUST_BACKTRACE=full cargo test --lib --bins -vv --features , -- --include-ignored
+
+  rust-e2e-test:
     strategy:
       fail-fast: false
       matrix:
@@ -103,9 +116,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           # cargoのキャッシュが原因でテストが失敗する場合はバージョン部分をカウントアップすること
-          key: "v2-cargo-test-cache-${{ matrix.features }}-${{ matrix.os }}"
+          key: "v1-cargo-e2e-test-cache-${{ matrix.features }}-${{ matrix.os }}"
       - name: Run cargo test
-        run: RUST_BACKTRACE=full cargo test -vv --features ,${{ matrix.features }} -- --include-ignored
+        run: RUST_BACKTRACE=full cargo test --test "*" -vv --features ,${{ matrix.features }} -- --include-ignored
 
   c-header:
     runs-on: ubuntu-latest
