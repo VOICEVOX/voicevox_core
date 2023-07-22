@@ -332,5 +332,9 @@ class UserDict:
         """
         ...
 
-def _validate_pronunciation(pronunciation: str) -> None:
+class VoicevoxError(Exception):
+    """VOICEVOXで発生したエラー。"""
+
     ...
+
+def _validate_pronunciation(pronunciation: str) -> None: ...
