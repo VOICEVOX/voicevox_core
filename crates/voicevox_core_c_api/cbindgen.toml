@@ -8,10 +8,12 @@ header = """
  *
  * 無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。
  *
- * <h2 id="voicevox-core-safety">
- *   <a href="#voicevox-core-safety">Safety</a>
- * </h2>
+ * <dl>
+ *   <dt id="voicevox-core-safety">
+ *     <a href="#voicevox-core-safety">⚠️ Safety</a>
+ *   </dt>
  *
+ *   <dd>
  * このライブラリの利用にあたっては、いくつかの不変条件が守られている必要がある。本ドキュメントではこの不変条件を<b>安全性要件</b>(_safety
  * requirements_)と呼び、"Safety"というセクションの下に安全性要件を示す。
  *
@@ -40,6 +42,8 @@ header = """
  *     - ヌルポインタ。
  *     - 解放されたポインタ。
  * - voicevox_coreをアンロードする場合、voicevox_coreが生成したポインタが有効であり続けることは保証されない。
+ *   </dd>
+ * </dl>
  */"""
 include_guard = "VOICEVOX_CORE_INCLUDE_GUARD"
 no_includes = true
