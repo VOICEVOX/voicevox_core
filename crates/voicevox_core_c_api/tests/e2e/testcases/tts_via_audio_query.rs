@@ -37,6 +37,7 @@ impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
             voicevox_default_initialize_options,
+            voicevox_default_load_voice_model_options,
             voicevox_default_audio_query_options,
             voicevox_default_synthesis_options,
             voicevox_open_jtalk_rc_new,
@@ -85,7 +86,11 @@ impl assert_cdylib::TestCase for TestCase {
             synthesizer.assume_init()
         };
 
-        assert_ok(voicevox_synthesizer_load_voice_model(synthesizer, model));
+        assert_ok(voicevox_synthesizer_load_voice_model(
+            synthesizer,
+            model,
+            **voicevox_default_load_voice_model_options,
+        ));
 
         let audio_query = {
             let mut audio_query = MaybeUninit::uninit();

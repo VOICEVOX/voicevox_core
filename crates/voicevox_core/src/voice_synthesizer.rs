@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{num::NonZeroU16, sync::Arc};
 
 use const_default::ConstDefault;
 use duplicate::duplicate_item;
@@ -6,6 +6,18 @@ use duplicate::duplicate_item;
 use crate::engine::{create_kana, parse_kana, AccentPhraseModel, OpenJtalk, SynthesisEngine};
 
 use super::*;
+
+pub struct LoadVoiceModelOptions {
+    pub gpu_num_sessions: NonZeroU16,
+}
+
+impl ConstDefault for LoadVoiceModelOptions {
+    const DEFAULT: Self = Self {
+        // SAFETY: 1 ≠ 0
+        #[allow(unsafe_code)]
+        gpu_num_sessions: unsafe { NonZeroU16::new_unchecked(1) },
+    };
+}
 
 pub struct SynthesisOptions {
     pub enable_interrogative_upspeak: bool,
@@ -79,6 +91,7 @@ pub struct InitializeOptions {
 
 #[duplicate_item(
     T;
+    [ LoadVoiceModelOptions ];
     [ AccentPhrasesOptions ];
     [ AudioQueryOptions ];
     [ TtsOptions ];
@@ -141,18 +154,22 @@ impl Synthesizer {
     }
 
     /// 音声モデルを読み込む
-    pub async fn load_voice_model(&mut self, model: &VoiceModel) -> Result<()> {
+    pub async fn load_voice_model(
+        &self,
+        model: &VoiceModel,
+        options: &LoadVoiceModelOptions,
+    ) -> Result<()> {
         self.synthesis_engine
-            .inference_core_mut()
-            .load_model(model)
+            .inference_core()
+            .load_model(model, options.gpu_num_sessions)
             .await?;
         Ok(())
     }
 
     /// 指定したモデルIdの音声モデルを開放する
-    pub fn unload_voice_model(&mut self, voice_model_id: &VoiceModelId) -> Result<()> {
+    pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
         self.synthesis_engine
-            .inference_core_mut()
+            .inference_core()
             .unload_model(voice_model_id)
     }
 
@@ -171,7 +188,7 @@ impl Synthesizer {
     }
 
     /// 今読み込んでいる音声モデルのメタ情報を返す
-    pub fn metas(&self) -> &VoiceModelMeta {
+    pub fn metas(&self) -> VoiceModelMeta {
         self.synthesis_engine.inference_core().metas()
     }
 
@@ -378,7 +395,7 @@ mod tests {
     #[case(Ok(()))]
     #[tokio::test]
     async fn load_model_works(#[case] expected_result_at_initialized: Result<()>) {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -389,7 +406,7 @@ mod tests {
         .unwrap();
 
         let result = syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&open_default_vvm_file().await, &Default::default())
             .await;
 
         assert_debug_fmt_eq!(
@@ -419,7 +436,7 @@ mod tests {
     #[tokio::test]
     async fn is_loaded_model_by_style_id_works(#[case] style_id: u32, #[case] expected: bool) {
         let style_id = StyleId::new(style_id);
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -433,7 +450,7 @@ mod tests {
             "expected is_model_loaded to return false, but got true",
         );
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&open_default_vvm_file().await, &Default::default())
             .await
             .unwrap();
 
@@ -448,7 +465,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_duration_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -459,7 +476,7 @@ mod tests {
         .unwrap();
 
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&open_default_vvm_file().await, &Default::default())
             .await
             .unwrap();
 
@@ -480,7 +497,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_intonation_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -490,7 +507,7 @@ mod tests {
         .await
         .unwrap();
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&open_default_vvm_file().await, &Default::default())
             .await
             .unwrap();
 
@@ -522,7 +539,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn decode_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -532,7 +549,7 @@ mod tests {
         .await
         .unwrap();
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&open_default_vvm_file().await, &Default::default())
             .await
             .unwrap();
 

@@ -1,12 +1,14 @@
 use std::{
-    ffi::{CStr, CString},
+    ffi::{c_char, CString},
     path::Path,
     sync::Arc,
 };
 
 use voicevox_core::{InitializeOptions, OpenJtalk, Result, Synthesizer, VoiceModel, VoiceModelId};
 
-use crate::{OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
+use crate::{
+    CApiResult, OpenJtalkRc, VoicevoxLoadVoiceModelOptions, VoicevoxSynthesizer, VoicevoxVoiceModel,
+};
 
 impl OpenJtalkRc {
     pub(crate) fn new_with_initialize(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {
@@ -24,26 +26,34 @@ impl VoicevoxSynthesizer {
         Ok(Self {
             synthesizer: Synthesizer::new_with_initialize(open_jtalk.open_jtalk.clone(), options)
                 .await?,
-            metas_cstring: CString::default(),
+            metas_cstring: Default::default(),
         })
     }
 
-    pub(crate) async fn load_voice_model(&mut self, model: &VoiceModel) -> Result<()> {
-        self.synthesizer.load_voice_model(model).await?;
-        let metas = self.synthesizer.metas();
-        self.metas_cstring = CString::new(serde_json::to_string(metas).unwrap()).unwrap();
+    pub(crate) async fn load_voice_model(
+        &self,
+        model: &VoiceModel,
+        options: VoicevoxLoadVoiceModelOptions,
+    ) -> CApiResult<()> {
+        self.synthesizer
+            .load_voice_model(model, &options.try_into()?)
+            .await?;
+        let metas = &self.synthesizer.metas();
+        *self.metas_cstring.lock().unwrap() =
+            CString::new(serde_json::to_string(metas).unwrap()).unwrap();
         Ok(())
     }
 
-    pub(crate) fn unload_voice_model(&mut self, model_id: &VoiceModelId) -> Result<()> {
+    pub(crate) fn unload_voice_model(&self, model_id: &VoiceModelId) -> Result<()> {
         self.synthesizer.unload_voice_model(model_id)?;
-        let metas = self.synthesizer.metas();
-        self.metas_cstring = CString::new(serde_json::to_string(metas).unwrap()).unwrap();
+        let metas = &self.synthesizer.metas();
+        *self.metas_cstring.lock().unwrap() =
+            CString::new(serde_json::to_string(metas).unwrap()).unwrap();
         Ok(())
     }
 
-    pub(crate) fn metas(&self) -> &CStr {
-        &self.metas_cstring
+    pub(crate) fn metas_ptr(&self) -> *const c_char {
+        self.metas_cstring.lock().unwrap().as_ptr()
     }
 }
 

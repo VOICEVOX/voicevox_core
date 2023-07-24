@@ -8,6 +8,8 @@ use voicevox_core::result_code::VoicevoxResultCode;
 pub(crate) struct Symbols<'lib> {
     pub(crate) voicevox_version: Symbol<'lib, &'lib &'lib c_char>,
     pub(crate) voicevox_default_initialize_options: Symbol<'lib, &'lib VoicevoxInitializeOptions>,
+    pub(crate) voicevox_default_load_voice_model_options:
+        Symbol<'lib, &'lib VoicevoxLoadVoiceModelOptions>,
     pub(crate) voicevox_default_audio_query_options: Symbol<'lib, &'lib VoicevoxAudioQueryOptions>,
     pub(crate) voicevox_default_synthesis_options: Symbol<'lib, &'lib VoicevoxSynthesisOptions>,
     pub(crate) voicevox_default_tts_options: Symbol<'lib, &'lib VoicevoxTtsOptions>,
@@ -43,13 +45,17 @@ pub(crate) struct Symbols<'lib> {
     pub(crate) voicevox_synthesizer_load_voice_model: Symbol<
         'lib,
         unsafe extern "C" fn(
-            *mut VoicevoxSynthesizer,
+            *const VoicevoxSynthesizer,
             *const VoicevoxVoiceModel,
+            VoicevoxLoadVoiceModelOptions,
         ) -> VoicevoxResultCode,
     >,
     pub(crate) voicevox_synthesizer_unload_voice_model: Symbol<
         'lib,
-        unsafe extern "C" fn(*mut VoicevoxSynthesizer, VoicevoxVoiceModelId) -> VoicevoxResultCode,
+        unsafe extern "C" fn(
+            *const VoicevoxSynthesizer,
+            VoicevoxVoiceModelId,
+        ) -> VoicevoxResultCode,
     >,
     pub(crate) voicevox_synthesizer_is_gpu_mode:
         Symbol<'lib, unsafe extern "C" fn(*const VoicevoxSynthesizer) -> bool>,
@@ -186,6 +192,7 @@ impl<'lib> Symbols<'lib> {
         Ok(new!(
             voicevox_version,
             voicevox_default_initialize_options,
+            voicevox_default_load_voice_model_options,
             voicevox_default_audio_query_options,
             voicevox_default_synthesis_options,
             voicevox_default_tts_options,
@@ -251,6 +258,12 @@ pub(crate) struct VoicevoxInitializeOptions {
     pub(crate) acceleration_mode: VoicevoxAccelerationMode,
     pub(crate) _cpu_num_threads: u16,
     pub(crate) _load_all_models: bool,
+}
+
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub(crate) struct VoicevoxLoadVoiceModelOptions {
+    pub(crate) gpu_num_sessions: u16,
 }
 
 #[derive(Clone, Copy)]

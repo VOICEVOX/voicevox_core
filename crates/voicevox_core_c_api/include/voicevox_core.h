@@ -220,6 +220,10 @@ typedef struct VoicevoxInitializeOptions {
   bool load_all_models;
 } VoicevoxInitializeOptions;
 
+typedef struct VoicevoxLoadVoiceModelOptions {
+  uint16_t gpu_num_sessions;
+} VoicevoxLoadVoiceModelOptions;
+
 /**
  * スタイルID
  */
@@ -302,6 +306,8 @@ extern "C" {
 extern const struct VoicevoxInitializeOptions voicevox_default_initialize_options;
 
 extern const char *voicevox_version;
+
+extern const struct VoicevoxLoadVoiceModelOptions voicevox_default_load_voice_model_options;
 
 extern const struct VoicevoxAudioQueryOptions voicevox_default_audio_query_options;
 
@@ -447,8 +453,9 @@ void voicevox_synthesizer_delete(struct VoicevoxSynthesizer *synthesizer);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_synthesizer_load_voice_model(struct VoicevoxSynthesizer *synthesizer,
-                                                         const struct VoicevoxVoiceModel *model);
+VoicevoxResultCode voicevox_synthesizer_load_voice_model(const struct VoicevoxSynthesizer *synthesizer,
+                                                         const struct VoicevoxVoiceModel *model,
+                                                         struct VoicevoxLoadVoiceModelOptions options);
 
 /**
  * モデルの読み込みを解除する
@@ -463,7 +470,7 @@ VoicevoxResultCode voicevox_synthesizer_load_voice_model(struct VoicevoxSynthesi
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_synthesizer_unload_voice_model(struct VoicevoxSynthesizer *synthesizer,
+VoicevoxResultCode voicevox_synthesizer_unload_voice_model(const struct VoicevoxSynthesizer *synthesizer,
                                                            VoicevoxVoiceModelId model_id);
 
 /**

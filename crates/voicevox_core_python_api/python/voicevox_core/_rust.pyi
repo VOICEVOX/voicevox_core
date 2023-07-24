@@ -90,13 +90,16 @@ class Synthesizer:
     def metas(self) -> SpeakerMeta:
         """メタ情報を取得する。"""
         ...
-    async def load_voice_model(self, model: VoiceModel) -> None:
+    async def load_voice_model(
+        self, model: VoiceModel, gpu_num_sessions: int = 1
+    ) -> None:
         """モデルを読み込む。
 
         Parameters
         ----------
         style_id
             読み込むモデルの話者ID。
+        gpu_num_sessions
         """
         ...
     def unload_voice_model(self, voice_model_id: str) -> None:

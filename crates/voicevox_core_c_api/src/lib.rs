@@ -247,7 +247,7 @@ pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
 #[derive(Getters)]
 pub struct VoicevoxSynthesizer {
     synthesizer: Synthesizer,
-    metas_cstring: CString,
+    metas_cstring: std::sync::Mutex<CString>,
 }
 
 /// 音声シンセサイザを生成して初期化する
@@ -287,6 +287,15 @@ pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesiz
     drop(synthesizer);
 }
 
+#[repr(C)]
+pub struct VoicevoxLoadVoiceModelOptions {
+    gpu_num_sessions: u16,
+}
+
+#[no_mangle]
+pub static voicevox_default_load_voice_model_options: VoicevoxLoadVoiceModelOptions =
+    ConstDefault::DEFAULT;
+
 /// モデルを読み込む
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] model 音声モデル
@@ -297,13 +306,12 @@ pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesiz
 /// @param model 有効な #VoicevoxVoiceModel へのポインタであること
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_load_voice_model(
-    synthesizer: &mut VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     model: &VoicevoxVoiceModel,
+    options: VoicevoxLoadVoiceModelOptions,
 ) -> VoicevoxResultCode {
     into_result_code_with_error(
-        RUNTIME
-            .block_on(synthesizer.load_voice_model(model.model()))
-            .map_err(Into::into),
+        RUNTIME.block_on(synthesizer.load_voice_model(model.model(), options)),
     )
 }
 
@@ -317,7 +325,7 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
 /// @param model_id NULL終端文字列であること
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
-    synthesizer: &mut VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
@@ -368,7 +376,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
 pub extern "C" fn voicevox_synthesizer_get_metas_json(
     synthesizer: &VoicevoxSynthesizer,
 ) -> *const c_char {
-    synthesizer.metas().as_ptr()
+    synthesizer.metas_ptr()
 }
 
 /// サポートデバイス情報をjsonで取得する

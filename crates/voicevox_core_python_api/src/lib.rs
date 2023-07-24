@@ -1,4 +1,4 @@
-use std::{fmt::Display, future::Future, path::PathBuf, sync::Arc};
+use std::{fmt::Display, future::Future, num::NonZeroU16, path::PathBuf, sync::Arc};
 
 use easy_ext::ext;
 use log::debug;
@@ -16,8 +16,8 @@ use tokio::{runtime::Runtime, sync::Mutex};
 use uuid::Uuid;
 use voicevox_core::{
     AccelerationMode, AccentPhraseModel, AccentPhrasesOptions, AudioQueryModel, AudioQueryOptions,
-    InitializeOptions, StyleId, SynthesisOptions, TtsOptions, UserDictWord, UserDictWordType,
-    VoiceModelId, VoiceModelMeta,
+    InitializeOptions, LoadVoiceModelOptions, StyleId, SynthesisOptions, TtsOptions, UserDictWord,
+    UserDictWordType, VoiceModelId, VoiceModelMeta,
 };
 
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
@@ -160,12 +160,18 @@ impl Synthesizer {
 
     #[getter]
     fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
-        to_pydantic_voice_model_meta(RUNTIME.block_on(self.synthesizer.lock()).metas(), py).unwrap()
+        to_pydantic_voice_model_meta(&RUNTIME.block_on(self.synthesizer.lock()).metas(), py)
+            .unwrap()
     }
 
+    #[pyo3(signature =(
+        model,
+        gpu_num_sessions = LoadVoiceModelOptions::default().gpu_num_sessions,
+    ))]
     fn load_voice_model<'py>(
         &mut self,
         model: &'py PyAny,
+        gpu_num_sessions: NonZeroU16,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let model: VoiceModel = model.extract()?;
@@ -174,7 +180,7 @@ impl Synthesizer {
             synthesizer
                 .lock()
                 .await
-                .load_voice_model(&model.model)
+                .load_voice_model(&model.model, &LoadVoiceModelOptions { gpu_num_sessions })
                 .await
                 .into_py_result()
         })

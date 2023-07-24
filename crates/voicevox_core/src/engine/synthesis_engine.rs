@@ -30,10 +30,6 @@ impl SynthesisEngine {
         &self.inference_core
     }
 
-    pub fn inference_core_mut(&mut self) -> &mut InferenceCore {
-        &mut self.inference_core
-    }
-
     pub async fn create_accent_phrases(
         &self,
         text: &str,
