@@ -111,7 +111,7 @@ jobs:
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - uses: Swatinem/rust-cache@v2
-      - name: Run cargo e2e test
+      - name: Run cargo integration test
         run: RUST_BACKTRACE=full cargo test --test "*" -vv --features ,${{ matrix.features }} -- --include-ignored
 
   c-header:
