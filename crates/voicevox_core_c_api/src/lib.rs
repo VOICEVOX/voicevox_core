@@ -133,14 +133,17 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     })())
 }
 
-/// OpenJtalkの使うユーザー辞書を設定する
+/// OpenJtalkの使うユーザー辞書を設定する。
+///
 /// この関数を呼び出した後にユーザー辞書を変更した場合、再度この関数を呼び出す必要がある。
-/// @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
+///
+/// @param [in] open_jtalk Open JTalkのオブジェクト
 /// @param [in] user_dict ユーザー辞書
 ///
-/// # Safety
-/// @open_jtalk 有効な :OpenJtalkRc のポインタであること
-/// @user_dict 有効な :VoicevoxUserDict のポインタであること
+/// \safety{
+/// - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならず、また ::voicevox_open_jtalk_rc_delete で解放されていてはいけない。
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// }
 #[no_mangle]
 pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
     open_jtalk: &OpenJtalkRc,
@@ -938,13 +941,13 @@ pub extern "C" fn voicevox_error_result_to_message(
     C_STRING_DROP_CHECKER.blacklist(message).as_ptr()
 }
 
-/// ユーザー辞書
+/// ユーザー辞書。
 #[derive(Default)]
 pub struct VoicevoxUserDict {
     dict: Arc<Mutex<voicevox_core::UserDict>>,
 }
 
-/// ユーザー辞書の単語
+/// ユーザー辞書の単語。
 #[repr(C)]
 pub struct VoicevoxUserDictWord {
     /// 表記
@@ -959,7 +962,7 @@ pub struct VoicevoxUserDictWord {
     priority: u32,
 }
 
-/// ユーザー辞書の単語の種類
+/// ユーザー辞書の単語の種類。
 #[repr(i32)]
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone)]
@@ -976,13 +979,11 @@ pub enum VoicevoxUserDictWordType {
     VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX = 4,
 }
 
-/// VoicevoxUserDictWordを最低限のパラメータで作成する。
+/// ::VoicevoxUserDictWord を最低限のパラメータで作成する。
+///
 /// @param [in] surface 表記
 /// @param [in] pronunciation 読み
-/// @return VoicevoxUserDictWord
-///
-/// # Safety
-/// @param surface, pronunciation は有効な文字列へのポインタであること
+/// @returns ::VoicevoxUserDictWord
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_word_make(
     surface: *const c_char,
@@ -997,24 +998,24 @@ pub extern "C" fn voicevox_user_dict_word_make(
     }
 }
 
-/// ユーザー辞書を作成する
-/// @return VoicevoxUserDict
+/// ユーザー辞書を作成する。
 ///
-/// # Safety
-/// @return 自動で解放されることはないので、呼び出し側で :voicevox_user_dict_delete で解放する必要がある
+/// @returns ::VoicevoxUserDict
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_new() -> Box<VoicevoxUserDict> {
     Default::default()
 }
 
-/// ユーザー辞書にファイルを読み込ませる
-/// @param [in] user_dict VoicevoxUserDictのポインタ
-/// @param [in] dict_path 読み込む辞書ファイルのパス
-/// @return 結果コード #VoicevoxResultCode
+/// ユーザー辞書にファイルを読み込ませる。
 ///
-/// # Safety
-/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
-/// @param dict_path パスが有効な文字列を指していること
+/// @param [in] user_dict ユーザー辞書
+/// @param [in] dict_path 読み込む辞書ファイルのパス
+/// @returns 結果コード
+///
+/// \safety{
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `dict_path`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_load(
     user_dict: &VoicevoxUserDict,
@@ -1029,19 +1030,25 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
     })())
 }
 
-/// ユーザー辞書に単語を追加する
-/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// ユーザー辞書に単語を追加する。
+///
+/// @param [in] ユーザー辞書
 /// @param [in] word 追加する単語
 /// @param [out] output_word_uuid 追加した単語のUUID
-/// @return 結果コード #VoicevoxResultCode
+/// @returns 結果コード
 ///
 /// # Safety
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
 ///
+/// \safety{
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `word->surface`と`word->pronunciation`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_word_uuid`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_add_word(
     user_dict: &VoicevoxUserDict,
-    word: &VoicevoxUserDictWord,
+    word: &VoicevoxUserDictWord, // FIXME: <https://github.com/VOICEVOX/voicevox_core/pull/534>に従う
     output_word_uuid: NonNull<[u8; 16]>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
@@ -1056,19 +1063,23 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
     })())
 }
 
-/// ユーザー辞書の単語を更新する
-/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// ユーザー辞書の単語を更新する。
+///
+/// @param [in] user_dict ユーザー辞書
 /// @param [in] word_uuid 更新する単語のUUID
 /// @param [in] word 新しい単語のデータ
-/// @return 結果コード #VoicevoxResultCode
+/// @returns 結果コード
 ///
-/// # Safety
-/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+/// \safety{
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `word_uuid`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `word->surface`と`word->pronunciation`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_update_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: &[u8; 16],
-    word: &VoicevoxUserDictWord,
+    word: &VoicevoxUserDictWord, // FIXME: <https://github.com/VOICEVOX/voicevox_core/pull/534>に従う
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
@@ -1082,10 +1093,16 @@ pub unsafe extern "C" fn voicevox_user_dict_update_word(
     })())
 }
 
-/// ユーザー辞書から単語を削除する
-/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// ユーザー辞書から単語を削除する。
+///
+/// @param [in] user_dict ユーザー辞書
 /// @param [in] word_uuid 削除する単語のUUID
-/// @return 結果コード #VoicevoxResultCode
+/// @returns 結果コード
+///
+/// \safety{
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `word_uuid`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_remove_word(
     user_dict: &VoicevoxUserDict,
@@ -1102,14 +1119,16 @@ pub extern "C" fn voicevox_user_dict_remove_word(
     })())
 }
 
-/// ユーザー辞書の単語をJSON形式で出力する
-/// @param [in] user_dict VoicevoxUserDictのポインタ
-/// @param [out] output_json JSON形式の文字列
-/// @return 結果コード #VoicevoxResultCode
+/// ユーザー辞書の単語をJSON形式で出力する。
 ///
-/// # Safety
-/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
-/// @param output_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+/// @param [in] user_dict ユーザー辞書
+/// @param [out] output_json 出力先
+/// @returns 結果コード
+///
+/// \safety{
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `output_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_to_json(
     user_dict: &VoicevoxUserDict,
@@ -1124,10 +1143,15 @@ pub unsafe extern "C" fn voicevox_user_dict_to_json(
     VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 
-/// 他のユーザー辞書をインポートする
-/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// 他のユーザー辞書をインポートする。
+///
+/// @param [in] user_dict ユーザー辞書
 /// @param [in] other_dict インポートするユーザー辞書
-/// @return 結果コード #VoicevoxResultCode
+/// @returns 結果コード
+///
+/// \safety{
+/// - `user_dict`と`other_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// }
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_import(
     user_dict: &VoicevoxUserDict,
@@ -1144,13 +1168,15 @@ pub extern "C" fn voicevox_user_dict_import(
     })())
 }
 
-/// ユーザー辞書をファイルに保存する
-/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// ユーザー辞書をファイルに保存する。
+///
+/// @param [in] user_dict ユーザー辞書
 /// @param [in] path 保存先のファイルパス
 ///
-/// # Safety
-/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
-/// @param path は有効なUTF-8文字列であること
+/// \safety{
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `path`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_save(
     user_dict: &VoicevoxUserDict,
@@ -1168,10 +1194,12 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 }
 
 /// ユーザー辞書を廃棄する。
-/// @param [in] user_dict VoicevoxUserDictのポインタ
 ///
-/// # Safety
-/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+/// @param [in] user_dict ユーザー辞書
+///
+/// \safety{
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また既にこの関数で解放されていてはいけない。
+/// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_delete(user_dict: Box<VoicevoxUserDict>) {
     drop(user_dict);

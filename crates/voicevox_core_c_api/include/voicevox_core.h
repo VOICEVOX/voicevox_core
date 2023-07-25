@@ -188,7 +188,7 @@ typedef int32_t VoicevoxResultCode;
 #endif // __cplusplus
 
 /**
- * ユーザー辞書の単語の種類
+ * ユーザー辞書の単語の種類。
  */
 enum VoicevoxUserDictWordType
 #ifdef __cplusplus
@@ -247,7 +247,7 @@ typedef struct OpenJtalkRc OpenJtalkRc;
 typedef struct VoicevoxSynthesizer VoicevoxSynthesizer;
 
 /**
- * ユーザー辞書
+ * ユーザー辞書。
  */
 typedef struct VoicevoxUserDict VoicevoxUserDict;
 
@@ -334,7 +334,7 @@ typedef struct VoicevoxTtsOptions {
 } VoicevoxTtsOptions;
 
 /**
- * ユーザー辞書の単語
+ * ユーザー辞書の単語。
  */
 typedef struct VoicevoxUserDictWord {
   /**
@@ -404,14 +404,17 @@ VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
                                               struct OpenJtalkRc **out_open_jtalk);
 
 /**
- * OpenJtalkの使うユーザー辞書を設定する
+ * OpenJtalkの使うユーザー辞書を設定する。
+ *
  * この関数を呼び出した後にユーザー辞書を変更した場合、再度この関数を呼び出す必要がある。
- * @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
+ *
+ * @param [in] open_jtalk Open JTalkのオブジェクト
  * @param [in] user_dict ユーザー辞書
  *
- * # Safety
- * @open_jtalk 有効な :OpenJtalkRc のポインタであること
- * @user_dict 有効な :VoicevoxUserDict のポインタであること
+ * \safety{
+ * - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならず、また ::voicevox_open_jtalk_rc_delete で解放されていてはいけない。
+ * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -964,13 +967,11 @@ __declspec(dllimport)
 const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
 
 /**
- * VoicevoxUserDictWordを最低限のパラメータで作成する。
+ * ::VoicevoxUserDictWord を最低限のパラメータで作成する。
+ *
  * @param [in] surface 表記
  * @param [in] pronunciation 読み
- * @return VoicevoxUserDictWord
- *
- * # Safety
- * @param surface, pronunciation は有効な文字列へのポインタであること
+ * @returns ::VoicevoxUserDictWord
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -979,11 +980,9 @@ struct VoicevoxUserDictWord voicevox_user_dict_word_make(const char *surface,
                                                          const char *pronunciation);
 
 /**
- * ユーザー辞書を作成する
- * @return VoicevoxUserDict
+ * ユーザー辞書を作成する。
  *
- * # Safety
- * @return 自動で解放されることはないので、呼び出し側で :voicevox_user_dict_delete で解放する必要がある
+ * @returns ::VoicevoxUserDict
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -991,14 +990,16 @@ __declspec(dllimport)
 struct VoicevoxUserDict *voicevox_user_dict_new(void);
 
 /**
- * ユーザー辞書にファイルを読み込ませる
- * @param [in] user_dict VoicevoxUserDictのポインタ
- * @param [in] dict_path 読み込む辞書ファイルのパス
- * @return 結果コード #VoicevoxResultCode
+ * ユーザー辞書にファイルを読み込ませる。
  *
- * # Safety
- * @param user_dict は有効な :VoicevoxUserDict のポインタであること
- * @param dict_path パスが有効な文字列を指していること
+ * @param [in] user_dict ユーザー辞書
+ * @param [in] dict_path 読み込む辞書ファイルのパス
+ * @returns 結果コード
+ *
+ * \safety{
+ * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+ * - `dict_path`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -1007,15 +1008,21 @@ VoicevoxResultCode voicevox_user_dict_load(const struct VoicevoxUserDict *user_d
                                            const char *dict_path);
 
 /**
- * ユーザー辞書に単語を追加する
- * @param [in] user_dict VoicevoxUserDictのポインタ
+ * ユーザー辞書に単語を追加する。
+ *
+ * @param [in] ユーザー辞書
  * @param [in] word 追加する単語
  * @param [out] output_word_uuid 追加した単語のUUID
- * @return 結果コード #VoicevoxResultCode
+ * @returns 結果コード
  *
  * # Safety
  * @param user_dict は有効な :VoicevoxUserDict のポインタであること
  *
+ * \safety{
+ * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+ * - `word->surface`と`word->pronunciation`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_word_uuid`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -1025,14 +1032,18 @@ VoicevoxResultCode voicevox_user_dict_add_word(const struct VoicevoxUserDict *us
                                                uint8_t (*output_word_uuid)[16]);
 
 /**
- * ユーザー辞書の単語を更新する
- * @param [in] user_dict VoicevoxUserDictのポインタ
+ * ユーザー辞書の単語を更新する。
+ *
+ * @param [in] user_dict ユーザー辞書
  * @param [in] word_uuid 更新する単語のUUID
  * @param [in] word 新しい単語のデータ
- * @return 結果コード #VoicevoxResultCode
+ * @returns 結果コード
  *
- * # Safety
- * @param user_dict は有効な :VoicevoxUserDict のポインタであること
+ * \safety{
+ * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+ * - `word_uuid`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `word->surface`と`word->pronunciation`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -1042,10 +1053,16 @@ VoicevoxResultCode voicevox_user_dict_update_word(const struct VoicevoxUserDict 
                                                   const struct VoicevoxUserDictWord *word);
 
 /**
- * ユーザー辞書から単語を削除する
- * @param [in] user_dict VoicevoxUserDictのポインタ
+ * ユーザー辞書から単語を削除する。
+ *
+ * @param [in] user_dict ユーザー辞書
  * @param [in] word_uuid 削除する単語のUUID
- * @return 結果コード #VoicevoxResultCode
+ * @returns 結果コード
+ *
+ * \safety{
+ * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+ * - `word_uuid`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -1054,14 +1071,16 @@ VoicevoxResultCode voicevox_user_dict_remove_word(const struct VoicevoxUserDict 
                                                   const uint8_t (*word_uuid)[16]);
 
 /**
- * ユーザー辞書の単語をJSON形式で出力する
- * @param [in] user_dict VoicevoxUserDictのポインタ
- * @param [out] output_json JSON形式の文字列
- * @return 結果コード #VoicevoxResultCode
+ * ユーザー辞書の単語をJSON形式で出力する。
  *
- * # Safety
- * @param user_dict は有効な :VoicevoxUserDict のポインタであること
- * @param output_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+ * @param [in] user_dict ユーザー辞書
+ * @param [out] output_json 出力先
+ * @returns 結果コード
+ *
+ * \safety{
+ * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+ * - `output_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -1070,10 +1089,15 @@ VoicevoxResultCode voicevox_user_dict_to_json(const struct VoicevoxUserDict *use
                                               char **output_json);
 
 /**
- * 他のユーザー辞書をインポートする
- * @param [in] user_dict VoicevoxUserDictのポインタ
+ * 他のユーザー辞書をインポートする。
+ *
+ * @param [in] user_dict ユーザー辞書
  * @param [in] other_dict インポートするユーザー辞書
- * @return 結果コード #VoicevoxResultCode
+ * @returns 結果コード
+ *
+ * \safety{
+ * - `user_dict`と`other_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -1082,13 +1106,15 @@ VoicevoxResultCode voicevox_user_dict_import(const struct VoicevoxUserDict *user
                                              const struct VoicevoxUserDict *other_dict);
 
 /**
- * ユーザー辞書をファイルに保存する
- * @param [in] user_dict VoicevoxUserDictのポインタ
+ * ユーザー辞書をファイルに保存する。
+ *
+ * @param [in] user_dict ユーザー辞書
  * @param [in] path 保存先のファイルパス
  *
- * # Safety
- * @param user_dict は有効な :VoicevoxUserDict のポインタであること
- * @param path は有効なUTF-8文字列であること
+ * \safety{
+ * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+ * - `path`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -1098,10 +1124,12 @@ VoicevoxResultCode voicevox_user_dict_save(const struct VoicevoxUserDict *user_d
 
 /**
  * ユーザー辞書を廃棄する。
- * @param [in] user_dict VoicevoxUserDictのポインタ
  *
- * # Safety
- * @param user_dict は有効な :VoicevoxUserDict のポインタであること
+ * @param [in] user_dict ユーザー辞書
+ *
+ * \safety{
+ * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また既にこの関数で解放されていてはいけない。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)

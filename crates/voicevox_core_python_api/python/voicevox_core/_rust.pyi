@@ -59,7 +59,7 @@ class OpenJtalk:
     def use_user_dict(self, user_dict: UserDict) -> None:
         """ユーザー辞書を設定する。
 
-        この関数を読んだ後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
+        この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
 
         Parameters
         ----------
