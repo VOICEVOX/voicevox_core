@@ -15,6 +15,10 @@ pub(crate) struct Symbols<'lib> {
         'lib,
         unsafe extern "C" fn(*const c_char, *mut *mut OpenJtalkRc) -> VoicevoxResultCode,
     >,
+    pub(crate) voicevox_open_jtalk_rc_use_user_dict: Symbol<
+        'lib,
+        unsafe extern "C" fn(*mut OpenJtalkRc, *const VoicevoxUserDict) -> VoicevoxResultCode,
+    >,
     pub(crate) voicevox_open_jtalk_rc_delete: Symbol<'lib, unsafe extern "C" fn(*mut OpenJtalkRc)>,
     pub(crate) voicevox_voice_model_new_from_path: Symbol<
         'lib,
@@ -121,6 +125,52 @@ pub(crate) struct Symbols<'lib> {
         'lib,
         unsafe extern "C" fn(i64, i64, *mut f32, *mut f32, *mut i64, *mut f32) -> bool,
     >,
+
+    pub(crate) voicevox_user_dict_word_make:
+        Symbol<'lib, unsafe extern "C" fn(*const c_char, *const c_char) -> VoicevoxUserDictWord>,
+    pub(crate) voicevox_user_dict_new:
+        Symbol<'lib, unsafe extern "C" fn() -> *mut VoicevoxUserDict>,
+    pub(crate) voicevox_user_dict_load: Symbol<
+        'lib,
+        unsafe extern "C" fn(*const VoicevoxUserDict, *const c_char) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_user_dict_add_word: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxUserDict,
+            *const VoicevoxUserDictWord,
+            *mut [u8; 16],
+        ) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_user_dict_update_word: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxUserDict,
+            *const [u8; 16],
+            *const VoicevoxUserDictWord,
+        ) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_user_dict_remove_word: Symbol<
+        'lib,
+        unsafe extern "C" fn(*const VoicevoxUserDict, *const [u8; 16]) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_user_dict_to_json: Symbol<
+        'lib,
+        unsafe extern "C" fn(*const VoicevoxUserDict, *mut *mut c_char) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_user_dict_import: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxUserDict,
+            *const VoicevoxUserDict,
+        ) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_user_dict_save: Symbol<
+        'lib,
+        unsafe extern "C" fn(*const VoicevoxUserDict, *const c_char) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_user_dict_delete:
+        Symbol<'lib, unsafe extern "C" fn(*mut VoicevoxUserDict) -> VoicevoxResultCode>,
 }
 
 impl<'lib> Symbols<'lib> {
@@ -140,6 +190,7 @@ impl<'lib> Symbols<'lib> {
             voicevox_default_synthesis_options,
             voicevox_default_tts_options,
             voicevox_open_jtalk_rc_new,
+            voicevox_open_jtalk_rc_use_user_dict,
             voicevox_open_jtalk_rc_delete,
             voicevox_voice_model_new_from_path,
             voicevox_voice_model_id,
@@ -169,6 +220,16 @@ impl<'lib> Symbols<'lib> {
             yukarin_s_forward,
             yukarin_sa_forward,
             decode_forward,
+            voicevox_user_dict_word_make,
+            voicevox_user_dict_new,
+            voicevox_user_dict_load,
+            voicevox_user_dict_add_word,
+            voicevox_user_dict_update_word,
+            voicevox_user_dict_remove_word,
+            voicevox_user_dict_to_json,
+            voicevox_user_dict_import,
+            voicevox_user_dict_save,
+            voicevox_user_dict_delete,
         ))
     }
 }
@@ -209,4 +270,24 @@ pub(crate) struct VoicevoxSynthesisOptions {
 pub(crate) struct VoicevoxTtsOptions {
     _kana: bool,
     _enable_interrogative_upspeak: bool,
+}
+
+#[repr(C)]
+pub(crate) struct VoicevoxUserDict {
+    _private: [u8; 0],
+}
+
+#[repr(C)]
+pub(crate) struct VoicevoxUserDictWord {
+    pub(crate) surface: *const c_char,
+    pub(crate) pronunciation: *const c_char,
+    pub(crate) accent_type: usize,
+    pub(crate) word_type: VoicevoxUserDictWordType,
+    pub(crate) priority: u32,
+}
+
+#[repr(i32)]
+#[allow(non_camel_case_types)]
+pub(crate) enum VoicevoxUserDictWordType {
+    VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN = 0,
 }

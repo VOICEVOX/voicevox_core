@@ -25,9 +25,10 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::runtime::Runtime;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
+use uuid::Uuid;
 use voicevox_core::{
-    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, VoiceModel,
-    VoiceModelId,
+    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, UserDictWord,
+    VoiceModel, VoiceModelId,
 };
 use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions, Synthesizer};
 
@@ -128,6 +129,29 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
         let open_jtalk = OpenJtalkRc::new_with_initialize(open_jtalk_dic_dir)?.into();
         out_open_jtalk.as_ptr().write_unaligned(open_jtalk);
+        Ok(())
+    })())
+}
+
+/// OpenJtalkの使うユーザー辞書を設定する
+/// この関数を呼び出した後にユーザー辞書を変更した場合、再度この関数を呼び出す必要がある。
+/// @param [in] open_jtalk 参照カウントで管理されたOpenJtalk
+/// @param [in] user_dict ユーザー辞書
+///
+/// # Safety
+/// @open_jtalk 有効な :OpenJtalkRc のポインタであること
+/// @user_dict 有効な :VoicevoxUserDict のポインタであること
+#[no_mangle]
+pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
+    open_jtalk: &OpenJtalkRc,
+    user_dict: &VoicevoxUserDict,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let user_dict = user_dict.to_owned();
+        {
+            let dict = user_dict.dict.as_ref().lock().expect("lock failed");
+            open_jtalk.open_jtalk.use_user_dict(&dict)?;
+        }
         Ok(())
     })())
 }
@@ -912,6 +936,245 @@ pub extern "C" fn voicevox_error_result_to_message(
     .expect("`error_result_to_message`が返す文字列はヌル終端であるはずである");
 
     C_STRING_DROP_CHECKER.blacklist(message).as_ptr()
+}
+
+/// ユーザー辞書
+#[derive(Default)]
+pub struct VoicevoxUserDict {
+    dict: Arc<Mutex<voicevox_core::UserDict>>,
+}
+
+/// ユーザー辞書の単語
+#[repr(C)]
+pub struct VoicevoxUserDictWord {
+    /// 表記
+    surface: *const c_char,
+    /// 読み
+    pronunciation: *const c_char,
+    /// アクセント型
+    accent_type: usize,
+    /// 単語の種類
+    word_type: VoicevoxUserDictWordType,
+    /// 優先度
+    priority: u32,
+}
+
+/// ユーザー辞書の単語の種類
+#[repr(i32)]
+#[allow(non_camel_case_types)]
+#[derive(Copy, Clone)]
+pub enum VoicevoxUserDictWordType {
+    /// 固有名詞。
+    VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN = 0,
+    /// 一般名詞。
+    VOICEVOX_USER_DICT_WORD_TYPE_COMMON_NOUN = 1,
+    /// 動詞。
+    VOICEVOX_USER_DICT_WORD_TYPE_VERB = 2,
+    /// 形容詞。
+    VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE = 3,
+    /// 接尾辞。
+    VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX = 4,
+}
+
+/// VoicevoxUserDictWordを最低限のパラメータで作成する。
+/// @param [in] surface 表記
+/// @param [in] pronunciation 読み
+/// @return VoicevoxUserDictWord
+///
+/// # Safety
+/// @param surface, pronunciation は有効な文字列へのポインタであること
+#[no_mangle]
+pub extern "C" fn voicevox_user_dict_word_make(
+    surface: *const c_char,
+    pronunciation: *const c_char,
+) -> VoicevoxUserDictWord {
+    VoicevoxUserDictWord {
+        surface,
+        pronunciation,
+        accent_type: UserDictWord::default().accent_type,
+        word_type: UserDictWord::default().word_type.into(),
+        priority: UserDictWord::default().priority,
+    }
+}
+
+/// ユーザー辞書を作成する
+/// @return VoicevoxUserDict
+///
+/// # Safety
+/// @return 自動で解放されることはないので、呼び出し側で :voicevox_user_dict_delete で解放する必要がある
+#[no_mangle]
+pub extern "C" fn voicevox_user_dict_new() -> Box<VoicevoxUserDict> {
+    Default::default()
+}
+
+/// ユーザー辞書にファイルを読み込ませる
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] dict_path 読み込む辞書ファイルのパス
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+/// @param dict_path パスが有効な文字列を指していること
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_user_dict_load(
+    user_dict: &VoicevoxUserDict,
+    dict_path: *const c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let dict_path = ensure_utf8(unsafe { CStr::from_ptr(dict_path) })?;
+        let mut dict = user_dict.dict.lock().unwrap();
+        dict.load(dict_path)?;
+
+        Ok(())
+    })())
+}
+
+/// ユーザー辞書に単語を追加する
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] word 追加する単語
+/// @param [out] output_word_uuid 追加した単語のUUID
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+///
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_user_dict_add_word(
+    user_dict: &VoicevoxUserDict,
+    word: &VoicevoxUserDictWord,
+    output_word_uuid: NonNull<[u8; 16]>,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let word = word.try_into_word()?;
+        let uuid = {
+            let mut dict = user_dict.dict.lock().expect("lock failed");
+            dict.add_word(word)?
+        };
+        output_word_uuid.as_ptr().copy_from(uuid.as_bytes(), 16);
+
+        Ok(())
+    })())
+}
+
+/// ユーザー辞書の単語を更新する
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] word_uuid 更新する単語のUUID
+/// @param [in] word 新しい単語のデータ
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_user_dict_update_word(
+    user_dict: &VoicevoxUserDict,
+    word_uuid: &[u8; 16],
+    word: &VoicevoxUserDictWord,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
+        let word = word.try_into_word()?;
+        {
+            let mut dict = user_dict.dict.lock().expect("lock failed");
+            dict.update_word(word_uuid, word)?;
+        };
+
+        Ok(())
+    })())
+}
+
+/// ユーザー辞書から単語を削除する
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] word_uuid 削除する単語のUUID
+/// @return 結果コード #VoicevoxResultCode
+#[no_mangle]
+pub extern "C" fn voicevox_user_dict_remove_word(
+    user_dict: &VoicevoxUserDict,
+    word_uuid: &[u8; 16],
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
+        {
+            let mut dict = user_dict.dict.lock().expect("lock failed");
+            dict.remove_word(word_uuid)?;
+        };
+
+        Ok(())
+    })())
+}
+
+/// ユーザー辞書の単語をJSON形式で出力する
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [out] output_json JSON形式の文字列
+/// @return 結果コード #VoicevoxResultCode
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+/// @param output_json 自動でheapメモリが割り当てられるので ::voicevox_json_free で解放する必要がある
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_user_dict_to_json(
+    user_dict: &VoicevoxUserDict,
+    output_json: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
+    let dict = user_dict.dict.lock().expect("lock failed");
+    let json = serde_json::to_string(&dict.words()).expect("should be always valid");
+    let json = CString::new(json).expect("\\0を含まない文字列であることが保証されている");
+    output_json
+        .as_ptr()
+        .write_unaligned(C_STRING_DROP_CHECKER.whitelist(json).into_raw());
+    VoicevoxResultCode::VOICEVOX_RESULT_OK
+}
+
+/// 他のユーザー辞書をインポートする
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] other_dict インポートするユーザー辞書
+/// @return 結果コード #VoicevoxResultCode
+#[no_mangle]
+pub extern "C" fn voicevox_user_dict_import(
+    user_dict: &VoicevoxUserDict,
+    other_dict: &VoicevoxUserDict,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        {
+            let mut dict = user_dict.dict.lock().expect("lock failed");
+            let other_dict = other_dict.dict.lock().expect("lock failed");
+            dict.import(&other_dict)?;
+        };
+
+        Ok(())
+    })())
+}
+
+/// ユーザー辞書をファイルに保存する
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+/// @param [in] path 保存先のファイルパス
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+/// @param path は有効なUTF-8文字列であること
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_user_dict_save(
+    user_dict: &VoicevoxUserDict,
+    path: *const c_char,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let path = ensure_utf8(CStr::from_ptr(path))?;
+        {
+            let dict = user_dict.dict.lock().expect("lock failed");
+            dict.save(path)?;
+        };
+
+        Ok(())
+    })())
+}
+
+/// ユーザー辞書を廃棄する。
+/// @param [in] user_dict VoicevoxUserDictのポインタ
+///
+/// # Safety
+/// @param user_dict は有効な :VoicevoxUserDict のポインタであること
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_user_dict_delete(user_dict: Box<VoicevoxUserDict>) {
+    drop(user_dict);
 }
 
 #[cfg(test)]

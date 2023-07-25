@@ -14,7 +14,7 @@ fs-err.workspace = true
 futures-core = "0.3.25"
 futures-util = "0.3.25"
 indicatif = "0.17.3"
-itertools = "0.10.5"
+itertools.workspace = true
 octocrab = { version = "0.19.0", default-features = false, features = ["rustls-tls", "stream"] }
 once_cell.workspace = true
 platforms = "3.0.2"

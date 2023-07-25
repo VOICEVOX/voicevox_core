@@ -1,5 +1,7 @@
 from pathlib import Path
-from typing import Final, List, Literal, Union
+from typing import Dict, Final, List, Literal, Union
+from uuid import UUID
+
 import numpy as np
 from numpy.typing import NDArray
 from voicevox_core import (
@@ -8,6 +10,8 @@ from voicevox_core import (
     AudioQuery,
     SpeakerMeta,
     SupportedDevices,
+    UserDict,
+    UserDictWord,
 )
 
 __version__: str
@@ -52,6 +56,17 @@ class OpenJtalk:
     """
 
     def __init__(self, open_jtalk_dict_dir: Union[Path, str]) -> None: ...
+    def use_user_dict(self, user_dict: UserDict) -> None:
+        """ユーザー辞書を設定する。
+
+        この関数を読んだ後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
+
+        Parameters
+        ----------
+        user_dict
+            ユーザー辞書。
+        """
+        ...
 
 class Synthesizer:
     """音声シンセサイザ。"""
@@ -103,12 +118,6 @@ class Synthesizer:
         :returns: モデルが読み込まれているかどうか。
         """
         ...
-    def unload_voice_model(self, voice_model_id: str) -> None:
-        """
-        音声モデルの読み込みを解除する。
-
-        :param voice_model_id: 音声モデルID。
-        """
     async def audio_query(
         self,
         text: str,
@@ -208,5 +217,79 @@ class Synthesizer:
         :param enable_interrogative_upspeak: 疑問文の調整を有効にする。
 
         :returns: WAVデータ。
+        """
+        ...
+
+class UserDict:
+    """ユーザー辞書。
+
+    Attributes
+    ----------
+    words
+        エントリーのリスト。
+    """
+
+    words: Dict[UUID, UserDictWord]
+    def __init__(self) -> None:
+        """ユーザー辞書をまたは新規作成する。"""
+        ...
+    def load(self, path: str) -> None:
+        """ファイルに保存されたユーザー辞書を読み込む。
+
+        Parameters
+        ----------
+        path
+            ユーザー辞書のパス。
+        """
+        ...
+    def save(self, path: str) -> None:
+        """ユーザー辞書をファイルに保存する。
+
+        Parameters
+        ----------
+        path
+            ユーザー辞書のパス。
+        """
+        ...
+    def add_word(self, word: UserDictWord) -> UUID:
+        """単語を追加する。
+
+        Parameters
+        ----------
+        word
+            追加する単語。
+
+        Returns
+        -------
+        単語のUUID。
+        """
+        ...
+    def update_word(self, word_uuid: UUID, word: UserDictWord) -> None:
+        """単語を更新する。
+
+        Parameters
+        ----------
+        word_uuid
+            更新する単語のUUID。
+        word
+            新しい単語のデータ。
+        """
+        ...
+    def remove_word(self, word_uuid: UUID) -> None:
+        """単語を削除する。
+
+        Parameters
+        ----------
+        word_uuid
+            削除する単語のUUID。
+        """
+        ...
+    def import_dict(self, other: UserDict) -> None:
+        """ユーザー辞書をインポートする。
+
+        Parameters
+        ----------
+        other
+            インポートするユーザー辞書。
         """
         ...

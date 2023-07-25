@@ -1,3 +1,4 @@
+import dataclasses
 from enum import Enum
 from typing import List, Optional
 
@@ -156,3 +157,22 @@ class AudioQuery:
     :func:`Synthesizer.audio_query` が返すもののみ ``str`` となる。入力としてのAudioQueryでは無視さ
     れる。
     """
+
+
+class UserDictWordType(str, Enum):
+    PROPER_NOUN = "PROPER_NOUN"
+    COMMON_NOUN = "COMMON_NOUN"
+    VERB = "VERB"
+    ADJECTIVE = "ADJECTIVE"
+    SUFFIX = "SUFFIX"
+
+
+@pydantic.dataclasses.dataclass
+class UserDictWord:
+    surface: str
+    pronunciation: str
+    accent_type: int = dataclasses.field(default=0)
+    word_type: UserDictWordType = dataclasses.field(
+        default=UserDictWordType.COMMON_NOUN
+    )
+    priority: int = dataclasses.field(default=5)

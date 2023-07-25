@@ -1,11 +1,13 @@
+use std::io::Write;
 use std::{
     path::{Path, PathBuf},
     sync::Mutex,
 };
+use tempfile::NamedTempFile;
 
 use ::open_jtalk::*;
 
-use crate::Error;
+use crate::{Error, UserDict};
 
 #[derive(thiserror::Error, Debug)]
 pub enum OpenJtalkError {
@@ -24,7 +26,7 @@ pub type Result<T> = std::result::Result<T, OpenJtalkError>;
 /// テキスト解析器としてのOpen JTalk。
 pub struct OpenJtalk {
     resources: Mutex<Resources>,
-    dict_loaded: bool,
+    dict_dir: Option<PathBuf>,
 }
 
 struct Resources {
@@ -44,7 +46,7 @@ impl OpenJtalk {
                 njd: ManagedResource::initialize(),
                 jpcommon: ManagedResource::initialize(),
             }),
-            dict_loaded: false,
+            dict_dir: None,
         }
     }
     pub fn new_with_initialize(
@@ -54,6 +56,54 @@ impl OpenJtalk {
         s.load(open_jtalk_dict_dir)
             .map_err(|_| Error::NotLoadedOpenjtalkDict)?;
         Ok(s)
+    }
+
+    /// ユーザー辞書を設定する。
+    /// 先に [`Self::load`] を呼ぶ必要がある。
+    /// この関数を読んだ後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
+    pub fn use_user_dict(&self, user_dict: &UserDict) -> crate::result::Result<()> {
+        let dict_dir = self
+            .dict_dir
+            .as_ref()
+            .and_then(|dict_dir| dict_dir.to_str())
+            .ok_or(Error::NotLoadedOpenjtalkDict)?;
+
+        // ユーザー辞書用のcsvを作成
+        let mut temp_csv = NamedTempFile::new().map_err(|e| Error::UseUserDict(e.to_string()))?;
+        temp_csv
+            .write_all(user_dict.to_mecab_format().as_bytes())
+            .map_err(|e| Error::UseUserDict(e.to_string()))?;
+        let temp_csv_path = temp_csv.into_temp_path();
+        let temp_dict = NamedTempFile::new().map_err(|e| Error::UseUserDict(e.to_string()))?;
+        let temp_dict_path = temp_dict.into_temp_path();
+
+        // Mecabでユーザー辞書をコンパイル
+        // TODO: エラー（SEGV）が出るパターンを把握し、それをRust側で防ぐ。
+        mecab_dict_index(&[
+            "mecab-dict-index",
+            "-d",
+            dict_dir,
+            "-u",
+            temp_dict_path.to_str().unwrap(),
+            "-f",
+            "utf-8",
+            "-t",
+            "utf-8",
+            temp_csv_path.to_str().unwrap(),
+            "-q",
+        ]);
+
+        let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
+
+        let result = mecab.load_with_userdic(Path::new(dict_dir), Some(Path::new(&temp_dict_path)));
+
+        if !result {
+            return Err(Error::UseUserDict(
+                "辞書のコンパイルに失敗しました".to_string(),
+            ));
+        }
+
+        Ok(())
     }
 
     pub fn extract_fullcontext(&self, text: impl AsRef<str>) -> Result<Vec<String>> {
@@ -113,10 +163,10 @@ impl OpenJtalk {
             .mecab
             .load(open_jtalk_dict_dir.as_ref());
         if result {
-            self.dict_loaded = true;
+            self.dict_dir = Some(open_jtalk_dict_dir.as_ref().into());
             Ok(())
         } else {
-            self.dict_loaded = false;
+            self.dict_dir = None;
             Err(OpenJtalkError::Load {
                 mecab_dict_dir: open_jtalk_dict_dir.as_ref().into(),
             })
@@ -124,7 +174,7 @@ impl OpenJtalk {
     }
 
     pub fn dict_loaded(&self) -> bool {
-        self.dict_loaded
+        self.dict_dir.is_some()
     }
 }
 
