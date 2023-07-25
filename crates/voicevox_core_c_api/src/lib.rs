@@ -83,7 +83,7 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
 
 /// テキスト解析器としてのOpen JTalk。
 ///
-/// コンストラクトは ::voicevox_open_jtalk_rc_new で行い、デストラクトは ::voicevox_open_jtalk_rc_delete で行う。
+/// <b>構築</b>(_construction_)は ::voicevox_open_jtalk_rc_new で行い、<b>破棄</b>(_destruction_)は ::voicevox_open_jtalk_rc_delete で行う。
 ///
 /// 参照カウント方式のスマートポインタ(reference-counted smart pointer)であり、
 /// ::voicevox_synthesizer_new_with_initialize に渡されるときには参照カウンタがインクリメントされる形でオブジェクトの共有が行われる。
@@ -100,12 +100,12 @@ pub struct OpenJtalkRc {
     open_jtalk: Arc<OpenJtalk>,
 }
 
-/// ::OpenJtalkRc をコンストラクトする。
+/// ::OpenJtalkRc を<b>構築</b>(_construct_)する。
 ///
 /// 解放は ::voicevox_open_jtalk_rc_delete で行う。
 ///
 /// @param [in] open_jtalk_dic_dir 辞書ディレクトリを指すUTF-8のパス
-/// @param [out] out_open_jtalk 生成先
+/// @param [out] out_open_jtalk 構築先
 ///
 /// @returns 結果コード
 ///
@@ -159,9 +159,9 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
     })())
 }
 
-/// ::OpenJtalkRc をデストラクトする。
+/// ::OpenJtalkRc を<b>破棄</b>(_destruct_)する。
 ///
-/// @param [in] open_jtalk デストラクト対象
+/// @param [in] open_jtalk 破棄対象
 ///
 /// \example{
 /// ```c
@@ -223,7 +223,7 @@ pub static voicevox_version: &c_char = {
 
 /// 音声モデル。
 ///
-/// コンストラクトは ::voicevox_voice_model_new_from_path で行い、デストラクトは ::voicevox_voice_model_delete で行う。
+/// <b>構築</b>(_construction_)は ::voicevox_voice_model_new_from_path で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_delete で行う。
 #[derive(Getters)]
 pub struct VoicevoxVoiceModel {
     model: VoiceModel,
@@ -239,10 +239,10 @@ pub type VoicevoxVoiceModelId = *const c_char;
 /// VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
 pub type VoicevoxStyleId = u32;
 
-/// VVMファイルから ::VoicevoxVoiceModel をコンストラクトする。
+/// VVMファイルから ::VoicevoxVoiceModel を<b>構築</b>(_construct_)する。
 ///
 /// @param [in] path vvmファイルへのUTF-8のファイルパス
-/// @param [out] out_model 生成先
+/// @param [out] out_model 構築先
 ///
 /// @returns 結果コード
 ///
@@ -293,9 +293,9 @@ pub extern "C" fn voicevox_voice_model_get_metas_json(model: &VoicevoxVoiceModel
     model.metas().as_ptr()
 }
 
-/// ::VoicevoxVoiceModel をデストラクトする。
+/// ::VoicevoxVoiceModel を<b>破棄</b>(_destruct_)する。
 ///
-/// @param [in] model 破棄する音声モデル
+/// @param [in] model 破棄対象
 ///
 /// \safety{
 /// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また既にこの関数で解放されていてはいけない。
@@ -308,18 +308,18 @@ pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
 
 /// 音声シンセサイザ。
 ///
-/// コンストラクトは ::voicevox_synthesizer_new_with_initialize で行い、デストラクトは ::voicevox_synthesizer_delete で行う。
+/// <b>構築</b>(_construction_)は ::voicevox_synthesizer_new_with_initialize で行い、<b>破棄</b>(_destruction_)は ::voicevox_synthesizer_delete で行う。
 #[derive(Getters)]
 pub struct VoicevoxSynthesizer {
     synthesizer: Synthesizer,
     metas_cstring: CString,
 }
 
-/// ::VoicevoxSynthesizer をコンストラクトする。
+/// ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。
 ///
 /// @param [in] open_jtalk Open JTalkのオブジェクト
 /// @param [in] options オプション
-/// @param [out] out_synthesizer 生成先
+/// @param [out] out_synthesizer 構築先
 ///
 /// @returns 結果コード
 ///
@@ -346,9 +346,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
     })())
 }
 
-/// ::VoicevoxSynthesizer をデストラクトする。
+/// ::VoicevoxSynthesizer を<b>破棄</b>(_destruct_)する。
 ///
-/// @param [in] synthesizer デストラクト対象
+/// @param [in] synthesizer 破棄対象
 ///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また既にこの関数で解放されていてはいけない。
@@ -998,7 +998,7 @@ pub extern "C" fn voicevox_user_dict_word_make(
     }
 }
 
-/// ユーザー辞書を作成する。
+/// ユーザー辞書をb>構築</b>(_construct_)する。
 ///
 /// @returns ::VoicevoxUserDict
 #[no_mangle]
@@ -1193,9 +1193,9 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
     })())
 }
 
-/// ユーザー辞書を廃棄する。
+/// ユーザー辞書を<b>破棄</b>(_destruct_)する。
 ///
-/// @param [in] user_dict ユーザー辞書
+/// @param [in] user_dict 破棄対象
 ///
 /// \safety{
 /// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また既にこの関数で解放されていてはいけない。
