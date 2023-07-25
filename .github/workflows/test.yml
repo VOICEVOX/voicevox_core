@@ -80,7 +80,7 @@ jobs:
       - name: Run cargo unit test
         run: RUST_BACKTRACE=full cargo test --lib --bins -vv --features , -- --include-ignored
 
-  rust-e2e-test:
+  rust-integration-test:
     strategy:
       fail-fast: false
       matrix:
