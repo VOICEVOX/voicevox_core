@@ -287,6 +287,7 @@ pub extern "C" fn voicevox_voice_model_id(model: &VoicevoxVoiceModel) -> Voicevo
 ///
 /// \safety{
 /// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
+/// - 戻り値の文字列は`model`の<b>生存期間</b>(_lifetime_)を越えてアクセスされてはならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_get_metas_json(model: &VoicevoxVoiceModel) -> *const c_char {
