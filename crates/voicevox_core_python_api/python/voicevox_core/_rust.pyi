@@ -34,7 +34,7 @@ class VoiceModel:
     @staticmethod
     async def from_path(path: Union[Path, str]) -> "VoiceModel":
         """
-        VVMファイルから ``VoiceModel`` をコンストラクトする。
+        VVMファイルから ``VoiceModel`` を生成する。
 
         :param path: VVMファイルへのパス。
         """
@@ -81,7 +81,7 @@ class Synthesizer:
         load_all_models: bool = False,
     ) -> "Synthesizer":
         """
-        :class:`Synthesizer` をコンストラクトする。
+        :class:`Synthesizer` を生成する。
 
         :param open_jtalk: Open JTalk。
         :param acceleration_mode: ハードウェアアクセラレーションモード。
