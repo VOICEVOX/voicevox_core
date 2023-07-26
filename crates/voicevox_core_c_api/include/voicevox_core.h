@@ -487,6 +487,7 @@ VoicevoxVoiceModelId voicevox_voice_model_id(const struct VoicevoxVoiceModel *mo
  *
  * \safety{
  * - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
+ * - 戻り値の文字列は`model`の<b>生存期間</b>(_lifetime_)を越えてアクセスされてはならない。
  * }
  */
 #ifdef _WIN32
