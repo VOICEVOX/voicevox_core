@@ -287,7 +287,7 @@ pub extern "C" fn voicevox_voice_model_id(model: &VoicevoxVoiceModel) -> Voicevo
 ///
 /// \safety{
 /// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
-/// - 戻り値の文字列は`model`の<b>生存期間</b>(_lifetime_)を越えてアクセスされてはならない。
+/// - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`model`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_get_metas_json(model: &VoicevoxVoiceModel) -> *const c_char {
@@ -451,6 +451,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
 ///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`synthesizer`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_get_metas_json(

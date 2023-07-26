@@ -487,7 +487,7 @@ VoicevoxVoiceModelId voicevox_voice_model_id(const struct VoicevoxVoiceModel *mo
  *
  * \safety{
  * - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
- * - 戻り値の文字列は`model`の<b>生存期間</b>(_lifetime_)を越えてアクセスされてはならない。
+ * - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`model`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
  * }
  */
 #ifdef _WIN32
@@ -628,6 +628,7 @@ bool voicevox_synthesizer_is_loaded_voice_model(const struct VoicevoxSynthesizer
  *
  * \safety{
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`synthesizer`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
  * }
  */
 #ifdef _WIN32
