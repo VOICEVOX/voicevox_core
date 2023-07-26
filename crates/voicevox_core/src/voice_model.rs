@@ -21,6 +21,8 @@ pub struct VoiceModelId {
 }
 
 /// 音声モデル。
+///
+/// VVMファイルと対応する。
 #[derive(Getters, Clone)]
 pub struct VoiceModel {
     /// ID。

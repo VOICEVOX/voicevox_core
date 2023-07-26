@@ -223,6 +223,7 @@ pub static voicevox_version: &c_char = {
 
 /// 音声モデル。
 ///
+/// VVMファイルと対応する。
 /// <b>構築</b>(_construction_)は ::voicevox_voice_model_new_from_path で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_delete で行う。
 #[derive(Getters)]
 pub struct VoicevoxVoiceModel {
