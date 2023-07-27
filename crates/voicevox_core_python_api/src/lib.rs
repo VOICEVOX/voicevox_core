@@ -28,6 +28,7 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
     module.add_wrapped(wrap_pyfunction!(supported_devices))?;
     module.add_wrapped(wrap_pyfunction!(_validate_pronunciation))?;
+    module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
 
     module.add_class::<Synthesizer>()?;
     module.add_class::<OpenJtalk>()?;
@@ -375,6 +376,11 @@ impl Synthesizer {
 #[pyfunction]
 fn _validate_pronunciation(pronunciation: &str) -> PyResult<()> {
     voicevox_core::validate_pronunciation(pronunciation).into_py_result()
+}
+
+#[pyfunction]
+fn _to_zenkaku(text: &str) -> PyResult<String> {
+    Ok(voicevox_core::to_zenkaku(text))
 }
 
 #[pyclass]
