@@ -1,8 +1,10 @@
-use std::fmt::Display;
+use std::{collections::BTreeMap, fmt::Display};
 
 use derive_getters::Getters;
 use derive_new::new;
 use serde::Deserialize;
+
+use super::*;
 
 pub type RawManifestVersion = String;
 #[derive(Deserialize, Clone, Debug, PartialEq, new)]
@@ -27,4 +29,5 @@ pub struct Manifest {
     decode_filename: String,
     predict_duration_filename: String,
     predict_intonation_filename: String,
+    style_id_to_model_inner_id: Option<BTreeMap<StyleId, ModelInnerId>>,
 }

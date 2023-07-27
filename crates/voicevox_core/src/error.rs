@@ -67,10 +67,10 @@ pub enum Error {
     InvalidStyleId { style_id: StyleId },
 
     #[error(
-        "{}: {model_index}",
-        base_error_message(VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR)
+        "{}: {model_id:?}",
+        base_error_message(VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR)
     )]
-    InvalidModelIndex { model_index: usize },
+    InvalidModelId { model_id: VoiceModelId },
 
     #[error("{}", base_error_message(VOICEVOX_RESULT_INFERENCE_ERROR))]
     InferenceFailed,

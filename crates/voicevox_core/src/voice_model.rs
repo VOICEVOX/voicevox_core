@@ -1,6 +1,7 @@
 use async_zip::{read::fs::ZipFileReader, ZipEntry};
 use futures::future::{join3, join_all};
-use serde::{de::DeserializeOwned, Deserialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::fmt::Display;
 
 use super::*;
 use std::{
@@ -16,6 +17,24 @@ pub type RawVoiceModelId = String;
 #[derive(PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, new, Getters, Debug)]
 pub struct VoiceModelId {
     raw_voice_model_id: RawVoiceModelId,
+}
+
+/// モデル内IDの実体
+pub type RawModelInnerId = u32;
+/// モデル内ID
+#[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
+pub struct ModelInnerId(RawModelInnerId);
+
+impl ModelInnerId {
+    pub fn raw_id(self) -> RawModelInnerId {
+        self.0
+    }
+}
+
+impl Display for ModelInnerId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.raw_id())
+    }
 }
 
 /// 音声モデル
@@ -99,6 +118,16 @@ impl VoiceModel {
         join_all(vvm_paths).await.into_iter().collect()
     }
     const ROOT_DIR_ENV_NAME: &str = "VV_MODELS_ROOT_DIR";
+
+    /// スタイルIDからモデル内IDを取得する。
+    /// モデル内IDのマッピングが存在しない場合はそのままスタイルIDを返す。
+    pub(crate) fn style_id_to_model_inner_id(&self, style_id: StyleId) -> ModelInnerId {
+        self.manifest
+            .style_id_to_model_inner_id()
+            .as_ref()
+            .and_then(|id_map| id_map.get(&style_id).cloned())
+            .unwrap_or_else(|| ModelInnerId::new(style_id.raw_id()))
+    }
 }
 
 struct VvmEntry {
@@ -149,7 +178,7 @@ impl VvmEntryReader {
     async fn read_vvm_entry(&self, filename: &str) -> Result<Vec<u8>> {
         let me = self.entry_map.get(filename).ok_or(Error::VvmRead {
             filename: filename.into(),
-            source: None,
+            source: None, // FIXME: ちゃんとエラーを返す
         })?;
         let mut manifest_reader =
             self.reader
@@ -157,7 +186,7 @@ impl VvmEntryReader {
                 .await
                 .map_err(|_| Error::VvmRead {
                     filename: filename.into(),
-                    source: None,
+                    source: None, // FIXME: ちゃんとエラーを返す
                 })?;
         let mut buf = Vec::with_capacity(me.entry.uncompressed_size() as usize);
         manifest_reader
@@ -165,7 +194,7 @@ impl VvmEntryReader {
             .await
             .map_err(|_| Error::VvmRead {
                 filename: filename.into(),
-                source: None,
+                source: None, // FIXME: ちゃんとエラーを返す
             })?;
         Ok(buf)
     }
