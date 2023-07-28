@@ -68,17 +68,17 @@ impl VoiceModel {
         Ok(InferenceModels {
             predict_duration_model: predict_duration_model_result.map_err(|e| Error::VvmRead {
                 path: self.path.clone(),
-                source: e.into(),
+                source: e,
             })?,
             predict_intonation_model: predict_intonation_model_result.map_err(|e| {
                 Error::VvmRead {
                     path: self.path.clone(),
-                    source: e.into(),
+                    source: e,
                 }
             })?,
             decode_model: decode_model_result.map_err(|e| Error::VvmRead {
                 path: self.path.clone(),
-                source: e.into(),
+                source: e,
             })?,
         })
     }
@@ -90,14 +90,14 @@ impl VoiceModel {
             .await
             .map_err(|e| Error::VvmRead {
                 path: path.as_ref().into(),
-                source: e.into(),
+                source: e,
             })?;
         let metas = reader
             .read_vvm_json::<VoiceModelMeta>(manifest.metas_filename())
             .await
             .map_err(|e| Error::VvmRead {
                 path: path.as_ref().into(),
-                source: e.into(),
+                source: e,
             })?;
         let id = VoiceModelId::new(nanoid!());
 
