@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use async_zip::{read::fs::ZipFileReader, ZipEntry};
 use futures::future::{join3, join_all};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -65,18 +66,39 @@ impl VoiceModel {
             .await;
 
         Ok(InferenceModels {
-            predict_duration_model: predict_duration_model_result?,
-            predict_intonation_model: predict_intonation_model_result?,
-            decode_model: decode_model_result?,
+            predict_duration_model: predict_duration_model_result.map_err(|e| Error::VvmRead {
+                path: self.path.clone(),
+                source: e.into(),
+            })?,
+            predict_intonation_model: predict_intonation_model_result.map_err(|e| {
+                Error::VvmRead {
+                    path: self.path.clone(),
+                    source: e.into(),
+                }
+            })?,
+            decode_model: decode_model_result.map_err(|e| Error::VvmRead {
+                path: self.path.clone(),
+                source: e.into(),
+            })?,
         })
     }
     /// 与えられたパスからモデルを取得する
     pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
         let reader = VvmEntryReader::open(&path).await?;
-        let manifest = reader.read_vvm_json::<Manifest>("manifest.json").await?;
+        let manifest = reader
+            .read_vvm_json::<Manifest>("manifest.json")
+            .await
+            .map_err(|e| Error::VvmRead {
+                path: path.as_ref().into(),
+                source: e.into(),
+            })?;
         let metas = reader
             .read_vvm_json::<VoiceModelMeta>(manifest.metas_filename())
-            .await?;
+            .await
+            .map_err(|e| Error::VvmRead {
+                path: path.as_ref().into(),
+                source: e.into(),
+            })?;
         let id = VoiceModelId::new(nanoid!());
 
         Ok(Self {
@@ -167,35 +189,21 @@ impl VvmEntryReader {
             .collect();
         Ok(VvmEntryReader::new(reader, entry_map))
     }
-    async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> Result<T> {
+    async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> anyhow::Result<T> {
         let bytes = self.read_vvm_entry(filename).await?;
-        serde_json::from_slice(&bytes).map_err(|e| Error::VvmRead {
-            filename: filename.into(),
-            source: Some(e.into()),
-        })
+        serde_json::from_slice(&bytes).map_err(|e| e.into())
     }
 
-    async fn read_vvm_entry(&self, filename: &str) -> Result<Vec<u8>> {
-        let me = self.entry_map.get(filename).ok_or(Error::VvmRead {
-            filename: filename.into(),
-            source: None, // FIXME: ちゃんとエラーを返す
-        })?;
-        let mut manifest_reader =
-            self.reader
-                .entry(me.index)
-                .await
-                .map_err(|_| Error::VvmRead {
-                    filename: filename.into(),
-                    source: None, // FIXME: ちゃんとエラーを返す
-                })?;
+    async fn read_vvm_entry(&self, filename: &str) -> anyhow::Result<Vec<u8>> {
+        let me = self
+            .entry_map
+            .get(filename)
+            .ok_or(anyhow!("Not found in vvm entries: {}", filename))?;
+        let mut manifest_reader = self.reader.entry(me.index).await?;
         let mut buf = Vec::with_capacity(me.entry.uncompressed_size() as usize);
         manifest_reader
             .read_to_end_checked(&mut buf, &me.entry)
-            .await
-            .map_err(|_| Error::VvmRead {
-                filename: filename.into(),
-                source: None, // FIXME: ちゃんとエラーを返す
-            })?;
+            .await?;
         Ok(buf)
     }
 }

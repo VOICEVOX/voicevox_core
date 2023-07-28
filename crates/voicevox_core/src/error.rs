@@ -44,11 +44,14 @@ pub enum Error {
         source: anyhow::Error,
     },
 
-    #[error("{},{filename}", base_error_message(VOICEVOX_VVM_MODEL_READ_ERROR))]
+    #[error(
+        "{}({path}):{source}",
+        base_error_message(VOICEVOX_VVM_MODEL_READ_ERROR)
+    )]
     VvmRead {
-        filename: String,
+        path: PathBuf,
         #[source]
-        source: Option<anyhow::Error>,
+        source: anyhow::Error,
     },
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_METAS_ERROR))]
