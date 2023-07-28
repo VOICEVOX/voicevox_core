@@ -121,7 +121,7 @@ impl UserDictWord {
 }
 
 /// カタカナの文字列が発音として有効かどうかを判定する。
-fn validate_pronunciation(pronunciation: &str) -> InvalidWordResult<()> {
+pub fn validate_pronunciation(pronunciation: &str) -> InvalidWordResult<()> {
     // 元実装：https://github.com/VOICEVOX/voicevox_engine/blob/39747666aa0895699e188f3fd03a0f448c9cf746/voicevox_engine/model.py#L190-L210
     if !PRONUNCIATION_REGEX.is_match(pronunciation) {
         return Err(InvalidWordError::InvalidPronunciation(
@@ -182,7 +182,7 @@ fn calculate_mora_count(pronunciation: &str, accent_type: usize) -> InvalidWordR
 /// - "!"から"~"までの範囲の文字(数字やアルファベット)は、対応する全角文字に
 /// - " "などの目に見えない文字は、まとめて全角スペース(0x3000)に
 /// 変換する。
-fn to_zenkaku(surface: &str) -> String {
+pub fn to_zenkaku(surface: &str) -> String {
     // 元実装：https://github.com/VOICEVOX/voicevox/blob/69898f5dd001d28d4de355a25766acb0e0833ec2/src/components/DictionaryManageDialog.vue#L379-L387
     SPACE_REGEX
         .replace_all(surface, "\u{3000}")
