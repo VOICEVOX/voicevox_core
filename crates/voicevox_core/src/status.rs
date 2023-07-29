@@ -249,6 +249,9 @@ impl Status {
     }
 }
 
+/// 読み込んだモデルの`Session`とそのメタ情報を保有し、追加/削除/取得の操作を提供する。
+///
+/// この構造体のメソッドは、すべて一瞬で完了すべきである。
 #[derive(Default)]
 struct LoadedModels(BTreeMap<VoiceModelId, LoadedModel>);
 
