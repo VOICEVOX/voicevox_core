@@ -8,6 +8,7 @@ publish.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+easy-ext.workspace = true
 jni = "0.21.1"
 voicevox_core.workspace = true
 

@@ -4102,6 +4102,7 @@ dependencies = [
 name = "voicevox_core_java_api"
 version = "0.0.0"
 dependencies = [
+ "easy-ext",
  "jni",
  "voicevox_core",
 ]
