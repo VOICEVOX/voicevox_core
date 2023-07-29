@@ -121,23 +121,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: windows-2019
-            features: ""
-          - os: windows-2022
-            features: ""
-          - os: windows-2019
-            features: directml
-          - os: windows-2022
-            features: directml
-          - os: macos-11
-            features: ""
-          - os: macos-12
-            features: ""
-          - os: ubuntu-20.04
-            features: ""
-          - os: ubuntu-22.04
-            features: ""
+        include: ${{ fromJson(needs.rust-integration-test-strategy-matrix.outputs.includes) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
