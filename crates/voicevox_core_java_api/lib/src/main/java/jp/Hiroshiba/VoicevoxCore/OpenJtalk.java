@@ -1,19 +1,19 @@
 package jp.Hiroshiba.VoicevoxCore;
 
 public class OpenJtalk {
-  private long internalPtr;
+  protected long internalPtr;
 
   public OpenJtalk() {
-    internalPtr = rsNewWithoutDic();
+    rsNewWithoutDic();
   }
 
-  public OpenJtalk(String open_jtalk_dict_dir) {
-    internalPtr = rsNewWithInitilize(open_jtalk_dict_dir);
+  public OpenJtalk(String openJtalkDictDir) {
+    rsNewWithInitilize(openJtalkDictDir);
   }
 
   private native long rsNewWithoutDic();
 
-  private native long rsNewWithInitilize(String open_jtalk_dict_dir);
+  private native long rsNewWithInitilize(String openJtalkDictDir);
 
   static {
     System.loadLibrary("voicevox_core_java_api");
