@@ -11,7 +11,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   # 簡易テストとするかどうか。workflow_dispatch以外は簡易テストとする
-  IS_SIMPLE_TEST: ${{ !(github.event.inputs) }}
+  IS_SIMPLE_TEST: ${{ github.event_name != 'workflow_dispatch' }}
 
 defaults:
   run:

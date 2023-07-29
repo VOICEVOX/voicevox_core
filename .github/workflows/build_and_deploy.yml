@@ -37,7 +37,7 @@ env:
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
   PRODUCTION_REPOSITORY_TAG: "0.15.0-preview.0" # 製品版のタグ名
   # 簡易テストとするかどうか。releaseとworkflow_dispatch以外は簡易テストとする
-  IS_SIMPLE_TEST: ${{ !(github.event.release || github.event.inputs) }}
+  IS_SIMPLE_TEST: ${{ github.event_name != 'release' && github.event_name != 'workflow_dispatch' }}
 
 defaults:
   run:
@@ -339,7 +339,7 @@ jobs:
           target_commitish: ${{ github.sha }}
 
   build_xcframework:
-    if: ${{ !(github.event.release || github.event.inputs) }} # env.IS_SIMPLE_TEST と同じ
+    if: ${{ ${{ github.event_name != 'release' && github.event_name != 'workflow_dispatch' }} }} # env.IS_SIMPLE_TEST と同じ
     needs: build_and_deploy
     runs-on: macos-12
     steps:
