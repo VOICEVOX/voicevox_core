@@ -37,7 +37,6 @@ impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
             voicevox_default_initialize_options,
-            voicevox_default_load_voice_model_options,
             voicevox_default_tts_options,
             voicevox_open_jtalk_rc_new,
             voicevox_open_jtalk_rc_delete,
@@ -83,11 +82,7 @@ impl assert_cdylib::TestCase for TestCase {
             synthesizer.assume_init()
         };
 
-        assert_ok(voicevox_synthesizer_load_voice_model(
-            synthesizer,
-            model,
-            **voicevox_default_load_voice_model_options,
-        ));
+        assert_ok(voicevox_synthesizer_load_voice_model(synthesizer, model));
 
         let (wav_length, wav) = {
             let mut wav_length = MaybeUninit::uninit();

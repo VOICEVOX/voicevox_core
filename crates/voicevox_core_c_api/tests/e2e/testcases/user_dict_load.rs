@@ -38,7 +38,6 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_user_dict_add_word,
             voicevox_user_dict_delete,
             voicevox_default_initialize_options,
-            voicevox_default_load_voice_model_options,
             voicevox_default_audio_query_options,
             voicevox_open_jtalk_rc_new,
             voicevox_open_jtalk_rc_use_user_dict,
@@ -101,11 +100,7 @@ impl assert_cdylib::TestCase for TestCase {
             synthesizer.assume_init()
         };
 
-        assert_ok(voicevox_synthesizer_load_voice_model(
-            synthesizer,
-            model,
-            **voicevox_default_load_voice_model_options,
-        ));
+        assert_ok(voicevox_synthesizer_load_voice_model(synthesizer, model));
 
         let mut audio_query_without_dict = std::ptr::null_mut();
         assert_ok(voicevox_synthesizer_audio_query(
