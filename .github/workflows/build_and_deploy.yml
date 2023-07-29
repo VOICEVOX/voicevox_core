@@ -339,6 +339,7 @@ jobs:
           target_commitish: ${{ github.sha }}
 
   build_xcframework:
+    if: ${{ !(github.event.release || github.event.inputs) }} # env.IS_SIMPLE_TEST と同じ
     needs: build_and_deploy
     runs-on: macos-12
     steps:
