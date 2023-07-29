@@ -86,13 +86,9 @@ impl Status {
 
         self.loaded_models.lock().unwrap().insert(
             model,
-            LightOrtSessions {
-                predict_duration: predict_duration_session.into(),
-                predict_intonation: predict_intonation_session.into(),
-            },
-            HeavyOrtSession {
-                decode: decode_model.into(),
-            },
+            predict_duration_session,
+            predict_intonation_session,
+            decode_model,
         )?;
         Ok(())
     }
@@ -169,19 +165,16 @@ impl Status {
         mut phoneme_vector_array: NdArray<i64, Ix1>,
         mut speaker_id_array: NdArray<i64, Ix1>,
     ) -> Result<Vec<f32>> {
-        let light_sessions = self
+        let predict_duration = self
             .loaded_models
             .lock()
             .unwrap()
-            .light_sessions(style_id)?;
+            .predict_duration(style_id)?;
 
         tokio::task::spawn_blocking(move || {
-            let LightOrtSessions {
-                predict_duration, ..
-            } = &mut *light_sessions.lock().unwrap();
+            let mut predict_duration = predict_duration.lock().unwrap();
 
             let output_tensors = predict_duration
-                .get_mut()
                 .run(vec![&mut phoneme_vector_array, &mut speaker_id_array])
                 .map_err(|_| Error::InferenceFailed)?;
             Ok(output_tensors[0].as_slice().unwrap().to_owned())
@@ -203,19 +196,16 @@ impl Status {
         mut end_accent_phrase_vector_array: NdArray<i64, Ix1>,
         mut speaker_id_array: NdArray<i64, Ix1>,
     ) -> Result<Vec<f32>> {
-        let light_sessions = self
+        let predict_intonation = self
             .loaded_models
             .lock()
             .unwrap()
-            .light_sessions(style_id)?;
+            .predict_intonation(style_id)?;
 
         tokio::task::spawn_blocking(move || {
-            let LightOrtSessions {
-                predict_intonation, ..
-            } = &mut *light_sessions.lock().unwrap();
+            let mut predict_intonation = predict_intonation.lock().unwrap();
 
             let output_tensors = predict_intonation
-                .get_mut()
                 .run(vec![
                     &mut length_array,
                     &mut vowel_phoneme_vector_array,
@@ -240,13 +230,12 @@ impl Status {
         mut phoneme_array: NdArray<f32, Ix2>,
         mut speaker_id_array: NdArray<i64, Ix1>,
     ) -> Result<Vec<f32>> {
-        let heavy_session = self.loaded_models.lock().unwrap().heavy_session(style_id)?;
+        let decode = self.loaded_models.lock().unwrap().decode(style_id)?;
 
         tokio::task::spawn_blocking(move || {
-            let HeavyOrtSession { decode } = &mut *heavy_session.lock().unwrap();
+            let mut decode = decode.lock().unwrap();
 
             let output_tensors = decode
-                .get_mut()
                 .run(vec![
                     &mut f0_array,
                     &mut phoneme_array,
@@ -277,20 +266,41 @@ impl LoadedModels {
             .collect()
     }
 
-    fn light_sessions(
-        &mut self,
+    fn predict_duration(
+        &self,
         style_id: StyleId,
-    ) -> Result<Arc<std::sync::Mutex<LightOrtSessions>>> {
-        let LoadedModel { session_set, .. } = self.find_loaded_voice_model(style_id)?;
-        Ok(session_set.get_light())
+    ) -> Result<Arc<std::sync::Mutex<AssertSend<Session<'static>>>>> {
+        let LoadedModel {
+            session_set: SessionSet {
+                predict_duration, ..
+            },
+            ..
+        } = self.find_loaded_voice_model(style_id)?;
+        Ok(predict_duration.clone())
     }
 
-    fn heavy_session(
-        &mut self,
+    fn predict_intonation(
+        &self,
         style_id: StyleId,
-    ) -> Result<Arc<std::sync::Mutex<HeavyOrtSession>>> {
-        let LoadedModel { session_set, .. } = self.find_loaded_voice_model(style_id)?;
-        Ok(session_set.get_heavy())
+    ) -> Result<Arc<std::sync::Mutex<AssertSend<Session<'static>>>>> {
+        let LoadedModel {
+            session_set: SessionSet {
+                predict_intonation, ..
+            },
+            ..
+        } = self.find_loaded_voice_model(style_id)?;
+        Ok(predict_intonation.clone())
+    }
+
+    fn decode(
+        &self,
+        style_id: StyleId,
+    ) -> Result<Arc<std::sync::Mutex<AssertSend<Session<'static>>>>> {
+        let LoadedModel {
+            session_set: SessionSet { decode, .. },
+            ..
+        } = self.find_loaded_voice_model(style_id)?;
+        Ok(decode.clone())
     }
 
     fn contains_voice_model(&self, model_id: &VoiceModelId) -> bool {
@@ -316,8 +326,9 @@ impl LoadedModels {
     fn insert(
         &mut self,
         model: &VoiceModel,
-        light_sessions: LightOrtSessions,
-        heavy_session: HeavyOrtSession,
+        predict_duration: Session<'static>,
+        predict_intonation: Session<'static>,
+        decode: Session<'static>,
     ) -> Result<()> {
         self.ensure_not_contains(model)?;
 
@@ -325,7 +336,11 @@ impl LoadedModels {
             model.id().clone(),
             LoadedModel {
                 metas: model.metas().clone(),
-                session_set: SessionSet::new(light_sessions, heavy_session),
+                session_set: SessionSet {
+                    predict_duration: Arc::new(std::sync::Mutex::new(predict_duration.into())),
+                    predict_intonation: Arc::new(std::sync::Mutex::new(predict_intonation.into())),
+                    decode: Arc::new(std::sync::Mutex::new(decode.into())),
+                },
             },
         );
         assert!(prev.is_none());
@@ -341,9 +356,9 @@ impl LoadedModels {
         Ok(())
     }
 
-    fn find_loaded_voice_model(&mut self, style_id: StyleId) -> Result<&mut LoadedModel> {
+    fn find_loaded_voice_model(&self, style_id: StyleId) -> Result<&LoadedModel> {
         self.0
-            .values_mut()
+            .values()
             .find(|LoadedModel { metas, .. }| {
                 metas
                     .iter()
@@ -362,34 +377,9 @@ impl LoadedModels {
 }
 
 struct SessionSet {
-    light: Arc<std::sync::Mutex<LightOrtSessions>>,
-    heavy: Arc<std::sync::Mutex<HeavyOrtSession>>,
-}
-
-impl SessionSet {
-    fn new(light: LightOrtSessions, heavy: HeavyOrtSession) -> Self {
-        Self {
-            light: Arc::new(light.into()),
-            heavy: Arc::new(heavy.into()),
-        }
-    }
-
-    fn get_light(&self) -> Arc<std::sync::Mutex<LightOrtSessions>> {
-        self.light.clone()
-    }
-
-    fn get_heavy(&mut self) -> Arc<std::sync::Mutex<HeavyOrtSession>> {
-        self.heavy.clone()
-    }
-}
-
-struct LightOrtSessions {
-    predict_duration: AssertSend<Session<'static>>,
-    predict_intonation: AssertSend<Session<'static>>,
-}
-
-struct HeavyOrtSession {
-    decode: AssertSend<Session<'static>>,
+    predict_duration: Arc<std::sync::Mutex<AssertSend<Session<'static>>>>,
+    predict_intonation: Arc<std::sync::Mutex<AssertSend<Session<'static>>>>,
+    decode: Arc<std::sync::Mutex<AssertSend<Session<'static>>>>,
 }
 
 // FIXME: 以下のことをちゃんと確認した後、onnxruntime-rs側で`Session`が`Send`であると宣言する。
@@ -398,15 +388,11 @@ struct HeavyOrtSession {
 use self::assert_send::AssertSend;
 
 mod assert_send {
+    use std::ops::{Deref, DerefMut};
+
     use onnxruntime::session::Session;
 
     pub(super) struct AssertSend<T>(T);
-
-    impl<T> AssertSend<T> {
-        pub(super) fn get_mut(&mut self) -> &mut T {
-            &mut self.0
-        }
-    }
 
     impl From<Session<'static>> for AssertSend<Session<'static>> {
         fn from(session: Session<'static>) -> Self {
@@ -414,9 +400,17 @@ mod assert_send {
         }
     }
 
-    impl<T> AsRef<T> for AssertSend<T> {
-        fn as_ref(&self) -> &T {
+    impl<T> Deref for AssertSend<T> {
+        type Target = T;
+
+        fn deref(&self) -> &Self::Target {
             &self.0
+        }
+    }
+
+    impl<T> DerefMut for AssertSend<T> {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.0
         }
     }
 
