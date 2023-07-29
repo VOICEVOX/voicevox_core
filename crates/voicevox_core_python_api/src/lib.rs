@@ -1,4 +1,4 @@
-use std::{num::NonZeroU16, sync::Arc};
+use std::sync::Arc;
 
 mod convert;
 use convert::*;
@@ -15,7 +15,7 @@ use tokio::{runtime::Runtime, sync::Mutex};
 use uuid::Uuid;
 use voicevox_core::{
     AccelerationMode, AccentPhrasesOptions, AudioQueryModel, AudioQueryOptions, InitializeOptions,
-    LoadVoiceModelOptions, StyleId, SynthesisOptions, TtsOptions, UserDictWord, VoiceModelId,
+    StyleId, SynthesisOptions, TtsOptions, UserDictWord, VoiceModelId,
 };
 
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
@@ -165,14 +165,9 @@ impl Synthesizer {
             .unwrap()
     }
 
-    #[pyo3(signature =(
-        model,
-        gpu_num_sessions = LoadVoiceModelOptions::default().gpu_num_sessions,
-    ))]
     fn load_voice_model<'py>(
         &mut self,
         model: &'py PyAny,
-        gpu_num_sessions: NonZeroU16,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let model: VoiceModel = model.extract()?;
@@ -181,7 +176,7 @@ impl Synthesizer {
             synthesizer
                 .lock()
                 .await
-                .load_voice_model(&model.model, &LoadVoiceModelOptions { gpu_num_sessions })
+                .load_voice_model(&model.model)
                 .await
                 .into_py_result()
         })

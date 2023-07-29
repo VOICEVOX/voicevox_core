@@ -1,5 +1,3 @@
-use std::num::NonZeroU16;
-
 use self::status::*;
 use super::*;
 use onnxruntime::{ndarray, session::NdArray};
@@ -21,9 +19,7 @@ impl InferenceCore {
 
             if load_all_models {
                 for model in &VoiceModel::get_all_models().await? {
-                    status
-                        .load_model(model, NonZeroU16::new(1).unwrap())
-                        .await?;
+                    status.load_model(model).await?;
                 }
             }
             Ok(Self { status })
@@ -44,8 +40,8 @@ impl InferenceCore {
         }
     }
 
-    pub async fn load_model(&self, model: &VoiceModel, gpu_num_sessions: NonZeroU16) -> Result<()> {
-        self.status.load_model(model, gpu_num_sessions).await
+    pub async fn load_model(&self, model: &VoiceModel) -> Result<()> {
+        self.status.load_model(model).await
     }
 
     pub fn unload_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {

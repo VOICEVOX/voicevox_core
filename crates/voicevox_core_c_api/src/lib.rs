@@ -287,15 +287,6 @@ pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesiz
     drop(synthesizer);
 }
 
-#[repr(C)]
-pub struct VoicevoxLoadVoiceModelOptions {
-    gpu_num_sessions: u16,
-}
-
-#[no_mangle]
-pub static voicevox_default_load_voice_model_options: VoicevoxLoadVoiceModelOptions =
-    ConstDefault::DEFAULT;
-
 /// モデルを読み込む
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] model 音声モデル
@@ -308,11 +299,8 @@ pub static voicevox_default_load_voice_model_options: VoicevoxLoadVoiceModelOpti
 pub extern "C" fn voicevox_synthesizer_load_voice_model(
     synthesizer: &VoicevoxSynthesizer,
     model: &VoicevoxVoiceModel,
-    options: VoicevoxLoadVoiceModelOptions,
 ) -> VoicevoxResultCode {
-    into_result_code_with_error(
-        RUNTIME.block_on(synthesizer.load_voice_model(model.model(), options)),
-    )
+    into_result_code_with_error(RUNTIME.block_on(synthesizer.load_voice_model(model.model())))
 }
 
 /// モデルの読み込みを解除する

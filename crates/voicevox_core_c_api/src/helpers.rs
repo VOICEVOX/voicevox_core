@@ -81,27 +81,6 @@ pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
     s.to_str().map_err(|_| CApiError::InvalidUtf8Input)
 }
 
-impl ConstDefault for VoicevoxLoadVoiceModelOptions {
-    const DEFAULT: Self = {
-        let options = voicevox_core::LoadVoiceModelOptions::DEFAULT;
-        Self {
-            gpu_num_sessions: options.gpu_num_sessions.get(),
-        }
-    };
-}
-
-impl TryFrom<VoicevoxLoadVoiceModelOptions> for voicevox_core::LoadVoiceModelOptions {
-    type Error = CApiError;
-
-    fn try_from(options: VoicevoxLoadVoiceModelOptions) -> std::result::Result<Self, Self::Error> {
-        let gpu_num_sessions = options
-            .gpu_num_sessions
-            .try_into()
-            .unwrap_or_else(|_| todo!());
-        Ok(Self { gpu_num_sessions })
-    }
-}
-
 impl ConstDefault for VoicevoxAudioQueryOptions {
     const DEFAULT: Self = {
         let options = voicevox_core::AudioQueryOptions::DEFAULT;

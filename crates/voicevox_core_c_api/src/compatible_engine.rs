@@ -100,8 +100,7 @@ pub extern "C" fn load_model(style_id: i64) -> bool {
     if let Some(model_id) = model_set.style_model_map.get(&style_id) {
         let vvm = model_set.model_map.get(model_id).unwrap();
         let synthesizer = &mut *lock_synthesizer();
-        let result = RUNTIME
-            .block_on(ensure_initialized!(synthesizer).load_voice_model(vvm, &Default::default()));
+        let result = RUNTIME.block_on(ensure_initialized!(synthesizer).load_voice_model(vvm));
         if let Some(err) = result.err() {
             set_message(&format!("{err}"));
             false

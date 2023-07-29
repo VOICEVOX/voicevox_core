@@ -1,4 +1,4 @@
-use std::{num::NonZeroU16, sync::Arc};
+use std::sync::Arc;
 
 use const_default::ConstDefault;
 use duplicate::duplicate_item;
@@ -6,18 +6,6 @@ use duplicate::duplicate_item;
 use crate::engine::{create_kana, parse_kana, AccentPhraseModel, OpenJtalk, SynthesisEngine};
 
 use super::*;
-
-pub struct LoadVoiceModelOptions {
-    pub gpu_num_sessions: NonZeroU16,
-}
-
-impl ConstDefault for LoadVoiceModelOptions {
-    const DEFAULT: Self = Self {
-        // SAFETY: 1 ≠ 0
-        #[allow(unsafe_code)]
-        gpu_num_sessions: unsafe { NonZeroU16::new_unchecked(1) },
-    };
-}
 
 pub struct SynthesisOptions {
     pub enable_interrogative_upspeak: bool,
@@ -91,7 +79,6 @@ pub struct InitializeOptions {
 
 #[duplicate_item(
     T;
-    [ LoadVoiceModelOptions ];
     [ AccentPhrasesOptions ];
     [ AudioQueryOptions ];
     [ TtsOptions ];
@@ -154,14 +141,10 @@ impl Synthesizer {
     }
 
     /// 音声モデルを読み込む
-    pub async fn load_voice_model(
-        &self,
-        model: &VoiceModel,
-        options: &LoadVoiceModelOptions,
-    ) -> Result<()> {
+    pub async fn load_voice_model(&self, model: &VoiceModel) -> Result<()> {
         self.synthesis_engine
             .inference_core()
-            .load_model(model, options.gpu_num_sessions)
+            .load_model(model)
             .await?;
         Ok(())
     }
@@ -406,7 +389,7 @@ mod tests {
         .unwrap();
 
         let result = syntesizer
-            .load_voice_model(&open_default_vvm_file().await, &Default::default())
+            .load_voice_model(&open_default_vvm_file().await)
             .await;
 
         assert_debug_fmt_eq!(
@@ -450,7 +433,7 @@ mod tests {
             "expected is_model_loaded to return false, but got true",
         );
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await, &Default::default())
+            .load_voice_model(&open_default_vvm_file().await)
             .await
             .unwrap();
 
@@ -476,7 +459,7 @@ mod tests {
         .unwrap();
 
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await, &Default::default())
+            .load_voice_model(&open_default_vvm_file().await)
             .await
             .unwrap();
 
@@ -507,7 +490,7 @@ mod tests {
         .await
         .unwrap();
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await, &Default::default())
+            .load_voice_model(&open_default_vvm_file().await)
             .await
             .unwrap();
 
@@ -549,7 +532,7 @@ mod tests {
         .await
         .unwrap();
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await, &Default::default())
+            .load_voice_model(&open_default_vvm_file().await)
             .await
             .unwrap();
 

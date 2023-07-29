@@ -6,9 +6,7 @@ use std::{
 
 use voicevox_core::{InitializeOptions, OpenJtalk, Result, Synthesizer, VoiceModel, VoiceModelId};
 
-use crate::{
-    CApiResult, OpenJtalkRc, VoicevoxLoadVoiceModelOptions, VoicevoxSynthesizer, VoicevoxVoiceModel,
-};
+use crate::{CApiResult, OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
 
 impl OpenJtalkRc {
     pub(crate) fn new_with_initialize(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {
@@ -30,14 +28,8 @@ impl VoicevoxSynthesizer {
         })
     }
 
-    pub(crate) async fn load_voice_model(
-        &self,
-        model: &VoiceModel,
-        options: VoicevoxLoadVoiceModelOptions,
-    ) -> CApiResult<()> {
-        self.synthesizer
-            .load_voice_model(model, &options.try_into()?)
-            .await?;
+    pub(crate) async fn load_voice_model(&self, model: &VoiceModel) -> CApiResult<()> {
+        self.synthesizer.load_voice_model(model).await?;
         let metas = &self.synthesizer.metas();
         *self.metas_cstring.lock().unwrap() =
             CString::new(serde_json::to_string(metas).unwrap()).unwrap();

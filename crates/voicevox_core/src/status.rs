@@ -7,7 +7,7 @@ use onnxruntime::{
     session::{NdArray, Session},
     GraphOptimizationLevel, LoggingLevel,
 };
-use std::{collections::VecDeque, iter, num::NonZeroU16, sync::Arc};
+use std::sync::Arc;
 use std::{env, path::Path};
 use tracing::error;
 
@@ -60,7 +60,7 @@ impl Status {
         }
     }
 
-    pub async fn load_model(&self, model: &VoiceModel, gpu_num_sessions: NonZeroU16) -> Result<()> {
+    pub async fn load_model(&self, model: &VoiceModel) -> Result<()> {
         self.loaded_models
             .lock()
             .unwrap()
@@ -78,15 +78,11 @@ impl Status {
             &self.light_session_options,
             model.path(),
         )?;
-        let decode_models = iter::repeat_with(|| {
-            self.new_session(
-                models.decode_model(),
-                &self.heavy_session_options,
-                model.path(),
-            )
-        })
-        .take(gpu_num_sessions.get().into())
-        .collect::<std::result::Result<Vec<_>, _>>()?;
+        let decode_model = self.new_session(
+            models.decode_model(),
+            &self.heavy_session_options,
+            model.path(),
+        )?;
 
         self.loaded_models.lock().unwrap().insert(
             model,
@@ -94,9 +90,9 @@ impl Status {
                 predict_duration: predict_duration_session.into(),
                 predict_intonation: predict_intonation_session.into(),
             },
-            decode_models.into_iter().map(|decode| HeavyOrtSession {
-                decode: decode.into(),
-            }),
+            HeavyOrtSession {
+                decode: decode_model.into(),
+            },
         )?;
         Ok(())
     }
@@ -321,7 +317,7 @@ impl LoadedModels {
         &mut self,
         model: &VoiceModel,
         light_sessions: LightOrtSessions,
-        heavy_session: impl IntoIterator<Item = HeavyOrtSession>,
+        heavy_session: HeavyOrtSession,
     ) -> Result<()> {
         self.ensure_not_contains(model)?;
 
@@ -366,16 +362,15 @@ impl LoadedModels {
 }
 
 struct SessionSet {
-    // 不変条件: `self.heavy.len() >= 1`
     light: Arc<std::sync::Mutex<LightOrtSessions>>,
-    heavy: VecDeque<Arc<std::sync::Mutex<HeavyOrtSession>>>,
+    heavy: Arc<std::sync::Mutex<HeavyOrtSession>>,
 }
 
 impl SessionSet {
-    fn new(light: LightOrtSessions, heavy: impl IntoIterator<Item = HeavyOrtSession>) -> Self {
+    fn new(light: LightOrtSessions, heavy: HeavyOrtSession) -> Self {
         Self {
             light: Arc::new(light.into()),
-            heavy: heavy.into_iter().map(Into::into).map(Arc::new).collect(),
+            heavy: Arc::new(heavy.into()),
         }
     }
 
@@ -383,12 +378,8 @@ impl SessionSet {
         self.light.clone()
     }
 
-    /// # Panics
-    ///
-    /// `self.heavy`が空のときパニックする。
     fn get_heavy(&mut self) -> Arc<std::sync::Mutex<HeavyOrtSession>> {
-        self.heavy.rotate_left(1);
-        self.heavy.back().unwrap().clone()
+        self.heavy.clone()
     }
 }
 
@@ -468,9 +459,7 @@ mod tests {
     #[tokio::test]
     async fn status_load_model_works() {
         let status = Status::new(false, 0);
-        let result = status
-            .load_model(&open_default_vvm_file().await, NonZeroU16::new(1).unwrap())
-            .await;
+        let result = status.load_model(&open_default_vvm_file().await).await;
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
     }
@@ -484,7 +473,7 @@ mod tests {
             !status.is_loaded_model(vvm.id()),
             "model should  not be loaded"
         );
-        let result = status.load_model(&vvm, NonZeroU16::new(1).unwrap()).await;
+        let result = status.load_model(&vvm).await;
         assert_debug_fmt_eq!(Ok(()), result);
         assert!(status.is_loaded_model(vvm.id()), "model should be loaded");
     }
