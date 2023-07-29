@@ -180,7 +180,7 @@ jobs:
             includes=$(echo "$includes" | jq -c '[.[] | select(.can_skip_in_simple_test == false)]')
           fi
           includes=$(echo "$includes" | jq -c '[.[] | del(.can_skip_in_simple_test)]')
-          echo "includes=${includes}" >> $GITHUB_OUTPUT
+          echo "includes=${includes}" >> "$GITHUB_OUTPUT"
 
   build_and_deploy:
     needs: strategy-matrix
