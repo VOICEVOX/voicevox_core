@@ -1,13 +1,22 @@
 name: test workflow
+
 on:
   push:
     branches:
       - "*"
       - "**/*"
   pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  # 簡易テストとするかどうか。workflow_dispatch以外は簡易テストとする
+  IS_SIMPLE_TEST: ${{ !(github.event.inputs) }}
+
 defaults:
   run:
     shell: bash
+
 jobs:
   shellcheck:
     runs-on: ubuntu-22.04
@@ -82,7 +91,33 @@ jobs:
       - name: Run cargo unit test
         run: RUST_BACKTRACE=full cargo test --lib --bins -vv --features , -- --include-ignored
 
+  rust-integration-test-strategy-matrix: # 実行対象の条件をフィルタリングする
+    runs-on: ubuntu-latest
+    outputs:
+      includes: ${{ steps.strategy-matrix.outputs.includes }}
+    steps:
+      - name: declare strategy matrix
+        id: strategy-matrix
+        run: |
+          includes='[
+            { "os": "windows-2019", "features": "", "can_skip_in_simple_test": true },
+            { "os": "windows-2022", "features": "", "can_skip_in_simple_test": true },
+            { "os": "windows-2019", "features": "directml", "can_skip_in_simple_test": false },
+            { "os": "windows-2022", "features": "directml", "can_skip_in_simple_test": true },
+            { "os": "macos-11", "features": "", "can_skip_in_simple_test": false },
+            { "os": "macos-12", "features": "", "can_skip_in_simple_test": true },
+            { "os": "ubuntu-20.04", "features": "", "can_skip_in_simple_test": false },
+            { "os": "ubuntu-22.04", "features": "", "can_skip_in_simple_test": true }
+          ]'
+
+          if ${{ env.IS_SIMPLE_TEST }}; then
+            includes=$(echo "$includes" | jq -c '[.[] | select(.can_skip_in_simple_test == false)]')
+          fi
+          includes=$(echo "$includes" | jq -c '[.[] | del(.can_skip_in_simple_test)]')
+          echo "includes=${includes}" >> "$GITHUB_OUTPUT"
+
   rust-integration-test:
+    needs: rust-integration-test-strategy-matrix
     strategy:
       fail-fast: false
       matrix:
@@ -264,6 +299,3 @@ jobs:
 
           pip install -r requirements-test.txt
           pytest
-
-env:
-  CARGO_TERM_COLOR: always

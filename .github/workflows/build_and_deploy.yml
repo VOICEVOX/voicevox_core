@@ -44,13 +44,13 @@ defaults:
     shell: bash
 
 jobs:
-  strategy-matrix: # 実行対象の条件をフィルタリングする
+  build_and_deploy_strategy_matrix: # 実行対象の条件をフィルタリングする
     runs-on: ubuntu-latest
     outputs:
-      includes: ${{ steps.strategy-matrix.outputs.includes }}
+      includes: ${{ steps.strategy_matrix.outputs.includes }}
     steps:
       - name: declare strategy matrix
-        id: strategy-matrix
+        id: strategy_matrix
         run: |
           includes='[
             {
@@ -183,11 +183,11 @@ jobs:
           echo "includes=${includes}" >> "$GITHUB_OUTPUT"
 
   build_and_deploy:
-    needs: strategy-matrix
+    needs: build_and_deploy_strategy_matrix
     environment: ${{ github.event.inputs.is_production == 'true' && 'production' || '' }} # 製品版のenvironment
     strategy:
       matrix:
-        include: ${{ fromJson(needs.strategy-matrix.outputs.includes) }}
+        include: ${{ fromJson(needs.build_and_deploy_strategy_matrix.outputs.includes) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3 # 製品版ではない場合
