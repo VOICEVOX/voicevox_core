@@ -339,7 +339,7 @@ jobs:
           target_commitish: ${{ github.sha }}
 
   build_xcframework:
-    if: ${{ ${{ github.event_name != 'release' && github.event_name != 'workflow_dispatch' }} }} # env.IS_SIMPLE_TEST と同じ
+    if: ${{ github.event_name != 'release' && github.event_name != 'workflow_dispatch' }} # env.IS_SIMPLE_TEST と同じ
     needs: build_and_deploy
     runs-on: macos-12
     steps:
