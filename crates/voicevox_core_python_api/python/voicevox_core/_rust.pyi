@@ -295,7 +295,7 @@ class UserDict:
         ...
 
 class VoicevoxError(Exception):
-    """VOICEVOXで発生したエラー。"""
+    """VOICEVOX COREのエラー。"""
 
     ...
 
