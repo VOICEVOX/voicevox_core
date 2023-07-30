@@ -53,14 +53,18 @@ class SupportedDevices:
 
     cuda: bool
     """
-    `CUDA Execution Provider <https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html>`_
-    (``CUDAExecutionProvider``)が利用可能。
+    CUDAが利用可能。
+
+    ONNX Runtimeの `CUDA Execution Provider <https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html>`_
+    (``CUDAExecutionProvider``)に対応する。必要な環境についてはそちらを参照。
     """
 
     dml: bool
     """
-    `DirectML Execution Provider <https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html>`_
-    (``DmlExecutionProvider``)が利用可能。
+    DirectMLが利用可能。
+
+    ONNX Runtimeの `DirectML Execution Provider <https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html>`_
+    (``DmlExecutionProvider``)に対応する。必要な環境についてはそちらを参照。
     """
 
 

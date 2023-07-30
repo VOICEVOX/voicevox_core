@@ -12,11 +12,17 @@ pub struct SupportedDevices {
     ///
     /// 常に`true`。
     cpu: bool,
-    /// [CUDA Execution Provider] (`CUDAExecutionProvider`)が利用可能。
+    /// CUDAが利用可能。
+    ///
+    /// ONNX Runtimeの[CUDA Execution Provider] (`CUDAExecutionProvider`)に対応する。必要な環境につ
+    /// いてはそちらを参照。
     ///
     /// [CUDA Execution Provider]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
     cuda: bool,
-    /// [DirectML Execution Provider] (`DmlExecutionProvider`)が利用可能。
+    /// DirectMLが利用可能。
+    ///
+    /// ONNX Runtimeの[DirectML Execution Provider] (`DmlExecutionProvider`)に対応する。必要な環境に
+    /// ついてはそちらを参照。
     ///
     /// [DirectML Execution Provider]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
     dml: bool,
