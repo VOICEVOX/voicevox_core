@@ -20,24 +20,6 @@ pub struct VoiceModelId {
     raw_voice_model_id: RawVoiceModelId,
 }
 
-/// モデル内IDの実体
-pub type RawModelInnerId = u32;
-/// モデル内ID
-#[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
-pub struct ModelInnerId(RawModelInnerId);
-
-impl ModelInnerId {
-    pub fn raw_id(self) -> RawModelInnerId {
-        self.0
-    }
-}
-
-impl Display for ModelInnerId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.raw_id())
-    }
-}
-
 /// 音声モデル
 #[derive(Getters, Clone)]
 pub struct VoiceModel {
