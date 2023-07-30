@@ -1,4 +1,5 @@
 mod utils;
+use crate::utils::throw_if_err;
 use jni::{
     objects::{JClass, JObject, JString, JValueGen},
     sys::{jboolean, jlong},
@@ -6,6 +7,7 @@ use jni::{
 };
 use once_cell::sync::Lazy;
 use tokio::runtime::Runtime;
+
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
     if cfg!(target_os = "android") {
         android_logger::init_once(
@@ -65,84 +67,77 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
 
 #[no_mangle]
 pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithoutDic<'local>(
-    mut env: JNIEnv<'local>,
+    env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jboolean {
-    let internal = voicevox_core::OpenJtalk::new_without_dic();
-    let internal_ptr = Box::into_raw(Box::new(internal));
+    throw_if_err(env, false, |env| {
+        let internal = voicevox_core::OpenJtalk::new_without_dic();
+        let internal_ptr = Box::into_raw(Box::new(internal));
 
-    unwrap_with_throw!(
-        env,
         env.set_field(
             this,
             "internalPtr",
             "J",
             JValueGen::Long(internal_ptr as jlong),
-        )
-    );
-
-    true as jboolean
+        )?;
+        Ok(true)
+    }) as jboolean
 }
 
 #[no_mangle]
 pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithInitialize<'local>(
-    mut env: JNIEnv<'local>,
+    env: JNIEnv<'local>,
     this: JObject<'local>,
     open_jtalk_dict_dir: JString<'local>,
 ) -> jboolean {
-    let open_jtalk_dict_dir = env
-        .get_string(&open_jtalk_dict_dir)
-        .expect("invalid java string");
-    let open_jtalk_dict_dir = open_jtalk_dict_dir.to_str().unwrap();
+    throw_if_err(env, false, |env| {
+        let open_jtalk_dict_dir = env.get_string(&open_jtalk_dict_dir)?;
+        let open_jtalk_dict_dir = open_jtalk_dict_dir.to_str()?;
 
-    let internal = unwrap_with_throw!(
-        env,
-        voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)
-    );
-    let internal_ptr = Box::into_raw(Box::new(internal));
+        let internal = voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)?;
+        let internal_ptr = Box::into_raw(Box::new(internal));
 
-    unwrap_with_throw!(
-        env,
         env.set_field(
             this,
             "internalPtr",
             "J",
             JValueGen::Long(internal_ptr as jlong),
-        )
-    );
-
-    true as jboolean
+        )?;
+        Ok(true)
+    }) as jboolean
 }
 
 #[no_mangle]
 pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'local>(
-    mut env: JNIEnv<'local>,
+    env: JNIEnv<'local>,
     this: JClass<'local>,
     model_path: JString<'local>,
 ) -> jboolean {
-    let model_path = env.get_string(&model_path).expect("invalid java string");
-    let model_path = model_path.to_str().unwrap();
+    throw_if_err(env, false, |env| {
+        let model_path = env.get_string(&model_path)?;
+        let model_path = model_path.to_str()?;
 
-    let internal = unwrap_with_throw!(
-        env,
-        RUNTIME.block_on(voicevox_core::VoiceModel::from_path(model_path))
-    );
-    let id = unwrap_with_throw!(env, env.new_string(internal.id().raw_voice_model_id()));
-    let internal_ptr = Box::into_raw(Box::new(internal));
+        let internal = RUNTIME.block_on(voicevox_core::VoiceModel::from_path(model_path))?;
+        let id = env.new_string(internal.id().raw_voice_model_id())?;
+        let internal_ptr = Box::into_raw(Box::new(&internal));
 
-    unwrap_with_throw!(
-        env,
         env.set_field(
             &this,
             "internalPtr",
             "J",
             JValueGen::Long(internal_ptr as jlong),
-        )
-    );
+        )?;
 
-    unwrap_with_throw!(
-        env,
-        env.set_field(&this, "id", "Ljava/lang/String;", JValueGen::Object(&id))
-    );
-    true as jboolean
+        env.set_field(&this, "id", "Ljava/lang/String;", JValueGen::Object(&id))?;
+        let speakers = env.new_object_array(
+            internal.metas().len() as i32,
+            object!("SpeakerMeta"),
+            JObject::null(),
+        )?;
+        for (i, meta) in internal.metas().iter().enumerate() {
+            let j_meta = env.new_object("SpeakerMeta", "()V", &[])?;
+            env.set_object_array_element(&speakers, i as i32, j_meta)?;
+        }
+        Ok(true)
+    }) as jboolean
 }

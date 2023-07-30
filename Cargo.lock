@@ -4151,6 +4151,7 @@ name = "voicevox_core_java_api"
 version = "0.0.0"
 dependencies = [
  "android_logger",
+ "anyhow",
  "chrono",
  "easy-ext",
  "jni",

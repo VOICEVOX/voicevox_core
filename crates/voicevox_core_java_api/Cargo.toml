@@ -9,6 +9,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 android_logger = "0.13.1"
+anyhow.workspace = true
 chrono = "0.4.26"
 easy-ext.workspace = true
 jni = "0.21.1"
