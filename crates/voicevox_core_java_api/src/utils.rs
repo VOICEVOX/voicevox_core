@@ -1,6 +1,5 @@
 use anyhow::Result;
 use jni::JNIEnv;
-pub static PACKAGE_NAME: &str = "jp/Hiroshiba/VoicevoxCore";
 
 #[macro_export]
 macro_rules! object {
@@ -16,8 +15,16 @@ where
     match inner(&mut env) {
         Ok(value) => value as _,
         Err(error) => {
-            env.throw_new("jp/Hiroshiba/VoicevoxCore/VoicevoxError", error.to_string())
-                .unwrap();
+            // Java側の例外は無視する。
+            // env.exception_clear()してもいいが、errorのメッセージは"Java exception was thrown"
+            // となり、デバッグが困難になるため、そのままにしておく。
+            if !env.exception_check().unwrap_or(false) {
+                env.throw_new(
+                    "jp/Hiroshiba/VoicevoxCore/VoicevoxException",
+                    error.to_string(),
+                )
+                .unwrap_or_else(|_| panic!("Failed to throw exception, original error: {}", error));
+            }
             fallback
         }
     }

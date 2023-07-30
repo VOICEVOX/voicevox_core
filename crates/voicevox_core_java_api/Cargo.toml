@@ -16,6 +16,6 @@ jni = "0.21.1"
 once_cell.workspace = true
 tokio.workspace = true
 tracing = { workspace = true, features = ["log"] }
-tracing-subscriber = "0.3.17"
+tracing-subscriber.workspace = true
 voicevox_core.workspace = true
 

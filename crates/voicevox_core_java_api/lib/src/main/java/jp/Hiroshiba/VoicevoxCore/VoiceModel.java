@@ -7,10 +7,10 @@ public class VoiceModel {
   public SpeakerMeta[] metas;
 
   public VoiceModel(String modelPath) {
-    internalPtr = rsFromPath(modelPath);
+    rsFromPath(modelPath);
   }
 
-  native static long rsFromPath(String modelPath);
+  private native boolean rsFromPath(String modelPath);
 
   static {
     System.loadLibrary("voicevox_core_java_api");

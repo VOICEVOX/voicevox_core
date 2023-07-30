@@ -11,9 +11,9 @@ public class OpenJtalk {
     rsNewWithInitilize(openJtalkDictDir);
   }
 
-  private native long rsNewWithoutDic();
+  private native boolean rsNewWithoutDic();
 
-  private native long rsNewWithInitilize(String openJtalkDictDir);
+  private native boolean rsNewWithInitilize(String openJtalkDictDir);
 
   static {
     System.loadLibrary("voicevox_core_java_api");
