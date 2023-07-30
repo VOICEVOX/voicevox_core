@@ -47,5 +47,6 @@ pub struct Manifest {
     decode_filename: String,
     predict_duration_filename: String,
     predict_intonation_filename: String,
-    style_id_to_model_inner_id: Option<BTreeMap<StyleId, ModelInnerId>>,
+    #[serde(default)]
+    style_id_to_model_inner_id: BTreeMap<StyleId, ModelInnerId>,
 }

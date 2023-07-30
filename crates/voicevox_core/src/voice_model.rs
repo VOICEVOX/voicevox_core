@@ -128,8 +128,8 @@ impl VoiceModel {
     pub(crate) fn style_id_to_model_inner_id(&self, style_id: StyleId) -> ModelInnerId {
         self.manifest
             .style_id_to_model_inner_id()
-            .as_ref()
-            .and_then(|id_map| id_map.get(&style_id).cloned())
+            .get(&style_id)
+            .cloned()
             .unwrap_or_else(|| ModelInnerId::new(style_id.raw_id()))
     }
 }
