@@ -1,7 +1,7 @@
 package jp.Hiroshiba.VoicevoxCore;
 
-public class OpenJtalk {
-  protected long internalPtr;
+public class OpenJtalk implements AutoCloseable {
+  protected long internal;
 
   public OpenJtalk() {
     rsNewWithoutDic();
@@ -11,9 +11,15 @@ public class OpenJtalk {
     rsNewWithInitilize(openJtalkDictDir);
   }
 
-  private native boolean rsNewWithoutDic();
+  public void close() {
+    rsDrop();
+  }
 
-  private native boolean rsNewWithInitilize(String openJtalkDictDir);
+  private native void rsNewWithoutDic();
+
+  private native void rsNewWithInitilize(String openJtalkDictDir);
+
+  private native void rsDrop();
 
   static {
     System.loadLibrary("voicevox_core_java_api");
