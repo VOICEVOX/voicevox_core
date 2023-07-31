@@ -110,6 +110,7 @@ jobs:
             { "os": "ubuntu-22.04", "features": "", "can_skip_in_simple_test": true }
           ]'
 
+          # FIXME: composite action に切り出す
           if ${{ env.IS_SIMPLE_TEST }}; then
             includes=$(echo "$includes" | jq -c '[.[] | select(.can_skip_in_simple_test == false)]')
           fi
