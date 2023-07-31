@@ -1,8 +1,7 @@
 use anyhow::anyhow;
 use async_zip::{read::fs::ZipFileReader, ZipEntry};
 use futures::future::{join3, join_all};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::fmt::Display;
+use serde::{de::DeserializeOwned, Deserialize};
 
 use super::*;
 use std::{
