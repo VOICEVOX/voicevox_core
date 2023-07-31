@@ -124,7 +124,7 @@ impl VoiceModel {
 
     /// スタイルIDからモデル内IDを取得する。
     /// モデル内IDのマッピングが存在しない場合はそのままスタイルIDを返す。
-    pub(crate) fn style_id_to_model_inner_id(&self, style_id: StyleId) -> ModelInnerId {
+    pub(crate) fn model_inner_id_for(&self, style_id: StyleId) -> ModelInnerId {
         self.manifest
             .style_id_to_model_inner_id()
             .get(&style_id)

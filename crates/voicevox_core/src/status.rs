@@ -115,10 +115,7 @@ impl Status {
             for style in speaker.styles().iter() {
                 self.id_relations.insert(
                     *style.id(),
-                    (
-                        model.id().clone(),
-                        model.style_id_to_model_inner_id(*style.id()),
-                    ),
+                    (model.id().clone(), model.model_inner_id_for(*style.id())),
                 );
             }
         }
