@@ -48,9 +48,6 @@ stderr.unix = ""
 last_error_message = "Statusが初期化されていません"
 stderr = ""
 
-[global_info]
-stderr = ""
-
 [simple_tts]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
 stderr.windows = '''

@@ -6,11 +6,6 @@ use voicevox_core::result_code::VoicevoxResultCode;
 /// voicevox\_core\_c\_apiのcdylibのシンボルを集めたもの。
 #[allow(dead_code)] // TODO: WIP
 pub(crate) struct Symbols<'lib> {
-    pub(crate) voicevox_version: Symbol<'lib, &'lib &'lib c_char>,
-    pub(crate) voicevox_default_initialize_options: Symbol<'lib, &'lib VoicevoxInitializeOptions>,
-    pub(crate) voicevox_default_audio_query_options: Symbol<'lib, &'lib VoicevoxAudioQueryOptions>,
-    pub(crate) voicevox_default_synthesis_options: Symbol<'lib, &'lib VoicevoxSynthesisOptions>,
-    pub(crate) voicevox_default_tts_options: Symbol<'lib, &'lib VoicevoxTtsOptions>,
     pub(crate) voicevox_open_jtalk_rc_new: Symbol<
         'lib,
         unsafe extern "C" fn(*const c_char, *mut *mut OpenJtalkRc) -> VoicevoxResultCode,
@@ -20,6 +15,9 @@ pub(crate) struct Symbols<'lib> {
         unsafe extern "C" fn(*mut OpenJtalkRc, *const VoicevoxUserDict) -> VoicevoxResultCode,
     >,
     pub(crate) voicevox_open_jtalk_rc_delete: Symbol<'lib, unsafe extern "C" fn(*mut OpenJtalkRc)>,
+    pub(crate) voicevox_make_default_initialize_options:
+        Symbol<'lib, unsafe extern "C" fn() -> VoicevoxInitializeOptions>,
+    pub(crate) voicevox_get_version: Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
     pub(crate) voicevox_voice_model_new_from_path: Symbol<
         'lib,
         unsafe extern "C" fn(*const c_char, *mut *mut VoicevoxVoiceModel) -> VoicevoxResultCode,
@@ -60,7 +58,9 @@ pub(crate) struct Symbols<'lib> {
     pub(crate) voicevox_synthesizer_get_metas_json:
         Symbol<'lib, unsafe extern "C" fn(*const VoicevoxSynthesizer) -> *const c_char>,
     pub(crate) voicevox_create_supported_devices_json:
-        Symbol<'lib, unsafe extern "C" fn(*mut *mut c_char) -> VoicevoxResultCode>,
+        Symbol<'lib, unsafe extern "C" fn() -> *const c_char>,
+    pub(crate) voicevox_make_default_audio_query_options:
+        Symbol<'lib, unsafe extern "C" fn() -> VoicevoxAudioQueryOptions>,
     pub(crate) voicevox_synthesizer_audio_query: Symbol<
         'lib,
         unsafe extern "C" fn(
@@ -71,6 +71,8 @@ pub(crate) struct Symbols<'lib> {
             *mut *mut c_char,
         ) -> VoicevoxResultCode,
     >,
+    pub(crate) voicevox_make_default_synthesis_options:
+        Symbol<'lib, unsafe extern "C" fn() -> VoicevoxSynthesisOptions>,
     pub(crate) voicevox_synthesizer_synthesis: Symbol<
         'lib,
         unsafe extern "C" fn(
@@ -82,6 +84,8 @@ pub(crate) struct Symbols<'lib> {
             *mut *mut u8,
         ) -> VoicevoxResultCode,
     >,
+    pub(crate) voicevox_make_default_tts_options:
+        Symbol<'lib, unsafe extern "C" fn() -> VoicevoxTtsOptions>,
     pub(crate) voicevox_synthesizer_tts: Symbol<
         'lib,
         unsafe extern "C" fn(
@@ -184,14 +188,11 @@ impl<'lib> Symbols<'lib> {
         });
 
         Ok(new!(
-            voicevox_version,
-            voicevox_default_initialize_options,
-            voicevox_default_audio_query_options,
-            voicevox_default_synthesis_options,
-            voicevox_default_tts_options,
             voicevox_open_jtalk_rc_new,
             voicevox_open_jtalk_rc_use_user_dict,
             voicevox_open_jtalk_rc_delete,
+            voicevox_make_default_initialize_options,
+            voicevox_get_version,
             voicevox_voice_model_new_from_path,
             voicevox_voice_model_id,
             voicevox_voice_model_get_metas_json,
@@ -204,8 +205,11 @@ impl<'lib> Symbols<'lib> {
             voicevox_synthesizer_is_loaded_voice_model,
             voicevox_synthesizer_get_metas_json,
             voicevox_create_supported_devices_json,
+            voicevox_make_default_audio_query_options,
             voicevox_synthesizer_audio_query,
+            voicevox_make_default_synthesis_options,
             voicevox_synthesizer_synthesis,
+            voicevox_make_default_tts_options,
             voicevox_synthesizer_tts,
             voicevox_json_free,
             voicevox_wav_free,
@@ -253,19 +257,16 @@ pub(crate) struct VoicevoxInitializeOptions {
     pub(crate) _load_all_models: bool,
 }
 
-#[derive(Clone, Copy)]
 #[repr(C)]
 pub(crate) struct VoicevoxAudioQueryOptions {
     _kana: bool,
 }
 
-#[derive(Clone, Copy)]
 #[repr(C)]
 pub(crate) struct VoicevoxSynthesisOptions {
     _enable_interrogative_upspeak: bool,
 }
 
-#[derive(Clone, Copy)]
 #[repr(C)]
 pub(crate) struct VoicevoxTtsOptions {
     _kana: bool,

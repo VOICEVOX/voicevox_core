@@ -1,8 +1,5 @@
 use std::sync::Arc;
 
-use const_default::ConstDefault;
-use duplicate::duplicate_item;
-
 use crate::engine::{create_kana, parse_kana, AccentPhraseModel, OpenJtalk, SynthesisEngine};
 
 use super::*;
@@ -25,12 +22,12 @@ impl From<&TtsOptions> for SynthesisOptions {
     }
 }
 
-#[derive(ConstDefault)]
+#[derive(Default)]
 pub struct AccentPhrasesOptions {
     pub kana: bool,
 }
 
-#[derive(ConstDefault)]
+#[derive(Default)]
 pub struct AudioQueryOptions {
     pub kana: bool,
 }
@@ -52,43 +49,28 @@ impl AsRef<TtsOptions> for TtsOptions {
     }
 }
 
-impl ConstDefault for TtsOptions {
-    const DEFAULT: Self = Self {
-        enable_interrogative_upspeak: true,
-        kana: ConstDefault::DEFAULT,
-    };
+impl Default for TtsOptions {
+    fn default() -> Self {
+        Self {
+            enable_interrogative_upspeak: true,
+            kana: Default::default(),
+        }
+    }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub enum AccelerationMode {
+    #[default]
     Auto,
     Cpu,
     Gpu,
 }
 
-impl ConstDefault for AccelerationMode {
-    const DEFAULT: Self = Self::Auto;
-}
-
-#[derive(ConstDefault)]
+#[derive(Default)]
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
     pub cpu_num_threads: u16,
     pub load_all_models: bool,
-}
-
-#[duplicate_item(
-    T;
-    [ AccentPhrasesOptions ];
-    [ AudioQueryOptions ];
-    [ TtsOptions ];
-    [ AccelerationMode ];
-    [ InitializeOptions ];
-)]
-impl Default for T {
-    fn default() -> Self {
-        Self::DEFAULT
-    }
 }
 
 /// 音声シンセサイザ
