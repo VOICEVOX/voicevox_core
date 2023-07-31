@@ -197,11 +197,6 @@ typedef struct VoicevoxUserDict VoicevoxUserDict;
 typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
 
 /**
- * 音声モデルID
- */
-typedef const char *VoicevoxVoiceModelId;
-
-/**
  * 初期化オプション
  */
 typedef struct VoicevoxInitializeOptions {
@@ -219,6 +214,11 @@ typedef struct VoicevoxInitializeOptions {
    */
   bool load_all_models;
 } VoicevoxInitializeOptions;
+
+/**
+ * 音声モデルID
+ */
+typedef const char *VoicevoxVoiceModelId;
 
 /**
  * Audio query のオプション
@@ -346,7 +346,6 @@ void voicevox_open_jtalk_rc_delete(struct OpenJtalkRc *open_jtalk);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 struct VoicevoxInitializeOptions voicevox_make_default_initialize_options(void);
 
 /**
@@ -356,7 +355,7 @@ struct VoicevoxInitializeOptions voicevox_make_default_initialize_options(void);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
- const char *voicevox_get_version(void);
+const char *voicevox_get_version(void);
 
 /**
  * vvmファイルパスから音声モデルを生成する
@@ -535,7 +534,6 @@ VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supporte
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 struct VoicevoxAudioQueryOptions voicevox_make_default_audio_query_options(void);
 
 /**
@@ -567,7 +565,6 @@ VoicevoxResultCode voicevox_synthesizer_audio_query(const struct VoicevoxSynthes
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 struct VoicevoxAccentPhrasesOptions voicevox_make_default_accent_phrases_options(void);
 
 /**
@@ -654,7 +651,6 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_pitch(const struct Voicevox
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 struct VoicevoxSynthesisOptions voicevox_make_default_synthesis_options(void);
 
 /**
@@ -688,7 +684,6 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-
 struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
 
 /**
