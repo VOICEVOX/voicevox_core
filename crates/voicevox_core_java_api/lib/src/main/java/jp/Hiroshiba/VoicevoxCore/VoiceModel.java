@@ -22,4 +22,16 @@ public class VoiceModel
   static {
     System.loadLibrary("voicevox_core_java_api");
   }
+
+  public static class SpeakerMeta {
+    String name;
+    StyleMeta[] styles;
+    String speakerUuid;
+    String version;
+  }
+
+  public static class StyleMeta {
+    String name;
+    int id;
+  }
 }

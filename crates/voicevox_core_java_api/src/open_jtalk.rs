@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::common::throw_if_err;
 use jni::{
     objects::{JObject, JString},
@@ -11,7 +13,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithoutDic<
     throw_if_err(env, (), |env| {
         let internal = voicevox_core::OpenJtalk::new_without_dic();
 
-        unsafe { env.set_rust_field(&this, "internal", internal) }?;
+        unsafe { env.set_rust_field(&this, "internal", Arc::new(internal)) }?;
         Ok(())
     })
 }
@@ -27,7 +29,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithInitial
         let open_jtalk_dict_dir = open_jtalk_dict_dir.to_str()?;
 
         let internal = voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)?;
-        unsafe { env.set_rust_field(&this, "internal", internal) }?;
+        unsafe { env.set_rust_field(&this, "internal", Arc::new(internal)) }?;
 
         Ok(())
     })
@@ -40,7 +42,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsDrop<'local>(
 ) {
     throw_if_err(env, (), |env| {
         let internal =
-            unsafe { env.get_rust_field::<_, _, voicevox_core::OpenJtalk>(&this, "internal") }?;
+            unsafe { env.get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&this, "internal") }?;
         drop(internal);
         unsafe { env.take_rust_field(&this, "internal") }?;
         Ok(())

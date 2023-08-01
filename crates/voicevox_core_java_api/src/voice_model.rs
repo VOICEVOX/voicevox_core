@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use crate::{
     common::{throw_if_err, RUNTIME},
-    object,
+    object_type,
 };
 use jni::{
     objects::{JObject, JString, JValueGen},
@@ -27,11 +29,11 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'loc
         )?;
         let speakers = env.new_object_array(
             internal.metas().len() as i32,
-            object!("SpeakerMeta"),
+            object_type!("VoiceModel$SpeakerMeta"),
             JObject::null(),
         )?;
         for (i, meta) in internal.metas().iter().enumerate() {
-            let j_meta = env.new_object(object!("SpeakerMeta"), "()V", &[])?;
+            let j_meta = env.new_object(object_type!("VoiceModel$SpeakerMeta"), "()V", &[])?;
             env.set_field(
                 &j_meta,
                 "name",
@@ -40,11 +42,11 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'loc
             )?;
             let j_styles = env.new_object_array(
                 meta.styles().len() as i32,
-                object!("StyleMeta"),
+                object_type!("VoiceModel$StyleMeta"),
                 JObject::null(),
             )?;
             for (j, style) in meta.styles().iter().enumerate() {
-                let j_style = env.new_object(object!("StyleMeta"), "()V", &[])?;
+                let j_style = env.new_object(object_type!("VoiceModel$StyleMeta"), "()V", &[])?;
                 env.set_field(
                     &j_style,
                     "name",
@@ -62,7 +64,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'loc
             env.set_field(
                 &j_meta,
                 "styles",
-                concat!("[", object!("StyleMeta")),
+                concat!("[", object_type!("VoiceModel$StyleMeta")),
                 JValueGen::Object(&j_styles),
             )?;
             env.set_field(
@@ -80,7 +82,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'loc
 
             env.set_object_array_element(&speakers, i as i32, j_meta)?;
         }
-        unsafe { env.set_rust_field(&this, "internal", internal) }?;
+        unsafe { env.set_rust_field(&this, "internal", Arc::new(internal)) }?;
 
         Ok(())
     })

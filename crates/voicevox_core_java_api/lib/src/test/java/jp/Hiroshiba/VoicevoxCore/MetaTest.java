@@ -4,7 +4,6 @@
 package jp.Hiroshiba.VoicevoxCore;
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 
@@ -15,8 +14,9 @@ class MetaTest {
     String cwd = System.getProperty("user.dir");
     File path = new File(
         cwd + "/../../../model/sample.vvm");
-    VoiceModel model = new VoiceModel(path.getAbsolutePath());
+    try (VoiceModel model = new VoiceModel(path.getAbsolutePath())) {
+      System.out.println(model);
+    }
 
-    System.out.println(model);
   }
 }

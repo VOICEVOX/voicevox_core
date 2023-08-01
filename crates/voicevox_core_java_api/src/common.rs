@@ -63,7 +63,26 @@ pub static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
 #[macro_export]
 macro_rules! object {
     ($name: literal) => {
+        concat!("jp/Hiroshiba/VoicevoxCore/", $name)
+    };
+}
+#[macro_export]
+macro_rules! object_type {
+    ($name: literal) => {
         concat!("Ljp/Hiroshiba/VoicevoxCore/", $name, ";")
+    };
+}
+#[macro_export]
+macro_rules! enum_object {
+    ($env: ident, $name: literal, $variant: literal) => {
+        $env.get_static_field(object!($name), $variant, object_type!($name))
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Failed to get field {}",
+                    concat!($variant, "L", object!($name), ";")
+                )
+            })
+            .l()
     };
 }
 
