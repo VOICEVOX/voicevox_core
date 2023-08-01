@@ -33,7 +33,7 @@ impl From<&TtsOptions> for SynthesisOptions {
 /// [`Synthesizer::create_accent_phrases`]: Synthesizer::create_accent_phrases
 #[derive(ConstDefault)]
 pub struct AccentPhrasesOptions {
-    /// AquesTalk形式のkanaとしてテキストを解釈する。
+    /// AquesTalk風記法としてテキストを解釈する。
     pub kana: bool,
 }
 
@@ -42,7 +42,7 @@ pub struct AccentPhrasesOptions {
 /// [`Synthesizer::audio_query`]: Synthesizer::audio_query
 #[derive(ConstDefault)]
 pub struct AudioQueryOptions {
-    /// AquesTalk形式のkanaとしてテキストを解釈する。
+    /// AquesTalk風記法としてテキストを解釈する。
     pub kana: bool,
 }
 
@@ -56,7 +56,7 @@ impl From<&TtsOptions> for AudioQueryOptions {
 ///
 /// [`Synthesizer::tts`]: Synthesizer::tts
 pub struct TtsOptions {
-    /// AquesTalk形式のkanaとしてテキストを解釈する。
+    /// AquesTalk風記法としてテキストを解釈する。
     pub kana: bool,
     pub enable_interrogative_upspeak: bool,
 }
@@ -293,8 +293,8 @@ impl Synthesizer {
 
     /// AccentPhrase (アクセント句)の配列を生成する。
     ///
-    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk形式のkanaとして、そうでないと
-    /// きには日本語のテキストとして解釈される。
+    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk風記法として、そうでないときには
+    /// 日本語のテキストとして解釈される。
     ///
     /// # Examples
     ///
@@ -378,7 +378,7 @@ impl Synthesizer {
     ///
     /// let accent_phrases = syntesizer
     ///     .create_accent_phrases(
-    ///         "コンニチワ'",   // AquesTalk形式のkana
+    ///         "コンニチワ'",   // AquesTalk風記法
     ///         StyleId::new(2), // "四国めたん (ノーマル)",
     ///         &AccentPhrasesOptions { kana: true },
     ///     )
@@ -444,8 +444,8 @@ impl Synthesizer {
 
     /// [AudioQuery]を生成する。
     ///
-    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk形式のkanaとして、そうでないと
-    /// きには日本語のテキストとして解釈される。
+    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk風記法として、そうでないときには
+    /// 日本語のテキストとして解釈される。
     ///
     /// # Examples
     ///
@@ -529,7 +529,7 @@ impl Synthesizer {
     ///
     /// let audio_query = syntesizer
     ///     .audio_query(
-    ///         "コンニチワ'",   // AquesTalk形式のkana
+    ///         "コンニチワ'",   // AquesTalk風記法
     ///         StyleId::new(2), // "四国めたん (ノーマル)",
     ///         &AudioQueryOptions { kana: true },
     ///     )
@@ -567,8 +567,8 @@ impl Synthesizer {
 
     /// テキスト音声合成を行う。
     ///
-    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk形式のkanaとして、そうでないと
-    /// きには日本語のテキストとして解釈される。
+    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk風記法として、そうでないときには
+    /// 日本語のテキストとして解釈される。
     ///
     /// [`options.kana`]: crate::TtsOptions::kana
     pub async fn tts(

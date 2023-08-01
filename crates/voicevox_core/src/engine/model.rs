@@ -67,7 +67,7 @@ pub struct AudioQueryModel {
     output_sampling_rate: u32,
     /// 音声データをステレオ出力するか否か。
     output_stereo: bool,
-    /// \[読み取り専用\] AquesTalkライクな読み仮名。
+    /// \[読み取り専用\] AquesTalk風記法。
     ///
     /// [`Synthesizer::audio_query`]が返すもののみ`Some`となる。入力としてのAudioQueryでは無視され
     /// る。

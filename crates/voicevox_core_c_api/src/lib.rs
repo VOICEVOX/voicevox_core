@@ -500,7 +500,7 @@ pub unsafe extern "C" fn voicevox_create_supported_devices_json(
 /// ::voicevox_synthesizer_audio_query のオプション。
 #[repr(C)]
 pub struct VoicevoxAudioQueryOptions {
-    /// aquestalk形式のkanaとしてテキストを解釈する
+    /// AquesTalk風記法としてテキストを解釈する
     kana: bool,
 }
 
@@ -513,7 +513,7 @@ pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = Con
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
-/// @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
+/// @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
 /// @param [in] style_id スタイルID
 /// @param [in] options オプション
 /// @param [out] output_audio_query_json 生成先
@@ -533,7 +533,7 @@ pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = Con
 /// ```c
 /// char *audio_query;
 /// voicevox_synthesizer_audio_query(synthesizer,
-///                                  "コンニチワ'",  // AquesTalk形式のkana
+///                                  "コンニチワ'",  // AquesTalk風記法
 ///                                  2,  // "四国めたん (ノーマル)"
 ///                                  (VoicevoxAudioQueryOptions){.kana = true},
 ///                                  &audio_query);
@@ -574,7 +574,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
 /// ::voicevox_synthesizer_create_accent_phrases のオプション。
 #[repr(C)]
 pub struct VoicevoxAccentPhrasesOptions {
-    /// AquesTalk形式のkanaとしてテキストを解釈する
+    /// AquesTalk風記法としてテキストを解釈する
     kana: bool,
 }
 
@@ -588,7 +588,7 @@ pub static voicevox_default_accent_phrases_options: VoicevoxAccentPhrasesOptions
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
-/// @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
+/// @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
 /// @param [in] style_id スタイルID
 /// @param [in] options オプション
 /// @param [out] output_accent_phrases_json 生成先
@@ -609,7 +609,7 @@ pub static voicevox_default_accent_phrases_options: VoicevoxAccentPhrasesOptions
 /// char *accent_phrases;
 /// voicevox_synthesizer_create_accent_phrases(
 ///     synthesizer,
-///     "コンニチワ'",  // AquesTalk形式のkana
+///     "コンニチワ'",  // AquesTalk風記法
 ///     2,              // "四国めたん (ノーマル)"
 ///     (VoicevoxAccentPhrasesOptions){.kana = true}, &accent_phrases);
 /// ```
@@ -825,7 +825,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
 /// ::voicevox_synthesizer_tts のオプション。
 #[repr(C)]
 pub struct VoicevoxTtsOptions {
-    /// AquesTalk形式のkanaとしてテキストを解釈する
+    /// AquesTalk風記法としてテキストを解釈する
     kana: bool,
     /// 疑問文の調整を有効にする
     enable_interrogative_upspeak: bool,
@@ -840,7 +840,7 @@ pub static voicevox_default_tts_options: VoicevoxTtsOptions = ConstDefault::DEFA
 /// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
 ///
 /// @param [in] synthesizer
-/// @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
+/// @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
 /// @param [in] style_id スタイルID
 /// @param [in] options オプション
 /// @param [out] output_wav_length 出力のバイト長

@@ -131,7 +131,7 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR = 12,
   /**
-   * aquestalk形式のテキストの解析に失敗した
+   * AquesTalk風記法のテキストの解析に失敗した
    */
   VOICEVOX_RESULT_PARSE_KANA_ERROR = 13,
   /**
@@ -295,7 +295,7 @@ typedef uint32_t VoicevoxStyleId;
  */
 typedef struct VoicevoxAudioQueryOptions {
   /**
-   * aquestalk形式のkanaとしてテキストを解釈する
+   * AquesTalk風記法としてテキストを解釈する
    */
   bool kana;
 } VoicevoxAudioQueryOptions;
@@ -305,7 +305,7 @@ typedef struct VoicevoxAudioQueryOptions {
  */
 typedef struct VoicevoxAccentPhrasesOptions {
   /**
-   * AquesTalk形式のkanaとしてテキストを解釈する
+   * AquesTalk風記法としてテキストを解釈する
    */
   bool kana;
 } VoicevoxAccentPhrasesOptions;
@@ -325,7 +325,7 @@ typedef struct VoicevoxSynthesisOptions {
  */
 typedef struct VoicevoxTtsOptions {
   /**
-   * AquesTalk形式のkanaとしてテキストを解釈する
+   * AquesTalk風記法としてテキストを解釈する
    */
   bool kana;
   /**
@@ -670,7 +670,7 @@ VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supporte
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
- * @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
+ * @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
  * @param [in] style_id スタイルID
  * @param [in] options オプション
  * @param [out] output_audio_query_json 生成先
@@ -690,7 +690,7 @@ VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supporte
  * ```c
  * char *audio_query;
  * voicevox_synthesizer_audio_query(synthesizer,
- *                                  "コンニチワ'",  // AquesTalk形式のkana
+ *                                  "コンニチワ'",  // AquesTalk風記法
  *                                  2,  // "四国めたん (ノーマル)"
  *                                  (VoicevoxAudioQueryOptions){.kana = true},
  *                                  &audio_query);
@@ -719,7 +719,7 @@ VoicevoxResultCode voicevox_synthesizer_audio_query(const struct VoicevoxSynthes
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
- * @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
+ * @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
  * @param [in] style_id スタイルID
  * @param [in] options オプション
  * @param [out] output_accent_phrases_json 生成先
@@ -740,7 +740,7 @@ VoicevoxResultCode voicevox_synthesizer_audio_query(const struct VoicevoxSynthes
  * char *accent_phrases;
  * voicevox_synthesizer_create_accent_phrases(
  *     synthesizer,
- *     "コンニチワ'",  // AquesTalk形式のkana
+ *     "コンニチワ'",  // AquesTalk風記法
  *     2,              // "四国めたん (ノーマル)"
  *     (VoicevoxAccentPhrasesOptions){.kana = true}, &accent_phrases);
  * ```
@@ -876,7 +876,7 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
  * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
  *
  * @param [in] synthesizer
- * @param [in] text UTF-8の日本語テキストまたはAquesTalk形式のkana
+ * @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
  * @param [in] style_id スタイルID
  * @param [in] options オプション
  * @param [out] output_wav_length 出力のバイト長

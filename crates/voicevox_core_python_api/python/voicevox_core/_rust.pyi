@@ -129,7 +129,7 @@ class Synthesizer:
 
         :param text: テキスト。文字コードはUTF-8。
         :param style_id: スタイルID。
-        :param kana: ``text`` をAquesTalk形式のkanaとして解釈する。
+        :param kana: ``text`` をAquesTalk風記法として解釈する。
 
         :returns: 話者とテキストから生成された :class:`AudioQuery` 。
         """
@@ -143,9 +143,9 @@ class Synthesizer:
         """
         AccentPhrase (アクセント句)の配列を生成する。
 
-        :param text: UTF-8の日本語テキストまたはAquesTalk形式のkana。
+        :param text: UTF-8の日本語テキストまたはAquesTalk風記法。
         :param style_id: スタイルID。
-        :param kana: ``text`` をAquesTalk形式のkanaとして解釈する。
+        :param kana: ``text`` をAquesTalk風記法として解釈する。
 
         :returns: :class:`AccentPhrase` の配列。
         """
@@ -211,9 +211,9 @@ class Synthesizer:
         """
         テキスト音声合成を実行する。
 
-        :param text: UTF-8の日本語テキストまたはAquesTalk形式のkana。
+        :param text: UTF-8の日本語テキストまたはAquesTalk風記法。
         :param style_id: スタイルID。
-        :param kana: ``text`` をAquesTalk形式のkanaとして解釈する。
+        :param kana: ``text`` をAquesTalk風記法として解釈する。
         :param enable_interrogative_upspeak: 疑問文の調整を有効にする。
 
         :returns: WAVデータ。
