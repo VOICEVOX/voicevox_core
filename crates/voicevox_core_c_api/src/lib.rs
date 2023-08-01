@@ -205,7 +205,7 @@ pub struct VoicevoxInitializeOptions {
     load_all_models: bool,
 }
 
-/// ::VoicevoxInitializeOptions のデフォルト値。
+/// デフォルトの初期化オプション
 #[no_mangle]
 pub static voicevox_default_initialize_options: VoicevoxInitializeOptions = ConstDefault::DEFAULT;
 
@@ -504,7 +504,7 @@ pub struct VoicevoxAudioQueryOptions {
     kana: bool,
 }
 
-/// ::VoicevoxAudioQueryOptions のデフォルト値。
+/// デフォルトの AudioQuery のオプション
 #[no_mangle]
 pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = ConstDefault::DEFAULT;
 
@@ -578,7 +578,7 @@ pub struct VoicevoxAccentPhrasesOptions {
     kana: bool,
 }
 
-/// デフォルトの ::VoicevoxAccentPhrasesOptions。
+/// デフォルトの `accent_phrases` のオプション
 #[no_mangle]
 pub static voicevox_default_accent_phrases_options: VoicevoxAccentPhrasesOptions =
     ConstDefault::DEFAULT;
@@ -774,7 +774,7 @@ pub struct VoicevoxSynthesisOptions {
     enable_interrogative_upspeak: bool,
 }
 
-/// ::VoicevoxSynthesisOptions のデフォルト値。
+/// デフォルトの `voicevox_synthesizer_synthesis` のオプション
 #[no_mangle]
 pub static voicevox_default_synthesis_options: VoicevoxSynthesisOptions = ConstDefault::DEFAULT;
 
@@ -831,7 +831,7 @@ pub struct VoicevoxTtsOptions {
     enable_interrogative_upspeak: bool,
 }
 
-/// ::VoicevoxTtsOptions のデフォルト値
+/// デフォルトのテキスト音声合成オプション
 #[no_mangle]
 pub static voicevox_default_tts_options: VoicevoxTtsOptions = ConstDefault::DEFAULT;
 
