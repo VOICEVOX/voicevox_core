@@ -37,16 +37,16 @@ impl assert_cdylib::TestCase for TestCase {
         {
             let mut supported_devices = MaybeUninit::uninit();
             assert_ok(voicevox_create_supported_devices_json(
-                *supported_devices.as_mut_ptr(),
+                supported_devices.as_mut_ptr(),
             ));
             let supported_devices = supported_devices.assume_init();
             std::assert_eq!(
                 SupportedDevices::create()?.to_json(),
-                CStr::from_ptr(*supported_devices)
+                CStr::from_ptr(supported_devices)
                     .to_str()?
                     .parse::<serde_json::Value>()?,
             );
-            voicevox_json_free(*supported_devices);
+            voicevox_json_free(supported_devices);
         }
 
         for result_code in VoicevoxResultCode::iter() {
