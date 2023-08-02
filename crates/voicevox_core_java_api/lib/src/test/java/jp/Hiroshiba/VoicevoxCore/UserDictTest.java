@@ -20,7 +20,7 @@ class UserDictTest
           model.metas[0].styles[0].id,
           EnumSet.noneOf(Synthesizer.AudioQueryOption.class));
       userDict.addWord(
-          UserDict.word().surface("this_word_should_not_exist_in_default_dictionary").pronunciation("テスト").build());
+          new UserDict.Word("this_word_should_not_exist_in_default_dictionary", "テスト"));
       openJtalk.useUserDict(userDict);
       AudioQuery query2 = synthesizer.audioQuery("this_word_should_not_exist_in_default_dictionary",
           model.metas[0].styles[0].id,
