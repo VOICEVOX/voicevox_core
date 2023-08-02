@@ -9,12 +9,10 @@ pub static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
             android_logger::Config::default()
                 .with_tag("VoicevoxCore")
                 .with_filter(
-                    android_logger::FilterBuilder::new()
-                        .parse(
-                            "error,voicevox_core=info,voicevox_core_java_api=info,onnxruntime=error",
-                        )
-                        .build(),
-                ),
+                android_logger::FilterBuilder::new()
+                    .parse("error,voicevox_core=info,voicevox_core_java_api=info,onnxruntime=error")
+                    .build(),
+            ),
         );
     } else {
         // TODO: Android以外でのログ出力を良い感じにする。（System.Loggerを使う？）

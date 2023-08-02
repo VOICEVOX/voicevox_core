@@ -1,11 +1,8 @@
 use std::sync::Arc;
 
-use crate::{
-    common::{throw_if_err, RUNTIME},
-    object_type,
-};
+use crate::common::{throw_if_err, RUNTIME};
 use jni::{
-    objects::{JObject, JString, JValueGen},
+    objects::{JObject, JString},
     sys::jobject,
     JNIEnv,
 };
@@ -48,7 +45,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetId<'local>
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetas<'local>(
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetasJson<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {
@@ -57,55 +54,9 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetas<'loc
             env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "internal")
         }?
         .clone();
-        let j_speakers = env.new_object_array(
-            internal.metas().len() as i32,
-            object_type!("VoiceModel$SpeakerMeta"),
-            JObject::null(),
-        )?;
-        for (i, meta) in internal.metas().iter().enumerate() {
-            let j_styles = env.new_object_array(
-                meta.styles().len() as i32,
-                object_type!("VoiceModel$StyleMeta"),
-                JObject::null(),
-            )?;
-            for (j, style) in meta.styles().iter().enumerate() {
-                let j_style = env.new_object(
-                    object_type!("VoiceModel$StyleMeta"),
-                    concat!(
-                        "(",
-                        "Ljava/lang/String;", // name
-                        "I",                  // id
-                        ")V"
-                    ),
-                    &[
-                        JValueGen::Object(&env.new_string(style.name())?.into()),
-                        JValueGen::Int(style.id().raw_id() as i32),
-                    ],
-                )?;
-                env.set_object_array_element(&j_styles, j as i32, j_style)?;
-            }
-
-            let j_meta = env.new_object(
-                object_type!("VoiceModel$SpeakerMeta"),
-                concat!(
-                    "(",
-                    "Ljava/lang/String;", // name
-                    "[",                  // styles
-                    object_type!("VoiceModel$StyleMeta"),
-                    "Ljava/lang/String;", // speakerUuid
-                    "Ljava/lang/String;", // version
-                    ")V"
-                ),
-                &[
-                    JValueGen::Object(&env.new_string(meta.name())?.into()),
-                    JValueGen::Object(&j_styles.into()),
-                    JValueGen::Object(&env.new_string(meta.speaker_uuid())?.into()),
-                    JValueGen::Object(&env.new_string(meta.version().raw_version())?.into()),
-                ],
-            )?;
-            env.set_object_array_element(&j_speakers, i as i32, j_meta)?;
-        }
-        Ok(j_speakers.into_raw())
+        let metas = internal.metas();
+        let metas_json = serde_json::to_string(&metas)?;
+        Ok(env.new_string(metas_json)?.into_raw())
     })
 }
 

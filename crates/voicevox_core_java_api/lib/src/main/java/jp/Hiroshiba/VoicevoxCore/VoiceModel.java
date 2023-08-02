@@ -2,6 +2,11 @@ package jp.Hiroshiba.VoicevoxCore;
 
 import javax.annotation.Nonnull;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+
 public class VoiceModel
     implements AutoCloseable {
   protected long internal;
@@ -14,7 +19,14 @@ public class VoiceModel
   public VoiceModel(String modelPath) {
     rsFromPath(modelPath);
     id = rsGetId();
-    metas = rsGetMetas();
+    String metasJson = rsGetMetasJson();
+    Gson gson = new Gson();
+    SpeakerMeta[] rawMetas = gson.fromJson(metasJson, SpeakerMeta[].class);
+    if (rawMetas == null) {
+      throw new RuntimeException("Failed to parse metasJson");
+    }
+    metas = rawMetas;
+
   }
 
   public void close() {
@@ -27,7 +39,7 @@ public class VoiceModel
   private native String rsGetId();
 
   @Nonnull
-  private native SpeakerMeta[] rsGetMetas();
+  private native String rsGetMetasJson();
 
   private native void rsDrop();
 
@@ -36,46 +48,51 @@ public class VoiceModel
   }
 
   public static class SpeakerMeta {
+    @JsonProperty("name")
+    @SerializedName("name")
+    @Expose
     @Nonnull
     final String name;
+    @JsonProperty("styles")
+    @SerializedName("styles")
+    @Expose
     @Nonnull
     final StyleMeta[] styles;
+    @JsonProperty("speaker_uuid")
+    @SerializedName("speaker_uuid")
+    @Expose
     @Nonnull
     final String speakerUuid;
+    @JsonProperty("version")
+    @SerializedName("version")
+    @Expose
     @Nonnull
     final String version;
 
-    protected SpeakerMeta(String name, StyleMeta[] styles, String speakerUuid, String version) {
-      if (name == null) {
-        throw new NullPointerException("name");
-      }
-      if (styles == null) {
-        throw new NullPointerException("styles");
-      }
-      if (speakerUuid == null) {
-        throw new NullPointerException("speakerUuid");
-      }
-      if (version == null) {
-        throw new NullPointerException("version");
-      }
-      this.name = name;
-      this.styles = styles;
-      this.speakerUuid = speakerUuid;
-      this.version = version;
+    private SpeakerMeta() {
+      this.name = "";
+      this.styles = new StyleMeta[0];
+      this.speakerUuid = "";
+      this.version = "";
     }
   }
 
   public static class StyleMeta {
+    @JsonProperty("name")
+    @SerializedName("name")
+    @Expose
     @Nonnull
     final String name;
+    @JsonProperty("id")
+    @SerializedName("id")
+    @Expose
     final int id;
 
-    protected StyleMeta(String name, int id) {
-      if (name == null) {
-        throw new NullPointerException("name");
-      }
-      this.name = name;
-      this.id = id;
+    private StyleMeta() {
+      // GSONからコンストラクトするため、このメソッドは呼ばれることは無い。
+      // このメソッドは@Nonnullを満たすために必要。
+      this.name = "";
+      this.id = 0;
     }
   }
 }
