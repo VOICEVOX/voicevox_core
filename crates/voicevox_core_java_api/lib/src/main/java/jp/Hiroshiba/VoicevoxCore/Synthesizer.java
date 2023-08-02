@@ -45,15 +45,30 @@ public class Synthesizer implements AutoCloseable {
   }
 
   @Nonnull
-  public List<AccentPhrase> accentPhrases(String text, EnumSet<AccentPhrasesOption> options) {
+  public List<AccentPhrase> accentPhrases(String text, int styleId, EnumSet<AccentPhrasesOption> options) {
     boolean kana = options.contains(AccentPhrasesOption.KANA);
-    String accentPhrasesJson = rsAccentPhrases(text, kana);
+    String accentPhrasesJson = rsAccentPhrases(text, styleId, kana);
     Gson gson = new Gson();
     AccentPhrase[] rawAccentPhrases = gson.fromJson(accentPhrasesJson, AccentPhrase[].class);
     if (rawAccentPhrases == null) {
       throw new NullPointerException("accent_phrases");
     }
     return new ArrayList<>(Arrays.asList(rawAccentPhrases));
+  }
+
+  @Nonnull
+  public byte[] synthesis(AudioQuery audioQuery, int styleId, EnumSet<SynthesisOption> options) {
+    boolean enableInterrogativeUpspeak = options.contains(SynthesisOption.ENABLE_INTERROGATIVE_UPSPEAK);
+    Gson gson = new Gson();
+    String queryJson = gson.toJson(audioQuery);
+    return rsSynthesis(queryJson, styleId, enableInterrogativeUpspeak);
+  }
+
+  @Nonnull
+  public byte[] tts(String text, int styleId, EnumSet<TtsOption> options) {
+    boolean kana = options.contains(TtsOption.KANA);
+    boolean enableInterrogativeUpspeak = options.contains(TtsOption.ENABLE_INTERROGATIVE_UPSPEAK);
+    return rsTts(text, styleId, kana, enableInterrogativeUpspeak);
   }
 
   public void close() {
@@ -72,10 +87,13 @@ public class Synthesizer implements AutoCloseable {
   private native String rsAudioQuery(String text, int styleId, boolean kana);
 
   @Nonnull
-  private native String rsAccentPhrases(String text, boolean kana);
+  private native String rsAccentPhrases(String text, int styleId, boolean kana);
 
   @Nonnull
-  private native String rsGetAudioQueryJson();
+  private native byte[] rsSynthesis(String queryJson, int styleId, boolean enableInterrogativeUpspeak);
+
+  @Nonnull
+  private native byte[] rsTts(String text, int styleId, boolean kana, boolean enableInterrogativeUpspeak);
 
   private native void rsDrop();
 

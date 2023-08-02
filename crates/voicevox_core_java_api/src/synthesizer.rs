@@ -213,6 +213,81 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAccentPhrase
 }
 
 #[no_mangle]
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsSynthesis<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    query_json: JString<'local>,
+    style_id: jint,
+    enable_interrogative_upspeak: jboolean,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let audio_query: String = env.get_string(&query_json)?.into();
+        let audio_query: voicevox_core::AudioQueryModel = serde_json::from_str(&audio_query)?;
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+                .clone()
+        };
+
+        let wave = {
+            let internal = internal.lock().unwrap();
+            let options = voicevox_core::SynthesisOptions {
+                enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
+                // ..Default::default()
+            };
+            RUNTIME.block_on(internal.synthesis(
+                &audio_query,
+                voicevox_core::StyleId::new(style_id),
+                &options,
+            ))?
+        };
+
+        let j_bytes = env.byte_array_from_slice(&wave)?;
+
+        Ok(j_bytes.into_raw())
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsTts<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    query_json: JString<'local>,
+    style_id: jint,
+    kana: jboolean,
+    enable_interrogative_upspeak: jboolean,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let text: String = env.get_string(&query_json)?.into();
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+                .clone()
+        };
+
+        let wave = {
+            let internal = internal.lock().unwrap();
+            let options = voicevox_core::TtsOptions {
+                kana: kana != 0,
+                enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
+                // ..Default::default()
+            };
+            RUNTIME.block_on(internal.tts(
+                &text,
+                voicevox_core::StyleId::new(style_id),
+                &options,
+            ))?
+        };
+
+        let j_bytes = env.byte_array_from_slice(&wave)?;
+
+        Ok(j_bytes.into_raw())
+    })
+}
+
+#[no_mangle]
 pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,

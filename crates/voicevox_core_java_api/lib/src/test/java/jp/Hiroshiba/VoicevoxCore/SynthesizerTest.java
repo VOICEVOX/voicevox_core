@@ -50,7 +50,20 @@ class SynthesizerTest {
         OpenJtalk openJtalk = openJtalk();
         Synthesizer synthesizer = Synthesizer.builder(openJtalk).build()) {
       synthesizer.loadVoiceModel(model);
-      synthesizer.audioQuery("こんにちは", model.metas[0].styles[0].id, EnumSet.noneOf(Synthesizer.AudioQueryOption.class));
+      AudioQuery query = synthesizer.audioQuery("こんにちは", model.metas[0].styles[0].id,
+          EnumSet.noneOf(Synthesizer.AudioQueryOption.class));
+
+      synthesizer.synthesis(query, model.metas[0].styles[0].id, EnumSet.noneOf(Synthesizer.SynthesisOption.class));
+    }
+  }
+
+  @Test
+  void checkTts() {
+    try (VoiceModel model = model();
+        OpenJtalk openJtalk = openJtalk();
+        Synthesizer synthesizer = Synthesizer.builder(openJtalk).build()) {
+      synthesizer.loadVoiceModel(model);
+      synthesizer.tts("こんにちは", model.metas[0].styles[0].id, EnumSet.noneOf(Synthesizer.TtsOption.class));
     }
   }
 }
