@@ -24,6 +24,7 @@ on:
       - Cargo.*
       - rust-toolchain
       - crates/download/**
+      - .github/workflows/build_and_deploy_downloader.yml
   push:
     paths:
       - Cargo.*
