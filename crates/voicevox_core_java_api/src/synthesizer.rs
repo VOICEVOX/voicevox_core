@@ -213,6 +213,100 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAccentPhrase
 }
 
 #[no_mangle]
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraData<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    accent_phrases_json: JString<'local>,
+    style_id: jint,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
+        let accent_phrases: Vec<voicevox_core::AccentPhraseModel> =
+            serde_json::from_str(&accent_phrases_json)?;
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+                .clone()
+        };
+
+        let replaced_accent_phrases = {
+            let internal = internal.lock().unwrap();
+            RUNTIME.block_on(
+                internal.replace_mora_data(&accent_phrases, voicevox_core::StyleId::new(style_id)),
+            )?
+        };
+
+        let replaced_accent_phrases_json = serde_json::to_string(&replaced_accent_phrases)?;
+
+        Ok(env.new_string(replaced_accent_phrases_json)?.into_raw())
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplacePhonemeLength<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    accent_phrases_json: JString<'local>,
+    style_id: jint,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
+        let accent_phrases: Vec<voicevox_core::AccentPhraseModel> =
+            serde_json::from_str(&accent_phrases_json)?;
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+                .clone()
+        };
+
+        let replaced_accent_phrases = {
+            let internal = internal.lock().unwrap();
+            RUNTIME.block_on(
+                internal
+                    .replace_phoneme_length(&accent_phrases, voicevox_core::StyleId::new(style_id)),
+            )?
+        };
+
+        let replaced_accent_phrases_json = serde_json::to_string(&replaced_accent_phrases)?;
+
+        Ok(env.new_string(replaced_accent_phrases_json)?.into_raw())
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraPitch<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    accent_phrases_json: JString<'local>,
+    style_id: jint,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
+        let accent_phrases: Vec<voicevox_core::AccentPhraseModel> =
+            serde_json::from_str(&accent_phrases_json)?;
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+                .clone()
+        };
+
+        let replaced_accent_phrases = {
+            let internal = internal.lock().unwrap();
+            RUNTIME.block_on(
+                internal.replace_mora_pitch(&accent_phrases, voicevox_core::StyleId::new(style_id)),
+            )?
+        };
+
+        let replaced_accent_phrases_json = serde_json::to_string(&replaced_accent_phrases)?;
+
+        Ok(env.new_string(replaced_accent_phrases_json)?.into_raw())
+    })
+}
+
+#[no_mangle]
 pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsSynthesis<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,

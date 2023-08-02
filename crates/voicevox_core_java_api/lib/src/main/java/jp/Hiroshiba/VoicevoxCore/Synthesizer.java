@@ -45,7 +45,7 @@ public class Synthesizer implements AutoCloseable {
   }
 
   @Nonnull
-  public List<AccentPhrase> accentPhrases(String text, int styleId, EnumSet<AccentPhrasesOption> options) {
+  public List<AccentPhrase> createAccentPhrases(String text, int styleId, EnumSet<AccentPhrasesOption> options) {
     boolean kana = options.contains(AccentPhrasesOption.KANA);
     String accentPhrasesJson = rsAccentPhrases(text, styleId, kana);
     Gson gson = new Gson();
@@ -54,6 +54,27 @@ public class Synthesizer implements AutoCloseable {
       throw new NullPointerException("accent_phrases");
     }
     return new ArrayList<>(Arrays.asList(rawAccentPhrases));
+  }
+
+  @Nonnull
+  public List<AccentPhrase> replaceMoraData(List<AccentPhrase> accentPhrases, int styleId) {
+    String accentPhrasesJson = new Gson().toJson(accentPhrases);
+    String replacedAccentPhrasesJson = rsReplaceMoraData(accentPhrasesJson, styleId, false);
+    return new ArrayList<>(Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
+  }
+
+  @Nonnull
+  public List<AccentPhrase> replacePhonemeLength(List<AccentPhrase> accentPhrases, int styleId) {
+    String accentPhrasesJson = new Gson().toJson(accentPhrases);
+    String replacedAccentPhrasesJson = rsReplacePhonemeLength(accentPhrasesJson, styleId, false);
+    return new ArrayList<>(Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
+  }
+
+  @Nonnull
+  public List<AccentPhrase> replaceMoraPitch(List<AccentPhrase> accentPhrases, int styleId) {
+    String accentPhrasesJson = new Gson().toJson(accentPhrases);
+    String replacedAccentPhrasesJson = rsReplaceMoraPitch(accentPhrasesJson, styleId, false);
+    return new ArrayList<>(Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
   }
 
   @Nonnull
@@ -88,6 +109,15 @@ public class Synthesizer implements AutoCloseable {
 
   @Nonnull
   private native String rsAccentPhrases(String text, int styleId, boolean kana);
+
+  @Nonnull
+  private native String rsReplaceMoraData(String accentPhrasesJson, int styleId, boolean kana);
+
+  @Nonnull
+  private native String rsReplacePhonemeLength(String accentPhrasesJson, int styleId, boolean kana);
+
+  @Nonnull
+  private native String rsReplaceMoraPitch(String accentPhrasesJson, int styleId, boolean kana);
 
   @Nonnull
   private native byte[] rsSynthesis(String queryJson, int styleId, boolean enableInterrogativeUpspeak);

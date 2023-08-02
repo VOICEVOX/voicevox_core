@@ -9,14 +9,12 @@ import java.io.File;
 
 class MetaTest {
   @Test
-  void checkMeta() {
+  void checkLoad() {
     // cwdはvoicevox_core/crates/voicevox_core_java_api/lib
     String cwd = System.getProperty("user.dir");
     File path = new File(
         cwd + "/../../../model/sample.vvm");
     try (VoiceModel model = new VoiceModel(path.getAbsolutePath())) {
-      System.out.println(model);
     }
-
   }
 }
