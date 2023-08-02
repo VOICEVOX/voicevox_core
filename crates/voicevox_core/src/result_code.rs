@@ -21,7 +21,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_LOAD_METAS_ERROR = 5,
     /// 無効なstyle_idが指定された
     VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR = 6,
-    /// 無効なvoice_model_idが指定された
+    /// 無効なmodel_idが指定された
     VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR = 7,
     /// 推論に失敗した
     VOICEVOX_RESULT_INFERENCE_ERROR = 8,
@@ -74,7 +74,7 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
 
         VOICEVOX_RESULT_OK => "エラーが発生しませんでした\0",
         VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR => "無効なspeaker_idです\0",
-        VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR => "無効なmodel_indexです\0",
+        VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR => "無効なmodel_idです\0",
         VOICEVOX_RESULT_INFERENCE_ERROR => "推論に失敗しました\0",
         VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR => {
             "入力テキストからのフルコンテキストラベル抽出に失敗しました\0"
