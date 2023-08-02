@@ -179,7 +179,7 @@ impl VvmEntryReader {
         let me = self
             .entry_map
             .get(filename)
-            .ok_or(anyhow!("Not found in vvm entries: {}", filename))?;
+            .ok_or_else(|| anyhow!("Not found in vvm entries: {}", filename))?;
         let mut manifest_reader = self.reader.entry(me.index).await?;
         let mut buf = Vec::with_capacity(me.entry.uncompressed_size() as usize);
         manifest_reader
