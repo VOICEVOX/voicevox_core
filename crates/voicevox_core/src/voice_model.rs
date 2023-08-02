@@ -9,20 +9,26 @@ use std::{
     path::{Path, PathBuf},
 };
 
-/// 音声モデルIdの実体
+/// [`VoiceModelId`]の実体。
+///
+/// [`VoiceModelId`]: VoiceModelId
 pub type RawVoiceModelId = String;
 
-/// 音声モデルId (型を強く分けるためにこうしている)
+/// 音声モデルID。
 #[derive(PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, new, Getters, Debug)]
 pub struct VoiceModelId {
     raw_voice_model_id: RawVoiceModelId,
 }
 
-/// 音声モデル
+/// 音声モデル。
+///
+/// VVMファイルと対応する。
 #[derive(Getters, Clone)]
 pub struct VoiceModel {
+    /// ID。
     id: VoiceModelId,
     manifest: Manifest,
+    /// メタ情報。
     metas: VoiceModelMeta,
     path: PathBuf,
 }
@@ -51,7 +57,7 @@ impl VoiceModel {
             decode_model: decode_model_result?,
         })
     }
-    /// 与えられたパスからモデルを取得する
+    /// VVMファイルから`VoiceModel`をコンストラクトする。
     pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
         let reader = VvmEntryReader::open(&path).await?;
         let manifest = reader.read_vvm_json::<Manifest>("manifest.json").await?;

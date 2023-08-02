@@ -4,29 +4,29 @@ use std::collections::HashMap;
 
 use crate::UserDictWordType;
 
-/// 最小の優先度
+/// 最小の優先度。
 pub static MIN_PRIORITY: u32 = 0;
-/// 最大の優先度
+/// 最大の優先度。
 pub static MAX_PRIORITY: u32 = 10;
 
-/// 品詞ごとの情報
+/// 品詞ごとの情報。
 #[derive(Debug, Getters)]
 pub struct PartOfSpeechDetail {
-    /// 品詞
+    /// 品詞。
     pub part_of_speech: &'static str,
-    /// 品詞細分類1
+    /// 品詞細分類1。
     pub part_of_speech_detail_1: &'static str,
-    /// 品詞細分類2
+    /// 品詞細分類2。
     pub part_of_speech_detail_2: &'static str,
-    /// 品詞細分類3
+    /// 品詞細分類3。
     pub part_of_speech_detail_3: &'static str,
-    /// 文脈IDは辞書の左・右文脈IDのこと
+    /// 文脈IDは辞書の左・右文脈IDのこと。
     ///
     /// 参考: <https://github.com/VOICEVOX/open_jtalk/blob/427cfd761b78efb6094bea3c5bb8c968f0d711ab/src/mecab-naist-jdic/_left-id.def>
     pub context_id: i32,
-    /// コストのパーセンタイル
+    /// コストのパーセンタイル。
     pub cost_candidates: Vec<i32>,
-    /// アクセント結合規則の一覧
+    /// アクセント結合規則の一覧。
     pub accent_associative_rules: Vec<&'static str>,
 }
 

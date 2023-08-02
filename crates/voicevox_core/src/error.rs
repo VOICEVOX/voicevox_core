@@ -6,11 +6,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 use uuid::Uuid;
 
-/*
- * 新しいエラーを定義したら、必ずresult_code.rsにあるVoicevoxResultCodeに対応するコードを定義し、
- * internal.rsにある変換関数に変換処理を加えること
- */
-
+/// VOICEVOX COREのエラー。
 #[derive(Error, Debug)]
 pub enum Error {
     /*

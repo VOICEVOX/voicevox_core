@@ -1,6 +1,6 @@
 use strum::EnumIter;
 
-/// 処理結果を示す結果コード
+/// 処理結果を示す結果コード。
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, EnumIter)]
 #[allow(non_camel_case_types)]
@@ -29,7 +29,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR = 11,
     /// 無効なutf8文字列が入力された
     VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR = 12,
-    /// aquestalk形式のテキストの解析に失敗した
+    /// AquesTalk風記法のテキストの解析に失敗した
     VOICEVOX_RESULT_PARSE_KANA_ERROR = 13,
     /// 無効なAudioQuery
     VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR = 14,
@@ -81,7 +81,7 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
         }
         VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR => "入力テキストが無効なUTF-8データでした\0",
         VOICEVOX_RESULT_PARSE_KANA_ERROR => {
-            "入力テキストをAquesTalkライクな読み仮名としてパースすることに失敗しました\0"
+            "入力テキストをAquesTalk風記法としてパースすることに失敗しました\0"
         }
         VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR => "無効なaudio_queryです\0",
         VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR => "無効なaccent_phraseです\0",
