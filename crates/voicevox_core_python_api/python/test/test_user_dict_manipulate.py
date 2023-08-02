@@ -49,7 +49,7 @@ async def test_user_dict_load() -> None:
 
     # ユーザー辞書のエクスポート
     dict_c = voicevox_core.UserDict()
-    uuid_c=dict_c.add_word(
+    uuid_c = dict_c.add_word(
         voicevox_core.UserDictWord(
             surface="bar",
             pronunciation="バー",
@@ -66,3 +66,12 @@ async def test_user_dict_load() -> None:
     dict_a.remove_word(uuid_a)
     assert uuid_a not in dict_a.words
     assert uuid_c in dict_a.words
+
+    # 単語のバリデーション
+    with pytest.raises(voicevox_core.VoicevoxError):
+        dict_a.add_word(
+            voicevox_core.UserDictWord(
+                surface="",
+                pronunciation="カタカナ以外の文字",
+            )
+        )

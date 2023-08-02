@@ -4,6 +4,8 @@ from typing import List, Optional
 
 import pydantic
 
+from ._rust import _validate_pronunciation, _to_zenkaku
+
 
 @pydantic.dataclasses.dataclass
 class StyleMeta:
@@ -89,3 +91,12 @@ class UserDictWord:
         default=UserDictWordType.COMMON_NOUN
     )
     priority: int = dataclasses.field(default=5)
+
+    @pydantic.validator("pronunciation")
+    def validate_pronunciation(cls, v):
+        _validate_pronunciation(v)
+        return v
+
+    @pydantic.validator("surface")
+    def validate_surface(cls, v):
+        return _to_zenkaku(v)
