@@ -1,6 +1,9 @@
 package jp.Hiroshiba.VoicevoxCore;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 
@@ -41,6 +44,18 @@ public class Synthesizer implements AutoCloseable {
     return audioQuery;
   }
 
+  @Nonnull
+  public List<AccentPhrase> accentPhrases(String text, EnumSet<AccentPhrasesOption> options) {
+    boolean kana = options.contains(AccentPhrasesOption.KANA);
+    String accentPhrasesJson = rsAccentPhrases(text, kana);
+    Gson gson = new Gson();
+    AccentPhrase[] rawAccentPhrases = gson.fromJson(accentPhrasesJson, AccentPhrase[].class);
+    if (rawAccentPhrases == null) {
+      throw new NullPointerException("accent_phrases");
+    }
+    return new ArrayList<>(Arrays.asList(rawAccentPhrases));
+  }
+
   public void close() {
     rsDrop();
   }
@@ -55,6 +70,12 @@ public class Synthesizer implements AutoCloseable {
 
   @Nonnull
   private native String rsAudioQuery(String text, int styleId, boolean kana);
+
+  @Nonnull
+  private native String rsAccentPhrases(String text, boolean kana);
+
+  @Nonnull
+  private native String rsGetAudioQueryJson();
 
   private native void rsDrop();
 
@@ -108,5 +129,18 @@ public class Synthesizer implements AutoCloseable {
 
   public static enum AudioQueryOption {
     KANA,
+  }
+
+  public static enum AccentPhrasesOption {
+    KANA,
+  }
+
+  public static enum SynthesisOption {
+    ENABLE_INTERROGATIVE_UPSPEAK
+  }
+
+  public static enum TtsOption {
+    KANA,
+    ENABLE_INTERROGATIVE_UPSPEAK
   }
 }

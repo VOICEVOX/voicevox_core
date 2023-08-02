@@ -175,6 +175,44 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAudioQuery<'
 }
 
 #[no_mangle]
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAccentPhrases<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    text: JString<'local>,
+    style_id: jint,
+    kana: jboolean,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let text: String = env.get_string(&text)?.into();
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+                .clone()
+        };
+
+        let accent_phrases = {
+            let internal = internal.lock().unwrap();
+            let options = voicevox_core::AccentPhrasesOptions {
+                kana: kana != 0,
+                // ..Default::default()
+            };
+            RUNTIME.block_on(internal.create_accent_phrases(
+                &text,
+                voicevox_core::StyleId::new(style_id),
+                &options,
+            ))?
+        };
+
+        let query_json = serde_json::to_string(&accent_phrases)?;
+
+        let j_accent_phrases = env.new_string(query_json)?;
+
+        Ok(j_accent_phrases.into_raw())
+    })
+}
+
+#[no_mangle]
 pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
