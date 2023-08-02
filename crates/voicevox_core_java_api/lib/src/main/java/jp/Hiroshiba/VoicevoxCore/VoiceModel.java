@@ -4,11 +4,13 @@ public class VoiceModel
     implements AutoCloseable {
   protected long internal;
 
-  public String id;
-  public SpeakerMeta[] metas;
+  final public String id;
+  final public SpeakerMeta[] metas;
 
   public VoiceModel(String modelPath) {
     rsFromPath(modelPath);
+    id = rsGetId();
+    metas = rsGetMetas();
   }
 
   public void close() {
@@ -17,6 +19,10 @@ public class VoiceModel
 
   private native void rsFromPath(String modelPath);
 
+  private native String rsGetId();
+
+  private native SpeakerMeta[] rsGetMetas();
+
   private native void rsDrop();
 
   static {
@@ -24,14 +30,26 @@ public class VoiceModel
   }
 
   public static class SpeakerMeta {
-    String name;
-    StyleMeta[] styles;
-    String speakerUuid;
-    String version;
+    final String name;
+    final StyleMeta[] styles;
+    final String speakerUuid;
+    final String version;
+
+    protected SpeakerMeta(String name, StyleMeta[] styles, String speakerUuid, String version) {
+      this.name = name;
+      this.styles = styles;
+      this.speakerUuid = speakerUuid;
+      this.version = version;
+    }
   }
 
   public static class StyleMeta {
-    String name;
-    int id;
+    final String name;
+    final int id;
+
+    protected StyleMeta(String name, int id) {
+      this.name = name;
+      this.id = id;
+    }
   }
 }

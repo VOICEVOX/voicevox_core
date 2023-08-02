@@ -11,6 +11,14 @@ public class Synthesizer implements AutoCloseable {
     rsLoadVoiceModel(voiceModel);
   }
 
+  public void unloadVoiceModel(String voiceModelId) {
+    rsUnloadVoiceModel(voiceModelId);
+  }
+
+  public boolean isLoadedVoiceModel(String voiceModelId) {
+    return rsIsLoadedVoiceModel(voiceModelId);
+  }
+
   public void close() {
     rsDrop();
   }
@@ -18,6 +26,10 @@ public class Synthesizer implements AutoCloseable {
   private native void rsNewWithInitialize(OpenJtalk openJtalk, SynthesizerBuilder builder);
 
   private native void rsLoadVoiceModel(VoiceModel voiceModel);
+
+  private native void rsUnloadVoiceModel(String voiceModelId);
+
+  private native boolean rsIsLoadedVoiceModel(String voiceModelId);
 
   private native void rsDrop();
 

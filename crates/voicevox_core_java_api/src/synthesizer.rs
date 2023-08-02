@@ -4,7 +4,11 @@ use crate::{
 };
 
 use anyhow::anyhow;
-use jni::{objects::JObject, JNIEnv};
+use jni::{
+    objects::{JObject, JString},
+    sys::jboolean,
+    JNIEnv,
+};
 use std::sync::{Arc, Mutex};
 
 #[no_mangle]
@@ -76,10 +80,57 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsLoadVoiceMod
         let internal = unsafe {
             env.get_rust_field::<_, _, Mutex<voicevox_core::Synthesizer>>(&this, "internal")?
         };
-        let mut internal = internal.lock().unwrap();
-        RUNTIME.block_on(internal.load_voice_model(&model))?;
+        {
+            let mut internal = internal.lock().unwrap();
+            RUNTIME.block_on(internal.load_voice_model(&model))?;
+        }
         Ok(())
     })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsUnloadVoiceModel<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    model_id: JString<'local>,
+) {
+    throw_if_err(env, (), |env| {
+        let model_id: String = env.get_string(&model_id)?.into();
+
+        let internal = unsafe {
+            env.get_rust_field::<_, _, Mutex<voicevox_core::Synthesizer>>(&this, "internal")?
+        };
+
+        {
+            let mut internal = internal.lock().unwrap();
+
+            internal.unload_voice_model(&voicevox_core::VoiceModelId::new(model_id))?;
+        }
+
+        Ok(())
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoiceModel<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    model_id: JString<'local>,
+) -> jboolean {
+    throw_if_err(env, false, |env| {
+        let model_id: String = env.get_string(&model_id)?.into();
+
+        let internal = unsafe {
+            env.get_rust_field::<_, _, Mutex<voicevox_core::Synthesizer>>(&this, "internal")?
+        };
+
+        let is_loaded = {
+            let internal = internal.lock().unwrap();
+            internal.is_loaded_voice_model(&voicevox_core::VoiceModelId::new(model_id))
+        };
+
+        Ok(is_loaded)
+    }) as jboolean
 }
 
 #[no_mangle]
