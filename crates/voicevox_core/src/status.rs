@@ -76,7 +76,7 @@ impl Status {
             merged_metas: VoiceModelMeta::default(),
             light_session_options: SessionOptions::new(cpu_num_threads, false),
             heavy_session_options: SessionOptions::new(cpu_num_threads, use_gpu),
-            id_relations: BTreeMap::default(),
+            id_relations: BTreeMap::new(),
         }
     }
 
