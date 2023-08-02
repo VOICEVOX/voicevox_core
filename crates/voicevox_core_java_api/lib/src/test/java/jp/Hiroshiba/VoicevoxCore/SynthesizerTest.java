@@ -5,34 +5,15 @@
 package jp.Hiroshiba.VoicevoxCore;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.List;
 
-@Timeout(10)
-class SynthesizerTest {
-  VoiceModel model() {
-    // cwdはvoicevox_core/crates/voicevox_core_java_api/lib
-    String cwd = System.getProperty("user.dir");
-    Path path = Paths.get(cwd, "..", "..", "..", "model", "sample.vvm");
-
-    return new VoiceModel(path.toString());
-
-  }
-
-  OpenJtalk openJtalk() {
-    String cwd = System.getProperty("user.dir");
-    Path path = Paths.get(cwd, "..", "..", "test_util", "data", "open_jtalk_dic_utf_8-1.11");
-
-    return new OpenJtalk(path.toString());
-  }
-
+class SynthesizerTest
+    extends Utils {
   @FunctionalInterface
   interface MoraCheckCallback {
     boolean check(Mora mora, Mora otherMora);
