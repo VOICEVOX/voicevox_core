@@ -14,8 +14,8 @@ chrono = "0.4.26"
 easy-ext.workspace = true
 jni = "0.21.1"
 once_cell.workspace = true
+serde_json.workspace = true
 tokio.workspace = true
 tracing = { workspace = true, features = ["log"] }
 tracing-subscriber.workspace = true
 voicevox_core.workspace = true
-

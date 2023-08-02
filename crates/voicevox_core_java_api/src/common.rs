@@ -11,7 +11,7 @@ pub static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
                 .with_filter(
                     android_logger::FilterBuilder::new()
                         .parse(
-                            "error,voicevox_core=info,voicevox_core_java_api=info,onnxruntime=info",
+                            "error,voicevox_core=info,voicevox_core_java_api=info,onnxruntime=error",
                         )
                         .build(),
                 ),
@@ -29,7 +29,7 @@ pub static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
             } else {
-                "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
+                "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=error".into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(out().is_terminal() && env_allows_ansi())

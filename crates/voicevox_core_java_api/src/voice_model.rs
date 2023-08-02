@@ -71,7 +71,12 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetas<'loc
             for (j, style) in meta.styles().iter().enumerate() {
                 let j_style = env.new_object(
                     object_type!("VoiceModel$StyleMeta"),
-                    concat!("(", "Ljava/lang/String;", "I", ")V"),
+                    concat!(
+                        "(",
+                        "Ljava/lang/String;", // name
+                        "I",                  // id
+                        ")V"
+                    ),
                     &[
                         JValueGen::Object(&env.new_string(style.name())?.into()),
                         JValueGen::Int(style.id().raw_id() as i32),
@@ -84,11 +89,11 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetas<'loc
                 object_type!("VoiceModel$SpeakerMeta"),
                 concat!(
                     "(",
-                    "Ljava/lang/String;",
-                    "[",
+                    "Ljava/lang/String;", // name
+                    "[",                  // styles
                     object_type!("VoiceModel$StyleMeta"),
-                    "Ljava/lang/String;",
-                    "Ljava/lang/String;",
+                    "Ljava/lang/String;", // speakerUuid
+                    "Ljava/lang/String;", // version
                     ")V"
                 ),
                 &[

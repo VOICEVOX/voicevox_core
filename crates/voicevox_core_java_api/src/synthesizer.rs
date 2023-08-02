@@ -6,7 +6,7 @@ use crate::{
 use anyhow::anyhow;
 use jni::{
     objects::{JObject, JString},
-    sys::jboolean,
+    sys::{jboolean, jint, jobject},
     JNIEnv,
 };
 use std::sync::{Arc, Mutex};
@@ -61,7 +61,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsNewWithIniti
             open_jtalk.clone(),
             Box::leak(Box::new(options)),
         ))?;
-        unsafe { env.set_rust_field(&this, "internal", Mutex::new(internal))? };
+        unsafe { env.set_rust_field(&this, "internal", Arc::new(Mutex::new(internal)))? };
         Ok(())
     })
 }
@@ -78,7 +78,8 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsLoadVoiceMod
                 .clone()
         };
         let internal = unsafe {
-            env.get_rust_field::<_, _, Mutex<voicevox_core::Synthesizer>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+                .clone()
         };
         {
             let mut internal = internal.lock().unwrap();
@@ -98,7 +99,8 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsUnloadVoiceM
         let model_id: String = env.get_string(&model_id)?.into();
 
         let internal = unsafe {
-            env.get_rust_field::<_, _, Mutex<voicevox_core::Synthesizer>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+                .clone()
         };
 
         {
@@ -121,7 +123,8 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoic
         let model_id: String = env.get_string(&model_id)?.into();
 
         let internal = unsafe {
-            env.get_rust_field::<_, _, Mutex<voicevox_core::Synthesizer>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+                .clone()
         };
 
         let is_loaded = {
@@ -134,14 +137,53 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoic
 }
 
 #[no_mangle]
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAudioQuery<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    text: JString<'local>,
+    style_id: jint,
+    kana: jboolean,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let text: String = env.get_string(&text)?.into();
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+                .clone()
+        };
+
+        let audio_query = {
+            let internal = internal.lock().unwrap();
+            let options = voicevox_core::AudioQueryOptions {
+                kana: kana != 0,
+                // ..Default::default()
+            };
+            RUNTIME.block_on(internal.audio_query(
+                &text,
+                voicevox_core::StyleId::new(style_id),
+                &options,
+            ))?
+        };
+
+        let query_json = serde_json::to_string(&audio_query)?;
+
+        let j_audio_query = env.new_string(query_json)?;
+
+        Ok(j_audio_query.into_raw())
+    })
+}
+
+#[no_mangle]
 pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Mutex<voicevox_core::Synthesizer>>(&this, "internal")
-        }?;
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+                .clone()
+        };
         drop(internal);
         unsafe { env.take_rust_field(&this, "internal") }?;
         Ok(())

@@ -1,5 +1,11 @@
 package jp.Hiroshiba.VoicevoxCore;
 
+import java.util.EnumSet;
+
+import javax.annotation.Nonnull;
+
+import com.google.gson.Gson;
+
 public class Synthesizer implements AutoCloseable {
   protected long internal;
 
@@ -19,6 +25,22 @@ public class Synthesizer implements AutoCloseable {
     return rsIsLoadedVoiceModel(voiceModelId);
   }
 
+  @Nonnull
+  public AudioQuery audioQuery(String text, int styleId, EnumSet<AudioQueryOption> options) {
+    boolean kana = options.contains(AudioQueryOption.KANA);
+    String queryJson = rsAudioQuery(text, styleId, kana);
+    Gson gson = new Gson();
+
+    System.out.println(queryJson);
+
+    AudioQuery audioQuery = gson.fromJson(queryJson, AudioQuery.class);
+    System.out.println(audioQuery);
+    if (audioQuery == null) {
+      throw new NullPointerException("audio_query");
+    }
+    return audioQuery;
+  }
+
   public void close() {
     rsDrop();
   }
@@ -30,6 +52,9 @@ public class Synthesizer implements AutoCloseable {
   private native void rsUnloadVoiceModel(String voiceModelId);
 
   private native boolean rsIsLoadedVoiceModel(String voiceModelId);
+
+  @Nonnull
+  private native String rsAudioQuery(String text, int styleId, boolean kana);
 
   private native void rsDrop();
 
@@ -81,4 +106,7 @@ public class Synthesizer implements AutoCloseable {
     GPU,
   }
 
+  public static enum AudioQueryOption {
+    KANA,
+  }
 }
