@@ -2,7 +2,7 @@ package jp.Hiroshiba.VoicevoxCore;
 
 import java.io.File;
 
-class Utils {
+class TestUtils {
   VoiceModel loadModel() {
     // cwdはvoicevox_core/crates/voicevox_core_java_api/lib
     String cwd = System.getProperty("user.dir");

@@ -303,7 +303,9 @@ jobs:
           java-version: "8"
           distribution: "adopt"
       - name: Build
-        run: cargo build -p voicevox_core_java_api -vv
+        run: |
+          cargo build -p voicevox_core_java_api -vv
+          cargo build -p test_util -vv
       - name: 必要なDLLをコピーしてテストを実行
         working-directory: crates/voicevox_core_java_api
         run: |
