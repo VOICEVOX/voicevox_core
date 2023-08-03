@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import com.google.gson.internal.LinkedTreeMap;
 
 public class UserDict
     implements AutoCloseable {
@@ -51,10 +52,19 @@ public class UserDict
     String json = rsGetWords();
     Gson gson = new Gson();
     @SuppressWarnings("unchecked")
-    HashMap<String, Word> words = gson.fromJson(json, HashMap.class);
-    if (words == null) {
+    HashMap<String, LinkedTreeMap<String, ?>> rawWords = gson.fromJson(json, HashMap.class);
+    if (rawWords == null) {
       throw new NullPointerException("words");
     }
+    HashMap<String, Word> words = new HashMap<>();
+    rawWords.forEach((uuid, rawWord) -> {
+      Word word = gson.fromJson(gson.toJson(rawWord), Word.class);
+      if (word == null) {
+        throw new NullPointerException("word");
+      }
+      words.put(uuid, word);
+    });
+
     return words;
   }
 
@@ -112,7 +122,7 @@ public class UserDict
     @JsonProperty("priority")
     @SerializedName("priority")
     @Expose
-    @Min(1)
+    @Min(0)
     @Max(10)
     public int priority;
 

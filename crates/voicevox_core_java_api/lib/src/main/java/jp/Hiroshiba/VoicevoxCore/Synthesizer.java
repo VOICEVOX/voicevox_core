@@ -34,10 +34,7 @@ public class Synthesizer implements AutoCloseable {
     String queryJson = rsAudioQuery(text, styleId, kana);
     Gson gson = new Gson();
 
-    System.out.println(queryJson);
-
     AudioQuery audioQuery = gson.fromJson(queryJson, AudioQuery.class);
-    System.out.println(audioQuery);
     if (audioQuery == null) {
       throw new NullPointerException("audio_query");
     }
