@@ -13,7 +13,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 class SynthesizerTest
-    extends TestUtilstils {
+    extends TestUtils {
   @FunctionalInterface
   interface MoraCheckCallback {
     boolean check(Mora mora, Mora otherMora);

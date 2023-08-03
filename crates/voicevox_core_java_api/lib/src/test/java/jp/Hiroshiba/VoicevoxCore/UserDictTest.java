@@ -9,7 +9,7 @@ import java.util.EnumSet;
 import org.junit.jupiter.api.Test;
 
 class UserDictTest
-    extends TestUtilstils {
+    extends TestUtils {
 
   // 辞書ロードのテスト。
   // 辞書ロード前後でkanaが異なることを確認する
