@@ -19,3 +19,6 @@ tokio.workspace = true
 tracing = { workspace = true, features = ["log"] }
 tracing-subscriber.workspace = true
 voicevox_core.workspace = true
+
+[dev-dependencies]
+test_util.workspace = true
