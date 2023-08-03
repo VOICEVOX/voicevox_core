@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use async_zip::{read::fs::ZipFileReader, ZipEntry};
 use futures::future::{join3, join_all};
 use serde::{de::DeserializeOwned, Deserialize};
@@ -52,18 +53,39 @@ impl VoiceModel {
             .await;
 
         Ok(InferenceModels {
-            predict_duration_model: predict_duration_model_result?,
-            predict_intonation_model: predict_intonation_model_result?,
-            decode_model: decode_model_result?,
+            predict_duration_model: predict_duration_model_result.map_err(|e| Error::VvmRead {
+                path: self.path.clone(),
+                source: e,
+            })?,
+            predict_intonation_model: predict_intonation_model_result.map_err(|e| {
+                Error::VvmRead {
+                    path: self.path.clone(),
+                    source: e,
+                }
+            })?,
+            decode_model: decode_model_result.map_err(|e| Error::VvmRead {
+                path: self.path.clone(),
+                source: e,
+            })?,
         })
     }
     /// VVMファイルから`VoiceModel`をコンストラクトする。
     pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
         let reader = VvmEntryReader::open(&path).await?;
-        let manifest = reader.read_vvm_json::<Manifest>("manifest.json").await?;
+        let manifest = reader
+            .read_vvm_json::<Manifest>("manifest.json")
+            .await
+            .map_err(|e| Error::VvmRead {
+                path: path.as_ref().into(),
+                source: e,
+            })?;
         let metas = reader
             .read_vvm_json::<VoiceModelMeta>(manifest.metas_filename())
-            .await?;
+            .await
+            .map_err(|e| Error::VvmRead {
+                path: path.as_ref().into(),
+                source: e,
+            })?;
         let id = VoiceModelId::new(nanoid!());
 
         Ok(Self {
@@ -105,6 +127,16 @@ impl VoiceModel {
         join_all(vvm_paths).await.into_iter().collect()
     }
     const ROOT_DIR_ENV_NAME: &str = "VV_MODELS_ROOT_DIR";
+
+    /// スタイルIDからモデル内IDを取得する。
+    /// モデル内IDのマッピングが存在しない場合はそのままスタイルIDを返す。
+    pub(crate) fn model_inner_id_for(&self, style_id: StyleId) -> ModelInnerId {
+        self.manifest
+            .style_id_to_model_inner_id()
+            .get(&style_id)
+            .cloned()
+            .unwrap_or_else(|| ModelInnerId::new(style_id.raw_id()))
+    }
 }
 
 struct VvmEntry {
@@ -144,35 +176,21 @@ impl VvmEntryReader {
             .collect();
         Ok(VvmEntryReader::new(reader, entry_map))
     }
-    async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> Result<T> {
+    async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> anyhow::Result<T> {
         let bytes = self.read_vvm_entry(filename).await?;
-        serde_json::from_slice(&bytes).map_err(|e| Error::VvmRead {
-            filename: filename.into(),
-            source: Some(e.into()),
-        })
+        serde_json::from_slice(&bytes).map_err(|e| e.into())
     }
 
-    async fn read_vvm_entry(&self, filename: &str) -> Result<Vec<u8>> {
-        let me = self.entry_map.get(filename).ok_or(Error::VvmRead {
-            filename: filename.into(),
-            source: None,
-        })?;
-        let mut manifest_reader =
-            self.reader
-                .entry(me.index)
-                .await
-                .map_err(|_| Error::VvmRead {
-                    filename: filename.into(),
-                    source: None,
-                })?;
+    async fn read_vvm_entry(&self, filename: &str) -> anyhow::Result<Vec<u8>> {
+        let me = self
+            .entry_map
+            .get(filename)
+            .ok_or_else(|| anyhow!("Not found in vvm entries: {}", filename))?;
+        let mut manifest_reader = self.reader.entry(me.index).await?;
         let mut buf = Vec::with_capacity(me.entry.uncompressed_size() as usize);
         manifest_reader
             .read_to_end_checked(&mut buf, &me.entry)
-            .await
-            .map_err(|_| Error::VvmRead {
-                filename: filename.into(),
-                source: None,
-            })?;
+            .await?;
         Ok(buf)
     }
 }
