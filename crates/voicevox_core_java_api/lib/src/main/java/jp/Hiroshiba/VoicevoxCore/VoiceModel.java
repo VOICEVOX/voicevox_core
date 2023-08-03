@@ -2,7 +2,6 @@ package jp.Hiroshiba.VoicevoxCore;
 
 import javax.annotation.Nonnull;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -56,25 +55,21 @@ public class VoiceModel
   /** 話者（speaker）のメタ情報。 */
   public static class SpeakerMeta {
     /** 話者名。 */
-    @JsonProperty("name")
     @SerializedName("name")
     @Expose
     @Nonnull
     final String name;
     /** 話者に属するスタイル。 */
-    @JsonProperty("styles")
     @SerializedName("styles")
     @Expose
     @Nonnull
     final StyleMeta[] styles;
     /** 話者のUUID。 */
-    @JsonProperty("speaker_uuid")
     @SerializedName("speaker_uuid")
     @Expose
     @Nonnull
     final String speakerUuid;
     /** 話者のバージョン。 */
-    @JsonProperty("version")
     @SerializedName("version")
     @Expose
     @Nonnull
@@ -93,13 +88,11 @@ public class VoiceModel
   /** スタイル（style）のメタ情報。 */
   public static class StyleMeta {
     /** スタイル名。 */
-    @JsonProperty("name")
     @SerializedName("name")
     @Expose
     @Nonnull
     final String name;
     /** スタイルID。 */
-    @JsonProperty("id")
     @SerializedName("id")
     @Expose
     final int id;

@@ -6,7 +6,6 @@ import javax.annotation.Nonnull;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -144,30 +143,25 @@ public class UserDict
   private static native void rsValidatePronunciation(String pronunciation);
 
   public static class Word {
-    @JsonProperty("surface")
     @SerializedName("surface")
     @Expose
     @Nonnull
     public String surface;
 
-    @JsonProperty("pronunciation")
     @SerializedName("pronunciation")
     @Expose
     @Nonnull
     public String pronunciation;
 
-    @JsonProperty("word_type")
     @SerializedName("word_type")
     @Expose
     @Nonnull
     public Type wordType;
 
-    @JsonProperty("accent_type")
     @SerializedName("accent_type")
     @Expose
     public int accentType;
 
-    @JsonProperty("priority")
     @SerializedName("priority")
     @Expose
     @Min(0)
@@ -215,27 +209,22 @@ public class UserDict
     }
 
     static enum Type {
-      @JsonProperty("PROPER_NOUN")
       @SerializedName("PROPER_NOUN")
       @Expose
       PROPER_NOUN,
 
-      @JsonProperty("COMMON_NOUN")
       @SerializedName("COMMON_NOUN")
       @Expose
       COMMON_NOUN,
 
-      @JsonProperty("VERB")
       @SerializedName("VERB")
       @Expose
       VERB,
 
-      @JsonProperty("ADJECTIVE")
       @SerializedName("ADJECTIVE")
       @Expose
       ADJECTIVE,
 
-      @JsonProperty("SUFFIX")
       @SerializedName("SUFFIX")
       @Expose
       SUFFIX,
