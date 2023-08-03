@@ -38,8 +38,8 @@ class SynthesizerTest
 
   @Test
   void checkModel() {
-    try (VoiceModel model = model();
-        OpenJtalk openJtalk = openJtalk();
+    try (VoiceModel model = loadModel();
+        OpenJtalk openJtalk = loadOpenJtalk();
         Synthesizer synthesizer = Synthesizer.builder(openJtalk).build()) {
       synthesizer.loadVoiceModel(model);
       assertTrue(synthesizer.isLoadedVoiceModel(model.id));
@@ -50,8 +50,8 @@ class SynthesizerTest
 
   @Test
   void checkAudioQuery() {
-    try (VoiceModel model = model();
-        OpenJtalk openJtalk = openJtalk();
+    try (VoiceModel model = loadModel();
+        OpenJtalk openJtalk = loadOpenJtalk();
         Synthesizer synthesizer = Synthesizer.builder(openJtalk).build()) {
       synthesizer.loadVoiceModel(model);
       AudioQuery query = synthesizer.audioQuery("こんにちは", model.metas[0].styles[0].id,
@@ -63,8 +63,8 @@ class SynthesizerTest
 
   @Test
   void checkAccentPhrases() {
-    try (VoiceModel model = model();
-        OpenJtalk openJtalk = openJtalk();
+    try (VoiceModel model = loadModel();
+        OpenJtalk openJtalk = loadOpenJtalk();
         Synthesizer synthesizer = Synthesizer.builder(openJtalk).build()) {
       synthesizer.loadVoiceModel(model);
       List<AccentPhrase> accentPhrases = synthesizer.createAccentPhrases("こんにちは", model.metas[0].styles[0].id,
@@ -83,8 +83,8 @@ class SynthesizerTest
 
   @Test
   void checkTts() {
-    try (VoiceModel model = model();
-        OpenJtalk openJtalk = openJtalk();
+    try (VoiceModel model = loadModel();
+        OpenJtalk openJtalk = loadOpenJtalk();
         Synthesizer synthesizer = Synthesizer.builder(openJtalk).build()) {
       synthesizer.loadVoiceModel(model);
       synthesizer.tts("こんにちは", model.metas[0].styles[0].id, EnumSet.noneOf(Synthesizer.TtsOption.class));

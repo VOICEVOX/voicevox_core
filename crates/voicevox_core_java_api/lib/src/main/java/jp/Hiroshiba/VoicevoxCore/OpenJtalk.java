@@ -11,6 +11,10 @@ public class OpenJtalk implements AutoCloseable {
     rsNewWithInitialize(openJtalkDictDir);
   }
 
+  public void useUserDict(UserDict userDict) {
+    rsUseUserDict(userDict);
+  }
+
   public void close() {
     rsDrop();
   }
@@ -18,6 +22,8 @@ public class OpenJtalk implements AutoCloseable {
   private native void rsNewWithoutDic();
 
   private native void rsNewWithInitialize(String openJtalkDictDir);
+
+  private native void rsUseUserDict(UserDict userDict);
 
   private native void rsDrop();
 

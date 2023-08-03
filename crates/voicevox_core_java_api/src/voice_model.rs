@@ -32,9 +32,9 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetId<'local>
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "internal")
-        }?
-        .clone();
+            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "internal")?
+                .clone()
+        };
 
         let id = internal.id().raw_voice_model_id();
 
@@ -51,9 +51,10 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetasJson<
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "internal")
-        }?
-        .clone();
+            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "internal")?
+                .clone()
+        };
+
         let metas = internal.metas();
         let metas_json = serde_json::to_string(&metas)?;
         Ok(env.new_string(metas_json)?.into_raw())

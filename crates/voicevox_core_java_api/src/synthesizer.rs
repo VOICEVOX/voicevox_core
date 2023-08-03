@@ -58,7 +58,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsNewWithIniti
                 .clone()
         };
         let internal = RUNTIME.block_on(voicevox_core::Synthesizer::new_with_initialize(
-            open_jtalk.clone(),
+            open_jtalk,
             Box::leak(Box::new(options)),
         ))?;
         unsafe { env.set_rust_field(&this, "internal", Arc::new(Mutex::new(internal)))? };

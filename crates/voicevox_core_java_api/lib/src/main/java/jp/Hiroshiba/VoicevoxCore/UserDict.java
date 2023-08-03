@@ -21,11 +21,17 @@ public class UserDict
 
   @Nonnull
   public String addWord(Word word) {
-    return rsAddWord(word);
+    Gson gson = new Gson();
+    String wordJson = gson.toJson(word);
+
+    return rsAddWord(wordJson);
   }
 
   public void updateWord(String uuid, Word word) {
-    rsUpdateWord(uuid, word);
+    Gson gson = new Gson();
+    String wordJson = gson.toJson(word);
+
+    rsUpdateWord(uuid, wordJson);
   }
 
   public void removeWord(String uuid) {
@@ -59,9 +65,9 @@ public class UserDict
   private native void rsNew();
 
   @Nonnull
-  private native String rsAddWord(Word word);
+  private native String rsAddWord(String word);
 
-  private native void rsUpdateWord(String uuid, Word word);
+  private native void rsUpdateWord(String uuid, String word);
 
   private native void rsRemoveWord(String uuid);
 
@@ -73,6 +79,11 @@ public class UserDict
   private native String rsGetWords();
 
   private native void rsDrop();
+
+  @Nonnull
+  private static native String rsToZenkaku(String surface);
+
+  private static native void rsValidatePronunciation(String pronunciation);
 
   public static class Word {
     @JsonProperty("surface")
@@ -144,11 +155,6 @@ public class UserDict
       this.priority = priority;
       return this;
     }
-
-    @Nonnull
-    private native String rsToZenkaku(String surface);
-
-    private native void rsValidatePronunciation(String pronunciation);
 
     static enum Type {
       @JsonProperty("PROPER_NOUN")

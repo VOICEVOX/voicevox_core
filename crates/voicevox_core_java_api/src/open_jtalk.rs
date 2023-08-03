@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use crate::common::throw_if_err;
 use jni::{
@@ -30,6 +30,32 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithInitial
 
         let internal = voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)?;
         unsafe { env.set_rust_field(&this, "internal", Arc::new(internal)) }?;
+
+        Ok(())
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsUseUserDict<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    user_dict: JObject<'local>,
+) {
+    throw_if_err(env, (), |env| {
+        let internal = unsafe {
+            env.get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&this, "internal")?
+                .clone()
+        };
+
+        let user_dict = unsafe {
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&user_dict, "internal")?
+                .clone()
+        };
+
+        {
+            let user_dict = user_dict.lock().unwrap();
+            internal.use_user_dict(&user_dict)?
+        }
 
         Ok(())
     })

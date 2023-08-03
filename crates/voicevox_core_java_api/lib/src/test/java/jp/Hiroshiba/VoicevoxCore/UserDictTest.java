@@ -11,8 +11,8 @@ class UserDictTest
 
   @Test
   void checkLoad() {
-    try (VoiceModel model = model();
-        OpenJtalk openJtalk = openJtalk();
+    try (VoiceModel model = loadModel();
+        OpenJtalk openJtalk = loadOpenJtalk();
         Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
         UserDict userDict = new UserDict()) {
       synthesizer.loadVoiceModel(model);
