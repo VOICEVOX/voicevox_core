@@ -2,7 +2,49 @@ language = "C"
 
 # Options for wrapping the contents of the header:
 
-header = "/// @file"
+header = """
+/**
+ * @file voicevox_core.h
+ *
+ * 無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。
+ *
+ * <dl>
+ *   <dt id="voicevox-core-safety">
+ *     <a href="#voicevox-core-safety">⚠️ Safety</a>
+ *   </dt>
+ *
+ *   <dd>
+ * このライブラリの利用にあたっては、いくつかの不変条件が守られている必要がある。本ドキュメントではこの不変条件を<b>安全性要件</b>(_safety
+ * requirements_)と呼び、"Safety"というセクションの下に安全性要件を示す。
+ *
+ * 安全性要件の違反は[Rust言語における<b>未定義動作</b>(_undefined behavior_; 通称<em>UB</em>)](
+ * https://doc.rust-lang.org/reference/behavior-considered-undefined.html)を引き起こす。Rustの未定義動作は、Cのそれや[C++のそれ](
+ * https://cpprefjp.github.io/implementation-compliance.html#nasal-demon)や[Zigのそれ](
+ * https://ziglang.org/documentation/0.10.1/#Undefined-Behavior)などとおおよそ同じであり、引き起こしてはならないものとされる。プログラム全体のどこかに未定義動作が含まれるなら、一般的に、処理系はそれについて何をしてもよい。[変数は同時にtrueでもfalseでもあってもよいし](
+ * https://markshroyer.com/2012/06/c-both-true-and-false/)、あなたの鼻から悪魔が飛び出してもよい。このことは通称<b>鼻から悪魔</b>(_nasal
+ * demons_)と呼ばれる。
+ *
+ * 未定義動作はプログラム全体に影響する。<b>運が良ければ</b>セグメンテーション違反などで異常終了するだけだが、ライブラリを呼び出している部分から離れた所で「鼻から悪魔」が起こることもある。そうなったら挙動の予測もデバッグも困難である。これが未定義動作が禁忌とされる所以である。
+ *
+ * `voicevox_core`全体における安全性要件は以下の通りである。
+ *
+ * - 「読み込みについて有効」と説明されているポインタは次の条件を満たしていなければならない。
+ *     - <b>間接参照可能</b>(_dereferenceable_)である。
+ *     - 参照先のメモリは他スレッドから書き込み中ではない。
+ * - 「書き込みについて有効」と説明されているポインタは次の条件を満たしていなければならない。
+ *     - 参照先のメモリは有効である (ただしメモリアラインメントに沿っている必要は無い)。
+ *     - 参照先のメモリは他スレッドからアクセス中ではない。
+ * - このライブラリで生成したオブジェクトの解放は、このライブラリが提供するAPIで行わなくてはならない(<code>free</code>や<code>HeapFree</code>で行ってはならない)。
+ *
+ * 次のことに注意すること。
+ *
+ * - 次のポインタは読み込みにおいても書き込みにおいても有効ではない。
+ *     - ヌルポインタ。
+ *     - 解放されたポインタ。
+ * - voicevox_coreをアンロードする場合、voicevox_coreが生成したポインタが有効であり続けることは保証されない。
+ *   </dd>
+ * </dl>
+ */"""
 include_guard = "VOICEVOX_CORE_INCLUDE_GUARD"
 no_includes = true
 include_version = true

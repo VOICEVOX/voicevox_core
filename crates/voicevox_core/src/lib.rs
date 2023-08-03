@@ -1,3 +1,5 @@
+//! 無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。
+
 #![deny(unsafe_code)]
 
 mod devices;
