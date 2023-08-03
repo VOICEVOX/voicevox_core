@@ -165,14 +165,20 @@ pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitiali
     VoicevoxInitializeOptions::default()
 }
 
-static VOICEVOX_VERSION: once_cell::sync::Lazy<CString> =
-    once_cell::sync::Lazy::new(|| CString::new(env!("CARGO_PKG_VERSION")).unwrap());
+#[no_mangle]
+static voicevox_version: &CStr = {
+    const VOICEVOX_VERSION: &CStr = unsafe {
+        // SAFETY: The package version is a SemVer, so it should not contain '\0'
+        CStr::from_bytes_with_nul_unchecked(concat!(env!("CARGO_PKG_VERSION"), '\0').as_bytes())
+    };
+    VOICEVOX_VERSION
+};
 
 /// voicevoxのバージョンを取得する
 /// @return SemVerでフォーマットされたバージョン
 #[no_mangle]
 pub extern "C" fn voicevox_get_version() -> *const c_char {
-    VOICEVOX_VERSION.as_ptr()
+    C_STRING_DROP_CHECKER.blacklist(voicevox_version).as_ptr()
 }
 
 /// 音声モデル
