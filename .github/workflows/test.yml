@@ -314,4 +314,4 @@ jobs:
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             export PATH="$PATH;${LD_LIBRARY_PATH//:/;}"
           fi
-          ./gradlew test
+          ./gradlew test --info
