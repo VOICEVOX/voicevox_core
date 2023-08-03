@@ -9,6 +9,11 @@ import javax.annotation.Nonnull;
 
 import com.google.gson.Gson;
 
+/**
+ * 音声シンセサイザ。
+ *
+ * @see Synthesizer#builder
+ */
 public class Synthesizer implements AutoCloseable {
   protected long internal;
 
@@ -16,18 +21,43 @@ public class Synthesizer implements AutoCloseable {
     rsNewWithInitialize(openJtalk, builder);
   }
 
+  /**
+   * モデルを読み込む。
+   *
+   * @param voiceModel 読み込むモデル。
+   */
   public void loadVoiceModel(VoiceModel voiceModel) {
     rsLoadVoiceModel(voiceModel);
   }
 
+  /**
+   * 音声モデルの読み込みを解除する。
+   *
+   * @param voiceModelId 読み込みを解除する音声モデルのID。
+   */
   public void unloadVoiceModel(String voiceModelId) {
     rsUnloadVoiceModel(voiceModelId);
   }
 
+  /**
+   * 指定した音声モデルのIDが読み込まれているかどうかを返す。
+   *
+   * @param voiceModelId 音声モデルのID。
+   * @return 指定した音声モデルのIDが読み込まれているかどうか。
+   */
   public boolean isLoadedVoiceModel(String voiceModelId) {
     return rsIsLoadedVoiceModel(voiceModelId);
   }
 
+  /**
+   * {@link AudioQuery} を生成する。
+   *
+   * @param text    テキスト。
+   * @param styleId スタイルID。
+   * @param options {@link AudioQueryOption} のセット。
+   *
+   * @return 話者とテキストから生成された {@link AudioQuery}。
+   */
   @Nonnull
   public AudioQuery audioQuery(String text, int styleId, EnumSet<AudioQueryOption> options) {
     boolean kana = options.contains(AudioQueryOption.KANA);
@@ -41,6 +71,15 @@ public class Synthesizer implements AutoCloseable {
     return audioQuery;
   }
 
+  /**
+   * {@link AccentPhrase} の配列を生成する。
+   *
+   * @param text    テキスト。
+   * @param styleId スタイルID。
+   * @param options {@link AudioQueryOption} のセット。
+   *
+   * @return 話者とテキストから生成された {@link AccentPhrase} の配列。
+   */
   @Nonnull
   public List<AccentPhrase> createAccentPhrases(String text, int styleId, EnumSet<AccentPhrasesOption> options) {
     boolean kana = options.contains(AccentPhrasesOption.KANA);
@@ -53,6 +92,14 @@ public class Synthesizer implements AutoCloseable {
     return new ArrayList<>(Arrays.asList(rawAccentPhrases));
   }
 
+  /**
+   * アクセント句の音高・音素長を変更する。
+   *
+   * @param accentPhrases 変更元のアクセント句の配列。
+   * @param styleId       スタイルID。
+   *
+   * @return 変更後のアクセント句の配列。
+   */
   @Nonnull
   public List<AccentPhrase> replaceMoraData(List<AccentPhrase> accentPhrases, int styleId) {
     String accentPhrasesJson = new Gson().toJson(accentPhrases);
@@ -60,6 +107,14 @@ public class Synthesizer implements AutoCloseable {
     return new ArrayList<>(Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
   }
 
+  /**
+   * アクセント句の音素長を変更する。
+   *
+   * @param accentPhrases 変更元のアクセント句の配列。
+   * @param styleId       スタイルID。
+   *
+   * @return 変更後のアクセント句の配列。
+   */
   @Nonnull
   public List<AccentPhrase> replacePhonemeLength(List<AccentPhrase> accentPhrases, int styleId) {
     String accentPhrasesJson = new Gson().toJson(accentPhrases);
@@ -67,6 +122,14 @@ public class Synthesizer implements AutoCloseable {
     return new ArrayList<>(Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
   }
 
+  /**
+   * アクセント句の音高を変更する。
+   *
+   * @param accentPhrases 変更元のアクセント句の配列。
+   * @param styleId       スタイルID。
+   *
+   * @return 変更後のアクセント句の配列。
+   */
   @Nonnull
   public List<AccentPhrase> replaceMoraPitch(List<AccentPhrase> accentPhrases, int styleId) {
     String accentPhrasesJson = new Gson().toJson(accentPhrases);
@@ -74,6 +137,15 @@ public class Synthesizer implements AutoCloseable {
     return new ArrayList<>(Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
   }
 
+  /**
+   * {@link AudioQuery} から音声合成する。
+   *
+   * @param audioQuery {@link AudioQuery}。
+   * @param styleId    スタイルID。
+   * @param options    {@link SynthesisOption} のセット。
+   *
+   * @return WAVデータ。
+   */
   @Nonnull
   public byte[] synthesis(AudioQuery audioQuery, int styleId, EnumSet<SynthesisOption> options) {
     boolean enableInterrogativeUpspeak = options.contains(SynthesisOption.ENABLE_INTERROGATIVE_UPSPEAK);
@@ -82,6 +154,15 @@ public class Synthesizer implements AutoCloseable {
     return rsSynthesis(queryJson, styleId, enableInterrogativeUpspeak);
   }
 
+  /**
+   * テキスト音声合成を実行する。
+   *
+   * @param text    テキスト。
+   * @param styleId スタイルID。
+   * @param options {@link TtsOption} のセット。
+   *
+   * @return WAVデータ。
+   */
   @Nonnull
   public byte[] tts(String text, int styleId, EnumSet<TtsOption> options) {
     boolean kana = options.contains(TtsOption.KANA);
@@ -89,6 +170,9 @@ public class Synthesizer implements AutoCloseable {
     return rsTts(text, styleId, kana, enableInterrogativeUpspeak);
   }
 
+  /**
+   * 音声シンセサイザを破棄する。
+   */
   public void close() {
     rsDrop();
   }
@@ -132,6 +216,9 @@ public class Synthesizer implements AutoCloseable {
     return new SynthesizerBuilder(openJtalk);
   }
 
+  /**
+   * 音声シンセサイザのビルダー。
+   */
   public static class SynthesizerBuilder {
     private OpenJtalk openJtalk;
     @SuppressWarnings("unused")
@@ -145,47 +232,64 @@ public class Synthesizer implements AutoCloseable {
       this.openJtalk = openJtalk;
     }
 
+    /** ハードウェアアクセラレーションモードを設定する。 */
     public SynthesizerBuilder accelerationMode(AccelerationMode accelerationMode) {
       this.accelerationMode = accelerationMode;
       return this;
     }
 
+    /** CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。 */
     public SynthesizerBuilder cpuNumThreads(int cpuNumThreads) {
       this.cpuNumThreads = cpuNumThreads;
       return this;
     }
 
+    /** 全てのモデルを読み込むかどうか。 */
     public SynthesizerBuilder loadAllModels(boolean loadAllModels) {
       this.loadAllModels = loadAllModels;
       return this;
     }
 
+    /** {@link Synthesizer} を構築する。 */
     public Synthesizer build() {
       Synthesizer synthesizer = new Synthesizer(openJtalk, this);
       return synthesizer;
     }
   }
 
+  /** ハードウェアアクセラレーションモード。 */
   public static enum AccelerationMode {
+    /** 実行環境に合わせて自動的に選択する。 */
     AUTO,
+    /** CPUに設定する。 */
     CPU,
+    /** GPUに設定する。 */
     GPU,
   }
 
+  /** {@link Synthesizer#audioQuery} のオプション。 */
   public static enum AudioQueryOption {
+    /** 入力テキストをAquesTalk風記法として解釈するかどうか。 */
     KANA,
   }
 
+  /** {@link Synthesizer#accentPhrases} のオプション。 */
   public static enum AccentPhrasesOption {
+    /** 入力テキストをAquesTalk風記法として解釈するかどうか。 */
     KANA,
   }
 
+  /** {@link Synthesizer#synthesis} のオプション。 */
   public static enum SynthesisOption {
+    /** 疑問文の調整を有効にするかどうか。 */
     ENABLE_INTERROGATIVE_UPSPEAK
   }
 
+  /** {@link Synthesizer#tts} のオプション。 */
   public static enum TtsOption {
+    /** 入力テキストをAquesTalk風記法として解釈するかどうか。 */
     KANA,
+    /** 疑問文の調整を有効にするかどうか。 */
     ENABLE_INTERROGATIVE_UPSPEAK
   }
 }

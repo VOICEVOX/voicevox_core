@@ -1,20 +1,30 @@
 package jp.Hiroshiba.VoicevoxCore;
 
+/** テキスト解析器としてのOpen JTalk。 */
 public class OpenJtalk implements AutoCloseable {
   protected long internal;
 
-  public OpenJtalk() {
-    rsNewWithoutDic();
-  }
-
+  /**
+   * Open JTalkの辞書ディレクトリ。
+   *
+   * @param openJtalkDictDir 辞書のディレクトリ。
+   */
   public OpenJtalk(String openJtalkDictDir) {
     rsNewWithInitialize(openJtalkDictDir);
   }
 
+  /**
+   * ユーザー辞書を設定する。
+   *
+   * この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
+   *
+   * @param userDict ユーザー辞書。
+   */
   public void useUserDict(UserDict userDict) {
     rsUseUserDict(userDict);
   }
 
+  /** Open JTalkを廃棄する。 */
   public void close() {
     rsDrop();
   }
