@@ -284,3 +284,34 @@ jobs:
 
           pip install -r requirements-test.txt
           pytest
+  build-and-test-java-api:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+          - os: macos-latest
+          - os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-File
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: "8"
+          distribution: "adopt"
+      - name: Build
+        run: cargo build -p voicevox_core_java_api -vv
+      - name: 必要なDLLをコピーしてテストを実行
+        working-directory: crates/voicevox_core_java_api
+        run:
+          cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll . || true
+          cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* . || true
+          cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
+          export LD_LIBRARY_PATH="${{ github.workspace }}/target/debug:."
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            export PATH="$PATH;${LD_LIBRARY_PATH//:/;}"
+          fi
+          ./gradlew test
