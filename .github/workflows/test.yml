@@ -306,7 +306,7 @@ jobs:
         run: cargo build -p voicevox_core_java_api -vv
       - name: 必要なDLLをコピーしてテストを実行
         working-directory: crates/voicevox_core_java_api
-        run:
+        run: |
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll . || true
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* . || true
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
