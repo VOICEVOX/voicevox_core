@@ -296,7 +296,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Rust
-        uses: ./.github/actions/rust-toolchain-from-File
+        uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
