@@ -313,7 +313,9 @@ jobs:
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* . || true
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            export PATH="$PATH;${{ github.workspace }}/target/debug;$PWD"
+            export PATH="${{ github.workspace }}/target/debug;$PWD;$PATH"
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            export DYLD_LIBRARY_PATH="${{ github.workspace }}/target/debug:$PWD"
           else
             export LD_LIBRARY_PATH="${{ github.workspace }}/target/debug:$PWD"
           fi
