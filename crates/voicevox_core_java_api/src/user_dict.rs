@@ -125,8 +125,8 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsImportDict<'loc
 
         {
             let mut internal = internal.lock().unwrap();
-            let mut other_dict = other_dict.lock().unwrap();
-            internal.import(&mut other_dict)?;
+            let other_dict = other_dict.lock().unwrap();
+            internal.import(&other_dict)?;
         }
 
         Ok(())
