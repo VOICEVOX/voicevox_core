@@ -1204,6 +1204,7 @@ ALPHABETICAL_INDEX     = YES
 # while generating the index headers.
 # This tag requires that the tag ALPHABETICAL_INDEX is set to YES.
 
+IGNORE_PREFIX          += VOICEVOX_
 IGNORE_PREFIX          += voicevox_
 IGNORE_PREFIX          += Voicevox
 
