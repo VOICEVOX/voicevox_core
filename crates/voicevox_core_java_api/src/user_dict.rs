@@ -105,6 +105,35 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsRemoveWord<'loc
 }
 
 #[no_mangle]
+pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsImportDict<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    other_dict: JObject<'local>,
+) {
+    throw_if_err(env, (), |env| {
+        let internal = unsafe {
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "internal")?
+                .clone()
+        };
+        let other_dict = unsafe {
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(
+                &other_dict,
+                "internal",
+            )?
+            .clone()
+        };
+
+        {
+            let mut internal = internal.lock().unwrap();
+            let mut other_dict = other_dict.lock().unwrap();
+            internal.import(&mut other_dict)?;
+        }
+
+        Ok(())
+    })
+}
+
+#[no_mangle]
 pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsLoad<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
@@ -215,7 +244,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsValidatePronunc
         let text = env.get_string(&text)?;
         let text = text.to_str()?;
 
-         voicevox_core::validate_pronunciation(text)?;
+        voicevox_core::validate_pronunciation(text)?;
 
         Ok(())
     })

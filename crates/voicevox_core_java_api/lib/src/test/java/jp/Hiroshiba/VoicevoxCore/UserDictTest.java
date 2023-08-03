@@ -51,13 +51,22 @@ class UserDictTest
       userDict.removeWord(uuid);
       assertTrue(userDict.getWords().get(uuid) == null);
 
-      // 辞書エクスポート/インポート
+      // 辞書のインポート
+      userDict.addWord(new UserDict.Word("hoge", "ホゲ"));
+      try (
+          UserDict userDict2 = new UserDict()) {
+        userDict2.addWord(new UserDict.Word("fuga", "フガ"));
+        userDict.importDict(userDict2);
+        assertTrue(userDict.getWords().size() == 2);
+      }
+
+      // 辞書の保存/読み込み
       Path path = Files.createTempFile("voicevox_user_dict", ".json");
       try (
           UserDict userDict2 = new UserDict()) {
         userDict.save(path.toString());
         userDict2.load(path.toString());
-        assertTrue(userDict2.getWords().size() == 0);
+        assertTrue(userDict2.getWords().size() == 2);
       } finally {
         Files.deleteIfExists(path);
       }
