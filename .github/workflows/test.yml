@@ -311,8 +311,8 @@ jobs:
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* . || true
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            export PATH="$PATH;${{ github.workspace }}/target/debug;$(pwd)"
+            export PATH="$PATH;${{ github.workspace }}/target/debug;$PWD"
           else
-            export LD_LIBRARY_PATH="${{ github.workspace }}/target/debug:$(pwd)"
+            export LD_LIBRARY_PATH="${{ github.workspace }}/target/debug:$PWD"
           fi
           ./gradlew test --info
