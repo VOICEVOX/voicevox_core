@@ -2,7 +2,7 @@ package jp.Hiroshiba.VoicevoxCore;
 
 /** テキスト解析器としてのOpen JTalk。 */
 public class OpenJtalk implements AutoCloseable {
-  protected long internal;
+  long internal;
 
   /**
    * Open JTalkの辞書ディレクトリ。

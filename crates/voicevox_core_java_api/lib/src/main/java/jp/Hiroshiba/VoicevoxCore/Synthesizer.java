@@ -15,7 +15,7 @@ import com.google.gson.Gson;
  * @see Synthesizer#builder
  */
 public class Synthesizer implements AutoCloseable {
-  protected long internal;
+  long internal;
 
   private Synthesizer(OpenJtalk openJtalk, SynthesizerBuilder builder) {
     rsNewWithInitialize(openJtalk, builder);
@@ -232,25 +232,44 @@ public class Synthesizer implements AutoCloseable {
       this.openJtalk = openJtalk;
     }
 
-    /** ハードウェアアクセラレーションモードを設定する。 */
+    /**
+     * ハードウェアアクセラレーションモードを設定する。
+     *
+     * @param accelerationMode ハードウェアアクセラレーションモード。
+     * @return ビルダー。
+     */
     public SynthesizerBuilder accelerationMode(AccelerationMode accelerationMode) {
       this.accelerationMode = accelerationMode;
       return this;
     }
 
-    /** CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。 */
+    /**
+     * CPU利用数を指定する。0を指定すると環境に合わせたCPUが利用される。
+     *
+     * @param cpuNumThreads CPU利用数。
+     * @return ビルダー。
+     */
     public SynthesizerBuilder cpuNumThreads(int cpuNumThreads) {
       this.cpuNumThreads = cpuNumThreads;
       return this;
     }
 
-    /** 全てのモデルを読み込むかどうか。 */
+    /**
+     * 全てのモデルを読み込むかどうか。
+     *
+     * @param loadAllModels 全てのモデルを読み込むかどうか。
+     * @return ビルダー。
+     */
     public SynthesizerBuilder loadAllModels(boolean loadAllModels) {
       this.loadAllModels = loadAllModels;
       return this;
     }
 
-    /** {@link Synthesizer} を構築する。 */
+    /**
+     * {@link Synthesizer} を構築する。
+     *
+     * @return {@link Synthesizer}。
+     */
     public Synthesizer build() {
       Synthesizer synthesizer = new Synthesizer(openJtalk, this);
       return synthesizer;
@@ -273,7 +292,7 @@ public class Synthesizer implements AutoCloseable {
     KANA,
   }
 
-  /** {@link Synthesizer#accentPhrases} のオプション。 */
+  /** {@link Synthesizer#createAccentPhrases} のオプション。 */
   public static enum AccentPhrasesOption {
     /** 入力テキストをAquesTalk風記法として解釈するかどうか。 */
     KANA,

@@ -15,7 +15,7 @@ import com.google.gson.internal.LinkedTreeMap;
 /** ユーザー辞書。 */
 public class UserDict
     implements AutoCloseable {
-  protected long internal;
+  long internal;
 
   /** ユーザー辞書を作成する。 */
   public UserDict() {

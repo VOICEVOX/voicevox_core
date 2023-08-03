@@ -10,7 +10,7 @@ import com.google.gson.annotations.SerializedName;
 /** 音声モデル。 */
 public class VoiceModel
     implements AutoCloseable {
-  protected long internal;
+  long internal;
 
   /** ID。 */
   @Nonnull
