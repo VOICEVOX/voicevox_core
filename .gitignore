@@ -40,3 +40,6 @@ packages/
 
 # Cargo
 target
+
+# Documents
+public/
