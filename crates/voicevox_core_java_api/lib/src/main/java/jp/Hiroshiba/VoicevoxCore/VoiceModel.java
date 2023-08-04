@@ -7,8 +7,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 /** 音声モデル。 */
-public class VoiceModel
-    implements AutoCloseable {
+public class VoiceModel extends Dll implements AutoCloseable {
   long internal;
 
   /** ID。 */
@@ -47,10 +46,6 @@ public class VoiceModel
   private native String rsGetMetasJson();
 
   private native void rsDrop();
-
-  static {
-    System.loadLibrary("voicevox_core_java_api");
-  }
 
   /** 話者（speaker）のメタ情報。 */
   public static class SpeakerMeta {

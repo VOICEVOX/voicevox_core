@@ -12,8 +12,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.internal.LinkedTreeMap;
 
 /** ユーザー辞書。 */
-public class UserDict
-    implements AutoCloseable {
+public class UserDict extends Dll implements AutoCloseable {
   long internal;
 
   /** ユーザー辞書を作成する。 */

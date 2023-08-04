@@ -14,7 +14,7 @@ import com.google.gson.Gson;
  *
  * @see Synthesizer#builder
  */
-public class Synthesizer implements AutoCloseable {
+public class Synthesizer extends Dll implements AutoCloseable {
   long internal;
 
   private Synthesizer(OpenJtalk openJtalk, SynthesizerBuilder builder) {
@@ -207,10 +207,6 @@ public class Synthesizer implements AutoCloseable {
   private native byte[] rsTts(String text, int styleId, boolean kana, boolean enableInterrogativeUpspeak);
 
   private native void rsDrop();
-
-  static {
-    System.loadLibrary("voicevox_core_java_api");
-  }
 
   public static SynthesizerBuilder builder(OpenJtalk openJtalk) {
     return new SynthesizerBuilder(openJtalk);
