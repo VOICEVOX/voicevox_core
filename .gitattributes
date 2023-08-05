@@ -1,9 +1,1 @@
 /crates/voicevox_core_c_api/include/voicevox_core.h linguist-generated=true
-
-# Java API
-crates/voicevox_core_java_api/gradlew       text eol=lf linguist-vendored
-
-crates/voicevox_core_java_api/**/*.bat      text eol=crlf linguist-vendored
-
-crates/voicevox_core_java_api/gradlew       linguist-vendored
-crates/voicevox_core_java_api/gradlew.bat   linguist-vendored
