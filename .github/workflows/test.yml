@@ -314,14 +314,13 @@ jobs:
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             export VV_DLL_PATH="${{ github.workspace }}/target/debug/voicevox_core_java_api.dll"
-            export ORT_DLL_PATH="$PWD/onnxruntime.dll"
+            ORT_NAME="onnxruntime.dll"
           elif [ "${{ matrix.os }}" = "macos-latest" ]; then
             export VV_DLL_PATH="${{ github.workspace }}/target/debug/libvoicevox_core_java_api.dylib"
-            ORT_NAME="$(ls "$PWD/libonnxruntime.*.dylib")"
-            export ORT_DLL_PATH="$PWD/$ORT_NAME"
+            ORT_NAME="$(ls "./libonnxruntime.*.dylib")"
           else
             export VV_DLL_PATH="${{ github.workspace }}/target/debug/libvoicevox_core_java_api.so"
-            ORT_NAME="$(ls "$PWD/libonnxruntime.so.*")"
-            export ORT_DLL_PATH="$PWD/$ORT_NAME"
+            ORT_NAME="$(ls "./libonnxruntime.so.*")"
           fi
+          export ORT_DLL_PATH="$PWD/$ORT_NAME"
           ./gradlew test --info
