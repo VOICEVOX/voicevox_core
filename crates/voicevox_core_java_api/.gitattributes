@@ -2,8 +2,10 @@
 # https://help.github.com/articles/dealing-with-line-endings/
 #
 # Linux start script should use lf
-/gradlew        text eol=lf
+/gradlew        text eol=lf linguist-vendored
 
 # These are Windows script files and should use crlf
 *.bat           text eol=crlf
 
+./gradlew       linguist-vendored
+./gradlew.bat   linguist-vendored
