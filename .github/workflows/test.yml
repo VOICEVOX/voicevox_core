@@ -317,10 +317,10 @@ jobs:
             ORT_NAME="onnxruntime.dll"
           elif [ "${{ matrix.os }}" = "macos-latest" ]; then
             export VV_DLL_PATH="${{ github.workspace }}/target/debug/libvoicevox_core_java_api.dylib"
-            ORT_NAME="$(ls "./libonnxruntime.*.dylib")"
+            ORT_NAME="$(ls ./libonnxruntime.*.dylib)"
           else
             export VV_DLL_PATH="${{ github.workspace }}/target/debug/libvoicevox_core_java_api.so"
-            ORT_NAME="$(ls "./libonnxruntime.so.*")"
+            ORT_NAME="$(ls ./libonnxruntime.so.*)"
           fi
           export ORT_DLL_PATH="$PWD/$ORT_NAME"
           ./gradlew test --info
