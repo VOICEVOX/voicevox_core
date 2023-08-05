@@ -1,0 +1,111 @@
+name: build and deploy downloader workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
+        required: true
+      code_signing:
+        description: "コード署名する"
+        type: boolean
+        required: false
+        default: false
+      is_production:
+        description: "製品版をビルドする"
+        type: boolean
+        required: false
+        default: false
+  release:
+    types:
+      - published
+  pull_request:
+    paths:
+      - Cargo.*
+      - rust-toolchain
+      - crates/download/**
+      - .github/workflows/build_and_deploy_downloader.yml
+  push:
+    paths:
+      - Cargo.*
+      - rust-toolchain
+      - crates/download/**
+      - .github/workflows/build_and_deploy_downloader.yml
+
+env:
+  # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
+  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy_and_deploy_downloader:
+    environment: ${{ github.event.inputs.is_production == 'true' && 'production' || '' }} # コード署名用のenvironment
+    strategy:
+      matrix:
+        include:
+          - name: download-windows-x64.exe
+            target: x86_64-pc-windows-msvc
+            os: windows-2019
+
+          - name: download-linux-x64
+            target: x86_64-unknown-linux-gnu
+            os: ubuntu-20.04
+
+          - name: download-linux-arm64
+            target: aarch64-unknown-linux-gnu
+            os: ubuntu-20.04
+
+          - name: download-osx-x64
+            target: x86_64-apple-darwin
+            os: macos-11
+
+          - name: download-osx-arm64
+            target: aarch64-apple-darwin
+            os: macos-11
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install cross compiler for aarch64-unknown-linux-gnu
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt update
+          sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
+      - name: Set up ${{ matrix.target }}
+        uses: ./.github/actions/rust-toolchain-from-file
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build downloader
+        run: cargo build -vv --release -p download --target ${{ matrix.target }}
+
+      - name: Rename the binary
+        run: |
+          case "$OS" in
+            Windows) exe_suffix=.exe;;
+            Linux | macOS) exe_suffix=;;
+          esac
+          mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
+
+      - name: Code signing (Windows)
+        if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
+        run: |
+          bash build_util/codesign.bash ./${{ matrix.name }}
+        env:
+          CERT_BASE64: ${{ secrets.CERT_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+
+      - name: Upload to Release
+        if: env.VERSION != '0.0.0'
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: ${{ matrix.name }}
+          target_commitish: ${{ github.sha }}

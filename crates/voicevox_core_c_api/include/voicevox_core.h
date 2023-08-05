@@ -115,9 +115,9 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR = 6,
   /**
-   * 無効なmodel_indexが指定された
+   * 無効なmodel_idが指定された
    */
-  VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR = 7,
+  VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR = 7,
   /**
    * 推論に失敗した
    */

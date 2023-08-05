@@ -23,7 +23,7 @@ pub struct Status {
     merged_metas: VoiceModelMeta,
     light_session_options: SessionOptions, // 軽いモデルはこちらを使う
     heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
-    id_relations: BTreeMap<StyleId, VoiceModelId>,
+    pub id_relations: BTreeMap<StyleId, (VoiceModelId, ModelInnerId)>, // FIXME: pubはやめたい
 }
 
 struct StatusModels {
@@ -113,7 +113,10 @@ impl Status {
 
         for speaker in model.metas().iter() {
             for style in speaker.styles().iter() {
-                self.id_relations.insert(*style.id(), model.id().clone());
+                self.id_relations.insert(
+                    *style.id(),
+                    (model.id().clone(), model.model_inner_id_for(*style.id())),
+                );
             }
         }
         self.set_metas();
@@ -141,7 +144,7 @@ impl Status {
             let remove_style_ids = self
                 .id_relations
                 .iter()
-                .filter(|&(_, loaded_model_id)| loaded_model_id == voice_model_id)
+                .filter(|&(_, (loaded_model_id, _))| loaded_model_id == voice_model_id)
                 .map(|(&style_id, _)| style_id)
                 .collect::<Vec<_>>();
 
@@ -228,61 +231,55 @@ impl Status {
 
     pub fn predict_duration_session_run(
         &self,
-        style_id: StyleId,
+        model_id: &VoiceModelId,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model_id) = self.id_relations.get(&style_id) {
-            if let Some(model) = self.models.predict_duration.get(model_id) {
-                if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
-                    Ok(output_tensors[0].as_slice().unwrap().to_owned())
-                } else {
-                    Err(Error::InferenceFailed)
-                }
+        if let Some(model) = self.models.predict_duration.get(model_id) {
+            if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
+                Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
-                Err(Error::InvalidStyleId { style_id })
+                Err(Error::InferenceFailed)
             }
         } else {
-            Err(Error::InvalidStyleId { style_id })
+            Err(Error::InvalidModelId {
+                model_id: model_id.clone(),
+            })
         }
     }
 
     pub fn predict_intonation_session_run(
         &self,
-        style_id: StyleId,
+        model_id: &VoiceModelId,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model_id) = self.id_relations.get(&style_id) {
-            if let Some(model) = self.models.predict_intonation.get(model_id) {
-                if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
-                    Ok(output_tensors[0].as_slice().unwrap().to_owned())
-                } else {
-                    Err(Error::InferenceFailed)
-                }
+        if let Some(model) = self.models.predict_intonation.get(model_id) {
+            if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
+                Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
-                Err(Error::InvalidStyleId { style_id })
+                Err(Error::InferenceFailed)
             }
         } else {
-            Err(Error::InvalidStyleId { style_id })
+            Err(Error::InvalidModelId {
+                model_id: model_id.clone(),
+            })
         }
     }
 
     pub fn decode_session_run(
         &self,
-        style_id: StyleId,
+        model_id: &VoiceModelId,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model_id) = self.id_relations.get(&style_id) {
-            if let Some(model) = self.models.decode.get(model_id) {
-                if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
-                    Ok(output_tensors[0].as_slice().unwrap().to_owned())
-                } else {
-                    Err(Error::InferenceFailed)
-                }
+        if let Some(model) = self.models.decode.get(model_id) {
+            if let Ok(output_tensors) = model.lock().unwrap().run(inputs) {
+                Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
-                Err(Error::InvalidStyleId { style_id })
+                Err(Error::InferenceFailed)
             }
         } else {
-            Err(Error::InvalidStyleId { style_id })
+            Err(Error::InvalidModelId {
+                model_id: model_id.clone(),
+            })
         }
     }
 }
