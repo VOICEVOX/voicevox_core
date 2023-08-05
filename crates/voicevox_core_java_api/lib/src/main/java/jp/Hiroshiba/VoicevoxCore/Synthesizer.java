@@ -17,7 +17,7 @@ import com.google.gson.Gson;
 public class Synthesizer extends Dll implements AutoCloseable {
   long internal;
 
-  private Synthesizer(OpenJtalk openJtalk, SynthesizerBuilder builder) {
+  private Synthesizer(OpenJtalk openJtalk, Builder builder) {
     rsNewWithInitialize(openJtalk, builder);
   }
 
@@ -177,7 +177,7 @@ public class Synthesizer extends Dll implements AutoCloseable {
     rsDrop();
   }
 
-  private native void rsNewWithInitialize(OpenJtalk openJtalk, SynthesizerBuilder builder);
+  private native void rsNewWithInitialize(OpenJtalk openJtalk, Builder builder);
 
   private native void rsLoadVoiceModel(VoiceModel voiceModel);
 
@@ -208,14 +208,15 @@ public class Synthesizer extends Dll implements AutoCloseable {
 
   private native void rsDrop();
 
-  public static SynthesizerBuilder builder(OpenJtalk openJtalk) {
-    return new SynthesizerBuilder(openJtalk);
+  public static Builder builder(OpenJtalk openJtalk) {
+    return new Builder(openJtalk);
   }
 
   /**
    * 音声シンセサイザのビルダー。
+   * @see Synthesizer#builder
    */
-  public static class SynthesizerBuilder {
+  public static class Builder {
     private OpenJtalk openJtalk;
     @SuppressWarnings("unused")
     private AccelerationMode accelerationMode;
@@ -224,7 +225,7 @@ public class Synthesizer extends Dll implements AutoCloseable {
     @SuppressWarnings("unused")
     private boolean loadAllModels;
 
-    public SynthesizerBuilder(OpenJtalk openJtalk) {
+    public Builder(OpenJtalk openJtalk) {
       this.openJtalk = openJtalk;
     }
 
@@ -234,7 +235,7 @@ public class Synthesizer extends Dll implements AutoCloseable {
      * @param accelerationMode ハードウェアアクセラレーションモード。
      * @return ビルダー。
      */
-    public SynthesizerBuilder accelerationMode(AccelerationMode accelerationMode) {
+    public Builder accelerationMode(AccelerationMode accelerationMode) {
       this.accelerationMode = accelerationMode;
       return this;
     }
@@ -245,7 +246,7 @@ public class Synthesizer extends Dll implements AutoCloseable {
      * @param cpuNumThreads CPU利用数。
      * @return ビルダー。
      */
-    public SynthesizerBuilder cpuNumThreads(int cpuNumThreads) {
+    public Builder cpuNumThreads(int cpuNumThreads) {
       this.cpuNumThreads = cpuNumThreads;
       return this;
     }
@@ -256,7 +257,7 @@ public class Synthesizer extends Dll implements AutoCloseable {
      * @param loadAllModels 全てのモデルを読み込むかどうか。
      * @return ビルダー。
      */
-    public SynthesizerBuilder loadAllModels(boolean loadAllModels) {
+    public Builder loadAllModels(boolean loadAllModels) {
       this.loadAllModels = loadAllModels;
       return this;
     }
