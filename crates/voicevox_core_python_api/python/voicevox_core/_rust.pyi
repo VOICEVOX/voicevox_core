@@ -1,18 +1,19 @@
 from pathlib import Path
-from typing import Dict, Final, List, Literal, Union
+from typing import Dict, Final, List, Literal, Union, TYPE_CHECKING
 from uuid import UUID
 
 import numpy as np
 from numpy.typing import NDArray
-from voicevox_core import (
-    AccelerationMode,
-    AccentPhrase,
-    AudioQuery,
-    SpeakerMeta,
-    SupportedDevices,
-    UserDict,
-    UserDictWord,
-)
+if TYPE_CHECKING:
+    from voicevox_core._models import (
+        AccelerationMode,
+        AccentPhrase,
+        AudioQuery,
+        SpeakerMeta,
+        SupportedDevices,
+        UserDict,
+        UserDictWord,
+    )
 
 __version__: str
 

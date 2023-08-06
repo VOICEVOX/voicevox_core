@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'voicevox_core_python_api'
+project = "voicevox_core_python_api"
 # copyright = '2022, _'
 # author = '_'
 # release = '_'
@@ -20,6 +20,7 @@ extensions = ["autoapi.extension"]
 
 autoapi_type = "python"
 autoapi_dirs = ["../../../crates/voicevox_core_python_api/python"]
+autoapi_ignore = ["*test*"]
 autoapi_options = [
     "members",
     "undoc-members",
@@ -31,7 +32,6 @@ autoapi_options = [
 
 # templates_path = ['_templates']
 exclude_patterns = []
-
 
 
 # -- Options for HTML output -------------------------------------------------
