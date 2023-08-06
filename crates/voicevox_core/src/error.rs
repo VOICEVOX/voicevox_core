@@ -6,11 +6,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 use uuid::Uuid;
 
-/*
- * 新しいエラーを定義したら、必ずresult_code.rsにあるVoicevoxResultCodeに対応するコードを定義し、
- * internal.rsにある変換関数に変換処理を加えること
- */
-
+/// VOICEVOX COREのエラー。
 #[derive(Error, Debug)]
 pub enum Error {
     /*
@@ -44,11 +40,14 @@ pub enum Error {
         source: anyhow::Error,
     },
 
-    #[error("{},{filename}", base_error_message(VOICEVOX_VVM_MODEL_READ_ERROR))]
+    #[error(
+        "{}({path}):{source}",
+        base_error_message(VOICEVOX_VVM_MODEL_READ_ERROR)
+    )]
     VvmRead {
-        filename: String,
+        path: PathBuf,
         #[source]
-        source: Option<anyhow::Error>,
+        source: anyhow::Error,
     },
 
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_LOAD_METAS_ERROR))]
@@ -67,10 +66,10 @@ pub enum Error {
     InvalidStyleId { style_id: StyleId },
 
     #[error(
-        "{}: {model_index}",
-        base_error_message(VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR)
+        "{}: {model_id:?}",
+        base_error_message(VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR)
     )]
-    InvalidModelIndex { model_index: usize },
+    InvalidModelId { model_id: VoiceModelId },
 
     #[error("{}", base_error_message(VOICEVOX_RESULT_INFERENCE_ERROR))]
     InferenceFailed,

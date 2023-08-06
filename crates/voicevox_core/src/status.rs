@@ -101,6 +101,10 @@ impl Status {
         self.loaded_models.lock().unwrap().metas()
     }
 
+    pub(crate) fn ids_for(&self, style_id: StyleId) -> Result<(VoiceModelId, ModelInnerId)> {
+        self.loaded_models.lock().unwrap().ids_for(style_id)
+    }
+
     pub fn is_loaded_model(&self, voice_model_id: &VoiceModelId) -> bool {
         self.loaded_models
             .lock()
@@ -159,9 +163,12 @@ impl Status {
         self.is_loaded_model_by_style_id(style_id)
     }
 
+    /// # Panics
+    ///
+    /// `self`が`model_id`を含んでいないとき、パニックする。
     pub async fn predict_duration_session_run(
         &self,
-        style_id: StyleId,
+        model_id: &VoiceModelId,
         mut phoneme_vector_array: NdArray<i64, Ix1>,
         mut speaker_id_array: NdArray<i64, Ix1>,
     ) -> Result<Vec<f32>> {
@@ -169,7 +176,7 @@ impl Status {
             .loaded_models
             .lock()
             .unwrap()
-            .predict_duration(style_id)?;
+            .predict_duration(model_id);
 
         tokio::task::spawn_blocking(move || {
             let mut predict_duration = predict_duration.lock().unwrap();
@@ -183,10 +190,13 @@ impl Status {
         .unwrap()
     }
 
+    /// # Panics
+    ///
+    /// `self`が`model_id`を含んでいないとき、パニックする。
     #[allow(clippy::too_many_arguments)]
     pub async fn predict_intonation_session_run(
         &self,
-        style_id: StyleId,
+        model_id: &VoiceModelId,
         mut length_array: NdArray<i64, Ix0>,
         mut vowel_phoneme_vector_array: NdArray<i64, Ix1>,
         mut consonant_phoneme_vector_array: NdArray<i64, Ix1>,
@@ -200,7 +210,7 @@ impl Status {
             .loaded_models
             .lock()
             .unwrap()
-            .predict_intonation(style_id)?;
+            .predict_intonation(model_id);
 
         tokio::task::spawn_blocking(move || {
             let mut predict_intonation = predict_intonation.lock().unwrap();
@@ -223,14 +233,17 @@ impl Status {
         .unwrap()
     }
 
+    /// # Panics
+    ///
+    /// `self`が`model_id`を含んでいないとき、パニックする。
     pub async fn decode_session_run(
         &self,
-        style_id: StyleId,
+        model_id: &VoiceModelId,
         mut f0_array: NdArray<f32, Ix2>,
         mut phoneme_array: NdArray<f32, Ix2>,
         mut speaker_id_array: NdArray<i64, Ix1>,
     ) -> Result<Vec<f32>> {
-        let decode = self.loaded_models.lock().unwrap().decode(style_id)?;
+        let decode = self.loaded_models.lock().unwrap().decode(model_id);
 
         tokio::task::spawn_blocking(move || {
             let mut decode = decode.lock().unwrap();
@@ -256,6 +269,7 @@ impl Status {
 struct LoadedModels(BTreeMap<VoiceModelId, LoadedModel>);
 
 struct LoadedModel {
+    model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
     session_set: SessionSet,
 }
@@ -269,41 +283,74 @@ impl LoadedModels {
             .collect()
     }
 
+    fn ids_for(&self, style_id: StyleId) -> Result<(VoiceModelId, ModelInnerId)> {
+        let (
+            model_id,
+            LoadedModel {
+                model_inner_ids, ..
+            },
+        ) = self
+            .0
+            .iter()
+            .find(|(_, LoadedModel { metas, .. })| {
+                metas
+                    .iter()
+                    .flat_map(SpeakerMeta::styles)
+                    .any(|style| *style.id() == style_id)
+            })
+            .ok_or(Error::InvalidStyleId { style_id })?;
+
+        let model_inner_id = *model_inner_ids
+            .get(&style_id)
+            .expect("`model_inner_ids` should contains all of the style IDs in the model");
+
+        Ok((model_id.clone(), model_inner_id))
+    }
+
+    /// # Panics
+    ///
+    /// `self`が`model_id`を含んでいないとき、パニックする。
     fn predict_duration(
         &self,
-        style_id: StyleId,
-    ) -> Result<Arc<std::sync::Mutex<AssertSend<Session<'static>>>>> {
+        model_id: &VoiceModelId,
+    ) -> Arc<std::sync::Mutex<AssertSend<Session<'static>>>> {
         let LoadedModel {
             session_set: SessionSet {
                 predict_duration, ..
             },
             ..
-        } = self.find_loaded_voice_model(style_id)?;
-        Ok(predict_duration.clone())
+        } = &self.0[model_id];
+        predict_duration.clone()
     }
 
+    /// # Panics
+    ///
+    /// `self`が`model_id`を含んでいないとき、パニックする。
     fn predict_intonation(
         &self,
-        style_id: StyleId,
-    ) -> Result<Arc<std::sync::Mutex<AssertSend<Session<'static>>>>> {
+        model_id: &VoiceModelId,
+    ) -> Arc<std::sync::Mutex<AssertSend<Session<'static>>>> {
         let LoadedModel {
             session_set: SessionSet {
                 predict_intonation, ..
             },
             ..
-        } = self.find_loaded_voice_model(style_id)?;
-        Ok(predict_intonation.clone())
+        } = &self.0[model_id];
+        predict_intonation.clone()
     }
 
+    /// # Panics
+    ///
+    /// `self`が`model_id`を含んでいないとき、パニックする。
     fn decode(
         &self,
-        style_id: StyleId,
-    ) -> Result<Arc<std::sync::Mutex<AssertSend<Session<'static>>>>> {
+        model_id: &VoiceModelId,
+    ) -> Arc<std::sync::Mutex<AssertSend<Session<'static>>>> {
         let LoadedModel {
             session_set: SessionSet { decode, .. },
             ..
-        } = self.find_loaded_voice_model(style_id)?;
-        Ok(decode.clone())
+        } = &self.0[model_id];
+        decode.clone()
     }
 
     fn contains_voice_model(&self, model_id: &VoiceModelId) -> bool {
@@ -338,6 +385,7 @@ impl LoadedModels {
         let prev = self.0.insert(
             model.id().clone(),
             LoadedModel {
+                model_inner_ids: model.model_inner_ids(),
                 metas: model.metas().clone(),
                 session_set: SessionSet {
                     predict_duration: Arc::new(std::sync::Mutex::new(predict_duration.into())),
@@ -357,18 +405,6 @@ impl LoadedModels {
             });
         }
         Ok(())
-    }
-
-    fn find_loaded_voice_model(&self, style_id: StyleId) -> Result<&LoadedModel> {
-        self.0
-            .values()
-            .find(|LoadedModel { metas, .. }| {
-                metas
-                    .iter()
-                    .flat_map(|speaker| speaker.styles())
-                    .any(|style| *style.id() == style_id)
-            })
-            .ok_or(Error::InvalidStyleId { style_id })
     }
 
     fn styles(&self) -> impl Iterator<Item = &StyleMeta> {

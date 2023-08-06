@@ -2,15 +2,45 @@ use serde::{Deserialize, Serialize};
 
 use super::*;
 
+/// このライブラリで利用可能なデバイスの情報。
+///
+/// あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったと
+/// しても`cuda`や`dml`は`true`を示しうる。
 #[derive(Getters, Debug, Serialize, Deserialize)]
 pub struct SupportedDevices {
+    /// CPUが利用可能。
+    ///
+    /// 常に`true`。
     cpu: bool,
+    /// CUDAが利用可能。
+    ///
+    /// ONNX Runtimeの[CUDA Execution Provider] (`CUDAExecutionProvider`)に対応する。必要な環境につ
+    /// いてはそちらを参照。
+    ///
+    /// [CUDA Execution Provider]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
     cuda: bool,
+    /// DirectMLが利用可能。
+    ///
+    /// ONNX Runtimeの[DirectML Execution Provider] (`DmlExecutionProvider`)に対応する。必要な環境に
+    /// ついてはそちらを参照。
+    ///
+    /// [DirectML Execution Provider]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
     dml: bool,
 }
 
 impl SupportedDevices {
-    /// サポートされているデバイス情報を取得する
+    /// `SupportedDevices`をコンストラクトする。
+    ///
+    /// # Example
+    ///
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
+    #[cfg_attr(not(windows), doc = "```")]
+    /// use voicevox_core::SupportedDevices;
+    ///
+    /// let supported_devices = SupportedDevices::create()?;
+    /// #
+    /// # Result::<_, anyhow::Error>::Ok(())
+    /// ```
     pub fn create() -> Result<Self> {
         let mut cuda_support = false;
         let mut dml_support = false;

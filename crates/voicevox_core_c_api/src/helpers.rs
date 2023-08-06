@@ -30,7 +30,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(LoadMetas(_))) => VOICEVOX_RESULT_LOAD_METAS_ERROR,
             Err(RustApi(GetSupportedDevices(_))) => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
             Err(RustApi(InvalidStyleId { .. })) => VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR,
-            Err(RustApi(InvalidModelIndex { .. })) => VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR,
+            Err(RustApi(InvalidModelId { .. })) => VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR,
             Err(RustApi(InferenceFailed)) => VOICEVOX_RESULT_INFERENCE_ERROR,
             Err(RustApi(ExtractFullContextLabel(_))) => {
                 VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR
