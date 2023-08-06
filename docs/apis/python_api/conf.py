@@ -16,7 +16,7 @@ project = "voicevox_core_python_api"
 
 autodoc_docstring_signature = True
 
-extensions = ["autoapi.extension"]
+extensions = ["autoapi.extension", "sphinx.ext.napoleon"]
 
 autoapi_type = "python"
 autoapi_dirs = ["../../../crates/voicevox_core_python_api/python"]

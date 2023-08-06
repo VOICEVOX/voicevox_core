@@ -4,8 +4,9 @@ from uuid import UUID
 
 import numpy as np
 from numpy.typing import NDArray
+
 if TYPE_CHECKING:
-    from voicevox_core._models import (
+    from voicevox_core import (
         AccelerationMode,
         AccentPhrase,
         AudioQuery,
@@ -18,8 +19,7 @@ if TYPE_CHECKING:
 __version__: str
 
 def supported_devices() -> SupportedDevices:
-    """
-    このライブラリで利用可能なデバイスの情報を取得する。
+    """このライブラリで利用可能なデバイスの情報を取得する。
 
     .. code-block::
 
@@ -33,11 +33,13 @@ class VoiceModel:
     """音声モデル。"""
 
     @staticmethod
-    async def from_path(path: Union[Path, str]) -> "VoiceModel":
-        """
-        VVMファイルから ``VoiceModel`` を生成する。
+    async def from_path(path: Union[Path, str]) -> VoiceModel:
+        """VVMファイルから ``VoiceModel`` を生成する。
 
-        :param path: VVMファイルへのパス。
+        Parameters
+        ----------
+        path
+            VVMファイルへのパス。
         """
         ...
     @property
@@ -50,13 +52,17 @@ class VoiceModel:
         ...
 
 class OpenJtalk:
-    """
-    テキスト解析器としてのOpen JTalk。
+    """テキスト解析器としてのOpen JTalk。"""
 
-    :param open_jtalk_dict_dir: open_jtalkの辞書ディレクトリ。
-    """
+    def __init__(self, open_jtalk_dict_dir: Union[Path, str]) -> None:
+        """Open JTalkを初期化する。
 
-    def __init__(self, open_jtalk_dict_dir: Union[Path, str]) -> None: ...
+        Parameters
+        ----------
+        open_jtalk_dict_dir
+            Open JTalkの辞書ディレクトリ。
+        """
+        ...
     def use_user_dict(self, user_dict: UserDict) -> None:
         """ユーザー辞書を設定する。
 
@@ -81,13 +87,18 @@ class Synthesizer:
         cpu_num_threads: int = 0,
         load_all_models: bool = False,
     ) -> "Synthesizer":
-        """
-        :class:`Synthesizer` を生成する。
+        """:class:`Synthesizer` を生成する。
 
-        :param open_jtalk: Open JTalk。
-        :param acceleration_mode: ハードウェアアクセラレーションモード。
-        :param cpu_num_threads: CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
-        :param load_all_models: 全てのモデルを読み込む。
+        Parameters
+        ----------
+        open_jtalk
+            Open JTalk。
+        acceleration_mode
+            ハードウェアアクセラレーションモード。
+        cpu_num_threads
+            CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
+        load_all_models
+            全てのモデルを読み込む。
         """
         ...
     def __repr__(self) -> str: ...
@@ -100,23 +111,34 @@ class Synthesizer:
         """メタ情報。"""
         ...
     async def load_voice_model(self, model: VoiceModel) -> None:
-        """
-        モデルを読み込む。
+        """モデルを読み込む。
 
-        :param style_id: 読み込むモデルのスタイルID。
+        Parameters
+        ----------
+        style_id
+            読み込むモデルのスタイルID。
         """
         ...
     def unload_voice_model(self, voice_model_id: str) -> None:
         """音声モデルの読み込みを解除する。
 
-        :param voice_model_id: 音声モデルID。
+        Parameters
+        ----------
+        voice_model_id
+            音声モデルID。
         """
         ...
     def is_loaded_voice_model(self, voice_model_id: str) -> bool:
-        """
-        指定したvoice_model_idのモデルが読み込まれているか判定する。
+        """指定したvoice_model_idのモデルが読み込まれているか判定する。
 
-        :returns: モデルが読み込まれているかどうか。
+        Parameters
+        ----------
+        voice_model_id
+            音声モデルID。
+
+        Returns
+        -------
+        モデルが読み込まれているかどうか。
         """
         ...
     async def audio_query(
@@ -125,14 +147,20 @@ class Synthesizer:
         style_id: int,
         kana: bool = False,
     ) -> AudioQuery:
-        """
-        :class:`AudioQuery` を生成する。
+        """:class:`AudioQuery` を生成する。
 
-        :param text: テキスト。文字コードはUTF-8。
-        :param style_id: スタイルID。
-        :param kana: ``text`` をAquesTalk風記法として解釈する。
+        Parameters
+        ----------
+        text
+            テキスト。文字コードはUTF-8。
+        style_id
+            スタイルID。
+        kana
+            ``text`` をAquesTalk風記法として解釈するかどうか。
 
-        :returns: 話者とテキストから生成された :class:`AudioQuery` 。
+        Returns
+        -------
+        話者とテキストから生成された :class:`AudioQuery` 。
         """
         ...
     async def create_accent_phrases(
@@ -141,14 +169,20 @@ class Synthesizer:
         style_id: int,
         kana: bool = False,
     ) -> List[AccentPhrase]:
-        """
-        AccentPhrase (アクセント句)の配列を生成する。
+        """AccentPhrase（アクセント句）の配列を生成する。
 
-        :param text: UTF-8の日本語テキストまたはAquesTalk風記法。
-        :param style_id: スタイルID。
-        :param kana: ``text`` をAquesTalk風記法として解釈する。
+        Parameters
+        ----------
+        text
+            UTF-8の日本語テキストまたはAquesTalk風記法。
+        style_id
+            スタイルID。
+        kana
+            ``text`` をAquesTalk風記法として解釈するかどうか。
 
-        :returns: :class:`AccentPhrase` の配列。
+        Returns
+        -------
+        :class:`AccentPhrase` の配列。
         """
         ...
     async def replace_mora_data(
@@ -156,10 +190,20 @@ class Synthesizer:
         accent_phrases: List[AccentPhrase],
         style_id: int,
     ) -> List[AccentPhrase]:
-        """アクセント句の音高・音素長を変更する。
+        """アクセント句の音高・音素長を変更した新しいアクセント句の配列を生成する。
 
-        :param accent_phrases: 変更元のアクセント句。
-        :param style_id: スタイルID。
+        元のアクセント句の音高・音素長は変更されない。
+
+        Parameters
+        ----------
+        accent_phrases:
+            変更元のアクセント句。
+        style_id:
+            スタイルID。
+
+        Returns
+        -------
+        新しいアクセント句の配列。
         """
         ...
     async def replace_phoneme_length(
@@ -167,11 +211,16 @@ class Synthesizer:
         accent_phrases: List[AccentPhrase],
         style_id: int,
     ) -> List[AccentPhrase]:
-        """
-        アクセント句の音素長を変更する。
+        """アクセント句の音素長を変更した新しいアクセント句の配列を生成する。
 
-        :param accent_phrases: 変更元のアクセント句。
-        :param style_id: スタイルID。
+        元のアクセント句の音素長は変更されない。
+
+        Parameters
+        ----------
+        accent_phrases
+            変更元のアクセント句。
+        style_id
+            スタイルID。
         """
         ...
     async def replace_mora_pitch(
@@ -179,11 +228,16 @@ class Synthesizer:
         accent_phrases: List[AccentPhrase],
         style_id: int,
     ) -> List[AccentPhrase]:
-        """
-        アクセント句の音高を変更する。
+        """アクセント句の音高を変更した新しいアクセント句の配列を生成する。
 
-        :param accent_phrases: 変更元のアクセント句。
-        :param style_id: スタイルID。
+        元のアクセント句の音高は変更されない。
+
+        Parameters
+        ----------
+        accent_phrases
+            変更元のアクセント句。
+        style_id
+            スタイルID。
         """
         ...
     async def synthesis(
@@ -192,14 +246,20 @@ class Synthesizer:
         style_id: int,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
-        """
-        :class:`AudioQuery` から音声合成する。
+        """:class:`AudioQuery` から音声合成する。
 
-        :param audio_query: :class:`AudioQuery` 。
-        :param style_id: スタイルID。
-        :param enable_interrogative_upspeak: 疑問文の調整を有効にする。
+        Parameters
+        ----------
+        audio_query
+            :class:`AudioQuery` 。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
 
-        :returns: WAVデータ。
+        Returns
+        -------
+        WAVデータ。
         """
         ...
     async def tts(
@@ -209,30 +269,35 @@ class Synthesizer:
         kana: bool = False,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
-        """
-        テキスト音声合成を実行する。
+        """テキスト音声合成を実行する。
 
-        :param text: UTF-8の日本語テキストまたはAquesTalk風記法。
-        :param style_id: スタイルID。
-        :param kana: ``text`` をAquesTalk風記法として解釈する。
-        :param enable_interrogative_upspeak: 疑問文の調整を有効にする。
+        Parameters
+        ----------
+        text
+            UTF-8の日本語テキストまたはAquesTalk風記法。
+        style_id
+            スタイルID。
+        kana
+            ``text`` をAquesTalk風記法として解釈するかどうか。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
 
-        :returns: WAVデータ。
+        Returns
+        -------
+        WAVデータ。
         """
         ...
 
 class UserDict:
-    """ユーザー辞書。
+    """ユーザー辞書。"""
 
-    Attributes
-    ----------
-    words
-        エントリーのリスト。
-    """
+    @property
+    def words(self) -> Dict[UUID, UserDictWord]:
+        """単語のDict。"""
+        ...
 
-    words: Dict[UUID, UserDictWord]
     def __init__(self) -> None:
-        """ユーザー辞書をまたは新規作成する。"""
+        """ユーザー辞書を新規作成する。"""
         ...
     def load(self, path: str) -> None:
         """ファイルに保存されたユーザー辞書を読み込む。
