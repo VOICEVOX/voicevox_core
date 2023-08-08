@@ -52,17 +52,15 @@ class VoiceModel:
         ...
 
 class OpenJtalk:
-    """テキスト解析器としてのOpen JTalk。"""
+    """テキスト解析器としてのOpen JTalk。
 
-    def __init__(self, open_jtalk_dict_dir: Union[Path, str]) -> None:
-        """Open JTalkを初期化する。
+    Parameters
+    ----------
+    open_jtalk_dict_dir
+        Open JTalkの辞書ディレクトリ。
+    """
 
-        Parameters
-        ----------
-        open_jtalk_dict_dir
-            Open JTalkの辞書ディレクトリ。
-        """
-        ...
+    def __init__(self, open_jtalk_dict_dir: Union[Path, str]) -> None: ...
     def use_user_dict(self, user_dict: UserDict) -> None:
         """ユーザー辞書を設定する。
 
@@ -295,10 +293,7 @@ class UserDict:
     def words(self) -> Dict[UUID, UserDictWord]:
         """このオプジェクトの :class:`dict` としての表現。"""
         ...
-
-    def __init__(self) -> None:
-        """ユーザー辞書を新規作成する。"""
-        ...
+    def __init__(self) -> None: ...
     def load(self, path: str) -> None:
         """ファイルに保存されたユーザー辞書を読み込む。
 
