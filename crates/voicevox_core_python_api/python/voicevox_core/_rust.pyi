@@ -293,7 +293,7 @@ class UserDict:
 
     @property
     def words(self) -> Dict[UUID, UserDictWord]:
-        """単語のDict。"""
+        """このオプジェクトの :class:`dict` としての表現。"""
         ...
 
     def __init__(self) -> None:
