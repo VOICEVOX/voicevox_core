@@ -155,8 +155,9 @@ impl Synthesizer {
         "Synthesizer { .. }"
     }
 
-    fn __enter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
-        slf
+    fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
+        slf.synthesizer.get()?;
+        Ok(slf)
     }
 
     fn __exit__(
@@ -164,8 +165,8 @@ impl Synthesizer {
         #[allow(unused_variables)] exc_type: &PyAny,
         #[allow(unused_variables)] exc_value: &PyAny,
         #[allow(unused_variables)] traceback: &PyAny,
-    ) -> PyResult<()> {
-        self.close()
+    ) {
+        self.close();
     }
 
     #[getter]
@@ -388,7 +389,7 @@ impl Synthesizer {
         )
     }
 
-    fn close(&mut self) -> PyResult<()> {
+    fn close(&mut self) {
         self.synthesizer.close()
     }
 }
@@ -415,23 +416,23 @@ impl<T, C: PyTypeInfo> Closable<T, C> {
         match &self.content {
             MaybeClosed::Open(content) => Ok(content),
             MaybeClosed::Closed => Err(VoicevoxError::new_err(format!(
-                "The `{}` is already closed",
+                "The `{}` is closed",
                 C::NAME,
             ))),
         }
     }
 
-    fn close(&mut self) -> PyResult<()> {
-        self.get()?;
-        debug!("Closing a {}", C::NAME);
+    fn close(&mut self) {
+        if matches!(self.content, MaybeClosed::Open(_)) {
+            debug!("Closing a {}", C::NAME);
+        }
         self.content = MaybeClosed::Closed;
-        Ok(())
     }
 }
 
 impl<T, C: PyTypeInfo> Drop for Closable<T, C> {
     fn drop(&mut self) {
-        let _ = self.close();
+        self.close();
     }
 }
 
