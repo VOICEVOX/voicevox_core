@@ -1124,7 +1124,7 @@ pub extern "C" fn voicevox_user_dict_remove_word(
 }
 
 /// ユーザー辞書の単語をJSON形式で出力する。
-/// 
+///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
 /// @param [in] user_dict ユーザー辞書
