@@ -71,15 +71,21 @@ impl InferenceCore {
             return Err(Error::InvalidStyleId { style_id });
         }
 
+        let (model_id, model_inner_id) = self
+            .status
+            .id_relations
+            .get(&style_id)
+            .ok_or(Error::InvalidStyleId { style_id })?;
+
         let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
-        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[style_id.raw_id() as i64]));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[model_inner_id.raw_id() as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
             vec![&mut phoneme_vector_array, &mut speaker_id_array];
 
         let mut output = self
             .status
-            .predict_duration_session_run(style_id, input_tensors)?;
+            .predict_duration_session_run(model_id, input_tensors)?;
 
         for output_item in output.iter_mut() {
             if *output_item < PHONEME_LENGTH_MINIMAL {
@@ -106,6 +112,12 @@ impl InferenceCore {
             return Err(Error::InvalidStyleId { style_id });
         }
 
+        let (model_id, model_inner_id) = self
+            .status
+            .id_relations
+            .get(&style_id)
+            .ok_or(Error::InvalidStyleId { style_id })?;
+
         let mut length_array = NdArray::new(ndarray::arr0(length as i64));
         let mut vowel_phoneme_vector_array = NdArray::new(ndarray::arr1(vowel_phoneme_vector));
         let mut consonant_phoneme_vector_array =
@@ -116,7 +128,7 @@ impl InferenceCore {
             NdArray::new(ndarray::arr1(start_accent_phrase_vector));
         let mut end_accent_phrase_vector_array =
             NdArray::new(ndarray::arr1(end_accent_phrase_vector));
-        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[style_id.raw_id() as i64]));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[model_inner_id.raw_id() as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> = vec![
             &mut length_array,
@@ -130,7 +142,7 @@ impl InferenceCore {
         ];
 
         self.status
-            .predict_intonation_session_run(style_id, input_tensors)
+            .predict_intonation_session_run(model_id, input_tensors)
     }
 
     pub async fn decode(
@@ -144,6 +156,12 @@ impl InferenceCore {
         if !self.status.validate_speaker_id(style_id) {
             return Err(Error::InvalidStyleId { style_id });
         }
+
+        let (model_id, model_inner_id) = self
+            .status
+            .id_relations
+            .get(&style_id)
+            .ok_or(Error::InvalidStyleId { style_id })?;
 
         // 音が途切れてしまうのを避けるworkaround処理が入っている
         // TODO: 改善したらここのpadding処理を取り除く
@@ -171,13 +189,13 @@ impl InferenceCore {
                 .into_shape([length_with_padding, phoneme_size])
                 .unwrap(),
         );
-        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[style_id.raw_id() as i64]));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[model_inner_id.raw_id() as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
             vec![&mut f0_array, &mut phoneme_array, &mut speaker_id_array];
 
         self.status
-            .decode_session_run(style_id, input_tensors)
+            .decode_session_run(model_id, input_tensors)
             .map(|output| Self::trim_padding_from_output(output, padding_size))
     }
 

@@ -31,3 +31,4 @@ jobs:
           title: Update rust toolchain ${{ env.RUST_VERSION }}
           body: |
             Update rust toolchain ${{ env.RUST_VERSION }}
+            （１度プルリクエストを閉じて再度開くことでテストが実行できます。）

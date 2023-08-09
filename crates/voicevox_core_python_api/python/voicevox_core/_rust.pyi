@@ -16,36 +16,50 @@ from voicevox_core import (
 
 __version__: str
 
-def supported_devices() -> SupportedDevices: ...
+def supported_devices() -> SupportedDevices:
+    """
+    このライブラリで利用可能なデバイスの情報を取得する。
+
+    .. code-block::
+
+       import voicevox_core
+
+       supported_devices = voicevox_core.supported_devices()
+    """
+    ...
 
 class VoiceModel:
+    """音声モデル。"""
+
     @staticmethod
     async def from_path(path: Union[Path, str]) -> "VoiceModel":
         """
-        Parameters
-        ----------
-        path
-            vvmファイルへのパス
+        VVMファイルから ``VoiceModel`` を生成する。
+
+        :param path: VVMファイルへのパス。
         """
         ...
     @property
-    def id(self) -> str: ...
+    def id(self) -> str:
+        """ID。"""
+        ...
     @property
-    def metas(self) -> List[SpeakerMeta]: ...
+    def metas(self) -> List[SpeakerMeta]:
+        """メタ情報。"""
+        ...
 
 class OpenJtalk:
-    def __init__(self, open_jtalk_dict_dir: Union[Path, str]) -> None:
-        """
-        Parameters
-        ----------
-        open_jtalk_dict_dir
-            open_jtalkの辞書ディレクトリ。
-        """
-        ...
+    """
+    テキスト解析器としてのOpen JTalk。
+
+    :param open_jtalk_dict_dir: open_jtalkの辞書ディレクトリ。
+    """
+
+    def __init__(self, open_jtalk_dict_dir: Union[Path, str]) -> None: ...
     def use_user_dict(self, user_dict: UserDict) -> None:
         """ユーザー辞書を設定する。
 
-        この関数を読んだ後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
+        この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
 
         Parameters
         ----------
@@ -55,6 +69,8 @@ class OpenJtalk:
         ...
 
 class Synthesizer:
+    """音声シンセサイザ。"""
+
     @staticmethod
     async def new_with_initialize(
         open_jtalk: OpenJtalk,
@@ -65,15 +81,12 @@ class Synthesizer:
         load_all_models: bool = False,
     ) -> "Synthesizer":
         """
-        Parameters
-        ----------
-        open_jtalk
-        acceleration_mode
-            ハードウェアアクセラレーションモード。
-        cpu_num_threads
-            CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
-        load_all_models
-            全てのモデルを読み込む。
+        :class:`Synthesizer` を生成する。
+
+        :param open_jtalk: Open JTalk。
+        :param acceleration_mode: ハードウェアアクセラレーションモード。
+        :param cpu_num_threads: CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
+        :param load_all_models: 全てのモデルを読み込む。
         """
         ...
     def __repr__(self) -> str: ...
@@ -81,41 +94,30 @@ class Synthesizer:
     def __exit__(self, exc_type, exc_value, traceback): ...
     @property
     def is_gpu_mode(self) -> bool:
-        """ハードウェアアクセラレーションがGPUモードか判定する。
-
-        Returns
-        -------
-        GPUモードならtrue、そうでないならfalse
-        """
+        """ハードウェアアクセラレーションがGPUモードかどうか。"""
         ...
     @property
     def metas(self) -> SpeakerMeta:
-        """メタ情報を取得する。"""
+        """メタ情報。"""
         ...
     async def load_voice_model(self, model: VoiceModel) -> None:
-        """モデルを読み込む。
+        """
+        モデルを読み込む。
 
-        Parameters
-        ----------
-        style_id
-            読み込むモデルの話者ID。
+        :param style_id: 読み込むモデルのスタイルID。
         """
         ...
     def unload_voice_model(self, voice_model_id: str) -> None:
-        """モデルの読み込みを解除する。
+        """音声モデルの読み込みを解除する。
 
-        Parameters
-        ----------
-        voice_model_id
-            音声モデルID。
+        :param voice_model_id: 音声モデルID。
         """
         ...
     def is_loaded_voice_model(self, voice_model_id: str) -> bool:
-        """指定したvoice_model_idのモデルが読み込まれているか判定する。
+        """
+        指定したvoice_model_idのモデルが読み込まれているか判定する。
 
-        Returns
-        -------
-        モデルが読み込まれているのであればtrue、そうでないならfalse
+        :returns: モデルが読み込まれているかどうか。
         """
         ...
     async def audio_query(
@@ -124,20 +126,14 @@ class Synthesizer:
         style_id: int,
         kana: bool = False,
     ) -> AudioQuery:
-        """AudioQuery を実行する。
+        """
+        :class:`AudioQuery` を生成する。
 
-        Parameters
-        ----------
-        text
-            テキスト。文字コードはUTF-8。
-        style_id
-            話者ID。
-        kana
-            aquestalk形式のkanaとしてテキストを解釈する。
+        :param text: テキスト。文字コードはUTF-8。
+        :param style_id: スタイルID。
+        :param kana: ``text`` をAquesTalk風記法として解釈する。
 
-        Returns
-        -------
-        :class:`AudioQuery`
+        :returns: 話者とテキストから生成された :class:`AudioQuery` 。
         """
         ...
     async def create_accent_phrases(
@@ -146,20 +142,14 @@ class Synthesizer:
         style_id: int,
         kana: bool = False,
     ) -> List[AccentPhrase]:
-        """create_accent_phrases を実行する。
+        """
+        AccentPhrase (アクセント句)の配列を生成する。
 
-        Parameters
-        ----------
-        text
-            テキスト。文字コードはUTF-8。
-        style_id
-            話者ID。
-        kana
-            aquestalk形式のkanaとしてテキストを解釈する。
+        :param text: UTF-8の日本語テキストまたはAquesTalk風記法。
+        :param style_id: スタイルID。
+        :param kana: ``text`` をAquesTalk風記法として解釈する。
 
-        Returns
-        -------
-        :class:`List` [:class:`AccentPhrase`]
+        :returns: :class:`AccentPhrase` の配列。
         """
         ...
     async def replace_mora_data(
@@ -169,15 +159,8 @@ class Synthesizer:
     ) -> List[AccentPhrase]:
         """アクセント句の音高・音素長を変更する。
 
-        Parameters
-        ----------
-        accent_phrases
-            変更元のアクセント句。
-        style_id
-            話者ID。
-        Returns
-        -------
-        :class:`List` [:class:`AccentPhrase`]
+        :param accent_phrases: 変更元のアクセント句。
+        :param style_id: スタイルID。
         """
         ...
     async def replace_phoneme_length(
@@ -185,17 +168,11 @@ class Synthesizer:
         accent_phrases: List[AccentPhrase],
         style_id: int,
     ) -> List[AccentPhrase]:
-        """アクセント句の音素長を変更する。
+        """
+        アクセント句の音素長を変更する。
 
-        Parameters
-        ----------
-        accent_phrases
-            変更元のアクセント句。
-        style_id
-            話者ID。
-        Returns
-        -------
-        :class:`List` [:class:`AccentPhrase`]
+        :param accent_phrases: 変更元のアクセント句。
+        :param style_id: スタイルID。
         """
         ...
     async def replace_mora_pitch(
@@ -203,17 +180,11 @@ class Synthesizer:
         accent_phrases: List[AccentPhrase],
         style_id: int,
     ) -> List[AccentPhrase]:
-        """アクセント句の音高を変更する。
+        """
+        アクセント句の音高を変更する。
 
-        Parameters
-        ----------
-        accent_phrases
-            変更元のアクセント句。
-        style_id
-            話者ID。
-        Returns
-        -------
-        :class:`List` [:class:`AccentPhrase`]
+        :param accent_phrases: 変更元のアクセント句。
+        :param style_id: スタイルID。
         """
         ...
     async def synthesis(
@@ -222,20 +193,14 @@ class Synthesizer:
         style_id: int,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
-        """AudioQuery から音声合成する。
+        """
+        :class:`AudioQuery` から音声合成する。
 
-        Parameters
-        ----------
-        audio_query
-            AudioQuery。
-        style_id
-            話者ID。
-        enable_interrogative_upspeak
-            疑問文の調整を有効にする。
+        :param audio_query: :class:`AudioQuery` 。
+        :param style_id: スタイルID。
+        :param enable_interrogative_upspeak: 疑問文の調整を有効にする。
 
-        Returns
-        -------
-        wavデータ
+        :returns: WAVデータ。
         """
         ...
     async def tts(
@@ -245,18 +210,15 @@ class Synthesizer:
         kana: bool = False,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
-        """テキスト音声合成を実行する。
+        """
+        テキスト音声合成を実行する。
 
-        Parameters
-        ----------
-        text
-            テキスト。文字コードはUTF-8。
-        style_id
-            話者ID。
-        kana
-            aquestalk形式のkanaとしてテキストを解釈する。
-        enable_interrogative_upspeak
-            疑問文の調整を有効にする。
+        :param text: UTF-8の日本語テキストまたはAquesTalk風記法。
+        :param style_id: スタイルID。
+        :param kana: ``text`` をAquesTalk風記法として解釈する。
+        :param enable_interrogative_upspeak: 疑問文の調整を有効にする。
+
+        :returns: WAVデータ。
         """
         ...
     def close(self) -> None: ...
@@ -336,7 +298,7 @@ class UserDict:
         ...
 
 class VoicevoxError(Exception):
-    """VOICEVOXで発生したエラー。"""
+    """VOICEVOX COREのエラー。"""
 
     ...
 
