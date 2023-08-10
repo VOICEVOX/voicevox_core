@@ -21,10 +21,13 @@ impl VoicevoxSynthesizer {
         open_jtalk: &OpenJtalkRc,
         options: &InitializeOptions,
     ) -> Result<Self> {
+        let synthesizer =
+            Synthesizer::new_with_initialize(open_jtalk.open_jtalk.clone(), options).await?;
+        let metas = synthesizer.metas();
+        let metas_cstring = CString::new(serde_json::to_string(&metas).unwrap()).unwrap();
         Ok(Self {
-            synthesizer: Synthesizer::new_with_initialize(open_jtalk.open_jtalk.clone(), options)
-                .await?,
-            metas_cstring: CString::default(),
+            synthesizer,
+            metas_cstring,
         })
     }
 
