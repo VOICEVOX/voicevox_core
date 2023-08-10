@@ -111,17 +111,16 @@ impl VoiceModel {
         };
 
         let mut vvm_paths = Vec::new();
-        for entry in root_dir.read_dir().map_err(|e| Error::LoadModel {
-            path: root_dir.clone(),
-            source: e.into(),
-        })? {
-            match entry {
-                Ok(entry) => vvm_paths.push(Self::from_path(entry.path())),
-                Err(e) => Err(Error::LoadModel {
-                    path: root_dir.clone(),
-                    source: e.into(),
-                })?,
-            }
+        for entry in root_dir
+            .read_dir()
+            .map_err(|e| Error::LoadModel {
+                path: root_dir.clone(),
+                source: e.into(),
+            })?
+            .filter_map(|v| v.ok())
+            .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "vvm"))
+        {
+            vvm_paths.push(Self::from_path(entry.path()));
         }
 
         join_all(vvm_paths).await.into_iter().collect()
