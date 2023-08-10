@@ -88,7 +88,8 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(synthesizer_new_with_initialize_output_json);
+static SNAPSHOTS: Lazy<Snapshots> =
+    snapshots::section!(synthesizer_new_with_initialize_output_json);
 
 #[derive(Deserialize)]
 struct Snapshots {
