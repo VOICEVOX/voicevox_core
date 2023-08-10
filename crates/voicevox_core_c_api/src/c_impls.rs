@@ -55,3 +55,24 @@ impl VoicevoxVoiceModel {
         Ok(Self { model, id, metas })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ::test_util::OPEN_JTALK_DIC_DIR;
+    use rstest::*;
+
+    #[rstest]
+    #[tokio::test]
+    async fn new_with_initialize_must_output_metas_json() {
+        let open_jtalk = OpenJtalkRc::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap();
+        let mut options = InitializeOptions::default();
+        options.load_all_models = true;
+        let synthesizer = VoicevoxSynthesizer::new_with_initialize(&open_jtalk, &options)
+            .await
+            .unwrap();
+
+        println!("{:?}", synthesizer.metas());
+        assert_eq!(CStr::is_empty(synthesizer.metas()), false);
+    }
+}
