@@ -4,21 +4,33 @@ use serde::{Deserialize, Serialize};
 
 /* 各フィールドのjsonフィールド名はsnake_caseとする*/
 
+/// モーラ（子音＋母音）ごとの情報。
 #[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
 pub struct MoraModel {
+    /// 文字。
     text: String,
+    /// 子音の音素。
     consonant: Option<String>,
+    /// 子音の音長。
     consonant_length: Option<f32>,
+    /// 母音の音素。
     vowel: String,
+    /// 母音の音長。
     vowel_length: f32,
+    /// 音高。
     pitch: f32,
 }
 
+/// AccentPhrase (アクセント句ごとの情報)。
 #[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
 pub struct AccentPhraseModel {
+    /// モーラの配列。
     moras: Vec<MoraModel>,
+    /// アクセント箇所。
     accent: usize,
+    /// 後ろに無音を付けるかどうか。
     pause_mora: Option<MoraModel>,
+    /// 疑問系かどうか。
     #[serde(default)]
     is_interrogative: bool,
 }
@@ -33,18 +45,34 @@ impl AccentPhraseModel {
     }
 }
 
+/// AudioQuery (音声合成用のクエリ)。
 #[allow(clippy::too_many_arguments)]
 #[derive(Clone, new, Getters, Deserialize, Serialize)]
 pub struct AudioQueryModel {
+    /// アクセント句の配列。
     accent_phrases: Vec<AccentPhraseModel>,
+    /// 全体の話速。
     speed_scale: f32,
+    /// 全体の音高。
     pitch_scale: f32,
+    /// 全体の抑揚。
     intonation_scale: f32,
+    /// 全体の音量。
     volume_scale: f32,
+    /// 音声の前の無音時間。
     pre_phoneme_length: f32,
+    /// 音声の後の無音時間。
     post_phoneme_length: f32,
+    /// 音声データの出力サンプリングレート。
     output_sampling_rate: u32,
+    /// 音声データをステレオ出力するか否か。
     output_stereo: bool,
+    /// \[読み取り専用\] AquesTalk風記法。
+    ///
+    /// [`Synthesizer::audio_query`]が返すもののみ`Some`となる。入力としてのAudioQueryでは無視され
+    /// る。
+    ///
+    /// [`Synthesizer::audio_query`]: crate::Synthesizer::audio_query
     kana: Option<String>,
 }
 

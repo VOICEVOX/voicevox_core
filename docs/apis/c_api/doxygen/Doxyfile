@@ -1204,7 +1204,9 @@ ALPHABETICAL_INDEX     = YES
 # while generating the index headers.
 # This tag requires that the tag ALPHABETICAL_INDEX is set to YES.
 
-IGNORE_PREFIX          =
+IGNORE_PREFIX          += VOICEVOX_
+IGNORE_PREFIX          += voicevox_
+IGNORE_PREFIX          += Voicevox
 
 #---------------------------------------------------------------------------
 # Configuration options related to the HTML output
@@ -2657,3 +2659,9 @@ GENERATE_LEGEND        = YES
 # The default value is: YES.
 
 DOT_CLEANUP            = YES
+
+ALIASES += example{1}="<dl><dt>Example</dt><dd>\1</dd></dl>"
+ALIASES += examples{1}="<dl><dt>Examples</dt><dd>\1</dd></dl>"
+
+# 中身は箇条書きで、素の文章からは始まらない想定
+ALIASES += safety{1}="<dl><dt> Safety</dt><dd><details><summary>⚠️安全性要件</summary><a href=\"#voicevox-core-safety\">安全性要件</a>は以下の通りである。\1</details></dd></dl>"

@@ -4,6 +4,9 @@ use crate::engine::{create_kana, parse_kana, AccentPhraseModel, OpenJtalk, Synth
 
 use super::*;
 
+/// [`Synthesizer::synthesis`]のオプション。
+///
+/// [`Synthesizer::synthesis`]: Synthesizer::synthesis
 pub struct SynthesisOptions {
     pub enable_interrogative_upspeak: bool,
 }
@@ -22,13 +25,21 @@ impl From<&TtsOptions> for SynthesisOptions {
     }
 }
 
+/// [`Synthesizer::create_accent_phrases`]のオプション。
+///
+/// [`Synthesizer::create_accent_phrases`]: Synthesizer::create_accent_phrases
 #[derive(Default)]
 pub struct AccentPhrasesOptions {
+    /// AquesTalk風記法としてテキストを解釈する。
     pub kana: bool,
 }
 
+/// [`Synthesizer::audio_query`]のオプション。
+///
+/// [`Synthesizer::audio_query`]: Synthesizer::audio_query
 #[derive(Default)]
 pub struct AudioQueryOptions {
+    /// AquesTalk風記法としてテキストを解釈する。
     pub kana: bool,
 }
 
@@ -38,7 +49,11 @@ impl From<&TtsOptions> for AudioQueryOptions {
     }
 }
 
+/// [`Synthesizer::tts`]のオプション。
+///
+/// [`Synthesizer::tts`]: Synthesizer::tts
 pub struct TtsOptions {
+    /// AquesTalk風記法としてテキストを解釈する。
     pub kana: bool,
     pub enable_interrogative_upspeak: bool,
 }
@@ -58,14 +73,21 @@ impl Default for TtsOptions {
     }
 }
 
+/// ハードウェアアクセラレーションモードを設定する設定値。
 #[derive(Default, Debug, PartialEq, Eq)]
 pub enum AccelerationMode {
+    /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
     #[default]
     Auto,
+    /// ハードウェアアクセラレーションモードを"CPU"に設定する。
     Cpu,
+    /// ハードウェアアクセラレーションモードを"GPU"に設定する。
     Gpu,
 }
 
+/// [`Synthesizer::new_with_initialize`]のオプション。
+///
+/// [`Synthesizer::new_with_initialize`]: Synthesizer::new_with_initialize
 #[derive(Default)]
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
@@ -73,14 +95,41 @@ pub struct InitializeOptions {
     pub load_all_models: bool,
 }
 
-/// 音声シンセサイザ
+/// 音声シンセサイザ。
 pub struct Synthesizer {
     synthesis_engine: SynthesisEngine,
     use_gpu: bool,
 }
 
 impl Synthesizer {
-    /// コンストラクタ兼初期化
+    /// `Synthesizer`をコンストラクトする。
+    ///
+    /// # Example
+    ///
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
+    #[cfg_attr(not(windows), doc = "```")]
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// # use test_util::OPEN_JTALK_DIC_DIR;
+    /// #
+    /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
+    /// #
+    /// use std::sync::Arc;
+    ///
+    /// use voicevox_core::{AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer};
+    ///
+    /// let mut syntesizer = Synthesizer::new_with_initialize(
+    ///     Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+    ///     &InitializeOptions {
+    ///         acceleration_mode: ACCELERATION_MODE,
+    ///         ..Default::default()
+    ///     },
+    /// )
+    /// .await?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn new_with_initialize(
         open_jtalk: Arc<OpenJtalk>,
         options: &InitializeOptions,
@@ -118,11 +167,12 @@ impl Synthesizer {
         })
     }
 
+    /// ハードウェアアクセラレーションがGPUモードか判定する。
     pub fn is_gpu_mode(&self) -> bool {
         self.use_gpu
     }
 
-    /// 音声モデルを読み込む
+    /// 音声モデルを読み込む。
     pub async fn load_voice_model(&mut self, model: &VoiceModel) -> Result<()> {
         self.synthesis_engine
             .inference_core_mut()
@@ -131,14 +181,14 @@ impl Synthesizer {
         Ok(())
     }
 
-    /// 指定したモデルIdの音声モデルを開放する
+    /// 音声モデルの読み込みを解除する。
     pub fn unload_voice_model(&mut self, voice_model_id: &VoiceModelId) -> Result<()> {
         self.synthesis_engine
             .inference_core_mut()
             .unload_model(voice_model_id)
     }
 
-    /// 指定したモデルIdの音声モデルが読み込まれているか判定する
+    /// 指定したIDの音声モデルが読み込まれているか判定する。
     pub fn is_loaded_voice_model(&self, voice_model_id: &VoiceModelId) -> bool {
         self.synthesis_engine
             .inference_core()
@@ -152,12 +202,12 @@ impl Synthesizer {
             .is_model_loaded_by_style_id(style_id)
     }
 
-    /// 今読み込んでいる音声モデルのメタ情報を返す
+    /// 今読み込んでいる音声モデルのメタ情報を返す。
     pub fn metas(&self) -> &VoiceModelMeta {
         self.synthesis_engine.inference_core().metas()
     }
 
-    /// 音声合成を行う
+    /// AudioQueryから音声合成を行う。
     pub async fn synthesis(
         &self,
         audio_query: &AudioQueryModel,
@@ -223,6 +273,104 @@ impl Synthesizer {
             .await
     }
 
+    /// AccentPhrase (アクセント句)の配列を生成する。
+    ///
+    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk風記法として、そうでないときには
+    /// 日本語のテキストとして解釈される。
+    ///
+    /// # Examples
+    ///
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
+    #[cfg_attr(not(windows), doc = "```")]
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// # let syntesizer = {
+    /// #     use std::sync::Arc;
+    /// #
+    /// #     use test_util::OPEN_JTALK_DIC_DIR;
+    /// #     use voicevox_core::{
+    /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
+    /// #     };
+    /// #
+    /// #     let mut syntesizer = Synthesizer::new_with_initialize(
+    /// #         Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+    /// #         &InitializeOptions {
+    /// #             acceleration_mode: AccelerationMode::Cpu,
+    /// #             ..Default::default()
+    /// #         },
+    /// #     )
+    /// #     .await?;
+    /// #
+    /// #     let model = &VoiceModel::from_path(concat!(
+    /// #         env!("CARGO_MANIFEST_DIR"),
+    /// #         "/../../model/sample.vvm",
+    /// #     ))
+    /// #     .await?;
+    /// #     syntesizer.load_voice_model(model).await?;
+    /// #
+    /// #     syntesizer
+    /// # };
+    /// #
+    /// use voicevox_core::StyleId;
+    ///
+    /// let accent_phrases = syntesizer
+    ///     .create_accent_phrases(
+    ///         "こんにちは",    // 日本語のテキスト
+    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         &Default::default(),
+    ///     )
+    ///     .await?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
+    #[cfg_attr(not(windows), doc = "```")]
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// # let syntesizer = {
+    /// #     use std::sync::Arc;
+    /// #
+    /// #     use test_util::OPEN_JTALK_DIC_DIR;
+    /// #     use voicevox_core::{
+    /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
+    /// #     };
+    /// #
+    /// #     let mut syntesizer = Synthesizer::new_with_initialize(
+    /// #         Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+    /// #         &InitializeOptions {
+    /// #             acceleration_mode: AccelerationMode::Cpu,
+    /// #             ..Default::default()
+    /// #         },
+    /// #     )
+    /// #     .await?;
+    /// #
+    /// #     let model = &VoiceModel::from_path(concat!(
+    /// #         env!("CARGO_MANIFEST_DIR"),
+    /// #         "/../../model/sample.vvm",
+    /// #     ))
+    /// #     .await?;
+    /// #     syntesizer.load_voice_model(model).await?;
+    /// #
+    /// #     syntesizer
+    /// # };
+    /// #
+    /// use voicevox_core::{AccentPhrasesOptions, StyleId};
+    ///
+    /// let accent_phrases = syntesizer
+    ///     .create_accent_phrases(
+    ///         "コンニチワ'",   // AquesTalk風記法
+    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         &AccentPhrasesOptions { kana: true },
+    ///     )
+    ///     .await?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`options.kana`]: crate::AccentPhrasesOptions::kana
     pub async fn create_accent_phrases(
         &self,
         text: &str,
@@ -243,6 +391,7 @@ impl Synthesizer {
         }
     }
 
+    /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
     pub async fn replace_mora_data(
         &self,
         accent_phrases: &[AccentPhraseModel],
@@ -253,6 +402,7 @@ impl Synthesizer {
             .await
     }
 
+    /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
     pub async fn replace_phoneme_length(
         &self,
         accent_phrases: &[AccentPhraseModel],
@@ -263,6 +413,7 @@ impl Synthesizer {
             .await
     }
 
+    /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
     pub async fn replace_mora_pitch(
         &self,
         accent_phrases: &[AccentPhraseModel],
@@ -273,6 +424,105 @@ impl Synthesizer {
             .await
     }
 
+    /// [AudioQuery]を生成する。
+    ///
+    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk風記法として、そうでないときには
+    /// 日本語のテキストとして解釈される。
+    ///
+    /// # Examples
+    ///
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
+    #[cfg_attr(not(windows), doc = "```")]
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// # let syntesizer = {
+    /// #     use std::sync::Arc;
+    /// #
+    /// #     use test_util::OPEN_JTALK_DIC_DIR;
+    /// #     use voicevox_core::{
+    /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
+    /// #     };
+    /// #
+    /// #     let mut syntesizer = Synthesizer::new_with_initialize(
+    /// #         Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+    /// #         &InitializeOptions {
+    /// #             acceleration_mode: AccelerationMode::Cpu,
+    /// #             ..Default::default()
+    /// #         },
+    /// #     )
+    /// #     .await?;
+    /// #
+    /// #     let model = &VoiceModel::from_path(concat!(
+    /// #         env!("CARGO_MANIFEST_DIR"),
+    /// #         "/../../model/sample.vvm",
+    /// #     ))
+    /// #     .await?;
+    /// #     syntesizer.load_voice_model(model).await?;
+    /// #
+    /// #     syntesizer
+    /// # };
+    /// #
+    /// use voicevox_core::StyleId;
+    ///
+    /// let audio_query = syntesizer
+    ///     .audio_query(
+    ///         "こんにちは",    // 日本語のテキスト
+    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         &Default::default(),
+    ///     )
+    ///     .await?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
+    #[cfg_attr(not(windows), doc = "```")]
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// # let syntesizer = {
+    /// #     use std::sync::Arc;
+    /// #
+    /// #     use test_util::OPEN_JTALK_DIC_DIR;
+    /// #     use voicevox_core::{
+    /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
+    /// #     };
+    /// #
+    /// #     let mut syntesizer = Synthesizer::new_with_initialize(
+    /// #         Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+    /// #         &InitializeOptions {
+    /// #             acceleration_mode: AccelerationMode::Cpu,
+    /// #             ..Default::default()
+    /// #         },
+    /// #     )
+    /// #     .await?;
+    /// #
+    /// #     let model = &VoiceModel::from_path(concat!(
+    /// #         env!("CARGO_MANIFEST_DIR"),
+    /// #         "/../../model/sample.vvm",
+    /// #     ))
+    /// #     .await?;
+    /// #     syntesizer.load_voice_model(model).await?;
+    /// #
+    /// #     syntesizer
+    /// # };
+    /// #
+    /// use voicevox_core::{AudioQueryOptions, StyleId};
+    ///
+    /// let audio_query = syntesizer
+    ///     .audio_query(
+    ///         "コンニチワ'",   // AquesTalk風記法
+    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         &AudioQueryOptions { kana: true },
+    ///     )
+    ///     .await?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [AudioQuery]: crate::AudioQueryModel
+    /// [`options.kana`]: crate::AudioQueryOptions::kana
     pub async fn audio_query(
         &self,
         text: &str,
@@ -297,6 +547,12 @@ impl Synthesizer {
         ))
     }
 
+    /// テキスト音声合成を行う。
+    ///
+    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk風記法として、そうでないときには
+    /// 日本語のテキストとして解釈される。
+    ///
+    /// [`options.kana`]: crate::TtsOptions::kana
     pub async fn tts(
         &self,
         text: &str,

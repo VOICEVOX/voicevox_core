@@ -27,11 +27,11 @@ metas = '''
     "name": "dummy3",
     "styles": [
       {
-        "id": 2,
+        "id": 302,
         "name": "style3-1"
       },
       {
-        "id": 3,
+        "id": 303,
         "name": "style3-2"
       }
     ],
