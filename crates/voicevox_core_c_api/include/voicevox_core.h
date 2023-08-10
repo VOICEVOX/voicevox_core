@@ -914,6 +914,7 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  *     - ::voicevox_synthesizer_replace_mora_data
  *     - ::voicevox_synthesizer_replace_phoneme_length
  *     - ::voicevox_synthesizer_replace_mora_pitch
+ *     - ::voicevox_user_dict_to_json
  * - 文字列の長さは生成時より変更されていてはならない。
  * - `json`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
  * - `json`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
@@ -1075,6 +1076,8 @@ VoicevoxResultCode voicevox_user_dict_remove_word(const struct VoicevoxUserDict 
 
 /**
  * ユーザー辞書の単語をJSON形式で出力する。
+ *
+ * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
  *
  * @param [in] user_dict ユーザー辞書
  * @param [out] output_json 出力先
