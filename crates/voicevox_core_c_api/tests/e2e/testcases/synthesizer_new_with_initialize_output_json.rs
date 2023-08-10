@@ -51,7 +51,7 @@ impl assert_cdylib::TestCase for TestCase {
                 openjtalk,
                 VoicevoxInitializeOptions {
                     acceleration_mode: VoicevoxAccelerationMode::VOICEVOX_ACCELERATION_MODE_CPU,
-                    _load_all_models: true,
+                    load_all_models: true,
                     ..**voicevox_default_initialize_options
                 },
                 synthesizer.as_mut_ptr(),

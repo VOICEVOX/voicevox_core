@@ -250,7 +250,7 @@ pub(crate) enum VoicevoxAccelerationMode {
 pub(crate) struct VoicevoxInitializeOptions {
     pub(crate) acceleration_mode: VoicevoxAccelerationMode,
     pub(crate) _cpu_num_threads: u16,
-    pub(crate) _load_all_models: bool,
+    pub(crate) load_all_models: bool,
 }
 
 #[derive(Clone, Copy)]
