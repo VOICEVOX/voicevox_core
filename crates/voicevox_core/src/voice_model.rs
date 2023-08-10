@@ -194,3 +194,15 @@ impl VvmEntryReader {
         Ok(buf)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[rstest]
+    #[tokio::test]
+    async fn get_all_models_only_load_vvm() {
+        let all_models = VoiceModel::get_all_models().await;
+        assert!(all_models.is_ok());
+    }
+}
