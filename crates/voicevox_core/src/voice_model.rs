@@ -110,8 +110,7 @@ impl VoiceModel {
                 .join("model")
         };
 
-        let mut vvm_paths = Vec::new();
-        for entry in root_dir
+        let vvm_paths = root_dir
             .read_dir()
             .and_then(|entries| entries.collect::<std::result::Result<Vec<_>, _>>())
             .map_err(|e| Error::LoadModel {
@@ -120,9 +119,7 @@ impl VoiceModel {
             })?
             .into_iter()
             .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "vvm"))
-        {
-            vvm_paths.push(Self::from_path(entry.path()));
-        }
+            .map(|entry| Self::from_path(entry.path()));
 
         join_all(vvm_paths).await.into_iter().collect()
     }
