@@ -99,7 +99,10 @@ metas = '''
     "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3"
   }
 ]'''
-stderr = ""
+stderr.windows = '''
+{windows-video-cards}
+'''
+stderr.unix = ""
 
 [tts_via_audio_query]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172

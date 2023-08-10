@@ -94,5 +94,6 @@ static SNAPSHOTS: Lazy<Snapshots> =
 #[derive(Deserialize)]
 struct Snapshots {
     metas: String,
+    #[serde(deserialize_with = "snapshots::deserialize_platform_specific_snapshot")]
     stderr: String,
 }
