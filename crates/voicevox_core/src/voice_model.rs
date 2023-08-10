@@ -114,15 +114,12 @@ impl VoiceModel {
         for entry in root_dir
             .read_dir()
             .and_then(|entries| entries.collect::<std::result::Result<Vec<_>, _>>())
-            .map(|entries| {
-                entries
-                    .into_iter()
-                    .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "vvm"))
-            })
             .map_err(|e| Error::LoadModel {
                 path: root_dir.clone(),
                 source: e.into(),
             })?
+            .into_iter()
+            .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "vvm"))
         {
             vvm_paths.push(Self::from_path(entry.path()));
         }
