@@ -47,36 +47,38 @@ Java プロジェクトを動かすには、
 
 ```console
 ❯ cargo build
-❯ LD_LIBRARY_PATH=/home/user/voicevox_core/target/debug gradle build
+❯ LD_LIBRARY_PATH=/home/user/voicevox_core/target/debug ./gradlew build
 
 # または
 ❯ cp ../../target/debug/libvoicevox_core_java_api.so lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so
-❯ gradle build
+❯ ./gradlew build
 ```
 
 ## ビルド（リリース）
 
-`cargo build --release` でビルドできます。
+`cargo build --release` でRust側を、`./gradlew build` でJava側をビルドできます。
+パッケージ化する時はlib/src/main/resources/dll内にdllをコピーしてください。
 
 ```console
 ❯ cargo build --release
 ❯ cp ../../target/release/libvoicevox_core_java_api.so lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so
+❯ ./gradlew build
 ```
 
 ## テスト
 
-`gradle test` でテストできます。
+`./gradlew test` でテストできます。
 
 ```console
-❯ gradle test
+❯ ./gradlew test
 ```
 
 ## ドキュメント
 
-`gradle javadoc` でドキュメントを生成できます。
+`./gradlew javadoc` でドキュメントを生成できます。
 
 ```console
-❯ gradle javadoc
+❯ ./gradlew javadoc
 ```
 
 ## DLL 読み込みについて
