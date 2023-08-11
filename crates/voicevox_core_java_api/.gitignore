@@ -6,7 +6,7 @@ build
 
 !lib
 
-lib/src/main/resources/dll/*
-!lib/src/main/resources/dll/**/.gitkeep
-lib/src/main/resources/jniLibs/*
-!lib/src/main/resources/jniLibs/**/.gitkeep
+lib/src/main/resources/dll/*/*
+!lib/src/main/resources/dll/*/.gitkeep
+lib/src/main/resources/jniLibs/*/*
+!lib/src/main/resources/jniLibs/*/.gitkeep

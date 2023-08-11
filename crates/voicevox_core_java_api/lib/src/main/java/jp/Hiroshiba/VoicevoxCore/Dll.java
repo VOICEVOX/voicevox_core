@@ -9,14 +9,6 @@ import ai.onnxruntime.OrtEnvironment;
 
 /** ライブラリを読み込むためだけのクラス。 */
 abstract class Dll {
-  // DLL を読み込む。
-  // src/main/resources/dll/[target] 以下に DLL を配置する。
-  // targetには以下のいずれかが入る：
-  // - win-x64
-  // - mac-x64
-  // - mac-arm64
-  // - linux-x64
-  // - linux-arm64
   static {
     String runtimeName = System.getProperty("java.runtime.name");
     if (runtimeName.equals("Android Runtime")) {
@@ -38,7 +30,9 @@ abstract class Dll {
       } else {
         throw new RuntimeException("Unsupported OS: " + rawOsName);
       }
-      if (rawOsArch.equals("x86_64")) {
+      if (rawOsArch.equals("x86")) {
+        osArch = "x86";
+      } else if (rawOsArch.equals("x86_64")) {
         osArch = "x64";
       } else if (rawOsArch.equals("amd64")) {
         osArch = "x64";
