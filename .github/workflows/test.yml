@@ -324,10 +324,10 @@ jobs:
             DLL_NAME="libvoicevox_core_java_api.dylib"
             case "$ARCH" in
               x86_64)
-                TARGET_NAME="macos-x64"
+                TARGET_NAME="mac-x64"
                 ;;
               arm64)
-                TARGET_NAME="macos-arm64"
+                TARGET_NAME="mac-arm64"
                 ;;
               *)
                 echo "Unsupported architecture: $ARCH"
