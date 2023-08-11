@@ -309,7 +309,7 @@ jobs:
           ARCH="$(uname -m)"
           case "${{ matrix.os }}" in
           windows-latest)
-            DLL_NAME="voicevox_core.dll"
+            DLL_NAME="voicevox_core_java_api.dll"
             case "$ARCH" in
               x86_64)
                 TARGET_NAME="windows-x64"
@@ -321,7 +321,7 @@ jobs:
             esac
             ;;
           macos-latest)
-            DLL_NAME="libvoicevox_core.dylib"
+            DLL_NAME="libvoicevox_core_java_api.dylib"
             case "$ARCH" in
               x86_64)
                 TARGET_NAME="macos-x64"
@@ -336,7 +336,7 @@ jobs:
             esac
             ;;
           ubuntu-latest)
-            DLL_NAME="libvoicevox_core.so"
+            DLL_NAME="libvoicevox_core_java_api.so"
             case "$ARCH" in
               x86_64)
                 TARGET_NAME="linux-x64"
