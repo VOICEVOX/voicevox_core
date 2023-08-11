@@ -19,7 +19,7 @@ abstract class Dll {
       String rawOsArch = System.getProperty("os.arch");
       String osName, osArch, dllName;
       if (rawOsName.startsWith("Win")) {
-        osName = "win";
+        osName = "windows";
         dllName = "voicevox_core_java_api.dll";
       } else if (rawOsName.startsWith("Mac")) {
         osName = "mac";
