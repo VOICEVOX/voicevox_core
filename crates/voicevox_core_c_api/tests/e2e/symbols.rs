@@ -57,7 +57,7 @@ pub(crate) struct Symbols<'lib> {
         'lib,
         unsafe extern "C" fn(*const VoicevoxSynthesizer, VoicevoxVoiceModelId) -> bool,
     >,
-    pub(crate) voicevox_synthesizer_get_metas_json:
+    pub(crate) voicevox_synthesizer_create_metas_json:
         Symbol<'lib, unsafe extern "C" fn(*const VoicevoxSynthesizer) -> *const c_char>,
     pub(crate) voicevox_create_supported_devices_json:
         Symbol<'lib, unsafe extern "C" fn(*mut *mut c_char) -> VoicevoxResultCode>,
@@ -202,7 +202,7 @@ impl<'lib> Symbols<'lib> {
             voicevox_synthesizer_unload_voice_model,
             voicevox_synthesizer_is_gpu_mode,
             voicevox_synthesizer_is_loaded_voice_model,
-            voicevox_synthesizer_get_metas_json,
+            voicevox_synthesizer_create_metas_json,
             voicevox_create_supported_devices_json,
             voicevox_synthesizer_audio_query,
             voicevox_synthesizer_synthesis,

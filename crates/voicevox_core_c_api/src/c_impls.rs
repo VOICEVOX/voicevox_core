@@ -1,8 +1,4 @@
-use std::{
-    ffi::{c_char, CString},
-    path::Path,
-    sync::Arc,
-};
+use std::{ffi::CString, path::Path, sync::Arc};
 
 use voicevox_core::{InitializeOptions, OpenJtalk, Result, Synthesizer, VoiceModel, VoiceModelId};
 
@@ -24,28 +20,22 @@ impl VoicevoxSynthesizer {
         Ok(Self {
             synthesizer: Synthesizer::new_with_initialize(open_jtalk.open_jtalk.clone(), options)
                 .await?,
-            metas_cstring: Default::default(),
         })
     }
 
     pub(crate) async fn load_voice_model(&self, model: &VoiceModel) -> CApiResult<()> {
         self.synthesizer.load_voice_model(model).await?;
-        let metas = &self.synthesizer.metas();
-        *self.metas_cstring.lock().unwrap() =
-            CString::new(serde_json::to_string(metas).unwrap()).unwrap();
         Ok(())
     }
 
     pub(crate) fn unload_voice_model(&self, model_id: &VoiceModelId) -> Result<()> {
         self.synthesizer.unload_voice_model(model_id)?;
-        let metas = &self.synthesizer.metas();
-        *self.metas_cstring.lock().unwrap() =
-            CString::new(serde_json::to_string(metas).unwrap()).unwrap();
         Ok(())
     }
 
-    pub(crate) fn metas_ptr(&self) -> *const c_char {
-        self.metas_cstring.lock().unwrap().as_ptr()
+    pub(crate) fn metas(&self) -> CString {
+        let metas = &self.synthesizer.metas();
+        CString::new(serde_json::to_string(metas).unwrap()).unwrap()
     }
 }
 

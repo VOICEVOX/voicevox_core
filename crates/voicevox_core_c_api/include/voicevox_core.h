@@ -623,19 +623,20 @@ bool voicevox_synthesizer_is_loaded_voice_model(const struct VoicevoxSynthesizer
 /**
  * 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
  *
+ * JSONの解放は ::voicevox_json_free で行う。
+ *
  * @param [in] synthesizer 音声シンセサイザ
  *
  * @return メタ情報のJSON文字列
  *
  * \safety{
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`synthesizer`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
  * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-const char *voicevox_synthesizer_get_metas_json(const struct VoicevoxSynthesizer *synthesizer);
+const char *voicevox_synthesizer_create_metas_json(const struct VoicevoxSynthesizer *synthesizer);
 
 /**
  * このライブラリで利用可能なデバイスの情報を、JSONで取得する。
@@ -909,6 +910,7 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  * \safety{
  * - `json`は以下のAPIで得られたポインタでなくてはいけない。
  *     - ::voicevox_create_supported_devices_json
+ *     - ::voicevox_synthesizer_create_metas_json
  *     - ::voicevox_synthesizer_audio_query
  *     - ::voicevox_synthesizer_create_accent_phrases
  *     - ::voicevox_synthesizer_replace_mora_data
