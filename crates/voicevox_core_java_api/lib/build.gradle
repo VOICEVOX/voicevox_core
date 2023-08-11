@@ -10,6 +10,8 @@ plugins {
     id 'java-library'
 }
 
+version = '999.999.999'
+
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
@@ -32,6 +34,8 @@ dependencies {
 
     // https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api
     implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.0.2'
+
+    implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime', version: '1.14.0'
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -45,5 +49,6 @@ tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
+
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
