@@ -42,20 +42,19 @@ abstract class Dll {
         throw new RuntimeException("Unsupported OS architecture: " + rawOsArch);
       }
 
+      String target = osName + "-" + osArch;
       // ONNX Runtime の DLL を読み込む。
       OrtEnvironment.getEnvironment();
-      try (InputStream in = Dll.class.getResourceAsStream("/dll/" + osName + "-" + osArch + "/" + dllName)) {
+      try (InputStream in = Dll.class.getResourceAsStream("/dll/" + target + "/" + dllName)) {
         if (in == null) {
           try {
             // フォールバック。開発用。
             System.loadLibrary("voicevox_core_java_api");
           } catch (UnsatisfiedLinkError e) {
-            throw new RuntimeException("Failed to load Voicevox Core DLL", e);
+            throw new RuntimeException("Failed to load Voicevox Core DLL for " + target, e);
           }
         } else {
           Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
-          tempDir = tempDir.resolve("voicevox_core_java_api");
-          tempDir.toFile().mkdirs();
           Path dllPath = tempDir.resolve(dllName);
           dllPath.toFile().deleteOnExit();
           Files.copy(in, dllPath);
@@ -63,7 +62,7 @@ abstract class Dll {
           System.load(dllPath.toAbsolutePath().toString());
         }
       } catch (Exception e) {
-        throw new RuntimeException("Failed to load Voicevox Core DLL", e);
+        throw new RuntimeException("Failed to load Voicevox Core DLL for " + target, e);
       }
     }
   }

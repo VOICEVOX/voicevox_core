@@ -356,4 +356,5 @@ jobs:
             ;;
           esac
           cp -v ../../target/debug/$DLL_NAME ./lib/src/main/resources/dll/$TARGET_NAME/$DLL_NAME
+          echo "target = $TARGET_NAME, dll = $DLL_NAME"
           ./gradlew test --info
