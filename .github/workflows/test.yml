@@ -306,18 +306,54 @@ jobs:
       - name: 必要なDLLをコピーしてテストを実行
         working-directory: crates/voicevox_core_java_api
         run: |
-          cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll . || true
-          cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* . || true
-          cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            export VV_DLL_PATH="${{ github.workspace }}/target/debug/voicevox_core_java_api.dll"
-            ORT_NAME="onnxruntime.dll"
-          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-            export VV_DLL_PATH="${{ github.workspace }}/target/debug/libvoicevox_core_java_api.dylib"
-            ORT_NAME="$(ls ./libonnxruntime.*.dylib)"
-          else
-            export VV_DLL_PATH="${{ github.workspace }}/target/debug/libvoicevox_core_java_api.so"
-            ORT_NAME="$(ls ./libonnxruntime.so.*)"
-          fi
-          export ORT_DLL_PATH="$PWD/$ORT_NAME"
+          ARCH="$(uname -m)"
+          case "${{ matrix.os }}" in
+          windows-latest)
+            DLL_NAME="voicevox_core.dll"
+            case "$ARCH" in
+              x86_64)
+                TARGET_NAME="windows-x64"
+                ;;
+              *)
+                echo "Unsupported architecture: $ARCH"
+                exit 1
+                ;;
+            esac
+            ;;
+          macos-latest)
+            DLL_NAME="libvoicevox_core.dylib"
+            case "$ARCH" in
+              x86_64)
+                TARGET_NAME="macos-x64"
+                ;;
+              arm64)
+                TARGET_NAME="macos-arm64"
+                ;;
+              *)
+                echo "Unsupported architecture: $ARCH"
+                exit 1
+                ;;
+            esac
+            ;;
+          ubuntu-latest)
+            DLL_NAME="libvoicevox_core.so"
+            case "$ARCH" in
+              x86_64)
+                TARGET_NAME="linux-x64"
+                ;;
+              aarch64)
+                TARGET_NAME="linux-arm64"
+                ;;
+              *)
+                echo "Unsupported architecture: $ARCH"
+                exit 1
+                ;;
+            esac
+            ;;
+          *)
+            echo "Unsupported OS: ${{ matrix.os }}"
+            exit 1
+            ;;
+          esac
+          cp -v ../../target/debug/$DLL_NAME ./lib/src/main/resources/dll/$TARGET_NAME/$DLL_NAME
           ./gradlew test --info

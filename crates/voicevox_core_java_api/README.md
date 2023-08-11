@@ -27,7 +27,7 @@ VOICEVOX CORE の Java バインディング。
                 - windows-x64:
                     - voicevox_core.dll
                 - ...
-            - jniLibs:
+            - jniLibs: # Android用のディレクトリ。
                 - x86_64:
                     - ...
 - src: # Rustのソースコード。jni-rsを使ってJavaとのバインディングを行う。
