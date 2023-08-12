@@ -93,7 +93,9 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
         VOICEVOX_RESULT_UNLOADED_MODEL_ERROR => "Modelが読み込まれていません\0",
         VOICEVOX_RESULT_LOAD_USER_DICT_ERROR => "ユーザー辞書を読み込めませんでした\0",
         VOICEVOX_RESULT_SAVE_USER_DICT_ERROR => "ユーザー辞書を書き込めませんでした\0",
-        VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR => "ユーザー辞書に単語が見つかりませんでした\0",
+        VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR => {
+            "ユーザー辞書に単語が見つかりませんでした\0"
+        }
         VOICEVOX_RESULT_USE_USER_DICT_ERROR => "OpenJTalkのユーザー辞書の設定に失敗しました\0",
         VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR => {
             "ユーザー辞書の単語のバリデーションに失敗しました\0"
