@@ -61,7 +61,7 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         let metas_json = {
-            let raw = voicevox_synthesizer_create_metas_json(synthesizer) as *mut std::ffi::c_char;
+            let raw = voicevox_synthesizer_create_metas_json(synthesizer);
             let metas_json = &CStr::from_ptr(raw).to_str()?.parse::<serde_json::Value>()?;
             let metas_json = serde_json::to_string_pretty(metas_json).unwrap();
             voicevox_json_free(raw);

@@ -453,7 +453,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_create_metas_json(
     synthesizer: &VoicevoxSynthesizer,
-) -> *const c_char {
+) -> *mut c_char {
     let metas = synthesizer.metas();
     C_STRING_DROP_CHECKER.whitelist(metas).into_raw()
 }

@@ -636,7 +636,7 @@ bool voicevox_synthesizer_is_loaded_voice_model(const struct VoicevoxSynthesizer
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-const char *voicevox_synthesizer_create_metas_json(const struct VoicevoxSynthesizer *synthesizer);
+char *voicevox_synthesizer_create_metas_json(const struct VoicevoxSynthesizer *synthesizer);
 
 /**
  * このライブラリで利用可能なデバイスの情報を、JSONで取得する。
