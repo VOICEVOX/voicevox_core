@@ -1,13 +1,11 @@
 package jp.Hiroshiba.VoicevoxCore;
 
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
-
 import javax.annotation.Nonnull;
-
-import com.google.gson.Gson;
 
 /**
  * 音声シンセサイザ。
@@ -52,10 +50,9 @@ public class Synthesizer extends Dll {
   /**
    * {@link AudioQuery} を生成する。
    *
-   * @param text    テキスト。
+   * @param text テキスト。
    * @param styleId スタイルID。
    * @param options {@link AudioQueryOption} のセット。
-   *
    * @return 話者とテキストから生成された {@link AudioQuery}。
    */
   @Nonnull
@@ -74,14 +71,14 @@ public class Synthesizer extends Dll {
   /**
    * {@link AccentPhrase} の配列を生成する。
    *
-   * @param text    テキスト。
+   * @param text テキスト。
    * @param styleId スタイルID。
    * @param options {@link AudioQueryOption} のセット。
-   *
    * @return 話者とテキストから生成された {@link AccentPhrase} の配列。
    */
   @Nonnull
-  public List<AccentPhrase> createAccentPhrases(String text, int styleId, EnumSet<AccentPhrasesOption> options) {
+  public List<AccentPhrase> createAccentPhrases(
+      String text, int styleId, EnumSet<AccentPhrasesOption> options) {
     boolean kana = options.contains(AccentPhrasesOption.KANA);
     String accentPhrasesJson = rsAccentPhrases(text, styleId, kana);
     Gson gson = new Gson();
@@ -96,59 +93,59 @@ public class Synthesizer extends Dll {
    * アクセント句の音高・音素長を変更する。
    *
    * @param accentPhrases 変更元のアクセント句の配列。
-   * @param styleId       スタイルID。
-   *
+   * @param styleId スタイルID。
    * @return 変更後のアクセント句の配列。
    */
   @Nonnull
   public List<AccentPhrase> replaceMoraData(List<AccentPhrase> accentPhrases, int styleId) {
     String accentPhrasesJson = new Gson().toJson(accentPhrases);
     String replacedAccentPhrasesJson = rsReplaceMoraData(accentPhrasesJson, styleId, false);
-    return new ArrayList<>(Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
+    return new ArrayList<>(
+        Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
   }
 
   /**
    * アクセント句の音素長を変更する。
    *
    * @param accentPhrases 変更元のアクセント句の配列。
-   * @param styleId       スタイルID。
-   *
+   * @param styleId スタイルID。
    * @return 変更後のアクセント句の配列。
    */
   @Nonnull
   public List<AccentPhrase> replacePhonemeLength(List<AccentPhrase> accentPhrases, int styleId) {
     String accentPhrasesJson = new Gson().toJson(accentPhrases);
     String replacedAccentPhrasesJson = rsReplacePhonemeLength(accentPhrasesJson, styleId, false);
-    return new ArrayList<>(Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
+    return new ArrayList<>(
+        Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
   }
 
   /**
    * アクセント句の音高を変更する。
    *
    * @param accentPhrases 変更元のアクセント句の配列。
-   * @param styleId       スタイルID。
-   *
+   * @param styleId スタイルID。
    * @return 変更後のアクセント句の配列。
    */
   @Nonnull
   public List<AccentPhrase> replaceMoraPitch(List<AccentPhrase> accentPhrases, int styleId) {
     String accentPhrasesJson = new Gson().toJson(accentPhrases);
     String replacedAccentPhrasesJson = rsReplaceMoraPitch(accentPhrasesJson, styleId, false);
-    return new ArrayList<>(Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
+    return new ArrayList<>(
+        Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
   }
 
   /**
    * {@link AudioQuery} から音声合成する。
    *
    * @param audioQuery {@link AudioQuery}。
-   * @param styleId    スタイルID。
-   * @param options    {@link SynthesisOption} のセット。
-   *
+   * @param styleId スタイルID。
+   * @param options {@link SynthesisOption} のセット。
    * @return WAVデータ。
    */
   @Nonnull
   public byte[] synthesis(AudioQuery audioQuery, int styleId, EnumSet<SynthesisOption> options) {
-    boolean enableInterrogativeUpspeak = options.contains(SynthesisOption.ENABLE_INTERROGATIVE_UPSPEAK);
+    boolean enableInterrogativeUpspeak =
+        options.contains(SynthesisOption.ENABLE_INTERROGATIVE_UPSPEAK);
     Gson gson = new Gson();
     String queryJson = gson.toJson(audioQuery);
     return rsSynthesis(queryJson, styleId, enableInterrogativeUpspeak);
@@ -157,10 +154,9 @@ public class Synthesizer extends Dll {
   /**
    * テキスト音声合成を実行する。
    *
-   * @param text    テキスト。
+   * @param text テキスト。
    * @param styleId スタイルID。
    * @param options {@link TtsOption} のセット。
-   *
    * @return WAVデータ。
    */
   @Nonnull
@@ -170,9 +166,7 @@ public class Synthesizer extends Dll {
     return rsTts(text, styleId, kana, enableInterrogativeUpspeak);
   }
 
-  /**
-   * 音声シンセサイザを破棄する。
-   */
+  /** 音声シンセサイザを破棄する。 */
   @Override
   protected void finalize() {
     rsDrop();
@@ -202,10 +196,12 @@ public class Synthesizer extends Dll {
   private native String rsReplaceMoraPitch(String accentPhrasesJson, int styleId, boolean kana);
 
   @Nonnull
-  private native byte[] rsSynthesis(String queryJson, int styleId, boolean enableInterrogativeUpspeak);
+  private native byte[] rsSynthesis(
+      String queryJson, int styleId, boolean enableInterrogativeUpspeak);
 
   @Nonnull
-  private native byte[] rsTts(String text, int styleId, boolean kana, boolean enableInterrogativeUpspeak);
+  private native byte[] rsTts(
+      String text, int styleId, boolean kana, boolean enableInterrogativeUpspeak);
 
   private native void rsDrop();
 
@@ -215,14 +211,18 @@ public class Synthesizer extends Dll {
 
   /**
    * 音声シンセサイザのビルダー。
+   *
    * @see Synthesizer#builder
    */
   public static class Builder {
     private OpenJtalk openJtalk;
+
     @SuppressWarnings("unused")
     private AccelerationMode accelerationMode;
+
     @SuppressWarnings("unused")
     private int cpuNumThreads;
+
     @SuppressWarnings("unused")
     private boolean loadAllModels;
 

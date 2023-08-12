@@ -1,15 +1,13 @@
 package jp.Hiroshiba.VoicevoxCore;
 
-import java.util.HashMap;
-
-import javax.annotation.Nonnull;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.internal.LinkedTreeMap;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import java.util.HashMap;
+import javax.annotation.Nonnull;
 
 /** ユーザー辞書。 */
 public class UserDict extends Dll {
@@ -98,20 +96,19 @@ public class UserDict extends Dll {
       throw new NullPointerException("words");
     }
     HashMap<String, Word> words = new HashMap<>();
-    rawWords.forEach((uuid, rawWord) -> {
-      Word word = gson.fromJson(gson.toJson(rawWord), Word.class);
-      if (word == null) {
-        throw new NullPointerException("word");
-      }
-      words.put(uuid, word);
-    });
+    rawWords.forEach(
+        (uuid, rawWord) -> {
+          Word word = gson.fromJson(gson.toJson(rawWord), Word.class);
+          if (word == null) {
+            throw new NullPointerException("word");
+          }
+          words.put(uuid, word);
+        });
 
     return words;
   }
 
-  /**
-   * ユーザー辞書を破棄する。
-   */
+  /** ユーザー辞書を破棄する。 */
   @Override
   protected void finalize() {
     rsDrop();
@@ -142,22 +139,15 @@ public class UserDict extends Dll {
 
   private static native void rsValidatePronunciation(String pronunciation);
 
-  /**
-   * ユーザー辞書の単語。
-   */
+  /** ユーザー辞書の単語。 */
   public static class Word {
-    /**
-     * 単語の表層形。
-     */
+    /** 単語の表層形。 */
     @SerializedName("surface")
     @Expose
     @Nonnull
     public String surface;
 
-    /**
-     * 単語の発音。
-     * 発音として有効なカタカナである必要がある。
-     */
+    /** 単語の発音。 発音として有効なカタカナである必要がある。 */
     @SerializedName("pronunciation")
     @Expose
     @Nonnull
@@ -173,20 +163,12 @@ public class UserDict extends Dll {
     @Nonnull
     public Type wordType;
 
-    /**
-     * アクセント型。
-     * 音が下がる場所を指す。
-     */
+    /** アクセント型。 音が下がる場所を指す。 */
     @SerializedName("accent_type")
     @Expose
     public int accentType;
 
-    /**
-     * 単語の優先度。
-     * 0から10までの整数。
-     * 数字が大きいほど優先度が高くなる。
-     * 1から9までの値を指定することを推奨。
-     */
+    /** 単語の優先度。 0から10までの整数。 数字が大きいほど優先度が高くなる。 1から9までの値を指定することを推奨。 */
     @SerializedName("priority")
     @Expose
     @Min(0)
@@ -196,9 +178,8 @@ public class UserDict extends Dll {
     /**
      * UserDict.Wordを作成する。
      *
-     * @param surface       言葉の表層形。
+     * @param surface 言葉の表層形。
      * @param pronunciation 言葉の発音。
-     *
      * @throws IllegalArgumentException pronunciationが不正な場合。
      */
     public Word(String surface, String pronunciation) {
@@ -221,7 +202,6 @@ public class UserDict extends Dll {
      * 単語の種類を設定する。
      *
      * @param wordType 単語の種類。
-     *
      * @return このインスタンス。
      */
     public Word wordType(Type wordType) {
@@ -236,7 +216,6 @@ public class UserDict extends Dll {
      * アクセント型を設定する。
      *
      * @param accentType アクセント型。
-     *
      * @return このインスタンス。
      */
     public Word accentType(int accentType) {
@@ -251,9 +230,7 @@ public class UserDict extends Dll {
      * 優先度を設定する。
      *
      * @param priority 優先度。
-     *
      * @return このインスタンス。
-     *
      * @throws IllegalArgumentException priorityが0未満または10より大きい場合。
      */
     public Word priority(int priority) {
@@ -264,41 +241,29 @@ public class UserDict extends Dll {
       return this;
     }
 
-    /**
-     * 単語の種類。
-     */
+    /** 単語の種類。 */
     public static enum Type {
-      /**
-       * 固有名詞。
-       */
+      /** 固有名詞。 */
       @SerializedName("PROPER_NOUN")
       @Expose
       PROPER_NOUN,
 
-      /**
-       * 一般名詞。
-       */
+      /** 一般名詞。 */
       @SerializedName("COMMON_NOUN")
       @Expose
       COMMON_NOUN,
 
-      /**
-       * 動詞。
-       */
+      /** 動詞。 */
       @SerializedName("VERB")
       @Expose
       VERB,
 
-      /**
-       * 形容詞。
-       */
+      /** 形容詞。 */
       @SerializedName("ADJECTIVE")
       @Expose
       ADJECTIVE,
 
-      /**
-       * 語尾。
-       */
+      /** 語尾。 */
       @SerializedName("SUFFIX")
       @Expose
       SUFFIX,

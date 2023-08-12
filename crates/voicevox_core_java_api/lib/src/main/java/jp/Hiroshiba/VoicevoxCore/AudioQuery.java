@@ -1,12 +1,10 @@
 package jp.Hiroshiba.VoicevoxCore;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.annotation.Nonnull;
-
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nonnull;
 
 /** AudioQuery (音声合成用のクエリ)。 */
 public class AudioQuery {
@@ -59,12 +57,12 @@ public class AudioQuery {
   /**
    * [読み取り専用] AquesTalk風記法。
    *
-   * {@link Synthesizer#audioQuery} が返すもののみ String となる。入力としてのAudioQueryでは無視される。
+   * <p>{@link Synthesizer#audioQuery} が返すもののみ String となる。入力としてのAudioQueryでは無視される。
    */
   @SerializedName("kana")
   @Expose
   @Nonnull
-  final public String kana;
+  public final String kana;
 
   public AudioQuery() {
     this.accentPhrases = new ArrayList<>();

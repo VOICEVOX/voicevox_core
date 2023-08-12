@@ -8,6 +8,7 @@
 plugins {
     // Apply the java-library plugin for API and implementation separation.
     id 'java-library'
+    id "com.diffplug.spotless" version "6.20.0"
 }
 
 version = '999.999.999'
@@ -52,3 +53,10 @@ tasks.named('test') {
 
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
+
+apply plugin: "com.diffplug.spotless"
+spotless {
+    java {
+        googleJavaFormat()
+    }
+}

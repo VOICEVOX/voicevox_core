@@ -1,21 +1,19 @@
 package jp.Hiroshiba.VoicevoxCore;
 
-import javax.annotation.Nonnull;
-
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import javax.annotation.Nonnull;
 
 /** 音声モデル。 */
 public class VoiceModel extends Dll {
   long internal;
 
   /** ID。 */
-  @Nonnull
-  final public String id;
+  @Nonnull public final String id;
+
   /** メタ情報。 */
-  @Nonnull
-  final public SpeakerMeta[] metas;
+  @Nonnull public final SpeakerMeta[] metas;
 
   public VoiceModel(String modelPath) {
     rsFromPath(modelPath);
@@ -27,12 +25,9 @@ public class VoiceModel extends Dll {
       throw new RuntimeException("Failed to parse metasJson");
     }
     metas = rawMetas;
-
   }
 
-  /**
-   * 音声モデルを廃棄する。
-   */
+  /** 音声モデルを廃棄する。 */
   @Override
   protected void finalize() {
     rsDrop();
@@ -55,16 +50,19 @@ public class VoiceModel extends Dll {
     @Expose
     @Nonnull
     final String name;
+
     /** 話者に属するスタイル。 */
     @SerializedName("styles")
     @Expose
     @Nonnull
     final StyleMeta[] styles;
+
     /** 話者のUUID。 */
     @SerializedName("speaker_uuid")
     @Expose
     @Nonnull
     final String speakerUuid;
+
     /** 話者のバージョン。 */
     @SerializedName("version")
     @Expose
@@ -88,6 +86,7 @@ public class VoiceModel extends Dll {
     @Expose
     @Nonnull
     final String name;
+
     /** スタイルID。 */
     @SerializedName("id")
     @Expose

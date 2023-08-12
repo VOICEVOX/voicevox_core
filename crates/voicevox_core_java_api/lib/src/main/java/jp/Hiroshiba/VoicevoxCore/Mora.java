@@ -1,10 +1,9 @@
 package jp.Hiroshiba.VoicevoxCore;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /** モーラ（子音＋母音）ごとの情報。 */
 public class Mora {

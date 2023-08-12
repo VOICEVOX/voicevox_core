@@ -1,11 +1,10 @@
 package jp.Hiroshiba.VoicevoxCore;
 
+import ai.onnxruntime.OrtEnvironment;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import ai.onnxruntime.OrtEnvironment;
 
 /** ライブラリを読み込むためだけのクラス。 */
 abstract class Dll {

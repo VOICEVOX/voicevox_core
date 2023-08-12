@@ -1,13 +1,11 @@
 package jp.Hiroshiba.VoicevoxCore;
 
-import java.util.List;
-import java.util.ArrayList;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /** AccentPhrase (アクセント句ごとの情報)。 */
 public class AccentPhrase {

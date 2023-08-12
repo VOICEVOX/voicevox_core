@@ -3,19 +3,17 @@
  */
 package jp.Hiroshiba.VoicevoxCore;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.File;
+import org.junit.jupiter.api.Test;
 
 class MetaTest {
   @Test
   void checkLoad() {
     // cwdはvoicevox_core/crates/voicevox_core_java_api/lib
     String cwd = System.getProperty("user.dir");
-    File path = new File(
-        cwd + "/../../../model/sample.vvm");
+    File path = new File(cwd + "/../../../model/sample.vvm");
     VoiceModel model = new VoiceModel(path.getAbsolutePath());
     assertNotNull(model.metas);
   }
