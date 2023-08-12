@@ -524,19 +524,19 @@ pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = Con
 /// ```c
 /// char *audio_query;
 /// voicevox_synthesizer_create_audio_query(synthesizer,
-///                                  "こんにちは",  // 日本語テキスト
-///                                  2,  // "四国めたん (ノーマル)"
-///                                  (VoicevoxAudioQueryOptions){.kana = false},
-///                                  &audio_query);
+///                                         "こんにちは",  // 日本語テキスト
+///                                         2,  // "四国めたん (ノーマル)"
+///                                         (VoicevoxAudioQueryOptions){.kana = false},
+///                                         &audio_query);
 /// ```
 ///
 /// ```c
 /// char *audio_query;
 /// voicevox_synthesizer_create_audio_query(synthesizer,
-///                                  "コンニチワ'",  // AquesTalk風記法
-///                                  2,  // "四国めたん (ノーマル)"
-///                                  (VoicevoxAudioQueryOptions){.kana = true},
-///                                  &audio_query);
+///                                         "コンニチワ'",  // AquesTalk風記法
+///                                         2,  // "四国めたん (ノーマル)"
+///                                         (VoicevoxAudioQueryOptions){.kana = true},
+///                                         &audio_query);
 /// ```
 /// }
 ///
