@@ -46,7 +46,7 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_synthesizer_new_with_initialize,
             voicevox_synthesizer_delete,
             voicevox_synthesizer_load_voice_model,
-            voicevox_synthesizer_audio_query,
+            voicevox_synthesizer_create_audio_query,
             voicevox_synthesizer_synthesis,
             voicevox_json_free,
             voicevox_wav_free,
@@ -90,7 +90,7 @@ impl assert_cdylib::TestCase for TestCase {
         let audio_query = {
             let mut audio_query = MaybeUninit::uninit();
             let text = CString::new(&*self.text).unwrap();
-            assert_ok(voicevox_synthesizer_audio_query(
+            assert_ok(voicevox_synthesizer_create_audio_query(
                 synthesizer,
                 text.as_ptr(),
                 STYLE_ID,
