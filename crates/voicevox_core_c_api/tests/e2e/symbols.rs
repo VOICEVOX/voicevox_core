@@ -61,7 +61,7 @@ pub(crate) struct Symbols<'lib> {
         Symbol<'lib, unsafe extern "C" fn(*const VoicevoxSynthesizer) -> *const c_char>,
     pub(crate) voicevox_create_supported_devices_json:
         Symbol<'lib, unsafe extern "C" fn(*mut *mut c_char) -> VoicevoxResultCode>,
-    pub(crate) voicevox_synthesizer_audio_query: Symbol<
+    pub(crate) voicevox_synthesizer_create_audio_query: Symbol<
         'lib,
         unsafe extern "C" fn(
             *const VoicevoxSynthesizer,
@@ -204,7 +204,7 @@ impl<'lib> Symbols<'lib> {
             voicevox_synthesizer_is_loaded_voice_model,
             voicevox_synthesizer_get_metas_json,
             voicevox_create_supported_devices_json,
-            voicevox_synthesizer_audio_query,
+            voicevox_synthesizer_create_audio_query,
             voicevox_synthesizer_synthesis,
             voicevox_synthesizer_tts,
             voicevox_json_free,
@@ -250,7 +250,7 @@ pub(crate) enum VoicevoxAccelerationMode {
 pub(crate) struct VoicevoxInitializeOptions {
     pub(crate) acceleration_mode: VoicevoxAccelerationMode,
     pub(crate) _cpu_num_threads: u16,
-    pub(crate) _load_all_models: bool,
+    pub(crate) load_all_models: bool,
 }
 
 #[derive(Clone, Copy)]
