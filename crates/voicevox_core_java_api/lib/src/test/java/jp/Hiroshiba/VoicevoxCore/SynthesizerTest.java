@@ -38,56 +38,52 @@ class SynthesizerTest
 
   @Test
   void checkModel() {
-    try (VoiceModel model = loadModel();
-        OpenJtalk openJtalk = loadOpenJtalk();
-        Synthesizer synthesizer = Synthesizer.builder(openJtalk).build()) {
-      synthesizer.loadVoiceModel(model);
-      assertTrue(synthesizer.isLoadedVoiceModel(model.id));
-      synthesizer.unloadVoiceModel(model.id);
-      assertFalse(synthesizer.isLoadedVoiceModel(model.id));
-    }
+    VoiceModel model = loadModel();
+    OpenJtalk openJtalk = loadOpenJtalk();
+    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+    synthesizer.loadVoiceModel(model);
+    assertTrue(synthesizer.isLoadedVoiceModel(model.id));
+    synthesizer.unloadVoiceModel(model.id);
+    assertFalse(synthesizer.isLoadedVoiceModel(model.id));
   }
 
   @Test
   void checkAudioQuery() {
-    try (VoiceModel model = loadModel();
-        OpenJtalk openJtalk = loadOpenJtalk();
-        Synthesizer synthesizer = Synthesizer.builder(openJtalk).build()) {
-      synthesizer.loadVoiceModel(model);
-      AudioQuery query = synthesizer.audioQuery("こんにちは", model.metas[0].styles[0].id,
-          EnumSet.noneOf(Synthesizer.AudioQueryOption.class));
+    VoiceModel model = loadModel();
+    OpenJtalk openJtalk = loadOpenJtalk();
+    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+    synthesizer.loadVoiceModel(model);
+    AudioQuery query = synthesizer.audioQuery("こんにちは", model.metas[0].styles[0].id,
+        EnumSet.noneOf(Synthesizer.AudioQueryOption.class));
 
-      synthesizer.synthesis(query, model.metas[0].styles[0].id, EnumSet.noneOf(Synthesizer.SynthesisOption.class));
-    }
+    synthesizer.synthesis(query, model.metas[0].styles[0].id, EnumSet.noneOf(Synthesizer.SynthesisOption.class));
   }
 
   @Test
   void checkAccentPhrases() {
-    try (VoiceModel model = loadModel();
-        OpenJtalk openJtalk = loadOpenJtalk();
-        Synthesizer synthesizer = Synthesizer.builder(openJtalk).build()) {
-      synthesizer.loadVoiceModel(model);
-      List<AccentPhrase> accentPhrases = synthesizer.createAccentPhrases("こんにちは", model.metas[0].styles[0].id,
-          EnumSet.noneOf(Synthesizer.AccentPhrasesOption.class));
-      List<AccentPhrase> accentPhrases2 = synthesizer.replaceMoraPitch(accentPhrases, model.metas[1].styles[0].id);
-      assertTrue(checkAllMoras(accentPhrases, accentPhrases2, (mora, otherMora) -> mora.pitch != otherMora.pitch));
-      List<AccentPhrase> accentPhrases3 = synthesizer.replacePhonemeLength(accentPhrases, model.metas[1].styles[0].id);
-      assertTrue(
-          checkAllMoras(accentPhrases, accentPhrases3, (mora, otherMora) -> mora.vowelLength != otherMora.vowelLength));
-      List<AccentPhrase> accentPhrases4 = synthesizer.replaceMoraData(accentPhrases, model.metas[1].styles[0].id);
-      assertTrue(checkAllMoras(accentPhrases, accentPhrases4,
-          (mora, otherMora) -> mora.pitch != otherMora.pitch && mora.vowelLength != otherMora.vowelLength));
+    VoiceModel model = loadModel();
+    OpenJtalk openJtalk = loadOpenJtalk();
+    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+    synthesizer.loadVoiceModel(model);
+    List<AccentPhrase> accentPhrases = synthesizer.createAccentPhrases("こんにちは", model.metas[0].styles[0].id,
+        EnumSet.noneOf(Synthesizer.AccentPhrasesOption.class));
+    List<AccentPhrase> accentPhrases2 = synthesizer.replaceMoraPitch(accentPhrases, model.metas[1].styles[0].id);
+    assertTrue(checkAllMoras(accentPhrases, accentPhrases2, (mora, otherMora) -> mora.pitch != otherMora.pitch));
+    List<AccentPhrase> accentPhrases3 = synthesizer.replacePhonemeLength(accentPhrases, model.metas[1].styles[0].id);
+    assertTrue(
+        checkAllMoras(accentPhrases, accentPhrases3, (mora, otherMora) -> mora.vowelLength != otherMora.vowelLength));
+    List<AccentPhrase> accentPhrases4 = synthesizer.replaceMoraData(accentPhrases, model.metas[1].styles[0].id);
+    assertTrue(checkAllMoras(accentPhrases, accentPhrases4,
+        (mora, otherMora) -> mora.pitch != otherMora.pitch && mora.vowelLength != otherMora.vowelLength));
 
-    }
   }
 
   @Test
   void checkTts() {
-    try (VoiceModel model = loadModel();
-        OpenJtalk openJtalk = loadOpenJtalk();
-        Synthesizer synthesizer = Synthesizer.builder(openJtalk).build()) {
-      synthesizer.loadVoiceModel(model);
-      synthesizer.tts("こんにちは", model.metas[0].styles[0].id, EnumSet.noneOf(Synthesizer.TtsOption.class));
-    }
+    VoiceModel model = loadModel();
+    OpenJtalk openJtalk = loadOpenJtalk();
+    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+    synthesizer.loadVoiceModel(model);
+    synthesizer.tts("こんにちは", model.metas[0].styles[0].id, EnumSet.noneOf(Synthesizer.TtsOption.class));
   }
 }

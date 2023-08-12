@@ -7,7 +7,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 /** 音声モデル。 */
-public class VoiceModel extends Dll implements AutoCloseable {
+public class VoiceModel extends Dll {
   long internal;
 
   /** ID。 */
@@ -33,7 +33,8 @@ public class VoiceModel extends Dll implements AutoCloseable {
   /**
    * 音声モデルを廃棄する。
    */
-  public void close() {
+  @Override
+  protected void finalize() {
     rsDrop();
   }
 

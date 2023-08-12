@@ -14,7 +14,7 @@ import com.google.gson.Gson;
  *
  * @see Synthesizer#builder
  */
-public class Synthesizer extends Dll implements AutoCloseable {
+public class Synthesizer extends Dll {
   long internal;
 
   private Synthesizer(OpenJtalk openJtalk, Builder builder) {
@@ -173,7 +173,8 @@ public class Synthesizer extends Dll implements AutoCloseable {
   /**
    * 音声シンセサイザを破棄する。
    */
-  public void close() {
+  @Override
+  protected void finalize() {
     rsDrop();
   }
 

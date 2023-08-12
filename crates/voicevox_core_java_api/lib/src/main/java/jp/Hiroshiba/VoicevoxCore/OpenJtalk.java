@@ -1,7 +1,7 @@
 package jp.Hiroshiba.VoicevoxCore;
 
 /** テキスト解析器としてのOpen JTalk。 */
-public class OpenJtalk extends Dll implements AutoCloseable {
+public class OpenJtalk extends Dll {
   long internal;
 
   /**
@@ -25,7 +25,8 @@ public class OpenJtalk extends Dll implements AutoCloseable {
   }
 
   /** Open JTalkを廃棄する。 */
-  public void close() {
+  @Override
+  protected void finalize() {
     rsDrop();
   }
 
