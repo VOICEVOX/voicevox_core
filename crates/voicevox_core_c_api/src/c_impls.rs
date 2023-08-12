@@ -19,10 +19,7 @@ impl VoicevoxSynthesizer {
     ) -> Result<Self> {
         let synthesizer =
             Synthesizer::new_with_initialize(open_jtalk.open_jtalk.clone(), options).await?;
-        Ok(Self {
-            synthesizer: Synthesizer::new_with_initialize(open_jtalk.open_jtalk.clone(), options)
-                .await?,
-        })
+        Ok(Self { synthesizer })
     }
 
     pub(crate) async fn load_voice_model(&self, model: &VoiceModel) -> CApiResult<()> {
