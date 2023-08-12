@@ -58,6 +58,52 @@ stderr.windows = '''
 '''
 stderr.unix = ""
 
+[synthesizer_new_with_initialize_output_json]
+metas = '''
+[
+  {
+    "name": "dummy1",
+    "styles": [
+      {
+        "id": 0,
+        "name": "style1"
+      }
+    ],
+    "version": "0.0.1",
+    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7"
+  },
+  {
+    "name": "dummy2",
+    "styles": [
+      {
+        "id": 1,
+        "name": "style2"
+      }
+    ],
+    "version": "0.0.1",
+    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905"
+  },
+  {
+    "name": "dummy3",
+    "styles": [
+      {
+        "id": 302,
+        "name": "style3-1"
+      },
+      {
+        "id": 303,
+        "name": "style3-2"
+      }
+    ],
+    "version": "0.0.1",
+    "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3"
+  }
+]'''
+stderr.windows = '''
+{windows-video-cards}
+'''
+stderr.unix = ""
+
 [tts_via_audio_query]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
 stderr.windows = '''

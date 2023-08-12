@@ -27,13 +27,19 @@ pub enum Error {
         #[source]
         source: anyhow::Error,
     },
-    #[error("{} ({})", base_error_message(VOICEVOX_ALREADY_LOADED_MODEL_ERROR), path.display())]
+    #[error("{} ({})", base_error_message(VOICEVOX_RESULT_ALREADY_LOADED_MODEL_ERROR), path.display())]
     AlreadyLoadedModel { path: PathBuf },
 
-    #[error("{} ({model_id:?})", base_error_message(VOICEVOX_UNLOADED_MODEL_ERROR))]
+    #[error(
+        "{} ({model_id:?})",
+        base_error_message(VOICEVOX_RESULT_UNLOADED_MODEL_ERROR)
+    )]
     UnloadedModel { model_id: VoiceModelId },
 
-    #[error("{}({path}):{source}", base_error_message(VOICEVOX_OPEN_FILE_ERROR))]
+    #[error(
+        "{}({path}):{source}",
+        base_error_message(VOICEVOX_RESULT_OPEN_FILE_ERROR)
+    )]
     OpenFile {
         path: PathBuf,
         #[source]
@@ -42,7 +48,7 @@ pub enum Error {
 
     #[error(
         "{}({path}):{source}",
-        base_error_message(VOICEVOX_VVM_MODEL_READ_ERROR)
+        base_error_message(VOICEVOX_RESULT_VVM_MODEL_READ_ERROR)
     )]
     VvmRead {
         path: PathBuf,
@@ -83,19 +89,25 @@ pub enum Error {
     #[error("{},{0}", base_error_message(VOICEVOX_RESULT_PARSE_KANA_ERROR))]
     ParseKana(#[from] KanaParseError),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_LOAD_USER_DICT_ERROR))]
+    #[error("{}: {0}", base_error_message(VOICEVOX_RESULT_LOAD_USER_DICT_ERROR))]
     LoadUserDict(String),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_SAVE_USER_DICT_ERROR))]
+    #[error("{}: {0}", base_error_message(VOICEVOX_RESULT_SAVE_USER_DICT_ERROR))]
     SaveUserDict(String),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_UNKNOWN_USER_DICT_WORD_ERROR))]
+    #[error(
+        "{}: {0}",
+        base_error_message(VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR)
+    )]
     UnknownWord(Uuid),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_USE_USER_DICT_ERROR))]
+    #[error("{}: {0}", base_error_message(VOICEVOX_RESULT_USE_USER_DICT_ERROR))]
     UseUserDict(String),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_INVALID_USER_DICT_WORD_ERROR))]
+    #[error(
+        "{}: {0}",
+        base_error_message(VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR)
+    )]
     InvalidWord(InvalidWordError),
 }
 

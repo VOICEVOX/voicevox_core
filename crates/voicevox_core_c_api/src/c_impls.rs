@@ -17,6 +17,8 @@ impl VoicevoxSynthesizer {
         open_jtalk: &OpenJtalkRc,
         options: &InitializeOptions,
     ) -> Result<Self> {
+        let synthesizer =
+            Synthesizer::new_with_initialize(open_jtalk.open_jtalk.clone(), options).await?;
         Ok(Self {
             synthesizer: Synthesizer::new_with_initialize(open_jtalk.open_jtalk.clone(), options)
                 .await?,

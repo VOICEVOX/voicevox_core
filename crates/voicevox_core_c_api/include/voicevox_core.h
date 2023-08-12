@@ -145,39 +145,39 @@ enum VoicevoxResultCode
   /**
    * ファイルオープンエラー
    */
-  VOICEVOX_OPEN_FILE_ERROR = 16,
+  VOICEVOX_RESULT_OPEN_FILE_ERROR = 16,
   /**
    * Modelを読み込めなかった
    */
-  VOICEVOX_VVM_MODEL_READ_ERROR = 17,
+  VOICEVOX_RESULT_VVM_MODEL_READ_ERROR = 17,
   /**
    * すでに読み込まれているModelを読み込もうとした
    */
-  VOICEVOX_ALREADY_LOADED_MODEL_ERROR = 18,
+  VOICEVOX_RESULT_ALREADY_LOADED_MODEL_ERROR = 18,
   /**
    * Modelが読み込まれていない
    */
-  VOICEVOX_UNLOADED_MODEL_ERROR = 19,
+  VOICEVOX_RESULT_UNLOADED_MODEL_ERROR = 19,
   /**
    * ユーザー辞書を読み込めなかった
    */
-  VOICEVOX_LOAD_USER_DICT_ERROR = 20,
+  VOICEVOX_RESULT_LOAD_USER_DICT_ERROR = 20,
   /**
    * ユーザー辞書を書き込めなかった
    */
-  VOICEVOX_SAVE_USER_DICT_ERROR = 21,
+  VOICEVOX_RESULT_SAVE_USER_DICT_ERROR = 21,
   /**
    * ユーザー辞書に単語が見つからなかった
    */
-  VOICEVOX_UNKNOWN_USER_DICT_WORD_ERROR = 22,
+  VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR = 22,
   /**
    * OpenJTalkのユーザー辞書の設定に失敗した
    */
-  VOICEVOX_USE_USER_DICT_ERROR = 23,
+  VOICEVOX_RESULT_USE_USER_DICT_ERROR = 23,
   /**
    * ユーザー辞書の単語のバリデーションに失敗した
    */
-  VOICEVOX_INVALID_USER_DICT_WORD_ERROR = 24,
+  VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR = 24,
   /**
    * UUIDの変換に失敗した
    */
@@ -291,7 +291,7 @@ typedef struct VoicevoxInitializeOptions {
 typedef uint32_t VoicevoxStyleId;
 
 /**
- * ::voicevox_synthesizer_audio_query のオプション。
+ * ::voicevox_synthesizer_create_audio_query のオプション。
  */
 typedef struct VoicevoxAudioQueryOptions {
   /**
@@ -681,20 +681,20 @@ VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supporte
  * \examples{
  * ```c
  * char *audio_query;
- * voicevox_synthesizer_audio_query(synthesizer,
- *                                  "こんにちは",  // 日本語テキスト
- *                                  2,  // "四国めたん (ノーマル)"
- *                                  (VoicevoxAudioQueryOptions){.kana = false},
- *                                  &audio_query);
+ * voicevox_synthesizer_create_audio_query(synthesizer,
+ *                                         "こんにちは",  // 日本語テキスト
+ *                                         2,  // "四国めたん (ノーマル)"
+ *                                         (VoicevoxAudioQueryOptions){.kana = false},
+ *                                         &audio_query);
  * ```
  *
  * ```c
  * char *audio_query;
- * voicevox_synthesizer_audio_query(synthesizer,
- *                                  "コンニチワ'",  // AquesTalk風記法
- *                                  2,  // "四国めたん (ノーマル)"
- *                                  (VoicevoxAudioQueryOptions){.kana = true},
- *                                  &audio_query);
+ * voicevox_synthesizer_create_audio_query(synthesizer,
+ *                                         "コンニチワ'",  // AquesTalk風記法
+ *                                         2,  // "四国めたん (ノーマル)"
+ *                                         (VoicevoxAudioQueryOptions){.kana = true},
+ *                                         &audio_query);
  * ```
  * }
  *
@@ -708,11 +708,11 @@ VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supporte
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_synthesizer_audio_query(const struct VoicevoxSynthesizer *synthesizer,
-                                                    const char *text,
-                                                    VoicevoxStyleId style_id,
-                                                    struct VoicevoxAudioQueryOptions options,
-                                                    char **output_audio_query_json);
+VoicevoxResultCode voicevox_synthesizer_create_audio_query(const struct VoicevoxSynthesizer *synthesizer,
+                                                           const char *text,
+                                                           VoicevoxStyleId style_id,
+                                                           struct VoicevoxAudioQueryOptions options,
+                                                           char **output_audio_query_json);
 
 /**
  * AccentPhrase (アクセント句)の配列をJSON形式で生成する。
@@ -911,7 +911,7 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  * - `json`は以下のAPIで得られたポインタでなくてはいけない。
  *     - ::voicevox_create_supported_devices_json
  *     - ::voicevox_synthesizer_create_metas_json
- *     - ::voicevox_synthesizer_audio_query
+ *     - ::voicevox_synthesizer_create_audio_query
  *     - ::voicevox_synthesizer_create_accent_phrases
  *     - ::voicevox_synthesizer_replace_mora_data
  *     - ::voicevox_synthesizer_replace_phoneme_length
