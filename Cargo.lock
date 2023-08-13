@@ -719,27 +719,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "const-default"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b396d1f76d455557e1218ec8066ae14bba60b4b36ecd55577ba979f5db7ecaa"
-dependencies = [
- "const-default-derive",
-]
-
-[[package]]
-name = "const-default-derive"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f814dd8cbb812233751ff6857b7fa86d9f52e88ac64e8f54e7a1ca0168f03da"
-dependencies = [
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn 1.0.102",
-]
-
-[[package]]
 name = "const_fn"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1058,16 +1037,6 @@ dependencies = [
  "once_cell",
  "os_pipe",
  "shared_child",
-]
-
-[[package]]
-name = "duplicate"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de78e66ac9061e030587b2a2e75cc88f22304913c907b11307bca737141230cb"
-dependencies = [
- "heck",
- "proc-macro-error",
 ]
 
 [[package]]
@@ -2553,16 +2522,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "proc-macro-crate"
-version = "1.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f4c021e1093a56626774e81216a4ce732a735e5bad4868a03f3ed65ca0c3919"
-dependencies = [
- "once_cell",
- "toml_edit",
-]
-
-[[package]]
 name = "proc-macro-error"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3981,10 +3940,8 @@ dependencies = [
  "anyhow",
  "async_zip",
  "cfg-if",
- "const-default",
  "derive-getters",
  "derive-new",
- "duplicate",
  "easy-ext",
  "flate2",
  "fs-err",
@@ -4022,7 +3979,6 @@ dependencies = [
  "assert_cmd",
  "chrono",
  "clap 4.0.10",
- "const-default",
  "derive-getters",
  "duct",
  "easy-ext",

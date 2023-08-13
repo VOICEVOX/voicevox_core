@@ -22,7 +22,7 @@ struct TestCase;
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
-            voicevox_version,
+            voicevox_get_version,
             voicevox_create_supported_devices_json,
             voicevox_error_result_to_message,
             voicevox_json_free,
@@ -31,7 +31,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         std::assert_eq!(
             env!("CARGO_PKG_VERSION"),
-            CStr::from_ptr(**voicevox_version).to_str()?,
+            CStr::from_ptr(voicevox_get_version()).to_str()?,
         );
 
         {

@@ -1,8 +1,5 @@
 use std::sync::Arc;
 
-use const_default::ConstDefault;
-use duplicate::duplicate_item;
-
 use crate::engine::{create_kana, parse_kana, AccentPhraseModel, OpenJtalk, SynthesisEngine};
 
 use super::*;
@@ -31,7 +28,7 @@ impl From<&TtsOptions> for SynthesisOptions {
 /// [`Synthesizer::create_accent_phrases`]のオプション。
 ///
 /// [`Synthesizer::create_accent_phrases`]: Synthesizer::create_accent_phrases
-#[derive(ConstDefault)]
+#[derive(Default)]
 pub struct AccentPhrasesOptions {
     /// AquesTalk風記法としてテキストを解釈する。
     pub kana: bool,
@@ -40,7 +37,7 @@ pub struct AccentPhrasesOptions {
 /// [`Synthesizer::audio_query`]のオプション。
 ///
 /// [`Synthesizer::audio_query`]: Synthesizer::audio_query
-#[derive(ConstDefault)]
+#[derive(Default)]
 pub struct AudioQueryOptions {
     /// AquesTalk風記法としてテキストを解釈する。
     pub kana: bool,
@@ -67,17 +64,20 @@ impl AsRef<TtsOptions> for TtsOptions {
     }
 }
 
-impl ConstDefault for TtsOptions {
-    const DEFAULT: Self = Self {
-        enable_interrogative_upspeak: true,
-        kana: ConstDefault::DEFAULT,
-    };
+impl Default for TtsOptions {
+    fn default() -> Self {
+        Self {
+            enable_interrogative_upspeak: true,
+            kana: Default::default(),
+        }
+    }
 }
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub enum AccelerationMode {
     /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
+    #[default]
     Auto,
     /// ハードウェアアクセラレーションモードを"CPU"に設定する。
     Cpu,
@@ -85,32 +85,14 @@ pub enum AccelerationMode {
     Gpu,
 }
 
-impl ConstDefault for AccelerationMode {
-    const DEFAULT: Self = Self::Auto;
-}
-
 /// [`Synthesizer::new_with_initialize`]のオプション。
 ///
 /// [`Synthesizer::new_with_initialize`]: Synthesizer::new_with_initialize
-#[derive(ConstDefault)]
+#[derive(Default)]
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
     pub cpu_num_threads: u16,
     pub load_all_models: bool,
-}
-
-#[duplicate_item(
-    T;
-    [ AccentPhrasesOptions ];
-    [ AudioQueryOptions ];
-    [ TtsOptions ];
-    [ AccelerationMode ];
-    [ InitializeOptions ];
-)]
-impl Default for T {
-    fn default() -> Self {
-        Self::DEFAULT
-    }
 }
 
 /// 音声シンセサイザ。

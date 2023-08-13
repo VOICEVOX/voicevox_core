@@ -12,7 +12,6 @@ members = [
 anyhow = "1.0.65"
 async_zip = { version = "0.0.11", features = ["full"] }
 clap = { version = "4.0.10", features = ["derive"] }
-const-default = { version = "1.0.0", features = ["derive"] }
 easy-ext = "1.0.1"
 fs-err = { version = "2.9.0", features = ["tokio"] }
 itertools = "0.10.5"
