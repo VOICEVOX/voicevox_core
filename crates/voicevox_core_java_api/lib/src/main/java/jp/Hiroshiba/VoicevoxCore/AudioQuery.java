@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
 
-/** AudioQuery (音声合成用のクエリ)。 */
+/** AudioQuery（音声合成用のクエリ）。 */
 public class AudioQuery {
   /** アクセント句の配列。 */
   @SerializedName("accent_phrases")
@@ -57,7 +57,7 @@ public class AudioQuery {
   /**
    * [読み取り専用] AquesTalk風記法。
    *
-   * <p>{@link Synthesizer#audioQuery} が返すもののみ String となる。入力としてのAudioQueryでは無視される。
+   * {@link Synthesizer#audioQuery} が返すもののみ String となる。入力としてのAudioQueryでは無視される。
    */
   @SerializedName("kana")
   @Expose
