@@ -7,7 +7,7 @@ VOICEVOX CORE の Java バインディング。
 以下の環境が必要です：
 
 - Rustup
-- JDK 8
+- JDK 11
 
 ## ファイル構成
 
