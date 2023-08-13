@@ -47,7 +47,7 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_synthesizer_new_with_initialize,
             voicevox_synthesizer_delete,
             voicevox_synthesizer_load_voice_model,
-            voicevox_synthesizer_audio_query,
+            voicevox_synthesizer_create_audio_query,
             ..
         } = Symbols::new(lib)?;
 
@@ -103,7 +103,7 @@ impl assert_cdylib::TestCase for TestCase {
         assert_ok(voicevox_synthesizer_load_voice_model(synthesizer, model));
 
         let mut audio_query_without_dict = std::ptr::null_mut();
-        assert_ok(voicevox_synthesizer_audio_query(
+        assert_ok(voicevox_synthesizer_create_audio_query(
             synthesizer,
             cstr!("this_word_should_not_exist_in_default_dictionary").as_ptr(),
             STYLE_ID,
@@ -117,7 +117,7 @@ impl assert_cdylib::TestCase for TestCase {
         assert_ok(voicevox_open_jtalk_rc_use_user_dict(openjtalk, dict));
 
         let mut audio_query_with_dict = std::ptr::null_mut();
-        assert_ok(voicevox_synthesizer_audio_query(
+        assert_ok(voicevox_synthesizer_create_audio_query(
             synthesizer,
             cstr!("this_word_should_not_exist_in_default_dictionary").as_ptr(),
             STYLE_ID,

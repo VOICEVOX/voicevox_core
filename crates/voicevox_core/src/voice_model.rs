@@ -110,19 +110,16 @@ impl VoiceModel {
                 .join("model")
         };
 
-        let mut vvm_paths = Vec::new();
-        for entry in root_dir.read_dir().map_err(|e| Error::LoadModel {
-            path: root_dir.clone(),
-            source: e.into(),
-        })? {
-            match entry {
-                Ok(entry) => vvm_paths.push(Self::from_path(entry.path())),
-                Err(e) => Err(Error::LoadModel {
-                    path: root_dir.clone(),
-                    source: e.into(),
-                })?,
-            }
-        }
+        let vvm_paths = root_dir
+            .read_dir()
+            .and_then(|entries| entries.collect::<std::result::Result<Vec<_>, _>>())
+            .map_err(|e| Error::LoadModel {
+                path: root_dir.clone(),
+                source: e.into(),
+            })?
+            .into_iter()
+            .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "vvm"))
+            .map(|entry| Self::from_path(entry.path()));
 
         join_all(vvm_paths).await.into_iter().collect()
     }
@@ -192,5 +189,17 @@ impl VvmEntryReader {
             .read_to_end_checked(&mut buf, &me.entry)
             .await?;
         Ok(buf)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[rstest]
+    #[tokio::test]
+    async fn get_all_models_only_load_vvm() {
+        let all_models = VoiceModel::get_all_models().await;
+        assert!(all_models.is_ok());
     }
 }

@@ -315,8 +315,8 @@ impl Synthesizer {
     ///
     /// let accent_phrases = syntesizer
     ///     .create_accent_phrases(
-    ///         "こんにちは",    // 日本語のテキスト
-    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         "こんにちは", // 日本語のテキスト
+    ///         StyleId::new(302),
     ///         &Default::default(),
     ///     )
     ///     .await?;
@@ -360,8 +360,8 @@ impl Synthesizer {
     ///
     /// let accent_phrases = syntesizer
     ///     .create_accent_phrases(
-    ///         "コンニチワ'",   // AquesTalk風記法
-    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         "コンニチワ'", // AquesTalk風記法
+    ///         StyleId::new(302),
     ///         &AccentPhrasesOptions { kana: true },
     ///     )
     ///     .await?;
@@ -466,8 +466,8 @@ impl Synthesizer {
     ///
     /// let audio_query = syntesizer
     ///     .audio_query(
-    ///         "こんにちは",    // 日本語のテキスト
-    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         "こんにちは", // 日本語のテキスト
+    ///         StyleId::new(302),
     ///         &Default::default(),
     ///     )
     ///     .await?;
@@ -511,8 +511,8 @@ impl Synthesizer {
     ///
     /// let audio_query = syntesizer
     ///     .audio_query(
-    ///         "コンニチワ'",   // AquesTalk風記法
-    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         "コンニチワ'", // AquesTalk風記法
+    ///         StyleId::new(302),
     ///         &AudioQueryOptions { kana: true },
     ///     )
     ///     .await?;
