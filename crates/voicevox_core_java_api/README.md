@@ -47,7 +47,7 @@ Java プロジェクトを動かすには、
 
 ```console
 ❯ cargo build
-❯ LD_LIBRARY_PATH=/home/user/voicevox_core/target/debug ./gradlew build
+❯ LD_LIBRARY_PATH=$(realpath ../../target/debug) ./gradlew build
 
 # または
 ❯ cp ../../target/debug/libvoicevox_core_java_api.so lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so
