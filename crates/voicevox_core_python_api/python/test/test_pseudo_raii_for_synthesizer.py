@@ -1,38 +1,39 @@
 import conftest
 import pytest
+import pytest_asyncio
 from voicevox_core import OpenJtalk, Synthesizer, VoicevoxError
 
 
-@pytest.mark.asyncio
-async def test_enter_returns_workable_self(open_jtalk: OpenJtalk) -> None:
-    with await Synthesizer.new_with_initialize(open_jtalk) as synthesizer:
-        synthesizer.metas
+def test_enter_returns_workable_self(synthesizer: Synthesizer) -> None:
+    with synthesizer as ctx:
+        assert ctx is synthesizer
+        _ = synthesizer.metas
 
 
-@pytest.mark.asyncio
-async def test_closing_multiple_times_is_allowed(open_jtalk: OpenJtalk) -> None:
-    with await Synthesizer.new_with_initialize(open_jtalk) as synthesizer:
+def test_closing_multiple_times_is_allowed(synthesizer: Synthesizer) -> None:
+    with synthesizer:
         with synthesizer:
             pass
-
     synthesizer.close()
     synthesizer.close()
 
 
-@pytest.mark.asyncio
-async def test_access_after_close_denied(open_jtalk: OpenJtalk) -> None:
-    synthesizer = await Synthesizer.new_with_initialize(open_jtalk)
+def test_access_after_close_denied(synthesizer: Synthesizer) -> None:
     synthesizer.close()
     with pytest.raises(VoicevoxError, match="^The `Synthesizer` is closed$"):
-        synthesizer.metas
+        _ = synthesizer.metas
 
 
-@pytest.mark.asyncio
-async def test_access_after_exit_denied(open_jtalk: OpenJtalk) -> None:
-    with await Synthesizer.new_with_initialize(open_jtalk) as synthesizer:
+def test_access_after_exit_denied(synthesizer: Synthesizer) -> None:
+    with synthesizer:
         pass
     with pytest.raises(VoicevoxError, match="^The `Synthesizer` is closed$"):
-        synthesizer.metas
+        _ = synthesizer.metas
+
+
+@pytest_asyncio.fixture
+async def synthesizer(open_jtalk: OpenJtalk) -> Synthesizer:
+    return await Synthesizer.new_with_initialize(open_jtalk)
 
 
 @pytest.fixture(scope="module")
