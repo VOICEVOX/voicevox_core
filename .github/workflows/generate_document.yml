@@ -23,7 +23,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v2
         with:
-          java-version: "8"
+          java-version: "11"
           distribution: "adopt"
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
