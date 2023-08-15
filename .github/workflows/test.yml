@@ -307,7 +307,7 @@ jobs:
         working-directory: crates/voicevox_core_java_api
         run: |
           ARCH="$(uname -m)"
-          case "${{ matrix.os }}" in
+          case "$RUNNER_OS" in
           windows-latest)
             DLL_NAME="voicevox_core_java_api.dll"
             case "$ARCH" in
