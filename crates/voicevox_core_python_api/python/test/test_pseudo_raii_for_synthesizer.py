@@ -1,3 +1,7 @@
+"""
+``Synthesizer`` について、(広義の)RAIIができることをテストする。
+"""
+
 import conftest
 import pytest
 import pytest_asyncio
