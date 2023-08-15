@@ -59,15 +59,21 @@ pub(crate) struct Symbols<'lib> {
         Symbol<'lib, unsafe extern "C" fn(*const VoicevoxSynthesizer) -> *const c_char>,
     pub(crate) voicevox_create_supported_devices_json:
         Symbol<'lib, unsafe extern "C" fn(*mut *mut c_char) -> VoicevoxResultCode>,
-    pub(crate) voicevox_make_default_audio_query_options:
-        Symbol<'lib, unsafe extern "C" fn() -> VoicevoxAudioQueryOptions>,
+    pub(crate) voicevox_synthesizer_create_audio_query_from_kana: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxSynthesizer,
+            *const c_char,
+            VoicevoxStyleId,
+            *mut *mut c_char,
+        ) -> VoicevoxResultCode,
+    >,
     pub(crate) voicevox_synthesizer_create_audio_query: Symbol<
         'lib,
         unsafe extern "C" fn(
             *const VoicevoxSynthesizer,
             *const c_char,
             VoicevoxStyleId,
-            VoicevoxAudioQueryOptions,
             *mut *mut c_char,
         ) -> VoicevoxResultCode,
     >,
@@ -86,6 +92,17 @@ pub(crate) struct Symbols<'lib> {
     >,
     pub(crate) voicevox_make_default_tts_options:
         Symbol<'lib, unsafe extern "C" fn() -> VoicevoxTtsOptions>,
+    pub(crate) voicevox_synthesizer_tts_from_kana: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxSynthesizer,
+            *const c_char,
+            VoicevoxStyleId,
+            VoicevoxTtsOptions,
+            *mut usize,
+            *mut *mut u8,
+        ) -> VoicevoxResultCode,
+    >,
     pub(crate) voicevox_synthesizer_tts: Symbol<
         'lib,
         unsafe extern "C" fn(
@@ -205,11 +222,12 @@ impl<'lib> Symbols<'lib> {
             voicevox_synthesizer_is_loaded_voice_model,
             voicevox_synthesizer_get_metas_json,
             voicevox_create_supported_devices_json,
-            voicevox_make_default_audio_query_options,
+            voicevox_synthesizer_create_audio_query_from_kana,
             voicevox_synthesizer_create_audio_query,
             voicevox_make_default_synthesis_options,
             voicevox_synthesizer_synthesis,
             voicevox_make_default_tts_options,
+            voicevox_synthesizer_tts_from_kana,
             voicevox_synthesizer_tts,
             voicevox_json_free,
             voicevox_wav_free,
@@ -258,18 +276,12 @@ pub(crate) struct VoicevoxInitializeOptions {
 }
 
 #[repr(C)]
-pub(crate) struct VoicevoxAudioQueryOptions {
-    _kana: bool,
-}
-
-#[repr(C)]
 pub(crate) struct VoicevoxSynthesisOptions {
     _enable_interrogative_upspeak: bool,
 }
 
 #[repr(C)]
 pub(crate) struct VoicevoxTtsOptions {
-    _kana: bool,
     _enable_interrogative_upspeak: bool,
 }
 

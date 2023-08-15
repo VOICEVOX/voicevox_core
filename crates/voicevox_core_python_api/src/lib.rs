@@ -14,8 +14,8 @@ use pyo3::{
 use tokio::{runtime::Runtime, sync::Mutex};
 use uuid::Uuid;
 use voicevox_core::{
-    AccelerationMode, AccentPhrasesOptions, AudioQueryModel, AudioQueryOptions, InitializeOptions,
-    StyleId, SynthesisOptions, TtsOptions, UserDictWord, VoiceModelId,
+    AccelerationMode, AudioQueryModel, InitializeOptions, StyleId, SynthesisOptions, TtsOptions,
+    UserDictWord, VoiceModelId,
 };
 
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
@@ -194,16 +194,14 @@ impl Synthesizer {
             .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
     }
 
-    #[pyo3(signature=(text,style_id,kana = AudioQueryOptions::default().kana))]
-    fn audio_query<'py>(
+    fn audio_query_from_kana<'py>(
         &self,
-        text: &str,
+        kana: &str,
         style_id: u32,
-        kana: bool,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let synthesizer = self.synthesizer.clone();
-        let text = text.to_owned();
+        let kana = kana.to_owned();
         pyo3_asyncio::tokio::future_into_py_with_locals(
             py,
             pyo3_asyncio::tokio::get_current_locals(py)?,
@@ -211,7 +209,7 @@ impl Synthesizer {
                 let audio_query = synthesizer
                     .lock()
                     .await
-                    .audio_query(&text, StyleId::new(style_id), &AudioQueryOptions { kana })
+                    .audio_query_from_kana(&kana, StyleId::new(style_id))
                     .await
                     .into_py_result()?;
 
@@ -224,12 +222,64 @@ impl Synthesizer {
         )
     }
 
-    #[pyo3(signature=(text, style_id, kana = AccentPhrasesOptions::default().kana))]
+    fn audio_query<'py>(&self, text: &str, style_id: u32, py: Python<'py>) -> PyResult<&'py PyAny> {
+        let synthesizer = self.synthesizer.clone();
+        let text = text.to_owned();
+        pyo3_asyncio::tokio::future_into_py_with_locals(
+            py,
+            pyo3_asyncio::tokio::get_current_locals(py)?,
+            async move {
+                let audio_query = synthesizer
+                    .lock()
+                    .await
+                    .audio_query(&text, StyleId::new(style_id))
+                    .await
+                    .into_py_result()?;
+
+                Python::with_gil(|py| {
+                    let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
+                    let ret = to_pydantic_dataclass(audio_query, class)?;
+                    Ok(ret.to_object(py))
+                })
+            },
+        )
+    }
+
+    fn create_accent_phrases_from_kana<'py>(
+        &self,
+        kana: &str,
+        style_id: u32,
+        py: Python<'py>,
+    ) -> PyResult<&'py PyAny> {
+        let synthesizer = self.synthesizer.clone();
+        let kana = kana.to_owned();
+        pyo3_asyncio::tokio::future_into_py_with_locals(
+            py,
+            pyo3_asyncio::tokio::get_current_locals(py)?,
+            async move {
+                let accent_phrases = synthesizer
+                    .lock()
+                    .await
+                    .create_accent_phrases_from_kana(&kana, StyleId::new(style_id))
+                    .await
+                    .into_py_result()?;
+                Python::with_gil(|py| {
+                    let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
+                    let accent_phrases = accent_phrases
+                        .iter()
+                        .map(|ap| to_pydantic_dataclass(ap, class))
+                        .collect::<PyResult<Vec<_>>>();
+                    let list = PyList::new(py, accent_phrases.into_iter());
+                    Ok(list.to_object(py))
+                })
+            },
+        )
+    }
+
     fn create_accent_phrases<'py>(
         &self,
         text: &str,
         style_id: u32,
-        kana: bool,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let synthesizer = self.synthesizer.clone();
@@ -241,11 +291,7 @@ impl Synthesizer {
                 let accent_phrases = synthesizer
                     .lock()
                     .await
-                    .create_accent_phrases(
-                        &text,
-                        StyleId::new(style_id),
-                        &AccentPhrasesOptions { kana },
-                    )
+                    .create_accent_phrases(&text, StyleId::new(style_id))
                     .await
                     .into_py_result()?;
                 Python::with_gil(|py| {
@@ -337,22 +383,52 @@ impl Synthesizer {
     }
 
     #[pyo3(signature=(
+        kana,
+        style_id,
+        enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+    ))]
+    fn tts_from_kana<'py>(
+        &self,
+        kana: &str,
+        style_id: u32,
+        enable_interrogative_upspeak: bool,
+        py: Python<'py>,
+    ) -> PyResult<&'py PyAny> {
+        let style_id = StyleId::new(style_id);
+        let options = TtsOptions {
+            enable_interrogative_upspeak,
+        };
+        let synthesizer = self.synthesizer.clone();
+        let kana = kana.to_owned();
+        pyo3_asyncio::tokio::future_into_py_with_locals(
+            py,
+            pyo3_asyncio::tokio::get_current_locals(py)?,
+            async move {
+                let wav = synthesizer
+                    .lock()
+                    .await
+                    .tts_from_kana(&kana, style_id, &options)
+                    .await
+                    .into_py_result()?;
+                Python::with_gil(|py| Ok(PyBytes::new(py, &wav).to_object(py)))
+            },
+        )
+    }
+
+    #[pyo3(signature=(
         text,
         style_id,
-        kana = TtsOptions::default().kana,
         enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
     ))]
     fn tts<'py>(
         &self,
         text: &str,
         style_id: u32,
-        kana: bool,
         enable_interrogative_upspeak: bool,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let style_id = StyleId::new(style_id);
         let options = TtsOptions {
-            kana,
             enable_interrogative_upspeak,
         };
         let synthesizer = self.synthesizer.clone();

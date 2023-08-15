@@ -38,7 +38,6 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_user_dict_add_word,
             voicevox_user_dict_delete,
             voicevox_make_default_initialize_options,
-            voicevox_make_default_audio_query_options,
             voicevox_open_jtalk_rc_new,
             voicevox_open_jtalk_rc_use_user_dict,
             voicevox_open_jtalk_rc_delete,
@@ -107,7 +106,6 @@ impl assert_cdylib::TestCase for TestCase {
             synthesizer,
             cstr!("this_word_should_not_exist_in_default_dictionary").as_ptr(),
             STYLE_ID,
-            voicevox_make_default_audio_query_options(),
             &mut audio_query_without_dict,
         ));
         let audio_query_without_dict = serde_json::from_str::<serde_json::Value>(
@@ -121,7 +119,6 @@ impl assert_cdylib::TestCase for TestCase {
             synthesizer,
             cstr!("this_word_should_not_exist_in_default_dictionary").as_ptr(),
             STYLE_ID,
-            voicevox_make_default_audio_query_options(),
             &mut audio_query_with_dict,
         ));
 

@@ -118,34 +118,58 @@ class Synthesizer:
         :returns: モデルが読み込まれているかどうか。
         """
         ...
-    async def audio_query(
+    async def audio_query_from_kana(
         self,
-        text: str,
+        kana: str,
         style_id: int,
-        kana: bool = False,
     ) -> AudioQuery:
         """
         :class:`AudioQuery` を生成する。
 
-        :param text: テキスト。文字コードはUTF-8。
+        :param kana: AquesTalk風記法。
         :param style_id: スタイルID。
-        :param kana: ``text`` をAquesTalk風記法として解釈する。
 
         :returns: 話者とテキストから生成された :class:`AudioQuery` 。
+        """
+        ...
+    async def audio_query(
+        self,
+        text: str,
+        style_id: int,
+    ) -> AudioQuery:
+        """
+        :class:`AudioQuery` を生成する。
+
+        :param text: UTF-8の日本語テキスト。
+        :param style_id: スタイルID。
+
+        :returns: 話者とテキストから生成された :class:`AudioQuery` 。
+        """
+        ...
+    async def create_accent_phrases_from_kana(
+        self,
+        kana: str,
+        style_id: int,
+    ) -> List[AccentPhrase]:
+        """
+        AccentPhrase (アクセント句)の配列を生成する。
+
+        :param kana: AquesTalk風記法。
+        :param style_id: スタイルID。
+
+        :returns: :class:`AccentPhrase` の配列。
         """
         ...
     async def create_accent_phrases(
         self,
         text: str,
         style_id: int,
-        kana: bool = False,
     ) -> List[AccentPhrase]:
         """
         AccentPhrase (アクセント句)の配列を生成する。
 
-        :param text: UTF-8の日本語テキストまたはAquesTalk風記法。
+        :param text: UTF-8の日本語テキスト。
         :param style_id: スタイルID。
-        :param kana: ``text`` をAquesTalk風記法として解釈する。
 
         :returns: :class:`AccentPhrase` の配列。
         """
@@ -201,19 +225,33 @@ class Synthesizer:
         :returns: WAVデータ。
         """
         ...
-    async def tts(
+    async def tts_from_kana(
         self,
-        text: str,
+        kana: str,
         style_id: int,
-        kana: bool = False,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
         テキスト音声合成を実行する。
 
-        :param text: UTF-8の日本語テキストまたはAquesTalk風記法。
+        :param kana: AquesTalk風記法。
         :param style_id: スタイルID。
-        :param kana: ``text`` をAquesTalk風記法として解釈する。
+        :param enable_interrogative_upspeak: 疑問文の調整を有効にする。
+
+        :returns: WAVデータ。
+        """
+        ...
+    async def tts(
+        self,
+        text: str,
+        style_id: int,
+        enable_interrogative_upspeak: bool = True,
+    ) -> bytes:
+        """
+        テキスト音声合成を実行する。
+
+        :param text: UTF-8の日本語テキスト。
+        :param style_id: スタイルID。
         :param enable_interrogative_upspeak: 疑問文の調整を有効にする。
 
         :returns: WAVデータ。
