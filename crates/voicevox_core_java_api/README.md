@@ -23,7 +23,7 @@ VOICEVOX CORE の Java バインディング。
                     - Synthesizer.java
                     - ...
             - resources:
-                - dll: # ライブラリ用のディレクトリ。詳細はDll.javaを参照。
+                - dll: # ライブラリ用のディレクトリ。詳細は後述。
                     - windows-x64:
                         - voicevox_core.dll
                     - ...
