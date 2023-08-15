@@ -308,7 +308,7 @@ jobs:
         run: |
           ARCH="$(uname -m)"
           case "$RUNNER_OS" in
-          windows-latest)
+          windows)
             DLL_NAME="voicevox_core_java_api.dll"
             case "$ARCH" in
               x86_64)
@@ -320,7 +320,7 @@ jobs:
                 ;;
             esac
             ;;
-          macos-latest)
+          macos)
             DLL_NAME="libvoicevox_core_java_api.dylib"
             case "$ARCH" in
               x86_64)
@@ -335,7 +335,7 @@ jobs:
                 ;;
             esac
             ;;
-          ubuntu-latest)
+          ubuntu)
             DLL_NAME="libvoicevox_core_java_api.so"
             case "$ARCH" in
               x86_64)
