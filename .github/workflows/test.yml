@@ -308,7 +308,7 @@ jobs:
         run: |
           ARCH="$(uname -m)"
           case "$RUNNER_OS" in
-          windows)
+          Windows)
             DLL_NAME="voicevox_core_java_api.dll"
             case "$ARCH" in
               x86_64)
@@ -320,7 +320,7 @@ jobs:
                 ;;
             esac
             ;;
-          macos)
+          macOS)
             DLL_NAME="libvoicevox_core_java_api.dylib"
             case "$ARCH" in
               x86_64)
@@ -335,7 +335,7 @@ jobs:
                 ;;
             esac
             ;;
-          ubuntu)
+          Linux)
             DLL_NAME="libvoicevox_core_java_api.so"
             case "$ARCH" in
               x86_64)
@@ -351,7 +351,7 @@ jobs:
             esac
             ;;
           *)
-            echo "Unsupported OS: ${{ matrix.os }}"
+            echo "Unsupported OS: $RUNNER_OS"
             exit 1
             ;;
           esac
