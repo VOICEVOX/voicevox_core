@@ -3,7 +3,6 @@ package jp.Hiroshiba.VoicevoxCore;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
 import javax.annotation.Nonnull;
 
@@ -48,51 +47,27 @@ public class Synthesizer extends Dll {
   }
 
   /**
-   * {@link AudioQuery} を生成する。
+   * {@link AudioQuery} を生成するためのオブジェクトを生成する。
    *
    * @param text テキスト。
    * @param styleId スタイルID。
-   * @param options {@link AudioQueryOption} のセット。
-   * @return 話者とテキストから生成された {@link AudioQuery}。
+   * @return {@link CreateAudioQueryConfigurator}。
    */
   @Nonnull
-  public AudioQuery audioQuery(String text, int styleId, EnumSet<AudioQueryOption> options) {
-    if (!Utils.isU32(styleId)) {
-      throw new IllegalArgumentException("styleId");
-    }
-    boolean kana = options.contains(AudioQueryOption.KANA);
-    String queryJson = rsAudioQuery(text, styleId, kana);
-    Gson gson = new Gson();
-
-    AudioQuery audioQuery = gson.fromJson(queryJson, AudioQuery.class);
-    if (audioQuery == null) {
-      throw new NullPointerException("audio_query");
-    }
-    return audioQuery;
+  public CreateAudioQueryConfigurator createAudioQuery(String text, int styleId) {
+    return new CreateAudioQueryConfigurator(this, text, styleId);
   }
 
   /**
-   * {@link AccentPhrase} の配列を生成する。
+   * {@link AccentPhrase} のリストを生成するためのオブジェクトを生成する。
    *
    * @param text テキスト。
    * @param styleId スタイルID。
-   * @param options {@link AudioQueryOption} のセット。
-   * @return 話者とテキストから生成された {@link AccentPhrase} の配列。
+   * @return {@link CreateAccentPhrasesConfigurator}。
    */
   @Nonnull
-  public List<AccentPhrase> createAccentPhrases(
-      String text, int styleId, EnumSet<AccentPhrasesOption> options) {
-    if (!Utils.isU32(styleId)) {
-      throw new IllegalArgumentException("styleId");
-    }
-    boolean kana = options.contains(AccentPhrasesOption.KANA);
-    String accentPhrasesJson = rsAccentPhrases(text, styleId, kana);
-    Gson gson = new Gson();
-    AccentPhrase[] rawAccentPhrases = gson.fromJson(accentPhrasesJson, AccentPhrase[].class);
-    if (rawAccentPhrases == null) {
-      throw new NullPointerException("accent_phrases");
-    }
-    return new ArrayList<>(Arrays.asList(rawAccentPhrases));
+  public CreateAccentPhrasesConfigurator createAccentPhrases(String text, int styleId) {
+    return new CreateAccentPhrasesConfigurator(this, text, styleId);
   }
 
   /**
@@ -150,41 +125,27 @@ public class Synthesizer extends Dll {
   }
 
   /**
-   * {@link AudioQuery} から音声合成する。
+   * {@link AudioQuery} から音声合成するためのオブジェクトを生成する。
    *
    * @param audioQuery {@link AudioQuery}。
    * @param styleId スタイルID。
-   * @param options {@link SynthesisOption} のセット。
-   * @return WAVデータ。
+   * @return {@link SynthesisConfigurator}。
    */
   @Nonnull
-  public byte[] synthesis(AudioQuery audioQuery, int styleId, EnumSet<SynthesisOption> options) {
-    if (!Utils.isU32(styleId)) {
-      throw new IllegalArgumentException("styleId");
-    }
-    boolean enableInterrogativeUpspeak =
-        options.contains(SynthesisOption.ENABLE_INTERROGATIVE_UPSPEAK);
-    Gson gson = new Gson();
-    String queryJson = gson.toJson(audioQuery);
-    return rsSynthesis(queryJson, styleId, enableInterrogativeUpspeak);
+  public SynthesisConfigurator synthesis(AudioQuery audioQuery, int styleId) {
+    return new SynthesisConfigurator(this, audioQuery, styleId);
   }
 
   /**
-   * テキスト音声合成を実行する。
+   * テキスト音声合成を実行するためのオブジェクトを生成する。
    *
    * @param text テキスト。
    * @param styleId スタイルID。
-   * @param options {@link TtsOption} のセット。
-   * @return WAVデータ。
+   * @return {@link TtsConfigurator}。
    */
   @Nonnull
-  public byte[] tts(String text, int styleId, EnumSet<TtsOption> options) {
-    if (!Utils.isU32(styleId)) {
-      throw new IllegalArgumentException("styleId");
-    }
-    boolean kana = options.contains(TtsOption.KANA);
-    boolean enableInterrogativeUpspeak = options.contains(TtsOption.ENABLE_INTERROGATIVE_UPSPEAK);
-    return rsTts(text, styleId, kana, enableInterrogativeUpspeak);
+  public TtsConfigurator tts(String text, int styleId) {
+    return new TtsConfigurator(this, text, styleId);
   }
 
   /** 音声シンセサイザを破棄する。 */
@@ -309,28 +270,199 @@ public class Synthesizer extends Dll {
   }
 
   /** {@link Synthesizer#audioQuery} のオプション。 */
-  public static enum AudioQueryOption {
-    /** 入力テキストをAquesTalk風記法として解釈するかどうか。 */
-    KANA,
+  public class CreateAudioQueryConfigurator {
+    private Synthesizer synthesizer;
+    private String text;
+    private int styleId;
+    private boolean kana;
+
+    private CreateAudioQueryConfigurator(Synthesizer synthesizer, String text, int styleId) {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      this.synthesizer = synthesizer;
+      this.text = text;
+      this.styleId = styleId;
+      this.kana = false;
+    }
+
+    /**
+     * 入力テキストをAquesTalk風記法として解釈するかどうか。
+     *
+     * @param kana 入力テキストをAquesTalk風記法として解釈するかどうか。
+     * @return {@link CreateAudioQueryConfigurator}。
+     */
+    @Nonnull
+    public CreateAudioQueryConfigurator kana(boolean kana) {
+      this.kana = kana;
+      return this;
+    }
+
+    /**
+     * {@link AudioQuery} を生成する。
+     *
+     * @return {@link AudioQuery}。
+     */
+    @Nonnull
+    public AudioQuery execute() {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      String queryJson = synthesizer.rsAudioQuery(this.text, this.styleId, this.kana);
+      Gson gson = new Gson();
+
+      AudioQuery audioQuery = gson.fromJson(queryJson, AudioQuery.class);
+      if (audioQuery == null) {
+        throw new NullPointerException("audio_query");
+      }
+      return audioQuery;
+    }
   }
 
   /** {@link Synthesizer#createAccentPhrases} のオプション。 */
-  public static enum AccentPhrasesOption {
-    /** 入力テキストをAquesTalk風記法として解釈するかどうか。 */
-    KANA,
+  public class CreateAccentPhrasesConfigurator {
+    private Synthesizer synthesizer;
+    private String text;
+    private int styleId;
+    private boolean kana;
+
+    private CreateAccentPhrasesConfigurator(Synthesizer synthesizer, String text, int styleId) {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      this.synthesizer = synthesizer;
+      this.text = text;
+      this.styleId = styleId;
+      this.kana = false;
+    }
+
+    /**
+     * 入力テキストをAquesTalk風記法として解釈するかどうか。
+     *
+     * @param kana 入力テキストをAquesTalk風記法として解釈するかどうか。
+     * @return {@link CreateAudioQueryConfigurator}。
+     */
+    @Nonnull
+    public CreateAccentPhrasesConfigurator kana(boolean kana) {
+      this.kana = kana;
+      return this;
+    }
+
+    /**
+     * {@link AccentPhrase} のリストを取得する。
+     *
+     * @return {@link AccentPhrase} のリスト。
+     */
+    @Nonnull
+    public List<AccentPhrase> execute() {
+      String accentPhrasesJson = synthesizer.rsAccentPhrases(this.text, this.styleId, this.kana);
+      Gson gson = new Gson();
+      AccentPhrase[] rawAccentPhrases = gson.fromJson(accentPhrasesJson, AccentPhrase[].class);
+      if (rawAccentPhrases == null) {
+        throw new NullPointerException("accent_phrases");
+      }
+      return new ArrayList<AccentPhrase>(Arrays.asList(rawAccentPhrases));
+    }
   }
 
-  /** {@link Synthesizer#synthesis} のオプション。 */
-  public static enum SynthesisOption {
-    /** 疑問文の調整を有効にするかどうか。 */
-    ENABLE_INTERROGATIVE_UPSPEAK
+  /** {@link Synthesizer#synthesize} のオプション。 */
+  public class SynthesisConfigurator {
+    private Synthesizer synthesizer;
+    private AudioQuery audioQuery;
+    private int styleId;
+    private boolean interrogativeUpspeak;
+
+    private SynthesisConfigurator(Synthesizer synthesizer, AudioQuery audioQuery, int styleId) {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      this.synthesizer = synthesizer;
+      this.audioQuery = audioQuery;
+      this.styleId = styleId;
+      this.interrogativeUpspeak = false;
+    }
+
+    /**
+     * 疑問文の調整を有効にするかどうか。
+     *
+     * @param interrogativeUpspeak 疑問文の調整を有効にするかどうか。
+     * @return {@link SynthesisConfigurator}。
+     */
+    @Nonnull
+    public SynthesisConfigurator interrogativeUpspeak(boolean interrogativeUpspeak) {
+      this.interrogativeUpspeak = interrogativeUpspeak;
+      return this;
+    }
+
+    /**
+     * {@link AudioQuery} から音声合成する。
+     *
+     * @return 音声データ。
+     */
+    @Nonnull
+    public byte[] execute() {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      Gson gson = new Gson();
+      String queryJson = gson.toJson(this.audioQuery);
+      return synthesizer.rsSynthesis(queryJson, this.styleId, this.interrogativeUpspeak);
+    }
   }
 
   /** {@link Synthesizer#tts} のオプション。 */
-  public static enum TtsOption {
-    /** 入力テキストをAquesTalk風記法として解釈するかどうか。 */
-    KANA,
-    /** 疑問文の調整を有効にするかどうか。 */
-    ENABLE_INTERROGATIVE_UPSPEAK
+  public class TtsConfigurator {
+    private Synthesizer synthesizer;
+    private String text;
+    private int styleId;
+    private boolean kana;
+    private boolean interrogativeUpspeak;
+
+    private TtsConfigurator(Synthesizer synthesizer, String text, int styleId) {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      this.synthesizer = synthesizer;
+      this.text = text;
+      this.styleId = styleId;
+      this.kana = false;
+    }
+
+    /**
+     * 入力テキストをAquesTalk風記法として解釈するかどうか。
+     *
+     * @param kana 入力テキストをAquesTalk風記法として解釈するかどうか。
+     * @return {@link CreateAudioQueryConfigurator}。
+     */
+    @Nonnull
+    public TtsConfigurator kana(boolean kana) {
+      this.kana = kana;
+      return this;
+    }
+
+    /**
+     * 疑問文の調整を有効にするかどうか。
+     *
+     * @param interrogativeUpspeak 疑問文の調整を有効にするかどうか。
+     * @return {@link SynthesisConfigurator}。
+     */
+    @Nonnull
+    public TtsConfigurator interrogativeUpspeak(boolean interrogativeUpspeak) {
+      this.interrogativeUpspeak = interrogativeUpspeak;
+      return this;
+    }
+
+    /**
+     * {@link AudioQuery} から音声合成する。
+     *
+     * @return 音声データ。
+     */
+    @Nonnull
+    public byte[] execute() {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      return synthesizer.rsTts(this.text, this.styleId, this.kana, this.interrogativeUpspeak);
+    }
   }
 }

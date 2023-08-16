@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.EnumSet;
 import org.junit.jupiter.api.Test;
 
 class UserDictTest extends TestUtils {
@@ -19,17 +18,18 @@ class UserDictTest extends TestUtils {
     UserDict userDict = new UserDict();
     synthesizer.loadVoiceModel(model);
     AudioQuery query1 =
-        synthesizer.audioQuery(
-            "this_word_should_not_exist_in_default_dictionary",
-            model.metas[0].styles[0].id,
-            EnumSet.noneOf(Synthesizer.AudioQueryOption.class));
+        synthesizer
+            .createAudioQuery(
+                "this_word_should_not_exist_in_default_dictionary", model.metas[0].styles[0].id)
+            .execute();
+
     userDict.addWord(new UserDict.Word("this_word_should_not_exist_in_default_dictionary", "テスト"));
     openJtalk.useUserDict(userDict);
     AudioQuery query2 =
-        synthesizer.audioQuery(
-            "this_word_should_not_exist_in_default_dictionary",
-            model.metas[0].styles[0].id,
-            EnumSet.noneOf(Synthesizer.AudioQueryOption.class));
+        synthesizer
+            .createAudioQuery(
+                "this_word_should_not_exist_in_default_dictionary", model.metas[0].styles[0].id)
+            .execute();
     assertTrue(query1.kana != query2.kana);
   }
 

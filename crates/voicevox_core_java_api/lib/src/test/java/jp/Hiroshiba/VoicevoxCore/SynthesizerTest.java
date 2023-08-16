@@ -7,7 +7,6 @@ package jp.Hiroshiba.VoicevoxCore;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.EnumSet;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -51,14 +50,9 @@ class SynthesizerTest extends TestUtils {
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
     synthesizer.loadVoiceModel(model);
-    AudioQuery query =
-        synthesizer.audioQuery(
-            "こんにちは",
-            model.metas[0].styles[0].id,
-            EnumSet.noneOf(Synthesizer.AudioQueryOption.class));
+    AudioQuery query = synthesizer.createAudioQuery("こんにちは", model.metas[0].styles[0].id).execute();
 
-    synthesizer.synthesis(
-        query, model.metas[0].styles[0].id, EnumSet.noneOf(Synthesizer.SynthesisOption.class));
+    synthesizer.synthesis(query, model.metas[0].styles[0].id).execute();
   }
 
   @Test
@@ -68,10 +62,7 @@ class SynthesizerTest extends TestUtils {
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
     synthesizer.loadVoiceModel(model);
     List<AccentPhrase> accentPhrases =
-        synthesizer.createAccentPhrases(
-            "こんにちは",
-            model.metas[0].styles[0].id,
-            EnumSet.noneOf(Synthesizer.AccentPhrasesOption.class));
+        synthesizer.createAccentPhrases("こんにちは", model.metas[0].styles[0].id).execute();
     List<AccentPhrase> accentPhrases2 =
         synthesizer.replaceMoraPitch(accentPhrases, model.metas[1].styles[0].id);
     assertTrue(
@@ -100,7 +91,6 @@ class SynthesizerTest extends TestUtils {
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
     synthesizer.loadVoiceModel(model);
-    synthesizer.tts(
-        "こんにちは", model.metas[0].styles[0].id, EnumSet.noneOf(Synthesizer.TtsOption.class));
+    synthesizer.tts("こんにちは", model.metas[0].styles[0].id).execute();
   }
 }
