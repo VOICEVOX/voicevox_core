@@ -12,7 +12,7 @@ use jni::{
 use std::sync::{Arc, Mutex};
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsNewWithInitialize<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsNewWithInitialize<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     open_jtalk: JObject<'local>,
@@ -67,7 +67,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsNewWithIniti
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsLoadVoiceModel<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsLoadVoiceModel<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     model: JObject<'local>,
@@ -90,7 +90,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsLoadVoiceMod
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsUnloadVoiceModel<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsUnloadVoiceModel<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     model_id: JString<'local>,
@@ -114,7 +114,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsUnloadVoiceM
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoiceModel<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoiceModel<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     model_id: JString<'local>,
@@ -137,7 +137,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoic
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAudioQuery<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAudioQuery<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     text: JString<'local>,
@@ -175,7 +175,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAudioQuery<'
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAccentPhrases<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAccentPhrases<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     text: JString<'local>,
@@ -213,7 +213,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAccentPhrase
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraData<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraData<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     accent_phrases_json: JString<'local>,
@@ -244,7 +244,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraD
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplacePhonemeLength<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplacePhonemeLength<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     accent_phrases_json: JString<'local>,
@@ -276,7 +276,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplacePhone
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraPitch<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraPitch<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     accent_phrases_json: JString<'local>,
@@ -307,7 +307,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraP
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsSynthesis<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsSynthesis<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     query_json: JString<'local>,
@@ -344,7 +344,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsSynthesis<'l
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsTts<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsTts<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     query_json: JString<'local>,
@@ -382,7 +382,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsTts<'local>(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsDrop<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {

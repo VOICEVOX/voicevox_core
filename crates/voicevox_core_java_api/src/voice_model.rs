@@ -8,7 +8,7 @@ use jni::{
 };
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     model_path: JString<'local>,
@@ -26,7 +26,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'loc
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetId<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetId<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {
@@ -45,7 +45,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetId<'local>
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetasJson<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetasJson<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {
@@ -62,7 +62,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetasJson<
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsDrop<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {

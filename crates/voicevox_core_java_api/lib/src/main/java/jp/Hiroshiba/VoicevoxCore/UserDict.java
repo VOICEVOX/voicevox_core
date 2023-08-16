@@ -87,7 +87,7 @@ public class UserDict extends Dll {
    * @return ユーザー辞書の単語。
    */
   @Nonnull
-  public HashMap<String, Word> getWords() {
+  public HashMap<String, Word> toHashMap() {
     String json = rsGetWords();
     Gson gson = new Gson();
     @SuppressWarnings("unchecked")

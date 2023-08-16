@@ -39,22 +39,22 @@ class UserDictTest extends TestUtils {
     UserDict userDict = new UserDict();
     // 単語追加
     String uuid = userDict.addWord(new UserDict.Word("hoge", "ホゲ"));
-    assertTrue(userDict.getWords().get(uuid) != null);
+    assertTrue(userDict.toHashMap().get(uuid) != null);
 
     // 単語更新
     userDict.updateWord(uuid, new UserDict.Word("hoge", "ホゲホゲ"));
-    assertTrue(userDict.getWords().get(uuid).pronunciation.equals("ホゲホゲ"));
+    assertTrue(userDict.toHashMap().get(uuid).pronunciation.equals("ホゲホゲ"));
 
     // 単語削除
     userDict.removeWord(uuid);
-    assertTrue(userDict.getWords().get(uuid) == null);
+    assertTrue(userDict.toHashMap().get(uuid) == null);
 
     // 辞書のインポート
     userDict.addWord(new UserDict.Word("hoge", "ホゲ"));
     UserDict userDict2 = new UserDict();
     userDict2.addWord(new UserDict.Word("fuga", "フガ"));
     userDict.importDict(userDict2);
-    assertTrue(userDict.getWords().size() == 2);
+    assertTrue(userDict.toHashMap().size() == 2);
 
     // 辞書の保存/読み込み
     Path path = Files.createTempFile("voicevox_user_dict", ".json");
@@ -62,7 +62,7 @@ class UserDictTest extends TestUtils {
       UserDict userDict3 = new UserDict();
       userDict.save(path.toString());
       userDict3.load(path.toString());
-      assertTrue(userDict3.getWords().size() == 2);
+      assertTrue(userDict3.toHashMap().size() == 2);
     } finally {
       Files.deleteIfExists(path);
     }

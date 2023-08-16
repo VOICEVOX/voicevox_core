@@ -9,7 +9,7 @@ use jni::{
 };
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsNew<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsNew<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {
@@ -23,7 +23,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsNew<'local>(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsAddWord<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsAddWord<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     word_json: JString<'local>,
@@ -52,7 +52,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsAddWord<'local>
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsUpdateWord<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsUpdateWord<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     uuid: JString<'local>,
@@ -81,7 +81,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsUpdateWord<'loc
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsRemoveWord<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsRemoveWord<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     uuid: JString<'local>,
@@ -105,7 +105,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsRemoveWord<'loc
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsImportDict<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsImportDict<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     other_dict: JObject<'local>,
@@ -134,7 +134,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsImportDict<'loc
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsLoad<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsLoad<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     path: JString<'local>,
@@ -158,7 +158,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsLoad<'local>(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsSave<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsSave<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     path: JString<'local>,
@@ -182,7 +182,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsSave<'local>(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsGetWords<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsGetWords<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {
@@ -204,7 +204,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsGetWords<'local
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsDrop<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {
@@ -215,7 +215,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsDrop<'local>(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsToZenkaku<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsToZenkaku<'local>(
     env: JNIEnv<'local>,
     _cls: JClass<'local>,
     text: JString<'local>,
@@ -232,7 +232,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsToZenkaku<'loca
 }
 
 #[no_mangle]
-pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsValidatePronunciation<'local>(
+extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsValidatePronunciation<'local>(
     env: JNIEnv<'local>,
     _cls: JClass<'local>,
     text: JString<'local>,
