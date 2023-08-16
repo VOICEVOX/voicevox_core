@@ -6,20 +6,20 @@ use jni::{
     JNIEnv,
 };
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithoutDic<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithoutDic<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
         let internal = voicevox_core::OpenJtalk::new_without_dic();
 
-        unsafe { env.set_rust_field(&this, "handle", Arc::new(internal)) }?;
+        env.set_rust_field(&this, "handle", Arc::new(internal))?;
         Ok(())
     })
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithInitialize<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithInitialize<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     open_jtalk_dict_dir: JString<'local>,
@@ -29,28 +29,26 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithInitialize<
         let open_jtalk_dict_dir = open_jtalk_dict_dir.to_str()?;
 
         let internal = voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)?;
-        unsafe { env.set_rust_field(&this, "handle", Arc::new(internal)) }?;
+        env.set_rust_field(&this, "handle", Arc::new(internal))?;
 
         Ok(())
     })
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsUseUserDict<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsUseUserDict<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     user_dict: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&this, "handle")?
+            .clone();
 
-        let user_dict = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&user_dict, "handle")?
-                .clone()
-        };
+        let user_dict = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&user_dict, "handle")?
+            .clone();
 
         {
             let user_dict = user_dict.lock().unwrap();
@@ -62,12 +60,12 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsUseUserDict<'local
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsDrop<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        unsafe { env.take_rust_field(&this, "handle") }?;
+        env.take_rust_field(&this, "handle")?;
         Ok(())
     })
 }

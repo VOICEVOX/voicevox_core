@@ -12,7 +12,7 @@ use jni::{
 use std::sync::{Arc, Mutex};
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsNewWithInitialize<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsNewWithInitialize<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     open_jtalk: JObject<'local>,
@@ -49,34 +49,31 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsNewWithInitializ
         let load_all_models = env.get_field(&builder, "loadAllModels", "Z")?;
         options.load_all_models = load_all_models.z().expect("loadAllModels is not boolean");
 
-        let open_jtalk = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&open_jtalk, "handle")?
-                .clone()
-        };
+        let open_jtalk = env
+            .get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&open_jtalk, "handle")?
+            .clone();
         let internal = RUNTIME.block_on(voicevox_core::Synthesizer::new_with_initialize(
             open_jtalk,
             Box::leak(Box::new(options)),
         ))?;
-        unsafe { env.set_rust_field(&this, "handle", Arc::new(Mutex::new(internal)))? };
+        env.set_rust_field(&this, "handle", Arc::new(Mutex::new(internal)))?;
         Ok(())
     })
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsLoadVoiceModel<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsLoadVoiceModel<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     model: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let model = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&model, "handle")?
-                .clone()
-        };
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
-                .clone()
-        };
+        let model = env
+            .get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&model, "handle")?
+            .clone();
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
         {
             let mut internal = internal.lock().unwrap();
             RUNTIME.block_on(internal.load_voice_model(&model))?;
@@ -86,7 +83,7 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsLoadVoiceModel<'
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsUnloadVoiceModel<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsUnloadVoiceModel<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     model_id: JString<'local>,
@@ -94,10 +91,9 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsUnloadVoiceModel
     throw_if_err(env, (), |env| {
         let model_id: String = env.get_string(&model_id)?.into();
 
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
 
         {
             let mut internal = internal.lock().unwrap();
@@ -110,7 +106,9 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsUnloadVoiceModel
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoiceModel<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoiceModel<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     model_id: JString<'local>,
@@ -118,10 +116,9 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoiceMod
     throw_if_err(env, false, |env| {
         let model_id: String = env.get_string(&model_id)?.into();
 
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
 
         let is_loaded = {
             let internal = internal.lock().unwrap();
@@ -134,7 +131,7 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoiceMod
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAudioQuery<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAudioQuery<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     text: JString<'local>,
@@ -145,10 +142,9 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAudioQuery<'loca
         let text: String = env.get_string(&text)?.into();
         let style_id = style_id as u32;
 
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
 
         let audio_query = {
             let internal = internal.lock().unwrap();
@@ -172,7 +168,7 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAudioQuery<'loca
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAccentPhrases<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAccentPhrases<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     text: JString<'local>,
@@ -183,10 +179,9 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAccentPhrases<'l
         let text: String = env.get_string(&text)?.into();
         let style_id = style_id as u32;
 
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
 
         let accent_phrases = {
             let internal = internal.lock().unwrap();
@@ -210,7 +205,7 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAccentPhrases<'l
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraData<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraData<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     accent_phrases_json: JString<'local>,
@@ -222,10 +217,9 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraData<
             serde_json::from_str(&accent_phrases_json)?;
         let style_id = style_id as u32;
 
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
 
         let replaced_accent_phrases = {
             let internal = internal.lock().unwrap();
@@ -241,7 +235,9 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraData<
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplacePhonemeLength<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplacePhonemeLength<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     accent_phrases_json: JString<'local>,
@@ -253,10 +249,9 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplacePhonemeLe
             serde_json::from_str(&accent_phrases_json)?;
         let style_id = style_id as u32;
 
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
 
         let replaced_accent_phrases = {
             let internal = internal.lock().unwrap();
@@ -273,7 +268,7 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplacePhonemeLe
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraPitch<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraPitch<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     accent_phrases_json: JString<'local>,
@@ -285,10 +280,9 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraPitch
             serde_json::from_str(&accent_phrases_json)?;
         let style_id = style_id as u32;
 
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
 
         let replaced_accent_phrases = {
             let internal = internal.lock().unwrap();
@@ -304,7 +298,7 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraPitch
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsSynthesis<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsSynthesis<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     query_json: JString<'local>,
@@ -316,10 +310,9 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsSynthesis<'local
         let audio_query: voicevox_core::AudioQueryModel = serde_json::from_str(&audio_query)?;
         let style_id = style_id as u32;
 
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
 
         let wave = {
             let internal = internal.lock().unwrap();
@@ -341,7 +334,7 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsSynthesis<'local
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsTts<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsTts<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     query_json: JString<'local>,
@@ -353,10 +346,9 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsTts<'local>(
         let text: String = env.get_string(&query_json)?.into();
         let style_id = style_id as u32;
 
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
 
         let wave = {
             let internal = internal.lock().unwrap();
@@ -379,12 +371,12 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsTts<'local>(
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsDrop<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        unsafe { env.take_rust_field(&this, "handle") }?;
+        env.take_rust_field(&this, "handle")?;
         Ok(())
     })
 }

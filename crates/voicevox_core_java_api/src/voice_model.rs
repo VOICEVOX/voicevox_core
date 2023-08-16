@@ -8,7 +8,7 @@ use jni::{
 };
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     model_path: JString<'local>,
@@ -19,22 +19,21 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'local>(
 
         let internal = RUNTIME.block_on(voicevox_core::VoiceModel::from_path(model_path))?;
 
-        unsafe { env.set_rust_field(&this, "handle", Arc::new(internal)) }?;
+        env.set_rust_field(&this, "handle", Arc::new(internal))?;
 
         Ok(())
     })
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetId<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetId<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "handle")?
+            .clone();
 
         let id = internal.id().raw_voice_model_id();
 
@@ -45,15 +44,14 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetId<'local>(
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetasJson<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetasJson<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "handle")?
-                .clone()
-        };
+        let internal = env
+            .get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "handle")?
+            .clone();
 
         let metas = internal.metas();
         let metas_json = serde_json::to_string(&metas)?;
@@ -62,12 +60,12 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetasJson<'loc
 }
 
 #[no_mangle]
-extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsDrop<'local>(
+unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        unsafe { env.take_rust_field(&this, "handle") }?;
+        env.take_rust_field(&this, "handle")?;
         Ok(())
     })
 }
