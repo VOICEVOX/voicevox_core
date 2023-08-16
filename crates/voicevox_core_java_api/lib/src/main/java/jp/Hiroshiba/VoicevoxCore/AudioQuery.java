@@ -61,7 +61,7 @@ public class AudioQuery {
    */
   @SerializedName("kana")
   @Expose
-  @Nonnull
+  @Nullable
   public final String kana;
 
   public AudioQuery() {
@@ -73,6 +73,6 @@ public class AudioQuery {
     this.prePhonemeLength = 0.1;
     this.postPhonemeLength = 0.1;
     this.outputSamplingRate = 24000;
-    this.kana = "";
+    this.kana = null;
   }
 }
