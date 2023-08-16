@@ -36,17 +36,17 @@ struct TestCase {
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
-            voicevox_default_initialize_options,
-            voicevox_default_audio_query_options,
-            voicevox_default_synthesis_options,
             voicevox_open_jtalk_rc_new,
             voicevox_open_jtalk_rc_delete,
+            voicevox_make_default_initialize_options,
             voicevox_voice_model_new_from_path,
             voicevox_voice_model_delete,
             voicevox_synthesizer_new_with_initialize,
             voicevox_synthesizer_delete,
             voicevox_synthesizer_load_voice_model,
+            voicevox_make_default_audio_query_options,
             voicevox_synthesizer_create_audio_query,
+            voicevox_make_default_synthesis_options,
             voicevox_synthesizer_synthesis,
             voicevox_json_free,
             voicevox_wav_free,
@@ -78,7 +78,7 @@ impl assert_cdylib::TestCase for TestCase {
                 openjtalk,
                 VoicevoxInitializeOptions {
                     acceleration_mode: VoicevoxAccelerationMode::VOICEVOX_ACCELERATION_MODE_CPU,
-                    ..**voicevox_default_initialize_options
+                    ..voicevox_make_default_initialize_options()
                 },
                 synthesizer.as_mut_ptr(),
             ));
@@ -94,7 +94,7 @@ impl assert_cdylib::TestCase for TestCase {
                 synthesizer,
                 text.as_ptr(),
                 STYLE_ID,
-                **voicevox_default_audio_query_options,
+                voicevox_make_default_audio_query_options(),
                 audio_query.as_mut_ptr(),
             ));
             audio_query.assume_init()
@@ -107,7 +107,7 @@ impl assert_cdylib::TestCase for TestCase {
                 synthesizer,
                 audio_query,
                 STYLE_ID,
-                **voicevox_default_synthesis_options,
+                voicevox_make_default_synthesis_options(),
                 wav_length.as_mut_ptr(),
                 wav.as_mut_ptr(),
             ));

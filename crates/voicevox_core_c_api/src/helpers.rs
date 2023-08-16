@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 use voicevox_core::UserDictWord;
 
-use const_default::ConstDefault;
 use thiserror::Error;
 
 use super::*;
@@ -81,11 +80,10 @@ pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
     s.to_str().map_err(|_| CApiError::InvalidUtf8Input)
 }
 
-impl ConstDefault for VoicevoxAudioQueryOptions {
-    const DEFAULT: Self = {
-        let options = voicevox_core::AudioQueryOptions::DEFAULT;
+impl From<voicevox_core::AudioQueryOptions> for VoicevoxAudioQueryOptions {
+    fn from(options: voicevox_core::AudioQueryOptions) -> Self {
         Self { kana: options.kana }
-    };
+    }
 }
 impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
     fn from(options: VoicevoxAudioQueryOptions) -> Self {
@@ -93,11 +91,10 @@ impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
     }
 }
 
-impl ConstDefault for VoicevoxAccentPhrasesOptions {
-    const DEFAULT: Self = {
-        let options = voicevox_core::AccentPhrasesOptions::DEFAULT;
+impl From<voicevox_core::AccentPhrasesOptions> for VoicevoxAccentPhrasesOptions {
+    fn from(options: voicevox_core::AccentPhrasesOptions) -> Self {
         Self { kana: options.kana }
-    };
+    }
 }
 impl From<VoicevoxAccentPhrasesOptions> for voicevox_core::AccentPhrasesOptions {
     fn from(options: VoicevoxAccentPhrasesOptions) -> Self {
@@ -113,10 +110,9 @@ impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
     }
 }
 
-impl VoicevoxAccelerationMode {
-    const fn from_rust(mode: voicevox_core::AccelerationMode) -> Self {
+impl From<voicevox_core::AccelerationMode> for VoicevoxAccelerationMode {
+    fn from(mode: voicevox_core::AccelerationMode) -> Self {
         use voicevox_core::AccelerationMode::*;
-
         match mode {
             Auto => Self::VOICEVOX_ACCELERATION_MODE_AUTO,
             Cpu => Self::VOICEVOX_ACCELERATION_MODE_CPU,
@@ -124,10 +120,10 @@ impl VoicevoxAccelerationMode {
         }
     }
 }
+
 impl From<VoicevoxAccelerationMode> for voicevox_core::AccelerationMode {
     fn from(mode: VoicevoxAccelerationMode) -> Self {
         use VoicevoxAccelerationMode::*;
-
         match mode {
             VOICEVOX_ACCELERATION_MODE_AUTO => Self::Auto,
             VOICEVOX_ACCELERATION_MODE_CPU => Self::Cpu,
@@ -136,15 +132,15 @@ impl From<VoicevoxAccelerationMode> for voicevox_core::AccelerationMode {
     }
 }
 
-impl ConstDefault for VoicevoxInitializeOptions {
-    const DEFAULT: Self = {
-        let options = voicevox_core::InitializeOptions::DEFAULT;
+impl Default for VoicevoxInitializeOptions {
+    fn default() -> Self {
+        let options = voicevox_core::InitializeOptions::default();
         Self {
-            acceleration_mode: VoicevoxAccelerationMode::from_rust(options.acceleration_mode),
+            acceleration_mode: options.acceleration_mode.into(),
             cpu_num_threads: options.cpu_num_threads,
             load_all_models: options.load_all_models,
         }
-    };
+    }
 }
 
 impl From<VoicevoxInitializeOptions> for voicevox_core::InitializeOptions {
@@ -157,14 +153,13 @@ impl From<VoicevoxInitializeOptions> for voicevox_core::InitializeOptions {
     }
 }
 
-impl ConstDefault for VoicevoxTtsOptions {
-    const DEFAULT: Self = {
-        let options = voicevox_core::TtsOptions::DEFAULT;
+impl From<voicevox_core::TtsOptions> for VoicevoxTtsOptions {
+    fn from(options: voicevox_core::TtsOptions) -> Self {
         Self {
             kana: options.kana,
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
         }
-    };
+    }
 }
 
 impl From<VoicevoxTtsOptions> for voicevox_core::TtsOptions {
@@ -176,13 +171,13 @@ impl From<VoicevoxTtsOptions> for voicevox_core::TtsOptions {
     }
 }
 
-impl ConstDefault for VoicevoxSynthesisOptions {
-    const DEFAULT: Self = {
-        let options = voicevox_core::TtsOptions::DEFAULT;
+impl Default for VoicevoxSynthesisOptions {
+    fn default() -> Self {
+        let options = voicevox_core::TtsOptions::default();
         Self {
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
         }
-    };
+    }
 }
 
 impl VoicevoxUserDictWord {

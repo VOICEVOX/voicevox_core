@@ -260,11 +260,6 @@ typedef struct VoicevoxUserDict VoicevoxUserDict;
 typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
 
 /**
- * 音声モデルID。
- */
-typedef const char *VoicevoxVoiceModelId;
-
-/**
  * ::voicevox_synthesizer_new_with_initialize のオプション。
  */
 typedef struct VoicevoxInitializeOptions {
@@ -284,11 +279,9 @@ typedef struct VoicevoxInitializeOptions {
 } VoicevoxInitializeOptions;
 
 /**
- * スタイルID。
- *
- * VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
+ * 音声モデルID。
  */
-typedef uint32_t VoicevoxStyleId;
+typedef const char *VoicevoxVoiceModelId;
 
 /**
  * ::voicevox_synthesizer_create_audio_query のオプション。
@@ -299,6 +292,13 @@ typedef struct VoicevoxAudioQueryOptions {
    */
   bool kana;
 } VoicevoxAudioQueryOptions;
+
+/**
+ * スタイルID。
+ *
+ * VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
+ */
+typedef uint32_t VoicevoxStyleId;
 
 /**
  * ::voicevox_synthesizer_create_accent_phrases のオプション。
@@ -363,18 +363,6 @@ typedef struct VoicevoxUserDictWord {
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
-
-extern const struct VoicevoxInitializeOptions voicevox_default_initialize_options;
-
-extern const char *voicevox_version;
-
-extern const struct VoicevoxAudioQueryOptions voicevox_default_audio_query_options;
-
-extern const struct VoicevoxAccentPhrasesOptions voicevox_default_accent_phrases_options;
-
-extern const struct VoicevoxSynthesisOptions voicevox_default_synthesis_options;
-
-extern const struct VoicevoxTtsOptions voicevox_default_tts_options;
 
 /**
  * ::OpenJtalkRc を<b>構築</b>(_construct_)する。
@@ -443,6 +431,24 @@ VoicevoxResultCode voicevox_open_jtalk_rc_use_user_dict(const struct OpenJtalkRc
 __declspec(dllimport)
 #endif
 void voicevox_open_jtalk_rc_delete(struct OpenJtalkRc *open_jtalk);
+
+/**
+ * デフォルトの初期化オプションを生成する
+ * @return デフォルト値が設定された初期化オプション
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxInitializeOptions voicevox_make_default_initialize_options(void);
+
+/**
+ * voicevoxのバージョンを取得する。
+ * @return SemVerでフォーマットされたバージョン。
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+const char *voicevox_get_version(void);
 
 /**
  * VVMファイルから ::VoicevoxVoiceModel を<b>構築</b>(_construct_)する。
@@ -666,6 +672,15 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supported_devices_json);
 
 /**
+ * デフォルトの AudioQuery のオプションを生成する
+ * @return デフォルト値が設定された AudioQuery オプション
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxAudioQueryOptions voicevox_make_default_audio_query_options(void);
+
+/**
  * AudioQueryをJSONとして生成する。
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -713,6 +728,15 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query(const struct Voicevox
                                                            VoicevoxStyleId style_id,
                                                            struct VoicevoxAudioQueryOptions options,
                                                            char **output_audio_query_json);
+
+/**
+ * デフォルトの `accent_phrases` のオプションを生成する
+ * @return デフォルト値が設定された `accent_phrases` のオプション
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxAccentPhrasesOptions voicevox_make_default_accent_phrases_options(void);
 
 /**
  * AccentPhrase (アクセント句)の配列をJSON形式で生成する。
@@ -841,6 +865,15 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_pitch(const struct Voicevox
                                                            char **output_accent_phrases_json);
 
 /**
+ * デフォルトの `voicevox_synthesizer_synthesis` のオプションを生成する
+ * @return デフォルト値が設定された `voicevox_synthesizer_synthesis` のオプション
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxSynthesisOptions voicevox_make_default_synthesis_options(void);
+
+/**
  * AudioQueryから音声合成を行う。
  *
  * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
@@ -870,6 +903,15 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
                                                   struct VoicevoxSynthesisOptions options,
                                                   uintptr_t *output_wav_length,
                                                   uint8_t **output_wav);
+
+/**
+ * デフォルトのテキスト音声合成オプションを生成する
+ * @return テキスト音声合成オプション
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
 
 /**
  * テキスト音声合成を行う。
