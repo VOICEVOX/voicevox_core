@@ -133,7 +133,8 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoiceMod
         };
 
         Ok(is_loaded)
-    }) as jboolean
+    })
+    .into()
 }
 
 #[no_mangle]
