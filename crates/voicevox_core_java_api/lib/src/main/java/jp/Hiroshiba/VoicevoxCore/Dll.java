@@ -21,7 +21,7 @@ abstract class Dll {
         osName = "windows";
         dllName = "voicevox_core_java_api.dll";
       } else if (rawOsName.startsWith("Mac")) {
-        osName = "mac";
+        osName = "macos";
         dllName = "libvoicevox_core_java_api.dylib";
       } else if (rawOsName.startsWith("Linux")) {
         osName = "linux";
