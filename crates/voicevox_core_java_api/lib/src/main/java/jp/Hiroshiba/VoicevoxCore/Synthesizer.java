@@ -55,6 +55,8 @@ public class Synthesizer extends Dll {
    * @param text テキスト。
    * @param styleId スタイルID。
    * @return {@link CreateAudioQueryConfigurator}。
+   *
+   * @see CreateAudioQueryConfigurator#execute
    */
   @Nonnull
   public CreateAudioQueryConfigurator createAudioQuery(String text, int styleId) {
@@ -67,6 +69,8 @@ public class Synthesizer extends Dll {
    * @param text テキスト。
    * @param styleId スタイルID。
    * @return {@link CreateAccentPhrasesConfigurator}。
+   *
+   * @see CreateAccentPhrasesConfigurator#execute
    */
   @Nonnull
   public CreateAccentPhrasesConfigurator createAccentPhrases(String text, int styleId) {
@@ -133,6 +137,8 @@ public class Synthesizer extends Dll {
    * @param audioQuery {@link AudioQuery}。
    * @param styleId スタイルID。
    * @return {@link SynthesisConfigurator}。
+   *
+   * @see SynthesisConfigurator#execute
    */
   @Nonnull
   public SynthesisConfigurator synthesis(AudioQuery audioQuery, int styleId) {
@@ -145,6 +151,8 @@ public class Synthesizer extends Dll {
    * @param text テキスト。
    * @param styleId スタイルID。
    * @return {@link TtsConfigurator}。
+   *
+   * @see TtsConfigurator#execute
    */
   @Nonnull
   public TtsConfigurator tts(String text, int styleId) {
@@ -266,7 +274,7 @@ public class Synthesizer extends Dll {
     GPU,
   }
 
-  /** {@link Synthesizer#audioQuery} のオプション。 */
+  /** {@link Synthesizer#createAudioQuery} のオプション。 */
   public class CreateAudioQueryConfigurator {
     private Synthesizer synthesizer;
     private String text;
@@ -362,7 +370,7 @@ public class Synthesizer extends Dll {
     }
   }
 
-  /** {@link Synthesizer#synthesize} のオプション。 */
+  /** {@link Synthesizer#synthesis} のオプション。 */
   public class SynthesisConfigurator {
     private Synthesizer synthesizer;
     private AudioQuery audioQuery;

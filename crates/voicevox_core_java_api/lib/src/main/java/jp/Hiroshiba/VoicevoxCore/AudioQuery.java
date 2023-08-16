@@ -58,7 +58,7 @@ public class AudioQuery {
   /**
    * [読み取り専用] AquesTalk風記法。
    *
-   * <p>{@link Synthesizer#audioQuery} が返すもののみ String となる。入力としてのAudioQueryでは無視される。
+   * <p>{@link Synthesizer#createAudioQuery} が返すもののみ String となる。入力としてのAudioQueryでは無視される。
    */
   @SerializedName("kana")
   @Expose
