@@ -13,7 +13,7 @@ import javax.annotation.Nonnull;
  * @see Synthesizer#builder
  */
 public class Synthesizer extends Dll {
-  long internal;
+  private long handle;
 
   private Synthesizer(OpenJtalk openJtalk, Builder builder) {
     rsNewWithInitialize(openJtalk, builder);

@@ -19,7 +19,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsFromPath<'loc
 
         let internal = RUNTIME.block_on(voicevox_core::VoiceModel::from_path(model_path))?;
 
-        unsafe { env.set_rust_field(&this, "internal", Arc::new(internal)) }?;
+        unsafe { env.set_rust_field(&this, "handle", Arc::new(internal)) }?;
 
         Ok(())
     })
@@ -32,7 +32,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetId<'local>
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "handle")?
                 .clone()
         };
 
@@ -51,7 +51,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsGetMetasJson<
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&this, "handle")?
                 .clone()
         };
 
@@ -67,10 +67,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_VoiceModel_rsDrop<'local>(
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let internal =
-            unsafe { env.get_rust_field::<_, _, voicevox_core::VoiceModel>(&this, "internal") }?;
-        drop(internal);
-        unsafe { env.take_rust_field(&this, "internal") }?;
+        unsafe { env.take_rust_field(&this, "handle") }?;
         Ok(())
     })
 }
