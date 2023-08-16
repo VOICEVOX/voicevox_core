@@ -172,11 +172,12 @@ impl Status {
         mut phoneme_vector_array: NdArray<i64, Ix1>,
         mut speaker_id_array: NdArray<i64, Ix1>,
     ) -> Result<Vec<f32>> {
-        let predict_duration = self
-            .loaded_models
-            .lock()
-            .unwrap()
-            .predict_duration(model_id);
+        let predict_duration = self.loaded_models.lock().unwrap().get(
+            model_id,
+            |SessionSet {
+                 predict_duration, ..
+             }| predict_duration,
+        );
 
         tokio::task::spawn_blocking(move || {
             let mut predict_duration = predict_duration.lock().unwrap();
@@ -206,11 +207,12 @@ impl Status {
         mut end_accent_phrase_vector_array: NdArray<i64, Ix1>,
         mut speaker_id_array: NdArray<i64, Ix1>,
     ) -> Result<Vec<f32>> {
-        let predict_intonation = self
-            .loaded_models
-            .lock()
-            .unwrap()
-            .predict_intonation(model_id);
+        let predict_intonation = self.loaded_models.lock().unwrap().get(
+            model_id,
+            |SessionSet {
+                 predict_intonation, ..
+             }| predict_intonation,
+        );
 
         tokio::task::spawn_blocking(move || {
             let mut predict_intonation = predict_intonation.lock().unwrap();
@@ -243,7 +245,11 @@ impl Status {
         mut phoneme_array: NdArray<f32, Ix2>,
         mut speaker_id_array: NdArray<i64, Ix1>,
     ) -> Result<Vec<f32>> {
-        let decode = self.loaded_models.lock().unwrap().decode(model_id);
+        let decode = self
+            .loaded_models
+            .lock()
+            .unwrap()
+            .get(model_id, |SessionSet { decode, .. }| decode);
 
         tokio::task::spawn_blocking(move || {
             let mut decode = decode.lock().unwrap();
@@ -310,47 +316,12 @@ impl LoadedModels {
     /// # Panics
     ///
     /// `self`が`model_id`を含んでいないとき、パニックする。
-    fn predict_duration(
+    fn get(
         &self,
         model_id: &VoiceModelId,
+        which: fn(&SessionSet) -> &Arc<std::sync::Mutex<AssertSend<Session<'static>>>>,
     ) -> Arc<std::sync::Mutex<AssertSend<Session<'static>>>> {
-        let LoadedModel {
-            session_set: SessionSet {
-                predict_duration, ..
-            },
-            ..
-        } = &self.0[model_id];
-        predict_duration.clone()
-    }
-
-    /// # Panics
-    ///
-    /// `self`が`model_id`を含んでいないとき、パニックする。
-    fn predict_intonation(
-        &self,
-        model_id: &VoiceModelId,
-    ) -> Arc<std::sync::Mutex<AssertSend<Session<'static>>>> {
-        let LoadedModel {
-            session_set: SessionSet {
-                predict_intonation, ..
-            },
-            ..
-        } = &self.0[model_id];
-        predict_intonation.clone()
-    }
-
-    /// # Panics
-    ///
-    /// `self`が`model_id`を含んでいないとき、パニックする。
-    fn decode(
-        &self,
-        model_id: &VoiceModelId,
-    ) -> Arc<std::sync::Mutex<AssertSend<Session<'static>>>> {
-        let LoadedModel {
-            session_set: SessionSet { decode, .. },
-            ..
-        } = &self.0[model_id];
-        decode.clone()
+        which(&self.0[model_id].session_set).clone()
     }
 
     fn contains_voice_model(&self, model_id: &VoiceModelId) -> bool {
