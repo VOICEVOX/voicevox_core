@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 
 /** 音声モデル。 */
 public class VoiceModel extends Dll {
-  long internal;
+  private long handle;
 
   /** ID。 */
   @Nonnull public final String id;

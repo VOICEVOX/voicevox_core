@@ -2,7 +2,7 @@ package jp.Hiroshiba.VoicevoxCore;
 
 /** テキスト解析器としてのOpen JTalk。 */
 public class OpenJtalk extends Dll {
-  long internal;
+  private long handle;
 
   /**
    * Open JTalkの辞書ディレクトリ。

@@ -11,7 +11,7 @@ import javax.annotation.Nonnull;
 
 /** ユーザー辞書。 */
 public class UserDict extends Dll {
-  long internal;
+  private long handle;
 
   /** ユーザー辞書を作成する。 */
   public UserDict() {

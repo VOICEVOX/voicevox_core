@@ -54,14 +54,14 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsNewWithIniti
         }
 
         let open_jtalk = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&open_jtalk, "internal")?
+            env.get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&open_jtalk, "handle")?
                 .clone()
         };
         let internal = RUNTIME.block_on(voicevox_core::Synthesizer::new_with_initialize(
             open_jtalk,
             Box::leak(Box::new(options)),
         ))?;
-        unsafe { env.set_rust_field(&this, "internal", Arc::new(Mutex::new(internal)))? };
+        unsafe { env.set_rust_field(&this, "handle", Arc::new(Mutex::new(internal)))? };
         Ok(())
     })
 }
@@ -74,11 +74,11 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsLoadVoiceMod
 ) {
     throw_if_err(env, (), |env| {
         let model = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&model, "internal")?
+            env.get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&model, "handle")?
                 .clone()
         };
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
                 .clone()
         };
         {
@@ -99,7 +99,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsUnloadVoiceM
         let model_id: String = env.get_string(&model_id)?.into();
 
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
                 .clone()
         };
 
@@ -123,7 +123,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsIsLoadedVoic
         let model_id: String = env.get_string(&model_id)?.into();
 
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
                 .clone()
         };
 
@@ -149,7 +149,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAudioQuery<'
         let style_id = style_id as u32;
 
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
                 .clone()
         };
 
@@ -187,7 +187,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsAccentPhrase
         let style_id = style_id as u32;
 
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
                 .clone()
         };
 
@@ -226,7 +226,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraD
         let style_id = style_id as u32;
 
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
                 .clone()
         };
 
@@ -257,7 +257,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplacePhone
         let style_id = style_id as u32;
 
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
                 .clone()
         };
 
@@ -289,7 +289,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsReplaceMoraP
         let style_id = style_id as u32;
 
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
                 .clone()
         };
 
@@ -320,7 +320,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsSynthesis<'l
         let style_id = style_id as u32;
 
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
                 .clone()
         };
 
@@ -357,7 +357,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsTts<'local>(
         let style_id = style_id as u32;
 
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
                 .clone()
         };
 
@@ -387,7 +387,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsDrop<'local>
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        unsafe { env.take_rust_field(&this, "internal") }?;
+        unsafe { env.take_rust_field(&this, "handle") }?;
         Ok(())
     })
 }

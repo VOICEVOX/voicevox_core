@@ -16,7 +16,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsNew<'local>(
     throw_if_err(env, (), |env| {
         let internal = voicevox_core::UserDict::new();
 
-        unsafe { env.set_rust_field(&this, "internal", Arc::new(Mutex::new(internal))) }?;
+        unsafe { env.set_rust_field(&this, "handle", Arc::new(Mutex::new(internal))) }?;
 
         Ok(())
     })
@@ -30,7 +30,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsAddWord<'local>
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "handle")?
                 .clone()
         };
 
@@ -60,7 +60,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsUpdateWord<'loc
 ) {
     throw_if_err(env, (), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "handle")?
                 .clone()
         };
 
@@ -88,7 +88,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsRemoveWord<'loc
 ) {
     throw_if_err(env, (), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "handle")?
                 .clone()
         };
 
@@ -112,13 +112,13 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsImportDict<'loc
 ) {
     throw_if_err(env, (), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "handle")?
                 .clone()
         };
         let other_dict = unsafe {
             env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(
                 &other_dict,
-                "internal",
+                "handle",
             )?
             .clone()
         };
@@ -141,7 +141,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsLoad<'local>(
 ) {
     throw_if_err(env, (), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "handle")?
                 .clone()
         };
 
@@ -165,7 +165,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsSave<'local>(
 ) {
     throw_if_err(env, (), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "handle")?
                 .clone()
         };
 
@@ -188,7 +188,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsGetWords<'local
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "internal")?
+            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&this, "handle")?
                 .clone()
         };
 
@@ -209,7 +209,7 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_UserDict_rsDrop<'local>(
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        unsafe { env.take_rust_field(&this, "internal") }?;
+        unsafe { env.take_rust_field(&this, "handle") }?;
         Ok(())
     })
 }
