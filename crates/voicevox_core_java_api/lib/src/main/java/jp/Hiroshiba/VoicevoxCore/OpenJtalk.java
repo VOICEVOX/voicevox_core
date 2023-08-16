@@ -1,8 +1,11 @@
 package jp.Hiroshiba.VoicevoxCore;
 
+import java.lang.ref.Cleaner;
+
 /** テキスト解析器としてのOpen JTalk。 */
 public class OpenJtalk extends Dll {
   private long handle;
+  private static final Cleaner cleaner = Cleaner.create();
 
   /**
    * Open JTalkの辞書ディレクトリ。
@@ -11,6 +14,8 @@ public class OpenJtalk extends Dll {
    */
   public OpenJtalk(String openJtalkDictDir) {
     rsNewWithInitialize(openJtalkDictDir);
+
+    cleaner.register(this, () -> rsDrop());
   }
 
   /**
@@ -22,12 +27,6 @@ public class OpenJtalk extends Dll {
    */
   public void useUserDict(UserDict userDict) {
     rsUseUserDict(userDict);
-  }
-
-  /** Open JTalkを廃棄する。 */
-  @Override
-  protected void finalize() {
-    rsDrop();
   }
 
   private native void rsNewWithoutDic();

@@ -3,11 +3,13 @@ package jp.Hiroshiba.VoicevoxCore;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import java.lang.ref.Cleaner;
 import javax.annotation.Nonnull;
 
 /** 音声モデル。 */
 public class VoiceModel extends Dll {
   private long handle;
+  private static final Cleaner cleaner = Cleaner.create();
 
   /** ID。 */
   @Nonnull public final String id;
@@ -25,12 +27,8 @@ public class VoiceModel extends Dll {
       throw new RuntimeException("Failed to parse metasJson");
     }
     metas = rawMetas;
-  }
 
-  /** 音声モデルを廃棄する。 */
-  @Override
-  protected void finalize() {
-    rsDrop();
+    cleaner.register(this, () -> rsDrop());
   }
 
   private native void rsFromPath(String modelPath);

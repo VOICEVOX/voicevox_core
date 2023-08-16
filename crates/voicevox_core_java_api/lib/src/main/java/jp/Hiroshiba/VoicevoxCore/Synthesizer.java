@@ -1,6 +1,7 @@
 package jp.Hiroshiba.VoicevoxCore;
 
 import com.google.gson.Gson;
+import java.lang.ref.Cleaner;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,9 +14,11 @@ import javax.annotation.Nonnull;
  */
 public class Synthesizer extends Dll {
   private long handle;
+  private static final Cleaner cleaner = Cleaner.create();
 
   private Synthesizer(OpenJtalk openJtalk, Builder builder) {
     rsNewWithInitialize(openJtalk, builder);
+    cleaner.register(this, () -> rsDrop());
   }
 
   /**
@@ -146,12 +149,6 @@ public class Synthesizer extends Dll {
   @Nonnull
   public TtsConfigurator tts(String text, int styleId) {
     return new TtsConfigurator(this, text, styleId);
-  }
-
-  /** 音声シンセサイザを破棄する。 */
-  @Override
-  protected void finalize() {
-    rsDrop();
   }
 
   private native void rsNewWithInitialize(OpenJtalk openJtalk, Builder builder);

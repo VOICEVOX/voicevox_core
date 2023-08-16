@@ -6,16 +6,20 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.internal.LinkedTreeMap;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.lang.ref.Cleaner;
 import java.util.HashMap;
 import javax.annotation.Nonnull;
 
 /** ユーザー辞書。 */
 public class UserDict extends Dll {
   private long handle;
+  private static final Cleaner cleaner = Cleaner.create();
 
   /** ユーザー辞書を作成する。 */
   public UserDict() {
     rsNew();
+
+    cleaner.register(this, () -> rsDrop());
   }
 
   /**
@@ -106,12 +110,6 @@ public class UserDict extends Dll {
         });
 
     return words;
-  }
-
-  /** ユーザー辞書を破棄する。 */
-  @Override
-  protected void finalize() {
-    rsDrop();
   }
 
   private native void rsNew();
