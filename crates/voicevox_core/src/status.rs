@@ -64,7 +64,7 @@ impl Status {
         self.loaded_models
             .lock()
             .unwrap()
-            .ensure_not_contains(model)?;
+            .ensure_acceptable(model)?;
 
         let models = model.read_inference_models().await?;
 
@@ -361,11 +361,18 @@ impl LoadedModels {
         self.styles().any(|style| *style.id() == style_id)
     }
 
-    fn ensure_not_contains(&self, model: &VoiceModel) -> Result<()> {
+    /// 与えられた`VoiceModel`を受け入れ可能かをチェックする。
+    ///
+    /// # Errors
+    ///
+    /// 音声モデルIDかスタイルIDが`model`と重複するとき、エラーを返す。
+    fn ensure_acceptable(&self, model: &VoiceModel) -> Result<()> {
         let loaded = self.styles();
         let external = model.metas().iter().flat_map(|speaker| speaker.styles());
 
-        if iproduct!(loaded, external).any(|(loaded, external)| loaded.id() == external.id()) {
+        if self.0.contains_key(model.id())
+            || iproduct!(loaded, external).any(|(loaded, external)| loaded.id() == external.id())
+        {
             return Err(Error::AlreadyLoadedModel {
                 path: model.path().clone(),
             });
@@ -380,7 +387,7 @@ impl LoadedModels {
         predict_intonation: Session<'static>,
         decode: Session<'static>,
     ) -> Result<()> {
-        self.ensure_not_contains(model)?;
+        self.ensure_acceptable(model)?;
 
         let prev = self.0.insert(
             model.id().clone(),
