@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 mod convert;
 use convert::*;
@@ -9,7 +9,7 @@ use pyo3::{
     exceptions::PyException,
     pyclass, pyfunction, pymethods, pymodule,
     types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyModule},
-    wrap_pyfunction, PyAny, PyObject, PyResult, Python, ToPyObject,
+    wrap_pyfunction, PyAny, PyObject, PyRef, PyResult, PyTypeInfo, Python, ToPyObject,
 };
 use tokio::{runtime::Runtime, sync::Mutex};
 use uuid::Uuid;
@@ -114,7 +114,7 @@ impl OpenJtalk {
 
 #[pyclass]
 struct Synthesizer {
-    synthesizer: Arc<Mutex<voicevox_core::Synthesizer>>,
+    synthesizer: Closable<Arc<Mutex<voicevox_core::Synthesizer>>, Self>,
 }
 
 #[pymethods]
@@ -143,9 +143,10 @@ impl Synthesizer {
                 },
             )
             .await
-            .into_py_result()?;
+            .into_py_result()?
+            .into();
             Ok(Self {
-                synthesizer: Arc::new(Mutex::new(synthesizer)),
+                synthesizer: Closable::new(Arc::new(synthesizer)),
             })
         })
     }
@@ -154,14 +155,30 @@ impl Synthesizer {
         "Synthesizer { .. }"
     }
 
-    #[getter]
-    fn is_gpu_mode(&self) -> bool {
-        RUNTIME.block_on(self.synthesizer.lock()).is_gpu_mode()
+    fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
+        slf.synthesizer.get()?;
+        Ok(slf)
+    }
+
+    fn __exit__(
+        &mut self,
+        #[allow(unused_variables)] exc_type: &PyAny,
+        #[allow(unused_variables)] exc_value: &PyAny,
+        #[allow(unused_variables)] traceback: &PyAny,
+    ) {
+        self.close();
     }
 
     #[getter]
-    fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
-        to_pydantic_voice_model_meta(RUNTIME.block_on(self.synthesizer.lock()).metas(), py).unwrap()
+    fn is_gpu_mode(&self) -> PyResult<bool> {
+        let synthesizer = self.synthesizer.get()?;
+        Ok(RUNTIME.block_on(synthesizer.lock()).is_gpu_mode())
+    }
+
+    #[getter]
+    fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
+        let synthesizer = self.synthesizer.get()?;
+        to_pydantic_voice_model_meta(RUNTIME.block_on(synthesizer.lock()).metas(), py)
     }
 
     fn load_voice_model<'py>(
@@ -170,7 +187,7 @@ impl Synthesizer {
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let model: VoiceModel = model.extract()?;
-        let synthesizer = self.synthesizer.clone();
+        let synthesizer = self.synthesizer.get()?.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             synthesizer
                 .lock()
@@ -183,15 +200,15 @@ impl Synthesizer {
 
     fn unload_voice_model(&mut self, voice_model_id: &str) -> PyResult<()> {
         RUNTIME
-            .block_on(self.synthesizer.lock())
+            .block_on(self.synthesizer.get()?.lock())
             .unload_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
             .into_py_result()
     }
 
-    fn is_loaded_voice_model(&self, voice_model_id: &str) -> bool {
-        RUNTIME
-            .block_on(self.synthesizer.lock())
-            .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
+    fn is_loaded_voice_model(&self, voice_model_id: &str) -> PyResult<bool> {
+        Ok(RUNTIME
+            .block_on(self.synthesizer.get()?.lock())
+            .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string())))
     }
 
     fn audio_query_from_kana<'py>(
@@ -200,7 +217,7 @@ impl Synthesizer {
         style_id: u32,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.clone();
+        let synthesizer = self.synthesizer.get()?.clone();
         let kana = kana.to_owned();
         pyo3_asyncio::tokio::future_into_py_with_locals(
             py,
@@ -223,7 +240,7 @@ impl Synthesizer {
     }
 
     fn audio_query<'py>(&self, text: &str, style_id: u32, py: Python<'py>) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.clone();
+        let synthesizer = self.synthesizer.get()?.clone();
         let text = text.to_owned();
         pyo3_asyncio::tokio::future_into_py_with_locals(
             py,
@@ -251,7 +268,7 @@ impl Synthesizer {
         style_id: u32,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.clone();
+        let synthesizer = self.synthesizer.get()?.clone();
         let kana = kana.to_owned();
         pyo3_asyncio::tokio::future_into_py_with_locals(
             py,
@@ -282,7 +299,7 @@ impl Synthesizer {
         style_id: u32,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.clone();
+        let synthesizer = self.synthesizer.get()?.clone();
         let text = text.to_owned();
         pyo3_asyncio::tokio::future_into_py_with_locals(
             py,
@@ -313,7 +330,7 @@ impl Synthesizer {
         style_id: u32,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.clone();
+        let synthesizer = self.synthesizer.get()?.clone();
         modify_accent_phrases(
             accent_phrases,
             StyleId::new(style_id),
@@ -328,7 +345,7 @@ impl Synthesizer {
         style_id: u32,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.clone();
+        let synthesizer = self.synthesizer.get()?.clone();
         modify_accent_phrases(
             accent_phrases,
             StyleId::new(style_id),
@@ -343,7 +360,7 @@ impl Synthesizer {
         style_id: u32,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.clone();
+        let synthesizer = self.synthesizer.get()?.clone();
         modify_accent_phrases(
             accent_phrases,
             StyleId::new(style_id),
@@ -360,7 +377,7 @@ impl Synthesizer {
         enable_interrogative_upspeak: bool,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.clone();
+        let synthesizer = self.synthesizer.get()?.clone();
         pyo3_asyncio::tokio::future_into_py_with_locals(
             py,
             pyo3_asyncio::tokio::get_current_locals(py)?,
@@ -398,7 +415,7 @@ impl Synthesizer {
         let options = TtsOptions {
             enable_interrogative_upspeak,
         };
-        let synthesizer = self.synthesizer.clone();
+        let synthesizer = self.synthesizer.get()?.clone();
         let kana = kana.to_owned();
         pyo3_asyncio::tokio::future_into_py_with_locals(
             py,
@@ -431,7 +448,7 @@ impl Synthesizer {
         let options = TtsOptions {
             enable_interrogative_upspeak,
         };
-        let synthesizer = self.synthesizer.clone();
+        let synthesizer = self.synthesizer.get()?.clone();
         let text = text.to_owned();
         pyo3_asyncio::tokio::future_into_py_with_locals(
             py,
@@ -446,6 +463,52 @@ impl Synthesizer {
                 Python::with_gil(|py| Ok(PyBytes::new(py, &wav).to_object(py)))
             },
         )
+    }
+
+    fn close(&mut self) {
+        self.synthesizer.close()
+    }
+}
+
+struct Closable<T, C: PyTypeInfo> {
+    content: MaybeClosed<T>,
+    marker: PhantomData<C>,
+}
+
+enum MaybeClosed<T> {
+    Open(T),
+    Closed,
+}
+
+impl<T, C: PyTypeInfo> Closable<T, C> {
+    fn new(content: T) -> Self {
+        Self {
+            content: MaybeClosed::Open(content),
+            marker: PhantomData,
+        }
+    }
+
+    fn get(&self) -> PyResult<&T> {
+        match &self.content {
+            MaybeClosed::Open(content) => Ok(content),
+            MaybeClosed::Closed => Err(VoicevoxError::new_err(format!(
+                "The `{}` is closed",
+                C::NAME,
+            ))),
+        }
+    }
+
+    fn close(&mut self) {
+        if matches!(self.content, MaybeClosed::Open(_)) {
+            debug!("Closing a {}", C::NAME);
+        }
+        self.content = MaybeClosed::Closed;
+    }
+}
+
+impl<T, C: PyTypeInfo> Drop for Closable<T, C> {
+    fn drop(&mut self) {
+        self.close();
     }
 }
 
@@ -525,11 +588,5 @@ impl UserDict {
             })
             .collect::<PyResult<Vec<_>>>()?;
         Ok(words.into_py_dict(py))
-    }
-}
-
-impl Drop for Synthesizer {
-    fn drop(&mut self) {
-        debug!("Destructing a VoicevoxCore");
     }
 }
