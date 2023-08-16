@@ -11,7 +11,7 @@ plugins {
     id "com.diffplug.spotless" version "6.20.0"
 }
 
-version = '999.999.999'
+version = '0.0.0'
 
 repositories {
     // Use Maven Central for resolving dependencies.
