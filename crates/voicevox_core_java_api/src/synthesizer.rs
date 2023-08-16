@@ -44,14 +44,10 @@ extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsNewWithInitializ
             };
         }
         let cpu_num_threads = env.get_field(&builder, "cpuNumThreads", "I")?;
-        if let Ok(cpu_num_threads) = cpu_num_threads.i() {
-            options.cpu_num_threads = cpu_num_threads as u16;
-        }
+        options.cpu_num_threads = cpu_num_threads.i().expect("cpuNumThreads is not integer") as u16;
 
         let load_all_models = env.get_field(&builder, "loadAllModels", "Z")?;
-        if let Ok(load_all_models) = load_all_models.z() {
-            options.load_all_models = load_all_models;
-        }
+        options.load_all_models = load_all_models.z().expect("loadAllModels is not boolean");
 
         let open_jtalk = unsafe {
             env.get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&open_jtalk, "handle")?
