@@ -67,10 +67,6 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsDrop<'local>(
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&this, "internal")
-        }?;
-        drop(internal);
         unsafe { env.take_rust_field(&this, "internal") }?;
         Ok(())
     })

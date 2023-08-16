@@ -387,11 +387,6 @@ pub extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_Synthesizer_rsDrop<'local>
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let internal = unsafe {
-            env.get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "internal")?
-                .clone()
-        };
-        drop(internal);
         unsafe { env.take_rust_field(&this, "internal") }?;
         Ok(())
     })
