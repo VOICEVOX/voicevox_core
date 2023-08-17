@@ -178,7 +178,7 @@ impl Synthesizer {
     #[getter]
     fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
         let synthesizer = self.synthesizer.get()?;
-        to_pydantic_voice_model_meta(RUNTIME.block_on(synthesizer.lock()).metas(), py)
+        to_pydantic_voice_model_meta(&RUNTIME.block_on(synthesizer.lock()).metas(), py)
     }
 
     fn load_voice_model<'py>(

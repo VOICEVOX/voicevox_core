@@ -31,7 +31,8 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_open_jtalk_rc_delete,
             voicevox_synthesizer_new_with_initialize,
             voicevox_synthesizer_delete,
-            voicevox_synthesizer_get_metas_json,
+            voicevox_synthesizer_create_metas_json,
+            voicevox_json_free,
             ..
         } = Symbols::new(lib)?;
 
@@ -60,9 +61,11 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         let metas_json = {
-            let metas_json =
-                CStr::from_ptr(voicevox_synthesizer_get_metas_json(synthesizer)).to_str()?;
-            serde_json::to_string_pretty(&metas_json.parse::<serde_json::Value>()?).unwrap()
+            let raw = voicevox_synthesizer_create_metas_json(synthesizer);
+            let metas_json = &CStr::from_ptr(raw).to_str()?.parse::<serde_json::Value>()?;
+            let metas_json = serde_json::to_string_pretty(metas_json).unwrap();
+            voicevox_json_free(raw);
+            metas_json
         };
 
         std::assert_eq!(SNAPSHOTS.metas, metas_json);

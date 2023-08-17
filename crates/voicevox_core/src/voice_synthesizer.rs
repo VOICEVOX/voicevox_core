@@ -173,18 +173,18 @@ impl Synthesizer {
     }
 
     /// 音声モデルを読み込む。
-    pub async fn load_voice_model(&mut self, model: &VoiceModel) -> Result<()> {
+    pub async fn load_voice_model(&self, model: &VoiceModel) -> Result<()> {
         self.synthesis_engine
-            .inference_core_mut()
+            .inference_core()
             .load_model(model)
             .await?;
         Ok(())
     }
 
     /// 音声モデルの読み込みを解除する。
-    pub fn unload_voice_model(&mut self, voice_model_id: &VoiceModelId) -> Result<()> {
+    pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
         self.synthesis_engine
-            .inference_core_mut()
+            .inference_core()
             .unload_model(voice_model_id)
     }
 
@@ -203,7 +203,7 @@ impl Synthesizer {
     }
 
     /// 今読み込んでいる音声モデルのメタ情報を返す。
-    pub fn metas(&self) -> &VoiceModelMeta {
+    pub fn metas(&self) -> VoiceModelMeta {
         self.synthesis_engine.inference_core().metas()
     }
 
@@ -616,7 +616,7 @@ mod tests {
     #[case(Ok(()))]
     #[tokio::test]
     async fn load_model_works(#[case] expected_result_at_initialized: Result<()>) {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -657,7 +657,7 @@ mod tests {
     #[tokio::test]
     async fn is_loaded_model_by_style_id_works(#[case] style_id: u32, #[case] expected: bool) {
         let style_id = StyleId::new(style_id);
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -686,7 +686,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_duration_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -718,7 +718,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_intonation_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -760,7 +760,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn decode_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,

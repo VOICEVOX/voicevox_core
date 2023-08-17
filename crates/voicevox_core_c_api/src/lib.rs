@@ -316,7 +316,6 @@ pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
 #[derive(Getters)]
 pub struct VoicevoxSynthesizer {
     synthesizer: Synthesizer,
-    metas_cstring: CString,
 }
 
 /// ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。
@@ -376,14 +375,10 @@ pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesiz
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_load_voice_model(
-    synthesizer: &mut VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     model: &VoicevoxVoiceModel,
 ) -> VoicevoxResultCode {
-    into_result_code_with_error(
-        RUNTIME
-            .block_on(synthesizer.load_voice_model(model.model()))
-            .map_err(Into::into),
-    )
+    into_result_code_with_error(RUNTIME.block_on(synthesizer.load_voice_model(model.model())))
 }
 
 /// 音声モデルの読み込みを解除する。
@@ -399,7 +394,7 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
-    synthesizer: &mut VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
@@ -448,19 +443,21 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
 
 /// 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
 ///
+/// JSONの解放は ::voicevox_json_free で行う。
+///
 /// @param [in] synthesizer 音声シンセサイザ
 ///
 /// @return メタ情報のJSON文字列
 ///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
-/// - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`synthesizer`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
 /// }
 #[no_mangle]
-pub extern "C" fn voicevox_synthesizer_get_metas_json(
+pub extern "C" fn voicevox_synthesizer_create_metas_json(
     synthesizer: &VoicevoxSynthesizer,
-) -> *const c_char {
-    synthesizer.metas().as_ptr()
+) -> *mut c_char {
+    let metas = synthesizer.metas();
+    C_STRING_DROP_CHECKER.whitelist(metas).into_raw()
 }
 
 /// このライブラリで利用可能なデバイスの情報を、JSONで取得する。
@@ -895,6 +892,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// \safety{
 /// - `json`は以下のAPIで得られたポインタでなくてはいけない。
 ///     - ::voicevox_create_supported_devices_json
+///     - ::voicevox_synthesizer_create_metas_json
 ///     - ::voicevox_synthesizer_create_audio_query
 ///     - ::voicevox_synthesizer_create_accent_phrases
 ///     - ::voicevox_synthesizer_replace_mora_data
@@ -1237,13 +1235,6 @@ mod tests {
     #[case(
         Err(Error::NotLoadedOpenjtalkDict),
         VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR
-    )]
-    #[case(
-        Err(Error::LoadModel {
-            path: "path/to/model.onnx".into(),
-            source: anyhow!("some load model error"),
-        }),
-        VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ERROR
     )]
     #[case(
         Err(Error::GetSupportedDevices(anyhow!("some get supported devices error"))),
