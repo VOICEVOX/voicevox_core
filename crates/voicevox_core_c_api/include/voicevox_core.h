@@ -95,10 +95,6 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR = 1,
   /**
-   * modelの読み込みに失敗した
-   */
-  VOICEVOX_RESULT_LOAD_MODEL_ERROR = 2,
-  /**
    * サポートされているデバイス情報取得に失敗した
    */
   VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR = 3,
@@ -106,10 +102,6 @@ enum VoicevoxResultCode
    * GPUモードがサポートされていない
    */
   VOICEVOX_RESULT_GPU_SUPPORT_ERROR = 4,
-  /**
-   * メタ情報読み込みに失敗した
-   */
-  VOICEVOX_RESULT_LOAD_METAS_ERROR = 5,
   /**
    * 無効なstyle_idが指定された
    */
@@ -143,17 +135,25 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR = 15,
   /**
-   * ファイルオープンエラー
+   * ZIPファイルを開くことに失敗した
    */
-  VOICEVOX_RESULT_OPEN_FILE_ERROR = 16,
+  VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR = 16,
   /**
-   * Modelを読み込めなかった
+   * ZIP内のファイルが読めなかった
    */
-  VOICEVOX_RESULT_VVM_MODEL_READ_ERROR = 17,
+  VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR = 17,
   /**
-   * すでに読み込まれているModelを読み込もうとした
+   * すでに読み込まれている音声モデルを読み込もうとした
    */
-  VOICEVOX_RESULT_ALREADY_LOADED_MODEL_ERROR = 18,
+  VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR = 18,
+  /**
+   * すでに読み込まれているスタイルを読み込もうとした
+   */
+  VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR = 2,
+  /**
+   * 無効なモデルデータ
+   */
+  VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 5,
   /**
    * Modelが読み込まれていない
    */

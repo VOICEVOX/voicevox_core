@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use async_zip::{read::fs::ZipFileReader, ZipEntry};
 use futures::future::{join3, join_all};
 use serde::{de::DeserializeOwned, Deserialize};
@@ -6,7 +5,7 @@ use serde::{de::DeserializeOwned, Deserialize};
 use super::*;
 use std::{
     collections::{BTreeMap, HashMap},
-    env,
+    env, io,
     path::{Path, PathBuf},
 };
 
@@ -16,7 +15,9 @@ use std::{
 pub type RawVoiceModelId = String;
 
 /// 音声モデルID。
-#[derive(PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, new, Getters, Debug)]
+#[derive(
+    PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, new, Getters, derive_more::Display, Debug,
+)]
 pub struct VoiceModelId {
     raw_voice_model_id: RawVoiceModelId,
 }
@@ -42,7 +43,7 @@ pub(crate) struct InferenceModels {
 }
 
 impl VoiceModel {
-    pub(crate) async fn read_inference_models(&self) -> Result<InferenceModels> {
+    pub(crate) async fn read_inference_models(&self) -> LoadModelResult<InferenceModels> {
         let reader = VvmEntryReader::open(&self.path).await?;
         let (decode_model_result, predict_duration_model_result, predict_intonation_model_result) =
             join3(
@@ -53,39 +54,18 @@ impl VoiceModel {
             .await;
 
         Ok(InferenceModels {
-            predict_duration_model: predict_duration_model_result.map_err(|e| Error::VvmRead {
-                path: self.path.clone(),
-                source: e,
-            })?,
-            predict_intonation_model: predict_intonation_model_result.map_err(|e| {
-                Error::VvmRead {
-                    path: self.path.clone(),
-                    source: e,
-                }
-            })?,
-            decode_model: decode_model_result.map_err(|e| Error::VvmRead {
-                path: self.path.clone(),
-                source: e,
-            })?,
+            predict_duration_model: predict_duration_model_result?,
+            predict_intonation_model: predict_intonation_model_result?,
+            decode_model: decode_model_result?,
         })
     }
     /// VVMファイルから`VoiceModel`をコンストラクトする。
-    pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
-        let reader = VvmEntryReader::open(&path).await?;
-        let manifest = reader
-            .read_vvm_json::<Manifest>("manifest.json")
-            .await
-            .map_err(|e| Error::VvmRead {
-                path: path.as_ref().into(),
-                source: e,
-            })?;
+    pub async fn from_path(path: impl AsRef<Path>) -> LoadModelResult<Self> {
+        let reader = VvmEntryReader::open(path.as_ref()).await?;
+        let manifest = reader.read_vvm_json::<Manifest>("manifest.json").await?;
         let metas = reader
             .read_vvm_json::<VoiceModelMeta>(manifest.metas_filename())
-            .await
-            .map_err(|e| Error::VvmRead {
-                path: path.as_ref().into(),
-                source: e,
-            })?;
+            .await?;
         let id = VoiceModelId::new(nanoid!());
 
         Ok(Self {
@@ -96,6 +76,10 @@ impl VoiceModel {
         })
     }
 
+    // FIXME: `load_all_models`自体を廃止し、これはENGINE専用とする
+    /// # Panics
+    ///
+    /// 目的のディレクトリが読めなかったらパニックする
     pub async fn get_all_models() -> Result<Vec<Self>> {
         let root_dir = if cfg!(test) {
             Path::new(env!("CARGO_WORKSPACE_DIR")).join("model")
@@ -113,15 +97,16 @@ impl VoiceModel {
         let vvm_paths = root_dir
             .read_dir()
             .and_then(|entries| entries.collect::<std::result::Result<Vec<_>, _>>())
-            .map_err(|e| Error::LoadModel {
-                path: root_dir.clone(),
-                source: e.into(),
-            })?
+            .unwrap_or_else(|e| panic!("{}が読めませんでした: {e}", root_dir.display()))
             .into_iter()
             .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "vvm"))
             .map(|entry| Self::from_path(entry.path()));
 
-        join_all(vvm_paths).await.into_iter().collect()
+        join_all(vvm_paths)
+            .await
+            .into_iter()
+            .collect::<std::result::Result<_, _>>()
+            .map_err(Into::into)
     }
     const ROOT_DIR_ENV_NAME: &str = "VV_MODELS_ROOT_DIR";
 
@@ -158,12 +143,13 @@ struct VvmEntryReader {
 }
 
 impl VvmEntryReader {
-    async fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let reader = ZipFileReader::new(path.as_ref())
+    async fn open(path: &Path) -> LoadModelResult<Self> {
+        let reader = ZipFileReader::new(path)
             .await
-            .map_err(|e| Error::OpenFile {
-                path: path.as_ref().into(),
-                source: e.into(),
+            .map_err(|source| LoadModelError {
+                path: path.to_owned(),
+                context: LoadModelErrorKind::OpenZipFile,
+                source: Some(source.into()),
             })?;
         let entry_map: HashMap<_, _> = reader
             .file()
@@ -183,22 +169,38 @@ impl VvmEntryReader {
             .collect();
         Ok(VvmEntryReader::new(reader, entry_map))
     }
-    async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> anyhow::Result<T> {
+    async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> LoadModelResult<T> {
         let bytes = self.read_vvm_entry(filename).await?;
-        serde_json::from_slice(&bytes).map_err(|e| e.into())
+        serde_json::from_slice(&bytes).map_err(|source| LoadModelError {
+            path: self.reader.path().to_owned(),
+            context: LoadModelErrorKind::ReadZipEntry {
+                filename: filename.to_owned(),
+            },
+            source: Some(source.into()),
+        })
     }
 
-    async fn read_vvm_entry(&self, filename: &str) -> anyhow::Result<Vec<u8>> {
-        let me = self
-            .entry_map
-            .get(filename)
-            .ok_or_else(|| anyhow!("Not found in vvm entries: {}", filename))?;
-        let mut manifest_reader = self.reader.entry(me.index).await?;
-        let mut buf = Vec::with_capacity(me.entry.uncompressed_size() as usize);
-        manifest_reader
-            .read_to_end_checked(&mut buf, &me.entry)
-            .await?;
-        Ok(buf)
+    async fn read_vvm_entry(&self, filename: &str) -> LoadModelResult<Vec<u8>> {
+        (|| async {
+            let me = self
+                .entry_map
+                .get(filename)
+                .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
+            let mut manifest_reader = self.reader.entry(me.index).await?;
+            let mut buf = Vec::with_capacity(me.entry.uncompressed_size() as usize);
+            manifest_reader
+                .read_to_end_checked(&mut buf, &me.entry)
+                .await?;
+            Ok::<_, anyhow::Error>(buf)
+        })()
+        .await
+        .map_err(|source| LoadModelError {
+            path: self.reader.path().to_owned(),
+            context: LoadModelErrorKind::ReadZipEntry {
+                filename: filename.to_owned(),
+            },
+            source: Some(source),
+        })
     }
 }
 

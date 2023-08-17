@@ -18,15 +18,20 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
     }
 
     fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
-        use voicevox_core::{result_code::VoicevoxResultCode::*, Error::*};
+        use voicevox_core::{result_code::VoicevoxResultCode::*, Error::*, LoadModelErrorKind::*};
         use CApiError::*;
 
         match result {
             Ok(()) => VOICEVOX_RESULT_OK,
             Err(RustApi(NotLoadedOpenjtalkDict)) => VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
             Err(RustApi(GpuSupport)) => VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
-            Err(RustApi(LoadModel { .. })) => VOICEVOX_RESULT_LOAD_MODEL_ERROR,
-            Err(RustApi(LoadMetas(_))) => VOICEVOX_RESULT_LOAD_METAS_ERROR,
+            Err(RustApi(LoadModel(err))) => match err.context() {
+                OpenZipFile => VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR,
+                ReadZipEntry { .. } => VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR,
+                ModelAlreadyLoaded { .. } => VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR,
+                StyleAlreadyLoaded { .. } => VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR,
+                InvalidModelData => VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR,
+            },
             Err(RustApi(GetSupportedDevices(_))) => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
             Err(RustApi(InvalidStyleId { .. })) => VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR,
             Err(RustApi(InvalidModelId { .. })) => VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR,
@@ -35,9 +40,6 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR
             }
             Err(RustApi(UnloadedModel { .. })) => VOICEVOX_RESULT_UNLOADED_MODEL_ERROR,
-            Err(RustApi(AlreadyLoadedModel { .. })) => VOICEVOX_RESULT_ALREADY_LOADED_MODEL_ERROR,
-            Err(RustApi(OpenFile { .. })) => VOICEVOX_RESULT_OPEN_FILE_ERROR,
-            Err(RustApi(VvmRead { .. })) => VOICEVOX_RESULT_VVM_MODEL_READ_ERROR,
             Err(RustApi(ParseKana(_))) => VOICEVOX_RESULT_PARSE_KANA_ERROR,
             Err(RustApi(LoadUserDict(_))) => VOICEVOX_RESULT_LOAD_USER_DICT_ERROR,
             Err(RustApi(SaveUserDict(_))) => VOICEVOX_RESULT_SAVE_USER_DICT_ERROR,

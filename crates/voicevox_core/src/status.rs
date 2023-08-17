@@ -121,11 +121,12 @@ impl Status {
         model: &[u8],
         session_options: &SessionOptions,
         path: impl AsRef<Path>,
-    ) -> Result<Session<'static>> {
+    ) -> LoadModelResult<Session<'static>> {
         self.new_session_from_bytes(|| model_file::decrypt(model), session_options)
-            .map_err(|source| Error::LoadModel {
-                path: path.as_ref().into(),
-                source,
+            .map_err(|source| LoadModelError {
+                path: path.as_ref().to_owned(),
+                context: LoadModelErrorKind::InvalidModelData,
+                source: Some(source),
             })
     }
 
@@ -337,16 +338,27 @@ impl LoadedModels {
     /// # Errors
     ///
     /// 音声モデルIDかスタイルIDが`model`と重複するとき、エラーを返す。
-    fn ensure_acceptable(&self, model: &VoiceModel) -> Result<()> {
+    fn ensure_acceptable(&self, model: &VoiceModel) -> LoadModelResult<()> {
         let loaded = self.styles();
         let external = model.metas().iter().flat_map(|speaker| speaker.styles());
 
-        if self.0.contains_key(model.id())
-            || iproduct!(loaded, external).any(|(loaded, external)| loaded.id() == external.id())
+        let error = |context| LoadModelError {
+            path: model.path().clone(),
+            context,
+            source: None,
+        };
+
+        if self.0.contains_key(model.id()) {
+            return Err(error(LoadModelErrorKind::ModelAlreadyLoaded {
+                id: model.id().clone(),
+            }));
+        }
+        if let Some((style, _)) =
+            iproduct!(loaded, external).find(|(loaded, external)| loaded.id() == external.id())
         {
-            return Err(Error::AlreadyLoadedModel {
-                path: model.path().clone(),
-            });
+            return Err(error(LoadModelErrorKind::StyleAlreadyLoaded {
+                id: *style.id(),
+            }));
         }
         Ok(())
     }
