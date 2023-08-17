@@ -149,11 +149,11 @@ enum VoicevoxResultCode
   /**
    * すでに読み込まれているスタイルを読み込もうとした
    */
-  VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR = 2,
+  VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR = 26,
   /**
    * 無効なモデルデータ
    */
-  VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 5,
+  VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 27,
   /**
    * Modelが読み込まれていない
    */
