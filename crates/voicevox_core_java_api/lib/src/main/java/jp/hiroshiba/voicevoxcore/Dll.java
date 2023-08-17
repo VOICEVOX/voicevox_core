@@ -1,4 +1,4 @@
-package jp.Hiroshiba.VoicevoxCore;
+package jp.hiroshiba.voicevoxcore;
 
 import ai.onnxruntime.OrtEnvironment;
 import java.io.InputStream;

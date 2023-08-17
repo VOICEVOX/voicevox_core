@@ -1,4 +1,4 @@
-package jp.Hiroshiba.VoicevoxCore;
+package jp.hiroshiba.voicevoxcore;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

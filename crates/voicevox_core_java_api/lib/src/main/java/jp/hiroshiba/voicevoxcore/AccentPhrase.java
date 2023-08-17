@@ -1,4 +1,4 @@
-package jp.Hiroshiba.VoicevoxCore;
+package jp.hiroshiba.voicevoxcore;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;

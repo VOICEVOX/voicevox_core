@@ -1,4 +1,4 @@
-package jp.Hiroshiba.VoicevoxCore;
+package jp.hiroshiba.voicevoxcore;
 
 import java.io.File;
 

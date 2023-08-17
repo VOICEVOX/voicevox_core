@@ -2,7 +2,7 @@
  * 音声合成のテスト。
  * ttsaudioQuery -> synthesisの順に実行する。
  */
-package jp.Hiroshiba.VoicevoxCore;
+package jp.hiroshiba.voicevoxcore;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

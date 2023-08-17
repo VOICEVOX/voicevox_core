@@ -4153,7 +4153,6 @@ dependencies = [
  "android_logger",
  "anyhow",
  "chrono",
- "easy-ext",
  "jni",
  "once_cell",
  "serde_json",

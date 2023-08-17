@@ -6,7 +6,7 @@ use jni::{
     JNIEnv,
 };
 #[no_mangle]
-unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithoutDic<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsNewWithoutDic<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {
@@ -19,7 +19,7 @@ unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithoutD
 }
 
 #[no_mangle]
-unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithInitialize<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsNewWithInitialize<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     open_jtalk_dict_dir: JString<'local>,
@@ -36,7 +36,7 @@ unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsNewWithInit
 }
 
 #[no_mangle]
-unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsUseUserDict<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsUseUserDict<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     user_dict: JObject<'local>,
@@ -60,7 +60,7 @@ unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsUseUserDict
 }
 
 #[no_mangle]
-unsafe extern "system" fn Java_jp_Hiroshiba_VoicevoxCore_OpenJtalk_rsDrop<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {

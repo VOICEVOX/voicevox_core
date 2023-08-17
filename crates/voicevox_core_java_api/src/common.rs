@@ -61,13 +61,13 @@ pub static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
 #[macro_export]
 macro_rules! object {
     ($name: literal) => {
-        concat!("jp/Hiroshiba/VoicevoxCore/", $name)
+        concat!("jp/hiroshiba/voicevoxcore/", $name)
     };
 }
 #[macro_export]
 macro_rules! object_type {
     ($name: literal) => {
-        concat!("Ljp/Hiroshiba/VoicevoxCore/", $name, ";")
+        concat!("Ljp/hiroshiba/voicevoxcore/", $name, ";")
     };
 }
 #[macro_export]
