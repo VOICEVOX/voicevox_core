@@ -75,7 +75,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsLoadVoice
             .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
             .clone();
         {
-            let mut internal = internal.lock().unwrap();
+            let internal = internal.lock().unwrap();
             RUNTIME.block_on(internal.load_voice_model(&model))?;
         }
         Ok(())
@@ -96,7 +96,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsUnloadVoi
             .clone();
 
         {
-            let mut internal = internal.lock().unwrap();
+            let internal = internal.lock().unwrap();
 
             internal.unload_voice_model(&voicevox_core::VoiceModelId::new(model_id))?;
         }
