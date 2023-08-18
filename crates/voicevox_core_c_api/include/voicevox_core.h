@@ -95,10 +95,6 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR = 1,
   /**
-   * modelの読み込みに失敗した
-   */
-  VOICEVOX_RESULT_LOAD_MODEL_ERROR = 2,
-  /**
    * サポートされているデバイス情報取得に失敗した
    */
   VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR = 3,
@@ -106,10 +102,6 @@ enum VoicevoxResultCode
    * GPUモードがサポートされていない
    */
   VOICEVOX_RESULT_GPU_SUPPORT_ERROR = 4,
-  /**
-   * メタ情報読み込みに失敗した
-   */
-  VOICEVOX_RESULT_LOAD_METAS_ERROR = 5,
   /**
    * 無効なstyle_idが指定された
    */
@@ -143,41 +135,49 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR = 15,
   /**
-   * ファイルオープンエラー
+   * ZIPファイルを開くことに失敗した
    */
-  VOICEVOX_OPEN_FILE_ERROR = 16,
+  VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR = 16,
   /**
-   * Modelを読み込めなかった
+   * ZIP内のファイルが読めなかった
    */
-  VOICEVOX_VVM_MODEL_READ_ERROR = 17,
+  VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR = 17,
   /**
-   * すでに読み込まれているModelを読み込もうとした
+   * すでに読み込まれている音声モデルを読み込もうとした
    */
-  VOICEVOX_ALREADY_LOADED_MODEL_ERROR = 18,
+  VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR = 18,
+  /**
+   * すでに読み込まれているスタイルを読み込もうとした
+   */
+  VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR = 26,
+  /**
+   * 無効なモデルデータ
+   */
+  VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 27,
   /**
    * Modelが読み込まれていない
    */
-  VOICEVOX_UNLOADED_MODEL_ERROR = 19,
+  VOICEVOX_RESULT_UNLOADED_MODEL_ERROR = 19,
   /**
    * ユーザー辞書を読み込めなかった
    */
-  VOICEVOX_LOAD_USER_DICT_ERROR = 20,
+  VOICEVOX_RESULT_LOAD_USER_DICT_ERROR = 20,
   /**
    * ユーザー辞書を書き込めなかった
    */
-  VOICEVOX_SAVE_USER_DICT_ERROR = 21,
+  VOICEVOX_RESULT_SAVE_USER_DICT_ERROR = 21,
   /**
    * ユーザー辞書に単語が見つからなかった
    */
-  VOICEVOX_UNKNOWN_USER_DICT_WORD_ERROR = 22,
+  VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR = 22,
   /**
    * OpenJTalkのユーザー辞書の設定に失敗した
    */
-  VOICEVOX_USE_USER_DICT_ERROR = 23,
+  VOICEVOX_RESULT_USE_USER_DICT_ERROR = 23,
   /**
    * ユーザー辞書の単語のバリデーションに失敗した
    */
-  VOICEVOX_INVALID_USER_DICT_WORD_ERROR = 24,
+  VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR = 24,
   /**
    * UUIDの変換に失敗した
    */
@@ -260,11 +260,6 @@ typedef struct VoicevoxUserDict VoicevoxUserDict;
 typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
 
 /**
- * 音声モデルID。
- */
-typedef const char *VoicevoxVoiceModelId;
-
-/**
  * ::voicevox_synthesizer_new_with_initialize のオプション。
  */
 typedef struct VoicevoxInitializeOptions {
@@ -284,14 +279,12 @@ typedef struct VoicevoxInitializeOptions {
 } VoicevoxInitializeOptions;
 
 /**
- * スタイルID。
- *
- * VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
+ * 音声モデルID。
  */
-typedef uint32_t VoicevoxStyleId;
+typedef const char *VoicevoxVoiceModelId;
 
 /**
- * ::voicevox_synthesizer_audio_query のオプション。
+ * ::voicevox_synthesizer_create_audio_query のオプション。
  */
 typedef struct VoicevoxAudioQueryOptions {
   /**
@@ -299,6 +292,13 @@ typedef struct VoicevoxAudioQueryOptions {
    */
   bool kana;
 } VoicevoxAudioQueryOptions;
+
+/**
+ * スタイルID。
+ *
+ * VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
+ */
+typedef uint32_t VoicevoxStyleId;
 
 /**
  * ::voicevox_synthesizer_create_accent_phrases のオプション。
@@ -363,18 +363,6 @@ typedef struct VoicevoxUserDictWord {
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
-
-extern const struct VoicevoxInitializeOptions voicevox_default_initialize_options;
-
-extern const char *voicevox_version;
-
-extern const struct VoicevoxAudioQueryOptions voicevox_default_audio_query_options;
-
-extern const struct VoicevoxAccentPhrasesOptions voicevox_default_accent_phrases_options;
-
-extern const struct VoicevoxSynthesisOptions voicevox_default_synthesis_options;
-
-extern const struct VoicevoxTtsOptions voicevox_default_tts_options;
 
 /**
  * ::OpenJtalkRc を<b>構築</b>(_construct_)する。
@@ -443,6 +431,24 @@ VoicevoxResultCode voicevox_open_jtalk_rc_use_user_dict(const struct OpenJtalkRc
 __declspec(dllimport)
 #endif
 void voicevox_open_jtalk_rc_delete(struct OpenJtalkRc *open_jtalk);
+
+/**
+ * デフォルトの初期化オプションを生成する
+ * @return デフォルト値が設定された初期化オプション
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxInitializeOptions voicevox_make_default_initialize_options(void);
+
+/**
+ * voicevoxのバージョンを取得する。
+ * @return SemVerでフォーマットされたバージョン。
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+const char *voicevox_get_version(void);
 
 /**
  * VVMファイルから ::VoicevoxVoiceModel を<b>構築</b>(_construct_)する。
@@ -563,7 +569,7 @@ void voicevox_synthesizer_delete(struct VoicevoxSynthesizer *synthesizer);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_synthesizer_load_voice_model(struct VoicevoxSynthesizer *synthesizer,
+VoicevoxResultCode voicevox_synthesizer_load_voice_model(const struct VoicevoxSynthesizer *synthesizer,
                                                          const struct VoicevoxVoiceModel *model);
 
 /**
@@ -582,7 +588,7 @@ VoicevoxResultCode voicevox_synthesizer_load_voice_model(struct VoicevoxSynthesi
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_synthesizer_unload_voice_model(struct VoicevoxSynthesizer *synthesizer,
+VoicevoxResultCode voicevox_synthesizer_unload_voice_model(const struct VoicevoxSynthesizer *synthesizer,
                                                            VoicevoxVoiceModelId model_id);
 
 /**
@@ -623,19 +629,20 @@ bool voicevox_synthesizer_is_loaded_voice_model(const struct VoicevoxSynthesizer
 /**
  * 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
  *
+ * JSONの解放は ::voicevox_json_free で行う。
+ *
  * @param [in] synthesizer 音声シンセサイザ
  *
  * @return メタ情報のJSON文字列
  *
  * \safety{
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`synthesizer`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
  * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-const char *voicevox_synthesizer_get_metas_json(const struct VoicevoxSynthesizer *synthesizer);
+char *voicevox_synthesizer_create_metas_json(const struct VoicevoxSynthesizer *synthesizer);
 
 /**
  * このライブラリで利用可能なデバイスの情報を、JSONで取得する。
@@ -665,6 +672,15 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supported_devices_json);
 
 /**
+ * デフォルトの AudioQuery のオプションを生成する
+ * @return デフォルト値が設定された AudioQuery オプション
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxAudioQueryOptions voicevox_make_default_audio_query_options(void);
+
+/**
  * AudioQueryをJSONとして生成する。
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -680,20 +696,20 @@ VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supporte
  * \examples{
  * ```c
  * char *audio_query;
- * voicevox_synthesizer_audio_query(synthesizer,
- *                                  "こんにちは",  // 日本語テキスト
- *                                  2,  // "四国めたん (ノーマル)"
- *                                  (VoicevoxAudioQueryOptions){.kana = false},
- *                                  &audio_query);
+ * voicevox_synthesizer_create_audio_query(synthesizer,
+ *                                         "こんにちは",  // 日本語テキスト
+ *                                         2,  // "四国めたん (ノーマル)"
+ *                                         (VoicevoxAudioQueryOptions){.kana = false},
+ *                                         &audio_query);
  * ```
  *
  * ```c
  * char *audio_query;
- * voicevox_synthesizer_audio_query(synthesizer,
- *                                  "コンニチワ'",  // AquesTalk風記法
- *                                  2,  // "四国めたん (ノーマル)"
- *                                  (VoicevoxAudioQueryOptions){.kana = true},
- *                                  &audio_query);
+ * voicevox_synthesizer_create_audio_query(synthesizer,
+ *                                         "コンニチワ'",  // AquesTalk風記法
+ *                                         2,  // "四国めたん (ノーマル)"
+ *                                         (VoicevoxAudioQueryOptions){.kana = true},
+ *                                         &audio_query);
  * ```
  * }
  *
@@ -707,11 +723,20 @@ VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supporte
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_synthesizer_audio_query(const struct VoicevoxSynthesizer *synthesizer,
-                                                    const char *text,
-                                                    VoicevoxStyleId style_id,
-                                                    struct VoicevoxAudioQueryOptions options,
-                                                    char **output_audio_query_json);
+VoicevoxResultCode voicevox_synthesizer_create_audio_query(const struct VoicevoxSynthesizer *synthesizer,
+                                                           const char *text,
+                                                           VoicevoxStyleId style_id,
+                                                           struct VoicevoxAudioQueryOptions options,
+                                                           char **output_audio_query_json);
+
+/**
+ * デフォルトの `accent_phrases` のオプションを生成する
+ * @return デフォルト値が設定された `accent_phrases` のオプション
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxAccentPhrasesOptions voicevox_make_default_accent_phrases_options(void);
 
 /**
  * AccentPhrase (アクセント句)の配列をJSON形式で生成する。
@@ -840,6 +865,15 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_pitch(const struct Voicevox
                                                            char **output_accent_phrases_json);
 
 /**
+ * デフォルトの `voicevox_synthesizer_synthesis` のオプションを生成する
+ * @return デフォルト値が設定された `voicevox_synthesizer_synthesis` のオプション
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxSynthesisOptions voicevox_make_default_synthesis_options(void);
+
+/**
  * AudioQueryから音声合成を行う。
  *
  * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
@@ -869,6 +903,15 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
                                                   struct VoicevoxSynthesisOptions options,
                                                   uintptr_t *output_wav_length,
                                                   uint8_t **output_wav);
+
+/**
+ * デフォルトのテキスト音声合成オプションを生成する
+ * @return テキスト音声合成オプション
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
 
 /**
  * テキスト音声合成を行う。
@@ -909,11 +952,13 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  * \safety{
  * - `json`は以下のAPIで得られたポインタでなくてはいけない。
  *     - ::voicevox_create_supported_devices_json
- *     - ::voicevox_synthesizer_audio_query
+ *     - ::voicevox_synthesizer_create_metas_json
+ *     - ::voicevox_synthesizer_create_audio_query
  *     - ::voicevox_synthesizer_create_accent_phrases
  *     - ::voicevox_synthesizer_replace_mora_data
  *     - ::voicevox_synthesizer_replace_phoneme_length
  *     - ::voicevox_synthesizer_replace_mora_pitch
+ *     - ::voicevox_user_dict_to_json
  * - 文字列の長さは生成時より変更されていてはならない。
  * - `json`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
  * - `json`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
@@ -1075,6 +1120,8 @@ VoicevoxResultCode voicevox_user_dict_remove_word(const struct VoicevoxUserDict 
 
 /**
  * ユーザー辞書の単語をJSON形式で出力する。
+ *
+ * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
  *
  * @param [in] user_dict ユーザー辞書
  * @param [out] output_json 出力先

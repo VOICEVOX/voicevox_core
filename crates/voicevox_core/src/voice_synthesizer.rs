@@ -1,8 +1,5 @@
 use std::sync::Arc;
 
-use const_default::ConstDefault;
-use duplicate::duplicate_item;
-
 use crate::engine::{create_kana, parse_kana, AccentPhraseModel, OpenJtalk, SynthesisEngine};
 
 use super::*;
@@ -31,7 +28,7 @@ impl From<&TtsOptions> for SynthesisOptions {
 /// [`Synthesizer::create_accent_phrases`]のオプション。
 ///
 /// [`Synthesizer::create_accent_phrases`]: Synthesizer::create_accent_phrases
-#[derive(ConstDefault)]
+#[derive(Default)]
 pub struct AccentPhrasesOptions {
     /// AquesTalk風記法としてテキストを解釈する。
     pub kana: bool,
@@ -40,7 +37,7 @@ pub struct AccentPhrasesOptions {
 /// [`Synthesizer::audio_query`]のオプション。
 ///
 /// [`Synthesizer::audio_query`]: Synthesizer::audio_query
-#[derive(ConstDefault)]
+#[derive(Default)]
 pub struct AudioQueryOptions {
     /// AquesTalk風記法としてテキストを解釈する。
     pub kana: bool,
@@ -67,17 +64,20 @@ impl AsRef<TtsOptions> for TtsOptions {
     }
 }
 
-impl ConstDefault for TtsOptions {
-    const DEFAULT: Self = Self {
-        enable_interrogative_upspeak: true,
-        kana: ConstDefault::DEFAULT,
-    };
+impl Default for TtsOptions {
+    fn default() -> Self {
+        Self {
+            enable_interrogative_upspeak: true,
+            kana: Default::default(),
+        }
+    }
 }
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub enum AccelerationMode {
     /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
+    #[default]
     Auto,
     /// ハードウェアアクセラレーションモードを"CPU"に設定する。
     Cpu,
@@ -85,32 +85,14 @@ pub enum AccelerationMode {
     Gpu,
 }
 
-impl ConstDefault for AccelerationMode {
-    const DEFAULT: Self = Self::Auto;
-}
-
 /// [`Synthesizer::new_with_initialize`]のオプション。
 ///
 /// [`Synthesizer::new_with_initialize`]: Synthesizer::new_with_initialize
-#[derive(ConstDefault)]
+#[derive(Default)]
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
     pub cpu_num_threads: u16,
     pub load_all_models: bool,
-}
-
-#[duplicate_item(
-    T;
-    [ AccentPhrasesOptions ];
-    [ AudioQueryOptions ];
-    [ TtsOptions ];
-    [ AccelerationMode ];
-    [ InitializeOptions ];
-)]
-impl Default for T {
-    fn default() -> Self {
-        Self::DEFAULT
-    }
 }
 
 /// 音声シンセサイザ。
@@ -191,18 +173,18 @@ impl Synthesizer {
     }
 
     /// 音声モデルを読み込む。
-    pub async fn load_voice_model(&mut self, model: &VoiceModel) -> Result<()> {
+    pub async fn load_voice_model(&self, model: &VoiceModel) -> Result<()> {
         self.synthesis_engine
-            .inference_core_mut()
+            .inference_core()
             .load_model(model)
             .await?;
         Ok(())
     }
 
     /// 音声モデルの読み込みを解除する。
-    pub fn unload_voice_model(&mut self, voice_model_id: &VoiceModelId) -> Result<()> {
+    pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
         self.synthesis_engine
-            .inference_core_mut()
+            .inference_core()
             .unload_model(voice_model_id)
     }
 
@@ -221,7 +203,7 @@ impl Synthesizer {
     }
 
     /// 今読み込んでいる音声モデルのメタ情報を返す。
-    pub fn metas(&self) -> &VoiceModelMeta {
+    pub fn metas(&self) -> VoiceModelMeta {
         self.synthesis_engine.inference_core().metas()
     }
 
@@ -333,8 +315,8 @@ impl Synthesizer {
     ///
     /// let accent_phrases = syntesizer
     ///     .create_accent_phrases(
-    ///         "こんにちは",    // 日本語のテキスト
-    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         "こんにちは", // 日本語のテキスト
+    ///         StyleId::new(302),
     ///         &Default::default(),
     ///     )
     ///     .await?;
@@ -378,8 +360,8 @@ impl Synthesizer {
     ///
     /// let accent_phrases = syntesizer
     ///     .create_accent_phrases(
-    ///         "コンニチワ'",   // AquesTalk風記法
-    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         "コンニチワ'", // AquesTalk風記法
+    ///         StyleId::new(302),
     ///         &AccentPhrasesOptions { kana: true },
     ///     )
     ///     .await?;
@@ -484,8 +466,8 @@ impl Synthesizer {
     ///
     /// let audio_query = syntesizer
     ///     .audio_query(
-    ///         "こんにちは",    // 日本語のテキスト
-    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         "こんにちは", // 日本語のテキスト
+    ///         StyleId::new(302),
     ///         &Default::default(),
     ///     )
     ///     .await?;
@@ -529,8 +511,8 @@ impl Synthesizer {
     ///
     /// let audio_query = syntesizer
     ///     .audio_query(
-    ///         "コンニチワ'",   // AquesTalk風記法
-    ///         StyleId::new(2), // "四国めたん (ノーマル)",
+    ///         "コンニチワ'", // AquesTalk風記法
+    ///         StyleId::new(302),
     ///         &AudioQueryOptions { kana: true },
     ///     )
     ///     .await?;
@@ -634,7 +616,7 @@ mod tests {
     #[case(Ok(()))]
     #[tokio::test]
     async fn load_model_works(#[case] expected_result_at_initialized: Result<()>) {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -675,7 +657,7 @@ mod tests {
     #[tokio::test]
     async fn is_loaded_model_by_style_id_works(#[case] style_id: u32, #[case] expected: bool) {
         let style_id = StyleId::new(style_id);
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -704,7 +686,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_duration_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -736,7 +718,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_intonation_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -778,7 +760,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn decode_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,

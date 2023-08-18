@@ -12,7 +12,6 @@ use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::*;
 use self::slice_owner::U8_SLICE_OWNER;
 use chrono::SecondsFormat;
-use const_default::ConstDefault;
 use derive_getters::Getters;
 use once_cell::sync::Lazy;
 use std::env;
@@ -205,21 +204,24 @@ pub struct VoicevoxInitializeOptions {
     load_all_models: bool,
 }
 
-/// デフォルトの初期化オプション
+/// デフォルトの初期化オプションを生成する
+/// @return デフォルト値が設定された初期化オプション
 #[no_mangle]
-pub static voicevox_default_initialize_options: VoicevoxInitializeOptions = ConstDefault::DEFAULT;
+pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitializeOptions {
+    VoicevoxInitializeOptions::default()
+}
 
-/// voicevoxのバージョン。
+/// voicevoxのバージョンを取得する。
+/// @return SemVerでフォーマットされたバージョン。
 #[no_mangle]
-pub static voicevox_version: &c_char = {
-    const VOICEVOX_VERSION: &CStr = unsafe {
+pub extern "C" fn voicevox_get_version() -> *const c_char {
+    return C_STRING_DROP_CHECKER.blacklist(VERSION).as_ptr();
+
+    const VERSION: &CStr = unsafe {
         // SAFETY: The package version is a SemVer, so it should not contain '\0'
         CStr::from_bytes_with_nul_unchecked(concat!(env!("CARGO_PKG_VERSION"), '\0').as_bytes())
     };
-
-    // SAFETY: `CStr::as_ptr` always returns a valid pointer.
-    unsafe { &*VOICEVOX_VERSION.as_ptr() }
-};
+}
 
 /// 音声モデル。
 ///
@@ -314,7 +316,6 @@ pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
 #[derive(Getters)]
 pub struct VoicevoxSynthesizer {
     synthesizer: Synthesizer,
-    metas_cstring: CString,
 }
 
 /// ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。
@@ -374,14 +375,10 @@ pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesiz
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_load_voice_model(
-    synthesizer: &mut VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     model: &VoicevoxVoiceModel,
 ) -> VoicevoxResultCode {
-    into_result_code_with_error(
-        RUNTIME
-            .block_on(synthesizer.load_voice_model(model.model()))
-            .map_err(Into::into),
-    )
+    into_result_code_with_error(RUNTIME.block_on(synthesizer.load_voice_model(model.model())))
 }
 
 /// 音声モデルの読み込みを解除する。
@@ -397,7 +394,7 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
-    synthesizer: &mut VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
@@ -446,19 +443,21 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
 
 /// 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
 ///
+/// JSONの解放は ::voicevox_json_free で行う。
+///
 /// @param [in] synthesizer 音声シンセサイザ
 ///
 /// @return メタ情報のJSON文字列
 ///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
-/// - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`synthesizer`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
 /// }
 #[no_mangle]
-pub extern "C" fn voicevox_synthesizer_get_metas_json(
+pub extern "C" fn voicevox_synthesizer_create_metas_json(
     synthesizer: &VoicevoxSynthesizer,
-) -> *const c_char {
-    synthesizer.metas().as_ptr()
+) -> *mut c_char {
+    let metas = synthesizer.metas();
+    C_STRING_DROP_CHECKER.whitelist(metas).into_raw()
 }
 
 /// このライブラリで利用可能なデバイスの情報を、JSONで取得する。
@@ -497,16 +496,19 @@ pub unsafe extern "C" fn voicevox_create_supported_devices_json(
     })())
 }
 
-/// ::voicevox_synthesizer_audio_query のオプション。
+/// ::voicevox_synthesizer_create_audio_query のオプション。
 #[repr(C)]
 pub struct VoicevoxAudioQueryOptions {
     /// AquesTalk風記法としてテキストを解釈する
     kana: bool,
 }
 
-/// デフォルトの AudioQuery のオプション
+/// デフォルトの AudioQuery のオプションを生成する
+/// @return デフォルト値が設定された AudioQuery オプション
 #[no_mangle]
-pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = ConstDefault::DEFAULT;
+pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQueryOptions {
+    voicevox_core::AudioQueryOptions::default().into()
+}
 
 /// AudioQueryをJSONとして生成する。
 ///
@@ -523,20 +525,20 @@ pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = Con
 /// \examples{
 /// ```c
 /// char *audio_query;
-/// voicevox_synthesizer_audio_query(synthesizer,
-///                                  "こんにちは",  // 日本語テキスト
-///                                  2,  // "四国めたん (ノーマル)"
-///                                  (VoicevoxAudioQueryOptions){.kana = false},
-///                                  &audio_query);
+/// voicevox_synthesizer_create_audio_query(synthesizer,
+///                                         "こんにちは",  // 日本語テキスト
+///                                         2,  // "四国めたん (ノーマル)"
+///                                         (VoicevoxAudioQueryOptions){.kana = false},
+///                                         &audio_query);
 /// ```
 ///
 /// ```c
 /// char *audio_query;
-/// voicevox_synthesizer_audio_query(synthesizer,
-///                                  "コンニチワ'",  // AquesTalk風記法
-///                                  2,  // "四国めたん (ノーマル)"
-///                                  (VoicevoxAudioQueryOptions){.kana = true},
-///                                  &audio_query);
+/// voicevox_synthesizer_create_audio_query(synthesizer,
+///                                         "コンニチワ'",  // AquesTalk風記法
+///                                         2,  // "四国めたん (ノーマル)"
+///                                         (VoicevoxAudioQueryOptions){.kana = true},
+///                                         &audio_query);
 /// ```
 /// }
 ///
@@ -547,7 +549,7 @@ pub static voicevox_default_audio_query_options: VoicevoxAudioQueryOptions = Con
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_synthesizer_audio_query(
+pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
     synthesizer: &VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
@@ -578,10 +580,12 @@ pub struct VoicevoxAccentPhrasesOptions {
     kana: bool,
 }
 
-/// デフォルトの `accent_phrases` のオプション
+/// デフォルトの `accent_phrases` のオプションを生成する
+/// @return デフォルト値が設定された `accent_phrases` のオプション
 #[no_mangle]
-pub static voicevox_default_accent_phrases_options: VoicevoxAccentPhrasesOptions =
-    ConstDefault::DEFAULT;
+pub extern "C" fn voicevox_make_default_accent_phrases_options() -> VoicevoxAccentPhrasesOptions {
+    voicevox_core::AccentPhrasesOptions::default().into()
+}
 
 /// AccentPhrase (アクセント句)の配列をJSON形式で生成する。
 ///
@@ -774,9 +778,12 @@ pub struct VoicevoxSynthesisOptions {
     enable_interrogative_upspeak: bool,
 }
 
-/// デフォルトの `voicevox_synthesizer_synthesis` のオプション
+/// デフォルトの `voicevox_synthesizer_synthesis` のオプションを生成する
+/// @return デフォルト値が設定された `voicevox_synthesizer_synthesis` のオプション
 #[no_mangle]
-pub static voicevox_default_synthesis_options: VoicevoxSynthesisOptions = ConstDefault::DEFAULT;
+pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesisOptions {
+    VoicevoxSynthesisOptions::default()
+}
 
 /// AudioQueryから音声合成を行う。
 ///
@@ -831,9 +838,12 @@ pub struct VoicevoxTtsOptions {
     enable_interrogative_upspeak: bool,
 }
 
-/// デフォルトのテキスト音声合成オプション
+/// デフォルトのテキスト音声合成オプションを生成する
+/// @return テキスト音声合成オプション
 #[no_mangle]
-pub static voicevox_default_tts_options: VoicevoxTtsOptions = ConstDefault::DEFAULT;
+pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
+    voicevox_core::TtsOptions::default().into()
+}
 
 /// テキスト音声合成を行う。
 ///
@@ -882,11 +892,13 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// \safety{
 /// - `json`は以下のAPIで得られたポインタでなくてはいけない。
 ///     - ::voicevox_create_supported_devices_json
-///     - ::voicevox_synthesizer_audio_query
+///     - ::voicevox_synthesizer_create_metas_json
+///     - ::voicevox_synthesizer_create_audio_query
 ///     - ::voicevox_synthesizer_create_accent_phrases
 ///     - ::voicevox_synthesizer_replace_mora_data
 ///     - ::voicevox_synthesizer_replace_phoneme_length
 ///     - ::voicevox_synthesizer_replace_mora_pitch
+///     - ::voicevox_user_dict_to_json
 /// - 文字列の長さは生成時より変更されていてはならない。
 /// - `json`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
 /// - `json`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
@@ -1124,6 +1136,8 @@ pub extern "C" fn voicevox_user_dict_remove_word(
 
 /// ユーザー辞書の単語をJSON形式で出力する。
 ///
+/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+///
 /// @param [in] user_dict ユーザー辞書
 /// @param [out] output_json 出力先
 /// @returns 結果コード
@@ -1221,13 +1235,6 @@ mod tests {
     #[case(
         Err(Error::NotLoadedOpenjtalkDict),
         VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR
-    )]
-    #[case(
-        Err(Error::LoadModel {
-            path: "path/to/model.onnx".into(),
-            source: anyhow!("some load model error"),
-        }),
-        VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ERROR
     )]
     #[case(
         Err(Error::GetSupportedDevices(anyhow!("some get supported devices error"))),

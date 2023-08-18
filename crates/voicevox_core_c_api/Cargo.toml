@@ -16,7 +16,6 @@ name = "e2e"
 directml = ["voicevox_core/directml"]
 
 [dependencies]
-const-default.workspace = true
 derive-getters.workspace = true
 libc = "0.2.134"
 once_cell.workspace = true
