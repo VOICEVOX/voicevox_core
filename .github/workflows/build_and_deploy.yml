@@ -292,6 +292,7 @@ jobs:
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
           cp -v crates/voicevox_core_c_api/include/voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
+          cp -v crates/voicevox_core_c_api/xcframework/Headers/module.modulemap "artifact/${{ env.ASSET_NAME }}"
           cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
           cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
@@ -362,11 +363,17 @@ jobs:
       - name: Create XCFramework
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          mkdir -p "Headers-sim"
+          cp -v artifact/voicevox_core-x86_64-apple-ios/voicevox_core.h "Headers-sim"
+          cp -v artifact/voicevox_core-x86_64-apple-ios/module.modulemap "Headers-sim"
+          mkdir -p "Headers-aarch64"
+          cp -v artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h "Headers-aarch64"
+          cp -v artifact/voicevox_core-aarch64-apple-ios/module.modulemap "Headers-aarch64"
           xcodebuild -create-xcframework \
             -library "artifact/voicevox_core-sim/libvoicevox_core.dylib" \
-            -headers "artifact/voicevox_core-x86_64-apple-ios/voicevox_core.h" \
+            -headers "Headers-sim" \
             -library "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib" \
-            -headers "artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h" \
+            -headers "Headers-aarch64" \
             -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
       - name: Archive artifact
         run: |
