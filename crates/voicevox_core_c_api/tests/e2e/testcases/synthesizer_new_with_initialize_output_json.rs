@@ -9,12 +9,11 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use test_util::OPEN_JTALK_DIC_DIR;
-use voicevox_core::result_code::VoicevoxResultCode;
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     snapshots,
-    symbols::{Symbols, VoicevoxAccelerationMode, VoicevoxInitializeOptions},
+    symbols::{Symbols, VoicevoxAccelerationMode, VoicevoxInitializeOptions, VoicevoxResultCode},
 };
 
 case!(TestCase);

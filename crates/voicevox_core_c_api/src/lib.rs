@@ -7,9 +7,11 @@ mod c_impls;
 mod compatible_engine;
 mod drop_check;
 mod helpers;
+mod result_code;
 mod slice_owner;
 use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::*;
+use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
 use chrono::SecondsFormat;
 use derive_getters::Getters;
@@ -176,8 +178,6 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
 pub extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: Box<OpenJtalkRc>) {
     drop(open_jtalk);
 }
-
-pub use voicevox_core::result_code::VoicevoxResultCode;
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
 #[repr(i32)]
@@ -948,11 +948,7 @@ pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    let message = CStr::from_bytes_with_nul(
-        voicevox_core::result_code::error_result_to_message(result_code).as_ref(),
-    )
-    .expect("`error_result_to_message`が返す文字列はヌル終端であるはずである");
-
+    let message = result_code::error_result_to_message(result_code);
     C_STRING_DROP_CHECKER.blacklist(message).as_ptr()
 }
 

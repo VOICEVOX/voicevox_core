@@ -1,5 +1,4 @@
 use self::engine::{FullContextLabelError, KanaParseError};
-use self::result_code::VoicevoxResultCode::{self, *};
 use super::*;
 //use engine::
 use std::path::PathBuf;
@@ -9,76 +8,49 @@ use uuid::Uuid;
 /// VOICEVOX COREのエラー。
 #[derive(Error, Debug)]
 pub enum Error {
-    /*
-     * エラーメッセージのベースとなる文字列は必ずbase_error_message関数を使用してVoicevoxResultCodeのエラー出力の内容と対応するようにすること
-     */
-    #[error(
-        "{}",
-        base_error_message(VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR)
-    )]
+    #[error("OpenJTalkの辞書が読み込まれていません")]
     NotLoadedOpenjtalkDict,
 
-    #[error("{}", base_error_message(VOICEVOX_RESULT_GPU_SUPPORT_ERROR))]
+    #[error("GPU機能をサポートすることができません")]
     GpuSupport,
 
     #[error(transparent)]
     LoadModel(#[from] LoadModelError),
 
-    #[error(
-        "{} ({model_id:?})",
-        base_error_message(VOICEVOX_RESULT_UNLOADED_MODEL_ERROR)
-    )]
+    #[error("Modelが読み込まれていません ({model_id:?})")]
     UnloadedModel { model_id: VoiceModelId },
 
-    #[error(
-        "{},{0}",
-        base_error_message(VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR)
-    )]
+    #[error("サポートされているデバイス情報取得中にエラーが発生しました,{0}")]
     GetSupportedDevices(#[source] anyhow::Error),
 
-    #[error(
-        "{}: {style_id:?}",
-        base_error_message(VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR)
-    )]
+    #[error("無効なspeaker_idです: {style_id:?}")]
     InvalidStyleId { style_id: StyleId },
 
-    #[error(
-        "{}: {model_id:?}",
-        base_error_message(VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR)
-    )]
+    #[error("無効なmodel_idです: {model_id:?}")]
     InvalidModelId { model_id: VoiceModelId },
 
-    #[error("{}", base_error_message(VOICEVOX_RESULT_INFERENCE_ERROR))]
+    #[error("推論に失敗しました")]
     InferenceFailed,
 
-    #[error(
-        "{},{0}",
-        base_error_message(VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR)
-    )]
+    #[error("入力テキストからのフルコンテキストラベル抽出に失敗しました,{0}")]
     ExtractFullContextLabel(#[from] FullContextLabelError),
 
-    #[error("{},{0}", base_error_message(VOICEVOX_RESULT_PARSE_KANA_ERROR))]
+    #[error("入力テキストをAquesTalk風記法としてパースすることに失敗しました,{0}")]
     ParseKana(#[from] KanaParseError),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_RESULT_LOAD_USER_DICT_ERROR))]
+    #[error("ユーザー辞書を読み込めませんでした: {0}")]
     LoadUserDict(String),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_RESULT_SAVE_USER_DICT_ERROR))]
+    #[error("ユーザー辞書を書き込めませんでした: {0}")]
     SaveUserDict(String),
 
-    #[error(
-        "{}: {0}",
-        base_error_message(VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR)
-    )]
+    #[error("ユーザー辞書に単語が見つかりませんでした: {0}")]
     UnknownWord(Uuid),
 
-    #[error("{}: {0}", base_error_message(VOICEVOX_RESULT_USE_USER_DICT_ERROR))]
+    #[error("OpenJTalkのユーザー辞書の設定に失敗しました: {0}")]
     UseUserDict(String),
 
-    #[error(
-        "{}: {0}",
-        base_error_message(VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR)
-    )]
+    #[error("ユーザー辞書の単語のバリデーションに失敗しました: {0}")]
     InvalidWord(InvalidWordError),
 }
 
@@ -105,26 +77,14 @@ impl LoadModelError {
 
 #[derive(derive_more::Display, Debug)]
 pub enum LoadModelErrorKind {
-    //#[display(fmt = "{}", "base_error_message(VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR)")]
     #[display(fmt = "ZIPファイルとして開くことができませんでした")]
     OpenZipFile,
-    //#[display(fmt = "{}", "base_error_message(VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR)")]
     #[display(fmt = "`{filename}`を読み取れませんでした")]
     ReadZipEntry { filename: String },
-    //#[display(fmt = "{}", "base_error_message(VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR)")]
     #[display(fmt = "モデル`{id}`は既に読み込まれています")]
     ModelAlreadyLoaded { id: VoiceModelId },
-    //#[display(fmt = "{}", "base_error_message(VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR)")]
     #[display(fmt = "スタイル`{id}`は既に読み込まれています")]
     StyleAlreadyLoaded { id: StyleId },
-    #[display(
-        fmt = "{}",
-        "base_error_message(VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR)"
-    )]
+    #[display(fmt = "モデルデータを読むことができませんでした")]
     InvalidModelData,
-}
-
-fn base_error_message(result_code: VoicevoxResultCode) -> &'static str {
-    let c_message: &'static str = crate::result_code::error_result_to_message(result_code);
-    &c_message[..(c_message.len() - 1)]
 }

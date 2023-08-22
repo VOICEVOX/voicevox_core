@@ -1,8 +1,10 @@
-use strum::EnumIter;
+use std::ffi::CStr;
+
+use cstr::cstr;
 
 /// 処理結果を示す結果コード。
 #[repr(i32)]
-#[derive(Debug, PartialEq, Eq, Clone, Copy, EnumIter)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[allow(non_camel_case_types)]
 pub enum VoicevoxResultCode {
     // C でのenum定義に合わせて大文字で定義している
@@ -57,47 +59,50 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
 }
 
-pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
-    // C APIのため、messageには必ず末尾にNULL文字を追加する
+pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static CStr {
     use VoicevoxResultCode::*;
     match result_code {
         VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR => {
-            "OpenJTalkの辞書が読み込まれていません\0"
+            cstr!("OpenJTalkの辞書が読み込まれていません")
         }
-
-        VOICEVOX_RESULT_GPU_SUPPORT_ERROR => "GPU機能をサポートすることができません\0",
+        VOICEVOX_RESULT_GPU_SUPPORT_ERROR => cstr!("GPU機能をサポートすることができません"),
         VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR => {
-            "サポートされているデバイス情報取得中にエラーが発生しました\0"
+            cstr!("サポートされているデバイス情報取得中にエラーが発生しました")
         }
-
-        VOICEVOX_RESULT_OK => "エラーが発生しませんでした\0",
-        VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR => "無効なspeaker_idです\0",
-        VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR => "無効なmodel_idです\0",
-        VOICEVOX_RESULT_INFERENCE_ERROR => "推論に失敗しました\0",
+        VOICEVOX_RESULT_OK => cstr!("エラーが発生しませんでした"),
+        VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR => cstr!("無効なspeaker_idです"),
+        VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR => cstr!("無効なmodel_idです"),
+        VOICEVOX_RESULT_INFERENCE_ERROR => cstr!("推論に失敗しました"),
         VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR => {
-            "入力テキストからのフルコンテキストラベル抽出に失敗しました\0"
+            cstr!("入力テキストからのフルコンテキストラベル抽出に失敗しました")
         }
-        VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR => "入力テキストが無効なUTF-8データでした\0",
+        VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR => cstr!("入力テキストが無効なUTF-8データでした"),
         VOICEVOX_RESULT_PARSE_KANA_ERROR => {
-            "入力テキストをAquesTalk風記法としてパースすることに失敗しました\0"
+            cstr!("入力テキストをAquesTalk風記法としてパースすることに失敗しました")
         }
-        VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR => "無効なaudio_queryです\0",
-        VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR => "無効なaccent_phraseです\0",
-        VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR => "ZIPファイルのオープンに失敗しました\0",
-        VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR => "ZIP内のファイルを読むことができませんでした\0",
-        VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR => "同じIDのモデルを読むことはできません\0",
-        VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR => "同じIDのスタイルを読むことはできません\0",
-        VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR => "モデルデータを読むことができませんでした\0",
-        VOICEVOX_RESULT_UNLOADED_MODEL_ERROR => "Modelが読み込まれていません\0",
-        VOICEVOX_RESULT_LOAD_USER_DICT_ERROR => "ユーザー辞書を読み込めませんでした\0",
-        VOICEVOX_RESULT_SAVE_USER_DICT_ERROR => "ユーザー辞書を書き込めませんでした\0",
+        VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR => cstr!("無効なaudio_queryです"),
+        VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR => cstr!("無効なaccent_phraseです"),
+        VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR => cstr!("ZIPファイルのオープンに失敗しました"),
+        VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR => {
+            cstr!("ZIP内のファイルを読むことができませんでした")
+        }
+        VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR => cstr!("同じIDのモデルを読むことはできません"),
+        VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR => {
+            cstr!("同じIDのスタイルを読むことはできません")
+        }
+        VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR => {
+            cstr!("モデルデータを読むことができませんでした")
+        }
+        VOICEVOX_RESULT_UNLOADED_MODEL_ERROR => cstr!("Modelが読み込まれていません"),
+        VOICEVOX_RESULT_LOAD_USER_DICT_ERROR => cstr!("ユーザー辞書を読み込めませんでした"),
+        VOICEVOX_RESULT_SAVE_USER_DICT_ERROR => cstr!("ユーザー辞書を書き込めませんでした"),
         VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR => {
-            "ユーザー辞書に単語が見つかりませんでした\0"
+            cstr!("ユーザー辞書に単語が見つかりませんでした")
         }
-        VOICEVOX_RESULT_USE_USER_DICT_ERROR => "OpenJTalkのユーザー辞書の設定に失敗しました\0",
+        VOICEVOX_RESULT_USE_USER_DICT_ERROR => cstr!("OpenJTalkのユーザー辞書の設定に失敗しました"),
         VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR => {
-            "ユーザー辞書の単語のバリデーションに失敗しました\0"
+            cstr!("ユーザー辞書の単語のバリデーションに失敗しました")
         }
-        VOICEVOX_RESULT_INVALID_UUID_ERROR => "UUIDの変換に失敗しました\0",
+        VOICEVOX_RESULT_INVALID_UUID_ERROR => cstr!("UUIDの変換に失敗しました"),
     }
 }

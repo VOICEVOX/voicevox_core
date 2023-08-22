@@ -8,27 +8,21 @@ use std::{
 };
 use tempfile::NamedTempFile;
 use uuid::Uuid;
-use voicevox_core::result_code::VoicevoxResultCode;
 
+use cstr::cstr;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     snapshots,
-    symbols::{Symbols, VoicevoxUserDict, VoicevoxUserDictWord},
+    symbols::{Symbols, VoicevoxResultCode, VoicevoxUserDict, VoicevoxUserDictWord},
 };
 
 case!(TestCase);
 
 #[derive(Serialize, Deserialize)]
 struct TestCase;
-
-macro_rules! cstr {
-    ($s:literal $(,)?) => {
-        CStr::from_bytes_with_nul(concat!($s, '\0').as_ref()).unwrap()
-    };
-}
 
 #[typetag::serde(name = "user_dict_manipulate")]
 impl assert_cdylib::TestCase for TestCase {

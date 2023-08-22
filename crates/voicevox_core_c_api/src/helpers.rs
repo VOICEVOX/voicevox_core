@@ -18,8 +18,9 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
     }
 
     fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
-        use voicevox_core::{result_code::VoicevoxResultCode::*, Error::*, LoadModelErrorKind::*};
+        use voicevox_core::{Error::*, LoadModelErrorKind::*};
         use CApiError::*;
+        use VoicevoxResultCode::*;
 
         match result {
             Ok(()) => VOICEVOX_RESULT_OK,
