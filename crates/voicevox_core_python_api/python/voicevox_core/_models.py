@@ -192,13 +192,15 @@ class UserDictWord:
     """言葉の表層形。"""
 
     pronunciation: str
-    """言葉の発音。
+    """
+    言葉の発音。
 
     カタカナで表記する。
     """
 
     accent_type: int = dataclasses.field(default=0)
-    """アクセント型。
+    """
+    アクセント型。
 
     音が下がる場所を指す。
     """
@@ -209,7 +211,8 @@ class UserDictWord:
     """品詞。"""
 
     priority: int = dataclasses.field(default=5)
-    """単語の優先度。
+    """
+    単語の優先度。
 
     0から10までの整数。
     数字が大きいほど優先度が高くなる。

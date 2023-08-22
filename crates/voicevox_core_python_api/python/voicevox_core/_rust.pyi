@@ -19,7 +19,8 @@ if TYPE_CHECKING:
 __version__: str
 
 def supported_devices() -> SupportedDevices:
-    """このライブラリで利用可能なデバイスの情報を取得する。
+    """
+    このライブラリで利用可能なデバイスの情報を取得する。
 
     .. code-block::
 
@@ -30,11 +31,13 @@ def supported_devices() -> SupportedDevices:
     ...
 
 class VoiceModel:
-    """音声モデル。"""
+    """
+    音声モデル。"""
 
     @staticmethod
     async def from_path(path: Union[Path, str]) -> VoiceModel:
-        """VVMファイルから ``VoiceModel`` を生成する。
+        """
+        VVMファイルから ``VoiceModel`` を生成する。
 
         Parameters
         ----------
@@ -52,7 +55,8 @@ class VoiceModel:
         ...
 
 class OpenJtalk:
-    """テキスト解析器としてのOpen JTalk。
+    """
+    テキスト解析器としてのOpen JTalk。
 
     Parameters
     ----------
@@ -62,7 +66,8 @@ class OpenJtalk:
 
     def __init__(self, open_jtalk_dict_dir: Union[Path, str]) -> None: ...
     def use_user_dict(self, user_dict: UserDict) -> None:
-        """ユーザー辞書を設定する。
+        """
+        ユーザー辞書を設定する。
 
         この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
 
@@ -85,7 +90,8 @@ class Synthesizer:
         cpu_num_threads: int = 0,
         load_all_models: bool = False,
     ) -> "Synthesizer":
-        """:class:`Synthesizer` を生成する。
+        """
+        :class:`Synthesizer` を生成する。
 
         Parameters
         ----------
@@ -109,7 +115,8 @@ class Synthesizer:
         """メタ情報。"""
         ...
     async def load_voice_model(self, model: VoiceModel) -> None:
-        """モデルを読み込む。
+        """
+        モデルを読み込む。
 
         Parameters
         ----------
@@ -118,7 +125,8 @@ class Synthesizer:
         """
         ...
     def unload_voice_model(self, voice_model_id: str) -> None:
-        """音声モデルの読み込みを解除する。
+        """
+        音声モデルの読み込みを解除する。
 
         Parameters
         ----------
@@ -127,7 +135,8 @@ class Synthesizer:
         """
         ...
     def is_loaded_voice_model(self, voice_model_id: str) -> bool:
-        """指定したvoice_model_idのモデルが読み込まれているか判定する。
+        """
+        指定したvoice_model_idのモデルが読み込まれているか判定する。
 
         Parameters
         ----------
@@ -145,7 +154,8 @@ class Synthesizer:
         style_id: int,
         kana: bool = False,
     ) -> AudioQuery:
-        """:class:`AudioQuery` を生成する。
+        """
+        :class:`AudioQuery` を生成する。
 
         Parameters
         ----------
@@ -167,7 +177,8 @@ class Synthesizer:
         style_id: int,
         kana: bool = False,
     ) -> List[AccentPhrase]:
-        """AccentPhrase（アクセント句）の配列を生成する。
+        """
+        AccentPhrase（アクセント句）の配列を生成する。
 
         Parameters
         ----------
@@ -188,7 +199,8 @@ class Synthesizer:
         accent_phrases: List[AccentPhrase],
         style_id: int,
     ) -> List[AccentPhrase]:
-        """アクセント句の音高・音素長を変更した新しいアクセント句の配列を生成する。
+        """
+        アクセント句の音高・音素長を変更した新しいアクセント句の配列を生成する。
 
         元のアクセント句の音高・音素長は変更されない。
 
@@ -209,7 +221,8 @@ class Synthesizer:
         accent_phrases: List[AccentPhrase],
         style_id: int,
     ) -> List[AccentPhrase]:
-        """アクセント句の音素長を変更した新しいアクセント句の配列を生成する。
+        """
+        アクセント句の音素長を変更した新しいアクセント句の配列を生成する。
 
         元のアクセント句の音素長は変更されない。
 
@@ -226,7 +239,8 @@ class Synthesizer:
         accent_phrases: List[AccentPhrase],
         style_id: int,
     ) -> List[AccentPhrase]:
-        """アクセント句の音高を変更した新しいアクセント句の配列を生成する。
+        """
+        アクセント句の音高を変更した新しいアクセント句の配列を生成する。
 
         元のアクセント句の音高は変更されない。
 
@@ -244,7 +258,8 @@ class Synthesizer:
         style_id: int,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
-        """:class:`AudioQuery` から音声合成する。
+        """
+        :class:`AudioQuery` から音声合成する。
 
         Parameters
         ----------
@@ -267,7 +282,8 @@ class Synthesizer:
         kana: bool = False,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
-        """テキスト音声合成を実行する。
+        """
+        テキスト音声合成を実行する。
 
         Parameters
         ----------
@@ -304,7 +320,8 @@ class UserDict:
         """
         ...
     def save(self, path: str) -> None:
-        """ユーザー辞書をファイルに保存する。
+        """
+        ユーザー辞書をファイルに保存する。
 
         Parameters
         ----------
@@ -313,7 +330,8 @@ class UserDict:
         """
         ...
     def add_word(self, word: UserDictWord) -> UUID:
-        """単語を追加する。
+        """
+        単語を追加する。
 
         Parameters
         ----------
@@ -326,7 +344,8 @@ class UserDict:
         """
         ...
     def update_word(self, word_uuid: UUID, word: UserDictWord) -> None:
-        """単語を更新する。
+        """
+        単語を更新する。
 
         Parameters
         ----------
@@ -337,7 +356,8 @@ class UserDict:
         """
         ...
     def remove_word(self, word_uuid: UUID) -> None:
-        """単語を削除する。
+        """
+        単語を削除する。
 
         Parameters
         ----------
@@ -346,7 +366,8 @@ class UserDict:
         """
         ...
     def import_dict(self, other: UserDict) -> None:
-        """ユーザー辞書をインポートする。
+        """
+        ユーザー辞書をインポートする。
 
         Parameters
         ----------
