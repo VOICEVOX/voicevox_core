@@ -12,7 +12,6 @@ mod manifest;
 mod metas;
 mod numerics;
 mod result;
-pub mod result_code;
 mod status;
 mod user_dict;
 mod version;

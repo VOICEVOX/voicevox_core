@@ -1,14 +1,14 @@
 // ユーザー辞書の登録によって読みが変化することを確認するテスト。
 // 辞書ロード前後でAudioQueryのkanaが変化するかどうかで確認する。
 
-use crate::symbols::VoicevoxInitializeOptions;
+use crate::symbols::{VoicevoxInitializeOptions, VoicevoxResultCode};
 use assert_cmd::assert::AssertResult;
 use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
 use std::mem::MaybeUninit;
 use test_util::OPEN_JTALK_DIC_DIR;
-use voicevox_core::result_code::VoicevoxResultCode;
 
+use cstr::cstr;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 
@@ -17,12 +17,6 @@ use crate::{
     snapshots,
     symbols::{Symbols, VoicevoxAccelerationMode, VoicevoxUserDictWordType},
 };
-
-macro_rules! cstr {
-    ($s:literal $(,)?) => {
-        CStr::from_bytes_with_nul(concat!($s, '\0').as_ref()).unwrap()
-    };
-}
 
 case!(TestCase);
 

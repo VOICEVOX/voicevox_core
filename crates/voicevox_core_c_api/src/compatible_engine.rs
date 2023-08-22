@@ -3,7 +3,6 @@ use std::{collections::BTreeMap, sync::Arc};
 use super::*;
 use libc::c_int;
 
-pub use voicevox_core::result_code::VoicevoxResultCode;
 use voicevox_core::{OpenJtalk, StyleId, VoiceModel};
 
 macro_rules! ensure_initialized {
