@@ -341,6 +341,7 @@ jobs:
     needs: build_and_deploy
     runs-on: macos-12
     steps:
+      - uses: actions/checkout@v3
       - name: Set ASSET_NAME env var
         run: echo "ASSET_NAME=voicevox_core-ios-xcframework-cpu-${{ env.VERSION }}" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v2
@@ -362,11 +363,18 @@ jobs:
       - name: Create XCFramework
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          # 必要なファイルだけコピー
+          mkdir -p "Headers-sim"
+          cp -v artifact/voicevox_core-x86_64-apple-ios/voicevox_core.h "Headers-sim"
+          cp -v crates/voicevox_core_c_api/xcframework/Headers/module.modulemap "Headers-sim"
+          mkdir -p "Headers-aarch64"
+          cp -v artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h "Headers-aarch64"
+          cp -v crates/voicevox_core_c_api/xcframework/Headers/module.modulemap "Headers-aarch64"
           xcodebuild -create-xcframework \
             -library "artifact/voicevox_core-sim/libvoicevox_core.dylib" \
-            -headers "artifact/voicevox_core-x86_64-apple-ios/voicevox_core.h" \
+            -headers "Headers-sim" \
             -library "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib" \
-            -headers "artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h" \
+            -headers "Headers-aarch64" \
             -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
       - name: Archive artifact
         run: |
