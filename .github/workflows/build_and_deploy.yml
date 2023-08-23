@@ -363,6 +363,7 @@ jobs:
       - name: Create XCFramework
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          # 必要なファイルだけコピー
           mkdir -p "Headers-sim"
           cp -v artifact/voicevox_core-x86_64-apple-ios/voicevox_core.h "Headers-sim"
           cp -v artifact/voicevox_core-x86_64-apple-ios/module.modulemap "Headers-sim"
