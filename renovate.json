@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base"
+  ],
+  "labels": [
+    "renovate"
+  ],
+  "timezone": "Asia/Tokyo",
+  "schedule": [
+    "before 1am"
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "^rust-toolchain$"
+      ],
+      "matchStrings": [
+        "(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "Rust",
+      "lookupNameTemplate": "rust-lang/rust",
+      "datasourceTemplate": "github-releases"
+    }
+  ]
+}
