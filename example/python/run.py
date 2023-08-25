@@ -29,7 +29,7 @@ async def main() -> None:
         open_jtalk_dict_dir,
         text,
         out,
-        speaker_id,
+        style_id,
     ) = parse_args()
 
     logger.debug("%s", f"{voicevox_core.supported_devices()=}")
@@ -47,10 +47,10 @@ async def main() -> None:
     await synthesizer.load_voice_model(model)
 
     logger.info("%s", f"Creating an AudioQuery from {text!r}")
-    audio_query = await synthesizer.audio_query(text, speaker_id)
+    audio_query = await synthesizer.audio_query(text, style_id)
 
     logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
-    wav = await synthesizer.synthesis(audio_query, speaker_id)
+    wav = await synthesizer.synthesis(audio_query, style_id)
 
     out.write_bytes(wav)
     logger.info("%s", f"Wrote `{out}`")
@@ -93,7 +93,7 @@ def parse_args() -> Tuple[AccelerationMode, Path, Path, str, Path, int]:
         help="話者IDを指定",
     )
     args = argparser.parse_args()
-    return (args.mode, args.vvm, args.dict_dir, args.text, args.out, args.speaker_id)
+    return (args.mode, args.vvm, args.dict_dir, args.text, args.out, args.style_id)
 
 
 def display_as_json(audio_query: AudioQuery) -> str:
