@@ -12,11 +12,13 @@
 #include <codecvt>
 #include <iostream>
 #include <vector>
+#include <filesystem>
 #include <fstream>
 
 #include "voicevox_core.h"
 
 #define OPENJTALK_DICT_NAME L"open_jtalk_dic_utf_8-1.11"
+#define MODEL_DIR_NAME L"model"
 
 int main() {
   std::wcout.imbue(std::locale(""));
@@ -45,18 +47,24 @@ int main() {
   }
   voicevox_open_jtalk_rc_delete(open_jtalk);
 
-  VoicevoxVoiceModel* model;
-  result = voicevox_voice_model_new_from_path("..\\..\\..\\model\\sample.vvm");
-  if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
-    OutErrorMessage(result);
-    return 0;
+  for (auto const& entry : std::filesystem::directory_iterator{GetModelDir()}) {
+    const auto path = entry.path();
+    if (path.extension() != ".vvm") {
+      continue;
+    }
+    VoicevoxVoiceModel* model;
+    result = voicevox_voice_model_new_from_path(path.c_str(), &model);
+    if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
+      OutErrorMessage(result);
+      return 0;
+    }
+    result = voicevox_synthesizer_load_voice_model(synthesizer, model);
+    if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
+      OutErrorMessage(result);
+      return 0;
+    }
+    voicevox_voice_model_delete(model);
   }
-  result = voicevox_synthesizer_load_voice_model(synthesizer, model);
-  if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
-    OutErrorMessage(result);
-    return 0;
-  }
-  voicevox_voice_model_delete(model);
 
   std::wcout << L"音声生成中" << std::endl;
   int32_t style_id = 0;
@@ -93,6 +101,17 @@ int main() {
 std::string GetOpenJTalkDict() {
   wchar_t buff[MAX_PATH] = {0};
   PathCchCombine(buff, MAX_PATH, GetExeDirectory().c_str(), OPENJTALK_DICT_NAME);
+  std::string retVal = wide_to_utf8_cppapi(buff);
+  return retVal;
+}
+
+/// <summary>
+/// VVMを含むディレクトリのパスを取得します。
+/// </summary>
+/// <returns>ディレクトのパス</returns>
+std::string GetModelDir() {
+  wchar_t buff[MAX_PATH] = {0};
+  PathCchCombine(buff, MAX_PATH, GetExeDirectory().c_str(), MODEL_DIR_NAME);
   std::string retVal = wide_to_utf8_cppapi(buff);
   return retVal;
 }

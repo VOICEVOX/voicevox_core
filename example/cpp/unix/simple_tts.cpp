@@ -1,9 +1,11 @@
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
 
 #include "voicevox_core/voicevox_core.h"
 
+#define STYLE_ID 0
 #define OUTPUT_WAV_NAME "audio.wav"
 
 int main(int argc, char *argv[]) {
@@ -32,26 +34,32 @@ int main(int argc, char *argv[]) {
   }
   voicevox_open_jtalk_rc_delete(open_jtalk);
 
-  VoicevoxVoiceModel* model;
-  result = voicevox_voice_model_new_from_path("..\\..\\..\\model\\sample.vvm");
-  if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
-    std::cerr << voicevox_error_result_to_message(result) << std::endl;
-    return 0;
+  for (auto const& entry :
+       std::filesystem::directory_iterator{"./voicevox_core/model"}) {
+    const auto path = entry.path();
+    if (path.extension() != ".vvm") {
+      continue;
+    }
+    VoicevoxVoiceModel* model;
+    result = voicevox_voice_model_new_from_path(path.c_str(), &model);
+    if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
+      std::cerr << voicevox_error_result_to_message(result) << std::endl;
+      return 0;
+    }
+    result = voicevox_synthesizer_load_voice_model(synthesizer, model);
+    if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
+      std::cerr << voicevox_error_result_to_message(result) << std::endl;
+      return 0;
+    }
+    voicevox_voice_model_delete(model);
   }
-  result = voicevox_synthesizer_load_voice_model(synthesizer, model);
-  if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
-    std::cerr << voicevox_error_result_to_message(result) << std::endl;
-    return 0;
-  }
-  voicevox_voice_model_delete(model);
 
   std::cout << "音声生成中..." << std::endl;
 
-  int64_t style_id = 0;
   size_t output_wav_size = 0;
   uint8_t *output_wav = nullptr;
 
-  result = voicevox_synthesizer_tts(synthesizer,text.c_str(), style_id,
+  result = voicevox_synthesizer_tts(synthesizer,text.c_str(), STYLE_ID,
                              voicevox_make_default_tts_options(),
                              &output_wav_size, &output_wav);
   if (result != VOICEVOX_RESULT_OK) {
