@@ -5,7 +5,7 @@ voicevox_core ライブラリ の Python バインディングを使った音声
 
 ## 準備
 
-1. wheelパッケージのインストールをします。
+1. wheel パッケージのインストールをします。
 
 `[バージョン]`の部分は適宜書き換えてください。
 
@@ -13,15 +13,14 @@ voicevox_core ライブラリ の Python バインディングを使った音声
 ❯ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/[バージョン]/voicevox_core-[バージョン]+cpu-cp38-abi3-linux_x86_64.whl
 ```
 
-cpu-cp38-abi3-linux_x86_64のところはアーキテクチャやOSによって適宜読み替えてください。
+cpu-cp38-abi3-linux_x86_64 のところはアーキテクチャや OS によって適宜読み替えてください。
 https://github.com/VOICEVOX/voicevox_core/releases/latest
-
 
 2. ダウンローダーを使って環境構築します。
 
-linux/macの場合
+linux/mac の場合
 
-download-linux-x64のところはアーキテクチャやOSによって適宜読み替えてください。
+download-linux-x64 のところはアーキテクチャや OS によって適宜読み替えてください。
 https://github.com/VOICEVOX/voicevox_core/releases/latest#%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%80
 
 ```console
@@ -33,7 +32,7 @@ https://github.com/VOICEVOX/voicevox_core/releases/latest#%E3%83%80%E3%82%A6%E3%
 ❯ #rm -r ./example/python/{model,VERSION,*voicevox_core*}
 ```
 
-windowsの場合
+windows の場合
 
 ```console
 ❯ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download-windows-x64.exe -OutFile ./download.exe
@@ -52,7 +51,7 @@ run.py を実行します。 Open JTalk 辞書ディレクトリ、読み上げ�
 
 ```console
 ❯ python ./run.py -h
-usage: run.py [-h] [--mode MODE] [--dict-dir DICT_DIR] [--text TEXT] [--out OUT] [--speaker-id SPEAKER_ID] vvm
+usage: run.py [-h] [--mode MODE] [--dict-dir DICT_DIR] [--text TEXT] [--out OUT] [--style-id STYLE_ID] vvm
 
 positional arguments:
   vvm                   vvmファイルへのパス
@@ -63,7 +62,7 @@ optional arguments:
   --dict-dir DICT_DIR   Open JTalkの辞書ディレクトリ
   --text TEXT           読み上げさせたい文章
   --out OUT             出力wavファイルのパス
-  --speaker-id SPEAKER_ID
+  --style-id STYLE_ID
                         話者IDを指定
 ```
 

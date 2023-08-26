@@ -47,12 +47,12 @@ int main() {
   voicevox_open_jtalk_rc_delete(open_jtalk);
 
   std::wcout << L"音声生成中" << std::endl;
-  int32_t speaker_id = 0;
+  int32_t style_id = 0;
   uintptr_t output_binary_size = 0;
   uint8_t* output_wav = nullptr;
   VoicevoxTtsOptions ttsOptions = voicevox_make_default_tts_options();
 
-  result = voicevox_synthesizer_tts(synthesizer,wide_to_utf8_cppapi(speak_words).c_str(), speaker_id, ttsOptions, &output_binary_size, &output_wav);
+  result = voicevox_synthesizer_tts(synthesizer,wide_to_utf8_cppapi(speak_words).c_str(), style_id, ttsOptions, &output_binary_size, &output_wav);
   if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
     OutErrorMessage(result);
     return 0;

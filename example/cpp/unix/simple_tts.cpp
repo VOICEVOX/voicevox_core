@@ -35,11 +35,11 @@ int main(int argc, char *argv[]) {
 
   std::cout << "音声生成中..." << std::endl;
 
-  int64_t speaker_id = 0;
+  int64_t style_id = 0;
   size_t output_wav_size = 0;
   uint8_t *output_wav = nullptr;
 
-  result = voicevox_synthesizer_tts(synthesizer,text.c_str(), speaker_id,
+  result = voicevox_synthesizer_tts(synthesizer,text.c_str(), style_id,
                              voicevox_make_default_tts_options(),
                              &output_wav_size, &output_wav);
   if (result != VOICEVOX_RESULT_OK) {
