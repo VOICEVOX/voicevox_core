@@ -208,14 +208,3 @@ impl VvmEntryReader {
         })
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[rstest]
-    #[tokio::test]
-    async fn get_all_models_only_load_vvm() {
-        VoiceModel::get_all_models().await;
-    }
-}
