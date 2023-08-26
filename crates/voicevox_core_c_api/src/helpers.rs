@@ -141,7 +141,6 @@ impl Default for VoicevoxInitializeOptions {
         Self {
             acceleration_mode: options.acceleration_mode.into(),
             cpu_num_threads: options.cpu_num_threads,
-            load_all_models: options.load_all_models,
         }
     }
 }
@@ -151,7 +150,6 @@ impl From<VoicevoxInitializeOptions> for voicevox_core::InitializeOptions {
         voicevox_core::InitializeOptions {
             acceleration_mode: value.acceleration_mode.into(),
             cpu_num_threads: value.cpu_num_threads,
-            load_all_models: value.load_all_models,
         }
     }
 }

@@ -124,14 +124,12 @@ impl Synthesizer {
         open_jtalk,
         acceleration_mode = InitializeOptions::default().acceleration_mode,
         cpu_num_threads = InitializeOptions::default().cpu_num_threads,
-        load_all_models = InitializeOptions::default().load_all_models,
     ))]
     fn new_with_initialize(
         py: Python,
         open_jtalk: OpenJtalk,
         #[pyo3(from_py_with = "from_acceleration_mode")] acceleration_mode: AccelerationMode,
         cpu_num_threads: u16,
-        load_all_models: bool,
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let synthesizer = voicevox_core::Synthesizer::new_with_initialize(
@@ -139,7 +137,6 @@ impl Synthesizer {
                 &InitializeOptions {
                     acceleration_mode,
                     cpu_num_threads,
-                    load_all_models,
                 },
             )
             .await

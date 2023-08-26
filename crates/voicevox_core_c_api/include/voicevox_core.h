@@ -272,10 +272,6 @@ typedef struct VoicevoxInitializeOptions {
    * 0を指定すると環境に合わせたCPUが利用される
    */
   uint16_t cpu_num_threads;
-  /**
-   * 全てのモデルを読み込む
-   */
-  bool load_all_models;
 } VoicevoxInitializeOptions;
 
 /**

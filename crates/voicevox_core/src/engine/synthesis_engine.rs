@@ -652,9 +652,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn is_openjtalk_dict_loaded_works() {
-        let core = InferenceCore::new_with_initialize(false, 0, false)
-            .await
-            .unwrap();
+        let core = InferenceCore::new_with_initialize(false, 0).await.unwrap();
         let synthesis_engine = SynthesisEngine::new(
             core,
             OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR)
@@ -668,9 +666,11 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn create_accent_phrases_works() {
-        let core = InferenceCore::new_with_initialize(false, 0, true)
-            .await
-            .unwrap();
+        let core = InferenceCore::new_with_initialize(false, 0).await.unwrap();
+
+        let model = &VoiceModel::sample().await.unwrap();
+        core.load_model(model).await.unwrap();
+
         let synthesis_engine = SynthesisEngine::new(
             core,
             OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR)

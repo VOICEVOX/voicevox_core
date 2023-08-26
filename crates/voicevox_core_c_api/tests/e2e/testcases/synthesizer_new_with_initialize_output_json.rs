@@ -4,6 +4,7 @@ use std::{
 };
 
 use assert_cmd::assert::AssertResult;
+use cstr::cstr;
 use libloading::Library;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -26,11 +27,13 @@ impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
             voicevox_make_default_initialize_options,
+            voicevox_voice_model_new_from_path,
             voicevox_open_jtalk_rc_new,
             voicevox_open_jtalk_rc_delete,
             voicevox_synthesizer_new_with_initialize,
             voicevox_synthesizer_delete,
             voicevox_synthesizer_create_metas_json,
+            voicevox_synthesizer_load_voice_model,
             voicevox_json_free,
             ..
         } = Symbols::new(lib)?;
@@ -51,13 +54,23 @@ impl assert_cdylib::TestCase for TestCase {
                 openjtalk,
                 VoicevoxInitializeOptions {
                     acceleration_mode: VoicevoxAccelerationMode::VOICEVOX_ACCELERATION_MODE_CPU,
-                    load_all_models: true,
                     ..voicevox_make_default_initialize_options()
                 },
                 synthesizer.as_mut_ptr(),
             ));
             synthesizer.assume_init()
         };
+
+        let model = {
+            let mut model = MaybeUninit::uninit();
+            assert_ok(voicevox_voice_model_new_from_path(
+                cstr!("../../model/sample.vvm").as_ptr(),
+                model.as_mut_ptr(),
+            ));
+            model.assume_init()
+        };
+
+        assert_ok(voicevox_synthesizer_load_voice_model(synthesizer, model));
 
         let metas_json = {
             let raw = voicevox_synthesizer_create_metas_json(synthesizer);

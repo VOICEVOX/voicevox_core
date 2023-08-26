@@ -92,7 +92,6 @@ pub enum AccelerationMode {
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
     pub cpu_num_threads: u16,
-    pub load_all_models: bool,
 }
 
 /// 音声シンセサイザ。
@@ -155,12 +154,7 @@ impl Synthesizer {
 
         Ok(Self {
             synthesis_engine: SynthesisEngine::new(
-                InferenceCore::new_with_initialize(
-                    use_gpu,
-                    options.cpu_num_threads,
-                    options.load_all_models,
-                )
-                .await?,
+                InferenceCore::new_with_initialize(use_gpu, options.cpu_num_threads).await?,
                 open_jtalk,
             ),
             use_gpu,
@@ -860,12 +854,14 @@ mod tests {
             Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
-                load_all_models: true,
                 ..Default::default()
             },
         )
         .await
         .unwrap();
+
+        let model = &VoiceModel::sample().await.unwrap();
+        syntesizer.load_voice_model(model).await.unwrap();
 
         let query = syntesizer
             .audio_query(
@@ -929,12 +925,14 @@ mod tests {
             Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
-                load_all_models: true,
                 ..Default::default()
             },
         )
         .await
         .unwrap();
+
+        let model = &VoiceModel::sample().await.unwrap();
+        syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
             .create_accent_phrases(
@@ -990,12 +988,14 @@ mod tests {
             Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
-                load_all_models: true,
                 ..Default::default()
             },
         )
         .await
         .unwrap();
+
+        let model = &VoiceModel::sample().await.unwrap();
+        syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
             .create_accent_phrases(
@@ -1029,12 +1029,14 @@ mod tests {
             Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
-                load_all_models: true,
                 ..Default::default()
             },
         )
         .await
         .unwrap();
+
+        let model = &VoiceModel::sample().await.unwrap();
+        syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
             .create_accent_phrases(
@@ -1064,12 +1066,14 @@ mod tests {
             Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
-                load_all_models: true,
                 ..Default::default()
             },
         )
         .await
         .unwrap();
+
+        let model = &VoiceModel::sample().await.unwrap();
+        syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
             .create_accent_phrases(

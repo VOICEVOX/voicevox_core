@@ -30,7 +30,6 @@ int main() {
   std::wcout << L"coreの初期化中" << std::endl;
   VoicevoxInitializeOptions  initializeOptions = voicevox_make_default_initialize_options();
   std::string dict = GetOpenJTalkDict();
-  initializeOptions.load_all_models = true;
 
   OpenJtalkRc* open_jtalk;
   auto result = voicevox_open_jtalk_rc_new(dict.c_str(),&open_jtalk);
@@ -45,6 +44,19 @@ int main() {
     return 0;
   }
   voicevox_open_jtalk_rc_delete(open_jtalk);
+
+  VoicevoxVoiceModel* model;
+  result = voicevox_voice_model_new_from_path("..\\..\\..\\model\\sample.vvm");
+  if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
+    OutErrorMessage(result);
+    return 0;
+  }
+  result = voicevox_synthesizer_load_voice_model(synthesizer, model);
+  if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
+    OutErrorMessage(result);
+    return 0;
+  }
+  voicevox_voice_model_delete(model);
 
   std::wcout << L"音声生成中" << std::endl;
   int32_t style_id = 0;

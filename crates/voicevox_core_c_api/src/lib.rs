@@ -200,8 +200,6 @@ pub struct VoicevoxInitializeOptions {
     /// CPU利用数を指定
     /// 0を指定すると環境に合わせたCPUが利用される
     cpu_num_threads: u16,
-    /// 全てのモデルを読み込む
-    load_all_models: bool,
 }
 
 /// デフォルトの初期化オプションを生成する
