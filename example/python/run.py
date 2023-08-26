@@ -87,7 +87,7 @@ def parse_args() -> Tuple[AccelerationMode, Path, Path, str, Path, int]:
         help="出力wavファイルのパス",
     )
     argparser.add_argument(
-        "--speaker-id",
+        "--style-id",
         default=0,
         type=int,
         help="話者IDを指定",
