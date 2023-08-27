@@ -5,7 +5,7 @@ use itertools::join;
 use uuid::Uuid;
 
 use super::word::*;
-use crate::{Error, Result};
+use crate::{error::ErrorRepr, Result};
 
 /// ユーザー辞書。
 /// 単語はJSONとの相互変換のために挿入された順序を保つ。
@@ -28,10 +28,11 @@ impl UserDict {
     pub fn load(&mut self, store_path: &str) -> Result<()> {
         let store_path = std::path::Path::new(store_path);
 
-        let store_file = File::open(store_path).map_err(|e| Error::LoadUserDict(e.to_string()))?;
+        let store_file =
+            File::open(store_path).map_err(|e| ErrorRepr::LoadUserDict(e.to_string()))?;
 
-        let words: IndexMap<Uuid, UserDictWord> =
-            serde_json::from_reader(store_file).map_err(|e| Error::LoadUserDict(e.to_string()))?;
+        let words: IndexMap<Uuid, UserDictWord> = serde_json::from_reader(store_file)
+            .map_err(|e| ErrorRepr::LoadUserDict(e.to_string()))?;
 
         self.words.extend(words);
         Ok(())
@@ -47,7 +48,7 @@ impl UserDict {
     /// ユーザー辞書の単語を変更する。
     pub fn update_word(&mut self, word_uuid: Uuid, new_word: UserDictWord) -> Result<()> {
         if !self.words.contains_key(&word_uuid) {
-            return Err(Error::UnknownWord(word_uuid));
+            return Err(ErrorRepr::UnknownWord(word_uuid).into());
         }
         self.words.insert(word_uuid, new_word);
         Ok(())
@@ -56,7 +57,7 @@ impl UserDict {
     /// ユーザー辞書から単語を削除する。
     pub fn remove_word(&mut self, word_uuid: Uuid) -> Result<UserDictWord> {
         let Some(word) = self.words.remove(&word_uuid) else {
-            return Err(Error::UnknownWord(word_uuid));
+            return Err(ErrorRepr::UnknownWord(word_uuid).into());
         };
         Ok(word)
     }
@@ -71,9 +72,10 @@ impl UserDict {
 
     /// ユーザー辞書を保存する。
     pub fn save(&self, store_path: &str) -> Result<()> {
-        let mut file = File::create(store_path).map_err(|e| Error::SaveUserDict(e.to_string()))?;
+        let mut file =
+            File::create(store_path).map_err(|e| ErrorRepr::SaveUserDict(e.to_string()))?;
         serde_json::to_writer(&mut file, &self.words)
-            .map_err(|e| Error::SaveUserDict(e.to_string()))?;
+            .map_err(|e| ErrorRepr::SaveUserDict(e.to_string()))?;
         Ok(())
     }
 

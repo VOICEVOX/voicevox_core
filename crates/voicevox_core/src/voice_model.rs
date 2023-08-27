@@ -60,7 +60,7 @@ impl VoiceModel {
         })
     }
     /// VVMファイルから`VoiceModel`をコンストラクトする。
-    pub async fn from_path(path: impl AsRef<Path>) -> LoadModelResult<Self> {
+    pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
         let reader = VvmEntryReader::open(path.as_ref()).await?;
         let manifest = reader.read_vvm_json::<Manifest>("manifest.json").await?;
         let metas = reader

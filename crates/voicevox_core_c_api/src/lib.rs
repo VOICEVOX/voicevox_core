@@ -33,9 +33,6 @@ use voicevox_core::{
 };
 use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions, Synthesizer};
 
-#[cfg(test)]
-use rstest::*;
-
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
     let _ = init_logger();
 
@@ -1216,31 +1213,4 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_delete(user_dict: Box<VoicevoxUserDict>) {
     drop(user_dict);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use anyhow::anyhow;
-    use pretty_assertions::assert_eq;
-    use voicevox_core::Error;
-    use voicevox_core::Result;
-
-    #[rstest]
-    #[case(Ok(()), VoicevoxResultCode::VOICEVOX_RESULT_OK)]
-    #[case(
-        Err(Error::NotLoadedOpenjtalkDict),
-        VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR
-    )]
-    #[case(
-        Err(Error::GetSupportedDevices(anyhow!("some get supported devices error"))),
-        VoicevoxResultCode::VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR
-    )]
-    fn into_result_code_with_error_works(
-        #[case] result: Result<()>,
-        #[case] expected: VoicevoxResultCode,
-    ) {
-        let actual = into_result_code_with_error(result.map_err(Into::into));
-        assert_eq!(expected, actual);
-    }
 }
