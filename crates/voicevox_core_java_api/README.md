@@ -19,7 +19,7 @@ VOICEVOX CORE の Java バインディング。
     - src:
         - main:
             - java:
-                - jp/Hiroshiba/VoicevoxCore: # Javaのソースコード。
+                - jp/hiroshiba/voicevoxcore: # Javaのソースコード。
                     - Synthesizer.java
                     - ...
             - resources:
@@ -41,7 +41,7 @@ VOICEVOX CORE の Java バインディング。
 Java プロジェクトを動かすには、
 
 - `LD_LIBRARY_PATH`などの環境変数に `[プロジェクトルート]/target/debug`（または`/release`） を追加するか、
-- `lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so` を作成する
+- `lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so` を作成する（`libvoicevox_core_java_api.so`はプラットフォームによって異なります、詳細は後述）。
 
 必要があります。
 
@@ -90,7 +90,7 @@ DLL の名前は、
 
 - Windows：voicevox_core_java_api.dll
 - Linux：libvoicevox_core_java_api.so
-- MacOS：libvoicevox_core_java_api.dylib
+- macOS：libvoicevox_core_java_api.dylib
 
 になります。
 見付からなかった場合は、`System.loadLibrary` で読み込みます。これはデバッグ用です。
