@@ -56,8 +56,8 @@ Java プロジェクトを動かすには、
 
 ## ビルド（リリース）
 
-`cargo build --release` でRust側を、`./gradlew build` でJava側をビルドできます。
-パッケージ化する時はlib/src/main/resources/dll内にdllをコピーしてください。
+`cargo build --release` で Rust 側を、`./gradlew build` で Java 側をビルドできます。
+パッケージ化する時は lib/src/main/resources/dll 内に dll をコピーしてください。
 
 ```console
 ❯ cargo build --release
