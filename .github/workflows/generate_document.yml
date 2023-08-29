@@ -49,9 +49,7 @@ jobs:
         run: sphinx-build docs/apis/python_api public/apis/python_api
       - name: Generate Javadoc
         run: |
-          cd crates/voicevox_core_java_api
-          ./gradlew javadoc
-          cd ../..
+          (cd crates/voicevox_core_java_api && ./gradlew javadoc)
           mkdir -p public/apis/java_api
           cp -r crates/voicevox_core_java_api/lib/build/docs/javadoc/* public/apis/java_api
       - name: Uplaod api document
