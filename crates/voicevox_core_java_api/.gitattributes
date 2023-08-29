@@ -9,4 +9,4 @@
 
 ./gradlew       linguist-vendored linguist-generated
 ./gradlew.bat   linguist-vendored linguist-generated
-./gradle        linguist-vendored linguist-generated
+./gradle/wrapper/gradle-wrapper.jar linguist-vendored linguist-generated
