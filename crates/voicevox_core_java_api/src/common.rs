@@ -96,7 +96,7 @@ where
             // となり、デバッグが困難になるため、そのままにしておく。
             if !env.exception_check().unwrap_or(false) {
                 env.throw_new(
-                    "jp/Hiroshiba/VoicevoxCore/VoicevoxException",
+                    "jp/hiroshiba/voicevoxcore/VoicevoxException",
                     error.to_string(),
                 )
                 .unwrap_or_else(|_| panic!("Failed to throw exception, original error: {}", error));
