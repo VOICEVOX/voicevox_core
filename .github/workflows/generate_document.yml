@@ -20,6 +20,11 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: "11"
+          distribution: "adopt"
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Create a venv
@@ -42,8 +47,14 @@ jobs:
           maturin develop --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
       - name: Generate Sphinx document
         run: sphinx-build docs/apis/python_api public/apis/python_api
+      - name: Generate Javadoc
+        run: |
+          (cd crates/voicevox_core_java_api && ./gradlew javadoc)
+          mkdir -p public/apis/java_api
+          cp -r crates/voicevox_core_java_api/lib/build/docs/javadoc/* public/apis/java_api
       - name: Uplaod api document
         uses: actions/upload-pages-artifact@v1
+        if: ${{ github.ref_name == 'main' }}
         with:
           path: public
   deploy_api_github_pages:
