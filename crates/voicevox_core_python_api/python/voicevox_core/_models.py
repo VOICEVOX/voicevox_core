@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import pydantic
 
-from ._rust import _validate_pronunciation, _to_zenkaku
+from ._rust import _to_zenkaku, _validate_pronunciation
 
 
 @pydantic.dataclasses.dataclass

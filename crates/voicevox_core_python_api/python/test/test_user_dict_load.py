@@ -2,8 +2,9 @@
 # AudioQueryのkanaを比較して変化するかどうかで判断する。
 
 from uuid import UUID
-import pytest
+
 import conftest  # noqa: F401
+import pytest
 import voicevox_core  # noqa: F401
 
 
