@@ -55,7 +55,6 @@ public class Synthesizer extends Dll {
    * @param text テキスト。
    * @param styleId スタイルID。
    * @return {@link CreateAudioQueryConfigurator}。
-   *
    * @see CreateAudioQueryConfigurator#execute
    */
   @Nonnull
@@ -69,7 +68,6 @@ public class Synthesizer extends Dll {
    * @param text テキスト。
    * @param styleId スタイルID。
    * @return {@link CreateAccentPhrasesConfigurator}。
-   *
    * @see CreateAccentPhrasesConfigurator#execute
    */
   @Nonnull
@@ -137,7 +135,6 @@ public class Synthesizer extends Dll {
    * @param audioQuery {@link AudioQuery}。
    * @param styleId スタイルID。
    * @return {@link SynthesisConfigurator}。
-   *
    * @see SynthesisConfigurator#execute
    */
   @Nonnull
@@ -151,7 +148,6 @@ public class Synthesizer extends Dll {
    * @param text テキスト。
    * @param styleId スタイルID。
    * @return {@link TtsConfigurator}。
-   *
    * @see TtsConfigurator#execute
    */
   @Nonnull
