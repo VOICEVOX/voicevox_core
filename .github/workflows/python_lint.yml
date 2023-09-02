@@ -1,7 +1,11 @@
-name: "Lint code"
+name: "Lint Python code"
 
 on:
   push:
+    paths:
+      - "**.py"
+      - "./.github/workflows/python_lint.yml"
+  pull_request:
     paths:
       - "**.py"
       - "./.github/workflows/python_lint.yml"
