@@ -12,6 +12,7 @@ from ._models import (  # noqa: F401
     UserDictWordType,
 )
 from ._rust import (
+    __version__,
     OpenJtalk,
     Synthesizer,
     VoiceModel,
@@ -21,6 +22,7 @@ from ._rust import (
 )  # noqa: F401
 
 __all__ = [
+    "__version__",
     "AccelerationMode",
     "AccentPhrase",
     "AudioQuery",
