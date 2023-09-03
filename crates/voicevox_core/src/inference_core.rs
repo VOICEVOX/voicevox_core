@@ -24,7 +24,7 @@ impl InferenceCore {
             }
             Ok(Self { status })
         } else {
-            Err(Error::GpuSupport)
+            Err(ErrorRepr::GpuSupport.into())
         }
     }
 
@@ -65,7 +65,7 @@ impl InferenceCore {
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
         if !self.status.validate_speaker_id(style_id) {
-            return Err(Error::InvalidStyleId { style_id });
+            return Err(ErrorRepr::InvalidStyleId { style_id }.into());
         }
 
         let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
@@ -100,7 +100,7 @@ impl InferenceCore {
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
         if !self.status.validate_speaker_id(style_id) {
-            return Err(Error::InvalidStyleId { style_id });
+            return Err(ErrorRepr::InvalidStyleId { style_id }.into());
         }
 
         let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
@@ -139,7 +139,7 @@ impl InferenceCore {
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
         if !self.status.validate_speaker_id(style_id) {
-            return Err(Error::InvalidStyleId { style_id });
+            return Err(ErrorRepr::InvalidStyleId { style_id }.into());
         }
 
         let (model_id, model_inner_id) = self.status.ids_for(style_id)?;

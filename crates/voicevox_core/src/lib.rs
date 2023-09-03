@@ -18,6 +18,9 @@ mod version;
 mod voice_model;
 mod voice_synthesizer;
 
+#[doc(hidden)]
+pub mod __internal;
+
 use self::inference_core::*;
 
 #[cfg(test)]

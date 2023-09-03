@@ -1147,6 +1147,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "duplicate"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de78e66ac9061e030587b2a2e75cc88f22304913c907b11307bca737141230cb"
+dependencies = [
+ "heck",
+ "proc-macro-error",
+]
+
+[[package]]
 name = "easy-ext"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4145,6 +4155,7 @@ dependencies = [
  "derive-getters",
  "derive-new",
  "derive_more",
+ "duplicate",
  "easy-ext",
  "flate2",
  "fs-err",
@@ -4193,10 +4204,8 @@ dependencies = [
  "ndarray",
  "ndarray-stats",
  "once_cell",
- "pretty_assertions",
  "process_path",
  "regex",
- "rstest",
  "serde",
  "serde_json",
  "serde_with",

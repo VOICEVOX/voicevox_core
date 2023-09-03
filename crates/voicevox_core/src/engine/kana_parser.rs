@@ -11,7 +11,7 @@ const WIDE_INTERROGATION_MARK: char = '？';
 const LOOP_LIMIT: usize = 300;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct KanaParseError(String);
+pub(crate) struct KanaParseError(String);
 
 impl std::fmt::Display for KanaParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -122,7 +122,7 @@ fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhraseModel> {
     ))
 }
 
-pub fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> {
+pub(crate) fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> {
     const TERMINATOR: char = '\0';
     let mut parsed_result = Vec::new();
     let chars_of_text = text.chars().chain([TERMINATOR]);
