@@ -6,6 +6,7 @@ on:
       - main
   pull_request:
     paths:
+      - ./example/python/**/*.py
       - ./crates/voicevox_core_python_api/**/*.py
       - ./crates/voicevox_core_python_api/requirements*.txt
       - ./crates/voicevox_core_python_api/pyproject.toml
@@ -28,7 +29,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
-      - name: Check code style
+      - name: Check code style for voicevox_core_python_api
+        run: |
+          black --check .
+          isort --check .
+      - name: Check code style for example/python
+        working-directory: ../example/python
         run: |
           black --check .
           isort --check .
