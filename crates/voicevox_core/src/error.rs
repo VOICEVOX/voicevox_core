@@ -23,6 +23,13 @@ impl From<E> for Error {
     }
 }
 
+// FIXME: `ErrorRepr::InvalidWord`を`#[error(transparent)]`にする
+impl From<InvalidWordError> for Error {
+    fn from(err: InvalidWordError) -> Self {
+        ErrorRepr::InvalidWord(err).into()
+    }
+}
+
 impl Error {
     /// 対応する[`ErrorKind`]を返す。
     pub fn kind(&self) -> ErrorKind {

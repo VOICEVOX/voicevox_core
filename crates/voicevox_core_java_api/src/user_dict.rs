@@ -213,7 +213,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsToZenkaku<'local>(
         let text = env.get_string(&text)?;
         let text = text.to_str()?;
 
-        let text = voicevox_core::to_zenkaku(text);
+        let text = voicevox_core::__internal::to_zenkaku(text);
 
         let text = env.new_string(text)?;
         Ok(text.into_raw())
@@ -230,7 +230,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsValidatePronunciati
         let text = env.get_string(&text)?;
         let text = text.to_str()?;
 
-        voicevox_core::validate_pronunciation(text)?;
+        voicevox_core::__internal::validate_pronunciation(text)?;
 
         Ok(())
     })
