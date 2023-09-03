@@ -2,13 +2,14 @@ name: "Lint Python code"
 
 on:
   push:
-    paths:
-      - "**.py"
-      - "./.github/workflows/python_lint.yml"
+    branches:
+      - main
   pull_request:
     paths:
-      - "**.py"
-      - "./.github/workflows/python_lint.yml"
+      - ./crates/voicevox_core_python_api/**/*.py
+      - ./crates/voicevox_core_python_api/requirements*.txt
+      - ./crates/voicevox_core_python_api/pyproject.toml
+      - ./.github/workflows/python_lint.yml
 
 defaults:
   run:
