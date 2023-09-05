@@ -1,7 +1,9 @@
-use std::fmt::Debug;
+use std::{error::Error as _, fmt::Debug, iter};
 use voicevox_core::UserDictWord;
 
+use itertools::Itertools as _;
 use thiserror::Error;
+use tracing::error;
 
 use super::*;
 use voicevox_core::AccentPhraseModel;
@@ -13,8 +15,11 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
     return into_result_code(result);
 
     fn display_error(err: &CApiError) {
-        eprintln!("Error(Display): {err}");
-        eprintln!("Error(Debug): {err:#?}");
+        let msg = err.to_string()
+            + &iter::successors(err.source(), |&e| e.source())
+                .map(|e| format!(" Caused by: {e}"))
+                .join("");
+        error!("{msg}");
     }
 
     fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {

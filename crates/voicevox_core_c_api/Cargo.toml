@@ -18,11 +18,13 @@ directml = ["voicevox_core/directml"]
 [dependencies]
 cstr = "0.2.11"
 derive-getters.workspace = true
+itertools.workspace = true
 libc = "0.2.134"
 once_cell.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+tracing.workspace = true
 tracing-subscriber.workspace = true
 uuid.workspace = true
 voicevox_core.workspace = true
