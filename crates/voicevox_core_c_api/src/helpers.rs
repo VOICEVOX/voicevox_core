@@ -1,7 +1,6 @@
 use std::{error::Error as _, fmt::Debug, iter};
 use voicevox_core::UserDictWord;
 
-use itertools::Itertools as _;
 use thiserror::Error;
 use tracing::error;
 
@@ -15,11 +14,11 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
     return into_result_code(result);
 
     fn display_error(err: &CApiError) {
-        let msg = err.to_string()
-            + &iter::successors(err.source(), |&e| e.source())
-                .map(|e| format!(" Caused by: {e}"))
-                .join("");
-        error!("{msg}");
+        itertools::chain(
+            [err.to_string()],
+            iter::successors(err.source(), |&e| e.source()).map(|e| format!("Caused by: {e}")),
+        )
+        .for_each(|msg| error!("{msg}"));
     }
 
     fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
