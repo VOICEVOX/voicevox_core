@@ -53,8 +53,7 @@ int main() {
       continue;
     }
     VoicevoxVoiceModel* model;
-    result = voicevox_voice_model_new_from_path(wide_to_utf8_cppapi(path).c_str(),
-                                                &model);
+    result = voicevox_voice_model_new_from_path(path.generic_u8string(), &model);
     if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
       OutErrorMessage(result);
       return 0;
