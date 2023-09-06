@@ -53,7 +53,8 @@ int main() {
       continue;
     }
     VoicevoxVoiceModel* model;
-    result = voicevox_voice_model_new_from_path(path.c_str(), &model);
+    result = voicevox_voice_model_new_from_path(wide_to_utf8_cppapi(path).c_str(),
+                                                &model);
     if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
       OutErrorMessage(result);
       return 0;
@@ -157,6 +158,8 @@ void OutErrorMessage(VoicevoxResultCode messageCode) {
   std::wstring wideStr = utf8_to_wide_cppapi(utf8Str);
   std::wcout << wideStr << std::endl;
 }
+
+// FIXME: codecvtはC++17から非推奨となり、win32で頑張って手書きしなければならない。それができたらvcxprojの_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNINGを削除する。
 
 /// <summary>
 /// ワイド文字列をUTF8に変換します。
