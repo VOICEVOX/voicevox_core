@@ -53,7 +53,8 @@ int main() {
       continue;
     }
     VoicevoxVoiceModel* model;
-    result = voicevox_voice_model_new_from_path(path.generic_u8string(), &model);
+    result = voicevox_voice_model_new_from_path(path.generic_u8string().c_str(),
+                                                &model);
     if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
       OutErrorMessage(result);
       return 0;
