@@ -77,7 +77,7 @@ impl VoiceModel {
     }
 
     #[cfg(test)]
-    pub(crate) async fn sample() -> LoadModelResult<Self> {
+    pub(crate) async fn sample() -> Result<Self> {
         return Self::from_path(PATH).await;
 
         static PATH: &str = concat!(env!("CARGO_WORKSPACE_DIR"), "/model/sample.vvm");
