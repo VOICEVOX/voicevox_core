@@ -159,7 +159,7 @@ void OutErrorMessage(VoicevoxResultCode messageCode) {
   std::wcout << wideStr << std::endl;
 }
 
-// FIXME: codecvtはC++17から非推奨となり、win32で頑張って手書きしなければならない。それができたらvcxprojの_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNINGを削除する。
+// FIXME: codecvtはC++17から非推奨であるため、std::filesystem::pathに乗り換える。それができたらvcxprojの_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNINGを削除する。
 
 /// <summary>
 /// ワイド文字列をUTF8に変換します。
