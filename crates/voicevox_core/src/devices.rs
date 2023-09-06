@@ -45,7 +45,7 @@ impl SupportedDevices {
         let mut cuda_support = false;
         let mut dml_support = false;
         for provider in onnxruntime::session::get_available_providers()
-            .map_err(|e| Error::GetSupportedDevices(e.into()))?
+            .map_err(|e| ErrorRepr::GetSupportedDevices(e.into()))?
             .iter()
         {
             match provider.as_str() {

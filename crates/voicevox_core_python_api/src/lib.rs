@@ -435,12 +435,12 @@ impl<T, C: PyTypeInfo> Drop for Closable<T, C> {
 
 #[pyfunction]
 fn _validate_pronunciation(pronunciation: &str) -> PyResult<()> {
-    voicevox_core::validate_pronunciation(pronunciation).into_py_result()
+    voicevox_core::__internal::validate_pronunciation(pronunciation).into_py_result()
 }
 
 #[pyfunction]
 fn _to_zenkaku(text: &str) -> PyResult<String> {
-    Ok(voicevox_core::to_zenkaku(text))
+    Ok(voicevox_core::__internal::to_zenkaku(text))
 }
 
 #[pyclass]

@@ -372,7 +372,7 @@ impl Synthesizer {
         options: &AccentPhrasesOptions,
     ) -> Result<Vec<AccentPhraseModel>> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
-            return Err(Error::NotLoadedOpenjtalkDict);
+            return Err(ErrorRepr::NotLoadedOpenjtalkDict.into());
         }
         if options.kana {
             self.synthesis_engine

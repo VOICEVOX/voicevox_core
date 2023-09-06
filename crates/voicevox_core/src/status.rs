@@ -185,7 +185,7 @@ impl Status {
 
             let output_tensors = predict_duration
                 .run(vec![&mut phoneme_vector_array, &mut speaker_id_array])
-                .map_err(|_| Error::InferenceFailed)?;
+                .map_err(|_| ErrorRepr::InferenceFailed)?;
             Ok(output_tensors[0].as_slice().unwrap().to_owned())
         })
         .await
@@ -229,7 +229,7 @@ impl Status {
                     &mut end_accent_phrase_vector_array,
                     &mut speaker_id_array,
                 ])
-                .map_err(|_| Error::InferenceFailed)?;
+                .map_err(|_| ErrorRepr::InferenceFailed)?;
             Ok(output_tensors[0].as_slice().unwrap().to_owned())
         })
         .await
@@ -261,7 +261,7 @@ impl Status {
                     &mut phoneme_array,
                     &mut speaker_id_array,
                 ])
-                .map_err(|_| Error::InferenceFailed)?;
+                .map_err(|_| ErrorRepr::InferenceFailed)?;
             Ok(output_tensors[0].as_slice().unwrap().to_owned())
         })
         .await
@@ -305,7 +305,7 @@ impl LoadedModels {
                     .flat_map(SpeakerMeta::styles)
                     .any(|style| *style.id() == style_id)
             })
-            .ok_or(Error::InvalidStyleId { style_id })?;
+            .ok_or(ErrorRepr::InvalidStyleId { style_id })?;
 
         let model_inner_id = *model_inner_ids
             .get(&style_id)
@@ -390,9 +390,10 @@ impl LoadedModels {
 
     fn remove(&mut self, model_id: &VoiceModelId) -> Result<()> {
         if self.0.remove(model_id).is_none() {
-            return Err(Error::UnloadedModel {
+            return Err(ErrorRepr::UnloadedModel {
                 model_id: model_id.clone(),
-            });
+            }
+            .into());
         }
         Ok(())
     }
