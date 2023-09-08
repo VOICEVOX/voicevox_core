@@ -956,6 +956,7 @@ pub struct VoicevoxUserDict {
 }
 
 /// ユーザー辞書の単語。
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct VoicevoxUserDictWord {
     /// 表記
@@ -1056,11 +1057,11 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_add_word(
     user_dict: &VoicevoxUserDict,
-    word: &VoicevoxUserDictWord, // FIXME: <https://github.com/VOICEVOX/voicevox_core/pull/534>に従う
+    word: *const VoicevoxUserDictWord, // FIXME: <https://github.com/VOICEVOX/voicevox_core/pull/534>に従う
     output_word_uuid: NonNull<[u8; 16]>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let word = word.try_into_word()?;
+        let word = (*word).try_into_word()?;
         let uuid = {
             let mut dict = user_dict.dict.lock().expect("lock failed");
             dict.add_word(word)?
@@ -1087,11 +1088,11 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
 pub unsafe extern "C" fn voicevox_user_dict_update_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: &[u8; 16],
-    word: &VoicevoxUserDictWord, // FIXME: <https://github.com/VOICEVOX/voicevox_core/pull/534>に従う
+    word: *const VoicevoxUserDictWord, // FIXME: <https://github.com/VOICEVOX/voicevox_core/pull/534>に従う
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
-        let word = word.try_into_word()?;
+        let word = (*word).try_into_word()?;
         {
             let mut dict = user_dict.dict.lock().expect("lock failed");
             dict.update_word(word_uuid, word)?;
