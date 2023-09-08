@@ -1057,7 +1057,7 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_add_word(
     user_dict: &VoicevoxUserDict,
-    word: *const VoicevoxUserDictWord, // FIXME: <https://github.com/VOICEVOX/voicevox_core/pull/534>に従う
+    word: *const VoicevoxUserDictWord,
     output_word_uuid: NonNull<[u8; 16]>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
@@ -1088,7 +1088,7 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
 pub unsafe extern "C" fn voicevox_user_dict_update_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: &[u8; 16],
-    word: *const VoicevoxUserDictWord, // FIXME: <https://github.com/VOICEVOX/voicevox_core/pull/534>に従う
+    word: *const VoicevoxUserDictWord,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
