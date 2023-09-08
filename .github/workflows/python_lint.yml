@@ -34,7 +34,7 @@ jobs:
           black --check .
           isort --check .
       - name: Check code style for example/python
-        working-directory: ../example/python
+        working-directory: ./example/python
         run: |
           black --check .
           isort --check .
