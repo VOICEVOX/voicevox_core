@@ -88,7 +88,6 @@ class Synthesizer:
             AccelerationMode, Literal["AUTO", "CPU", "GPU"]
         ] = AccelerationMode.AUTO,
         cpu_num_threads: int = 0,
-        load_all_models: bool = False,
     ) -> "Synthesizer":
         """
         :class:`Synthesizer` を生成する。
@@ -101,8 +100,6 @@ class Synthesizer:
             ハードウェアアクセラレーションモード。
         cpu_num_threads
             CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
-        load_all_models
-            全てのモデルを読み込む。
         """
         ...
     def __repr__(self) -> str: ...

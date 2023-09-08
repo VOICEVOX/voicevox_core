@@ -210,9 +210,6 @@ public class Synthesizer extends Dll {
     @SuppressWarnings("unused")
     private int cpuNumThreads;
 
-    @SuppressWarnings("unused")
-    private boolean loadAllModels;
-
     public Builder(OpenJtalk openJtalk) {
       this.openJtalk = openJtalk;
     }
@@ -239,17 +236,6 @@ public class Synthesizer extends Dll {
         throw new IllegalArgumentException("cpuNumThreads");
       }
       this.cpuNumThreads = cpuNumThreads;
-      return this;
-    }
-
-    /**
-     * 全てのモデルを読み込むかどうか。
-     *
-     * @param loadAllModels 全てのモデルを読み込むかどうか。
-     * @return ビルダー。
-     */
-    public Builder loadAllModels(boolean loadAllModels) {
-      this.loadAllModels = loadAllModels;
       return this;
     }
 

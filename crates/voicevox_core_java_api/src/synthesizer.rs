@@ -46,9 +46,6 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNewWithIn
         let cpu_num_threads = env.get_field(&builder, "cpuNumThreads", "I")?;
         options.cpu_num_threads = cpu_num_threads.i().expect("cpuNumThreads is not integer") as u16;
 
-        let load_all_models = env.get_field(&builder, "loadAllModels", "Z")?;
-        options.load_all_models = load_all_models.z().expect("loadAllModels is not boolean");
-
         let open_jtalk = env
             .get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&open_jtalk, "handle")?
             .clone();

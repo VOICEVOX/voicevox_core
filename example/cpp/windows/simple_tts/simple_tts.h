@@ -3,6 +3,7 @@
 #include "voicevox_core.h"
 
 std::string GetOpenJTalkDict();
+std::string GetModelDir();
 std::wstring GetWaveFileName();
 std::wstring GetExePath();
 std::wstring GetExeDirectory();

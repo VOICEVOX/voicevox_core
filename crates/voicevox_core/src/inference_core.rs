@@ -9,19 +9,9 @@ pub struct InferenceCore {
 }
 
 impl InferenceCore {
-    pub(crate) async fn new_with_initialize(
-        use_gpu: bool,
-        cpu_num_threads: u16,
-        load_all_models: bool,
-    ) -> Result<Self> {
+    pub(crate) async fn new_with_initialize(use_gpu: bool, cpu_num_threads: u16) -> Result<Self> {
         if !use_gpu || Self::can_support_gpu_feature()? {
             let status = Status::new(use_gpu, cpu_num_threads);
-
-            if load_all_models {
-                for model in &VoiceModel::get_all_models().await? {
-                    status.load_model(model).await?;
-                }
-            }
             Ok(Self { status })
         } else {
             Err(ErrorRepr::GpuSupport.into())

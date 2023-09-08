@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::VoiceModel;
+use crate::{Result, VoiceModel};
 
 pub async fn open_default_vvm_file() -> VoiceModel {
     VoiceModel::from_path(
@@ -16,4 +16,12 @@ pub async fn open_default_vvm_file() -> VoiceModel {
     )
     .await
     .unwrap()
+}
+
+impl VoiceModel {
+    pub(crate) async fn sample() -> Result<Self> {
+        return Self::from_path(PATH).await;
+
+        static PATH: &str = concat!(env!("CARGO_WORKSPACE_DIR"), "/model/sample.vvm");
+    }
 }

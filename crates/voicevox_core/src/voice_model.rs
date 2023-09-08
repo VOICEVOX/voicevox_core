@@ -76,14 +76,12 @@ impl VoiceModel {
         })
     }
 
-    // FIXME: `load_all_models`自体を廃止し、これはENGINE専用とする
+    // FIXME: C APIに移動する
     /// # Panics
     ///
-    /// 目的のディレクトリが読めなかったらパニックする
-    pub async fn get_all_models() -> Result<Vec<Self>> {
-        let root_dir = if cfg!(test) {
-            Path::new(env!("CARGO_WORKSPACE_DIR")).join("model")
-        } else if let Some(root_dir) = env::var_os(Self::ROOT_DIR_ENV_NAME) {
+    /// 失敗したらパニックする
+    pub async fn get_all_models() -> Vec<Self> {
+        let root_dir = if let Some(root_dir) = env::var_os(Self::ROOT_DIR_ENV_NAME) {
             root_dir.into()
         } else {
             process_path::get_dylib_path()
@@ -106,7 +104,7 @@ impl VoiceModel {
             .await
             .into_iter()
             .collect::<std::result::Result<_, _>>()
-            .map_err(Into::into)
+            .unwrap()
     }
     const ROOT_DIR_ENV_NAME: &str = "VV_MODELS_ROOT_DIR";
 
@@ -201,17 +199,5 @@ impl VvmEntryReader {
             },
             source: Some(source),
         })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[rstest]
-    #[tokio::test]
-    async fn get_all_models_only_load_vvm() {
-        let all_models = VoiceModel::get_all_models().await;
-        assert!(all_models.is_ok());
     }
 }
