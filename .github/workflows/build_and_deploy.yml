@@ -389,17 +389,3 @@ jobs:
           files: |-
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
-
-  deploy_downloader:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Upload to Release
-        if: env.VERSION != '0.0.0'
-        uses: softprops/action-gh-release@v1
-        with:
-          prerelease: true
-          tag_name: ${{ env.VERSION }}
-          files: |-
-            scripts/downloads/*
-          target_commitish: ${{ github.sha }}
