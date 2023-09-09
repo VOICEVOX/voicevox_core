@@ -147,6 +147,12 @@ DLL用のヘッダファイルは [crates/voicevox\_core\_c\_api/include/voicevo
 cargo test
 ```
 
+## ダウンローダーの実行
+
+```bash
+cargo run -p download
+```
+
 ## ヘッダファイルの更新
 
 ```bash

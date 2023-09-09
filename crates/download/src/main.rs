@@ -148,6 +148,11 @@ async fn main() -> anyhow::Result<()> {
     })
     .await?;
 
+    let model = find_gh_asset(octocrab, CORE_REPO_NAME, &version, |tag| {
+        format!("model-{tag}.zip")
+    })
+    .await?;
+
     let additional_libraries = OptionFuture::from((device != Device::Cpu).then(|| {
         find_gh_asset(
             octocrab,
@@ -186,6 +191,15 @@ async fn main() -> anyhow::Result<()> {
     )?);
 
     if !min {
+        let model_dir = output.join("model");
+        fs_err::create_dir(&model_dir)?;
+        tasks.spawn(download_and_extract_from_gh(
+            model,
+            Stripping::FirstDir,
+            &model_dir,
+            &progresses,
+        )?);
+
         if let Some(additional_libraries) = additional_libraries {
             tasks.spawn(download_and_extract_from_gh(
                 additional_libraries,
