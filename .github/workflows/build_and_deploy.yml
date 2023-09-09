@@ -29,7 +29,7 @@ on:
 
 env:
   VOICEVOX_RESOURCE_VERSION: "0.15.0-preview.1"
-  VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-preview.1"
+  VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-preview.2"
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
   PRODUCTION_REPOSITORY_TAG: "0.15.0-preview.2" # 製品版のタグ名
@@ -235,19 +235,11 @@ jobs:
           repository: VOICEVOX/voicevox_resource
           ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
           path: download/resource
-      - name: Checkout VOICEVOX FAT RESOURCE
-        if: github.event.inputs.is_production == 'true'
-        uses: actions/checkout@v3
-        with:
-          repository: VOICEVOX/voicevox_fat_resource
-          ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
-          path: download/fat_resource
       - name: Raplace resource
         if: github.event.inputs.is_production == 'true'
         shell: bash
         run: |
           mv -f download/resource/core/README.md ./README.md
-          rm -r ./model; mv download/fat_resource/core/model ./model
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-edit
@@ -318,7 +310,7 @@ jobs:
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && !contains(matrix.target, 'ios')
+        if: env.VERSION != '0.0.0' && !contains(matrix.target, 'ios')
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -381,7 +373,7 @@ jobs:
           cd artifact/${{ env.ASSET_NAME }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.VERSION != '0.0.0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -402,4 +394,40 @@ jobs:
           tag_name: ${{ env.VERSION }}
           files: |-
             scripts/downloads/*
+          target_commitish: ${{ github.sha }}
+
+  deploy_vvm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checkout VOICEVOX FAT RESOURCE
+        if: github.event.inputs.is_production == 'true'
+        uses: actions/checkout@v3
+        with:
+          repository: VOICEVOX/voicevox_fat_resource
+          ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
+          path: download/fat_resource
+      - name: Raplace resource
+        if: github.event.inputs.is_production == 'true'
+        shell: bash
+        run: |
+          rm -r ./model; mv download/fat_resource/core/model ./model
+      - name: Set ASSET_NAME env var
+        run: echo "ASSET_NAME=model-${{ env.VERSION }}" >> "$GITHUB_ENV"
+      - name: Create artifact
+        run: |
+          mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          cp -vr model "artifact/${{ env.ASSET_NAME }}/"
+      - name: Archive artifact
+        run: |
+          cd artifact
+          7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
+      - name: Upload to Release
+        if: env.VERSION != '0.0.0'
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
