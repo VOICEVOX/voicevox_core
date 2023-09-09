@@ -382,7 +382,7 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
 
-  deploy_vvm:
+  deploy_model:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -402,8 +402,8 @@ jobs:
         run: echo "ASSET_NAME=model-${{ env.VERSION }}" >> "$GITHUB_ENV"
       - name: Create artifact
         run: |
-          mkdir -p "artifact/${{ env.ASSET_NAME }}"
-          cp -vr model "artifact/${{ env.ASSET_NAME }}/"
+          mkdir "artifact"
+          mv model "artifact/${{ env.ASSET_NAME }}/"
       - name: Archive artifact
         run: |
           cd artifact
