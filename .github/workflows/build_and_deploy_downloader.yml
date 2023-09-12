@@ -5,6 +5,23 @@ on:
     inputs:
       version:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
+        type: string
+        required: true
+      code_signing:
+        description: "コード署名する"
+        type: boolean
+        required: false
+        default: false
+      is_production:
+        description: "製品版をビルドする"
+        type: boolean
+        required: false
+        default: false
+  workflow_call:
+    inputs:
+      version:
+        description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
+        type: string
         required: true
       code_signing:
         description: "コード署名する"
@@ -34,7 +51,7 @@ on:
 
 env:
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
-  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
+  VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0' }}
 
 defaults:
   run:
@@ -42,7 +59,7 @@ defaults:
 
 jobs:
   deploy_and_deploy_downloader:
-    environment: ${{ github.event.inputs.is_production == 'true' && 'production' || '' }} # コード署名用のenvironment
+    environment: ${{ inputs.is_production == 'true' && 'production' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include:
@@ -94,7 +111,7 @@ jobs:
           mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
 
       - name: Code signing (Windows)
-        if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
+        if: startsWith(matrix.os, 'windows') && inputs.code_signing == 'true'
         run: |
           bash build_util/codesign.bash ./${{ matrix.name }}
         env:

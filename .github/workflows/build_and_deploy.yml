@@ -31,7 +31,7 @@ env:
   VOICEVOX_RESOURCE_VERSION: "0.15.0-preview.1"
   VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-preview.1"
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
-  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
+  VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0' }}
   PRODUCTION_REPOSITORY_TAG: "0.15.0-preview.2" # 製品版のタグ名
   # 簡易テストとするかどうか。releaseとworkflow_dispatch以外は簡易テストとする
   IS_SIMPLE_TEST: ${{ github.event_name != 'release' && github.event_name != 'workflow_dispatch' }}
@@ -182,21 +182,21 @@ jobs:
 
   build_and_deploy:
     needs: build_and_deploy_strategy_matrix
-    environment: ${{ github.event.inputs.is_production == 'true' && 'production' || '' }} # 製品版のenvironment
+    environment: ${{ inputs.is_production == 'true' && 'production' || '' }} # 製品版のenvironment
     strategy:
       matrix:
         include: ${{ fromJson(needs.build_and_deploy_strategy_matrix.outputs.includes) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3 # 製品版ではない場合
-        if: ${{ github.event.inputs.is_production != 'true' }}
+        if: ${{ inputs.is_production != 'true' }}
       - uses: actions/checkout@v3 # 製品版の場合
-        if: ${{ github.event.inputs.is_production == 'true' }}
+        if: ${{ inputs.is_production == 'true' }}
         with:
           fetch-depth: 0 # 全履歴取得
           token: ${{ secrets.PRODUCTION_GITHUB_TOKEN }}
       - name: Merge production branch
-        if: github.event.inputs.is_production == 'true'
+        if: inputs.is_production == 'true'
         shell: bash
         run: |
           (
@@ -229,21 +229,21 @@ jobs:
           echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
       - name: Checkout VOICEVOX RESOURCE
-        if: github.event.inputs.is_production == 'true'
+        if: inputs.is_production == 'true'
         uses: actions/checkout@v3
         with:
           repository: VOICEVOX/voicevox_resource
           ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
           path: download/resource
       - name: Checkout VOICEVOX FAT RESOURCE
-        if: github.event.inputs.is_production == 'true'
+        if: inputs.is_production == 'true'
         uses: actions/checkout@v3
         with:
           repository: VOICEVOX/voicevox_fat_resource
           ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
           path: download/fat_resource
       - name: Raplace resource
-        if: github.event.inputs.is_production == 'true'
+        if: inputs.is_production == 'true'
         shell: bash
         run: |
           mv -f download/resource/core/README.md ./README.md
@@ -262,7 +262,7 @@ jobs:
           function build() {
             cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
           }
-          if ${{ github.event.inputs.is_production != 'true' }}; then
+          if ${{ inputs.is_production != 'true' }}; then
             build
           else
             build > /dev/null 2>&1
@@ -278,7 +278,7 @@ jobs:
           function build() {
             maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
           }
-          if ${{ github.event.inputs.is_production != 'true' }}; then
+          if ${{ inputs.is_production != 'true' }}; then
             build
           else
             build > /dev/null 2>&1
@@ -301,7 +301,7 @@ jobs:
           cp -vr model "artifact/${{ env.ASSET_NAME }}/"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
       - name: Code signing (Windows)
-        if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
+        if: startsWith(matrix.os, 'windows') && inputs.code_signing == 'true'
         run: |
           bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
         env:
@@ -389,3 +389,11 @@ jobs:
           files: |-
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
+
+  build_and_deploy_downloader:
+    uses: ./.github/workflows/build_and_deploy_downloader.yml
+    secrets: inherit
+    with:
+      version: ${{ inputs.version }}
+      code_signing: ${{ inputs.code_signing }}
+      is_production: ${{ inputs.is_production }}
