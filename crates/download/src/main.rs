@@ -49,7 +49,7 @@ static OPEN_JTALK_DIC_URL: Lazy<Url> = Lazy::new(|| {
 #[derive(clap::Parser)]
 struct Args {
     /// ダウンロードするライブラリを最小限にするように指定
-    #[arg(long)]
+    #[arg(long, conflicts_with("additional_libraries_version"))]
     min: bool,
 
     /// 出力先の指定
