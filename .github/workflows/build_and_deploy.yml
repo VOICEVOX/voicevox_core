@@ -41,10 +41,11 @@ defaults:
     shell: bash
 
 jobs:
-  build_and_deploy_strategy_matrix: # 実行対象の条件をフィルタリングする
+  config: # 全 jobs で利用する定数の定義。実行対象の条件をフィルタリングする。
     runs-on: ubuntu-latest
     outputs:
       includes: ${{ steps.strategy_matrix.outputs.includes }}
+      without_deploy: ${{ env.VERSION != '0.0.0' }}
     steps:
       - name: declare strategy matrix
         id: strategy_matrix
@@ -181,11 +182,11 @@ jobs:
           echo "includes=${includes}" >> "$GITHUB_OUTPUT"
 
   build_and_deploy:
-    needs: build_and_deploy_strategy_matrix
+    needs: config
     environment: ${{ github.event.inputs.is_production == 'true' && 'production' || '' }} # 製品版のenvironment
     strategy:
       matrix:
-        include: ${{ fromJson(needs.build_and_deploy_strategy_matrix.outputs.includes) }}
+        include: ${{ fromJson(needs.config.outputs.includes) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3 # 製品版ではない場合
@@ -318,7 +319,7 @@ jobs:
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && !contains(matrix.target, 'ios')
+        if: needs.config.outputs.without_deploy && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && !contains(matrix.target, 'ios')
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -327,7 +328,7 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
-        if: env.VERSION != '0.0.0' && matrix.whl_local_version
+        if: needs.config.outputs.without_deploy && matrix.whl_local_version
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -381,7 +382,7 @@ jobs:
           cd artifact/${{ env.ASSET_NAME }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: needs.config.outputs.without_deploy && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -389,3 +390,10 @@ jobs:
           files: |-
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
+
+  download_test:
+    needs: [config, build_and_deploy]
+    if: needs.config.outputs.without_deploy
+    uses: ./.github/workflows/download_test.yml
+    with:
+      version: ${{ inputs.version }}

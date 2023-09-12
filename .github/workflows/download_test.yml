@@ -1,4 +1,5 @@
 name: Download test workflow
+
 on:
   workflow_call:
     inputs:
@@ -184,6 +185,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
+
       - name: Get prerelease latest version
         if: ${{ env.VERSION == 'prerelease-latest' }}
         run: |
@@ -194,14 +196,17 @@ jobs:
             jq -er '.[0].tag_name'
           )
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
       - name: Execute download command
         run: ${{ matrix.download_command }} --version ${{ env.VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Check downloaded version
         run: |
           [ -e "${{ matrix.download_dir }}/VERSION" ]
           [ "$(cat "${{ matrix.download_dir }}/VERSION")" = "${{ env.VERSION }}" ]
+
       - name: Check downloaded files
         run: |
           mapfile -t items < <(echo -n '${{ matrix.check_items }}')
@@ -211,6 +216,7 @@ jobs:
             # shellcheck disable=SC2086
             [ -e "${{ matrix.download_dir }}"/${item} ]
           done
+
       - name: Check should not exists files
         run: |
           mapfile -t items < <(echo -n '${{ matrix.check_not_exists_items }}')
