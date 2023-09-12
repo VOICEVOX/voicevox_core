@@ -24,7 +24,7 @@ jobs:
         include:
           - name: 通常ダウンロード
             os: windows-latest
-            download_command: cargo run -vv -p download
+            download_command: cargo run -vv -p download -- # バージョン指定のために -- が必要
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
