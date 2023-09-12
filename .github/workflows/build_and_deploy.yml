@@ -391,6 +391,7 @@ jobs:
           target_commitish: ${{ github.sha }}
 
   build_and_deploy_downloader:
+    needs: build_and_deploy
     uses: ./.github/workflows/build_and_deploy_downloader.yml
     secrets: inherit
     with:
