@@ -1,11 +1,5 @@
 name: Download test workflow
 on:
-  workflow_call:
-    inputs:
-      version:
-        description: "テスト対象のコアのバージョン。無指定時はprerelease込みの最新release。"
-        type: string
-        required: false
   push:
     branches:
       - main
@@ -16,7 +10,7 @@ on:
       - ".github/workflows/download_test.yml"
 
 env:
-  VERSION: ${{ inputs.version || 'prerelease-latest' }}
+  VERSION: "prerelease-latest"
 
 defaults:
   run:
