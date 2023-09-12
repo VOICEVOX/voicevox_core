@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       includes: ${{ steps.strategy_matrix.outputs.includes }}
-      without_deploy: ${{ env.VERSION != '0.0.0' }}
+      without_deploy: ${{ env.VERSION == '0.0.0' }}
     steps:
       - name: declare strategy matrix
         id: strategy_matrix
@@ -319,7 +319,7 @@ jobs:
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: needs.config.outputs.without_deploy && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && !contains(matrix.target, 'ios')
+        if: (!needs.config.outputs.without_deploy) && env.SKIP_UPLOADING_RELEASE_ASSET == '0' && !contains(matrix.target, 'ios')
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -328,7 +328,7 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
-        if: needs.config.outputs.without_deploy && matrix.whl_local_version
+        if: (!needs.config.outputs.without_deploy) && matrix.whl_local_version
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -382,7 +382,7 @@ jobs:
           cd artifact/${{ env.ASSET_NAME }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
-        if: needs.config.outputs.without_deploy && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: (!needs.config.outputs.without_deploy) && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -393,7 +393,7 @@ jobs:
 
   download_test:
     needs: [config, build_and_deploy]
-    if: needs.config.outputs.without_deploy
+    if: ! needs.config.outputs.without_deploy
     uses: ./.github/workflows/download_test.yml
     with:
       version: ${{ inputs.version }}
