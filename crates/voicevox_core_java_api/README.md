@@ -40,28 +40,32 @@ VOICEVOX CORE の Java バインディング。
 バインディングは `cargo build` でビルドできます。
 Java プロジェクトを動かすには、
 
-- `LD_LIBRARY_PATH`などの環境変数に `[プロジェクトルート]/target/debug`（または`/release`） を追加するか、
-- `lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so` を作成する（`libvoicevox_core_java_api.so`はプラットフォームによって異なります、詳細は後述）。
+- `LD_LIBRARY_PATH`などの環境変数に `[プロジェクトルート]/target/debug`（または`/release`） や onnxruntime の DLL があるディレクトリを追加するか、
+- `lib/src/main/resources/dll/[target]/`内に onnxruntime と voicevox_core_java_api の DLL をコピーする
 
 必要があります。
 
 ```console
 ❯ cargo build
-❯ LD_LIBRARY_PATH=$(realpath ../../target/debug) ./gradlew build
+❯ export LD_LIBRARY_PATH="$(realpath ../../target/debug):$LD_LIBRARY_PATH"
+❯ export LD_LIBRARY_PATH="/path/to/onnxruntime/lib:$LD_LIBRARY_PATH"
+❯ ./gradlew build
 
 # または
 ❯ cp ../../target/debug/libvoicevox_core_java_api.so lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so
+❯ cp /path/to/onnxruntime/lib/libonnxruntime.so.1.14.0 lib/src/main/resources/dll/[target]/libonnxruntime.so.1.14.0
 ❯ ./gradlew build
 ```
 
 ## ビルド（リリース）
 
 `cargo build --release` で Rust 側を、`./gradlew build` で Java 側をビルドできます。
-パッケージ化する時は lib/src/main/resources/dll 内に dll をコピーしてください。
+パッケージ化する時は lib/src/main/resources/dll 内に DLL をコピーしてください。
 
 ```console
 ❯ cargo build --release
 ❯ cp ../../target/release/libvoicevox_core_java_api.so lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so
+❯ cp /path/to/onnxruntime/lib/libonnxruntime.so.1.14.0 lib/src/main/resources/dll/[target]/libonnxruntime.so.1.14.0
 ❯ ./gradlew build
 ```
 
@@ -85,12 +89,5 @@ Java プロジェクトを動かすには、
 
 Android では、jniLibs から System.loadLibrary で読み込みます。
 
-Android 以外では、src/main/resources/dll 内の適切な DLL を一時ディレクトリにコピーし、System.load で読み込みます。
-DLL の名前は、
-
-- Windows：voicevox_core_java_api.dll
-- Linux：libvoicevox_core_java_api.so
-- macOS：libvoicevox_core_java_api.dylib
-
-になります。
+Android 以外では、src/main/resources/dll 内の DLL を一時ディレクトリにコピーし、System.load で読み込みます。
 見付からなかった場合は、`System.loadLibrary` で読み込みます。これはデバッグ用です。
