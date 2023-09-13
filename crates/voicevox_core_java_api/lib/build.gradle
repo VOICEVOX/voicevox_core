@@ -39,7 +39,7 @@ dependencies {
     implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.0.2'
 
     if (buildTarget == "android") {
-      implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime_android', version: '1.14.0'
+      implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime-android', version: '1.14.0'
     }
 }
 
