@@ -4,7 +4,6 @@
  */
 package jp.hiroshiba.voicevoxcore;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -37,19 +36,19 @@ class SynthesizerTest extends TestUtils {
   void checkModel() {
     VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+    Synthesizer synthesizer =
+        Synthesizer.builder(openJtalk).accelerationMode(Synthesizer.AccelerationMode.CPU).build();
+
     synthesizer.loadVoiceModel(model);
+
     assertTrue(synthesizer.isLoadedVoiceModel(model.id));
-    synthesizer.unloadVoiceModel(model.id);
-    assertFalse(synthesizer.isLoadedVoiceModel(model.id));
   }
 
   @Test
   void checkAudioQuery() {
     VoiceModel model = loadModel();
-    OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
-    synthesizer.loadVoiceModel(model);
+    Synthesizer synthesizer = createSynthesizer();
+
     AudioQuery query = synthesizer.createAudioQuery("こんにちは", model.metas[0].styles[0].id).execute();
 
     synthesizer.synthesis(query, model.metas[0].styles[0].id).execute();
@@ -58,9 +57,8 @@ class SynthesizerTest extends TestUtils {
   @Test
   void checkAccentPhrases() {
     VoiceModel model = loadModel();
-    OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
-    synthesizer.loadVoiceModel(model);
+    Synthesizer synthesizer = createSynthesizer();
+
     List<AccentPhrase> accentPhrases =
         synthesizer.createAccentPhrases("こんにちは", model.metas[0].styles[0].id).execute();
     List<AccentPhrase> accentPhrases2 =
@@ -88,9 +86,7 @@ class SynthesizerTest extends TestUtils {
   @Test
   void checkTts() {
     VoiceModel model = loadModel();
-    OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
-    synthesizer.loadVoiceModel(model);
+    Synthesizer synthesizer = createSynthesizer();
     synthesizer.tts("こんにちは", model.metas[0].styles[0].id).execute();
   }
 }

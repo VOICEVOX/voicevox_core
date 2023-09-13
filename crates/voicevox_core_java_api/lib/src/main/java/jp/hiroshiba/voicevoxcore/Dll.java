@@ -1,6 +1,5 @@
 package jp.hiroshiba.voicevoxcore;
 
-import ai.onnxruntime.OrtEnvironment;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,16 +15,25 @@ abstract class Dll {
     } else {
       String rawOsName = System.getProperty("os.name");
       String rawOsArch = System.getProperty("os.arch");
-      String osName, osArch, dllName;
+      String osName, osArch, vvDllName, ortDllName;
+      String[] ortOptionalDllNames;
       if (rawOsName.startsWith("Win")) {
         osName = "windows";
-        dllName = "voicevox_core_java_api.dll";
+        vvDllName = "voicevox_core_java_api.dll";
+        ortDllName = "onnxruntime.dll";
+        ortOptionalDllNames =
+            new String[] {"onnxruntime_providers_shared.dll", "onnxruntime_providers_cuda.dll"};
       } else if (rawOsName.startsWith("Mac")) {
         osName = "macos";
-        dllName = "libvoicevox_core_java_api.dylib";
+        vvDllName = "libvoicevox_core_java_api.dylib";
+        ortDllName = "libonnxruntime.1.14.0.dylib";
+        ortOptionalDllNames = new String[] {};
       } else if (rawOsName.startsWith("Linux")) {
         osName = "linux";
-        dllName = "libvoicevox_core_java_api.so";
+        vvDllName = "libvoicevox_core_java_api.so";
+        ortDllName = "libonnxruntime.so.1.14.0";
+        ortOptionalDllNames =
+            new String[] {"libonnxruntime_providers_shared.so", "libonnxruntime_providers_cuda.so"};
       } else {
         throw new RuntimeException("Unsupported OS: " + rawOsName);
       }
@@ -42,27 +50,40 @@ abstract class Dll {
       }
 
       String target = osName + "-" + osArch;
-      // ONNX Runtime の DLL を読み込む。
-      OrtEnvironment.getEnvironment();
-      try (InputStream in = Dll.class.getResourceAsStream("/dll/" + target + "/" + dllName)) {
-        if (in == null) {
-          try {
-            // フォールバック。開発用。
-            System.loadLibrary("voicevox_core_java_api");
-          } catch (UnsatisfiedLinkError e) {
-            throw new RuntimeException("Failed to load Voicevox Core DLL for " + target, e);
-          }
-        } else {
-          Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
-          Path dllPath = tempDir.resolve(dllName);
-          dllPath.toFile().deleteOnExit();
-          Files.copy(in, dllPath);
-
-          System.load(dllPath.toAbsolutePath().toString());
-        }
-      } catch (Exception e) {
-        throw new RuntimeException("Failed to load Voicevox Core DLL for " + target, e);
+      loadDll(target, ortDllName, "onnxruntime");
+      for (String dllName : ortOptionalDllNames) {
+        loadDll(target, dllName);
       }
+      loadDll(target, vvDllName, "voicevox_core_java_api");
+    }
+  }
+
+  private static void loadDll(String target, String dllName) {
+    loadDll(target, dllName, null);
+  }
+
+  private static void loadDll(String target, String dllName, String fallbackDllName) {
+    String resourceRoot = "/dll/" + target + "/";
+    try (InputStream in = Dll.class.getResourceAsStream(resourceRoot + dllName)) {
+      if (in == null) {
+        if (fallbackDllName == null) {
+          return;
+        }
+        try {
+          System.loadLibrary(fallbackDllName);
+        } catch (UnsatisfiedLinkError e) {
+          throw new RuntimeException("Failed to load " + dllName + " for " + target, e);
+        }
+      } else {
+        Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
+        Path dllPath = tempDir.resolve(dllName);
+        dllPath.toFile().deleteOnExit();
+        Files.copy(in, dllPath);
+
+        System.load(dllPath.toAbsolutePath().toString());
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to load " + dllName + " for " + target, e);
     }
   }
 }
