@@ -53,15 +53,15 @@ struct Args {
     min: bool,
 
     /// 出力先の指定
-    #[arg(short, long, default_value(DEFAULT_OUTPUT))]
+    #[arg(short, long, value_name("DIRECTORY"), default_value(DEFAULT_OUTPUT))]
     output: PathBuf,
 
     /// ダウンロードするvoicevox_coreのバージョンの指定
-    #[arg(short, long, default_value("latest"))]
+    #[arg(short, long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
     version: String,
 
     /// 追加でダウンロードするライブラリのバージョン
-    #[arg(long, default_value("latest"))]
+    #[arg(long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
     additional_libraries_version: String,
 
     /// ダウンロードするデバイスを指定する(cudaはlinuxのみ)
