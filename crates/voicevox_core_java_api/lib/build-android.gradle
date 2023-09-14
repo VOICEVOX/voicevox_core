@@ -7,16 +7,10 @@
 
 plugins {
     // Apply the java-library plugin for API and implementation separation.
-    id 'java-library'
-    id "com.diffplug.spotless" version "6.20.0"
+    id 'com.android.library' version '8.1.1'
 }
 
-def String cargoToml = file('../../../Cargo.toml').text
-def String version = cargoToml =~ /version = "([0-9.]+)"/
-
-def boolean isGpu = System.getenv('IS_GPU') == 'true'
-
-version = version[0][1]
+version = '0.0.0'
 
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -41,11 +35,7 @@ dependencies {
     // https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api
     implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.0.2'
 
-    if (isGpu) {
-        implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime-gpu', version: '1.14.0'
-    } else {
-        implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime', version: '1.14.0'
-    }
+    implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime-android', version: '1.14.0'
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -55,16 +45,20 @@ java {
     }
 }
 
-tasks.named('test') {
-    // Use JUnit Platform for unit tests.
-    useJUnitPlatform()
-}
+android {
+  compileSdkVersion 31
+  namespace "jp.hiroshiba.voicevoxcore"
 
-compileJava.options.encoding = 'UTF-8'
-compileTestJava.options.encoding = 'UTF-8'
-
-spotless {
-    java {
-        googleJavaFormat()
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_11
+    targetCompatibility JavaVersion.VERSION_11
+  }
+  kotlinOptions {
+    jvmTarget = "1.11"
+  }
+  sourceSets {
+    main {
+      jniLibs.srcDirs = ["./src/main/resources/jniLibs"]
     }
+  }
 }
