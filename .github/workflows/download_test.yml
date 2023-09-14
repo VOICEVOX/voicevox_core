@@ -182,7 +182,7 @@ jobs:
         if: ${{ env.VERSION == 'prerelease-latest' }}
         run: |
           VERSION=$(
-            curl -s https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
+            curl -sSf https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
               -H 'authorization: Bearer ${{ github.token }}' \
               -H 'content-type: application/json' |
             jq -er '.[0].tag_name'
