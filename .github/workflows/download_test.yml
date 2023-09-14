@@ -8,9 +8,14 @@ on:
       - "Cargo.*"
       - "crates/download/**"
       - ".github/workflows/download_test.yml"
+
+env:
+  VERSION: "prerelease-latest"
+
 defaults:
   run:
     shell: bash
+
 jobs:
   download-releases:
     strategy:
@@ -19,7 +24,7 @@ jobs:
         include:
           - name: 通常ダウンロード
             os: windows-latest
-            download_command: cargo run -vv -p download
+            download_command: cargo run -vv -p download -- # バージョン指定のために -- が必要
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
@@ -169,29 +174,28 @@ jobs:
               open_jtalk_dic_utf_8-1.11
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}-${{ matrix.os }}
-    env:
-      EXPECTED_VOICEVOX_CORE_VERSION: latest
-      # See https://github.com/VOICEVOX/voicevox_core/issues/310
-      #EXPECTED_VOICEVOX_CORE_VERSION: ${{ matrix.expected_version || 'latest' }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Rust
-        if: ${{ startsWith(matrix.download_command, 'cargo ') }}
         uses: ./.github/actions/rust-toolchain-from-file
+      - name: Get prerelease latest version
+        if: ${{ env.VERSION == 'prerelease-latest' }}
+        run: |
+          VERSION=$(
+            curl -sSf https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
+              -H 'authorization: Bearer ${{ github.token }}' \
+              -H 'content-type: application/json' |
+            jq -er '.[0].tag_name'
+          )
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Execute download command
-        run: ${{ matrix.download_command }}
+        run: ${{ matrix.download_command }} --version ${{ env.VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Get latest version
-        if: ${{ env.EXPECTED_VOICEVOX_CORE_VERSION == 'latest' }}
-        run: |
-          echo "EXPECTED_VOICEVOX_CORE_VERSION=$(gh release view --repo VOICEVOX/voicevox_core --json 'tagName' --jq '.tagName')" >> "$GITHUB_ENV"
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - name: Check downloaded version
         run: |
           [ -e "${{ matrix.download_dir }}/VERSION" ]
-          [ "$(cat "${{ matrix.download_dir }}/VERSION")" = "${{ env.EXPECTED_VOICEVOX_CORE_VERSION }}" ]
+          [ "$(cat "${{ matrix.download_dir }}/VERSION")" = "${{ env.VERSION }}" ]
       - name: Check downloaded files
         run: |
           mapfile -t items < <(echo -n '${{ matrix.check_items }}')
