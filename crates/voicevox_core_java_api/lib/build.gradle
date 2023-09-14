@@ -40,7 +40,7 @@ dependencies {
     implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.0.2'
 
     if (isGpu) {
-        implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime-gpu', version: '1.14.0'
+        implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime_gpu', version: '1.14.0'
     } else {
         implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime', version: '1.14.0'
     }
