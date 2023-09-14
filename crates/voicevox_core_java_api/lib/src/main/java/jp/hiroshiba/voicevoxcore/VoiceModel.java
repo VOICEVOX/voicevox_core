@@ -47,25 +47,25 @@ public class VoiceModel extends Dll {
     @SerializedName("name")
     @Expose
     @Nonnull
-    final String name;
+    public final String name;
 
     /** 話者に属するスタイル。 */
     @SerializedName("styles")
     @Expose
     @Nonnull
-    final StyleMeta[] styles;
+    public final StyleMeta[] styles;
 
     /** 話者のUUID。 */
     @SerializedName("speaker_uuid")
     @Expose
     @Nonnull
-    final String speakerUuid;
+    public final String speakerUuid;
 
     /** 話者のバージョン。 */
     @SerializedName("version")
     @Expose
     @Nonnull
-    final String version;
+    public final String version;
 
     private SpeakerMeta() {
       // GSONからコンストラクトするため、このメソッドは呼ばれることは無い。
@@ -83,12 +83,12 @@ public class VoiceModel extends Dll {
     @SerializedName("name")
     @Expose
     @Nonnull
-    final String name;
+    public final String name;
 
     /** スタイルID。 */
     @SerializedName("id")
     @Expose
-    final int id;
+    public final int id;
 
     private StyleMeta() {
       this.name = "";
