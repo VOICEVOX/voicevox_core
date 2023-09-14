@@ -1,7 +1,6 @@
 package jp.hiroshiba.voicevoxcore;
 
 import com.google.gson.Gson;
-import java.lang.ref.Cleaner;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,11 +13,14 @@ import javax.annotation.Nonnull;
  */
 public class Synthesizer extends Dll {
   private long handle;
-  private static final Cleaner cleaner = Cleaner.create();
 
   private Synthesizer(OpenJtalk openJtalk, Builder builder) {
     rsNewWithInitialize(openJtalk, builder);
-    cleaner.register(this, () -> rsDrop());
+  }
+
+  protected void finalize() throws Throwable {
+    rsDrop();
+    super.finalize();
   }
 
   /**
@@ -52,7 +54,7 @@ public class Synthesizer extends Dll {
   /**
    * {@link AudioQuery} を生成するためのオブジェクトを生成する。
    *
-   * @param text テキスト。
+   * @param text    テキスト。
    * @param styleId スタイルID。
    * @return {@link CreateAudioQueryConfigurator}。
    * @see CreateAudioQueryConfigurator#execute
@@ -65,7 +67,7 @@ public class Synthesizer extends Dll {
   /**
    * {@link AccentPhrase} のリストを生成するためのオブジェクトを生成する。
    *
-   * @param text テキスト。
+   * @param text    テキスト。
    * @param styleId スタイルID。
    * @return {@link CreateAccentPhrasesConfigurator}。
    * @see CreateAccentPhrasesConfigurator#execute
@@ -79,7 +81,7 @@ public class Synthesizer extends Dll {
    * アクセント句の音高・音素長を変更する。
    *
    * @param accentPhrases 変更元のアクセント句の配列。
-   * @param styleId スタイルID。
+   * @param styleId       スタイルID。
    * @return 変更後のアクセント句の配列。
    */
   @Nonnull
@@ -97,7 +99,7 @@ public class Synthesizer extends Dll {
    * アクセント句の音素長を変更する。
    *
    * @param accentPhrases 変更元のアクセント句の配列。
-   * @param styleId スタイルID。
+   * @param styleId       スタイルID。
    * @return 変更後のアクセント句の配列。
    */
   @Nonnull
@@ -115,7 +117,7 @@ public class Synthesizer extends Dll {
    * アクセント句の音高を変更する。
    *
    * @param accentPhrases 変更元のアクセント句の配列。
-   * @param styleId スタイルID。
+   * @param styleId       スタイルID。
    * @return 変更後のアクセント句の配列。
    */
   @Nonnull
@@ -133,7 +135,7 @@ public class Synthesizer extends Dll {
    * {@link AudioQuery} から音声合成するためのオブジェクトを生成する。
    *
    * @param audioQuery {@link AudioQuery}。
-   * @param styleId スタイルID。
+   * @param styleId    スタイルID。
    * @return {@link SynthesisConfigurator}。
    * @see SynthesisConfigurator#execute
    */
@@ -145,7 +147,7 @@ public class Synthesizer extends Dll {
   /**
    * テキスト音声合成を実行するためのオブジェクトを生成する。
    *
-   * @param text テキスト。
+   * @param text    テキスト。
    * @param styleId スタイルID。
    * @return {@link TtsConfigurator}。
    * @see TtsConfigurator#execute

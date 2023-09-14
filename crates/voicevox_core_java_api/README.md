@@ -44,14 +44,16 @@ Java プロジェクトを動かすには、
 - `lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so` を作成する（`libvoicevox_core_java_api.so`はプラットフォームによって異なります、詳細は後述）。
 
 必要があります。
+また、ハードウェアアクセラレーションをテストするには`IS_GPU`環境変数を`true`にする必要があります。
 
 ```console
 ❯ cargo build
-❯ LD_LIBRARY_PATH=$(realpath ../../target/debug) ./gradlew build
+❯ LD_LIBRARY_PATH=$(realpath ../../target/debug) ./gradlew test
 
 # または
 ❯ cp ../../target/debug/libvoicevox_core_java_api.so lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so
-❯ ./gradlew build
+❯ ./gradlew test
+❯ IS_GPU=true ./gradlew test
 ```
 
 ## ビルド（リリース）
@@ -63,6 +65,7 @@ Java プロジェクトを動かすには、
 ❯ cargo build --release
 ❯ cp ../../target/release/libvoicevox_core_java_api.so lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so
 ❯ ./gradlew build
+❯ IS_GPU=true ./gradlew build
 ```
 
 ## テスト
