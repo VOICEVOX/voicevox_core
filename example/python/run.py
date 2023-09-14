@@ -7,13 +7,8 @@ from pathlib import Path
 from typing import Tuple
 
 import voicevox_core
-from voicevox_core import (
-    AccelerationMode,
-    AudioQuery,
-    OpenJtalk,
-    Synthesizer,
-    VoiceModel,
-)
+from voicevox_core import (AccelerationMode, AudioQuery, OpenJtalk,
+                           Synthesizer, VoiceModel)
 
 
 async def main() -> None:

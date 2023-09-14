@@ -2,8 +2,9 @@
 # どのコードがどの操作を行っているかはコメントを参照。
 
 import os
-from uuid import UUID
 import tempfile
+from uuid import UUID
+
 import pytest
 import voicevox_core  # noqa: F401
 
