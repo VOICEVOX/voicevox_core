@@ -1,0 +1,31 @@
+name: "Lint Java code"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - ./crates/voicevox_core_java_api/**/*.java
+      - ./crates/voicevox_core_java_api/gradle/**
+      - ./crates/voicevox_core_java_api/gradlew
+      - ./crates/voicevox_core_java_api/settings.gradle
+      - ./.github/workflows/java_lint.yml
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./crates/voicevox_core_java_api
+
+jobs:
+  java-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v2
+        with:
+          java-version: "11"
+          distribution: "adopt"
+      - name: Check code style
+        run: |
+          ./gradlew spotlessCheck --info

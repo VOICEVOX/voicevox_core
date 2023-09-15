@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Final, List, Literal, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Final, List, Literal, Union
 from uuid import UUID
 
 import numpy as np
