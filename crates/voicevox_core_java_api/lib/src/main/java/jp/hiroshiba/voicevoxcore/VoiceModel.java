@@ -3,7 +3,7 @@ package jp.hiroshiba.voicevoxcore;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 /** 音声モデル。 */
 public class VoiceModel extends Dll {

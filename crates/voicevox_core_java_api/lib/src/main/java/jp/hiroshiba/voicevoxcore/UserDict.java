@@ -4,10 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.internal.LinkedTreeMap;
+import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.HashMap;
-import javax.annotation.Nonnull;
 
 /** ユーザー辞書。 */
 public class UserDict extends Dll {

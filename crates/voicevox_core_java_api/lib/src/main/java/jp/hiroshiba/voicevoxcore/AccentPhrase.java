@@ -2,10 +2,10 @@ package jp.hiroshiba.voicevoxcore;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /** AccentPhrase (アクセント句ごとの情報)。 */
 public class AccentPhrase {

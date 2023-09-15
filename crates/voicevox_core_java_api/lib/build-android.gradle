@@ -11,13 +11,9 @@ plugins {
 }
 
 def String cargoToml = file('../../../Cargo.toml').text
-def String cargoTomlVersion = (cargoToml =~ /version = "([0-9.]+)"/)[0][1]
-
-def String target = System.getenv('TARGET')?.toLowerCase() ?: "cpu"
-def boolean isGpu = target.contains('cuda') || target.contains('directml')
+def String cargoTomlVersion = (cargoToml =~ /(?m)^version = "(\S+)"$/)[0][1]
 
 version = cargoTomlVersion
-
 
 repositories {
     google()
@@ -30,14 +26,14 @@ dependencies {
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
-    implementation 'com.google.guava:guava:31.1-jre'
-
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
 
     // https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api
     implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.0.2'
+
+    // https://mvnrepository.com/artifact/jakarta.annotation/jakarta.annotation-api
+    implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: '2.1.1'
 
     implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime-android', version: '1.14.0'
 }

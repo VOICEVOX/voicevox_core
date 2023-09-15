@@ -19,8 +19,8 @@ plugins {
 }
 
 rootProject.name = 'jp.hiroshiba.voicevoxcore'
-def String target = System.getenv('TARGET')?.toLowerCase() ?: "cpu"
-def boolean isAndroid = target == 'android'
+def String targetOs = System.getenv('OS')?.toLowerCase() ?: "desktop"
+def boolean isAndroid = targetOs == 'android'
 include('lib')
 if (isAndroid) {
     project(':lib').buildFileName = 'build-android.gradle'

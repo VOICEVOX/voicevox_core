@@ -1,10 +1,10 @@
 package jp.hiroshiba.voicevoxcore;
 
 import com.google.gson.Gson;
+import jakarta.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 /**
  * 音声シンセサイザ。
