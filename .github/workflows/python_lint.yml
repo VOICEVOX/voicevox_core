@@ -32,7 +32,7 @@ jobs:
       - name: Check code style for voicevox_core_python_api
         run: |
           black --check .
-          isort --check --profile black .
+          isort --check .
       - name: Check code style for example/python
         working-directory: ./example/python
         run: |
