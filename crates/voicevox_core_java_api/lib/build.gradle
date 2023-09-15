@@ -17,8 +17,6 @@ def String cargoTomlVersion = (cargoToml =~ /(?m)^version = "(\S+)"$/)[0][1]
 def String device = System.getenv('DEVICE')?.toLowerCase() ?: "cpu"
 def boolean isGpu = ['cuda', 'directml'].contains(device)
 
-version = cargoTomlVersion
-
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
@@ -30,19 +28,10 @@ dependencies {
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // https://mvnrepository.com/artifact/com.google.code.gson/gson
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
-
-    // https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api
-    implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.0.2'
-
-    // https://mvnrepository.com/artifact/jakarta.annotation/jakarta.annotation-api
-    implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: '2.1.1'
-
     if (isGpu) {
-        implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime_gpu', version: '1.14.0'
+        implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime_gpu', version: gradle.ext.onnxruntimeVersion
     } else {
-        implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime', version: '1.14.0'
+        implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime', version: gradle.ext.onnxruntimeVersion
     }
 }
 

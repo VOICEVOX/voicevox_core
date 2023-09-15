@@ -27,3 +27,15 @@ if (isAndroid) {
 } else {
     project(':lib').buildFileName = 'build.gradle'
 }
+
+def String cargoToml = file('../../Cargo.toml').text
+def String cargoTomlVersion = (cargoToml =~ /(?m)^version = "(\S+)"$/)[0][1]
+
+gradle.ext {
+  version = cargoTomlVersion
+
+  gsonVersion = '2.10.1'
+  jakartaValidationVersion = '3.0.2'
+  jakartaAnnotationVersion = '2.1.1'
+  onnxruntimeVersion = '1.14.0'
+}

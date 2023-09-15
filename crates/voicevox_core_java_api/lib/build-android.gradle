@@ -3,10 +3,7 @@ plugins {
     id 'org.jetbrains.kotlin.android' version '1.9.10'
 }
 
-def String cargoToml = file('../../../Cargo.toml').text
-def String cargoTomlVersion = (cargoToml =~ /(?m)^version = "(\S+)"$/)[0][1]
-
-version = cargoTomlVersion
+version = gradle.ext.version
 
 repositories {
     google()
@@ -20,15 +17,15 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1'
+    implementation group: 'com.google.code.gson', name: 'gson', version: gradle.ext.gsonVersion
 
     // https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api
-    implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.0.2'
+    implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: gradle.ext.jakartaValidationVersion
 
     // https://mvnrepository.com/artifact/jakarta.annotation/jakarta.annotation-api
-    implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: '2.1.1'
+    implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: gradle.ext.jakartaAnnotationVersion
 
-    implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime-android', version: '1.14.0'
+    implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime-android', version: gradle.ext.onnxruntimeVersion
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
