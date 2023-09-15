@@ -212,7 +212,6 @@ jobs:
             # shellcheck disable=SC2086
             [ -e "${{ matrix.download_dir }}"/${item} ]
           done
-
       - name: Check should not exists files
         run: |
           mapfile -t items < <(echo -n '${{ matrix.check_not_exists_items }}')
