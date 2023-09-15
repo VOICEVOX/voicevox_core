@@ -6,11 +6,11 @@ on:
       - main
   pull_request:
     paths:
-      - './example/python/**.py'
-      - './crates/voicevox_core_python_api/**.py'
-      - './crates/voicevox_core_python_api/requirements*.txt'
-      - './crates/voicevox_core_python_api/pyproject.toml'
-      - './.github/workflows/python_lint.yml'
+      - 'example/python/**.py'
+      - 'crates/voicevox_core_python_api/**.py'
+      - 'crates/voicevox_core_python_api/requirements*.txt'
+      - 'crates/voicevox_core_python_api/pyproject.toml'
+      - '.github/workflows/python_lint.yml'
 
 defaults:
   run:
