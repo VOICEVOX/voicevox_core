@@ -34,6 +34,9 @@ def String cargoTomlVersion = (cargoToml =~ /(?m)^version = "(\S+)"$/)[0][1]
 gradle.ext {
   version = cargoTomlVersion
 
+  targetOs = targetOs
+  targetDevice = System.getenv('DEVICE') ?: 'cpu'
+
   gsonVersion = '2.10.1'
   jakartaValidationVersion = '3.0.2'
   jakartaAnnotationVersion = '2.1.1'

@@ -11,11 +11,9 @@ plugins {
     id "com.diffplug.spotless" version "6.20.0"
 }
 
-def String cargoToml = file('../../../Cargo.toml').text
-def String cargoTomlVersion = (cargoToml =~ /(?m)^version = "(\S+)"$/)[0][1]
+def boolean isGpu = ['cuda', 'directml'].contains(gradle.ext.device)
 
-def String device = System.getenv('DEVICE')?.toLowerCase() ?: "cpu"
-def boolean isGpu = ['cuda', 'directml'].contains(device)
+version = gradle.ext.version
 
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -27,6 +25,15 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    implementation group: 'com.google.code.gson', name: 'gson', version: gradle.ext.gsonVersion
+
+    // https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api
+    implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: gradle.ext.jakartaValidationVersion
+
+    // https://mvnrepository.com/artifact/jakarta.annotation/jakarta.annotation-api
+    implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: gradle.ext.jakartaAnnotationVersion
 
     if (isGpu) {
         implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime_gpu', version: gradle.ext.onnxruntimeVersion
