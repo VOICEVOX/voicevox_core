@@ -16,6 +16,9 @@ name = "e2e"
 directml = ["voicevox_core/directml"]
 
 [dependencies]
+anstream = { version = "0.5.0", default-features = false, features = ["auto"] }
+anstyle-query = "1.0.0"
+colorchoice = "1.0.0"
 cstr = "0.2.11"
 derive-getters.workspace = true
 itertools.workspace = true
