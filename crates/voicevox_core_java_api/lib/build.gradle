@@ -8,6 +8,7 @@
 plugins {
     // Apply the java-library plugin for API and implementation separation.
     id 'java-library'
+    id 'maven-publish'
     id "com.diffplug.spotless" version "6.20.0"
 }
 
@@ -47,6 +48,8 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(8)
     }
+
+    withJavadocJar()
 }
 tasks.named('test') {
     // Use JUnit Platform for unit tests.
@@ -59,5 +62,16 @@ compileTestJava.options.encoding = 'UTF-8'
 spotless {
     java {
         googleJavaFormat()
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'jp.hiroshiba.voicevoxcore'
+            artifactId = gradle.ext.targetDevice == 'cpu' ? 'voicevoxcore' : "voicevoxcore-${gradle.ext.targetDevice}"
+            version = gradle.ext.version
+            from components.java
+        }
     }
 }

@@ -256,6 +256,15 @@ jobs:
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
           if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
+      - name: cache target
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: build voicevox_core_c_api
         shell: bash
         run: |
@@ -286,6 +295,17 @@ jobs:
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
+      - name: build voicevox_core_java_api
+        if: "!endsWith(matrix.target, 'ios')"
+        run: |
+          function build() {
+            cargo build -p voicevox_core_java_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+          }
+          if ${{ github.event.inputs.is_production != 'true' }}; then
+            build
+          else
+            build > /dev/null 2>&1
+          fi
       - name: Set ASSET_NAME env var
         run: echo "ASSET_NAME=voicevox_core-${{ matrix.artifact_name }}-${{ env.VERSION }}" >> "$GITHUB_ENV"
       - name: Organize artifact
@@ -300,6 +320,11 @@ jobs:
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
           cp -vr model "artifact/${{ env.ASSET_NAME }}/"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
+
+          mkdir java_artifact
+          cp -v crates/voicevox_core_java_api/target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
+          cp -v crates/voicevox_core_java_api/target/${{ matrix.target }}/release/libvoicevox_core_java_api.dylib java_artifact/ || true
+          cp -v crates/voicevox_core_java_api/target/${{ matrix.target }}/release/voicevox_core_java_api.dll java_artifact/ || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
         run: |
@@ -309,7 +334,7 @@ jobs:
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
       - name: Upload artifact to build XCFramework
         if: contains(matrix.target, 'ios')
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: voicevox_core-${{ matrix.target }}
           path: artifact/${{ env.ASSET_NAME }}
@@ -335,6 +360,12 @@ jobs:
           files: |-
             ${{ steps.build-voicevox-core-python-api.outputs.whl }}
           target_commitish: ${{ github.sha }}
+      - name: Upload voicevox_core_java_api to artifact
+        if: env.VERSION != '0.0.0' && !contains(matrix.target, 'ios')
+        uses: actions/upload-artifact@v3
+        with:
+          name: voicevox_core_java_api-${{ matrix.artifact_name }}
+          path: java_artifact
 
   build_xcframework:
     if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
@@ -388,4 +419,115 @@ jobs:
           tag_name: ${{ env.VERSION }}
           files: |-
             ${{ env.ASSET_NAME }}.zip
+          target_commitish: ${{ github.sha }}
+
+  build_java_api:
+    runs-on: ubuntu-latest
+    if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
+    needs:
+      - build_and_deploy
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-file
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: "11"
+          distribution: "adopt"
+      - uses: nttld/setup-ndk@v1
+        if: endsWith(matrix.target, '-linux-android')
+        with:
+          ndk-version: r25b
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+      - name: Install cargo-edit
+        run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
+      - name: set cargo version
+        run: |
+          cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
+      - name: Download artifact
+        run: |
+          mkdir artifact
+          cd artifact
+          gh run download ${{ github.run_id }} -R ${{ github.repository }} -p voicevox_core_java_api-*
+
+      - name: Build voicevoxcore
+        run: |
+          cat <<EOF > files.txt
+          windows-x64-cpu|windows-x64
+          windows-x86-cpu|windows-x86
+          linux-x64-cpu|linux-x64
+          linux-arm64-cpu|linux-arm64
+          osx-x64-cpu|macos-x64
+          osx-arm64-cpu|macos-arm64
+          EOF
+
+          for line in $(cat files.txt); do
+            IFS='|' read artifact_name target <<< "$line"
+            cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+          done
+
+          cd crates/voicevox_core_java_api
+          OS=desktop DEVICE=cpu gradle publishToMavenLocal
+
+      - name: Build voicevoxcore-directml
+        run: |
+          cat <<EOF > files.txt
+          windows-x64-directml|windows-x64
+          EOF
+
+          for line in $(cat files.txt); do
+            IFS='|' read artifact_name target <<< "$line"
+            cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+          done
+
+          cd crates/voicevox_core_java_api
+          OS=desktop DEVICE=directml gradle publishToMavenLocal
+
+      - name: Build voicevoxcore-cuda
+        run: |
+          cat <<EOF > files.txt
+          windows-x64-cuda|windows-x64
+          linux-x64-gpu|linux-x64
+          EOF
+
+          for line in $(cat files.txt); do
+            IFS='|' read artifact_name target <<< "$line"
+            cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+          done
+
+          cd crates/voicevox_core_java_api
+          OS=desktop DEVICE=cuda gradle publishToMavenLocal
+
+      - name: Build voicevoxcore-android
+        run: |
+          rm -rf crates/voicevox_core_java_api/lib/src/main/resources/dll
+          cat <<EOF > files.txt
+          android-arm64-cpu|arm64-v8a
+          android-x86_64-cpu|x86_64
+          EOF
+
+          for line in $(cat files.txt); do
+            IFS='|' read artifact_name target <<< "$line"
+            cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+          done
+
+          cd crates/voicevox_core_java_api
+          OS=android DEVICE=cpu gradle publishToMavenLocal
+
+      - name: Package
+        run: |
+          cd ~/.m2/repository
+          rm -rf dev || true
+          zip -r /tmp/java_packages.zip .
+
+      - name: Upload to Release
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            /tmp/java_packages.zip
           target_commitish: ${{ github.sha }}
