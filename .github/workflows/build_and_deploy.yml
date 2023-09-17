@@ -362,7 +362,7 @@ jobs:
           files: |-
             ${{ steps.build-voicevox-core-python-api.outputs.whl }}
           target_commitish: ${{ github.sha }}
-      - name: Upload voicevox_core_java_api to artifact
+      - name: Upload voicevox_core_java_api artifact
         if: env.VERSION != '0.0.0' && !contains(matrix.target, 'ios')
         uses: actions/upload-artifact@v3
         with:
