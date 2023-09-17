@@ -263,9 +263,9 @@ jobs:
           path: |
             ~/.cargo
             target
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.artifact_name }}
+          key: ${{ matrix.artifact_name }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-rust-
+            ${{ matrix.artifact_name }}-rust-
       - name: build voicevox_core_c_api
         shell: bash
         run: |
@@ -448,13 +448,71 @@ jobs:
       - name: set cargo version
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
-      - name: Download artifact
-        run: |
-          mkdir artifact
-          cd artifact
-          gh run download ${{ github.run_id }} -R ${{ github.repository }} -p voicevox_core_java_api-*
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: "Download artifact (windows-x64-cpu)"
+        uses: actions/download-artifact@v3
+        with:
+          name: voicevox_core_java_api-windows-x64-cpu
+          path: artifact/windows-x64-cpu
+
+      - name: "Download artifact (windows-x64-directml)"
+        uses: actions/download-artifact@v3
+        with:
+          name: voicevox_core_java_api-windows-x64-directml
+          path: artifact/windows-x64-directml
+
+      - name: "Download artifact (windows-x64-cuda)"
+        uses: actions/download-artifact@v3
+        with:
+          name: voicevox_core_java_api-windows-x64-cuda
+          path: artifact/windows-x64-cuda
+
+      - name: "Download artifact (windows-x86-cpu)"
+        uses: actions/download-artifact@v3
+        with:
+          name: voicevox_core_java_api-windows-x86-cpu
+          path: artifact/windows-x86-cpu
+
+      - name: "Download artifact (linux-x64-cpu)"
+        uses: actions/download-artifact@v3
+        with:
+          name: voicevox_core_java_api-linux-x64-cpu
+          path: artifact/linux-x64-cpu
+
+      - name: "Download artifact (linux-x64-gpu)"
+        uses: actions/download-artifact@v3
+        with:
+          name: voicevox_core_java_api-linux-x64-gpu
+          path: artifact/linux-x64-gpu
+
+      - name: "Download artifact (linux-arm64-cpu)"
+        uses: actions/download-artifact@v3
+        with:
+          name: voicevox_core_java_api-linux-arm64-cpu
+          path: artifact/linux-arm64-cpu
+
+      - name: "Download artifact (android-arm64-cpu)"
+        uses: actions/download-artifact@v3
+        with:
+          name: voicevox_core_java_api-android-arm64-cpu
+          path: artifact/android-arm64-cpu
+
+      - name: "Download artifact (android-x86_64-cpu)"
+        uses: actions/download-artifact@v3
+        with:
+          name: voicevox_core_java_api-android-x86_64-cpu
+          path: artifact/android-x86_64-cpu
+
+      - name: "Download artifact (osx-arm64-cpu)"
+        uses: actions/download-artifact@v3
+        with:
+          name: voicevox_core_java_api-osx-arm64-cpu
+          path: artifact/osx-arm64-cpu
+
+      - name: "Download artifact (osx-x64-cpu)"
+        uses: actions/download-artifact@v3
+        with:
+          name: voicevox_core_java_api-osx-x64-cpu
+          path: artifact/osx-x64-cpu
 
       - name: Build voicevoxcore
         run: |
@@ -467,7 +525,7 @@ jobs:
           osx-arm64-cpu|macos-arm64
           EOF
             IFS='|' read -r artifact_name target <<< "$line"
-            cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+            cp -v "artifact/${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
           cd crates/voicevox_core_java_api
@@ -479,7 +537,7 @@ jobs:
           windows-x64-directml|windows-x64
           EOF
             IFS='|' read -r artifact_name target <<< "$line"
-            cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+            cp -v "artifact/${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
           cd crates/voicevox_core_java_api
@@ -492,7 +550,7 @@ jobs:
           linux-x64-gpu|linux-x64
           EOF
             IFS='|' read -r artifact_name target <<< "$line"
-            cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+            cp -v "artifact/${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
           cd crates/voicevox_core_java_api
@@ -506,7 +564,7 @@ jobs:
           android-x86_64-cpu|x86_64
           EOF
             IFS='|' read -r artifact_name target <<< "$line"
-            cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+            cp -v "artifact/${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
           cd crates/voicevox_core_java_api
