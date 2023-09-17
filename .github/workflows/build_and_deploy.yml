@@ -458,7 +458,7 @@ jobs:
 
       - name: Build voicevoxcore
         run: |
-          cat <<EOF > files.txt
+          cat <<EOF | while read -r line; do
           windows-x64-cpu|windows-x64
           windows-x86-cpu|windows-x86
           linux-x64-cpu|linux-x64
@@ -466,9 +466,7 @@ jobs:
           osx-x64-cpu|macos-x64
           osx-arm64-cpu|macos-arm64
           EOF
-
-          for line in $(cat files.txt); do
-            IFS='|' read artifact_name target <<< "$line"
+            IFS='|' read -r artifact_name target <<< "$line"
             cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
@@ -477,12 +475,10 @@ jobs:
 
       - name: Build voicevoxcore-directml
         run: |
-          cat <<EOF > files.txt
+          cat <<EOF | while read -r line; do
           windows-x64-directml|windows-x64
           EOF
-
-          for line in $(cat files.txt); do
-            IFS='|' read artifact_name target <<< "$line"
+            IFS='|' read -r artifact_name target <<< "$line"
             cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
@@ -491,13 +487,11 @@ jobs:
 
       - name: Build voicevoxcore-cuda
         run: |
-          cat <<EOF > files.txt
+          cat <<EOF | while read -r line; do
           windows-x64-cuda|windows-x64
           linux-x64-gpu|linux-x64
           EOF
-
-          for line in $(cat files.txt); do
-            IFS='|' read artifact_name target <<< "$line"
+            IFS='|' read -r artifact_name target <<< "$line"
             cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
@@ -507,13 +501,11 @@ jobs:
       - name: Build voicevoxcore-android
         run: |
           rm -rf crates/voicevox_core_java_api/lib/src/main/resources/dll
-          cat <<EOF > files.txt
+          cat <<EOF | while read -r line; do
           android-arm64-cpu|arm64-v8a
           android-x86_64-cpu|x86_64
           EOF
-
-          for line in $(cat files.txt); do
-            IFS='|' read artifact_name target <<< "$line"
+            IFS='|' read -r artifact_name target <<< "$line"
             cp -v "artifact/voicevox_core_java_api-${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
