@@ -292,7 +292,8 @@ jobs:
           else
             build > /dev/null 2>&1
           fi
-          echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
+          ls -l ./target/wheels
+          echo "whl=$(find ./target/wheels -type f | head -1)" >> "$GITHUB_OUTPUT"
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_java_api
