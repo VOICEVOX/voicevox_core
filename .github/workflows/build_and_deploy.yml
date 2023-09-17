@@ -513,6 +513,8 @@ jobs:
         with:
           name: voicevox_core_java_api-osx-x64-cpu
           path: artifact/osx-x64-cpu
+      - name: Print tree
+        run: tree artifact
 
       - name: Build voicevoxcore
         run: |
