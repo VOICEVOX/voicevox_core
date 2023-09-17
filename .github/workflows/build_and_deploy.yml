@@ -322,9 +322,9 @@ jobs:
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
           mkdir java_artifact
-          cp -v crates/voicevox_core_java_api/target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
-          cp -v crates/voicevox_core_java_api/target/${{ matrix.target }}/release/libvoicevox_core_java_api.dylib java_artifact/ || true
-          cp -v crates/voicevox_core_java_api/target/${{ matrix.target }}/release/voicevox_core_java_api.dll java_artifact/ || true
+          cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
+          cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.dylib java_artifact/ || true
+          cp -v target/${{ matrix.target }}/release/voicevox_core_java_api.dll java_artifact/ || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
         run: |
