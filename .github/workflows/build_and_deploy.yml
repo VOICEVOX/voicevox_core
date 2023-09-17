@@ -263,7 +263,7 @@ jobs:
           path: |
             ~/.cargo
             target
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.artifact_name }}
           restore-keys: |
             ${{ runner.os }}-rust-
       - name: build voicevox_core_c_api
