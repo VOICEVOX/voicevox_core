@@ -258,13 +258,14 @@ jobs:
           if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
       - name: cache target
         uses: actions/cache@v3
+        if: github.event.inputs.is_production != 'true'
         with:
           path: |
             ~/.cargo
             target
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            ${{ runner.os }}-rust-
       - name: build voicevox_core_c_api
         shell: bash
         run: |
