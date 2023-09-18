@@ -34,8 +34,6 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(8)
     }
-
-    withJavadocJar()
 }
 
 android {
@@ -56,6 +54,11 @@ android {
             jniLibs.srcDirs = ["./src/main/resources/jniLibs"]
         }
     }
+    publishing {
+        singleVariant("release") {
+            withJavadocJar()
+        }
+    }
 }
 
 publishing {
@@ -64,7 +67,10 @@ publishing {
             groupId = 'jp.hiroshiba.voicevoxcore'
             artifactId = gradle.ext.targetDevice == 'cpu' ? 'voicevoxcore-android' : "voicevoxcore-android-${gradle.ext.targetDevice}"
             version = gradle.ext.version
-            from components.java
+
+            afterEvaluate {
+                from components.release
+            }
         }
     }
 }
