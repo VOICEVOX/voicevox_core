@@ -2,8 +2,8 @@ package jp.hiroshiba.voicevoxcore;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 /** モーラ（子音＋母音）ごとの情報。 */
 public class Mora {

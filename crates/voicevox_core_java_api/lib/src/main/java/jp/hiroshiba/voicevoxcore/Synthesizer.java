@@ -1,11 +1,10 @@
 package jp.hiroshiba.voicevoxcore;
 
 import com.google.gson.Gson;
-import java.lang.ref.Cleaner;
+import jakarta.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 /**
  * 音声シンセサイザ。
@@ -14,11 +13,14 @@ import javax.annotation.Nonnull;
  */
 public class Synthesizer extends Dll {
   private long handle;
-  private static final Cleaner cleaner = Cleaner.create();
 
   private Synthesizer(OpenJtalk openJtalk, Builder builder) {
     rsNewWithInitialize(openJtalk, builder);
-    cleaner.register(this, () -> rsDrop());
+  }
+
+  protected void finalize() throws Throwable {
+    rsDrop();
+    super.finalize();
   }
 
   /**
