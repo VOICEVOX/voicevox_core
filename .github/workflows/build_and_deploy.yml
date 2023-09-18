@@ -539,7 +539,7 @@ jobs:
           cat <<EOF | while read -r line; do
           windows-x64-directml|windows-x64
           EOF
-            mkdir "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+            IFS='|' read -r artifact_name target <<< "$line"
             cp -v artifact/$artifact_name/* "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
@@ -566,8 +566,8 @@ jobs:
           android-arm64-cpu|arm64-v8a
           android-x86_64-cpu|x86_64
           EOF
-            mkdir -p "crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/${target}/"
             IFS='|' read -r artifact_name target <<< "$line"
+            mkdir "crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/${target}/"
             cp -v artifact/$artifact_name/* "crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/${target}/"
           done
 
