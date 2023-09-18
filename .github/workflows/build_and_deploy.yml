@@ -528,7 +528,7 @@ jobs:
           EOF
             IFS='|' read -r artifact_name target <<< "$line"
             mkdir "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
-            cp -v "artifact/${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+            cp -v artifact/$artifact_name/* "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
           cd crates/voicevox_core_java_api
@@ -540,7 +540,7 @@ jobs:
           windows-x64-directml|windows-x64
           EOF
             mkdir "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
-            cp -v "artifact/${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+            cp -v artifact/$artifact_name/* "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
           cd crates/voicevox_core_java_api
@@ -553,7 +553,7 @@ jobs:
           linux-x64-gpu|linux-x64
           EOF
             IFS='|' read -r artifact_name target <<< "$line"
-            cp -v "artifact/${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
+            cp -v artifact/$artifact_name/* "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
           done
 
           cd crates/voicevox_core_java_api
@@ -568,7 +568,7 @@ jobs:
           EOF
             mkdir -p "crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/${target}/"
             IFS='|' read -r artifact_name target <<< "$line"
-            cp -v "artifact/${artifact_name}/*" "crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/${target}/"
+            cp -v artifact/$artifact_name/* "crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/${target}/"
           done
 
           cd crates/voicevox_core_java_api
