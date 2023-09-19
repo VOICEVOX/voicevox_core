@@ -13,13 +13,15 @@ use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::*;
 use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
+use anstream::{AutoStream, RawStream};
 use chrono::SecondsFormat;
+use colorchoice::ColorChoice;
 use derive_getters::Getters;
 use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
-use std::io::{self, IsTerminal, Write};
+use std::io;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -37,6 +39,23 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
     let _ = init_logger();
 
     fn init_logger() -> std::result::Result<(), impl Sized> {
+        let ansi = {
+            // anstyle系のクレートを利用して次の2つを行う。
+            //
+            // * ANSI escape codeを出してよいかの判定（環境変数のチェックとisatty）
+            // * 必要であれば`ENABLE_VIRTUAL_TERMINAL_PROCESSING`の有効化
+
+            assert_eq!(
+                ColorChoice::Auto,
+                ColorChoice::global(),
+                "`ColorChoice::write_global` should not have been called",
+            );
+
+            AutoStream::choice(&out()) != ColorChoice::Never
+                && anstyle_query::term_supports_ansi_color()
+                && anstyle_query::windows::enable_ansi_colors().unwrap_or(true)
+        };
+
         tracing_subscriber::fmt()
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
@@ -44,7 +63,7 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
                 "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
-            .with_ansi(out().is_terminal() && env_allows_ansi())
+            .with_ansi(ansi)
             .with_writer(out)
             .try_init()
     }
@@ -55,20 +74,10 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
         wtr.write_str(&chrono::Local::now().to_rfc3339_opts(SecondsFormat::Micros, false))
     }
 
-    fn out() -> impl IsTerminal + Write {
+    fn out() -> impl RawStream {
         io::stderr()
     }
 
-    fn env_allows_ansi() -> bool {
-        // https://docs.rs/termcolor/1.2.0/src/termcolor/lib.rs.html#245-291
-        // ただしWindowsではPowerShellっぽかったらそのまま許可する。
-        // ちゃんとやるなら`ENABLE_VIRTUAL_TERMINAL_PROCESSING`をチェックするなり、そもそも
-        // fwdansiとかでWin32の色に変換するべきだが、面倒。
-        env::var_os("TERM").map_or(
-            cfg!(windows) && env::var_os("PSModulePath").is_some(),
-            |term| term != "dumb",
-        ) && env::var_os("NO_COLOR").is_none()
-    }
     Runtime::new().unwrap()
 });
 

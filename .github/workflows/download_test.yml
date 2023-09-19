@@ -1,5 +1,12 @@
 name: Download test workflow
+
 on:
+  workflow_call:
+    inputs:
+      version:
+        description: "テスト対象のコアのバージョン。無指定時はprerelease込みの最新release。"
+        type: string
+        required: false
   push:
     branches:
       - main
@@ -10,7 +17,7 @@ on:
       - ".github/workflows/download_test.yml"
 
 env:
-  VERSION: "prerelease-latest"
+  VERSION: ${{ inputs.version || 'prerelease-latest' }}
 
 defaults:
   run:
@@ -28,7 +35,7 @@ jobs:
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
-              model/metas.json
+              model/README.*
               open_jtalk_dic_utf_8-1.11
               README.txt
             # https://github.com/VOICEVOX/voicevox_core/pull/411#issuecomment-1412457592
@@ -46,7 +53,7 @@ jobs:
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
-              model/metas.json
+              model/README.*
               open_jtalk_dic_utf_8-1.11
               README.txt
             check_not_exists_items: |
@@ -63,7 +70,7 @@ jobs:
             download_dir: other_output
             check_items: |
               voicevox_core.dll
-              model/metas.json
+              model/README.*
               open_jtalk_dic_utf_8-1.11
               README.txt
             check_not_exists_items: |
@@ -80,7 +87,7 @@ jobs:
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
-              model/metas.json
+              model/README.*
               README.txt
             check_not_exists_items: |
               *directml*
@@ -97,7 +104,7 @@ jobs:
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
-              model/metas.json
+              model/README.*
               open_jtalk_dic_utf_8-1.11
               README.txt
               DirectML.dll
@@ -116,7 +123,7 @@ jobs:
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
-              model/metas.json
+              model/README.*
               README.txt
             check_not_exists_items: |
               *cuda*
@@ -134,7 +141,7 @@ jobs:
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
-              model/metas.json
+              model/README.*
               open_jtalk_dic_utf_8-1.11
               README.txt
               EULA.txt
@@ -156,7 +163,7 @@ jobs:
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
-              model/metas.json
+              model/README.*
               README.txt
             check_not_exists_items: |
               *directml*
