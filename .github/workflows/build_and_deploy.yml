@@ -258,15 +258,8 @@ jobs:
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
           if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
       - name: cache target
-        uses: actions/cache@v3
+        uses: Swatinem/rust-cache@v2
         if: github.event.inputs.is_production != 'true'
-        with:
-          path: |
-            ~/.cargo
-            target
-          key: ${{ matrix.artifact_name }}-rust-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ matrix.artifact_name }}-rust-
       - name: build voicevox_core_c_api
         shell: bash
         run: |
@@ -285,6 +278,7 @@ jobs:
         if: matrix.whl_local_version
         id: build-voicevox-core-python-api
         run: |
+          rm -rf ./target/wheels
           pip install -r ./crates/voicevox_core_python_api/requirements.txt
           function build() {
             maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
@@ -295,7 +289,7 @@ jobs:
             build > /dev/null 2>&1
           fi
           ls -l ./target/wheels
-          echo "whl=$(find ./target/wheels -type f | head -1)" >> "$GITHUB_OUTPUT"
+          echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_java_api
