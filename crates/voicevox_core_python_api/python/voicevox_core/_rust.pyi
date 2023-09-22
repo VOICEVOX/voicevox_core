@@ -153,11 +153,11 @@ class Synthesizer:
         style_id: int,
     ) -> AudioQuery:
         """
-        :class:`AudioQuery` を生成する。
+        AquesTalk風記法から :class:`AudioQuery` を生成する。
 
         Parameters
         ----------
-        text
+        kana
             AquesTalk風記法。
         style_id
             スタイルID。
@@ -173,12 +173,18 @@ class Synthesizer:
         style_id: int,
     ) -> AudioQuery:
         """
-        :class:`AudioQuery` を生成する。
+        日本語のテキストから :class:`AudioQuery` を生成する。
 
-        :param text: UTF-8の日本語テキスト。
-        :param style_id: スタイルID。
+        Parameters
+        ----------
+        text
+            UTF-8の日本語テキスト。
+        style_id
+            スタイルID。
 
-        :returns: 話者とテキストから生成された :class:`AudioQuery` 。
+        Returns
+        -------
+        話者とテキストから生成された :class:`AudioQuery` 。
         """
         ...
     async def create_accent_phrases_from_kana(
@@ -187,12 +193,18 @@ class Synthesizer:
         style_id: int,
     ) -> List[AccentPhrase]:
         """
-        AccentPhrase (アクセント句)の配列を生成する。
+        AquesTalk風記法からAccentPhrase（アクセント句）の配列を生成する。
 
-        :param kana: AquesTalk風記法。
-        :param style_id: スタイルID。
+        Parameters
+        ----------
+        kana
+            AquesTalk風記法。
+        style_id
+            スタイルID。
 
-        :returns: :class:`AccentPhrase` の配列。
+        Returns
+        -------
+        :class:`AccentPhrase` の配列。
         """
         ...
     async def create_accent_phrases(
@@ -201,7 +213,7 @@ class Synthesizer:
         style_id: int,
     ) -> List[AccentPhrase]:
         """
-        AccentPhrase（アクセント句）の配列を生成する。
+        日本語のテキストからAccentPhrase（アクセント句）の配列を生成する。
 
         Parameters
         ----------
@@ -303,13 +315,16 @@ class Synthesizer:
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
-        テキスト音声合成を実行する。
+        AquesTalk風記法から音声合成を行う。
 
-        :param kana: AquesTalk風記法。
-        :param style_id: スタイルID。
-        :param enable_interrogative_upspeak: 疑問文の調整を有効にする。
-
-        :returns: WAVデータ。
+        Parameters
+        ----------
+        kana
+            AquesTalk風記法。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
         """
         ...
     async def tts(
@@ -319,7 +334,7 @@ class Synthesizer:
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
-        テキスト音声合成を実行する。
+        日本語のテキストから音声合成を行う。
 
         Parameters
         ----------
