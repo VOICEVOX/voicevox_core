@@ -1,7 +1,7 @@
 use std::ffi::{c_char, c_int, c_void};
 
 use libloading::{Library, Symbol};
-use voicevox_core::result_code::VoicevoxResultCode;
+use strum::EnumIter;
 
 /// voicevox\_core\_c\_apiのcdylibのシンボルを集めたもの。
 #[allow(dead_code)] // TODO: WIP
@@ -55,8 +55,8 @@ pub(crate) struct Symbols<'lib> {
         'lib,
         unsafe extern "C" fn(*const VoicevoxSynthesizer, VoicevoxVoiceModelId) -> bool,
     >,
-    pub(crate) voicevox_synthesizer_get_metas_json:
-        Symbol<'lib, unsafe extern "C" fn(*const VoicevoxSynthesizer) -> *const c_char>,
+    pub(crate) voicevox_synthesizer_create_metas_json:
+        Symbol<'lib, unsafe extern "C" fn(*const VoicevoxSynthesizer) -> *mut c_char>,
     pub(crate) voicevox_create_supported_devices_json:
         Symbol<'lib, unsafe extern "C" fn(*mut *mut c_char) -> VoicevoxResultCode>,
     pub(crate) voicevox_synthesizer_create_audio_query_from_kana: Symbol<
@@ -220,7 +220,7 @@ impl<'lib> Symbols<'lib> {
             voicevox_synthesizer_unload_voice_model,
             voicevox_synthesizer_is_gpu_mode,
             voicevox_synthesizer_is_loaded_voice_model,
-            voicevox_synthesizer_get_metas_json,
+            voicevox_synthesizer_create_metas_json,
             voicevox_create_supported_devices_json,
             voicevox_synthesizer_create_audio_query_from_kana,
             voicevox_synthesizer_create_audio_query,
@@ -263,6 +263,36 @@ type VoicevoxSynthesizer = c_void;
 type VoicevoxStyleId = u32;
 
 #[repr(i32)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, EnumIter)]
+#[allow(non_camel_case_types)]
+pub(crate) enum VoicevoxResultCode {
+    VOICEVOX_RESULT_OK = 0,
+    VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR = 1,
+    VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR = 3,
+    VOICEVOX_RESULT_GPU_SUPPORT_ERROR = 4,
+    VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR = 6,
+    VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR = 7,
+    VOICEVOX_RESULT_INFERENCE_ERROR = 8,
+    VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR = 11,
+    VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR = 12,
+    VOICEVOX_RESULT_PARSE_KANA_ERROR = 13,
+    VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR = 14,
+    VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR = 15,
+    VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR = 16,
+    VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR = 17,
+    VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR = 18,
+    VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR = 26,
+    VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 27,
+    VOICEVOX_RESULT_UNLOADED_MODEL_ERROR = 19,
+    VOICEVOX_RESULT_LOAD_USER_DICT_ERROR = 20,
+    VOICEVOX_RESULT_SAVE_USER_DICT_ERROR = 21,
+    VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR = 22,
+    VOICEVOX_RESULT_USE_USER_DICT_ERROR = 23,
+    VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR = 24,
+    VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
+}
+
+#[repr(i32)]
 #[allow(non_camel_case_types)]
 pub(crate) enum VoicevoxAccelerationMode {
     VOICEVOX_ACCELERATION_MODE_CPU = 1,
@@ -272,7 +302,6 @@ pub(crate) enum VoicevoxAccelerationMode {
 pub(crate) struct VoicevoxInitializeOptions {
     pub(crate) acceleration_mode: VoicevoxAccelerationMode,
     pub(crate) _cpu_num_threads: u16,
-    pub(crate) load_all_models: bool,
 }
 
 #[repr(C)]

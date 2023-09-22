@@ -12,12 +12,14 @@ mod manifest;
 mod metas;
 mod numerics;
 mod result;
-pub mod result_code;
 mod status;
 mod user_dict;
 mod version;
 mod voice_model;
 mod voice_synthesizer;
+
+#[doc(hidden)]
+pub mod __internal;
 
 use self::inference_core::*;
 

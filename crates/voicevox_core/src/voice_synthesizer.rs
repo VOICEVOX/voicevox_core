@@ -65,7 +65,6 @@ pub enum AccelerationMode {
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
     pub cpu_num_threads: u16,
-    pub load_all_models: bool,
 }
 
 /// 音声シンセサイザ。
@@ -128,12 +127,7 @@ impl Synthesizer {
 
         Ok(Self {
             synthesis_engine: SynthesisEngine::new(
-                InferenceCore::new_with_initialize(
-                    use_gpu,
-                    options.cpu_num_threads,
-                    options.load_all_models,
-                )
-                .await?,
+                InferenceCore::new_with_initialize(use_gpu, options.cpu_num_threads).await?,
                 open_jtalk,
             ),
             use_gpu,
@@ -146,18 +140,18 @@ impl Synthesizer {
     }
 
     /// 音声モデルを読み込む。
-    pub async fn load_voice_model(&mut self, model: &VoiceModel) -> Result<()> {
+    pub async fn load_voice_model(&self, model: &VoiceModel) -> Result<()> {
         self.synthesis_engine
-            .inference_core_mut()
+            .inference_core()
             .load_model(model)
             .await?;
         Ok(())
     }
 
     /// 音声モデルの読み込みを解除する。
-    pub fn unload_voice_model(&mut self, voice_model_id: &VoiceModelId) -> Result<()> {
+    pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
         self.synthesis_engine
-            .inference_core_mut()
+            .inference_core()
             .unload_model(voice_model_id)
     }
 
@@ -176,7 +170,7 @@ impl Synthesizer {
     }
 
     /// 今読み込んでいる音声モデルのメタ情報を返す。
-    pub fn metas(&self) -> &VoiceModelMeta {
+    pub fn metas(&self) -> VoiceModelMeta {
         self.synthesis_engine.inference_core().metas()
     }
 
@@ -350,7 +344,7 @@ impl Synthesizer {
         style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
-            return Err(Error::NotLoadedOpenjtalkDict);
+            return Err(ErrorRepr::NotLoadedOpenjtalkDict.into());
         }
         self.synthesis_engine
             .create_accent_phrases(text, style_id)
@@ -593,7 +587,7 @@ mod tests {
     #[case(Ok(()))]
     #[tokio::test]
     async fn load_model_works(#[case] expected_result_at_initialized: Result<()>) {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -634,7 +628,7 @@ mod tests {
     #[tokio::test]
     async fn is_loaded_model_by_style_id_works(#[case] style_id: u32, #[case] expected: bool) {
         let style_id = StyleId::new(style_id);
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -663,7 +657,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_duration_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -695,7 +689,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_intonation_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -737,7 +731,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn decode_works() {
-        let mut syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -834,12 +828,14 @@ mod tests {
             Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
-                load_all_models: true,
                 ..Default::default()
             },
         )
         .await
         .unwrap();
+
+        let model = &VoiceModel::sample().await.unwrap();
+        syntesizer.load_voice_model(model).await.unwrap();
 
         let query = match input {
             Input::Kana(input) => {
@@ -901,12 +897,14 @@ mod tests {
             Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
-                load_all_models: true,
                 ..Default::default()
             },
         )
         .await
         .unwrap();
+
+        let model = &VoiceModel::sample().await.unwrap();
+        syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = match input {
             Input::Kana(input) => {
@@ -965,12 +963,14 @@ mod tests {
             Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
-                load_all_models: true,
                 ..Default::default()
             },
         )
         .await
         .unwrap();
+
+        let model = &VoiceModel::sample().await.unwrap();
+        syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
             .create_accent_phrases("これはテストです", StyleId::new(0))
@@ -1000,12 +1000,14 @@ mod tests {
             Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
-                load_all_models: true,
                 ..Default::default()
             },
         )
         .await
         .unwrap();
+
+        let model = &VoiceModel::sample().await.unwrap();
+        syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
             .create_accent_phrases("これはテストです", StyleId::new(0))
@@ -1031,12 +1033,14 @@ mod tests {
             Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
-                load_all_models: true,
                 ..Default::default()
             },
         )
         .await
         .unwrap();
+
+        let model = &VoiceModel::sample().await.unwrap();
+        syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
             .create_accent_phrases("これはテストです", StyleId::new(0))

@@ -95,10 +95,6 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR = 1,
   /**
-   * modelの読み込みに失敗した
-   */
-  VOICEVOX_RESULT_LOAD_MODEL_ERROR = 2,
-  /**
    * サポートされているデバイス情報取得に失敗した
    */
   VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR = 3,
@@ -106,10 +102,6 @@ enum VoicevoxResultCode
    * GPUモードがサポートされていない
    */
   VOICEVOX_RESULT_GPU_SUPPORT_ERROR = 4,
-  /**
-   * メタ情報読み込みに失敗した
-   */
-  VOICEVOX_RESULT_LOAD_METAS_ERROR = 5,
   /**
    * 無効なstyle_idが指定された
    */
@@ -143,17 +135,25 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR = 15,
   /**
-   * ファイルオープンエラー
+   * ZIPファイルを開くことに失敗した
    */
-  VOICEVOX_RESULT_OPEN_FILE_ERROR = 16,
+  VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR = 16,
   /**
-   * Modelを読み込めなかった
+   * ZIP内のファイルが読めなかった
    */
-  VOICEVOX_RESULT_VVM_MODEL_READ_ERROR = 17,
+  VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR = 17,
   /**
-   * すでに読み込まれているModelを読み込もうとした
+   * すでに読み込まれている音声モデルを読み込もうとした
    */
-  VOICEVOX_RESULT_ALREADY_LOADED_MODEL_ERROR = 18,
+  VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR = 18,
+  /**
+   * すでに読み込まれているスタイルを読み込もうとした
+   */
+  VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR = 26,
+  /**
+   * 無効なモデルデータ
+   */
+  VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 27,
   /**
    * Modelが読み込まれていない
    */
@@ -272,10 +272,6 @@ typedef struct VoicevoxInitializeOptions {
    * 0を指定すると環境に合わせたCPUが利用される
    */
   uint16_t cpu_num_threads;
-  /**
-   * 全てのモデルを読み込む
-   */
-  bool load_all_models;
 } VoicevoxInitializeOptions;
 
 /**
@@ -545,7 +541,7 @@ void voicevox_synthesizer_delete(struct VoicevoxSynthesizer *synthesizer);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_synthesizer_load_voice_model(struct VoicevoxSynthesizer *synthesizer,
+VoicevoxResultCode voicevox_synthesizer_load_voice_model(const struct VoicevoxSynthesizer *synthesizer,
                                                          const struct VoicevoxVoiceModel *model);
 
 /**
@@ -564,7 +560,7 @@ VoicevoxResultCode voicevox_synthesizer_load_voice_model(struct VoicevoxSynthesi
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_synthesizer_unload_voice_model(struct VoicevoxSynthesizer *synthesizer,
+VoicevoxResultCode voicevox_synthesizer_unload_voice_model(const struct VoicevoxSynthesizer *synthesizer,
                                                            VoicevoxVoiceModelId model_id);
 
 /**
@@ -605,19 +601,20 @@ bool voicevox_synthesizer_is_loaded_voice_model(const struct VoicevoxSynthesizer
 /**
  * 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
  *
+ * JSONの解放は ::voicevox_json_free で行う。
+ *
  * @param [in] synthesizer 音声シンセサイザ
  *
  * @return メタ情報のJSON文字列
  *
  * \safety{
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`synthesizer`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
  * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-const char *voicevox_synthesizer_get_metas_json(const struct VoicevoxSynthesizer *synthesizer);
+char *voicevox_synthesizer_create_metas_json(const struct VoicevoxSynthesizer *synthesizer);
 
 /**
  * このライブラリで利用可能なデバイスの情報を、JSONで取得する。
@@ -984,6 +981,7 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  * \safety{
  * - `json`は以下のAPIで得られたポインタでなくてはいけない。
  *     - ::voicevox_create_supported_devices_json
+ *     - ::voicevox_synthesizer_create_metas_json
  *     - ::voicevox_synthesizer_create_audio_query
  *     - ::voicevox_synthesizer_create_accent_phrases
  *     - ::voicevox_synthesizer_replace_mora_data

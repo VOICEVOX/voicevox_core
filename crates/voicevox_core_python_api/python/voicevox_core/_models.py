@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import pydantic
 
-from ._rust import _validate_pronunciation, _to_zenkaku
+from ._rust import _to_zenkaku, _validate_pronunciation
 
 
 @pydantic.dataclasses.dataclass
@@ -166,28 +166,64 @@ class AudioQuery:
 
 
 class UserDictWordType(str, Enum):
+    """ユーザー辞書の単語の品詞。"""
+
     PROPER_NOUN = "PROPER_NOUN"
+    """固有名詞。"""
+
     COMMON_NOUN = "COMMON_NOUN"
+    """一般名詞。"""
+
     VERB = "VERB"
+    """動詞。"""
+
     ADJECTIVE = "ADJECTIVE"
+    """形容詞。"""
+
     SUFFIX = "SUFFIX"
+    """語尾。"""
 
 
 @pydantic.dataclasses.dataclass
 class UserDictWord:
+    """ユーザー辞書の単語。"""
+
     surface: str
+    """言葉の表層形。"""
+
     pronunciation: str
+    """
+    言葉の発音。
+
+    カタカナで表記する。
+    """
+
     accent_type: int = dataclasses.field(default=0)
+    """
+    アクセント型。
+
+    音が下がる場所を指す。
+    """
+
     word_type: UserDictWordType = dataclasses.field(
         default=UserDictWordType.COMMON_NOUN
     )
+    """品詞。"""
+
     priority: int = dataclasses.field(default=5)
+    """
+    単語の優先度。
+
+    0から10までの整数。
+    数字が大きいほど優先度が高くなる。
+    1から9までの値を指定することを推奨する。
+    """
 
     @pydantic.validator("pronunciation")
-    def validate_pronunciation(cls, v):
+    def _validate_pronunciation(cls, v):
         _validate_pronunciation(v)
         return v
 
     @pydantic.validator("surface")
-    def validate_surface(cls, v):
+    def _validate_surface(cls, v):
         return _to_zenkaku(v)

@@ -7,17 +7,21 @@ mod c_impls;
 mod compatible_engine;
 mod drop_check;
 mod helpers;
+mod result_code;
 mod slice_owner;
 use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::*;
+use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
+use anstream::{AutoStream, RawStream};
 use chrono::SecondsFormat;
+use colorchoice::ColorChoice;
 use derive_getters::Getters;
 use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
-use std::io::{self, IsTerminal, Write};
+use std::io;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -31,13 +35,27 @@ use voicevox_core::{
 };
 use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions, Synthesizer};
 
-#[cfg(test)]
-use rstest::*;
-
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
     let _ = init_logger();
 
     fn init_logger() -> std::result::Result<(), impl Sized> {
+        let ansi = {
+            // anstyle系のクレートを利用して次の2つを行う。
+            //
+            // * ANSI escape codeを出してよいかの判定（環境変数のチェックとisatty）
+            // * 必要であれば`ENABLE_VIRTUAL_TERMINAL_PROCESSING`の有効化
+
+            assert_eq!(
+                ColorChoice::Auto,
+                ColorChoice::global(),
+                "`ColorChoice::write_global` should not have been called",
+            );
+
+            AutoStream::choice(&out()) != ColorChoice::Never
+                && anstyle_query::term_supports_ansi_color()
+                && anstyle_query::windows::enable_ansi_colors().unwrap_or(true)
+        };
+
         tracing_subscriber::fmt()
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
@@ -45,7 +63,7 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
                 "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
-            .with_ansi(out().is_terminal() && env_allows_ansi())
+            .with_ansi(ansi)
             .with_writer(out)
             .try_init()
     }
@@ -56,20 +74,10 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
         wtr.write_str(&chrono::Local::now().to_rfc3339_opts(SecondsFormat::Micros, false))
     }
 
-    fn out() -> impl IsTerminal + Write {
+    fn out() -> impl RawStream {
         io::stderr()
     }
 
-    fn env_allows_ansi() -> bool {
-        // https://docs.rs/termcolor/1.2.0/src/termcolor/lib.rs.html#245-291
-        // ただしWindowsではPowerShellっぽかったらそのまま許可する。
-        // ちゃんとやるなら`ENABLE_VIRTUAL_TERMINAL_PROCESSING`をチェックするなり、そもそも
-        // fwdansiとかでWin32の色に変換するべきだが、面倒。
-        env::var_os("TERM").map_or(
-            cfg!(windows) && env::var_os("PSModulePath").is_some(),
-            |term| term != "dumb",
-        ) && env::var_os("NO_COLOR").is_none()
-    }
     Runtime::new().unwrap()
 });
 
@@ -177,8 +185,6 @@ pub extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: Box<OpenJtalkRc>) {
     drop(open_jtalk);
 }
 
-pub use voicevox_core::result_code::VoicevoxResultCode;
-
 /// ハードウェアアクセラレーションモードを設定する設定値。
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq)]
@@ -200,8 +206,6 @@ pub struct VoicevoxInitializeOptions {
     /// CPU利用数を指定
     /// 0を指定すると環境に合わせたCPUが利用される
     cpu_num_threads: u16,
-    /// 全てのモデルを読み込む
-    load_all_models: bool,
 }
 
 /// デフォルトの初期化オプションを生成する
@@ -316,7 +320,6 @@ pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
 #[derive(Getters)]
 pub struct VoicevoxSynthesizer {
     synthesizer: Synthesizer,
-    metas_cstring: CString,
 }
 
 /// ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。
@@ -376,14 +379,10 @@ pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesiz
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_load_voice_model(
-    synthesizer: &mut VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     model: &VoicevoxVoiceModel,
 ) -> VoicevoxResultCode {
-    into_result_code_with_error(
-        RUNTIME
-            .block_on(synthesizer.load_voice_model(model.model()))
-            .map_err(Into::into),
-    )
+    into_result_code_with_error(RUNTIME.block_on(synthesizer.load_voice_model(model.model())))
 }
 
 /// 音声モデルの読み込みを解除する。
@@ -399,7 +398,7 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
-    synthesizer: &mut VoicevoxSynthesizer,
+    synthesizer: &VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
@@ -448,19 +447,21 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
 
 /// 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
 ///
+/// JSONの解放は ::voicevox_json_free で行う。
+///
 /// @param [in] synthesizer 音声シンセサイザ
 ///
 /// @return メタ情報のJSON文字列
 ///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
-/// - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`synthesizer`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
 /// }
 #[no_mangle]
-pub extern "C" fn voicevox_synthesizer_get_metas_json(
+pub extern "C" fn voicevox_synthesizer_create_metas_json(
     synthesizer: &VoicevoxSynthesizer,
-) -> *const c_char {
-    synthesizer.metas().as_ptr()
+) -> *mut c_char {
+    let metas = synthesizer.metas();
+    C_STRING_DROP_CHECKER.whitelist(metas).into_raw()
 }
 
 /// このライブラリで利用可能なデバイスの情報を、JSONで取得する。
@@ -976,6 +977,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// \safety{
 /// - `json`は以下のAPIで得られたポインタでなくてはいけない。
 ///     - ::voicevox_create_supported_devices_json
+///     - ::voicevox_synthesizer_create_metas_json
 ///     - ::voicevox_synthesizer_create_audio_query
 ///     - ::voicevox_synthesizer_create_accent_phrases
 ///     - ::voicevox_synthesizer_replace_mora_data
@@ -1031,11 +1033,7 @@ pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    let message = CStr::from_bytes_with_nul(
-        voicevox_core::result_code::error_result_to_message(result_code).as_ref(),
-    )
-    .expect("`error_result_to_message`が返す文字列はヌル終端であるはずである");
-
+    let message = result_code::error_result_to_message(result_code);
     C_STRING_DROP_CHECKER.blacklist(message).as_ptr()
 }
 
@@ -1046,6 +1044,7 @@ pub struct VoicevoxUserDict {
 }
 
 /// ユーザー辞書の単語。
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct VoicevoxUserDictWord {
     /// 表記
@@ -1146,11 +1145,11 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_add_word(
     user_dict: &VoicevoxUserDict,
-    word: &VoicevoxUserDictWord, // FIXME: <https://github.com/VOICEVOX/voicevox_core/pull/534>に従う
+    word: *const VoicevoxUserDictWord,
     output_word_uuid: NonNull<[u8; 16]>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let word = word.try_into_word()?;
+        let word = word.read_unaligned().try_into_word()?;
         let uuid = {
             let mut dict = user_dict.dict.lock().expect("lock failed");
             dict.add_word(word)?
@@ -1177,11 +1176,11 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
 pub unsafe extern "C" fn voicevox_user_dict_update_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: &[u8; 16],
-    word: &VoicevoxUserDictWord, // FIXME: <https://github.com/VOICEVOX/voicevox_core/pull/534>に従う
+    word: *const VoicevoxUserDictWord,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
-        let word = word.try_into_word()?;
+        let word = word.read_unaligned().try_into_word()?;
         {
             let mut dict = user_dict.dict.lock().expect("lock failed");
             dict.update_word(word_uuid, word)?;
@@ -1303,38 +1302,4 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_delete(user_dict: Box<VoicevoxUserDict>) {
     drop(user_dict);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use anyhow::anyhow;
-    use pretty_assertions::assert_eq;
-    use voicevox_core::Error;
-    use voicevox_core::Result;
-
-    #[rstest]
-    #[case(Ok(()), VoicevoxResultCode::VOICEVOX_RESULT_OK)]
-    #[case(
-        Err(Error::NotLoadedOpenjtalkDict),
-        VoicevoxResultCode::VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR
-    )]
-    #[case(
-        Err(Error::LoadModel {
-            path: "path/to/model.onnx".into(),
-            source: anyhow!("some load model error"),
-        }),
-        VoicevoxResultCode::VOICEVOX_RESULT_LOAD_MODEL_ERROR
-    )]
-    #[case(
-        Err(Error::GetSupportedDevices(anyhow!("some get supported devices error"))),
-        VoicevoxResultCode::VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR
-    )]
-    fn into_result_code_with_error_works(
-        #[case] result: Result<()>,
-        #[case] expected: VoicevoxResultCode,
-    ) {
-        let actual = into_result_code_with_error(result.map_err(Into::into));
-        assert_eq!(expected, actual);
-    }
 }

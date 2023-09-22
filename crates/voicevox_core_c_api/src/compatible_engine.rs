@@ -3,7 +3,6 @@ use std::{collections::BTreeMap, sync::Arc};
 use super::*;
 use libc::c_int;
 
-pub use voicevox_core::result_code::VoicevoxResultCode;
 use voicevox_core::{OpenJtalk, StyleId, VoiceModel};
 
 macro_rules! ensure_initialized {
@@ -27,7 +26,7 @@ struct VoiceModelSet {
 }
 
 static VOICE_MODEL_SET: Lazy<Mutex<VoiceModelSet>> = Lazy::new(|| {
-    let all_vvms = RUNTIME.block_on(VoiceModel::get_all_models()).unwrap();
+    let all_vvms = RUNTIME.block_on(VoiceModel::get_all_models());
     let model_map: BTreeMap<_, _> = all_vvms
         .iter()
         .map(|vvm| (vvm.id().clone(), vvm.clone()))
@@ -69,18 +68,29 @@ fn set_message(message: &str) {
 
 #[no_mangle]
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
-    let result = RUNTIME.block_on(voicevox_core::Synthesizer::new_with_initialize(
-        Arc::new(OpenJtalk::new_without_dic()),
-        &voicevox_core::InitializeOptions {
-            acceleration_mode: if use_gpu {
-                voicevox_core::AccelerationMode::Gpu
-            } else {
-                voicevox_core::AccelerationMode::Cpu
+    let result = RUNTIME.block_on((|| async {
+        let synthesizer = voicevox_core::Synthesizer::new_with_initialize(
+            Arc::new(OpenJtalk::new_without_dic()),
+            &voicevox_core::InitializeOptions {
+                acceleration_mode: if use_gpu {
+                    voicevox_core::AccelerationMode::Gpu
+                } else {
+                    voicevox_core::AccelerationMode::Cpu
+                },
+                cpu_num_threads: cpu_num_threads as u16,
             },
-            cpu_num_threads: cpu_num_threads as u16,
-            load_all_models,
-        },
-    ));
+        )
+        .await?;
+
+        if load_all_models {
+            for model in &VoiceModel::get_all_models().await {
+                synthesizer.load_voice_model(model).await?;
+            }
+        }
+
+        Ok::<_, voicevox_core::Error>(synthesizer)
+    })());
+
     match result {
         Ok(synthesizer) => {
             *lock_synthesizer() = Some(synthesizer);

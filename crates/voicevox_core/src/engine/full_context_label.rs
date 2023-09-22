@@ -5,7 +5,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 #[derive(thiserror::Error, Debug)]
-pub enum FullContextLabelError {
+pub(crate) enum FullContextLabelError {
     #[error("label parse error label:{label}")]
     LabelParse { label: String },
 
@@ -49,7 +49,7 @@ fn string_feature_by_regex(re: &Regex, label: &str) -> Result<String> {
 }
 
 impl Phoneme {
-    pub fn from_label(label: impl Into<String>) -> Result<Self> {
+    pub(crate) fn from_label(label: impl Into<String>) -> Result<Self> {
         let mut contexts = HashMap::<String, String>::with_capacity(10);
         let label = label.into();
         contexts.insert("p3".into(), string_feature_by_regex(&P3_REGEX, &label)?);
@@ -116,7 +116,7 @@ pub struct AccentPhrase {
 }
 
 impl AccentPhrase {
-    pub fn from_phonemes(mut phonemes: Vec<Phoneme>) -> Result<Self> {
+    pub(crate) fn from_phonemes(mut phonemes: Vec<Phoneme>) -> Result<Self> {
         let mut moras = Vec::with_capacity(phonemes.len());
         let mut mora_phonemes = Vec::with_capacity(phonemes.len());
         for i in 0..phonemes.len() {
@@ -208,7 +208,7 @@ pub struct BreathGroup {
 }
 
 impl BreathGroup {
-    pub fn from_phonemes(phonemes: Vec<Phoneme>) -> Result<Self> {
+    pub(crate) fn from_phonemes(phonemes: Vec<Phoneme>) -> Result<Self> {
         let mut accent_phrases = Vec::with_capacity(phonemes.len());
         let mut accent_phonemes = Vec::with_capacity(phonemes.len());
         for i in 0..phonemes.len() {
@@ -256,7 +256,7 @@ pub struct Utterance {
 }
 
 impl Utterance {
-    pub fn from_phonemes(phonemes: Vec<Phoneme>) -> Result<Self> {
+    pub(crate) fn from_phonemes(phonemes: Vec<Phoneme>) -> Result<Self> {
         let mut breath_groups = vec![];
         let mut group_phonemes = Vec::with_capacity(phonemes.len());
         let mut pauses = vec![];
@@ -305,7 +305,7 @@ impl Utterance {
         self.phonemes().iter().map(|p| p.label().clone()).collect()
     }
 
-    pub fn extract_full_context_label(
+    pub(crate) fn extract_full_context_label(
         open_jtalk: &open_jtalk::OpenJtalk,
         text: impl AsRef<str>,
     ) -> Result<Self> {

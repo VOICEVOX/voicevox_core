@@ -11,16 +11,18 @@ from ._models import (  # noqa: F401
     UserDictWord,
     UserDictWordType,
 )
-from ._rust import (
+from ._rust import (  # noqa: F401
     OpenJtalk,
     Synthesizer,
+    UserDict,
     VoiceModel,
     VoicevoxError,
-    UserDict,
+    __version__,
     supported_devices,
-)  # noqa: F401
+)
 
 __all__ = [
+    "__version__",
     "AccelerationMode",
     "AccentPhrase",
     "AudioQuery",

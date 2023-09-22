@@ -1,27 +1,17 @@
-use std::{
-    collections::HashMap,
-    ffi::{CStr, CString},
-    mem::MaybeUninit,
-};
+use std::{collections::HashMap, ffi::CString, mem::MaybeUninit};
 
 use assert_cmd::assert::AssertResult;
+use cstr::cstr;
 use libloading::Library;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use test_util::OPEN_JTALK_DIC_DIR;
-use voicevox_core::result_code::VoicevoxResultCode;
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     snapshots,
-    symbols::{Symbols, VoicevoxAccelerationMode, VoicevoxInitializeOptions},
+    symbols::{Symbols, VoicevoxAccelerationMode, VoicevoxInitializeOptions, VoicevoxResultCode},
 };
-
-macro_rules! cstr {
-    ($s:literal $(,)?) => {
-        CStr::from_bytes_with_nul(concat!($s, '\0').as_ref()).unwrap()
-    };
-}
 
 case!(TestCase {
     text: "こんにちは、音声合成の世界へようこそ".to_owned()

@@ -124,14 +124,12 @@ impl Synthesizer {
         open_jtalk,
         acceleration_mode = InitializeOptions::default().acceleration_mode,
         cpu_num_threads = InitializeOptions::default().cpu_num_threads,
-        load_all_models = InitializeOptions::default().load_all_models,
     ))]
     fn new_with_initialize(
         py: Python,
         open_jtalk: OpenJtalk,
         #[pyo3(from_py_with = "from_acceleration_mode")] acceleration_mode: AccelerationMode,
         cpu_num_threads: u16,
-        load_all_models: bool,
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let synthesizer = voicevox_core::Synthesizer::new_with_initialize(
@@ -139,7 +137,6 @@ impl Synthesizer {
                 &InitializeOptions {
                     acceleration_mode,
                     cpu_num_threads,
-                    load_all_models,
                 },
             )
             .await
@@ -178,7 +175,7 @@ impl Synthesizer {
     #[getter]
     fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
         let synthesizer = self.synthesizer.get()?;
-        to_pydantic_voice_model_meta(RUNTIME.block_on(synthesizer.lock()).metas(), py)
+        to_pydantic_voice_model_meta(&RUNTIME.block_on(synthesizer.lock()).metas(), py)
     }
 
     fn load_voice_model<'py>(
@@ -514,12 +511,12 @@ impl<T, C: PyTypeInfo> Drop for Closable<T, C> {
 
 #[pyfunction]
 fn _validate_pronunciation(pronunciation: &str) -> PyResult<()> {
-    voicevox_core::validate_pronunciation(pronunciation).into_py_result()
+    voicevox_core::__internal::validate_pronunciation(pronunciation).into_py_result()
 }
 
 #[pyfunction]
 fn _to_zenkaku(text: &str) -> PyResult<String> {
-    Ok(voicevox_core::to_zenkaku(text))
+    Ok(voicevox_core::__internal::to_zenkaku(text))
 }
 
 #[pyclass]

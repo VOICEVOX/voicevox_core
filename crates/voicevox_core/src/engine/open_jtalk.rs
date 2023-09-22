@@ -7,10 +7,10 @@ use tempfile::NamedTempFile;
 
 use ::open_jtalk::*;
 
-use crate::{Error, UserDict};
+use crate::{error::ErrorRepr, UserDict};
 
 #[derive(thiserror::Error, Debug)]
-pub enum OpenJtalkError {
+pub(crate) enum OpenJtalkError {
     #[error("open_jtalk load error")]
     Load { mecab_dict_dir: PathBuf },
     #[error("open_jtalk extract_fullcontext error")]
@@ -21,7 +21,7 @@ pub enum OpenJtalkError {
     },
 }
 
-pub type Result<T> = std::result::Result<T, OpenJtalkError>;
+type Result<T> = std::result::Result<T, OpenJtalkError>;
 
 /// テキスト解析器としてのOpen JTalk。
 pub struct OpenJtalk {
@@ -54,7 +54,7 @@ impl OpenJtalk {
     ) -> crate::result::Result<Self> {
         let mut s = Self::new_without_dic();
         s.load(open_jtalk_dict_dir)
-            .map_err(|_| Error::NotLoadedOpenjtalkDict)?;
+            .map_err(|_| ErrorRepr::NotLoadedOpenjtalkDict)?;
         Ok(s)
     }
 
@@ -67,15 +67,16 @@ impl OpenJtalk {
             .dict_dir
             .as_ref()
             .and_then(|dict_dir| dict_dir.to_str())
-            .ok_or(Error::NotLoadedOpenjtalkDict)?;
+            .ok_or(ErrorRepr::NotLoadedOpenjtalkDict)?;
 
         // ユーザー辞書用のcsvを作成
-        let mut temp_csv = NamedTempFile::new().map_err(|e| Error::UseUserDict(e.to_string()))?;
+        let mut temp_csv =
+            NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.to_string()))?;
         temp_csv
             .write_all(user_dict.to_mecab_format().as_bytes())
-            .map_err(|e| Error::UseUserDict(e.to_string()))?;
+            .map_err(|e| ErrorRepr::UseUserDict(e.to_string()))?;
         let temp_csv_path = temp_csv.into_temp_path();
-        let temp_dict = NamedTempFile::new().map_err(|e| Error::UseUserDict(e.to_string()))?;
+        let temp_dict = NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.to_string()))?;
         let temp_dict_path = temp_dict.into_temp_path();
 
         // Mecabでユーザー辞書をコンパイル
@@ -99,15 +100,15 @@ impl OpenJtalk {
         let result = mecab.load_with_userdic(Path::new(dict_dir), Some(Path::new(&temp_dict_path)));
 
         if !result {
-            return Err(Error::UseUserDict(
-                "辞書のコンパイルに失敗しました".to_string(),
-            ));
+            return Err(
+                ErrorRepr::UseUserDict("辞書のコンパイルに失敗しました".to_string()).into(),
+            );
         }
 
         Ok(())
     }
 
-    pub fn extract_fullcontext(&self, text: impl AsRef<str>) -> Result<Vec<String>> {
+    pub(crate) fn extract_fullcontext(&self, text: impl AsRef<str>) -> Result<Vec<String>> {
         let Resources {
             mecab,
             njd,

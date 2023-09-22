@@ -4,17 +4,17 @@ use std::{
 };
 
 use assert_cmd::assert::AssertResult;
+use cstr::cstr;
 use libloading::Library;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use test_util::OPEN_JTALK_DIC_DIR;
-use voicevox_core::result_code::VoicevoxResultCode;
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     snapshots,
-    symbols::{Symbols, VoicevoxAccelerationMode, VoicevoxInitializeOptions},
+    symbols::{Symbols, VoicevoxAccelerationMode, VoicevoxInitializeOptions, VoicevoxResultCode},
 };
 
 case!(TestCase);
@@ -27,11 +27,14 @@ impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
             voicevox_make_default_initialize_options,
+            voicevox_voice_model_new_from_path,
             voicevox_open_jtalk_rc_new,
             voicevox_open_jtalk_rc_delete,
             voicevox_synthesizer_new_with_initialize,
             voicevox_synthesizer_delete,
-            voicevox_synthesizer_get_metas_json,
+            voicevox_synthesizer_create_metas_json,
+            voicevox_synthesizer_load_voice_model,
+            voicevox_json_free,
             ..
         } = Symbols::new(lib)?;
 
@@ -51,7 +54,6 @@ impl assert_cdylib::TestCase for TestCase {
                 openjtalk,
                 VoicevoxInitializeOptions {
                     acceleration_mode: VoicevoxAccelerationMode::VOICEVOX_ACCELERATION_MODE_CPU,
-                    load_all_models: true,
                     ..voicevox_make_default_initialize_options()
                 },
                 synthesizer.as_mut_ptr(),
@@ -59,10 +61,23 @@ impl assert_cdylib::TestCase for TestCase {
             synthesizer.assume_init()
         };
 
+        let model = {
+            let mut model = MaybeUninit::uninit();
+            assert_ok(voicevox_voice_model_new_from_path(
+                cstr!("../../model/sample.vvm").as_ptr(),
+                model.as_mut_ptr(),
+            ));
+            model.assume_init()
+        };
+
+        assert_ok(voicevox_synthesizer_load_voice_model(synthesizer, model));
+
         let metas_json = {
-            let metas_json =
-                CStr::from_ptr(voicevox_synthesizer_get_metas_json(synthesizer)).to_str()?;
-            serde_json::to_string_pretty(&metas_json.parse::<serde_json::Value>()?).unwrap()
+            let raw = voicevox_synthesizer_create_metas_json(synthesizer);
+            let metas_json = &CStr::from_ptr(raw).to_str()?.parse::<serde_json::Value>()?;
+            let metas_json = serde_json::to_string_pretty(metas_json).unwrap();
+            voicevox_json_free(raw);
+            metas_json
         };
 
         std::assert_eq!(SNAPSHOTS.metas, metas_json);

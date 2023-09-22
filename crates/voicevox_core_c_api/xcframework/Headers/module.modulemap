@@ -1,0 +1,4 @@
+module VoicevoxCore {
+  header "voicevox_core.h"
+  export *
+}

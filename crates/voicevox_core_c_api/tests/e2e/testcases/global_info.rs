@@ -1,16 +1,17 @@
-use std::{ffi::CStr, mem::MaybeUninit};
+use std::{collections::HashMap, ffi::CStr, mem::MaybeUninit, str};
 
 use assert_cmd::assert::AssertResult;
 use libloading::Library;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use strum::IntoEnumIterator;
-use voicevox_core::{result_code::VoicevoxResultCode, SupportedDevices};
+use voicevox_core::SupportedDevices;
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     snapshots,
-    symbols::Symbols,
+    symbols::{Symbols, VoicevoxResultCode},
 };
 
 case!(TestCase);
@@ -51,8 +52,10 @@ impl assert_cdylib::TestCase for TestCase {
 
         for result_code in VoicevoxResultCode::iter() {
             std::assert_eq!(
-                voicevox_core::result_code::error_result_to_message(result_code).as_bytes(),
-                CStr::from_ptr(voicevox_error_result_to_message(result_code)).to_bytes_with_nul(),
+                SNAPSHOTS.result_messages[&(result_code as _)],
+                str::from_utf8(
+                    CStr::from_ptr(voicevox_error_result_to_message(result_code)).to_bytes()
+                )?,
             );
         }
         return Ok(());
@@ -75,7 +78,10 @@ impl assert_cdylib::TestCase for TestCase {
 
 static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(global_info);
 
+#[serde_as]
 #[derive(Deserialize)]
 struct Snapshots {
+    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
+    result_messages: HashMap<i32, String>,
     stderr: String,
 }
