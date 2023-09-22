@@ -128,15 +128,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsLoadedV
 }
 
 #[no_mangle]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuery<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQueryFromKana<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
-    text: JString<'local>,
+    kana: JString<'local>,
     style_id: jint,
-    kana: jboolean,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
-        let text: String = env.get_string(&text)?.into();
+        let kana: String = env.get_string(&kana)?.into();
         let style_id = style_id as u32;
 
         let internal = env
@@ -145,15 +146,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
 
         let audio_query = {
             let internal = internal.lock().unwrap();
-            let options = voicevox_core::AudioQueryOptions {
-                kana: kana != 0,
-                // ..Default::default()
-            };
-            RUNTIME.block_on(internal.audio_query(
-                &text,
-                voicevox_core::StyleId::new(style_id),
-                &options,
-            ))?
+            RUNTIME.block_on(
+                internal.audio_query_from_kana(&kana, voicevox_core::StyleId::new(style_id)),
+            )?
         };
 
         let query_json = serde_json::to_string(&audio_query)?;
@@ -165,12 +160,72 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
 }
 
 #[no_mangle]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuery<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    text: JString<'local>,
+    style_id: jint,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let text: String = env.get_string(&text)?.into();
+        let style_id = style_id as u32;
+
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
+
+        let audio_query = {
+            let internal = internal.lock().unwrap();
+            RUNTIME.block_on(internal.audio_query(&text, voicevox_core::StyleId::new(style_id)))?
+        };
+
+        let query_json = serde_json::to_string(&audio_query)?;
+
+        let j_audio_query = env.new_string(query_json)?;
+
+        Ok(j_audio_query.into_raw())
+    })
+}
+
+#[no_mangle]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhrasesFromKana<
+    'local,
+>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    kana: JString<'local>,
+    style_id: jint,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let kana: String = env.get_string(&kana)?.into();
+        let style_id = style_id as u32;
+
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
+
+        let accent_phrases = {
+            let internal = internal.lock().unwrap();
+            RUNTIME.block_on(
+                internal
+                    .create_accent_phrases_from_kana(&kana, voicevox_core::StyleId::new(style_id)),
+            )?
+        };
+
+        let query_json = serde_json::to_string(&accent_phrases)?;
+
+        let j_accent_phrases = env.new_string(query_json)?;
+
+        Ok(j_accent_phrases.into_raw())
+    })
+}
+
+#[no_mangle]
 unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhrases<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     text: JString<'local>,
     style_id: jint,
-    kana: jboolean,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let text: String = env.get_string(&text)?.into();
@@ -182,15 +237,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhr
 
         let accent_phrases = {
             let internal = internal.lock().unwrap();
-            let options = voicevox_core::AccentPhrasesOptions {
-                kana: kana != 0,
-                // ..Default::default()
-            };
-            RUNTIME.block_on(internal.create_accent_phrases(
-                &text,
-                voicevox_core::StyleId::new(style_id),
-                &options,
-            ))?
+            RUNTIME.block_on(
+                internal.create_accent_phrases(&text, voicevox_core::StyleId::new(style_id)),
+            )?
         };
 
         let query_json = serde_json::to_string(&accent_phrases)?;
@@ -331,12 +380,46 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsSynthesis
 }
 
 #[no_mangle]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTtsFromKana<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    kana: JString<'local>,
+    style_id: jint,
+    enable_interrogative_upspeak: jboolean,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let kana: String = env.get_string(&kana)?.into();
+        let style_id = style_id as u32;
+
+        let internal = env
+            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .clone();
+
+        let wave = {
+            let internal = internal.lock().unwrap();
+            let options = voicevox_core::TtsOptions {
+                enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
+                // ..Default::default()
+            };
+            RUNTIME.block_on(internal.tts_from_kana(
+                &kana,
+                voicevox_core::StyleId::new(style_id),
+                &options,
+            ))?
+        };
+
+        let j_bytes = env.byte_array_from_slice(&wave)?;
+
+        Ok(j_bytes.into_raw())
+    })
+}
+
+#[no_mangle]
 unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTts<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     query_json: JString<'local>,
     style_id: jint,
-    kana: jboolean,
     enable_interrogative_upspeak: jboolean,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
@@ -350,7 +433,6 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTts<'loca
         let wave = {
             let internal = internal.lock().unwrap();
             let options = voicevox_core::TtsOptions {
-                kana: kana != 0,
                 enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
                 // ..Default::default()
             };
