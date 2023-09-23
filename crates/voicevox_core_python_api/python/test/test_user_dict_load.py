@@ -19,7 +19,7 @@ async def test_user_dict_load() -> None:
     await synthesizer.load_voice_model(model)
 
     audio_query_without_dict = await synthesizer.audio_query(
-        "this_word_should_not_exist_in_default_dictionary", style_id=0, kana=False
+        "this_word_should_not_exist_in_default_dictionary", style_id=0
     )
 
     temp_dict = voicevox_core.UserDict()
@@ -34,6 +34,6 @@ async def test_user_dict_load() -> None:
     open_jtalk.use_user_dict(temp_dict)
 
     audio_query_with_dict = await synthesizer.audio_query(
-        "this_word_should_not_exist_in_default_dictionary", style_id=0, kana=False
+        "this_word_should_not_exist_in_default_dictionary", style_id=0
     )
     assert audio_query_without_dict != audio_query_with_dict

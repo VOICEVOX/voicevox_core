@@ -34,7 +34,6 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_synthesizer_new_with_initialize,
             voicevox_synthesizer_delete,
             voicevox_synthesizer_load_voice_model,
-            voicevox_make_default_audio_query_options,
             voicevox_synthesizer_create_audio_query,
             voicevox_make_default_synthesis_options,
             voicevox_synthesizer_synthesis,
@@ -84,7 +83,6 @@ impl assert_cdylib::TestCase for TestCase {
                 synthesizer,
                 text.as_ptr(),
                 STYLE_ID,
-                voicevox_make_default_audio_query_options(),
                 audio_query.as_mut_ptr(),
             ));
             audio_query.assume_init()

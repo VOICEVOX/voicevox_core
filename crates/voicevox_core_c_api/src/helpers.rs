@@ -85,28 +85,6 @@ pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
     s.to_str().map_err(|_| CApiError::InvalidUtf8Input)
 }
 
-impl From<voicevox_core::AudioQueryOptions> for VoicevoxAudioQueryOptions {
-    fn from(options: voicevox_core::AudioQueryOptions) -> Self {
-        Self { kana: options.kana }
-    }
-}
-impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
-    fn from(options: VoicevoxAudioQueryOptions) -> Self {
-        Self { kana: options.kana }
-    }
-}
-
-impl From<voicevox_core::AccentPhrasesOptions> for VoicevoxAccentPhrasesOptions {
-    fn from(options: voicevox_core::AccentPhrasesOptions) -> Self {
-        Self { kana: options.kana }
-    }
-}
-impl From<VoicevoxAccentPhrasesOptions> for voicevox_core::AccentPhrasesOptions {
-    fn from(options: VoicevoxAccentPhrasesOptions) -> Self {
-        Self { kana: options.kana }
-    }
-}
-
 impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
     fn from(options: VoicevoxSynthesisOptions) -> Self {
         Self {
@@ -159,7 +137,6 @@ impl From<VoicevoxInitializeOptions> for voicevox_core::InitializeOptions {
 impl From<voicevox_core::TtsOptions> for VoicevoxTtsOptions {
     fn from(options: voicevox_core::TtsOptions) -> Self {
         Self {
-            kana: options.kana,
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
         }
     }
@@ -168,7 +145,6 @@ impl From<voicevox_core::TtsOptions> for VoicevoxTtsOptions {
 impl From<VoicevoxTtsOptions> for voicevox_core::TtsOptions {
     fn from(options: VoicevoxTtsOptions) -> Self {
         Self {
-            kana: options.kana,
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
         }
     }

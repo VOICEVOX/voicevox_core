@@ -18,18 +18,14 @@ class UserDictTest extends TestUtils {
     UserDict userDict = new UserDict();
     synthesizer.loadVoiceModel(model);
     AudioQuery query1 =
-        synthesizer
-            .createAudioQuery(
-                "this_word_should_not_exist_in_default_dictionary", model.metas[0].styles[0].id)
-            .execute();
+        synthesizer.createAudioQuery(
+            "this_word_should_not_exist_in_default_dictionary", model.metas[0].styles[0].id);
 
     userDict.addWord(new UserDict.Word("this_word_should_not_exist_in_default_dictionary", "テスト"));
     openJtalk.useUserDict(userDict);
     AudioQuery query2 =
-        synthesizer
-            .createAudioQuery(
-                "this_word_should_not_exist_in_default_dictionary", model.metas[0].styles[0].id)
-            .execute();
+        synthesizer.createAudioQuery(
+            "this_word_should_not_exist_in_default_dictionary", model.metas[0].styles[0].id);
     assertTrue(query1.kana != query2.kana);
   }
 

@@ -50,7 +50,7 @@ class SynthesizerTest extends TestUtils {
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
     synthesizer.loadVoiceModel(model);
-    AudioQuery query = synthesizer.createAudioQuery("こんにちは", model.metas[0].styles[0].id).execute();
+    AudioQuery query = synthesizer.createAudioQuery("こんにちは", model.metas[0].styles[0].id);
 
     synthesizer.synthesis(query, model.metas[0].styles[0].id).execute();
   }
@@ -62,7 +62,7 @@ class SynthesizerTest extends TestUtils {
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
     synthesizer.loadVoiceModel(model);
     List<AccentPhrase> accentPhrases =
-        synthesizer.createAccentPhrases("こんにちは", model.metas[0].styles[0].id).execute();
+        synthesizer.createAccentPhrases("こんにちは", model.metas[0].styles[0].id);
     List<AccentPhrase> accentPhrases2 =
         synthesizer.replaceMoraPitch(accentPhrases, model.metas[1].styles[0].id);
     assertTrue(
@@ -91,6 +91,6 @@ class SynthesizerTest extends TestUtils {
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
     synthesizer.loadVoiceModel(model);
-    synthesizer.tts("こんにちは", model.metas[0].styles[0].id).execute();
+    synthesizer.tts("こんにちは", model.metas[0].styles[0].id);
   }
 }
