@@ -436,18 +436,7 @@ impl Synthesizer {
         style_id: StyleId,
     ) -> Result<AudioQueryModel> {
         let accent_phrases = self.create_accent_phrases_from_kana(kana, style_id).await?;
-        Ok(AudioQueryModel::new(
-            accent_phrases,
-            1.,
-            0.,
-            1.,
-            1.,
-            0.1,
-            0.1,
-            SynthesisEngine::DEFAULT_SAMPLING_RATE,
-            false,
-            Some(kana.to_owned()),
-        ))
+        Ok(AudioQueryModel::from_accent_phrases(accent_phrases).with_kana(Some(kana.to_owned())))
     }
 
     /// 日本語のテキストから[AudioQuery]を生成する。
@@ -498,19 +487,7 @@ impl Synthesizer {
     /// [AudioQuery]: crate::AudioQueryModel
     pub async fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQueryModel> {
         let accent_phrases = self.create_accent_phrases(text, style_id).await?;
-        let kana = create_kana(&accent_phrases);
-        Ok(AudioQueryModel::new(
-            accent_phrases,
-            1.,
-            0.,
-            1.,
-            1.,
-            0.1,
-            0.1,
-            SynthesisEngine::DEFAULT_SAMPLING_RATE,
-            false,
-            Some(kana),
-        ))
+        Ok(AudioQueryModel::from_accent_phrases(accent_phrases))
     }
 
     /// AquesTalk風記法から音声合成を行う。
@@ -573,6 +550,24 @@ fn list_windows_video_cards() {
 
     fn trim_nul(s: &[u16]) -> &[u16] {
         &s[..s.iter().position(|&c| c == 0x0000).unwrap_or(s.len())]
+    }
+}
+
+impl AudioQueryModel {
+    fn from_accent_phrases(accent_phrases: Vec<AccentPhraseModel>) -> Self {
+        let kana = create_kana(&accent_phrases);
+        Self::new(
+            accent_phrases,
+            1.,
+            0.,
+            1.,
+            1.,
+            0.1,
+            0.1,
+            SynthesisEngine::DEFAULT_SAMPLING_RATE,
+            false,
+            Some(kana),
+        )
     }
 }
 
