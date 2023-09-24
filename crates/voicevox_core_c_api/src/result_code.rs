@@ -71,8 +71,8 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         }
         VOICEVOX_RESULT_OK => cstr!("エラーが発生しませんでした"),
         VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR => cstr!(
-            "指定されたIDに対するスタイルが見つかりませんでした。読み込まれていないか、読み込みが\
-             解除されています"
+            "指定されたIDに対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか\
+             、読み込みが解除されています"
         ),
         VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR => cstr!(
             "指定されたIDに対する音声モデルが見つかりませんでした。読み込まれていないか、読み込み\
