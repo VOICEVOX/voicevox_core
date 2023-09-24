@@ -17,10 +17,10 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR = 3,
     /// GPUモードがサポートされていない
     VOICEVOX_RESULT_GPU_SUPPORT_ERROR = 4,
-    /// 無効なstyle_idが指定された
-    VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR = 6,
-    /// 無効なmodel_idが指定された
-    VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR = 7,
+    /// スタイルIDに対するスタイルが見つからなかった
+    VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR = 6,
+    /// 音声モデルIDに対する音声モデルが見つからなかった
+    VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR = 7,
     /// 推論に失敗した
     VOICEVOX_RESULT_INFERENCE_ERROR = 8,
     /// コンテキストラベル出力に失敗した
@@ -50,7 +50,7 @@ pub enum VoicevoxResultCode {
     /// ユーザー辞書を書き込めなかった
     VOICEVOX_RESULT_SAVE_USER_DICT_ERROR = 21,
     /// ユーザー辞書に単語が見つからなかった
-    VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR = 22,
+    VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR = 22,
     /// OpenJTalkのユーザー辞書の設定に失敗した
     VOICEVOX_RESULT_USE_USER_DICT_ERROR = 23,
     /// ユーザー辞書の単語のバリデーションに失敗した
@@ -70,8 +70,14 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
             cstr!("サポートされているデバイス情報取得中にエラーが発生しました")
         }
         VOICEVOX_RESULT_OK => cstr!("エラーが発生しませんでした"),
-        VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR => cstr!("無効なspeaker_idです"),
-        VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR => cstr!("無効なmodel_idです"),
+        VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR => cstr!(
+            "指定されたIDに対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか\
+             、読み込みが解除されています"
+        ),
+        VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR => cstr!(
+            "指定されたIDに対する音声モデルが見つかりませんでした。読み込まれていないか、読み込み\
+             が既に解除されています"
+        ),
         VOICEVOX_RESULT_INFERENCE_ERROR => cstr!("推論に失敗しました"),
         VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR => {
             cstr!("入力テキストからのフルコンテキストラベル抽出に失敗しました")
@@ -96,7 +102,7 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         VOICEVOX_RESULT_UNLOADED_MODEL_ERROR => cstr!("Modelが読み込まれていません"),
         VOICEVOX_RESULT_LOAD_USER_DICT_ERROR => cstr!("ユーザー辞書を読み込めませんでした"),
         VOICEVOX_RESULT_SAVE_USER_DICT_ERROR => cstr!("ユーザー辞書を書き込めませんでした"),
-        VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR => {
+        VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR => {
             cstr!("ユーザー辞書に単語が見つかりませんでした")
         }
         VOICEVOX_RESULT_USE_USER_DICT_ERROR => cstr!("OpenJTalkのユーザー辞書の設定に失敗しました"),

@@ -48,7 +48,7 @@ impl UserDict {
     /// ユーザー辞書の単語を変更する。
     pub fn update_word(&mut self, word_uuid: Uuid, new_word: UserDictWord) -> Result<()> {
         if !self.words.contains_key(&word_uuid) {
-            return Err(ErrorRepr::UnknownWord(word_uuid).into());
+            return Err(ErrorRepr::WordNotFound(word_uuid).into());
         }
         self.words.insert(word_uuid, new_word);
         Ok(())
@@ -57,7 +57,7 @@ impl UserDict {
     /// ユーザー辞書から単語を削除する。
     pub fn remove_word(&mut self, word_uuid: Uuid) -> Result<UserDictWord> {
         let Some(word) = self.words.remove(&word_uuid) else {
-            return Err(ErrorRepr::UnknownWord(word_uuid).into());
+            return Err(ErrorRepr::WordNotFound(word_uuid).into());
         };
         Ok(word)
     }
