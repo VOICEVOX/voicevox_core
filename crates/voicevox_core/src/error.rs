@@ -45,14 +45,14 @@ impl Error {
             },
             ErrorRepr::UnloadedModel { .. } => ErrorKind::UnloadedModel,
             ErrorRepr::GetSupportedDevices(_) => ErrorKind::GetSupportedDevices,
-            ErrorRepr::InvalidStyleId { .. } => ErrorKind::InvalidStyleId,
-            ErrorRepr::InvalidModelId { .. } => ErrorKind::InvalidModelId,
+            ErrorRepr::StyleNotFound { .. } => ErrorKind::StyleNotFound,
+            ErrorRepr::ModelNotFound { .. } => ErrorKind::ModelNotFound,
             ErrorRepr::InferenceFailed => ErrorKind::InferenceFailed,
             ErrorRepr::ExtractFullContextLabel(_) => ErrorKind::ExtractFullContextLabel,
             ErrorRepr::ParseKana(_) => ErrorKind::ParseKana,
             ErrorRepr::LoadUserDict(_) => ErrorKind::LoadUserDict,
             ErrorRepr::SaveUserDict(_) => ErrorKind::SaveUserDict,
-            ErrorRepr::UnknownWord(_) => ErrorKind::UnknownWord,
+            ErrorRepr::WordNotFound(_) => ErrorKind::WordNotFound,
             ErrorRepr::UseUserDict(_) => ErrorKind::UseUserDict,
             ErrorRepr::InvalidWord(_) => ErrorKind::InvalidWord,
         }
@@ -76,12 +76,14 @@ pub(crate) enum ErrorRepr {
     #[error("サポートされているデバイス情報取得中にエラーが発生しました,{0}")]
     GetSupportedDevices(#[source] anyhow::Error),
 
-    #[error("無効なspeaker_idです: {style_id:?}")]
-    InvalidStyleId { style_id: StyleId },
+    #[error("`{style_id}`に対するスタイルが見つかりませんでした。読み込まれていないか、読み込みが解除されています")]
+    StyleNotFound { style_id: StyleId },
 
     #[allow(dead_code)] // FIXME
-    #[error("無効なmodel_idです: {model_id:?}")]
-    InvalidModelId { model_id: VoiceModelId },
+    #[error(
+        "`{model_id}`に対する音声モデルが見つかりませんでした。読み込まれていないか、読み込みが既に解除されています"
+    )]
+    ModelNotFound { model_id: VoiceModelId },
 
     #[error("推論に失敗しました")]
     InferenceFailed,
@@ -99,7 +101,7 @@ pub(crate) enum ErrorRepr {
     SaveUserDict(String),
 
     #[error("ユーザー辞書に単語が見つかりませんでした: {0}")]
-    UnknownWord(Uuid),
+    WordNotFound(Uuid),
 
     #[error("OpenJTalkのユーザー辞書の設定に失敗しました: {0}")]
     UseUserDict(String),
@@ -129,10 +131,10 @@ pub enum ErrorKind {
     UnloadedModel,
     /// サポートされているデバイス情報取得に失敗した。
     GetSupportedDevices,
-    /// 無効なstyle_idが指定された。
-    InvalidStyleId,
-    /// 無効なmodel_idが指定された。
-    InvalidModelId,
+    /// スタイルIDに対するスタイルが見つからなかった。
+    StyleNotFound,
+    /// 音声モデルIDに対する音声モデルが見つからなかった。
+    ModelNotFound,
     /// 推論に失敗した。
     InferenceFailed,
     /// コンテキストラベル出力に失敗した。
@@ -144,7 +146,7 @@ pub enum ErrorKind {
     /// ユーザー辞書を書き込めなかった。
     SaveUserDict,
     /// ユーザー辞書に単語が見つからなかった。
-    UnknownWord,
+    WordNotFound,
     /// OpenJTalkのユーザー辞書の設定に失敗した。
     UseUserDict,
     /// ユーザー辞書の単語のバリデーションに失敗した。

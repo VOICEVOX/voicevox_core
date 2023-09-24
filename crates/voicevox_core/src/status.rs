@@ -305,7 +305,7 @@ impl LoadedModels {
                     .flat_map(SpeakerMeta::styles)
                     .any(|style| *style.id() == style_id)
             })
-            .ok_or(ErrorRepr::InvalidStyleId { style_id })?;
+            .ok_or(ErrorRepr::StyleNotFound { style_id })?;
 
         let model_inner_id = *model_inner_ids
             .get(&style_id)
