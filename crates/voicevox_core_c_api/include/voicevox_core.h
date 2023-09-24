@@ -103,13 +103,13 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_GPU_SUPPORT_ERROR = 4,
   /**
-   * 無効なstyle_idが指定された
+   * スタイルIDに対するスタイルが見つからなかった
    */
-  VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR = 6,
+  VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR = 6,
   /**
-   * 無効なmodel_idが指定された
+   * 音声モデルIDに対する音声モデルが見つからなかった
    */
-  VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR = 7,
+  VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR = 7,
   /**
    * 推論に失敗した
    */
@@ -169,7 +169,7 @@ enum VoicevoxResultCode
   /**
    * ユーザー辞書に単語が見つからなかった
    */
-  VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR = 22,
+  VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR = 22,
   /**
    * OpenJTalkのユーザー辞書の設定に失敗した
    */
