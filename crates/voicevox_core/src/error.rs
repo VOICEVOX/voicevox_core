@@ -76,7 +76,7 @@ pub(crate) enum ErrorRepr {
     #[error("サポートされているデバイス情報取得中にエラーが発生しました,{0}")]
     GetSupportedDevices(#[source] anyhow::Error),
 
-    #[error("`{style_id}`に対するスタイルが見つかりませんでした。読み込まれていないか、読み込みが解除されています")]
+    #[error("`{style_id}`に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています")]
     StyleNotFound { style_id: StyleId },
 
     #[allow(dead_code)] // FIXME
