@@ -43,8 +43,6 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR = 26,
     /// 無効なモデルデータ
     VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 27,
-    /// Modelが読み込まれていない
-    VOICEVOX_RESULT_UNLOADED_MODEL_ERROR = 19,
     /// ユーザー辞書を読み込めなかった
     VOICEVOX_RESULT_LOAD_USER_DICT_ERROR = 20,
     /// ユーザー辞書を書き込めなかった
@@ -99,7 +97,6 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR => {
             cstr!("モデルデータを読むことができませんでした")
         }
-        VOICEVOX_RESULT_UNLOADED_MODEL_ERROR => cstr!("Modelが読み込まれていません"),
         VOICEVOX_RESULT_LOAD_USER_DICT_ERROR => cstr!("ユーザー辞書を読み込めませんでした"),
         VOICEVOX_RESULT_SAVE_USER_DICT_ERROR => cstr!("ユーザー辞書を書き込めませんでした"),
         VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR => {

@@ -43,7 +43,6 @@ impl Error {
                 LoadModelErrorKind::StyleAlreadyLoaded { .. } => ErrorKind::StyleAlreadyLoaded,
                 LoadModelErrorKind::InvalidModelData => ErrorKind::InvalidModelData,
             },
-            ErrorRepr::UnloadedModel { .. } => ErrorKind::UnloadedModel,
             ErrorRepr::GetSupportedDevices(_) => ErrorKind::GetSupportedDevices,
             ErrorRepr::StyleNotFound { .. } => ErrorKind::StyleNotFound,
             ErrorRepr::ModelNotFound { .. } => ErrorKind::ModelNotFound,
@@ -70,9 +69,6 @@ pub(crate) enum ErrorRepr {
     #[error(transparent)]
     LoadModel(#[from] LoadModelError),
 
-    #[error("Modelが読み込まれていません ({model_id:?})")]
-    UnloadedModel { model_id: VoiceModelId },
-
     #[error("サポートされているデバイス情報取得中にエラーが発生しました,{0}")]
     GetSupportedDevices(#[source] anyhow::Error),
 
@@ -82,7 +78,6 @@ pub(crate) enum ErrorRepr {
     )]
     StyleNotFound { style_id: StyleId },
 
-    #[allow(dead_code)] // FIXME
     #[error(
         "`{model_id}`に対する音声モデルが見つかりませんでした。読み込まれていないか、読み込みが既\
          に解除されています"
@@ -131,8 +126,6 @@ pub enum ErrorKind {
     StyleAlreadyLoaded,
     /// 無効なモデルデータ。
     InvalidModelData,
-    /// Modelが読み込まれていない。
-    UnloadedModel,
     /// サポートされているデバイス情報取得に失敗した。
     GetSupportedDevices,
     /// スタイルIDに対するスタイルが見つからなかった。

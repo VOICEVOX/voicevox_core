@@ -66,7 +66,6 @@ result_messages.17 = "ZIP内のファイルを読むことができませんで�
 result_messages.18 = "同じIDのモデルを読むことはできません"
 result_messages.26 = "同じIDのスタイルを読むことはできません"
 result_messages.27 = "モデルデータを読むことができませんでした"
-result_messages.19 = "Modelが読み込まれていません"
 result_messages.20 = "ユーザー辞書を読み込めませんでした"
 result_messages.21 = "ユーザー辞書を書き込めませんでした"
 result_messages.22 = "ユーザー辞書に単語が見つかりませんでした"
