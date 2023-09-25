@@ -155,10 +155,6 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 27,
   /**
-   * Modelが読み込まれていない
-   */
-  VOICEVOX_RESULT_UNLOADED_MODEL_ERROR = 19,
-  /**
    * ユーザー辞書を読み込めなかった
    */
   VOICEVOX_RESULT_LOAD_USER_DICT_ERROR = 20,

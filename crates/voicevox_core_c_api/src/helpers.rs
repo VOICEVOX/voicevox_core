@@ -36,7 +36,6 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 ModelAlreadyLoaded => VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR,
                 StyleAlreadyLoaded => VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR,
                 InvalidModelData => VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR,
-                UnloadedModel => VOICEVOX_RESULT_UNLOADED_MODEL_ERROR,
                 GetSupportedDevices => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
                 StyleNotFound => VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
                 ModelNotFound => VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
