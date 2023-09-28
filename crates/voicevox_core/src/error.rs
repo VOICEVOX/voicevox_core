@@ -16,17 +16,11 @@ pub struct Error(#[from] ErrorRepr);
     [ LoadModelError ];
     [ FullContextLabelError ];
     [ KanaParseError ];
+    [ InvalidWordError ];
 )]
 impl From<E> for Error {
     fn from(err: E) -> Self {
         Self(err.into())
-    }
-}
-
-// FIXME: `ErrorRepr::InvalidWord`を`#[error(transparent)]`にする
-impl From<InvalidWordError> for Error {
-    fn from(err: InvalidWordError) -> Self {
-        ErrorRepr::InvalidWord(err).into()
     }
 }
 
@@ -105,8 +99,8 @@ pub(crate) enum ErrorRepr {
     #[error("OpenJTalkのユーザー辞書の設定に失敗しました: {0}")]
     UseUserDict(String),
 
-    #[error("ユーザー辞書の単語のバリデーションに失敗しました: {0}")]
-    InvalidWord(InvalidWordError),
+    #[error(transparent)]
+    InvalidWord(#[from] InvalidWordError),
 }
 
 /// エラーの種類。
