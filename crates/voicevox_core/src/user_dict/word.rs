@@ -58,15 +58,23 @@ impl<'de> Deserialize<'de> for UserDictWord {
 #[allow(clippy::enum_variant_names)] // FIXME
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub(crate) enum InvalidWordError {
-    #[error("{BASE_ERROR_MESSAGE}: 無効な発音です({1}): {0:?}")]
+    #[error("{}: 無効な発音です({_1}): {_0:?}", Self::BASE_MSG)]
     InvalidPronunciation(String, &'static str),
-    #[error("{BASE_ERROR_MESSAGE}: 優先度は{MIN_PRIORITY}以上{MAX_PRIORITY}以下である必要があります: {0}")]
+    #[error(
+        "{}: 優先度は{MIN_PRIORITY}以上{MAX_PRIORITY}以下である必要があります: {_0}",
+        Self::BASE_MSG
+    )]
     InvalidPriority(u32),
-    #[error("{BASE_ERROR_MESSAGE}: 誤ったアクセント型です({1:?}の範囲から外れています): {0}")]
+    #[error(
+        "{}: 誤ったアクセント型です({1:?}の範囲から外れています): {_0}",
+        Self::BASE_MSG
+    )]
     InvalidAccentType(usize, RangeToInclusive<usize>),
 }
 
-const BASE_ERROR_MESSAGE: &str = "ユーザー辞書の単語のバリデーションに失敗しました";
+impl InvalidWordError {
+    const BASE_MSG: &str = "ユーザー辞書の単語のバリデーションに失敗しました";
+}
 
 type InvalidWordResult<T> = std::result::Result<T, InvalidWordError>;
 
