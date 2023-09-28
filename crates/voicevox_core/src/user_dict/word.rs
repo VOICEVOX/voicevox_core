@@ -108,9 +108,8 @@ impl UserDictWord {
         if MIN_PRIORITY > priority || priority > MAX_PRIORITY {
             return Err(ErrorRepr::InvalidWord(InvalidWordError::InvalidPriority(priority)).into());
         }
-        validate_pronunciation(&pronunciation).map_err(ErrorRepr::InvalidWord)?;
-        let mora_count =
-            calculate_mora_count(&pronunciation, accent_type).map_err(ErrorRepr::InvalidWord)?;
+        validate_pronunciation(&pronunciation)?;
+        let mora_count = calculate_mora_count(&pronunciation, accent_type)?;
         Ok(Self {
             surface: to_zenkaku(surface),
             pronunciation,
