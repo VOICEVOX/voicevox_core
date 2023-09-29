@@ -46,8 +46,14 @@ impl CStringDropChecker {
             owned_str_addrs, ..
         } = &mut *self.0.lock().unwrap();
 
-        let duplicated = !owned_str_addrs.insert(s.as_ptr() as usize);
-        assert!(!duplicated, "duplicated");
+        let ptr = s.as_ptr();
+        let duplicated = !owned_str_addrs.insert(ptr as usize);
+        assert!(
+            !duplicated,
+            "{ptr:p}として管理される別の文字列が存在しています。原因としては文字列が誤った形で解放\
+             されたことが考えられます。このライブラリで生成したオブジェクトの解放は、このライブラリ\
+             が提供するAPIで行われなくてはなりません",
+        );
         s
     }
 
