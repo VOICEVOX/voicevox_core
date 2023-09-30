@@ -48,12 +48,13 @@ impl CStringDropChecker {
 
         let ptr = s.as_ptr();
         let duplicated = !owned_str_addrs.insert(ptr as usize);
-        assert!(
-            !duplicated,
-            "別の{ptr:p}が管理下にあります。原因としては以前の文字列{ptr:p}が誤った形で解放された\
-             ことが考えられます。このライブラリで生成したオブジェクトの解放は、このライブラリ\
-             が提供するAPIで行われなくてはなりません",
-        );
+        if duplicated {
+            panic!(
+                "別の{ptr:p}が管理下にあります。原因としては以前の文字列{ptr:p}が誤った形で解放\
+                 されたことが考えられます。このライブラリで生成したオブジェクトの解放は、この\
+                 ライブラリが提供するAPIで行われなくてはなりません",
+            );
+        }
         s
     }
 
