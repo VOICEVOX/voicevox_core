@@ -293,7 +293,7 @@ jobs:
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_java_api
-        if: "!endsWith(matrix.target, 'ios')"
+        if: "includes(matrix.target, 'android')"
         run: |
           function build() {
             cargo build -p voicevox_core_java_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
@@ -320,8 +320,6 @@ jobs:
 
           mkdir java_artifact
           cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
-          cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.dylib java_artifact/ || true
-          cp -v target/${{ matrix.target }}/release/voicevox_core_java_api.dll java_artifact/ || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
         run: |
@@ -358,7 +356,7 @@ jobs:
             ${{ steps.build-voicevox-core-python-api.outputs.whl }}
           target_commitish: ${{ github.sha }}
       - name: Upload voicevox_core_java_api artifact
-        if: env.VERSION != '0.0.0' && !contains(matrix.target, 'ios')
+        if: env.VERSION != '0.0.0' && !contains(matrix.target, 'android')
         uses: actions/upload-artifact@v3
         with:
           name: voicevox_core_java_api-${{ matrix.artifact_name }}
@@ -443,47 +441,6 @@ jobs:
       - name: set cargo version
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
-      - name: "Download artifact (windows-x64-cpu)"
-        uses: actions/download-artifact@v3
-        with:
-          name: voicevox_core_java_api-windows-x64-cpu
-          path: artifact/windows-x64-cpu
-
-      - name: "Download artifact (windows-x64-directml)"
-        uses: actions/download-artifact@v3
-        with:
-          name: voicevox_core_java_api-windows-x64-directml
-          path: artifact/windows-x64-directml
-
-      - name: "Download artifact (windows-x64-cuda)"
-        uses: actions/download-artifact@v3
-        with:
-          name: voicevox_core_java_api-windows-x64-cuda
-          path: artifact/windows-x64-cuda
-
-      - name: "Download artifact (windows-x86-cpu)"
-        uses: actions/download-artifact@v3
-        with:
-          name: voicevox_core_java_api-windows-x86-cpu
-          path: artifact/windows-x86-cpu
-
-      - name: "Download artifact (linux-x64-cpu)"
-        uses: actions/download-artifact@v3
-        with:
-          name: voicevox_core_java_api-linux-x64-cpu
-          path: artifact/linux-x64-cpu
-
-      - name: "Download artifact (linux-x64-gpu)"
-        uses: actions/download-artifact@v3
-        with:
-          name: voicevox_core_java_api-linux-x64-gpu
-          path: artifact/linux-x64-gpu
-
-      - name: "Download artifact (linux-arm64-cpu)"
-        uses: actions/download-artifact@v3
-        with:
-          name: voicevox_core_java_api-linux-arm64-cpu
-          path: artifact/linux-arm64-cpu
 
       - name: "Download artifact (android-arm64-cpu)"
         uses: actions/download-artifact@v3
@@ -497,62 +454,8 @@ jobs:
           name: voicevox_core_java_api-android-x86_64-cpu
           path: artifact/android-x86_64-cpu
 
-      - name: "Download artifact (osx-arm64-cpu)"
-        uses: actions/download-artifact@v3
-        with:
-          name: voicevox_core_java_api-osx-arm64-cpu
-          path: artifact/osx-arm64-cpu
-
-      - name: "Download artifact (osx-x64-cpu)"
-        uses: actions/download-artifact@v3
-        with:
-          name: voicevox_core_java_api-osx-x64-cpu
-          path: artifact/osx-x64-cpu
       - name: Print tree
         run: tree artifact
-
-      - name: Build voicevoxcore
-        run: |
-          cat <<EOF | while read -r line; do
-          windows-x64-cpu|windows-x64
-          windows-x86-cpu|windows-x86
-          linux-x64-cpu|linux-x64
-          linux-arm64-cpu|linux-arm64
-          osx-x64-cpu|macos-x64
-          osx-arm64-cpu|macos-arm64
-          EOF
-            IFS='|' read -r artifact_name target <<< "$line"
-            mkdir "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
-            cp -v "artifact/$artifact_name"/* "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
-          done
-
-          cd crates/voicevox_core_java_api
-          OS=desktop DEVICE=cpu gradle publishToMavenLocal
-
-      - name: Build voicevoxcore-directml
-        run: |
-          cat <<EOF | while read -r line; do
-          windows-x64-directml|windows-x64
-          EOF
-            IFS='|' read -r artifact_name target <<< "$line"
-            cp -v "artifact/$artifact_name"/* "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
-          done
-
-          cd crates/voicevox_core_java_api
-          OS=desktop DEVICE=directml gradle publishToMavenLocal
-
-      - name: Build voicevoxcore-cuda
-        run: |
-          cat <<EOF | while read -r line; do
-          windows-x64-cuda|windows-x64
-          linux-x64-gpu|linux-x64
-          EOF
-            IFS='|' read -r artifact_name target <<< "$line"
-            cp -v "artifact/$artifact_name"/* "crates/voicevox_core_java_api/lib/src/main/resources/dll/${target}/"
-          done
-
-          cd crates/voicevox_core_java_api
-          OS=desktop DEVICE=cuda gradle publishToMavenLocal
 
       - name: Build voicevoxcore-android
         run: |
