@@ -356,7 +356,7 @@ jobs:
             ${{ steps.build-voicevox-core-python-api.outputs.whl }}
           target_commitish: ${{ github.sha }}
       - name: Upload voicevox_core_java_api artifact
-        if: env.VERSION != '0.0.0' && !contains(matrix.target, 'android')
+        if: env.VERSION != '0.0.0' && contains(matrix.target, 'android')
         uses: actions/upload-artifact@v3
         with:
           name: voicevox_core_java_api-${{ matrix.artifact_name }}
