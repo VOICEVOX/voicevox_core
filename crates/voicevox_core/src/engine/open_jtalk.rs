@@ -12,18 +12,12 @@ use ::open_jtalk::*;
 use crate::{error::ErrorRepr, UserDict};
 
 #[derive(thiserror::Error, Debug)]
-pub(crate) enum OpenJtalkError {
-    #[error("open_jtalk load error")]
-    Load { mecab_dict_dir: PathBuf },
-    #[error("open_jtalk extract_fullcontext error")]
-    ExtractFullContext {
-        text: String,
-        #[source]
-        source: Option<anyhow::Error>,
-    },
+#[error("`{name}`の実行が失敗しました")]
+pub(crate) struct OpenjtalkFunctionError {
+    name: &'static str,
+    #[source]
+    source: Option<Text2MecabError>,
 }
-
-type Result<T> = std::result::Result<T, OpenJtalkError>;
 
 /// テキスト解析器としてのOpen JTalk。
 pub struct OpenJtalk {
@@ -55,8 +49,10 @@ impl OpenJtalk {
         open_jtalk_dict_dir: impl AsRef<Path>,
     ) -> crate::result::Result<Self> {
         let mut s = Self::new_without_dic();
-        s.load(open_jtalk_dict_dir)
-            .map_err(|_| ErrorRepr::NotLoadedOpenjtalkDict)?;
+        s.load(open_jtalk_dict_dir).map_err(|()| {
+            // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
+            ErrorRepr::NotLoadedOpenjtalkDict
+        })?;
         Ok(s)
     }
 
@@ -107,7 +103,10 @@ impl OpenJtalk {
         Ok(())
     }
 
-    pub(crate) fn extract_fullcontext(&self, text: impl AsRef<str>) -> Result<Vec<String>> {
+    pub(crate) fn extract_fullcontext(
+        &self,
+        text: impl AsRef<str>,
+    ) -> std::result::Result<Vec<String>, OpenjtalkFunctionError> {
         let Resources {
             mecab,
             njd,
@@ -118,19 +117,16 @@ impl OpenJtalk {
         njd.refresh();
         mecab.refresh();
 
-        let mecab_text =
-            text2mecab(text.as_ref()).map_err(|e| OpenJtalkError::ExtractFullContext {
-                text: text.as_ref().into(),
-                source: Some(e.into()),
-            })?;
+        let mecab_text = text2mecab(text.as_ref()).map_err(|e| OpenjtalkFunctionError {
+            name: "text2mecab",
+            source: Some(e),
+        })?;
         if mecab.analysis(mecab_text) {
             njd.mecab2njd(
-                mecab
-                    .get_feature()
-                    .ok_or(OpenJtalkError::ExtractFullContext {
-                        text: text.as_ref().into(),
-                        source: None,
-                    })?,
+                mecab.get_feature().ok_or(OpenjtalkFunctionError {
+                    name: "Mecab_get_feature",
+                    source: None,
+                })?,
                 mecab.get_size(),
             );
             njd.set_pronunciation();
@@ -143,20 +139,20 @@ impl OpenJtalk {
             jpcommon.make_label();
             jpcommon
                 .get_label_feature_to_iter()
-                .ok_or_else(|| OpenJtalkError::ExtractFullContext {
-                    text: text.as_ref().into(),
+                .ok_or(OpenjtalkFunctionError {
+                    name: "JPCommon_get_label_feature",
                     source: None,
                 })
                 .map(|iter| iter.map(|s| s.to_string()).collect())
         } else {
-            Err(OpenJtalkError::ExtractFullContext {
-                text: text.as_ref().into(),
+            Err(OpenjtalkFunctionError {
+                name: "Mecab_analysis",
                 source: None,
             })
         }
     }
 
-    fn load(&mut self, open_jtalk_dict_dir: impl AsRef<Path>) -> Result<()> {
+    fn load(&mut self, open_jtalk_dict_dir: impl AsRef<Path>) -> std::result::Result<(), ()> {
         let result = self
             .resources
             .lock()
@@ -168,9 +164,7 @@ impl OpenJtalk {
             Ok(())
         } else {
             self.dict_dir = None;
-            Err(OpenJtalkError::Load {
-                mecab_dict_dir: open_jtalk_dict_dir.as_ref().into(),
-            })
+            Err(())
         }
     }
 
@@ -274,9 +268,12 @@ mod tests {
     }
 
     #[rstest]
-    #[case("",Err(OpenJtalkError::ExtractFullContext{text:"".into(),source:None}))]
+    #[case("", Err(OpenjtalkFunctionError { name: "Mecab_get_feature", source: None }))]
     #[case("こんにちは、ヒホです。", Ok(testdata_hello_hiho()))]
-    fn extract_fullcontext_works(#[case] text: &str, #[case] expected: super::Result<Vec<String>>) {
+    fn extract_fullcontext_works(
+        #[case] text: &str,
+        #[case] expected: std::result::Result<Vec<String>, OpenjtalkFunctionError>,
+    ) {
         let open_jtalk = OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap();
         let result = open_jtalk.extract_fullcontext(text);
         assert_debug_fmt_eq!(expected, result);
@@ -286,7 +283,7 @@ mod tests {
     #[case("こんにちは、ヒホです。", Ok(testdata_hello_hiho()))]
     fn extract_fullcontext_loop_works(
         #[case] text: &str,
-        #[case] expected: super::Result<Vec<String>>,
+        #[case] expected: std::result::Result<Vec<String>, OpenjtalkFunctionError>,
     ) {
         let open_jtalk = OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap();
         for _ in 0..10 {

@@ -81,7 +81,7 @@ pub(crate) enum ErrorRepr {
     #[error("推論に失敗しました")]
     InferenceFailed,
 
-    #[error("入力テキストからのフルコンテキストラベル抽出に失敗しました,{0}")]
+    #[error(transparent)]
     ExtractFullContextLabel(#[from] FullContextLabelError),
 
     #[error(transparent)]
