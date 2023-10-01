@@ -10,16 +10,9 @@ const PAUSE_DELIMITER: char = '、';
 const WIDE_INTERROGATION_MARK: char = '？';
 const LOOP_LIMIT: usize = 300;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
+#[error("入力テキストをAquesTalk風記法としてパースすることに失敗しました: {_0}")]
 pub(crate) struct KanaParseError(String);
-
-impl std::fmt::Display for KanaParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Parse Error: {}", self.0)
-    }
-}
-
-impl std::error::Error for KanaParseError {}
 
 type KanaParseResult<T> = std::result::Result<T, KanaParseError>;
 

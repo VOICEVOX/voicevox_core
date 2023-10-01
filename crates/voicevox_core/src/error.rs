@@ -84,7 +84,7 @@ pub(crate) enum ErrorRepr {
     #[error("入力テキストからのフルコンテキストラベル抽出に失敗しました,{0}")]
     ExtractFullContextLabel(#[from] FullContextLabelError),
 
-    #[error("入力テキストをAquesTalk風記法としてパースすることに失敗しました,{0}")]
+    #[error(transparent)]
     ParseKana(#[from] KanaParseError),
 
     #[error("ユーザー辞書を読み込めませんでした")]
