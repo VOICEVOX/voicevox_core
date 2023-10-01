@@ -72,10 +72,9 @@ impl UserDict {
 
     /// ユーザー辞書を保存する。
     pub fn save(&self, store_path: &str) -> Result<()> {
-        let mut file =
-            File::create(store_path).map_err(|e| ErrorRepr::SaveUserDict(e.to_string()))?;
+        let mut file = File::create(store_path).map_err(|e| ErrorRepr::SaveUserDict(e.into()))?;
         serde_json::to_writer(&mut file, &self.words)
-            .map_err(|e| ErrorRepr::SaveUserDict(e.to_string()))?;
+            .map_err(|e| ErrorRepr::SaveUserDict(e.into()))?;
         Ok(())
     }
 

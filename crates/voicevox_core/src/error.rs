@@ -90,8 +90,8 @@ pub(crate) enum ErrorRepr {
     #[error("ユーザー辞書を読み込めませんでした: {0}")]
     LoadUserDict(String),
 
-    #[error("ユーザー辞書を書き込めませんでした: {0}")]
-    SaveUserDict(String),
+    #[error("ユーザー辞書を書き込めませんでした")]
+    SaveUserDict(#[source] anyhow::Error),
 
     #[error("ユーザー辞書に単語が見つかりませんでした: {0}")]
     WordNotFound(Uuid),
