@@ -2,6 +2,7 @@ use self::engine::{FullContextLabelError, KanaParseError};
 use super::*;
 //use engine::
 use duplicate::duplicate_item;
+use onnxruntime::OrtError;
 use std::path::PathBuf;
 use thiserror::Error;
 use uuid::Uuid;
@@ -63,8 +64,8 @@ pub(crate) enum ErrorRepr {
     #[error(transparent)]
     LoadModel(#[from] LoadModelError),
 
-    #[error("サポートされているデバイス情報取得中にエラーが発生しました,{0}")]
-    GetSupportedDevices(#[source] anyhow::Error),
+    #[error("サポートされているデバイス情報取得中にエラーが発生しました")]
+    GetSupportedDevices(#[source] OrtError),
 
     #[error(
         "`{style_id}`に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読\
