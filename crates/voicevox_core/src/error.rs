@@ -96,8 +96,8 @@ pub(crate) enum ErrorRepr {
     #[error("ユーザー辞書に単語が見つかりませんでした: {0}")]
     WordNotFound(Uuid),
 
-    #[error("OpenJTalkのユーザー辞書の設定に失敗しました: {0}")]
-    UseUserDict(String),
+    #[error("OpenJTalkのユーザー辞書の設定に失敗しました")]
+    UseUserDict(#[source] anyhow::Error),
 
     #[error(transparent)]
     InvalidWord(#[from] InvalidWordError),
