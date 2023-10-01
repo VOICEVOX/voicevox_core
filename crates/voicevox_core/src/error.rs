@@ -87,8 +87,8 @@ pub(crate) enum ErrorRepr {
     #[error("入力テキストをAquesTalk風記法としてパースすることに失敗しました,{0}")]
     ParseKana(#[from] KanaParseError),
 
-    #[error("ユーザー辞書を読み込めませんでした: {0}")]
-    LoadUserDict(String),
+    #[error("ユーザー辞書を読み込めませんでした")]
+    LoadUserDict(#[source] anyhow::Error),
 
     #[error("ユーザー辞書を書き込めませんでした")]
     SaveUserDict(#[source] anyhow::Error),

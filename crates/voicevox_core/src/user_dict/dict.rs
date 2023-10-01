@@ -28,11 +28,10 @@ impl UserDict {
     pub fn load(&mut self, store_path: &str) -> Result<()> {
         let store_path = std::path::Path::new(store_path);
 
-        let store_file =
-            File::open(store_path).map_err(|e| ErrorRepr::LoadUserDict(e.to_string()))?;
+        let store_file = File::open(store_path).map_err(|e| ErrorRepr::LoadUserDict(e.into()))?;
 
-        let words: IndexMap<Uuid, UserDictWord> = serde_json::from_reader(store_file)
-            .map_err(|e| ErrorRepr::LoadUserDict(e.to_string()))?;
+        let words: IndexMap<Uuid, UserDictWord> =
+            serde_json::from_reader(store_file).map_err(|e| ErrorRepr::LoadUserDict(e.into()))?;
 
         self.words.extend(words);
         Ok(())
