@@ -149,10 +149,7 @@ pub(crate) type LoadModelResult<T> = std::result::Result<T, LoadModelError>;
 
 /// 音声モデル読み込みのエラー。
 #[derive(Error, Debug)]
-#[error(
-    "`{path}`の読み込みに失敗しました: {context}{}",
-    source.as_ref().map(|e| format!(": {e}")).unwrap_or_default())
-]
+#[error("`{path}`の読み込みに失敗しました: {context}")]
 pub(crate) struct LoadModelError {
     pub(crate) path: PathBuf,
     pub(crate) context: LoadModelErrorKind,
