@@ -58,13 +58,24 @@ impl<'de> Deserialize<'de> for UserDictWord {
 #[allow(clippy::enum_variant_names)] // FIXME
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub(crate) enum InvalidWordError {
-    #[error("無効な発音です({1}): {0:?}")]
+    #[error("{}: 無効な発音です({_1}): {_0:?}", Self::BASE_MSG)]
     InvalidPronunciation(String, &'static str),
-    #[error("優先度は{MIN_PRIORITY}以上{MAX_PRIORITY}以下である必要があります: {0}")]
+    #[error(
+        "{}: 優先度は{MIN_PRIORITY}以上{MAX_PRIORITY}以下である必要があります: {_0}",
+        Self::BASE_MSG
+    )]
     InvalidPriority(u32),
-    #[error("誤ったアクセント型です({1:?}の範囲から外れています): {0}")]
+    #[error(
+        "{}: 誤ったアクセント型です({1:?}の範囲から外れています): {_0}",
+        Self::BASE_MSG
+    )]
     InvalidAccentType(usize, RangeToInclusive<usize>),
 }
+
+impl InvalidWordError {
+    const BASE_MSG: &str = "ユーザー辞書の単語のバリデーションに失敗しました";
+}
+
 type InvalidWordResult<T> = std::result::Result<T, InvalidWordError>;
 
 static PRONUNCIATION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
@@ -105,9 +116,8 @@ impl UserDictWord {
         if MIN_PRIORITY > priority || priority > MAX_PRIORITY {
             return Err(ErrorRepr::InvalidWord(InvalidWordError::InvalidPriority(priority)).into());
         }
-        validate_pronunciation(&pronunciation).map_err(ErrorRepr::InvalidWord)?;
-        let mora_count =
-            calculate_mora_count(&pronunciation, accent_type).map_err(ErrorRepr::InvalidWord)?;
+        validate_pronunciation(&pronunciation)?;
+        let mora_count = calculate_mora_count(&pronunciation, accent_type)?;
         Ok(Self {
             surface: to_zenkaku(surface),
             pronunciation,

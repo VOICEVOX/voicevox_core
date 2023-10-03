@@ -2,6 +2,7 @@ use self::engine::{FullContextLabelError, KanaParseError};
 use super::*;
 //use engine::
 use duplicate::duplicate_item;
+use onnxruntime::OrtError;
 use std::path::PathBuf;
 use thiserror::Error;
 use uuid::Uuid;
@@ -16,17 +17,11 @@ pub struct Error(#[from] ErrorRepr);
     [ LoadModelError ];
     [ FullContextLabelError ];
     [ KanaParseError ];
+    [ InvalidWordError ];
 )]
 impl From<E> for Error {
     fn from(err: E) -> Self {
         Self(err.into())
-    }
-}
-
-// FIXME: `ErrorRepr::InvalidWord`を`#[error(transparent)]`にする
-impl From<InvalidWordError> for Error {
-    fn from(err: InvalidWordError) -> Self {
-        ErrorRepr::InvalidWord(err).into()
     }
 }
 
@@ -69,8 +64,8 @@ pub(crate) enum ErrorRepr {
     #[error(transparent)]
     LoadModel(#[from] LoadModelError),
 
-    #[error("サポートされているデバイス情報取得中にエラーが発生しました,{0}")]
-    GetSupportedDevices(#[source] anyhow::Error),
+    #[error("サポートされているデバイス情報取得中にエラーが発生しました")]
+    GetSupportedDevices(#[source] OrtError),
 
     #[error(
         "`{style_id}`に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読\
@@ -87,26 +82,26 @@ pub(crate) enum ErrorRepr {
     #[error("推論に失敗しました")]
     InferenceFailed,
 
-    #[error("入力テキストからのフルコンテキストラベル抽出に失敗しました,{0}")]
+    #[error(transparent)]
     ExtractFullContextLabel(#[from] FullContextLabelError),
 
-    #[error("入力テキストをAquesTalk風記法としてパースすることに失敗しました,{0}")]
+    #[error(transparent)]
     ParseKana(#[from] KanaParseError),
 
-    #[error("ユーザー辞書を読み込めませんでした: {0}")]
-    LoadUserDict(String),
+    #[error("ユーザー辞書を読み込めませんでした")]
+    LoadUserDict(#[source] anyhow::Error),
 
-    #[error("ユーザー辞書を書き込めませんでした: {0}")]
-    SaveUserDict(String),
+    #[error("ユーザー辞書を書き込めませんでした")]
+    SaveUserDict(#[source] anyhow::Error),
 
     #[error("ユーザー辞書に単語が見つかりませんでした: {0}")]
     WordNotFound(Uuid),
 
-    #[error("OpenJTalkのユーザー辞書の設定に失敗しました: {0}")]
-    UseUserDict(String),
+    #[error("OpenJTalkのユーザー辞書の設定に失敗しました")]
+    UseUserDict(#[source] anyhow::Error),
 
-    #[error("ユーザー辞書の単語のバリデーションに失敗しました: {0}")]
-    InvalidWord(InvalidWordError),
+    #[error(transparent)]
+    InvalidWord(#[from] InvalidWordError),
 }
 
 /// エラーの種類。
@@ -154,10 +149,7 @@ pub(crate) type LoadModelResult<T> = std::result::Result<T, LoadModelError>;
 
 /// 音声モデル読み込みのエラー。
 #[derive(Error, Debug)]
-#[error(
-    "`{path}`の読み込みに失敗しました: {context}{}",
-    source.as_ref().map(|e| format!(": {e}")).unwrap_or_default())
-]
+#[error("`{path}`の読み込みに失敗しました: {context}")]
 pub(crate) struct LoadModelError {
     pub(crate) path: PathBuf,
     pub(crate) context: LoadModelErrorKind,
