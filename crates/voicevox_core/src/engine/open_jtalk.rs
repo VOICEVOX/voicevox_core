@@ -12,9 +12,9 @@ use ::open_jtalk::*;
 use crate::{error::ErrorRepr, UserDict};
 
 #[derive(thiserror::Error, Debug)]
-#[error("`{name}`の実行が失敗しました")]
+#[error("`{function}`の実行が失敗しました")]
 pub(crate) struct OpenjtalkFunctionError {
-    name: &'static str,
+    function: &'static str,
     #[source]
     source: Option<Text2MecabError>,
 }
@@ -118,13 +118,13 @@ impl OpenJtalk {
         mecab.refresh();
 
         let mecab_text = text2mecab(text.as_ref()).map_err(|e| OpenjtalkFunctionError {
-            name: "text2mecab",
+            function: "text2mecab",
             source: Some(e),
         })?;
         if mecab.analysis(mecab_text) {
             njd.mecab2njd(
                 mecab.get_feature().ok_or(OpenjtalkFunctionError {
-                    name: "Mecab_get_feature",
+                    function: "Mecab_get_feature",
                     source: None,
                 })?,
                 mecab.get_size(),
@@ -140,13 +140,13 @@ impl OpenJtalk {
             jpcommon
                 .get_label_feature_to_iter()
                 .ok_or(OpenjtalkFunctionError {
-                    name: "JPCommon_get_label_feature",
+                    function: "JPCommon_get_label_feature",
                     source: None,
                 })
                 .map(|iter| iter.map(|s| s.to_string()).collect())
         } else {
             Err(OpenjtalkFunctionError {
-                name: "Mecab_analysis",
+                function: "Mecab_analysis",
                 source: None,
             })
         }
@@ -268,7 +268,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case("", Err(OpenjtalkFunctionError { name: "Mecab_get_feature", source: None }))]
+    #[case("", Err(OpenjtalkFunctionError { function: "Mecab_get_feature", source: None }))]
     #[case("こんにちは、ヒホです。", Ok(testdata_hello_hiho()))]
     fn extract_fullcontext_works(
         #[case] text: &str,
