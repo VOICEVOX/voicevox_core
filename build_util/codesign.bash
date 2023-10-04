@@ -31,7 +31,7 @@ if [ ! -d "$INSTALL_DIR" ]; then
     unzip -o SSL.COM-eSigner-CKA_1.0.6.zip
     mv *eSigner*CKA_*.exe eSigner_CKA_Installer.exe
     powershell "
-        & ./eSigner_CKA_Installer.exe /CURRENTUSER /VERYSILENT /SUPPRESSMSGBOXES /DIR="$INSTALL_DIR" | Out-Null
+        & ./eSigner_CKA_Installer.exe /CURRENTUSER /VERYSILENT /SUPPRESSMSGBOXES /DIR='$INSTALL_DIR' | Out-Null
         & '$INSTALL_DIR\eSignerCKATool.exe' config -mode product -user '$ESIGNERCKA_USERNAME' -pass '$ESIGNERCKA_PASSWORD' -totp '$ESIGNERCKA_TOTP_SECRET' -key '$INSTALL_DIR\master.key' -r
         & '$INSTALL_DIR\eSignerCKATool.exe' unload
     "
@@ -41,6 +41,7 @@ fi
 # 証明書を読み込む
 powershell "& '$INSTALL_DIR\eSignerCKATool.exe' load"
 
+# shellcheck disable=SC2016
 THUMBPRINT=$(
     powershell '
         $CodeSigningCert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Select-Object -First 1
