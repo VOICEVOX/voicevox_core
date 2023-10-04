@@ -51,6 +51,7 @@ THUMBPRINT=$(
 # 指定ファイルに署名する
 function codesign() {
     TARGET="$1"
+    # shellcheck disable=SC2012
     SIGNTOOL=$(ls "C:/Program Files (x86)/Windows Kits/"10/bin/*/x86/signtool.exe | sort -V | tail -n 1) # なぜかこれじゃないと動かない
     powershell "& '$SIGNTOOL' sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /sha1 '$THUMBPRINT' '$TARGET'"
 }
