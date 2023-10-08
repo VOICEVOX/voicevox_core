@@ -416,7 +416,7 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
 
-  build_java_api:
+  build_java_package:
     runs-on: ubuntu-latest
     if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
     needs:
@@ -490,6 +490,7 @@ jobs:
           files: |-
             /tmp/java_packages.zip
           target_commitish: ${{ github.sha }}
+
   download_test:
     needs: [config, build_and_deploy]
     if: needs.config.outputs.deploy == 'true'
