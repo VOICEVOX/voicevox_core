@@ -107,7 +107,20 @@ impl CStringDropChecker {
 mod tests {
     use std::ffi::{c_char, CStr};
 
+    use cstr::cstr;
+
     use super::CStringDropChecker;
+
+    #[test]
+    #[should_panic(
+        expected = "このライブラリで生成したオブジェクトの解放は、このライブラリが提供するAPIで\
+                    行われなくてはなりません"
+    )]
+    fn it_denies_duplicated_char_ptr() {
+        let checker = CStringDropChecker::new();
+        let s = cstr!("").to_owned();
+        checker.whitelist(checker.whitelist(s));
+    }
 
     #[test]
     #[should_panic(
