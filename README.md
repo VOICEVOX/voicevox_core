@@ -20,6 +20,11 @@ Issue 側で取り組み始めたことを伝えるか、最初に Draft プル�
 
 [VOICEVOX 非公式 Discord サーバー](https://discord.gg/WMwWetrzuh)にて、開発の議論や雑談を行っています。気軽にご参加ください。
 
+### Rust 以外の言語の API に関する方針
+
+Voicevox Core の主要機能は Rust で実装されることを前提としており、他の言語のラッパーでのみの機能追加はしない方針としています。これは機能の一貫性を保つための方針です。
+各言語の特性に応じた追加実装（例えば、Python での style_id の [NewType](https://docs.python.org/ja/3/library/typing.html#newtype) 化など）は許容されます。
+
 ## 環境構築
 
 Downloader を用いて環境構築を行う場合
