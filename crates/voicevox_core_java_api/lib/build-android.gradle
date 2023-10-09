@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.library' version '8.1.1'
+    id 'maven-publish'
     id 'org.jetbrains.kotlin.android' version '1.9.10'
 }
 
@@ -51,6 +52,25 @@ android {
     sourceSets {
         main {
             jniLibs.srcDirs = ["./src/main/resources/jniLibs"]
+        }
+    }
+    publishing {
+        singleVariant("release") {
+            withJavadocJar()
+        }
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'jp.hiroshiba.voicevoxcore'
+            artifactId = gradle.ext.targetDevice == 'cpu' ? 'voicevoxcore-android' : "voicevoxcore-android-${gradle.ext.targetDevice}"
+            version = gradle.ext.version
+
+            afterEvaluate {
+                from components.release
+            }
         }
     }
 }
