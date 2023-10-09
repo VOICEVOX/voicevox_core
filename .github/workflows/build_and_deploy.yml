@@ -288,7 +288,6 @@ jobs:
           else
             build > /dev/null 2>&1
           fi
-          ls -l ./target/wheels
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
