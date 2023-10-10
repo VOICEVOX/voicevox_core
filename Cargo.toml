@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.dependencies]
-anyhow = "1.0.65"
+anyhow = "1.0.75"
 async_zip = { version = "0.0.11", features = ["full"] }
 clap = { version = "4.0.10", features = ["derive"] }
 easy-ext = "1.0.1"
