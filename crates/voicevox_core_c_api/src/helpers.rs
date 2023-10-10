@@ -36,16 +36,15 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 ModelAlreadyLoaded => VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR,
                 StyleAlreadyLoaded => VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR,
                 InvalidModelData => VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR,
-                UnloadedModel => VOICEVOX_RESULT_UNLOADED_MODEL_ERROR,
                 GetSupportedDevices => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
-                InvalidStyleId => VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR,
-                InvalidModelId => VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR,
+                StyleNotFound => VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
+                ModelNotFound => VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
                 InferenceFailed => VOICEVOX_RESULT_INFERENCE_ERROR,
                 ExtractFullContextLabel => VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
                 ParseKana => VOICEVOX_RESULT_PARSE_KANA_ERROR,
                 LoadUserDict => VOICEVOX_RESULT_LOAD_USER_DICT_ERROR,
                 SaveUserDict => VOICEVOX_RESULT_SAVE_USER_DICT_ERROR,
-                UnknownWord => VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR,
+                WordNotFound => VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR,
                 UseUserDict => VOICEVOX_RESULT_USE_USER_DICT_ERROR,
                 InvalidWord => VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR,
             },
@@ -83,28 +82,6 @@ pub(crate) fn accent_phrases_to_json(audio_query_model: &[AccentPhraseModel]) ->
 
 pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
     s.to_str().map_err(|_| CApiError::InvalidUtf8Input)
-}
-
-impl From<voicevox_core::AudioQueryOptions> for VoicevoxAudioQueryOptions {
-    fn from(options: voicevox_core::AudioQueryOptions) -> Self {
-        Self { kana: options.kana }
-    }
-}
-impl From<VoicevoxAudioQueryOptions> for voicevox_core::AudioQueryOptions {
-    fn from(options: VoicevoxAudioQueryOptions) -> Self {
-        Self { kana: options.kana }
-    }
-}
-
-impl From<voicevox_core::AccentPhrasesOptions> for VoicevoxAccentPhrasesOptions {
-    fn from(options: voicevox_core::AccentPhrasesOptions) -> Self {
-        Self { kana: options.kana }
-    }
-}
-impl From<VoicevoxAccentPhrasesOptions> for voicevox_core::AccentPhrasesOptions {
-    fn from(options: VoicevoxAccentPhrasesOptions) -> Self {
-        Self { kana: options.kana }
-    }
 }
 
 impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
@@ -159,7 +136,6 @@ impl From<VoicevoxInitializeOptions> for voicevox_core::InitializeOptions {
 impl From<voicevox_core::TtsOptions> for VoicevoxTtsOptions {
     fn from(options: voicevox_core::TtsOptions) -> Self {
         Self {
-            kana: options.kana,
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
         }
     }
@@ -168,7 +144,6 @@ impl From<voicevox_core::TtsOptions> for VoicevoxTtsOptions {
 impl From<VoicevoxTtsOptions> for voicevox_core::TtsOptions {
     fn from(options: VoicevoxTtsOptions) -> Self {
         Self {
-            kana: options.kana,
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
         }
     }

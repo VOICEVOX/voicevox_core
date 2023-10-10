@@ -13,13 +13,15 @@ use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::*;
 use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
+use anstream::{AutoStream, RawStream};
 use chrono::SecondsFormat;
+use colorchoice::ColorChoice;
 use derive_getters::Getters;
 use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
-use std::io::{self, IsTerminal, Write};
+use std::io;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -28,8 +30,8 @@ use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
 use voicevox_core::{
-    AccentPhraseModel, AudioQueryModel, AudioQueryOptions, OpenJtalk, TtsOptions, UserDictWord,
-    VoiceModel, VoiceModelId,
+    AccentPhraseModel, AudioQueryModel, OpenJtalk, TtsOptions, UserDictWord, VoiceModel,
+    VoiceModelId,
 };
 use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions, Synthesizer};
 
@@ -37,6 +39,23 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
     let _ = init_logger();
 
     fn init_logger() -> std::result::Result<(), impl Sized> {
+        let ansi = {
+            // anstyle系のクレートを利用して次の2つを行う。
+            //
+            // * ANSI escape codeを出してよいかの判定（環境変数のチェックとisatty）
+            // * 必要であれば`ENABLE_VIRTUAL_TERMINAL_PROCESSING`の有効化
+
+            assert_eq!(
+                ColorChoice::Auto,
+                ColorChoice::global(),
+                "`ColorChoice::write_global` should not have been called",
+            );
+
+            AutoStream::choice(&out()) != ColorChoice::Never
+                && anstyle_query::term_supports_ansi_color()
+                && anstyle_query::windows::enable_ansi_colors().unwrap_or(true)
+        };
+
         tracing_subscriber::fmt()
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
@@ -44,7 +63,7 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
                 "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
-            .with_ansi(out().is_terminal() && env_allows_ansi())
+            .with_ansi(ansi)
             .with_writer(out)
             .try_init()
     }
@@ -55,20 +74,10 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
         wtr.write_str(&chrono::Local::now().to_rfc3339_opts(SecondsFormat::Micros, false))
     }
 
-    fn out() -> impl IsTerminal + Write {
+    fn out() -> impl RawStream {
         io::stderr()
     }
 
-    fn env_allows_ansi() -> bool {
-        // https://docs.rs/termcolor/1.2.0/src/termcolor/lib.rs.html#245-291
-        // ただしWindowsではPowerShellっぽかったらそのまま許可する。
-        // ちゃんとやるなら`ENABLE_VIRTUAL_TERMINAL_PROCESSING`をチェックするなり、そもそも
-        // fwdansiとかでWin32の色に変換するべきだが、面倒。
-        env::var_os("TERM").map_or(
-            cfg!(windows) && env::var_os("PSModulePath").is_some(),
-            |term| term != "dumb",
-        ) && env::var_os("NO_COLOR").is_none()
-    }
     Runtime::new().unwrap()
 });
 
@@ -491,52 +500,74 @@ pub unsafe extern "C" fn voicevox_create_supported_devices_json(
     })())
 }
 
-/// ::voicevox_synthesizer_create_audio_query のオプション。
-#[repr(C)]
-pub struct VoicevoxAudioQueryOptions {
-    /// AquesTalk風記法としてテキストを解釈する
-    kana: bool,
-}
-
-/// デフォルトの AudioQuery のオプションを生成する
-/// @return デフォルト値が設定された AudioQuery オプション
-#[no_mangle]
-pub extern "C" fn voicevox_make_default_audio_query_options() -> VoicevoxAudioQueryOptions {
-    voicevox_core::AudioQueryOptions::default().into()
-}
-
-/// AudioQueryをJSONとして生成する。
+/// AquesTalk風記法から、AudioQueryをJSONとして生成する。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
-/// @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
+/// @param [in] kana AquesTalk風記法
 /// @param [in] style_id スタイルID
-/// @param [in] options オプション
 /// @param [out] output_audio_query_json 生成先
 ///
 /// @returns 結果コード
 ///
-/// \examples{
+/// \example{
 /// ```c
 /// char *audio_query;
-/// voicevox_synthesizer_create_audio_query(synthesizer,
-///                                         "こんにちは",  // 日本語テキスト
-///                                         2,  // "四国めたん (ノーマル)"
-///                                         (VoicevoxAudioQueryOptions){.kana = false},
-///                                         &audio_query);
-/// ```
-///
-/// ```c
-/// char *audio_query;
-/// voicevox_synthesizer_create_audio_query(synthesizer,
-///                                         "コンニチワ'",  // AquesTalk風記法
-///                                         2,  // "四国めたん (ノーマル)"
-///                                         (VoicevoxAudioQueryOptions){.kana = true},
-///                                         &audio_query);
+/// voicevox_synthesizer_create_audio_query_from_kana(synthesizer, "コンニチワ'",
+///                                                   2, // "四国めたん (ノーマル)"
+///                                                   &audio_query);
 /// ```
 /// }
 ///
+/// \safety{
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
+    synthesizer: &VoicevoxSynthesizer,
+    kana: *const c_char,
+    style_id: VoicevoxStyleId,
+    output_audio_query_json: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let kana = CStr::from_ptr(kana);
+        let kana = ensure_utf8(kana)?;
+        let audio_query = RUNTIME.block_on(
+            synthesizer
+                .synthesizer()
+                .audio_query_from_kana(kana, StyleId::new(style_id)),
+        )?;
+        let audio_query = CString::new(audio_query_model_to_json(&audio_query))
+            .expect("should not contain '\\0'");
+        output_audio_query_json
+            .as_ptr()
+            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
+        Ok(())
+    })())
+}
+
+/// 日本語テキストから、AudioQueryをJSONとして生成する。
+///
+/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] text UTF-8の日本語テキスト
+/// @param [in] style_id スタイルID
+/// @param [out] output_audio_query_json 生成先
+///
+/// @returns 結果コード
+///
+/// \example{
+/// ```c
+/// char *audio_query;
+/// voicevox_synthesizer_create_audio_query(synthesizer, "こんにちは",
+///                                         2, // "四国めたん (ノーマル)"
+///                                         &audio_query);
+/// ```
+/// }
 ///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
@@ -548,17 +579,16 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
     synthesizer: &VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
-    options: VoicevoxAudioQueryOptions,
     output_audio_query_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let text = CStr::from_ptr(text);
-        let japanese_or_kana = ensure_utf8(text)?;
-        let audio_query = RUNTIME.block_on(synthesizer.synthesizer().audio_query(
-            japanese_or_kana,
-            StyleId::new(style_id),
-            &AudioQueryOptions::from(options),
-        ))?;
+        let text = ensure_utf8(text)?;
+        let audio_query = RUNTIME.block_on(
+            synthesizer
+                .synthesizer()
+                .audio_query(text, StyleId::new(style_id)),
+        )?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
         output_audio_query_json
@@ -568,49 +598,72 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
     })())
 }
 
-/// ::voicevox_synthesizer_create_accent_phrases のオプション。
-#[repr(C)]
-pub struct VoicevoxAccentPhrasesOptions {
-    /// AquesTalk風記法としてテキストを解釈する
-    kana: bool,
-}
-
-/// デフォルトの `accent_phrases` のオプションを生成する
-/// @return デフォルト値が設定された `accent_phrases` のオプション
-#[no_mangle]
-pub extern "C" fn voicevox_make_default_accent_phrases_options() -> VoicevoxAccentPhrasesOptions {
-    voicevox_core::AccentPhrasesOptions::default().into()
-}
-
-/// AccentPhrase (アクセント句)の配列をJSON形式で生成する。
+/// AquesTalk風記法から、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
-/// @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
+/// @param [in] kana AquesTalk風記法
 /// @param [in] style_id スタイルID
-/// @param [in] options オプション
 /// @param [out] output_accent_phrases_json 生成先
 ///
 /// @returns 結果コード
 ///
-/// \examples{
+/// \example{
 /// ```c
 /// char *accent_phrases;
-/// voicevox_synthesizer_create_accent_phrases(
-///     synthesizer,
-///     "こんにちは",  // 日本語テキスト
-///     2,             // "四国めたん (ノーマル)"
-///     voicevox_default_accent_phrases_options, &accent_phrases);
+/// voicevox_synthesizer_create_accent_phrases_from_kana(
+///     synthesizer, "コンニチワ'",
+///     2, // "四国めたん (ノーマル)"
+///     &accent_phrases);
 /// ```
+/// }
 ///
+/// \safety{
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
+    synthesizer: &VoicevoxSynthesizer,
+    kana: *const c_char,
+    style_id: VoicevoxStyleId,
+    output_accent_phrases_json: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let kana = ensure_utf8(CStr::from_ptr(kana))?;
+        let accent_phrases = RUNTIME.block_on(
+            synthesizer
+                .synthesizer()
+                .create_accent_phrases_from_kana(kana, StyleId::new(style_id)),
+        )?;
+        let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
+            .expect("should not contain '\\0'");
+        output_accent_phrases_json
+            .as_ptr()
+            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        Ok(())
+    })())
+}
+
+/// 日本語テキストから、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
+///
+/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] text UTF-8の日本語テキスト
+/// @param [in] style_id スタイルID
+/// @param [out] output_accent_phrases_json 生成先
+///
+/// @returns 結果コード
+///
+/// \example{
 /// ```c
 /// char *accent_phrases;
-/// voicevox_synthesizer_create_accent_phrases(
-///     synthesizer,
-///     "コンニチワ'",  // AquesTalk風記法
-///     2,              // "四国めたん (ノーマル)"
-///     (VoicevoxAccentPhrasesOptions){.kana = true}, &accent_phrases);
+/// voicevox_synthesizer_create_accent_phrases(synthesizer, "こんにちは",
+///                                            2, // "四国めたん (ノーマル)"
+///                                            &accent_phrases);
 /// ```
 /// }
 ///
@@ -624,16 +677,15 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     synthesizer: &VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
-    options: VoicevoxAccentPhrasesOptions,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;
-        let accent_phrases = RUNTIME.block_on(synthesizer.synthesizer().create_accent_phrases(
-            text,
-            StyleId::new(style_id),
-            &options.into(),
-        ))?;
+        let accent_phrases = RUNTIME.block_on(
+            synthesizer
+                .synthesizer()
+                .create_accent_phrases(text, StyleId::new(style_id)),
+        )?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
@@ -827,8 +879,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
 /// ::voicevox_synthesizer_tts のオプション。
 #[repr(C)]
 pub struct VoicevoxTtsOptions {
-    /// AquesTalk風記法としてテキストを解釈する
-    kana: bool,
     /// 疑問文の調整を有効にする
     enable_interrogative_upspeak: bool,
 }
@@ -840,12 +890,52 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
     voicevox_core::TtsOptions::default().into()
 }
 
-/// テキスト音声合成を行う。
+/// AquesTalk風記法から音声合成を行う。
 ///
 /// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
 ///
 /// @param [in] synthesizer
-/// @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
+/// @param [in] kana AquesTalk風記法
+/// @param [in] style_id スタイルID
+/// @param [in] options オプション
+/// @param [out] output_wav_length 出力のバイト長
+/// @param [out] output_wav 出力先
+///
+/// @returns 結果コード
+///
+/// \safety{
+/// - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
+    synthesizer: &VoicevoxSynthesizer,
+    kana: *const c_char,
+    style_id: VoicevoxStyleId,
+    options: VoicevoxTtsOptions,
+    output_wav_length: NonNull<usize>,
+    output_wav: NonNull<*mut u8>,
+) -> VoicevoxResultCode {
+    into_result_code_with_error((|| {
+        let kana = ensure_utf8(CStr::from_ptr(kana))?;
+        let output = RUNTIME.block_on(synthesizer.synthesizer().tts_from_kana(
+            kana,
+            StyleId::new(style_id),
+            &TtsOptions::from(options),
+        ))?;
+        U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length);
+        Ok(())
+    })())
+}
+
+/// 日本語テキストから音声合成を行う。
+///
+/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+///
+/// @param [in] synthesizer
+/// @param [in] text UTF-8の日本語テキスト
 /// @param [in] style_id スタイルID
 /// @param [in] options オプション
 /// @param [out] output_wav_length 出力のバイト長

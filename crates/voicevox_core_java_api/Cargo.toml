@@ -7,6 +7,9 @@ publish.workspace = true
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+directml = ["voicevox_core/directml"]
+
 [dependencies]
 android_logger = "0.13.1"
 anyhow.workspace = true

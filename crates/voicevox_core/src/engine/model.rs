@@ -76,6 +76,12 @@ pub struct AudioQueryModel {
     kana: Option<String>,
 }
 
+impl AudioQueryModel {
+    pub(crate) fn with_kana(self, kana: Option<String>) -> Self {
+        Self { kana, ..self }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

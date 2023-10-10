@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Final, List, Literal, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Final, List, Literal, Union
 from uuid import UUID
 
 import numpy as np
@@ -147,46 +147,80 @@ class Synthesizer:
         モデルが読み込まれているかどうか。
         """
         ...
-    async def audio_query(
+    async def audio_query_from_kana(
         self,
-        text: str,
+        kana: str,
         style_id: int,
-        kana: bool = False,
     ) -> AudioQuery:
         """
-        :class:`AudioQuery` を生成する。
+        AquesTalk風記法から :class:`AudioQuery` を生成する。
 
         Parameters
         ----------
-        text
-            テキスト。文字コードはUTF-8。
+        kana
+            AquesTalk風記法。
         style_id
             スタイルID。
-        kana
-            ``text`` をAquesTalk風記法として解釈するかどうか。
 
         Returns
         -------
         話者とテキストから生成された :class:`AudioQuery` 。
         """
         ...
-    async def create_accent_phrases(
+    async def audio_query(
         self,
         text: str,
         style_id: int,
-        kana: bool = False,
-    ) -> List[AccentPhrase]:
+    ) -> AudioQuery:
         """
-        AccentPhrase（アクセント句）の配列を生成する。
+        日本語のテキストから :class:`AudioQuery` を生成する。
 
         Parameters
         ----------
         text
-            UTF-8の日本語テキストまたはAquesTalk風記法。
+            UTF-8の日本語テキスト。
         style_id
             スタイルID。
+
+        Returns
+        -------
+        話者とテキストから生成された :class:`AudioQuery` 。
+        """
+        ...
+    async def create_accent_phrases_from_kana(
+        self,
+        kana: str,
+        style_id: int,
+    ) -> List[AccentPhrase]:
+        """
+        AquesTalk風記法からAccentPhrase（アクセント句）の配列を生成する。
+
+        Parameters
+        ----------
         kana
-            ``text`` をAquesTalk風記法として解釈するかどうか。
+            AquesTalk風記法。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        :class:`AccentPhrase` の配列。
+        """
+        ...
+    async def create_accent_phrases(
+        self,
+        text: str,
+        style_id: int,
+    ) -> List[AccentPhrase]:
+        """
+        日本語のテキストからAccentPhrase（アクセント句）の配列を生成する。
+
+        Parameters
+        ----------
+        text
+            UTF-8の日本語テキスト。
+        style_id
+            スタイルID。
 
         Returns
         -------
@@ -274,24 +308,40 @@ class Synthesizer:
         WAVデータ。
         """
         ...
+    async def tts_from_kana(
+        self,
+        kana: str,
+        style_id: int,
+        enable_interrogative_upspeak: bool = True,
+    ) -> bytes:
+        """
+        AquesTalk風記法から音声合成を行う。
+
+        Parameters
+        ----------
+        kana
+            AquesTalk風記法。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
+        """
+        ...
     async def tts(
         self,
         text: str,
         style_id: int,
-        kana: bool = False,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
-        テキスト音声合成を実行する。
+        日本語のテキストから音声合成を行う。
 
         Parameters
         ----------
         text
-            UTF-8の日本語テキストまたはAquesTalk風記法。
+            UTF-8の日本語テキスト。
         style_id
             スタイルID。
-        kana
-            ``text`` をAquesTalk風記法として解釈するかどうか。
         enable_interrogative_upspeak
             疑問文の調整を有効にするかどうか。
 

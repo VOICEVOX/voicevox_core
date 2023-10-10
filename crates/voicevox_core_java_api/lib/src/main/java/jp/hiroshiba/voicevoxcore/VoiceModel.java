@@ -3,13 +3,11 @@ package jp.hiroshiba.voicevoxcore;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import java.lang.ref.Cleaner;
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 /** 音声モデル。 */
 public class VoiceModel extends Dll {
   private long handle;
-  private static final Cleaner cleaner = Cleaner.create();
 
   /** ID。 */
   @Nonnull public final String id;
@@ -27,8 +25,11 @@ public class VoiceModel extends Dll {
       throw new RuntimeException("Failed to parse metasJson");
     }
     metas = rawMetas;
+  }
 
-    cleaner.register(this, () -> rsDrop());
+  protected void finalize() throws Throwable {
+    rsDrop();
+    super.finalize();
   }
 
   private native void rsFromPath(String modelPath);
@@ -47,25 +48,25 @@ public class VoiceModel extends Dll {
     @SerializedName("name")
     @Expose
     @Nonnull
-    final String name;
+    public final String name;
 
     /** 話者に属するスタイル。 */
     @SerializedName("styles")
     @Expose
     @Nonnull
-    final StyleMeta[] styles;
+    public final StyleMeta[] styles;
 
     /** 話者のUUID。 */
     @SerializedName("speaker_uuid")
     @Expose
     @Nonnull
-    final String speakerUuid;
+    public final String speakerUuid;
 
     /** 話者のバージョン。 */
     @SerializedName("version")
     @Expose
     @Nonnull
-    final String version;
+    public final String version;
 
     private SpeakerMeta() {
       // GSONからコンストラクトするため、このメソッドは呼ばれることは無い。
@@ -83,12 +84,12 @@ public class VoiceModel extends Dll {
     @SerializedName("name")
     @Expose
     @Nonnull
-    final String name;
+    public final String name;
 
     /** スタイルID。 */
     @SerializedName("id")
     @Expose
-    final int id;
+    public final int id;
 
     private StyleMeta() {
       this.name = "";

@@ -1,22 +1,32 @@
 use std::collections::HashMap;
 
 use super::*;
+use crate::engine::open_jtalk::OpenjtalkFunctionError;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
+// FIXME: 入力テキストをここで持って、メッセージに含む
 #[derive(thiserror::Error, Debug)]
-pub(crate) enum FullContextLabelError {
-    #[error("label parse error label:{label}")]
+#[error("入力テキストからのフルコンテキストラベル抽出に失敗しました: {context}")]
+pub(crate) struct FullContextLabelError {
+    context: ErrorKind,
+    #[source]
+    source: Option<OpenjtalkFunctionError>,
+}
+
+#[derive(derive_more::Display, Debug)]
+enum ErrorKind {
+    #[display(fmt = "Open JTalkで解釈することができませんでした")]
+    OpenJtalk,
+
+    #[display(fmt = "label parse error label: {label}")]
     LabelParse { label: String },
 
-    #[error("too long mora mora_phonemes:{mora_phonemes:?}")]
+    #[display(fmt = "too long mora mora_phonemes: {mora_phonemes:?}")]
     TooLongMora { mora_phonemes: Vec<Phoneme> },
 
-    #[error("invalid mora:{mora:?}")]
+    #[display(fmt = "invalid mora: {mora:?}")]
     InvalidMora { mora: Box<Mora> },
-
-    #[error(transparent)]
-    OpenJtalk(#[from] open_jtalk::OpenJtalkError),
 }
 
 type Result<T> = std::result::Result<T, FullContextLabelError>;
@@ -38,18 +48,18 @@ static H1_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(/H:(\d+|xx)_)").unwrap
 static I3_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(@(\d+|xx)\+)").unwrap());
 static J1_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(/J:(\d+|xx)_)").unwrap());
 
-fn string_feature_by_regex(re: &Regex, label: &str) -> Result<String> {
+fn string_feature_by_regex(re: &Regex, label: &str) -> std::result::Result<String, ErrorKind> {
     if let Some(caps) = re.captures(label) {
         Ok(caps.get(2).unwrap().as_str().to_string())
     } else {
-        Err(FullContextLabelError::LabelParse {
+        Err(ErrorKind::LabelParse {
             label: label.into(),
         })
     }
 }
 
 impl Phoneme {
-    pub(crate) fn from_label(label: impl Into<String>) -> Result<Self> {
+    fn from_label(label: impl Into<String>) -> std::result::Result<Self, ErrorKind> {
         let mut contexts = HashMap::<String, String>::with_capacity(10);
         let label = label.into();
         contexts.insert("p3".into(), string_feature_by_regex(&P3_REGEX, &label)?);
@@ -116,7 +126,7 @@ pub struct AccentPhrase {
 }
 
 impl AccentPhrase {
-    pub(crate) fn from_phonemes(mut phonemes: Vec<Phoneme>) -> Result<Self> {
+    fn from_phonemes(mut phonemes: Vec<Phoneme>) -> std::result::Result<Self, ErrorKind> {
         let mut moras = Vec::with_capacity(phonemes.len());
         let mut mora_phonemes = Vec::with_capacity(phonemes.len());
         for i in 0..phonemes.len() {
@@ -140,7 +150,7 @@ impl AccentPhrase {
                         mora_phonemes.get(1).unwrap().clone(),
                     ));
                 } else {
-                    return Err(FullContextLabelError::TooLongMora { mora_phonemes });
+                    return Err(ErrorKind::TooLongMora { mora_phonemes });
                 }
                 mora_phonemes.clear();
             }
@@ -151,11 +161,11 @@ impl AccentPhrase {
             .vowel()
             .contexts()
             .get("f2")
-            .ok_or_else(|| FullContextLabelError::InvalidMora {
+            .ok_or_else(|| ErrorKind::InvalidMora {
                 mora: mora.clone().into(),
             })?
             .parse()
-            .map_err(|_| FullContextLabelError::InvalidMora {
+            .map_err(|_| ErrorKind::InvalidMora {
                 mora: mora.clone().into(),
             })?;
 
@@ -208,7 +218,7 @@ pub struct BreathGroup {
 }
 
 impl BreathGroup {
-    pub(crate) fn from_phonemes(phonemes: Vec<Phoneme>) -> Result<Self> {
+    fn from_phonemes(phonemes: Vec<Phoneme>) -> std::result::Result<Self, ErrorKind> {
         let mut accent_phrases = Vec::with_capacity(phonemes.len());
         let mut accent_phonemes = Vec::with_capacity(phonemes.len());
         for i in 0..phonemes.len() {
@@ -256,7 +266,7 @@ pub struct Utterance {
 }
 
 impl Utterance {
-    pub(crate) fn from_phonemes(phonemes: Vec<Phoneme>) -> Result<Self> {
+    fn from_phonemes(phonemes: Vec<Phoneme>) -> std::result::Result<Self, ErrorKind> {
         let mut breath_groups = vec![];
         let mut group_phonemes = Vec::with_capacity(phonemes.len());
         let mut pauses = vec![];
@@ -309,12 +319,22 @@ impl Utterance {
         open_jtalk: &open_jtalk::OpenJtalk,
         text: impl AsRef<str>,
     ) -> Result<Self> {
-        let labels = open_jtalk.extract_fullcontext(text)?;
-        Self::from_phonemes(
-            labels
-                .into_iter()
-                .map(Phoneme::from_label)
-                .collect::<Result<Vec<_>>>()?,
-        )
+        let labels =
+            open_jtalk
+                .extract_fullcontext(text)
+                .map_err(|source| FullContextLabelError {
+                    context: ErrorKind::OpenJtalk,
+                    source: Some(source),
+                })?;
+
+        labels
+            .into_iter()
+            .map(Phoneme::from_label)
+            .collect::<std::result::Result<Vec<_>, _>>()
+            .and_then(Self::from_phonemes)
+            .map_err(|context| FullContextLabelError {
+                context,
+                source: None,
+            })
     }
 }

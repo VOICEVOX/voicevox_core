@@ -1,7 +1,44 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
+    resolutionStrategy {
+        eachPlugin {
+            if(requested.id.namespace == "com.android") {
+                useModule("com.android.tools.build:gradle:${requested.version}")
+            }
+        }
+    }
+}
 plugins {
     // Apply the foojay-resolver plugin to allow automatic download of JDKs
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.4.0'
 }
 
 rootProject.name = 'jp.hiroshiba.voicevoxcore'
+def String targetOs = System.getenv('OS')?.toLowerCase() ?: "desktop"
+def boolean isAndroid = targetOs == 'android'
 include('lib')
+if (isAndroid) {
+    project(':lib').buildFileName = 'build-android.gradle'
+} else {
+    project(':lib').buildFileName = 'build.gradle'
+}
+
+def String cargoToml = file('../../Cargo.toml').text
+def String cargoTomlVersion = (cargoToml =~ /(?m)^version = "(\S+)"$/)[0][1]
+
+gradle.ext {
+  version = cargoTomlVersion
+
+  targetOs = targetOs
+  targetDevice = System.getenv('DEVICE') ?: 'cpu'
+
+  gsonVersion = '2.10.1'
+  jakartaValidationVersion = '3.0.2'
+  jakartaAnnotationVersion = '2.1.1'
+  onnxruntimeVersion = '1.14.0'
+}

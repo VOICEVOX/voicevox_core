@@ -59,15 +59,21 @@ pub(crate) struct Symbols<'lib> {
         Symbol<'lib, unsafe extern "C" fn(*const VoicevoxSynthesizer) -> *mut c_char>,
     pub(crate) voicevox_create_supported_devices_json:
         Symbol<'lib, unsafe extern "C" fn(*mut *mut c_char) -> VoicevoxResultCode>,
-    pub(crate) voicevox_make_default_audio_query_options:
-        Symbol<'lib, unsafe extern "C" fn() -> VoicevoxAudioQueryOptions>,
+    pub(crate) voicevox_synthesizer_create_audio_query_from_kana: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxSynthesizer,
+            *const c_char,
+            VoicevoxStyleId,
+            *mut *mut c_char,
+        ) -> VoicevoxResultCode,
+    >,
     pub(crate) voicevox_synthesizer_create_audio_query: Symbol<
         'lib,
         unsafe extern "C" fn(
             *const VoicevoxSynthesizer,
             *const c_char,
             VoicevoxStyleId,
-            VoicevoxAudioQueryOptions,
             *mut *mut c_char,
         ) -> VoicevoxResultCode,
     >,
@@ -86,6 +92,17 @@ pub(crate) struct Symbols<'lib> {
     >,
     pub(crate) voicevox_make_default_tts_options:
         Symbol<'lib, unsafe extern "C" fn() -> VoicevoxTtsOptions>,
+    pub(crate) voicevox_synthesizer_tts_from_kana: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxSynthesizer,
+            *const c_char,
+            VoicevoxStyleId,
+            VoicevoxTtsOptions,
+            *mut usize,
+            *mut *mut u8,
+        ) -> VoicevoxResultCode,
+    >,
     pub(crate) voicevox_synthesizer_tts: Symbol<
         'lib,
         unsafe extern "C" fn(
@@ -205,11 +222,12 @@ impl<'lib> Symbols<'lib> {
             voicevox_synthesizer_is_loaded_voice_model,
             voicevox_synthesizer_create_metas_json,
             voicevox_create_supported_devices_json,
-            voicevox_make_default_audio_query_options,
+            voicevox_synthesizer_create_audio_query_from_kana,
             voicevox_synthesizer_create_audio_query,
             voicevox_make_default_synthesis_options,
             voicevox_synthesizer_synthesis,
             voicevox_make_default_tts_options,
+            voicevox_synthesizer_tts_from_kana,
             voicevox_synthesizer_tts,
             voicevox_json_free,
             voicevox_wav_free,
@@ -252,8 +270,8 @@ pub(crate) enum VoicevoxResultCode {
     VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR = 1,
     VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR = 3,
     VOICEVOX_RESULT_GPU_SUPPORT_ERROR = 4,
-    VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR = 6,
-    VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR = 7,
+    VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR = 6,
+    VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR = 7,
     VOICEVOX_RESULT_INFERENCE_ERROR = 8,
     VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR = 11,
     VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR = 12,
@@ -265,10 +283,9 @@ pub(crate) enum VoicevoxResultCode {
     VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR = 18,
     VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR = 26,
     VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 27,
-    VOICEVOX_RESULT_UNLOADED_MODEL_ERROR = 19,
     VOICEVOX_RESULT_LOAD_USER_DICT_ERROR = 20,
     VOICEVOX_RESULT_SAVE_USER_DICT_ERROR = 21,
-    VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR = 22,
+    VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR = 22,
     VOICEVOX_RESULT_USE_USER_DICT_ERROR = 23,
     VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR = 24,
     VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
@@ -287,18 +304,12 @@ pub(crate) struct VoicevoxInitializeOptions {
 }
 
 #[repr(C)]
-pub(crate) struct VoicevoxAudioQueryOptions {
-    _kana: bool,
-}
-
-#[repr(C)]
 pub(crate) struct VoicevoxSynthesisOptions {
     _enable_interrogative_upspeak: bool,
 }
 
 #[repr(C)]
 pub(crate) struct VoicevoxTtsOptions {
-    _kana: bool,
     _enable_interrogative_upspeak: bool,
 }
 

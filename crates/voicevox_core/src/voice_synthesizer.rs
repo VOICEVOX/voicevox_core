@@ -25,36 +25,10 @@ impl From<&TtsOptions> for SynthesisOptions {
     }
 }
 
-/// [`Synthesizer::create_accent_phrases`]のオプション。
-///
-/// [`Synthesizer::create_accent_phrases`]: Synthesizer::create_accent_phrases
-#[derive(Default)]
-pub struct AccentPhrasesOptions {
-    /// AquesTalk風記法としてテキストを解釈する。
-    pub kana: bool,
-}
-
-/// [`Synthesizer::audio_query`]のオプション。
-///
-/// [`Synthesizer::audio_query`]: Synthesizer::audio_query
-#[derive(Default)]
-pub struct AudioQueryOptions {
-    /// AquesTalk風記法としてテキストを解釈する。
-    pub kana: bool,
-}
-
-impl From<&TtsOptions> for AudioQueryOptions {
-    fn from(options: &TtsOptions) -> Self {
-        Self { kana: options.kana }
-    }
-}
-
 /// [`Synthesizer::tts`]のオプション。
 ///
 /// [`Synthesizer::tts`]: Synthesizer::tts
 pub struct TtsOptions {
-    /// AquesTalk風記法としてテキストを解釈する。
-    pub kana: bool,
     pub enable_interrogative_upspeak: bool,
 }
 
@@ -68,7 +42,6 @@ impl Default for TtsOptions {
     fn default() -> Self {
         Self {
             enable_interrogative_upspeak: true,
-            kana: Default::default(),
         }
     }
 }
@@ -267,12 +240,9 @@ impl Synthesizer {
             .await
     }
 
-    /// AccentPhrase (アクセント句)の配列を生成する。
+    /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
     ///
-    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk風記法として、そうでないときには
-    /// 日本語のテキストとして解釈される。
-    ///
-    /// # Examples
+    /// # Example
     ///
     #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
     #[cfg_attr(not(windows), doc = "```")]
@@ -308,16 +278,25 @@ impl Synthesizer {
     /// use voicevox_core::StyleId;
     ///
     /// let accent_phrases = syntesizer
-    ///     .create_accent_phrases(
-    ///         "こんにちは", // 日本語のテキスト
-    ///         StyleId::new(302),
-    ///         &Default::default(),
-    ///     )
+    ///     .create_accent_phrases_from_kana("コンニチワ'", StyleId::new(302))
     ///     .await?;
     /// #
     /// # Ok(())
     /// # }
     /// ```
+    pub async fn create_accent_phrases_from_kana(
+        &self,
+        kana: &str,
+        style_id: StyleId,
+    ) -> Result<Vec<AccentPhraseModel>> {
+        self.synthesis_engine
+            .replace_mora_data(&parse_kana(kana)?, style_id)
+            .await
+    }
+
+    /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
+    ///
+    /// # Example
     ///
     #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
     #[cfg_attr(not(windows), doc = "```")]
@@ -350,39 +329,26 @@ impl Synthesizer {
     /// #     syntesizer
     /// # };
     /// #
-    /// use voicevox_core::{AccentPhrasesOptions, StyleId};
+    /// use voicevox_core::StyleId;
     ///
     /// let accent_phrases = syntesizer
-    ///     .create_accent_phrases(
-    ///         "コンニチワ'", // AquesTalk風記法
-    ///         StyleId::new(302),
-    ///         &AccentPhrasesOptions { kana: true },
-    ///     )
+    ///     .create_accent_phrases("こんにちは", StyleId::new(302))
     ///     .await?;
     /// #
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// [`options.kana`]: crate::AccentPhrasesOptions::kana
     pub async fn create_accent_phrases(
         &self,
         text: &str,
         style_id: StyleId,
-        options: &AccentPhrasesOptions,
     ) -> Result<Vec<AccentPhraseModel>> {
         if !self.synthesis_engine.is_openjtalk_dict_loaded() {
             return Err(ErrorRepr::NotLoadedOpenjtalkDict.into());
         }
-        if options.kana {
-            self.synthesis_engine
-                .replace_mora_data(&parse_kana(text)?, style_id)
-                .await
-        } else {
-            self.synthesis_engine
-                .create_accent_phrases(text, style_id)
-                .await
-        }
+        self.synthesis_engine
+            .create_accent_phrases(text, style_id)
+            .await
     }
 
     /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
@@ -418,10 +384,62 @@ impl Synthesizer {
             .await
     }
 
-    /// [AudioQuery]を生成する。
+    /// AquesTalk風記法から[AudioQuery]を生成する。
     ///
-    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk風記法として、そうでないときには
-    /// 日本語のテキストとして解釈される。
+    /// # Example
+    ///
+    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
+    #[cfg_attr(not(windows), doc = "```")]
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// # let syntesizer = {
+    /// #     use std::sync::Arc;
+    /// #
+    /// #     use test_util::OPEN_JTALK_DIC_DIR;
+    /// #     use voicevox_core::{
+    /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
+    /// #     };
+    /// #
+    /// #     let mut syntesizer = Synthesizer::new_with_initialize(
+    /// #         Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+    /// #         &InitializeOptions {
+    /// #             acceleration_mode: AccelerationMode::Cpu,
+    /// #             ..Default::default()
+    /// #         },
+    /// #     )
+    /// #     .await?;
+    /// #
+    /// #     let model = &VoiceModel::from_path(concat!(
+    /// #         env!("CARGO_MANIFEST_DIR"),
+    /// #         "/../../model/sample.vvm",
+    /// #     ))
+    /// #     .await?;
+    /// #     syntesizer.load_voice_model(model).await?;
+    /// #
+    /// #     syntesizer
+    /// # };
+    /// #
+    /// use voicevox_core::StyleId;
+    ///
+    /// let audio_query = syntesizer
+    ///     .audio_query_from_kana("コンニチワ'", StyleId::new(302))
+    ///     .await?;
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [AudioQuery]: crate::AudioQueryModel
+    pub async fn audio_query_from_kana(
+        &self,
+        kana: &str,
+        style_id: StyleId,
+    ) -> Result<AudioQueryModel> {
+        let accent_phrases = self.create_accent_phrases_from_kana(kana, style_id).await?;
+        Ok(AudioQueryModel::from_accent_phrases(accent_phrases).with_kana(Some(kana.to_owned())))
+    }
+
+    /// 日本語のテキストから[AudioQuery]を生成する。
     ///
     /// # Examples
     ///
@@ -459,56 +477,7 @@ impl Synthesizer {
     /// use voicevox_core::StyleId;
     ///
     /// let audio_query = syntesizer
-    ///     .audio_query(
-    ///         "こんにちは", // 日本語のテキスト
-    ///         StyleId::new(302),
-    ///         &Default::default(),
-    ///     )
-    ///     .await?;
-    /// #
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
-    #[cfg_attr(not(windows), doc = "```")]
-    /// # #[tokio::main]
-    /// # async fn main() -> anyhow::Result<()> {
-    /// # let syntesizer = {
-    /// #     use std::sync::Arc;
-    /// #
-    /// #     use test_util::OPEN_JTALK_DIC_DIR;
-    /// #     use voicevox_core::{
-    /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
-    /// #     };
-    /// #
-    /// #     let mut syntesizer = Synthesizer::new_with_initialize(
-    /// #         Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
-    /// #         &InitializeOptions {
-    /// #             acceleration_mode: AccelerationMode::Cpu,
-    /// #             ..Default::default()
-    /// #         },
-    /// #     )
-    /// #     .await?;
-    /// #
-    /// #     let model = &VoiceModel::from_path(concat!(
-    /// #         env!("CARGO_MANIFEST_DIR"),
-    /// #         "/../../model/sample.vvm",
-    /// #     ))
-    /// #     .await?;
-    /// #     syntesizer.load_voice_model(model).await?;
-    /// #
-    /// #     syntesizer
-    /// # };
-    /// #
-    /// use voicevox_core::{AudioQueryOptions, StyleId};
-    ///
-    /// let audio_query = syntesizer
-    ///     .audio_query(
-    ///         "コンニチワ'", // AquesTalk風記法
-    ///         StyleId::new(302),
-    ///         &AudioQueryOptions { kana: true },
-    ///     )
+    ///     .audio_query("こんにちは", StyleId::new(302))
     ///     .await?;
     /// #
     /// # Ok(())
@@ -516,46 +485,31 @@ impl Synthesizer {
     /// ```
     ///
     /// [AudioQuery]: crate::AudioQueryModel
-    /// [`options.kana`]: crate::AudioQueryOptions::kana
-    pub async fn audio_query(
-        &self,
-        text: &str,
-        style_id: StyleId,
-        options: &AudioQueryOptions,
-    ) -> Result<AudioQueryModel> {
-        let accent_phrases = self
-            .create_accent_phrases(text, style_id, &AccentPhrasesOptions { kana: options.kana })
-            .await?;
-        let kana = create_kana(&accent_phrases);
-        Ok(AudioQueryModel::new(
-            accent_phrases,
-            1.,
-            0.,
-            1.,
-            1.,
-            0.1,
-            0.1,
-            SynthesisEngine::DEFAULT_SAMPLING_RATE,
-            false,
-            Some(kana),
-        ))
+    pub async fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQueryModel> {
+        let accent_phrases = self.create_accent_phrases(text, style_id).await?;
+        Ok(AudioQueryModel::from_accent_phrases(accent_phrases))
     }
 
-    /// テキスト音声合成を行う。
-    ///
-    /// `text`は[`options.kana`]が有効化されているときにはAquesTalk風記法として、そうでないときには
-    /// 日本語のテキストとして解釈される。
-    ///
-    /// [`options.kana`]: crate::TtsOptions::kana
+    /// AquesTalk風記法から音声合成を行う。
+    pub async fn tts_from_kana(
+        &self,
+        kana: &str,
+        style_id: StyleId,
+        options: &TtsOptions,
+    ) -> Result<Vec<u8>> {
+        let audio_query = &self.audio_query_from_kana(kana, style_id).await?;
+        self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
+            .await
+    }
+
+    /// 日本語のテキストから音声合成を行う。
     pub async fn tts(
         &self,
         text: &str,
         style_id: StyleId,
         options: &TtsOptions,
     ) -> Result<Vec<u8>> {
-        let audio_query = &self
-            .audio_query(text, style_id, &AudioQueryOptions::from(options))
-            .await?;
+        let audio_query = &self.audio_query(text, style_id).await?;
         self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
             .await
     }
@@ -596,6 +550,24 @@ fn list_windows_video_cards() {
 
     fn trim_nul(s: &[u16]) -> &[u16] {
         &s[..s.iter().position(|&c| c == 0x0000).unwrap_or(s.len())]
+    }
+}
+
+impl AudioQueryModel {
+    fn from_accent_phrases(accent_phrases: Vec<AccentPhraseModel>) -> Self {
+        let kana = create_kana(&accent_phrases);
+        Self::new(
+            accent_phrases,
+            1.,
+            0.,
+            1.,
+            1.,
+            0.1,
+            0.1,
+            SynthesisEngine::DEFAULT_SAMPLING_RATE,
+            false,
+            Some(kana),
+        )
     }
 }
 
@@ -832,21 +804,18 @@ mod tests {
 
     #[rstest]
     #[case(
-        "これはテストです",
-        false,
+        Input::Japanese("これはテストです"),
         TEXT_CONSONANT_VOWEL_DATA1,
         "コレワ'/テ'_ストデ_ス"
     )]
     #[case(
-        "コ'レワ/テ_スト'デ_ス",
-        true,
+        Input::Kana("コ'レワ/テ_スト'デ_ス"),
         TEXT_CONSONANT_VOWEL_DATA2,
         "コ'レワ/テ_スト'デ_ス"
     )]
     #[tokio::test]
     async fn audio_query_works(
-        #[case] input_text: &str,
-        #[case] input_kana_option: bool,
+        #[case] input: Input,
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
         #[case] expected_kana_text: &str,
     ) {
@@ -863,16 +832,15 @@ mod tests {
         let model = &VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
-        let query = syntesizer
-            .audio_query(
-                input_text,
-                StyleId::new(0),
-                &AudioQueryOptions {
-                    kana: input_kana_option,
-                },
-            )
-            .await
-            .unwrap();
+        let query = match input {
+            Input::Kana(input) => {
+                syntesizer
+                    .audio_query_from_kana(input, StyleId::new(0))
+                    .await
+            }
+            Input::Japanese(input) => syntesizer.audio_query(input, StyleId::new(0)).await,
+        }
+        .unwrap();
 
         assert_eq!(
             query.accent_phrases().len(),
@@ -913,12 +881,11 @@ mod tests {
     }
 
     #[rstest]
-    #[case("これはテストです", false, TEXT_CONSONANT_VOWEL_DATA1)]
-    #[case("コ'レワ/テ_スト'デ_ス", true, TEXT_CONSONANT_VOWEL_DATA2)]
+    #[case(Input::Japanese("これはテストです"), TEXT_CONSONANT_VOWEL_DATA1)]
+    #[case(Input::Kana("コ'レワ/テ_スト'デ_ス"), TEXT_CONSONANT_VOWEL_DATA2)]
     #[tokio::test]
     async fn accent_phrases_works(
-        #[case] input_text: &str,
-        #[case] input_kana_option: bool,
+        #[case] input: Input,
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
     ) {
         let syntesizer = Synthesizer::new_with_initialize(
@@ -934,16 +901,19 @@ mod tests {
         let model = &VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
-        let accent_phrases = syntesizer
-            .create_accent_phrases(
-                input_text,
-                StyleId::new(0),
-                &AccentPhrasesOptions {
-                    kana: input_kana_option,
-                },
-            )
-            .await
-            .unwrap();
+        let accent_phrases = match input {
+            Input::Kana(input) => {
+                syntesizer
+                    .create_accent_phrases_from_kana(input, StyleId::new(0))
+                    .await
+            }
+            Input::Japanese(input) => {
+                syntesizer
+                    .create_accent_phrases(input, StyleId::new(0))
+                    .await
+            }
+        }
+        .unwrap();
 
         assert_eq!(
             accent_phrases.len(),
@@ -998,11 +968,7 @@ mod tests {
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
-            .create_accent_phrases(
-                "これはテストです",
-                StyleId::new(0),
-                &AccentPhrasesOptions { kana: false },
-            )
+            .create_accent_phrases("これはテストです", StyleId::new(0))
             .await
             .unwrap();
 
@@ -1039,11 +1005,7 @@ mod tests {
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
-            .create_accent_phrases(
-                "これはテストです",
-                StyleId::new(0),
-                &AccentPhrasesOptions { kana: false },
-            )
+            .create_accent_phrases("これはテストです", StyleId::new(0))
             .await
             .unwrap();
 
@@ -1076,11 +1038,7 @@ mod tests {
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
-            .create_accent_phrases(
-                "これはテストです",
-                StyleId::new(0),
-                &AccentPhrasesOptions { kana: false },
-            )
+            .create_accent_phrases("これはテストです", StyleId::new(0))
             .await
             .unwrap();
 
@@ -1113,5 +1071,10 @@ mod tests {
         std::iter::zip(before, after)
             .flat_map(move |(before, after)| std::iter::zip(before.moras(), after.moras()))
             .any(|(before, after)| param(before) != param(after))
+    }
+
+    enum Input {
+        Japanese(&'static str),
+        Kana(&'static str),
     }
 }

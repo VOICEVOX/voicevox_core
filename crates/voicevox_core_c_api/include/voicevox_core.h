@@ -103,13 +103,13 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_GPU_SUPPORT_ERROR = 4,
   /**
-   * 無効なstyle_idが指定された
+   * スタイルIDに対するスタイルが見つからなかった
    */
-  VOICEVOX_RESULT_INVALID_STYLE_ID_ERROR = 6,
+  VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR = 6,
   /**
-   * 無効なmodel_idが指定された
+   * 音声モデルIDに対する音声モデルが見つからなかった
    */
-  VOICEVOX_RESULT_INVALID_MODEL_ID_ERROR = 7,
+  VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR = 7,
   /**
    * 推論に失敗した
    */
@@ -155,10 +155,6 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 27,
   /**
-   * Modelが読み込まれていない
-   */
-  VOICEVOX_RESULT_UNLOADED_MODEL_ERROR = 19,
-  /**
    * ユーザー辞書を読み込めなかった
    */
   VOICEVOX_RESULT_LOAD_USER_DICT_ERROR = 20,
@@ -169,7 +165,7 @@ enum VoicevoxResultCode
   /**
    * ユーザー辞書に単語が見つからなかった
    */
-  VOICEVOX_RESULT_UNKNOWN_USER_DICT_WORD_ERROR = 22,
+  VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR = 22,
   /**
    * OpenJTalkのユーザー辞書の設定に失敗した
    */
@@ -280,31 +276,11 @@ typedef struct VoicevoxInitializeOptions {
 typedef const char *VoicevoxVoiceModelId;
 
 /**
- * ::voicevox_synthesizer_create_audio_query のオプション。
- */
-typedef struct VoicevoxAudioQueryOptions {
-  /**
-   * AquesTalk風記法としてテキストを解釈する
-   */
-  bool kana;
-} VoicevoxAudioQueryOptions;
-
-/**
  * スタイルID。
  *
  * VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
  */
 typedef uint32_t VoicevoxStyleId;
-
-/**
- * ::voicevox_synthesizer_create_accent_phrases のオプション。
- */
-typedef struct VoicevoxAccentPhrasesOptions {
-  /**
-   * AquesTalk風記法としてテキストを解釈する
-   */
-  bool kana;
-} VoicevoxAccentPhrasesOptions;
 
 /**
  * ::voicevox_synthesizer_synthesis のオプション。
@@ -320,10 +296,6 @@ typedef struct VoicevoxSynthesisOptions {
  * ::voicevox_synthesizer_tts のオプション。
  */
 typedef struct VoicevoxTtsOptions {
-  /**
-   * AquesTalk風記法としてテキストを解釈する
-   */
-  bool kana;
   /**
    * 疑問文の調整を有効にする
    */
@@ -668,47 +640,60 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supported_devices_json);
 
 /**
- * デフォルトの AudioQuery のオプションを生成する
- * @return デフォルト値が設定された AudioQuery オプション
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-struct VoicevoxAudioQueryOptions voicevox_make_default_audio_query_options(void);
-
-/**
- * AudioQueryをJSONとして生成する。
+ * AquesTalk風記法から、AudioQueryをJSONとして生成する。
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
- * @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
+ * @param [in] kana AquesTalk風記法
  * @param [in] style_id スタイルID
- * @param [in] options オプション
  * @param [out] output_audio_query_json 生成先
  *
  * @returns 結果コード
  *
- * \examples{
+ * \example{
  * ```c
  * char *audio_query;
- * voicevox_synthesizer_create_audio_query(synthesizer,
- *                                         "こんにちは",  // 日本語テキスト
- *                                         2,  // "四国めたん (ノーマル)"
- *                                         (VoicevoxAudioQueryOptions){.kana = false},
- *                                         &audio_query);
- * ```
- *
- * ```c
- * char *audio_query;
- * voicevox_synthesizer_create_audio_query(synthesizer,
- *                                         "コンニチワ'",  // AquesTalk風記法
- *                                         2,  // "四国めたん (ノーマル)"
- *                                         (VoicevoxAudioQueryOptions){.kana = true},
- *                                         &audio_query);
+ * voicevox_synthesizer_create_audio_query_from_kana(synthesizer, "コンニチワ'",
+ *                                                   2, // "四国めたん (ノーマル)"
+ *                                                   &audio_query);
  * ```
  * }
  *
+ * \safety{
+ * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_create_audio_query_from_kana(const struct VoicevoxSynthesizer *synthesizer,
+                                                                     const char *kana,
+                                                                     VoicevoxStyleId style_id,
+                                                                     char **output_audio_query_json);
+
+/**
+ * 日本語テキストから、AudioQueryをJSONとして生成する。
+ *
+ * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ *
+ * @param [in] synthesizer 音声シンセサイザ
+ * @param [in] text UTF-8の日本語テキスト
+ * @param [in] style_id スタイルID
+ * @param [out] output_audio_query_json 生成先
+ *
+ * @returns 結果コード
+ *
+ * \example{
+ * ```c
+ * char *audio_query;
+ * voicevox_synthesizer_create_audio_query(synthesizer, "こんにちは",
+ *                                         2, // "四国めたん (ノーマル)"
+ *                                         &audio_query);
+ * ```
+ * }
  *
  * \safety{
  * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
@@ -722,48 +707,62 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_synthesizer_create_audio_query(const struct VoicevoxSynthesizer *synthesizer,
                                                            const char *text,
                                                            VoicevoxStyleId style_id,
-                                                           struct VoicevoxAudioQueryOptions options,
                                                            char **output_audio_query_json);
 
 /**
- * デフォルトの `accent_phrases` のオプションを生成する
- * @return デフォルト値が設定された `accent_phrases` のオプション
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-struct VoicevoxAccentPhrasesOptions voicevox_make_default_accent_phrases_options(void);
-
-/**
- * AccentPhrase (アクセント句)の配列をJSON形式で生成する。
+ * AquesTalk風記法から、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
- * @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
+ * @param [in] kana AquesTalk風記法
  * @param [in] style_id スタイルID
- * @param [in] options オプション
  * @param [out] output_accent_phrases_json 生成先
  *
  * @returns 結果コード
  *
- * \examples{
+ * \example{
  * ```c
  * char *accent_phrases;
- * voicevox_synthesizer_create_accent_phrases(
- *     synthesizer,
- *     "こんにちは",  // 日本語テキスト
- *     2,             // "四国めたん (ノーマル)"
- *     voicevox_default_accent_phrases_options, &accent_phrases);
+ * voicevox_synthesizer_create_accent_phrases_from_kana(
+ *     synthesizer, "コンニチワ'",
+ *     2, // "四国めたん (ノーマル)"
+ *     &accent_phrases);
  * ```
+ * }
  *
+ * \safety{
+ * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_create_accent_phrases_from_kana(const struct VoicevoxSynthesizer *synthesizer,
+                                                                        const char *kana,
+                                                                        VoicevoxStyleId style_id,
+                                                                        char **output_accent_phrases_json);
+
+/**
+ * 日本語テキストから、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
+ *
+ * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ *
+ * @param [in] synthesizer 音声シンセサイザ
+ * @param [in] text UTF-8の日本語テキスト
+ * @param [in] style_id スタイルID
+ * @param [out] output_accent_phrases_json 生成先
+ *
+ * @returns 結果コード
+ *
+ * \example{
  * ```c
  * char *accent_phrases;
- * voicevox_synthesizer_create_accent_phrases(
- *     synthesizer,
- *     "コンニチワ'",  // AquesTalk風記法
- *     2,              // "四国めたん (ノーマル)"
- *     (VoicevoxAccentPhrasesOptions){.kana = true}, &accent_phrases);
+ * voicevox_synthesizer_create_accent_phrases(synthesizer, "こんにちは",
+ *                                            2, // "四国めたん (ノーマル)"
+ *                                            &accent_phrases);
  * ```
  * }
  *
@@ -779,7 +778,6 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct VoicevoxSynthesizer *synthesizer,
                                                               const char *text,
                                                               VoicevoxStyleId style_id,
-                                                              struct VoicevoxAccentPhrasesOptions options,
                                                               char **output_accent_phrases_json);
 
 /**
@@ -910,12 +908,43 @@ __declspec(dllimport)
 struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
 
 /**
- * テキスト音声合成を行う。
+ * AquesTalk風記法から音声合成を行う。
  *
  * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
  *
  * @param [in] synthesizer
- * @param [in] text UTF-8の日本語テキストまたはAquesTalk風記法
+ * @param [in] kana AquesTalk風記法
+ * @param [in] style_id スタイルID
+ * @param [in] options オプション
+ * @param [out] output_wav_length 出力のバイト長
+ * @param [out] output_wav 出力先
+ *
+ * @returns 結果コード
+ *
+ * \safety{
+ * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_tts_from_kana(const struct VoicevoxSynthesizer *synthesizer,
+                                                      const char *kana,
+                                                      VoicevoxStyleId style_id,
+                                                      struct VoicevoxTtsOptions options,
+                                                      uintptr_t *output_wav_length,
+                                                      uint8_t **output_wav);
+
+/**
+ * 日本語テキストから音声合成を行う。
+ *
+ * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+ *
+ * @param [in] synthesizer
+ * @param [in] text UTF-8の日本語テキスト
  * @param [in] style_id スタイルID
  * @param [in] options オプション
  * @param [out] output_wav_length 出力のバイト長

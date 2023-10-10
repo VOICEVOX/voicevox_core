@@ -305,7 +305,7 @@ impl LoadedModels {
                     .flat_map(SpeakerMeta::styles)
                     .any(|style| *style.id() == style_id)
             })
-            .ok_or(ErrorRepr::InvalidStyleId { style_id })?;
+            .ok_or(ErrorRepr::StyleNotFound { style_id })?;
 
         let model_inner_id = *model_inner_ids
             .get(&style_id)
@@ -390,7 +390,7 @@ impl LoadedModels {
 
     fn remove(&mut self, model_id: &VoiceModelId) -> Result<()> {
         if self.0.remove(model_id).is_none() {
-            return Err(ErrorRepr::UnloadedModel {
+            return Err(ErrorRepr::ModelNotFound {
                 model_id: model_id.clone(),
             }
             .into());

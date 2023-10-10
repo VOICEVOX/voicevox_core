@@ -47,7 +47,13 @@ impl<T> SliceOwner<T> {
         let len = slice.len();
 
         let duplicated = slices.insert(ptr as usize, slice.into()).is_some();
-        assert!(!duplicated, "duplicated");
+        if duplicated {
+            panic!(
+                "別の{ptr:p}が管理下にあります。原因としては以前に別の配列が{ptr:p}として存在\
+                 しており、それが誤った形で解放されたことが考えられます。このライブラリで生成した\
+                 オブジェクトの解放は、このライブラリが提供するAPIで行われなくてはなりません",
+            );
+        }
 
         out_ptr.as_ptr().write_unaligned(ptr);
         out_len.as_ptr().write_unaligned(len);

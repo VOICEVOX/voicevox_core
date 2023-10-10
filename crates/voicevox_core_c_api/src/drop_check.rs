@@ -46,8 +46,15 @@ impl CStringDropChecker {
             owned_str_addrs, ..
         } = &mut *self.0.lock().unwrap();
 
-        let duplicated = !owned_str_addrs.insert(s.as_ptr() as usize);
-        assert!(!duplicated, "duplicated");
+        let ptr = s.as_ptr();
+        let duplicated = !owned_str_addrs.insert(ptr as usize);
+        if duplicated {
+            panic!(
+                "別の{ptr:p}が管理下にあります。原因としては以前に別の文字列が{ptr:p}として存在\
+                 しており、それが誤った形で解放されたことが考えられます。このライブラリで生成した\
+                 オブジェクトの解放は、このライブラリが提供するAPIで行われなくてはなりません",
+            );
+        }
         s
     }
 
@@ -100,7 +107,20 @@ impl CStringDropChecker {
 mod tests {
     use std::ffi::{c_char, CStr};
 
+    use cstr::cstr;
+
     use super::CStringDropChecker;
+
+    #[test]
+    #[should_panic(
+        expected = "このライブラリで生成したオブジェクトの解放は、このライブラリが提供するAPIで\
+                    行われなくてはなりません"
+    )]
+    fn it_denies_duplicated_char_ptr() {
+        let checker = CStringDropChecker::new();
+        let s = cstr!("").to_owned();
+        checker.whitelist(checker.whitelist(s));
+    }
 
     #[test]
     #[should_panic(
