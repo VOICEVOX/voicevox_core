@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 directml = ["voicevox_core/directml"]
 
 [dependencies]
-android_logger = "0.13.1"
+android_logger = "0.13.3"
 anyhow.workspace = true
 chrono = "0.4.26"
 jni = "0.21.1"
