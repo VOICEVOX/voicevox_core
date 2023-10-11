@@ -184,7 +184,7 @@ jobs:
 
   build_and_deploy:
     needs: config
-    environment: ${{ fromJson(inputs.is_production) && 'production' || '' }} # 製品版のenvironment
+    environment: ${{ inputs.is_production && 'production' || '' }} # 製品版のenvironment
     strategy:
       matrix:
         include: ${{ fromJson(needs.config.outputs.includes) }}
@@ -193,14 +193,14 @@ jobs:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v3 # 製品版ではない場合
-        if: !fromJson(inputs.is_production)
+        if: !inputs.is_production
       - uses: actions/checkout@v3 # 製品版の場合
-        if: fromJson(inputs.is_production)
+        if: inputs.is_production
         with:
           fetch-depth: 0 # 全履歴取得
           token: ${{ secrets.PRODUCTION_GITHUB_TOKEN }}
       - name: Merge production branch
-        if: fromJson(inputs.is_production)
+        if: inputs.is_production
         shell: bash
         run: |
           (
@@ -233,21 +233,21 @@ jobs:
           echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
       - name: Checkout VOICEVOX RESOURCE
-        if: fromJson(inputs.is_production)
+        if: inputs.is_production
         uses: actions/checkout@v3
         with:
           repository: VOICEVOX/voicevox_resource
           ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
           path: download/resource
       - name: Checkout VOICEVOX FAT RESOURCE
-        if: fromJson(inputs.is_production)
+        if: inputs.is_production
         uses: actions/checkout@v3
         with:
           repository: VOICEVOX/voicevox_fat_resource
           ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
           path: download/fat_resource
       - name: Raplace resource
-        if: fromJson(inputs.is_production)
+        if: inputs.is_production
         shell: bash
         run: |
           mv -f download/resource/core/README.md ./README.md
@@ -262,14 +262,14 @@ jobs:
           if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
       - name: cache target
         uses: Swatinem/rust-cache@v2
-        if: !fromJson(inputs.is_production)
+        if: !inputs.is_production
       - name: build voicevox_core_c_api
         shell: bash
         run: |
           function build() {
             cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
           }
-          if ${{ !fromJson(inputs.is_production) }}; then
+          if ${{ !inputs.is_production }}; then
             build
           else
             build > /dev/null 2>&1
@@ -286,7 +286,7 @@ jobs:
           function build() {
             maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
           }
-          if ${{ !fromJson(inputs.is_production) }}; then
+          if ${{ !inputs.is_production }}; then
             build
           else
             build > /dev/null 2>&1
@@ -300,7 +300,7 @@ jobs:
           function build() {
             cargo build -p voicevox_core_java_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
           }
-          if ${{ !fromJson(inputs.is_production) }}; then
+          if ${{ !inputs.is_production }}; then
             build
           else
             build > /dev/null 2>&1
@@ -321,7 +321,7 @@ jobs:
           mkdir java_artifact
           cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
       - name: Code signing (Windows)
-        if: startsWith(matrix.os, 'windows') && fromJson(inputs.code_signing)
+        if: startsWith(matrix.os, 'windows') && inputs.code_signing
         run: |
           bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
         env:
