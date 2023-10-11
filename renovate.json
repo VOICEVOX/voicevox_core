@@ -4,11 +4,22 @@
     "config:recommended"
   ],
   "timezone": "Asia/Tokyo",
-  "schedule": [
-    "before 1am"
-  ],
-  "regexManagers": [
+  "packageRules": [
     {
+      "groupSlug": "rust",
+      "groupName": "Rust",
+      "matchPackagePatterns": "^Rust$"
+    },
+    {
+      "groupSlug": "others",
+      "groupName": "Others",
+      "excludePackagePatterns": "^Rust$",
+      "dependencyDashboardApproval": true
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
       "fileMatch": [
         "^rust-toolchain$"
       ],
@@ -16,7 +27,7 @@
         "(?<currentValue>\\d+\\.\\d+\\.\\d+)"
       ],
       "depNameTemplate": "Rust",
-      "lookupNameTemplate": "rust-lang/rust",
+      "packageNameTemplate": "rust-lang/rust",
       "datasourceTemplate": "github-releases"
     }
   ]
