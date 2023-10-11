@@ -193,7 +193,7 @@ jobs:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v3 # 製品版ではない場合
-        if: !inputs.is_production
+        if: ${{ !inputs.is_production }}
       - uses: actions/checkout@v3 # 製品版の場合
         if: inputs.is_production
         with:
@@ -262,7 +262,7 @@ jobs:
           if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
       - name: cache target
         uses: Swatinem/rust-cache@v2
-        if: !inputs.is_production
+        if: ${{ !inputs.is_production }}
       - name: build voicevox_core_c_api
         shell: bash
         run: |
