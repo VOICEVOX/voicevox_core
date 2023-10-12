@@ -145,7 +145,7 @@ model フォルダにある onnx モデルはダミーのため、ノイズの�
 cargo build --release -p voicevox_core_c_api
 ```
 
-DLL 用のヘッダファイルは [crates/voicevox_core_c_api/include/voicevox_core.h](https://github.com/VOICEVOX/voicevox_core/tree/main/crates/voicevox_core_c_api/include/voicevox_core.h) にあります。
+DLL用のヘッダファイルは [crates/voicevox\_core\_c\_api/include/voicevox\_core.h](https://github.com/VOICEVOX/voicevox_core/tree/main/crates/voicevox_core_c_api/include/voicevox_core.h) にあります。
 
 ## コアライブラリのテスト
 
