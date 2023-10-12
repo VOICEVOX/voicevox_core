@@ -42,7 +42,7 @@ defaults:
 
 jobs:
   deploy_and_deploy_downloader:
-    environment: ${{ inputs.is_production == 'true' && 'production' || '' }} # コード署名用のenvironment
+    environment: ${{ inputs.is_production && 'production' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include:
@@ -94,7 +94,7 @@ jobs:
           mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
 
       - name: Code signing (Windows)
-        if: startsWith(matrix.os, 'windows') && inputs.code_signing == 'true'
+        if: startsWith(matrix.os, 'windows') && inputs.code_signing
         run: |
           bash build_util/codesign.bash ./${{ matrix.name }}
         env:
