@@ -283,7 +283,7 @@ impl Synthesizer {
                         .iter()
                         .map(|ap| to_pydantic_dataclass(ap, class))
                         .collect::<PyResult<Vec<_>>>();
-                    let list = PyList::new(py, accent_phrases.into_iter());
+                    let list = PyList::new(py, accent_phrases);
                     Ok(list.to_object(py))
                 })
             },
@@ -314,7 +314,7 @@ impl Synthesizer {
                         .iter()
                         .map(|ap| to_pydantic_dataclass(ap, class))
                         .collect::<PyResult<Vec<_>>>();
-                    let list = PyList::new(py, accent_phrases.into_iter());
+                    let list = PyList::new(py, accent_phrases);
                     Ok(list.to_object(py))
                 })
             },
