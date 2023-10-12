@@ -5,6 +5,7 @@ import os
 import tempfile
 from uuid import UUID
 
+import pydantic
 import pytest
 import voicevox_core  # noqa: F401
 
@@ -69,7 +70,7 @@ async def test_user_dict_load() -> None:
     assert uuid_c in dict_a.words
 
     # 単語のバリデーション
-    with pytest.raises(voicevox_core.VoicevoxError):
+    with pytest.raises(pydantic.ValidationError):
         dict_a.add_word(
             voicevox_core.UserDictWord(
                 surface="",

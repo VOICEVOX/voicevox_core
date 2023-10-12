@@ -6,7 +6,7 @@ use log::debug;
 use once_cell::sync::Lazy;
 use pyo3::{
     create_exception,
-    exceptions::PyException,
+    exceptions::{PyException, PyValueError},
     pyclass, pyfunction, pymethods, pymodule,
     types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyModule},
     wrap_pyfunction, PyAny, PyObject, PyRef, PyResult, PyTypeInfo, Python, ToPyObject,
@@ -22,7 +22,7 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
 
 #[pymodule]
 #[pyo3(name = "_rust")]
-fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
+fn rust(_: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
 
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
@@ -34,16 +34,45 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_class::<OpenJtalk>()?;
     module.add_class::<VoiceModel>()?;
     module.add_class::<UserDict>()?;
-    module.add("VoicevoxError", py.get_type::<VoicevoxError>())?;
-    Ok(())
+
+    add_exceptions(module)
 }
 
-create_exception!(
-    voicevox_core,
-    VoicevoxError,
-    PyException,
-    "voicevox_core Error."
-);
+macro_rules! exceptions {
+    ($($name:ident: $base:ty;)*) => {
+        $(
+            create_exception!(voicevox_core, $name, $base);
+        )*
+
+        fn add_exceptions(module: &PyModule) -> PyResult<()> {
+            $(
+                module.add(stringify!($name), module.py().get_type::<$name>())?;
+            )*
+            Ok(())
+        }
+    };
+}
+
+exceptions! {
+    NotLoadedOpenjtalkDictError: PyException;
+    GpuSupportError: PyException;
+    OpenZipFileError: PyException;
+    ReadZipEntryError: PyException;
+    ModelAlreadyLoadedError: PyException;
+    StyleAlreadyLoadedError: PyException;
+    InvalidModelDataError: PyException;
+    GetSupportedDevicesError: PyException;
+    StyleNotFoundError: PyException;
+    ModelNotFoundError: PyException;
+    InferenceFailedError: PyException;
+    ExtractFullContextLabelError: PyException;
+    ParseKanaError: PyValueError;
+    LoadUserDictError: PyException;
+    SaveUserDictError: PyException;
+    WordNotFoundError: PyException;
+    UseUserDictError: PyException;
+    InvalidWordError: PyValueError;
+}
 
 #[pyclass]
 #[derive(Clone)]
@@ -57,7 +86,7 @@ fn supported_devices(py: Python) -> PyResult<&PyAny> {
         .import("voicevox_core")?
         .getattr("SupportedDevices")?
         .downcast()?;
-    let s = voicevox_core::SupportedDevices::create().into_py_result()?;
+    let s = voicevox_core::SupportedDevices::create().into_py_result(py)?;
     to_pydantic_dataclass(s, class)
 }
 
@@ -69,9 +98,8 @@ impl VoiceModel {
         #[pyo3(from_py_with = "from_utf8_path")] path: String,
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let model = voicevox_core::VoiceModel::from_path(path)
-                .await
-                .into_py_result()?;
+            let model = voicevox_core::VoiceModel::from_path(path).await;
+            let model = Python::with_gil(|py| model.into_py_result(py))?;
             Ok(Self { model })
         })
     }
@@ -96,19 +124,22 @@ struct OpenJtalk {
 #[pymethods]
 impl OpenJtalk {
     #[new]
-    fn new(#[pyo3(from_py_with = "from_utf8_path")] open_jtalk_dict_dir: String) -> PyResult<Self> {
+    fn new(
+        #[pyo3(from_py_with = "from_utf8_path")] open_jtalk_dict_dir: String,
+        py: Python<'_>,
+    ) -> PyResult<Self> {
         Ok(Self {
             open_jtalk: Arc::new(
                 voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)
-                    .into_py_result()?,
+                    .into_py_result(py)?,
             ),
         })
     }
 
-    fn use_user_dict(&self, user_dict: UserDict) -> PyResult<()> {
+    fn use_user_dict(&self, user_dict: UserDict, py: Python<'_>) -> PyResult<()> {
         self.open_jtalk
             .use_user_dict(&user_dict.dict)
-            .into_py_result()
+            .into_py_result(py)
     }
 }
 
@@ -139,9 +170,8 @@ impl Synthesizer {
                     cpu_num_threads,
                 },
             )
-            .await
-            .into_py_result()?
-            .into();
+            .await;
+            let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?.into();
             Ok(Self {
                 synthesizer: Closable::new(Arc::new(synthesizer)),
             })
@@ -186,20 +216,21 @@ impl Synthesizer {
         let model: VoiceModel = model.extract()?;
         let synthesizer = self.synthesizer.get()?.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            synthesizer
+            let synthesizer = synthesizer
                 .lock()
                 .await
                 .load_voice_model(&model.model)
-                .await
-                .into_py_result()
+                .await;
+
+            Python::with_gil(|py| synthesizer.into_py_result(py))
         })
     }
 
-    fn unload_voice_model(&mut self, voice_model_id: &str) -> PyResult<()> {
+    fn unload_voice_model(&mut self, voice_model_id: &str, py: Python<'_>) -> PyResult<()> {
         RUNTIME
             .block_on(self.synthesizer.get()?.lock())
             .unload_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
-            .into_py_result()
+            .into_py_result(py)
     }
 
     fn is_loaded_voice_model(&self, voice_model_id: &str) -> PyResult<bool> {
@@ -224,12 +255,11 @@ impl Synthesizer {
                     .lock()
                     .await
                     .audio_query_from_kana(&kana, StyleId::new(style_id))
-                    .await
-                    .into_py_result()?;
+                    .await;
 
                 Python::with_gil(|py| {
                     let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
-                    let ret = to_pydantic_dataclass(audio_query, class)?;
+                    let ret = to_pydantic_dataclass(audio_query.into_py_result(py)?, class)?;
                     Ok(ret.to_object(py))
                 })
             },
@@ -247,10 +277,10 @@ impl Synthesizer {
                     .lock()
                     .await
                     .audio_query(&text, StyleId::new(style_id))
-                    .await
-                    .into_py_result()?;
+                    .await;
 
                 Python::with_gil(|py| {
+                    let audio_query = audio_query.into_py_result(py)?;
                     let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
                     let ret = to_pydantic_dataclass(audio_query, class)?;
                     Ok(ret.to_object(py))
@@ -275,11 +305,11 @@ impl Synthesizer {
                     .lock()
                     .await
                     .create_accent_phrases_from_kana(&kana, StyleId::new(style_id))
-                    .await
-                    .into_py_result()?;
+                    .await;
                 Python::with_gil(|py| {
                     let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
                     let accent_phrases = accent_phrases
+                        .into_py_result(py)?
                         .iter()
                         .map(|ap| to_pydantic_dataclass(ap, class))
                         .collect::<PyResult<Vec<_>>>();
@@ -306,11 +336,11 @@ impl Synthesizer {
                     .lock()
                     .await
                     .create_accent_phrases(&text, StyleId::new(style_id))
-                    .await
-                    .into_py_result()?;
+                    .await;
                 Python::with_gil(|py| {
                     let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
                     let accent_phrases = accent_phrases
+                        .into_py_result(py)?
                         .iter()
                         .map(|ap| to_pydantic_dataclass(ap, class))
                         .collect::<PyResult<Vec<_>>>();
@@ -389,9 +419,11 @@ impl Synthesizer {
                             enable_interrogative_upspeak,
                         },
                     )
-                    .await
-                    .into_py_result()?;
-                Python::with_gil(|py| Ok(PyBytes::new(py, &wav).to_object(py)))
+                    .await;
+                Python::with_gil(|py| {
+                    let wav = wav.into_py_result(py)?;
+                    Ok(PyBytes::new(py, &wav).to_object(py))
+                })
             },
         )
     }
@@ -422,9 +454,12 @@ impl Synthesizer {
                     .lock()
                     .await
                     .tts_from_kana(&kana, style_id, &options)
-                    .await
-                    .into_py_result()?;
-                Python::with_gil(|py| Ok(PyBytes::new(py, &wav).to_object(py)))
+                    .await;
+
+                Python::with_gil(|py| {
+                    let wav = wav.into_py_result(py)?;
+                    Ok(PyBytes::new(py, &wav).to_object(py))
+                })
             },
         )
     }
@@ -455,9 +490,12 @@ impl Synthesizer {
                     .lock()
                     .await
                     .tts(&text, style_id, &options)
-                    .await
-                    .into_py_result()?;
-                Python::with_gil(|py| Ok(PyBytes::new(py, &wav).to_object(py)))
+                    .await;
+
+                Python::with_gil(|py| {
+                    let wav = wav.into_py_result(py)?;
+                    Ok(PyBytes::new(py, &wav).to_object(py))
+                })
             },
         )
     }
@@ -488,7 +526,7 @@ impl<T, C: PyTypeInfo> Closable<T, C> {
     fn get(&self) -> PyResult<&T> {
         match &self.content {
             MaybeClosed::Open(content) => Ok(content),
-            MaybeClosed::Closed => Err(VoicevoxError::new_err(format!(
+            MaybeClosed::Closed => Err(PyValueError::new_err(format!(
                 "The `{}` is closed",
                 C::NAME,
             ))),
@@ -510,8 +548,8 @@ impl<T, C: PyTypeInfo> Drop for Closable<T, C> {
 }
 
 #[pyfunction]
-fn _validate_pronunciation(pronunciation: &str) -> PyResult<()> {
-    voicevox_core::__internal::validate_pronunciation(pronunciation).into_py_result()
+fn _validate_pronunciation(pronunciation: &str, py: Python<'_>) -> PyResult<()> {
+    voicevox_core::__internal::validate_pronunciation(pronunciation).into_py_result(py)
 }
 
 #[pyfunction]
@@ -532,12 +570,12 @@ impl UserDict {
         Self::default()
     }
 
-    fn load(&mut self, path: &str) -> PyResult<()> {
-        self.dict.load(path).into_py_result()
+    fn load(&mut self, path: &str, py: Python<'_>) -> PyResult<()> {
+        self.dict.load(path).into_py_result(py)
     }
 
-    fn save(&self, path: &str) -> PyResult<()> {
-        self.dict.save(path).into_py_result()
+    fn save(&self, path: &str, py: Python<'_>) -> PyResult<()> {
+        self.dict.save(path).into_py_result(py)
     }
 
     fn add_word(
@@ -545,7 +583,7 @@ impl UserDict {
         #[pyo3(from_py_with = "to_rust_user_dict_word")] word: UserDictWord,
         py: Python,
     ) -> PyResult<PyObject> {
-        let uuid = self.dict.add_word(word).into_py_result()?;
+        let uuid = self.dict.add_word(word).into_py_result(py)?;
 
         to_py_uuid(py, uuid)
     }
@@ -554,21 +592,23 @@ impl UserDict {
         &mut self,
         #[pyo3(from_py_with = "to_rust_uuid")] word_uuid: Uuid,
         #[pyo3(from_py_with = "to_rust_user_dict_word")] word: UserDictWord,
+        py: Python<'_>,
     ) -> PyResult<()> {
-        self.dict.update_word(word_uuid, word).into_py_result()?;
+        self.dict.update_word(word_uuid, word).into_py_result(py)?;
         Ok(())
     }
 
     fn remove_word(
         &mut self,
         #[pyo3(from_py_with = "to_rust_uuid")] word_uuid: Uuid,
+        py: Python<'_>,
     ) -> PyResult<()> {
-        self.dict.remove_word(word_uuid).into_py_result()?;
+        self.dict.remove_word(word_uuid).into_py_result(py)?;
         Ok(())
     }
 
-    fn import_dict(&mut self, other: &UserDict) -> PyResult<()> {
-        self.dict.import(&other.dict).into_py_result()?;
+    fn import_dict(&mut self, other: &UserDict, py: Python<'_>) -> PyResult<()> {
+        self.dict.import(&other.dict).into_py_result(py)?;
         Ok(())
     }
 
