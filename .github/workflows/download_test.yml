@@ -87,7 +87,6 @@ jobs:
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
-              model/README.*
               README.txt
             check_not_exists_items: |
               *directml*
@@ -97,6 +96,7 @@ jobs:
               *nvidia*
               *cufft*
               *curand*
+              model/README.*
               open_jtalk_dic_utf_8-1.11
           - name: DirectML option確認
             os: windows-latest
@@ -123,7 +123,6 @@ jobs:
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
-              model/README.*
               README.txt
             check_not_exists_items: |
               *cuda*
@@ -134,6 +133,7 @@ jobs:
               *curand*
               Directml.dll
               DirectML_LICENSE.txt
+              model/README.*
               open_jtalk_dic_utf_8-1.11
           - name: cuda option確認
             os: windows-latest
@@ -163,7 +163,6 @@ jobs:
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
-              model/README.*
               README.txt
             check_not_exists_items: |
               *directml*
@@ -178,6 +177,7 @@ jobs:
               cudnn_ops_infer64_*.dll
               cufft64_*.dll
               curand64_*.dll
+              model/README.*
               open_jtalk_dic_utf_8-1.11
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}-${{ matrix.os }}
