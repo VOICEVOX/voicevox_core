@@ -68,7 +68,7 @@ fn set_message(message: &str) {
 
 #[no_mangle]
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
-    let result = RUNTIME.block_on((|| async {
+    let result = RUNTIME.block_on(async {
         let synthesizer = voicevox_core::Synthesizer::new_with_initialize(
             Arc::new(OpenJtalk::new_without_dic()),
             &voicevox_core::InitializeOptions {
@@ -89,7 +89,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
         }
 
         Ok::<_, voicevox_core::Error>(synthesizer)
-    })());
+    });
 
     match result {
         Ok(synthesizer) => {
