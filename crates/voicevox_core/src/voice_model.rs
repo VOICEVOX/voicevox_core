@@ -179,7 +179,7 @@ impl VvmEntryReader {
     }
 
     async fn read_vvm_entry(&self, filename: &str) -> LoadModelResult<Vec<u8>> {
-        (|| async {
+        async {
             let me = self
                 .entry_map
                 .get(filename)
@@ -190,7 +190,7 @@ impl VvmEntryReader {
                 .read_to_end_checked(&mut buf, &me.entry)
                 .await?;
             Ok::<_, anyhow::Error>(buf)
-        })()
+        }
         .await
         .map_err(|source| LoadModelError {
             path: self.reader.path().to_owned(),
