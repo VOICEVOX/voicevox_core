@@ -191,12 +191,10 @@ async fn main() -> anyhow::Result<()> {
     )?);
 
     if !min {
-        let model_dir = output.join("model");
-        fs_err::create_dir(&model_dir)?;
         tasks.spawn(download_and_extract_from_gh(
             model,
             Stripping::FirstDir,
-            &model_dir,
+            &output.join("model"),
             &progresses,
         )?);
 
