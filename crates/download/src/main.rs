@@ -36,9 +36,7 @@ const DEFAULT_OUTPUT: &str = if cfg!(windows) {
     "./voicevox_core"
 };
 
-const ORGANIZATION_NAME: &str = "VOICEVOX";
-const CORE_REPO_NAME: &str = "voicevox_core";
-const ADDITIONAL_LIBRARIES_REPO_NAME: &str = "voicevox_additional_libraries";
+const LIB_NAME: &str = "voicevox_core";
 
 static OPEN_JTALK_DIC_URL: Lazy<Url> = Lazy::new(|| {
     "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
@@ -75,6 +73,20 @@ struct Args {
     /// ダウンロードする対象のOSを指定する
     #[arg(value_enum, long, default_value(Os::default_opt().map(<&str>::from)))]
     os: Os,
+
+    #[arg(
+        long,
+        value_name("REPOSITORY"),
+        default_value("VOICEVOX/voicevox_core")
+    )]
+    core_repo: RepoName,
+
+    #[arg(
+        long,
+        value_name("REPOSITORY"),
+        default_value("VOICEVOX/voicevox_additional_libraries")
+    )]
+    additional_libraries_repo: RepoName,
 }
 
 #[derive(Default, ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq)]
@@ -123,6 +135,13 @@ impl Os {
     }
 }
 
+#[derive(parse_display::FromStr, Clone)]
+#[from_str(regex = "(?<owner>[a-zA-Z0-9_]+)/(?<repo>[a-zA-Z0-9_]+)")]
+struct RepoName {
+    owner: String,
+    repo: String,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     setup_logger();
@@ -135,23 +154,25 @@ async fn main() -> anyhow::Result<()> {
         device,
         cpu_arch,
         os,
+        core_repo,
+        additional_libraries_repo,
     } = Args::parse();
 
     let octocrab = &octocrab()?;
 
-    let core = find_gh_asset(octocrab, CORE_REPO_NAME, &version, |tag| {
+    let core = find_gh_asset(octocrab, core_repo, &version, |tag| {
         let device = match (os, device) {
             (Os::Linux, Device::Cuda) => "gpu",
             (_, device) => device.into(),
         };
-        format!("{CORE_REPO_NAME}-{os}-{cpu_arch}-{device}-{tag}.zip")
+        format!("{LIB_NAME}-{os}-{cpu_arch}-{device}-{tag}.zip")
     })
     .await?;
 
     let additional_libraries = OptionFuture::from((device != Device::Cpu).then(|| {
         find_gh_asset(
             octocrab,
-            ADDITIONAL_LIBRARIES_REPO_NAME,
+            additional_libraries_repo,
             &additional_libraries_version,
             |_| {
                 let device = match device {
@@ -169,7 +190,7 @@ async fn main() -> anyhow::Result<()> {
     info!("対象OS: {os}");
     info!("対象CPUアーキテクチャ: {cpu_arch}");
     info!("ダウンロードデバイスタイプ: {device}");
-    info!("ダウンロード{CORE_REPO_NAME}バージョン: {}", core.tag);
+    info!("ダウンロード{LIB_NAME}バージョン: {}", core.tag);
     if let Some(GhAsset { tag, .. }) = &additional_libraries {
         info!("ダウンロード追加ライブラリバージョン: {tag}");
     }
@@ -236,7 +257,7 @@ fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
 
 async fn find_gh_asset(
     octocrab: &Arc<Octocrab>,
-    repo: &str,
+    repo: RepoName,
     git_tag_or_latest: &str,
     asset_name: impl FnOnce(&str) -> String,
 ) -> anyhow::Result<GhAsset> {
@@ -246,7 +267,7 @@ async fn find_gh_asset(
         assets,
         ..
     } = {
-        let repos = octocrab.repos(ORGANIZATION_NAME, repo);
+        let repos = octocrab.repos(&repo.owner, &repo.repo);
         let releases = repos.releases();
         match git_tag_or_latest {
             "latest" => releases.get_latest().await,
@@ -262,7 +283,7 @@ async fn find_gh_asset(
 
     Ok(GhAsset {
         octocrab: octocrab.clone(),
-        repo: repo.to_owned(),
+        repo,
         tag: tag_name,
         id,
         name,
@@ -289,7 +310,7 @@ fn download_and_extract_from_gh(
 
     Ok(async move {
         let bytes_stream = octocrab
-            .repos(ORGANIZATION_NAME, repo)
+            .repos(&repo.owner, &repo.repo)
             .releases()
             .stream_asset(id)
             .await?
@@ -523,7 +544,7 @@ async fn download_and_extract(
 
 struct GhAsset {
     octocrab: Arc<Octocrab>,
-    repo: String,
+    repo: RepoName,
     tag: String,
     id: AssetId,
     name: String,
