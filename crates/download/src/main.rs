@@ -158,7 +158,7 @@ async fn main() -> anyhow::Result<()> {
 
     let octocrab = &octocrab()?;
 
-    let core = find_gh_asset(octocrab, core_repo, &version, |tag| {
+    let core = find_gh_asset(octocrab, &core_repo, &version, |tag| {
         let device = match (os, device) {
             (Os::Linux, Device::Cuda) => "gpu",
             (_, device) => device.into(),
@@ -167,7 +167,7 @@ async fn main() -> anyhow::Result<()> {
     })
     .await?;
 
-    let model = find_gh_asset(octocrab, core_repo, &version, |tag| {
+    let model = find_gh_asset(octocrab, &core_repo, &version, |tag| {
         format!("model-{tag}.zip")
     })
     .await?;
@@ -175,7 +175,7 @@ async fn main() -> anyhow::Result<()> {
     let additional_libraries = OptionFuture::from((device != Device::Cpu).then(|| {
         find_gh_asset(
             octocrab,
-            additional_libraries_repo,
+            &additional_libraries_repo,
             &additional_libraries_version,
             |_| {
                 let device = match device {
@@ -267,7 +267,7 @@ fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
 
 async fn find_gh_asset(
     octocrab: &Arc<Octocrab>,
-    repo: RepoName,
+    repo: &RepoName,
     git_tag_or_latest: &str,
     asset_name: impl FnOnce(&str) -> String,
 ) -> anyhow::Result<GhAsset> {
@@ -293,7 +293,7 @@ async fn find_gh_asset(
 
     Ok(GhAsset {
         octocrab: octocrab.clone(),
-        repo,
+        repo: repo.clone(),
         tag: tag_name,
         id,
         name,
