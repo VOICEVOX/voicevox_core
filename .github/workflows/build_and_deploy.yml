@@ -29,7 +29,7 @@ on:
 
 env:
   VOICEVOX_RESOURCE_VERSION: "0.15.0-preview.3"
-  VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-preview.3"
+  VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-preview.4"
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0' }}
   PRODUCTION_REPOSITORY_TAG: "0.15.0-preview.2" # 製品版のタグ名
@@ -239,19 +239,11 @@ jobs:
           repository: VOICEVOX/voicevox_resource
           ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
           path: download/resource
-      - name: Checkout VOICEVOX FAT RESOURCE
-        if: inputs.is_production
-        uses: actions/checkout@v3
-        with:
-          repository: VOICEVOX/voicevox_fat_resource
-          ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
-          path: download/fat_resource
       - name: Raplace resource
         if: inputs.is_production
         shell: bash
         run: |
           mv -f download/resource/core/README.md ./README.md
-          rm -r ./model; mv download/fat_resource/core/model ./model
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-edit
@@ -315,7 +307,6 @@ jobs:
           # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
           rm -f artifact/${{ env.ASSET_NAME }}/libonnxruntime.{so,dylib}
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
-          cp -vr model "artifact/${{ env.ASSET_NAME }}/"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
           mkdir java_artifact
@@ -407,6 +398,43 @@ jobs:
         run: |
           cd artifact/${{ env.ASSET_NAME }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
+      - name: Upload to Release
+        if: fromJson(needs.config.outputs.deploy)
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ env.ASSET_NAME }}.zip
+          target_commitish: ${{ github.sha }}
+
+  deploy_model:
+    runs-on: ubuntu-latest
+    needs: config
+    env:
+      ASSET_NAME: model-${{ needs.config.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checkout VOICEVOX FAT RESOURCE
+        if: inputs.is_production
+        uses: actions/checkout@v3
+        with:
+          repository: VOICEVOX/voicevox_fat_resource
+          ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
+          path: download/fat_resource
+      - name: Raplace resource
+        if: inputs.is_production
+        shell: bash
+        run: |
+          rm -r ./model; mv download/fat_resource/core/model ./model
+      - name: Create artifact
+        run: |
+          mkdir "artifact"
+          mv model "artifact/${{ env.ASSET_NAME }}/"
+      - name: Archive artifact
+        run: |
+          cd artifact
+          7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
         uses: softprops/action-gh-release@v1
