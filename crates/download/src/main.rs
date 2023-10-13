@@ -167,7 +167,7 @@ async fn main() -> anyhow::Result<()> {
     })
     .await?;
 
-    let model = find_gh_asset(octocrab, CORE_REPO_NAME, &version, |tag| {
+    let model = find_gh_asset(octocrab, core_repo, &version, |tag| {
         format!("model-{tag}.zip")
     })
     .await?;
