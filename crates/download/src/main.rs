@@ -37,6 +37,8 @@ const DEFAULT_OUTPUT: &str = if cfg!(windows) {
 };
 
 const LIB_NAME: &str = "voicevox_core";
+const DEFAULT_CORE_REPO: &str = "VOICEVOX/voicevox_core";
+const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
 
 static OPEN_JTALK_DIC_URL: Lazy<Url> = Lazy::new(|| {
     "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
@@ -74,17 +76,13 @@ struct Args {
     #[arg(value_enum, long, default_value(Os::default_opt().map(<&str>::from)))]
     os: Os,
 
-    #[arg(
-        long,
-        value_name("REPOSITORY"),
-        default_value("VOICEVOX/voicevox_core")
-    )]
+    #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_CORE_REPO))]
     core_repo: RepoName,
 
     #[arg(
         long,
         value_name("REPOSITORY"),
-        default_value("VOICEVOX/voicevox_additional_libraries")
+        default_value(DEFAULT_ADDITIONAL_LIBRARIES_REPO)
     )]
     additional_libraries_repo: RepoName,
 }
