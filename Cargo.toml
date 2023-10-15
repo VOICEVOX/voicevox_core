@@ -8,6 +8,7 @@ members = [
     "crates/voicevox_core_python_api",
     "crates/xtask"
 ]
+resolver = "2"
 
 [workspace.dependencies]
 anyhow = "1.0.65"
