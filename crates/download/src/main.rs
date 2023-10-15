@@ -106,7 +106,7 @@ struct Args {
     additional_libraries_repo: RepoName,
 }
 
-#[derive(ValueEnum, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(ValueEnum, Clone, Copy, PartialEq, Eq, Hash)]
 enum DownloadTarget {
     Core,
     Models,
