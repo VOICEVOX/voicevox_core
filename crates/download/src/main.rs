@@ -79,12 +79,7 @@ struct Args {
     additional_libraries_version: String,
 
     /// ダウンロードするデバイスを指定する(cudaはlinuxのみ)
-    #[arg(
-        value_enum,
-        long,
-        default_value(<&str>::from(Device::default())),
-        required_if_eq("only", "additional-libraries")
-    )]
+    #[arg(value_enum, long, default_value(<&str>::from(Device::default())))]
     device: Device,
 
     /// ダウンロードするcpuのアーキテクチャを指定する
@@ -227,6 +222,12 @@ async fn main() -> anyhow::Result<()> {
             warn!(
                 "`--additional-libraries-repo={additional_libraries_repo}`が指定されていますが、\
                  `additional-libraries-version`はダウンロード対象から除外されています",
+            );
+        }
+        if device != Device::Cpu {
+            warn!(
+                "`--device={device}`が指定されていますが、`additional-libraries-version`は\
+                 ダウンロード対象から除外されています",
             );
         }
     }
@@ -675,17 +676,7 @@ mod tests {
     #[case(&["", "--min", "--only", "core"])]
     #[case(&["", "--min", "--exclude", "core"])]
     fn it_denies_conflicting_options(#[case] args: &[&str]) {
-        let result = parse(args);
+        let result = Args::try_parse_from(args).map(|_| ()).map_err(|e| e.kind());
         assert_eq!(Err(clap::error::ErrorKind::ArgumentConflict), result);
-    }
-
-    #[test]
-    fn it_denies_only_additional_libraries_option_without_device_option() {
-        let result = parse(&["", "--only", "additional-libraries"]);
-        assert_eq!(Err(clap::error::ErrorKind::MissingRequiredArgument), result);
-    }
-
-    fn parse(args: &[&str]) -> Result<(), clap::error::ErrorKind> {
-        Args::try_parse_from(args).map(|_| ()).map_err(|e| e.kind())
     }
 }
