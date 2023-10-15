@@ -680,7 +680,7 @@ mod tests {
     }
 
     #[test]
-    fn it_denies_only_option_without_device_option() {
+    fn it_denies_only_additional_libraries_option_without_device_option() {
         let result = parse(&["", "--only", "additional-libraries"]);
         assert_eq!(Err(clap::error::ErrorKind::MissingRequiredArgument), result);
     }
