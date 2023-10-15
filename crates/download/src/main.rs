@@ -662,3 +662,30 @@ enum Stripping {
     None,
     FirstDir,
 }
+
+#[cfg(test)]
+mod tests {
+    use clap::Parser as _;
+    use rstest::rstest;
+
+    use super::Args;
+
+    #[rstest]
+    #[case(&["", "--only", "core", "--exclude", "models"])]
+    #[case(&["", "--min", "--only", "core"])]
+    #[case(&["", "--min", "--exclude", "core"])]
+    fn it_denies_conflicting_options(#[case] args: &[&str]) {
+        let result = parse(args);
+        assert_eq!(Err(clap::error::ErrorKind::ArgumentConflict), result);
+    }
+
+    #[test]
+    fn it_denies_only_option_without_device_option() {
+        let result = parse(&["", "--only", "additional-libraries"]);
+        assert_eq!(Err(clap::error::ErrorKind::MissingRequiredArgument), result);
+    }
+
+    fn parse(args: &[&str]) -> Result<(), clap::error::ErrorKind> {
+        Args::try_parse_from(args).map(|_| ()).map_err(|e| e.kind())
+    }
+}

@@ -46,7 +46,7 @@ rev = "a16714ce16dec76fd0e3041a7acfa484921db3b5"
 flate2 = "1.0.24"
 heck = "0.4.0"
 pretty_assertions = "1.3.0"
-rstest = "0.15.0"
+rstest.workspace = true
 tar = "0.4.38"
 test_util.workspace = true
 

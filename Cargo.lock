@@ -1170,6 +1170,7 @@ dependencies = [
  "platforms",
  "rayon",
  "reqwest",
+ "rstest",
  "strum",
  "tokio",
  "tracing",
