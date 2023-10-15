@@ -224,10 +224,10 @@ async fn main() -> anyhow::Result<()> {
                  `additional-libraries-version`はダウンロード対象から除外されています",
             );
         }
-        if device != Device::Cpu {
+        if device == Device::Cpu {
             warn!(
-                "`--device={device}`が指定されていますが、`additional-libraries-version`は\
-                 ダウンロード対象から除外されています",
+                "`--device`が指定されていない、もしくは`--device=cpu`が指定されていますが、\
+                 `additional-libraries-version`はダウンロード対象から除外されています",
             );
         }
     }
