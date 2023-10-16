@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "crates/download",
+    "crates/downloader",
     "crates/test_util",
     "crates/voicevox_core",
     "crates/voicevox_core_c_api",

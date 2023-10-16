@@ -250,7 +250,7 @@ jobs:
         run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
       - name: set cargo version
         run: |
-          cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude download --exclude xtask
+          cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude downloader --exclude xtask
           if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
       - name: cache target
         uses: Swatinem/rust-cache@v2

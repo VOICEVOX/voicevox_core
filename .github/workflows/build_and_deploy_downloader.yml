@@ -23,13 +23,13 @@ on:
     paths:
       - Cargo.*
       - rust-toolchain
-      - crates/download/**
+      - crates/downloader/**
       - .github/workflows/build_and_deploy_downloader.yml
   push:
     paths:
       - Cargo.*
       - rust-toolchain
-      - crates/download/**
+      - crates/downloader/**
       - .github/workflows/build_and_deploy_downloader.yml
 
 env:
@@ -83,7 +83,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build downloader
-        run: cargo build -vv --release -p download --target ${{ matrix.target }}
+        run: cargo build -vv --release -p downloader --target ${{ matrix.target }}
 
       - name: Rename the binary
         run: |
