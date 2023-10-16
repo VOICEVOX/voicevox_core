@@ -5,7 +5,7 @@ edition.workspace = true
 publish.workspace = true
 
 [[bin]]
-name = "download"
+{ name = "download", path = "src/main.rs" }
 
 [dependencies]
 anyhow.workspace = true
