@@ -35,8 +35,8 @@ Downloader を用いて環境構築を行う場合
 PowerShell で下記コマンドを実行してください
 
 ```PowerShell
-Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/downloader-windows-x64.exe -OutFile ./downloader.exe
-./downloader.exe
+Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download-windows-x64.exe -OutFile ./download.exe
+./download.exe
 ```
 
 ### Linux/macOS の場合
@@ -44,18 +44,18 @@ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/down
 [最新のリリース](https://github.com/VOICEVOX/voicevox_core/releases/latest)から環境に合わせてダウンローダーのバイナリをダウンロードしてください。
 現在利用可能なのは以下の 4 つです。
 
-- downloader-linux-arm64
-- downloader-linux-x64
-- downloader-osx-arm64
-- downloader-osx-x64
+- download-linux-arm64
+- download-linux-x64
+- download-osx-arm64
+- download-osx-x64
 
 以下は Linux の x64 での実行例です。
 
 ```bash
-binary=downloader-linux-x64
-curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/${binary} -o downloader
-chmod +x downloader
-./downloader
+binary=download-linux-x64
+curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/${binary} -o download
+chmod +x download
+./download
 ```
 
 詳細な Downloader の使い方については [こちら](./docs/downloader.md) を参照してください

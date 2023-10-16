@@ -46,23 +46,23 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: downloader-windows-x64.exe
+          - name: download-windows-x64.exe
             target: x86_64-pc-windows-msvc
             os: windows-2019
 
-          - name: downloader-linux-x64
+          - name: download-linux-x64
             target: x86_64-unknown-linux-gnu
             os: ubuntu-20.04
 
-          - name: downloader-linux-arm64
+          - name: download-linux-arm64
             target: aarch64-unknown-linux-gnu
             os: ubuntu-20.04
 
-          - name: downloader-osx-x64
+          - name: download-osx-x64
             target: x86_64-apple-darwin
             os: macos-11
 
-          - name: downloader-osx-arm64
+          - name: download-osx-arm64
             target: aarch64-apple-darwin
             os: macos-11
 
@@ -91,7 +91,7 @@ jobs:
             Windows) exe_suffix=.exe;;
             Linux | macOS) exe_suffix=;;
           esac
-          mv $"target/${{ matrix.target }}/release/downloader$exe_suffix" ./${{ matrix.name }}
+          mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
 
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
