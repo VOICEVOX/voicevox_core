@@ -186,7 +186,7 @@ clarify = [
     { name = "ring", version = "0.16", expression = "MIT AND ISC AND OpenSSL", license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }] },
 
     # TODO: `package.license`を書く
-    { name = "download", expression = "MIT", license-files = [] },
+    { name = "downloader", expression = "MIT", license-files = [] },
     { name = "open_jtalk", expression = "BSD-3-Clause", license-files = [] },
     { name = "open_jtalk-sys", expression = "BSD-3-Clause", license-files = [] },
     { name = "voicevox_core", expression = "MIT", license-files = [] },

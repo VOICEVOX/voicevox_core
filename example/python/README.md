@@ -20,14 +20,14 @@ https://github.com/VOICEVOX/voicevox_core/releases/latest
 
 linux/mac の場合
 
-download-linux-x64 のところはアーキテクチャや OS によって適宜読み替えてください。
+downloader-linux-x64 のところはアーキテクチャや OS によって適宜読み替えてください。
 https://github.com/VOICEVOX/voicevox_core/releases/latest#%E3%83%80%E3%82%A6%E3%83%B3%E3%83%AD%E3%83%BC%E3%83%80
 
 ```console
-❯ binary=download-linux-x64
-❯ curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/${binary} -o download
-❯ chmod +x download
-❯ ./download -o ./example/python
+❯ binary=downloader-linux-x64
+❯ curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/${binary} -o downloader
+❯ chmod +x downloader
+❯ ./downloader -o ./example/python
 ❯ # いくつかのファイルは不要なので消すことができます
 ❯ #rm -r ./example/python/{model,VERSION,*voicevox_core*}
 ```
@@ -35,8 +35,8 @@ https://github.com/VOICEVOX/voicevox_core/releases/latest#%E3%83%80%E3%82%A6%E3%
 windows の場合
 
 ```console
-❯ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download-windows-x64.exe -OutFile ./download.exe
-❯ ./download -o ./example/python
+❯ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/downloader-windows-x64.exe -OutFile ./downloader.exe
+❯ ./downloader -o ./example/python
 ❯ # いくつかのファイルは不要なので消すことができます
 ❯ #Remove-Item -Recurse ./example/python/model,./example/python/VERSION,./example/python/*voicevox_core*
 ```
