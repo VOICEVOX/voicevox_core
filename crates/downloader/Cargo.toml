@@ -4,6 +4,9 @@ version = "0.0.0"
 edition.workspace = true
 publish.workspace = true
 
+[[bin]]
+name = "download"
+
 [dependencies]
 anyhow.workspace = true
 binstall-tar = "0.4.39"
