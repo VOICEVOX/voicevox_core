@@ -1,11 +1,11 @@
 use async_zip::{read::fs::ZipFileReader, ZipEntry};
-use futures::future::{join3, join_all};
+use futures::future::join3;
 use serde::{de::DeserializeOwned, Deserialize};
 
 use super::*;
 use std::{
     collections::{BTreeMap, HashMap},
-    env, io,
+    io,
     path::{Path, PathBuf},
 };
 
@@ -75,38 +75,6 @@ impl VoiceModel {
             path: path.as_ref().into(),
         })
     }
-
-    // FIXME: C APIに移動する
-    /// # Panics
-    ///
-    /// 失敗したらパニックする
-    pub async fn get_all_models() -> Vec<Self> {
-        let root_dir = if let Some(root_dir) = env::var_os(Self::ROOT_DIR_ENV_NAME) {
-            root_dir.into()
-        } else {
-            process_path::get_dylib_path()
-                .or_else(process_path::get_executable_path)
-                .unwrap()
-                .parent()
-                .unwrap_or_else(|| "".as_ref())
-                .join("model")
-        };
-
-        let vvm_paths = root_dir
-            .read_dir()
-            .and_then(|entries| entries.collect::<std::result::Result<Vec<_>, _>>())
-            .unwrap_or_else(|e| panic!("{}が読めませんでした: {e}", root_dir.display()))
-            .into_iter()
-            .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "vvm"))
-            .map(|entry| Self::from_path(entry.path()));
-
-        join_all(vvm_paths)
-            .await
-            .into_iter()
-            .collect::<std::result::Result<_, _>>()
-            .unwrap()
-    }
-    const ROOT_DIR_ENV_NAME: &str = "VV_MODELS_ROOT_DIR";
 
     /// モデル内のすべてのスタイルに対するモデル内IDを取得する。
     ///

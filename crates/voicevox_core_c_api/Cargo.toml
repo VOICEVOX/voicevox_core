@@ -21,6 +21,7 @@ anstyle-query = "1.0.0"
 colorchoice = "1.0.0"
 cstr = "0.2.11"
 derive-getters.workspace = true
+futures.workspace = true
 itertools.workspace = true
 libc = "0.2.134"
 once_cell.workspace = true
@@ -37,6 +38,11 @@ version = "0.4.23"
 default-features = false
 features = ["clock"]
 
+# FIXME: iOS対応のpull request(https://github.com/wesleywiser/process_path/pull/16)がマージされる見込みが無いため
+[dependencies.process_path]
+git = "https://github.com/VOICEVOX/process_path.git"
+rev = "de226a26e8e18edbdb1d6f986afe37bbbf35fbf4"
+
 [dev-dependencies]
 anyhow.workspace = true
 assert_cmd = { version = "2.0.8", features = ["color-auto"] }
@@ -48,7 +54,6 @@ libloading = "0.7.3"
 libtest-mimic = "0.6.0"
 ndarray = "0.15.6"
 ndarray-stats = "0.5.1"
-process_path.workspace = true
 regex.workspace = true
 serde.workspace = true
 serde_with = "3.3.0"

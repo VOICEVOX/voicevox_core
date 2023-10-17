@@ -20,13 +20,14 @@ macro_rules! ensure_initialized {
 static ERROR_MESSAGE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
 
 struct VoiceModelSet {
+    all_vvms: Vec<VoiceModel>,
     all_metas_json: CString,
     style_model_map: BTreeMap<StyleId, VoiceModelId>,
     model_map: BTreeMap<VoiceModelId, VoiceModel>,
 }
 
-static VOICE_MODEL_SET: Lazy<Mutex<VoiceModelSet>> = Lazy::new(|| {
-    let all_vvms = RUNTIME.block_on(VoiceModel::get_all_models());
+static VOICE_MODEL_SET: Lazy<VoiceModelSet> = Lazy::new(|| {
+    let all_vvms = RUNTIME.block_on(get_all_models());
     let model_map: BTreeMap<_, _> = all_vvms
         .iter()
         .map(|vvm| (vvm.id().clone(), vvm.clone()))
@@ -41,15 +42,50 @@ static VOICE_MODEL_SET: Lazy<Mutex<VoiceModelSet>> = Lazy::new(|| {
         }
     }
 
-    Mutex::new(VoiceModelSet {
+    return VoiceModelSet {
         all_metas_json: CString::new(serde_json::to_string(&metas).unwrap()).unwrap(),
+        all_vvms,
         style_model_map,
         model_map,
-    })
+    };
+
+    /// # Panics
+    ///
+    /// 失敗したらパニックする
+    async fn get_all_models() -> Vec<VoiceModel> {
+        let root_dir = if let Some(root_dir) = env::var_os(ROOT_DIR_ENV_NAME) {
+            root_dir.into()
+        } else {
+            process_path::get_dylib_path()
+                .or_else(process_path::get_executable_path)
+                .unwrap()
+                .parent()
+                .unwrap_or_else(|| "".as_ref())
+                .join("model")
+        };
+
+        let vvm_paths = root_dir
+            .read_dir()
+            .and_then(|entries| entries.collect::<std::result::Result<Vec<_>, _>>())
+            .unwrap_or_else(|e| panic!("{}が読めませんでした: {e}", root_dir.display()))
+            .into_iter()
+            .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "vvm"))
+            .map(|entry| VoiceModel::from_path(entry.path()));
+
+        futures::future::join_all(vvm_paths)
+            .await
+            .into_iter()
+            .collect::<std::result::Result<_, _>>()
+            .unwrap()
+    }
+
+    const ROOT_DIR_ENV_NAME: &str = "VV_MODELS_ROOT_DIR";
 });
 
-fn voice_model_set() -> MutexGuard<'static, VoiceModelSet> {
-    VOICE_MODEL_SET.lock().unwrap()
+// FIXME: この関数を消して直接`VOICE_MODEL_SET`を参照するか、あるいは`once_cell::sync::OnceCell`
+// 経由でエラーをエンジンに伝達するようにする
+fn voice_model_set() -> &'static VoiceModelSet {
+    &VOICE_MODEL_SET
 }
 
 static SYNTHESIZER: Lazy<Mutex<Option<voicevox_core::Synthesizer>>> =
@@ -83,7 +119,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
         .await?;
 
         if load_all_models {
-            for model in &VoiceModel::get_all_models().await {
+            for model in &voice_model_set().all_vvms {
                 synthesizer.load_voice_model(model).await?;
             }
         }
