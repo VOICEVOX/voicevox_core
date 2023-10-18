@@ -23,18 +23,18 @@ on:
     paths:
       - Cargo.*
       - rust-toolchain
-      - crates/download/**
+      - crates/downloader/**
       - .github/workflows/build_and_deploy_downloader.yml
   push:
     paths:
       - Cargo.*
       - rust-toolchain
-      - crates/download/**
+      - crates/downloader/**
       - .github/workflows/build_and_deploy_downloader.yml
 
 env:
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
-  VERSION: ${{ github.event.release.tag_name || github.event.inputs.version || '0.0.0' }}
+  VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0' }}
 
 defaults:
   run:
@@ -42,7 +42,7 @@ defaults:
 
 jobs:
   deploy_and_deploy_downloader:
-    environment: ${{ github.event.inputs.is_production == 'true' && 'production' || '' }} # コード署名用のenvironment
+    environment: ${{ inputs.is_production && 'production' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include:
@@ -83,7 +83,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build downloader
-        run: cargo build -vv --release -p download --target ${{ matrix.target }}
+        run: cargo build -vv --release -p downloader --target ${{ matrix.target }}
 
       - name: Rename the binary
         run: |
@@ -94,12 +94,13 @@ jobs:
           mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
 
       - name: Code signing (Windows)
-        if: startsWith(matrix.os, 'windows') && github.event.inputs.code_signing == 'true'
+        if: startsWith(matrix.os, 'windows') && inputs.code_signing
         run: |
           bash build_util/codesign.bash ./${{ matrix.name }}
         env:
-          CERT_BASE64: ${{ secrets.CERT_BASE64 }}
-          CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+          ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
+          ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
+          ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
 
       - name: Upload to Release
         if: env.VERSION != '0.0.0'

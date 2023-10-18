@@ -18,12 +18,11 @@ derive_more = "0.99.17"
 duplicate = "1.0.0"
 easy-ext.workspace = true
 fs-err.workspace = true
-futures = "0.3.26"
+futures.workspace = true
 indexmap = { version = "2.0.0", features = ["serde"] }
 itertools.workspace = true
 nanoid = "0.4.0"
 once_cell.workspace = true
-process_path.workspace = true
 regex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -46,7 +45,7 @@ rev = "a16714ce16dec76fd0e3041a7acfa484921db3b5"
 flate2 = "1.0.24"
 heck = "0.4.0"
 pretty_assertions = "1.3.0"
-rstest = "0.15.0"
+rstest.workspace = true
 tar = "0.4.38"
 test_util.workspace = true
 

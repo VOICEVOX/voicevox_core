@@ -1,5 +1,6 @@
 use std::{
     borrow::Cow,
+    collections::HashSet,
     env,
     future::Future,
     io::{self, Cursor, Read},
@@ -26,7 +27,7 @@ use once_cell::sync::Lazy;
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
 use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
-use tracing::info;
+use tracing::{info, warn};
 use url::Url;
 use zip::ZipArchive;
 
@@ -36,9 +37,9 @@ const DEFAULT_OUTPUT: &str = if cfg!(windows) {
     "./voicevox_core"
 };
 
-const ORGANIZATION_NAME: &str = "VOICEVOX";
-const CORE_REPO_NAME: &str = "voicevox_core";
-const ADDITIONAL_LIBRARIES_REPO_NAME: &str = "voicevox_additional_libraries";
+const LIB_NAME: &str = "voicevox_core";
+const DEFAULT_CORE_REPO: &str = "VOICEVOX/voicevox_core";
+const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
 
 static OPEN_JTALK_DIC_URL: Lazy<Url> = Lazy::new(|| {
     "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
@@ -48,7 +49,20 @@ static OPEN_JTALK_DIC_URL: Lazy<Url> = Lazy::new(|| {
 
 #[derive(clap::Parser)]
 struct Args {
-    /// ダウンロードするライブラリを最小限にするように指定
+    /// ダウンロード対象を限定する
+    #[arg(
+        long,
+        num_args(1..),
+        value_name("TARGET"),
+        conflicts_with_all(["exclude", "min"]))
+    ]
+    only: Vec<DownloadTarget>,
+
+    /// ダウンロード対象を除外する
+    #[arg(long, num_args(1..), value_name("TARGET"), conflicts_with("min"))]
+    exclude: Vec<DownloadTarget>,
+
+    /// `--only core`のエイリアス
     #[arg(long, conflicts_with("additional_libraries_version"))]
     min: bool,
 
@@ -75,6 +89,24 @@ struct Args {
     /// ダウンロードする対象のOSを指定する
     #[arg(value_enum, long, default_value(Os::default_opt().map(<&str>::from)))]
     os: Os,
+
+    #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_CORE_REPO))]
+    core_repo: RepoName,
+
+    #[arg(
+        long,
+        value_name("REPOSITORY"),
+        default_value(DEFAULT_ADDITIONAL_LIBRARIES_REPO)
+    )]
+    additional_libraries_repo: RepoName,
+}
+
+#[derive(ValueEnum, Clone, Copy, PartialEq, Eq, Hash)]
+enum DownloadTarget {
+    Core,
+    Models,
+    AdditionalLibraries,
+    Dict,
 }
 
 #[derive(Default, ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq)]
@@ -123,11 +155,21 @@ impl Os {
     }
 }
 
+#[derive(parse_display::FromStr, parse_display::Display, Clone)]
+#[from_str(regex = "(?<owner>[a-zA-Z0-9_]+)/(?<repo>[a-zA-Z0-9_]+)")]
+#[display("{owner}/{repo}")]
+struct RepoName {
+    owner: String,
+    repo: String,
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     setup_logger();
 
     let Args {
+        only,
+        exclude,
         min,
         output,
         version,
@@ -135,23 +177,81 @@ async fn main() -> anyhow::Result<()> {
         device,
         cpu_arch,
         os,
+        core_repo,
+        additional_libraries_repo,
     } = Args::parse();
+
+    let targets: HashSet<_> = if !only.is_empty() {
+        assert!(exclude.is_empty() && !min);
+        only.into_iter().collect()
+    } else if !exclude.is_empty() {
+        assert!(!min);
+        DownloadTarget::value_variants()
+            .iter()
+            .copied()
+            .filter(|t| !exclude.contains(t))
+            .collect()
+    } else if min {
+        [DownloadTarget::Core].into()
+    } else {
+        DownloadTarget::value_variants().iter().copied().collect()
+    };
+
+    if !(targets.contains(&DownloadTarget::Core) || targets.contains(&DownloadTarget::Models)) {
+        if version != "latest" {
+            warn!(
+                "`--version={version}`が指定されていますが、`core`も`models`もダウンロード対象から\
+                 除外されています",
+            );
+        }
+        if core_repo.to_string() != DEFAULT_CORE_REPO {
+            warn!(
+                "`--core-repo={core_repo}`が指定されていますが、`core`も`models`もダウンロード対象\
+                 から除外されています",
+            );
+        }
+    }
+    if !targets.contains(&DownloadTarget::AdditionalLibraries) {
+        if additional_libraries_version != "latest" {
+            warn!(
+                "`--additional-libraries-version={additional_libraries_version}`が指定されています\
+                 が、`additional-libraries-version`はダウンロード対象から除外されています",
+            );
+        }
+        if additional_libraries_repo.to_string() != DEFAULT_ADDITIONAL_LIBRARIES_REPO {
+            warn!(
+                "`--additional-libraries-repo={additional_libraries_repo}`が指定されていますが、\
+                 `additional-libraries-version`はダウンロード対象から除外されています",
+            );
+        }
+        if device == Device::Cpu {
+            warn!(
+                "`--device`が指定されていない、もしくは`--device=cpu`が指定されていますが、\
+                 `additional-libraries-version`はダウンロード対象から除外されています",
+            );
+        }
+    }
 
     let octocrab = &octocrab()?;
 
-    let core = find_gh_asset(octocrab, CORE_REPO_NAME, &version, |tag| {
+    let core = find_gh_asset(octocrab, &core_repo, &version, |tag| {
         let device = match (os, device) {
             (Os::Linux, Device::Cuda) => "gpu",
             (_, device) => device.into(),
         };
-        format!("{CORE_REPO_NAME}-{os}-{cpu_arch}-{device}-{tag}.zip")
+        format!("{LIB_NAME}-{os}-{cpu_arch}-{device}-{tag}.zip")
+    })
+    .await?;
+
+    let model = find_gh_asset(octocrab, &core_repo, &version, |tag| {
+        format!("model-{tag}.zip")
     })
     .await?;
 
     let additional_libraries = OptionFuture::from((device != Device::Cpu).then(|| {
         find_gh_asset(
             octocrab,
-            ADDITIONAL_LIBRARIES_REPO_NAME,
+            &additional_libraries_repo,
             &additional_libraries_version,
             |_| {
                 let device = match device {
@@ -169,7 +269,7 @@ async fn main() -> anyhow::Result<()> {
     info!("対象OS: {os}");
     info!("対象CPUアーキテクチャ: {cpu_arch}");
     info!("ダウンロードデバイスタイプ: {device}");
-    info!("ダウンロード{CORE_REPO_NAME}バージョン: {}", core.tag);
+    info!("ダウンロード{LIB_NAME}バージョン: {}", core.tag);
     if let Some(GhAsset { tag, .. }) = &additional_libraries {
         info!("ダウンロード追加ライブラリバージョン: {tag}");
     }
@@ -178,14 +278,23 @@ async fn main() -> anyhow::Result<()> {
 
     let mut tasks = JoinSet::new();
 
-    tasks.spawn(download_and_extract_from_gh(
-        core,
-        Stripping::FirstDir,
-        &output,
-        &progresses,
-    )?);
-
-    if !min {
+    if targets.contains(&DownloadTarget::Core) {
+        tasks.spawn(download_and_extract_from_gh(
+            core,
+            Stripping::FirstDir,
+            &output,
+            &progresses,
+        )?);
+    }
+    if targets.contains(&DownloadTarget::Models) {
+        tasks.spawn(download_and_extract_from_gh(
+            model,
+            Stripping::FirstDir,
+            &output.join("model"),
+            &progresses,
+        )?);
+    }
+    if targets.contains(&DownloadTarget::AdditionalLibraries) {
         if let Some(additional_libraries) = additional_libraries {
             tasks.spawn(download_and_extract_from_gh(
                 additional_libraries,
@@ -194,7 +303,8 @@ async fn main() -> anyhow::Result<()> {
                 &progresses,
             )?);
         }
-
+    }
+    if targets.contains(&DownloadTarget::Dict) {
         tasks.spawn(download_and_extract_from_url(
             &OPEN_JTALK_DIC_URL,
             Stripping::None,
@@ -236,7 +346,7 @@ fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
 
 async fn find_gh_asset(
     octocrab: &Arc<Octocrab>,
-    repo: &str,
+    repo: &RepoName,
     git_tag_or_latest: &str,
     asset_name: impl FnOnce(&str) -> String,
 ) -> anyhow::Result<GhAsset> {
@@ -246,7 +356,7 @@ async fn find_gh_asset(
         assets,
         ..
     } = {
-        let repos = octocrab.repos(ORGANIZATION_NAME, repo);
+        let repos = octocrab.repos(&repo.owner, &repo.repo);
         let releases = repos.releases();
         match git_tag_or_latest {
             "latest" => releases.get_latest().await,
@@ -262,7 +372,7 @@ async fn find_gh_asset(
 
     Ok(GhAsset {
         octocrab: octocrab.clone(),
-        repo: repo.to_owned(),
+        repo: repo.clone(),
         tag: tag_name,
         id,
         name,
@@ -289,7 +399,7 @@ fn download_and_extract_from_gh(
 
     Ok(async move {
         let bytes_stream = octocrab
-            .repos(ORGANIZATION_NAME, repo)
+            .repos(&repo.owner, &repo.repo)
             .releases()
             .stream_asset(id)
             .await?
@@ -523,7 +633,7 @@ async fn download_and_extract(
 
 struct GhAsset {
     octocrab: Arc<Octocrab>,
-    repo: String,
+    repo: RepoName,
     tag: String,
     id: AssetId,
     name: String,
@@ -552,4 +662,21 @@ impl ArchiveKind {
 enum Stripping {
     None,
     FirstDir,
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::Parser as _;
+    use rstest::rstest;
+
+    use super::Args;
+
+    #[rstest]
+    #[case(&["", "--only", "core", "--exclude", "models"])]
+    #[case(&["", "--min", "--only", "core"])]
+    #[case(&["", "--min", "--exclude", "core"])]
+    fn it_denies_conflicting_options(#[case] args: &[&str]) {
+        let result = Args::try_parse_from(args).map(|_| ()).map_err(|e| e.kind());
+        assert_eq!(Err(clap::error::ErrorKind::ArgumentConflict), result);
+    }
 }

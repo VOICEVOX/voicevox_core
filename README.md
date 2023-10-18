@@ -1,6 +1,6 @@
 # VOICEVOX CORE
 
-## **現在のmainブランチは工事中なので正しく動かないことがあります。[バージョン0.14.4](https://github.com/VOICEVOX/voicevox_core/tree/0.14.4)をご利用ください。**
+## **現在の main ブランチは工事中なので正しく動かないことがあります。[バージョン 0.14.4](https://github.com/VOICEVOX/voicevox_core/tree/0.14.4)をご利用ください。**
 
 [![releases](https://img.shields.io/github/v/release/VOICEVOX/voicevox_core?label=release)](https://github.com/VOICEVOX/voicevox_core/releases)
 [![test](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml/badge.svg)](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml)
@@ -15,6 +15,7 @@
 全体構成は [こちら](https://github.com/VOICEVOX/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
 
 ## 貢献者の方へ
+
 Issue を解決するプルリクエストを作成される際は、別の方と同じ Issue に取り組むことを避けるため、
 Issue 側で取り組み始めたことを伝えるか、最初に Draft プルリクエストを作成してください。
 
@@ -57,7 +58,7 @@ chmod +x download
 ./download
 ```
 
-詳細な Downloader の使い方については [こちら](./docs/downloads/download.md) を参照してください
+詳細な Downloader の使い方については [こちら](./docs/downloader.md) を参照してください
 
 <details>
 <summary> Downloader を使わない場合</summary>
@@ -87,13 +88,13 @@ Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます�
 nvidia 製 GPU を搭載した Windows, Linux PC では CUDA を用いた合成が可能です。
 
 CUDA 版を利用するには Downloader の実行が必要です。  
-詳細は [CUDA 版をダウンロードする場合](./docs/downloads/download.md#cuda) を参照してください
+詳細は [CUDA 版をダウンロードする場合](./docs/downloader.md#cuda) を参照してください
 
 ##### DirectML
 
 DirectX12 に対応した GPU を搭載した Windows PC では DirectML を用いた合成が可能です  
 DirectML 版を利用するには Downloader の実行が必要です。  
-詳細は [DirectML 版をダウンロードする場合](./docs/downloads/download.md#directml) を参照してください
+詳細は [DirectML 版をダウンロードする場合](./docs/downloads/downloader.md#directml) を参照してください
 
 macOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
 
@@ -144,12 +145,21 @@ model フォルダにある onnx モデルはダミーのため、ノイズの�
 cargo build --release -p voicevox_core_c_api
 ```
 
-DLL用のヘッダファイルは [crates/voicevox\_core\_c\_api/include/voicevox\_core.h](https://github.com/VOICEVOX/voicevox_core/tree/main/crates/voicevox_core_c_api/include/voicevox_core.h) にあります。
+DLL 用のヘッダファイルは [crates/voicevox_core_c_api/include/voicevox_core.h](https://github.com/VOICEVOX/voicevox_core/tree/main/crates/voicevox_core_c_api/include/voicevox_core.h) にあります。
 
 ## コアライブラリのテスト
 
 ```bash
 cargo test
+```
+
+## ダウンローダーの実行
+
+```bash
+cargo run -p downloader
+
+# ヘルプを表示
+cargo run -p downloader -- -h
 ```
 
 ## ヘッダファイルの更新
@@ -177,7 +187,8 @@ typos
 **[voicevoxcore4s](https://github.com/windymelt/voicevoxcore4s) [@windymelt](https://github.com/windymelt)** ･･･ VOICEVOX CORE の Scala(JVM) 向け FFI ラッパー  
 **[voicevox_flutter](https://github.com/char5742/voicevox_flutter) [@char5742](https://github.com/char5742)** ･･･ VOICEVOX CORE の Flutter 向け FFI ラッパー  
 **[voicevoxcore.go](https://github.com/sh1ma/voicevoxcore.go) [@sh1ma](https://github.com/sh1ma)** ･･･ VOICEVOX CORE の Go 言語 向け FFI ラッパー  
-**[VoicevoxCoreSharp](https://github.com/yamachu/VoicevoxCoreSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX CORE の C# 向け FFI ラッパー  
+**[VoicevoxCoreSharp](https://github.com/yamachu/VoicevoxCoreSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX CORE の C# 向け FFI ラッパー
+
 ## ライセンス
 
 ソースコードのライセンスは [MIT LICENSE](./LICENSE) です。
