@@ -97,17 +97,9 @@ where
             // env.exception_clear()してもいいが、errorのメッセージは"Java exception was thrown"
             // となり、デバッグが困難になるため、そのままにしておく。
             if !env.exception_check().unwrap_or(false) {
-                macro_rules! throw_new {
-                    ($class:expr, $msg:expr $(,)?) => {
-                        env.throw_new($class, $msg).unwrap_or_else(|_| {
-                            panic!("Failed to throw exception, original error: {error:?}")
-                        })
-                    };
-                }
-
-                macro_rules! throw {
-                    ($e:expr $(,)?) => {
-                        env.throw($e).unwrap_or_else(|_| {
+                macro_rules! or_panic {
+                    ($result:expr) => {
+                        $result.unwrap_or_else(|_| {
                             panic!("Failed to throw exception, original error: {error:?}")
                         })
                     };
@@ -200,24 +192,28 @@ where
                             .unwrap()
                         });
 
-                        throw!(exc);
+                        or_panic!(env.throw(exc));
                     }
                     JavaApiError::Jni(error) => {
-                        throw_new!("java/lang/RuntimeException", error.to_string())
+                        or_panic!(env.throw_new("java/lang/RuntimeException", error.to_string()))
                     }
                     JavaApiError::Utf8(error) => {
-                        throw_new!("java/lang/IllegalArgumentException", error.to_string())
+                        or_panic!(
+                            env.throw_new("java/lang/IllegalArgumentException", error.to_string())
+                        )
                     }
                     JavaApiError::Uuid(error) => {
-                        throw_new!("java/lang/IllegalArgumentException", error.to_string())
+                        or_panic!(
+                            env.throw_new("java/lang/IllegalArgumentException", error.to_string())
+                        )
                     }
                     JavaApiError::Json(error) => {
-                        throw_new!("java/lang/RuntimeException", error.to_string())
+                        or_panic!(env.throw_new("java/lang/RuntimeException", error.to_string()))
                     }
-                    JavaApiError::IllegalAccelerationMode => throw_new!(
+                    JavaApiError::IllegalAccelerationMode => or_panic!(env.throw_new(
                         "java/lang/IllegalArgumentException",
                         "Invalid acceleration mode".to_owned(),
-                    ),
+                    )),
                 };
             }
             fallback
