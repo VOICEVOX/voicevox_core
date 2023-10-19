@@ -115,9 +115,6 @@ where
 
                 match &error {
                     JavaApiError::RustApi(error) => {
-                        // FIXME: `IndexOutOfBoundsException`を継承する`…NotFound`系に対して`cause`
-                        // を設定しようとすると死んでしまう
-
                         macro_rules! class {
                             ($($variant:ident),* $(,)?) => {
                                 match error.kind() {
@@ -152,6 +149,9 @@ where
                             UseUserDict,
                             InvalidWord,
                         );
+
+                        // FIXME
+                        assert!(!class.ends_with("NotFoundException") || error.source().is_none());
 
                         let mut sources =
                             iter::successors(error.source(), |&source| source.source())
