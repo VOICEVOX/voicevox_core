@@ -1,9 +1,8 @@
 use crate::{
-    common::{throw_if_err, RUNTIME},
+    common::{throw_if_err, JavaApiError, RUNTIME},
     enum_object, object, object_type,
 };
 
-use anyhow::anyhow;
 use jni::{
     objects::{JObject, JString},
     sys::{jboolean, jint, jobject},
@@ -40,7 +39,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNewWithIn
             } else if env.is_same_object(&acceleration_mode, gpu)? {
                 voicevox_core::AccelerationMode::Gpu
             } else {
-                return Err(anyhow!("invalid acceleration mode".to_string(),));
+                return Err(JavaApiError::IllegalAccelerationMode);
             };
         }
         let cpu_num_threads = env.get_field(&builder, "cpuNumThreads", "I")?;

@@ -54,7 +54,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModel_rsGetMetasJs
             .clone();
 
         let metas = internal.metas();
-        let metas_json = serde_json::to_string(&metas)?;
+        let metas_json = serde_json::to_string(&metas).expect("should not fail");
         Ok(env.new_string(metas_json)?.into_raw())
     })
 }
