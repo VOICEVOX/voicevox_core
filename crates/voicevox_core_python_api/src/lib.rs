@@ -6,7 +6,7 @@ use log::debug;
 use once_cell::sync::Lazy;
 use pyo3::{
     create_exception,
-    exceptions::{PyException, PyValueError},
+    exceptions::{PyException, PyKeyError, PyValueError},
     pyclass, pyfunction, pymethods, pymodule,
     types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyModule},
     wrap_pyfunction, PyAny, PyObject, PyRef, PyResult, PyTypeInfo, Python, ToPyObject,
@@ -62,14 +62,14 @@ exceptions! {
     StyleAlreadyLoadedError: PyException;
     InvalidModelDataError: PyException;
     GetSupportedDevicesError: PyException;
-    StyleNotFoundError: PyException;
-    ModelNotFoundError: PyException;
+    StyleNotFoundError: PyKeyError;
+    ModelNotFoundError: PyKeyError;
     InferenceFailedError: PyException;
     ExtractFullContextLabelError: PyException;
     ParseKanaError: PyValueError;
     LoadUserDictError: PyException;
     SaveUserDictError: PyException;
-    WordNotFoundError: PyException;
+    WordNotFoundError: PyKeyError;
     UseUserDictError: PyException;
     InvalidWordError: PyValueError;
 }

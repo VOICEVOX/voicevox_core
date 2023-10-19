@@ -466,12 +466,12 @@ class GetSupportedDevicesError(Exception):
 
     ...
 
-class StyleNotFoundError(Exception):
+class StyleNotFoundError(KeyError):
     """スタイルIDに対するスタイルが見つからなかった。"""
 
     ...
 
-class ModelNotFoundError(Exception):
+class ModelNotFoundError(KeyError):
     """音声モデルIDに対する音声モデルが見つからなかった。"""
 
     ...
@@ -501,7 +501,7 @@ class SaveUserDictError(Exception):
 
     ...
 
-class WordNotFoundError(Exception):
+class WordNotFoundError(KeyError):
     """ユーザー辞書に単語が見つからなかった。"""
 
     ...
