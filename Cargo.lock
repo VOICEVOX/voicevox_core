@@ -4361,7 +4361,6 @@ dependencies = [
  "once_cell",
  "serde_json",
  "test_util",
- "thiserror",
  "tokio",
  "tracing",
  "tracing-subscriber",
