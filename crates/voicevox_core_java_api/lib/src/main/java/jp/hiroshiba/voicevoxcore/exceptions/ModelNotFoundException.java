@@ -5,4 +5,9 @@ public class ModelNotFoundException extends IndexOutOfBoundsException {
   public ModelNotFoundException(String message) {
     super(message);
   }
+
+  public ModelNotFoundException(String message, Throwable cause)
+      throws UnsupportedOperationException {
+    throw new UnsupportedOperationException();
+  }
 }

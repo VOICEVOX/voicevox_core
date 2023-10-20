@@ -142,9 +142,6 @@ where
                             InvalidWord,
                         );
 
-                        // FIXME
-                        assert!(!class.ends_with("NotFoundException") || error.source().is_none());
-
                         let mut sources =
                             iter::successors(error.source(), |&source| source.source())
                                 .collect::<Vec<_>>()
