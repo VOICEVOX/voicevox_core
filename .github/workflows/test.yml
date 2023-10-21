@@ -260,6 +260,10 @@ jobs:
           - os: macos-latest
           - os: ubuntu-latest
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./crates/voicevox_core_python_api
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.9
@@ -271,13 +275,11 @@ jobs:
       - run: |
           pip install --upgrade poetry
           cd crates/voicevox_core_python_api
-          poetry config virtualenvs.create false
           poetry install --with dev --with test
       - run: cargo build -p voicevox_core_c_api -vv
-      - run: maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
-      - run: maturin develop --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
+      - run: maturin build --manifest-path Cargo.toml --locked
+      - run: maturin develop --manifest-path Cargo.toml --locked
       - name: 必要なDLLをコピーしてpytestを実行
-        working-directory: crates/voicevox_core_python_api
         run: |
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll . || true
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* . || true

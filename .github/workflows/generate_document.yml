@@ -30,6 +30,7 @@ jobs:
       - name: Create a venv
         uses: ./.github/actions/create-venv
       - name: Install python dependencies
+        working-directory: ./crates/voicevox_core_python_api
         run: |
           pip install --upgrade poetry
           poetry config virtualenvs.create false

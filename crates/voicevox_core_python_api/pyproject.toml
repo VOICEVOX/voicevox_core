@@ -1,8 +1,19 @@
-[tool.poetry]
+[project]
 name = "voicevox_core"
-version = "0.0.0"
+requires-python = ">=3.8"
+dependencies = ["numpy", "pydantic>=1.9.2,<2"]
 description = "VOICEVOX CORE の Python バインディングです。"
-authors = ["Hiroshiba <hihokaruta@gmail.com>"]
+authors = [{ name = "Hiroshiba", email = "hihokaruta@gmail.com" }]
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Rust",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS :: MacOS X",
+    "Environment :: GPU :: NVIDIA CUDA",
+]
+# TODO：ユーザー用のREADMEを作る
+# readme = "README.md"
 
 [build-system]
 requires = ["maturin>=0.13.2,<0.14"]
@@ -15,9 +26,16 @@ profile = "black"
 bindings = "pyo3"
 skip-auditwheel = true # Linuxでlibonnxruntime.so.*の不在を許してもらう
 
+[tool.poetry]
+# Poetryはこれがないと動かない
+name = "voicevox_core"
+version = "0.0.0"
+description = "VOICEVOX CORE の Python バインディングです。"
+authors = []
+
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
-numpy = ">=1.26.1,<2"
+python = ">=3.8,<3.13"
+numpy = ">=1,<2"
 pydantic = ">=1.9.2,<2"
 
 [tool.poetry.group.docs.dependencies]
