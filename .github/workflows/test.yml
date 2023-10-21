@@ -274,18 +274,17 @@ jobs:
         uses: ./.github/actions/rust-toolchain-from-file
       - run: |
           pip install --upgrade poetry
-          cd crates/voicevox_core_python_api
           poetry install --with dev --with test
       - run: cargo build -p voicevox_core_c_api -vv
-      - run: maturin build --manifest-path Cargo.toml --locked
-      - run: maturin develop --manifest-path Cargo.toml --locked
+      - run: poetry run maturin build --manifest-path Cargo.toml --locked
+      - run: poetry run maturin develop --manifest-path Cargo.toml --locked
       - name: 必要なDLLをコピーしてpytestを実行
         run: |
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll . || true
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* . || true
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
 
-          pytest
+          poetry run pytest
   build-and-test-java-api:
     strategy:
       fail-fast: false

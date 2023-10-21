@@ -48,7 +48,7 @@ jobs:
       - name: Build voicevox_core_python_api
         run: |
           cargo build -p voicevox_core_c_api -vv
-          maturin develop --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
+          poetry run maturin develop --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
       - name: Generate Sphinx document
         run: sphinx-build docs/apis/python_api public/apis/python_api
       - name: Generate Javadoc
