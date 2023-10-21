@@ -262,7 +262,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        shell: bash
         working-directory: ./crates/voicevox_core_python_api
     steps:
       - uses: actions/checkout@v3
