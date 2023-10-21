@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    borrow::Cow,
+    sync::{Arc, Mutex},
+};
 
 use crate::common::throw_if_err;
 use jni::{
@@ -26,7 +29,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsNewWithInit
 ) {
     throw_if_err(env, (), |env| {
         let open_jtalk_dict_dir = env.get_string(&open_jtalk_dict_dir)?;
-        let open_jtalk_dict_dir = open_jtalk_dict_dir.to_str()?;
+        let open_jtalk_dict_dir = &*Cow::from(&open_jtalk_dict_dir);
 
         let internal = voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)?;
         env.set_rust_field(&this, "handle", Arc::new(internal))?;

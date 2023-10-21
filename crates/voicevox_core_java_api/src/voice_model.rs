@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use crate::common::{throw_if_err, RUNTIME};
 use jni::{
@@ -15,7 +15,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModel_rsFromPath<'
 ) {
     throw_if_err(env, (), |env| {
         let model_path = env.get_string(&model_path)?;
-        let model_path = model_path.to_str()?;
+        let model_path = &*Cow::from(&model_path);
 
         let internal = RUNTIME.block_on(voicevox_core::VoiceModel::from_path(model_path))?;
 
