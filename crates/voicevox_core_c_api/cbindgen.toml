@@ -69,9 +69,17 @@ prefix = """
 __declspec(dllimport)
 #endif"""
 args = "vertical"
+deprecated = "DEPRECATED"
+deprecated_with_note = "DEPRECATED_WITH_NOTES({})"
+
+[struct]
+deprecated = "DEPRECATED"
+deprecated_with_note = "DEPRECATED_WITH_NOTES({})"
 
 [enum]
 rename_variants = "ScreamingSnakeCase"
+deprecated = "DEPRECATED"
+deprecated_with_note = "DEPRECATED_WITH_NOTES({})"
 
 # Options for how your Rust library should be parsed
 

@@ -5,7 +5,7 @@ edition.workspace = true
 publish.workspace = true
 
 [dependencies]
-cbindgen = "0.24.3"
+cbindgen = "0.26.0"
 clap.workspace = true
 color-eyre = "0.6.2"
 eyre = "0.6.8"
