@@ -32,6 +32,7 @@ jobs:
       - name: Install python dependencies
         run: |
           pip install --upgrade poetry
+          poetry config virtualenvs.create false
           poetry install --with test
       - name: mkdir public
         run: mkdir -p public/apis/c_api

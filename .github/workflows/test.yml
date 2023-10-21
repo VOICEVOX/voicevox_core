@@ -271,6 +271,7 @@ jobs:
       - run: |
           pip install --upgrade poetry
           cd crates/voicevox_core_python_api
+          poetry config virtualenvs.create false
           poetry install --with dev --with test
       - run: cargo build -p voicevox_core_c_api -vv
       - run: maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
