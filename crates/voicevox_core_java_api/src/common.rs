@@ -1,4 +1,4 @@
-use std::{error::Error as _, iter, str::Utf8Error};
+use std::{error::Error as _, iter};
 
 use derive_more::From;
 use jni::{objects::JThrowable, JNIEnv};
@@ -194,23 +194,16 @@ where
                     JavaApiError::Jni(error) => {
                         or_panic!(env.throw_new("java/lang/RuntimeException", error.to_string()))
                     }
-                    JavaApiError::Utf8(error) => {
-                        or_panic!(
-                            env.throw_new("java/lang/IllegalArgumentException", error.to_string())
-                        )
-                    }
                     JavaApiError::Uuid(error) => {
                         or_panic!(
                             env.throw_new("java/lang/IllegalArgumentException", error.to_string())
                         )
                     }
-                    JavaApiError::Json(error) => {
-                        or_panic!(env.throw_new("java/lang/RuntimeException", error.to_string()))
+                    JavaApiError::DeJson(error) => {
+                        or_panic!(
+                            env.throw_new("java/lang/IllegalArgumentException", error.to_string())
+                        )
                     }
-                    JavaApiError::IllegalAccelerationMode => or_panic!(env.throw_new(
-                        "java/lang/IllegalArgumentException",
-                        "Invalid acceleration mode".to_owned(),
-                    )),
                 };
             }
             fallback
@@ -227,13 +220,7 @@ pub enum JavaApiError {
     Jni(jni::errors::Error),
 
     #[from]
-    Utf8(Utf8Error),
-
-    #[from]
     Uuid(uuid::Error),
 
-    #[from]
-    Json(serde_json::Error),
-
-    IllegalAccelerationMode,
+    DeJson(serde_json::Error),
 }

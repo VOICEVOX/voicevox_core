@@ -1,7 +1,10 @@
 use jni::objects::JClass;
-use std::sync::{Arc, Mutex};
+use std::{
+    borrow::Cow,
+    sync::{Arc, Mutex},
+};
 
-use crate::common::throw_if_err;
+use crate::common::{throw_if_err, JavaApiError};
 use jni::{
     objects::{JObject, JString},
     sys::jobject,
@@ -34,9 +37,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsAddWord<'loc
             .clone();
 
         let word_json = env.get_string(&word_json)?;
-        let word_json = word_json.to_str()?;
+        let word_json = &Cow::from(&word_json);
 
-        let word: voicevox_core::UserDictWord = serde_json::from_str(word_json)?;
+        let word: voicevox_core::UserDictWord =
+            serde_json::from_str(word_json).map_err(JavaApiError::DeJson)?;
 
         let uuid = {
             let mut internal = internal.lock().unwrap();
@@ -63,11 +67,12 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsUpdateWord<'
             .clone();
 
         let uuid = env.get_string(&uuid)?;
-        let uuid = uuid.to_str()?.parse()?;
+        let uuid = Cow::from(&uuid).parse()?;
         let word_json = env.get_string(&word_json)?;
-        let word_json = word_json.to_str()?;
+        let word_json = &Cow::from(&word_json);
 
-        let word: voicevox_core::UserDictWord = serde_json::from_str(word_json)?;
+        let word: voicevox_core::UserDictWord =
+            serde_json::from_str(word_json).map_err(JavaApiError::DeJson)?;
 
         {
             let mut internal = internal.lock().unwrap();
@@ -90,7 +95,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsRemoveWord<'
             .clone();
 
         let uuid = env.get_string(&uuid)?;
-        let uuid = uuid.to_str()?.parse()?;
+        let uuid = Cow::from(&uuid).parse()?;
 
         {
             let mut internal = internal.lock().unwrap();
@@ -137,7 +142,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsLoad<'local>
             .clone();
 
         let path = env.get_string(&path)?;
-        let path = path.to_str()?;
+        let path = &Cow::from(&path);
 
         {
             let mut internal = internal.lock().unwrap();
@@ -160,7 +165,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsSave<'local>
             .clone();
 
         let path = env.get_string(&path)?;
-        let path = path.to_str()?;
+        let path = &Cow::from(&path);
 
         {
             let internal = internal.lock().unwrap();
@@ -183,7 +188,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsGetWords<'lo
 
         let words = {
             let internal = internal.lock().unwrap();
-            serde_json::to_string(internal.words())?
+            serde_json::to_string(internal.words()).expect("should not fail")
         };
 
         let words = env.new_string(words)?;
@@ -211,7 +216,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsToZenkaku<'local>(
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let text = env.get_string(&text)?;
-        let text = text.to_str()?;
+        let text = &Cow::from(&text);
 
         let text = voicevox_core::__internal::to_zenkaku(text);
 
@@ -228,7 +233,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsValidatePronunciati
 ) {
     throw_if_err(env, (), |env| {
         let text = env.get_string(&text)?;
-        let text = text.to_str()?;
+        let text = &Cow::from(&text);
 
         voicevox_core::__internal::validate_pronunciation(text)?;
 
