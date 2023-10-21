@@ -114,7 +114,7 @@ impl From<VoicevoxAccelerationMode> for voicevox_core::AccelerationMode {
     }
 }
 
-impl Default for VoicevoxInitializeOptions {
+impl Default for VoicevoxInitializeSynthesizerOptions {
     fn default() -> Self {
         let options = voicevox_core::InitializeOptions::default();
         Self {
@@ -124,8 +124,8 @@ impl Default for VoicevoxInitializeOptions {
     }
 }
 
-impl From<VoicevoxInitializeOptions> for voicevox_core::InitializeOptions {
-    fn from(value: VoicevoxInitializeOptions) -> Self {
+impl From<VoicevoxInitializeSynthesizerOptions> for voicevox_core::InitializeOptions {
+    fn from(value: VoicevoxInitializeSynthesizerOptions) -> Self {
         voicevox_core::InitializeOptions {
             acceleration_mode: value.acceleration_mode.into(),
             cpu_num_threads: value.cpu_num_threads,

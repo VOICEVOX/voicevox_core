@@ -55,7 +55,21 @@ after_includes = """
 #else // __cplusplus
 #include <stdbool.h>
 #include <stdint.h>
-#endif // __cplusplus"""
+#endif // __cplusplus
+
+#if defined(__cplusplus)
+#define DEPRECATED [[deprecated]]
+#define DEPRECATED_WITH_NOTE(msg) [[deprecated(msg)]]
+#elif defined(_MSC_VER)
+#define DEPRECATED __declspec(deprecated)
+#define DEPRECATED_WITH_NOTE(msg) __declspec(deprecated(msg))
+#elif defined(__GNUC__)
+#define DEPRECATED __attribute__((deprecated))
+#define DEPRECATED_WITH_NOTE(msg) __attribute__((deprecated(msg)))
+#else
+#define DEPRECATED
+#define DEPRECATED_WITH_NOTE(msg)
+#endif"""
 
 # Code Style Options
 
@@ -70,16 +84,16 @@ __declspec(dllimport)
 #endif"""
 args = "vertical"
 deprecated = "DEPRECATED"
-deprecated_with_note = "DEPRECATED_WITH_NOTES({})"
+deprecated_with_note = "DEPRECATED_WITH_NOTE({})"
 
 [struct]
 deprecated = "DEPRECATED"
-deprecated_with_note = "DEPRECATED_WITH_NOTES({})"
+deprecated_with_note = "DEPRECATED_WITH_NOTE({})"
 
 [enum]
 rename_variants = "ScreamingSnakeCase"
 deprecated = "DEPRECATED"
-deprecated_with_note = "DEPRECATED_WITH_NOTES({})"
+deprecated_with_note = "DEPRECATED_WITH_NOTE({})"
 
 # Options for how your Rust library should be parsed
 

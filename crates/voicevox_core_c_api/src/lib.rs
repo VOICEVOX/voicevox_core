@@ -9,6 +9,7 @@ mod drop_check;
 mod helpers;
 mod result_code;
 mod slice_owner;
+mod v014_compatible_engine;
 use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::*;
 use self::result_code::VoicevoxResultCode;
@@ -200,7 +201,7 @@ pub enum VoicevoxAccelerationMode {
 
 /// ::voicevox_synthesizer_new_with_initialize のオプション。
 #[repr(C)]
-pub struct VoicevoxInitializeOptions {
+pub struct VoicevoxInitializeSynthesizerOptions {
     /// ハードウェアアクセラレーションモード
     acceleration_mode: VoicevoxAccelerationMode,
     /// CPU利用数を指定
@@ -211,8 +212,9 @@ pub struct VoicevoxInitializeOptions {
 /// デフォルトの初期化オプションを生成する
 /// @return デフォルト値が設定された初期化オプション
 #[no_mangle]
-pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitializeOptions {
-    VoicevoxInitializeOptions::default()
+pub extern "C" fn voicevox_make_default_initialize_synthesizer_options(
+) -> VoicevoxInitializeSynthesizerOptions {
+    VoicevoxInitializeSynthesizerOptions::default()
 }
 
 /// voicevoxのバージョンを取得する。
@@ -337,7 +339,7 @@ pub struct VoicevoxSynthesizer {
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_new_with_initialize(
     open_jtalk: &OpenJtalkRc,
-    options: VoicevoxInitializeOptions,
+    options: VoicevoxInitializeSynthesizerOptions,
     out_synthesizer: NonNull<Box<VoicevoxSynthesizer>>,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {

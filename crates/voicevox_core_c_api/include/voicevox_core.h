@@ -53,6 +53,20 @@
 #include <stdint.h>
 #endif // __cplusplus
 
+#if defined(__cplusplus)
+#define DEPRECATED [[deprecated]]
+#define DEPRECATED_WITH_NOTE(msg) [[deprecated(msg)]]
+#elif defined(_MSC_VER)
+#define DEPRECATED __declspec(deprecated)
+#define DEPRECATED_WITH_NOTE(msg) __declspec(deprecated(msg))
+#elif defined(__GNUC__)
+#define DEPRECATED __attribute__((deprecated))
+#define DEPRECATED_WITH_NOTE(msg) __attribute__((deprecated(msg)))
+#else
+#define DEPRECATED
+#define DEPRECATED_WITH_NOTE(msg)
+#endif
+
 /**
  * ハードウェアアクセラレーションモードを設定する設定値。
  */
@@ -258,7 +272,7 @@ typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
 /**
  * ::voicevox_synthesizer_new_with_initialize のオプション。
  */
-typedef struct VoicevoxInitializeOptions {
+typedef struct VoicevoxInitializeSynthesizerOptions {
   /**
    * ハードウェアアクセラレーションモード
    */
@@ -268,7 +282,7 @@ typedef struct VoicevoxInitializeOptions {
    * 0を指定すると環境に合わせたCPUが利用される
    */
   uint16_t cpu_num_threads;
-} VoicevoxInitializeOptions;
+} VoicevoxInitializeSynthesizerOptions;
 
 /**
  * 音声モデルID。
@@ -327,6 +341,29 @@ typedef struct VoicevoxUserDictWord {
    */
   uint32_t priority;
 } VoicevoxUserDictWord;
+
+/**
+ * ::voicevox_initialize のオプション。
+ */
+typedef struct DEPRECATED_WITH_NOTE("VoicevoxInitializeSynthesizerOptions を使ってください。") VoicevoxInitializeOptions {
+  /**
+   * ハードウェアアクセラレーションモード
+   */
+  VoicevoxAccelerationMode acceleration_mode;
+  /**
+   * CPU利用数を指定
+   * 0を指定すると環境に合わせたCPUが利用される
+   */
+  uint16_t cpu_num_threads;
+  /**
+   * 全てのモデルを読み込む
+   */
+  bool load_all_models;
+  /**
+   * open_jtalkの辞書ディレクトリ
+   */
+  const char *open_jtalk_dict_dir;
+} VoicevoxInitializeOptions;
 
 #ifdef __cplusplus
 extern "C" {
@@ -407,7 +444,7 @@ void voicevox_open_jtalk_rc_delete(struct OpenJtalkRc *open_jtalk);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-struct VoicevoxInitializeOptions voicevox_make_default_initialize_options(void);
+struct VoicevoxInitializeSynthesizerOptions voicevox_make_default_initialize_synthesizer_options(void);
 
 /**
  * voicevoxのバージョンを取得する。
@@ -503,7 +540,7 @@ void voicevox_voice_model_delete(struct VoicevoxVoiceModel *model);
 __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_synthesizer_new_with_initialize(const struct OpenJtalkRc *open_jtalk,
-                                                            struct VoicevoxInitializeOptions options,
+                                                            struct VoicevoxInitializeSynthesizerOptions options,
                                                             struct VoicevoxSynthesizer **out_synthesizer);
 
 /**
@@ -1210,6 +1247,12 @@ VoicevoxResultCode voicevox_user_dict_save(const struct VoicevoxUserDict *user_d
 __declspec(dllimport)
 #endif
 void voicevox_user_dict_delete(struct VoicevoxUserDict *user_dict);
+
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+DEPRECATED_WITH_NOTE("voicevox_synthesizer_new_with_initialize を使ってください。")
+bool voicevox_initialize(struct VoicevoxInitializeOptions options);
 
 #ifdef __cplusplus
 } // extern "C"
