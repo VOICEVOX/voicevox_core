@@ -276,8 +276,8 @@ jobs:
           pip install --upgrade poetry
           poetry install --with dev --with test
       - run: cargo build -p voicevox_core_c_api -vv
-      - run: poetry run maturin build --manifest-path Cargo.toml --locked
-      - run: poetry run maturin develop --manifest-path Cargo.toml --locked
+      - run: poetry run maturin build --locked
+      - run: poetry run maturin develop --locked
       - name: 必要なDLLをコピーしてpytestを実行
         run: |
           cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll . || true
