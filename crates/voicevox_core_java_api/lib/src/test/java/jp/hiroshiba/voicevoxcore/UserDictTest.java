@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
+import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
+import jp.hiroshiba.voicevoxcore.exceptions.LoadUserDictException;
 import org.junit.jupiter.api.Test;
 
 class UserDictTest extends TestUtils {
@@ -11,7 +14,8 @@ class UserDictTest extends TestUtils {
   // 辞書ロードのテスト。
   // 辞書ロード前後でkanaが異なることを確認する
   @Test
-  void checkLoad() {
+  void checkLoad()
+      throws InferenceFailedException, InvalidModelDataException, LoadUserDictException {
     VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();

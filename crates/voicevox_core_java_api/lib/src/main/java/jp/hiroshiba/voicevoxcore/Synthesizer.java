@@ -5,6 +5,8 @@ import jakarta.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
+import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 
 /**
  * 音声シンセサイザ。
@@ -28,7 +30,7 @@ public class Synthesizer extends Dll {
    *
    * @param voiceModel 読み込むモデル。
    */
-  public void loadVoiceModel(VoiceModel voiceModel) {
+  public void loadVoiceModel(VoiceModel voiceModel) throws InvalidModelDataException {
     rsLoadVoiceModel(voiceModel);
   }
 
@@ -59,7 +61,8 @@ public class Synthesizer extends Dll {
    * @return {@link AudioQuery}。
    */
   @Nonnull
-  public AudioQuery createAudioQueryFromKana(String kana, int styleId) {
+  public AudioQuery createAudioQueryFromKana(String kana, int styleId)
+      throws InferenceFailedException {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
@@ -81,7 +84,7 @@ public class Synthesizer extends Dll {
    * @return {@link AudioQuery}。
    */
   @Nonnull
-  public AudioQuery createAudioQuery(String text, int styleId) {
+  public AudioQuery createAudioQuery(String text, int styleId) throws InferenceFailedException {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
@@ -103,7 +106,8 @@ public class Synthesizer extends Dll {
    * @return {@link AccentPhrase} のリスト。
    */
   @Nonnull
-  public List<AccentPhrase> createAccentPhrasesFromKana(String kana, int styleId) {
+  public List<AccentPhrase> createAccentPhrasesFromKana(String kana, int styleId)
+      throws InferenceFailedException {
     String accentPhrasesJson = rsAccentPhrasesFromKana(kana, styleId);
     Gson gson = new Gson();
     AccentPhrase[] rawAccentPhrases = gson.fromJson(accentPhrasesJson, AccentPhrase[].class);
@@ -121,7 +125,8 @@ public class Synthesizer extends Dll {
    * @return {@link AccentPhrase} のリスト。
    */
   @Nonnull
-  public List<AccentPhrase> createAccentPhrases(String text, int styleId) {
+  public List<AccentPhrase> createAccentPhrases(String text, int styleId)
+      throws InferenceFailedException {
     String accentPhrasesJson = rsAccentPhrases(text, styleId);
     Gson gson = new Gson();
     AccentPhrase[] rawAccentPhrases = gson.fromJson(accentPhrasesJson, AccentPhrase[].class);
@@ -139,7 +144,8 @@ public class Synthesizer extends Dll {
    * @return 変更後のアクセント句の配列。
    */
   @Nonnull
-  public List<AccentPhrase> replaceMoraData(List<AccentPhrase> accentPhrases, int styleId) {
+  public List<AccentPhrase> replaceMoraData(List<AccentPhrase> accentPhrases, int styleId)
+      throws InferenceFailedException {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
@@ -157,7 +163,8 @@ public class Synthesizer extends Dll {
    * @return 変更後のアクセント句の配列。
    */
   @Nonnull
-  public List<AccentPhrase> replacePhonemeLength(List<AccentPhrase> accentPhrases, int styleId) {
+  public List<AccentPhrase> replacePhonemeLength(List<AccentPhrase> accentPhrases, int styleId)
+      throws InferenceFailedException {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
@@ -175,7 +182,8 @@ public class Synthesizer extends Dll {
    * @return 変更後のアクセント句の配列。
    */
   @Nonnull
-  public List<AccentPhrase> replaceMoraPitch(List<AccentPhrase> accentPhrases, int styleId) {
+  public List<AccentPhrase> replaceMoraPitch(List<AccentPhrase> accentPhrases, int styleId)
+      throws InferenceFailedException {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
@@ -226,42 +234,50 @@ public class Synthesizer extends Dll {
 
   private native void rsNewWithInitialize(OpenJtalk openJtalk, Builder builder);
 
-  private native void rsLoadVoiceModel(VoiceModel voiceModel);
+  private native void rsLoadVoiceModel(VoiceModel voiceModel) throws InvalidModelDataException;
 
   private native void rsUnloadVoiceModel(String voiceModelId);
 
   private native boolean rsIsLoadedVoiceModel(String voiceModelId);
 
   @Nonnull
-  private native String rsAudioQueryFromKana(String kana, int styleId);
+  private native String rsAudioQueryFromKana(String kana, int styleId)
+      throws InferenceFailedException;
 
   @Nonnull
-  private native String rsAudioQuery(String text, int styleId);
+  private native String rsAudioQuery(String text, int styleId) throws InferenceFailedException;
 
   @Nonnull
-  private native String rsAccentPhrasesFromKana(String kana, int styleId);
+  private native String rsAccentPhrasesFromKana(String kana, int styleId)
+      throws InferenceFailedException;
 
   @Nonnull
-  private native String rsAccentPhrases(String text, int styleId);
+  private native String rsAccentPhrases(String text, int styleId) throws InferenceFailedException;
 
   @Nonnull
-  private native String rsReplaceMoraData(String accentPhrasesJson, int styleId, boolean kana);
+  private native String rsReplaceMoraData(String accentPhrasesJson, int styleId, boolean kana)
+      throws InferenceFailedException;
 
   @Nonnull
-  private native String rsReplacePhonemeLength(String accentPhrasesJson, int styleId, boolean kana);
+  private native String rsReplacePhonemeLength(String accentPhrasesJson, int styleId, boolean kana)
+      throws InferenceFailedException;
 
   @Nonnull
-  private native String rsReplaceMoraPitch(String accentPhrasesJson, int styleId, boolean kana);
+  private native String rsReplaceMoraPitch(String accentPhrasesJson, int styleId, boolean kana)
+      throws InferenceFailedException;
 
   @Nonnull
   private native byte[] rsSynthesis(
-      String queryJson, int styleId, boolean enableInterrogativeUpspeak);
+      String queryJson, int styleId, boolean enableInterrogativeUpspeak)
+      throws InferenceFailedException;
 
   @Nonnull
-  private native byte[] rsTtsFromKana(String kana, int styleId, boolean enableInterrogativeUpspeak);
+  private native byte[] rsTtsFromKana(String kana, int styleId, boolean enableInterrogativeUpspeak)
+      throws InferenceFailedException;
 
   @Nonnull
-  private native byte[] rsTts(String text, int styleId, boolean enableInterrogativeUpspeak);
+  private native byte[] rsTts(String text, int styleId, boolean enableInterrogativeUpspeak)
+      throws InferenceFailedException;
 
   private native void rsDrop();
 
@@ -368,7 +384,7 @@ public class Synthesizer extends Dll {
      * @return 音声データ。
      */
     @Nonnull
-    public byte[] execute() {
+    public byte[] execute() throws InferenceFailedException {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }
@@ -412,7 +428,7 @@ public class Synthesizer extends Dll {
      * @return 音声データ。
      */
     @Nonnull
-    public byte[] execute() {
+    public byte[] execute() throws InferenceFailedException {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }
@@ -454,7 +470,7 @@ public class Synthesizer extends Dll {
      * @return 音声データ。
      */
     @Nonnull
-    public byte[] execute() {
+    public byte[] execute() throws InferenceFailedException {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }

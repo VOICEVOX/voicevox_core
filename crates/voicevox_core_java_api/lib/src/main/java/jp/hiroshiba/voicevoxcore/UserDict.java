@@ -8,6 +8,8 @@ import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.HashMap;
+import jp.hiroshiba.voicevoxcore.exceptions.LoadUserDictException;
+import jp.hiroshiba.voicevoxcore.exceptions.SaveUserDictException;
 
 /** ユーザー辞書。 */
 public class UserDict extends Dll {
@@ -73,7 +75,7 @@ public class UserDict extends Dll {
    *
    * @param path ユーザー辞書のパス。
    */
-  public void load(String path) {
+  public void load(String path) throws LoadUserDictException {
     rsLoad(path);
   }
 
@@ -82,7 +84,7 @@ public class UserDict extends Dll {
    *
    * @param path ユーザー辞書のパス。
    */
-  public void save(String path) {
+  public void save(String path) throws SaveUserDictException {
     rsSave(path);
   }
 
@@ -124,9 +126,9 @@ public class UserDict extends Dll {
 
   private native void rsImportDict(UserDict dict);
 
-  private native void rsLoad(String path);
+  private native void rsLoad(String path) throws LoadUserDictException;
 
-  private native void rsSave(String path);
+  private native void rsSave(String path) throws SaveUserDictException;
 
   @Nonnull
   private native String rsGetWords();

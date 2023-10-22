@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
+import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import org.junit.jupiter.api.Test;
 
 class SynthesizerTest extends TestUtils {
@@ -34,7 +36,7 @@ class SynthesizerTest extends TestUtils {
   }
 
   @Test
-  void checkModel() {
+  void checkModel() throws InvalidModelDataException {
     VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
@@ -45,7 +47,7 @@ class SynthesizerTest extends TestUtils {
   }
 
   @Test
-  void checkAudioQuery() {
+  void checkAudioQuery() throws InferenceFailedException, InvalidModelDataException {
     VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
@@ -56,7 +58,7 @@ class SynthesizerTest extends TestUtils {
   }
 
   @Test
-  void checkAccentPhrases() {
+  void checkAccentPhrases() throws InferenceFailedException, InvalidModelDataException {
     VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
@@ -86,7 +88,7 @@ class SynthesizerTest extends TestUtils {
   }
 
   @Test
-  void checkTts() {
+  void checkTts() throws InferenceFailedException, InvalidModelDataException {
     VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
