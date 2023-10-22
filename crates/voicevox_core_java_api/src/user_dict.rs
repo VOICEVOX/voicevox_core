@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::common::throw_if_err;
+use crate::common::{throw_if_err, JavaApiError};
 use jni::{
     objects::{JObject, JString},
     sys::jobject,
@@ -39,7 +39,8 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsAddWord<'loc
         let word_json = env.get_string(&word_json)?;
         let word_json = &Cow::from(&word_json);
 
-        let word: voicevox_core::UserDictWord = serde_json::from_str(word_json)?;
+        let word: voicevox_core::UserDictWord =
+            serde_json::from_str(word_json).map_err(JavaApiError::DeJson)?;
 
         let uuid = {
             let mut internal = internal.lock().unwrap();
@@ -70,7 +71,8 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsUpdateWord<'
         let word_json = env.get_string(&word_json)?;
         let word_json = &Cow::from(&word_json);
 
-        let word: voicevox_core::UserDictWord = serde_json::from_str(word_json)?;
+        let word: voicevox_core::UserDictWord =
+            serde_json::from_str(word_json).map_err(JavaApiError::DeJson)?;
 
         {
             let mut internal = internal.lock().unwrap();
@@ -186,7 +188,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsGetWords<'lo
 
         let words = {
             let internal = internal.lock().unwrap();
-            serde_json::to_string(internal.words())?
+            serde_json::to_string(internal.words()).expect("should not fail")
         };
 
         let words = env.new_string(words)?;

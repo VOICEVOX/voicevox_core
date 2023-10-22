@@ -1,5 +1,7 @@
-use anyhow::Result;
-use jni::JNIEnv;
+use std::{error::Error as _, iter};
+
+use derive_more::From;
+use jni::{objects::JThrowable, JNIEnv};
 use once_cell::sync::Lazy;
 use tokio::runtime::Runtime;
 
@@ -86,7 +88,7 @@ macro_rules! enum_object {
 
 pub fn throw_if_err<T, F>(mut env: JNIEnv, fallback: T, inner: F) -> T
 where
-    F: FnOnce(&mut JNIEnv) -> Result<T>,
+    F: FnOnce(&mut JNIEnv) -> Result<T, JavaApiError>,
 {
     match inner(&mut env) {
         Ok(value) => value as _,
@@ -95,13 +97,130 @@ where
             // env.exception_clear()してもいいが、errorのメッセージは"Java exception was thrown"
             // となり、デバッグが困難になるため、そのままにしておく。
             if !env.exception_check().unwrap_or(false) {
-                env.throw_new(
-                    "jp/hiroshiba/voicevoxcore/VoicevoxException",
-                    error.to_string(),
-                )
-                .unwrap_or_else(|_| panic!("Failed to throw exception, original error: {}", error));
+                macro_rules! or_panic {
+                    ($result:expr) => {
+                        $result.unwrap_or_else(|_| {
+                            panic!("Failed to throw exception, original error: {error:?}")
+                        })
+                    };
+                }
+
+                match &error {
+                    JavaApiError::RustApi(error) => {
+                        macro_rules! class {
+                            ($($variant:ident),* $(,)?) => {
+                                match error.kind() {
+                                    $(
+                                        voicevox_core::ErrorKind::$variant => concat!(
+                                            "jp/hiroshiba/voicevoxcore/exceptions/",
+                                            stringify!($variant),
+                                            "Exception",
+                                        ),
+                                    )*
+                                }
+                            };
+                        }
+
+                        let class = class!(
+                            NotLoadedOpenjtalkDict,
+                            GpuSupport,
+                            OpenZipFile,
+                            ReadZipEntry,
+                            ModelAlreadyLoaded,
+                            StyleAlreadyLoaded,
+                            InvalidModelData,
+                            GetSupportedDevices,
+                            StyleNotFound,
+                            ModelNotFound,
+                            InferenceFailed,
+                            ExtractFullContextLabel,
+                            ParseKana,
+                            LoadUserDict,
+                            SaveUserDict,
+                            WordNotFound,
+                            UseUserDict,
+                            InvalidWord,
+                        );
+
+                        let mut sources =
+                            iter::successors(error.source(), |&source| source.source())
+                                .collect::<Vec<_>>()
+                                .into_iter()
+                                .rev();
+
+                        // FIXME: `.unwrap()`ではなく、ちゃんと`.expect()`とかを書く
+
+                        let exc = JThrowable::from(if let Some(innermost) = sources.next() {
+                            let innermost = env
+                                .new_object(
+                                    "java/lang/RuntimeException",
+                                    "(Ljava/lang/String;)V",
+                                    &[(&env.new_string(innermost.to_string()).unwrap()).into()],
+                                )
+                                .unwrap();
+
+                            let cause = sources.fold(innermost, |cause, source| {
+                                env.new_object(
+                                    "java/lang/RuntimeException",
+                                    "(Ljava/lang/String;Ljava/lang/Throwable;)V",
+                                    &[
+                                        (&env.new_string(source.to_string()).unwrap()).into(),
+                                        (&cause).into(),
+                                    ],
+                                )
+                                .unwrap()
+                            });
+
+                            env.new_object(
+                                class,
+                                "(Ljava/lang/String;Ljava/lang/Throwable;)V",
+                                &[
+                                    (&env.new_string(error.to_string()).unwrap()).into(),
+                                    (&cause).into(),
+                                ],
+                            )
+                            .unwrap()
+                        } else {
+                            env.new_object(
+                                class,
+                                "(Ljava/lang/String;)V",
+                                &[(&env.new_string(error.to_string()).unwrap()).into()],
+                            )
+                            .unwrap()
+                        });
+
+                        or_panic!(env.throw(exc));
+                    }
+                    JavaApiError::Jni(error) => {
+                        or_panic!(env.throw_new("java/lang/RuntimeException", error.to_string()))
+                    }
+                    JavaApiError::Uuid(error) => {
+                        or_panic!(
+                            env.throw_new("java/lang/IllegalArgumentException", error.to_string())
+                        )
+                    }
+                    JavaApiError::DeJson(error) => {
+                        or_panic!(
+                            env.throw_new("java/lang/IllegalArgumentException", error.to_string())
+                        )
+                    }
+                };
             }
             fallback
         }
     }
+}
+
+#[derive(From, Debug)]
+pub enum JavaApiError {
+    #[from]
+    RustApi(voicevox_core::Error),
+
+    #[from]
+    Jni(jni::errors::Error),
+
+    #[from]
+    Uuid(uuid::Error),
+
+    DeJson(serde_json::Error),
 }

@@ -4355,8 +4355,8 @@ name = "voicevox_core_java_api"
 version = "0.0.0"
 dependencies = [
  "android_logger",
- "anyhow",
  "chrono",
+ "derive_more",
  "jni",
  "once_cell",
  "serde_json",
@@ -4364,6 +4364,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "uuid",
  "voicevox_core",
 ]
 

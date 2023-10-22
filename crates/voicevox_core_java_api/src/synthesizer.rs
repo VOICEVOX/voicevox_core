@@ -1,9 +1,8 @@
 use crate::{
-    common::{throw_if_err, RUNTIME},
+    common::{throw_if_err, JavaApiError, RUNTIME},
     enum_object, object, object_type,
 };
 
-use anyhow::anyhow;
 use jni::{
     objects::{JObject, JString},
     sys::{jboolean, jint, jobject},
@@ -40,7 +39,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNewWithIn
             } else if env.is_same_object(&acceleration_mode, gpu)? {
                 voicevox_core::AccelerationMode::Gpu
             } else {
-                return Err(anyhow!("invalid acceleration mode".to_string(),));
+                panic!("予期しない`AccelerationMode`です: {acceleration_mode:?}");
             };
         }
         let cpu_num_threads = env.get_field(&builder, "cpuNumThreads", "I")?;
@@ -151,7 +150,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
             )?
         };
 
-        let query_json = serde_json::to_string(&audio_query)?;
+        let query_json = serde_json::to_string(&audio_query).expect("should not fail");
 
         let j_audio_query = env.new_string(query_json)?;
 
@@ -179,7 +178,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
             RUNTIME.block_on(internal.audio_query(&text, voicevox_core::StyleId::new(style_id)))?
         };
 
-        let query_json = serde_json::to_string(&audio_query)?;
+        let query_json = serde_json::to_string(&audio_query).expect("should not fail");
 
         let j_audio_query = env.new_string(query_json)?;
 
@@ -212,7 +211,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhr
             )?
         };
 
-        let query_json = serde_json::to_string(&accent_phrases)?;
+        let query_json = serde_json::to_string(&accent_phrases).expect("should not fail");
 
         let j_accent_phrases = env.new_string(query_json)?;
 
@@ -242,7 +241,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhr
             )?
         };
 
-        let query_json = serde_json::to_string(&accent_phrases)?;
+        let query_json = serde_json::to_string(&accent_phrases).expect("should not fail");
 
         let j_accent_phrases = env.new_string(query_json)?;
 
@@ -260,7 +259,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
         let accent_phrases: Vec<voicevox_core::AccentPhraseModel> =
-            serde_json::from_str(&accent_phrases_json)?;
+            serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 
         let internal = env
@@ -274,7 +273,8 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
             )?
         };
 
-        let replaced_accent_phrases_json = serde_json::to_string(&replaced_accent_phrases)?;
+        let replaced_accent_phrases_json =
+            serde_json::to_string(&replaced_accent_phrases).expect("should not fail");
 
         Ok(env.new_string(replaced_accent_phrases_json)?.into_raw())
     })
@@ -292,7 +292,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplacePh
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
         let accent_phrases: Vec<voicevox_core::AccentPhraseModel> =
-            serde_json::from_str(&accent_phrases_json)?;
+            serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 
         let internal = env
@@ -307,7 +307,8 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplacePh
             )?
         };
 
-        let replaced_accent_phrases_json = serde_json::to_string(&replaced_accent_phrases)?;
+        let replaced_accent_phrases_json =
+            serde_json::to_string(&replaced_accent_phrases).expect("should not fail");
 
         Ok(env.new_string(replaced_accent_phrases_json)?.into_raw())
     })
@@ -323,7 +324,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
         let accent_phrases: Vec<voicevox_core::AccentPhraseModel> =
-            serde_json::from_str(&accent_phrases_json)?;
+            serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 
         let internal = env
@@ -337,7 +338,8 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
             )?
         };
 
-        let replaced_accent_phrases_json = serde_json::to_string(&replaced_accent_phrases)?;
+        let replaced_accent_phrases_json =
+            serde_json::to_string(&replaced_accent_phrases).expect("should not fail");
 
         Ok(env.new_string(replaced_accent_phrases_json)?.into_raw())
     })
@@ -353,7 +355,8 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsSynthesis
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let audio_query: String = env.get_string(&query_json)?.into();
-        let audio_query: voicevox_core::AudioQueryModel = serde_json::from_str(&audio_query)?;
+        let audio_query: voicevox_core::AudioQueryModel =
+            serde_json::from_str(&audio_query).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 
         let internal = env

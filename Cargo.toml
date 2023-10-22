@@ -14,6 +14,7 @@ resolver = "2"
 anyhow = "1.0.65"
 async_zip = { version = "0.0.11", features = ["full"] }
 clap = { version = "4.0.10", features = ["derive"] }
+derive_more = "0.99.17"
 easy-ext = "1.0.1"
 fs-err = { version = "2.9.0", features = ["tokio"] }
 futures = "0.3.26"
