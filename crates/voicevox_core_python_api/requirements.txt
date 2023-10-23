@@ -1,4 +1,0 @@
-Sphinx>=6.2.1,<7
-maturin>=0.13.2,<0.14
-pydata-sphinx-theme>=0.14.1,<0.15
-sphinx-autoapi>=3.0.0,<4

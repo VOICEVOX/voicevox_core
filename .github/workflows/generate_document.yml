@@ -29,8 +29,12 @@ jobs:
         uses: taiki-e/install-action@cargo-binstall
       - name: Create a venv
         uses: ./.github/actions/create-venv
-      - name: pip install
-        run: pip install -r ./crates/voicevox_core_python_api/requirements.txt
+      - name: Install python dependencies
+        working-directory: ./crates/voicevox_core_python_api
+        run: |
+          pip install --upgrade poetry
+          poetry config virtualenvs.create false
+          poetry install --with test
       - name: mkdir public
         run: mkdir -p public/apis/c_api
       - name: cp docs/apis/index.html
