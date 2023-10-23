@@ -25,6 +25,10 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: "3.8"
+      - name: Validate poetry.lock
+        run: |
+          poetry lock --no-update
+          git diff
       - name: Install dependencies
         run: |
           python -m pip install --upgrade poetry
