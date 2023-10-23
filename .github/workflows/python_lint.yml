@@ -32,7 +32,7 @@ jobs:
       - name: Validate poetry.lock
         run: |
           poetry lock --no-update
-          git diff
+          git diff --exit-code
       - name: Install dependencies
         run: poetry install --with test
       - name: Check code style for voicevox_core_python_api
