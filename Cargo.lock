@@ -1163,11 +1163,9 @@ dependencies = [
  "futures-core",
  "futures-util",
  "indicatif",
- "itertools",
  "octocrab",
  "once_cell",
  "parse-display",
- "platforms",
  "rayon",
  "reqwest",
  "rstest",
@@ -2669,12 +2667,6 @@ name = "pkg-config"
 version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1df8c4ec4b0627e53bdf214615ad287367e482558cf84b109250b37464dc03ae"
-
-[[package]]
-name = "platforms"
-version = "3.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3d7ddaed09e0eb771a79ab0fd64609ba0afb0a8366421957936ad14cbd13630"
 
 [[package]]
 name = "polling"
@@ -4281,7 +4273,6 @@ dependencies = [
  "derive_more",
  "duplicate",
  "easy-ext",
- "flate2",
  "fs-err",
  "futures",
  "heck",
@@ -4297,8 +4288,6 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
- "strum",
- "tar",
  "tempfile",
  "test_util",
  "thiserror",
@@ -4362,7 +4351,6 @@ dependencies = [
  "serde_json",
  "test_util",
  "tokio",
- "tracing",
  "tracing-subscriber",
  "uuid",
  "voicevox_core",
@@ -4382,7 +4370,6 @@ dependencies = [
  "serde_json",
  "test_util",
  "tokio",
- "tracing",
  "uuid",
  "voicevox_core",
 ]

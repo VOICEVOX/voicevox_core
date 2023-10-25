@@ -1,7 +1,7 @@
 [project]
 name = "voicevox_core"
 requires-python = ">=3.8"
-dependencies = ["numpy", "pydantic>=1.9.2,<2"]
+dependencies = ["pydantic>=1.9.2,<2"]
 description = "VOICEVOX CORE の Python バインディングです。"
 authors = [{ name = "Hiroshiba", email = "hihokaruta@gmail.com" }]
 classifiers = [
@@ -35,7 +35,6 @@ authors = []
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.13"
-numpy = ">=1,<2"
 pydantic = ">=1.9.2,<2"
 
 [tool.poetry.group.docs.dependencies]

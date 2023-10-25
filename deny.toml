@@ -52,7 +52,6 @@ allow-build-scripts = [
     { name = "num-traits", version = "0.2" }, # https://docs.rs/crate/num-traits/0.2/source/build.rs
     { name = "onnxruntime", version = "=0.1.0" }, # https://github.com/VOICEVOX/onnxruntime-rs/blob/405f62fb53df1b59b0e69adafbd1c28e4d5c2787/onnxruntime/build.rs
     { name = "parking_lot_core", version = "0.9" }, # https://docs.rs/crate/parking_lot_core/0.9/source/build.rs
-    { name = "platforms", version = "3" }, # https://docs.rs/crate/platforms/3.0.2/source/build.rs
     { name = "polling", version = "2" }, # https://docs.rs/crate/polling/2/source/build.rs
     { name = "portable-atomic", version = "0.3" }, # https://docs.rs/crate/portable-atomic/0.3.19/source/build.rs
     { name = "proc-macro-error", version = "1" }, # https://docs.rs/crate/proc-macro-error/1/source/build.rs

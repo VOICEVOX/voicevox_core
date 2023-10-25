@@ -1,10 +1,8 @@
 import json
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from typing import List, TypedDict
 
-import numpy as np
 import pytest
 
 root_dir = Path(os.path.dirname(os.path.abspath(__file__)))

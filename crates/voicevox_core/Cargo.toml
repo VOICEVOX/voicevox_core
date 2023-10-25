@@ -26,7 +26,6 @@ once_cell.workspace = true
 regex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-strum.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
@@ -42,11 +41,9 @@ git = "https://github.com/VOICEVOX/open_jtalk-rs.git"
 rev = "a16714ce16dec76fd0e3041a7acfa484921db3b5"
 
 [dev-dependencies]
-flate2 = "1.0.24"
 heck = "0.4.0"
 pretty_assertions = "1.3.0"
 rstest.workspace = true
-tar = "0.4.38"
 test_util.workspace = true
 
 [target."cfg(windows)".dependencies]
