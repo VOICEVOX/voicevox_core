@@ -1,9 +1,6 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Final, List, Literal, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Union
 from uuid import UUID
-
-import numpy as np
-from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from voicevox_core import (
