@@ -13,10 +13,10 @@ mod metas;
 mod numerics;
 mod result;
 mod status;
+mod synthesizer;
 mod user_dict;
 mod version;
 mod voice_model;
-mod voice_synthesizer;
 
 #[doc(hidden)]
 pub mod __internal;
@@ -36,9 +36,9 @@ pub use self::result::*;
 pub use self::voice_model::*;
 pub use devices::*;
 pub use manifest::*;
+pub use synthesizer::*;
 pub use user_dict::*;
 pub use version::*;
-pub use voice_synthesizer::*;
 
 use derive_getters::*;
 use derive_new::new;
