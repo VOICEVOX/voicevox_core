@@ -36,6 +36,7 @@ jobs:
           args: --release --out dist
           sccache: 'true'
           manylinux: auto
+        working-directory: ${{ github.workspace }}/crates/voicevox_core_python_api
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
@@ -59,6 +60,7 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --out dist
           sccache: 'true'
+        working-directory: ${{ github.workspace }}/crates/voicevox_core_python_api
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
@@ -81,6 +83,7 @@ jobs:
           target: ${{ matrix.target }}
           args: --release --out dist
           sccache: 'true'
+        working-directory: ${{ github.workspace }}/crates/voicevox_core_python_api
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
