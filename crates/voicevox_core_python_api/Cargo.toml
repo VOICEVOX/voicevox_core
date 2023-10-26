@@ -18,7 +18,6 @@ directml = ["voicevox_core/directml"]
 easy-ext.workspace = true
 log = "0.4.17"
 once_cell.workspace = true
-openssl = { version = "0.10.57", features = ["vendored"] }
 pyo3 = { version = "0.18.0", features = ["abi3-py38", "extension-module"] }
 pyo3-asyncio = { version = "0.18.0", features = ["tokio-runtime"] }
 pyo3-log = "0.8.0"
