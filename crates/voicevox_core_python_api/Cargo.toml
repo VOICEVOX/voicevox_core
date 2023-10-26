@@ -23,7 +23,6 @@ pyo3-asyncio = { version = "0.18.0", features = ["tokio-runtime"] }
 pyo3-log = "0.8.0"
 serde.workspace = true
 serde_json.workspace = true
-test_util.workspace = false # only for it's build script
 tokio.workspace = true
 uuid.workspace = true
 voicevox_core.workspace = true
