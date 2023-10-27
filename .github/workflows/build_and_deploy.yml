@@ -278,6 +278,11 @@ jobs:
           poetry config virtualenvs.create false
           (cd crates/voicevox_core_python_api && poetry install --with dev)
           function build() {
+            # shellcheck disable=SC2251
+            ! grep -q dev-dependencies ./crates/voicevox_core_python_api/Cargo.toml
+            # 以下のようなことを防止するため、依存クレートはMaturinの外でビルドしておく
+            # https://github.com/VOICEVOX/voicevox_core/issues/653#issuecomment-1782108410
+            cargo build -p voicevox_core_python_api --features ${{ matrix.features }}, --target ${{ matrix.target }} --release -vv
             maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
           }
           if ${{ !inputs.is_production }}; then

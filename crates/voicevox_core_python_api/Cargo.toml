@@ -4,10 +4,6 @@ version = "0.0.0"
 edition.workspace = true
 publish.workspace = true
 
-[package.metadata.maturin]
-name = "voicevox_core._rust"
-python-source = "python"
-
 [lib]
 crate-type = ["cdylib"]
 
