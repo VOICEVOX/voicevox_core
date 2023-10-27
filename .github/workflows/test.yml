@@ -277,6 +277,7 @@ jobs:
       - run: cargo build -p test_util -vv # build scriptにより/crates/test_util/data/の生成
       # 以下のようなことを防止するため、依存クレートはMaturinの外でビルドしておく
       # https://github.com/VOICEVOX/voicevox_core/issues/653#issuecomment-1782108410
+      - run: poetry run -- cargo build -p voicevox_core_c_api -vv
       - run: poetry run -- cargo build -p voicevox_core_python_api -vv
       - run: poetry run maturin build --locked
       - run: poetry run maturin develop --locked
