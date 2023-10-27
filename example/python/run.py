@@ -16,6 +16,7 @@ from voicevox_core import (
 )
 
 
+# asyncやawaitは必須です。
 async def main() -> None:
     logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s")
     logger = logging.getLogger(__name__)
