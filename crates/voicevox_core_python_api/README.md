@@ -52,3 +52,11 @@ VOICEVOX CORE の Python バインディングです。
 ## サンプル実行
 
 `maturin develop` で editable な状態でインストールした後、[example/python](../../example/python) にてサンプルを実行できます。
+
+## トラブルシューティング
+
+Maturinで依存クレート（例: [open\_jtalk-sys](https://github.com/VOICEVOX/open_jtalk-rs)）のビルドが失敗する場合は、依存クレートのみをあらかじめ `cargo build` すれば解決する場合があります。
+
+```console
+❯ cargo build -p voicevox_core_python_api [--releasee]
+```
