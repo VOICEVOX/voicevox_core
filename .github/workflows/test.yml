@@ -275,7 +275,7 @@ jobs:
           pip install --upgrade poetry
           poetry install --with dev --with test
       - run: cargo build -p test_util -vv # build scriptにより/crates/test_util/data/の生成
-      # `macos-latest`(=`macos-12`)で次の問題が発生するため、それ対するワークアラウンド
+      # `macos-latest`(=`macos-12`)で次の問題が発生するため、それに対するワークアラウンド
       # https://github.com/VOICEVOX/voicevox_core/issues/653#issuecomment-1782108410
       - if: startsWith(matrix.os, 'mac')
         name: Build open_jtalk-sys
