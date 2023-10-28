@@ -281,7 +281,7 @@ jobs:
         name: Build open_jtalk-sys
         run: |
           poetry run -- cargo build -p voicevox_core_python_api -vv || true
-          [ -n "$(find ./target/debug/deps -name 'libopen_jtalk_sys-*.rlib')" ]
+          [ -n "$(find ../../target/debug/deps -name 'libopen_jtalk_sys-*.rlib')" ]
       - run: poetry run maturin build --locked
       - run: poetry run maturin develop --locked
       - name: 必要なDLLをコピーしてpytestを実行
