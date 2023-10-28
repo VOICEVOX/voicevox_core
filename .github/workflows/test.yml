@@ -277,7 +277,7 @@ jobs:
       - run: cargo build -p test_util -vv # build scriptにより/crates/test_util/data/の生成
       # 次の問題に対するワークアラウンド
       # https://github.com/VOICEVOX/voicevox_core/issues/653#issuecomment-1782108410
-      - if: matrix.os == 'macos-latest'
+      - if: startsWith(matrix.os, 'mac')
         name: Build open_jtalk-sys
         run: |
           poetry run -- cargo build -p voicevox_core_python_api -vv || true
