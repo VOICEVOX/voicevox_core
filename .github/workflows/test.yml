@@ -278,7 +278,10 @@ jobs:
       # 次の問題に対するワークアラウンド
       # https://github.com/VOICEVOX/voicevox_core/issues/653#issuecomment-1782108410
       - if: matrix.os == 'macos-latest'
-        run: poetry run -- cargo build -p voicevox_core_python_api -vv
+        name: Build open_jtalk-sys
+        run: |
+          poetry run -- cargo build -p voicevox_core_python_api -vv || true
+          [ -n "$(find ./target/debug/deps -name 'libopen_jtalk_sys-*.rlib')" ]
       - run: poetry run maturin build --locked
       - run: poetry run maturin develop --locked
       - name: 必要なDLLをコピーしてpytestを実行
