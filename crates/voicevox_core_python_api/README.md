@@ -55,7 +55,7 @@ VOICEVOX CORE の Python バインディングです。
 
 ## トラブルシューティング
 
-Maturinで依存クレート（例: [open\_jtalk-sys](https://github.com/VOICEVOX/open_jtalk-rs)）のビルドが失敗する場合は、依存クレートのみをあらかじめ `cargo build` すれば解決する場合があります。
+Maturinで依存クレート（例: [open\_jtalk-sys](https://github.com/VOICEVOX/open_jtalk-rs)）のビルドが失敗する場合は、Maturinの外であらかじめ `cargo build` すれば解決する場合があります。
 
 ```console
 ❯ cargo build -p voicevox_core_python_api [--releasee]
