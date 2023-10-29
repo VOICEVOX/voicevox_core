@@ -8,7 +8,7 @@ use jni::{
     sys::{jboolean, jint, jobject},
     JNIEnv,
 };
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 #[no_mangle]
 unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNewWithInitialize<'local>(
@@ -52,7 +52,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNewWithIn
             open_jtalk,
             Box::leak(Box::new(options)),
         ))?;
-        env.set_rust_field(&this, "handle", Arc::new(Mutex::new(internal)))?;
+        env.set_rust_field(&this, "handle", Arc::new(internal))?;
         Ok(())
     })
 }
@@ -68,12 +68,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsLoadVoice
             .get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&model, "handle")?
             .clone();
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
-        {
-            let internal = internal.lock().unwrap();
-            RUNTIME.block_on(internal.load_voice_model(&model))?;
-        }
+        RUNTIME.block_on(internal.load_voice_model(&model))?;
         Ok(())
     })
 }
@@ -88,14 +85,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsUnloadVoi
         let model_id: String = env.get_string(&model_id)?.into();
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
-        {
-            let internal = internal.lock().unwrap();
-
-            internal.unload_voice_model(&voicevox_core::VoiceModelId::new(model_id))?;
-        }
+        internal.unload_voice_model(&voicevox_core::VoiceModelId::new(model_id))?;
 
         Ok(())
     })
@@ -113,13 +106,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsLoadedV
         let model_id: String = env.get_string(&model_id)?.into();
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
-        let is_loaded = {
-            let internal = internal.lock().unwrap();
-            internal.is_loaded_voice_model(&voicevox_core::VoiceModelId::new(model_id))
-        };
+        let is_loaded = internal.is_loaded_voice_model(&voicevox_core::VoiceModelId::new(model_id));
 
         Ok(is_loaded)
     })
@@ -140,15 +130,12 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
-        let audio_query = {
-            let internal = internal.lock().unwrap();
-            RUNTIME.block_on(
-                internal.audio_query_from_kana(&kana, voicevox_core::StyleId::new(style_id)),
-            )?
-        };
+        let audio_query = RUNTIME.block_on(
+            internal.audio_query_from_kana(&kana, voicevox_core::StyleId::new(style_id)),
+        )?;
 
         let query_json = serde_json::to_string(&audio_query).expect("should not fail");
 
@@ -170,13 +157,11 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
-        let audio_query = {
-            let internal = internal.lock().unwrap();
-            RUNTIME.block_on(internal.audio_query(&text, voicevox_core::StyleId::new(style_id)))?
-        };
+        let audio_query =
+            RUNTIME.block_on(internal.audio_query(&text, voicevox_core::StyleId::new(style_id)))?;
 
         let query_json = serde_json::to_string(&audio_query).expect("should not fail");
 
@@ -200,16 +185,12 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhr
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
-        let accent_phrases = {
-            let internal = internal.lock().unwrap();
-            RUNTIME.block_on(
-                internal
-                    .create_accent_phrases_from_kana(&kana, voicevox_core::StyleId::new(style_id)),
-            )?
-        };
+        let accent_phrases = RUNTIME.block_on(
+            internal.create_accent_phrases_from_kana(&kana, voicevox_core::StyleId::new(style_id)),
+        )?;
 
         let query_json = serde_json::to_string(&accent_phrases).expect("should not fail");
 
@@ -231,15 +212,12 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhr
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
-        let accent_phrases = {
-            let internal = internal.lock().unwrap();
-            RUNTIME.block_on(
-                internal.create_accent_phrases(&text, voicevox_core::StyleId::new(style_id)),
-            )?
-        };
+        let accent_phrases = RUNTIME.block_on(
+            internal.create_accent_phrases(&text, voicevox_core::StyleId::new(style_id)),
+        )?;
 
         let query_json = serde_json::to_string(&accent_phrases).expect("should not fail");
 
@@ -263,15 +241,12 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
-        let replaced_accent_phrases = {
-            let internal = internal.lock().unwrap();
-            RUNTIME.block_on(
-                internal.replace_mora_data(&accent_phrases, voicevox_core::StyleId::new(style_id)),
-            )?
-        };
+        let replaced_accent_phrases = RUNTIME.block_on(
+            internal.replace_mora_data(&accent_phrases, voicevox_core::StyleId::new(style_id)),
+        )?;
 
         let replaced_accent_phrases_json =
             serde_json::to_string(&replaced_accent_phrases).expect("should not fail");
@@ -296,11 +271,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplacePh
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
         let replaced_accent_phrases = {
-            let internal = internal.lock().unwrap();
             RUNTIME.block_on(
                 internal
                     .replace_phoneme_length(&accent_phrases, voicevox_core::StyleId::new(style_id)),
@@ -328,15 +302,12 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
-        let replaced_accent_phrases = {
-            let internal = internal.lock().unwrap();
-            RUNTIME.block_on(
-                internal.replace_mora_pitch(&accent_phrases, voicevox_core::StyleId::new(style_id)),
-            )?
-        };
+        let replaced_accent_phrases = RUNTIME.block_on(
+            internal.replace_mora_pitch(&accent_phrases, voicevox_core::StyleId::new(style_id)),
+        )?;
 
         let replaced_accent_phrases_json =
             serde_json::to_string(&replaced_accent_phrases).expect("should not fail");
@@ -360,11 +331,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsSynthesis
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
         let wave = {
-            let internal = internal.lock().unwrap();
             let options = voicevox_core::SynthesisOptions {
                 enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
                 // ..Default::default()
@@ -395,11 +365,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTtsFromKa
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
         let wave = {
-            let internal = internal.lock().unwrap();
             let options = voicevox_core::TtsOptions {
                 enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
                 // ..Default::default()
@@ -430,11 +399,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTts<'loca
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::Synthesizer>>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
             .clone();
 
         let wave = {
-            let internal = internal.lock().unwrap();
             let options = voicevox_core::TtsOptions {
                 enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
                 // ..Default::default()

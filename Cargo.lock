@@ -4361,13 +4361,11 @@ version = "0.0.0"
 dependencies = [
  "easy-ext",
  "log",
- "once_cell",
  "pyo3",
  "pyo3-asyncio",
  "pyo3-log",
  "serde",
  "serde_json",
- "tokio",
  "uuid",
  "voicevox_core",
 ]
