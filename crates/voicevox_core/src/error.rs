@@ -41,7 +41,7 @@ impl Error {
             ErrorRepr::GetSupportedDevices(_) => ErrorKind::GetSupportedDevices,
             ErrorRepr::StyleNotFound { .. } => ErrorKind::StyleNotFound,
             ErrorRepr::ModelNotFound { .. } => ErrorKind::ModelNotFound,
-            ErrorRepr::InferenceFailed => ErrorKind::InferenceFailed,
+            ErrorRepr::InferenceFailed { .. } => ErrorKind::InferenceFailed,
             ErrorRepr::ExtractFullContextLabel(_) => ErrorKind::ExtractFullContextLabel,
             ErrorRepr::ParseKana(_) => ErrorKind::ParseKana,
             ErrorRepr::LoadUserDict(_) => ErrorKind::LoadUserDict,
@@ -80,7 +80,7 @@ pub(crate) enum ErrorRepr {
     ModelNotFound { model_id: VoiceModelId },
 
     #[error("推論に失敗しました")]
-    InferenceFailed,
+    InferenceFailed(#[source] anyhow::Error),
 
     #[error(transparent)]
     ExtractFullContextLabel(#[from] FullContextLabelError),
