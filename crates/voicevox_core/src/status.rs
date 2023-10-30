@@ -185,7 +185,7 @@ impl Status {
 
             let output_tensors = predict_duration
                 .run(vec![&mut phoneme_vector_array, &mut speaker_id_array])
-                .map_err(|_| ErrorRepr::InferenceFailed)?;
+                .map_err(|e| ErrorRepr::InferenceFailed(e.into()))?;
             Ok(output_tensors[0].as_slice().unwrap().to_owned())
         })
         .await
@@ -229,7 +229,7 @@ impl Status {
                     &mut end_accent_phrase_vector_array,
                     &mut speaker_id_array,
                 ])
-                .map_err(|_| ErrorRepr::InferenceFailed)?;
+                .map_err(|e| ErrorRepr::InferenceFailed(e.into()))?;
             Ok(output_tensors[0].as_slice().unwrap().to_owned())
         })
         .await
@@ -261,7 +261,7 @@ impl Status {
                     &mut phoneme_array,
                     &mut speaker_id_array,
                 ])
-                .map_err(|_| ErrorRepr::InferenceFailed)?;
+                .map_err(|e| ErrorRepr::InferenceFailed(e.into()))?;
             Ok(output_tensors[0].as_slice().unwrap().to_owned())
         })
         .await
