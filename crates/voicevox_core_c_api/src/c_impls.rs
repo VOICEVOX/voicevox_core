@@ -5,20 +5,16 @@ use voicevox_core::{InitializeOptions, OpenJtalk, Result, Synthesizer, VoiceMode
 use crate::{CApiResult, OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
 
 impl OpenJtalkRc {
-    pub(crate) fn new_with_initialize(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {
+    pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
-            open_jtalk: Arc::new(OpenJtalk::new_with_initialize(open_jtalk_dic_dir)?),
+            open_jtalk: Arc::new(OpenJtalk::new(open_jtalk_dic_dir)?),
         })
     }
 }
 
 impl VoicevoxSynthesizer {
-    pub(crate) async fn new_with_initialize(
-        open_jtalk: &OpenJtalkRc,
-        options: &InitializeOptions,
-    ) -> Result<Self> {
-        let synthesizer =
-            Synthesizer::new_with_initialize(open_jtalk.open_jtalk.clone(), options).await?;
+    pub(crate) async fn new(open_jtalk: &OpenJtalkRc, options: &InitializeOptions) -> Result<Self> {
+        let synthesizer = Synthesizer::new(open_jtalk.open_jtalk.clone(), options).await?;
         Ok(Self { synthesizer })
     }
 

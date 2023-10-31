@@ -9,7 +9,7 @@ pub struct InferenceCore {
 }
 
 impl InferenceCore {
-    pub(crate) async fn new_with_initialize(use_gpu: bool, cpu_num_threads: u16) -> Result<Self> {
+    pub(crate) async fn new(use_gpu: bool, cpu_num_threads: u16) -> Result<Self> {
         if !use_gpu || Self::can_support_gpu_feature()? {
             let status = Status::new(use_gpu, cpu_num_threads);
             Ok(Self { status })

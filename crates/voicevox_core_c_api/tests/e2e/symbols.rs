@@ -28,7 +28,7 @@ pub(crate) struct Symbols<'lib> {
         Symbol<'lib, unsafe extern "C" fn(*const VoicevoxVoiceModel) -> *const c_char>,
     pub(crate) voicevox_voice_model_delete:
         Symbol<'lib, unsafe extern "C" fn(*mut VoicevoxVoiceModel)>,
-    pub(crate) voicevox_synthesizer_new_with_initialize: Symbol<
+    pub(crate) voicevox_synthesizer_new: Symbol<
         'lib,
         unsafe extern "C" fn(
             *const OpenJtalkRc,
@@ -214,7 +214,7 @@ impl<'lib> Symbols<'lib> {
             voicevox_voice_model_id,
             voicevox_voice_model_get_metas_json,
             voicevox_voice_model_delete,
-            voicevox_synthesizer_new_with_initialize,
+            voicevox_synthesizer_new,
             voicevox_synthesizer_delete,
             voicevox_synthesizer_load_voice_model,
             voicevox_synthesizer_unload_voice_model,

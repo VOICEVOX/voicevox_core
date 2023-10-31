@@ -652,13 +652,9 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn is_openjtalk_dict_loaded_works() {
-        let core = InferenceCore::new_with_initialize(false, 0).await.unwrap();
-        let synthesis_engine = SynthesisEngine::new(
-            core,
-            OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR)
-                .unwrap()
-                .into(),
-        );
+        let core = InferenceCore::new(false, 0).await.unwrap();
+        let synthesis_engine =
+            SynthesisEngine::new(core, OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap().into());
 
         assert_eq!(synthesis_engine.is_openjtalk_dict_loaded(), true);
     }
@@ -666,17 +662,13 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn create_accent_phrases_works() {
-        let core = InferenceCore::new_with_initialize(false, 0).await.unwrap();
+        let core = InferenceCore::new(false, 0).await.unwrap();
 
         let model = &VoiceModel::sample().await.unwrap();
         core.load_model(model).await.unwrap();
 
-        let synthesis_engine = SynthesisEngine::new(
-            core,
-            OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR)
-                .unwrap()
-                .into(),
-        );
+        let synthesis_engine =
+            SynthesisEngine::new(core, OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap().into());
 
         let accent_phrases = synthesis_engine
             .create_accent_phrases("同じ、文章、です。完全に、同一です。", StyleId::new(1))

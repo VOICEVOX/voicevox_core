@@ -126,8 +126,7 @@ impl OpenJtalk {
     ) -> PyResult<Self> {
         Ok(Self {
             open_jtalk: Arc::new(
-                voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)
-                    .into_py_result(py)?,
+                voicevox_core::OpenJtalk::new(open_jtalk_dict_dir).into_py_result(py)?,
             ),
         })
     }
@@ -146,20 +145,21 @@ struct Synthesizer {
 
 #[pymethods]
 impl Synthesizer {
+    #[allow(clippy::new_ret_no_self)]
     #[staticmethod]
     #[pyo3(signature =(
         open_jtalk,
         acceleration_mode = InitializeOptions::default().acceleration_mode,
         cpu_num_threads = InitializeOptions::default().cpu_num_threads,
     ))]
-    fn new_with_initialize(
+    fn new(
         py: Python,
         open_jtalk: OpenJtalk,
         #[pyo3(from_py_with = "from_acceleration_mode")] acceleration_mode: AccelerationMode,
         cpu_num_threads: u16,
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let synthesizer = voicevox_core::Synthesizer::new_with_initialize(
+            let synthesizer = voicevox_core::Synthesizer::new(
                 open_jtalk.open_jtalk.clone(),
                 &InitializeOptions {
                     acceleration_mode,

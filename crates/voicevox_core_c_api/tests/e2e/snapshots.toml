@@ -81,7 +81,7 @@ stderr.windows = '''
 '''
 stderr.unix = ""
 
-[synthesizer_new_with_initialize_output_json]
+[synthesizer_new_output_json]
 metas = '''
 [
   {

@@ -37,7 +37,7 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_open_jtalk_rc_delete,
             voicevox_voice_model_new_from_path,
             voicevox_voice_model_delete,
-            voicevox_synthesizer_new_with_initialize,
+            voicevox_synthesizer_new,
             voicevox_synthesizer_delete,
             voicevox_synthesizer_load_voice_model,
             voicevox_synthesizer_create_audio_query,
@@ -82,7 +82,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         let synthesizer = {
             let mut synthesizer = MaybeUninit::uninit();
-            assert_ok(voicevox_synthesizer_new_with_initialize(
+            assert_ok(voicevox_synthesizer_new(
                 openjtalk,
                 VoicevoxInitializeOptions {
                     acceleration_mode: VoicevoxAccelerationMode::VOICEVOX_ACCELERATION_MODE_CPU,
