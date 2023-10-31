@@ -17,7 +17,7 @@ public class Synthesizer extends Dll {
   private long handle;
 
   private Synthesizer(OpenJtalk openJtalk, Builder builder) {
-    rsNewWithInitialize(openJtalk, builder);
+    rsNew(openJtalk, builder);
   }
 
   protected void finalize() throws Throwable {
@@ -232,7 +232,7 @@ public class Synthesizer extends Dll {
     return new TtsConfigurator(this, text, styleId);
   }
 
-  private native void rsNewWithInitialize(OpenJtalk openJtalk, Builder builder);
+  private native void rsNew(OpenJtalk openJtalk, Builder builder);
 
   private native void rsLoadVoiceModel(VoiceModel voiceModel) throws InvalidModelDataException;
 

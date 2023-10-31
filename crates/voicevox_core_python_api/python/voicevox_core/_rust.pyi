@@ -79,7 +79,7 @@ class Synthesizer:
     """音声シンセサイザ。"""
 
     @staticmethod
-    async def new_with_initialize(
+    async def new(
         open_jtalk: OpenJtalk,
         acceleration_mode: Union[
             AccelerationMode, Literal["AUTO", "CPU", "GPU"]

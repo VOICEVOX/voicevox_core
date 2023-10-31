@@ -9,7 +9,7 @@ public class OpenJtalk extends Dll {
    * @param openJtalkDictDir 辞書のディレクトリ。
    */
   public OpenJtalk(String openJtalkDictDir) {
-    rsNewWithInitialize(openJtalkDictDir);
+    rsNew(openJtalkDictDir);
   }
 
   protected void finalize() throws Throwable {
@@ -28,9 +28,7 @@ public class OpenJtalk extends Dll {
     rsUseUserDict(userDict);
   }
 
-  private native void rsNewWithoutDic();
-
-  private native void rsNewWithInitialize(String openJtalkDictDir);
+  private native void rsNew(String openJtalkDictDir);
 
   private native void rsUseUserDict(UserDict userDict);
 

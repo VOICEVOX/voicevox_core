@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   VoicevoxSynthesizer* synthesizer;
-  result = voicevox_synthesizer_new_with_initialize(open_jtalk,initialize_options,&synthesizer);
+  result = voicevox_synthesizer_new(open_jtalk,initialize_options,&synthesizer);
   if (result != VOICEVOX_RESULT_OK) {
     std::cerr << voicevox_error_result_to_message(result) << std::endl;
     return 1;

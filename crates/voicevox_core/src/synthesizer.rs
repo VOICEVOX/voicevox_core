@@ -58,9 +58,9 @@ pub enum AccelerationMode {
     Gpu,
 }
 
-/// [`Synthesizer::new_with_initialize`]のオプション。
+/// [`Synthesizer::new`]のオプション。
 ///
-/// [`Synthesizer::new_with_initialize`]: Synthesizer::new_with_initialize
+/// [`Synthesizer::new`]: Synthesizer::new
 #[derive(Default)]
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
@@ -90,8 +90,8 @@ impl Synthesizer {
     ///
     /// use voicevox_core::{AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer};
     ///
-    /// let mut syntesizer = Synthesizer::new_with_initialize(
-    ///     Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+    /// let mut syntesizer = Synthesizer::new(
+    ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
     ///     &InitializeOptions {
     ///         acceleration_mode: ACCELERATION_MODE,
     ///         ..Default::default()
@@ -102,10 +102,7 @@ impl Synthesizer {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn new_with_initialize(
-        open_jtalk: Arc<OpenJtalk>,
-        options: &InitializeOptions,
-    ) -> Result<Self> {
+    pub async fn new(open_jtalk: Arc<OpenJtalk>, options: &InitializeOptions) -> Result<Self> {
         #[cfg(windows)]
         list_windows_video_cards();
         let use_gpu = match options.acceleration_mode {
@@ -127,7 +124,7 @@ impl Synthesizer {
 
         Ok(Self {
             synthesis_engine: SynthesisEngine::new(
-                InferenceCore::new_with_initialize(use_gpu, options.cpu_num_threads).await?,
+                InferenceCore::new(use_gpu, options.cpu_num_threads).await?,
                 open_jtalk,
             ),
             use_gpu,
@@ -256,8 +253,8 @@ impl Synthesizer {
     /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
     /// #     };
     /// #
-    /// #     let mut syntesizer = Synthesizer::new_with_initialize(
-    /// #         Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+    /// #     let mut syntesizer = Synthesizer::new(
+    /// #         Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
     /// #         &InitializeOptions {
     /// #             acceleration_mode: AccelerationMode::Cpu,
     /// #             ..Default::default()
@@ -310,8 +307,8 @@ impl Synthesizer {
     /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
     /// #     };
     /// #
-    /// #     let mut syntesizer = Synthesizer::new_with_initialize(
-    /// #         Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+    /// #     let mut syntesizer = Synthesizer::new(
+    /// #         Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
     /// #         &InitializeOptions {
     /// #             acceleration_mode: AccelerationMode::Cpu,
     /// #             ..Default::default()
@@ -400,8 +397,8 @@ impl Synthesizer {
     /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
     /// #     };
     /// #
-    /// #     let mut syntesizer = Synthesizer::new_with_initialize(
-    /// #         Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+    /// #     let mut syntesizer = Synthesizer::new(
+    /// #         Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
     /// #         &InitializeOptions {
     /// #             acceleration_mode: AccelerationMode::Cpu,
     /// #             ..Default::default()
@@ -455,8 +452,8 @@ impl Synthesizer {
     /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
     /// #     };
     /// #
-    /// #     let mut syntesizer = Synthesizer::new_with_initialize(
-    /// #         Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+    /// #     let mut syntesizer = Synthesizer::new(
+    /// #         Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
     /// #         &InitializeOptions {
     /// #             acceleration_mode: AccelerationMode::Cpu,
     /// #             ..Default::default()
@@ -582,7 +579,7 @@ mod tests {
     #[case(Ok(()))]
     #[tokio::test]
     async fn load_model_works(#[case] expected_result_at_initialized: Result<()>) {
-        let syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -606,7 +603,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn is_use_gpu_works() {
-        let syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -623,7 +620,7 @@ mod tests {
     #[tokio::test]
     async fn is_loaded_model_by_style_id_works(#[case] style_id: u32, #[case] expected: bool) {
         let style_id = StyleId::new(style_id);
-        let syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -652,7 +649,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_duration_works() {
-        let syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -684,7 +681,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_intonation_works() {
-        let syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -726,7 +723,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn decode_works() {
-        let syntesizer = Synthesizer::new_with_initialize(
+        let syntesizer = Synthesizer::new(
             Arc::new(OpenJtalk::new_without_dic()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -819,8 +816,8 @@ mod tests {
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
         #[case] expected_kana_text: &str,
     ) {
-        let syntesizer = Synthesizer::new_with_initialize(
-            Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+        let syntesizer = Synthesizer::new(
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -888,8 +885,8 @@ mod tests {
         #[case] input: Input,
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
     ) {
-        let syntesizer = Synthesizer::new_with_initialize(
-            Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+        let syntesizer = Synthesizer::new(
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -954,8 +951,8 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_length_works() {
-        let syntesizer = Synthesizer::new_with_initialize(
-            Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+        let syntesizer = Synthesizer::new(
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -991,8 +988,8 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_pitch_works() {
-        let syntesizer = Synthesizer::new_with_initialize(
-            Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+        let syntesizer = Synthesizer::new(
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1024,8 +1021,8 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_data_works() {
-        let syntesizer = Synthesizer::new_with_initialize(
-            Arc::new(OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap()),
+        let syntesizer = Synthesizer::new(
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
