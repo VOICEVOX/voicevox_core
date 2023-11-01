@@ -14,6 +14,10 @@ impl OpenJtalkRc {
 
 impl VoicevoxSynthesizer {
     pub(crate) fn new(open_jtalk: &OpenJtalkRc, options: &InitializeOptions) -> Result<Self> {
+        // ロガーを起動
+        // FIXME: `into_result_code_with_error`を`run`とかに改名し、`init_logger`をその中に移動
+        let _ = *crate::RUNTIME;
+
         let synthesizer = Synthesizer::new(open_jtalk.open_jtalk.clone(), options)?;
         Ok(Self { synthesizer })
     }
