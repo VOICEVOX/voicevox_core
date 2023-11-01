@@ -48,10 +48,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'loca
         let open_jtalk = env
             .get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&open_jtalk, "handle")?
             .clone();
-        let internal = RUNTIME.block_on(voicevox_core::Synthesizer::new(
-            open_jtalk,
-            Box::leak(Box::new(options)),
-        ))?;
+        let internal = voicevox_core::Synthesizer::new(open_jtalk, Box::leak(Box::new(options)))?;
         env.set_rust_field(&this, "handle", Arc::new(internal))?;
         Ok(())
     })

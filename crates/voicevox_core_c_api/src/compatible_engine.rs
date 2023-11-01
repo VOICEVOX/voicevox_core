@@ -115,8 +115,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
                 },
                 cpu_num_threads: cpu_num_threads as u16,
             },
-        )
-        .await?;
+        )?;
 
         if load_all_models {
             for model in &voice_model_set().all_vvms {

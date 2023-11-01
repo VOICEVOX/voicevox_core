@@ -13,8 +13,8 @@ impl OpenJtalkRc {
 }
 
 impl VoicevoxSynthesizer {
-    pub(crate) async fn new(open_jtalk: &OpenJtalkRc, options: &InitializeOptions) -> Result<Self> {
-        let synthesizer = Synthesizer::new(open_jtalk.open_jtalk.clone(), options).await?;
+    pub(crate) fn new(open_jtalk: &OpenJtalkRc, options: &InitializeOptions) -> Result<Self> {
+        let synthesizer = Synthesizer::new(open_jtalk.open_jtalk.clone(), options)?;
         Ok(Self { synthesizer })
     }
 

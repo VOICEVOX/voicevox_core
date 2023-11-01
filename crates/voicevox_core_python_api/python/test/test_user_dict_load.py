@@ -12,9 +12,7 @@ import voicevox_core  # noqa: F401
 async def test_user_dict_load() -> None:
     open_jtalk = voicevox_core.OpenJtalk(conftest.open_jtalk_dic_dir)
     model = await voicevox_core.VoiceModel.from_path(conftest.model_dir)
-    synthesizer = await voicevox_core.Synthesizer.new(
-        open_jtalk=open_jtalk,
-    )
+    synthesizer = voicevox_core.Synthesizer(open_jtalk)
 
     await synthesizer.load_voice_model(model)
 
