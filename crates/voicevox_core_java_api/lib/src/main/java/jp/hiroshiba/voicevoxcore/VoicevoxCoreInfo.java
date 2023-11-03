@@ -1,13 +1,11 @@
 package jp.hiroshiba.voicevoxcore;
 
-import jakarta.annotation.Nonnull;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import jakarta.annotation.Nonnull;
 
-/**
- * VOICEVOX CORE自体の情報。
- */
+/** VOICEVOX CORE自体の情報。 */
 public class VoicevoxCoreInfo extends Dll {
   /**
    * ライブラリのバージョン。
@@ -48,14 +46,14 @@ public class VoicevoxCoreInfo extends Dll {
   /**
    * このライブラリで利用可能なデバイスの情報。
    *
-   * あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても
-   * {@link #cuda} や {@link #dml} は {@code true} を示しうる。
+   * <p>あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても {@link #cuda} や {@link #dml} は {@code
+   * true} を示しうる。
    */
   public static class SupportedDevices {
     /**
      * CPUが利用可能。
      *
-     * 常に <code>true</code> 。
+     * <p>常に <code>true</code> 。
      */
     @SerializedName("cpu")
     @Expose
@@ -65,10 +63,9 @@ public class VoicevoxCoreInfo extends Dll {
     /**
      * CUDAが利用可能。
      *
-     * ONNX Runtimeの <a href=
+     * <p>ONNX Runtimeの <a href=
      * "https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html"
-     * target="_blank">CUDAExecutionProvider</a>に対応する。
-     * 必要な環境についてはそちらを参照。
+     * target="_blank">CUDAExecutionProvider</a>に対応する。 必要な環境についてはそちらを参照。
      */
     @SerializedName("cuda")
     @Expose
@@ -78,10 +75,9 @@ public class VoicevoxCoreInfo extends Dll {
     /**
      * DirectMLが利用可能。
      *
-     * ONNX Runtimeの <a href=
+     * <p>ONNX Runtimeの <a href=
      * "https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html"
-     * target="_blank">DmlExecutionProvider</a>に対応する。
-     * 必要な環境についてはそちらを参照。
+     * target="_blank">DmlExecutionProvider</a>に対応する。 必要な環境についてはそちらを参照。
      */
     @SerializedName("dml")
     @Expose
@@ -94,5 +90,4 @@ public class VoicevoxCoreInfo extends Dll {
       this.dml = false;
     }
   }
-
 }

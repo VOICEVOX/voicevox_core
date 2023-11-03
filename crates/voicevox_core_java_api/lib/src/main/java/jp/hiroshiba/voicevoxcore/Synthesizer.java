@@ -82,7 +82,7 @@ public class Synthesizer extends Dll {
   /**
    * AquesTalk風記法から {@link AudioQuery} を生成する。
    *
-   * @param kana    AquesTalk風記法。
+   * @param kana AquesTalk風記法。
    * @param styleId スタイルID。
    * @return {@link AudioQuery}。
    * @throws InferenceFailedException 推論に失敗した場合。
@@ -106,7 +106,7 @@ public class Synthesizer extends Dll {
   /**
    * 日本語のテキストから {@link AudioQuery} を生成する。
    *
-   * @param text    日本語のテキスト。
+   * @param text 日本語のテキスト。
    * @param styleId スタイルID。
    * @return {@link AudioQuery}。
    * @throws InferenceFailedException 推論に失敗した場合。
@@ -129,7 +129,7 @@ public class Synthesizer extends Dll {
   /**
    * AquesTalk風記法から {@link AccentPhrase} のリストを生成する。
    *
-   * @param kana    AquesTalk風記法。
+   * @param kana AquesTalk風記法。
    * @param styleId スタイルID。
    * @return {@link AccentPhrase} のリスト。
    * @throws InferenceFailedException 推論に失敗した場合。
@@ -149,7 +149,7 @@ public class Synthesizer extends Dll {
   /**
    * 日本語のテキストから {@link AccentPhrase} のリストを生成する。
    *
-   * @param text    日本語のテキスト。
+   * @param text 日本語のテキスト。
    * @param styleId スタイルID。
    * @return {@link AccentPhrase} のリスト。
    * @throws InferenceFailedException 推論に失敗した場合。
@@ -170,7 +170,7 @@ public class Synthesizer extends Dll {
    * アクセント句の音高・音素長を変更する。
    *
    * @param accentPhrases 変更元のアクセント句の配列。
-   * @param styleId       スタイルID。
+   * @param styleId スタイルID。
    * @return 変更後のアクセント句の配列。
    * @throws InferenceFailedException 推論に失敗した場合。
    */
@@ -190,7 +190,7 @@ public class Synthesizer extends Dll {
    * アクセント句の音素長を変更する。
    *
    * @param accentPhrases 変更元のアクセント句の配列。
-   * @param styleId       スタイルID。
+   * @param styleId スタイルID。
    * @return 変更後のアクセント句の配列。
    * @throws InferenceFailedException 推論に失敗した場合。
    */
@@ -210,7 +210,7 @@ public class Synthesizer extends Dll {
    * アクセント句の音高を変更する。
    *
    * @param accentPhrases 変更元のアクセント句の配列。
-   * @param styleId       スタイルID。
+   * @param styleId スタイルID。
    * @return 変更後のアクセント句の配列。
    * @throws InferenceFailedException 推論に失敗した場合。
    */
@@ -230,7 +230,7 @@ public class Synthesizer extends Dll {
    * {@link AudioQuery} から音声合成するためのオブジェクトを生成する。
    *
    * @param audioQuery {@link AudioQuery}。
-   * @param styleId    スタイルID。
+   * @param styleId スタイルID。
    * @return {@link SynthesisConfigurator}。
    * @see SynthesisConfigurator#execute
    */
@@ -242,7 +242,7 @@ public class Synthesizer extends Dll {
   /**
    * AquesTalk風記法をもとに音声合成を実行するためのオブジェクトを生成する。
    *
-   * @param kana    AquesTalk風記法。
+   * @param kana AquesTalk風記法。
    * @param styleId スタイルID。
    * @return {@link TtsFromKanaConfigurator}。
    * @see TtsFromKanaConfigurator#execute
@@ -255,7 +255,7 @@ public class Synthesizer extends Dll {
   /**
    * 日本語のテキストをもとに音声合成を実行するためのオブジェクトを生成する。
    *
-   * @param text    日本語のテキスト。
+   * @param text 日本語のテキスト。
    * @param styleId スタイルID。
    * @return {@link TtsConfigurator}。
    * @see TtsConfigurator#execute
@@ -420,7 +420,6 @@ public class Synthesizer extends Dll {
      * {@link AudioQuery} から音声合成する。
      *
      * @return 音声データ。
-     *
      * @throws InferenceFailedException 推論に失敗した場合。
      */
     @Nonnull
@@ -466,7 +465,6 @@ public class Synthesizer extends Dll {
      * {@link AudioQuery} から音声合成する。
      *
      * @return 音声データ。
-     *
      * @throws InferenceFailedException 推論に失敗した場合。
      */
     @Nonnull
@@ -510,7 +508,6 @@ public class Synthesizer extends Dll {
      * {@link AudioQuery} から音声合成する。
      *
      * @return 音声データ。
-     *
      * @throws InferenceFailedException 推論に失敗した場合。
      */
     @Nonnull

@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-
 import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import org.junit.jupiter.api.Test;
@@ -22,9 +21,8 @@ class SynthesizerTest extends TestUtils {
   @Test
   void checkIsGpuMode() {
     OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer = Synthesizer.builder(openJtalk)
-        .accelerationMode(Synthesizer.AccelerationMode.CPU)
-        .build();
+    Synthesizer synthesizer =
+        Synthesizer.builder(openJtalk).accelerationMode(Synthesizer.AccelerationMode.CPU).build();
     assertFalse(synthesizer.isGpuMode());
   }
 
@@ -81,23 +79,28 @@ class SynthesizerTest extends TestUtils {
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
     synthesizer.loadVoiceModel(model);
-    List<AccentPhrase> accentPhrases = synthesizer.createAccentPhrases("こんにちは", model.metas[0].styles[0].id);
-    List<AccentPhrase> accentPhrases2 = synthesizer.replaceMoraPitch(accentPhrases, model.metas[1].styles[0].id);
+    List<AccentPhrase> accentPhrases =
+        synthesizer.createAccentPhrases("こんにちは", model.metas[0].styles[0].id);
+    List<AccentPhrase> accentPhrases2 =
+        synthesizer.replaceMoraPitch(accentPhrases, model.metas[1].styles[0].id);
     assertTrue(
         checkAllMoras(
             accentPhrases, accentPhrases2, (mora, otherMora) -> mora.pitch != otherMora.pitch));
-    List<AccentPhrase> accentPhrases3 = synthesizer.replacePhonemeLength(accentPhrases, model.metas[1].styles[0].id);
+    List<AccentPhrase> accentPhrases3 =
+        synthesizer.replacePhonemeLength(accentPhrases, model.metas[1].styles[0].id);
     assertTrue(
         checkAllMoras(
             accentPhrases,
             accentPhrases3,
             (mora, otherMora) -> mora.vowelLength != otherMora.vowelLength));
-    List<AccentPhrase> accentPhrases4 = synthesizer.replaceMoraData(accentPhrases, model.metas[1].styles[0].id);
+    List<AccentPhrase> accentPhrases4 =
+        synthesizer.replaceMoraData(accentPhrases, model.metas[1].styles[0].id);
     assertTrue(
         checkAllMoras(
             accentPhrases,
             accentPhrases4,
-            (mora, otherMora) -> mora.pitch != otherMora.pitch && mora.vowelLength != otherMora.vowelLength));
+            (mora, otherMora) ->
+                mora.pitch != otherMora.pitch && mora.vowelLength != otherMora.vowelLength));
   }
 
   @Test

@@ -14,7 +14,6 @@ class InfoTest {
     assertNotNull(VoicevoxCoreInfo.getVersion());
   }
 
-
   @Test
   void checkSupportedDevices() {
     VoicevoxCoreInfo.SupportedDevices supportedDevices = VoicevoxCoreInfo.getSupportedDevices();

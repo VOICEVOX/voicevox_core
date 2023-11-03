@@ -1,8 +1,6 @@
 package jp.hiroshiba.voicevoxcore;
 
-/**
- * テキスト解析機としてのOpen JTalk。
- */
+/** テキスト解析機としてのOpen JTalk。 */
 public class OpenJtalk extends Dll {
   private long handle;
 
@@ -23,8 +21,7 @@ public class OpenJtalk extends Dll {
   /**
    * ユーザー辞書を設定する。
    *
-   * <p>
-   * この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
+   * <p>この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
    *
    * @param userDict ユーザー辞書。
    */
