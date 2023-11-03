@@ -16,7 +16,11 @@ public class VoicevoxCoreInfo extends Dll {
    */
   @Nonnull
   public static String getVersion() {
-    return rsGetVersion();
+    String version = rsGetVersion();
+    if (version == null) {
+      throw new NullPointerException("version");
+    }
+    return version;
   }
 
   /**
@@ -28,7 +32,11 @@ public class VoicevoxCoreInfo extends Dll {
   public static SupportedDevices getSupportedDevices() {
     Gson gson = new Gson();
     String supportedDevicesJson = rsGetSupportedDevicesJson();
-    return gson.fromJson(supportedDevicesJson, SupportedDevices.class);
+    SupportedDevices supportedDevices = gson.fromJson(supportedDevicesJson, SupportedDevices.class);
+    if (supportedDevices == null) {
+      throw new NullPointerException("supported_devices");
+    }
+    return supportedDevices;
   }
 
   @Nonnull

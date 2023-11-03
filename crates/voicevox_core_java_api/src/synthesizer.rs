@@ -56,6 +56,37 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'loca
         Ok(())
     })
 }
+#[no_mangle]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsGpuMode<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+) -> jboolean {
+    throw_if_err(env, false, |env| {
+        let internal = env
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
+            .clone();
+
+        Ok(internal.is_gpu_mode())
+    })
+    .into()
+}
+#[no_mangle]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsGetMetasJson<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let internal = env
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
+            .clone();
+
+        let metas_json = serde_json::to_string(&internal.metas()).expect("should not fail");
+
+        let j_metas_json = env.new_string(metas_json)?;
+
+        Ok(j_metas_json.into_raw())
+    })
+}
 
 #[no_mangle]
 unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsLoadVoiceModel<'local>(

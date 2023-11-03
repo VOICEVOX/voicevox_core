@@ -26,6 +26,31 @@ public class Synthesizer extends Dll {
   }
 
   /**
+   * ハードウェアアクセラレーションがGPUモードかどうかを返す。
+   *
+   * @return ハードウェアアクセラレーションがGPUモードかどうか。
+   */
+  public boolean isGpuMode() {
+    return rsIsGpuMode();
+  }
+
+  /**
+   * メタ情報を取得する。
+   *
+   * @return メタ情報。
+   */
+  @Nonnull
+  public VoiceModel.SpeakerMeta[] getMetas() {
+    Gson gson = new Gson();
+    String metasJson = rsGetMetasJson();
+    VoiceModel.SpeakerMeta[] rawMetas = gson.fromJson(metasJson, VoiceModel.SpeakerMeta[].class);
+    if (rawMetas == null) {
+      throw new NullPointerException("metas");
+    }
+    return rawMetas;
+  }
+
+  /**
    * モデルを読み込む。
    *
    * @param voiceModel 読み込むモデル。
@@ -241,6 +266,11 @@ public class Synthesizer extends Dll {
   }
 
   private native void rsNew(OpenJtalk openJtalk, Builder builder);
+
+  private native boolean rsIsGpuMode();
+
+  @Nonnull
+  private native String rsGetMetasJson();
 
   private native void rsLoadVoiceModel(VoiceModel voiceModel) throws InvalidModelDataException;
 

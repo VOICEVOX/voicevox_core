@@ -107,7 +107,7 @@ class Synthesizer:
         """ハードウェアアクセラレーションがGPUモードかどうか。"""
         ...
     @property
-    def metas(self) -> SpeakerMeta:
+    def metas(self) -> List[SpeakerMeta]:
         """メタ情報。"""
         ...
     async def load_voice_model(self, model: VoiceModel) -> None:

@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-class MetaTest {
+class InfoTest {
   @Test
   void checkVersion() {
     assertNotNull(VoicevoxCoreInfo.getVersion());
