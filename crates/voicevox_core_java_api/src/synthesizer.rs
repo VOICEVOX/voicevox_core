@@ -18,6 +18,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'loca
     builder: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
+        // ロガーを起動
+        // FIXME: `throw_if_err`を`run`とかに改名し、`init_logger`をその中に移動
+        let _ = *RUNTIME;
+
         let mut options = voicevox_core::InitializeOptions::default();
 
         let acceleration_mode = env
