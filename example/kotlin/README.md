@@ -61,6 +61,6 @@ Options:
 Inititalizing: AUTO, ./open_jtalk_dic_utf_8-1.11
 Loading: ../../model/sample.vvm
 Creating an AudioQuery from the text: この音声は、ボイスボックスを使用して、出力されています。
-Synthesizing... jp.hiroshiba.voicevoxcore.AudioQuery@4bbfb90a
+Synthesizing...
 Saving the audio to ./output.wav
 ```
