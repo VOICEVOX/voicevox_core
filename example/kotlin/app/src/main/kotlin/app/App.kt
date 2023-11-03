@@ -1,4 +1,4 @@
-package jp.hiroshiba.voicevoxcoreexample
+package app
 
 import java.io.File
 import jp.hiroshiba.voicevoxcore.*
@@ -11,7 +11,7 @@ enum class Mode {
 }
 
 fun main(args: Array<String>) {
-  val parser = ArgParser("example")
+  val parser = ArgParser("voicevoxcoreexample")
   val mode by parser.option(ArgType.Choice<Mode>(), description = "モード").default(Mode.AUTO)
   val vvmPath by
       parser.option(ArgType.String, fullName = "vvm", description = "vvmファイルへのパス").required()
@@ -48,7 +48,7 @@ fun main(args: Array<String>) {
   println("Creating an AudioQuery from the text: ${text}")
   val audioQuery = synthesizer.createAudioQuery(text, styleId)
 
-  println("Synthesizing... ${audioQuery}")
+  println("Synthesizing...")
   val audio = synthesizer.synthesis(audioQuery, styleId).execute()
 
   println("Saving the audio to ${out}")
