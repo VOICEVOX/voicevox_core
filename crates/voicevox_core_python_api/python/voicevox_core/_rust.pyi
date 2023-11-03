@@ -76,29 +76,27 @@ class OpenJtalk:
         ...
 
 class Synthesizer:
-    """音声シンセサイザ。"""
+    """
+    音声シンセサイザ。
 
-    @staticmethod
-    async def new(
+    Parameters
+    ----------
+    open_jtalk
+        Open JTalk。
+    acceleration_mode
+        ハードウェアアクセラレーションモード。
+    cpu_num_threads
+        CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
+    """
+
+    def __init__(
+        self,
         open_jtalk: OpenJtalk,
         acceleration_mode: Union[
             AccelerationMode, Literal["AUTO", "CPU", "GPU"]
         ] = AccelerationMode.AUTO,
         cpu_num_threads: int = 0,
-    ) -> "Synthesizer":
-        """
-        :class:`Synthesizer` を生成する。
-
-        Parameters
-        ----------
-        open_jtalk
-            Open JTalk。
-        acceleration_mode
-            ハードウェアアクセラレーションモード。
-        cpu_num_threads
-            CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
-        """
-        ...
+    ) -> None: ...
     def __repr__(self) -> str: ...
     def __enter__(self) -> "Synthesizer": ...
     def __exit__(self, exc_type, exc_value, traceback) -> None: ...

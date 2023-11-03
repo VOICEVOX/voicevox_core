@@ -80,8 +80,7 @@ impl Synthesizer {
     ///
     #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
     #[cfg_attr(not(windows), doc = "```")]
-    /// # #[tokio::main]
-    /// # async fn main() -> anyhow::Result<()> {
+    /// # fn main() -> anyhow::Result<()> {
     /// # use test_util::OPEN_JTALK_DIC_DIR;
     /// #
     /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
@@ -96,13 +95,12 @@ impl Synthesizer {
     ///         acceleration_mode: ACCELERATION_MODE,
     ///         ..Default::default()
     ///     },
-    /// )
-    /// .await?;
+    /// )?;
     /// #
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn new(open_jtalk: Arc<OpenJtalk>, options: &InitializeOptions) -> Result<Self> {
+    pub fn new(open_jtalk: Arc<OpenJtalk>, options: &InitializeOptions) -> Result<Self> {
         #[cfg(windows)]
         list_windows_video_cards();
         let use_gpu = match options.acceleration_mode {
@@ -124,7 +122,7 @@ impl Synthesizer {
 
         Ok(Self {
             synthesis_engine: SynthesisEngine::new(
-                InferenceCore::new(use_gpu, options.cpu_num_threads).await?,
+                InferenceCore::new(use_gpu, options.cpu_num_threads)?,
                 open_jtalk,
             ),
             use_gpu,
@@ -259,8 +257,7 @@ impl Synthesizer {
     /// #             acceleration_mode: AccelerationMode::Cpu,
     /// #             ..Default::default()
     /// #         },
-    /// #     )
-    /// #     .await?;
+    /// #     )?;
     /// #
     /// #     let model = &VoiceModel::from_path(concat!(
     /// #         env!("CARGO_MANIFEST_DIR"),
@@ -313,8 +310,7 @@ impl Synthesizer {
     /// #             acceleration_mode: AccelerationMode::Cpu,
     /// #             ..Default::default()
     /// #         },
-    /// #     )
-    /// #     .await?;
+    /// #     )?;
     /// #
     /// #     let model = &VoiceModel::from_path(concat!(
     /// #         env!("CARGO_MANIFEST_DIR"),
@@ -403,8 +399,7 @@ impl Synthesizer {
     /// #             acceleration_mode: AccelerationMode::Cpu,
     /// #             ..Default::default()
     /// #         },
-    /// #     )
-    /// #     .await?;
+    /// #     )?;
     /// #
     /// #     let model = &VoiceModel::from_path(concat!(
     /// #         env!("CARGO_MANIFEST_DIR"),
@@ -458,8 +453,7 @@ impl Synthesizer {
     /// #             acceleration_mode: AccelerationMode::Cpu,
     /// #             ..Default::default()
     /// #         },
-    /// #     )
-    /// #     .await?;
+    /// #     )?;
     /// #
     /// #     let model = &VoiceModel::from_path(concat!(
     /// #         env!("CARGO_MANIFEST_DIR"),
@@ -586,7 +580,6 @@ mod tests {
                 ..Default::default()
             },
         )
-        .await
         .unwrap();
 
         let result = syntesizer
@@ -610,7 +603,6 @@ mod tests {
                 ..Default::default()
             },
         )
-        .await
         .unwrap();
         assert!(!syntesizer.is_gpu_mode());
     }
@@ -627,7 +619,6 @@ mod tests {
                 ..Default::default()
             },
         )
-        .await
         .unwrap();
         assert!(
             !syntesizer.is_loaded_model_by_style_id(style_id),
@@ -656,7 +647,6 @@ mod tests {
                 ..Default::default()
             },
         )
-        .await
         .unwrap();
 
         syntesizer
@@ -688,7 +678,6 @@ mod tests {
                 ..Default::default()
             },
         )
-        .await
         .unwrap();
         syntesizer
             .load_voice_model(&open_default_vvm_file().await)
@@ -730,7 +719,6 @@ mod tests {
                 ..Default::default()
             },
         )
-        .await
         .unwrap();
         syntesizer
             .load_voice_model(&open_default_vvm_file().await)
@@ -823,7 +811,6 @@ mod tests {
                 ..Default::default()
             },
         )
-        .await
         .unwrap();
 
         let model = &VoiceModel::sample().await.unwrap();
@@ -892,7 +879,6 @@ mod tests {
                 ..Default::default()
             },
         )
-        .await
         .unwrap();
 
         let model = &VoiceModel::sample().await.unwrap();
@@ -958,7 +944,6 @@ mod tests {
                 ..Default::default()
             },
         )
-        .await
         .unwrap();
 
         let model = &VoiceModel::sample().await.unwrap();
@@ -995,7 +980,6 @@ mod tests {
                 ..Default::default()
             },
         )
-        .await
         .unwrap();
 
         let model = &VoiceModel::sample().await.unwrap();
@@ -1028,7 +1012,6 @@ mod tests {
                 ..Default::default()
             },
         )
-        .await
         .unwrap();
 
         let model = &VoiceModel::sample().await.unwrap();
