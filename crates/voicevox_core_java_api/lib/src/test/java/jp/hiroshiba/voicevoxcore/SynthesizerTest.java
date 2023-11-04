@@ -49,16 +49,16 @@ class SynthesizerTest extends TestUtils {
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
 
-    assertTrue(synthesizer.getMetas().length == 0);
+    assertTrue(synthesizer.metas().length == 0);
 
     synthesizer.loadVoiceModel(model);
 
-    assertTrue(synthesizer.getMetas().length >= 1);
+    assertTrue(synthesizer.metas().length >= 1);
     assertTrue(synthesizer.isLoadedVoiceModel(model.id));
 
     synthesizer.unloadVoiceModel(model.id);
 
-    assertTrue(synthesizer.getMetas().length == 0);
+    assertTrue(synthesizer.metas().length == 0);
     assertFalse(synthesizer.isLoadedVoiceModel(model.id));
   }
 
