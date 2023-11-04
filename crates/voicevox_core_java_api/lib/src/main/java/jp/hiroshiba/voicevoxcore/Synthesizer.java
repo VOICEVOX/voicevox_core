@@ -40,7 +40,7 @@ public class Synthesizer extends Dll {
    * @return メタ情報。
    */
   @Nonnull
-  public VoiceModel.SpeakerMeta[] getMetas() {
+  public VoiceModel.SpeakerMeta[] metas() {
     Gson gson = new Gson();
     String metasJson = rsGetMetasJson();
     VoiceModel.SpeakerMeta[] rawMetas = gson.fromJson(metasJson, VoiceModel.SpeakerMeta[].class);
