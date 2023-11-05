@@ -22,6 +22,7 @@ futures.workspace = true
 indexmap = { version = "2.0.0", features = ["serde"] }
 itertools.workspace = true
 nanoid = "0.4.0"
+ndarray.workspace = true
 once_cell.workspace = true
 regex.workspace = true
 serde.workspace = true

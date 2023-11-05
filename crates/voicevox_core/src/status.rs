@@ -1,23 +1,16 @@
 use super::*;
-use itertools::iproduct;
-use once_cell::sync::Lazy;
-use onnxruntime::{
-    environment::Environment,
-    ndarray::{Ix0, Ix1, Ix2},
-    session::{NdArray, Session},
-    GraphOptimizationLevel, LoggingLevel,
+use crate::infer::{
+    runtimes::Onnxruntime,
+    signatures::{Decode, PredictDuration, PredictIntonation, SessionSet},
+    DecryptModelError, Output, SessionOptions, Signature, TypedSession,
 };
+use derive_more::Index;
+use itertools::iproduct;
+use std::path::Path;
 use std::sync::Arc;
-use std::{env, path::Path};
-use tracing::error;
 
 mod model_file;
 
-cfg_if! {
-    if #[cfg(not(feature="directml"))]{
-        use onnxruntime::CudaProviderOptions;
-    }
-}
 use std::collections::BTreeMap;
 
 pub struct Status {
@@ -25,31 +18,6 @@ pub struct Status {
     light_session_options: SessionOptions, // 軽いモデルはこちらを使う
     heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
 }
-
-#[derive(new, Getters)]
-struct SessionOptions {
-    cpu_num_threads: u16,
-    use_gpu: bool,
-}
-
-#[derive(thiserror::Error, Debug)]
-#[error("不正なモデルファイルです")]
-struct DecryptModelError;
-
-static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
-    cfg_if! {
-        if #[cfg(debug_assertions)]{
-            const LOGGING_LEVEL: LoggingLevel = LoggingLevel::Verbose;
-        } else{
-            const LOGGING_LEVEL: LoggingLevel = LoggingLevel::Warning;
-        }
-    }
-    Environment::builder()
-        .with_name(env!("CARGO_PKG_NAME"))
-        .with_log_level(LOGGING_LEVEL)
-        .build()
-        .unwrap()
-});
 
 impl Status {
     pub fn new(use_gpu: bool, cpu_num_threads: u16) -> Self {
@@ -116,48 +84,18 @@ impl Status {
         self.loaded_models.lock().unwrap().contains_style(style_id)
     }
 
-    fn new_session(
+    fn new_session<S: Signature>(
         &self,
         model: &[u8],
         session_options: &SessionOptions,
         path: impl AsRef<Path>,
-    ) -> LoadModelResult<Session<'static>> {
-        self.new_session_from_bytes(|| model_file::decrypt(model), session_options)
+    ) -> LoadModelResult<TypedSession<Onnxruntime, S>> {
+        TypedSession::<Onnxruntime, S>::new(|| model_file::decrypt(model), *session_options)
             .map_err(|source| LoadModelError {
                 path: path.as_ref().to_owned(),
                 context: LoadModelErrorKind::InvalidModelData,
                 source: Some(source),
             })
-    }
-
-    fn new_session_from_bytes(
-        &self,
-        model_bytes: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
-        session_options: &SessionOptions,
-    ) -> anyhow::Result<Session<'static>> {
-        let session_builder = ENVIRONMENT
-            .new_session_builder()?
-            .with_optimization_level(GraphOptimizationLevel::Basic)?
-            .with_intra_op_num_threads(*session_options.cpu_num_threads() as i32)?
-            .with_inter_op_num_threads(*session_options.cpu_num_threads() as i32)?;
-
-        let session_builder = if *session_options.use_gpu() {
-            cfg_if! {
-                if #[cfg(feature = "directml")]{
-                    session_builder
-                        .with_disable_mem_pattern()?
-                        .with_execution_mode(onnxruntime::ExecutionMode::ORT_SEQUENTIAL)?
-                        .with_append_execution_provider_directml(0)?
-                } else {
-                    let options = CudaProviderOptions::default();
-                    session_builder.with_append_execution_provider_cuda(options)?
-                }
-            }
-        } else {
-            session_builder
-        };
-
-        Ok(session_builder.with_model_from_memory(model_bytes()?)?)
     }
 
     pub fn validate_speaker_id(&self, style_id: StyleId) -> bool {
@@ -167,102 +105,25 @@ impl Status {
     /// # Panics
     ///
     /// `self`が`model_id`を含んでいないとき、パニックする。
-    pub async fn predict_duration_session_run(
+    pub(crate) async fn run_session<S>(
         &self,
         model_id: &VoiceModelId,
-        mut phoneme_vector_array: NdArray<i64, Ix1>,
-        mut speaker_id_array: NdArray<i64, Ix1>,
-    ) -> Result<Vec<f32>> {
-        let predict_duration = self.loaded_models.lock().unwrap().get(
-            model_id,
-            |SessionSet {
-                 predict_duration, ..
-             }| predict_duration,
-        );
+        input: S,
+    ) -> Result<S::Output>
+    where
+        S: Signature,
+        for<'a> &'a S::SessionSet<Onnxruntime>: From<&'a SessionSet<Onnxruntime>>,
+        S::Output: Output<Onnxruntime>,
+    {
+        let sess = S::get_session::<Onnxruntime>(
+            (&self.loaded_models.lock().unwrap()[model_id].session_set).into(),
+        )
+        .clone();
 
         tokio::task::spawn_blocking(move || {
-            let mut predict_duration = predict_duration.lock().unwrap();
-
-            let output_tensors = predict_duration
-                .run(vec![&mut phoneme_vector_array, &mut speaker_id_array])
-                .map_err(|e| ErrorRepr::InferenceFailed(e.into()))?;
-            Ok(output_tensors[0].as_slice().unwrap().to_owned())
-        })
-        .await
-        .unwrap()
-    }
-
-    /// # Panics
-    ///
-    /// `self`が`model_id`を含んでいないとき、パニックする。
-    #[allow(clippy::too_many_arguments)]
-    pub async fn predict_intonation_session_run(
-        &self,
-        model_id: &VoiceModelId,
-        mut length_array: NdArray<i64, Ix0>,
-        mut vowel_phoneme_vector_array: NdArray<i64, Ix1>,
-        mut consonant_phoneme_vector_array: NdArray<i64, Ix1>,
-        mut start_accent_vector_array: NdArray<i64, Ix1>,
-        mut end_accent_vector_array: NdArray<i64, Ix1>,
-        mut start_accent_phrase_vector_array: NdArray<i64, Ix1>,
-        mut end_accent_phrase_vector_array: NdArray<i64, Ix1>,
-        mut speaker_id_array: NdArray<i64, Ix1>,
-    ) -> Result<Vec<f32>> {
-        let predict_intonation = self.loaded_models.lock().unwrap().get(
-            model_id,
-            |SessionSet {
-                 predict_intonation, ..
-             }| predict_intonation,
-        );
-
-        tokio::task::spawn_blocking(move || {
-            let mut predict_intonation = predict_intonation.lock().unwrap();
-
-            let output_tensors = predict_intonation
-                .run(vec![
-                    &mut length_array,
-                    &mut vowel_phoneme_vector_array,
-                    &mut consonant_phoneme_vector_array,
-                    &mut start_accent_vector_array,
-                    &mut end_accent_vector_array,
-                    &mut start_accent_phrase_vector_array,
-                    &mut end_accent_phrase_vector_array,
-                    &mut speaker_id_array,
-                ])
-                .map_err(|e| ErrorRepr::InferenceFailed(e.into()))?;
-            Ok(output_tensors[0].as_slice().unwrap().to_owned())
-        })
-        .await
-        .unwrap()
-    }
-
-    /// # Panics
-    ///
-    /// `self`が`model_id`を含んでいないとき、パニックする。
-    pub async fn decode_session_run(
-        &self,
-        model_id: &VoiceModelId,
-        mut f0_array: NdArray<f32, Ix2>,
-        mut phoneme_array: NdArray<f32, Ix2>,
-        mut speaker_id_array: NdArray<i64, Ix1>,
-    ) -> Result<Vec<f32>> {
-        let decode = self
-            .loaded_models
-            .lock()
-            .unwrap()
-            .get(model_id, |SessionSet { decode, .. }| decode);
-
-        tokio::task::spawn_blocking(move || {
-            let mut decode = decode.lock().unwrap();
-
-            let output_tensors = decode
-                .run(vec![
-                    &mut f0_array,
-                    &mut phoneme_array,
-                    &mut speaker_id_array,
-                ])
-                .map_err(|e| ErrorRepr::InferenceFailed(e.into()))?;
-            Ok(output_tensors[0].as_slice().unwrap().to_owned())
+            let mut sess = sess.lock().unwrap();
+            sess.run(input)
+                .map_err(|e| ErrorRepr::InferenceFailed(e).into())
         })
         .await
         .unwrap()
@@ -272,13 +133,13 @@ impl Status {
 /// 読み込んだモデルの`Session`とそのメタ情報を保有し、追加/削除/取得の操作を提供する。
 ///
 /// この構造体のメソッドは、すべて一瞬で完了すべきである。
-#[derive(Default)]
+#[derive(Default, Index)]
 struct LoadedModels(BTreeMap<VoiceModelId, LoadedModel>);
 
 struct LoadedModel {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_set: SessionSet,
+    session_set: SessionSet<Onnxruntime>,
 }
 
 impl LoadedModels {
@@ -312,17 +173,6 @@ impl LoadedModels {
             .expect("`model_inner_ids` should contains all of the style IDs in the model");
 
         Ok((model_id.clone(), model_inner_id))
-    }
-
-    /// # Panics
-    ///
-    /// `self`が`model_id`を含んでいないとき、パニックする。
-    fn get(
-        &self,
-        model_id: &VoiceModelId,
-        which: fn(&SessionSet) -> &Arc<std::sync::Mutex<AssertSend<Session<'static>>>>,
-    ) -> Arc<std::sync::Mutex<AssertSend<Session<'static>>>> {
-        which(&self.0[model_id].session_set).clone()
     }
 
     fn contains_voice_model(&self, model_id: &VoiceModelId) -> bool {
@@ -366,9 +216,9 @@ impl LoadedModels {
     fn insert(
         &mut self,
         model: &VoiceModel,
-        predict_duration: Session<'static>,
-        predict_intonation: Session<'static>,
-        decode: Session<'static>,
+        predict_duration: TypedSession<Onnxruntime, PredictDuration>,
+        predict_intonation: TypedSession<Onnxruntime, PredictIntonation>,
+        decode: TypedSession<Onnxruntime, Decode>,
     ) -> Result<()> {
         self.ensure_acceptable(model)?;
 
@@ -378,9 +228,9 @@ impl LoadedModels {
                 model_inner_ids: model.model_inner_ids(),
                 metas: model.metas().clone(),
                 session_set: SessionSet {
-                    predict_duration: Arc::new(std::sync::Mutex::new(predict_duration.into())),
-                    predict_intonation: Arc::new(std::sync::Mutex::new(predict_intonation.into())),
-                    decode: Arc::new(std::sync::Mutex::new(decode.into())),
+                    predict_duration: Arc::new(std::sync::Mutex::new(predict_duration)),
+                    predict_intonation: Arc::new(std::sync::Mutex::new(predict_intonation)),
+                    decode: Arc::new(std::sync::Mutex::new(decode)),
                 },
             },
         );
@@ -404,49 +254,6 @@ impl LoadedModels {
             .flat_map(|LoadedModel { metas, .. }| metas)
             .flat_map(|speaker| speaker.styles())
     }
-}
-
-struct SessionSet {
-    predict_duration: Arc<std::sync::Mutex<AssertSend<Session<'static>>>>,
-    predict_intonation: Arc<std::sync::Mutex<AssertSend<Session<'static>>>>,
-    decode: Arc<std::sync::Mutex<AssertSend<Session<'static>>>>,
-}
-
-// FIXME: 以下のことをちゃんと確認した後、onnxruntime-rs側で`Session`が`Send`であると宣言する。
-// https://github.com/VOICEVOX/voicevox_core/issues/307#issuecomment-1276184614
-
-use self::assert_send::AssertSend;
-
-mod assert_send {
-    use std::ops::{Deref, DerefMut};
-
-    use onnxruntime::session::Session;
-
-    pub(super) struct AssertSend<T>(T);
-
-    impl From<Session<'static>> for AssertSend<Session<'static>> {
-        fn from(session: Session<'static>) -> Self {
-            Self(session)
-        }
-    }
-
-    impl<T> Deref for AssertSend<T> {
-        type Target = T;
-
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
-    }
-
-    impl<T> DerefMut for AssertSend<T> {
-        fn deref_mut(&mut self) -> &mut Self::Target {
-            &mut self.0
-        }
-    }
-
-    // SAFETY: `Session` is probably "send"able.
-    #[allow(unsafe_code)]
-    unsafe impl<T> Send for AssertSend<T> {}
 }
 
 #[cfg(test)]

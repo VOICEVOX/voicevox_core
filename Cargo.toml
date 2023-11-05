@@ -19,6 +19,7 @@ easy-ext = "1.0.1"
 fs-err = { version = "2.9.0", features = ["tokio"] }
 futures = "0.3.26"
 itertools = "0.10.5"
+ndarray = "0.15.6"
 once_cell = "1.18.0"
 regex = "1.10.0"
 rstest = "0.15.0"

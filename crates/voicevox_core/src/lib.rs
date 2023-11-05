@@ -6,6 +6,7 @@ mod devices;
 /// cbindgen:ignore
 mod engine;
 mod error;
+mod infer;
 mod inference_core;
 mod macros;
 mod manifest;

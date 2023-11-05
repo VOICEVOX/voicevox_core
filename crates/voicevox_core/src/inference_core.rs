@@ -1,6 +1,6 @@
 use self::status::*;
 use super::*;
-use onnxruntime::{ndarray, session::NdArray};
+use crate::infer::signatures::{Decode, PredictDuration, PredictIntonation};
 
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 
@@ -60,12 +60,15 @@ impl InferenceCore {
 
         let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
 
-        let phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
-        let speaker_id_array = NdArray::new(ndarray::arr1(&[model_inner_id.raw_id().into()]));
-
-        let mut output = self
+        let (mut output,) = self
             .status
-            .predict_duration_session_run(&model_id, phoneme_vector_array, speaker_id_array)
+            .run_session(
+                &model_id,
+                PredictDuration {
+                    phoneme: ndarray::arr1(phoneme_vector),
+                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                },
+            )
             .await?;
 
         for output_item in output.iter_mut() {
@@ -95,29 +98,24 @@ impl InferenceCore {
 
         let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
 
-        let length_array = NdArray::new(ndarray::arr0(length as i64));
-        let vowel_phoneme_vector_array = NdArray::new(ndarray::arr1(vowel_phoneme_vector));
-        let consonant_phoneme_vector_array = NdArray::new(ndarray::arr1(consonant_phoneme_vector));
-        let start_accent_vector_array = NdArray::new(ndarray::arr1(start_accent_vector));
-        let end_accent_vector_array = NdArray::new(ndarray::arr1(end_accent_vector));
-        let start_accent_phrase_vector_array =
-            NdArray::new(ndarray::arr1(start_accent_phrase_vector));
-        let end_accent_phrase_vector_array = NdArray::new(ndarray::arr1(end_accent_phrase_vector));
-        let speaker_id_array = NdArray::new(ndarray::arr1(&[model_inner_id.raw_id().into()]));
-
-        self.status
-            .predict_intonation_session_run(
+        let (output,) = self
+            .status
+            .run_session(
                 &model_id,
-                length_array,
-                vowel_phoneme_vector_array,
-                consonant_phoneme_vector_array,
-                start_accent_vector_array,
-                end_accent_vector_array,
-                start_accent_phrase_vector_array,
-                end_accent_phrase_vector_array,
-                speaker_id_array,
+                PredictIntonation {
+                    length: ndarray::arr0(length as i64),
+                    vowel_phoneme: ndarray::arr1(vowel_phoneme_vector),
+                    consonant_phoneme: ndarray::arr1(consonant_phoneme_vector),
+                    start_accent: ndarray::arr1(start_accent_vector),
+                    end_accent: ndarray::arr1(end_accent_vector),
+                    start_accent_phrase: ndarray::arr1(start_accent_phrase_vector),
+                    end_accent_phrase: ndarray::arr1(end_accent_phrase_vector),
+                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                },
             )
-            .await
+            .await?;
+
+        Ok(output)
     }
 
     pub async fn decode(
@@ -150,22 +148,23 @@ impl InferenceCore {
             padding_size,
         );
 
-        let f0_array = NdArray::new(
-            ndarray::arr1(&f0_with_padding)
-                .into_shape([length_with_padding, 1])
-                .unwrap(),
-        );
-        let phoneme_array = NdArray::new(
-            ndarray::arr1(&phoneme_with_padding)
-                .into_shape([length_with_padding, phoneme_size])
-                .unwrap(),
-        );
-        let speaker_id_array = NdArray::new(ndarray::arr1(&[model_inner_id.raw_id().into()]));
+        let (output,) = self
+            .status
+            .run_session(
+                &model_id,
+                Decode {
+                    f0: ndarray::arr1(&f0_with_padding)
+                        .into_shape([length_with_padding, 1])
+                        .unwrap(),
+                    phoneme: ndarray::arr1(&phoneme_with_padding)
+                        .into_shape([length_with_padding, phoneme_size])
+                        .unwrap(),
+                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                },
+            )
+            .await?;
 
-        self.status
-            .decode_session_run(&model_id, f0_array, phoneme_array, speaker_id_array)
-            .await
-            .map(|output| Self::trim_padding_from_output(output, padding_size))
+        Ok(Self::trim_padding_from_output(output, padding_size))
     }
 
     fn make_f0_with_padding(
