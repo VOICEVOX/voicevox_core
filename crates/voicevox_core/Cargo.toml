@@ -17,6 +17,7 @@ derive-new = "0.5.9"
 derive_more.workspace = true
 duplicate = "1.0.0"
 easy-ext.workspace = true
+educe = "0.4.23"
 fs-err.workspace = true
 futures.workspace = true
 indexmap = { version = "2.0.0", features = ["serde"] }

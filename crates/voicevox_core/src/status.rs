@@ -1,10 +1,10 @@
 use super::*;
 use crate::infer::{
-    runtimes::Onnxruntime,
     signatures::{Decode, PredictDuration, PredictIntonation, SessionSet},
-    DecryptModelError, Output, SessionOptions, Signature, TypedSession,
+    DecryptModelError, InferenceRuntime, Output, SessionOptions, Signature, TypedSession,
 };
 use derive_more::Index;
+use educe::Educe;
 use itertools::iproduct;
 use std::path::Path;
 use std::sync::Arc;
@@ -13,13 +13,13 @@ mod model_file;
 
 use std::collections::BTreeMap;
 
-pub struct Status {
-    loaded_models: std::sync::Mutex<LoadedModels>,
+pub(crate) struct Status<R: InferenceRuntime> {
+    loaded_models: std::sync::Mutex<LoadedModels<R>>,
     light_session_options: SessionOptions, // 軽いモデルはこちらを使う
     heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
 }
 
-impl Status {
+impl<R: InferenceRuntime> Status<R> {
     pub fn new(use_gpu: bool, cpu_num_threads: u16) -> Self {
         Self {
             loaded_models: Default::default(),
@@ -89,13 +89,14 @@ impl Status {
         model: &[u8],
         session_options: &SessionOptions,
         path: impl AsRef<Path>,
-    ) -> LoadModelResult<TypedSession<Onnxruntime, S>> {
-        TypedSession::<Onnxruntime, S>::new(|| model_file::decrypt(model), *session_options)
-            .map_err(|source| LoadModelError {
+    ) -> LoadModelResult<TypedSession<R, S>> {
+        TypedSession::<R, S>::new(|| model_file::decrypt(model), *session_options).map_err(
+            |source| LoadModelError {
                 path: path.as_ref().to_owned(),
                 context: LoadModelErrorKind::InvalidModelData,
                 source: Some(source),
-            })
+            },
+        )
     }
 
     pub fn validate_speaker_id(&self, style_id: StyleId) -> bool {
@@ -112,13 +113,12 @@ impl Status {
     ) -> Result<S::Output>
     where
         S: Signature,
-        for<'a> &'a S::SessionSet<Onnxruntime>: From<&'a SessionSet<Onnxruntime>>,
-        S::Output: Output<Onnxruntime>,
+        for<'a> &'a S::SessionSet<R>: From<&'a SessionSet<R>>,
+        S::Output: Output<R>,
     {
-        let sess = S::get_session::<Onnxruntime>(
-            (&self.loaded_models.lock().unwrap()[model_id].session_set).into(),
-        )
-        .clone();
+        let sess =
+            S::get_session::<R>((&self.loaded_models.lock().unwrap()[model_id].session_set).into())
+                .clone();
 
         tokio::task::spawn_blocking(move || {
             let mut sess = sess.lock().unwrap();
@@ -133,16 +133,17 @@ impl Status {
 /// 読み込んだモデルの`Session`とそのメタ情報を保有し、追加/削除/取得の操作を提供する。
 ///
 /// この構造体のメソッドは、すべて一瞬で完了すべきである。
-#[derive(Default, Index)]
-struct LoadedModels(BTreeMap<VoiceModelId, LoadedModel>);
+#[derive(Educe, Index)]
+#[educe(Default(bound = "R: InferenceRuntime"))]
+struct LoadedModels<R: InferenceRuntime>(BTreeMap<VoiceModelId, LoadedModel<R>>);
 
-struct LoadedModel {
+struct LoadedModel<R: InferenceRuntime> {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_set: SessionSet<Onnxruntime>,
+    session_set: SessionSet<R>,
 }
 
-impl LoadedModels {
+impl<R: InferenceRuntime> LoadedModels<R> {
     fn metas(&self) -> VoiceModelMeta {
         self.0
             .values()
@@ -216,9 +217,9 @@ impl LoadedModels {
     fn insert(
         &mut self,
         model: &VoiceModel,
-        predict_duration: TypedSession<Onnxruntime, PredictDuration>,
-        predict_intonation: TypedSession<Onnxruntime, PredictIntonation>,
-        decode: TypedSession<Onnxruntime, Decode>,
+        predict_duration: TypedSession<R, PredictDuration>,
+        predict_intonation: TypedSession<R, PredictIntonation>,
+        decode: TypedSession<R, Decode>,
     ) -> Result<()> {
         self.ensure_acceptable(model)?;
 
@@ -260,6 +261,7 @@ impl LoadedModels {
 mod tests {
 
     use super::*;
+    use crate::infer::runtimes::Onnxruntime;
     use crate::macros::tests::assert_debug_fmt_eq;
     use pretty_assertions::assert_eq;
 
@@ -272,7 +274,7 @@ mod tests {
     #[case(false, 8)]
     #[case(false, 0)]
     fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: u16) {
-        let status = Status::new(use_gpu, cpu_num_threads);
+        let status = Status::<Onnxruntime>::new(use_gpu, cpu_num_threads);
         assert_eq!(false, status.light_session_options.use_gpu);
         assert_eq!(use_gpu, status.heavy_session_options.use_gpu);
         assert_eq!(
@@ -289,7 +291,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_load_model_works() {
-        let status = Status::new(false, 0);
+        let status = Status::<Onnxruntime>::new(false, 0);
         let result = status.load_model(&open_default_vvm_file().await).await;
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
@@ -298,7 +300,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_is_model_loaded_works() {
-        let status = Status::new(false, 0);
+        let status = Status::<Onnxruntime>::new(false, 0);
         let vvm = open_default_vvm_file().await;
         assert!(
             !status.is_loaded_model(vvm.id()),

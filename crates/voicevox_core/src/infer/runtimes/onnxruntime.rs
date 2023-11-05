@@ -8,7 +8,7 @@ use crate::infer::{
 
 pub(crate) use self::assert_send::AssertSend;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub(crate) enum Onnxruntime {}
 
 impl InferenceRuntime for Onnxruntime {

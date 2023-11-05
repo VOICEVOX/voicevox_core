@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::engine::{create_kana, parse_kana, AccentPhraseModel, OpenJtalk, SynthesisEngine};
+use crate::{
+    engine::{create_kana, parse_kana, AccentPhraseModel, OpenJtalk, SynthesisEngine},
+    infer::runtimes::Onnxruntime,
+};
 
 use super::*;
 
@@ -67,9 +70,11 @@ pub struct InitializeOptions {
     pub cpu_num_threads: u16,
 }
 
+type SynthesizerInferenceRuntime = Onnxruntime;
+
 /// 音声シンセサイザ。
 pub struct Synthesizer {
-    synthesis_engine: SynthesisEngine,
+    synthesis_engine: SynthesisEngine<SynthesizerInferenceRuntime>,
     use_gpu: bool,
 }
 

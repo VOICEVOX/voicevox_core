@@ -1,18 +1,18 @@
 pub(crate) mod runtimes;
 pub(crate) mod signatures;
 
-use std::{fmt::Debug, marker::PhantomData, sync::Arc};
+use std::{fmt::Debug, hash::Hash, marker::PhantomData, sync::Arc};
 
 use derive_new::new;
 use ndarray::{Array, Dimension, LinalgScalar};
 use thiserror::Error;
 
-pub(crate) trait InferenceRuntime: Copy {
+pub(crate) trait InferenceRuntime: Copy + Ord + Hash + Debug + 'static {
     type Session: Session;
     type RunBuilder<'a>: RunBuilder<'a, Runtime = Self>;
 }
 
-pub(crate) trait Session: Sized + 'static {
+pub(crate) trait Session: Sized + Send + 'static {
     fn new(
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
         options: SessionOptions,

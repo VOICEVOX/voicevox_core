@@ -5,6 +5,7 @@ use std::sync::Arc;
 use super::full_context_label::Utterance;
 use super::open_jtalk::OpenJtalk;
 use super::*;
+use crate::infer::{InferenceRuntime, Output};
 use crate::numerics::F32Ext as _;
 use crate::InferenceCore;
 
@@ -15,18 +16,19 @@ const MORA_PHONEME_LIST: &[&str] = &[
 ];
 
 #[derive(new)]
-pub struct SynthesisEngine {
-    inference_core: InferenceCore,
+pub(crate) struct SynthesisEngine<R: InferenceRuntime> {
+    inference_core: InferenceCore<R>,
     open_jtalk: Arc<OpenJtalk>,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for SynthesisEngine {}
-
-impl SynthesisEngine {
+impl<R> SynthesisEngine<R>
+where
+    R: InferenceRuntime,
+    (Vec<f32>,): Output<R>,
+{
     pub const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
-    pub fn inference_core(&self) -> &InferenceCore {
+    pub fn inference_core(&self) -> &InferenceCore<R> {
         &self.inference_core
     }
 
@@ -123,7 +125,7 @@ impl SynthesisEngine {
         accent_phrases: &[AccentPhraseModel],
         style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
-        let (_, phoneme_data_list) = SynthesisEngine::initial_process(accent_phrases);
+        let (_, phoneme_data_list) = Self::initial_process(accent_phrases);
 
         let (_, _, vowel_indexes_data) = split_mora(&phoneme_data_list);
 
@@ -185,7 +187,7 @@ impl SynthesisEngine {
         accent_phrases: &[AccentPhraseModel],
         style_id: StyleId,
     ) -> Result<Vec<AccentPhraseModel>> {
-        let (_, phoneme_data_list) = SynthesisEngine::initial_process(accent_phrases);
+        let (_, phoneme_data_list) = Self::initial_process(accent_phrases);
 
         let mut base_start_accent_list = vec![0];
         let mut base_end_accent_list = vec![0];
@@ -193,28 +195,12 @@ impl SynthesisEngine {
         let mut base_end_accent_phrase_list = vec![0];
         for accent_phrase in accent_phrases {
             let mut accent = usize::from(*accent_phrase.accent() != 1);
-            SynthesisEngine::create_one_accent_list(
-                &mut base_start_accent_list,
-                accent_phrase,
-                accent as i32,
-            );
+            Self::create_one_accent_list(&mut base_start_accent_list, accent_phrase, accent as i32);
 
             accent = *accent_phrase.accent() - 1;
-            SynthesisEngine::create_one_accent_list(
-                &mut base_end_accent_list,
-                accent_phrase,
-                accent as i32,
-            );
-            SynthesisEngine::create_one_accent_list(
-                &mut base_start_accent_phrase_list,
-                accent_phrase,
-                0,
-            );
-            SynthesisEngine::create_one_accent_list(
-                &mut base_end_accent_phrase_list,
-                accent_phrase,
-                -1,
-            );
+            Self::create_one_accent_list(&mut base_end_accent_list, accent_phrase, accent as i32);
+            Self::create_one_accent_list(&mut base_start_accent_phrase_list, accent_phrase, 0);
+            Self::create_one_accent_list(&mut base_end_accent_phrase_list, accent_phrase, -1);
         }
         base_start_accent_list.push(0);
         base_end_accent_list.push(0);
@@ -328,7 +314,7 @@ impl SynthesisEngine {
             query.accent_phrases().clone()
         };
 
-        let (flatten_moras, phoneme_data_list) = SynthesisEngine::initial_process(&accent_phrases);
+        let (flatten_moras, phoneme_data_list) = Self::initial_process(&accent_phrases);
 
         let mut phoneme_length_list = vec![pre_phoneme_length];
         let mut f0_list = vec![0.];
@@ -647,12 +633,12 @@ mod tests {
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use pretty_assertions::assert_eq;
 
-    use crate::*;
+    use crate::{infer::runtimes::Onnxruntime, *};
 
     #[rstest]
     #[tokio::test]
     async fn is_openjtalk_dict_loaded_works() {
-        let core = InferenceCore::new(false, 0).unwrap();
+        let core = InferenceCore::<Onnxruntime>::new(false, 0).unwrap();
         let synthesis_engine =
             SynthesisEngine::new(core, OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap().into());
 
@@ -662,7 +648,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn create_accent_phrases_works() {
-        let core = InferenceCore::new(false, 0).unwrap();
+        let core = InferenceCore::<Onnxruntime>::new(false, 0).unwrap();
 
         let model = &VoiceModel::sample().await.unwrap();
         core.load_model(model).await.unwrap();

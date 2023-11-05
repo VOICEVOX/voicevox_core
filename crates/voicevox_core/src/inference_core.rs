@@ -1,14 +1,21 @@
 use self::status::*;
 use super::*;
-use crate::infer::signatures::{Decode, PredictDuration, PredictIntonation};
+use crate::infer::{
+    signatures::{Decode, PredictDuration, PredictIntonation},
+    InferenceRuntime, Output,
+};
 
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 
-pub struct InferenceCore {
-    status: Status,
+pub(crate) struct InferenceCore<R: InferenceRuntime> {
+    status: Status<R>,
 }
 
-impl InferenceCore {
+impl<R> InferenceCore<R>
+where
+    R: InferenceRuntime,
+    (Vec<f32>,): Output<R>,
+{
     pub(crate) fn new(use_gpu: bool, cpu_num_threads: u16) -> Result<Self> {
         if !use_gpu || Self::can_support_gpu_feature()? {
             let status = Status::new(use_gpu, cpu_num_threads);
