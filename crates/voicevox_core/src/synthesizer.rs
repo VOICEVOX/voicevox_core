@@ -70,11 +70,11 @@ pub struct InitializeOptions {
     pub cpu_num_threads: u16,
 }
 
-type SynthesizerInferenceRuntime = Onnxruntime;
+pub(crate) type InferenceRuntimeImpl = Onnxruntime;
 
 /// 音声シンセサイザ。
 pub struct Synthesizer {
-    synthesis_engine: SynthesisEngine<SynthesizerInferenceRuntime>,
+    synthesis_engine: SynthesisEngine<InferenceRuntimeImpl>,
     use_gpu: bool,
 }
 

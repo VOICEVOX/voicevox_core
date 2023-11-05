@@ -2,8 +2,13 @@ use ndarray::{Array, Dimension};
 use once_cell::sync::Lazy;
 use onnxruntime::{environment::Environment, GraphOptimizationLevel, LoggingLevel};
 
-use crate::infer::{
-    DecryptModelError, InferenceRuntime, InputScalar, Output, RunBuilder, Session, SessionOptions,
+use crate::{
+    devices::SupportedDevices,
+    error::ErrorRepr,
+    infer::{
+        DecryptModelError, InferenceRuntime, InputScalar, Output, RunBuilder, Session,
+        SessionOptions,
+    },
 };
 
 pub(crate) use self::assert_send::AssertSend;
@@ -14,6 +19,27 @@ pub(crate) enum Onnxruntime {}
 impl InferenceRuntime for Onnxruntime {
     type Session = AssertSend<onnxruntime::session::Session<'static>>;
     type RunBuilder<'a> = OnnxruntimeInferenceBuilder<'a>;
+
+    fn supported_devices() -> crate::Result<SupportedDevices> {
+        let mut cuda_support = false;
+        let mut dml_support = false;
+        for provider in onnxruntime::session::get_available_providers()
+            .map_err(ErrorRepr::GetSupportedDevices)?
+            .iter()
+        {
+            match provider.as_str() {
+                "CUDAExecutionProvider" => cuda_support = true,
+                "DmlExecutionProvider" => dml_support = true,
+                _ => {}
+            }
+        }
+
+        Ok(SupportedDevices {
+            cpu: true,
+            cuda: cuda_support,
+            dml: dml_support,
+        })
+    }
 }
 
 impl Session for AssertSend<onnxruntime::session::Session<'static>> {

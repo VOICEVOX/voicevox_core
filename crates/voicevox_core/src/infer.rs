@@ -7,9 +7,12 @@ use derive_new::new;
 use ndarray::{Array, Dimension, LinalgScalar};
 use thiserror::Error;
 
+use crate::SupportedDevices;
+
 pub(crate) trait InferenceRuntime: Copy + Ord + Hash + Debug + 'static {
     type Session: Session;
     type RunBuilder<'a>: RunBuilder<'a, Runtime = Self>;
+    fn supported_devices() -> crate::Result<SupportedDevices>;
 }
 
 pub(crate) trait Session: Sized + Send + 'static {
