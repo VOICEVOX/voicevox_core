@@ -37,20 +37,17 @@ impl<R: InferenceRuntime> Status<R> {
         let models = model.read_inference_models().await?;
 
         let predict_duration_session = self.new_session(
-            models.predict_duration_model(),
+            &models.predict_duration,
             &self.light_session_options,
             model.path(),
         )?;
         let predict_intonation_session = self.new_session(
-            models.predict_intonation_model(),
+            &models.predict_intonation,
             &self.light_session_options,
             model.path(),
         )?;
-        let decode_model = self.new_session(
-            models.decode_model(),
-            &self.heavy_session_options,
-            model.path(),
-        )?;
+        let decode_model =
+            self.new_session(&models.decode, &self.heavy_session_options, model.path())?;
 
         self.loaded_models.lock().unwrap().insert(
             model,

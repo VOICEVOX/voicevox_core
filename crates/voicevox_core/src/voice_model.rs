@@ -3,6 +3,7 @@ use futures::future::join3;
 use serde::{de::DeserializeOwned, Deserialize};
 
 use super::*;
+use crate::infer::signatures::ModelBytesSet;
 use std::{
     collections::{BTreeMap, HashMap},
     io,
@@ -35,15 +36,8 @@ pub struct VoiceModel {
     path: PathBuf,
 }
 
-#[derive(Getters)]
-pub(crate) struct InferenceModels {
-    decode_model: Vec<u8>,
-    predict_duration_model: Vec<u8>,
-    predict_intonation_model: Vec<u8>,
-}
-
 impl VoiceModel {
-    pub(crate) async fn read_inference_models(&self) -> LoadModelResult<InferenceModels> {
+    pub(crate) async fn read_inference_models(&self) -> LoadModelResult<ModelBytesSet> {
         let reader = VvmEntryReader::open(&self.path).await?;
         let (decode_model_result, predict_duration_model_result, predict_intonation_model_result) =
             join3(
@@ -53,10 +47,10 @@ impl VoiceModel {
             )
             .await;
 
-        Ok(InferenceModels {
-            predict_duration_model: predict_duration_model_result?,
-            predict_intonation_model: predict_intonation_model_result?,
-            decode_model: decode_model_result?,
+        Ok(ModelBytesSet {
+            predict_duration: predict_duration_model_result?,
+            predict_intonation: predict_intonation_model_result?,
+            decode: decode_model_result?,
         })
     }
     /// VVMファイルから`VoiceModel`をコンストラクトする。

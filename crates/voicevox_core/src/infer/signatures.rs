@@ -4,6 +4,12 @@ use ndarray::{Array0, Array1, Array2};
 
 use crate::infer::{InferenceRuntime, RunBuilder, Signature, TypedSession};
 
+pub(crate) struct ModelBytesSet {
+    pub(crate) predict_duration: Vec<u8>,
+    pub(crate) predict_intonation: Vec<u8>,
+    pub(crate) decode: Vec<u8>,
+}
+
 pub(crate) struct SessionSet<R: InferenceRuntime> {
     pub(crate) predict_duration: Arc<std::sync::Mutex<TypedSession<R, PredictDuration>>>,
     pub(crate) predict_intonation: Arc<std::sync::Mutex<TypedSession<R, PredictIntonation>>>,
