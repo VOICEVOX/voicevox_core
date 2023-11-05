@@ -2,6 +2,7 @@ use ndarray::{Array, Dimension};
 use once_cell::sync::Lazy;
 use onnxruntime::{environment::Environment, GraphOptimizationLevel, LoggingLevel};
 
+use self::assert_send::AssertSend;
 use crate::{
     devices::SupportedDevices,
     error::ErrorRepr,
@@ -10,8 +11,6 @@ use crate::{
         SessionOptions,
     },
 };
-
-pub(crate) use self::assert_send::AssertSend;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub(crate) enum Onnxruntime {}
