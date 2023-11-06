@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName;
 import jakarta.annotation.Nonnull;
 
 /** VOICEVOX CORE自体の情報。 */
-public class VoicevoxCoreInfo extends Dll {
+public class GlobalInfo extends Dll {
   /**
    * ライブラリのバージョン。
    *

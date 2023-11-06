@@ -1,7 +1,7 @@
 use crate::common::throw_if_err;
 use jni::{sys::jobject, JNIEnv};
 #[no_mangle]
-extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoicevoxCoreInfo_rsGetVersion(
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_GlobalInfo_rsGetVersion(
     env: JNIEnv<'_>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
@@ -10,7 +10,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoicevoxCoreInfo_rsGetVersion(
     })
 }
 #[no_mangle]
-extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoicevoxCoreInfo_rsGetSupportedDevicesJson(
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_GlobalInfo_rsGetSupportedDevicesJson(
     env: JNIEnv<'_>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {

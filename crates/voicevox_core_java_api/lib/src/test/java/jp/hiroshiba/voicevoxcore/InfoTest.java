@@ -1,5 +1,5 @@
 /*
- * VoicevoxCoreInfoのテスト。
+ * GlobalInfoのテスト。
  */
 package jp.hiroshiba.voicevoxcore;
 
@@ -11,12 +11,12 @@ import org.junit.jupiter.api.Test;
 class InfoTest {
   @Test
   void checkVersion() {
-    assertNotNull(VoicevoxCoreInfo.getVersion());
+    assertNotNull(GlobalInfo.getVersion());
   }
 
   @Test
   void checkSupportedDevices() {
-    VoicevoxCoreInfo.SupportedDevices supportedDevices = VoicevoxCoreInfo.getSupportedDevices();
+    GlobalInfo.SupportedDevices supportedDevices = GlobalInfo.getSupportedDevices();
 
     assertNotNull(supportedDevices);
     assertTrue(supportedDevices.cpu);
