@@ -224,8 +224,8 @@ impl<R: InferenceRuntime> LoadedModels<R> {
 mod tests {
 
     use super::*;
-    use crate::infer::runtimes::Onnxruntime;
     use crate::macros::tests::assert_debug_fmt_eq;
+    use crate::synthesizer::InferenceRuntimeImpl;
     use pretty_assertions::assert_eq;
 
     #[rstest]
@@ -237,7 +237,7 @@ mod tests {
     #[case(false, 8)]
     #[case(false, 0)]
     fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: u16) {
-        let status = Status::<Onnxruntime>::new(use_gpu, cpu_num_threads);
+        let status = Status::<InferenceRuntimeImpl>::new(use_gpu, cpu_num_threads);
         assert_eq!(false, status.light_session_options.use_gpu);
         assert_eq!(use_gpu, status.heavy_session_options.use_gpu);
         assert_eq!(
@@ -254,7 +254,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_load_model_works() {
-        let status = Status::<Onnxruntime>::new(false, 0);
+        let status = Status::<InferenceRuntimeImpl>::new(false, 0);
         let result = status.load_model(&open_default_vvm_file().await).await;
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
@@ -263,7 +263,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_is_model_loaded_works() {
-        let status = Status::<Onnxruntime>::new(false, 0);
+        let status = Status::<InferenceRuntimeImpl>::new(false, 0);
         let vvm = open_default_vvm_file().await;
         assert!(
             !status.is_loaded_model(vvm.id()),

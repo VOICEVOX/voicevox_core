@@ -633,12 +633,12 @@ mod tests {
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use pretty_assertions::assert_eq;
 
-    use crate::{infer::runtimes::Onnxruntime, *};
+    use crate::{synthesizer::InferenceRuntimeImpl, *};
 
     #[rstest]
     #[tokio::test]
     async fn is_openjtalk_dict_loaded_works() {
-        let core = InferenceCore::<Onnxruntime>::new(false, 0).unwrap();
+        let core = InferenceCore::<InferenceRuntimeImpl>::new(false, 0).unwrap();
         let synthesis_engine =
             SynthesisEngine::new(core, OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap().into());
 
@@ -648,7 +648,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn create_accent_phrases_works() {
-        let core = InferenceCore::<Onnxruntime>::new(false, 0).unwrap();
+        let core = InferenceCore::<InferenceRuntimeImpl>::new(false, 0).unwrap();
 
         let model = &VoiceModel::sample().await.unwrap();
         core.load_model(model).await.unwrap();

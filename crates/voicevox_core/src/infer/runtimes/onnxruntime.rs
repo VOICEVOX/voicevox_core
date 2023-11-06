@@ -107,7 +107,7 @@ impl<'sess> From<&'sess mut AssertSend<onnxruntime::session::Session<'static>>>
 }
 
 impl<'sess> RunBuilder<'sess> for OnnxruntimeInferenceBuilder<'sess> {
-    type Runtime = Onnxruntime;
+    type Session = AssertSend<onnxruntime::session::Session<'static>>;
 
     fn input(&mut self, tensor: Array<impl InputScalar, impl Dimension + 'static>) -> &mut Self {
         self.inputs

@@ -2,7 +2,7 @@ mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod signatures;
 
-use std::{fmt::Debug, hash::Hash, marker::PhantomData, sync::Arc};
+use std::{fmt::Debug, marker::PhantomData, sync::Arc};
 
 use derive_new::new;
 use enum_map::{Enum, EnumMap};
@@ -11,9 +11,9 @@ use thiserror::Error;
 
 use crate::{ErrorRepr, SupportedDevices};
 
-pub(crate) trait InferenceRuntime: Copy + Ord + Hash + Debug + 'static {
+pub(crate) trait InferenceRuntime: 'static {
     type Session: Session;
-    type RunBuilder<'a>: RunBuilder<'a, Runtime = Self>;
+    type RunBuilder<'a>: RunBuilder<'a, Session = Self::Session>;
     fn supported_devices() -> crate::Result<SupportedDevices>;
 }
 
@@ -24,10 +24,8 @@ pub(crate) trait Session: Sized + Send + 'static {
     ) -> anyhow::Result<Self>;
 }
 
-pub(crate) trait RunBuilder<'a>:
-    From<&'a mut <Self::Runtime as InferenceRuntime>::Session>
-{
-    type Runtime: InferenceRuntime;
+pub(crate) trait RunBuilder<'a>: From<&'a mut Self::Session> {
+    type Session: Session;
     fn input(&mut self, tensor: Array<impl InputScalar, impl Dimension + 'static>) -> &mut Self;
 }
 
@@ -36,7 +34,7 @@ pub(crate) trait InputScalar: LinalgScalar + Debug + sealed::OnnxruntimeInputSca
 impl InputScalar for i64 {}
 impl InputScalar for f32 {}
 
-pub(crate) trait Signature: Sized + Send + Sync + 'static {
+pub(crate) trait Signature: Sized + Send + 'static {
     type Kind: Enum;
     type Output;
     const KIND: Self::Kind;
