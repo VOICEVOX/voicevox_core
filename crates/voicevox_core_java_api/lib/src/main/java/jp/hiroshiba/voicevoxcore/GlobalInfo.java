@@ -14,11 +14,7 @@ public class GlobalInfo extends Dll {
    */
   @Nonnull
   public static String getVersion() {
-    String version = rsGetVersion();
-    if (version == null) {
-      throw new NullPointerException("version");
-    }
-    return version;
+    return rsGetVersion();
   }
 
   /**
