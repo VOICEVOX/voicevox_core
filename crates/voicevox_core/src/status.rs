@@ -1,15 +1,10 @@
 use super::*;
 use crate::infer::{
-    signatures::{Decode, PredictDuration, PredictIntonation, SessionSet},
-    DecryptModelError, InferenceRuntime, Output, SessionOptions, Signature, TypedSession,
+    signatures::SignatureKind, InferenceRuntime, Output, SessionOptions, SessionSet, Signature,
 };
 use derive_more::Index;
 use educe::Educe;
 use itertools::iproduct;
-use std::path::Path;
-use std::sync::Arc;
-
-mod model_file;
 
 use std::collections::BTreeMap;
 
@@ -34,27 +29,24 @@ impl<R: InferenceRuntime> Status<R> {
             .unwrap()
             .ensure_acceptable(model)?;
 
-        let models = model.read_inference_models().await?;
+        let model_bytes = &model.read_inference_models().await?;
 
-        let predict_duration_session = self.new_session(
-            &models.predict_duration,
-            &self.light_session_options,
-            model.path(),
-        )?;
-        let predict_intonation_session = self.new_session(
-            &models.predict_intonation,
-            &self.light_session_options,
-            model.path(),
-        )?;
-        let decode_model =
-            self.new_session(&models.decode, &self.heavy_session_options, model.path())?;
+        let session_set = SessionSet::new(model_bytes, |kind| match kind {
+            SignatureKind::PredictDuration | SignatureKind::PredictIntonation => {
+                self.light_session_options
+            }
+            SignatureKind::Decode => self.heavy_session_options,
+        })
+        .map_err(|source| LoadModelError {
+            path: model.path().clone(),
+            context: LoadModelErrorKind::InvalidModelData,
+            source: Some(source),
+        })?;
 
-        self.loaded_models.lock().unwrap().insert(
-            model,
-            predict_duration_session,
-            predict_intonation_session,
-            decode_model,
-        )?;
+        self.loaded_models
+            .lock()
+            .unwrap()
+            .insert(model, session_set)?;
         Ok(())
     }
 
@@ -81,21 +73,6 @@ impl<R: InferenceRuntime> Status<R> {
         self.loaded_models.lock().unwrap().contains_style(style_id)
     }
 
-    fn new_session<S: Signature>(
-        &self,
-        model: &[u8],
-        session_options: &SessionOptions,
-        path: impl AsRef<Path>,
-    ) -> LoadModelResult<TypedSession<R, S>> {
-        TypedSession::<R, S>::new(|| model_file::decrypt(model), *session_options).map_err(
-            |source| LoadModelError {
-                path: path.as_ref().to_owned(),
-                context: LoadModelErrorKind::InvalidModelData,
-                source: Some(source),
-            },
-        )
-    }
-
     pub fn validate_speaker_id(&self, style_id: StyleId) -> bool {
         self.is_loaded_model_by_style_id(style_id)
     }
@@ -109,21 +86,16 @@ impl<R: InferenceRuntime> Status<R> {
         input: S,
     ) -> Result<S::Output>
     where
-        S: Signature,
-        for<'a> &'a S::SessionSet<R>: From<&'a SessionSet<R>>,
+        S: Signature<Kind = SignatureKind>,
         S::Output: Output<R>,
     {
-        let sess =
-            S::get_session::<R>((&self.loaded_models.lock().unwrap()[model_id].session_set).into())
-                .clone();
+        let sess = self.loaded_models.lock().unwrap()[model_id]
+            .session_set
+            .get();
 
-        tokio::task::spawn_blocking(move || {
-            let mut sess = sess.lock().unwrap();
-            sess.run(input)
-                .map_err(|e| ErrorRepr::InferenceFailed(e).into())
-        })
-        .await
-        .unwrap()
+        tokio::task::spawn_blocking(move || sess.run(input))
+            .await
+            .unwrap()
     }
 }
 
@@ -137,7 +109,7 @@ struct LoadedModels<R: InferenceRuntime>(BTreeMap<VoiceModelId, LoadedModel<R>>)
 struct LoadedModel<R: InferenceRuntime> {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_set: SessionSet<R>,
+    session_set: SessionSet<SignatureKind, R>,
 }
 
 impl<R: InferenceRuntime> LoadedModels<R> {
@@ -214,9 +186,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     fn insert(
         &mut self,
         model: &VoiceModel,
-        predict_duration: TypedSession<R, PredictDuration>,
-        predict_intonation: TypedSession<R, PredictIntonation>,
-        decode: TypedSession<R, Decode>,
+        session_set: SessionSet<SignatureKind, R>,
     ) -> Result<()> {
         self.ensure_acceptable(model)?;
 
@@ -225,11 +195,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             LoadedModel {
                 model_inner_ids: model.model_inner_ids(),
                 metas: model.metas().clone(),
-                session_set: SessionSet {
-                    predict_duration: Arc::new(std::sync::Mutex::new(predict_duration)),
-                    predict_intonation: Arc::new(std::sync::Mutex::new(predict_intonation)),
-                    decode: Arc::new(std::sync::Mutex::new(decode)),
-                },
+                session_set,
             },
         );
         assert!(prev.is_none());

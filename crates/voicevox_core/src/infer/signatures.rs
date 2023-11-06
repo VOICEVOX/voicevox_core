@@ -1,19 +1,13 @@
-use std::sync::Arc;
-
+use enum_map::Enum;
 use ndarray::{Array0, Array1, Array2};
 
-use crate::infer::{InferenceRuntime, RunBuilder, Signature, TypedSession};
+use crate::infer::{RunBuilder, Signature};
 
-pub(crate) struct ModelBytesSet {
-    pub(crate) predict_duration: Vec<u8>,
-    pub(crate) predict_intonation: Vec<u8>,
-    pub(crate) decode: Vec<u8>,
-}
-
-pub(crate) struct SessionSet<R: InferenceRuntime> {
-    pub(crate) predict_duration: Arc<std::sync::Mutex<TypedSession<R, PredictDuration>>>,
-    pub(crate) predict_intonation: Arc<std::sync::Mutex<TypedSession<R, PredictIntonation>>>,
-    pub(crate) decode: Arc<std::sync::Mutex<TypedSession<R, Decode>>>,
+#[derive(Clone, Copy, Enum)]
+pub(crate) enum SignatureKind {
+    PredictDuration,
+    PredictIntonation,
+    Decode,
 }
 
 pub(crate) struct PredictDuration {
@@ -22,14 +16,10 @@ pub(crate) struct PredictDuration {
 }
 
 impl Signature for PredictDuration {
-    type SessionSet<R: InferenceRuntime> = SessionSet<R>;
+    type Kind = SignatureKind;
     type Output = (Vec<f32>,);
 
-    fn get_session<R: InferenceRuntime>(
-        session_set: &Self::SessionSet<R>,
-    ) -> &Arc<std::sync::Mutex<TypedSession<R, Self>>> {
-        &session_set.predict_duration
-    }
+    const KIND: Self::Kind = SignatureKind::PredictDuration;
 
     fn input<'a, 'b>(self, ctx: &'a mut impl RunBuilder<'b>) {
         ctx.input(self.phoneme).input(self.speaker_id);
@@ -48,14 +38,10 @@ pub(crate) struct PredictIntonation {
 }
 
 impl Signature for PredictIntonation {
-    type SessionSet<R: InferenceRuntime> = SessionSet<R>;
+    type Kind = SignatureKind;
     type Output = (Vec<f32>,);
 
-    fn get_session<R: InferenceRuntime>(
-        session_set: &Self::SessionSet<R>,
-    ) -> &Arc<std::sync::Mutex<TypedSession<R, Self>>> {
-        &session_set.predict_intonation
-    }
+    const KIND: Self::Kind = SignatureKind::PredictIntonation;
 
     fn input<'a, 'b>(self, ctx: &'a mut impl RunBuilder<'b>) {
         ctx.input(self.length)
@@ -76,14 +62,10 @@ pub(crate) struct Decode {
 }
 
 impl Signature for Decode {
-    type SessionSet<R: InferenceRuntime> = SessionSet<R>;
+    type Kind = SignatureKind;
     type Output = (Vec<f32>,);
 
-    fn get_session<R: InferenceRuntime>(
-        session_set: &Self::SessionSet<R>,
-    ) -> &Arc<std::sync::Mutex<TypedSession<R, Self>>> {
-        &session_set.decode
-    }
+    const KIND: Self::Kind = SignatureKind::Decode;
 
     fn input<'a, 'b>(self, ctx: &'a mut impl RunBuilder<'b>) {
         ctx.input(self.f0)

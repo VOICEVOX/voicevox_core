@@ -1,13 +1,15 @@
+mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod signatures;
 
 use std::{fmt::Debug, hash::Hash, marker::PhantomData, sync::Arc};
 
 use derive_new::new;
+use enum_map::{Enum, EnumMap};
 use ndarray::{Array, Dimension, LinalgScalar};
 use thiserror::Error;
 
-use crate::SupportedDevices;
+use crate::{ErrorRepr, SupportedDevices};
 
 pub(crate) trait InferenceRuntime: Copy + Ord + Hash + Debug + 'static {
     type Session: Session;
@@ -35,11 +37,9 @@ impl InputScalar for i64 {}
 impl InputScalar for f32 {}
 
 pub(crate) trait Signature: Sized + Send + Sync + 'static {
-    type SessionSet<R: InferenceRuntime>;
+    type Kind: Enum;
     type Output;
-    fn get_session<R: InferenceRuntime>(
-        session_set: &Self::SessionSet<R>,
-    ) -> &Arc<std::sync::Mutex<TypedSession<R, Self>>>;
+    const KIND: Self::Kind;
     fn input<'a, 'b>(self, ctx: &'a mut impl RunBuilder<'b>);
 }
 
@@ -47,30 +47,52 @@ pub(crate) trait Output<R: InferenceRuntime>: Sized + Send {
     fn run(ctx: R::RunBuilder<'_>) -> anyhow::Result<Self>;
 }
 
-pub(crate) struct TypedSession<R: InferenceRuntime, I> {
-    inner: R::Session,
-    marker: PhantomData<fn(I)>,
+pub(crate) struct SessionSet<K: Enum, R: InferenceRuntime>(
+    EnumMap<K, Arc<std::sync::Mutex<R::Session>>>,
+);
+
+impl<K: Enum, R: InferenceRuntime> SessionSet<K, R> {
+    pub(crate) fn new(
+        model_bytes: &EnumMap<K, Vec<u8>>,
+        mut options: impl FnMut(K) -> SessionOptions,
+    ) -> anyhow::Result<Self> {
+        let mut sessions = model_bytes
+            .iter()
+            .map(|(k, m)| {
+                let sess = R::Session::new(|| model_file::decrypt(m), options(k))?;
+                Ok(Some(Arc::new(std::sync::Mutex::new(sess))))
+            })
+            .collect::<anyhow::Result<Vec<_>>>()?;
+
+        Ok(Self(EnumMap::<K, _>::from_fn(|k| {
+            sessions[k.into_usize()].take().expect("should exist")
+        })))
+    }
 }
 
-impl<R: InferenceRuntime, S: Signature> TypedSession<R, S> {
-    pub(crate) fn new(
-        model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
-        options: SessionOptions,
-    ) -> anyhow::Result<Self> {
-        let inner = R::Session::new(model, options)?;
-        Ok(Self {
-            inner,
+impl<K: Enum, R: InferenceRuntime> SessionSet<K, R> {
+    pub(crate) fn get<S: Signature<Kind = K>>(&self) -> SessionCell<R, S> {
+        SessionCell {
+            inner: self.0[S::KIND].clone(),
             marker: PhantomData,
-        })
+        }
     }
+}
 
-    pub(crate) fn run(&mut self, sig: S) -> anyhow::Result<S::Output>
+pub(crate) struct SessionCell<R: InferenceRuntime, S> {
+    inner: Arc<std::sync::Mutex<R::Session>>,
+    marker: PhantomData<fn(S)>,
+}
+
+impl<R: InferenceRuntime, S: Signature> SessionCell<R, S> {
+    pub(crate) fn run(self, input: S) -> crate::Result<S::Output>
     where
         S::Output: Output<R>,
     {
-        let mut ctx = R::RunBuilder::from(&mut self.inner);
-        sig.input(&mut ctx);
-        S::Output::run(ctx)
+        let mut inner = self.inner.lock().unwrap();
+        let mut ctx = R::RunBuilder::from(&mut inner);
+        input.input(&mut ctx);
+        S::Output::run(ctx).map_err(|e| ErrorRepr::InferenceFailed(e).into())
     }
 }
 

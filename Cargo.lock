@@ -1239,6 +1239,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "enum-map"
+version = "3.0.0-beta.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e698c4fb1d30d2aeaf3b169ca72fbc019a049d7c85acc7f91d5f58a22e3ee13"
+dependencies = [
+ "enum-map-derive",
+]
+
+[[package]]
+name = "enum-map-derive"
+version = "1.0.0-0.gat.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "48c69b3965971f5d0ea6a6dd26b55cdd517ae0e1425dc8d94e482a5915bd7ddf"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
+]
+
+[[package]]
 name = "enum-ordinalize"
 version = "3.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4299,6 +4319,7 @@ dependencies = [
  "duplicate",
  "easy-ext",
  "educe",
+ "enum-map",
  "fs-err",
  "futures",
  "heck",
