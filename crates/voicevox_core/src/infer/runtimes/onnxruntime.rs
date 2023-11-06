@@ -23,6 +23,7 @@ impl InferenceRuntime for Onnxruntime {
         let mut cuda_support = false;
         let mut dml_support = false;
         for provider in onnxruntime::session::get_available_providers()
+            .map_err(Into::into)
             .map_err(ErrorRepr::GetSupportedDevices)?
             .iter()
         {
