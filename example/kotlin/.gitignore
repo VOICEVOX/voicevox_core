@@ -1,0 +1,16 @@
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
+output.wav
+
+# OpenJTalk-dictionary's dir
+open_jtalk_dic_utf_8-*
+
+# shared library
+*.so
+*.so.*
+*.dylib
+*.dll
+*.jar
