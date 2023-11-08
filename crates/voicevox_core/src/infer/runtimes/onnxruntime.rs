@@ -21,7 +21,7 @@ pub(crate) enum Onnxruntime {}
 
 impl InferenceRuntime for Onnxruntime {
     type Session = AssertSend<onnxruntime::session::Session<'static>>;
-    type RunContext<'a> = OnnxruntimeInferenceBuilder<'a>;
+    type RunContext<'a> = OnnxruntimeRunContext<'a>;
 
     fn supported_devices() -> crate::Result<SupportedDevices> {
         let mut cuda_support = false;
@@ -94,13 +94,13 @@ impl InferenceSession for AssertSend<onnxruntime::session::Session<'static>> {
     }
 }
 
-pub(crate) struct OnnxruntimeInferenceBuilder<'sess> {
+pub(crate) struct OnnxruntimeRunContext<'sess> {
     sess: &'sess mut AssertSend<onnxruntime::session::Session<'static>>,
     inputs: Vec<Box<dyn onnxruntime::session::AnyArray>>,
 }
 
 impl<'sess> From<&'sess mut AssertSend<onnxruntime::session::Session<'static>>>
-    for OnnxruntimeInferenceBuilder<'sess>
+    for OnnxruntimeRunContext<'sess>
 {
     fn from(sess: &'sess mut AssertSend<onnxruntime::session::Session<'static>>) -> Self {
         Self {
@@ -110,7 +110,7 @@ impl<'sess> From<&'sess mut AssertSend<onnxruntime::session::Session<'static>>>
     }
 }
 
-impl<'sess> RunContext<'sess> for OnnxruntimeInferenceBuilder<'sess> {
+impl<'sess> RunContext<'sess> for OnnxruntimeRunContext<'sess> {
     type Runtime = Onnxruntime;
 }
 
@@ -125,7 +125,7 @@ impl<A: TypeToTensorElementDataType + Debug + 'static, D: Dimension + 'static>
 
 impl SupportsInferenceOutput<(Vec<f32>,)> for Onnxruntime {
     fn run(
-        OnnxruntimeInferenceBuilder { sess, mut inputs }: OnnxruntimeInferenceBuilder<'_>,
+        OnnxruntimeRunContext { sess, mut inputs }: OnnxruntimeRunContext<'_>,
     ) -> anyhow::Result<(Vec<f32>,)> {
         let outputs = sess.run(inputs.iter_mut().map(|t| &mut **t as &mut _).collect())?;
 
