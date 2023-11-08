@@ -1,10 +1,9 @@
 use super::*;
 use crate::infer::{
-    signatures::InferenceSignatureKind, InferenceInput, InferenceRuntime, InferenceSessionOptions,
-    InferenceSessionSet, InferenceSignature, SupportsInferenceInputTensors,
-    SupportsInferenceOutput,
+    signatures::InferenceSignatureKind, InferenceInput, InferenceRuntime, InferenceSessionCell,
+    InferenceSessionOptions, InferenceSessionSet, InferenceSignature,
+    SupportsInferenceInputTensors, SupportsInferenceOutput,
 };
-use derive_more::Index;
 use educe::Educe;
 use itertools::iproduct;
 
@@ -93,9 +92,7 @@ impl<R: InferenceRuntime> Status<R> {
         R: SupportsInferenceInputTensors<I>
             + SupportsInferenceOutput<<I::Signature as InferenceSignature>::Output>,
     {
-        let sess = self.loaded_models.lock().unwrap()[model_id]
-            .session_set
-            .get();
+        let sess = self.loaded_models.lock().unwrap().get(model_id);
 
         tokio::task::spawn_blocking(move || sess.run(input))
             .await
@@ -106,7 +103,7 @@ impl<R: InferenceRuntime> Status<R> {
 /// 読み込んだモデルの`Session`とそのメタ情報を保有し、追加/削除/取得の操作を提供する。
 ///
 /// この構造体のメソッドは、すべて一瞬で完了すべきである。
-#[derive(Educe, Index)]
+#[derive(Educe)]
 #[educe(Default(bound = "R: InferenceRuntime"))]
 struct LoadedModels<R: InferenceRuntime>(BTreeMap<VoiceModelId, LoadedModel<R>>);
 
@@ -147,6 +144,17 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             .expect("`model_inner_ids` should contains all of the style IDs in the model");
 
         Ok((model_id.clone(), model_inner_id))
+    }
+
+    /// # Panics
+    ///
+    /// `self`が`model_id`を含んでいないとき、パニックする。
+    fn get<I>(&self, model_id: &VoiceModelId) -> InferenceSessionCell<R, I>
+    where
+        I: InferenceInput,
+        I::Signature: InferenceSignature<Kind = InferenceSignatureKind>,
+    {
+        self.0[model_id].session_set.get()
     }
 
     fn contains_voice_model(&self, model_id: &VoiceModelId) -> bool {
