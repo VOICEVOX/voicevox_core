@@ -4,7 +4,7 @@ use futures::future::join3;
 use serde::{de::DeserializeOwned, Deserialize};
 
 use super::*;
-use crate::infer::signatures::SignatureKind;
+use crate::infer::signatures::InferenceSignatureKind;
 use std::{
     collections::{BTreeMap, HashMap},
     io,
@@ -40,7 +40,7 @@ pub struct VoiceModel {
 impl VoiceModel {
     pub(crate) async fn read_inference_models(
         &self,
-    ) -> LoadModelResult<EnumMap<SignatureKind, Vec<u8>>> {
+    ) -> LoadModelResult<EnumMap<InferenceSignatureKind, Vec<u8>>> {
         let reader = VvmEntryReader::open(&self.path).await?;
         let (decode_model_result, predict_duration_model_result, predict_intonation_model_result) =
             join3(

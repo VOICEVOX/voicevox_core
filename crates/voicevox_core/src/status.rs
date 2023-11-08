@@ -1,6 +1,6 @@
 use super::*;
 use crate::infer::{
-    signatures::SignatureKind, InferenceInput, InferenceRuntime, InferenceSessionOptions,
+    signatures::InferenceSignatureKind, InferenceInput, InferenceRuntime, InferenceSessionOptions,
     InferenceSessionSet, InferenceSignature, SupportsInferenceInputTensors,
     SupportsInferenceOutput,
 };
@@ -34,10 +34,10 @@ impl<R: InferenceRuntime> Status<R> {
         let model_bytes = &model.read_inference_models().await?;
 
         let session_set = InferenceSessionSet::new(model_bytes, |kind| match kind {
-            SignatureKind::PredictDuration | SignatureKind::PredictIntonation => {
+            InferenceSignatureKind::PredictDuration | InferenceSignatureKind::PredictIntonation => {
                 self.light_session_options
             }
-            SignatureKind::Decode => self.heavy_session_options,
+            InferenceSignatureKind::Decode => self.heavy_session_options,
         })
         .map_err(|source| LoadModelError {
             path: model.path().clone(),
@@ -89,7 +89,7 @@ impl<R: InferenceRuntime> Status<R> {
     ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
         I: InferenceInput,
-        I::Signature: InferenceSignature<Kind = SignatureKind>,
+        I::Signature: InferenceSignature<Kind = InferenceSignatureKind>,
         R: SupportsInferenceInputTensors<I>
             + SupportsInferenceOutput<<I::Signature as InferenceSignature>::Output>,
     {
@@ -113,7 +113,7 @@ struct LoadedModels<R: InferenceRuntime>(BTreeMap<VoiceModelId, LoadedModel<R>>)
 struct LoadedModel<R: InferenceRuntime> {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_set: InferenceSessionSet<SignatureKind, R>,
+    session_set: InferenceSessionSet<InferenceSignatureKind, R>,
 }
 
 impl<R: InferenceRuntime> LoadedModels<R> {
@@ -190,7 +190,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     fn insert(
         &mut self,
         model: &VoiceModel,
-        session_set: InferenceSessionSet<SignatureKind, R>,
+        session_set: InferenceSessionSet<InferenceSignatureKind, R>,
     ) -> Result<()> {
         self.ensure_acceptable(model)?;
 

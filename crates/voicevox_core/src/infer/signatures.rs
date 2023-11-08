@@ -7,7 +7,7 @@ use crate::infer::{
 };
 
 #[derive(Clone, Copy, Enum)]
-pub(crate) enum SignatureKind {
+pub(crate) enum InferenceSignatureKind {
     PredictDuration,
     PredictIntonation,
     Decode,
@@ -16,10 +16,10 @@ pub(crate) enum SignatureKind {
 pub(crate) enum PredictDuration {}
 
 impl InferenceSignature for PredictDuration {
-    type Kind = SignatureKind;
+    type Kind = InferenceSignatureKind;
     type Input = PredictDurationInput;
     type Output = (Vec<f32>,);
-    const KIND: Self::Kind = SignatureKind::PredictDuration;
+    const KIND: Self::Kind = InferenceSignatureKind::PredictDuration;
 }
 
 pub(crate) struct PredictDurationInput {
@@ -42,10 +42,10 @@ impl<R: SupportsInferenceInputTensor<Array1<i64>>>
 pub(crate) enum PredictIntonation {}
 
 impl InferenceSignature for PredictIntonation {
-    type Kind = SignatureKind;
+    type Kind = InferenceSignatureKind;
     type Input = PredictIntonationInput;
     type Output = (Vec<f32>,);
-    const KIND: Self::Kind = SignatureKind::PredictIntonation;
+    const KIND: Self::Kind = InferenceSignatureKind::PredictIntonation;
 }
 
 pub(crate) struct PredictIntonationInput {
@@ -81,10 +81,10 @@ impl<R: SupportsInferenceInputTensor<Array0<i64>> + SupportsInferenceInputTensor
 pub(crate) enum Decode {}
 
 impl InferenceSignature for Decode {
-    type Kind = SignatureKind;
+    type Kind = InferenceSignatureKind;
     type Input = DecodeInput;
     type Output = (Vec<f32>,);
-    const KIND: Self::Kind = SignatureKind::Decode;
+    const KIND: Self::Kind = InferenceSignatureKind::Decode;
 }
 
 pub(crate) struct DecodeInput {
