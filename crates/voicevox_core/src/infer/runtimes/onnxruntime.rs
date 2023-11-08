@@ -123,10 +123,12 @@ impl<A: TypeToTensorElementDataType + Debug + 'static, D: Dimension + 'static>
     }
 }
 
-impl SupportsInferenceOutput<(Vec<f32>,)> for Onnxruntime {
+impl<T: Send + TypeToTensorElementDataType + Debug + Clone> SupportsInferenceOutput<(Vec<T>,)>
+    for Onnxruntime
+{
     fn run(
         OnnxruntimeRunContext { sess, mut inputs }: OnnxruntimeRunContext<'_>,
-    ) -> anyhow::Result<(Vec<f32>,)> {
+    ) -> anyhow::Result<(Vec<T>,)> {
         let outputs = sess.run(inputs.iter_mut().map(|t| &mut **t as &mut _).collect())?;
 
         // FIXME: 2個以上の出力や二次元以上の出力をちゃんとしたやりかたで弾く
