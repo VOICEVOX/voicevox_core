@@ -2,24 +2,9 @@ use enum_map::Enum;
 use ndarray::{Array0, Array1, Array2};
 
 use crate::infer::{
-    InferenceInput, InferenceSignature, SupportsInferenceInputTensor,
-    SupportsInferenceInputTensors, SupportsInferenceSignature,
+    InferenceInput, InferenceSignature, RunContextExt as _, SupportsInferenceInputTensor,
+    SupportsInferenceInputTensors,
 };
-
-pub(crate) trait SupportsAllSignatures:
-    SupportsInferenceSignature<PredictDuration>
-    + SupportsInferenceSignature<PredictIntonation>
-    + SupportsInferenceSignature<Decode>
-{
-}
-
-impl<
-        R: SupportsInferenceSignature<PredictDuration>
-            + SupportsInferenceSignature<PredictIntonation>
-            + SupportsInferenceSignature<Decode>,
-    > SupportsAllSignatures for R
-{
-}
 
 #[derive(Clone, Copy, Enum)]
 pub(crate) enum SignatureKind {
@@ -49,9 +34,8 @@ impl InferenceInput for PredictDurationInput {
 impl<R: SupportsInferenceInputTensor<Array1<i64>>>
     SupportsInferenceInputTensors<PredictDurationInput> for R
 {
-    fn input(ctx: &mut R::RunContext<'_>, input: PredictDurationInput) {
-        R::input(ctx, input.phoneme);
-        R::input(ctx, input.speaker_id);
+    fn input(input: PredictDurationInput, ctx: &mut R::RunContext<'_>) {
+        ctx.input(input.phoneme).input(input.speaker_id);
     }
 }
 
@@ -82,15 +66,15 @@ impl InferenceInput for PredictIntonationInput {
 impl<R: SupportsInferenceInputTensor<Array0<i64>> + SupportsInferenceInputTensor<Array1<i64>>>
     SupportsInferenceInputTensors<PredictIntonationInput> for R
 {
-    fn input(ctx: &mut R::RunContext<'_>, input: PredictIntonationInput) {
-        R::input(ctx, input.length);
-        R::input(ctx, input.vowel_phoneme);
-        R::input(ctx, input.consonant_phoneme);
-        R::input(ctx, input.start_accent);
-        R::input(ctx, input.end_accent);
-        R::input(ctx, input.start_accent_phrase);
-        R::input(ctx, input.end_accent_phrase);
-        R::input(ctx, input.speaker_id);
+    fn input(input: PredictIntonationInput, ctx: &mut R::RunContext<'_>) {
+        ctx.input(input.length)
+            .input(input.vowel_phoneme)
+            .input(input.consonant_phoneme)
+            .input(input.start_accent)
+            .input(input.end_accent)
+            .input(input.start_accent_phrase)
+            .input(input.end_accent_phrase)
+            .input(input.speaker_id);
     }
 }
 
@@ -116,9 +100,9 @@ impl InferenceInput for DecodeInput {
 impl<R: SupportsInferenceInputTensor<Array1<i64>> + SupportsInferenceInputTensor<Array2<f32>>>
     SupportsInferenceInputTensors<DecodeInput> for R
 {
-    fn input(ctx: &mut R::RunContext<'_>, input: DecodeInput) {
-        R::input(ctx, input.f0);
-        R::input(ctx, input.phoneme);
-        R::input(ctx, input.speaker_id);
+    fn input(input: DecodeInput, ctx: &mut R::RunContext<'_>) {
+        ctx.input(input.f0)
+            .input(input.phoneme)
+            .input(input.speaker_id);
     }
 }

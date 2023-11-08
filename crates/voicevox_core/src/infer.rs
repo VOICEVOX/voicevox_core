@@ -5,6 +5,7 @@ pub(crate) mod signatures;
 use std::{collections::HashMap, fmt::Debug, marker::PhantomData, sync::Arc};
 
 use derive_new::new;
+use easy_ext::ext;
 use enum_map::{Enum, EnumMap};
 use thiserror::Error;
 
@@ -12,7 +13,7 @@ use crate::{ErrorRepr, SupportedDevices};
 
 pub(crate) trait InferenceRuntime: 'static {
     type Session: InferenceSession;
-    type RunContext<'a>: RunContext<'a, Session = Self::Session>;
+    type RunContext<'a>: RunContext<'a, Runtime = Self>;
     fn supported_devices() -> crate::Result<SupportedDevices>;
 }
 
@@ -23,8 +24,21 @@ pub(crate) trait InferenceSession: Sized + Send + 'static {
     ) -> anyhow::Result<Self>;
 }
 
-pub(crate) trait RunContext<'a>: From<&'a mut Self::Session> {
-    type Session: InferenceSession;
+pub(crate) trait RunContext<'a>:
+    From<&'a mut <Self::Runtime as InferenceRuntime>::Session>
+{
+    type Runtime: InferenceRuntime<RunContext<'a> = Self>;
+}
+
+#[ext(RunContextExt)]
+impl<'a, T: RunContext<'a>> T {
+    fn input<I>(&mut self, tensor: I) -> &mut Self
+    where
+        T::Runtime: SupportsInferenceInputTensor<I>,
+    {
+        <T::Runtime as SupportsInferenceInputTensor<_>>::input(tensor, self);
+        self
+    }
 }
 
 pub(crate) trait SupportsInferenceSignature<S: InferenceSignature>:
@@ -40,11 +54,11 @@ impl<
 }
 
 pub(crate) trait SupportsInferenceInputTensor<I>: InferenceRuntime {
-    fn input(ctx: &mut Self::RunContext<'_>, tensor: I);
+    fn input(tensor: I, ctx: &mut Self::RunContext<'_>);
 }
 
 pub(crate) trait SupportsInferenceInputTensors<I: InferenceInput>: InferenceRuntime {
-    fn input(ctx: &mut Self::RunContext<'_>, tensors: I);
+    fn input(tensors: I, ctx: &mut Self::RunContext<'_>);
 }
 
 pub(crate) trait SupportsInferenceOutput<O: Send>: InferenceRuntime {
@@ -115,7 +129,7 @@ impl<
     ) -> crate::Result<<I::Signature as InferenceSignature>::Output> {
         let mut inner = self.inner.lock().unwrap();
         let mut ctx = R::RunContext::from(&mut inner);
-        R::input(&mut ctx, input);
+        R::input(input, &mut ctx);
         R::run(ctx).map_err(|e| ErrorRepr::InferenceFailed(e).into())
     }
 }

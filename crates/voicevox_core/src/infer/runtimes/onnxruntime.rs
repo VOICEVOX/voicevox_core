@@ -111,13 +111,13 @@ impl<'sess> From<&'sess mut AssertSend<onnxruntime::session::Session<'static>>>
 }
 
 impl<'sess> RunContext<'sess> for OnnxruntimeInferenceBuilder<'sess> {
-    type Session = AssertSend<onnxruntime::session::Session<'static>>;
+    type Runtime = Onnxruntime;
 }
 
 impl<A: TypeToTensorElementDataType + Debug + 'static, D: Dimension + 'static>
     SupportsInferenceInputTensor<Array<A, D>> for Onnxruntime
 {
-    fn input(ctx: &mut Self::RunContext<'_>, tensor: Array<A, D>) {
+    fn input(tensor: Array<A, D>, ctx: &mut Self::RunContext<'_>) {
         ctx.inputs
             .push(Box::new(onnxruntime::session::NdArray::new(tensor)));
     }
