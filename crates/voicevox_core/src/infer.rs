@@ -36,7 +36,7 @@ impl<'a, T: RunContext<'a>> T {
     where
         T::Runtime: SupportsInferenceInputTensor<I>,
     {
-        <T::Runtime as SupportsInferenceInputTensor<_>>::input(tensor, self);
+        T::Runtime::input(tensor, self);
         self
     }
 }
@@ -106,7 +106,7 @@ impl<K: Enum, R: InferenceRuntime> InferenceSessionSet<K, R> {
         I::Signature: InferenceSignature<Kind = K>,
     {
         InferenceSessionCell {
-            inner: self.0[<I::Signature as InferenceSignature>::KIND].clone(),
+            inner: self.0[I::Signature::KIND].clone(),
             marker: PhantomData,
         }
     }
@@ -127,8 +127,8 @@ impl<
         self,
         input: I,
     ) -> crate::Result<<I::Signature as InferenceSignature>::Output> {
-        let mut inner = self.inner.lock().unwrap();
-        let mut ctx = R::RunContext::from(&mut inner);
+        let inner = &mut *self.inner.lock().unwrap();
+        let mut ctx = inner.into();
         R::input(input, &mut ctx);
         R::run(ctx).map_err(|e| ErrorRepr::InferenceFailed(e).into())
     }
