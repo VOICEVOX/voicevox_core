@@ -1,8 +1,11 @@
 use self::status::*;
 use super::*;
 use crate::infer::{
-    signatures::{Decode, PredictDuration, PredictIntonation},
-    InferenceRuntime, Output,
+    signatures::{
+        Decode, DecodeInput, PredictDuration, PredictDurationInput, PredictIntonation,
+        PredictIntonationInput,
+    },
+    InferenceRuntime, SupportsInferenceSignature,
 };
 
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
@@ -11,10 +14,11 @@ pub(crate) struct InferenceCore<R: InferenceRuntime> {
     status: Status<R>,
 }
 
-impl<R> InferenceCore<R>
-where
-    R: InferenceRuntime,
-    (Vec<f32>,): Output<R>,
+impl<
+        R: SupportsInferenceSignature<PredictDuration>
+            + SupportsInferenceSignature<PredictIntonation>
+            + SupportsInferenceSignature<Decode>,
+    > InferenceCore<R>
 {
     pub(crate) fn new(use_gpu: bool, cpu_num_threads: u16) -> Result<Self> {
         if !use_gpu || Self::can_support_gpu_feature()? {
@@ -71,7 +75,7 @@ where
             .status
             .run_session(
                 &model_id,
-                PredictDuration {
+                PredictDurationInput {
                     phoneme: ndarray::arr1(phoneme_vector),
                     speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
                 },
@@ -109,7 +113,7 @@ where
             .status
             .run_session(
                 &model_id,
-                PredictIntonation {
+                PredictIntonationInput {
                     length: ndarray::arr0(length as i64),
                     vowel_phoneme: ndarray::arr1(vowel_phoneme_vector),
                     consonant_phoneme: ndarray::arr1(consonant_phoneme_vector),
@@ -159,7 +163,7 @@ where
             .status
             .run_session(
                 &model_id,
-                Decode {
+                DecodeInput {
                     f0: ndarray::arr1(&f0_with_padding)
                         .into_shape([length_with_padding, 1])
                         .unwrap(),

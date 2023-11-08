@@ -5,7 +5,10 @@ use std::sync::Arc;
 use super::full_context_label::Utterance;
 use super::open_jtalk::OpenJtalk;
 use super::*;
-use crate::infer::{InferenceRuntime, Output};
+use crate::infer::{
+    signatures::{Decode, PredictDuration, PredictIntonation},
+    InferenceRuntime, SupportsInferenceSignature,
+};
 use crate::numerics::F32Ext as _;
 use crate::InferenceCore;
 
@@ -15,19 +18,20 @@ const MORA_PHONEME_LIST: &[&str] = &[
     "a", "i", "u", "e", "o", "N", "A", "I", "U", "E", "O", "cl", "pau",
 ];
 
+pub const DEFAULT_SAMPLING_RATE: u32 = 24000;
+
 #[derive(new)]
 pub(crate) struct SynthesisEngine<R: InferenceRuntime> {
     inference_core: InferenceCore<R>,
     open_jtalk: Arc<OpenJtalk>,
 }
 
-impl<R> SynthesisEngine<R>
-where
-    R: InferenceRuntime,
-    (Vec<f32>,): Output<R>,
+impl<
+        R: SupportsInferenceSignature<PredictDuration>
+            + SupportsInferenceSignature<PredictIntonation>
+            + SupportsInferenceSignature<Decode>,
+    > SynthesisEngine<R>
 {
-    pub const DEFAULT_SAMPLING_RATE: u32 = 24000;
-
     pub fn inference_core(&self) -> &InferenceCore<R> {
         &self.inference_core
     }
@@ -426,7 +430,7 @@ where
         let num_channels: u16 = if output_stereo { 2 } else { 1 };
         let bit_depth: u16 = 16;
         let repeat_count: u32 =
-            (output_sampling_rate / Self::DEFAULT_SAMPLING_RATE) * num_channels as u32;
+            (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
         let block_size: u16 = bit_depth * num_channels / 8;
 
         let bytes_size = wave.len() as u32 * repeat_count * 2;

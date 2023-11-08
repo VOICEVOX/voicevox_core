@@ -1,6 +1,8 @@
 use super::*;
 use crate::infer::{
-    signatures::SignatureKind, InferenceRuntime, Output, SessionOptions, SessionSet, Signature,
+    signatures::SignatureKind, InferenceInput, InferenceRuntime, InferenceSessionOptions,
+    InferenceSessionSet, InferenceSignature, SupportsInferenceInputTensors,
+    SupportsInferenceOutput,
 };
 use derive_more::Index;
 use educe::Educe;
@@ -10,16 +12,16 @@ use std::collections::BTreeMap;
 
 pub(crate) struct Status<R: InferenceRuntime> {
     loaded_models: std::sync::Mutex<LoadedModels<R>>,
-    light_session_options: SessionOptions, // 軽いモデルはこちらを使う
-    heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
+    light_session_options: InferenceSessionOptions, // 軽いモデルはこちらを使う
+    heavy_session_options: InferenceSessionOptions, // 重いモデルはこちらを使う
 }
 
 impl<R: InferenceRuntime> Status<R> {
     pub fn new(use_gpu: bool, cpu_num_threads: u16) -> Self {
         Self {
             loaded_models: Default::default(),
-            light_session_options: SessionOptions::new(cpu_num_threads, false),
-            heavy_session_options: SessionOptions::new(cpu_num_threads, use_gpu),
+            light_session_options: InferenceSessionOptions::new(cpu_num_threads, false),
+            heavy_session_options: InferenceSessionOptions::new(cpu_num_threads, use_gpu),
         }
     }
 
@@ -31,7 +33,7 @@ impl<R: InferenceRuntime> Status<R> {
 
         let model_bytes = &model.read_inference_models().await?;
 
-        let session_set = SessionSet::new(model_bytes, |kind| match kind {
+        let session_set = InferenceSessionSet::new(model_bytes, |kind| match kind {
             SignatureKind::PredictDuration | SignatureKind::PredictIntonation => {
                 self.light_session_options
             }
@@ -80,14 +82,16 @@ impl<R: InferenceRuntime> Status<R> {
     /// # Panics
     ///
     /// `self`が`model_id`を含んでいないとき、パニックする。
-    pub(crate) async fn run_session<S>(
+    pub(crate) async fn run_session<I>(
         &self,
         model_id: &VoiceModelId,
-        input: S,
-    ) -> Result<S::Output>
+        input: I,
+    ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
-        S: Signature<Kind = SignatureKind>,
-        S::Output: Output<R>,
+        I: InferenceInput,
+        I::Signature: InferenceSignature<Kind = SignatureKind>,
+        R: SupportsInferenceInputTensors<I>
+            + SupportsInferenceOutput<<I::Signature as InferenceSignature>::Output>,
     {
         let sess = self.loaded_models.lock().unwrap()[model_id]
             .session_set
@@ -109,7 +113,7 @@ struct LoadedModels<R: InferenceRuntime>(BTreeMap<VoiceModelId, LoadedModel<R>>)
 struct LoadedModel<R: InferenceRuntime> {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_set: SessionSet<SignatureKind, R>,
+    session_set: InferenceSessionSet<SignatureKind, R>,
 }
 
 impl<R: InferenceRuntime> LoadedModels<R> {
@@ -186,7 +190,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     fn insert(
         &mut self,
         model: &VoiceModel,
-        session_set: SessionSet<SignatureKind, R>,
+        session_set: InferenceSessionSet<SignatureKind, R>,
     ) -> Result<()> {
         self.ensure_acceptable(model)?;
 

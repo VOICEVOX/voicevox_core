@@ -1,14 +1,18 @@
+use std::fmt::Debug;
+
 use ndarray::{Array, Dimension};
 use once_cell::sync::Lazy;
-use onnxruntime::{environment::Environment, GraphOptimizationLevel, LoggingLevel};
+use onnxruntime::{
+    environment::Environment, GraphOptimizationLevel, LoggingLevel, TypeToTensorElementDataType,
+};
 
 use self::assert_send::AssertSend;
 use crate::{
     devices::SupportedDevices,
     error::ErrorRepr,
     infer::{
-        DecryptModelError, InferenceRuntime, InputScalar, Output, RunBuilder, Session,
-        SessionOptions,
+        DecryptModelError, InferenceRuntime, InferenceSession, InferenceSessionOptions, RunContext,
+        SupportsInferenceInputTensor, SupportsInferenceOutput,
     },
 };
 
@@ -17,7 +21,7 @@ pub(crate) enum Onnxruntime {}
 
 impl InferenceRuntime for Onnxruntime {
     type Session = AssertSend<onnxruntime::session::Session<'static>>;
-    type RunBuilder<'a> = OnnxruntimeInferenceBuilder<'a>;
+    type RunContext<'a> = OnnxruntimeInferenceBuilder<'a>;
 
     fn supported_devices() -> crate::Result<SupportedDevices> {
         let mut cuda_support = false;
@@ -42,10 +46,10 @@ impl InferenceRuntime for Onnxruntime {
     }
 }
 
-impl Session for AssertSend<onnxruntime::session::Session<'static>> {
+impl InferenceSession for AssertSend<onnxruntime::session::Session<'static>> {
     fn new(
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
-        options: SessionOptions,
+        options: InferenceSessionOptions,
     ) -> anyhow::Result<Self> {
         let mut builder = ENVIRONMENT
             .new_session_builder()?
@@ -106,20 +110,23 @@ impl<'sess> From<&'sess mut AssertSend<onnxruntime::session::Session<'static>>>
     }
 }
 
-impl<'sess> RunBuilder<'sess> for OnnxruntimeInferenceBuilder<'sess> {
+impl<'sess> RunContext<'sess> for OnnxruntimeInferenceBuilder<'sess> {
     type Session = AssertSend<onnxruntime::session::Session<'static>>;
+}
 
-    fn input(&mut self, tensor: Array<impl InputScalar, impl Dimension + 'static>) -> &mut Self {
-        self.inputs
+impl<A: TypeToTensorElementDataType + Debug + 'static, D: Dimension + 'static>
+    SupportsInferenceInputTensor<Array<A, D>> for Onnxruntime
+{
+    fn input(ctx: &mut Self::RunContext<'_>, tensor: Array<A, D>) {
+        ctx.inputs
             .push(Box::new(onnxruntime::session::NdArray::new(tensor)));
-        self
     }
 }
 
-impl Output<Onnxruntime> for (Vec<f32>,) {
+impl SupportsInferenceOutput<(Vec<f32>,)> for Onnxruntime {
     fn run(
         OnnxruntimeInferenceBuilder { sess, mut inputs }: OnnxruntimeInferenceBuilder<'_>,
-    ) -> anyhow::Result<Self> {
+    ) -> anyhow::Result<(Vec<f32>,)> {
         let outputs = sess.run(inputs.iter_mut().map(|t| &mut **t as &mut _).collect())?;
 
         // FIXME: 2個以上の出力や二次元以上の出力をちゃんとしたやりかたで弾く

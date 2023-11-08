@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use crate::{
-    engine::{create_kana, parse_kana, AccentPhraseModel, OpenJtalk, SynthesisEngine},
+    engine::{
+        create_kana, parse_kana, AccentPhraseModel, OpenJtalk, SynthesisEngine,
+        DEFAULT_SAMPLING_RATE,
+    },
     infer::runtimes::Onnxruntime,
 };
 
@@ -560,7 +563,7 @@ impl AudioQueryModel {
             1.,
             0.1,
             0.1,
-            SynthesisEngine::DEFAULT_SAMPLING_RATE,
+            DEFAULT_SAMPLING_RATE,
             false,
             Some(kana),
         )

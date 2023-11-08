@@ -6,53 +6,70 @@ use std::{collections::HashMap, fmt::Debug, marker::PhantomData, sync::Arc};
 
 use derive_new::new;
 use enum_map::{Enum, EnumMap};
-use ndarray::{Array, Dimension, LinalgScalar};
 use thiserror::Error;
 
 use crate::{ErrorRepr, SupportedDevices};
 
 pub(crate) trait InferenceRuntime: 'static {
-    type Session: Session;
-    type RunBuilder<'a>: RunBuilder<'a, Session = Self::Session>;
+    type Session: InferenceSession;
+    type RunContext<'a>: RunContext<'a, Session = Self::Session>;
     fn supported_devices() -> crate::Result<SupportedDevices>;
 }
 
-pub(crate) trait Session: Sized + Send + 'static {
+pub(crate) trait InferenceSession: Sized + Send + 'static {
     fn new(
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
-        options: SessionOptions,
+        options: InferenceSessionOptions,
     ) -> anyhow::Result<Self>;
 }
 
-pub(crate) trait RunBuilder<'a>: From<&'a mut Self::Session> {
-    type Session: Session;
-    fn input(&mut self, tensor: Array<impl InputScalar, impl Dimension + 'static>) -> &mut Self;
+pub(crate) trait RunContext<'a>: From<&'a mut Self::Session> {
+    type Session: InferenceSession;
 }
 
-pub(crate) trait InputScalar: LinalgScalar + Debug + sealed::InputScalar {}
+pub(crate) trait SupportsInferenceSignature<S: InferenceSignature>:
+    SupportsInferenceInputTensors<S::Input> + SupportsInferenceOutput<S::Output>
+{
+}
 
-impl InputScalar for i64 {}
-impl InputScalar for f32 {}
+impl<
+        R: SupportsInferenceInputTensors<S::Input> + SupportsInferenceOutput<S::Output>,
+        S: InferenceSignature,
+    > SupportsInferenceSignature<S> for R
+{
+}
 
-pub(crate) trait Signature: Sized + Send + 'static {
+pub(crate) trait SupportsInferenceInputTensor<I>: InferenceRuntime {
+    fn input(ctx: &mut Self::RunContext<'_>, tensor: I);
+}
+
+pub(crate) trait SupportsInferenceInputTensors<I: InferenceInput>: InferenceRuntime {
+    fn input(ctx: &mut Self::RunContext<'_>, tensors: I);
+}
+
+pub(crate) trait SupportsInferenceOutput<O: Send>: InferenceRuntime {
+    fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<O>;
+}
+
+pub(crate) trait InferenceSignature: Sized + Send + 'static {
     type Kind: Enum + Copy;
-    type Output;
+    type Input: InferenceInput;
+    type Output: Send;
     const KIND: Self::Kind;
-    fn input<'a, 'b>(self, ctx: &'a mut impl RunBuilder<'b>);
 }
 
-pub(crate) trait Output<R: InferenceRuntime>: Sized + Send {
-    fn run(ctx: R::RunBuilder<'_>) -> anyhow::Result<Self>;
+pub(crate) trait InferenceInput: Send + 'static {
+    type Signature: InferenceSignature;
 }
 
-pub(crate) struct SessionSet<K: Enum, R: InferenceRuntime>(
+pub(crate) struct InferenceSessionSet<K: Enum, R: InferenceRuntime>(
     EnumMap<K, Arc<std::sync::Mutex<R::Session>>>,
 );
 
-impl<K: Enum + Copy, R: InferenceRuntime> SessionSet<K, R> {
+impl<K: Enum + Copy, R: InferenceRuntime> InferenceSessionSet<K, R> {
     pub(crate) fn new(
         model_bytes: &EnumMap<K, Vec<u8>>,
-        mut options: impl FnMut(K) -> SessionOptions,
+        mut options: impl FnMut(K) -> InferenceSessionOptions,
     ) -> anyhow::Result<Self> {
         let mut sessions = model_bytes
             .iter()
@@ -68,34 +85,43 @@ impl<K: Enum + Copy, R: InferenceRuntime> SessionSet<K, R> {
     }
 }
 
-impl<K: Enum, R: InferenceRuntime> SessionSet<K, R> {
-    pub(crate) fn get<S: Signature<Kind = K>>(&self) -> SessionCell<R, S> {
-        SessionCell {
-            inner: self.0[S::KIND].clone(),
+impl<K: Enum, R: InferenceRuntime> InferenceSessionSet<K, R> {
+    pub(crate) fn get<I>(&self) -> InferenceSessionCell<R, I>
+    where
+        I: InferenceInput,
+        I::Signature: InferenceSignature<Kind = K>,
+    {
+        InferenceSessionCell {
+            inner: self.0[<I::Signature as InferenceSignature>::KIND].clone(),
             marker: PhantomData,
         }
     }
 }
 
-pub(crate) struct SessionCell<R: InferenceRuntime, S> {
+pub(crate) struct InferenceSessionCell<R: InferenceRuntime, I> {
     inner: Arc<std::sync::Mutex<R::Session>>,
-    marker: PhantomData<fn(S)>,
+    marker: PhantomData<fn(I)>,
 }
 
-impl<R: InferenceRuntime, S: Signature> SessionCell<R, S> {
-    pub(crate) fn run(self, input: S) -> crate::Result<S::Output>
-    where
-        S::Output: Output<R>,
-    {
+impl<
+        R: SupportsInferenceInputTensors<I>
+            + SupportsInferenceOutput<<I::Signature as InferenceSignature>::Output>,
+        I: InferenceInput,
+    > InferenceSessionCell<R, I>
+{
+    pub(crate) fn run(
+        self,
+        input: I,
+    ) -> crate::Result<<I::Signature as InferenceSignature>::Output> {
         let mut inner = self.inner.lock().unwrap();
-        let mut ctx = R::RunBuilder::from(&mut inner);
-        input.input(&mut ctx);
-        S::Output::run(ctx).map_err(|e| ErrorRepr::InferenceFailed(e).into())
+        let mut ctx = R::RunContext::from(&mut inner);
+        R::input(&mut ctx, input);
+        R::run(ctx).map_err(|e| ErrorRepr::InferenceFailed(e).into())
     }
 }
 
 #[derive(new, Clone, Copy)]
-pub(crate) struct SessionOptions {
+pub(crate) struct InferenceSessionOptions {
     pub(crate) cpu_num_threads: u16,
     pub(crate) use_gpu: bool,
 }
@@ -103,17 +129,3 @@ pub(crate) struct SessionOptions {
 #[derive(Error, Debug)]
 #[error("不正なモデルファイルです")]
 pub(crate) struct DecryptModelError;
-
-mod sealed {
-    pub(crate) trait InputScalar: OnnxruntimeInputScalar {}
-
-    impl InputScalar for i64 {}
-    impl InputScalar for f32 {}
-
-    pub(crate) trait OnnxruntimeInputScalar:
-        onnxruntime::TypeToTensorElementDataType
-    {
-    }
-
-    impl<T: onnxruntime::TypeToTensorElementDataType> OnnxruntimeInputScalar for T {}
-}
