@@ -69,13 +69,13 @@ pub(crate) trait SupportsInferenceOutput<O: Send>: InferenceRuntime {
 
 pub(crate) trait InferenceSignature: Sized + Send + 'static {
     type Kind: Enum + Copy;
-    type Input: InferenceInputSignature;
+    type Input: InferenceInputSignature<Signature = Self>;
     type Output: Send;
     const KIND: Self::Kind;
 }
 
 pub(crate) trait InferenceInputSignature: Send + 'static {
-    type Signature: InferenceSignature;
+    type Signature: InferenceSignature<Input = Self>;
 }
 
 pub(crate) struct InferenceSessionSet<K: Enum, R: InferenceRuntime>(
