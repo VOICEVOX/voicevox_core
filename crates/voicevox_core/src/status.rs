@@ -1,8 +1,8 @@
 use super::*;
 use crate::infer::{
-    signatures::InferenceSignatureKind, InferenceInput, InferenceRuntime, InferenceSessionCell,
-    InferenceSessionOptions, InferenceSessionSet, InferenceSignature,
-    SupportsInferenceInputTensors, SupportsInferenceOutput,
+    signatures::InferenceSignatureKind, InferenceInputSignature, InferenceRuntime,
+    InferenceSessionCell, InferenceSessionOptions, InferenceSessionSet, InferenceSignature,
+    SupportsInferenceInputSignature, SupportsInferenceOutput,
 };
 use educe::Educe;
 use itertools::iproduct;
@@ -87,9 +87,9 @@ impl<R: InferenceRuntime> Status<R> {
         input: I,
     ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
-        I: InferenceInput,
+        I: InferenceInputSignature,
         I::Signature: InferenceSignature<Kind = InferenceSignatureKind>,
-        R: SupportsInferenceInputTensors<I>
+        R: SupportsInferenceInputSignature<I>
             + SupportsInferenceOutput<<I::Signature as InferenceSignature>::Output>,
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
@@ -151,7 +151,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     /// `self`が`model_id`を含んでいないとき、パニックする。
     fn get<I>(&self, model_id: &VoiceModelId) -> InferenceSessionCell<R, I>
     where
-        I: InferenceInput,
+        I: InferenceInputSignature,
         I::Signature: InferenceSignature<Kind = InferenceSignatureKind>,
     {
         self.0[model_id].session_set.get()

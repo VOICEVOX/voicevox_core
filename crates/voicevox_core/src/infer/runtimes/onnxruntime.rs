@@ -117,9 +117,9 @@ impl<'sess> RunContext<'sess> for OnnxruntimeRunContext<'sess> {
 impl<A: TypeToTensorElementDataType + Debug + 'static, D: Dimension + 'static>
     SupportsInferenceInputTensor<Array<A, D>> for Onnxruntime
 {
-    fn input(tensor: Array<A, D>, ctx: &mut Self::RunContext<'_>) {
+    fn input(input: Array<A, D>, ctx: &mut Self::RunContext<'_>) {
         ctx.inputs
-            .push(Box::new(onnxruntime::session::NdArray::new(tensor)));
+            .push(Box::new(onnxruntime::session::NdArray::new(input)));
     }
 }
 

@@ -42,23 +42,25 @@ impl<'a, T: RunContext<'a>> T {
 }
 
 pub(crate) trait SupportsInferenceSignature<S: InferenceSignature>:
-    SupportsInferenceInputTensors<S::Input> + SupportsInferenceOutput<S::Output>
+    SupportsInferenceInputSignature<S::Input> + SupportsInferenceOutput<S::Output>
 {
 }
 
 impl<
-        R: SupportsInferenceInputTensors<S::Input> + SupportsInferenceOutput<S::Output>,
+        R: SupportsInferenceInputSignature<S::Input> + SupportsInferenceOutput<S::Output>,
         S: InferenceSignature,
     > SupportsInferenceSignature<S> for R
 {
 }
 
 pub(crate) trait SupportsInferenceInputTensor<I>: InferenceRuntime {
-    fn input(tensor: I, ctx: &mut Self::RunContext<'_>);
+    fn input(input: I, ctx: &mut Self::RunContext<'_>);
 }
 
-pub(crate) trait SupportsInferenceInputTensors<I: InferenceInput>: InferenceRuntime {
-    fn input(tensors: I, ctx: &mut Self::RunContext<'_>);
+pub(crate) trait SupportsInferenceInputSignature<I: InferenceInputSignature>:
+    InferenceRuntime
+{
+    fn input(input: I, ctx: &mut Self::RunContext<'_>);
 }
 
 pub(crate) trait SupportsInferenceOutput<O: Send>: InferenceRuntime {
@@ -67,12 +69,12 @@ pub(crate) trait SupportsInferenceOutput<O: Send>: InferenceRuntime {
 
 pub(crate) trait InferenceSignature: Sized + Send + 'static {
     type Kind: Enum + Copy;
-    type Input: InferenceInput;
+    type Input: InferenceInputSignature;
     type Output: Send;
     const KIND: Self::Kind;
 }
 
-pub(crate) trait InferenceInput: Send + 'static {
+pub(crate) trait InferenceInputSignature: Send + 'static {
     type Signature: InferenceSignature;
 }
 
@@ -102,7 +104,7 @@ impl<K: Enum + Copy, R: InferenceRuntime> InferenceSessionSet<K, R> {
 impl<K: Enum, R: InferenceRuntime> InferenceSessionSet<K, R> {
     pub(crate) fn get<I>(&self) -> InferenceSessionCell<R, I>
     where
-        I: InferenceInput,
+        I: InferenceInputSignature,
         I::Signature: InferenceSignature<Kind = K>,
     {
         InferenceSessionCell {
@@ -118,9 +120,9 @@ pub(crate) struct InferenceSessionCell<R: InferenceRuntime, I> {
 }
 
 impl<
-        R: SupportsInferenceInputTensors<I>
+        R: SupportsInferenceInputSignature<I>
             + SupportsInferenceOutput<<I::Signature as InferenceSignature>::Output>,
-        I: InferenceInput,
+        I: InferenceInputSignature,
     > InferenceSessionCell<R, I>
 {
     pub(crate) fn run(

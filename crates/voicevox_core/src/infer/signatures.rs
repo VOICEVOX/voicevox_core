@@ -2,8 +2,8 @@ use enum_map::Enum;
 use ndarray::{Array0, Array1, Array2};
 
 use crate::infer::{
-    InferenceInput, InferenceSignature, RunContextExt as _, SupportsInferenceInputTensor,
-    SupportsInferenceInputTensors,
+    InferenceInputSignature, InferenceSignature, RunContextExt as _,
+    SupportsInferenceInputSignature, SupportsInferenceInputTensor,
 };
 
 #[derive(Clone, Copy, Enum)]
@@ -27,12 +27,12 @@ pub(crate) struct PredictDurationInput {
     pub(crate) speaker_id: Array1<i64>,
 }
 
-impl InferenceInput for PredictDurationInput {
+impl InferenceInputSignature for PredictDurationInput {
     type Signature = PredictDuration;
 }
 
 impl<R: SupportsInferenceInputTensor<Array1<i64>>>
-    SupportsInferenceInputTensors<PredictDurationInput> for R
+    SupportsInferenceInputSignature<PredictDurationInput> for R
 {
     fn input(input: PredictDurationInput, ctx: &mut R::RunContext<'_>) {
         ctx.input(input.phoneme).input(input.speaker_id);
@@ -59,12 +59,12 @@ pub(crate) struct PredictIntonationInput {
     pub(crate) speaker_id: Array1<i64>,
 }
 
-impl InferenceInput for PredictIntonationInput {
+impl InferenceInputSignature for PredictIntonationInput {
     type Signature = PredictIntonation;
 }
 
 impl<R: SupportsInferenceInputTensor<Array0<i64>> + SupportsInferenceInputTensor<Array1<i64>>>
-    SupportsInferenceInputTensors<PredictIntonationInput> for R
+    SupportsInferenceInputSignature<PredictIntonationInput> for R
 {
     fn input(input: PredictIntonationInput, ctx: &mut R::RunContext<'_>) {
         ctx.input(input.length)
@@ -93,12 +93,12 @@ pub(crate) struct DecodeInput {
     pub(crate) speaker_id: Array1<i64>,
 }
 
-impl InferenceInput for DecodeInput {
+impl InferenceInputSignature for DecodeInput {
     type Signature = Decode;
 }
 
 impl<R: SupportsInferenceInputTensor<Array1<i64>> + SupportsInferenceInputTensor<Array2<f32>>>
-    SupportsInferenceInputTensors<DecodeInput> for R
+    SupportsInferenceInputSignature<DecodeInput> for R
 {
     fn input(input: DecodeInput, ctx: &mut R::RunContext<'_>) {
         ctx.input(input.f0)
