@@ -34,8 +34,13 @@ impl InferenceInputSignature for PredictDurationInput {
 impl<R: SupportsInferenceInputTensor<Array1<i64>>>
     SupportsInferenceInputSignature<PredictDurationInput> for R
 {
-    fn input(input: PredictDurationInput, ctx: &mut R::RunContext<'_>) {
-        ctx.input(input.phoneme).input(input.speaker_id);
+    fn make_run_context(
+        sess: &mut Self::Session,
+        input: PredictDurationInput,
+    ) -> Self::RunContext<'_> {
+        Self::RunContext::from(sess)
+            .with_input(input.phoneme)
+            .with_input(input.speaker_id)
     }
 }
 
@@ -66,15 +71,19 @@ impl InferenceInputSignature for PredictIntonationInput {
 impl<R: SupportsInferenceInputTensor<Array0<i64>> + SupportsInferenceInputTensor<Array1<i64>>>
     SupportsInferenceInputSignature<PredictIntonationInput> for R
 {
-    fn input(input: PredictIntonationInput, ctx: &mut R::RunContext<'_>) {
-        ctx.input(input.length)
-            .input(input.vowel_phoneme)
-            .input(input.consonant_phoneme)
-            .input(input.start_accent)
-            .input(input.end_accent)
-            .input(input.start_accent_phrase)
-            .input(input.end_accent_phrase)
-            .input(input.speaker_id);
+    fn make_run_context(
+        sess: &mut Self::Session,
+        input: PredictIntonationInput,
+    ) -> Self::RunContext<'_> {
+        Self::RunContext::from(sess)
+            .with_input(input.length)
+            .with_input(input.vowel_phoneme)
+            .with_input(input.consonant_phoneme)
+            .with_input(input.start_accent)
+            .with_input(input.end_accent)
+            .with_input(input.start_accent_phrase)
+            .with_input(input.end_accent_phrase)
+            .with_input(input.speaker_id)
     }
 }
 
@@ -100,9 +109,10 @@ impl InferenceInputSignature for DecodeInput {
 impl<R: SupportsInferenceInputTensor<Array1<i64>> + SupportsInferenceInputTensor<Array2<f32>>>
     SupportsInferenceInputSignature<DecodeInput> for R
 {
-    fn input(input: DecodeInput, ctx: &mut R::RunContext<'_>) {
-        ctx.input(input.f0)
-            .input(input.phoneme)
-            .input(input.speaker_id);
+    fn make_run_context(sess: &mut Self::Session, input: DecodeInput) -> Self::RunContext<'_> {
+        Self::RunContext::from(sess)
+            .with_input(input.f0)
+            .with_input(input.phoneme)
+            .with_input(input.speaker_id)
     }
 }

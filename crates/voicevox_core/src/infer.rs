@@ -32,11 +32,11 @@ pub(crate) trait RunContext<'a>:
 
 #[ext(RunContextExt)]
 impl<'a, T: RunContext<'a>> T {
-    fn input<I>(&mut self, tensor: I) -> &mut Self
+    fn with_input<I>(mut self, tensor: I) -> Self
     where
         T::Runtime: SupportsInferenceInputTensor<I>,
     {
-        T::Runtime::input(tensor, self);
+        T::Runtime::push_input(tensor, &mut self);
         self
     }
 }
@@ -54,13 +54,13 @@ impl<
 }
 
 pub(crate) trait SupportsInferenceInputTensor<I>: InferenceRuntime {
-    fn input(input: I, ctx: &mut Self::RunContext<'_>);
+    fn push_input(input: I, ctx: &mut Self::RunContext<'_>);
 }
 
 pub(crate) trait SupportsInferenceInputSignature<I: InferenceInputSignature>:
     InferenceRuntime
 {
-    fn input(input: I, ctx: &mut Self::RunContext<'_>);
+    fn make_run_context(sess: &mut Self::Session, input: I) -> Self::RunContext<'_>;
 }
 
 pub(crate) trait SupportsInferenceOutput<O: Send>: InferenceRuntime {
@@ -129,9 +129,8 @@ impl<
         self,
         input: I,
     ) -> crate::Result<<I::Signature as InferenceSignature>::Output> {
-        let inner = &mut *self.inner.lock().unwrap();
-        let mut ctx = inner.into();
-        R::input(input, &mut ctx);
+        let inner = &mut self.inner.lock().unwrap();
+        let ctx = R::make_run_context(inner, input);
         R::run(ctx).map_err(|e| ErrorRepr::InferenceFailed(e).into())
     }
 }
