@@ -1,8 +1,9 @@
 use super::*;
 use crate::infer::{
-    signatures::InferenceSignatureKind, InferenceInputSignature, InferenceRuntime,
-    InferenceSessionCell, InferenceSessionOptions, InferenceSessionSet, InferenceSignature,
-    SupportsInferenceInputSignature, SupportsInferenceOutput,
+    signatures::{InferenceModelGroupImpl, InferenceModelKindImpl},
+    InferenceInputSignature, InferenceRuntime, InferenceSessionCell, InferenceSessionOptions,
+    InferenceSessionSet, InferenceSignature, SupportsInferenceInputSignature,
+    SupportsInferenceOutput,
 };
 use educe::Educe;
 use itertools::iproduct;
@@ -33,10 +34,10 @@ impl<R: InferenceRuntime> Status<R> {
         let model_bytes = &model.read_inference_models().await?;
 
         let session_set = InferenceSessionSet::new(model_bytes, |kind| match kind {
-            InferenceSignatureKind::PredictDuration | InferenceSignatureKind::PredictIntonation => {
+            InferenceModelKindImpl::PredictDuration | InferenceModelKindImpl::PredictIntonation => {
                 self.light_session_options
             }
-            InferenceSignatureKind::Decode => self.heavy_session_options,
+            InferenceModelKindImpl::Decode => self.heavy_session_options,
         })
         .map_err(|source| LoadModelError {
             path: model.path().clone(),
@@ -88,7 +89,7 @@ impl<R: InferenceRuntime> Status<R> {
     ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Kind = InferenceSignatureKind>,
+        I::Signature: InferenceSignature<ModelGroup = InferenceModelGroupImpl>,
         R: SupportsInferenceInputSignature<I>
             + SupportsInferenceOutput<<I::Signature as InferenceSignature>::Output>,
     {
@@ -110,7 +111,7 @@ struct LoadedModels<R: InferenceRuntime>(BTreeMap<VoiceModelId, LoadedModel<R>>)
 struct LoadedModel<R: InferenceRuntime> {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_set: InferenceSessionSet<InferenceSignatureKind, R>,
+    session_set: InferenceSessionSet<InferenceModelGroupImpl, R>,
 }
 
 impl<R: InferenceRuntime> LoadedModels<R> {
@@ -152,7 +153,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     fn get<I>(&self, model_id: &VoiceModelId) -> InferenceSessionCell<R, I>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Kind = InferenceSignatureKind>,
+        I::Signature: InferenceSignature<ModelGroup = InferenceModelGroupImpl>,
     {
         self.0[model_id].session_set.get()
     }
@@ -198,7 +199,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     fn insert(
         &mut self,
         model: &VoiceModel,
-        session_set: InferenceSessionSet<InferenceSignatureKind, R>,
+        session_set: InferenceSessionSet<InferenceModelGroupImpl, R>,
     ) -> Result<()> {
         self.ensure_acceptable(model)?;
 

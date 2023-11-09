@@ -2,12 +2,18 @@ use enum_map::Enum;
 use ndarray::{Array0, Array1, Array2};
 
 use crate::infer::{
-    InferenceInputSignature, InferenceSignature, RunContextExt as _,
+    InferenceInputSignature, InferenceModelGroup, InferenceSignature, RunContextExt as _,
     SupportsInferenceInputSignature, SupportsInferenceInputTensor,
 };
 
+pub(crate) enum InferenceModelGroupImpl {}
+
+impl InferenceModelGroup for InferenceModelGroupImpl {
+    type Kind = InferenceModelKindImpl;
+}
+
 #[derive(Clone, Copy, Enum)]
-pub(crate) enum InferenceSignatureKind {
+pub(crate) enum InferenceModelKindImpl {
     PredictDuration,
     PredictIntonation,
     Decode,
@@ -16,10 +22,10 @@ pub(crate) enum InferenceSignatureKind {
 pub(crate) enum PredictDuration {}
 
 impl InferenceSignature for PredictDuration {
-    type Kind = InferenceSignatureKind;
+    type ModelGroup = InferenceModelGroupImpl;
     type Input = PredictDurationInput;
     type Output = (Vec<f32>,);
-    const KIND: Self::Kind = InferenceSignatureKind::PredictDuration;
+    const MODEL: InferenceModelKindImpl = InferenceModelKindImpl::PredictDuration;
 }
 
 pub(crate) struct PredictDurationInput {
@@ -47,10 +53,10 @@ impl<R: SupportsInferenceInputTensor<Array1<i64>>>
 pub(crate) enum PredictIntonation {}
 
 impl InferenceSignature for PredictIntonation {
-    type Kind = InferenceSignatureKind;
+    type ModelGroup = InferenceModelGroupImpl;
     type Input = PredictIntonationInput;
     type Output = (Vec<f32>,);
-    const KIND: Self::Kind = InferenceSignatureKind::PredictIntonation;
+    const MODEL: InferenceModelKindImpl = InferenceModelKindImpl::PredictIntonation;
 }
 
 pub(crate) struct PredictIntonationInput {
@@ -90,10 +96,10 @@ impl<R: SupportsInferenceInputTensor<Array0<i64>> + SupportsInferenceInputTensor
 pub(crate) enum Decode {}
 
 impl InferenceSignature for Decode {
-    type Kind = InferenceSignatureKind;
+    type ModelGroup = InferenceModelGroupImpl;
     type Input = DecodeInput;
     type Output = (Vec<f32>,);
-    const KIND: Self::Kind = InferenceSignatureKind::Decode;
+    const MODEL: InferenceModelKindImpl = InferenceModelKindImpl::Decode;
 }
 
 pub(crate) struct DecodeInput {
