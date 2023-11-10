@@ -36,7 +36,7 @@ async def main() -> None:
     logger.debug("%s", f"{voicevox_core.supported_devices()=}")
 
     logger.info("%s", f"Initializing ({acceleration_mode=}, {open_jtalk_dict_dir=})")
-    synthesizer = Synthesizer(
+    synthesizer = await Synthesizer.new_with_initialize(
         OpenJtalk(open_jtalk_dict_dir), acceleration_mode=acceleration_mode
     )
 
