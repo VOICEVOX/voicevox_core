@@ -53,7 +53,7 @@ pub(crate) trait InferenceSignature: Sized + Send + 'static {
     type Group: InferenceGroup;
     type Input: InferenceInputSignature<Signature = Self>;
     type Output: TryFrom<Vec<OutputTensor>, Error = anyhow::Error> + Send;
-    const INFERENCE: <Self::Group as InferenceGroup>::Kind;
+    const KIND: <Self::Group as InferenceGroup>::Kind;
 }
 
 pub(crate) trait InferenceInputSignature: Send + 'static {
@@ -121,7 +121,7 @@ impl<G: InferenceGroup, R: InferenceRuntime> InferenceSessionSet<G, R> {
         I::Signature: InferenceSignature<Group = G>,
     {
         InferenceSessionCell {
-            inner: self.0[I::Signature::INFERENCE].clone(),
+            inner: self.0[I::Signature::KIND].clone(),
             marker: PhantomData,
         }
     }

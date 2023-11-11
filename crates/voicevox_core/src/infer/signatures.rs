@@ -23,7 +23,7 @@ impl InferenceSignature for PredictDuration {
     type Group = InferenceGroupImpl;
     type Input = PredictDurationInput;
     type Output = PredictDurationOutput;
-    const INFERENCE: InferencelKindImpl = InferencelKindImpl::PredictDuration;
+    const KIND: InferencelKindImpl = InferencelKindImpl::PredictDuration;
 }
 
 #[derive(InferenceInputSignature)]
@@ -44,7 +44,7 @@ impl InferenceSignature for PredictIntonation {
     type Group = InferenceGroupImpl;
     type Input = PredictIntonationInput;
     type Output = PredictIntonationOutput;
-    const INFERENCE: InferencelKindImpl = InferencelKindImpl::PredictIntonation;
+    const KIND: InferencelKindImpl = InferencelKindImpl::PredictIntonation;
 }
 
 #[derive(InferenceInputSignature)]
@@ -71,7 +71,7 @@ impl InferenceSignature for Decode {
     type Group = InferenceGroupImpl;
     type Input = DecodeInput;
     type Output = DecodeOutput;
-    const INFERENCE: InferencelKindImpl = InferencelKindImpl::Decode;
+    const KIND: InferencelKindImpl = InferencelKindImpl::Decode;
 }
 
 #[derive(InferenceInputSignature)]
