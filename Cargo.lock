@@ -4342,6 +4342,7 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+ "voicevox_core_macros",
  "windows",
 ]
 
@@ -4401,6 +4402,15 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "voicevox_core",
+]
+
+[[package]]
+name = "voicevox_core_macros"
+version = "0.0.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
 ]
 
 [[package]]

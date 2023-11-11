@@ -34,6 +34,7 @@ thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 uuid.workspace = true
+voicevox_core_macros = { path = "../voicevox_core_macros" }
 
 [dependencies.onnxruntime]
 git = "https://github.com/VOICEVOX/onnxruntime-rs.git"

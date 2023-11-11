@@ -1,13 +1,5 @@
 [workspace]
-members = [
-    "crates/downloader",
-    "crates/test_util",
-    "crates/voicevox_core",
-    "crates/voicevox_core_c_api",
-    "crates/voicevox_core_java_api",
-    "crates/voicevox_core_python_api",
-    "crates/xtask"
-]
+members = ["crates/*"]
 resolver = "2"
 
 [workspace.dependencies]
