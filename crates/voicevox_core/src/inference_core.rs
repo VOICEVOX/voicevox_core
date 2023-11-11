@@ -2,8 +2,8 @@ use enum_map::enum_map;
 
 use crate::infer::{
     signatures::{
-        DecodeInput, DecodeOutput, InferenceGroupImpl, InferencelKindImpl, PredictDurationInput,
-        PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput,
+        DecodeInput, DecodeOutput, InferenceKind, PredictDurationInput, PredictDurationOutput,
+        PredictIntonationInput, PredictIntonationOutput,
     },
     status::Status,
     InferenceRuntime, InferenceSessionOptions,
@@ -14,7 +14,7 @@ use super::*;
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 
 pub(crate) struct InferenceCore<R: InferenceRuntime> {
-    status: Status<R, InferenceGroupImpl>,
+    status: Status<R, InferenceKind>,
 }
 
 impl<R: InferenceRuntime> InferenceCore<R> {
@@ -27,9 +27,9 @@ impl<R: InferenceRuntime> InferenceCore<R> {
             let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
 
             let status = Status::new(enum_map! {
-                InferencelKindImpl::PredictDuration
-                | InferencelKindImpl::PredictIntonation => light_session_options,
-                InferencelKindImpl::Decode => heavy_session_options,
+                InferenceKind::PredictDuration
+                | InferenceKind::PredictIntonation => light_session_options,
+                InferenceKind::Decode => heavy_session_options,
             });
             Ok(Self { status })
         } else {

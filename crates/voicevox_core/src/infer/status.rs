@@ -5,7 +5,7 @@ use std::{
 };
 
 use educe::Educe;
-use enum_map::{Enum as _, EnumMap};
+use enum_map::EnumMap;
 use itertools::iproduct;
 
 use crate::{
@@ -23,11 +23,11 @@ use super::{
 
 pub(crate) struct Status<R: InferenceRuntime, G: InferenceGroup> {
     loaded_models: std::sync::Mutex<LoadedModels<R, G>>,
-    session_options: EnumMap<G::Kind, InferenceSessionOptions>,
+    session_options: EnumMap<G, InferenceSessionOptions>,
 }
 
 impl<R: InferenceRuntime, G: InferenceGroup> Status<R, G> {
-    pub fn new(session_options: EnumMap<G::Kind, InferenceSessionOptions>) -> Self {
+    pub fn new(session_options: EnumMap<G, InferenceSessionOptions>) -> Self {
         Self {
             loaded_models: Default::default(),
             session_options,
@@ -37,7 +37,7 @@ impl<R: InferenceRuntime, G: InferenceGroup> Status<R, G> {
     pub async fn load_model(
         &self,
         model: &VoiceModel,
-        model_bytes: &EnumMap<G::Kind, Vec<u8>>,
+        model_bytes: &EnumMap<G, Vec<u8>>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
@@ -238,13 +238,13 @@ impl<R: InferenceRuntime, G: InferenceGroup> LoadedModels<R, G> {
 }
 
 struct SessionSet<R: InferenceRuntime, G: InferenceGroup>(
-    EnumMap<G::Kind, Arc<std::sync::Mutex<R::Session>>>,
+    EnumMap<G, Arc<std::sync::Mutex<R::Session>>>,
 );
 
 impl<R: InferenceRuntime, G: InferenceGroup> SessionSet<R, G> {
     fn new(
-        model_bytes: &EnumMap<G::Kind, Vec<u8>>,
-        options: &EnumMap<G::Kind, InferenceSessionOptions>,
+        model_bytes: &EnumMap<G, Vec<u8>>,
+        options: &EnumMap<G, InferenceSessionOptions>,
     ) -> anyhow::Result<Self> {
         let mut sessions = model_bytes
             .iter()
@@ -254,7 +254,7 @@ impl<R: InferenceRuntime, G: InferenceGroup> SessionSet<R, G> {
             })
             .collect::<anyhow::Result<HashMap<_, _>>>()?;
 
-        Ok(Self(EnumMap::<G::Kind, _>::from_fn(|k| {
+        Ok(Self(EnumMap::<G, _>::from_fn(|k| {
             sessions.remove(&k.into_usize()).expect("should exist")
         })))
     }
@@ -295,10 +295,8 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        infer::signatures::{InferenceGroupImpl, InferencelKindImpl},
-        macros::tests::assert_debug_fmt_eq,
-        synthesizer::InferenceRuntimeImpl,
-        test_util::open_default_vvm_file,
+        infer::signatures::InferenceKind, macros::tests::assert_debug_fmt_eq,
+        synthesizer::InferenceRuntimeImpl, test_util::open_default_vvm_file,
     };
 
     use super::{super::InferenceSessionOptions, Status};
@@ -315,23 +313,23 @@ mod tests {
         let light_session_options = InferenceSessionOptions::new(cpu_num_threads, false);
         let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
         let session_options = enum_map! {
-            InferencelKindImpl::PredictDuration
-            | InferencelKindImpl::PredictIntonation => light_session_options,
-            InferencelKindImpl::Decode => heavy_session_options,
+            InferenceKind::PredictDuration
+            | InferenceKind::PredictIntonation => light_session_options,
+            InferenceKind::Decode => heavy_session_options,
         };
-        let status = Status::<InferenceRuntimeImpl, InferenceGroupImpl>::new(session_options);
+        let status = Status::<InferenceRuntimeImpl, InferenceKind>::new(session_options);
 
         assert_eq!(
             light_session_options,
-            status.session_options[InferencelKindImpl::PredictDuration],
+            status.session_options[InferenceKind::PredictDuration],
         );
         assert_eq!(
             light_session_options,
-            status.session_options[InferencelKindImpl::PredictIntonation],
+            status.session_options[InferenceKind::PredictIntonation],
         );
         assert_eq!(
             heavy_session_options,
-            status.session_options[InferencelKindImpl::Decode],
+            status.session_options[InferenceKind::Decode],
         );
 
         assert!(status.loaded_models.lock().unwrap().0.is_empty());
@@ -340,7 +338,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_load_model_works() {
-        let status = Status::<InferenceRuntimeImpl, InferenceGroupImpl>::new(
+        let status = Status::<InferenceRuntimeImpl, InferenceKind>::new(
             enum_map!(_ => InferenceSessionOptions::new(0, false)),
         );
         let model = &open_default_vvm_file().await;
@@ -353,7 +351,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_is_model_loaded_works() {
-        let status = Status::<InferenceRuntimeImpl, InferenceGroupImpl>::new(
+        let status = Status::<InferenceRuntimeImpl, InferenceKind>::new(
             enum_map!(_ => InferenceSessionOptions::new(0, false)),
         );
         let vvm = open_default_vvm_file().await;

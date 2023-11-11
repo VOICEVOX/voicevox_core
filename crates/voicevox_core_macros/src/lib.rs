@@ -8,6 +8,12 @@ use syn::{
     Data, DataEnum, DataStruct, DataUnion, DeriveInput, Field, Fields, Token,
 };
 
+#[proc_macro_derive(InferenceGroup)]
+pub fn derive_inference_group(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let DeriveInput { ident, .. } = parse_macro_input!(input as DeriveInput);
+    quote!(impl crate::infer::InferenceGroup for #ident {}).into()
+}
+
 #[proc_macro_derive(InferenceInputSignature, attributes(input_signature))]
 pub fn derive_inference_input_signature(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     return derive_inference_input_signature(&parse_macro_input!(input))

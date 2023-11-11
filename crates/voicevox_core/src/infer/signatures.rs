@@ -1,17 +1,11 @@
 use enum_map::Enum;
-use macros::{InferenceInputSignature, TryFromVecOutputTensor};
+use macros::{InferenceGroup, InferenceInputSignature, TryFromVecOutputTensor};
 use ndarray::{Array0, Array1, Array2};
 
-use super::{InferenceGroup, InferenceSignature, OutputTensor};
+use super::{InferenceSignature, OutputTensor};
 
-pub(crate) enum InferenceGroupImpl {}
-
-impl InferenceGroup for InferenceGroupImpl {
-    type Kind = InferencelKindImpl;
-}
-
-#[derive(Clone, Copy, Enum)]
-pub(crate) enum InferencelKindImpl {
+#[derive(Clone, Copy, Enum, InferenceGroup)]
+pub(crate) enum InferenceKind {
     PredictDuration,
     PredictIntonation,
     Decode,
@@ -20,10 +14,10 @@ pub(crate) enum InferencelKindImpl {
 pub(crate) enum PredictDuration {}
 
 impl InferenceSignature for PredictDuration {
-    type Group = InferenceGroupImpl;
+    type Group = InferenceKind;
     type Input = PredictDurationInput;
     type Output = PredictDurationOutput;
-    const KIND: InferencelKindImpl = InferencelKindImpl::PredictDuration;
+    const KIND: InferenceKind = InferenceKind::PredictDuration;
 }
 
 #[derive(InferenceInputSignature)]
@@ -41,10 +35,10 @@ pub(crate) struct PredictDurationOutput {
 pub(crate) enum PredictIntonation {}
 
 impl InferenceSignature for PredictIntonation {
-    type Group = InferenceGroupImpl;
+    type Group = InferenceKind;
     type Input = PredictIntonationInput;
     type Output = PredictIntonationOutput;
-    const KIND: InferencelKindImpl = InferencelKindImpl::PredictIntonation;
+    const KIND: InferenceKind = InferenceKind::PredictIntonation;
 }
 
 #[derive(InferenceInputSignature)]
@@ -68,10 +62,10 @@ pub(crate) struct PredictIntonationOutput {
 pub(crate) enum Decode {}
 
 impl InferenceSignature for Decode {
-    type Group = InferenceGroupImpl;
+    type Group = InferenceKind;
     type Input = DecodeInput;
     type Output = DecodeOutput;
-    const KIND: InferencelKindImpl = InferencelKindImpl::Decode;
+    const KIND: InferenceKind = InferenceKind::Decode;
 }
 
 #[derive(InferenceInputSignature)]

@@ -31,15 +31,13 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
-pub(crate) trait InferenceGroup {
-    type Kind: Copy + Enum;
-}
+pub(crate) trait InferenceGroup: Copy + Enum {}
 
 pub(crate) trait InferenceSignature: Sized + Send + 'static {
     type Group: InferenceGroup;
     type Input: InferenceInputSignature<Signature = Self>;
     type Output: TryFrom<Vec<OutputTensor>, Error = anyhow::Error> + Send;
-    const KIND: <Self::Group as InferenceGroup>::Kind;
+    const KIND: Self::Group;
 }
 
 pub(crate) trait InferenceInputSignature: Send + 'static {
