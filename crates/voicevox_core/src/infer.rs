@@ -67,26 +67,26 @@ pub(crate) trait SupportsInferenceOutput<O: Send>: InferenceRuntime {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<O>;
 }
 
-pub(crate) trait InferenceModelGroup {
+pub(crate) trait InferenceGroup {
     type Kind: Copy + Enum;
 }
 
 pub(crate) trait InferenceSignature: Sized + Send + 'static {
-    type ModelGroup: InferenceModelGroup;
+    type Group: InferenceGroup;
     type Input: InferenceInputSignature<Signature = Self>;
     type Output: Send;
-    const MODEL: <Self::ModelGroup as InferenceModelGroup>::Kind;
+    const INFERENCE: <Self::Group as InferenceGroup>::Kind;
 }
 
 pub(crate) trait InferenceInputSignature: Send + 'static {
     type Signature: InferenceSignature<Input = Self>;
 }
 
-pub(crate) struct InferenceSessionSet<G: InferenceModelGroup, R: InferenceRuntime>(
+pub(crate) struct InferenceSessionSet<G: InferenceGroup, R: InferenceRuntime>(
     EnumMap<G::Kind, Arc<std::sync::Mutex<R::Session>>>,
 );
 
-impl<G: InferenceModelGroup, R: InferenceRuntime> InferenceSessionSet<G, R> {
+impl<G: InferenceGroup, R: InferenceRuntime> InferenceSessionSet<G, R> {
     pub(crate) fn new(
         model_bytes: &EnumMap<G::Kind, Vec<u8>>,
         mut options: impl FnMut(G::Kind) -> InferenceSessionOptions,
@@ -105,14 +105,14 @@ impl<G: InferenceModelGroup, R: InferenceRuntime> InferenceSessionSet<G, R> {
     }
 }
 
-impl<G: InferenceModelGroup, R: InferenceRuntime> InferenceSessionSet<G, R> {
+impl<G: InferenceGroup, R: InferenceRuntime> InferenceSessionSet<G, R> {
     pub(crate) fn get<I>(&self) -> InferenceSessionCell<R, I>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature<ModelGroup = G>,
+        I::Signature: InferenceSignature<Group = G>,
     {
         InferenceSessionCell {
-            inner: self.0[I::Signature::MODEL].clone(),
+            inner: self.0[I::Signature::INFERENCE].clone(),
             marker: PhantomData,
         }
     }

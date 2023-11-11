@@ -2,18 +2,18 @@ use enum_map::Enum;
 use ndarray::{Array0, Array1, Array2};
 
 use crate::infer::{
-    InferenceInputSignature, InferenceModelGroup, InferenceSignature, RunContextExt as _,
+    InferenceGroup, InferenceInputSignature, InferenceSignature, RunContextExt as _,
     SupportsInferenceInputSignature, SupportsInferenceInputTensor,
 };
 
-pub(crate) enum InferenceModelGroupImpl {}
+pub(crate) enum InferenceGroupImpl {}
 
-impl InferenceModelGroup for InferenceModelGroupImpl {
-    type Kind = InferenceModelKindImpl;
+impl InferenceGroup for InferenceGroupImpl {
+    type Kind = InferencelKindImpl;
 }
 
 #[derive(Clone, Copy, Enum)]
-pub(crate) enum InferenceModelKindImpl {
+pub(crate) enum InferencelKindImpl {
     PredictDuration,
     PredictIntonation,
     Decode,
@@ -22,10 +22,10 @@ pub(crate) enum InferenceModelKindImpl {
 pub(crate) enum PredictDuration {}
 
 impl InferenceSignature for PredictDuration {
-    type ModelGroup = InferenceModelGroupImpl;
+    type Group = InferenceGroupImpl;
     type Input = PredictDurationInput;
     type Output = (Vec<f32>,);
-    const MODEL: InferenceModelKindImpl = InferenceModelKindImpl::PredictDuration;
+    const INFERENCE: InferencelKindImpl = InferencelKindImpl::PredictDuration;
 }
 
 pub(crate) struct PredictDurationInput {
@@ -53,10 +53,10 @@ impl<R: SupportsInferenceInputTensor<Array1<i64>>>
 pub(crate) enum PredictIntonation {}
 
 impl InferenceSignature for PredictIntonation {
-    type ModelGroup = InferenceModelGroupImpl;
+    type Group = InferenceGroupImpl;
     type Input = PredictIntonationInput;
     type Output = (Vec<f32>,);
-    const MODEL: InferenceModelKindImpl = InferenceModelKindImpl::PredictIntonation;
+    const INFERENCE: InferencelKindImpl = InferencelKindImpl::PredictIntonation;
 }
 
 pub(crate) struct PredictIntonationInput {
@@ -96,10 +96,10 @@ impl<R: SupportsInferenceInputTensor<Array0<i64>> + SupportsInferenceInputTensor
 pub(crate) enum Decode {}
 
 impl InferenceSignature for Decode {
-    type ModelGroup = InferenceModelGroupImpl;
+    type Group = InferenceGroupImpl;
     type Input = DecodeInput;
     type Output = (Vec<f32>,);
-    const MODEL: InferenceModelKindImpl = InferenceModelKindImpl::Decode;
+    const INFERENCE: InferencelKindImpl = InferencelKindImpl::Decode;
 }
 
 pub(crate) struct DecodeInput {
