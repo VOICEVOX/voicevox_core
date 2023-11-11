@@ -74,7 +74,7 @@ pub fn derive_inference_input_signature(input: proc_macro::TokenStream) -> proc_
     }
 }
 
-#[proc_macro_derive(TryFromVecAnyTensor)]
+#[proc_macro_derive(TryFromVecOutputTensor)]
 pub fn derive_try_from_vec_any_tensor(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     return derive_try_from_vec_any_tensor(&parse_macro_input!(input))
         .unwrap_or_else(|e| e.to_compile_error())
@@ -96,13 +96,15 @@ pub fn derive_try_from_vec_any_tensor(input: proc_macro::TokenStream) -> proc_ma
 
         Ok(quote! {
             impl #impl_generics
-                ::std::convert::TryFrom<::std::vec::Vec<crate::infer::AnyTensor>>
+                ::std::convert::TryFrom<::std::vec::Vec<crate::infer::OutputTensor>>
                 for #ident #ty_generics
             #where_clause
             {
                 type Error = ::anyhow::Error;
 
-                fn try_from(tensors: ::std::vec::Vec<AnyTensor>) -> ::std::result::Result<Self, Self::Error> {
+                fn try_from(
+                    tensors: ::std::vec::Vec<OutputTensor>,
+                ) -> ::std::result::Result<Self, Self::Error> {
                     ::anyhow::ensure!(
                         tensors.len() == #num_fields,
                         "expected {} tensor(s), got {}",

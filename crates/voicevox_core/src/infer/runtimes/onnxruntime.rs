@@ -11,7 +11,7 @@ use crate::{
     devices::SupportedDevices,
     error::ErrorRepr,
     infer::{
-        AnyTensor, DecryptModelError, InferenceRuntime, InferenceSessionOptions, InputScalar,
+        DecryptModelError, InferenceRuntime, InferenceSessionOptions, InputScalar, OutputTensor,
         RunContext,
     },
 };
@@ -101,7 +101,7 @@ impl InferenceRuntime for Onnxruntime {
 
     fn run(
         OnnxruntimeRunContext { sess, mut inputs }: OnnxruntimeRunContext<'_>,
-    ) -> anyhow::Result<Vec<AnyTensor>> {
+    ) -> anyhow::Result<Vec<OutputTensor>> {
         // FIXME: 現状では`f32`のみ対応。実行時にsessionからdatatypeが取れるので、別の型の対応も
         // おそらく可能ではあるが、それが必要になるよりもortクレートへの引越しが先になると思われる
         // のでこのままにする。
@@ -120,7 +120,7 @@ impl InferenceRuntime for Onnxruntime {
 
         Ok(outputs
             .iter()
-            .map(|o| AnyTensor::Float32((*o).clone().into_owned()))
+            .map(|o| OutputTensor::Float32((*o).clone().into_owned()))
             .collect())
     }
 }

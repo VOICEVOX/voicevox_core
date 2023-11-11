@@ -1,8 +1,8 @@
 use enum_map::Enum;
-use macros::{InferenceInputSignature, TryFromVecAnyTensor};
+use macros::{InferenceInputSignature, TryFromVecOutputTensor};
 use ndarray::{Array0, Array1, Array2};
 
-use super::{AnyTensor, InferenceGroup, InferenceSignature};
+use super::{InferenceGroup, InferenceSignature, OutputTensor};
 
 pub(crate) enum InferenceGroupImpl {}
 
@@ -33,7 +33,7 @@ pub(crate) struct PredictDurationInput {
     pub(crate) speaker_id: Array1<i64>,
 }
 
-#[derive(TryFromVecAnyTensor)]
+#[derive(TryFromVecOutputTensor)]
 pub(crate) struct PredictDurationOutput {
     pub(crate) phoneme_length: Array1<f32>,
 }
@@ -60,7 +60,7 @@ pub(crate) struct PredictIntonationInput {
     pub(crate) speaker_id: Array1<i64>,
 }
 
-#[derive(TryFromVecAnyTensor)]
+#[derive(TryFromVecOutputTensor)]
 pub(crate) struct PredictIntonationOutput {
     pub(crate) f0_list: Array1<f32>,
 }
@@ -82,7 +82,7 @@ pub(crate) struct DecodeInput {
     pub(crate) speaker_id: Array1<i64>,
 }
 
-#[derive(TryFromVecAnyTensor)]
+#[derive(TryFromVecOutputTensor)]
 pub(crate) struct DecodeOutput {
     pub(crate) wave: Array1<f32>,
 }

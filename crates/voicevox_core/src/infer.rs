@@ -28,7 +28,7 @@ pub(crate) trait InferenceRuntime: 'static {
         ctx: &mut Self::RunContext<'_>,
     );
 
-    fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<AnyTensor>>;
+    fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
 pub(crate) trait RunContext<'a>:
@@ -52,7 +52,7 @@ pub(crate) trait InferenceGroup {
 pub(crate) trait InferenceSignature: Sized + Send + 'static {
     type Group: InferenceGroup;
     type Input: InferenceInputSignature<Signature = Self>;
-    type Output: TryFrom<Vec<AnyTensor>, Error = anyhow::Error> + Send;
+    type Output: TryFrom<Vec<OutputTensor>, Error = anyhow::Error> + Send;
     const INFERENCE: <Self::Group as InferenceGroup>::Kind;
 }
 
@@ -67,26 +67,26 @@ impl InputScalar for i64 {}
 impl InputScalar for f32 {}
 
 pub(crate) trait OutputScalar: Sized {
-    fn extract_dyn_dim(tensor: AnyTensor) -> std::result::Result<ArrayD<Self>, ExtractError>;
+    fn extract(tensor: OutputTensor) -> std::result::Result<ArrayD<Self>, ExtractError>;
 }
 
 impl OutputScalar for f32 {
-    fn extract_dyn_dim(tensor: AnyTensor) -> std::result::Result<ArrayD<Self>, ExtractError> {
+    fn extract(tensor: OutputTensor) -> std::result::Result<ArrayD<Self>, ExtractError> {
         match tensor {
-            AnyTensor::Float32(tensor) => Ok(tensor),
+            OutputTensor::Float32(tensor) => Ok(tensor),
         }
     }
 }
 
-pub(crate) enum AnyTensor {
+pub(crate) enum OutputTensor {
     Float32(ArrayD<f32>),
 }
 
-impl<A: OutputScalar, D: Dimension> TryFrom<AnyTensor> for Array<A, D> {
+impl<A: OutputScalar, D: Dimension> TryFrom<OutputTensor> for Array<A, D> {
     type Error = ExtractError;
 
-    fn try_from(tensor: AnyTensor) -> Result<Self, Self::Error> {
-        let this = A::extract_dyn_dim(tensor)?.into_dimensionality()?;
+    fn try_from(tensor: OutputTensor) -> Result<Self, Self::Error> {
+        let this = A::extract(tensor)?.into_dimensionality()?;
         Ok(this)
     }
 }
