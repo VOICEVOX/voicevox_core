@@ -1,48 +1,57 @@
-use super::*;
-use crate::infer::{
-    signatures::{InferenceGroupImpl, InferencelKindImpl},
-    InferenceInputSignature, InferenceRuntime, InferenceSessionCell, InferenceSessionOptions,
-    InferenceSessionSet, InferenceSignature,
+use std::{
+    collections::{BTreeMap, HashMap},
+    marker::PhantomData,
+    sync::Arc,
 };
+
 use educe::Educe;
+use enum_map::{Enum as _, EnumMap};
 use itertools::iproduct;
 
-use std::collections::BTreeMap;
+use crate::{
+    error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
+    manifest::ModelInnerId,
+    metas::{SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
+    voice_model::{VoiceModel, VoiceModelId},
+    Result,
+};
 
-pub(crate) struct Status<R: InferenceRuntime> {
-    loaded_models: std::sync::Mutex<LoadedModels<R>>,
-    light_session_options: InferenceSessionOptions, // 軽いモデルはこちらを使う
-    heavy_session_options: InferenceSessionOptions, // 重いモデルはこちらを使う
+use super::{
+    model_file, InferenceGroup, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
+    InferenceSignature,
+};
+
+pub(crate) struct Status<R: InferenceRuntime, G: InferenceGroup> {
+    loaded_models: std::sync::Mutex<LoadedModels<R, G>>,
+    session_options: EnumMap<G::Kind, InferenceSessionOptions>,
 }
 
-impl<R: InferenceRuntime> Status<R> {
-    pub fn new(use_gpu: bool, cpu_num_threads: u16) -> Self {
+impl<R: InferenceRuntime, G: InferenceGroup> Status<R, G> {
+    pub fn new(session_options: EnumMap<G::Kind, InferenceSessionOptions>) -> Self {
         Self {
             loaded_models: Default::default(),
-            light_session_options: InferenceSessionOptions::new(cpu_num_threads, false),
-            heavy_session_options: InferenceSessionOptions::new(cpu_num_threads, use_gpu),
+            session_options,
         }
     }
 
-    pub async fn load_model(&self, model: &VoiceModel) -> Result<()> {
+    pub async fn load_model(
+        &self,
+        model: &VoiceModel,
+        model_bytes: &EnumMap<G::Kind, Vec<u8>>,
+    ) -> Result<()> {
         self.loaded_models
             .lock()
             .unwrap()
             .ensure_acceptable(model)?;
 
-        let model_bytes = &model.read_inference_models().await?;
-
-        let session_set = InferenceSessionSet::new(model_bytes, |kind| match kind {
-            InferencelKindImpl::PredictDuration | InferencelKindImpl::PredictIntonation => {
-                self.light_session_options
-            }
-            InferencelKindImpl::Decode => self.heavy_session_options,
-        })
-        .map_err(|source| LoadModelError {
-            path: model.path().clone(),
-            context: LoadModelErrorKind::InvalidModelData,
-            source: Some(source),
-        })?;
+        let session_set =
+            SessionSet::new(model_bytes, &self.session_options).map_err(|source| {
+                LoadModelError {
+                    path: model.path().clone(),
+                    context: LoadModelErrorKind::InvalidModelData,
+                    source: Some(source),
+                }
+            })?;
 
         self.loaded_models
             .lock()
@@ -88,7 +97,7 @@ impl<R: InferenceRuntime> Status<R> {
     ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Group = InferenceGroupImpl>,
+        I::Signature: InferenceSignature<Group = G>,
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
 
@@ -102,16 +111,18 @@ impl<R: InferenceRuntime> Status<R> {
 ///
 /// この構造体のメソッドは、すべて一瞬で完了すべきである。
 #[derive(Educe)]
-#[educe(Default(bound = "R: InferenceRuntime"))]
-struct LoadedModels<R: InferenceRuntime>(BTreeMap<VoiceModelId, LoadedModel<R>>);
+#[educe(Default(bound = "R: InferenceRuntime, G: InferenceGroup"))]
+struct LoadedModels<R: InferenceRuntime, G: InferenceGroup>(
+    BTreeMap<VoiceModelId, LoadedModel<R, G>>,
+);
 
-struct LoadedModel<R: InferenceRuntime> {
+struct LoadedModel<R: InferenceRuntime, G: InferenceGroup> {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_set: InferenceSessionSet<InferenceGroupImpl, R>,
+    session_set: SessionSet<R, G>,
 }
 
-impl<R: InferenceRuntime> LoadedModels<R> {
+impl<R: InferenceRuntime, G: InferenceGroup> LoadedModels<R, G> {
     fn metas(&self) -> VoiceModelMeta {
         self.0
             .values()
@@ -147,10 +158,10 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     /// # Panics
     ///
     /// `self`が`model_id`を含んでいないとき、パニックする。
-    fn get<I>(&self, model_id: &VoiceModelId) -> InferenceSessionCell<R, I>
+    fn get<I>(&self, model_id: &VoiceModelId) -> SessionCell<R, I>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Group = InferenceGroupImpl>,
+        I::Signature: InferenceSignature<Group = G>,
     {
         self.0[model_id].session_set.get()
     }
@@ -193,11 +204,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         Ok(())
     }
 
-    fn insert(
-        &mut self,
-        model: &VoiceModel,
-        session_set: InferenceSessionSet<InferenceGroupImpl, R>,
-    ) -> Result<()> {
+    fn insert(&mut self, model: &VoiceModel, session_set: SessionSet<R, G>) -> Result<()> {
         self.ensure_acceptable(model)?;
 
         let prev = self.0.insert(
@@ -230,13 +237,71 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     }
 }
 
+struct SessionSet<R: InferenceRuntime, G: InferenceGroup>(
+    EnumMap<G::Kind, Arc<std::sync::Mutex<R::Session>>>,
+);
+
+impl<R: InferenceRuntime, G: InferenceGroup> SessionSet<R, G> {
+    fn new(
+        model_bytes: &EnumMap<G::Kind, Vec<u8>>,
+        options: &EnumMap<G::Kind, InferenceSessionOptions>,
+    ) -> anyhow::Result<Self> {
+        let mut sessions = model_bytes
+            .iter()
+            .map(|(k, m)| {
+                let sess = R::new_session(|| model_file::decrypt(m), options[k])?;
+                Ok((k.into_usize(), std::sync::Mutex::new(sess).into()))
+            })
+            .collect::<anyhow::Result<HashMap<_, _>>>()?;
+
+        Ok(Self(EnumMap::<G::Kind, _>::from_fn(|k| {
+            sessions.remove(&k.into_usize()).expect("should exist")
+        })))
+    }
+}
+
+impl<R: InferenceRuntime, G: InferenceGroup> SessionSet<R, G> {
+    fn get<I>(&self) -> SessionCell<R, I>
+    where
+        I: InferenceInputSignature,
+        I::Signature: InferenceSignature<Group = G>,
+    {
+        SessionCell {
+            inner: self.0[I::Signature::KIND].clone(),
+            marker: PhantomData,
+        }
+    }
+}
+
+struct SessionCell<R: InferenceRuntime, I> {
+    inner: Arc<std::sync::Mutex<R::Session>>,
+    marker: PhantomData<fn(I)>,
+}
+
+impl<R: InferenceRuntime, I: InferenceInputSignature> SessionCell<R, I> {
+    fn run(self, input: I) -> crate::Result<<I::Signature as InferenceSignature>::Output> {
+        let inner = &mut self.inner.lock().unwrap();
+        let ctx = input.make_run_context::<R>(inner);
+        R::run(ctx)
+            .and_then(TryInto::try_into)
+            .map_err(|e| ErrorRepr::InferenceFailed(e).into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-
-    use super::*;
-    use crate::macros::tests::assert_debug_fmt_eq;
-    use crate::synthesizer::InferenceRuntimeImpl;
+    use enum_map::enum_map;
     use pretty_assertions::assert_eq;
+    use rstest::rstest;
+
+    use crate::{
+        infer::signatures::{InferenceGroupImpl, InferencelKindImpl},
+        macros::tests::assert_debug_fmt_eq,
+        synthesizer::InferenceRuntimeImpl,
+        test_util::open_default_vvm_file,
+    };
+
+    use super::{super::InferenceSessionOptions, Status};
 
     #[rstest]
     #[case(true, 0)]
@@ -247,25 +312,40 @@ mod tests {
     #[case(false, 8)]
     #[case(false, 0)]
     fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: u16) {
-        let status = Status::<InferenceRuntimeImpl>::new(use_gpu, cpu_num_threads);
-        assert_eq!(false, status.light_session_options.use_gpu);
-        assert_eq!(use_gpu, status.heavy_session_options.use_gpu);
+        let light_session_options = InferenceSessionOptions::new(cpu_num_threads, false);
+        let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
+        let session_options = enum_map! {
+            InferencelKindImpl::PredictDuration
+            | InferencelKindImpl::PredictIntonation => light_session_options,
+            InferencelKindImpl::Decode => heavy_session_options,
+        };
+        let status = Status::<InferenceRuntimeImpl, InferenceGroupImpl>::new(session_options);
+
         assert_eq!(
-            cpu_num_threads,
-            status.light_session_options.cpu_num_threads
+            light_session_options,
+            status.session_options[InferencelKindImpl::PredictDuration],
         );
         assert_eq!(
-            cpu_num_threads,
-            status.heavy_session_options.cpu_num_threads
+            light_session_options,
+            status.session_options[InferencelKindImpl::PredictIntonation],
         );
+        assert_eq!(
+            heavy_session_options,
+            status.session_options[InferencelKindImpl::Decode],
+        );
+
         assert!(status.loaded_models.lock().unwrap().0.is_empty());
     }
 
     #[rstest]
     #[tokio::test]
     async fn status_load_model_works() {
-        let status = Status::<InferenceRuntimeImpl>::new(false, 0);
-        let result = status.load_model(&open_default_vvm_file().await).await;
+        let status = Status::<InferenceRuntimeImpl, InferenceGroupImpl>::new(
+            enum_map!(_ => InferenceSessionOptions::new(0, false)),
+        );
+        let model = &open_default_vvm_file().await;
+        let model_bytes = &model.read_inference_models().await.unwrap();
+        let result = status.load_model(model, model_bytes).await;
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
     }
@@ -273,13 +353,16 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_is_model_loaded_works() {
-        let status = Status::<InferenceRuntimeImpl>::new(false, 0);
+        let status = Status::<InferenceRuntimeImpl, InferenceGroupImpl>::new(
+            enum_map!(_ => InferenceSessionOptions::new(0, false)),
+        );
         let vvm = open_default_vvm_file().await;
+        let model_bytes = &vvm.read_inference_models().await.unwrap();
         assert!(
             !status.is_loaded_model(vvm.id()),
             "model should  not be loaded"
         );
-        let result = status.load_model(&vvm).await;
+        let result = status.load_model(&vvm, model_bytes).await;
         assert_debug_fmt_eq!(Ok(()), result);
         assert!(status.is_loaded_model(vvm.id()), "model should be loaded");
     }

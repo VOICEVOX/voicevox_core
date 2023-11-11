@@ -1,23 +1,36 @@
-use self::status::*;
-use super::*;
+use enum_map::enum_map;
+
 use crate::infer::{
     signatures::{
-        DecodeInput, DecodeOutput, PredictDurationInput, PredictDurationOutput,
-        PredictIntonationInput, PredictIntonationOutput,
+        DecodeInput, DecodeOutput, InferenceGroupImpl, InferencelKindImpl, PredictDurationInput,
+        PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput,
     },
-    InferenceRuntime,
+    status::Status,
+    InferenceRuntime, InferenceSessionOptions,
 };
+
+use super::*;
 
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 
 pub(crate) struct InferenceCore<R: InferenceRuntime> {
-    status: Status<R>,
+    status: Status<R, InferenceGroupImpl>,
 }
 
 impl<R: InferenceRuntime> InferenceCore<R> {
     pub(crate) fn new(use_gpu: bool, cpu_num_threads: u16) -> Result<Self> {
         if !use_gpu || Self::can_support_gpu_feature()? {
-            let status = Status::new(use_gpu, cpu_num_threads);
+            // 軽いモデルはこちらを使う
+            let light_session_options = InferenceSessionOptions::new(cpu_num_threads, false);
+
+            // 重いモデルはこちらを使う
+            let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
+
+            let status = Status::new(enum_map! {
+                InferencelKindImpl::PredictDuration
+                | InferencelKindImpl::PredictIntonation => light_session_options,
+                InferencelKindImpl::Decode => heavy_session_options,
+            });
             Ok(Self { status })
         } else {
             Err(ErrorRepr::GpuSupport.into())
@@ -37,7 +50,8 @@ impl<R: InferenceRuntime> InferenceCore<R> {
     }
 
     pub async fn load_model(&self, model: &VoiceModel) -> Result<()> {
-        self.status.load_model(model).await
+        let model_bytes = &model.read_inference_models().await?;
+        self.status.load_model(model, model_bytes).await
     }
 
     pub fn unload_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {

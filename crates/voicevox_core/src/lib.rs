@@ -13,7 +13,6 @@ mod manifest;
 mod metas;
 mod numerics;
 mod result;
-mod status;
 mod synthesizer;
 mod user_dict;
 mod version;

@@ -1,16 +1,17 @@
 mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod signatures;
+pub(crate) mod status;
 
-use std::{collections::HashMap, fmt::Debug, marker::PhantomData, sync::Arc};
+use std::fmt::Debug;
 
 use derive_new::new;
 use easy_ext::ext;
-use enum_map::{Enum, EnumMap};
+use enum_map::Enum;
 use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
 
-use crate::{ErrorRepr, SupportedDevices};
+use crate::SupportedDevices;
 
 pub(crate) trait InferenceRuntime: 'static {
     type Session: Sized + Send + 'static;
@@ -91,61 +92,7 @@ impl<A: OutputScalar, D: Dimension> TryFrom<OutputTensor> for Array<A, D> {
     }
 }
 
-pub(crate) struct InferenceSessionSet<G: InferenceGroup, R: InferenceRuntime>(
-    EnumMap<G::Kind, Arc<std::sync::Mutex<R::Session>>>,
-);
-
-impl<G: InferenceGroup, R: InferenceRuntime> InferenceSessionSet<G, R> {
-    pub(crate) fn new(
-        model_bytes: &EnumMap<G::Kind, Vec<u8>>,
-        mut options: impl FnMut(G::Kind) -> InferenceSessionOptions,
-    ) -> anyhow::Result<Self> {
-        let mut sessions = model_bytes
-            .iter()
-            .map(|(k, m)| {
-                let sess = R::new_session(|| model_file::decrypt(m), options(k))?;
-                Ok((k.into_usize(), std::sync::Mutex::new(sess).into()))
-            })
-            .collect::<anyhow::Result<HashMap<_, _>>>()?;
-
-        Ok(Self(EnumMap::<G::Kind, _>::from_fn(|k| {
-            sessions.remove(&k.into_usize()).expect("should exist")
-        })))
-    }
-}
-
-impl<G: InferenceGroup, R: InferenceRuntime> InferenceSessionSet<G, R> {
-    pub(crate) fn get<I>(&self) -> InferenceSessionCell<R, I>
-    where
-        I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Group = G>,
-    {
-        InferenceSessionCell {
-            inner: self.0[I::Signature::KIND].clone(),
-            marker: PhantomData,
-        }
-    }
-}
-
-pub(crate) struct InferenceSessionCell<R: InferenceRuntime, I> {
-    inner: Arc<std::sync::Mutex<R::Session>>,
-    marker: PhantomData<fn(I)>,
-}
-
-impl<R: InferenceRuntime, I: InferenceInputSignature> InferenceSessionCell<R, I> {
-    pub(crate) fn run(
-        self,
-        input: I,
-    ) -> crate::Result<<I::Signature as InferenceSignature>::Output> {
-        let inner = &mut self.inner.lock().unwrap();
-        let ctx = input.make_run_context::<R>(inner);
-        R::run(ctx)
-            .and_then(TryInto::try_into)
-            .map_err(|e| ErrorRepr::InferenceFailed(e).into())
-    }
-}
-
-#[derive(new, Clone, Copy)]
+#[derive(new, Clone, Copy, PartialEq, Debug)]
 pub(crate) struct InferenceSessionOptions {
     pub(crate) cpu_num_threads: u16,
     pub(crate) use_gpu: bool,
