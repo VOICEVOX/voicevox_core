@@ -1,9 +1,10 @@
+use anyhow::ensure;
 use enum_map::Enum;
 use ndarray::{Array0, Array1, Array2};
 
-use crate::infer::{
-    InferenceGroup, InferenceInputSignature, InferenceSignature, RunContextExt as _,
-    SupportsInferenceInputSignature, SupportsInferenceInputTensor,
+use super::{
+    AnyTensor, InferenceGroup, InferenceInputSignature, InferenceRuntime, InferenceSignature,
+    RunContextExt as _,
 };
 
 pub(crate) enum InferenceGroupImpl {}
@@ -24,7 +25,7 @@ pub(crate) enum PredictDuration {}
 impl InferenceSignature for PredictDuration {
     type Group = InferenceGroupImpl;
     type Input = PredictDurationInput;
-    type Output = (Vec<f32>,);
+    type Output = PredictDurationOutput;
     const INFERENCE: InferencelKindImpl = InferencelKindImpl::PredictDuration;
 }
 
@@ -35,18 +36,36 @@ pub(crate) struct PredictDurationInput {
 
 impl InferenceInputSignature for PredictDurationInput {
     type Signature = PredictDuration;
+
+    fn make_run_context<R: InferenceRuntime>(self, sess: &mut R::Session) -> R::RunContext<'_> {
+        R::RunContext::from(sess)
+            .with_input(self.phoneme)
+            .with_input(self.speaker_id)
+    }
 }
 
-impl<R: SupportsInferenceInputTensor<Array1<i64>>>
-    SupportsInferenceInputSignature<PredictDurationInput> for R
-{
-    fn make_run_context(
-        sess: &mut Self::Session,
-        input: PredictDurationInput,
-    ) -> Self::RunContext<'_> {
-        Self::RunContext::from(sess)
-            .with_input(input.phoneme)
-            .with_input(input.speaker_id)
+pub(crate) struct PredictDurationOutput {
+    pub(crate) phoneme_length: Array1<f32>,
+}
+
+impl TryFrom<Vec<AnyTensor>> for PredictDurationOutput {
+    type Error = anyhow::Error;
+
+    fn try_from(tensors: Vec<AnyTensor>) -> Result<Self, Self::Error> {
+        ensure!(
+            tensors.len() == 1,
+            "expected 1 tensor(s), got {}",
+            tensors.len(),
+        );
+
+        let mut tensors = tensors.into_iter();
+        let this = Self {
+            phoneme_length: tensors
+                .next()
+                .expect("the length should have been checked")
+                .try_into()?,
+        };
+        Ok(this)
     }
 }
 
@@ -55,7 +74,7 @@ pub(crate) enum PredictIntonation {}
 impl InferenceSignature for PredictIntonation {
     type Group = InferenceGroupImpl;
     type Input = PredictIntonationInput;
-    type Output = (Vec<f32>,);
+    type Output = PredictIntonationOutput;
     const INFERENCE: InferencelKindImpl = InferencelKindImpl::PredictIntonation;
 }
 
@@ -72,24 +91,42 @@ pub(crate) struct PredictIntonationInput {
 
 impl InferenceInputSignature for PredictIntonationInput {
     type Signature = PredictIntonation;
+
+    fn make_run_context<R: InferenceRuntime>(self, sess: &mut R::Session) -> R::RunContext<'_> {
+        R::RunContext::from(sess)
+            .with_input(self.length)
+            .with_input(self.vowel_phoneme)
+            .with_input(self.consonant_phoneme)
+            .with_input(self.start_accent)
+            .with_input(self.end_accent)
+            .with_input(self.start_accent_phrase)
+            .with_input(self.end_accent_phrase)
+            .with_input(self.speaker_id)
+    }
 }
 
-impl<R: SupportsInferenceInputTensor<Array0<i64>> + SupportsInferenceInputTensor<Array1<i64>>>
-    SupportsInferenceInputSignature<PredictIntonationInput> for R
-{
-    fn make_run_context(
-        sess: &mut Self::Session,
-        input: PredictIntonationInput,
-    ) -> Self::RunContext<'_> {
-        Self::RunContext::from(sess)
-            .with_input(input.length)
-            .with_input(input.vowel_phoneme)
-            .with_input(input.consonant_phoneme)
-            .with_input(input.start_accent)
-            .with_input(input.end_accent)
-            .with_input(input.start_accent_phrase)
-            .with_input(input.end_accent_phrase)
-            .with_input(input.speaker_id)
+pub(crate) struct PredictIntonationOutput {
+    pub(crate) f0_list: Array1<f32>,
+}
+
+impl TryFrom<Vec<AnyTensor>> for PredictIntonationOutput {
+    type Error = anyhow::Error;
+
+    fn try_from(tensors: Vec<AnyTensor>) -> Result<Self, Self::Error> {
+        ensure!(
+            tensors.len() == 1,
+            "expected 1 tensor(s), got {}",
+            tensors.len(),
+        );
+
+        let mut tensors = tensors.into_iter();
+        let this = Self {
+            f0_list: tensors
+                .next()
+                .expect("the length should have been checked")
+                .try_into()?,
+        };
+        Ok(this)
     }
 }
 
@@ -98,7 +135,7 @@ pub(crate) enum Decode {}
 impl InferenceSignature for Decode {
     type Group = InferenceGroupImpl;
     type Input = DecodeInput;
-    type Output = (Vec<f32>,);
+    type Output = DecodeOutput;
     const INFERENCE: InferencelKindImpl = InferencelKindImpl::Decode;
 }
 
@@ -110,15 +147,36 @@ pub(crate) struct DecodeInput {
 
 impl InferenceInputSignature for DecodeInput {
     type Signature = Decode;
+
+    fn make_run_context<R: InferenceRuntime>(self, sess: &mut R::Session) -> R::RunContext<'_> {
+        R::RunContext::from(sess)
+            .with_input(self.f0)
+            .with_input(self.phoneme)
+            .with_input(self.speaker_id)
+    }
 }
 
-impl<R: SupportsInferenceInputTensor<Array1<i64>> + SupportsInferenceInputTensor<Array2<f32>>>
-    SupportsInferenceInputSignature<DecodeInput> for R
-{
-    fn make_run_context(sess: &mut Self::Session, input: DecodeInput) -> Self::RunContext<'_> {
-        Self::RunContext::from(sess)
-            .with_input(input.f0)
-            .with_input(input.phoneme)
-            .with_input(input.speaker_id)
+pub(crate) struct DecodeOutput {
+    pub(crate) wave: Array1<f32>,
+}
+
+impl TryFrom<Vec<AnyTensor>> for DecodeOutput {
+    type Error = anyhow::Error;
+
+    fn try_from(tensors: Vec<AnyTensor>) -> Result<Self, Self::Error> {
+        ensure!(
+            tensors.len() == 1,
+            "expected 1 tensor(s), got {}",
+            tensors.len(),
+        );
+
+        let mut tensors = tensors.into_iter();
+        let this = Self {
+            wave: tensors
+                .next()
+                .expect("the length should have been checked")
+                .try_into()?,
+        };
+        Ok(this)
     }
 }

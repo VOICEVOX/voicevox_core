@@ -2,10 +2,10 @@ use self::status::*;
 use super::*;
 use crate::infer::{
     signatures::{
-        Decode, DecodeInput, PredictDuration, PredictDurationInput, PredictIntonation,
-        PredictIntonationInput,
+        DecodeInput, DecodeOutput, PredictDurationInput, PredictDurationOutput,
+        PredictIntonationInput, PredictIntonationOutput,
     },
-    InferenceRuntime, SupportsInferenceSignature,
+    InferenceRuntime,
 };
 
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
@@ -14,12 +14,7 @@ pub(crate) struct InferenceCore<R: InferenceRuntime> {
     status: Status<R>,
 }
 
-impl<
-        R: SupportsInferenceSignature<PredictDuration>
-            + SupportsInferenceSignature<PredictIntonation>
-            + SupportsInferenceSignature<Decode>,
-    > InferenceCore<R>
-{
+impl<R: InferenceRuntime> InferenceCore<R> {
     pub(crate) fn new(use_gpu: bool, cpu_num_threads: u16) -> Result<Self> {
         if !use_gpu || Self::can_support_gpu_feature()? {
             let status = Status::new(use_gpu, cpu_num_threads);
@@ -71,7 +66,9 @@ impl<
 
         let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
 
-        let (mut output,) = self
+        let PredictDurationOutput {
+            phoneme_length: output,
+        } = self
             .status
             .run_session(
                 &model_id,
@@ -81,6 +78,7 @@ impl<
                 },
             )
             .await?;
+        let mut output = output.into_raw_vec();
 
         for output_item in output.iter_mut() {
             if *output_item < PHONEME_LENGTH_MINIMAL {
@@ -109,7 +107,7 @@ impl<
 
         let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
 
-        let (output,) = self
+        let PredictIntonationOutput { f0_list: output } = self
             .status
             .run_session(
                 &model_id,
@@ -126,7 +124,7 @@ impl<
             )
             .await?;
 
-        Ok(output)
+        Ok(output.into_raw_vec())
     }
 
     pub async fn decode(
@@ -159,7 +157,7 @@ impl<
             padding_size,
         );
 
-        let (output,) = self
+        let DecodeOutput { wave: output } = self
             .status
             .run_session(
                 &model_id,
@@ -175,7 +173,10 @@ impl<
             )
             .await?;
 
-        Ok(Self::trim_padding_from_output(output, padding_size))
+        Ok(Self::trim_padding_from_output(
+            output.into_raw_vec(),
+            padding_size,
+        ))
     }
 
     fn make_f0_with_padding(

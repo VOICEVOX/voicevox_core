@@ -7,21 +7,28 @@ use std::{collections::HashMap, fmt::Debug, marker::PhantomData, sync::Arc};
 use derive_new::new;
 use easy_ext::ext;
 use enum_map::{Enum, EnumMap};
+use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
 
 use crate::{ErrorRepr, SupportedDevices};
 
 pub(crate) trait InferenceRuntime: 'static {
-    type Session: InferenceSession;
+    type Session: Sized + Send + 'static;
     type RunContext<'a>: RunContext<'a, Runtime = Self>;
-    fn supported_devices() -> crate::Result<SupportedDevices>;
-}
 
-pub(crate) trait InferenceSession: Sized + Send + 'static {
-    fn new(
+    fn supported_devices() -> crate::Result<SupportedDevices>;
+
+    fn new_session(
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
         options: InferenceSessionOptions,
-    ) -> anyhow::Result<Self>;
+    ) -> anyhow::Result<Self::Session>;
+
+    fn push_input(
+        input: Array<impl InputScalar, impl Dimension + 'static>,
+        ctx: &mut Self::RunContext<'_>,
+    );
+
+    fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<AnyTensor>>;
 }
 
 pub(crate) trait RunContext<'a>:
@@ -32,39 +39,10 @@ pub(crate) trait RunContext<'a>:
 
 #[ext(RunContextExt)]
 impl<'a, T: RunContext<'a>> T {
-    fn with_input<I>(mut self, tensor: I) -> Self
-    where
-        T::Runtime: SupportsInferenceInputTensor<I>,
-    {
+    fn with_input(mut self, tensor: Array<impl InputScalar, impl Dimension + 'static>) -> Self {
         T::Runtime::push_input(tensor, &mut self);
         self
     }
-}
-
-pub(crate) trait SupportsInferenceSignature<S: InferenceSignature>:
-    SupportsInferenceInputSignature<S::Input> + SupportsInferenceOutput<S::Output>
-{
-}
-
-impl<
-        R: SupportsInferenceInputSignature<S::Input> + SupportsInferenceOutput<S::Output>,
-        S: InferenceSignature,
-    > SupportsInferenceSignature<S> for R
-{
-}
-
-pub(crate) trait SupportsInferenceInputTensor<I>: InferenceRuntime {
-    fn push_input(input: I, ctx: &mut Self::RunContext<'_>);
-}
-
-pub(crate) trait SupportsInferenceInputSignature<I: InferenceInputSignature>:
-    InferenceRuntime
-{
-    fn make_run_context(sess: &mut Self::Session, input: I) -> Self::RunContext<'_>;
-}
-
-pub(crate) trait SupportsInferenceOutput<O: Send>: InferenceRuntime {
-    fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<O>;
 }
 
 pub(crate) trait InferenceGroup {
@@ -74,12 +52,43 @@ pub(crate) trait InferenceGroup {
 pub(crate) trait InferenceSignature: Sized + Send + 'static {
     type Group: InferenceGroup;
     type Input: InferenceInputSignature<Signature = Self>;
-    type Output: Send;
+    type Output: TryFrom<Vec<AnyTensor>, Error = anyhow::Error> + Send;
     const INFERENCE: <Self::Group as InferenceGroup>::Kind;
 }
 
 pub(crate) trait InferenceInputSignature: Send + 'static {
     type Signature: InferenceSignature<Input = Self>;
+    fn make_run_context<R: InferenceRuntime>(self, sess: &mut R::Session) -> R::RunContext<'_>;
+}
+
+pub(crate) trait InputScalar: sealed::InputScalar + Debug + 'static {}
+
+impl InputScalar for i64 {}
+impl InputScalar for f32 {}
+
+pub(crate) trait OutputScalar: Sized {
+    fn extract_dyn_dim(tensor: AnyTensor) -> std::result::Result<ArrayD<Self>, ExtractError>;
+}
+
+impl OutputScalar for f32 {
+    fn extract_dyn_dim(tensor: AnyTensor) -> std::result::Result<ArrayD<Self>, ExtractError> {
+        match tensor {
+            AnyTensor::Float32(tensor) => Ok(tensor),
+        }
+    }
+}
+
+pub(crate) enum AnyTensor {
+    Float32(ArrayD<f32>),
+}
+
+impl<A: OutputScalar, D: Dimension> TryFrom<AnyTensor> for Array<A, D> {
+    type Error = ExtractError;
+
+    fn try_from(tensor: AnyTensor) -> Result<Self, Self::Error> {
+        let this = A::extract_dyn_dim(tensor)?.into_dimensionality()?;
+        Ok(this)
+    }
 }
 
 pub(crate) struct InferenceSessionSet<G: InferenceGroup, R: InferenceRuntime>(
@@ -94,7 +103,7 @@ impl<G: InferenceGroup, R: InferenceRuntime> InferenceSessionSet<G, R> {
         let mut sessions = model_bytes
             .iter()
             .map(|(k, m)| {
-                let sess = R::Session::new(|| model_file::decrypt(m), options(k))?;
+                let sess = R::new_session(|| model_file::decrypt(m), options(k))?;
                 Ok((k.into_usize(), std::sync::Mutex::new(sess).into()))
             })
             .collect::<anyhow::Result<HashMap<_, _>>>()?;
@@ -123,19 +132,16 @@ pub(crate) struct InferenceSessionCell<R: InferenceRuntime, I> {
     marker: PhantomData<fn(I)>,
 }
 
-impl<
-        R: SupportsInferenceInputSignature<I>
-            + SupportsInferenceOutput<<I::Signature as InferenceSignature>::Output>,
-        I: InferenceInputSignature,
-    > InferenceSessionCell<R, I>
-{
+impl<R: InferenceRuntime, I: InferenceInputSignature> InferenceSessionCell<R, I> {
     pub(crate) fn run(
         self,
         input: I,
     ) -> crate::Result<<I::Signature as InferenceSignature>::Output> {
         let inner = &mut self.inner.lock().unwrap();
-        let ctx = R::make_run_context(inner, input);
-        R::run(ctx).map_err(|e| ErrorRepr::InferenceFailed(e).into())
+        let ctx = input.make_run_context::<R>(inner);
+        R::run(ctx)
+            .and_then(TryInto::try_into)
+            .map_err(|e| ErrorRepr::InferenceFailed(e).into())
     }
 }
 
@@ -146,5 +152,25 @@ pub(crate) struct InferenceSessionOptions {
 }
 
 #[derive(Error, Debug)]
+pub(crate) enum ExtractError {
+    #[error(transparent)]
+    Shape(#[from] ShapeError),
+}
+
+#[derive(Error, Debug)]
 #[error("不正なモデルファイルです")]
 pub(crate) struct DecryptModelError;
+
+mod sealed {
+    pub(crate) trait InputScalar: OnnxruntimeInputScalar {}
+
+    impl InputScalar for i64 {}
+    impl InputScalar for f32 {}
+
+    pub(crate) trait OnnxruntimeInputScalar:
+        onnxruntime::TypeToTensorElementDataType
+    {
+    }
+
+    impl<T: onnxruntime::TypeToTensorElementDataType> OnnxruntimeInputScalar for T {}
+}

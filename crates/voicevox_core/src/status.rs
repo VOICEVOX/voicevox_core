@@ -2,8 +2,7 @@ use super::*;
 use crate::infer::{
     signatures::{InferenceGroupImpl, InferencelKindImpl},
     InferenceInputSignature, InferenceRuntime, InferenceSessionCell, InferenceSessionOptions,
-    InferenceSessionSet, InferenceSignature, SupportsInferenceInputSignature,
-    SupportsInferenceOutput,
+    InferenceSessionSet, InferenceSignature,
 };
 use educe::Educe;
 use itertools::iproduct;
@@ -90,8 +89,6 @@ impl<R: InferenceRuntime> Status<R> {
     where
         I: InferenceInputSignature,
         I::Signature: InferenceSignature<Group = InferenceGroupImpl>,
-        R: SupportsInferenceInputSignature<I>
-            + SupportsInferenceOutput<<I::Signature as InferenceSignature>::Output>,
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
 

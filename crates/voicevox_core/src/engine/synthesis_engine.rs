@@ -5,10 +5,7 @@ use std::sync::Arc;
 use super::full_context_label::Utterance;
 use super::open_jtalk::OpenJtalk;
 use super::*;
-use crate::infer::{
-    signatures::{Decode, PredictDuration, PredictIntonation},
-    InferenceRuntime, SupportsInferenceSignature,
-};
+use crate::infer::InferenceRuntime;
 use crate::numerics::F32Ext as _;
 use crate::InferenceCore;
 
@@ -26,12 +23,7 @@ pub(crate) struct SynthesisEngine<R: InferenceRuntime> {
     open_jtalk: Arc<OpenJtalk>,
 }
 
-impl<
-        R: SupportsInferenceSignature<PredictDuration>
-            + SupportsInferenceSignature<PredictIntonation>
-            + SupportsInferenceSignature<Decode>,
-    > SynthesisEngine<R>
-{
+impl<R: InferenceRuntime> SynthesisEngine<R> {
     pub fn inference_core(&self) -> &InferenceCore<R> {
         &self.inference_core
     }

@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use ndarray::{Array, Dimension};
 use once_cell::sync::Lazy;
 use onnxruntime::{
-    environment::Environment, GraphOptimizationLevel, LoggingLevel, TypeToTensorElementDataType,
+    environment::Environment, GraphOptimizationLevel, LoggingLevel, TensorElementDataType,
 };
 
 use self::assert_send::AssertSend;
@@ -11,8 +11,8 @@ use crate::{
     devices::SupportedDevices,
     error::ErrorRepr,
     infer::{
-        DecryptModelError, InferenceRuntime, InferenceSession, InferenceSessionOptions, RunContext,
-        SupportsInferenceInputTensor, SupportsInferenceOutput,
+        AnyTensor, DecryptModelError, InferenceRuntime, InferenceSessionOptions, InputScalar,
+        RunContext,
     },
 };
 
@@ -44,13 +44,11 @@ impl InferenceRuntime for Onnxruntime {
             dml: dml_support,
         })
     }
-}
 
-impl InferenceSession for AssertSend<onnxruntime::session::Session<'static>> {
-    fn new(
+    fn new_session(
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
         options: InferenceSessionOptions,
-    ) -> anyhow::Result<Self> {
+    ) -> anyhow::Result<Self::Session> {
         let mut builder = ENVIRONMENT
             .new_session_builder()?
             .with_optimization_level(GraphOptimizationLevel::Basic)?
@@ -75,8 +73,8 @@ impl InferenceSession for AssertSend<onnxruntime::session::Session<'static>> {
         }
 
         let model = model()?;
-        let this = builder.with_model_from_memory(model)?.into();
-        return Ok(this);
+        let sess = builder.with_model_from_memory(model)?.into();
+        return Ok(sess);
 
         static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
             Environment::builder()
@@ -91,6 +89,39 @@ impl InferenceSession for AssertSend<onnxruntime::session::Session<'static>> {
         } else {
             LoggingLevel::Warning
         };
+    }
+
+    fn push_input(
+        input: Array<impl InputScalar, impl Dimension + 'static>,
+        ctx: &mut Self::RunContext<'_>,
+    ) {
+        ctx.inputs
+            .push(Box::new(onnxruntime::session::NdArray::new(input)));
+    }
+
+    fn run(
+        OnnxruntimeRunContext { sess, mut inputs }: OnnxruntimeRunContext<'_>,
+    ) -> anyhow::Result<Vec<AnyTensor>> {
+        // FIXME: 現状では`f32`のみ対応。実行時にsessionからdatatypeが取れるので、別の型の対応も
+        // おそらく可能ではあるが、それが必要になるよりもortクレートへの引越しが先になると思われる
+        // のでこのままにする。
+
+        if !sess
+            .outputs
+            .iter()
+            .all(|info| matches!(info.output_type, TensorElementDataType::Float))
+        {
+            unimplemented!(
+                "currently only `ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT` is supported for output",
+            );
+        }
+
+        let outputs = sess.run::<f32>(inputs.iter_mut().map(|t| &mut **t as &mut _).collect())?;
+
+        Ok(outputs
+            .iter()
+            .map(|o| AnyTensor::Float32((*o).clone().into_owned()))
+            .collect())
     }
 }
 
@@ -112,28 +143,6 @@ impl<'sess> From<&'sess mut AssertSend<onnxruntime::session::Session<'static>>>
 
 impl<'sess> RunContext<'sess> for OnnxruntimeRunContext<'sess> {
     type Runtime = Onnxruntime;
-}
-
-impl<A: TypeToTensorElementDataType + Debug + 'static, D: Dimension + 'static>
-    SupportsInferenceInputTensor<Array<A, D>> for Onnxruntime
-{
-    fn push_input(input: Array<A, D>, ctx: &mut Self::RunContext<'_>) {
-        ctx.inputs
-            .push(Box::new(onnxruntime::session::NdArray::new(input)));
-    }
-}
-
-impl<T: Send + TypeToTensorElementDataType + Debug + Clone> SupportsInferenceOutput<(Vec<T>,)>
-    for Onnxruntime
-{
-    fn run(
-        OnnxruntimeRunContext { sess, mut inputs }: OnnxruntimeRunContext<'_>,
-    ) -> anyhow::Result<(Vec<T>,)> {
-        let outputs = sess.run(inputs.iter_mut().map(|t| &mut **t as &mut _).collect())?;
-
-        // FIXME: 2個以上の出力や二次元以上の出力をちゃんとしたやりかたで弾く
-        Ok((outputs[0].as_slice().unwrap().to_owned(),))
-    }
 }
 
 // FIXME: 以下のことをちゃんと確認した後、onnxruntime-rs側で`Session`が`Send`であると宣言する。
