@@ -6,7 +6,6 @@ pub(crate) mod status;
 use std::fmt::Debug;
 
 use derive_new::new;
-use easy_ext::ext;
 use enum_map::Enum;
 use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
@@ -15,7 +14,7 @@ use crate::SupportedDevices;
 
 pub(crate) trait InferenceRuntime: 'static {
     type Session: Sized + Send + 'static;
-    type RunContext<'a>: RunContext<'a, Runtime = Self>;
+    type RunContext<'a>: From<&'a mut Self::Session>;
 
     fn supported_devices() -> crate::Result<SupportedDevices>;
 
@@ -30,20 +29,6 @@ pub(crate) trait InferenceRuntime: 'static {
     );
 
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
-}
-
-pub(crate) trait RunContext<'a>:
-    From<&'a mut <Self::Runtime as InferenceRuntime>::Session>
-{
-    type Runtime: InferenceRuntime<RunContext<'a> = Self>;
-}
-
-#[ext(RunContextExt)]
-impl<'a, T: RunContext<'a>> T {
-    fn with_input(mut self, tensor: Array<impl InputScalar, impl Dimension + 'static>) -> Self {
-        T::Runtime::push_input(tensor, &mut self);
-        self
-    }
 }
 
 pub(crate) trait InferenceGroup {

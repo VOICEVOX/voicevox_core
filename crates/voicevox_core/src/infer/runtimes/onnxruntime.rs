@@ -12,7 +12,6 @@ use crate::{
     error::ErrorRepr,
     infer::{
         DecryptModelError, InferenceRuntime, InferenceSessionOptions, InputScalar, OutputTensor,
-        RunContext,
     },
 };
 
@@ -139,10 +138,6 @@ impl<'sess> From<&'sess mut AssertSend<onnxruntime::session::Session<'static>>>
             inputs: vec![],
         }
     }
-}
-
-impl<'sess> RunContext<'sess> for OnnxruntimeRunContext<'sess> {
-    type Runtime = Onnxruntime;
 }
 
 // FIXME: 以下のことをちゃんと確認した後、onnxruntime-rs側で`Session`が`Send`であると宣言する。
