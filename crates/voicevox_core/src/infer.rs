@@ -3,10 +3,13 @@ pub(crate) mod runtimes;
 pub(crate) mod signatures;
 pub(crate) mod status;
 
-use std::fmt::Debug;
+use std::{
+    borrow::Cow,
+    fmt::{self, Debug, Display},
+};
 
 use derive_new::new;
-use enum_map::Enum;
+use enum_map::{Enum, EnumMap};
 use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
 
@@ -18,10 +21,15 @@ pub(crate) trait InferenceRuntime: 'static {
 
     fn supported_devices() -> crate::Result<SupportedDevices>;
 
+    #[allow(clippy::type_complexity)]
     fn new_session(
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
         options: InferenceSessionOptions,
-    ) -> anyhow::Result<Self::Session>;
+    ) -> anyhow::Result<(
+        Self::Session,
+        Vec<ParamInfo<InputScalarKind>>,
+        Vec<ParamInfo<OutputScalarKind>>,
+    )>;
 
     fn push_input(
         input: Array<impl InputScalar, impl Dimension + 'static>,
@@ -31,35 +39,70 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
-pub(crate) trait InferenceGroup: Copy + Enum {}
+pub(crate) trait InferenceGroup: Copy + Enum {
+    const INPUT_PARAM_INFOS: EnumMap<Self, &'static [ParamInfo<InputScalarKind>]>;
+    const OUTPUT_PARAM_INFOS: EnumMap<Self, &'static [ParamInfo<OutputScalarKind>]>;
+}
 
 pub(crate) trait InferenceSignature: Sized + Send + 'static {
     type Group: InferenceGroup;
     type Input: InferenceInputSignature<Signature = Self>;
-    type Output: TryFrom<Vec<OutputTensor>, Error = anyhow::Error> + Send;
+    type Output: InferenceOutputSignature;
     const KIND: Self::Group;
 }
 
 pub(crate) trait InferenceInputSignature: Send + 'static {
     type Signature: InferenceSignature<Input = Self>;
+    const PARAM_INFOS: &'static [ParamInfo<InputScalarKind>];
     fn make_run_context<R: InferenceRuntime>(self, sess: &mut R::Session) -> R::RunContext<'_>;
 }
 
-pub(crate) trait InputScalar: sealed::InputScalar + Debug + 'static {}
+pub(crate) trait InputScalar: sealed::InputScalar + Debug + 'static {
+    const KIND: InputScalarKind;
+}
 
-impl InputScalar for i64 {}
-impl InputScalar for f32 {}
+impl InputScalar for i64 {
+    const KIND: InputScalarKind = InputScalarKind::Int64;
+}
+
+impl InputScalar for f32 {
+    const KIND: InputScalarKind = InputScalarKind::Float32;
+}
+
+#[derive(Clone, Copy, PartialEq, derive_more::Display)]
+pub(crate) enum InputScalarKind {
+    #[display(fmt = "int64_t")]
+    Int64,
+
+    #[display(fmt = "float")]
+    Float32,
+}
+
+pub(crate) trait InferenceOutputSignature:
+    TryFrom<Vec<OutputTensor>, Error = anyhow::Error> + Send
+{
+    const PARAM_INFOS: &'static [ParamInfo<OutputScalarKind>];
+}
 
 pub(crate) trait OutputScalar: Sized {
+    const KIND: OutputScalarKind;
     fn extract(tensor: OutputTensor) -> std::result::Result<ArrayD<Self>, ExtractError>;
 }
 
 impl OutputScalar for f32 {
+    const KIND: OutputScalarKind = OutputScalarKind::Float32;
+
     fn extract(tensor: OutputTensor) -> std::result::Result<ArrayD<Self>, ExtractError> {
         match tensor {
             OutputTensor::Float32(tensor) => Ok(tensor),
         }
     }
+}
+
+#[derive(Clone, Copy, PartialEq, derive_more::Display)]
+pub(crate) enum OutputScalarKind {
+    #[display(fmt = "float")]
+    Float32,
 }
 
 pub(crate) enum OutputTensor {
@@ -73,6 +116,41 @@ impl<A: OutputScalar, D: Dimension> TryFrom<OutputTensor> for Array<A, D> {
         let this = A::extract(tensor)?.into_dimensionality()?;
         Ok(this)
     }
+}
+
+pub(crate) struct ParamInfo<D> {
+    name: Cow<'static, str>,
+    dt: D,
+    ndim: Option<usize>,
+}
+
+impl<D: PartialEq> ParamInfo<D> {
+    fn accepts(&self, other: &Self) -> bool {
+        self.name == other.name
+            && self.dt == other.dt
+            && (self.ndim.is_none() || self.ndim == other.ndim)
+    }
+}
+
+impl<D: Display> Display for ParamInfo<D> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.dt)?;
+        if let Some(ndim) = self.ndim {
+            f.write_str(&"[]".repeat(ndim))
+        } else {
+            f.write_str("[]...")
+        }
+    }
+}
+
+pub(crate) trait ArrayExt {
+    type Scalar;
+    type Dimension: Dimension;
+}
+
+impl<A, D: Dimension> ArrayExt for Array<A, D> {
+    type Scalar = A;
+    type Dimension = D;
 }
 
 #[derive(new, Clone, Copy, PartialEq, Debug)]

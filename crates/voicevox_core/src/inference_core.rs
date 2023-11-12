@@ -87,7 +87,7 @@ impl<R: InferenceRuntime> InferenceCore<R> {
             .run_session(
                 &model_id,
                 PredictDurationInput {
-                    phoneme: ndarray::arr1(phoneme_vector),
+                    phoneme_list: ndarray::arr1(phoneme_vector),
                     speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
                 },
             )
@@ -127,12 +127,12 @@ impl<R: InferenceRuntime> InferenceCore<R> {
                 &model_id,
                 PredictIntonationInput {
                     length: ndarray::arr0(length as i64),
-                    vowel_phoneme: ndarray::arr1(vowel_phoneme_vector),
-                    consonant_phoneme: ndarray::arr1(consonant_phoneme_vector),
-                    start_accent: ndarray::arr1(start_accent_vector),
-                    end_accent: ndarray::arr1(end_accent_vector),
-                    start_accent_phrase: ndarray::arr1(start_accent_phrase_vector),
-                    end_accent_phrase: ndarray::arr1(end_accent_phrase_vector),
+                    vowel_phoneme_list: ndarray::arr1(vowel_phoneme_vector),
+                    consonant_phoneme_list: ndarray::arr1(consonant_phoneme_vector),
+                    start_accent_list: ndarray::arr1(start_accent_vector),
+                    end_accent_list: ndarray::arr1(end_accent_vector),
+                    start_accent_phrase_list: ndarray::arr1(start_accent_phrase_vector),
+                    end_accent_phrase_list: ndarray::arr1(end_accent_phrase_vector),
                     speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
                 },
             )

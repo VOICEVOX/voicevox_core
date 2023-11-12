@@ -1,15 +1,18 @@
 use std::{
     collections::{BTreeMap, HashMap},
+    fmt::Display,
     marker::PhantomData,
     sync::Arc,
 };
 
+use anyhow::bail;
 use educe::Educe;
 use enum_map::EnumMap;
-use itertools::iproduct;
+use itertools::{iproduct, Itertools as _};
 
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
+    infer::ParamInfo,
     manifest::ModelInnerId,
     metas::{SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
     voice_model::{VoiceModel, VoiceModelId},
@@ -249,14 +252,39 @@ impl<R: InferenceRuntime, G: InferenceGroup> SessionSet<R, G> {
         let mut sessions = model_bytes
             .iter()
             .map(|(k, m)| {
-                let sess = R::new_session(|| model_file::decrypt(m), options[k])?;
+                let expected_input_param_infos = G::INPUT_PARAM_INFOS[k];
+                let expected_output_param_infos = G::OUTPUT_PARAM_INFOS[k];
+
+                let (sess, actual_input_param_infos, actual_output_param_infos) =
+                    R::new_session(|| model_file::decrypt(m), options[k])?;
+
+                check_param_infos(expected_input_param_infos, &actual_input_param_infos)?;
+                check_param_infos(expected_output_param_infos, &actual_output_param_infos)?;
+
                 Ok((k.into_usize(), std::sync::Mutex::new(sess).into()))
             })
             .collect::<anyhow::Result<HashMap<_, _>>>()?;
 
-        Ok(Self(EnumMap::<G, _>::from_fn(|k| {
+        return Ok(Self(EnumMap::<G, _>::from_fn(|k| {
             sessions.remove(&k.into_usize()).expect("should exist")
-        })))
+        })));
+
+        fn check_param_infos<D: PartialEq + Display>(
+            expected: &[ParamInfo<D>],
+            actual: &[ParamInfo<D>],
+        ) -> anyhow::Result<()> {
+            if !(expected.len() == actual.len()
+                && itertools::zip_eq(expected, actual)
+                    .all(|(expected, actual)| expected.accepts(actual)))
+            {
+                bail!(
+                    "expected {{{}}}, got {{{}}}",
+                    expected.iter().join(", "),
+                    actual.iter().join(", "),
+                )
+            }
+            Ok(())
+        }
     }
 }
 

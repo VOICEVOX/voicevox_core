@@ -1,18 +1,19 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, vec};
 
+use anyhow::anyhow;
 use ndarray::{Array, Dimension};
 use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment, GraphOptimizationLevel, LoggingLevel, TensorElementDataType,
 };
 
+use crate::{devices::SupportedDevices, error::ErrorRepr};
+
 use self::assert_send::AssertSend;
-use crate::{
-    devices::SupportedDevices,
-    error::ErrorRepr,
-    infer::{
-        DecryptModelError, InferenceRuntime, InferenceSessionOptions, InputScalar, OutputTensor,
-    },
+
+use super::super::{
+    DecryptModelError, InferenceRuntime, InferenceSessionOptions, InputScalar, InputScalarKind,
+    OutputScalarKind, OutputTensor, ParamInfo,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -47,7 +48,11 @@ impl InferenceRuntime for Onnxruntime {
     fn new_session(
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
         options: InferenceSessionOptions,
-    ) -> anyhow::Result<Self::Session> {
+    ) -> anyhow::Result<(
+        Self::Session,
+        Vec<ParamInfo<InputScalarKind>>,
+        Vec<ParamInfo<OutputScalarKind>>,
+    )> {
         let mut builder = ENVIRONMENT
             .new_session_builder()?
             .with_optimization_level(GraphOptimizationLevel::Basic)?
@@ -72,8 +77,67 @@ impl InferenceRuntime for Onnxruntime {
         }
 
         let model = model()?;
-        let sess = builder.with_model_from_memory(model)?.into();
-        return Ok(sess);
+        let sess = AssertSend::from(builder.with_model_from_memory(model)?);
+
+        let input_param_infos = sess
+            .inputs
+            .iter()
+            .map(|info| {
+                let dt = match info.input_type {
+                    TensorElementDataType::Float => Ok(InputScalarKind::Float32),
+                    TensorElementDataType::Uint8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8"),
+                    TensorElementDataType::Int8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8"),
+                    TensorElementDataType::Uint16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16"),
+                    TensorElementDataType::Int16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16"),
+                    TensorElementDataType::Int32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32"),
+                    TensorElementDataType::Int64 => Ok(InputScalarKind::Int64),
+                    TensorElementDataType::String => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING"),
+                    TensorElementDataType::Double => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE"),
+                    TensorElementDataType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
+                    TensorElementDataType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
+                }
+                .map_err(|actual| {
+                    anyhow!("unsupported input datatype `{actual}` for `{}`", info.name)
+                })?;
+
+                Ok(ParamInfo {
+                    name: info.name.clone().into(),
+                    dt,
+                    ndim: Some(info.dimensions.len()),
+                })
+            })
+            .collect::<anyhow::Result<_>>()?;
+
+        let output_param_infos = sess
+            .outputs
+            .iter()
+            .map(|info| {
+                let dt = match info.output_type {
+                    TensorElementDataType::Float => Ok(OutputScalarKind::Float32),
+                    TensorElementDataType::Uint8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8"),
+                    TensorElementDataType::Int8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8"),
+                    TensorElementDataType::Uint16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16"),
+                    TensorElementDataType::Int16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16"),
+                    TensorElementDataType::Int32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32"),
+                    TensorElementDataType::Int64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64"),
+                    TensorElementDataType::String => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING"),
+                    TensorElementDataType::Double => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE"),
+                    TensorElementDataType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
+                    TensorElementDataType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
+                }
+                .map_err(|actual| {
+                    anyhow!("unsupported output datatype `{actual}` for `{}`", info.name)
+                })?;
+
+                Ok(ParamInfo {
+                    name: info.name.clone().into(),
+                    dt,
+                    ndim: Some(info.dimensions.len()),
+                })
+            })
+            .collect::<anyhow::Result<_>>()?;
+
+        return Ok((sess, input_param_infos, output_param_infos));
 
         static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
             Environment::builder()

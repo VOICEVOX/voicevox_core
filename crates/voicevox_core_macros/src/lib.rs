@@ -5,13 +5,21 @@ use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input,
     spanned::Spanned as _,
-    Data, DataEnum, DataStruct, DataUnion, DeriveInput, Field, Fields, Token,
+    Data, DataEnum, DataStruct, DataUnion, DeriveInput, Field, Fields, Token, Type,
 };
 
 #[proc_macro_derive(InferenceGroup)]
 pub fn derive_inference_group(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let DeriveInput { ident, .. } = parse_macro_input!(input as DeriveInput);
-    quote!(impl crate::infer::InferenceGroup for #ident {}).into()
+    let DeriveInput {
+        ident, generics, ..
+    } = parse_macro_input!(input as DeriveInput);
+
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    quote! {
+        impl #impl_generics crate::infer::InferenceGroup for #ident #ty_generics #where_clause {}
+    }
+    .into()
 }
 
 #[proc_macro_derive(InferenceInputSignature, attributes(input_signature))]
@@ -43,13 +51,40 @@ pub fn derive_inference_input_signature(input: proc_macro::TokenStream) -> proc_
             .parse_args()?;
 
         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-        let field_names = struct_field_names(data)?;
+
+        let fields = struct_fields(data)?;
+
+        let param_infos = fields
+            .iter()
+            .map(|(name, ty)| {
+                let name = name.to_string();
+                quote! {
+                    crate::infer::ParamInfo {
+                        name: ::std::borrow::Cow::Borrowed(#name),
+                        dt: <
+                            <#ty as crate::infer::ArrayExt>::Scalar as crate::infer::InputScalar
+                        >::KIND,
+                        ndim: <
+                            <#ty as crate::infer::ArrayExt>::Dimension as ::ndarray::Dimension
+                        >::NDIM,
+                    },
+                }
+            })
+            .collect::<proc_macro2::TokenStream>();
+
+        let field_names = fields.iter().map(|(name, _)| name);
 
         Ok(quote! {
             impl #impl_generics crate::infer::InferenceInputSignature for #ident #ty_generics
             #where_clause
             {
                 type Signature = #signature;
+
+                const PARAM_INFOS: &'static [crate::infer::ParamInfo<
+                    crate::infer::InputScalarKind
+                >] = &[
+                    #param_infos
+                ];
 
                 fn make_run_context<R: crate::infer::InferenceRuntime>(
                     self,
@@ -80,13 +115,15 @@ pub fn derive_inference_input_signature(input: proc_macro::TokenStream) -> proc_
     }
 }
 
-#[proc_macro_derive(TryFromVecOutputTensor)]
-pub fn derive_try_from_vec_any_tensor(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    return derive_try_from_vec_any_tensor(&parse_macro_input!(input))
+#[proc_macro_derive(InferenceOutputSignature)]
+pub fn derive_inference_output_signature(
+    input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    return derive_inference_output_signature(&parse_macro_input!(input))
         .unwrap_or_else(|e| e.to_compile_error())
         .into();
 
-    fn derive_try_from_vec_any_tensor(
+    fn derive_inference_output_signature(
         input: &DeriveInput,
     ) -> syn::Result<proc_macro2::TokenStream> {
         let DeriveInput {
@@ -97,10 +134,41 @@ pub fn derive_try_from_vec_any_tensor(input: proc_macro::TokenStream) -> proc_ma
         } = input;
 
         let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-        let field_names = struct_field_names(data)?;
-        let num_fields = field_names.len();
+
+        let fields = struct_fields(data)?;
+        let num_fields = fields.len();
+
+        let param_infos = fields
+            .iter()
+            .map(|(name, ty)| {
+                let name = name.to_string();
+                quote! {
+                    crate::infer::ParamInfo {
+                        name: ::std::borrow::Cow::Borrowed(#name),
+                        dt: <
+                            <#ty as crate::infer::ArrayExt>::Scalar as crate::infer::OutputScalar
+                        >::KIND,
+                        ndim: <
+                            <#ty as crate::infer::ArrayExt>::Dimension as ::ndarray::Dimension
+                        >::NDIM,
+                    },
+                }
+            })
+            .collect::<proc_macro2::TokenStream>();
+
+        let field_names = fields.iter().map(|(name, _)| name);
 
         Ok(quote! {
+            impl #impl_generics crate::infer::InferenceOutputSignature for #ident #ty_generics
+            #where_clause
+            {
+                const PARAM_INFOS: &'static [crate::infer::ParamInfo<
+                    crate::infer::OutputScalarKind
+                >] = &[
+                    #param_infos
+                ];
+            }
+
             impl #impl_generics
                 ::std::convert::TryFrom<::std::vec::Vec<crate::infer::OutputTensor>>
                 for #ident #ty_generics
@@ -133,7 +201,7 @@ pub fn derive_try_from_vec_any_tensor(input: proc_macro::TokenStream) -> proc_ma
     }
 }
 
-fn struct_field_names(data: &Data) -> syn::Result<Vec<&syn::Ident>> {
+fn struct_fields(data: &Data) -> syn::Result<Vec<(&syn::Ident, &Type)>> {
     let fields = match data {
         Data::Struct(DataStruct {
             fields: Fields::Named(fields),
@@ -153,6 +221,6 @@ fn struct_field_names(data: &Data) -> syn::Result<Vec<&syn::Ident>> {
     Ok(fields
         .named
         .iter()
-        .map(|Field { ident, .. }| ident.as_ref().expect("should be named"))
+        .map(|Field { ident, ty, .. }| (ident.as_ref().expect("should be named"), ty))
         .collect())
 }
