@@ -21,7 +21,7 @@ educe = "0.4.23"
 enum-map = "3.0.0-beta.1"
 fs-err.workspace = true
 futures.workspace = true
-indexmap = { version = "2.0.0", features = ["serde"] }
+indexmap.workspace = true
 itertools.workspace = true
 nanoid = "0.4.0"
 ndarray.workspace = true

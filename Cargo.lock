@@ -4408,6 +4408,7 @@ dependencies = [
 name = "voicevox_core_macros"
 version = "0.0.0"
 dependencies = [
+ "indexmap 2.0.0",
  "proc-macro2",
  "quote",
  "syn 2.0.38",

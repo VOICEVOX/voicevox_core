@@ -1,28 +1,142 @@
 #![warn(rust_2018_idioms)]
 
+use indexmap::IndexMap;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
     parse_macro_input,
     spanned::Spanned as _,
-    Data, DataEnum, DataStruct, DataUnion, DeriveInput, Field, Fields, Token, Type,
+    Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Field, Fields, Generics,
+    ItemType, Type, Variant,
 };
 
-#[proc_macro_derive(InferenceGroup)]
+#[proc_macro_derive(InferenceGroup, attributes(inference_group))]
 pub fn derive_inference_group(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let DeriveInput {
-        ident, generics, ..
-    } = parse_macro_input!(input as DeriveInput);
+    return derive_inference_group(&parse_macro_input!(input))
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into();
 
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    fn derive_inference_group(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
+        let DeriveInput {
+            vis,
+            ident: group_name,
+            generics,
+            data,
+            ..
+        } = input;
 
-    quote! {
-        impl #impl_generics crate::infer::InferenceGroup for #ident #ty_generics #where_clause {}
+        deny_generics(generics)?;
+
+        let variants = unit_enum_variants(data)?
+            .into_iter()
+            .map(|(attrs, variant_name)| {
+                let AssocTypes { input, output } = attrs
+                    .iter()
+                    .find(|a| a.path().is_ident("inference_group"))
+                    .ok_or_else(|| {
+                        syn::Error::new(
+                            proc_macro2::Span::call_site(),
+                            "missing `#[inference_group(…)]`",
+                        )
+                    })?
+                    .parse_args()?;
+
+                Ok((variant_name, (input, output)))
+            })
+            .collect::<syn::Result<IndexMap<_, _>>>()?;
+
+        let variant_names = &variants.keys().collect::<Vec<_>>();
+
+        let signatures = variants
+            .iter()
+            .map(|(variant_name, (input_ty, output_ty))| {
+                quote! {
+                    #vis enum #variant_name {}
+
+                    impl crate::infer::InferenceSignature for #variant_name {
+                        type Group = #group_name;
+                        type Input = #input_ty;
+                        type Output = #output_ty;
+                        const KIND: Self::Group = #group_name :: #variant_name;
+                    }
+                }
+            });
+
+        Ok(quote! {
+            impl crate::infer::InferenceGroup for #group_name {
+                const INPUT_PARAM_INFOS: ::enum_map::EnumMap<
+                    Self,
+                    &'static [crate::infer::ParamInfo<crate::infer::InputScalarKind>],
+                > = ::enum_map::EnumMap::from_array([
+                    #(<#variant_names as crate::infer::InferenceSignature>::Input::PARAM_INFOS),*
+                ]);
+
+                const OUTPUT_PARAM_INFOS: ::enum_map::EnumMap<
+                    Self,
+                    &'static [crate::infer::ParamInfo<crate::infer::OutputScalarKind>],
+                > = ::enum_map::EnumMap::from_array([
+                    #(<#variant_names as crate::infer::InferenceSignature>::Output::PARAM_INFOS),*
+                ]);
+            }
+
+            #(#signatures)*
+        })
     }
-    .into()
+
+    struct AssocTypes {
+        input: Type,
+        output: Type,
+    }
+
+    impl Parse for AssocTypes {
+        fn parse(stream: ParseStream<'_>) -> syn::Result<Self> {
+            let mut input = None;
+            let mut output = None;
+
+            while !stream.is_empty() {
+                let ItemType {
+                    ident,
+                    generics,
+                    ty,
+                    ..
+                } = stream.parse()?;
+
+                deny_generics(&generics)?;
+
+                *match &*ident.to_string() {
+                    "Input" => &mut input,
+                    "Output" => &mut output,
+                    _ => {
+                        return Err(syn::Error::new(
+                            ident.span(),
+                            "expected `Input` or `Output`",
+                        ))
+                    }
+                } = Some(*ty);
+            }
+
+            let input =
+                input.ok_or_else(|| syn::Error::new(stream.span(), "missing `type Input = …;`"))?;
+
+            let output = output
+                .ok_or_else(|| syn::Error::new(stream.span(), "missing `type Output = …;`"))?;
+
+            Ok(Self { input, output })
+        }
+    }
+
+    fn deny_generics(generics: &Generics) -> syn::Result<()> {
+        if !generics.params.is_empty() {
+            return Err(syn::Error::new(generics.params.span(), "must be empty"));
+        }
+        if let Some(where_clause) = &generics.where_clause {
+            return Err(syn::Error::new(where_clause.span(), "must be empty"));
+        }
+        Ok(())
+    }
 }
 
-#[proc_macro_derive(InferenceInputSignature, attributes(input_signature))]
+#[proc_macro_derive(InferenceInputSignature, attributes(inference_input_signature))]
 pub fn derive_inference_input_signature(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     return derive_inference_input_signature(&parse_macro_input!(input))
         .unwrap_or_else(|e| e.to_compile_error())
@@ -41,11 +155,11 @@ pub fn derive_inference_input_signature(input: proc_macro::TokenStream) -> proc_
 
         let AssocTypeSignature(signature) = attrs
             .iter()
-            .find(|a| a.path().is_ident("input_signature"))
+            .find(|a| a.path().is_ident("inference_input_signature"))
             .ok_or_else(|| {
                 syn::Error::new(
                     proc_macro2::Span::call_site(),
-                    "missing `#[input_signature(…)]`",
+                    "missing `#[inference_input_signature(…)]`",
                 )
             })?
             .parse_args()?;
@@ -100,17 +214,16 @@ pub fn derive_inference_input_signature(input: proc_macro::TokenStream) -> proc_
         })
     }
 
-    struct AssocTypeSignature(syn::Ident);
+    struct AssocTypeSignature(Type);
 
     impl Parse for AssocTypeSignature {
         fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
-            let key = input.parse::<syn::Ident>()?;
-            if key != "Signature" {
-                return Err(syn::Error::new(key.span(), "expected `Signature`"));
+            let ItemType { ident, ty, .. } = input.parse()?;
+
+            if ident != "Signature" {
+                return Err(syn::Error::new(ident.span(), "expected `Signature`"));
             }
-            input.parse::<Token![=]>()?;
-            let value = input.parse::<syn::Ident>()?;
-            Ok(Self(value))
+            Ok(Self(*ty))
         }
     }
 }
@@ -211,10 +324,10 @@ fn struct_fields(data: &Data) -> syn::Result<Vec<(&syn::Ident, &Type)>> {
             return Err(syn::Error::new(fields.span(), "expect named fields"));
         }
         Data::Enum(DataEnum { enum_token, .. }) => {
-            return Err(syn::Error::new(enum_token.span(), "expected an enum"));
+            return Err(syn::Error::new(enum_token.span(), "expected a struct"));
         }
         Data::Union(DataUnion { union_token, .. }) => {
-            return Err(syn::Error::new(union_token.span(), "expected an enum"));
+            return Err(syn::Error::new(union_token.span(), "expected a struct"));
         }
     };
 
@@ -222,5 +335,28 @@ fn struct_fields(data: &Data) -> syn::Result<Vec<(&syn::Ident, &Type)>> {
         .named
         .iter()
         .map(|Field { ident, ty, .. }| (ident.as_ref().expect("should be named"), ty))
+        .collect())
+}
+
+fn unit_enum_variants(data: &Data) -> syn::Result<Vec<(&[Attribute], &syn::Ident)>> {
+    let variants = match data {
+        Data::Struct(DataStruct { struct_token, .. }) => {
+            return Err(syn::Error::new(struct_token.span(), "expected an enum"));
+        }
+        Data::Enum(DataEnum { variants, .. }) => variants,
+        Data::Union(DataUnion { union_token, .. }) => {
+            return Err(syn::Error::new(union_token.span(), "expected an enum"));
+        }
+    };
+
+    for Variant { fields, .. } in variants {
+        if *fields != Fields::Unit {
+            return Err(syn::Error::new(fields.span(), "must be unit"));
+        }
+    }
+
+    Ok(variants
+        .iter()
+        .map(|Variant { attrs, ident, .. }| (&**attrs, ident))
         .collect())
 }
