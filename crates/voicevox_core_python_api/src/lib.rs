@@ -145,32 +145,27 @@ struct Synthesizer {
 
 #[pymethods]
 impl Synthesizer {
-    #[allow(clippy::new_ret_no_self)]
-    #[staticmethod]
+    #[new]
     #[pyo3(signature =(
         open_jtalk,
         acceleration_mode = InitializeOptions::default().acceleration_mode,
         cpu_num_threads = InitializeOptions::default().cpu_num_threads,
     ))]
     fn new(
-        py: Python,
         open_jtalk: OpenJtalk,
         #[pyo3(from_py_with = "from_acceleration_mode")] acceleration_mode: AccelerationMode,
         cpu_num_threads: u16,
-    ) -> PyResult<&PyAny> {
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let synthesizer = voicevox_core::Synthesizer::new(
-                open_jtalk.open_jtalk.clone(),
-                &InitializeOptions {
-                    acceleration_mode,
-                    cpu_num_threads,
-                },
-            )
-            .await;
-            let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?.into();
-            let synthesizer = Closable::new(synthesizer);
-            Ok(Self { synthesizer })
-        })
+    ) -> PyResult<Self> {
+        let synthesizer = voicevox_core::Synthesizer::new(
+            open_jtalk.open_jtalk.clone(),
+            &InitializeOptions {
+                acceleration_mode,
+                cpu_num_threads,
+            },
+        );
+        let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?.into();
+        let synthesizer = Closable::new(synthesizer);
+        Ok(Self { synthesizer })
     }
 
     fn __repr__(&self) -> &'static str {

@@ -343,9 +343,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
     into_result_code_with_error((|| {
         let options = options.into();
 
-        let synthesizer = RUNTIME
-            .block_on(VoicevoxSynthesizer::new(open_jtalk, &options))?
-            .into();
+        let synthesizer = VoicevoxSynthesizer::new(open_jtalk, &options)?.into();
         out_synthesizer.as_ptr().write_unaligned(synthesizer);
         Ok(())
     })())
