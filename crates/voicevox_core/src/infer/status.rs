@@ -277,13 +277,24 @@ impl<R: InferenceRuntime, G: InferenceGroup> SessionSet<R, G> {
                 && itertools::zip_eq(expected, actual)
                     .all(|(expected, actual)| expected.accepts(actual)))
             {
-                bail!(
-                    "expected {{{}}}, got {{{}}}",
-                    expected.iter().join(", "),
-                    actual.iter().join(", "),
-                )
+                let expected = display_param_infos(expected);
+                let actual = display_param_infos(actual);
+                bail!("expected {{{expected}}}, got {{{actual}}}")
             }
             Ok(())
+        }
+
+        fn display_param_infos(infos: &[ParamInfo<impl Display>]) -> impl Display {
+            infos
+                .iter()
+                .map(|ParamInfo { name, dt, ndim }| {
+                    let brackets = match *ndim {
+                        Some(ndim) => "[]".repeat(ndim),
+                        None => "[]...".to_owned(),
+                    };
+                    format!("{name}: {dt}{brackets}")
+                })
+                .join(", ")
         }
     }
 }

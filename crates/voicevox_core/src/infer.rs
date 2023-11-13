@@ -3,10 +3,7 @@ pub(crate) mod runtimes;
 pub(crate) mod signatures;
 pub(crate) mod status;
 
-use std::{
-    borrow::Cow,
-    fmt::{self, Debug, Display},
-};
+use std::{borrow::Cow, fmt::Debug};
 
 use derive_new::new;
 use enum_map::{Enum, EnumMap};
@@ -129,17 +126,6 @@ impl<D: PartialEq> ParamInfo<D> {
         self.name == other.name
             && self.dt == other.dt
             && (self.ndim.is_none() || self.ndim == other.ndim)
-    }
-}
-
-impl<D: Display> Display for ParamInfo<D> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: {}", self.name, self.dt)?;
-        if let Some(ndim) = self.ndim {
-            f.write_str(&"[]".repeat(ndim))
-        } else {
-            f.write_str("[]...")
-        }
     }
 }
 
