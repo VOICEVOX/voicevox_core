@@ -7,12 +7,13 @@ use syn::{
     ItemType, Type, Variant,
 };
 
-pub(crate) fn derive_inference_domain(
+pub(crate) fn derive_inference_operation(
     input: &DeriveInput,
 ) -> syn::Result<proc_macro2::TokenStream> {
     let DeriveInput {
+        attrs,
         vis,
-        ident: domain_name,
+        ident: operation_ty_name,
         generics,
         data,
         ..
@@ -20,16 +21,27 @@ pub(crate) fn derive_inference_domain(
 
     deny_generics(generics)?;
 
+    let AssocTypeDomain(domain_ty) = attrs
+        .iter()
+        .find(|a| a.path().is_ident("inference_operation"))
+        .ok_or_else(|| {
+            syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "missing `#[inference_operation(…)]`",
+            )
+        })?
+        .parse_args()?;
+
     let variants = unit_enum_variants(data)?
         .into_iter()
         .map(|(attrs, variant_name)| {
             let AssocTypes { input, output } = attrs
                 .iter()
-                .find(|a| a.path().is_ident("inference_domain"))
+                .find(|a| a.path().is_ident("inference_operation"))
                 .ok_or_else(|| {
                     syn::Error::new(
                         proc_macro2::Span::call_site(),
-                        "missing `#[inference_domain(…)]`",
+                        "missing `#[inference_operation(…)]`",
                     )
                 })?
                 .parse_args()?;
@@ -47,16 +59,18 @@ pub(crate) fn derive_inference_domain(
                 #vis enum #variant_name {}
 
                 impl crate::infer::InferenceSignature for #variant_name {
-                    type Domain = #domain_name;
+                    type Domain = #domain_ty;
                     type Input = #input_ty;
                     type Output = #output_ty;
-                    const KIND: Self::Domain = #domain_name :: #variant_name;
+
+                    const OPERATION: <Self::Domain as crate::infer::InferenceDomain>::Operation =
+                        #operation_ty_name :: #variant_name;
                 }
             }
         });
 
     return Ok(quote! {
-        impl crate::infer::InferenceDomain for #domain_name {
+        impl crate::infer::InferenceOperation for #operation_ty_name {
             const PARAM_INFOS: ::enum_map::EnumMap<
                 Self,
                 (
@@ -73,6 +87,19 @@ pub(crate) fn derive_inference_domain(
 
         #(#signatures)*
     });
+
+    struct AssocTypeDomain(Type);
+
+    impl Parse for AssocTypeDomain {
+        fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+            let ItemType { ident, ty, .. } = input.parse()?;
+
+            if ident != "Domain" {
+                return Err(syn::Error::new(ident.span(), "expected `Domain`"));
+            }
+            Ok(Self(*ty))
+        }
+    }
 
     struct AssocTypes {
         input: Type,

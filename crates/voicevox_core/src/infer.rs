@@ -36,7 +36,11 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
-pub(crate) trait InferenceDomain: Copy + Enum {
+pub(crate) trait InferenceDomain {
+    type Operation: InferenceOperation;
+}
+
+pub(crate) trait InferenceOperation: Copy + Enum {
     /// `{InferenceInputSignature,InferenceOutputSignature}::PARAM_INFOS`を集めたもの。
     ///
     /// マクロ（voicevox_core_macros）で実装される前提。
@@ -54,7 +58,7 @@ pub(crate) trait InferenceSignature: Sized + Send + 'static {
     type Domain: InferenceDomain;
     type Input: InferenceInputSignature<Signature = Self>;
     type Output: InferenceOutputSignature;
-    const KIND: Self::Domain;
+    const OPERATION: <Self::Domain as crate::infer::InferenceDomain>::Operation;
 }
 
 pub(crate) trait InferenceInputSignature: Send + 'static {

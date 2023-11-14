@@ -7,12 +7,12 @@ use std::{
 
 use anyhow::bail;
 use educe::Educe;
-use enum_map::EnumMap;
+use enum_map::{Enum as _, EnumMap};
 use itertools::{iproduct, Itertools as _};
 
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
-    infer::ParamInfo,
+    infer::{InferenceOperation, ParamInfo},
     manifest::ModelInnerId,
     metas::{SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
     voice_model::{VoiceModel, VoiceModelId},
@@ -26,11 +26,11 @@ use super::{
 
 pub(crate) struct Status<R: InferenceRuntime, D: InferenceDomain> {
     loaded_models: std::sync::Mutex<LoadedModels<R, D>>,
-    session_options: EnumMap<D, InferenceSessionOptions>,
+    session_options: EnumMap<D::Operation, InferenceSessionOptions>,
 }
 
 impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
-    pub fn new(session_options: EnumMap<D, InferenceSessionOptions>) -> Self {
+    pub fn new(session_options: EnumMap<D::Operation, InferenceSessionOptions>) -> Self {
         Self {
             loaded_models: Default::default(),
             session_options,
@@ -40,7 +40,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
     pub async fn load_model(
         &self,
         model: &VoiceModel,
-        model_bytes: &EnumMap<D, Vec<u8>>,
+        model_bytes: &EnumMap<D::Operation, Vec<u8>>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
@@ -241,30 +241,31 @@ impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
 }
 
 struct SessionSet<R: InferenceRuntime, D: InferenceDomain>(
-    EnumMap<D, Arc<std::sync::Mutex<R::Session>>>,
+    EnumMap<D::Operation, Arc<std::sync::Mutex<R::Session>>>,
 );
 
 impl<R: InferenceRuntime, D: InferenceDomain> SessionSet<R, D> {
     fn new(
-        model_bytes: &EnumMap<D, Vec<u8>>,
-        options: &EnumMap<D, InferenceSessionOptions>,
+        model_bytes: &EnumMap<D::Operation, Vec<u8>>,
+        options: &EnumMap<D::Operation, InferenceSessionOptions>,
     ) -> anyhow::Result<Self> {
         let mut sessions = model_bytes
             .iter()
-            .map(|(k, m)| {
-                let (expected_input_param_infos, expected_output_param_infos) = D::PARAM_INFOS[k];
+            .map(|(op, model_bytes)| {
+                let (expected_input_param_infos, expected_output_param_infos) =
+                    <D::Operation as InferenceOperation>::PARAM_INFOS[op];
 
                 let (sess, actual_input_param_infos, actual_output_param_infos) =
-                    R::new_session(|| model_file::decrypt(m), options[k])?;
+                    R::new_session(|| model_file::decrypt(model_bytes), options[op])?;
 
                 check_param_infos(expected_input_param_infos, &actual_input_param_infos)?;
                 check_param_infos(expected_output_param_infos, &actual_output_param_infos)?;
 
-                Ok((k.into_usize(), std::sync::Mutex::new(sess).into()))
+                Ok((op.into_usize(), std::sync::Mutex::new(sess).into()))
             })
             .collect::<anyhow::Result<HashMap<_, _>>>()?;
 
-        return Ok(Self(EnumMap::<D, _>::from_fn(|k| {
+        return Ok(Self(EnumMap::<D::Operation, _>::from_fn(|k| {
             sessions.remove(&k.into_usize()).expect("should exist")
         })));
 
@@ -305,7 +306,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> SessionSet<R, D> {
         I::Signature: InferenceSignature<Domain = D>,
     {
         SessionCell {
-            inner: self.0[I::Signature::KIND].clone(),
+            inner: self.0[I::Signature::OPERATION].clone(),
             marker: PhantomData,
         }
     }
@@ -333,8 +334,10 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        infer::domain::InferenceKind, macros::tests::assert_debug_fmt_eq,
-        synthesizer::InferenceRuntimeImpl, test_util::open_default_vvm_file,
+        infer::domain::{InferenceDomainImpl, InferenceOperationKind},
+        macros::tests::assert_debug_fmt_eq,
+        synthesizer::InferenceRuntimeImpl,
+        test_util::open_default_vvm_file,
     };
 
     use super::{super::InferenceSessionOptions, Status};
@@ -351,23 +354,23 @@ mod tests {
         let light_session_options = InferenceSessionOptions::new(cpu_num_threads, false);
         let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
         let session_options = enum_map! {
-            InferenceKind::PredictDuration
-            | InferenceKind::PredictIntonation => light_session_options,
-            InferenceKind::Decode => heavy_session_options,
+            InferenceOperationKind::PredictDuration
+            | InferenceOperationKind::PredictIntonation => light_session_options,
+            InferenceOperationKind::Decode => heavy_session_options,
         };
-        let status = Status::<InferenceRuntimeImpl, InferenceKind>::new(session_options);
+        let status = Status::<InferenceRuntimeImpl, InferenceDomainImpl>::new(session_options);
 
         assert_eq!(
             light_session_options,
-            status.session_options[InferenceKind::PredictDuration],
+            status.session_options[InferenceOperationKind::PredictDuration],
         );
         assert_eq!(
             light_session_options,
-            status.session_options[InferenceKind::PredictIntonation],
+            status.session_options[InferenceOperationKind::PredictIntonation],
         );
         assert_eq!(
             heavy_session_options,
-            status.session_options[InferenceKind::Decode],
+            status.session_options[InferenceOperationKind::Decode],
         );
 
         assert!(status.loaded_models.lock().unwrap().0.is_empty());
@@ -376,7 +379,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_load_model_works() {
-        let status = Status::<InferenceRuntimeImpl, InferenceKind>::new(
+        let status = Status::<InferenceRuntimeImpl, InferenceDomainImpl>::new(
             enum_map!(_ => InferenceSessionOptions::new(0, false)),
         );
         let model = &open_default_vvm_file().await;
@@ -389,7 +392,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_is_model_loaded_works() {
-        let status = Status::<InferenceRuntimeImpl, InferenceKind>::new(
+        let status = Status::<InferenceRuntimeImpl, InferenceDomainImpl>::new(
             enum_map!(_ => InferenceSessionOptions::new(0, false)),
         );
         let vvm = open_default_vvm_file().await;

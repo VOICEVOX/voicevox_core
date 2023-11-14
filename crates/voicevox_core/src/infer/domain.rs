@@ -1,24 +1,35 @@
 use enum_map::Enum;
-use macros::{InferenceDomain, InferenceInputSignature, InferenceOutputSignature};
+use macros::{InferenceInputSignature, InferenceOperation, InferenceOutputSignature};
 use ndarray::{Array0, Array1, Array2};
 
-use super::{InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor};
+use super::{
+    InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
+};
 
-#[derive(Clone, Copy, Enum, InferenceDomain)]
-pub(crate) enum InferenceKind {
-    #[inference_domain(
+pub(crate) enum InferenceDomainImpl {}
+
+impl InferenceDomain for InferenceDomainImpl {
+    type Operation = InferenceOperationKind;
+}
+
+#[derive(Clone, Copy, Enum, InferenceOperation)]
+#[inference_operation(
+    type Domain = InferenceDomainImpl;
+)]
+pub(crate) enum InferenceOperationKind {
+    #[inference_operation(
         type Input = PredictDurationInput;
         type Output = PredictDurationOutput;
     )]
     PredictDuration,
 
-    #[inference_domain(
+    #[inference_operation(
         type Input = PredictIntonationInput;
         type Output = PredictIntonationOutput;
     )]
     PredictIntonation,
 
-    #[inference_domain(
+    #[inference_operation(
         type Input = DecodeInput;
         type Output = DecodeOutput;
     )]

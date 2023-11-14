@@ -10,23 +10,30 @@ use syn::parse_macro_input;
 ///
 /// ```
 /// use enum_map::Enum;
-/// use macros::InferenceDomain;
+/// use macros::InferenceOperation;
 ///
-/// #[derive(Clone, Copy, Enum, InferenceDomain)]
-/// pub(crate) enum InferenceKind {
-///     #[inference_domain(
+/// impl InferenceDomain for InferenceDomainImpl {
+///     type Operation = InferenceOperationKind;
+/// }
+///
+/// #[derive(Clone, Copy, Enum, InferenceOperation)]
+/// #[inference_operation(
+///     type Domain = InferenceDomainImpl;
+/// )]
+/// pub(crate) enum InferenceOperationKind {
+///     #[inference_operation(
 ///         type Input = PredictDurationInput;
 ///         type Output = PredictDurationOutput;
 ///     )]
 ///     PredictDuration,
 ///
-///     #[inference_domain(
+///     #[inference_operation(
 ///         type Input = PredictIntonationInput;
 ///         type Output = PredictIntonationOutput;
 ///     )]
 ///     PredictIntonation,
 ///
-///     #[inference_domain(
+///     #[inference_operation(
 ///         type Input = DecodeInput;
 ///         type Output = DecodeOutput;
 ///     )]
@@ -34,10 +41,10 @@ use syn::parse_macro_input;
 /// }
 /// ```
 #[cfg(not(doctest))]
-#[proc_macro_derive(InferenceDomain, attributes(inference_domain))]
-pub fn derive_inference_domain(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+#[proc_macro_derive(InferenceOperation, attributes(inference_operation))]
+pub fn derive_inference_operation(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = &parse_macro_input!(input);
-    from_syn(inference_domain::derive_inference_domain(input))
+    from_syn(inference_domain::derive_inference_operation(input))
 }
 
 /// `voicevox_core`内で、`crate::infer::InferenceInputSignature`を実装する。
