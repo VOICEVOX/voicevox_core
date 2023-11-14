@@ -4,7 +4,7 @@ use futures::future::join3;
 use serde::{de::DeserializeOwned, Deserialize};
 
 use super::*;
-use crate::infer::signatures::InferenceKind;
+use crate::infer::domain::InferenceKind;
 use std::{
     collections::{BTreeMap, HashMap},
     io,

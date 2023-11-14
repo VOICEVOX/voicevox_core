@@ -20,17 +20,17 @@ use crate::{
 };
 
 use super::{
-    model_file, InferenceGroup, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
-    InferenceSignature,
+    model_file, InferenceDomain, InferenceInputSignature, InferenceRuntime,
+    InferenceSessionOptions, InferenceSignature,
 };
 
-pub(crate) struct Status<R: InferenceRuntime, G: InferenceGroup> {
-    loaded_models: std::sync::Mutex<LoadedModels<R, G>>,
-    session_options: EnumMap<G, InferenceSessionOptions>,
+pub(crate) struct Status<R: InferenceRuntime, D: InferenceDomain> {
+    loaded_models: std::sync::Mutex<LoadedModels<R, D>>,
+    session_options: EnumMap<D, InferenceSessionOptions>,
 }
 
-impl<R: InferenceRuntime, G: InferenceGroup> Status<R, G> {
-    pub fn new(session_options: EnumMap<G, InferenceSessionOptions>) -> Self {
+impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
+    pub fn new(session_options: EnumMap<D, InferenceSessionOptions>) -> Self {
         Self {
             loaded_models: Default::default(),
             session_options,
@@ -40,7 +40,7 @@ impl<R: InferenceRuntime, G: InferenceGroup> Status<R, G> {
     pub async fn load_model(
         &self,
         model: &VoiceModel,
-        model_bytes: &EnumMap<G, Vec<u8>>,
+        model_bytes: &EnumMap<D, Vec<u8>>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
@@ -100,7 +100,7 @@ impl<R: InferenceRuntime, G: InferenceGroup> Status<R, G> {
     ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Group = G>,
+        I::Signature: InferenceSignature<Domain = D>,
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
 
@@ -114,18 +114,18 @@ impl<R: InferenceRuntime, G: InferenceGroup> Status<R, G> {
 ///
 /// この構造体のメソッドは、すべて一瞬で完了すべきである。
 #[derive(Educe)]
-#[educe(Default(bound = "R: InferenceRuntime, G: InferenceGroup"))]
-struct LoadedModels<R: InferenceRuntime, G: InferenceGroup>(
-    BTreeMap<VoiceModelId, LoadedModel<R, G>>,
+#[educe(Default(bound = "R: InferenceRuntime, D: InferenceDomain"))]
+struct LoadedModels<R: InferenceRuntime, D: InferenceDomain>(
+    BTreeMap<VoiceModelId, LoadedModel<R, D>>,
 );
 
-struct LoadedModel<R: InferenceRuntime, G: InferenceGroup> {
+struct LoadedModel<R: InferenceRuntime, D: InferenceDomain> {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_set: SessionSet<R, G>,
+    session_set: SessionSet<R, D>,
 }
 
-impl<R: InferenceRuntime, G: InferenceGroup> LoadedModels<R, G> {
+impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
     fn metas(&self) -> VoiceModelMeta {
         self.0
             .values()
@@ -164,7 +164,7 @@ impl<R: InferenceRuntime, G: InferenceGroup> LoadedModels<R, G> {
     fn get<I>(&self, model_id: &VoiceModelId) -> SessionCell<R, I>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Group = G>,
+        I::Signature: InferenceSignature<Domain = D>,
     {
         self.0[model_id].session_set.get()
     }
@@ -207,7 +207,7 @@ impl<R: InferenceRuntime, G: InferenceGroup> LoadedModels<R, G> {
         Ok(())
     }
 
-    fn insert(&mut self, model: &VoiceModel, session_set: SessionSet<R, G>) -> Result<()> {
+    fn insert(&mut self, model: &VoiceModel, session_set: SessionSet<R, D>) -> Result<()> {
         self.ensure_acceptable(model)?;
 
         let prev = self.0.insert(
@@ -240,20 +240,20 @@ impl<R: InferenceRuntime, G: InferenceGroup> LoadedModels<R, G> {
     }
 }
 
-struct SessionSet<R: InferenceRuntime, G: InferenceGroup>(
-    EnumMap<G, Arc<std::sync::Mutex<R::Session>>>,
+struct SessionSet<R: InferenceRuntime, D: InferenceDomain>(
+    EnumMap<D, Arc<std::sync::Mutex<R::Session>>>,
 );
 
-impl<R: InferenceRuntime, G: InferenceGroup> SessionSet<R, G> {
+impl<R: InferenceRuntime, D: InferenceDomain> SessionSet<R, D> {
     fn new(
-        model_bytes: &EnumMap<G, Vec<u8>>,
-        options: &EnumMap<G, InferenceSessionOptions>,
+        model_bytes: &EnumMap<D, Vec<u8>>,
+        options: &EnumMap<D, InferenceSessionOptions>,
     ) -> anyhow::Result<Self> {
         let mut sessions = model_bytes
             .iter()
             .map(|(k, m)| {
-                let expected_input_param_infos = G::INPUT_PARAM_INFOS[k];
-                let expected_output_param_infos = G::OUTPUT_PARAM_INFOS[k];
+                let expected_input_param_infos = D::INPUT_PARAM_INFOS[k];
+                let expected_output_param_infos = D::OUTPUT_PARAM_INFOS[k];
 
                 let (sess, actual_input_param_infos, actual_output_param_infos) =
                     R::new_session(|| model_file::decrypt(m), options[k])?;
@@ -265,7 +265,7 @@ impl<R: InferenceRuntime, G: InferenceGroup> SessionSet<R, G> {
             })
             .collect::<anyhow::Result<HashMap<_, _>>>()?;
 
-        return Ok(Self(EnumMap::<G, _>::from_fn(|k| {
+        return Ok(Self(EnumMap::<D, _>::from_fn(|k| {
             sessions.remove(&k.into_usize()).expect("should exist")
         })));
 
@@ -299,11 +299,11 @@ impl<R: InferenceRuntime, G: InferenceGroup> SessionSet<R, G> {
     }
 }
 
-impl<R: InferenceRuntime, G: InferenceGroup> SessionSet<R, G> {
+impl<R: InferenceRuntime, D: InferenceDomain> SessionSet<R, D> {
     fn get<I>(&self) -> SessionCell<R, I>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Group = G>,
+        I::Signature: InferenceSignature<Domain = D>,
     {
         SessionCell {
             inner: self.0[I::Signature::KIND].clone(),
@@ -334,7 +334,7 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        infer::signatures::InferenceKind, macros::tests::assert_debug_fmt_eq,
+        infer::domain::InferenceKind, macros::tests::assert_debug_fmt_eq,
         synthesizer::InferenceRuntimeImpl, test_util::open_default_vvm_file,
     };
 

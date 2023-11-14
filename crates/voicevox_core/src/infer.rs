@@ -1,6 +1,6 @@
+pub(crate) mod domain;
 mod model_file;
 pub(crate) mod runtimes;
-pub(crate) mod signatures;
 pub(crate) mod status;
 
 use std::{borrow::Cow, fmt::Debug};
@@ -36,16 +36,16 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
-pub(crate) trait InferenceGroup: Copy + Enum {
+pub(crate) trait InferenceDomain: Copy + Enum {
     const INPUT_PARAM_INFOS: EnumMap<Self, &'static [ParamInfo<InputScalarKind>]>;
     const OUTPUT_PARAM_INFOS: EnumMap<Self, &'static [ParamInfo<OutputScalarKind>]>;
 }
 
 pub(crate) trait InferenceSignature: Sized + Send + 'static {
-    type Group: InferenceGroup;
+    type Domain: InferenceDomain;
     type Input: InferenceInputSignature<Signature = Self>;
     type Output: InferenceOutputSignature;
-    const KIND: Self::Group;
+    const KIND: Self::Domain;
 }
 
 pub(crate) trait InferenceInputSignature: Send + 'static {

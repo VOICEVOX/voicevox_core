@@ -10,16 +10,16 @@ use syn::{
     ItemType, Type, Variant,
 };
 
-#[proc_macro_derive(InferenceGroup, attributes(inference_group))]
-pub fn derive_inference_group(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    return derive_inference_group(&parse_macro_input!(input))
+#[proc_macro_derive(InferenceDomain, attributes(inference_domain))]
+pub fn derive_inference_domain(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    return derive_inference_domain(&parse_macro_input!(input))
         .unwrap_or_else(|e| e.to_compile_error())
         .into();
 
-    fn derive_inference_group(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
+    fn derive_inference_domain(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
         let DeriveInput {
             vis,
-            ident: group_name,
+            ident: domain_name,
             generics,
             data,
             ..
@@ -32,11 +32,11 @@ pub fn derive_inference_group(input: proc_macro::TokenStream) -> proc_macro::Tok
             .map(|(attrs, variant_name)| {
                 let AssocTypes { input, output } = attrs
                     .iter()
-                    .find(|a| a.path().is_ident("inference_group"))
+                    .find(|a| a.path().is_ident("inference_domain"))
                     .ok_or_else(|| {
                         syn::Error::new(
                             proc_macro2::Span::call_site(),
-                            "missing `#[inference_group(…)]`",
+                            "missing `#[inference_domain(…)]`",
                         )
                     })?
                     .parse_args()?;
@@ -54,16 +54,16 @@ pub fn derive_inference_group(input: proc_macro::TokenStream) -> proc_macro::Tok
                     #vis enum #variant_name {}
 
                     impl crate::infer::InferenceSignature for #variant_name {
-                        type Group = #group_name;
+                        type Domain = #domain_name;
                         type Input = #input_ty;
                         type Output = #output_ty;
-                        const KIND: Self::Group = #group_name :: #variant_name;
+                        const KIND: Self::Domain = #domain_name :: #variant_name;
                     }
                 }
             });
 
         Ok(quote! {
-            impl crate::infer::InferenceGroup for #group_name {
+            impl crate::infer::InferenceDomain for #domain_name {
                 const INPUT_PARAM_INFOS: ::enum_map::EnumMap<
                     Self,
                     &'static [crate::infer::ParamInfo<crate::infer::InputScalarKind>],

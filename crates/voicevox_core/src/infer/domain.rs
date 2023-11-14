@@ -1,24 +1,24 @@
 use enum_map::Enum;
-use macros::{InferenceGroup, InferenceInputSignature, InferenceOutputSignature};
+use macros::{InferenceDomain, InferenceInputSignature, InferenceOutputSignature};
 use ndarray::{Array0, Array1, Array2};
 
 use super::{InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor};
 
-#[derive(Clone, Copy, Enum, InferenceGroup)]
+#[derive(Clone, Copy, Enum, InferenceDomain)]
 pub(crate) enum InferenceKind {
-    #[inference_group(
+    #[inference_domain(
         type Input = PredictDurationInput;
         type Output = PredictDurationOutput;
     )]
     PredictDuration,
 
-    #[inference_group(
+    #[inference_domain(
         type Input = PredictIntonationInput;
         type Output = PredictIntonationOutput;
     )]
     PredictIntonation,
 
-    #[inference_group(
+    #[inference_domain(
         type Input = DecodeInput;
         type Output = DecodeOutput;
     )]

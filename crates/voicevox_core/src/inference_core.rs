@@ -1,7 +1,7 @@
 use enum_map::enum_map;
 
 use crate::infer::{
-    signatures::{
+    domain::{
         DecodeInput, DecodeOutput, InferenceKind, PredictDurationInput, PredictDurationOutput,
         PredictIntonationInput, PredictIntonationOutput,
     },
