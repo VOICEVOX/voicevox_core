@@ -164,6 +164,8 @@ pub(crate) enum ExtractError {
 #[error("不正なモデルファイルです")]
 pub(crate) struct DecryptModelError;
 
+// FIXME: `onnxruntime::TypeToTensorElementDataType`に依存する代わりに、`InputScalar`から`runtimes`
+// まではvisitor patternでつなぐ
 mod sealed {
     pub(crate) trait InputScalar: OnnxruntimeInputScalar {}
 
