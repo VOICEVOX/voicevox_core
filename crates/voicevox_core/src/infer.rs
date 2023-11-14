@@ -37,8 +37,14 @@ pub(crate) trait InferenceRuntime: 'static {
 }
 
 pub(crate) trait InferenceDomain: Copy + Enum {
-    const INPUT_PARAM_INFOS: EnumMap<Self, &'static [ParamInfo<InputScalarKind>]>;
-    const OUTPUT_PARAM_INFOS: EnumMap<Self, &'static [ParamInfo<OutputScalarKind>]>;
+    #[allow(clippy::type_complexity)]
+    const PARAM_INFOS: EnumMap<
+        Self,
+        (
+            &'static [ParamInfo<InputScalarKind>],
+            &'static [ParamInfo<OutputScalarKind>],
+        ),
+    >;
 }
 
 pub(crate) trait InferenceSignature: Sized + Send + 'static {

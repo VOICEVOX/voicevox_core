@@ -57,18 +57,17 @@ pub(crate) fn derive_inference_domain(
 
     return Ok(quote! {
         impl crate::infer::InferenceDomain for #domain_name {
-            const INPUT_PARAM_INFOS: ::enum_map::EnumMap<
+            const PARAM_INFOS: ::enum_map::EnumMap<
                 Self,
-                &'static [crate::infer::ParamInfo<crate::infer::InputScalarKind>],
+                (
+                    &'static [crate::infer::ParamInfo<crate::infer::InputScalarKind>],
+                    &'static [crate::infer::ParamInfo<crate::infer::OutputScalarKind>],
+                ),
             > = ::enum_map::EnumMap::from_array([
-                #(<#variant_names as crate::infer::InferenceSignature>::Input::PARAM_INFOS),*
-            ]);
-
-            const OUTPUT_PARAM_INFOS: ::enum_map::EnumMap<
-                Self,
-                &'static [crate::infer::ParamInfo<crate::infer::OutputScalarKind>],
-            > = ::enum_map::EnumMap::from_array([
-                #(<#variant_names as crate::infer::InferenceSignature>::Output::PARAM_INFOS),*
+                #((
+                    <#variant_names as crate::infer::InferenceSignature>::Input::PARAM_INFOS,
+                    <#variant_names as crate::infer::InferenceSignature>::Output::PARAM_INFOS
+                )),*
             ]);
         }
 

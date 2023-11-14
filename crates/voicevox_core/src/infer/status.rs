@@ -252,8 +252,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> SessionSet<R, D> {
         let mut sessions = model_bytes
             .iter()
             .map(|(k, m)| {
-                let expected_input_param_infos = D::INPUT_PARAM_INFOS[k];
-                let expected_output_param_infos = D::OUTPUT_PARAM_INFOS[k];
+                let (expected_input_param_infos, expected_output_param_infos) = D::PARAM_INFOS[k];
 
                 let (sess, actual_input_param_infos, actual_output_param_infos) =
                     R::new_session(|| model_file::decrypt(m), options[k])?;
