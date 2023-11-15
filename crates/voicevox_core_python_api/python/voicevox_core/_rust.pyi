@@ -8,9 +8,11 @@ if TYPE_CHECKING:
         AccentPhrase,
         AudioQuery,
         SpeakerMeta,
+        StyleId,
         SupportedDevices,
         UserDict,
         UserDictWord,
+        VoiceModelId,
     )
 
 __version__: str
@@ -43,7 +45,7 @@ class VoiceModel:
         """
         ...
     @property
-    def id(self) -> str:
+    def id(self) -> VoiceModelId:
         """ID。"""
         ...
     @property
@@ -118,7 +120,7 @@ class Synthesizer:
             読み込むモデルのスタイルID。
         """
         ...
-    def unload_voice_model(self, voice_model_id: str) -> None:
+    def unload_voice_model(self, voice_model_id: Union[VoiceModelId, str]) -> None:
         """
         音声モデルの読み込みを解除する。
 
@@ -128,7 +130,7 @@ class Synthesizer:
             音声モデルID。
         """
         ...
-    def is_loaded_voice_model(self, voice_model_id: str) -> bool:
+    def is_loaded_voice_model(self, voice_model_id: Union[VoiceModelId, str]) -> bool:
         """
         指定したvoice_model_idのモデルが読み込まれているか判定する。
 
@@ -145,7 +147,7 @@ class Synthesizer:
     async def audio_query_from_kana(
         self,
         kana: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> AudioQuery:
         """
         AquesTalk風記法から :class:`AudioQuery` を生成する。
@@ -165,7 +167,7 @@ class Synthesizer:
     async def audio_query(
         self,
         text: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> AudioQuery:
         """
         日本語のテキストから :class:`AudioQuery` を生成する。
@@ -185,7 +187,7 @@ class Synthesizer:
     async def create_accent_phrases_from_kana(
         self,
         kana: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> List[AccentPhrase]:
         """
         AquesTalk風記法からAccentPhrase（アクセント句）の配列を生成する。
@@ -205,7 +207,7 @@ class Synthesizer:
     async def create_accent_phrases(
         self,
         text: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> List[AccentPhrase]:
         """
         日本語のテキストからAccentPhrase（アクセント句）の配列を生成する。
@@ -225,7 +227,7 @@ class Synthesizer:
     async def replace_mora_data(
         self,
         accent_phrases: List[AccentPhrase],
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> List[AccentPhrase]:
         """
         アクセント句の音高・音素長を変更した新しいアクセント句の配列を生成する。
@@ -247,7 +249,7 @@ class Synthesizer:
     async def replace_phoneme_length(
         self,
         accent_phrases: List[AccentPhrase],
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> List[AccentPhrase]:
         """
         アクセント句の音素長を変更した新しいアクセント句の配列を生成する。
@@ -265,7 +267,7 @@ class Synthesizer:
     async def replace_mora_pitch(
         self,
         accent_phrases: List[AccentPhrase],
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> List[AccentPhrase]:
         """
         アクセント句の音高を変更した新しいアクセント句の配列を生成する。
@@ -283,7 +285,7 @@ class Synthesizer:
     async def synthesis(
         self,
         audio_query: AudioQuery,
-        style_id: int,
+        style_id: Union[StyleId, int],
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -306,7 +308,7 @@ class Synthesizer:
     async def tts_from_kana(
         self,
         kana: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -325,7 +327,7 @@ class Synthesizer:
     async def tts(
         self,
         text: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
