@@ -36,10 +36,16 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
+/// `VoiceModel`に対応する、
 pub(crate) trait InferenceDomain {
     type Operation: InferenceOperation;
 }
 
+/// `InferenceDomain`の推論操作を表す列挙型。
+///
+/// それぞれのバリアントには、対応する`InferenceSignature`が存在するべきである。
+///
+/// `::macros::InferenceOperation`により導出される。
 pub(crate) trait InferenceOperation: Copy + Enum {
     /// `{InferenceInputSignature,InferenceOutputSignature}::PARAM_INFOS`を集めたもの。
     ///
@@ -54,6 +60,9 @@ pub(crate) trait InferenceOperation: Copy + Enum {
     >;
 }
 
+/// `InferenceDomain`の推論操作を表す列挙型。
+///
+/// `::macros::InferenceOperation`により、具体型ごと生成される。
 pub(crate) trait InferenceSignature: Sized + Send + 'static {
     type Domain: InferenceDomain;
     type Input: InferenceInputSignature<Signature = Self>;
@@ -61,6 +70,9 @@ pub(crate) trait InferenceSignature: Sized + Send + 'static {
     const OPERATION: <Self::Domain as crate::infer::InferenceDomain>::Operation;
 }
 
+/// 推論操作の入力シグネチャ。
+///
+/// `::macros::InferenceInputSignature`により導出される。
 pub(crate) trait InferenceInputSignature: Send + 'static {
     type Signature: InferenceSignature<Input = Self>;
     const PARAM_INFOS: &'static [ParamInfo<InputScalarKind>];
@@ -88,6 +100,9 @@ pub(crate) enum InputScalarKind {
     Float32,
 }
 
+/// 推論操作の出力シグネチャ。
+///
+/// `::macros::InferenceOutputSignature`により、`TryFrom`も含めて導出される。
 pub(crate) trait InferenceOutputSignature:
     TryFrom<Vec<OutputTensor>, Error = anyhow::Error> + Send
 {

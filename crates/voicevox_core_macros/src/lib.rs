@@ -4,7 +4,12 @@ mod inference_domain;
 
 use syn::parse_macro_input;
 
-/// Rust APIクレート内で、`crate::infer::InferenceDomain`を実装する。
+/// Rust APIクレート内で、`crate::infer::InferenceDomain`の導出などを行う。
+///
+/// 次のことを行う。
+///
+/// - `InferenceDomain`の導出
+/// - 各バリアントに対する`InferenceInputSignature`の実装を、型ごと生成
 ///
 /// # Example
 ///
@@ -49,7 +54,7 @@ pub fn derive_inference_operation(input: proc_macro::TokenStream) -> proc_macro:
     from_syn(inference_domain::derive_inference_operation(input))
 }
 
-/// Rust APIクレート内で、`crate::infer::InferenceInputSignature`を実装する。
+/// Rust APIクレート内で、`crate::infer::InferenceInputSignature`を導出する。
 ///
 /// # Example
 ///
@@ -72,7 +77,8 @@ pub fn derive_inference_input_signature(input: proc_macro::TokenStream) -> proc_
     from_syn(inference_domain::derive_inference_input_signature(input))
 }
 
-/// Rust APIクレート内で、`crate::infer::InferenceInputSignature`を実装する。
+/// Rust APIクレート内で`crate::infer::InferenceInputSignature`を、`TryFrom<OutputTensor>`ごと導出
+/// する。
 ///
 /// # Example
 ///
