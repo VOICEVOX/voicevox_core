@@ -18,6 +18,14 @@ class SynthesizerTest extends TestUtils {
     boolean check(Mora mora, Mora otherMora);
   }
 
+  @Test
+  void checkIsGpuMode() {
+    OpenJtalk openJtalk = loadOpenJtalk();
+    Synthesizer synthesizer =
+        Synthesizer.builder(openJtalk).accelerationMode(Synthesizer.AccelerationMode.CPU).build();
+    assertFalse(synthesizer.isGpuMode());
+  }
+
   boolean checkAllMoras(
       List<AccentPhrase> accentPhrases,
       List<AccentPhrase> otherAccentPhrases,
@@ -40,9 +48,17 @@ class SynthesizerTest extends TestUtils {
     VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+
+    assertTrue(synthesizer.metas().length == 0);
+
     synthesizer.loadVoiceModel(model);
+
+    assertTrue(synthesizer.metas().length >= 1);
     assertTrue(synthesizer.isLoadedVoiceModel(model.id));
+
     synthesizer.unloadVoiceModel(model.id);
+
+    assertTrue(synthesizer.metas().length == 0);
     assertFalse(synthesizer.isLoadedVoiceModel(model.id));
   }
 

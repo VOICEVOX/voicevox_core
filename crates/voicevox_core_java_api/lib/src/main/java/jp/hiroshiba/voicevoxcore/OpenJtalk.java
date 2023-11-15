@@ -1,5 +1,6 @@
 package jp.hiroshiba.voicevoxcore;
 
+/** テキスト解析機としてのOpen JTalk。 */
 public class OpenJtalk extends Dll {
   private long handle;
 
