@@ -4,7 +4,7 @@ mod inference_domain;
 
 use syn::parse_macro_input;
 
-/// `voicevox_core`内で、`crate::infer::InferenceDomain`を実装する。
+/// Rust APIクレート内で、`crate::infer::InferenceDomain`を実装する。
 ///
 /// # Example
 ///
@@ -49,7 +49,7 @@ pub fn derive_inference_operation(input: proc_macro::TokenStream) -> proc_macro:
     from_syn(inference_domain::derive_inference_operation(input))
 }
 
-/// `voicevox_core`内で、`crate::infer::InferenceInputSignature`を実装する。
+/// Rust APIクレート内で、`crate::infer::InferenceInputSignature`を実装する。
 ///
 /// # Example
 ///
@@ -72,7 +72,7 @@ pub fn derive_inference_input_signature(input: proc_macro::TokenStream) -> proc_
     from_syn(inference_domain::derive_inference_input_signature(input))
 }
 
-/// `voicevox_core`内で、`crate::infer::InferenceInputSignature`を実装する。
+/// Rust APIクレート内で、`crate::infer::InferenceInputSignature`を実装する。
 ///
 /// # Example
 ///
