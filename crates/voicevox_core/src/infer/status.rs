@@ -334,7 +334,7 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        infer::domain::{InferenceDomainImpl, InferenceOperationKind},
+        infer::domain::{InferenceDomainImpl, InferenceOperationImpl},
         macros::tests::assert_debug_fmt_eq,
         synthesizer::InferenceRuntimeImpl,
         test_util::open_default_vvm_file,
@@ -354,23 +354,23 @@ mod tests {
         let light_session_options = InferenceSessionOptions::new(cpu_num_threads, false);
         let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
         let session_options = enum_map! {
-            InferenceOperationKind::PredictDuration
-            | InferenceOperationKind::PredictIntonation => light_session_options,
-            InferenceOperationKind::Decode => heavy_session_options,
+            InferenceOperationImpl::PredictDuration
+            | InferenceOperationImpl::PredictIntonation => light_session_options,
+            InferenceOperationImpl::Decode => heavy_session_options,
         };
         let status = Status::<InferenceRuntimeImpl, InferenceDomainImpl>::new(session_options);
 
         assert_eq!(
             light_session_options,
-            status.session_options[InferenceOperationKind::PredictDuration],
+            status.session_options[InferenceOperationImpl::PredictDuration],
         );
         assert_eq!(
             light_session_options,
-            status.session_options[InferenceOperationKind::PredictIntonation],
+            status.session_options[InferenceOperationImpl::PredictIntonation],
         );
         assert_eq!(
             heavy_session_options,
-            status.session_options[InferenceOperationKind::Decode],
+            status.session_options[InferenceOperationImpl::Decode],
         );
 
         assert!(status.loaded_models.lock().unwrap().0.is_empty());

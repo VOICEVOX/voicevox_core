@@ -2,7 +2,7 @@ use enum_map::enum_map;
 
 use crate::infer::{
     domain::{
-        DecodeInput, DecodeOutput, InferenceDomainImpl, InferenceOperationKind,
+        DecodeInput, DecodeOutput, InferenceDomainImpl, InferenceOperationImpl,
         PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
         PredictIntonationOutput,
     },
@@ -28,9 +28,9 @@ impl<R: InferenceRuntime> InferenceCore<R> {
             let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
 
             let status = Status::new(enum_map! {
-                InferenceOperationKind::PredictDuration
-                | InferenceOperationKind::PredictIntonation => light_session_options,
-                InferenceOperationKind::Decode => heavy_session_options,
+                InferenceOperationImpl::PredictDuration
+                | InferenceOperationImpl::PredictIntonation => light_session_options,
+                InferenceOperationImpl::Decode => heavy_session_options,
             });
             Ok(Self { status })
         } else {

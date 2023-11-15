@@ -9,14 +9,14 @@ use super::{
 pub(crate) enum InferenceDomainImpl {}
 
 impl InferenceDomain for InferenceDomainImpl {
-    type Operation = InferenceOperationKind;
+    type Operation = InferenceOperationImpl;
 }
 
 #[derive(Clone, Copy, Enum, InferenceOperation)]
 #[inference_operation(
     type Domain = InferenceDomainImpl;
 )]
-pub(crate) enum InferenceOperationKind {
+pub(crate) enum InferenceOperationImpl {
     #[inference_operation(
         type Input = PredictDurationInput;
         type Output = PredictDurationOutput;
