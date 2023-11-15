@@ -12,15 +12,17 @@ use syn::parse_macro_input;
 /// use enum_map::Enum;
 /// use macros::InferenceOperation;
 ///
+/// pub(crate) enum InferenceDomainImpl {}
+///
 /// impl InferenceDomain for InferenceDomainImpl {
-///     type Operation = InferenceOperationKind;
+///     type Operation = InferenceOperationImpl;
 /// }
 ///
 /// #[derive(Clone, Copy, Enum, InferenceOperation)]
 /// #[inference_operation(
 ///     type Domain = InferenceDomainImpl;
 /// )]
-/// pub(crate) enum InferenceOperationKind {
+/// pub(crate) enum InferenceOperationImpl {
 ///     #[inference_operation(
 ///         type Input = PredictDurationInput;
 ///         type Output = PredictDurationOutput;
