@@ -102,7 +102,7 @@ pub(crate) enum InputScalarKind {
 
 /// 推論操作の出力シグネチャ。
 ///
-/// `::macros::InferenceOutputSignature`により、`TryFrom`も含めて導出される。
+/// `::macros::InferenceOutputSignature`により、`TryFrom<OutputTensor>`も含めて導出される。
 pub(crate) trait InferenceOutputSignature:
     TryFrom<Vec<OutputTensor>, Error = anyhow::Error> + Send
 {
