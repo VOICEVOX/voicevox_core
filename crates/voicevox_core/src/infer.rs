@@ -65,7 +65,7 @@ pub(crate) trait InferenceSignature: Sized + Send + 'static {
     type Domain: InferenceDomain;
     type Input: InferenceInputSignature<Signature = Self>;
     type Output: InferenceOutputSignature;
-    const OPERATION: <Self::Domain as crate::infer::InferenceDomain>::Operation;
+    const OPERATION: <Self::Domain as InferenceDomain>::Operation;
 }
 
 /// 推論操作の入力シグネチャ。
