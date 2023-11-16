@@ -36,7 +36,7 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
-/// `VoiceModel`に対応する、
+/// ある`VoiceModel`が提供する推論操作の集合を示す。
 pub(crate) trait InferenceDomain {
     type Operation: InferenceOperation;
 }
