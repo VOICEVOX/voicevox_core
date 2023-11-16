@@ -6,6 +6,7 @@ pub(crate) mod status;
 use std::{borrow::Cow, fmt::Debug};
 
 use derive_new::new;
+use duplicate::duplicate_item;
 use enum_map::{Enum, EnumMap};
 use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
@@ -14,7 +15,7 @@ use crate::SupportedDevices;
 
 pub(crate) trait InferenceRuntime: 'static {
     type Session: Sized + Send + 'static;
-    type RunContext<'a>: From<&'a mut Self::Session>;
+    type RunContext<'a>: From<&'a mut Self::Session> + PushInputTensor;
 
     fn supported_devices() -> crate::Result<SupportedDevices>;
 
@@ -27,11 +28,6 @@ pub(crate) trait InferenceRuntime: 'static {
         Vec<ParamInfo<InputScalarKind>>,
         Vec<ParamInfo<OutputScalarKind>>,
     )>;
-
-    fn push_input(
-        input: Array<impl InputScalar, impl Dimension + 'static>,
-        ctx: &mut Self::RunContext<'_>,
-    );
 
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
@@ -77,16 +73,29 @@ pub(crate) trait InferenceInputSignature: Send + 'static {
     fn make_run_context<R: InferenceRuntime>(self, sess: &mut R::Session) -> R::RunContext<'_>;
 }
 
-pub(crate) trait InputScalar: sealed::InputScalar + Debug + 'static {
+pub(crate) trait InputScalar: Sized {
     const KIND: InputScalarKind;
+
+    fn push_tensor_to_ctx(
+        tensor: Array<Self, impl Dimension + 'static>,
+        visitor: &mut impl PushInputTensor,
+    );
 }
 
-impl InputScalar for i64 {
-    const KIND: InputScalarKind = InputScalarKind::Int64;
-}
+#[duplicate_item(
+    T       KIND_VAL                     push;
+    [ i64 ] [ InputScalarKind::Int64 ]   [ push_int64 ];
+    [ f32 ] [ InputScalarKind::Float32 ] [ push_float32 ];
+)]
+impl InputScalar for T {
+    const KIND: InputScalarKind = KIND_VAL;
 
-impl InputScalar for f32 {
-    const KIND: InputScalarKind = InputScalarKind::Float32;
+    fn push_tensor_to_ctx(
+        tensor: Array<Self, impl Dimension + 'static>,
+        ctx: &mut impl PushInputTensor,
+    ) {
+        ctx.push(tensor)
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, derive_more::Display)]
@@ -96,6 +105,11 @@ pub(crate) enum InputScalarKind {
 
     #[display(fmt = "float")]
     Float32,
+}
+
+pub(crate) trait PushInputTensor {
+    fn push_int64(&mut self, tensor: Array<i64, impl Dimension + 'static>);
+    fn push_float32(&mut self, tensor: Array<f32, impl Dimension + 'static>);
 }
 
 /// 推論操作の出力シグネチャ。
@@ -170,19 +184,3 @@ pub(crate) enum ExtractError {
 #[derive(Error, Debug)]
 #[error("不正なモデルファイルです")]
 pub(crate) struct DecryptModelError;
-
-// FIXME: `onnxruntime::TypeToTensorElementDataType`に依存する代わりに、`InputScalar`から`runtimes`
-// まではvisitor patternでつなぐ
-mod sealed {
-    pub(crate) trait InputScalar: OnnxruntimeInputScalar {}
-
-    impl InputScalar for i64 {}
-    impl InputScalar for f32 {}
-
-    pub(crate) trait OnnxruntimeInputScalar:
-        onnxruntime::TypeToTensorElementDataType
-    {
-    }
-
-    impl<T: onnxruntime::TypeToTensorElementDataType> OnnxruntimeInputScalar for T {}
-}

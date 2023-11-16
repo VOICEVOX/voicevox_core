@@ -1,10 +1,12 @@
 use std::{fmt::Debug, vec};
 
 use anyhow::anyhow;
+use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use once_cell::sync::Lazy;
 use onnxruntime::{
     environment::Environment, GraphOptimizationLevel, LoggingLevel, TensorElementDataType,
+    TypeToTensorElementDataType,
 };
 
 use crate::{devices::SupportedDevices, error::ErrorRepr};
@@ -12,8 +14,8 @@ use crate::{devices::SupportedDevices, error::ErrorRepr};
 use self::assert_send::AssertSend;
 
 use super::super::{
-    DecryptModelError, InferenceRuntime, InferenceSessionOptions, InputScalar, InputScalarKind,
-    OutputScalarKind, OutputTensor, ParamInfo,
+    DecryptModelError, InferenceRuntime, InferenceSessionOptions, InputScalarKind,
+    OutputScalarKind, OutputTensor, ParamInfo, PushInputTensor,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -154,14 +156,6 @@ impl InferenceRuntime for Onnxruntime {
         };
     }
 
-    fn push_input(
-        input: Array<impl InputScalar, impl Dimension + 'static>,
-        ctx: &mut Self::RunContext<'_>,
-    ) {
-        ctx.inputs
-            .push(Box::new(onnxruntime::session::NdArray::new(input)));
-    }
-
     fn run(
         OnnxruntimeRunContext { sess, mut inputs }: OnnxruntimeRunContext<'_>,
     ) -> anyhow::Result<Vec<OutputTensor>> {
@@ -193,6 +187,16 @@ pub(crate) struct OnnxruntimeRunContext<'sess> {
     inputs: Vec<Box<dyn onnxruntime::session::AnyArray>>,
 }
 
+impl OnnxruntimeRunContext<'_> {
+    fn push_input(
+        &mut self,
+        input: Array<impl TypeToTensorElementDataType + Debug + 'static, impl Dimension + 'static>,
+    ) {
+        self.inputs
+            .push(Box::new(onnxruntime::session::NdArray::new(input)));
+    }
+}
+
 impl<'sess> From<&'sess mut AssertSend<onnxruntime::session::Session<'static>>>
     for OnnxruntimeRunContext<'sess>
 {
@@ -201,6 +205,17 @@ impl<'sess> From<&'sess mut AssertSend<onnxruntime::session::Session<'static>>>
             sess,
             inputs: vec![],
         }
+    }
+}
+
+impl PushInputTensor for OnnxruntimeRunContext<'_> {
+    #[duplicate_item(
+        method           T;
+        [ push_int64 ]   [ i64 ];
+        [ push_float32 ] [ f32 ];
+    )]
+    fn method(&mut self, tensor: Array<T, impl Dimension + 'static>) {
+        self.push_input(tensor);
     }
 }
 
