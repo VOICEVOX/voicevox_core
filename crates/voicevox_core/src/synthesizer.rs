@@ -251,35 +251,15 @@ impl Synthesizer {
     #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
-    /// # let syntesizer = {
-    /// #     use std::sync::Arc;
-    /// #
-    /// #     use test_util::OPEN_JTALK_DIC_DIR;
-    /// #     use voicevox_core::{
-    /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
-    /// #     };
-    /// #
-    /// #     let mut syntesizer = Synthesizer::new(
-    /// #         Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
-    /// #         &InitializeOptions {
-    /// #             acceleration_mode: AccelerationMode::Cpu,
-    /// #             ..Default::default()
-    /// #         },
-    /// #     )?;
-    /// #
-    /// #     let model = &VoiceModel::from_path(concat!(
-    /// #         env!("CARGO_MANIFEST_DIR"),
-    /// #         "/../../model/sample.vvm",
-    /// #     ))
+    /// # let synthesizer =
+    /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+    /// #         test_util::OPEN_JTALK_DIC_DIR,
+    /// #     )
     /// #     .await?;
-    /// #     syntesizer.load_voice_model(model).await?;
-    /// #
-    /// #     syntesizer
-    /// # };
     /// #
     /// use voicevox_core::StyleId;
     ///
-    /// let accent_phrases = syntesizer
+    /// let accent_phrases = synthesizer
     ///     .create_accent_phrases_from_kana("コンニチワ'", StyleId::new(302))
     ///     .await?;
     /// #
@@ -304,35 +284,15 @@ impl Synthesizer {
     #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
-    /// # let syntesizer = {
-    /// #     use std::sync::Arc;
-    /// #
-    /// #     use test_util::OPEN_JTALK_DIC_DIR;
-    /// #     use voicevox_core::{
-    /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
-    /// #     };
-    /// #
-    /// #     let mut syntesizer = Synthesizer::new(
-    /// #         Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
-    /// #         &InitializeOptions {
-    /// #             acceleration_mode: AccelerationMode::Cpu,
-    /// #             ..Default::default()
-    /// #         },
-    /// #     )?;
-    /// #
-    /// #     let model = &VoiceModel::from_path(concat!(
-    /// #         env!("CARGO_MANIFEST_DIR"),
-    /// #         "/../../model/sample.vvm",
-    /// #     ))
+    /// # let synthesizer =
+    /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+    /// #         test_util::OPEN_JTALK_DIC_DIR,
+    /// #     )
     /// #     .await?;
-    /// #     syntesizer.load_voice_model(model).await?;
-    /// #
-    /// #     syntesizer
-    /// # };
     /// #
     /// use voicevox_core::StyleId;
     ///
-    /// let accent_phrases = syntesizer
+    /// let accent_phrases = synthesizer
     ///     .create_accent_phrases("こんにちは", StyleId::new(302))
     ///     .await?;
     /// #
@@ -393,35 +353,15 @@ impl Synthesizer {
     #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
-    /// # let syntesizer = {
-    /// #     use std::sync::Arc;
-    /// #
-    /// #     use test_util::OPEN_JTALK_DIC_DIR;
-    /// #     use voicevox_core::{
-    /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
-    /// #     };
-    /// #
-    /// #     let mut syntesizer = Synthesizer::new(
-    /// #         Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
-    /// #         &InitializeOptions {
-    /// #             acceleration_mode: AccelerationMode::Cpu,
-    /// #             ..Default::default()
-    /// #         },
-    /// #     )?;
-    /// #
-    /// #     let model = &VoiceModel::from_path(concat!(
-    /// #         env!("CARGO_MANIFEST_DIR"),
-    /// #         "/../../model/sample.vvm",
-    /// #     ))
+    /// # let synthesizer =
+    /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+    /// #         test_util::OPEN_JTALK_DIC_DIR,
+    /// #     )
     /// #     .await?;
-    /// #     syntesizer.load_voice_model(model).await?;
-    /// #
-    /// #     syntesizer
-    /// # };
     /// #
     /// use voicevox_core::StyleId;
     ///
-    /// let audio_query = syntesizer
+    /// let audio_query = synthesizer
     ///     .audio_query_from_kana("コンニチワ'", StyleId::new(302))
     ///     .await?;
     /// #
@@ -447,35 +387,15 @@ impl Synthesizer {
     #[cfg_attr(not(windows), doc = "```")]
     /// # #[tokio::main]
     /// # async fn main() -> anyhow::Result<()> {
-    /// # let syntesizer = {
-    /// #     use std::sync::Arc;
-    /// #
-    /// #     use test_util::OPEN_JTALK_DIC_DIR;
-    /// #     use voicevox_core::{
-    /// #         AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceModel,
-    /// #     };
-    /// #
-    /// #     let mut syntesizer = Synthesizer::new(
-    /// #         Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
-    /// #         &InitializeOptions {
-    /// #             acceleration_mode: AccelerationMode::Cpu,
-    /// #             ..Default::default()
-    /// #         },
-    /// #     )?;
-    /// #
-    /// #     let model = &VoiceModel::from_path(concat!(
-    /// #         env!("CARGO_MANIFEST_DIR"),
-    /// #         "/../../model/sample.vvm",
-    /// #     ))
+    /// # let synthesizer =
+    /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+    /// #         test_util::OPEN_JTALK_DIC_DIR,
+    /// #     )
     /// #     .await?;
-    /// #     syntesizer.load_voice_model(model).await?;
-    /// #
-    /// #     syntesizer
-    /// # };
     /// #
     /// use voicevox_core::StyleId;
     ///
-    /// let audio_query = syntesizer
+    /// let audio_query = synthesizer
     ///     .audio_query("こんにちは", StyleId::new(302))
     ///     .await?;
     /// #
