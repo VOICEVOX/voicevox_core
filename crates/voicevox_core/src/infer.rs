@@ -94,7 +94,7 @@ impl InputScalar for T {
         tensor: Array<Self, impl Dimension + 'static>,
         ctx: &mut impl PushInputTensor,
     ) {
-        ctx.push(tensor)
+        ctx.push(tensor);
     }
 }
 
