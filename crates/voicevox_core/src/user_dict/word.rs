@@ -73,7 +73,7 @@ pub(crate) enum InvalidWordError {
 }
 
 impl InvalidWordError {
-    const BASE_MSG: &str = "ユーザー辞書の単語のバリデーションに失敗しました";
+    const BASE_MSG: &'static str = "ユーザー辞書の単語のバリデーションに失敗しました";
 }
 
 type InvalidWordResult<T> = std::result::Result<T, InvalidWordError>;
