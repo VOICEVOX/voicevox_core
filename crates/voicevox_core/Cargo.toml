@@ -17,11 +17,14 @@ derive-new = "0.5.9"
 derive_more.workspace = true
 duplicate = "1.0.0"
 easy-ext.workspace = true
+educe = "0.4.23"
+enum-map = "3.0.0-beta.1"
 fs-err.workspace = true
 futures.workspace = true
-indexmap = { version = "2.0.0", features = ["serde"] }
+indexmap.workspace = true
 itertools.workspace = true
 nanoid = "0.4.0"
+ndarray.workspace = true
 once_cell.workspace = true
 regex.workspace = true
 serde.workspace = true
@@ -31,6 +34,7 @@ thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 uuid.workspace = true
+voicevox_core_macros = { path = "../voicevox_core_macros" }
 
 [dependencies.onnxruntime]
 git = "https://github.com/VOICEVOX/onnxruntime-rs.git"

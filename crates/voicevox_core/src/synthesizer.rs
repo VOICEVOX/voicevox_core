@@ -1,6 +1,12 @@
 use std::sync::Arc;
 
-use crate::engine::{create_kana, parse_kana, AccentPhraseModel, OpenJtalk, SynthesisEngine};
+use crate::{
+    engine::{
+        create_kana, parse_kana, AccentPhraseModel, OpenJtalk, SynthesisEngine,
+        DEFAULT_SAMPLING_RATE,
+    },
+    infer::runtimes::Onnxruntime,
+};
 
 use super::*;
 
@@ -67,9 +73,11 @@ pub struct InitializeOptions {
     pub cpu_num_threads: u16,
 }
 
+pub(crate) type InferenceRuntimeImpl = Onnxruntime;
+
 /// 音声シンセサイザ。
 pub struct Synthesizer {
-    synthesis_engine: SynthesisEngine,
+    synthesis_engine: SynthesisEngine<InferenceRuntimeImpl>,
     use_gpu: bool,
 }
 
@@ -555,7 +563,7 @@ impl AudioQueryModel {
             1.,
             0.1,
             0.1,
-            SynthesisEngine::DEFAULT_SAMPLING_RATE,
+            DEFAULT_SAMPLING_RATE,
             false,
             Some(kana),
         )

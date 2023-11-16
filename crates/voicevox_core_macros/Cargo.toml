@@ -1,0 +1,15 @@
+[package]
+name = "voicevox_core_macros"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+name = "macros"
+proc-macro = true
+
+[dependencies]
+indexmap.workspace = true
+proc-macro2 = "1.0.69"
+quote = "1.0.33"
+syn = { version = "2.0.38", features = ["extra-traits"] }

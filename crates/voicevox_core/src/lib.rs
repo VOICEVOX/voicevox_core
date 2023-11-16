@@ -6,13 +6,13 @@ mod devices;
 /// cbindgen:ignore
 mod engine;
 mod error;
+mod infer;
 mod inference_core;
 mod macros;
 mod manifest;
 mod metas;
 mod numerics;
 mod result;
-mod status;
 mod synthesizer;
 mod user_dict;
 mod version;

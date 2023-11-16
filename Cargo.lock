@@ -1206,6 +1206,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49457524c7e65648794c98283282a0b7c73b10018e7091f1cdcfff314fd7ae59"
 
 [[package]]
+name = "educe"
+version = "0.4.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f0042ff8246a363dbe77d2ceedb073339e85a804b9a47636c6e016a9a32c05f"
+dependencies = [
+ "enum-ordinalize",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.102",
+]
+
+[[package]]
 name = "either"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1224,6 +1236,39 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9852635589dc9f9ea1b6fe9f05b50ef208c85c834a562f0c6abb1c475736ec2b"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "enum-map"
+version = "3.0.0-beta.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e698c4fb1d30d2aeaf3b169ca72fbc019a049d7c85acc7f91d5f58a22e3ee13"
+dependencies = [
+ "enum-map-derive",
+]
+
+[[package]]
+name = "enum-map-derive"
+version = "1.0.0-0.gat.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "48c69b3965971f5d0ea6a6dd26b55cdd517ae0e1425dc8d94e482a5915bd7ddf"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
+]
+
+[[package]]
+name = "enum-ordinalize"
+version = "3.1.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1bf1fa3f06bbff1ea5b1a9c7b14aa992a39657db60a2759457328d7e058f49ee"
+dependencies = [
+ "num-bigint",
+ "num-traits",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
 ]
 
 [[package]]
@@ -4273,6 +4318,8 @@ dependencies = [
  "derive_more",
  "duplicate",
  "easy-ext",
+ "educe",
+ "enum-map",
  "fs-err",
  "futures",
  "heck",
@@ -4280,6 +4327,7 @@ dependencies = [
  "indexmap 2.0.0",
  "itertools",
  "nanoid",
+ "ndarray",
  "once_cell",
  "onnxruntime",
  "open_jtalk",
@@ -4294,6 +4342,7 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+ "voicevox_core_macros",
  "windows",
 ]
 
@@ -4353,6 +4402,16 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "voicevox_core",
+]
+
+[[package]]
+name = "voicevox_core_macros"
+version = "0.0.0"
+dependencies = [
+ "indexmap 2.0.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
 ]
 
 [[package]]

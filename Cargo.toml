@@ -1,13 +1,5 @@
 [workspace]
-members = [
-    "crates/downloader",
-    "crates/test_util",
-    "crates/voicevox_core",
-    "crates/voicevox_core_c_api",
-    "crates/voicevox_core_java_api",
-    "crates/voicevox_core_python_api",
-    "crates/xtask"
-]
+members = ["crates/*"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -18,7 +10,9 @@ derive_more = "0.99.17"
 easy-ext = "1.0.1"
 fs-err = { version = "2.9.0", features = ["tokio"] }
 futures = "0.3.26"
+indexmap = { version = "2.0.0", features = ["serde"] }
 itertools = "0.10.5"
+ndarray = "0.15.6"
 once_cell = "1.18.0"
 regex = "1.10.0"
 rstest = "0.15.0"
