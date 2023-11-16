@@ -48,8 +48,6 @@ pub(crate) trait InferenceDomain {
 /// `::macros::InferenceOperation`により導出される。
 pub(crate) trait InferenceOperation: Copy + Enum {
     /// `{InferenceInputSignature,InferenceOutputSignature}::PARAM_INFOS`を集めたもの。
-    ///
-    /// マクロ（voicevox_core_macros）で実装される前提。
     #[allow(clippy::type_complexity)]
     const PARAM_INFOS: EnumMap<
         Self,
