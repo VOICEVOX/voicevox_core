@@ -187,12 +187,8 @@ pub(crate) fn derive_inference_input_signature(
             quote! {
                 crate::infer::ParamInfo {
                     name: ::std::borrow::Cow::Borrowed(#name),
-                    dt: <
-                        <#ty as crate::infer::ArrayExt>::Scalar as crate::infer::InputScalar
-                    >::KIND,
-                    ndim: <
-                        <#ty as crate::infer::ArrayExt>::Dimension as ::ndarray::Dimension
-                    >::NDIM,
+                    dt: <<#ty as __ArrayExt>::Scalar as crate::infer::InputScalar>::KIND,
+                    ndim: <<#ty as __ArrayExt>::Dimension as ::ndarray::Dimension>::NDIM,
                 },
             }
         })
@@ -208,9 +204,21 @@ pub(crate) fn derive_inference_input_signature(
 
             const PARAM_INFOS: &'static [crate::infer::ParamInfo<
                 crate::infer::InputScalarKind
-            >] = &[
-                #param_infos
-            ];
+            >] = {
+                trait __ArrayExt {
+                    type Scalar: crate::infer::InputScalar;
+                    type Dimension: ::ndarray::Dimension + 'static;
+                }
+
+                impl<A: crate::infer::InputScalar, D: ::ndarray::Dimension + 'static> __ArrayExt
+                    for ::ndarray::Array<A, D>
+                {
+                    type Scalar = A;
+                    type Dimension = D;
+                }
+
+                &[#param_infos]
+            };
 
             fn make_run_context<R: crate::infer::InferenceRuntime>(
                 self,
@@ -261,12 +269,8 @@ pub(crate) fn derive_inference_output_signature(
             quote! {
                 crate::infer::ParamInfo {
                     name: ::std::borrow::Cow::Borrowed(#name),
-                    dt: <
-                        <#ty as crate::infer::ArrayExt>::Scalar as crate::infer::OutputScalar
-                    >::KIND,
-                    ndim: <
-                        <#ty as crate::infer::ArrayExt>::Dimension as ::ndarray::Dimension
-                    >::NDIM,
+                    dt: <<#ty as __ArrayExt>::Scalar as crate::infer::OutputScalar>::KIND,
+                    ndim: <<#ty as __ArrayExt>::Dimension as ::ndarray::Dimension>::NDIM,
                 },
             }
         })
@@ -280,9 +284,21 @@ pub(crate) fn derive_inference_output_signature(
         {
             const PARAM_INFOS: &'static [crate::infer::ParamInfo<
                 crate::infer::OutputScalarKind
-            >] = &[
-                #param_infos
-            ];
+            >] = {
+                trait __ArrayExt {
+                    type Scalar: crate::infer::OutputScalar;
+                    type Dimension: ::ndarray::Dimension + 'static;
+                }
+
+                impl<A: crate::infer::OutputScalar, D: ::ndarray::Dimension + 'static> __ArrayExt
+                    for ::ndarray::Array<A, D>
+                {
+                    type Scalar = A;
+                    type Dimension = D;
+                }
+
+                &[#param_infos]
+            };
         }
 
         impl #impl_generics ::std::convert::TryFrom<::std::vec::Vec<crate::infer::OutputTensor>>

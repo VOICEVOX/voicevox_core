@@ -155,16 +155,6 @@ impl<D: PartialEq> ParamInfo<D> {
     }
 }
 
-pub(crate) trait ArrayExt {
-    type Scalar;
-    type Dimension: Dimension;
-}
-
-impl<A, D: Dimension> ArrayExt for Array<A, D> {
-    type Scalar = A;
-    type Dimension = D;
-}
-
 #[derive(new, Clone, Copy, PartialEq, Debug)]
 pub(crate) struct InferenceSessionOptions {
     pub(crate) cpu_num_threads: u16,
