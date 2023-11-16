@@ -24,6 +24,7 @@ public class OpenJtalk extends Dll {
    * <p>この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
    *
    * <p>Androidの場合、この関数を呼び出す前に {@code TMPDIR} 環境変数を設定する必要がある。
+   *
    * <pre>{@code
    * Activity activity = ...;
    * Os.setenv("TMPDIR", activity.getCacheDir().getAbsolutePath(), true);
