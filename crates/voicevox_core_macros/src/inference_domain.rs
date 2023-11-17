@@ -226,9 +226,21 @@ pub(crate) fn derive_inference_input_signature(
             ) -> R::RunContext<'_> {
                 let mut ctx = <R::RunContext<'_> as ::std::convert::From<_>>::from(sess);
                 #(
-                    R::push_input(self.#field_names, &mut ctx);
+                    __ArrayExt::push_to_ctx(self.#field_names, &mut ctx);
                 )*
-                ctx
+                return ctx;
+
+                trait __ArrayExt {
+                    fn push_to_ctx(self, ctx: &mut impl crate::infer::PushInputTensor);
+                }
+
+                impl<A: crate::infer::InputScalar, D: ::ndarray::Dimension + 'static> __ArrayExt
+                    for ::ndarray::Array<A, D>
+                {
+                    fn push_to_ctx(self, ctx: &mut impl crate::infer::PushInputTensor) {
+                        A::push_tensor_to_ctx(self, ctx);
+                    }
+                }
             }
         }
     });
