@@ -62,3 +62,7 @@ tempfile.workspace = true
 test_util.workspace = true
 toml = "0.7.2"
 typetag = "0.2.5"
+
+[lints.rust]
+unsafe_code = "allow" # C APIのための操作
+rust_2018_idioms = "warn"
