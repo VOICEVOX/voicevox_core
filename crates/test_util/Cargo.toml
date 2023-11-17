@@ -20,3 +20,7 @@ serde.workspace = true
 serde_json.workspace = true
 surf = "2.3.2"
 tar = "0.4.38"
+
+[lints.rust]
+unsafe_code = "forbid"
+rust_2018_idioms = "warn"

@@ -53,3 +53,7 @@ test_util.workspace = true
 [target."cfg(windows)".dependencies]
 humansize = "2.1.2"
 windows = { version = "0.43.0", features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
+
+[lints.rust]
+unsafe_code = "deny" # FIXME: あまり意味が無くなっているため潔く`allow`にする。あるいはunsafeを撲滅する
+rust_2018_idioms = "warn"

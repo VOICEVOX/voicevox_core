@@ -20,3 +20,7 @@ serde.workspace = true
 serde_json.workspace = true
 uuid.workspace = true
 voicevox_core.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+rust_2018_idioms = "warn"

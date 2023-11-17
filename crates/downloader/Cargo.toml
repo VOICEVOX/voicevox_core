@@ -32,3 +32,7 @@ zip = "0.6.3"
 
 [dev-dependencies]
 rstest.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+rust_2018_idioms = "warn"
