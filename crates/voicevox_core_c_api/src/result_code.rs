@@ -11,8 +11,8 @@ pub enum VoicevoxResultCode {
     // 出力フォーマットを変更すればRustでよく使われているUpperCamelにできるが、実際に出力されるコードとの差異をできるだけ少なくするため
     /// 成功
     VOICEVOX_RESULT_OK = 0,
-    /// open_jtalk辞書ファイルが読み込まれていない
-    VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR = 1,
+    /// Open JTalkのシステム辞書を読むことができなかった
+    VOICEVOX_RESULT_LOAD_OPENJTALK_SYSTEM_DIC = 1,
     /// サポートされているデバイス情報取得に失敗した
     VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR = 3,
     /// GPUモードがサポートされていない
@@ -60,8 +60,8 @@ pub enum VoicevoxResultCode {
 pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static CStr {
     use VoicevoxResultCode::*;
     match result_code {
-        VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR => {
-            cstr!("OpenJTalkの辞書が読み込まれていません")
+        VOICEVOX_RESULT_LOAD_OPENJTALK_SYSTEM_DIC => {
+            cstr!("Open JTalkのシステム辞書を読むことができませんでした")
         }
         VOICEVOX_RESULT_GPU_SUPPORT_ERROR => cstr!("GPU機能をサポートすることができません"),
         VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR => {

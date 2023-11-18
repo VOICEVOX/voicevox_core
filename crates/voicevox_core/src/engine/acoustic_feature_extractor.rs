@@ -4,7 +4,7 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 #[rustfmt::skip]
-const PHONEME_LIST: &[&str] = &[
+const PHONEME_LIST: [&str; 45] = [
     "pau",
     "A",
     "E",
@@ -70,9 +70,7 @@ pub struct OjtPhoneme {
 }
 
 impl OjtPhoneme {
-    pub fn num_phoneme() -> usize {
-        PHONEME_MAP.len()
-    }
+    pub(crate) const NUM_PHONEME: usize = PHONEME_LIST.len();
 
     pub fn space_phoneme() -> String {
         "pau".into()
@@ -134,8 +132,8 @@ mod tests {
     }
 
     #[rstest]
-    fn test_num_phoneme_works() {
-        assert_eq!(OjtPhoneme::num_phoneme(), 45);
+    fn test_phoneme_map_has_enough_elements() {
+        assert_eq!(OjtPhoneme::NUM_PHONEME, PHONEME_MAP.len());
     }
 
     #[rstest]

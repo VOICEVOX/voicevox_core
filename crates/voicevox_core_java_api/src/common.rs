@@ -122,7 +122,7 @@ where
                         }
 
                         let class = class!(
-                            NotLoadedOpenjtalkDict,
+                            LoadOpenjtalkSystemDic,
                             GpuSupport,
                             OpenZipFile,
                             ReadZipEntry,

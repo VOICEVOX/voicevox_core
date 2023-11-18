@@ -4,7 +4,7 @@ use crate::{AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer, VoiceMo
 
 pub async fn synthesizer_with_sample_voice_model(
     open_jtalk_dic_dir: impl AsRef<Path>,
-) -> anyhow::Result<Synthesizer> {
+) -> anyhow::Result<Synthesizer<Arc<OpenJtalk>>> {
     let syntesizer = Synthesizer::new(
         Arc::new(OpenJtalk::new(open_jtalk_dic_dir).unwrap()),
         &InitializeOptions {

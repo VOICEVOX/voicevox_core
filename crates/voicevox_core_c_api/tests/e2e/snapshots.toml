@@ -50,7 +50,7 @@ stderr = ""
 
 [global_info]
 result_messages.0 = "エラーが発生しませんでした"
-result_messages.1 = "OpenJTalkの辞書が読み込まれていません"
+result_messages.1 = "Open JTalkのシステム辞書を読むことができませんでした"
 result_messages.3 = "サポートされているデバイス情報取得中にエラーが発生しました"
 result_messages.4 = "GPU機能をサポートすることができません"
 result_messages.6 = "指定されたIDに対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています"

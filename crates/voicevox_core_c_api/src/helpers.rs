@@ -29,7 +29,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
         match result {
             Ok(()) => VOICEVOX_RESULT_OK,
             Err(RustApi(err)) => match err.kind() {
-                NotLoadedOpenjtalkDict => VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
+                LoadOpenjtalkSystemDic => VOICEVOX_RESULT_LOAD_OPENJTALK_SYSTEM_DIC,
                 GpuSupport => VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
                 OpenZipFile => VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR,
                 ReadZipEntry => VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR,
