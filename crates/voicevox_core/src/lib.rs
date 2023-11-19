@@ -5,7 +5,6 @@ mod devices;
 mod engine;
 mod error;
 mod infer;
-mod inference_core;
 mod macros;
 mod manifest;
 mod metas;
@@ -18,8 +17,6 @@ mod voice_model;
 
 #[doc(hidden)]
 pub mod __internal;
-
-use self::inference_core::*;
 
 #[cfg(test)]
 mod test_util;
