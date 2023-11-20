@@ -423,8 +423,8 @@ class UserDict:
         """
         ...
 
-class NotLoadedOpenjtalkDictError(Exception):
-    """open_jtalk辞書ファイルが読み込まれていない。"""
+class LoadOpenjtalkSystemDicError(Exception):
+    """Open JTalkのシステム辞書を読むことができなかった。"""
 
     ...
 

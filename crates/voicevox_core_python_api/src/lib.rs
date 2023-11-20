@@ -50,7 +50,7 @@ macro_rules! exceptions {
 }
 
 exceptions! {
-    NotLoadedOpenjtalkDictError: PyException;
+    LoadOpenjtalkSystemDicError: PyException;
     GpuSupportError: PyException;
     OpenZipFileError: PyException;
     ReadZipEntryError: PyException;
@@ -140,7 +140,7 @@ impl OpenJtalk {
 
 #[pyclass]
 struct Synthesizer {
-    synthesizer: Closable<Arc<voicevox_core::Synthesizer>, Self>,
+    synthesizer: Closable<Arc<voicevox_core::Synthesizer<Arc<voicevox_core::OpenJtalk>>>, Self>,
 }
 
 #[pymethods]

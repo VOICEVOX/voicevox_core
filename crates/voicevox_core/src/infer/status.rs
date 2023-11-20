@@ -86,14 +86,14 @@ impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
         self.loaded_models.lock().unwrap().contains_style(style_id)
     }
 
-    pub fn validate_speaker_id(&self, style_id: StyleId) -> bool {
-        self.is_loaded_model_by_style_id(style_id)
-    }
-
+    /// 推論を実行する。
+    ///
+    /// CPU/GPU-bound操作であるため、async文脈ではスレッドに包むべきである。
+    ///
     /// # Panics
     ///
     /// `self`が`model_id`を含んでいないとき、パニックする。
-    pub(crate) async fn run_session<I>(
+    pub(crate) fn run_session<I>(
         &self,
         model_id: &VoiceModelId,
         input: I,
@@ -103,10 +103,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
         I::Signature: InferenceSignature<Domain = D>,
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
-
-        tokio::task::spawn_blocking(move || sess.run(input))
-            .await
-            .unwrap()
+        sess.run(input)
     }
 }
 

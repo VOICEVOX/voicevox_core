@@ -28,7 +28,7 @@ impl Error {
     /// 対応する[`ErrorKind`]を返す。
     pub fn kind(&self) -> ErrorKind {
         match &self.0 {
-            ErrorRepr::NotLoadedOpenjtalkDict => ErrorKind::NotLoadedOpenjtalkDict,
+            ErrorRepr::LoadOpenjtalkSystemDic(_) => ErrorKind::LoadOpenjtalkSystemDic,
             ErrorRepr::GpuSupport => ErrorKind::GpuSupport,
             ErrorRepr::LoadModel(LoadModelError { context, .. }) => match context {
                 LoadModelErrorKind::OpenZipFile => ErrorKind::OpenZipFile,
@@ -54,8 +54,8 @@ impl Error {
 
 #[derive(Error, Debug)]
 pub(crate) enum ErrorRepr {
-    #[error("OpenJTalkの辞書が読み込まれていません")]
-    NotLoadedOpenjtalkDict,
+    #[error("ディレクトリ`{_0}`をOpen JTalkのシステム辞書として読むことができませんでした")]
+    LoadOpenjtalkSystemDic(String),
 
     #[error("GPU機能をサポートすることができません")]
     GpuSupport,
@@ -106,8 +106,8 @@ pub(crate) enum ErrorRepr {
 /// エラーの種類。
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ErrorKind {
-    /// open_jtalk辞書ファイルが読み込まれていない。
-    NotLoadedOpenjtalkDict,
+    /// Open JTalkのシステム辞書を読むことができなかった。
+    LoadOpenjtalkSystemDic,
     /// GPUモードがサポートされていない。
     GpuSupport,
     /// ZIPファイルを開くことに失敗した。

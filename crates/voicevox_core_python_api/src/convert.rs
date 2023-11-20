@@ -15,8 +15,8 @@ use voicevox_core::{
 
 use crate::{
     ExtractFullContextLabelError, GetSupportedDevicesError, GpuSupportError, InferenceFailedError,
-    InvalidModelDataError, InvalidWordError, LoadUserDictError, ModelAlreadyLoadedError,
-    ModelNotFoundError, NotLoadedOpenjtalkDictError, OpenZipFileError, ParseKanaError,
+    InvalidModelDataError, InvalidWordError, LoadOpenjtalkSystemDicError, LoadUserDictError,
+    ModelAlreadyLoadedError, ModelNotFoundError, OpenZipFileError, ParseKanaError,
     ReadZipEntryError, SaveUserDictError, StyleAlreadyLoadedError, StyleNotFoundError,
     UseUserDictError, WordNotFoundError,
 };
@@ -158,7 +158,7 @@ pub impl<T> voicevox_core::Result<T> {
         self.map_err(|err| {
             let msg = err.to_string();
             let top = match err.kind() {
-                ErrorKind::NotLoadedOpenjtalkDict => NotLoadedOpenjtalkDictError::new_err(msg),
+                ErrorKind::LoadOpenjtalkSystemDic => LoadOpenjtalkSystemDicError::new_err(msg),
                 ErrorKind::GpuSupport => GpuSupportError::new_err(msg),
                 ErrorKind::OpenZipFile => OpenZipFileError::new_err(msg),
                 ErrorKind::ReadZipEntry => ReadZipEntryError::new_err(msg),

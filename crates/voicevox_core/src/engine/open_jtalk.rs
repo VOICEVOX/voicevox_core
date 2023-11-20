@@ -1,8 +1,5 @@
 use std::io::Write;
-use std::{
-    path::{Path, PathBuf},
-    sync::Mutex,
-};
+use std::{path::Path, sync::Mutex};
 
 use anyhow::anyhow;
 use tempfile::NamedTempFile;
@@ -22,7 +19,7 @@ pub(crate) struct OpenjtalkFunctionError {
 /// テキスト解析器としてのOpen JTalk。
 pub struct OpenJtalk {
     resources: Mutex<Resources>,
-    dict_dir: Option<PathBuf>,
+    dict_dir: String,
 }
 
 struct Resources {
@@ -35,24 +32,27 @@ struct Resources {
 unsafe impl Send for Resources {}
 
 impl OpenJtalk {
-    // FIXME: この関数は廃止し、`Synthesizer`は`Option<OpenJtalk>`という形でこの構造体を持つ
-    pub fn new_without_dic() -> Self {
-        Self {
-            resources: Mutex::new(Resources {
-                mecab: ManagedResource::initialize(),
-                njd: ManagedResource::initialize(),
-                jpcommon: ManagedResource::initialize(),
-            }),
-            dict_dir: None,
-        }
-    }
     pub fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
-        let mut s = Self::new_without_dic();
-        s.load(open_jtalk_dict_dir).map_err(|()| {
-            // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
-            ErrorRepr::NotLoadedOpenjtalkDict
-        })?;
-        Ok(s)
+        let mut resources = Resources {
+            mecab: ManagedResource::initialize(),
+            njd: ManagedResource::initialize(),
+            jpcommon: ManagedResource::initialize(),
+        };
+        let dict_dir = open_jtalk_dict_dir
+            .as_ref()
+            .to_str()
+            .unwrap_or_else(|| todo!("Rust APIでは`Utf8Path`で受けるようにする"))
+            .to_owned();
+
+        let result = resources.mecab.load(&dict_dir);
+        if !result {
+            return Err(ErrorRepr::LoadOpenjtalkSystemDic(dict_dir).into());
+        }
+
+        Ok(Self {
+            resources: resources.into(),
+            dict_dir,
+        })
     }
 
     // 先に`load`を呼ぶ必要がある。
@@ -60,12 +60,6 @@ impl OpenJtalk {
     ///
     /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
     pub fn use_user_dict(&self, user_dict: &UserDict) -> crate::result::Result<()> {
-        let dict_dir = self
-            .dict_dir
-            .as_ref()
-            .and_then(|dict_dir| dict_dir.to_str())
-            .ok_or(ErrorRepr::NotLoadedOpenjtalkDict)?;
-
         // ユーザー辞書用のcsvを作成
         let mut temp_csv = NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
         temp_csv
@@ -80,7 +74,7 @@ impl OpenJtalk {
         mecab_dict_index(&[
             "mecab-dict-index",
             "-d",
-            dict_dir,
+            &self.dict_dir,
             "-u",
             temp_dict_path.to_str().unwrap(),
             "-f",
@@ -93,7 +87,8 @@ impl OpenJtalk {
 
         let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
 
-        let result = mecab.load_with_userdic(Path::new(dict_dir), Some(Path::new(&temp_dict_path)));
+        let result =
+            mecab.load_with_userdic(self.dict_dir.as_ref(), Some(Path::new(&temp_dict_path)));
 
         if !result {
             return Err(ErrorRepr::UseUserDict(anyhow!("辞書のコンパイルに失敗しました")).into());
@@ -149,26 +144,6 @@ impl OpenJtalk {
                 source: None,
             })
         }
-    }
-
-    fn load(&mut self, open_jtalk_dict_dir: impl AsRef<Path>) -> std::result::Result<(), ()> {
-        let result = self
-            .resources
-            .lock()
-            .unwrap()
-            .mecab
-            .load(open_jtalk_dict_dir.as_ref());
-        if result {
-            self.dict_dir = Some(open_jtalk_dict_dir.as_ref().into());
-            Ok(())
-        } else {
-            self.dict_dir = None;
-            Err(())
-        }
-    }
-
-    pub fn dict_loaded(&self) -> bool {
-        self.dict_dir.is_some()
     }
 }
 

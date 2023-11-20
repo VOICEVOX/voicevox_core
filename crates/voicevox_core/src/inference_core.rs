@@ -1,4 +1,5 @@
 use enum_map::enum_map;
+use ndarray::{Array1, ArrayView1, ArrayView2};
 
 use crate::infer::{
     domain::{
@@ -9,12 +10,14 @@ use crate::infer::{
     status::Status,
     InferenceRuntime, InferenceSessionOptions,
 };
+use itertools::Itertools as _;
 
 use super::*;
 
 const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
 
 pub(crate) struct InferenceCore<R: InferenceRuntime> {
+    use_gpu: bool,
     status: Status<R, InferenceDomainImpl>,
 }
 
@@ -32,7 +35,7 @@ impl<R: InferenceRuntime> InferenceCore<R> {
                 | InferenceOperationImpl::PredictIntonation => light_session_options,
                 InferenceOperationImpl::Decode => heavy_session_options,
             });
-            Ok(Self { status })
+            Ok(Self { use_gpu, status })
         } else {
             Err(ErrorRepr::GpuSupport.into())
         }
@@ -48,6 +51,10 @@ impl<R: InferenceRuntime> InferenceCore<R> {
                 Ok(*supported_devices.cuda())
             }
         }
+    }
+
+    pub(crate) fn is_use_gpu(&self) -> bool {
+        self.use_gpu
     }
 
     pub async fn load_model(&self, model: &VoiceModel) -> Result<()> {
@@ -70,29 +77,25 @@ impl<R: InferenceRuntime> InferenceCore<R> {
         self.status.is_loaded_model_by_style_id(style_id)
     }
 
-    pub async fn predict_duration(
+    /// `predict_duration`を実行する。
+    ///
+    /// CPU-bound操作であるため、async文脈ではスレッドに包むべきである。
+    pub fn predict_duration(
         &self,
-        phoneme_vector: &[i64],
+        phoneme_list: Array1<i64>,
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        if !self.status.validate_speaker_id(style_id) {
-            return Err(ErrorRepr::StyleNotFound { style_id }.into());
-        }
-
         let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
 
         let PredictDurationOutput {
             phoneme_length: output,
-        } = self
-            .status
-            .run_session(
-                &model_id,
-                PredictDurationInput {
-                    phoneme_list: ndarray::arr1(phoneme_vector),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
-                },
-            )
-            .await?;
+        } = self.status.run_session(
+            &model_id,
+            PredictDurationInput {
+                phoneme_list,
+                speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+            },
+        )?;
         let mut output = output.into_raw_vec();
 
         for output_item in output.iter_mut() {
@@ -104,57 +107,77 @@ impl<R: InferenceRuntime> InferenceCore<R> {
         Ok(output)
     }
 
+    /// `predict_intonation`を実行する。
+    ///
+    /// CPU-bound操作であるため、async文脈ではスレッドに包むべきである。
+    ///
+    /// # Panics
+    ///
+    /// 長さが合わないとき、パニックする。
     #[allow(clippy::too_many_arguments)]
-    pub async fn predict_intonation(
+    pub fn predict_intonation(
         &self,
-        length: usize,
-        vowel_phoneme_vector: &[i64],
-        consonant_phoneme_vector: &[i64],
-        start_accent_vector: &[i64],
-        end_accent_vector: &[i64],
-        start_accent_phrase_vector: &[i64],
-        end_accent_phrase_vector: &[i64],
+        vowel_phoneme_list: Array1<i64>,
+        consonant_phoneme_list: Array1<i64>,
+        start_accent_list: Array1<i64>,
+        end_accent_list: Array1<i64>,
+        start_accent_phrase_list: Array1<i64>,
+        end_accent_phrase_list: Array1<i64>,
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        if !self.status.validate_speaker_id(style_id) {
-            return Err(ErrorRepr::StyleNotFound { style_id }.into());
-        }
-
         let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
 
-        let PredictIntonationOutput { f0_list: output } = self
-            .status
-            .run_session(
-                &model_id,
-                PredictIntonationInput {
-                    length: ndarray::arr0(length as i64),
-                    vowel_phoneme_list: ndarray::arr1(vowel_phoneme_vector),
-                    consonant_phoneme_list: ndarray::arr1(consonant_phoneme_vector),
-                    start_accent_list: ndarray::arr1(start_accent_vector),
-                    end_accent_list: ndarray::arr1(end_accent_vector),
-                    start_accent_phrase_list: ndarray::arr1(start_accent_phrase_vector),
-                    end_accent_phrase_list: ndarray::arr1(end_accent_phrase_vector),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
-                },
-            )
-            .await?;
+        let Ok(&length) = [
+            vowel_phoneme_list.len(),
+            consonant_phoneme_list.len(),
+            start_accent_list.len(),
+            end_accent_list.len(),
+            start_accent_phrase_list.len(),
+            end_accent_phrase_list.len(),
+        ]
+        .iter()
+        .unique()
+        .exactly_one() else {
+            panic!("different lengths");
+        };
+
+        let PredictIntonationOutput { f0_list: output } = self.status.run_session(
+            &model_id,
+            PredictIntonationInput {
+                length: ndarray::arr0(length as i64),
+                vowel_phoneme_list,
+                consonant_phoneme_list,
+                start_accent_list,
+                end_accent_list,
+                start_accent_phrase_list,
+                end_accent_phrase_list,
+                speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+            },
+        )?;
 
         Ok(output.into_raw_vec())
     }
 
-    pub async fn decode(
+    /// `predict_intonation`を実行する。
+    ///
+    /// CPU/GPU-bound操作であるため、async文脈ではスレッドに包むべきである。
+    ///
+    /// # Panics
+    ///
+    /// `f0`と`phoneme`の長さが合わないとき、パニックする。
+    pub fn decode(
         &self,
-        length: usize,
-        phoneme_size: usize,
-        f0: &[f32],
-        phoneme_vector: &[f32],
+        f0: ArrayView1<'_, f32>,
+        phoneme: ArrayView2<'_, f32>,
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        if !self.status.validate_speaker_id(style_id) {
-            return Err(ErrorRepr::StyleNotFound { style_id }.into());
-        }
-
         let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+
+        let length = f0.len();
+        let (phoneme_length, phoneme_size) = phoneme.dim();
+        if phoneme_length != length {
+            panic!("different lengths");
+        }
 
         // 音が途切れてしまうのを避けるworkaround処理が入っている
         // TODO: 改善したらここのpadding処理を取り除く
@@ -163,30 +186,28 @@ impl<R: InferenceRuntime> InferenceCore<R> {
         let padding_size = ((PADDING_SIZE * DEFAULT_SAMPLING_RATE) / 256.0).round() as usize;
         let start_and_end_padding_size = 2 * padding_size;
         let length_with_padding = length + start_and_end_padding_size;
-        let f0_with_padding = Self::make_f0_with_padding(f0, length_with_padding, padding_size);
+        let f0_with_padding =
+            Self::make_f0_with_padding(f0.to_slice().unwrap(), length_with_padding, padding_size);
 
         let phoneme_with_padding = Self::make_phoneme_with_padding(
-            phoneme_vector,
+            phoneme.to_slice().unwrap(),
             phoneme_size,
             length_with_padding,
             padding_size,
         );
 
-        let DecodeOutput { wave: output } = self
-            .status
-            .run_session(
-                &model_id,
-                DecodeInput {
-                    f0: ndarray::arr1(&f0_with_padding)
-                        .into_shape([length_with_padding, 1])
-                        .unwrap(),
-                    phoneme: ndarray::arr1(&phoneme_with_padding)
-                        .into_shape([length_with_padding, phoneme_size])
-                        .unwrap(),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
-                },
-            )
-            .await?;
+        let DecodeOutput { wave: output } = self.status.run_session(
+            &model_id,
+            DecodeInput {
+                f0: ndarray::arr1(&f0_with_padding)
+                    .into_shape([length_with_padding, 1])
+                    .unwrap(),
+                phoneme: ndarray::arr1(&phoneme_with_padding)
+                    .into_shape([length_with_padding, phoneme_size])
+                    .unwrap(),
+                speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+            },
+        )?;
 
         Ok(Self::trim_padding_from_output(
             output.into_raw_vec(),
