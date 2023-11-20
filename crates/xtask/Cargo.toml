@@ -5,10 +5,10 @@ edition.workspace = true
 publish.workspace = true
 
 [dependencies]
-cbindgen = "0.24.3"
-clap.workspace = true
-color-eyre = "0.6.2"
-eyre = "0.6.8"
+cbindgen.workspace = true
+clap = { workspace = true, features = ["derive"] }
+color-eyre.workspace = true
+eyre.workspace = true
 fs-err.workspace = true
 
 [lints.rust]
