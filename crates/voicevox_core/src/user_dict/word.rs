@@ -222,7 +222,7 @@ impl UserDictWord {
     pub fn to_mecab_format(&self) -> String {
         let pos = PART_OF_SPEECH_DETAIL.get(&self.word_type).unwrap();
         format!(
-            "{},{},{},{},{},{},{},{},{},{},{},{},{},{}/{},{}\n",
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{}/{},{}",
             self.surface,
             pos.context_id,
             pos.context_id,
@@ -270,7 +270,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             word.to_mecab_format(),
-            "単語,1348,1348,8609,名詞,固有名詞,一般,*,*,*,*,ヨミ,ヨミ,0/2,*\n"
+            "単語,1348,1348,8609,名詞,固有名詞,一般,*,*,*,*,ヨミ,ヨミ,0/2,*"
         );
     }
 
