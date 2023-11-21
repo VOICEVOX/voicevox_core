@@ -77,7 +77,7 @@ struct VoiceModel {
 }
 
 #[pyfunction]
-fn supported_devices(py: Python) -> PyResult<&PyAny> {
+fn supported_devices(py: Python<'_>) -> PyResult<&PyAny> {
     let class = py
         .import("voicevox_core")?
         .getattr("SupportedDevices")?
@@ -126,8 +126,7 @@ impl OpenJtalk {
     ) -> PyResult<Self> {
         Ok(Self {
             open_jtalk: Arc::new(
-                voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)
-                    .into_py_result(py)?,
+                voicevox_core::OpenJtalk::new(open_jtalk_dict_dir).into_py_result(py)?,
             ),
         })
     }
@@ -146,31 +145,27 @@ struct Synthesizer {
 
 #[pymethods]
 impl Synthesizer {
-    #[staticmethod]
+    #[new]
     #[pyo3(signature =(
         open_jtalk,
         acceleration_mode = InitializeOptions::default().acceleration_mode,
         cpu_num_threads = InitializeOptions::default().cpu_num_threads,
     ))]
-    fn new_with_initialize(
-        py: Python,
+    fn new(
         open_jtalk: OpenJtalk,
         #[pyo3(from_py_with = "from_acceleration_mode")] acceleration_mode: AccelerationMode,
         cpu_num_threads: u16,
-    ) -> PyResult<&PyAny> {
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let synthesizer = voicevox_core::Synthesizer::new_with_initialize(
-                open_jtalk.open_jtalk.clone(),
-                &InitializeOptions {
-                    acceleration_mode,
-                    cpu_num_threads,
-                },
-            )
-            .await;
-            let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?.into();
-            let synthesizer = Closable::new(synthesizer);
-            Ok(Self { synthesizer })
-        })
+    ) -> PyResult<Self> {
+        let synthesizer = voicevox_core::Synthesizer::new(
+            open_jtalk.open_jtalk.clone(),
+            &InitializeOptions {
+                acceleration_mode,
+                cpu_num_threads,
+            },
+        );
+        let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?.into();
+        let synthesizer = Closable::new(synthesizer);
+        Ok(Self { synthesizer })
     }
 
     fn __repr__(&self) -> &'static str {
@@ -552,7 +547,7 @@ impl UserDict {
     fn add_word(
         &mut self,
         #[pyo3(from_py_with = "to_rust_user_dict_word")] word: UserDictWord,
-        py: Python,
+        py: Python<'_>,
     ) -> PyResult<PyObject> {
         let uuid = self.dict.add_word(word).into_py_result(py)?;
 

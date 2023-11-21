@@ -8,21 +8,9 @@ use jni::{
     objects::{JObject, JString},
     JNIEnv,
 };
-#[no_mangle]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsNewWithoutDic<'local>(
-    env: JNIEnv<'local>,
-    this: JObject<'local>,
-) {
-    throw_if_err(env, (), |env| {
-        let internal = voicevox_core::OpenJtalk::new_without_dic();
-
-        env.set_rust_field(&this, "handle", Arc::new(internal))?;
-        Ok(())
-    })
-}
 
 #[no_mangle]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsNewWithInitialize<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsNew<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     open_jtalk_dict_dir: JString<'local>,
@@ -31,7 +19,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsNewWithInit
         let open_jtalk_dict_dir = env.get_string(&open_jtalk_dict_dir)?;
         let open_jtalk_dict_dir = &*Cow::from(&open_jtalk_dict_dir);
 
-        let internal = voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)?;
+        let internal = voicevox_core::OpenJtalk::new(open_jtalk_dict_dir)?;
         env.set_rust_field(&this, "handle", Arc::new(internal))?;
 
         Ok(())

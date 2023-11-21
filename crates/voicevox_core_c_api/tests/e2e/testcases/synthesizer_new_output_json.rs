@@ -22,7 +22,7 @@ case!(TestCase);
 #[derive(Serialize, Deserialize)]
 struct TestCase;
 
-#[typetag::serde(name = "synthesizer_new_with_initialize_output_json")]
+#[typetag::serde(name = "synthesizer_new_output_json")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
         let Symbols {
@@ -30,7 +30,7 @@ impl assert_cdylib::TestCase for TestCase {
             voicevox_voice_model_new_from_path,
             voicevox_open_jtalk_rc_new,
             voicevox_open_jtalk_rc_delete,
-            voicevox_synthesizer_new_with_initialize,
+            voicevox_synthesizer_new,
             voicevox_synthesizer_delete,
             voicevox_synthesizer_create_metas_json,
             voicevox_synthesizer_load_voice_model,
@@ -50,7 +50,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         let synthesizer = {
             let mut synthesizer = MaybeUninit::uninit();
-            assert_ok(voicevox_synthesizer_new_with_initialize(
+            assert_ok(voicevox_synthesizer_new(
                 openjtalk,
                 VoicevoxInitializeOptions {
                     acceleration_mode: VoicevoxAccelerationMode::VOICEVOX_ACCELERATION_MODE_CPU,
@@ -103,8 +103,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> =
-    snapshots::section!(synthesizer_new_with_initialize_output_json);
+static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(synthesizer_new_output_json);
 
 #[derive(Deserialize)]
 struct Snapshots {

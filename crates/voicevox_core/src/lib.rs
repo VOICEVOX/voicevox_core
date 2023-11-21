@@ -1,18 +1,15 @@
 //! 無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。
 
-#![deny(unsafe_code)]
-
 mod devices;
 /// cbindgen:ignore
 mod engine;
 mod error;
-mod inference_core;
+mod infer;
 mod macros;
 mod manifest;
 mod metas;
 mod numerics;
 mod result;
-mod status;
 mod synthesizer;
 mod user_dict;
 mod version;
@@ -20,8 +17,6 @@ mod voice_model;
 
 #[doc(hidden)]
 pub mod __internal;
-
-use self::inference_core::*;
 
 #[cfg(test)]
 mod test_util;

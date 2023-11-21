@@ -11,13 +11,17 @@ use jni::{
 use std::sync::Arc;
 
 #[no_mangle]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNewWithInitialize<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     open_jtalk: JObject<'local>,
     builder: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
+        // ロガーを起動
+        // FIXME: `throw_if_err`を`run`とかに改名し、`init_logger`をその中に移動
+        let _ = *RUNTIME;
+
         let mut options = voicevox_core::InitializeOptions::default();
 
         let acceleration_mode = env
@@ -48,12 +52,40 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNewWithIn
         let open_jtalk = env
             .get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&open_jtalk, "handle")?
             .clone();
-        let internal = RUNTIME.block_on(voicevox_core::Synthesizer::new_with_initialize(
-            open_jtalk,
-            Box::leak(Box::new(options)),
-        ))?;
+        let internal = voicevox_core::Synthesizer::new(open_jtalk, Box::leak(Box::new(options)))?;
         env.set_rust_field(&this, "handle", Arc::new(internal))?;
         Ok(())
+    })
+}
+#[no_mangle]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsGpuMode<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+) -> jboolean {
+    throw_if_err(env, false, |env| {
+        let internal = env
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
+            .clone();
+
+        Ok(internal.is_gpu_mode())
+    })
+    .into()
+}
+#[no_mangle]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsGetMetasJson<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let internal = env
+            .get_rust_field::<_, _, Arc<voicevox_core::Synthesizer>>(&this, "handle")?
+            .clone();
+
+        let metas_json = serde_json::to_string(&internal.metas()).expect("should not fail");
+
+        let j_metas_json = env.new_string(metas_json)?;
+
+        Ok(j_metas_json.into_raw())
     })
 }
 

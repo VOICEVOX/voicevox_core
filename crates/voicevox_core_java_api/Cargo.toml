@@ -11,13 +11,18 @@ crate-type = ["cdylib"]
 directml = ["voicevox_core/directml"]
 
 [dependencies]
-android_logger = "0.13.1"
-chrono = "0.4.26"
+android_logger.workspace = true
+chrono = { workspace = true, default-features = false, features = ["clock"] }
 derive_more.workspace = true
-jni = "0.21.1"
+jni.workspace = true
 once_cell.workspace = true
-serde_json.workspace = true
-tokio.workspace = true
-tracing-subscriber.workspace = true
+serde_json = { workspace = true, features = ["preserve_order"] }
+tokio = { workspace = true, features = ["rt", "rt-multi-thread"] }
+tracing = { workspace = true, features = ["log"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 uuid.workspace = true
 voicevox_core.workspace = true
+
+[lints.rust]
+unsafe_code = "allow" # jni-rsが要求
+rust_2018_idioms = "warn"
