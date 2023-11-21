@@ -40,6 +40,6 @@ async def synthesizer(open_jtalk: OpenJtalk) -> Synthesizer:
     return Synthesizer(open_jtalk)
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture
 async def open_jtalk() -> OpenJtalk:
     return await OpenJtalk.new(conftest.open_jtalk_dic_dir)
