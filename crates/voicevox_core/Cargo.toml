@@ -10,49 +10,44 @@ directml = ["onnxruntime/directml"]
 
 [dependencies]
 anyhow.workspace = true
-async_zip.workspace = true
-cfg-if = "1.0.0"
+async_zip = { workspace = true, features = ["full"] }
+cfg-if.workspace = true
 derive-getters.workspace = true
-derive-new = "0.5.9"
+derive-new.workspace = true
 derive_more.workspace = true
-duplicate = "1.0.0"
+duplicate.workspace = true
 easy-ext.workspace = true
-educe = "0.4.23"
-enum-map = "3.0.0-beta.1"
-fs-err.workspace = true
+educe.workspace = true
+enum-map.workspace = true
+fs-err = { workspace = true, features = ["tokio"] }
 futures.workspace = true
-indexmap.workspace = true
+indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
-nanoid = "0.4.0"
+nanoid.workspace = true
 ndarray.workspace = true
 once_cell.workspace = true
+onnxruntime.workspace = true
+open_jtalk.workspace = true
 regex.workspace = true
-serde.workspace = true
-serde_json.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["preserve_order"] }
 tempfile.workspace = true
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["rt"] }
 tracing.workspace = true
-uuid.workspace = true
+uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox_core_macros = { path = "../voicevox_core_macros" }
 
-[dependencies.onnxruntime]
-git = "https://github.com/VOICEVOX/onnxruntime-rs.git"
-rev = "ebb9dcb9b26ee681889b52b6db3b4f642b04a250"
-
-[dependencies.open_jtalk]
-git = "https://github.com/VOICEVOX/open_jtalk-rs.git"
-rev = "a16714ce16dec76fd0e3041a7acfa484921db3b5"
-
 [dev-dependencies]
-heck = "0.4.0"
-pretty_assertions = "1.3.0"
+heck.workspace = true
+pretty_assertions.workspace = true
 rstest.workspace = true
 test_util.workspace = true
+tokio = { workspace = true, features = ["rt", "macros"] }
 
 [target."cfg(windows)".dependencies]
-humansize = "2.1.2"
-windows = { version = "0.43.0", features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
+humansize.workspace = true
+windows = { workspace = true, features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
 
 [lints.rust]
 unsafe_code = "deny" # FIXME: あまり意味が無くなっているため潔く`allow`にする。あるいはunsafeを撲滅する
