@@ -1,9 +1,6 @@
-use std::{
-    borrow::Cow,
-    sync::{Arc, Mutex},
-};
+use std::{borrow::Cow, sync::Arc};
 
-use crate::common::throw_if_err;
+use crate::common::{throw_if_err, RUNTIME};
 use jni::{
     objects::{JObject, JString},
     JNIEnv,
@@ -19,7 +16,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsNew<'local>
         let open_jtalk_dict_dir = env.get_string(&open_jtalk_dict_dir)?;
         let open_jtalk_dict_dir = &*Cow::from(&open_jtalk_dict_dir);
 
-        let internal = voicevox_core::OpenJtalk::new(open_jtalk_dict_dir)?;
+        let internal = RUNTIME.block_on(voicevox_core::OpenJtalk::new(open_jtalk_dict_dir))?;
         env.set_rust_field(&this, "handle", Arc::new(internal))?;
 
         Ok(())
@@ -38,13 +35,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsUseUserDict
             .clone();
 
         let user_dict = env
-            .get_rust_field::<_, _, Arc<Mutex<voicevox_core::UserDict>>>(&user_dict, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::UserDict>>(&user_dict, "handle")?
             .clone();
 
-        {
-            let user_dict = user_dict.lock().unwrap();
-            internal.use_user_dict(&user_dict)?
-        }
+        RUNTIME.block_on(internal.use_user_dict(&user_dict))?;
 
         Ok(())
     })

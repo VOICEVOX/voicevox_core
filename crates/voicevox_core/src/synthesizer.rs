@@ -1428,7 +1428,7 @@ mod tests {
         #[case] expected_kana_text: &str,
     ) {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1496,7 +1496,7 @@ mod tests {
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
     ) {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1561,7 +1561,7 @@ mod tests {
     #[tokio::test]
     async fn create_accent_phrases_works_for_japanese_commas_and_periods() {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1620,7 +1620,7 @@ mod tests {
     #[tokio::test]
     async fn mora_length_works() {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1656,7 +1656,7 @@ mod tests {
     #[tokio::test]
     async fn mora_pitch_works() {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1688,7 +1688,7 @@ mod tests {
     #[tokio::test]
     async fn mora_data_works() {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()

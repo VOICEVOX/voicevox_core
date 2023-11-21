@@ -119,22 +119,26 @@ struct OpenJtalk {
 
 #[pymethods]
 impl OpenJtalk {
-    #[new]
+    #[allow(clippy::new_ret_no_self)]
+    #[staticmethod]
     fn new(
         #[pyo3(from_py_with = "from_utf8_path")] open_jtalk_dict_dir: String,
         py: Python<'_>,
-    ) -> PyResult<Self> {
-        Ok(Self {
-            open_jtalk: Arc::new(
-                voicevox_core::OpenJtalk::new(open_jtalk_dict_dir).into_py_result(py)?,
-            ),
+    ) -> PyResult<&PyAny> {
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let open_jtalk = voicevox_core::OpenJtalk::new(open_jtalk_dict_dir).await;
+            let open_jtalk = Python::with_gil(|py| open_jtalk.into_py_result(py))?.into();
+            Ok(Self { open_jtalk })
         })
     }
 
-    fn use_user_dict(&self, user_dict: UserDict, py: Python<'_>) -> PyResult<()> {
-        self.open_jtalk
-            .use_user_dict(&user_dict.dict)
-            .into_py_result(py)
+    fn use_user_dict<'py>(&self, user_dict: UserDict, py: Python<'py>) -> PyResult<&'py PyAny> {
+        let this = self.open_jtalk.clone();
+
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let result = this.use_user_dict(&user_dict.dict).await;
+            Python::with_gil(|py| result.into_py_result(py))
+        })
     }
 }
 
@@ -526,7 +530,7 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
 #[pyclass]
 #[derive(Default, Debug, Clone)]
 struct UserDict {
-    dict: voicevox_core::UserDict,
+    dict: Arc<voicevox_core::UserDict>,
 }
 
 #[pymethods]
@@ -536,12 +540,24 @@ impl UserDict {
         Self::default()
     }
 
-    fn load(&mut self, path: &str, py: Python<'_>) -> PyResult<()> {
-        self.dict.load(path).into_py_result(py)
+    fn load<'py>(&self, path: &str, py: Python<'py>) -> PyResult<&'py PyAny> {
+        let this = self.dict.clone();
+        let path = path.to_owned();
+
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let result = this.load(&path).await;
+            Python::with_gil(|py| result.into_py_result(py))
+        })
     }
 
-    fn save(&self, path: &str, py: Python<'_>) -> PyResult<()> {
-        self.dict.save(path).into_py_result(py)
+    fn save<'py>(&self, path: &str, py: Python<'py>) -> PyResult<&'py PyAny> {
+        let this = self.dict.clone();
+        let path = path.to_owned();
+
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let result = this.save(&path).await;
+            Python::with_gil(|py| result.into_py_result(py))
+        })
     }
 
     fn add_word(
@@ -580,16 +596,16 @@ impl UserDict {
 
     #[getter]
     fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
-        let words = self
-            .dict
-            .words()
-            .iter()
-            .map(|(&uuid, word)| {
-                let uuid = to_py_uuid(py, uuid)?;
-                let word = to_py_user_dict_word(py, word)?;
-                Ok((uuid, word))
-            })
-            .collect::<PyResult<Vec<_>>>()?;
+        let words = self.dict.with_words(|words| {
+            words
+                .iter()
+                .map(|(&uuid, word)| {
+                    let uuid = to_py_uuid(py, uuid)?;
+                    let word = to_py_user_dict_word(py, word)?;
+                    Ok((uuid, word))
+                })
+                .collect::<PyResult<Vec<_>>>()
+        })?;
         Ok(words.into_py_dict(py))
     }
 }
