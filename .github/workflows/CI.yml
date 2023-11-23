@@ -76,7 +76,11 @@ jobs:
         with:
           python-version: '3.10'
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo build -p voicevox_core_python_api
+      - run: |
+          pip install --upgrade poetry
+          poetry config virtualenvs.create false
+          (cd crates/voicevox_core_python_api && poetry install --with dev)
+          cargo build -p voicevox_core_python_api
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
