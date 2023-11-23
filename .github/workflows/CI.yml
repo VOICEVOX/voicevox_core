@@ -16,7 +16,7 @@ on:
       - published
 
 env:
-  VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0' 
+  VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0'  }}
 
 permissions:
   contents: read
