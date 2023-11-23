@@ -156,3 +156,5 @@ jobs:
         with:
           command: upload
           args: --non-interactive --skip-existing dist/*
+        env:
+          MATURIN_REPOSITORY_URL: https://test.pypi.org/legacy/
