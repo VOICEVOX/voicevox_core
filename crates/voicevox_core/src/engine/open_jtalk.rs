@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::sync::Arc;
 use std::{
     path::{Path, PathBuf},
     sync::Mutex,
@@ -21,7 +22,7 @@ pub(crate) struct OpenjtalkFunctionError {
 
 /// テキスト解析器としてのOpen JTalk。
 pub struct OpenJtalk {
-    resources: Mutex<Resources>,
+    resources: Arc<Mutex<Resources>>,
     dict_dir: Option<PathBuf>,
 }
 
@@ -42,58 +43,76 @@ impl OpenJtalk {
                 mecab: ManagedResource::initialize(),
                 njd: ManagedResource::initialize(),
                 jpcommon: ManagedResource::initialize(),
-            }),
+            })
+            .into(),
             dict_dir: None,
         }
     }
-    pub fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
-        let mut s = Self::new_without_dic();
-        s.load(open_jtalk_dict_dir).map_err(|()| {
-            // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
-            ErrorRepr::NotLoadedOpenjtalkDict
-        })?;
-        Ok(s)
+
+    pub async fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
+        let open_jtalk_dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
+
+        tokio::task::spawn_blocking(move || {
+            let mut s = Self::new_without_dic();
+            s.load(open_jtalk_dict_dir).map_err(|()| {
+                // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
+                ErrorRepr::NotLoadedOpenjtalkDict
+            })?;
+            Ok(s)
+        })
+        .await
+        .unwrap()
     }
 
     // 先に`load`を呼ぶ必要がある。
     /// ユーザー辞書を設定する。
     ///
     /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
-    pub fn use_user_dict(&self, user_dict: &UserDict) -> crate::result::Result<()> {
+    pub async fn use_user_dict(&self, user_dict: &UserDict) -> crate::result::Result<()> {
         let dict_dir = self
             .dict_dir
             .as_ref()
             .and_then(|dict_dir| dict_dir.to_str())
-            .ok_or(ErrorRepr::NotLoadedOpenjtalkDict)?;
+            .ok_or(ErrorRepr::NotLoadedOpenjtalkDict)?
+            .to_owned();
 
-        // ユーザー辞書用のcsvを作成
-        let mut temp_csv = NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
-        temp_csv
-            .write_all(user_dict.to_mecab_format().as_bytes())
-            .map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
-        let temp_csv_path = temp_csv.into_temp_path();
-        let temp_dict = NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
-        let temp_dict_path = temp_dict.into_temp_path();
+        let resources = self.resources.clone();
 
-        // Mecabでユーザー辞書をコンパイル
-        // TODO: エラー（SEGV）が出るパターンを把握し、それをRust側で防ぐ。
-        mecab_dict_index(&[
-            "mecab-dict-index",
-            "-d",
-            dict_dir,
-            "-u",
-            temp_dict_path.to_str().unwrap(),
-            "-f",
-            "utf-8",
-            "-t",
-            "utf-8",
-            temp_csv_path.to_str().unwrap(),
-            "-q",
-        ]);
+        let words = user_dict.to_mecab_format();
 
-        let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
+        let result = tokio::task::spawn_blocking(move || -> crate::Result<_> {
+            // ユーザー辞書用のcsvを作成
+            let mut temp_csv =
+                NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
+            temp_csv
+                .write_all(words.as_ref())
+                .map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
+            let temp_csv_path = temp_csv.into_temp_path();
+            let temp_dict = NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
+            let temp_dict_path = temp_dict.into_temp_path();
 
-        let result = mecab.load_with_userdic(Path::new(dict_dir), Some(Path::new(&temp_dict_path)));
+            // Mecabでユーザー辞書をコンパイル
+            // TODO: エラー（SEGV）が出るパターンを把握し、それをRust側で防ぐ。
+            mecab_dict_index(&[
+                "mecab-dict-index",
+                "-d",
+                &dict_dir,
+                "-u",
+                temp_dict_path.to_str().unwrap(),
+                "-f",
+                "utf-8",
+                "-t",
+                "utf-8",
+                temp_csv_path.to_str().unwrap(),
+                "-q",
+            ]);
+
+            let Resources { mecab, .. } = &mut *resources.lock().unwrap();
+
+            Ok(mecab.load_with_userdic(dict_dir.as_ref(), Some(Path::new(&temp_dict_path))))
+        })
+        .await
+        .unwrap()?;
 
         if !result {
             return Err(ErrorRepr::UseUserDict(anyhow!("辞書のコンパイルに失敗しました")).into());
@@ -269,22 +288,24 @@ mod tests {
     #[rstest]
     #[case("", Err(OpenjtalkFunctionError { function: "Mecab_get_feature", source: None }))]
     #[case("こんにちは、ヒホです。", Ok(testdata_hello_hiho()))]
-    fn extract_fullcontext_works(
+    #[tokio::test]
+    async fn extract_fullcontext_works(
         #[case] text: &str,
         #[case] expected: std::result::Result<Vec<String>, OpenjtalkFunctionError>,
     ) {
-        let open_jtalk = OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap();
+        let open_jtalk = OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap();
         let result = open_jtalk.extract_fullcontext(text);
         assert_debug_fmt_eq!(expected, result);
     }
 
     #[rstest]
     #[case("こんにちは、ヒホです。", Ok(testdata_hello_hiho()))]
-    fn extract_fullcontext_loop_works(
+    #[tokio::test]
+    async fn extract_fullcontext_loop_works(
         #[case] text: &str,
         #[case] expected: std::result::Result<Vec<String>, OpenjtalkFunctionError>,
     ) {
-        let open_jtalk = OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap();
+        let open_jtalk = OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap();
         for _ in 0..10 {
             let result = open_jtalk.extract_fullcontext(text);
             assert_debug_fmt_eq!(expected, result);

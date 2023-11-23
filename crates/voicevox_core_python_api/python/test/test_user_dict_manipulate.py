@@ -59,8 +59,8 @@ async def test_user_dict_load() -> None:
     )
     temp_path_fd, temp_path = tempfile.mkstemp()
     os.close(temp_path_fd)
-    dict_c.save(temp_path)
-    dict_a.load(temp_path)
+    await dict_c.save(temp_path)
+    await dict_a.load(temp_path)
     assert uuid_a in dict_a.words
     assert uuid_c in dict_a.words
 

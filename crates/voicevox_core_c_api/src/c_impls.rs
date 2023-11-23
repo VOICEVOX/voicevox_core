@@ -5,9 +5,9 @@ use voicevox_core::{InitializeOptions, OpenJtalk, Result, Synthesizer, VoiceMode
 use crate::{CApiResult, OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
 
 impl OpenJtalkRc {
-    pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {
+    pub(crate) async fn new(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
-            open_jtalk: Arc::new(OpenJtalk::new(open_jtalk_dic_dir)?),
+            open_jtalk: Arc::new(OpenJtalk::new(open_jtalk_dic_dir).await?),
         })
     }
 }
