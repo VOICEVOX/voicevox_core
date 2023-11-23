@@ -7,9 +7,12 @@ from ._models import (  # noqa: F401
     AudioQuery,
     Mora,
     SpeakerMeta,
+    StyleId,
+    StyleVersion,
     SupportedDevices,
     UserDictWord,
     UserDictWordType,
+    VoiceModelId,
 )
 from ._rust import (  # noqa: F401
     ExtractFullContextLabelError,
@@ -61,7 +64,9 @@ __all__ = [
     "SaveUserDictError",
     "SpeakerMeta",
     "StyleAlreadyLoadedError",
+    "StyleId",
     "StyleNotFoundError",
+    "StyleVersion",
     "SupportedDevices",
     "Synthesizer",
     "VoiceModel",
@@ -70,5 +75,6 @@ __all__ = [
     "UserDict",
     "UserDictWord",
     "UserDictWordType",
+    "VoiceModelId",
     "WordNotFoundError",
 ]

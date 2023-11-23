@@ -77,7 +77,7 @@ struct VoiceModel {
 }
 
 #[pyfunction]
-fn supported_devices(py: Python) -> PyResult<&PyAny> {
+fn supported_devices(py: Python<'_>) -> PyResult<&PyAny> {
     let class = py
         .import("voicevox_core")?
         .getattr("SupportedDevices")?
@@ -547,7 +547,7 @@ impl UserDict {
     fn add_word(
         &mut self,
         #[pyo3(from_py_with = "to_rust_user_dict_word")] word: UserDictWord,
-        py: Python,
+        py: Python<'_>,
     ) -> PyResult<PyObject> {
         let uuid = self.dict.add_word(word).into_py_result(py)?;
 

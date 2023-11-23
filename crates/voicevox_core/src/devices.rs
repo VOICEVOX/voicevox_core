@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::*;
+use crate::{infer::InferenceRuntime, synthesizer::InferenceRuntimeImpl};
 
 /// このライブラリで利用可能なデバイスの情報。
 ///
@@ -11,21 +12,21 @@ pub struct SupportedDevices {
     /// CPUが利用可能。
     ///
     /// 常に`true`。
-    cpu: bool,
+    pub cpu: bool,
     /// CUDAが利用可能。
     ///
     /// ONNX Runtimeの[CUDA Execution Provider] (`CUDAExecutionProvider`)に対応する。必要な環境につ
     /// いてはそちらを参照。
     ///
     /// [CUDA Execution Provider]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
-    cuda: bool,
+    pub cuda: bool,
     /// DirectMLが利用可能。
     ///
     /// ONNX Runtimeの[DirectML Execution Provider] (`DmlExecutionProvider`)に対応する。必要な環境に
     /// ついてはそちらを参照。
     ///
     /// [DirectML Execution Provider]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
-    dml: bool,
+    pub dml: bool,
 }
 
 impl SupportedDevices {
@@ -42,24 +43,7 @@ impl SupportedDevices {
     /// # Result::<_, anyhow::Error>::Ok(())
     /// ```
     pub fn create() -> Result<Self> {
-        let mut cuda_support = false;
-        let mut dml_support = false;
-        for provider in onnxruntime::session::get_available_providers()
-            .map_err(ErrorRepr::GetSupportedDevices)?
-            .iter()
-        {
-            match provider.as_str() {
-                "CUDAExecutionProvider" => cuda_support = true,
-                "DmlExecutionProvider" => dml_support = true,
-                _ => {}
-            }
-        }
-
-        Ok(SupportedDevices {
-            cpu: true,
-            cuda: cuda_support,
-            dml: dml_support,
-        })
+        <InferenceRuntimeImpl as InferenceRuntime>::supported_devices()
     }
 
     pub fn to_json(&self) -> serde_json::Value {

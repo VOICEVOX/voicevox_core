@@ -1,10 +1,37 @@
 import dataclasses
 from enum import Enum
-from typing import List, Optional
+from typing import List, NewType, Optional
 
 import pydantic
 
 from ._rust import _to_zenkaku, _validate_pronunciation
+
+StyleId = NewType("StyleId", int)
+"""
+スタイルID。
+
+Parameters
+----------
+x : int
+"""
+
+StyleVersion = NewType("StyleVersion", str)
+"""
+スタイルのバージョン。
+
+Parameters
+----------
+x : str
+"""
+
+VoiceModelId = NewType("VoiceModelId", str)
+"""
+音声モデルID。
+
+Parameters
+----------
+x : str
+"""
 
 
 @pydantic.dataclasses.dataclass
@@ -14,7 +41,7 @@ class StyleMeta:
     name: str
     """スタイル名。"""
 
-    id: int
+    id: StyleId
     """スタイルID。"""
 
 
@@ -31,7 +58,7 @@ class SpeakerMeta:
     speaker_uuid: str
     """話者のバージョン。"""
 
-    version: str
+    version: StyleVersion
     """話者のUUID。"""
 
 

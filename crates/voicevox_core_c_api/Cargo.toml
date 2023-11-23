@@ -16,49 +16,45 @@ name = "e2e"
 directml = ["voicevox_core/directml"]
 
 [dependencies]
-anstream = { version = "0.5.0", default-features = false, features = ["auto"] }
-anstyle-query = "1.0.0"
-colorchoice = "1.0.0"
-cstr = "0.2.11"
+anstream = { workspace = true, default-features = false, features = ["auto"] }
+anstyle-query.workspace = true
+chrono = { workspace = true, default-features = false, features = ["clock"] }
+colorchoice.workspace = true
+cstr.workspace = true
 derive-getters.workspace = true
 futures.workspace = true
 itertools.workspace = true
-libc = "0.2.134"
+libc.workspace = true
 once_cell.workspace = true
-serde_json.workspace = true
+process_path.workspace = true
+serde_json = { workspace = true, features = ["preserve_order"] }
 thiserror.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["rt", "rt-multi-thread"] }
 tracing.workspace = true
-tracing-subscriber.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 uuid.workspace = true
 voicevox_core.workspace = true
 
-[dependencies.chrono]
-version = "0.4.23"
-default-features = false
-features = ["clock"]
-
-# FIXME: iOS対応のpull request(https://github.com/wesleywiser/process_path/pull/16)がマージされる見込みが無いため
-[dependencies.process_path]
-git = "https://github.com/VOICEVOX/process_path.git"
-rev = "de226a26e8e18edbdb1d6f986afe37bbbf35fbf4"
-
 [dev-dependencies]
 anyhow.workspace = true
-assert_cmd = { version = "2.0.8", features = ["color-auto"] }
-clap.workspace = true
-duct = "0.13.6"
+assert_cmd = { workspace = true, features = ["color-auto"] }
+clap = { workspace = true, features = ["derive"] }
+duct.workspace = true
 easy-ext.workspace = true
-inventory = "0.3.4"
-libloading = "0.7.3"
-libtest-mimic = "0.6.0"
-ndarray = "0.15.6"
-ndarray-stats = "0.5.1"
+inventory.workspace = true
+libloading.workspace = true
+libtest-mimic.workspace = true
+ndarray.workspace = true
+ndarray-stats.workspace = true
 regex.workspace = true
-serde.workspace = true
-serde_with = "3.3.0"
-strum.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_with.workspace = true
+strum = { workspace = true, features = ["derive"] }
 tempfile.workspace = true
 test_util.workspace = true
-toml = "0.7.2"
-typetag = "0.2.5"
+toml.workspace = true
+typetag.workspace = true
+
+[lints.rust]
+unsafe_code = "allow" # C APIのための操作
+rust_2018_idioms = "warn"
