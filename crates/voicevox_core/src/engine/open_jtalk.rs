@@ -35,6 +35,7 @@ struct Resources {
 unsafe impl Send for Resources {}
 
 impl OpenJtalk {
+    // FIXME: この関数は廃止し、`Synthesizer`は`Option<OpenJtalk>`という形でこの構造体を持つ
     pub fn new_without_dic() -> Self {
         Self {
             resources: Mutex::new(Resources {
@@ -45,9 +46,7 @@ impl OpenJtalk {
             dict_dir: None,
         }
     }
-    pub fn new_with_initialize(
-        open_jtalk_dict_dir: impl AsRef<Path>,
-    ) -> crate::result::Result<Self> {
+    pub fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
         let mut s = Self::new_without_dic();
         s.load(open_jtalk_dict_dir).map_err(|()| {
             // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
@@ -274,7 +273,7 @@ mod tests {
         #[case] text: &str,
         #[case] expected: std::result::Result<Vec<String>, OpenjtalkFunctionError>,
     ) {
-        let open_jtalk = OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap();
+        let open_jtalk = OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap();
         let result = open_jtalk.extract_fullcontext(text);
         assert_debug_fmt_eq!(expected, result);
     }
@@ -285,7 +284,7 @@ mod tests {
         #[case] text: &str,
         #[case] expected: std::result::Result<Vec<String>, OpenjtalkFunctionError>,
     ) {
-        let open_jtalk = OpenJtalk::new_with_initialize(OPEN_JTALK_DIC_DIR).unwrap();
+        let open_jtalk = OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap();
         for _ in 0..10 {
             let result = open_jtalk.extract_fullcontext(text);
             assert_debug_fmt_eq!(expected, result);

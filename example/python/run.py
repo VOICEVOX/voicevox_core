@@ -16,6 +16,7 @@ from voicevox_core import (
 )
 
 
+# asyncやawaitは必須です。
 async def main() -> None:
     logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s")
     logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ async def main() -> None:
     logger.debug("%s", f"{voicevox_core.supported_devices()=}")
 
     logger.info("%s", f"Initializing ({acceleration_mode=}, {open_jtalk_dict_dir=})")
-    synthesizer = await Synthesizer.new_with_initialize(
+    synthesizer = Synthesizer(
         OpenJtalk(open_jtalk_dict_dir), acceleration_mode=acceleration_mode
     )
 

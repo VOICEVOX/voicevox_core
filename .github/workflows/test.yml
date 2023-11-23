@@ -274,7 +274,14 @@ jobs:
       - run: |
           pip install --upgrade poetry
           poetry install --with dev --with test
-      - run: cargo build -p voicevox_core_c_api -vv
+      - run: cargo build -p test_util -vv # build scriptにより/crates/test_util/data/の生成
+      # `macos-latest`(=`macos-12`)で次の問題が発生するため、それに対するワークアラウンド
+      # https://github.com/VOICEVOX/voicevox_core/issues/653#issuecomment-1782108410
+      - if: startsWith(matrix.os, 'mac')
+        name: Build open_jtalk-sys
+        run: |
+          poetry run -- cargo build -p voicevox_core_python_api -vv || true
+          [ -n "$(find ../../target/debug/deps -name 'libopen_jtalk_sys-*.rlib')" ]
       - run: poetry run maturin build --locked
       - run: poetry run maturin develop --locked
       - name: 必要なDLLをコピーしてpytestを実行
@@ -305,7 +312,7 @@ jobs:
       - name: Build
         run: |
           cargo build -p voicevox_core_java_api -vv
-          cargo build -p test_util -vv
+          cargo build -p test_util -vv # build scriptにより/crates/test_util/data/の生成
       - name: 必要なDLLをコピーしてテストを実行
         working-directory: crates/voicevox_core_java_api
         run: |

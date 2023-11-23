@@ -1,5 +1,6 @@
 package jp.hiroshiba.voicevoxcore;
 
+/** テキスト解析機としてのOpen JTalk。 */
 public class OpenJtalk extends Dll {
   private long handle;
 
@@ -9,7 +10,7 @@ public class OpenJtalk extends Dll {
    * @param openJtalkDictDir 辞書のディレクトリ。
    */
   public OpenJtalk(String openJtalkDictDir) {
-    rsNewWithInitialize(openJtalkDictDir);
+    rsNew(openJtalkDictDir);
   }
 
   protected void finalize() throws Throwable {
@@ -22,15 +23,20 @@ public class OpenJtalk extends Dll {
    *
    * <p>この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
    *
+   * <p>Androidの場合、この関数を呼び出す前に {@code TMPDIR} 環境変数を設定する必要がある。
+   *
+   * <pre>{@code
+   * Activity activity = ...;
+   * Os.setenv("TMPDIR", activity.getCacheDir().getAbsolutePath(), true);
+   * }</pre>
+   *
    * @param userDict ユーザー辞書。
    */
   public void useUserDict(UserDict userDict) {
     rsUseUserDict(userDict);
   }
 
-  private native void rsNewWithoutDic();
-
-  private native void rsNewWithInitialize(String openJtalkDictDir);
+  private native void rsNew(String openJtalkDictDir);
 
   private native void rsUseUserDict(UserDict userDict);
 

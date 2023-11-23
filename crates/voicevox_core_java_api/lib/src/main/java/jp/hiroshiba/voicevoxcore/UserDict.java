@@ -74,6 +74,7 @@ public class UserDict extends Dll {
    * ユーザー辞書を読み込む。
    *
    * @param path ユーザー辞書のパス。
+   * @throws LoadUserDictException ユーザー辞書を読み込めなかった場合。
    */
   public void load(String path) throws LoadUserDictException {
     rsLoad(path);
@@ -83,6 +84,7 @@ public class UserDict extends Dll {
    * ユーザー辞書を保存する。
    *
    * @param path ユーザー辞書のパス。
+   * @throws SaveUserDictException ユーザー辞書を保存できなかった場合。
    */
   public void save(String path) throws SaveUserDictException {
     rsSave(path);

@@ -3,7 +3,6 @@ use std::{marker::PhantomData, sync::Arc};
 mod convert;
 use convert::*;
 use log::debug;
-use once_cell::sync::Lazy;
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
@@ -11,14 +10,11 @@ use pyo3::{
     types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyModule},
     wrap_pyfunction, PyAny, PyObject, PyRef, PyResult, PyTypeInfo, Python, ToPyObject,
 };
-use tokio::{runtime::Runtime, sync::Mutex};
 use uuid::Uuid;
 use voicevox_core::{
     AccelerationMode, AudioQueryModel, InitializeOptions, StyleId, SynthesisOptions, TtsOptions,
     UserDictWord, VoiceModelId,
 };
-
-static RUNTIME: Lazy<Runtime> = Lazy::new(|| Runtime::new().unwrap());
 
 #[pymodule]
 #[pyo3(name = "_rust")]
@@ -81,7 +77,7 @@ struct VoiceModel {
 }
 
 #[pyfunction]
-fn supported_devices(py: Python) -> PyResult<&PyAny> {
+fn supported_devices(py: Python<'_>) -> PyResult<&PyAny> {
     let class = py
         .import("voicevox_core")?
         .getattr("SupportedDevices")?
@@ -130,8 +126,7 @@ impl OpenJtalk {
     ) -> PyResult<Self> {
         Ok(Self {
             open_jtalk: Arc::new(
-                voicevox_core::OpenJtalk::new_with_initialize(open_jtalk_dict_dir)
-                    .into_py_result(py)?,
+                voicevox_core::OpenJtalk::new(open_jtalk_dict_dir).into_py_result(py)?,
             ),
         })
     }
@@ -145,37 +140,32 @@ impl OpenJtalk {
 
 #[pyclass]
 struct Synthesizer {
-    synthesizer: Closable<Arc<Mutex<voicevox_core::Synthesizer>>, Self>,
+    synthesizer: Closable<Arc<voicevox_core::Synthesizer>, Self>,
 }
 
 #[pymethods]
 impl Synthesizer {
-    #[staticmethod]
+    #[new]
     #[pyo3(signature =(
         open_jtalk,
         acceleration_mode = InitializeOptions::default().acceleration_mode,
         cpu_num_threads = InitializeOptions::default().cpu_num_threads,
     ))]
-    fn new_with_initialize(
-        py: Python,
+    fn new(
         open_jtalk: OpenJtalk,
         #[pyo3(from_py_with = "from_acceleration_mode")] acceleration_mode: AccelerationMode,
         cpu_num_threads: u16,
-    ) -> PyResult<&PyAny> {
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let synthesizer = voicevox_core::Synthesizer::new_with_initialize(
-                open_jtalk.open_jtalk.clone(),
-                &InitializeOptions {
-                    acceleration_mode,
-                    cpu_num_threads,
-                },
-            )
-            .await;
-            let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?.into();
-            Ok(Self {
-                synthesizer: Closable::new(Arc::new(synthesizer)),
-            })
-        })
+    ) -> PyResult<Self> {
+        let synthesizer = voicevox_core::Synthesizer::new(
+            open_jtalk.open_jtalk.clone(),
+            &InitializeOptions {
+                acceleration_mode,
+                cpu_num_threads,
+            },
+        );
+        let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?.into();
+        let synthesizer = Closable::new(synthesizer);
+        Ok(Self { synthesizer })
     }
 
     fn __repr__(&self) -> &'static str {
@@ -199,13 +189,13 @@ impl Synthesizer {
     #[getter]
     fn is_gpu_mode(&self) -> PyResult<bool> {
         let synthesizer = self.synthesizer.get()?;
-        Ok(RUNTIME.block_on(synthesizer.lock()).is_gpu_mode())
+        Ok(synthesizer.is_gpu_mode())
     }
 
     #[getter]
     fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
         let synthesizer = self.synthesizer.get()?;
-        to_pydantic_voice_model_meta(&RUNTIME.block_on(synthesizer.lock()).metas(), py)
+        to_pydantic_voice_model_meta(&synthesizer.metas(), py)
     }
 
     fn load_voice_model<'py>(
@@ -216,26 +206,22 @@ impl Synthesizer {
         let model: VoiceModel = model.extract()?;
         let synthesizer = self.synthesizer.get()?.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let synthesizer = synthesizer
-                .lock()
-                .await
-                .load_voice_model(&model.model)
-                .await;
-
-            Python::with_gil(|py| synthesizer.into_py_result(py))
+            let result = synthesizer.load_voice_model(&model.model).await;
+            Python::with_gil(|py| result.into_py_result(py))
         })
     }
 
     fn unload_voice_model(&mut self, voice_model_id: &str, py: Python<'_>) -> PyResult<()> {
-        RUNTIME
-            .block_on(self.synthesizer.get()?.lock())
+        self.synthesizer
+            .get()?
             .unload_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
             .into_py_result(py)
     }
 
     fn is_loaded_voice_model(&self, voice_model_id: &str) -> PyResult<bool> {
-        Ok(RUNTIME
-            .block_on(self.synthesizer.get()?.lock())
+        Ok(self
+            .synthesizer
+            .get()?
             .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string())))
     }
 
@@ -252,8 +238,6 @@ impl Synthesizer {
             pyo3_asyncio::tokio::get_current_locals(py)?,
             async move {
                 let audio_query = synthesizer
-                    .lock()
-                    .await
                     .audio_query_from_kana(&kana, StyleId::new(style_id))
                     .await;
 
@@ -273,11 +257,7 @@ impl Synthesizer {
             py,
             pyo3_asyncio::tokio::get_current_locals(py)?,
             async move {
-                let audio_query = synthesizer
-                    .lock()
-                    .await
-                    .audio_query(&text, StyleId::new(style_id))
-                    .await;
+                let audio_query = synthesizer.audio_query(&text, StyleId::new(style_id)).await;
 
                 Python::with_gil(|py| {
                     let audio_query = audio_query.into_py_result(py)?;
@@ -302,8 +282,6 @@ impl Synthesizer {
             pyo3_asyncio::tokio::get_current_locals(py)?,
             async move {
                 let accent_phrases = synthesizer
-                    .lock()
-                    .await
                     .create_accent_phrases_from_kana(&kana, StyleId::new(style_id))
                     .await;
                 Python::with_gil(|py| {
@@ -333,8 +311,6 @@ impl Synthesizer {
             pyo3_asyncio::tokio::get_current_locals(py)?,
             async move {
                 let accent_phrases = synthesizer
-                    .lock()
-                    .await
                     .create_accent_phrases(&text, StyleId::new(style_id))
                     .await;
                 Python::with_gil(|py| {
@@ -362,7 +338,7 @@ impl Synthesizer {
             accent_phrases,
             StyleId::new(style_id),
             py,
-            |a, s| async move { synthesizer.lock().await.replace_mora_data(&a, s).await },
+            |a, s| async move { synthesizer.replace_mora_data(&a, s).await },
         )
     }
 
@@ -377,7 +353,7 @@ impl Synthesizer {
             accent_phrases,
             StyleId::new(style_id),
             py,
-            |a, s| async move { synthesizer.lock().await.replace_phoneme_length(&a, s).await },
+            |a, s| async move { synthesizer.replace_phoneme_length(&a, s).await },
         )
     }
 
@@ -392,7 +368,7 @@ impl Synthesizer {
             accent_phrases,
             StyleId::new(style_id),
             py,
-            |a, s| async move { synthesizer.lock().await.replace_mora_pitch(&a, s).await },
+            |a, s| async move { synthesizer.replace_mora_pitch(&a, s).await },
         )
     }
 
@@ -410,8 +386,6 @@ impl Synthesizer {
             pyo3_asyncio::tokio::get_current_locals(py)?,
             async move {
                 let wav = synthesizer
-                    .lock()
-                    .await
                     .synthesis(
                         &audio_query,
                         StyleId::new(style_id),
@@ -450,11 +424,7 @@ impl Synthesizer {
             py,
             pyo3_asyncio::tokio::get_current_locals(py)?,
             async move {
-                let wav = synthesizer
-                    .lock()
-                    .await
-                    .tts_from_kana(&kana, style_id, &options)
-                    .await;
+                let wav = synthesizer.tts_from_kana(&kana, style_id, &options).await;
 
                 Python::with_gil(|py| {
                     let wav = wav.into_py_result(py)?;
@@ -486,11 +456,7 @@ impl Synthesizer {
             py,
             pyo3_asyncio::tokio::get_current_locals(py)?,
             async move {
-                let wav = synthesizer
-                    .lock()
-                    .await
-                    .tts(&text, style_id, &options)
-                    .await;
+                let wav = synthesizer.tts(&text, style_id, &options).await;
 
                 Python::with_gil(|py| {
                     let wav = wav.into_py_result(py)?;
@@ -581,7 +547,7 @@ impl UserDict {
     fn add_word(
         &mut self,
         #[pyo3(from_py_with = "to_rust_user_dict_word")] word: UserDictWord,
-        py: Python,
+        py: Python<'_>,
     ) -> PyResult<PyObject> {
         let uuid = self.dict.add_word(word).into_py_result(py)?;
 

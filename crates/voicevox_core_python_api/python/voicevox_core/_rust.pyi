@@ -8,9 +8,11 @@ if TYPE_CHECKING:
         AccentPhrase,
         AudioQuery,
         SpeakerMeta,
+        StyleId,
         SupportedDevices,
         UserDict,
         UserDictWord,
+        VoiceModelId,
     )
 
 __version__: str
@@ -43,7 +45,7 @@ class VoiceModel:
         """
         ...
     @property
-    def id(self) -> str:
+    def id(self) -> VoiceModelId:
         """ID。"""
         ...
     @property
@@ -76,29 +78,27 @@ class OpenJtalk:
         ...
 
 class Synthesizer:
-    """音声シンセサイザ。"""
+    """
+    音声シンセサイザ。
 
-    @staticmethod
-    async def new_with_initialize(
+    Parameters
+    ----------
+    open_jtalk
+        Open JTalk。
+    acceleration_mode
+        ハードウェアアクセラレーションモード。
+    cpu_num_threads
+        CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
+    """
+
+    def __init__(
+        self,
         open_jtalk: OpenJtalk,
         acceleration_mode: Union[
             AccelerationMode, Literal["AUTO", "CPU", "GPU"]
         ] = AccelerationMode.AUTO,
         cpu_num_threads: int = 0,
-    ) -> "Synthesizer":
-        """
-        :class:`Synthesizer` を生成する。
-
-        Parameters
-        ----------
-        open_jtalk
-            Open JTalk。
-        acceleration_mode
-            ハードウェアアクセラレーションモード。
-        cpu_num_threads
-            CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
-        """
-        ...
+    ) -> None: ...
     def __repr__(self) -> str: ...
     def __enter__(self) -> "Synthesizer": ...
     def __exit__(self, exc_type, exc_value, traceback) -> None: ...
@@ -107,7 +107,7 @@ class Synthesizer:
         """ハードウェアアクセラレーションがGPUモードかどうか。"""
         ...
     @property
-    def metas(self) -> SpeakerMeta:
+    def metas(self) -> List[SpeakerMeta]:
         """メタ情報。"""
         ...
     async def load_voice_model(self, model: VoiceModel) -> None:
@@ -120,7 +120,7 @@ class Synthesizer:
             読み込むモデルのスタイルID。
         """
         ...
-    def unload_voice_model(self, voice_model_id: str) -> None:
+    def unload_voice_model(self, voice_model_id: Union[VoiceModelId, str]) -> None:
         """
         音声モデルの読み込みを解除する。
 
@@ -130,7 +130,7 @@ class Synthesizer:
             音声モデルID。
         """
         ...
-    def is_loaded_voice_model(self, voice_model_id: str) -> bool:
+    def is_loaded_voice_model(self, voice_model_id: Union[VoiceModelId, str]) -> bool:
         """
         指定したvoice_model_idのモデルが読み込まれているか判定する。
 
@@ -147,7 +147,7 @@ class Synthesizer:
     async def audio_query_from_kana(
         self,
         kana: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> AudioQuery:
         """
         AquesTalk風記法から :class:`AudioQuery` を生成する。
@@ -167,7 +167,7 @@ class Synthesizer:
     async def audio_query(
         self,
         text: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> AudioQuery:
         """
         日本語のテキストから :class:`AudioQuery` を生成する。
@@ -187,7 +187,7 @@ class Synthesizer:
     async def create_accent_phrases_from_kana(
         self,
         kana: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> List[AccentPhrase]:
         """
         AquesTalk風記法からAccentPhrase（アクセント句）の配列を生成する。
@@ -207,7 +207,7 @@ class Synthesizer:
     async def create_accent_phrases(
         self,
         text: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> List[AccentPhrase]:
         """
         日本語のテキストからAccentPhrase（アクセント句）の配列を生成する。
@@ -227,7 +227,7 @@ class Synthesizer:
     async def replace_mora_data(
         self,
         accent_phrases: List[AccentPhrase],
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> List[AccentPhrase]:
         """
         アクセント句の音高・音素長を変更した新しいアクセント句の配列を生成する。
@@ -249,7 +249,7 @@ class Synthesizer:
     async def replace_phoneme_length(
         self,
         accent_phrases: List[AccentPhrase],
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> List[AccentPhrase]:
         """
         アクセント句の音素長を変更した新しいアクセント句の配列を生成する。
@@ -267,7 +267,7 @@ class Synthesizer:
     async def replace_mora_pitch(
         self,
         accent_phrases: List[AccentPhrase],
-        style_id: int,
+        style_id: Union[StyleId, int],
     ) -> List[AccentPhrase]:
         """
         アクセント句の音高を変更した新しいアクセント句の配列を生成する。
@@ -285,7 +285,7 @@ class Synthesizer:
     async def synthesis(
         self,
         audio_query: AudioQuery,
-        style_id: int,
+        style_id: Union[StyleId, int],
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -308,7 +308,7 @@ class Synthesizer:
     async def tts_from_kana(
         self,
         kana: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -327,7 +327,7 @@ class Synthesizer:
     async def tts(
         self,
         text: str,
-        style_id: int,
+        style_id: Union[StyleId, int],
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """

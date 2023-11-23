@@ -119,7 +119,7 @@ pub fn to_rust_uuid(ob: &PyAny) -> PyResult<Uuid> {
     let uuid = ob.getattr("hex")?.extract::<String>()?;
     uuid.parse::<Uuid>().into_py_value_result()
 }
-pub fn to_py_uuid(py: Python, uuid: Uuid) -> PyResult<PyObject> {
+pub fn to_py_uuid(py: Python<'_>, uuid: Uuid) -> PyResult<PyObject> {
     let uuid = uuid.hyphenated().to_string();
     let uuid = py.import("uuid")?.call_method1("UUID", (uuid,))?;
     Ok(uuid.to_object(py))

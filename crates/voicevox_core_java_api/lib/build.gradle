@@ -50,6 +50,7 @@ java {
     }
 
     withJavadocJar()
+    withSourcesJar()
 }
 tasks.named('test') {
     // Use JUnit Platform for unit tests.

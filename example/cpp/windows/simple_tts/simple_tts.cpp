@@ -40,7 +40,7 @@ int main() {
     return 0;
   }
   VoicevoxSynthesizer* synthesizer;
-  result = voicevox_synthesizer_new_with_initialize(open_jtalk,initializeOptions,&synthesizer);
+  result = voicevox_synthesizer_new(open_jtalk,initializeOptions,&synthesizer);
   if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
     OutErrorMessage(result);
     return 0;

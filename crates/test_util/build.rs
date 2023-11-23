@@ -17,8 +17,17 @@ const DIC_DIR_NAME: &str = "open_jtalk_dic_utf_8-1.11";
 async fn main() -> anyhow::Result<()> {
     let mut dist = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
     dist.push("data");
-    download_open_jtalk_dict(&dist).await?;
+
+    let dic_dir = dist.join(DIC_DIR_NAME);
+    if !dic_dir.try_exists()? {
+        download_open_jtalk_dict(&dist).await?;
+        ensure!(dic_dir.exists(), "`{}` does not exist", dic_dir.display());
+    }
+
     generate_example_data_json(&dist)?;
+
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=src/typing.rs");
     Ok(())
 }
 

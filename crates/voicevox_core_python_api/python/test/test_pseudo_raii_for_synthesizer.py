@@ -37,7 +37,7 @@ def test_access_after_exit_denied(synthesizer: Synthesizer) -> None:
 
 @pytest_asyncio.fixture
 async def synthesizer(open_jtalk: OpenJtalk) -> Synthesizer:
-    return await Synthesizer.new_with_initialize(open_jtalk)
+    return Synthesizer(open_jtalk)
 
 
 @pytest.fixture(scope="module")

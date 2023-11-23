@@ -14,17 +14,9 @@
 エンジンは [VOICEVOX ENGINE](https://github.com/VOICEVOX/voicevox_engine/) 、
 全体構成は [こちら](https://github.com/VOICEVOX/voicevox/blob/main/docs/%E5%85%A8%E4%BD%93%E6%A7%8B%E6%88%90.md) に詳細があります。）
 
-## 貢献者の方へ
+## API
 
-Issue を解決するプルリクエストを作成される際は、別の方と同じ Issue に取り組むことを避けるため、
-Issue 側で取り組み始めたことを伝えるか、最初に Draft プルリクエストを作成してください。
-
-[VOICEVOX 非公式 Discord サーバー](https://discord.gg/WMwWetrzuh)にて、開発の議論や雑談を行っています。気軽にご参加ください。
-
-### Rust 以外の言語の API に関する方針
-
-VOICEVOX CORE の主要機能は Rust で実装されることを前提としており、他の言語のラッパーでのみの機能追加はしない方針としています。これは機能の一貫性を保つための方針です。
-各言語の特性に応じた追加実装（例えば、Python での `style_id` の [`NewType`](https://docs.python.org/ja/3/library/typing.html#newtype) 化など）は許容されます。
+[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/c_api/globals_func.html)をご覧ください。
 
 ## 環境構築
 
@@ -130,9 +122,17 @@ sudo apt install libgomp1
 
 サンプルコードを実装された際はぜひお知らせください。こちらに追記させて頂きます。
 
-## API
+## 貢献者の方へ
 
-[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/c_api/globals_func.html)をご覧ください。
+Issue を解決するプルリクエストを作成される際は、別の方と同じ Issue に取り組むことを避けるため、
+Issue 側で取り組み始めたことを伝えるか、最初に Draft プルリクエストを作成してください。
+
+[VOICEVOX 非公式 Discord サーバー](https://discord.gg/WMwWetrzuh)にて、開発の議論や雑談を行っています。気軽にご参加ください。
+
+### Rust 以外の言語の API に関する方針
+
+VOICEVOX CORE の主要機能は Rust で実装されることを前提としており、他の言語のラッパーでのみの機能追加はしない方針としています。これは機能の一貫性を保つための方針です。
+各言語の特性に応じた追加実装（例えば、Python での `style_id` の [`NewType`](https://docs.python.org/ja/3/library/typing.html#newtype) 化など）は許容されます。
 
 ## コアライブラリのビルド
 

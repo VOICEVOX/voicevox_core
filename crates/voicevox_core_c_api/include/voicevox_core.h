@@ -222,7 +222,7 @@ typedef int32_t VoicevoxUserDictWordType;
  * <b>構築</b>(_construction_)は ::voicevox_open_jtalk_rc_new で行い、<b>破棄</b>(_destruction_)は ::voicevox_open_jtalk_rc_delete で行う。
  *
  * 参照カウント方式のスマートポインタ(reference-counted smart pointer)であり、
- * ::voicevox_synthesizer_new_with_initialize に渡されるときには参照カウンタがインクリメントされる形でオブジェクトの共有が行われる。
+ * ::voicevox_synthesizer_new に渡されるときには参照カウンタがインクリメントされる形でオブジェクトの共有が行われる。
  *
  * \example{
  * ```c
@@ -238,7 +238,7 @@ typedef struct OpenJtalkRc OpenJtalkRc;
 /**
  * 音声シンセサイザ。
  *
- * <b>構築</b>(_construction_)は ::voicevox_synthesizer_new_with_initialize で行い、<b>破棄</b>(_destruction_)は ::voicevox_synthesizer_delete で行う。
+ * <b>構築</b>(_construction_)は ::voicevox_synthesizer_new で行い、<b>破棄</b>(_destruction_)は ::voicevox_synthesizer_delete で行う。
  */
 typedef struct VoicevoxSynthesizer VoicevoxSynthesizer;
 
@@ -256,7 +256,7 @@ typedef struct VoicevoxUserDict VoicevoxUserDict;
 typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
 
 /**
- * ::voicevox_synthesizer_new_with_initialize のオプション。
+ * ::voicevox_synthesizer_new のオプション。
  */
 typedef struct VoicevoxInitializeOptions {
   /**
@@ -502,9 +502,9 @@ void voicevox_voice_model_delete(struct VoicevoxVoiceModel *model);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_synthesizer_new_with_initialize(const struct OpenJtalkRc *open_jtalk,
-                                                            struct VoicevoxInitializeOptions options,
-                                                            struct VoicevoxSynthesizer **out_synthesizer);
+VoicevoxResultCode voicevox_synthesizer_new(const struct OpenJtalkRc *open_jtalk,
+                                            struct VoicevoxInitializeOptions options,
+                                            struct VoicevoxSynthesizer **out_synthesizer);
 
 /**
  * ::VoicevoxSynthesizer を<b>破棄</b>(_destruct_)する。
@@ -512,7 +512,7 @@ VoicevoxResultCode voicevox_synthesizer_new_with_initialize(const struct OpenJta
  * @param [in] synthesizer 破棄対象
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また既にこの関数で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また既にこの関数で解放されていてはいけない。
  * - `synthesizer`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
  * }
  */
@@ -530,7 +530,7 @@ void voicevox_synthesizer_delete(struct VoicevoxSynthesizer *synthesizer);
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
  * }
  */
@@ -549,7 +549,7 @@ VoicevoxResultCode voicevox_synthesizer_load_voice_model(const struct VoicevoxSy
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `model_id`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * }
  */
@@ -567,7 +567,7 @@ VoicevoxResultCode voicevox_synthesizer_unload_voice_model(const struct Voicevox
  * @returns GPUモードかどうか
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * }
  */
 #ifdef _WIN32
@@ -584,7 +584,7 @@ bool voicevox_synthesizer_is_gpu_mode(const struct VoicevoxSynthesizer *synthesi
  * @returns モデルが読み込まれているかどうか
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `model_id`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * }
  */
@@ -604,7 +604,7 @@ bool voicevox_synthesizer_is_loaded_voice_model(const struct VoicevoxSynthesizer
  * @return メタ情報のJSON文字列
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * }
  */
 #ifdef _WIN32
@@ -661,7 +661,7 @@ VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supporte
  * }
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -696,7 +696,7 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query_from_kana(const struc
  * }
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -732,7 +732,7 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query(const struct Voicevox
  * }
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -767,7 +767,7 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases_from_kana(const st
  * }
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -793,7 +793,7 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct Voice
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -819,7 +819,7 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_data(const struct VoicevoxS
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -845,7 +845,7 @@ VoicevoxResultCode voicevox_synthesizer_replace_phoneme_length(const struct Voic
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -882,7 +882,7 @@ struct VoicevoxSynthesisOptions voicevox_make_default_synthesis_options(void);
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -922,7 +922,7 @@ struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -953,7 +953,7 @@ VoicevoxResultCode voicevox_synthesizer_tts_from_kana(const struct VoicevoxSynth
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new_with_initialize で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
  * - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
