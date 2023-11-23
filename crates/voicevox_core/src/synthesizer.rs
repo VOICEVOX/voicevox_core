@@ -105,7 +105,8 @@ impl Synthesizer {
     ///
     #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
     #[cfg_attr(not(windows), doc = "```")]
-    /// # fn main() -> anyhow::Result<()> {
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
     /// # use test_util::OPEN_JTALK_DIC_DIR;
     /// #
     /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
@@ -115,7 +116,7 @@ impl Synthesizer {
     /// use voicevox_core::{AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer};
     ///
     /// let mut syntesizer = Synthesizer::new(
-    ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+    ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
     ///     &InitializeOptions {
     ///         acceleration_mode: ACCELERATION_MODE,
     ///         ..Default::default()
@@ -1428,7 +1429,7 @@ mod tests {
         #[case] expected_kana_text: &str,
     ) {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1496,7 +1497,7 @@ mod tests {
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
     ) {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1561,7 +1562,7 @@ mod tests {
     #[tokio::test]
     async fn create_accent_phrases_works_for_japanese_commas_and_periods() {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1620,7 +1621,7 @@ mod tests {
     #[tokio::test]
     async fn mora_length_works() {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1656,7 +1657,7 @@ mod tests {
     #[tokio::test]
     async fn mora_pitch_works() {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1688,7 +1689,7 @@ mod tests {
     #[tokio::test]
     async fn mora_data_works() {
         let syntesizer = Synthesizer::new(
-            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
+            Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()

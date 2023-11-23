@@ -56,15 +56,20 @@ class VoiceModel:
 class OpenJtalk:
     """
     テキスト解析器としてのOpen JTalk。
-
-    Parameters
-    ----------
-    open_jtalk_dict_dir
-        Open JTalkの辞書ディレクトリ。
     """
 
-    def __init__(self, open_jtalk_dict_dir: Union[Path, str]) -> None: ...
-    def use_user_dict(self, user_dict: UserDict) -> None:
+    @staticmethod
+    async def new(open_jtalk_dict_dir: Union[Path, str]) -> "OpenJtalk":
+        """
+        ``OpenJTalk`` を生成する。
+
+        Parameters
+        ----------
+        open_jtalk_dict_dir
+            Open JTalkの辞書ディレクトリ。
+        """
+        ...
+    async def use_user_dict(self, user_dict: UserDict) -> None:
         """
         ユーザー辞書を設定する。
 
@@ -357,7 +362,7 @@ class UserDict:
         """このオプジェクトの :class:`dict` としての表現。"""
         ...
     def __init__(self) -> None: ...
-    def load(self, path: str) -> None:
+    async def load(self, path: str) -> None:
         """ファイルに保存されたユーザー辞書を読み込む。
 
         Parameters
@@ -366,7 +371,7 @@ class UserDict:
             ユーザー辞書のパス。
         """
         ...
-    def save(self, path: str) -> None:
+    async def save(self, path: str) -> None:
         """
         ユーザー辞書をファイルに保存する。
 

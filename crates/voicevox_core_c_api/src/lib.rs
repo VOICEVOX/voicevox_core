@@ -134,7 +134,9 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
-        let open_jtalk = OpenJtalkRc::new(open_jtalk_dic_dir)?.into();
+        let open_jtalk = RUNTIME
+            .block_on(OpenJtalkRc::new(open_jtalk_dic_dir))?
+            .into();
         out_open_jtalk.as_ptr().write_unaligned(open_jtalk);
         Ok(())
     })())
@@ -157,11 +159,7 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
     user_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        let user_dict = user_dict.to_owned();
-        {
-            let dict = user_dict.dict.as_ref().lock().expect("lock failed");
-            open_jtalk.open_jtalk.use_user_dict(&dict)?;
-        }
+        RUNTIME.block_on(open_jtalk.open_jtalk.use_user_dict(&user_dict.dict))?;
         Ok(())
     })())
 }
@@ -1036,7 +1034,7 @@ pub extern "C" fn voicevox_error_result_to_message(
 /// ユーザー辞書。
 #[derive(Default)]
 pub struct VoicevoxUserDict {
-    dict: Arc<Mutex<voicevox_core::UserDict>>,
+    dict: Arc<voicevox_core::UserDict>,
 }
 
 /// ユーザー辞書の単語。
@@ -1116,8 +1114,7 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let dict_path = ensure_utf8(unsafe { CStr::from_ptr(dict_path) })?;
-        let mut dict = user_dict.dict.lock().unwrap();
-        dict.load(dict_path)?;
+        RUNTIME.block_on(user_dict.dict.load(dict_path))?;
 
         Ok(())
     })())
@@ -1146,10 +1143,7 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let word = word.read_unaligned().try_into_word()?;
-        let uuid = {
-            let mut dict = user_dict.dict.lock().expect("lock failed");
-            dict.add_word(word)?
-        };
+        let uuid = user_dict.dict.add_word(word)?;
         output_word_uuid.as_ptr().copy_from(uuid.as_bytes(), 16);
 
         Ok(())
@@ -1177,10 +1171,7 @@ pub unsafe extern "C" fn voicevox_user_dict_update_word(
     into_result_code_with_error((|| {
         let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
         let word = word.read_unaligned().try_into_word()?;
-        {
-            let mut dict = user_dict.dict.lock().expect("lock failed");
-            dict.update_word(word_uuid, word)?;
-        };
+        user_dict.dict.update_word(word_uuid, word)?;
 
         Ok(())
     })())
@@ -1203,11 +1194,7 @@ pub extern "C" fn voicevox_user_dict_remove_word(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
-        {
-            let mut dict = user_dict.dict.lock().expect("lock failed");
-            dict.remove_word(word_uuid)?;
-        };
-
+        user_dict.dict.remove_word(word_uuid)?;
         Ok(())
     })())
 }
@@ -1229,8 +1216,7 @@ pub unsafe extern "C" fn voicevox_user_dict_to_json(
     user_dict: &VoicevoxUserDict,
     output_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    let dict = user_dict.dict.lock().expect("lock failed");
-    let json = serde_json::to_string(&dict.words()).expect("should be always valid");
+    let json = user_dict.dict.to_json();
     let json = CString::new(json).expect("\\0を含まない文字列であることが保証されている");
     output_json
         .as_ptr()
@@ -1253,12 +1239,7 @@ pub extern "C" fn voicevox_user_dict_import(
     other_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
-        {
-            let mut dict = user_dict.dict.lock().expect("lock failed");
-            let other_dict = other_dict.dict.lock().expect("lock failed");
-            dict.import(&other_dict)?;
-        };
-
+        user_dict.dict.import(&other_dict.dict)?;
         Ok(())
     })())
 }
@@ -1279,11 +1260,7 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 ) -> VoicevoxResultCode {
     into_result_code_with_error((|| {
         let path = ensure_utf8(CStr::from_ptr(path))?;
-        {
-            let dict = user_dict.dict.lock().expect("lock failed");
-            dict.save(path)?;
-        };
-
+        RUNTIME.block_on(user_dict.dict.save(path))?;
         Ok(())
     })())
 }
