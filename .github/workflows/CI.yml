@@ -152,6 +152,7 @@ jobs:
           name: wheels
           path: dist/
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: PyO3/maturin-action@v1
         with:
-          repository-url: https://test.pypi.org/legacy/
+          command: upload
+          args: --non-interactive --skip-existing dist/*
