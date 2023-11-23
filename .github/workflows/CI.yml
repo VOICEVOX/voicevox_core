@@ -22,7 +22,7 @@ permissions:
   contents: read
 
 jobs:
-  download:
+  version:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -41,6 +41,7 @@ jobs:
     
   linux:
     runs-on: ubuntu-latest
+    needs: version
     strategy:
       matrix:
         target: [x86_64, aarch64]
@@ -66,6 +67,7 @@ jobs:
 
   windows:
     runs-on: windows-latest
+    needs: version
     strategy:
       matrix:
         target: [x64, x86]
@@ -91,6 +93,7 @@ jobs:
 
   macos:
     runs-on: macos-latest
+    needs: version
     strategy:
       matrix:
         target: [x86_64]
