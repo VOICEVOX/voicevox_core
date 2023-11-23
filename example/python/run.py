@@ -37,7 +37,7 @@ async def main() -> None:
 
     logger.info("%s", f"Initializing ({acceleration_mode=}, {open_jtalk_dict_dir=})")
     synthesizer = Synthesizer(
-        OpenJtalk(open_jtalk_dict_dir), acceleration_mode=acceleration_mode
+        await OpenJtalk.new(open_jtalk_dict_dir), acceleration_mode=acceleration_mode
     )
 
     logger.debug("%s", f"{synthesizer.metas=}")

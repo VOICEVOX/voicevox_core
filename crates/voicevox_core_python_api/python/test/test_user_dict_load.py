@@ -10,7 +10,7 @@ import voicevox_core  # noqa: F401
 
 @pytest.mark.asyncio
 async def test_user_dict_load() -> None:
-    open_jtalk = voicevox_core.OpenJtalk(conftest.open_jtalk_dic_dir)
+    open_jtalk = await voicevox_core.OpenJtalk.new(conftest.open_jtalk_dic_dir)
     model = await voicevox_core.VoiceModel.from_path(conftest.model_dir)
     synthesizer = voicevox_core.Synthesizer(open_jtalk)
 
@@ -29,7 +29,7 @@ async def test_user_dict_load() -> None:
     )
     assert isinstance(uuid, UUID)
 
-    open_jtalk.use_user_dict(temp_dict)
+    await open_jtalk.use_user_dict(temp_dict)
 
     audio_query_with_dict = await synthesizer.audio_query(
         "this_word_should_not_exist_in_default_dictionary", style_id=0
