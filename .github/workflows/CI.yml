@@ -56,7 +56,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --locked --manifest-path crates/voicevox_core_python_api/Cargo.toml
+          args: --release --out dist --locked --manifest-path crates/voicevox_core_python_api/Cargo.toml --find-interpreter
           sccache: 'true'
           manylinux: auto
       - name: Upload wheels
@@ -83,7 +83,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --locked --manifest-path crates/voicevox_core_python_api/Cargo.toml
+          args: --release --out dist --locked --manifest-path crates/voicevox_core_python_api/Cargo.toml --find-interpreter
           sccache: 'true'
       - name: Upload wheels
         uses: actions/upload-artifact@v3
@@ -113,7 +113,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --locked --manifest-path crates/voicevox_core_python_api/Cargo.toml
+          args: --release --out dist --locked --manifest-path crates/voicevox_core_python_api/Cargo.toml --find-interpreter
           sccache: 'true'
       - name: Upload wheels
         uses: actions/upload-artifact@v3
@@ -144,14 +144,14 @@ jobs:
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
     needs: [linux, windows, macos, sdist]
+    permissions:
+      id-token: write
     steps:
       - uses: actions/download-artifact@v3
         with:
           name: wheels
+          path: dist/
       - name: Publish to PyPI
-        uses: PyO3/maturin-action@v1
-        env:
-          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          command: upload
-          args: --non-interactive --skip-existing *
+          repository-url: https://test.pypi.org/legacy/
