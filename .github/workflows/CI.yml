@@ -121,29 +121,11 @@ jobs:
           name: wheels
           path: dist
 
-  sdist:
-    runs-on: ubuntu-latest
-    needs: version
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: projects
-      - name: Build sdist
-        uses: PyO3/maturin-action@v1
-        with:
-          command: sdist
-          args: --out dist --manifest-path crates/voicevox_core_python_api/Cargo.toml
-      - name: Upload sdist
-        uses: actions/upload-artifact@v3
-        with:
-          name: wheels
-          path: dist
-
   release:
     name: Release
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
-    needs: [linux, windows, macos, sdist]
+    needs: [linux, windows, macos]
     permissions:
       id-token: write
     steps:
