@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, sync::Arc};
 use super::*;
 use libc::c_int;
 
-use voicevox_core::{OpenJtalk, StyleId, VoiceModel};
+use voicevox_core::{OpenJtalk, StyleId, VoiceModel, __internal::interop::PerformInference as _};
 
 macro_rules! ensure_initialized {
     ($synthesizer:expr $(,)?) => {
@@ -104,6 +104,8 @@ fn set_message(message: &str) {
 
 #[no_mangle]
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
+    // FIXME: ここはもう`RUNTIME.block_on`で包む必要は無くなっているのだが、ロガーの設定を`RUNTIME`
+    // で行っているという構造になってしまっているので、外すとロガーの初期化が遅れてしまでう
     let result = RUNTIME.block_on(async {
         let synthesizer = voicevox_core::Synthesizer::new(
             Arc::new(OpenJtalk::new_without_dic()),
@@ -197,10 +199,10 @@ pub extern "C" fn yukarin_s_forward(
     output: *mut f32,
 ) -> bool {
     let synthesizer = &*lock_synthesizer();
-    let result = RUNTIME.block_on(ensure_initialized!(synthesizer).predict_duration(
+    let result = ensure_initialized!(synthesizer).predict_duration(
         unsafe { std::slice::from_raw_parts_mut(phoneme_list, length as usize) },
         StyleId::new(unsafe { *speaker_id as u32 }),
-    ));
+    );
     match result {
         Ok(output_vec) => {
             let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
@@ -227,7 +229,7 @@ pub extern "C" fn yukarin_sa_forward(
     output: *mut f32,
 ) -> bool {
     let synthesizer = &*lock_synthesizer();
-    let result = RUNTIME.block_on(ensure_initialized!(synthesizer).predict_intonation(
+    let result = ensure_initialized!(synthesizer).predict_intonation(
         length as usize,
         unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length as usize) },
         unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length as usize) },
@@ -236,7 +238,7 @@ pub extern "C" fn yukarin_sa_forward(
         unsafe { std::slice::from_raw_parts(start_accent_phrase_list, length as usize) },
         unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length as usize) },
         StyleId::new(unsafe { *speaker_id as u32 }),
-    ));
+    );
     match result {
         Ok(output_vec) => {
             let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
@@ -262,13 +264,13 @@ pub extern "C" fn decode_forward(
     let length = length as usize;
     let phoneme_size = phoneme_size as usize;
     let synthesizer = &*lock_synthesizer();
-    let result = RUNTIME.block_on(ensure_initialized!(synthesizer).decode(
+    let result = ensure_initialized!(synthesizer).decode(
         length,
         phoneme_size,
         unsafe { std::slice::from_raw_parts(f0, length) },
         unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) },
         StyleId::new(unsafe { *speaker_id as u32 }),
-    ));
+    );
     match result {
         Ok(output_vec) => {
             let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };

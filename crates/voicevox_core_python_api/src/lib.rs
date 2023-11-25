@@ -144,7 +144,7 @@ impl OpenJtalk {
 
 #[pyclass]
 struct Synthesizer {
-    synthesizer: Closable<Arc<voicevox_core::Synthesizer>, Self>,
+    synthesizer: Closable<voicevox_core::Synthesizer, Self>,
 }
 
 #[pymethods]
@@ -167,7 +167,7 @@ impl Synthesizer {
                 cpu_num_threads,
             },
         );
-        let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?.into();
+        let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?;
         let synthesizer = Closable::new(synthesizer);
         Ok(Self { synthesizer })
     }

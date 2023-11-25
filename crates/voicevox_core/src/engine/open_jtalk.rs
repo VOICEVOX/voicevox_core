@@ -52,7 +52,7 @@ impl OpenJtalk {
     pub async fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
         let open_jtalk_dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
 
-        tokio::task::spawn_blocking(move || {
+        crate::task::asyncify(move || {
             let mut s = Self::new_without_dic();
             s.load(open_jtalk_dict_dir).map_err(|()| {
                 // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
@@ -61,7 +61,6 @@ impl OpenJtalk {
             Ok(s)
         })
         .await
-        .unwrap()
     }
 
     // 先に`load`を呼ぶ必要がある。
@@ -80,7 +79,7 @@ impl OpenJtalk {
 
         let words = user_dict.to_mecab_format();
 
-        let result = tokio::task::spawn_blocking(move || -> crate::Result<_> {
+        let result = crate::task::asyncify(move || -> crate::Result<_> {
             // ユーザー辞書用のcsvを作成
             let mut temp_csv =
                 NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
@@ -111,8 +110,7 @@ impl OpenJtalk {
 
             Ok(mecab.load_with_userdic(dict_dir.as_ref(), Some(Path::new(&temp_dict_path))))
         })
-        .await
-        .unwrap()?;
+        .await?;
 
         if !result {
             return Err(ErrorRepr::UseUserDict(anyhow!("辞書のコンパイルに失敗しました")).into());
