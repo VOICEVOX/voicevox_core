@@ -11,11 +11,11 @@ mod metas;
 mod numerics;
 mod result;
 mod synthesizer;
+mod task;
 mod user_dict;
 mod version;
 mod voice_model;
 
-#[doc(hidden)]
 pub mod __internal;
 
 #[cfg(test)]
@@ -31,7 +31,9 @@ pub use self::result::*;
 pub use self::voice_model::*;
 pub use devices::*;
 pub use manifest::*;
-pub use synthesizer::*;
+pub use synthesizer::{
+    AccelerationMode, InitializeOptions, SynthesisOptions, Synthesizer, TtsOptions,
+};
 pub use user_dict::*;
 pub use version::*;
 
