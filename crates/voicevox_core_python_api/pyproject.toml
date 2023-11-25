@@ -25,7 +25,7 @@ profile = "black"
 [tool.maturin]
 module-name = "voicevox_core._rust"
 bindings = "pyo3"
-skip-auditwheel = true # Linuxでlibonnxruntime.so.*の不在を許してもらう
+skip-auditwheel = false # Linuxでlibonnxruntime.so.*の不在を許してもらう
 python-source = "python"
 
 [tool.poetry]
