@@ -1,9 +1,9 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeMap;
 
 use super::*;
 use libc::c_int;
 
-use voicevox_core::{OpenJtalk, StyleId, VoiceModel, __internal::interop::PerformInference as _};
+use voicevox_core::{StyleId, VoiceModel, __internal::interop::PerformInference as _};
 
 macro_rules! ensure_initialized {
     ($synthesizer:expr $(,)?) => {
@@ -88,10 +88,10 @@ fn voice_model_set() -> &'static VoiceModelSet {
     &VOICE_MODEL_SET
 }
 
-static SYNTHESIZER: Lazy<Mutex<Option<voicevox_core::Synthesizer>>> =
+static SYNTHESIZER: Lazy<Mutex<Option<voicevox_core::Synthesizer<()>>>> =
     Lazy::new(|| Mutex::new(None));
 
-fn lock_synthesizer() -> MutexGuard<'static, Option<voicevox_core::Synthesizer>> {
+fn lock_synthesizer() -> MutexGuard<'static, Option<voicevox_core::Synthesizer<()>>> {
     SYNTHESIZER.lock().unwrap()
 }
 
@@ -108,7 +108,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
     // で行っているという構造になってしまっているので、外すとロガーの初期化が遅れてしまでう
     let result = RUNTIME.block_on(async {
         let synthesizer = voicevox_core::Synthesizer::new(
-            Arc::new(OpenJtalk::new_without_dic()),
+            (),
             &voicevox_core::InitializeOptions {
                 acceleration_mode: if use_gpu {
                     voicevox_core::AccelerationMode::Gpu

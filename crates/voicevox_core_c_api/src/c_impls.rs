@@ -1,4 +1,4 @@
-use std::{ffi::CString, path::Path, sync::Arc};
+use std::{ffi::CString, path::Path};
 
 use voicevox_core::{InitializeOptions, OpenJtalk, Result, Synthesizer, VoiceModel, VoiceModelId};
 
@@ -7,7 +7,7 @@ use crate::{CApiResult, OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
 impl OpenJtalkRc {
     pub(crate) async fn new(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
-            open_jtalk: Arc::new(OpenJtalk::new(open_jtalk_dic_dir).await?),
+            open_jtalk: OpenJtalk::new(open_jtalk_dic_dir).await?,
         })
     }
 }

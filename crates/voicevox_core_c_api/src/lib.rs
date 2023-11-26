@@ -104,7 +104,7 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
 /// ```
 /// }
 pub struct OpenJtalkRc {
-    open_jtalk: Arc<OpenJtalk>,
+    open_jtalk: OpenJtalk,
 }
 
 /// ::OpenJtalkRc を<b>構築</b>(_construct_)する。
@@ -317,7 +317,7 @@ pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
 /// <b>構築</b>(_construction_)は ::voicevox_synthesizer_new で行い、<b>破棄</b>(_destruction_)は ::voicevox_synthesizer_delete で行う。
 #[derive(Getters)]
 pub struct VoicevoxSynthesizer {
-    synthesizer: Synthesizer,
+    synthesizer: Synthesizer<OpenJtalk>,
 }
 
 /// ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。

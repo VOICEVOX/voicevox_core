@@ -114,7 +114,7 @@ impl VoiceModel {
 #[pyclass]
 #[derive(Clone)]
 struct OpenJtalk {
-    open_jtalk: Arc<voicevox_core::OpenJtalk>,
+    open_jtalk: voicevox_core::OpenJtalk,
 }
 
 #[pymethods]
@@ -127,7 +127,7 @@ impl OpenJtalk {
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let open_jtalk = voicevox_core::OpenJtalk::new(open_jtalk_dict_dir).await;
-            let open_jtalk = Python::with_gil(|py| open_jtalk.into_py_result(py))?.into();
+            let open_jtalk = Python::with_gil(|py| open_jtalk.into_py_result(py))?;
             Ok(Self { open_jtalk })
         })
     }
@@ -144,7 +144,7 @@ impl OpenJtalk {
 
 #[pyclass]
 struct Synthesizer {
-    synthesizer: Closable<voicevox_core::Synthesizer, Self>,
+    synthesizer: Closable<voicevox_core::Synthesizer<voicevox_core::OpenJtalk>, Self>,
 }
 
 #[pymethods]

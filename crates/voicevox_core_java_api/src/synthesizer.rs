@@ -50,7 +50,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'loca
         options.cpu_num_threads = cpu_num_threads.i().expect("cpuNumThreads is not integer") as u16;
 
         let open_jtalk = env
-            .get_rust_field::<_, _, Arc<voicevox_core::OpenJtalk>>(&open_jtalk, "handle")?
+            .get_rust_field::<_, _, voicevox_core::OpenJtalk>(&open_jtalk, "handle")?
             .clone();
         let internal = voicevox_core::Synthesizer::new(open_jtalk, Box::leak(Box::new(options)))?;
         env.set_rust_field(&this, "handle", internal)?;
@@ -64,7 +64,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsGpuMode
 ) -> jboolean {
     throw_if_err(env, false, |env| {
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         Ok(internal.is_gpu_mode())
@@ -78,7 +80,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsGetMetasJ
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let metas_json = serde_json::to_string(&internal.metas()).expect("should not fail");
@@ -100,7 +104,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsLoadVoice
             .get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&model, "handle")?
             .clone();
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
         RUNTIME.block_on(internal.load_voice_model(&model))?;
         Ok(())
@@ -117,7 +123,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsUnloadVoi
         let model_id: String = env.get_string(&model_id)?.into();
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         internal.unload_voice_model(&voicevox_core::VoiceModelId::new(model_id))?;
@@ -138,7 +146,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsLoadedV
         let model_id: String = env.get_string(&model_id)?.into();
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let is_loaded = internal.is_loaded_voice_model(&voicevox_core::VoiceModelId::new(model_id));
@@ -162,7 +172,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let audio_query = RUNTIME.block_on(
@@ -189,7 +201,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let audio_query =
@@ -217,7 +231,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhr
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let accent_phrases = RUNTIME.block_on(
@@ -244,7 +260,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhr
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let accent_phrases = RUNTIME.block_on(
@@ -273,7 +291,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let replaced_accent_phrases = RUNTIME.block_on(
@@ -303,7 +323,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplacePh
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let replaced_accent_phrases = {
@@ -334,7 +356,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let replaced_accent_phrases = RUNTIME.block_on(
@@ -363,7 +387,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsSynthesis
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let wave = {
@@ -397,7 +423,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTtsFromKa
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let wave = {
@@ -431,7 +459,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTts<'loca
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+                &this, "handle",
+            )?
             .clone();
 
         let wave = {
