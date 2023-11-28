@@ -13,7 +13,7 @@ directml = ["voicevox_core/directml"]
 [dependencies]
 easy-ext.workspace = true
 log.workspace = true
-pyo3 = { workspace = true, features = ["abi3-py38", "extension-module"] }
+pyo3 = { workspace = true, features = ["extension-module"] }
 pyo3-asyncio = { workspace = true, features = ["tokio-runtime"] }
 pyo3-log.workspace = true
 serde = { workspace = true, features = ["derive"] }
