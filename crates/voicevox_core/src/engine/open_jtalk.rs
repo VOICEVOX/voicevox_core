@@ -1,9 +1,6 @@
 use std::io::Write;
 use std::sync::Arc;
-use std::{
-    path::{Path, PathBuf},
-    sync::Mutex,
-};
+use std::{path::Path, sync::Mutex};
 
 use anyhow::anyhow;
 use tempfile::NamedTempFile;
@@ -21,9 +18,10 @@ pub(crate) struct OpenjtalkFunctionError {
 }
 
 /// テキスト解析器としてのOpen JTalk。
+#[derive(Clone)]
 pub struct OpenJtalk {
     resources: Arc<Mutex<Resources>>,
-    dict_dir: Option<PathBuf>,
+    dict_dir: Arc<String>, // FIXME: `camino::Utf8PathBuf`にする
 }
 
 struct Resources {
@@ -36,51 +34,45 @@ struct Resources {
 unsafe impl Send for Resources {}
 
 impl OpenJtalk {
-    // FIXME: この関数は廃止し、`Synthesizer`は`Option<OpenJtalk>`という形でこの構造体を持つ
-    pub fn new_without_dic() -> Self {
-        Self {
-            resources: Mutex::new(Resources {
+    pub async fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
+        let dict_dir = open_jtalk_dict_dir
+            .as_ref()
+            .to_str()
+            .unwrap_or_else(|| todo!()) // FIXME: `camino::Utf8Path`を要求するようにする
+            .to_owned();
+        let dict_dir = Arc::new(dict_dir);
+
+        crate::task::asyncify(move || {
+            let mut resources = Resources {
                 mecab: ManagedResource::initialize(),
                 njd: ManagedResource::initialize(),
                 jpcommon: ManagedResource::initialize(),
-            })
-            .into(),
-            dict_dir: None,
-        }
-    }
+            };
 
-    pub async fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
-        let open_jtalk_dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
-
-        tokio::task::spawn_blocking(move || {
-            let mut s = Self::new_without_dic();
-            s.load(open_jtalk_dict_dir).map_err(|()| {
+            let result = resources.mecab.load(&*dict_dir);
+            if !result {
                 // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
-                ErrorRepr::NotLoadedOpenjtalkDict
-            })?;
-            Ok(s)
+                return Err(ErrorRepr::NotLoadedOpenjtalkDict.into());
+            }
+
+            Ok(Self {
+                resources: Mutex::new(resources).into(),
+                dict_dir,
+            })
         })
         .await
-        .unwrap()
     }
 
-    // 先に`load`を呼ぶ必要がある。
     /// ユーザー辞書を設定する。
     ///
     /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
     pub async fn use_user_dict(&self, user_dict: &UserDict) -> crate::result::Result<()> {
-        let dict_dir = self
-            .dict_dir
-            .as_ref()
-            .and_then(|dict_dir| dict_dir.to_str())
-            .ok_or(ErrorRepr::NotLoadedOpenjtalkDict)?
-            .to_owned();
-
         let resources = self.resources.clone();
+        let dict_dir = self.dict_dir.clone();
 
         let words = user_dict.to_mecab_format();
 
-        let result = tokio::task::spawn_blocking(move || -> crate::Result<_> {
+        let result = crate::task::asyncify(move || -> crate::Result<_> {
             // ユーザー辞書用のcsvを作成
             let mut temp_csv =
                 NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
@@ -109,10 +101,9 @@ impl OpenJtalk {
 
             let Resources { mecab, .. } = &mut *resources.lock().unwrap();
 
-            Ok(mecab.load_with_userdic(dict_dir.as_ref(), Some(Path::new(&temp_dict_path))))
+            Ok(mecab.load_with_userdic((*dict_dir).as_ref(), Some(Path::new(&temp_dict_path))))
         })
-        .await
-        .unwrap()?;
+        .await?;
 
         if !result {
             return Err(ErrorRepr::UseUserDict(anyhow!("辞書のコンパイルに失敗しました")).into());
@@ -168,26 +159,6 @@ impl OpenJtalk {
                 source: None,
             })
         }
-    }
-
-    fn load(&mut self, open_jtalk_dict_dir: impl AsRef<Path>) -> std::result::Result<(), ()> {
-        let result = self
-            .resources
-            .lock()
-            .unwrap()
-            .mecab
-            .load(open_jtalk_dict_dir.as_ref());
-        if result {
-            self.dict_dir = Some(open_jtalk_dict_dir.as_ref().into());
-            Ok(())
-        } else {
-            self.dict_dir = None;
-            Err(())
-        }
-    }
-
-    pub fn dict_loaded(&self) -> bool {
-        self.dict_dir.is_some()
     }
 }
 
