@@ -1,4 +1,5 @@
 pub mod doctest_fixtures;
+pub mod interop;
 
 // VOICEVOX CORE内のラッパー向けの実装
 // FIXME: 要議論: https://github.com/VOICEVOX/voicevox_core/issues/595
