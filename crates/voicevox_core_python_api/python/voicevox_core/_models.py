@@ -119,12 +119,6 @@ class Mora:
     text: str
     """文字。"""
 
-    consonant: Optional[str]
-    """子音の音素。"""
-
-    consonant_length: Optional[float]
-    """子音の音長。"""
-
     vowel: str
     """母音の音素。"""
 
@@ -133,6 +127,12 @@ class Mora:
 
     pitch: float
     """音高。"""
+
+    consonant: Optional[str] = None
+    """子音の音素。"""
+
+    consonant_length: Optional[float] = None
+    """子音の音長。"""
 
 
 @pydantic.dataclasses.dataclass
@@ -145,10 +145,10 @@ class AccentPhrase:
     accent: int
     """アクセント箇所。"""
 
-    pause_mora: Optional[Mora]
+    pause_mora: Optional[Mora] = None
     """後ろに無音を付けるかどうか。"""
 
-    is_interrogative: bool
+    is_interrogative: bool = False
     """疑問系かどうか。"""
 
 
@@ -183,7 +183,7 @@ class AudioQuery:
     output_stereo: bool
     """音声データをステレオ出力するか否か。"""
 
-    kana: Optional[str]  # FIXME: requiredになっている（他の`Optional`も同様）
+    kana: Optional[str] = None
     """
     [読み取り専用] AquesTalk風記法。
 
