@@ -12,7 +12,7 @@ VOICEVOX の音声合成のコア部分で、VOICEVOX 音声合成が可能で�
 
 ### 実行に必要なファイルのダウンロード
 
-コアを動作させるには依存ライブラリである `onnxruntime` や、音声合成のためのモデル(VVM)が必要です。これらはコア用の Downloader を用いてダウンロードすることができます。
+コアを動作させるには依存ライブラリである `onnxruntime` や、音声合成のための音声モデル（VVM ファイル）が必要です。これらはコア用の Downloader を用いてダウンロードすることができます。
 
 [最新のリリース](https://github.com/VOICEVOX/voicevox_core/releases/latest/)から、お使いの環境にあった Downloader （Windows の x64 環境の場合は`download-windows-x64.exe`）をダウンロードし、ファイル名を`download`に変更します。macOS や Linux の場合は実行権限を付与します。
 
