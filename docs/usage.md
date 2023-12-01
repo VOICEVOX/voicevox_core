@@ -1,6 +1,6 @@
-# VOICEVOX CORE ユーザーガイド
+# VOICEVOX コア ユーザーガイド
 
-## VOICEVOX CORE とは
+## VOICEVOX コアとは
 
 VOICEVOX の音声合成のコア部分で、VOICEVOX 音声合成が可能です。
 
