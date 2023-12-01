@@ -88,7 +88,7 @@ asyncio.run(main())
 
 ### 2. 音声モデルの読み込み
 
-VVM ファイルから`VoiceModel`インスタンスを作成し、`Synthesizer`に読み込ませます。その VVM ファイルにどの声が含まれているかは`VoiceModel`は`.metas`で確認できます。
+VVM ファイルから`VoiceModel`インスタンスを作成し、`Synthesizer`に読み込ませます。その VVM ファイルにどの声が含まれているかは`VoiceModel`の`.metas`で確認できます。
 
 ```python
 model = await VoiceModel.from_path("model/0.vvm")
@@ -113,7 +113,7 @@ pprint(model.metas)
 
 ## イントネーションの調整
 
-`Synthesizer`はイントネーションの生成と音声合成の処理を分けることができます。
+`Synthesizer`はイントネーションの生成と音声合成の処理を分けることもできます。
 
 ### AudioQuery の生成
 
@@ -148,7 +148,7 @@ AudioQuery(accent_phrases=[AccentPhrase(moras=[Mora(text='サ',
 少し声を高くしてみます。`AudioQuery`の`.pitch_scale`で声の高さを調整できます。
 
 ```python
-audio_query.pitch_scale = 0.1
+audio_query.pitch_scale += 0.1
 ```
 
 ### 音声合成
