@@ -14,23 +14,23 @@ VOICEVOX の音声合成のコア部分で、VOICEVOX 音声合成が可能で�
 
 コアを動作させるには依存ライブラリである `onnxruntime` や、音声合成のための音声モデル（VVM ファイル）が必要です。これらはコア用の Downloader を用いてダウンロードすることができます。
 
-[最新のリリース](https://github.com/VOICEVOX/voicevox_core/releases/latest/)から、お使いの環境にあった Downloader （Windows の x64 環境の場合は`download-windows-x64.exe`）をダウンロードし、ファイル名を`download`に変更します。macOS や Linux の場合は実行権限を付与します。
+[最新のリリース](https://github.com/VOICEVOX/voicevox_core/releases/latest/)から、お使いの環境にあった Downloader （例えば Windows の x64 環境の場合は`download-windows-x64.exe`）をダウンロードし、ファイル名を`download`に変更します。macOS や Linux の場合は実行権限を付与します。
 
 ```sh
 # 実行権限の付与
 chmod +x download
 ```
 
-以下のコマンドで Downloader を実行して依存ライブラリとモデルをダウンロードします。DirectML や CUDA を利用する場合は引数を追加します。
+以下のコマンドで Downloader を実行して依存ライブラリとモデルをダウンロードします。DirectML 版や CUDA 版を利用する場合は引数を追加します。
 
 ```sh
-# CPU 版を利用する場合
+# CPU版を利用する場合
 ./download
 
-# DirectML を利用する場合
+# DirectML版を利用する場合
 ./download --device directml
 
-# CUDA を利用する場合
+# CUDA版を利用する場合
 ./download --device cuda
 ```
 
@@ -51,7 +51,7 @@ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/[バー�
 
 ## テキスト音声合成
 
-`voicevox_core`ディレクトリ内でコードを実行します。VOICEVOX コアは`Synthesizer`に音声モデルを読み込むことでテキスト音声合成できます。まずサンプルコードを紹介し、その後で処理１つ１つを説明します。
+VOICEVOX コアでは`Synthesizer`に音声モデルを読み込むことでテキスト音声合成できます。まずサンプルコードを紹介し、その後で処理１つ１つを説明します。
 
 ### サンプルコード
 
@@ -88,7 +88,7 @@ asyncio.run(main())
 
 ### 2. 音声モデルの読み込み
 
-VVM ファイルから`VoiceModel`インスタンスを作成し、`Synthesizer`に読み込ませます。`VoiceModel`は音声モデルのパラメータを保持しています。`.metas`でその VVM ファイルにどの声が含まれているか確認できます。
+VVM ファイルから`VoiceModel`インスタンスを作成し、`Synthesizer`に読み込ませます。その VVM ファイルにどの声が含まれているかは`VoiceModel`は`.metas`で確認できます。
 
 ```python
 model = await VoiceModel.from_path("model/0.vvm")
@@ -113,7 +113,7 @@ pprint(model.metas)
 
 ## イントネーションの調整
 
-`Synthesizer`はイントネーションの生成と音声合成を分けて行うことができます。
+`Synthesizer`はイントネーションの生成と音声合成の処理を分けることができます。
 
 ### AudioQuery の生成
 
@@ -145,7 +145,7 @@ AudioQuery(accent_phrases=[AccentPhrase(moras=[Mora(text='サ',
 
 ### AudioQuery の調整
 
-では少し声を高くしてみましょう。`AudioQuery`の`.pitch_scale`で声の高さを調整できます。
+少し声を高くしてみます。`AudioQuery`の`.pitch_scale`で声の高さを調整できます。
 
 ```python
 audio_query.pitch_scale = 0.1
@@ -161,9 +161,9 @@ audio_query.pitch_scale = 0.1
         f.write(wav)
 ```
 
-`AudioQuery`で調整できるパラメータは他にも速さ`.speed_scale`や音量`.volume_scale`、他にも音ごとの高さ`.accent_phrases[].moras[].pitch`などがあります。詳細は[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.AudioQuery)で紹介しています。
+`AudioQuery`で調整できるパラメータは他にも速さ`.speed_scale`や音量`.volume_scale`、音ごとの高さ`.accent_phrases[].moras[].pitch`などがあります。詳細は[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.AudioQuery)で紹介しています。
 
-## 辞書の変更
+## ユーザー辞書
 
 TODO。[OpenJtalk.use_user_dict](https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.OpenJtalk.use_user_dict)辺りを使います。
 
