@@ -32,9 +32,9 @@ impl self::blocking::VoiceModel {
         let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
         let model_bytes = [
-            self.header.manifest.decode_filename(),
             self.header.manifest.predict_duration_filename(),
             self.header.manifest.predict_intonation_filename(),
+            self.header.manifest.decode_filename(),
         ]
         .into_par_iter()
         .map(|filename| reader.read_vvm_entry(filename))
