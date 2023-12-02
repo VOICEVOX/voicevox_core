@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-use crate::{Result, VoiceModel};
+use crate::Result;
 
-pub async fn open_default_vvm_file() -> VoiceModel {
-    VoiceModel::from_path(
+pub async fn open_default_vvm_file() -> crate::tokio::VoiceModel {
+    crate::tokio::VoiceModel::from_path(
         ::test_util::convert_zip_vvm(
             PathBuf::from(env!("CARGO_WORKSPACE_DIR"))
                 .join(file!())
@@ -18,7 +18,7 @@ pub async fn open_default_vvm_file() -> VoiceModel {
     .unwrap()
 }
 
-impl VoiceModel {
+impl crate::tokio::VoiceModel {
     pub(crate) async fn sample() -> Result<Self> {
         return Self::from_path(PATH).await;
 

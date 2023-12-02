@@ -29,11 +29,8 @@ use tokio::runtime::Runtime;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
-use voicevox_core::{
-    AccentPhraseModel, AudioQueryModel, OpenJtalk, TtsOptions, UserDictWord, VoiceModel,
-    VoiceModelId,
-};
-use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions, Synthesizer};
+use voicevox_core::{AccentPhraseModel, AudioQueryModel, TtsOptions, UserDictWord, VoiceModelId};
+use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions};
 
 static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
     let _ = init_logger();
@@ -104,7 +101,7 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
 /// ```
 /// }
 pub struct OpenJtalkRc {
-    open_jtalk: OpenJtalk,
+    open_jtalk: voicevox_core::tokio::OpenJtalk,
 }
 
 /// ::OpenJtalkRc を<b>構築</b>(_construct_)する。
@@ -231,7 +228,7 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
 /// <b>構築</b>(_construction_)は ::voicevox_voice_model_new_from_path で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_delete で行う。
 #[derive(Getters)]
 pub struct VoicevoxVoiceModel {
-    model: VoiceModel,
+    model: voicevox_core::tokio::VoiceModel,
     id: CString,
     metas: CString,
 }
@@ -317,7 +314,7 @@ pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
 /// <b>構築</b>(_construction_)は ::voicevox_synthesizer_new で行い、<b>破棄</b>(_destruction_)は ::voicevox_synthesizer_delete で行う。
 #[derive(Getters)]
 pub struct VoicevoxSynthesizer {
-    synthesizer: Synthesizer<OpenJtalk>,
+    synthesizer: voicevox_core::tokio::Synthesizer<voicevox_core::tokio::OpenJtalk>,
 }
 
 /// ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。
@@ -1034,7 +1031,7 @@ pub extern "C" fn voicevox_error_result_to_message(
 /// ユーザー辞書。
 #[derive(Default)]
 pub struct VoicevoxUserDict {
-    dict: Arc<voicevox_core::UserDict>,
+    dict: Arc<voicevox_core::tokio::UserDict>,
 }
 
 /// ユーザー辞書の単語。
