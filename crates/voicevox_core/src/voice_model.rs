@@ -253,6 +253,10 @@ impl AsyncVvmEntryReader {
     }
 }
 
+// FIXME: "header"といいつつ、VVMのファイルパスを持っている状態になっている。
+/// 音声モデルが持つ、各モデルファイルの実体を除く情報。
+///
+/// モデルの`[u8]`と分けて`Status`に渡す。
 #[derive(Clone)]
 pub(crate) struct VoiceModelHeader {
     /// ID。
