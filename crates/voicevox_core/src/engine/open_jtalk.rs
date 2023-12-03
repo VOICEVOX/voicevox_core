@@ -131,11 +131,11 @@ impl self::blocking::Inner {
     }
 }
 
-pub trait TextAnalyzer: Clone + Send + Sync + 'static {
+pub trait FullcontextExtractor: Clone + Send + Sync + 'static {
     fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>>;
 }
 
-impl TextAnalyzer for self::blocking::OpenJtalk {
+impl FullcontextExtractor for self::blocking::OpenJtalk {
     fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>> {
         let Resources {
             mecab,
@@ -185,7 +185,7 @@ impl TextAnalyzer for self::blocking::OpenJtalk {
     }
 }
 
-impl TextAnalyzer for self::tokio::OpenJtalk {
+impl FullcontextExtractor for self::tokio::OpenJtalk {
     fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>> {
         self.0.extract_fullcontext(text)
     }
@@ -219,7 +219,7 @@ mod tests {
 
     use crate::macros::tests::assert_debug_fmt_eq;
 
-    use super::{OpenjtalkFunctionError, TextAnalyzer as _};
+    use super::{FullcontextExtractor as _, OpenjtalkFunctionError};
 
     fn testdata_hello_hiho() -> Vec<String> {
         // こんにちは、ヒホです。の期待値

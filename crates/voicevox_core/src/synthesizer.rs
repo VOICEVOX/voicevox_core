@@ -4,7 +4,8 @@ use enum_map::enum_map;
 
 use crate::{
     engine::{
-        create_kana, parse_kana, AccentPhraseModel, MoraModel, OjtPhoneme, TextAnalyzer, Utterance,
+        create_kana, parse_kana, AccentPhraseModel, FullcontextExtractor, MoraModel, OjtPhoneme,
+        Utterance,
     },
     infer::{
         domain::{
@@ -210,7 +211,7 @@ impl<O: Send + Sync + 'static> self::tokio::Synthesizer<O> {
     }
 }
 
-impl<T: TextAnalyzer> self::tokio::Synthesizer<T> {
+impl<T: FullcontextExtractor> self::tokio::Synthesizer<T> {
     pub async fn create_accent_phrases(
         &self,
         text: &str,
@@ -604,7 +605,7 @@ impl<O> self::blocking::Synthesizer<O> {
     }
 }
 
-impl<T: TextAnalyzer> self::blocking::Synthesizer<T> {
+impl<T: FullcontextExtractor> self::blocking::Synthesizer<T> {
     /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
     ///
     /// # Example
@@ -944,7 +945,7 @@ impl<O> self::blocking::Synthesizer<O> {
     }
 }
 
-impl<T: TextAnalyzer> self::blocking::Synthesizer<T> {
+impl<T: FullcontextExtractor> self::blocking::Synthesizer<T> {
     /// 日本語のテキストから[AudioQuery]を生成する。
     ///
     /// # Examples
@@ -989,7 +990,7 @@ impl<O> self::blocking::Synthesizer<O> {
     }
 }
 
-impl<T: TextAnalyzer> self::blocking::Synthesizer<T> {
+impl<T: FullcontextExtractor> self::blocking::Synthesizer<T> {
     /// 日本語のテキストから音声合成を行う。
     pub fn tts(&self, text: &str, style_id: StyleId, options: &TtsOptions) -> Result<Vec<u8>> {
         let audio_query = &self.audio_query(text, style_id)?;

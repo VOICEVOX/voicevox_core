@@ -10,4 +10,4 @@ pub use self::full_context_label::*;
 pub use self::kana_parser::*;
 pub use self::model::*;
 pub(crate) use self::mora_list::mora2text;
-pub use self::open_jtalk::TextAnalyzer;
+pub use self::open_jtalk::FullcontextExtractor;

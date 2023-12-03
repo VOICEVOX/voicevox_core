@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::engine::open_jtalk::TextAnalyzer;
+use crate::engine::open_jtalk::FullcontextExtractor;
 use derive_getters::Getters;
 use derive_new::new;
 use once_cell::sync::Lazy;
@@ -317,7 +317,7 @@ impl Utterance {
     }
 
     pub(crate) fn extract_full_context_label(
-        open_jtalk: &impl TextAnalyzer,
+        open_jtalk: &impl FullcontextExtractor,
         text: impl AsRef<str>,
     ) -> Result<Self> {
         let labels = open_jtalk

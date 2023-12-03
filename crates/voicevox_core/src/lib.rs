@@ -26,7 +26,7 @@ mod test_util;
 #[cfg(test)]
 use self::test_util::*;
 
-pub use self::engine::{AccentPhraseModel, AudioQueryModel, TextAnalyzer};
+pub use self::engine::{AccentPhraseModel, AudioQueryModel, FullcontextExtractor};
 pub use self::error::*;
 pub use self::metas::*;
 pub use self::result::*;
