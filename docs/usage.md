@@ -156,9 +156,9 @@ audio_query.pitch_scale += 0.1
 調整した`AudioQuery`を`Synthesizer`の`.synthesis`に渡すと、調整した音声波形のバイナリデータが返ります。
 
 ```python
-    wav = await synthesizer.synthesis(audio_query, style_id)
-    with open("output.wav", "wb") as f:
-        f.write(wav)
+wav = await synthesizer.synthesis(audio_query, style_id)
+with open("output.wav", "wb") as f:
+    f.write(wav)
 ```
 
 `AudioQuery`で調整できるパラメータは他にも速さ`.speed_scale`や音量`.volume_scale`、音ごとの高さ`.accent_phrases[].moras[].pitch`などがあります。詳細は[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.AudioQuery)で紹介しています。
