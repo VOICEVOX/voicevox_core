@@ -167,6 +167,10 @@ with open("output.wav", "wb") as f:
 
 TODO。[OpenJtalk.use_user_dict](https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.OpenJtalk.use_user_dict)辺りを使います。
 
+## 動的ライブラリを使う場合
+
+TODO。.so/.dll/.dylib ファイルがあるので直接呼び出します。[C++ Example](https://github.com/VOICEVOX/voicevox_core/tree/main/example/cpp)で流れを紹介しています。[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/c_api/globals_func.html)も参考になります。
+
 ## 非同期処理
 
 TODO。同じ音声モデルのインスタンスで同時に音声合成はできません（Mutex になっています）。仕様が変更されている可能性もあります。
