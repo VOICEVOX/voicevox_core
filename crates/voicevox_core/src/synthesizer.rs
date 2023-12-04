@@ -357,7 +357,8 @@ impl<O> self::blocking::Synthesizer<O> {
         self.status.is_loaded_model(voice_model_id)
     }
 
-    fn is_loaded_model_by_style_id(&self, style_id: StyleId) -> bool {
+    #[doc(hidden)]
+    pub fn is_loaded_model_by_style_id(&self, style_id: StyleId) -> bool {
         self.status.is_loaded_model_by_style_id(style_id)
     }
 
