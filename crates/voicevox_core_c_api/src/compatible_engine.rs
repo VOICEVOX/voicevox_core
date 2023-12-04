@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use super::*;
 use libc::c_int;
 
-use voicevox_core::{StyleId, VoiceModel, __internal::interop::PerformInference as _};
+use voicevox_core::{StyleId, __internal::interop::PerformInference as _};
 
 macro_rules! ensure_initialized {
     ($synthesizer:expr $(,)?) => {
@@ -20,10 +20,10 @@ macro_rules! ensure_initialized {
 static ERROR_MESSAGE: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
 
 struct VoiceModelSet {
-    all_vvms: Vec<VoiceModel>,
+    all_vvms: Vec<voicevox_core::tokio::VoiceModel>,
     all_metas_json: CString,
     style_model_map: BTreeMap<StyleId, VoiceModelId>,
-    model_map: BTreeMap<VoiceModelId, VoiceModel>,
+    model_map: BTreeMap<VoiceModelId, voicevox_core::tokio::VoiceModel>,
 }
 
 static VOICE_MODEL_SET: Lazy<VoiceModelSet> = Lazy::new(|| {
@@ -52,7 +52,7 @@ static VOICE_MODEL_SET: Lazy<VoiceModelSet> = Lazy::new(|| {
     /// # Panics
     ///
     /// 失敗したらパニックする
-    async fn get_all_models() -> Vec<VoiceModel> {
+    async fn get_all_models() -> Vec<voicevox_core::tokio::VoiceModel> {
         let root_dir = if let Some(root_dir) = env::var_os(ROOT_DIR_ENV_NAME) {
             root_dir.into()
         } else {
@@ -70,7 +70,7 @@ static VOICE_MODEL_SET: Lazy<VoiceModelSet> = Lazy::new(|| {
             .unwrap_or_else(|e| panic!("{}が読めませんでした: {e}", root_dir.display()))
             .into_iter()
             .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "vvm"))
-            .map(|entry| VoiceModel::from_path(entry.path()));
+            .map(|entry| voicevox_core::tokio::VoiceModel::from_path(entry.path()));
 
         futures::future::join_all(vvm_paths)
             .await
@@ -88,10 +88,10 @@ fn voice_model_set() -> &'static VoiceModelSet {
     &VOICE_MODEL_SET
 }
 
-static SYNTHESIZER: Lazy<Mutex<Option<voicevox_core::Synthesizer<()>>>> =
+static SYNTHESIZER: Lazy<Mutex<Option<voicevox_core::tokio::Synthesizer<()>>>> =
     Lazy::new(|| Mutex::new(None));
 
-fn lock_synthesizer() -> MutexGuard<'static, Option<voicevox_core::Synthesizer<()>>> {
+fn lock_synthesizer() -> MutexGuard<'static, Option<voicevox_core::tokio::Synthesizer<()>>> {
     SYNTHESIZER.lock().unwrap()
 }
 
@@ -107,7 +107,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
     // FIXME: ここはもう`RUNTIME.block_on`で包む必要は無くなっているのだが、ロガーの設定を`RUNTIME`
     // で行っているという構造になってしまっているので、外すとロガーの初期化が遅れてしまでう
     let result = RUNTIME.block_on(async {
-        let synthesizer = voicevox_core::Synthesizer::new(
+        let synthesizer = voicevox_core::tokio::Synthesizer::new(
             (),
             &voicevox_core::InitializeOptions {
                 acceleration_mode: if use_gpu {

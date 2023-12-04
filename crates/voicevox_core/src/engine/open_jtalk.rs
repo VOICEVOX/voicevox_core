@@ -7,7 +7,7 @@ use tempfile::NamedTempFile;
 
 use ::open_jtalk::*;
 
-use crate::{error::ErrorRepr, UserDict};
+use crate::error::ErrorRepr;
 
 #[derive(thiserror::Error, Debug)]
 #[error("`{function}`の実行が失敗しました")]
@@ -15,13 +15,6 @@ pub(crate) struct OpenjtalkFunctionError {
     function: &'static str,
     #[source]
     source: Option<Text2MecabError>,
-}
-
-/// テキスト解析器としてのOpen JTalk。
-#[derive(Clone)]
-pub struct OpenJtalk {
-    resources: Arc<Mutex<Resources>>,
-    dict_dir: Arc<String>, // FIXME: `camino::Utf8PathBuf`にする
 }
 
 struct Resources {
@@ -33,16 +26,16 @@ struct Resources {
 #[allow(unsafe_code)]
 unsafe impl Send for Resources {}
 
-impl OpenJtalk {
-    pub async fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
+impl self::blocking::OpenJtalk {
+    pub fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
         let dict_dir = open_jtalk_dict_dir
             .as_ref()
             .to_str()
             .unwrap_or_else(|| todo!()) // FIXME: `camino::Utf8Path`を要求するようにする
             .to_owned();
-        let dict_dir = Arc::new(dict_dir);
 
-        crate::task::asyncify(move || {
+        // FIXME: この`{}`はGitのdiffを抑えるためだけに存在
+        {
             let mut resources = Resources {
                 mecab: ManagedResource::initialize(),
                 njd: ManagedResource::initialize(),
@@ -55,24 +48,50 @@ impl OpenJtalk {
                 return Err(ErrorRepr::NotLoadedOpenjtalkDict.into());
             }
 
-            Ok(Self {
-                resources: Mutex::new(resources).into(),
+            Ok(Self(Arc::new(self::blocking::Inner {
+                resources: Mutex::new(resources),
                 dict_dir,
-            })
-        })
-        .await
+            })))
+        }
     }
 
     /// ユーザー辞書を設定する。
     ///
     /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
-    pub async fn use_user_dict(&self, user_dict: &UserDict) -> crate::result::Result<()> {
-        let resources = self.resources.clone();
-        let dict_dir = self.dict_dir.clone();
+    pub fn use_user_dict(
+        &self,
+        user_dict: &crate::blocking::UserDict,
+    ) -> crate::result::Result<()> {
+        let words = &user_dict.to_mecab_format();
+        self.0.use_user_dict(words)
+    }
+}
 
+impl self::tokio::OpenJtalk {
+    pub async fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
+        let open_jtalk_dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
+        let blocking =
+            crate::task::asyncify(|| self::blocking::OpenJtalk::new(open_jtalk_dict_dir)).await?;
+        Ok(Self(blocking))
+    }
+
+    /// ユーザー辞書を設定する。
+    ///
+    /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
+    pub async fn use_user_dict(
+        &self,
+        user_dict: &crate::tokio::UserDict,
+    ) -> crate::result::Result<()> {
+        let inner = self.0 .0.clone();
         let words = user_dict.to_mecab_format();
+        crate::task::asyncify(move || inner.use_user_dict(&words)).await
+    }
+}
 
-        let result = crate::task::asyncify(move || -> crate::Result<_> {
+impl self::blocking::Inner {
+    // FIXME: 中断可能にする
+    fn use_user_dict(&self, words: &str) -> crate::result::Result<()> {
+        let result = {
             // ユーザー辞書用のcsvを作成
             let mut temp_csv =
                 NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
@@ -88,7 +107,7 @@ impl OpenJtalk {
             mecab_dict_index(&[
                 "mecab-dict-index",
                 "-d",
-                &dict_dir,
+                &self.dict_dir,
                 "-u",
                 temp_dict_path.to_str().unwrap(),
                 "-f",
@@ -99,11 +118,10 @@ impl OpenJtalk {
                 "-q",
             ]);
 
-            let Resources { mecab, .. } = &mut *resources.lock().unwrap();
+            let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
 
-            Ok(mecab.load_with_userdic((*dict_dir).as_ref(), Some(Path::new(&temp_dict_path))))
-        })
-        .await?;
+            mecab.load_with_userdic(self.dict_dir.as_ref(), Some(Path::new(&temp_dict_path)))
+        };
 
         if !result {
             return Err(ErrorRepr::UseUserDict(anyhow!("辞書のコンパイルに失敗しました")).into());
@@ -111,22 +129,25 @@ impl OpenJtalk {
 
         Ok(())
     }
+}
 
-    pub(crate) fn extract_fullcontext(
-        &self,
-        text: impl AsRef<str>,
-    ) -> std::result::Result<Vec<String>, OpenjtalkFunctionError> {
+pub trait FullcontextExtractor: Clone + Send + Sync + 'static {
+    fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>>;
+}
+
+impl FullcontextExtractor for self::blocking::OpenJtalk {
+    fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>> {
         let Resources {
             mecab,
             njd,
             jpcommon,
-        } = &mut *self.resources.lock().unwrap();
+        } = &mut *self.0.resources.lock().unwrap();
 
         jpcommon.refresh();
         njd.refresh();
         mecab.refresh();
 
-        let mecab_text = text2mecab(text.as_ref()).map_err(|e| OpenjtalkFunctionError {
+        let mecab_text = text2mecab(text).map_err(|e| OpenjtalkFunctionError {
             function: "text2mecab",
             source: Some(e),
         })?;
@@ -153,21 +174,52 @@ impl OpenJtalk {
                     source: None,
                 })
                 .map(|iter| iter.map(|s| s.to_string()).collect())
+                .map_err(Into::into)
         } else {
             Err(OpenjtalkFunctionError {
                 function: "Mecab_analysis",
                 source: None,
-            })
+            }
+            .into())
         }
     }
 }
 
+impl FullcontextExtractor for self::tokio::OpenJtalk {
+    fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>> {
+        self.0.extract_fullcontext(text)
+    }
+}
+
+pub(crate) mod blocking {
+    use std::sync::Arc;
+
+    use super::Resources;
+
+    /// テキスト解析器としてのOpen JTalk。
+    #[derive(Clone)]
+    pub struct OpenJtalk(pub(super) Arc<Inner>);
+
+    pub(super) struct Inner {
+        pub(super) resources: std::sync::Mutex<Resources>,
+        pub(super) dict_dir: String, // FIXME: `camino::Utf8PathBuf`にする
+    }
+}
+
+pub(crate) mod tokio {
+    /// テキスト解析器としてのOpen JTalk。
+    #[derive(Clone)]
+    pub struct OpenJtalk(pub(super) super::blocking::OpenJtalk);
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ::test_util::OPEN_JTALK_DIC_DIR;
+    use rstest::rstest;
 
-    use crate::{macros::tests::assert_debug_fmt_eq, *};
+    use crate::macros::tests::assert_debug_fmt_eq;
+
+    use super::{FullcontextExtractor as _, OpenjtalkFunctionError};
 
     fn testdata_hello_hiho() -> Vec<String> {
         // こんにちは、ヒホです。の期待値
@@ -257,14 +309,16 @@ mod tests {
     }
 
     #[rstest]
-    #[case("", Err(OpenjtalkFunctionError { function: "Mecab_get_feature", source: None }))]
+    #[case("", Err(OpenjtalkFunctionError { function: "Mecab_get_feature", source: None }.into()))]
     #[case("こんにちは、ヒホです。", Ok(testdata_hello_hiho()))]
     #[tokio::test]
     async fn extract_fullcontext_works(
         #[case] text: &str,
-        #[case] expected: std::result::Result<Vec<String>, OpenjtalkFunctionError>,
+        #[case] expected: anyhow::Result<Vec<String>>,
     ) {
-        let open_jtalk = OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap();
+        let open_jtalk = super::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+            .await
+            .unwrap();
         let result = open_jtalk.extract_fullcontext(text);
         assert_debug_fmt_eq!(expected, result);
     }
@@ -274,9 +328,11 @@ mod tests {
     #[tokio::test]
     async fn extract_fullcontext_loop_works(
         #[case] text: &str,
-        #[case] expected: std::result::Result<Vec<String>, OpenjtalkFunctionError>,
+        #[case] expected: anyhow::Result<Vec<String>>,
     ) {
-        let open_jtalk = OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap();
+        let open_jtalk = super::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+            .await
+            .unwrap();
         for _ in 0..10 {
             let result = open_jtalk.extract_fullcontext(text);
             assert_debug_fmt_eq!(expected, result);

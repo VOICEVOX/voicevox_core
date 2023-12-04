@@ -1,13 +1,11 @@
-use std::{
-    io::{Cursor, Write as _},
-    sync::Arc,
-};
+use std::io::{Cursor, Write as _};
 
 use enum_map::enum_map;
 
 use crate::{
     engine::{
-        create_kana, parse_kana, AccentPhraseModel, MoraModel, OjtPhoneme, OpenJtalk, Utterance,
+        create_kana, parse_kana, AccentPhraseModel, FullcontextExtractor, MoraModel, OjtPhoneme,
+        Utterance,
     },
     infer::{
         domain::{
@@ -23,9 +21,10 @@ use crate::{
 
 use super::*;
 
-/// [`Synthesizer::synthesis`]のオプション。
+/// [`blocking::Synthesizer::synthesis`]および[`tokio::Synthesizer::synthesis`]のオプション。
 ///
-/// [`Synthesizer::synthesis`]: Synthesizer::synthesis
+/// [`blocking::Synthesizer::synthesis`]: blocking::Synthesizer::synthesis
+/// [`tokio::Synthesizer::synthesis`]: tokio::Synthesizer::synthesis
 #[derive(Clone)]
 pub struct SynthesisOptions {
     pub enable_interrogative_upspeak: bool,
@@ -45,9 +44,10 @@ impl From<&TtsOptions> for SynthesisOptions {
     }
 }
 
-/// [`Synthesizer::tts`]のオプション。
+/// [`blocking::Synthesizer::tts`]および[`tokio::Synthesizer::tts`]のオプション。
 ///
-/// [`Synthesizer::tts`]: Synthesizer::tts
+/// [`blocking::Synthesizer::tts`]: blocking::Synthesizer::tts
+/// [`tokio::Synthesizer::tts`]: tokio::Synthesizer::tts
 #[derive(Clone)]
 pub struct TtsOptions {
     pub enable_interrogative_upspeak: bool,
@@ -79,9 +79,10 @@ pub enum AccelerationMode {
     Gpu,
 }
 
-/// [`Synthesizer::new`]のオプション。
+/// [`blocking::Synthesizer::new`]および[`tokio::Synthesizer::new`]のオプション。
 ///
-/// [`Synthesizer::new`]: Synthesizer::new
+/// [`blocking::Synthesizer::new`]: blocking::Synthesizer::new
+/// [`tokio::Synthesizer::new`]: tokio::Synthesizer::new
 #[derive(Default)]
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
@@ -92,14 +93,10 @@ const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
 pub(crate) type InferenceRuntimeImpl = Onnxruntime;
 
-/// 音声シンセサイザ。
-#[derive(Clone)]
-pub struct Synthesizer<O>(Arc<blocking::Synthesizer<O>>);
-
 // FIXME: docを書く
-impl<O: Send + Sync + 'static> Synthesizer<O> {
+impl<O: Send + Sync + 'static> self::tokio::Synthesizer<O> {
     pub fn new(open_jtalk: O, options: &InitializeOptions) -> Result<Self> {
-        blocking::Synthesizer::new(open_jtalk, options)
+        self::blocking::Synthesizer::new(open_jtalk, options)
             .map(Into::into)
             .map(Self)
     }
@@ -108,8 +105,9 @@ impl<O: Send + Sync + 'static> Synthesizer<O> {
         self.0.is_gpu_mode()
     }
 
-    pub async fn load_voice_model(&self, model: &VoiceModel) -> Result<()> {
-        self.0.load_voice_model(model).await
+    pub async fn load_voice_model(&self, model: &crate::tokio::VoiceModel) -> Result<()> {
+        let model_bytes = &model.read_inference_models().await?;
+        self.0.status.insert_model(model.header(), model_bytes)
     }
 
     pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
@@ -213,7 +211,7 @@ impl<O: Send + Sync + 'static> Synthesizer<O> {
     }
 }
 
-impl Synthesizer<OpenJtalk> {
+impl<T: FullcontextExtractor> self::tokio::Synthesizer<T> {
     pub async fn create_accent_phrases(
         &self,
         text: &str,
@@ -251,7 +249,7 @@ impl Synthesizer<OpenJtalk> {
 
 // FIXME: ここのdocのコードブロックはasync版のものなので、↑の方に移した上で、(ブロッキング版を
 // public APIにするならの話ではあるが)ブロッキング版はブロッキング版でコード例を用意する
-impl<O> blocking::Synthesizer<O> {
+impl<O> self::blocking::Synthesizer<O> {
     /// `Synthesizer`をコンストラクトする。
     ///
     /// # Example
@@ -266,7 +264,10 @@ impl<O> blocking::Synthesizer<O> {
     /// #
     /// use std::sync::Arc;
     ///
-    /// use voicevox_core::{AccelerationMode, InitializeOptions, OpenJtalk, Synthesizer};
+    /// use voicevox_core::{
+    ///     tokio::{OpenJtalk, Synthesizer},
+    ///     AccelerationMode, InitializeOptions,
+    /// };
     ///
     /// let mut syntesizer = Synthesizer::new(
     ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
@@ -279,7 +280,7 @@ impl<O> blocking::Synthesizer<O> {
     /// # Ok(())
     /// # }
     /// ```
-    fn new(open_jtalk: O, options: &InitializeOptions) -> Result<Self> {
+    pub fn new(open_jtalk: O, options: &InitializeOptions) -> Result<Self> {
         #[cfg(windows)]
         list_windows_video_cards();
 
@@ -336,24 +337,23 @@ impl<O> blocking::Synthesizer<O> {
     }
 
     /// ハードウェアアクセラレーションがGPUモードか判定する。
-    fn is_gpu_mode(&self) -> bool {
+    pub fn is_gpu_mode(&self) -> bool {
         self.use_gpu
     }
 
-    // FIXME: ブロッキング版を作る
     /// 音声モデルを読み込む。
-    async fn load_voice_model(&self, model: &VoiceModel) -> Result<()> {
-        let model_bytes = &model.read_inference_models().await?;
-        self.status.load_model(model, model_bytes).await
+    pub fn load_voice_model(&self, model: &crate::blocking::VoiceModel) -> Result<()> {
+        let model_bytes = &model.read_inference_models()?;
+        self.status.insert_model(model.header(), model_bytes)
     }
 
     /// 音声モデルの読み込みを解除する。
-    fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
+    pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
         self.status.unload_model(voice_model_id)
     }
 
     /// 指定したIDの音声モデルが読み込まれているか判定する。
-    fn is_loaded_voice_model(&self, voice_model_id: &VoiceModelId) -> bool {
+    pub fn is_loaded_voice_model(&self, voice_model_id: &VoiceModelId) -> bool {
         self.status.is_loaded_model(voice_model_id)
     }
 
@@ -362,12 +362,12 @@ impl<O> blocking::Synthesizer<O> {
     }
 
     /// 今読み込んでいる音声モデルのメタ情報を返す。
-    fn metas(&self) -> VoiceModelMeta {
+    pub fn metas(&self) -> VoiceModelMeta {
         self.status.metas()
     }
 
     /// AudioQueryから音声合成を行う。
-    fn synthesis(
+    pub fn synthesis(
         &self,
         audio_query: &AudioQueryModel,
         style_id: StyleId,
@@ -596,7 +596,7 @@ impl<O> blocking::Synthesizer<O> {
     /// # Ok(())
     /// # }
     /// ```
-    fn create_accent_phrases_from_kana(
+    pub fn create_accent_phrases_from_kana(
         &self,
         kana: &str,
         style_id: StyleId,
@@ -605,7 +605,7 @@ impl<O> blocking::Synthesizer<O> {
     }
 }
 
-impl blocking::Synthesizer<OpenJtalk> {
+impl<T: FullcontextExtractor> self::blocking::Synthesizer<T> {
     /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
     ///
     /// # Example
@@ -629,7 +629,7 @@ impl blocking::Synthesizer<OpenJtalk> {
     /// # Ok(())
     /// # }
     /// ```
-    fn create_accent_phrases(
+    pub fn create_accent_phrases(
         &self,
         text: &str,
         style_id: StyleId,
@@ -707,9 +707,9 @@ impl blocking::Synthesizer<OpenJtalk> {
     }
 }
 
-impl<O> blocking::Synthesizer<O> {
+impl<O> self::blocking::Synthesizer<O> {
     /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
-    fn replace_mora_data(
+    pub fn replace_mora_data(
         &self,
         accent_phrases: &[AccentPhraseModel],
         style_id: StyleId,
@@ -719,7 +719,7 @@ impl<O> blocking::Synthesizer<O> {
     }
 
     /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
-    fn replace_phoneme_length(
+    pub fn replace_phoneme_length(
         &self,
         accent_phrases: &[AccentPhraseModel],
         style_id: StyleId,
@@ -779,7 +779,7 @@ impl<O> blocking::Synthesizer<O> {
     }
 
     /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
-    fn replace_mora_pitch(
+    pub fn replace_mora_pitch(
         &self,
         accent_phrases: &[AccentPhraseModel],
         style_id: StyleId,
@@ -939,13 +939,13 @@ impl<O> blocking::Synthesizer<O> {
     /// ```
     ///
     /// [AudioQuery]: crate::AudioQueryModel
-    fn audio_query_from_kana(&self, kana: &str, style_id: StyleId) -> Result<AudioQueryModel> {
+    pub fn audio_query_from_kana(&self, kana: &str, style_id: StyleId) -> Result<AudioQueryModel> {
         let accent_phrases = self.create_accent_phrases_from_kana(kana, style_id)?;
         Ok(AudioQueryModel::from_accent_phrases(accent_phrases).with_kana(Some(kana.to_owned())))
     }
 }
 
-impl blocking::Synthesizer<OpenJtalk> {
+impl<T: FullcontextExtractor> self::blocking::Synthesizer<T> {
     /// 日本語のテキストから[AudioQuery]を生成する。
     ///
     /// # Examples
@@ -971,15 +971,15 @@ impl blocking::Synthesizer<OpenJtalk> {
     /// ```
     ///
     /// [AudioQuery]: crate::AudioQueryModel
-    fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQueryModel> {
+    pub fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQueryModel> {
         let accent_phrases = self.create_accent_phrases(text, style_id)?;
         Ok(AudioQueryModel::from_accent_phrases(accent_phrases))
     }
 }
 
-impl<O> blocking::Synthesizer<O> {
+impl<O> self::blocking::Synthesizer<O> {
     /// AquesTalk風記法から音声合成を行う。
-    fn tts_from_kana(
+    pub fn tts_from_kana(
         &self,
         kana: &str,
         style_id: StyleId,
@@ -990,9 +990,9 @@ impl<O> blocking::Synthesizer<O> {
     }
 }
 
-impl blocking::Synthesizer<OpenJtalk> {
+impl<T: FullcontextExtractor> self::blocking::Synthesizer<T> {
     /// 日本語のテキストから音声合成を行う。
-    fn tts(&self, text: &str, style_id: StyleId, options: &TtsOptions) -> Result<Vec<u8>> {
+    pub fn tts(&self, text: &str, style_id: StyleId, options: &TtsOptions) -> Result<Vec<u8>> {
         let audio_query = &self.audio_query(text, style_id)?;
         self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
     }
@@ -1039,7 +1039,7 @@ pub trait PerformInference {
     ) -> Result<Vec<f32>>;
 }
 
-impl<O> PerformInference for Synthesizer<O> {
+impl<O> PerformInference for self::tokio::Synthesizer<O> {
     fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
         self.0.predict_duration(phoneme_vector, style_id)
     }
@@ -1080,7 +1080,7 @@ impl<O> PerformInference for Synthesizer<O> {
     }
 }
 
-impl<O> PerformInference for blocking::Synthesizer<O> {
+impl<O> PerformInference for self::blocking::Synthesizer<O> {
     fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
         // FIXME: `Status::ids_for`があるため、ここは不要なはず
         if !self.status.validate_speaker_id(style_id) {
@@ -1393,30 +1393,43 @@ impl AudioQueryModel {
     }
 }
 
-mod blocking {
+pub(crate) mod blocking {
     use crate::infer::{domain::InferenceDomainImpl, status::Status};
 
     use super::InferenceRuntimeImpl;
 
-    pub(super) struct Synthesizer<O> {
+    /// 音声シンセサイザ。
+    pub struct Synthesizer<O> {
         pub(super) status: Status<InferenceRuntimeImpl, InferenceDomainImpl>,
         pub(super) open_jtalk: O,
         pub(super) use_gpu: bool,
     }
 }
 
+pub(crate) mod tokio {
+    use std::sync::Arc;
+
+    /// 音声シンセサイザ。
+    #[derive(Clone)]
+    pub struct Synthesizer<O>(pub(super) Arc<super::blocking::Synthesizer<O>>);
+}
+
 #[cfg(test)]
 mod tests {
 
-    use super::*;
-    use crate::{engine::MoraModel, macros::tests::assert_debug_fmt_eq};
+    use super::{AccelerationMode, InitializeOptions, PerformInference as _};
+    use crate::{
+        engine::MoraModel, macros::tests::assert_debug_fmt_eq, open_default_vvm_file,
+        AccentPhraseModel, Result, StyleId,
+    };
     use ::test_util::OPEN_JTALK_DIC_DIR;
+    use rstest::rstest;
 
     #[rstest]
     #[case(Ok(()))]
     #[tokio::test]
     async fn load_model_works(#[case] expected_result_at_initialized: Result<()>) {
-        let syntesizer = Synthesizer::new(
+        let syntesizer = super::tokio::Synthesizer::new(
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1439,7 +1452,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn is_use_gpu_works() {
-        let syntesizer = Synthesizer::new(
+        let syntesizer = super::tokio::Synthesizer::new(
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1455,7 +1468,7 @@ mod tests {
     #[tokio::test]
     async fn is_loaded_model_by_style_id_works(#[case] style_id: u32, #[case] expected: bool) {
         let style_id = StyleId::new(style_id);
-        let syntesizer = Synthesizer::new(
+        let syntesizer = super::tokio::Synthesizer::new(
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1483,7 +1496,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_duration_works() {
-        let syntesizer = Synthesizer::new(
+        let syntesizer = super::tokio::Synthesizer::new(
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1512,7 +1525,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_intonation_works() {
-        let syntesizer = Synthesizer::new(
+        let syntesizer = super::tokio::Synthesizer::new(
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1551,7 +1564,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn decode_works() {
-        let syntesizer = Synthesizer::new(
+        let syntesizer = super::tokio::Synthesizer::new(
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1641,8 +1654,10 @@ mod tests {
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
         #[case] expected_kana_text: &str,
     ) {
-        let syntesizer = Synthesizer::new(
-            OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap(),
+        let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+                .await
+                .unwrap(),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1650,7 +1665,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &VoiceModel::sample().await.unwrap();
+        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let query = match input {
@@ -1709,8 +1724,10 @@ mod tests {
         #[case] input: Input,
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
     ) {
-        let syntesizer = Synthesizer::new(
-            OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap(),
+        let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+                .await
+                .unwrap(),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1718,7 +1735,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &VoiceModel::sample().await.unwrap();
+        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = match input {
@@ -1774,8 +1791,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn create_accent_phrases_works_for_japanese_commas_and_periods() {
-        let syntesizer = Synthesizer::new(
-            OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap(),
+        let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+                .await
+                .unwrap(),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1783,7 +1802,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &VoiceModel::sample().await.unwrap();
+        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1833,8 +1852,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_length_works() {
-        let syntesizer = Synthesizer::new(
-            OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap(),
+        let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+                .await
+                .unwrap(),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1842,7 +1863,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &VoiceModel::sample().await.unwrap();
+        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1869,8 +1890,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_pitch_works() {
-        let syntesizer = Synthesizer::new(
-            OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap(),
+        let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+                .await
+                .unwrap(),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1878,7 +1901,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &VoiceModel::sample().await.unwrap();
+        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1901,8 +1924,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_data_works() {
-        let syntesizer = Synthesizer::new(
-            OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap(),
+        let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+                .await
+                .unwrap(),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
                 ..Default::default()
@@ -1910,7 +1935,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &VoiceModel::sample().await.unwrap();
+        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer

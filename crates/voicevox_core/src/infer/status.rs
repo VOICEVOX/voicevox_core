@@ -15,8 +15,8 @@ use crate::{
     infer::{InferenceOperation, ParamInfo},
     manifest::ModelInnerId,
     metas::{SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
-    voice_model::{VoiceModel, VoiceModelId},
-    Result,
+    voice_model::VoiceModelId,
+    Result, VoiceModelHeader,
 };
 
 use super::{
@@ -37,20 +37,20 @@ impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
         }
     }
 
-    pub async fn load_model(
+    pub fn insert_model(
         &self,
-        model: &VoiceModel,
+        model_header: &VoiceModelHeader,
         model_bytes: &EnumMap<D::Operation, Vec<u8>>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
             .unwrap()
-            .ensure_acceptable(model)?;
+            .ensure_acceptable(model_header)?;
 
         let session_set =
             SessionSet::new(model_bytes, &self.session_options).map_err(|source| {
                 LoadModelError {
-                    path: model.path().clone(),
+                    path: model_header.path.clone(),
                     context: LoadModelErrorKind::InvalidModelData,
                     source: Some(source),
                 }
@@ -59,7 +59,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
         self.loaded_models
             .lock()
             .unwrap()
-            .insert(model, session_set)?;
+            .insert(model_header, session_set)?;
         Ok(())
     }
 
@@ -180,24 +180,27 @@ impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
         self.styles().any(|style| *style.id() == style_id)
     }
 
-    /// 与えられた`VoiceModel`を受け入れ可能かをチェックする。
+    /// 音声モデルを受け入れ可能かをチェックする。
     ///
     /// # Errors
     ///
-    /// 音声モデルIDかスタイルIDが`model`と重複するとき、エラーを返す。
-    fn ensure_acceptable(&self, model: &VoiceModel) -> LoadModelResult<()> {
+    /// 音声モデルIDかスタイルIDが`model_header`と重複するとき、エラーを返す。
+    fn ensure_acceptable(&self, model_header: &VoiceModelHeader) -> LoadModelResult<()> {
         let loaded = self.styles();
-        let external = model.metas().iter().flat_map(|speaker| speaker.styles());
+        let external = model_header
+            .metas
+            .iter()
+            .flat_map(|speaker| speaker.styles());
 
         let error = |context| LoadModelError {
-            path: model.path().clone(),
+            path: model_header.path.clone(),
             context,
             source: None,
         };
 
-        if self.0.contains_key(model.id()) {
+        if self.0.contains_key(&model_header.id) {
             return Err(error(LoadModelErrorKind::ModelAlreadyLoaded {
-                id: model.id().clone(),
+                id: model_header.id.clone(),
             }));
         }
         if let Some((style, _)) =
@@ -210,14 +213,18 @@ impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
         Ok(())
     }
 
-    fn insert(&mut self, model: &VoiceModel, session_set: SessionSet<R, D>) -> Result<()> {
-        self.ensure_acceptable(model)?;
+    fn insert(
+        &mut self,
+        model_header: &VoiceModelHeader,
+        session_set: SessionSet<R, D>,
+    ) -> Result<()> {
+        self.ensure_acceptable(model_header)?;
 
         let prev = self.0.insert(
-            model.id().clone(),
+            model_header.id.clone(),
             LoadedModel {
-                model_inner_ids: model.model_inner_ids(),
-                metas: model.metas().clone(),
+                model_inner_ids: model_header.model_inner_ids(),
+                metas: model_header.metas.clone(),
                 session_set,
             },
         );
@@ -387,7 +394,7 @@ mod tests {
         );
         let model = &open_default_vvm_file().await;
         let model_bytes = &model.read_inference_models().await.unwrap();
-        let result = status.load_model(model, model_bytes).await;
+        let result = status.insert_model(model.header(), model_bytes);
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
     }
@@ -399,13 +406,17 @@ mod tests {
             enum_map!(_ => InferenceSessionOptions::new(0, false)),
         );
         let vvm = open_default_vvm_file().await;
+        let model_header = vvm.header();
         let model_bytes = &vvm.read_inference_models().await.unwrap();
         assert!(
-            !status.is_loaded_model(vvm.id()),
+            !status.is_loaded_model(&model_header.id),
             "model should  not be loaded"
         );
-        let result = status.load_model(&vvm, model_bytes).await;
+        let result = status.insert_model(model_header, model_bytes);
         assert_debug_fmt_eq!(Ok(()), result);
-        assert!(status.is_loaded_model(vvm.id()), "model should be loaded");
+        assert!(
+            status.is_loaded_model(&model_header.id),
+            "model should be loaded",
+        );
     }
 }

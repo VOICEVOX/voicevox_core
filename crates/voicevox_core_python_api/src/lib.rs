@@ -73,7 +73,7 @@ exceptions! {
 #[pyclass]
 #[derive(Clone)]
 struct VoiceModel {
-    model: voicevox_core::VoiceModel,
+    model: voicevox_core::tokio::VoiceModel,
 }
 
 #[pyfunction]
@@ -94,7 +94,7 @@ impl VoiceModel {
         #[pyo3(from_py_with = "from_utf8_path")] path: String,
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let model = voicevox_core::VoiceModel::from_path(path).await;
+            let model = voicevox_core::tokio::VoiceModel::from_path(path).await;
             let model = Python::with_gil(|py| model.into_py_result(py))?;
             Ok(Self { model })
         })
@@ -114,7 +114,7 @@ impl VoiceModel {
 #[pyclass]
 #[derive(Clone)]
 struct OpenJtalk {
-    open_jtalk: voicevox_core::OpenJtalk,
+    open_jtalk: voicevox_core::tokio::OpenJtalk,
 }
 
 #[pymethods]
@@ -126,7 +126,7 @@ impl OpenJtalk {
         py: Python<'_>,
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let open_jtalk = voicevox_core::OpenJtalk::new(open_jtalk_dict_dir).await;
+            let open_jtalk = voicevox_core::tokio::OpenJtalk::new(open_jtalk_dict_dir).await;
             let open_jtalk = Python::with_gil(|py| open_jtalk.into_py_result(py))?;
             Ok(Self { open_jtalk })
         })
@@ -144,7 +144,7 @@ impl OpenJtalk {
 
 #[pyclass]
 struct Synthesizer {
-    synthesizer: Closable<voicevox_core::Synthesizer<voicevox_core::OpenJtalk>, Self>,
+    synthesizer: Closable<voicevox_core::tokio::Synthesizer<voicevox_core::tokio::OpenJtalk>, Self>,
 }
 
 #[pymethods]
@@ -160,7 +160,7 @@ impl Synthesizer {
         #[pyo3(from_py_with = "from_acceleration_mode")] acceleration_mode: AccelerationMode,
         cpu_num_threads: u16,
     ) -> PyResult<Self> {
-        let synthesizer = voicevox_core::Synthesizer::new(
+        let synthesizer = voicevox_core::tokio::Synthesizer::new(
             open_jtalk.open_jtalk.clone(),
             &InitializeOptions {
                 acceleration_mode,
@@ -530,7 +530,7 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
 #[pyclass]
 #[derive(Default, Debug, Clone)]
 struct UserDict {
-    dict: Arc<voicevox_core::UserDict>,
+    dict: Arc<voicevox_core::tokio::UserDict>,
 }
 
 #[pymethods]

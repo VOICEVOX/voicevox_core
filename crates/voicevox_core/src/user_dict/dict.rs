@@ -5,14 +5,7 @@ use uuid::Uuid;
 use super::word::*;
 use crate::{error::ErrorRepr, Result};
 
-/// ユーザー辞書。
-/// 単語はJSONとの相互変換のために挿入された順序を保つ。
-#[derive(Debug, Default)]
-pub struct UserDict {
-    words: std::sync::Mutex<IndexMap<Uuid, UserDictWord>>,
-}
-
-impl UserDict {
+impl self::blocking::UserDict {
     /// ユーザー辞書を作成する。
     pub fn new() -> Self {
         Default::default()
@@ -31,13 +24,12 @@ impl UserDict {
     /// # Errors
     ///
     /// ファイルが読めなかった、または内容が不正だった場合はエラーを返す。
-    pub async fn load(&self, store_path: &str) -> Result<()> {
-        let words = async {
-            let words = &fs_err::tokio::read(store_path).await?;
+    pub fn load(&self, store_path: &str) -> Result<()> {
+        let words = (|| {
+            let words = &fs_err::read(store_path)?;
             let words = serde_json::from_slice::<IndexMap<_, _>>(words)?;
             Ok(words)
-        }
-        .await
+        })()
         .map_err(ErrorRepr::LoadUserDict)?;
 
         self.words.lock().unwrap().extend(words);
@@ -78,12 +70,11 @@ impl UserDict {
     }
 
     /// ユーザー辞書を保存する。
-    pub async fn save(&self, store_path: &str) -> Result<()> {
-        fs_err::tokio::write(
+    pub fn save(&self, store_path: &str) -> Result<()> {
+        fs_err::write(
             store_path,
             serde_json::to_vec(&self.words).expect("should not fail"),
         )
-        .await
         .map_err(|e| ErrorRepr::SaveUserDict(e.into()).into())
     }
 
@@ -98,4 +89,87 @@ impl UserDict {
             "\n",
         )
     }
+}
+
+impl self::tokio::UserDict {
+    /// ユーザー辞書を作成する。
+    pub fn new() -> Self {
+        Self(self::blocking::UserDict::new().into())
+    }
+
+    pub fn to_json(&self) -> String {
+        self.0.to_json()
+    }
+
+    pub fn with_words<R>(&self, f: impl FnOnce(&IndexMap<Uuid, UserDictWord>) -> R) -> R {
+        self.0.with_words(f)
+    }
+
+    /// ユーザー辞書をファイルから読み込む。
+    ///
+    /// # Errors
+    ///
+    /// ファイルが読めなかった、または内容が不正だった場合はエラーを返す。
+    pub async fn load(&self, store_path: &str) -> Result<()> {
+        let blocking = self.0.clone();
+        let store_path = store_path.to_owned();
+        crate::task::asyncify(move || blocking.load(&store_path)).await
+    }
+
+    /// ユーザー辞書に単語を追加する。
+    pub fn add_word(&self, word: UserDictWord) -> Result<Uuid> {
+        self.0.add_word(word)
+    }
+
+    /// ユーザー辞書の単語を変更する。
+    pub fn update_word(&self, word_uuid: Uuid, new_word: UserDictWord) -> Result<()> {
+        self.0.update_word(word_uuid, new_word)
+    }
+
+    /// ユーザー辞書から単語を削除する。
+    pub fn remove_word(&self, word_uuid: Uuid) -> Result<UserDictWord> {
+        self.0.remove_word(word_uuid)
+    }
+
+    /// 他のユーザー辞書をインポートする。
+    pub fn import(&self, other: &Self) -> Result<()> {
+        self.0.import(&other.0)
+    }
+
+    /// ユーザー辞書を保存する。
+    pub async fn save(&self, store_path: &str) -> Result<()> {
+        let blocking = self.0.clone();
+        let store_path = store_path.to_owned();
+        crate::task::asyncify(move || blocking.save(&store_path)).await
+    }
+
+    /// MeCabで使用する形式に変換する。
+    pub(crate) fn to_mecab_format(&self) -> String {
+        self.0.to_mecab_format()
+    }
+}
+
+pub(crate) mod blocking {
+    use indexmap::IndexMap;
+    use uuid::Uuid;
+
+    use super::UserDictWord;
+
+    /// ユーザー辞書。
+    ///
+    /// 単語はJSONとの相互変換のために挿入された順序を保つ。
+    #[derive(Debug, Default)]
+    pub struct UserDict {
+        pub(super) words: std::sync::Mutex<IndexMap<Uuid, UserDictWord>>,
+    }
+}
+
+pub(crate) mod tokio {
+    use std::sync::Arc;
+
+    /// ユーザー辞書。
+    ///
+    /// 単語はJSONとの相互変換のために挿入された順序を保つ。
+    #[derive(Debug, Default)]
+    pub struct UserDict(pub(super) Arc<super::blocking::UserDict>);
 }

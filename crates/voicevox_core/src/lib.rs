@@ -17,6 +17,8 @@ mod version;
 mod voice_model;
 
 pub mod __internal;
+pub mod blocking;
+pub mod tokio;
 
 #[cfg(test)]
 mod test_util;
@@ -24,16 +26,14 @@ mod test_util;
 #[cfg(test)]
 use self::test_util::*;
 
-pub use self::engine::{AccentPhraseModel, AudioQueryModel, OpenJtalk};
+pub use self::engine::{AccentPhraseModel, AudioQueryModel, FullcontextExtractor};
 pub use self::error::*;
 pub use self::metas::*;
 pub use self::result::*;
 pub use self::voice_model::*;
 pub use devices::*;
 pub use manifest::*;
-pub use synthesizer::{
-    AccelerationMode, InitializeOptions, SynthesisOptions, Synthesizer, TtsOptions,
-};
+pub use synthesizer::{AccelerationMode, InitializeOptions, SynthesisOptions, TtsOptions};
 pub use user_dict::*;
 pub use version::*;
 

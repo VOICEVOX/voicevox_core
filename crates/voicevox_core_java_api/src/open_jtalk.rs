@@ -16,7 +16,8 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsNew<'local>
         let open_jtalk_dict_dir = env.get_string(&open_jtalk_dict_dir)?;
         let open_jtalk_dict_dir = &*Cow::from(&open_jtalk_dict_dir);
 
-        let internal = RUNTIME.block_on(voicevox_core::OpenJtalk::new(open_jtalk_dict_dir))?;
+        let internal =
+            RUNTIME.block_on(voicevox_core::tokio::OpenJtalk::new(open_jtalk_dict_dir))?;
         env.set_rust_field(&this, "handle", internal)?;
 
         Ok(())
@@ -31,11 +32,11 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsUseUserDict
 ) {
     throw_if_err(env, (), |env| {
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::OpenJtalk>(&this, "handle")?
+            .get_rust_field::<_, _, voicevox_core::tokio::OpenJtalk>(&this, "handle")?
             .clone();
 
         let user_dict = env
-            .get_rust_field::<_, _, Arc<voicevox_core::UserDict>>(&user_dict, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::tokio::UserDict>>(&user_dict, "handle")?
             .clone();
 
         RUNTIME.block_on(internal.use_user_dict(&user_dict))?;

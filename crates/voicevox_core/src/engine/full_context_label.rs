@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use super::*;
-use crate::engine::open_jtalk::OpenjtalkFunctionError;
+use crate::engine::open_jtalk::FullcontextExtractor;
+use derive_getters::Getters;
+use derive_new::new;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -11,7 +12,7 @@ use regex::Regex;
 pub(crate) struct FullContextLabelError {
     context: ErrorKind,
     #[source]
-    source: Option<OpenjtalkFunctionError>,
+    source: Option<anyhow::Error>,
 }
 
 #[derive(derive_more::Display, Debug)]
@@ -316,16 +317,15 @@ impl Utterance {
     }
 
     pub(crate) fn extract_full_context_label(
-        open_jtalk: &open_jtalk::OpenJtalk,
+        open_jtalk: &impl FullcontextExtractor,
         text: impl AsRef<str>,
     ) -> Result<Self> {
-        let labels =
-            open_jtalk
-                .extract_fullcontext(text)
-                .map_err(|source| FullContextLabelError {
-                    context: ErrorKind::OpenJtalk,
-                    source: Some(source),
-                })?;
+        let labels = open_jtalk
+            .extract_fullcontext(text.as_ref())
+            .map_err(|source| FullContextLabelError {
+                context: ErrorKind::OpenJtalk,
+                source: Some(source),
+            })?;
 
         labels
             .into_iter()
