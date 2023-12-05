@@ -6,7 +6,7 @@ use log::debug;
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
-    pyclass, pyfunction, pymethods, pymodule,
+    py_run, pyclass, pyfunction, pymethods, pymodule,
     types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyModule},
     wrap_pyfunction, PyAny, PyObject, PyRef, PyResult, PyTypeInfo, Python, ToPyObject,
 };
@@ -18,7 +18,7 @@ use voicevox_core::{
 
 #[pymodule]
 #[pyo3(name = "_rust")]
-fn rust(_: Python<'_>, module: &PyModule) -> PyResult<()> {
+fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
 
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
@@ -26,12 +26,23 @@ fn rust(_: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_wrapped(wrap_pyfunction!(_validate_pronunciation))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
 
-    module.add_class::<Synthesizer>()?;
-    module.add_class::<OpenJtalk>()?;
-    module.add_class::<VoiceModel>()?;
-    module.add_class::<UserDict>()?;
+    module.add_class::<self::Synthesizer>()?;
+    module.add_class::<self::OpenJtalk>()?;
+    module.add_class::<self::VoiceModel>()?;
+    module.add_class::<self::UserDict>()?;
 
-    add_exceptions(module)
+    add_exceptions(module)?;
+
+    let blocking_module = PyModule::new(py, "voicevox_core._rust.blocking")?;
+    blocking_module.add_class::<self::blocking::OpenJtalk>()?;
+    blocking_module.add_class::<self::blocking::UserDict>()?;
+    // https://github.com/PyO3/pyo3/issues/1517#issuecomment-808664021
+    py_run!(
+        py,
+        blocking_module,
+        "import sys; sys.modules['voicevox_core._rust.blocking'] = blocking_module"
+    );
+    module.add_submodule(blocking_module)
 }
 
 macro_rules! exceptions {
@@ -607,5 +618,114 @@ impl UserDict {
                 .collect::<PyResult<Vec<_>>>()
         })?;
         Ok(words.into_py_dict(py))
+    }
+}
+
+mod blocking {
+    use std::sync::Arc;
+
+    use pyo3::{
+        pyclass, pymethods,
+        types::{IntoPyDict as _, PyDict},
+        PyObject, PyResult, Python,
+    };
+    use uuid::Uuid;
+    use voicevox_core::UserDictWord;
+
+    use crate::convert::VoicevoxCoreResultExt as _;
+
+    #[pyclass]
+    #[derive(Clone)]
+    pub(crate) struct OpenJtalk {
+        open_jtalk: voicevox_core::blocking::OpenJtalk,
+    }
+
+    #[pymethods]
+    impl OpenJtalk {
+        #[new]
+        fn new(
+            #[pyo3(from_py_with = "super::from_utf8_path")] open_jtalk_dict_dir: String,
+            py: Python<'_>,
+        ) -> PyResult<Self> {
+            let open_jtalk =
+                voicevox_core::blocking::OpenJtalk::new(open_jtalk_dict_dir).into_py_result(py)?;
+            Ok(Self { open_jtalk })
+        }
+
+        fn use_user_dict(&self, user_dict: UserDict, py: Python<'_>) -> PyResult<()> {
+            self.open_jtalk
+                .use_user_dict(&user_dict.dict)
+                .into_py_result(py)
+        }
+    }
+
+    #[pyclass]
+    #[derive(Default, Debug, Clone)]
+    pub(crate) struct UserDict {
+        dict: Arc<voicevox_core::blocking::UserDict>,
+    }
+
+    #[pymethods]
+    impl UserDict {
+        #[new]
+        fn new() -> Self {
+            Self::default()
+        }
+
+        fn load(&self, path: &str, py: Python<'_>) -> PyResult<()> {
+            self.dict.load(path).into_py_result(py)
+        }
+
+        fn save(&self, path: &str, py: Python<'_>) -> PyResult<()> {
+            self.dict.save(path).into_py_result(py)
+        }
+
+        fn add_word(
+            &mut self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
+            py: Python<'_>,
+        ) -> PyResult<PyObject> {
+            let uuid = self.dict.add_word(word).into_py_result(py)?;
+
+            crate::convert::to_py_uuid(py, uuid)
+        }
+
+        fn update_word(
+            &mut self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] word_uuid: Uuid,
+            #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
+            py: Python<'_>,
+        ) -> PyResult<()> {
+            self.dict.update_word(word_uuid, word).into_py_result(py)
+        }
+
+        fn remove_word(
+            &mut self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] word_uuid: Uuid,
+            py: Python<'_>,
+        ) -> PyResult<()> {
+            self.dict.remove_word(word_uuid).into_py_result(py)?;
+            Ok(())
+        }
+
+        fn import_dict(&mut self, other: &UserDict, py: Python<'_>) -> PyResult<()> {
+            self.dict.import(&other.dict).into_py_result(py)?;
+            Ok(())
+        }
+
+        #[getter]
+        fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
+            let words = self.dict.with_words(|words| {
+                words
+                    .iter()
+                    .map(|(&uuid, word)| {
+                        let uuid = crate::convert::to_py_uuid(py, uuid)?;
+                        let word = crate::convert::to_py_user_dict_word(py, word)?;
+                        Ok((uuid, word))
+                    })
+                    .collect::<PyResult<Vec<_>>>()
+            })?;
+            Ok(words.into_py_dict(py))
+        }
     }
 }

@@ -41,11 +41,14 @@ from ._rust import (  # noqa: F401
     supported_devices,
 )
 
+from . import blocking  # noqa: F401 isort: skip
+
 __all__ = [
     "__version__",
     "AccelerationMode",
     "AccentPhrase",
     "AudioQuery",
+    "blocking",
     "ExtractFullContextLabelError",
     "GetSupportedDevicesError",
     "GpuSupportError",

@@ -49,6 +49,9 @@ jobs:
         run: |
           cargo build -p voicevox_core_c_api -vv
           maturin develop --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
+      # https://github.com/readthedocs/sphinx-autoapi/issues/405
+      - name: Workaround to make Sphinx recognize `_rust` as a module
+        run: touch ./crates/voicevox_core_python_api/python/voicevox_core/_rust/__init__.py
       - name: Generate Sphinx document
         run: sphinx-build docs/apis/python_api public/apis/python_api
       - name: Generate Javadoc

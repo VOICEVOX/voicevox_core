@@ -150,7 +150,7 @@ pub fn to_rust_word_type(word_type: &PyAny) -> PyResult<UserDictWordType> {
     serde_json::from_value::<UserDictWordType>(json!(name)).into_py_value_result()
 }
 
-#[ext]
+#[ext(VoicevoxCoreResultExt)]
 pub impl<T> voicevox_core::Result<T> {
     fn into_py_result(self, py: Python<'_>) -> PyResult<T> {
         use voicevox_core::ErrorKind;
