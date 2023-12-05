@@ -2,11 +2,12 @@ use std::{marker::PhantomData, sync::Arc};
 
 mod convert;
 use convert::*;
+use easy_ext::ext;
 use log::debug;
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
-    py_run, pyclass, pyfunction, pymethods, pymodule,
+    pyclass, pyfunction, pymethods, pymodule,
     types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyModule},
     wrap_pyfunction, PyAny, PyObject, PyRef, PyResult, PyTypeInfo, Python, ToPyObject,
 };
@@ -26,23 +27,29 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_wrapped(wrap_pyfunction!(_validate_pronunciation))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
 
-    module.add_class::<self::Synthesizer>()?;
-    module.add_class::<self::OpenJtalk>()?;
-    module.add_class::<self::VoiceModel>()?;
-    module.add_class::<self::UserDict>()?;
-
     add_exceptions(module)?;
 
     let blocking_module = PyModule::new(py, "voicevox_core._rust.blocking")?;
     blocking_module.add_class::<self::blocking::OpenJtalk>()?;
     blocking_module.add_class::<self::blocking::UserDict>()?;
+    module.add_and_register_submodule(blocking_module)?;
+
+    let asyncio_module = PyModule::new(py, "voicevox_core._rust.asyncio")?;
+    asyncio_module.add_class::<self::Synthesizer>()?;
+    asyncio_module.add_class::<self::OpenJtalk>()?;
+    asyncio_module.add_class::<self::VoiceModel>()?;
+    asyncio_module.add_class::<self::UserDict>()?;
+    module.add_and_register_submodule(asyncio_module)
+}
+
+#[ext]
+impl PyModule {
     // https://github.com/PyO3/pyo3/issues/1517#issuecomment-808664021
-    py_run!(
-        py,
-        blocking_module,
-        "import sys; sys.modules['voicevox_core._rust.blocking'] = blocking_module"
-    );
-    module.add_submodule(blocking_module)
+    fn add_and_register_submodule(&self, module: &PyModule) -> PyResult<()> {
+        let sys = self.py().import("sys")?;
+        sys.getattr("modules")?.set_item(module.name()?, module)?;
+        self.add_submodule(module)
+    }
 }
 
 macro_rules! exceptions {

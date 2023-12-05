@@ -5,7 +5,7 @@
 import conftest
 import pytest
 import pytest_asyncio
-from voicevox_core import OpenJtalk, Synthesizer
+from voicevox_core.asyncio import OpenJtalk, Synthesizer
 
 
 def test_enter_returns_workable_self(synthesizer: Synthesizer) -> None:

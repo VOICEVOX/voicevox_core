@@ -6,14 +6,10 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Tuple
 
+from voicevox_core.asyncio import OpenJtalk, Synthesizer, VoiceModel
+
 import voicevox_core
-from voicevox_core import (
-    AccelerationMode,
-    AudioQuery,
-    OpenJtalk,
-    Synthesizer,
-    VoiceModel,
-)
+from voicevox_core import AccelerationMode, AudioQuery
 
 
 # asyncやawaitは必須です。

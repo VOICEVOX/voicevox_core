@@ -12,7 +12,7 @@ import voicevox_core  # noqa: F401
 
 @pytest.mark.asyncio
 async def test_user_dict_load() -> None:
-    dict_a = voicevox_core.UserDict()
+    dict_a = voicevox_core.asyncio.UserDict()
 
     # 単語の追加
     uuid_a = dict_a.add_word(
@@ -38,7 +38,7 @@ async def test_user_dict_load() -> None:
     assert dict_a.words[uuid_a].pronunciation == "フガ"
 
     # ユーザー辞書のインポート
-    dict_b = voicevox_core.UserDict()
+    dict_b = voicevox_core.asyncio.UserDict()
     uuid_b = dict_b.add_word(
         voicevox_core.UserDictWord(
             surface="foo",
@@ -50,7 +50,7 @@ async def test_user_dict_load() -> None:
     assert uuid_b in dict_a.words
 
     # ユーザー辞書のエクスポート
-    dict_c = voicevox_core.UserDict()
+    dict_c = voicevox_core.asyncio.UserDict()
     uuid_c = dict_c.add_word(
         voicevox_core.UserDictWord(
             surface="bar",
