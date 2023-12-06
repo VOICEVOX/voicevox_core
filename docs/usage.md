@@ -14,6 +14,9 @@ VOICEVOX の音声合成のコア部分で、VOICEVOX 音声合成が可能で�
 
 コアを動作させるには依存ライブラリである ONNX Runtime や、音声合成のための音声モデル（VVM ファイル）が必要です。これらはコア用の Downloader を用いてダウンロードすることができます。
 
+> [!NOTE]
+> 音声モデル（VVM ファイル）には利用規約が存在します。詳しくはダウンロードしたファイル内の README に記載されています。
+
 [最新のリリース](https://github.com/VOICEVOX/voicevox_core/releases/latest/)から、お使いの環境にあった Downloader （例えば Windows の x64 環境の場合は`download-windows-x64.exe`）をダウンロードし、ファイル名を`download`に変更します。macOS や Linux の場合は実行権限を付与します。
 
 ```sh
@@ -88,7 +91,7 @@ asyncio.run(main())
 
 ### 2. 音声モデルの読み込み
 
-VVM ファイルから`VoiceModel`インスタンスを作成し、`Synthesizer`に読み込ませます。その VVM ファイルにどの声が含まれているかは`VoiceModel`の`.metas`で確認できます。
+VVM ファイルから`VoiceModel`インスタンスを作成し、`Synthesizer`に読み込ませます。その VVM ファイルにどの声が含まれているかは`VoiceModel`の`.metas`や[音声モデルと声の対応表](https://github.com/VOICEVOX/voicevox_fat_resource/blob/main/core/model/README.md#%E9%9F%B3%E5%A3%B0%E3%83%A2%E3%83%87%E3%83%ABvvm%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%A8%E5%A3%B0%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB%E5%90%8D%E3%81%A8%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB-id-%E3%81%AE%E5%AF%BE%E5%BF%9C%E8%A1%A8)で確認できます。
 
 ```python
 model = await VoiceModel.from_path("model/0.vvm")

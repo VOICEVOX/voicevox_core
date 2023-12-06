@@ -1,7 +1,9 @@
 # VOICEVOX CORE Downloader
-VOICEVOX COREの実行にはモデルやOpen JTalkなどの外部ライブラリのダウンロードが必要になります。
+VOICEVOX COREの実行には音声モデル（VVM ファイル）やOpen JTalkなどの外部ライブラリのダウンロードが必要になります。
 VOICEVOX CORE Downloaderは環境に合わせてそれらをダウンロードします。
 
+> [!NOTE]
+> 音声モデル（VVM ファイル）には利用規約が存在します。詳しくはダウンロードしたファイル内の README に記載されています。
 
 # ダウンローダーの入手
 
