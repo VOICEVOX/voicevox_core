@@ -356,7 +356,7 @@ impl Synthesizer {
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let synthesizer = self.synthesizer.get()?.clone();
-        modify_accent_phrases(
+        async_modify_accent_phrases(
             accent_phrases,
             StyleId::new(style_id),
             py,
@@ -371,7 +371,7 @@ impl Synthesizer {
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let synthesizer = self.synthesizer.get()?.clone();
-        modify_accent_phrases(
+        async_modify_accent_phrases(
             accent_phrases,
             StyleId::new(style_id),
             py,
@@ -386,7 +386,7 @@ impl Synthesizer {
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let synthesizer = self.synthesizer.get()?.clone();
-        modify_accent_phrases(
+        async_modify_accent_phrases(
             accent_phrases,
             StyleId::new(style_id),
             py,
@@ -633,13 +633,42 @@ mod blocking {
 
     use pyo3::{
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyDict},
-        PyObject, PyResult, Python,
+        types::{IntoPyDict as _, PyBytes, PyDict, PyList},
+        PyAny, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
-    use voicevox_core::UserDictWord;
+    use voicevox_core::{
+        AccelerationMode, AudioQueryModel, InitializeOptions, StyleId, SynthesisOptions,
+        TtsOptions, UserDictWord, VoiceModelId,
+    };
 
-    use crate::convert::VoicevoxCoreResultExt as _;
+    use crate::{convert::VoicevoxCoreResultExt as _, Closable};
+
+    #[pyclass]
+    #[derive(Clone)]
+    struct VoiceModel(voicevox_core::blocking::VoiceModel);
+
+    #[pymethods]
+    impl VoiceModel {
+        #[staticmethod]
+        fn from_path(
+            py: Python<'_>,
+            #[pyo3(from_py_with = "crate::convert::from_utf8_path")] path: String,
+        ) -> PyResult<Self> {
+            let inner = voicevox_core::blocking::VoiceModel::from_path(path).into_py_result(py)?;
+            Ok(Self(inner))
+        }
+
+        #[getter]
+        fn id(&self) -> &str {
+            self.0.id().raw_voice_model_id()
+        }
+
+        #[getter]
+        fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
+            crate::convert::to_pydantic_voice_model_meta(self.0.metas(), py).unwrap()
+        }
+    }
 
     #[pyclass]
     #[derive(Clone)]
@@ -663,6 +692,280 @@ mod blocking {
             self.open_jtalk
                 .use_user_dict(&user_dict.dict)
                 .into_py_result(py)
+        }
+    }
+
+    #[pyclass]
+    struct Synthesizer(
+        Closable<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>, Self>,
+    );
+
+    #[pymethods]
+    impl Synthesizer {
+        #[new]
+        #[pyo3(signature =(
+            open_jtalk,
+            acceleration_mode = InitializeOptions::default().acceleration_mode,
+            cpu_num_threads = InitializeOptions::default().cpu_num_threads,
+        ))]
+        fn new(
+            open_jtalk: OpenJtalk,
+            #[pyo3(from_py_with = "crate::convert::from_acceleration_mode")]
+            acceleration_mode: AccelerationMode,
+            cpu_num_threads: u16,
+            py: Python<'_>,
+        ) -> PyResult<Self> {
+            let inner = voicevox_core::blocking::Synthesizer::new(
+                open_jtalk.open_jtalk.clone(),
+                &InitializeOptions {
+                    acceleration_mode,
+                    cpu_num_threads,
+                },
+            )
+            .into_py_result(py)?;
+            Ok(Self(Closable::new(inner)))
+        }
+
+        fn __repr__(&self) -> &'static str {
+            "Synthesizer { .. }"
+        }
+
+        fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
+            slf.0.get()?;
+            Ok(slf)
+        }
+
+        fn __exit__(
+            &mut self,
+            #[allow(unused_variables)] exc_type: &PyAny,
+            #[allow(unused_variables)] exc_value: &PyAny,
+            #[allow(unused_variables)] traceback: &PyAny,
+        ) {
+            self.close();
+        }
+
+        #[getter]
+        fn is_gpu_mode(&self) -> PyResult<bool> {
+            let inner = self.0.get()?;
+            Ok(inner.is_gpu_mode())
+        }
+
+        #[getter]
+        fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
+            let inner = self.0.get()?;
+            crate::convert::to_pydantic_voice_model_meta(&inner.metas(), py)
+        }
+
+        fn load_voice_model(&mut self, model: &PyAny, py: Python<'_>) -> PyResult<()> {
+            let model: VoiceModel = model.extract()?;
+            self.0.get()?.load_voice_model(&model.0).into_py_result(py)
+        }
+
+        fn unload_voice_model(&mut self, voice_model_id: &str, py: Python<'_>) -> PyResult<()> {
+            self.0
+                .get()?
+                .unload_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
+                .into_py_result(py)
+        }
+
+        fn is_loaded_voice_model(&self, voice_model_id: &str) -> PyResult<bool> {
+            Ok(self
+                .0
+                .get()?
+                .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string())))
+        }
+
+        fn audio_query_from_kana<'py>(
+            &self,
+            kana: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let inner = self.0.get()?;
+
+            let audio_query = inner
+                .audio_query_from_kana(kana, StyleId::new(style_id))
+                .into_py_result(py)?;
+
+            let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
+            crate::convert::to_pydantic_dataclass(audio_query, class)
+        }
+
+        fn audio_query<'py>(
+            &self,
+            text: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let inner = self.0.get()?;
+
+            let audio_query = inner
+                .audio_query(text, StyleId::new(style_id))
+                .into_py_result(py)?;
+
+            let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
+            crate::convert::to_pydantic_dataclass(audio_query, class)
+        }
+
+        fn create_accent_phrases_from_kana<'py>(
+            &self,
+            kana: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<Vec<&'py PyAny>> {
+            let inner = self.0.get()?;
+
+            let accent_phrases = inner
+                .create_accent_phrases_from_kana(kana, StyleId::new(style_id))
+                .into_py_result(py)?;
+
+            let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
+            accent_phrases
+                .iter()
+                .map(|ap| crate::convert::to_pydantic_dataclass(ap, class))
+                .collect()
+        }
+
+        fn create_accent_phrases<'py>(
+            &self,
+            text: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<Vec<&'py PyAny>> {
+            let inner = self.0.get()?;
+
+            let accent_phrases = inner
+                .create_accent_phrases(text, StyleId::new(style_id))
+                .into_py_result(py)?;
+
+            let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
+            accent_phrases
+                .iter()
+                .map(|ap| crate::convert::to_pydantic_dataclass(ap, class))
+                .collect()
+        }
+
+        fn replace_mora_data<'py>(
+            &self,
+            accent_phrases: &'py PyList,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<Vec<&'py PyAny>> {
+            let inner = self.0.get()?;
+            crate::convert::blocking_modify_accent_phrases(
+                accent_phrases,
+                StyleId::new(style_id),
+                py,
+                |a, s| inner.replace_mora_data(&a, s),
+            )
+        }
+
+        fn replace_phoneme_length<'py>(
+            &self,
+            accent_phrases: &'py PyList,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<Vec<&'py PyAny>> {
+            let inner = self.0.get()?;
+            crate::convert::blocking_modify_accent_phrases(
+                accent_phrases,
+                StyleId::new(style_id),
+                py,
+                |a, s| inner.replace_phoneme_length(&a, s),
+            )
+        }
+
+        fn replace_mora_pitch<'py>(
+            &self,
+            accent_phrases: &'py PyList,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<Vec<&'py PyAny>> {
+            let inner = self.0.get()?;
+            crate::convert::blocking_modify_accent_phrases(
+                accent_phrases,
+                StyleId::new(style_id),
+                py,
+                |a, s| inner.replace_mora_pitch(&a, s),
+            )
+        }
+
+        #[pyo3(signature=(
+            audio_query,
+            style_id,
+            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+        ))]
+        fn synthesis<'py>(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQueryModel,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyBytes> {
+            let wav = &self
+                .0
+                .get()?
+                .synthesis(
+                    &audio_query,
+                    StyleId::new(style_id),
+                    &SynthesisOptions {
+                        enable_interrogative_upspeak,
+                    },
+                )
+                .into_py_result(py)?;
+            Ok(PyBytes::new(py, wav))
+        }
+
+        #[pyo3(signature=(
+            kana,
+            style_id,
+            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+        ))]
+        fn tts_from_kana<'py>(
+            &self,
+            kana: &str,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyBytes> {
+            let style_id = StyleId::new(style_id);
+            let options = &TtsOptions {
+                enable_interrogative_upspeak,
+            };
+            let wav = &self
+                .0
+                .get()?
+                .tts_from_kana(kana, style_id, options)
+                .into_py_result(py)?;
+            Ok(PyBytes::new(py, wav))
+        }
+
+        #[pyo3(signature=(
+            text,
+            style_id,
+            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+        ))]
+        fn tts<'py>(
+            &self,
+            text: &str,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyBytes> {
+            let style_id = StyleId::new(style_id);
+            let options = &TtsOptions {
+                enable_interrogative_upspeak,
+            };
+            let wav = &self
+                .0
+                .get()?
+                .tts(text, style_id, options)
+                .into_py_result(py)?;
+            Ok(PyBytes::new(py, wav))
+        }
+
+        fn close(&mut self) {
+            self.0.close()
         }
     }
 

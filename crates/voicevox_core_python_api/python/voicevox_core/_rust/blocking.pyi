@@ -1,9 +1,41 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Union
+from typing import TYPE_CHECKING, Dict, List, Literal, Union
 from uuid import UUID
 
 if TYPE_CHECKING:
-    from voicevox_core import UserDictWord
+    from voicevox_core import (
+        AccelerationMode,
+        AccentPhrase,
+        AudioQuery,
+        SpeakerMeta,
+        StyleId,
+        UserDictWord,
+        VoiceModelId,
+    )
+
+class VoiceModel:
+    """
+    音声モデル。"""
+
+    @staticmethod
+    def from_path(path: Union[Path, str]) -> VoiceModel:
+        """
+        VVMファイルから ``VoiceModel`` を生成する。
+
+        Parameters
+        ----------
+        path
+            VVMファイルへのパス。
+        """
+        ...
+    @property
+    def id(self) -> VoiceModelId:
+        """ID。"""
+        ...
+    @property
+    def metas(self) -> List[SpeakerMeta]:
+        """メタ情報。"""
+        ...
 
 class OpenJtalk:
     """
@@ -28,6 +60,278 @@ class OpenJtalk:
             ユーザー辞書。
         """
         ...
+
+class Synthesizer:
+    """
+    音声シンセサイザ。
+
+    Parameters
+    ----------
+    open_jtalk
+        Open JTalk。
+    acceleration_mode
+        ハードウェアアクセラレーションモード。
+    cpu_num_threads
+        CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
+    """
+
+    def __init__(
+        self,
+        open_jtalk: OpenJtalk,
+        acceleration_mode: Union[
+            AccelerationMode, Literal["AUTO", "CPU", "GPU"]
+        ] = AccelerationMode.AUTO,
+        cpu_num_threads: int = 0,
+    ) -> None: ...
+    def __repr__(self) -> str: ...
+    def __enter__(self) -> "Synthesizer": ...
+    def __exit__(self, exc_type, exc_value, traceback) -> None: ...
+    @property
+    def is_gpu_mode(self) -> bool:
+        """ハードウェアアクセラレーションがGPUモードかどうか。"""
+        ...
+    @property
+    def metas(self) -> List[SpeakerMeta]:
+        """メタ情報。"""
+        ...
+    def load_voice_model(self, model: VoiceModel) -> None:
+        """
+        モデルを読み込む。
+
+        Parameters
+        ----------
+        style_id
+            読み込むモデルのスタイルID。
+        """
+        ...
+    def unload_voice_model(self, voice_model_id: Union[VoiceModelId, str]) -> None:
+        """
+        音声モデルの読み込みを解除する。
+
+        Parameters
+        ----------
+        voice_model_id
+            音声モデルID。
+        """
+        ...
+    def is_loaded_voice_model(self, voice_model_id: Union[VoiceModelId, str]) -> bool:
+        """
+        指定したvoice_model_idのモデルが読み込まれているか判定する。
+
+        Parameters
+        ----------
+        voice_model_id
+            音声モデルID。
+
+        Returns
+        -------
+        モデルが読み込まれているかどうか。
+        """
+        ...
+    def audio_query_from_kana(
+        self,
+        kana: str,
+        style_id: Union[StyleId, int],
+    ) -> AudioQuery:
+        """
+        AquesTalk風記法から :class:`AudioQuery` を生成する。
+
+        Parameters
+        ----------
+        kana
+            AquesTalk風記法。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        話者とテキストから生成された :class:`AudioQuery` 。
+        """
+        ...
+    def audio_query(
+        self,
+        text: str,
+        style_id: Union[StyleId, int],
+    ) -> AudioQuery:
+        """
+        日本語のテキストから :class:`AudioQuery` を生成する。
+
+        Parameters
+        ----------
+        text
+            UTF-8の日本語テキスト。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        話者とテキストから生成された :class:`AudioQuery` 。
+        """
+        ...
+    def create_accent_phrases_from_kana(
+        self,
+        kana: str,
+        style_id: Union[StyleId, int],
+    ) -> List[AccentPhrase]:
+        """
+        AquesTalk風記法からAccentPhrase（アクセント句）の配列を生成する。
+
+        Parameters
+        ----------
+        kana
+            AquesTalk風記法。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        :class:`AccentPhrase` の配列。
+        """
+        ...
+    def create_accent_phrases(
+        self,
+        text: str,
+        style_id: Union[StyleId, int],
+    ) -> List[AccentPhrase]:
+        """
+        日本語のテキストからAccentPhrase（アクセント句）の配列を生成する。
+
+        Parameters
+        ----------
+        text
+            UTF-8の日本語テキスト。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        :class:`AccentPhrase` の配列。
+        """
+        ...
+    def replace_mora_data(
+        self,
+        accent_phrases: List[AccentPhrase],
+        style_id: Union[StyleId, int],
+    ) -> List[AccentPhrase]:
+        """
+        アクセント句の音高・音素長を変更した新しいアクセント句の配列を生成する。
+
+        元のアクセント句の音高・音素長は変更されない。
+
+        Parameters
+        ----------
+        accent_phrases:
+            変更元のアクセント句。
+        style_id:
+            スタイルID。
+
+        Returns
+        -------
+        新しいアクセント句の配列。
+        """
+        ...
+    def replace_phoneme_length(
+        self,
+        accent_phrases: List[AccentPhrase],
+        style_id: Union[StyleId, int],
+    ) -> List[AccentPhrase]:
+        """
+        アクセント句の音素長を変更した新しいアクセント句の配列を生成する。
+
+        元のアクセント句の音素長は変更されない。
+
+        Parameters
+        ----------
+        accent_phrases
+            変更元のアクセント句。
+        style_id
+            スタイルID。
+        """
+        ...
+    def replace_mora_pitch(
+        self,
+        accent_phrases: List[AccentPhrase],
+        style_id: Union[StyleId, int],
+    ) -> List[AccentPhrase]:
+        """
+        アクセント句の音高を変更した新しいアクセント句の配列を生成する。
+
+        元のアクセント句の音高は変更されない。
+
+        Parameters
+        ----------
+        accent_phrases
+            変更元のアクセント句。
+        style_id
+            スタイルID。
+        """
+        ...
+    def synthesis(
+        self,
+        audio_query: AudioQuery,
+        style_id: Union[StyleId, int],
+        enable_interrogative_upspeak: bool = True,
+    ) -> bytes:
+        """
+        :class:`AudioQuery` から音声合成する。
+
+        Parameters
+        ----------
+        audio_query
+            :class:`AudioQuery` 。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
+
+        Returns
+        -------
+        WAVデータ。
+        """
+        ...
+    def tts_from_kana(
+        self,
+        kana: str,
+        style_id: Union[StyleId, int],
+        enable_interrogative_upspeak: bool = True,
+    ) -> bytes:
+        """
+        AquesTalk風記法から音声合成を行う。
+
+        Parameters
+        ----------
+        kana
+            AquesTalk風記法。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
+        """
+        ...
+    def tts(
+        self,
+        text: str,
+        style_id: Union[StyleId, int],
+        enable_interrogative_upspeak: bool = True,
+    ) -> bytes:
+        """
+        日本語のテキストから音声合成を行う。
+
+        Parameters
+        ----------
+        text
+            UTF-8の日本語テキスト。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
+
+        Returns
+        -------
+        WAVデータ。
+        """
+        ...
+    def close(self) -> None: ...
 
 class UserDict:
     """ユーザー辞書。"""

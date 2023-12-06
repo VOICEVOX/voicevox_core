@@ -79,7 +79,33 @@ pub fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAn
     class.call((), Some(x))
 }
 
-pub fn modify_accent_phrases<'py, Fun, Fut>(
+pub(crate) fn blocking_modify_accent_phrases<'py>(
+    accent_phrases: &'py PyList,
+    speaker_id: StyleId,
+    py: Python<'py>,
+    method: impl FnOnce(
+        Vec<AccentPhraseModel>,
+        StyleId,
+    ) -> voicevox_core::Result<Vec<AccentPhraseModel>>,
+) -> PyResult<Vec<&'py PyAny>> {
+    let rust_accent_phrases = accent_phrases
+        .iter()
+        .map(from_dataclass)
+        .collect::<PyResult<Vec<AccentPhraseModel>>>()?;
+
+    method(rust_accent_phrases, speaker_id)
+        .into_py_result(py)?
+        .iter()
+        .map(move |accent_phrase| {
+            to_pydantic_dataclass(
+                accent_phrase,
+                py.import("voicevox_core")?.getattr("AccentPhrase")?,
+            )
+        })
+        .collect()
+}
+
+pub fn async_modify_accent_phrases<'py, Fun, Fut>(
     accent_phrases: &'py PyList,
     speaker_id: StyleId,
     py: Python<'py>,
@@ -115,6 +141,7 @@ where
         },
     )
 }
+
 pub fn to_rust_uuid(ob: &PyAny) -> PyResult<Uuid> {
     let uuid = ob.getattr("hex")?.extract::<String>()?;
     uuid.parse::<Uuid>().into_py_value_result()
