@@ -30,7 +30,9 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     add_exceptions(module)?;
 
     let blocking_module = PyModule::new(py, "voicevox_core._rust.blocking")?;
+    blocking_module.add_class::<self::blocking::Synthesizer>()?;
     blocking_module.add_class::<self::blocking::OpenJtalk>()?;
+    blocking_module.add_class::<self::blocking::VoiceModel>()?;
     blocking_module.add_class::<self::blocking::UserDict>()?;
     module.add_and_register_submodule(blocking_module)?;
 
@@ -646,7 +648,7 @@ mod blocking {
 
     #[pyclass]
     #[derive(Clone)]
-    struct VoiceModel(voicevox_core::blocking::VoiceModel);
+    pub(crate) struct VoiceModel(voicevox_core::blocking::VoiceModel);
 
     #[pymethods]
     impl VoiceModel {
@@ -696,7 +698,7 @@ mod blocking {
     }
 
     #[pyclass]
-    struct Synthesizer(
+    pub(crate) struct Synthesizer(
         Closable<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>, Self>,
     );
 
