@@ -58,28 +58,23 @@ VOICEVOX コアでは`Synthesizer`に音声モデルを読み込むことでテ�
 これは Python で書かれたサンプルコードですが、大枠の流れはどの言語でも同じです。
 
 ```python
-import asyncio
 from pprint import pprint
-from voicevox_core import OpenJtalk, Synthesizer, VoiceModel
+from voicevox_core.blocking import OpenJtalk, Synthesizer, VoiceModel
 
-# asyncやawaitは必須です
-async def main():
-    # 1. Synthesizerの初期化
-    open_jtalk_dict_dir = "open_jtalk_dic_utf_8-1.11"
-    synthesizer = Synthesizer(await OpenJtalk.new(open_jtalk_dict_dir))
+# 1. Synthesizerの初期化
+open_jtalk_dict_dir = "open_jtalk_dic_utf_8-1.11"
+synthesizer = Synthesizer(OpenJtalk(open_jtalk_dict_dir))
 
-    # 2. 音声モデルの読み込み
-    model = await VoiceModel.from_path("model/0.vvm")
-    await synthesizer.load_voice_model(model)
+# 2. 音声モデルの読み込み
+model = VoiceModel.from_path("model/0.vvm")
+synthesizer.load_voice_model(model)
 
-    # 3. テキスト音声合成
-    text = "サンプル音声です"
-    style_id = 0
-    wav = await synthesizer.tts(text, style_id)
-    with open("output.wav", "wb") as f:
-        f.write(wav)
-
-asyncio.run(main())
+# 3. テキスト音声合成
+text = "サンプル音声です"
+style_id = 0
+wav = synthesizer.tts(text, style_id)
+with open("output.wav", "wb") as f:
+    f.write(wav)
 ```
 
 ### 1. Synthesizer の初期化
@@ -91,7 +86,7 @@ asyncio.run(main())
 VVM ファイルから`VoiceModel`インスタンスを作成し、`Synthesizer`に読み込ませます。その VVM ファイルにどの声が含まれているかは`VoiceModel`の`.metas`で確認できます。
 
 ```python
-model = await VoiceModel.from_path("model/0.vvm")
+model = VoiceModel.from_path("model/0.vvm")
 pprint(model.metas)
 ```
 
@@ -122,7 +117,7 @@ pprint(model.metas)
 ```python
 text = "サンプル音声です"
 style_id = 0
-audio_query = await synthesizer.audio_query(text, style_id)
+audio_query = synthesizer.audio_query(text, style_id)
 pprint(audio_query)
 ```
 
@@ -156,7 +151,7 @@ audio_query.pitch_scale += 0.1
 調整した`AudioQuery`を`Synthesizer`の`.synthesis`に渡すと、調整した音声波形のバイナリデータが返ります。
 
 ```python
-wav = await synthesizer.synthesis(audio_query, style_id)
+wav = synthesizer.synthesis(audio_query, style_id)
 with open("output.wav", "wb") as f:
     f.write(wav)
 ```
