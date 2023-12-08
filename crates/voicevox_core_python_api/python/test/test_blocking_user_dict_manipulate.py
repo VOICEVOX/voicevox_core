@@ -1,4 +1,9 @@
-# ユーザー辞書の操作をテストする。
+"""
+ユーザー辞書の操作をテストする。
+
+``test_asyncio_user_dict_manipulate`` と対になる。
+"""
+
 # どのコードがどの操作を行っているかはコメントを参照。
 
 import os
@@ -7,12 +12,11 @@ from uuid import UUID
 
 import pydantic
 import pytest
-import voicevox_core  # noqa: F401
+import voicevox_core
 
 
-@pytest.mark.asyncio
-async def test_user_dict_load() -> None:
-    dict_a = voicevox_core.asyncio.UserDict()
+def test_user_dict_load() -> None:
+    dict_a = voicevox_core.blocking.UserDict()
 
     # 単語の追加
     uuid_a = dict_a.add_word(
@@ -38,7 +42,7 @@ async def test_user_dict_load() -> None:
     assert dict_a.words[uuid_a].pronunciation == "フガ"
 
     # ユーザー辞書のインポート
-    dict_b = voicevox_core.asyncio.UserDict()
+    dict_b = voicevox_core.blocking.UserDict()
     uuid_b = dict_b.add_word(
         voicevox_core.UserDictWord(
             surface="foo",
@@ -50,7 +54,7 @@ async def test_user_dict_load() -> None:
     assert uuid_b in dict_a.words
 
     # ユーザー辞書のエクスポート
-    dict_c = voicevox_core.asyncio.UserDict()
+    dict_c = voicevox_core.blocking.UserDict()
     uuid_c = dict_c.add_word(
         voicevox_core.UserDictWord(
             surface="bar",
@@ -59,8 +63,8 @@ async def test_user_dict_load() -> None:
     )
     temp_path_fd, temp_path = tempfile.mkstemp()
     os.close(temp_path_fd)
-    await dict_c.save(temp_path)
-    await dict_a.load(temp_path)
+    dict_c.save(temp_path)
+    dict_a.load(temp_path)
     assert uuid_a in dict_a.words
     assert uuid_c in dict_a.words
 

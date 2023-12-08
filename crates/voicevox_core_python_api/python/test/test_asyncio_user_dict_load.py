@@ -1,4 +1,9 @@
-# ユーザー辞書の単語が反映されるかをテストする。
+"""
+ユーザー辞書の単語が反映されるかをテストする。
+
+``test_pseudo_raii_for_blocking_synthesizer`` と対になる。
+"""
+
 # AudioQueryのkanaを比較して変化するかどうかで判断する。
 
 from uuid import UUID
