@@ -9,32 +9,16 @@ if TYPE_CHECKING:
         AudioQuery,
         SpeakerMeta,
         StyleId,
-        SupportedDevices,
-        UserDict,
         UserDictWord,
         VoiceModelId,
     )
-
-__version__: str
-
-def supported_devices() -> SupportedDevices:
-    """
-    このライブラリで利用可能なデバイスの情報を取得する。
-
-    .. code-block::
-
-       import voicevox_core
-
-       supported_devices = voicevox_core.supported_devices()
-    """
-    ...
 
 class VoiceModel:
     """
     音声モデル。"""
 
     @staticmethod
-    async def from_path(path: Union[Path, str]) -> VoiceModel:
+    def from_path(path: Union[Path, str]) -> VoiceModel:
         """
         VVMファイルから ``VoiceModel`` を生成する。
 
@@ -56,20 +40,15 @@ class VoiceModel:
 class OpenJtalk:
     """
     テキスト解析器としてのOpen JTalk。
+
+    Parameters
+    ----------
+    open_jtalk_dict_dir
+        Open JTalkの辞書ディレクトリ。
     """
 
-    @staticmethod
-    async def new(open_jtalk_dict_dir: Union[Path, str]) -> "OpenJtalk":
-        """
-        ``OpenJTalk`` を生成する。
-
-        Parameters
-        ----------
-        open_jtalk_dict_dir
-            Open JTalkの辞書ディレクトリ。
-        """
-        ...
-    async def use_user_dict(self, user_dict: UserDict) -> None:
+    def __init__(self, open_jtalk_dict_dir: Union[Path, str]) -> None: ...
+    def use_user_dict(self, user_dict: UserDict) -> None:
         """
         ユーザー辞書を設定する。
 
@@ -115,7 +94,7 @@ class Synthesizer:
     def metas(self) -> List[SpeakerMeta]:
         """メタ情報。"""
         ...
-    async def load_voice_model(self, model: VoiceModel) -> None:
+    def load_voice_model(self, model: VoiceModel) -> None:
         """
         モデルを読み込む。
 
@@ -149,7 +128,7 @@ class Synthesizer:
         モデルが読み込まれているかどうか。
         """
         ...
-    async def audio_query_from_kana(
+    def audio_query_from_kana(
         self,
         kana: str,
         style_id: Union[StyleId, int],
@@ -169,7 +148,7 @@ class Synthesizer:
         話者とテキストから生成された :class:`AudioQuery` 。
         """
         ...
-    async def audio_query(
+    def audio_query(
         self,
         text: str,
         style_id: Union[StyleId, int],
@@ -189,7 +168,7 @@ class Synthesizer:
         話者とテキストから生成された :class:`AudioQuery` 。
         """
         ...
-    async def create_accent_phrases_from_kana(
+    def create_accent_phrases_from_kana(
         self,
         kana: str,
         style_id: Union[StyleId, int],
@@ -209,7 +188,7 @@ class Synthesizer:
         :class:`AccentPhrase` の配列。
         """
         ...
-    async def create_accent_phrases(
+    def create_accent_phrases(
         self,
         text: str,
         style_id: Union[StyleId, int],
@@ -229,7 +208,7 @@ class Synthesizer:
         :class:`AccentPhrase` の配列。
         """
         ...
-    async def replace_mora_data(
+    def replace_mora_data(
         self,
         accent_phrases: List[AccentPhrase],
         style_id: Union[StyleId, int],
@@ -251,7 +230,7 @@ class Synthesizer:
         新しいアクセント句の配列。
         """
         ...
-    async def replace_phoneme_length(
+    def replace_phoneme_length(
         self,
         accent_phrases: List[AccentPhrase],
         style_id: Union[StyleId, int],
@@ -269,7 +248,7 @@ class Synthesizer:
             スタイルID。
         """
         ...
-    async def replace_mora_pitch(
+    def replace_mora_pitch(
         self,
         accent_phrases: List[AccentPhrase],
         style_id: Union[StyleId, int],
@@ -287,7 +266,7 @@ class Synthesizer:
             スタイルID。
         """
         ...
-    async def synthesis(
+    def synthesis(
         self,
         audio_query: AudioQuery,
         style_id: Union[StyleId, int],
@@ -310,7 +289,7 @@ class Synthesizer:
         WAVデータ。
         """
         ...
-    async def tts_from_kana(
+    def tts_from_kana(
         self,
         kana: str,
         style_id: Union[StyleId, int],
@@ -329,7 +308,7 @@ class Synthesizer:
             疑問文の調整を有効にするかどうか。
         """
         ...
-    async def tts(
+    def tts(
         self,
         text: str,
         style_id: Union[StyleId, int],
@@ -362,7 +341,7 @@ class UserDict:
         """このオプジェクトの :class:`dict` としての表現。"""
         ...
     def __init__(self) -> None: ...
-    async def load(self, path: str) -> None:
+    def load(self, path: str) -> None:
         """ファイルに保存されたユーザー辞書を読み込む。
 
         Parameters
@@ -371,7 +350,7 @@ class UserDict:
             ユーザー辞書のパス。
         """
         ...
-    async def save(self, path: str) -> None:
+    def save(self, path: str) -> None:
         """
         ユーザー辞書をファイルに保存する。
 
@@ -427,96 +406,3 @@ class UserDict:
             インポートするユーザー辞書。
         """
         ...
-
-class NotLoadedOpenjtalkDictError(Exception):
-    """open_jtalk辞書ファイルが読み込まれていない。"""
-
-    ...
-
-class GpuSupportError(Exception):
-    """GPUモードがサポートされていない。"""
-
-    ...
-
-class OpenZipFileError(Exception):
-    """ZIPファイルを開くことに失敗した。"""
-
-    ...
-
-class ReadZipEntryError(Exception):
-    """ZIP内のファイルが読めなかった。"""
-
-    ...
-
-class ModelAlreadyLoadedError(Exception):
-    """すでに読み込まれている音声モデルを読み込もうとした。"""
-
-    ...
-
-class StyleAlreadyLoadedError(Exception):
-    """すでに読み込まれているスタイルを読み込もうとした。"""
-
-    ...
-
-class InvalidModelDataError(Exception):
-    """無効なモデルデータ。"""
-
-    ...
-
-class GetSupportedDevicesError(Exception):
-    """サポートされているデバイス情報取得に失敗した。"""
-
-    ...
-
-class StyleNotFoundError(KeyError):
-    """スタイルIDに対するスタイルが見つからなかった。"""
-
-    ...
-
-class ModelNotFoundError(KeyError):
-    """音声モデルIDに対する音声モデルが見つからなかった。"""
-
-    ...
-
-class InferenceFailedError(Exception):
-    """推論に失敗した。"""
-
-    ...
-
-class ExtractFullContextLabelError(Exception):
-    """コンテキストラベル出力に失敗した。"""
-
-    ...
-
-class ParseKanaError(ValueError):
-    """AquesTalk風記法のテキストの解析に失敗した。"""
-
-    ...
-
-class LoadUserDictError(Exception):
-    """ユーザー辞書を読み込めなかった。"""
-
-    ...
-
-class SaveUserDictError(Exception):
-    """ユーザー辞書を書き込めなかった。"""
-
-    ...
-
-class WordNotFoundError(KeyError):
-    """ユーザー辞書に単語が見つからなかった。"""
-
-    ...
-
-class UseUserDictError(Exception):
-    """OpenJTalkのユーザー辞書の設定に失敗した。"""
-
-    ...
-
-class InvalidWordError(ValueError):
-    """ユーザー辞書の単語のバリデーションに失敗した。"""
-
-    ...
-
-def _validate_pronunciation(pronunciation: str) -> None: ...
-def _to_zenkaku(text: str) -> str: ...
