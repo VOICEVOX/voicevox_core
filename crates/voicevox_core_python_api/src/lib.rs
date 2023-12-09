@@ -648,7 +648,9 @@ mod blocking {
 
     #[pyclass]
     #[derive(Clone)]
-    pub(crate) struct VoiceModel(voicevox_core::blocking::VoiceModel);
+    pub(crate) struct VoiceModel {
+        model: voicevox_core::blocking::VoiceModel,
+    }
 
     #[pymethods]
     impl VoiceModel {
@@ -657,18 +659,18 @@ mod blocking {
             py: Python<'_>,
             #[pyo3(from_py_with = "crate::convert::from_utf8_path")] path: String,
         ) -> PyResult<Self> {
-            let inner = voicevox_core::blocking::VoiceModel::from_path(path).into_py_result(py)?;
-            Ok(Self(inner))
+            let model = voicevox_core::blocking::VoiceModel::from_path(path).into_py_result(py)?;
+            Ok(Self { model })
         }
 
         #[getter]
         fn id(&self) -> &str {
-            self.0.id().raw_voice_model_id()
+            self.model.id().raw_voice_model_id()
         }
 
         #[getter]
         fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
-            crate::convert::to_pydantic_voice_model_meta(self.0.metas(), py).unwrap()
+            crate::convert::to_pydantic_voice_model_meta(self.model.metas(), py).unwrap()
         }
     }
 
@@ -698,9 +700,12 @@ mod blocking {
     }
 
     #[pyclass]
-    pub(crate) struct Synthesizer(
-        Closable<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>, Self>,
-    );
+    pub(crate) struct Synthesizer {
+        synthesizer: Closable<
+            voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>,
+            Self,
+        >,
+    }
 
     #[pymethods]
     impl Synthesizer {
@@ -725,7 +730,9 @@ mod blocking {
                 },
             )
             .into_py_result(py)?;
-            Ok(Self(Closable::new(inner)))
+            Ok(Self {
+                synthesizer: Closable::new(inner),
+            })
         }
 
         fn __repr__(&self) -> &'static str {
@@ -733,7 +740,7 @@ mod blocking {
         }
 
         fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
-            slf.0.get()?;
+            slf.synthesizer.get()?;
             Ok(slf)
         }
 
@@ -748,23 +755,26 @@ mod blocking {
 
         #[getter]
         fn is_gpu_mode(&self) -> PyResult<bool> {
-            let inner = self.0.get()?;
-            Ok(inner.is_gpu_mode())
+            let synthesizer = self.synthesizer.get()?;
+            Ok(synthesizer.is_gpu_mode())
         }
 
         #[getter]
         fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
-            let inner = self.0.get()?;
-            crate::convert::to_pydantic_voice_model_meta(&inner.metas(), py)
+            let synthesizer = self.synthesizer.get()?;
+            crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
         }
 
         fn load_voice_model(&mut self, model: &PyAny, py: Python<'_>) -> PyResult<()> {
             let model: VoiceModel = model.extract()?;
-            self.0.get()?.load_voice_model(&model.0).into_py_result(py)
+            self.synthesizer
+                .get()?
+                .load_voice_model(&model.model)
+                .into_py_result(py)
         }
 
         fn unload_voice_model(&mut self, voice_model_id: &str, py: Python<'_>) -> PyResult<()> {
-            self.0
+            self.synthesizer
                 .get()?
                 .unload_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
                 .into_py_result(py)
@@ -772,7 +782,7 @@ mod blocking {
 
         fn is_loaded_voice_model(&self, voice_model_id: &str) -> PyResult<bool> {
             Ok(self
-                .0
+                .synthesizer
                 .get()?
                 .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string())))
         }
@@ -783,9 +793,9 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let inner = self.0.get()?;
+            let synthesizer = self.synthesizer.get()?;
 
-            let audio_query = inner
+            let audio_query = synthesizer
                 .audio_query_from_kana(kana, StyleId::new(style_id))
                 .into_py_result(py)?;
 
@@ -799,9 +809,9 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let inner = self.0.get()?;
+            let synthesizesr = self.synthesizer.get()?;
 
-            let audio_query = inner
+            let audio_query = synthesizesr
                 .audio_query(text, StyleId::new(style_id))
                 .into_py_result(py)?;
 
@@ -815,9 +825,9 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<Vec<&'py PyAny>> {
-            let inner = self.0.get()?;
+            let synthesizer = self.synthesizer.get()?;
 
-            let accent_phrases = inner
+            let accent_phrases = synthesizer
                 .create_accent_phrases_from_kana(kana, StyleId::new(style_id))
                 .into_py_result(py)?;
 
@@ -834,9 +844,9 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<Vec<&'py PyAny>> {
-            let inner = self.0.get()?;
+            let synthesizer = self.synthesizer.get()?;
 
-            let accent_phrases = inner
+            let accent_phrases = synthesizer
                 .create_accent_phrases(text, StyleId::new(style_id))
                 .into_py_result(py)?;
 
@@ -853,12 +863,12 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<Vec<&'py PyAny>> {
-            let inner = self.0.get()?;
+            let synthesizer = self.synthesizer.get()?;
             crate::convert::blocking_modify_accent_phrases(
                 accent_phrases,
                 StyleId::new(style_id),
                 py,
-                |a, s| inner.replace_mora_data(&a, s),
+                |a, s| synthesizer.replace_mora_data(&a, s),
             )
         }
 
@@ -868,12 +878,12 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<Vec<&'py PyAny>> {
-            let inner = self.0.get()?;
+            let synthesizer = self.synthesizer.get()?;
             crate::convert::blocking_modify_accent_phrases(
                 accent_phrases,
                 StyleId::new(style_id),
                 py,
-                |a, s| inner.replace_phoneme_length(&a, s),
+                |a, s| synthesizer.replace_phoneme_length(&a, s),
             )
         }
 
@@ -883,12 +893,12 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<Vec<&'py PyAny>> {
-            let inner = self.0.get()?;
+            let synthesizer = self.synthesizer.get()?;
             crate::convert::blocking_modify_accent_phrases(
                 accent_phrases,
                 StyleId::new(style_id),
                 py,
-                |a, s| inner.replace_mora_pitch(&a, s),
+                |a, s| synthesizer.replace_mora_pitch(&a, s),
             )
         }
 
@@ -905,7 +915,7 @@ mod blocking {
             py: Python<'py>,
         ) -> PyResult<&'py PyBytes> {
             let wav = &self
-                .0
+                .synthesizer
                 .get()?
                 .synthesis(
                     &audio_query,
@@ -935,7 +945,7 @@ mod blocking {
                 enable_interrogative_upspeak,
             };
             let wav = &self
-                .0
+                .synthesizer
                 .get()?
                 .tts_from_kana(kana, style_id, options)
                 .into_py_result(py)?;
@@ -959,7 +969,7 @@ mod blocking {
                 enable_interrogative_upspeak,
             };
             let wav = &self
-                .0
+                .synthesizer
                 .get()?
                 .tts(text, style_id, options)
                 .into_py_result(py)?;
@@ -967,7 +977,7 @@ mod blocking {
         }
 
         fn close(&mut self) {
-            self.0.close()
+            self.synthesizer.close()
         }
     }
 
