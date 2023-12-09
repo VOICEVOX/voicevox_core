@@ -1,11 +1,12 @@
 """
 ``Synthesizer`` について、(広義の)RAIIができることをテストする。
+
+``test_pseudo_raii_for_asyncio_synthesizer`` と対になる。
 """
 
 import conftest
 import pytest
-import pytest_asyncio
-from voicevox_core import OpenJtalk, Synthesizer
+from voicevox_core.blocking import OpenJtalk, Synthesizer
 
 
 def test_enter_returns_workable_self(synthesizer: Synthesizer) -> None:
@@ -35,11 +36,11 @@ def test_access_after_exit_denied(synthesizer: Synthesizer) -> None:
         _ = synthesizer.metas
 
 
-@pytest_asyncio.fixture
-async def synthesizer(open_jtalk: OpenJtalk) -> Synthesizer:
+@pytest.fixture
+def synthesizer(open_jtalk: OpenJtalk) -> Synthesizer:
     return Synthesizer(open_jtalk)
 
 
-@pytest_asyncio.fixture(scope="function")
-async def open_jtalk() -> OpenJtalk:
-    return await OpenJtalk.new(conftest.open_jtalk_dic_dir)
+@pytest.fixture(scope="session")
+def open_jtalk() -> OpenJtalk:
+    return OpenJtalk(conftest.open_jtalk_dic_dir)

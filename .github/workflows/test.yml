@@ -262,6 +262,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
+        shell: bash
         working-directory: ./crates/voicevox_core_python_api
     steps:
       - uses: actions/checkout@v3
@@ -292,7 +293,10 @@ jobs:
 
           poetry run pytest
       - name: Exampleを実行
-        run: poetry run python ../../example/python/run.py ../../model/sample.vvm --dict-dir ../test_util/data/open_jtalk_dic_utf_8-1.11
+        run: |
+          for file in ../../example/python/run{,-asyncio}.py; do
+            poetry run python "$file" ../../model/sample.vvm --dict-dir ../test_util/data/open_jtalk_dic_utf_8-1.11
+          done
   build-and-test-java-api:
     strategy:
       fail-fast: false

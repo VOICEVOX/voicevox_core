@@ -47,7 +47,7 @@ TODO:
 
 ## 実行
 
-run.py を実行します。 Open JTalk 辞書ディレクトリ、読み上げさせたい文章、出力 wav ファイルのパスをオプションで指定することができます。
+run.py もしくは run-asyncio.py を実行します。 Open JTalk 辞書ディレクトリ、読み上げさせたい文章、出力 wav ファイルのパスをオプションで指定することができます。
 
 ```console
 ❯ python ./run.py -h
