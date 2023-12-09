@@ -1,3 +1,5 @@
+"""asyncio版のサンプルコードです。"""
+
 import asyncio
 import dataclasses
 import json
@@ -11,7 +13,6 @@ from voicevox_core import AccelerationMode, AudioQuery
 from voicevox_core.asyncio import OpenJtalk, Synthesizer, VoiceModel
 
 
-# asyncやawaitは必須です。
 async def main() -> None:
     logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s")
     logger = logging.getLogger(__name__)
