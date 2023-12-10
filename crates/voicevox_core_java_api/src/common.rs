@@ -1,12 +1,16 @@
 use std::{error::Error as _, iter};
 
 use derive_more::From;
-use jni::{objects::JThrowable, JNIEnv};
+use jni::{
+    objects::{JObject, JThrowable},
+    JNIEnv,
+};
 
 // FIXME: 別ファイルに分離する
 #[no_mangle]
 extern "system" fn Java_jp_hiroshiba_voicevoxcore_Dll_00024LoggerInitializer_initLogger(
     _: JNIEnv<'_>,
+    _: JObject<'_>,
 ) {
     if cfg!(target_os = "android") {
         android_logger::init_once(
