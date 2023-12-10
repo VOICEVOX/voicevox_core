@@ -31,6 +31,46 @@ use uuid::Uuid;
 use voicevox_core::{AccentPhraseModel, AudioQueryModel, TtsOptions, UserDictWord, VoiceModelId};
 use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions};
 
+fn init_logger() -> std::result::Result<(), impl Sized> {
+    let ansi = {
+        // anstyle系のクレートを利用して次の2つを行う。
+        //
+        // * ANSI escape codeを出してよいかの判定（環境変数のチェックとisatty）
+        // * 必要であれば`ENABLE_VIRTUAL_TERMINAL_PROCESSING`の有効化
+
+        assert_eq!(
+            ColorChoice::Auto,
+            ColorChoice::global(),
+            "`ColorChoice::write_global` should not have been called",
+        );
+
+        AutoStream::choice(&out()) != ColorChoice::Never
+            && anstyle_query::term_supports_ansi_color()
+            && anstyle_query::windows::enable_ansi_colors().unwrap_or(true)
+    };
+
+    return tracing_subscriber::fmt()
+        .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
+            EnvFilter::from_default_env()
+        } else {
+            "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
+        })
+        .with_timer(local_time as fn(&mut Writer<'_>) -> _)
+        .with_ansi(ansi)
+        .with_writer(out)
+        .try_init();
+
+    fn local_time(wtr: &mut Writer<'_>) -> fmt::Result {
+        // ローカル時刻で表示はするが、そのフォーマットはtracing-subscriber本来のものに近いようにする。
+        // https://github.com/tokio-rs/tracing/blob/tracing-subscriber-0.3.16/tracing-subscriber/src/fmt/time/datetime.rs#L235-L241
+        wtr.write_str(&chrono::Local::now().to_rfc3339_opts(SecondsFormat::Micros, false))
+    }
+
+    fn out() -> impl RawStream {
+        io::stderr()
+    }
+}
+
 /*
  * Cの関数として公開するための型や関数を定義するこれらの実装はvoicevox_core/publish.rsに定義してある対応する関数にある
  * この関数ではvoicevox_core/publish.rsにある対応する関数の呼び出しと、その戻り値をCの形式に変換する処理のみとする
@@ -82,12 +122,13 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     open_jtalk_dic_dir: *const c_char,
     out_open_jtalk: NonNull<Box<OpenJtalkRc>>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
         let open_jtalk = OpenJtalkRc::new(open_jtalk_dic_dir)?.into();
         out_open_jtalk.as_ptr().write_unaligned(open_jtalk);
         Ok(())
-    })
+    })())
 }
 
 /// OpenJtalkの使うユーザー辞書を設定する。
@@ -106,10 +147,11 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
     open_jtalk: &OpenJtalkRc,
     user_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         open_jtalk.open_jtalk.use_user_dict(&user_dict.dict)?;
         Ok(())
-    })
+    })())
 }
 
 /// ::OpenJtalkRc を<b>破棄</b>(_destruct_)する。
@@ -128,7 +170,8 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: Box<OpenJtalkRc>) {
-    run(|| drop(open_jtalk));
+    let _ = init_logger();
+    drop(open_jtalk);
 }
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
@@ -158,7 +201,7 @@ pub struct VoicevoxInitializeOptions {
 /// @return デフォルト値が設定された初期化オプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitializeOptions {
-    // その気になればconst化できるほどの処理であり、ロガーの起動は必要無し
+    let _ = init_logger();
     VoicevoxInitializeOptions::default()
 }
 
@@ -166,7 +209,8 @@ pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitiali
 /// @return SemVerでフォーマットされたバージョン。
 #[no_mangle]
 pub extern "C" fn voicevox_get_version() -> *const c_char {
-    return run(|| C_STRING_DROP_CHECKER.blacklist(VERSION).as_ptr());
+    let _ = init_logger();
+    return C_STRING_DROP_CHECKER.blacklist(VERSION).as_ptr();
 
     const VERSION: &CStr = unsafe {
         // SAFETY: The package version is a SemVer, so it should not contain '\0'
@@ -209,12 +253,13 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
     path: *const c_char,
     out_model: NonNull<Box<VoicevoxVoiceModel>>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let path = ensure_utf8(CStr::from_ptr(path))?;
         let model = VoicevoxVoiceModel::from_path(path)?.into();
         out_model.as_ptr().write_unaligned(model);
         Ok(())
-    })
+    })())
 }
 
 /// ::VoicevoxVoiceModel からIDを取得する。
@@ -228,7 +273,8 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_id(model: &VoicevoxVoiceModel) -> VoicevoxVoiceModelId {
-    run(|| model.id().as_ptr())
+    let _ = init_logger();
+    model.id().as_ptr()
 }
 
 /// ::VoicevoxVoiceModel からメタ情報を取得する。
@@ -243,7 +289,8 @@ pub extern "C" fn voicevox_voice_model_id(model: &VoicevoxVoiceModel) -> Voicevo
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_get_metas_json(model: &VoicevoxVoiceModel) -> *const c_char {
-    run(|| model.metas().as_ptr())
+    let _ = init_logger();
+    model.metas().as_ptr()
 }
 
 /// ::VoicevoxVoiceModel を<b>破棄</b>(_destruct_)する。
@@ -256,7 +303,8 @@ pub extern "C" fn voicevox_voice_model_get_metas_json(model: &VoicevoxVoiceModel
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
-    run(|| drop(model));
+    let _ = init_logger();
+    drop(model);
 }
 
 /// 音声シンセサイザ。
@@ -285,13 +333,14 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
     options: VoicevoxInitializeOptions,
     out_synthesizer: NonNull<Box<VoicevoxSynthesizer>>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let options = options.into();
 
         let synthesizer = VoicevoxSynthesizer::new(open_jtalk, &options)?.into();
         out_synthesizer.as_ptr().write_unaligned(synthesizer);
         Ok(())
-    })
+    })())
 }
 
 /// ::VoicevoxSynthesizer を<b>破棄</b>(_destruct_)する。
@@ -304,7 +353,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesizer>) {
-    run(|| drop(synthesizer));
+    let _ = init_logger();
+    drop(synthesizer);
 }
 
 /// 音声モデルを読み込む。
@@ -323,7 +373,8 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
     synthesizer: &VoicevoxSynthesizer,
     model: &VoicevoxVoiceModel,
 ) -> VoicevoxResultCode {
-    run(|| synthesizer.load_voice_model(model.model()))
+    let _ = init_logger();
+    into_result_code_with_error(synthesizer.load_voice_model(model.model()))
 }
 
 /// 音声モデルの読み込みを解除する。
@@ -342,12 +393,13 @@ pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
     synthesizer: &VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) })?;
         synthesizer
             .unload_voice_model(&VoiceModelId::new(raw_model_id.to_string()))
             .map_err(Into::into)
-    })
+    })())
 }
 
 /// ハードウェアアクセラレーションがGPUモードか判定する。
@@ -361,7 +413,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_is_gpu_mode(synthesizer: &VoicevoxSynthesizer) -> bool {
-    run(|| synthesizer.synthesizer().is_gpu_mode())
+    let _ = init_logger();
+    synthesizer.synthesizer().is_gpu_mode()
 }
 
 /// 指定したIDの音声モデルが読み込まれているか判定する。
@@ -380,12 +433,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
     synthesizer: &VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> bool {
-    run(|| {
-        let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) }).unwrap();
-        synthesizer
-            .synthesizer()
-            .is_loaded_voice_model(&VoiceModelId::new(raw_model_id.into()))
-    })
+    let _ = init_logger();
+    // FIXME: 不正なUTF-8文字列に対し、正式なエラーとするか黙って`false`を返す
+    let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) }).unwrap();
+    synthesizer
+        .synthesizer()
+        .is_loaded_voice_model(&VoiceModelId::new(raw_model_id.into()))
 }
 
 /// 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
@@ -403,10 +456,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
 pub extern "C" fn voicevox_synthesizer_create_metas_json(
     synthesizer: &VoicevoxSynthesizer,
 ) -> *mut c_char {
-    run(|| {
-        let metas = synthesizer.metas();
-        C_STRING_DROP_CHECKER.whitelist(metas).into_raw()
-    })
+    let _ = init_logger();
+    let metas = synthesizer.metas();
+    C_STRING_DROP_CHECKER.whitelist(metas).into_raw()
 }
 
 /// このライブラリで利用可能なデバイスの情報を、JSONで取得する。
@@ -433,7 +485,8 @@ pub extern "C" fn voicevox_synthesizer_create_metas_json(
 pub unsafe extern "C" fn voicevox_create_supported_devices_json(
     output_supported_devices_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let supported_devices =
             CString::new(SupportedDevices::create()?.to_json().to_string()).unwrap();
         output_supported_devices_json.as_ptr().write_unaligned(
@@ -442,7 +495,7 @@ pub unsafe extern "C" fn voicevox_create_supported_devices_json(
                 .into_raw(),
         );
         Ok(())
-    })
+    })())
 }
 
 /// AquesTalk風記法から、AudioQueryをJSONとして生成する。
@@ -477,7 +530,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
     style_id: VoicevoxStyleId,
     output_audio_query_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let kana = CStr::from_ptr(kana);
         let kana = ensure_utf8(kana)?;
 
@@ -490,7 +544,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
             .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
         Ok(())
-    })
+    })())
 }
 
 /// 日本語テキストから、AudioQueryをJSONとして生成する。
@@ -525,7 +579,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
     style_id: VoicevoxStyleId,
     output_audio_query_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let text = CStr::from_ptr(text);
         let text = ensure_utf8(text)?;
 
@@ -538,7 +593,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
             .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
         Ok(())
-    })
+    })())
 }
 
 /// AquesTalk風記法から、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
@@ -574,7 +629,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let kana = ensure_utf8(CStr::from_ptr(kana))?;
         let accent_phrases = synthesizer
             .synthesizer()
@@ -585,7 +641,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
             .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
-    })
+    })())
 }
 
 /// 日本語テキストから、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
@@ -620,7 +676,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let accent_phrases = synthesizer
             .synthesizer()
@@ -631,7 +688,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
             .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
-    })
+    })())
 }
 
 /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
@@ -657,7 +714,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
@@ -670,7 +728,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
             .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
-    })
+    })())
 }
 
 /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
@@ -696,7 +754,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
@@ -709,7 +768,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
             .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
-    })
+    })())
 }
 
 /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
@@ -735,7 +794,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
@@ -748,7 +808,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
             .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
-    })
+    })())
 }
 
 /// ::voicevox_synthesizer_synthesis のオプション。
@@ -762,7 +822,7 @@ pub struct VoicevoxSynthesisOptions {
 /// @return デフォルト値が設定された `voicevox_synthesizer_synthesis` のオプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesisOptions {
-    // その気になればconst化できるほどの処理であり、ロガーの起動は必要無し
+    let _ = init_logger();
     VoicevoxSynthesisOptions::default()
 }
 
@@ -794,7 +854,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     output_wav_length: NonNull<usize>,
     output_wav: NonNull<*mut u8>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let audio_query_json = CStr::from_ptr(audio_query_json)
             .to_str()
             .map_err(|_| CApiError::InvalidUtf8Input)?;
@@ -807,7 +868,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
         )?;
         U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length);
         Ok(())
-    })
+    })())
 }
 
 /// ::voicevox_synthesizer_tts のオプション。
@@ -821,7 +882,7 @@ pub struct VoicevoxTtsOptions {
 /// @return テキスト音声合成オプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
-    // その気になればconst化できるほどの処理であり、ロガーの起動は必要無し
+    let _ = init_logger();
     voicevox_core::TtsOptions::default().into()
 }
 
@@ -853,7 +914,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
     output_wav_length: NonNull<usize>,
     output_wav: NonNull<*mut u8>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let kana = ensure_utf8(CStr::from_ptr(kana))?;
         let output = synthesizer.synthesizer().tts_from_kana(
             kana,
@@ -862,7 +924,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
         )?;
         U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length);
         Ok(())
-    })
+    })())
 }
 
 /// 日本語テキストから音声合成を行う。
@@ -893,7 +955,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
     output_wav_length: NonNull<usize>,
     output_wav: NonNull<*mut u8>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let output = synthesizer.synthesizer().tts(
             text,
@@ -902,7 +965,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
         )?;
         U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length);
         Ok(())
-    })
+    })())
 }
 
 /// JSON文字列を解放する。
@@ -925,7 +988,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
-    run(|| drop(CString::from_raw(C_STRING_DROP_CHECKER.check(json))));
+    let _ = init_logger();
+    drop(CString::from_raw(C_STRING_DROP_CHECKER.check(json)));
 }
 
 /// WAVデータを解放する。
@@ -941,7 +1005,8 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
-    run(|| U8_SLICE_OWNER.drop_for(wav));
+    let _ = init_logger();
+    U8_SLICE_OWNER.drop_for(wav);
 }
 
 /// 結果コードに対応したメッセージ文字列を取得する。
@@ -968,10 +1033,9 @@ pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    run(|| {
-        let message = result_code::error_result_to_message(result_code);
-        C_STRING_DROP_CHECKER.blacklist(message).as_ptr()
-    })
+    let _ = init_logger();
+    let message = result_code::error_result_to_message(result_code);
+    C_STRING_DROP_CHECKER.blacklist(message).as_ptr()
 }
 
 /// ユーザー辞書。
@@ -1023,7 +1087,7 @@ pub extern "C" fn voicevox_user_dict_word_make(
     surface: *const c_char,
     pronunciation: *const c_char,
 ) -> VoicevoxUserDictWord {
-    // その気になればconst化できるほどの処理であり、ロガーの起動は必要無し
+    let _ = init_logger();
     VoicevoxUserDictWord {
         surface,
         pronunciation,
@@ -1038,7 +1102,8 @@ pub extern "C" fn voicevox_user_dict_word_make(
 /// @returns ::VoicevoxUserDict
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_new() -> Box<VoicevoxUserDict> {
-    run(Box::<VoicevoxUserDict>::default)
+    let _ = init_logger();
+    Default::default()
 }
 
 /// ユーザー辞書にファイルを読み込ませる。
@@ -1056,12 +1121,13 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
     user_dict: &VoicevoxUserDict,
     dict_path: *const c_char,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let dict_path = ensure_utf8(unsafe { CStr::from_ptr(dict_path) })?;
         user_dict.dict.load(dict_path)?;
 
         Ok(())
-    })
+    })())
 }
 
 /// ユーザー辞書に単語を追加する。
@@ -1085,13 +1151,14 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
     word: *const VoicevoxUserDictWord,
     output_word_uuid: NonNull<[u8; 16]>,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let word = word.read_unaligned().try_into_word()?;
         let uuid = user_dict.dict.add_word(word)?;
         output_word_uuid.as_ptr().copy_from(uuid.as_bytes(), 16);
 
         Ok(())
-    })
+    })())
 }
 
 /// ユーザー辞書の単語を更新する。
@@ -1112,13 +1179,14 @@ pub unsafe extern "C" fn voicevox_user_dict_update_word(
     word_uuid: &[u8; 16],
     word: *const VoicevoxUserDictWord,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
         let word = word.read_unaligned().try_into_word()?;
         user_dict.dict.update_word(word_uuid, word)?;
 
         Ok(())
-    })
+    })())
 }
 
 /// ユーザー辞書から単語を削除する。
@@ -1136,13 +1204,15 @@ pub extern "C" fn voicevox_user_dict_remove_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: &[u8; 16],
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
         user_dict.dict.remove_word(word_uuid)?;
         Ok(())
-    })
+    })())
 }
 
+// FIXME: infallibleなので、`char*`を戻り値にしてもよいはず
 /// ユーザー辞書の単語をJSON形式で出力する。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -1160,14 +1230,13 @@ pub unsafe extern "C" fn voicevox_user_dict_to_json(
     user_dict: &VoicevoxUserDict,
     output_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    run(|| {
-        let json = user_dict.dict.to_json();
-        let json = CString::new(json).expect("\\0を含まない文字列であることが保証されている");
-        output_json
-            .as_ptr()
-            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(json).into_raw());
-        Ok(())
-    })
+    let _ = init_logger();
+    let json = user_dict.dict.to_json();
+    let json = CString::new(json).expect("\\0を含まない文字列であることが保証されている");
+    output_json
+        .as_ptr()
+        .write_unaligned(C_STRING_DROP_CHECKER.whitelist(json).into_raw());
+    VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 
 /// 他のユーザー辞書をインポートする。
@@ -1184,10 +1253,11 @@ pub extern "C" fn voicevox_user_dict_import(
     user_dict: &VoicevoxUserDict,
     other_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         user_dict.dict.import(&other_dict.dict)?;
         Ok(())
-    })
+    })())
 }
 
 /// ユーザー辞書をファイルに保存する。
@@ -1204,11 +1274,12 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
     user_dict: &VoicevoxUserDict,
     path: *const c_char,
 ) -> VoicevoxResultCode {
-    run(|| {
+    let _ = init_logger();
+    into_result_code_with_error((|| {
         let path = ensure_utf8(CStr::from_ptr(path))?;
         user_dict.dict.save(path)?;
         Ok(())
-    })
+    })())
 }
 
 /// ユーザー辞書を<b>破棄</b>(_destruct_)する。
@@ -1220,5 +1291,6 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_delete(user_dict: Box<VoicevoxUserDict>) {
-    run(|| drop(user_dict));
+    let _ = init_logger();
+    drop(user_dict);
 }

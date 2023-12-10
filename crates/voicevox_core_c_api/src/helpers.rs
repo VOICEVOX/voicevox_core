@@ -1,128 +1,57 @@
 use std::{error::Error as _, fmt::Debug, iter};
 use voicevox_core::UserDictWord;
 
-use duplicate::duplicate_item;
 use thiserror::Error;
 use tracing::error;
 
 use super::*;
 use voicevox_core::AccentPhraseModel;
 
-pub(crate) fn run<F: FnOnce() -> O, O: Outcome>(f: F) -> O::Output {
-    let _ = init_logger();
-    return f().convert_with_error();
+pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxResultCode {
+    if let Err(err) = &result {
+        display_error(err);
+    }
+    return into_result_code(result);
 
-    fn init_logger() -> std::result::Result<(), impl Sized> {
-        let ansi = {
-            // anstyle系のクレートを利用して次の2つを行う。
-            //
-            // * ANSI escape codeを出してよいかの判定（環境変数のチェックとisatty）
-            // * 必要であれば`ENABLE_VIRTUAL_TERMINAL_PROCESSING`の有効化
-
-            assert_eq!(
-                ColorChoice::Auto,
-                ColorChoice::global(),
-                "`ColorChoice::write_global` should not have been called",
-            );
-
-            AutoStream::choice(&out()) != ColorChoice::Never
-                && anstyle_query::term_supports_ansi_color()
-                && anstyle_query::windows::enable_ansi_colors().unwrap_or(true)
-        };
-
-        tracing_subscriber::fmt()
-            .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
-                EnvFilter::from_default_env()
-            } else {
-                "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
-            })
-            .with_timer(local_time as fn(&mut Writer<'_>) -> _)
-            .with_ansi(ansi)
-            .with_writer(out)
-            .try_init()
+    fn display_error(err: &CApiError) {
+        itertools::chain(
+            [err.to_string()],
+            iter::successors(err.source(), |&e| e.source()).map(|e| format!("Caused by: {e}")),
+        )
+        .for_each(|msg| error!("{msg}"));
     }
 
-    fn local_time(wtr: &mut Writer<'_>) -> fmt::Result {
-        // ローカル時刻で表示はするが、そのフォーマットはtracing-subscriber本来のものに近いようにする。
-        // https://github.com/tokio-rs/tracing/blob/tracing-subscriber-0.3.16/tracing-subscriber/src/fmt/time/datetime.rs#L235-L241
-        wtr.write_str(&chrono::Local::now().to_rfc3339_opts(SecondsFormat::Micros, false))
-    }
+    fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
+        use voicevox_core::ErrorKind::*;
+        use CApiError::*;
+        use VoicevoxResultCode::*;
 
-    fn out() -> impl RawStream {
-        io::stderr()
-    }
-}
-
-pub(crate) trait Outcome: Sized {
-    type Output;
-    fn convert_with_error(self) -> Self::Output;
-}
-
-#[duplicate_item(
-    impl_generics T;
-    []            [ () ];
-    []            [ bool ];
-    []            [ *const c_char ];
-    []            [ *mut c_char ];
-    [ T ]         [ Box<T> ];
-)]
-impl<impl_generics> Outcome for T {
-    type Output = Self;
-
-    fn convert_with_error(self) -> Self::Output {
-        self
-    }
-}
-
-impl Outcome for CApiResult<()> {
-    type Output = VoicevoxResultCode;
-
-    fn convert_with_error(self) -> Self::Output {
-        if let Err(err) = &self {
-            display_error(err);
-        }
-        return into_result_code(self);
-
-        fn display_error(err: &CApiError) {
-            itertools::chain(
-                [err.to_string()],
-                iter::successors(err.source(), |&e| e.source()).map(|e| format!("Caused by: {e}")),
-            )
-            .for_each(|msg| error!("{msg}"));
-        }
-
-        fn into_result_code(this: CApiResult<()>) -> VoicevoxResultCode {
-            use voicevox_core::ErrorKind::*;
-            use CApiError::*;
-            use VoicevoxResultCode::*;
-
-            match this {
-                Ok(()) => VOICEVOX_RESULT_OK,
-                Err(RustApi(err)) => match err.kind() {
-                    NotLoadedOpenjtalkDict => VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
-                    GpuSupport => VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
-                    OpenZipFile => VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR,
-                    ReadZipEntry => VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR,
-                    ModelAlreadyLoaded => VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR,
-                    StyleAlreadyLoaded => VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR,
-                    InvalidModelData => VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR,
-                    GetSupportedDevices => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
-                    StyleNotFound => VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
-                    ModelNotFound => VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
-                    InferenceFailed => VOICEVOX_RESULT_INFERENCE_ERROR,
-                    ExtractFullContextLabel => VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
-                    ParseKana => VOICEVOX_RESULT_PARSE_KANA_ERROR,
-                    LoadUserDict => VOICEVOX_RESULT_LOAD_USER_DICT_ERROR,
-                    SaveUserDict => VOICEVOX_RESULT_SAVE_USER_DICT_ERROR,
-                    WordNotFound => VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR,
-                    UseUserDict => VOICEVOX_RESULT_USE_USER_DICT_ERROR,
-                    InvalidWord => VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR,
-                },
-                Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
-                Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
-                Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
-                Err(InvalidUuid(_)) => VOICEVOX_RESULT_INVALID_UUID_ERROR,
-            }
+        match result {
+            Ok(()) => VOICEVOX_RESULT_OK,
+            Err(RustApi(err)) => match err.kind() {
+                NotLoadedOpenjtalkDict => VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
+                GpuSupport => VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
+                OpenZipFile => VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR,
+                ReadZipEntry => VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR,
+                ModelAlreadyLoaded => VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR,
+                StyleAlreadyLoaded => VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR,
+                InvalidModelData => VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR,
+                GetSupportedDevices => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
+                StyleNotFound => VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
+                ModelNotFound => VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
+                InferenceFailed => VOICEVOX_RESULT_INFERENCE_ERROR,
+                ExtractFullContextLabel => VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
+                ParseKana => VOICEVOX_RESULT_PARSE_KANA_ERROR,
+                LoadUserDict => VOICEVOX_RESULT_LOAD_USER_DICT_ERROR,
+                SaveUserDict => VOICEVOX_RESULT_SAVE_USER_DICT_ERROR,
+                WordNotFound => VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR,
+                UseUserDict => VOICEVOX_RESULT_USE_USER_DICT_ERROR,
+                InvalidWord => VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR,
+            },
+            Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
+            Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
+            Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
+            Err(InvalidUuid(_)) => VOICEVOX_RESULT_INVALID_UUID_ERROR,
         }
     }
 }

@@ -100,93 +100,92 @@ fn set_message(message: &str) {
 
 #[no_mangle]
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
-    run(|| {
-        let result = (|| {
-            let synthesizer = voicevox_core::blocking::Synthesizer::new(
-                (),
-                &voicevox_core::InitializeOptions {
-                    acceleration_mode: if use_gpu {
-                        voicevox_core::AccelerationMode::Gpu
-                    } else {
-                        voicevox_core::AccelerationMode::Cpu
-                    },
-                    cpu_num_threads: cpu_num_threads as u16,
+    let _ = init_logger();
+    let result = (|| {
+        let synthesizer = voicevox_core::blocking::Synthesizer::new(
+            (),
+            &voicevox_core::InitializeOptions {
+                acceleration_mode: if use_gpu {
+                    voicevox_core::AccelerationMode::Gpu
+                } else {
+                    voicevox_core::AccelerationMode::Cpu
                 },
-            )?;
+                cpu_num_threads: cpu_num_threads as u16,
+            },
+        )?;
 
-            if load_all_models {
-                for model in &voice_model_set().all_vvms {
-                    synthesizer.load_voice_model(model)?;
-                }
-            }
-
-            Ok::<_, voicevox_core::Error>(synthesizer)
-        })();
-
-        match result {
-            Ok(synthesizer) => {
-                *lock_synthesizer() = Some(synthesizer);
-                true
-            }
-            Err(err) => {
-                set_message(&format!("{err}"));
-                false
+        if load_all_models {
+            for model in &voice_model_set().all_vvms {
+                synthesizer.load_voice_model(model)?;
             }
         }
-    })
+
+        Ok::<_, voicevox_core::Error>(synthesizer)
+    })();
+
+    match result {
+        Ok(synthesizer) => {
+            *lock_synthesizer() = Some(synthesizer);
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
 }
 
 #[no_mangle]
 pub extern "C" fn load_model(style_id: i64) -> bool {
-    run(|| {
-        let style_id = StyleId::new(style_id as u32);
-        let model_set = voice_model_set();
-        if let Some(model_id) = model_set.style_model_map.get(&style_id) {
-            let vvm = model_set.model_map.get(model_id).unwrap();
-            let synthesizer = &mut *lock_synthesizer();
-            let result = ensure_initialized!(synthesizer).load_voice_model(vvm);
-            if let Some(err) = result.err() {
-                set_message(&format!("{err}"));
-                false
-            } else {
-                true
-            }
-        } else {
-            set_message(&format!("{}は無効なStyle IDです", style_id));
+    let _ = init_logger();
+    let style_id = StyleId::new(style_id as u32);
+    let model_set = voice_model_set();
+    if let Some(model_id) = model_set.style_model_map.get(&style_id) {
+        let vvm = model_set.model_map.get(model_id).unwrap();
+        let synthesizer = &mut *lock_synthesizer();
+        let result = ensure_initialized!(synthesizer).load_voice_model(vvm);
+        if let Some(err) = result.err() {
+            set_message(&format!("{err}"));
             false
+        } else {
+            true
         }
-    })
+    } else {
+        set_message(&format!("{}は無効なStyle IDです", style_id));
+        false
+    }
 }
 
 #[no_mangle]
 pub extern "C" fn is_model_loaded(speaker_id: i64) -> bool {
-    run(|| {
-        ensure_initialized!(&*lock_synthesizer())
-            .is_loaded_model_by_style_id(StyleId::new(speaker_id as u32))
-    })
+    let _ = init_logger();
+    ensure_initialized!(&*lock_synthesizer())
+        .is_loaded_model_by_style_id(StyleId::new(speaker_id as u32))
 }
 
 #[no_mangle]
 pub extern "C" fn finalize() {
-    run(|| *lock_synthesizer() = None);
+    let _ = init_logger();
+    *lock_synthesizer() = None;
 }
 
 #[no_mangle]
 pub extern "C" fn metas() -> *const c_char {
-    run(|| {
-        let model_set = voice_model_set();
-        model_set.all_metas_json.as_ptr()
-    })
+    let _ = init_logger();
+    let model_set = voice_model_set();
+    model_set.all_metas_json.as_ptr()
 }
 
 #[no_mangle]
 pub extern "C" fn last_error_message() -> *const c_char {
-    run(|| ERROR_MESSAGE.lock().unwrap().as_ptr() as *const c_char)
+    let _ = init_logger();
+    ERROR_MESSAGE.lock().unwrap().as_ptr() as *const c_char
 }
 
 #[no_mangle]
 pub extern "C" fn supported_devices() -> *const c_char {
-    return run(|| SUPPORTED_DEVICES.as_ptr());
+    let _ = init_logger();
+    return SUPPORTED_DEVICES.as_ptr();
 
     static SUPPORTED_DEVICES: Lazy<CString> = Lazy::new(|| {
         CString::new(SupportedDevices::create().unwrap().to_json().to_string()).unwrap()
@@ -200,25 +199,23 @@ pub extern "C" fn yukarin_s_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    run(|| {
-        let synthesizer = &*lock_synthesizer();
-        let result = ensure_initialized!(synthesizer).predict_duration(
-            unsafe { std::slice::from_raw_parts_mut(phoneme_list, length as usize) },
-            StyleId::new(unsafe { *speaker_id as u32 }),
-        );
-        match result {
-            Ok(output_vec) => {
-                let output_slice =
-                    unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
-                output_slice.clone_from_slice(&output_vec);
-                true
-            }
-            Err(err) => {
-                set_message(&format!("{err}"));
-                false
-            }
+    let _ = init_logger();
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).predict_duration(
+        unsafe { std::slice::from_raw_parts_mut(phoneme_list, length as usize) },
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_vec) => {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
+            output_slice.clone_from_slice(&output_vec);
+            true
         }
-    })
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
 }
 
 #[no_mangle]
@@ -233,31 +230,29 @@ pub extern "C" fn yukarin_sa_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    run(|| {
-        let synthesizer = &*lock_synthesizer();
-        let result = ensure_initialized!(synthesizer).predict_intonation(
-            length as usize,
-            unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length as usize) },
-            unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length as usize) },
-            unsafe { std::slice::from_raw_parts(start_accent_list, length as usize) },
-            unsafe { std::slice::from_raw_parts(end_accent_list, length as usize) },
-            unsafe { std::slice::from_raw_parts(start_accent_phrase_list, length as usize) },
-            unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length as usize) },
-            StyleId::new(unsafe { *speaker_id as u32 }),
-        );
-        match result {
-            Ok(output_vec) => {
-                let output_slice =
-                    unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
-                output_slice.clone_from_slice(&output_vec);
-                true
-            }
-            Err(err) => {
-                set_message(&format!("{err}"));
-                false
-            }
+    let _ = init_logger();
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).predict_intonation(
+        length as usize,
+        unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length as usize) },
+        unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length as usize) },
+        unsafe { std::slice::from_raw_parts(start_accent_list, length as usize) },
+        unsafe { std::slice::from_raw_parts(end_accent_list, length as usize) },
+        unsafe { std::slice::from_raw_parts(start_accent_phrase_list, length as usize) },
+        unsafe { std::slice::from_raw_parts(end_accent_phrase_list, length as usize) },
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_vec) => {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
+            output_slice.clone_from_slice(&output_vec);
+            true
         }
-    })
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
 }
 
 #[no_mangle]
@@ -269,27 +264,26 @@ pub extern "C" fn decode_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    run(|| {
-        let length = length as usize;
-        let phoneme_size = phoneme_size as usize;
-        let synthesizer = &*lock_synthesizer();
-        let result = ensure_initialized!(synthesizer).decode(
-            length,
-            phoneme_size,
-            unsafe { std::slice::from_raw_parts(f0, length) },
-            unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) },
-            StyleId::new(unsafe { *speaker_id as u32 }),
-        );
-        match result {
-            Ok(output_vec) => {
-                let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };
-                output_slice.clone_from_slice(&output_vec);
-                true
-            }
-            Err(err) => {
-                set_message(&format!("{err}"));
-                false
-            }
+    let _ = init_logger();
+    let length = length as usize;
+    let phoneme_size = phoneme_size as usize;
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).decode(
+        length,
+        phoneme_size,
+        unsafe { std::slice::from_raw_parts(f0, length) },
+        unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) },
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_vec) => {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };
+            output_slice.clone_from_slice(&output_vec);
+            true
         }
-    })
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
 }
