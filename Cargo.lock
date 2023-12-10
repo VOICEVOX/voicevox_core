@@ -4395,7 +4395,6 @@ dependencies = [
  "cstr",
  "derive-getters",
  "duct",
- "duplicate",
  "easy-ext",
  "futures",
  "inventory",
