@@ -4432,7 +4432,6 @@ dependencies = [
  "jni",
  "once_cell",
  "serde_json",
- "tokio",
  "tracing",
  "tracing-subscriber",
  "uuid",
