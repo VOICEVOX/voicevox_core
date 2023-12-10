@@ -17,7 +17,6 @@ derive_more.workspace = true
 jni.workspace = true
 once_cell.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
-tokio = { workspace = true, features = ["rt", "rt-multi-thread"] }
 tracing = { workspace = true, features = ["log"] }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 uuid.workspace = true

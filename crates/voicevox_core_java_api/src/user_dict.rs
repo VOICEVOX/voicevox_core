@@ -1,7 +1,7 @@
 use jni::objects::JClass;
 use std::{borrow::Cow, sync::Arc};
 
-use crate::common::{throw_if_err, JavaApiError, RUNTIME};
+use crate::common::{throw_if_err, JavaApiError};
 use jni::{
     objects::{JObject, JString},
     sys::jobject,
@@ -14,7 +14,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsNew<'local>(
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let internal = voicevox_core::tokio::UserDict::new();
+        let internal = voicevox_core::blocking::UserDict::new();
 
         env.set_rust_field(&this, "handle", Arc::new(internal))?;
 
@@ -30,7 +30,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsAddWord<'loc
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::tokio::UserDict>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
             .clone();
 
         let word_json = env.get_string(&word_json)?;
@@ -55,7 +55,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsUpdateWord<'
 ) {
     throw_if_err(env, (), |env| {
         let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::tokio::UserDict>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
             .clone();
 
         let uuid = env.get_string(&uuid)?;
@@ -80,7 +80,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsRemoveWord<'
 ) {
     throw_if_err(env, (), |env| {
         let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::tokio::UserDict>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
             .clone();
 
         let uuid = env.get_string(&uuid)?;
@@ -100,10 +100,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsImportDict<'
 ) {
     throw_if_err(env, (), |env| {
         let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::tokio::UserDict>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
             .clone();
         let other_dict = env
-            .get_rust_field::<_, _, Arc<voicevox_core::tokio::UserDict>>(&other_dict, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&other_dict, "handle")?
             .clone();
 
         internal.import(&other_dict)?;
@@ -120,13 +120,13 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsLoad<'local>
 ) {
     throw_if_err(env, (), |env| {
         let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::tokio::UserDict>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
             .clone();
 
         let path = env.get_string(&path)?;
         let path = &Cow::from(&path);
 
-        RUNTIME.block_on(internal.load(path))?;
+        internal.load(path)?;
 
         Ok(())
     })
@@ -140,13 +140,13 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsSave<'local>
 ) {
     throw_if_err(env, (), |env| {
         let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::tokio::UserDict>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
             .clone();
 
         let path = env.get_string(&path)?;
         let path = &Cow::from(&path);
 
-        RUNTIME.block_on(internal.save(path))?;
+        internal.save(path)?;
 
         Ok(())
     })
@@ -159,7 +159,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsGetWords<'lo
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::tokio::UserDict>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
             .clone();
 
         let words = internal.to_json();

@@ -357,7 +357,8 @@ impl<O> self::blocking::Synthesizer<O> {
         self.status.is_loaded_model(voice_model_id)
     }
 
-    fn is_loaded_model_by_style_id(&self, style_id: StyleId) -> bool {
+    #[doc(hidden)]
+    pub fn is_loaded_model_by_style_id(&self, style_id: StyleId) -> bool {
         self.status.is_loaded_model_by_style_id(style_id)
     }
 
@@ -1039,47 +1040,6 @@ pub trait PerformInference {
     ) -> Result<Vec<f32>>;
 }
 
-impl<O> PerformInference for self::tokio::Synthesizer<O> {
-    fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
-        self.0.predict_duration(phoneme_vector, style_id)
-    }
-
-    fn predict_intonation(
-        &self,
-        length: usize,
-        vowel_phoneme_vector: &[i64],
-        consonant_phoneme_vector: &[i64],
-        start_accent_vector: &[i64],
-        end_accent_vector: &[i64],
-        start_accent_phrase_vector: &[i64],
-        end_accent_phrase_vector: &[i64],
-        style_id: StyleId,
-    ) -> Result<Vec<f32>> {
-        self.0.predict_intonation(
-            length,
-            vowel_phoneme_vector,
-            consonant_phoneme_vector,
-            start_accent_vector,
-            end_accent_vector,
-            start_accent_phrase_vector,
-            end_accent_phrase_vector,
-            style_id,
-        )
-    }
-
-    fn decode(
-        &self,
-        length: usize,
-        phoneme_size: usize,
-        f0: &[f32],
-        phoneme_vector: &[f32],
-        style_id: StyleId,
-    ) -> Result<Vec<f32>> {
-        self.0
-            .decode(length, phoneme_size, f0, phoneme_vector, style_id)
-    }
-}
-
 impl<O> PerformInference for self::blocking::Synthesizer<O> {
     fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
         // FIXME: `Status::ids_for`があるため、ここは不要なはず
@@ -1516,7 +1476,9 @@ mod tests {
             30, 35, 14, 23, 7, 21, 14, 43, 30, 30, 23, 30, 35, 30, 0,
         ];
 
-        let result = syntesizer.predict_duration(&phoneme_vector, StyleId::new(1));
+        let result = syntesizer
+            .0
+            .predict_duration(&phoneme_vector, StyleId::new(1));
 
         assert!(result.is_ok(), "{result:?}");
         assert_eq!(result.unwrap().len(), phoneme_vector.len());
@@ -1546,7 +1508,7 @@ mod tests {
         let start_accent_phrase_vector = [0, 1, 0, 0, 0];
         let end_accent_phrase_vector = [0, 0, 0, 1, 0];
 
-        let result = syntesizer.predict_intonation(
+        let result = syntesizer.0.predict_intonation(
             vowel_phoneme_vector.len(),
             &vowel_phoneme_vector,
             &consonant_phoneme_vector,
@@ -1599,7 +1561,9 @@ mod tests {
         set_one(30, 45..60);
         set_one(0, 60..69);
 
-        let result = syntesizer.decode(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, StyleId::new(1));
+        let result = syntesizer
+            .0
+            .decode(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, StyleId::new(1));
 
         assert!(result.is_ok(), "{result:?}");
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
