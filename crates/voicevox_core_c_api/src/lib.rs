@@ -24,41 +24,46 @@ use std::fmt;
 use std::io;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard, Once};
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
 use voicevox_core::{AccentPhraseModel, AudioQueryModel, TtsOptions, UserDictWord, VoiceModelId};
 use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions};
 
-fn init_logger() -> std::result::Result<(), impl Sized> {
-    let ansi = {
-        // anstyle系のクレートを利用して次の2つを行う。
-        //
-        // * ANSI escape codeを出してよいかの判定（環境変数のチェックとisatty）
-        // * 必要であれば`ENABLE_VIRTUAL_TERMINAL_PROCESSING`の有効化
+fn init_logger_once() {
+    static ONCE: Once = Once::new();
 
-        assert_eq!(
-            ColorChoice::Auto,
-            ColorChoice::global(),
-            "`ColorChoice::write_global` should not have been called",
-        );
+    ONCE.call_once(|| {
+        let ansi = {
+            // anstyle系のクレートを利用して次の2つを行う。
+            //
+            // * ANSI escape codeを出してよいかの判定（環境変数のチェックとisatty）
+            // * 必要であれば`ENABLE_VIRTUAL_TERMINAL_PROCESSING`の有効化
 
-        AutoStream::choice(&out()) != ColorChoice::Never
-            && anstyle_query::term_supports_ansi_color()
-            && anstyle_query::windows::enable_ansi_colors().unwrap_or(true)
-    };
+            assert_eq!(
+                ColorChoice::Auto,
+                ColorChoice::global(),
+                "`ColorChoice::write_global` should not have been called",
+            );
 
-    return tracing_subscriber::fmt()
-        .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
-            EnvFilter::from_default_env()
-        } else {
-            "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
-        })
-        .with_timer(local_time as fn(&mut Writer<'_>) -> _)
-        .with_ansi(ansi)
-        .with_writer(out)
-        .try_init();
+            AutoStream::choice(&out()) != ColorChoice::Never
+                && anstyle_query::term_supports_ansi_color()
+                && anstyle_query::windows::enable_ansi_colors().unwrap_or(true)
+        };
+
+        // FIXME: `try_init` → `init` （subscriberは他に存在しないはずなので）
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
+                EnvFilter::from_default_env()
+            } else {
+                "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
+            })
+            .with_timer(local_time as fn(&mut Writer<'_>) -> _)
+            .with_ansi(ansi)
+            .with_writer(out)
+            .try_init();
+    });
 
     fn local_time(wtr: &mut Writer<'_>) -> fmt::Result {
         // ローカル時刻で表示はするが、そのフォーマットはtracing-subscriber本来のものに近いようにする。
@@ -122,7 +127,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     open_jtalk_dic_dir: *const c_char,
     out_open_jtalk: NonNull<Box<OpenJtalkRc>>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
         let open_jtalk = OpenJtalkRc::new(open_jtalk_dic_dir)?.into();
@@ -147,7 +152,7 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
     open_jtalk: &OpenJtalkRc,
     user_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         open_jtalk.open_jtalk.use_user_dict(&user_dict.dict)?;
         Ok(())
@@ -170,7 +175,7 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: Box<OpenJtalkRc>) {
-    let _ = init_logger();
+    init_logger_once();
     drop(open_jtalk);
 }
 
@@ -201,7 +206,7 @@ pub struct VoicevoxInitializeOptions {
 /// @return デフォルト値が設定された初期化オプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitializeOptions {
-    let _ = init_logger();
+    init_logger_once();
     VoicevoxInitializeOptions::default()
 }
 
@@ -209,7 +214,7 @@ pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitiali
 /// @return SemVerでフォーマットされたバージョン。
 #[no_mangle]
 pub extern "C" fn voicevox_get_version() -> *const c_char {
-    let _ = init_logger();
+    init_logger_once();
     return C_STRING_DROP_CHECKER.blacklist(VERSION).as_ptr();
 
     const VERSION: &CStr = unsafe {
@@ -253,7 +258,7 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
     path: *const c_char,
     out_model: NonNull<Box<VoicevoxVoiceModel>>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let path = ensure_utf8(CStr::from_ptr(path))?;
         let model = VoicevoxVoiceModel::from_path(path)?.into();
@@ -273,7 +278,7 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_id(model: &VoicevoxVoiceModel) -> VoicevoxVoiceModelId {
-    let _ = init_logger();
+    init_logger_once();
     model.id().as_ptr()
 }
 
@@ -289,7 +294,7 @@ pub extern "C" fn voicevox_voice_model_id(model: &VoicevoxVoiceModel) -> Voicevo
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_get_metas_json(model: &VoicevoxVoiceModel) -> *const c_char {
-    let _ = init_logger();
+    init_logger_once();
     model.metas().as_ptr()
 }
 
@@ -303,7 +308,7 @@ pub extern "C" fn voicevox_voice_model_get_metas_json(model: &VoicevoxVoiceModel
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
-    let _ = init_logger();
+    init_logger_once();
     drop(model);
 }
 
@@ -333,7 +338,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
     options: VoicevoxInitializeOptions,
     out_synthesizer: NonNull<Box<VoicevoxSynthesizer>>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let options = options.into();
 
@@ -353,7 +358,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesizer>) {
-    let _ = init_logger();
+    init_logger_once();
     drop(synthesizer);
 }
 
@@ -373,7 +378,7 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
     synthesizer: &VoicevoxSynthesizer,
     model: &VoicevoxVoiceModel,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error(synthesizer.load_voice_model(model.model()))
 }
 
@@ -393,7 +398,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
     synthesizer: &VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) })?;
         synthesizer
@@ -413,7 +418,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_is_gpu_mode(synthesizer: &VoicevoxSynthesizer) -> bool {
-    let _ = init_logger();
+    init_logger_once();
     synthesizer.synthesizer().is_gpu_mode()
 }
 
@@ -433,7 +438,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
     synthesizer: &VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId,
 ) -> bool {
-    let _ = init_logger();
+    init_logger_once();
     // FIXME: 不正なUTF-8文字列に対し、正式なエラーとするか黙って`false`を返す
     let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) }).unwrap();
     synthesizer
@@ -456,7 +461,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
 pub extern "C" fn voicevox_synthesizer_create_metas_json(
     synthesizer: &VoicevoxSynthesizer,
 ) -> *mut c_char {
-    let _ = init_logger();
+    init_logger_once();
     let metas = synthesizer.metas();
     C_STRING_DROP_CHECKER.whitelist(metas).into_raw()
 }
@@ -485,7 +490,7 @@ pub extern "C" fn voicevox_synthesizer_create_metas_json(
 pub unsafe extern "C" fn voicevox_create_supported_devices_json(
     output_supported_devices_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let supported_devices =
             CString::new(SupportedDevices::create()?.to_json().to_string()).unwrap();
@@ -530,7 +535,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
     style_id: VoicevoxStyleId,
     output_audio_query_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let kana = CStr::from_ptr(kana);
         let kana = ensure_utf8(kana)?;
@@ -579,7 +584,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
     style_id: VoicevoxStyleId,
     output_audio_query_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let text = CStr::from_ptr(text);
         let text = ensure_utf8(text)?;
@@ -629,7 +634,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let kana = ensure_utf8(CStr::from_ptr(kana))?;
         let accent_phrases = synthesizer
@@ -676,7 +681,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let accent_phrases = synthesizer
@@ -714,7 +719,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
@@ -754,7 +759,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
@@ -794,7 +799,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let accent_phrases: Vec<AccentPhraseModel> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
@@ -822,7 +827,7 @@ pub struct VoicevoxSynthesisOptions {
 /// @return デフォルト値が設定された `voicevox_synthesizer_synthesis` のオプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesisOptions {
-    let _ = init_logger();
+    init_logger_once();
     VoicevoxSynthesisOptions::default()
 }
 
@@ -854,7 +859,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     output_wav_length: NonNull<usize>,
     output_wav: NonNull<*mut u8>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let audio_query_json = CStr::from_ptr(audio_query_json)
             .to_str()
@@ -882,7 +887,7 @@ pub struct VoicevoxTtsOptions {
 /// @return テキスト音声合成オプション
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
-    let _ = init_logger();
+    init_logger_once();
     voicevox_core::TtsOptions::default().into()
 }
 
@@ -914,7 +919,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
     output_wav_length: NonNull<usize>,
     output_wav: NonNull<*mut u8>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let kana = ensure_utf8(CStr::from_ptr(kana))?;
         let output = synthesizer.synthesizer().tts_from_kana(
@@ -955,7 +960,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
     output_wav_length: NonNull<usize>,
     output_wav: NonNull<*mut u8>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;
         let output = synthesizer.synthesizer().tts(
@@ -988,7 +993,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
-    let _ = init_logger();
+    init_logger_once();
     drop(CString::from_raw(C_STRING_DROP_CHECKER.check(json)));
 }
 
@@ -1005,7 +1010,7 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
-    let _ = init_logger();
+    init_logger_once();
     U8_SLICE_OWNER.drop_for(wav);
 }
 
@@ -1033,7 +1038,7 @@ pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
 pub extern "C" fn voicevox_error_result_to_message(
     result_code: VoicevoxResultCode,
 ) -> *const c_char {
-    let _ = init_logger();
+    init_logger_once();
     let message = result_code::error_result_to_message(result_code);
     C_STRING_DROP_CHECKER.blacklist(message).as_ptr()
 }
@@ -1087,7 +1092,7 @@ pub extern "C" fn voicevox_user_dict_word_make(
     surface: *const c_char,
     pronunciation: *const c_char,
 ) -> VoicevoxUserDictWord {
-    let _ = init_logger();
+    init_logger_once();
     VoicevoxUserDictWord {
         surface,
         pronunciation,
@@ -1102,7 +1107,7 @@ pub extern "C" fn voicevox_user_dict_word_make(
 /// @returns ::VoicevoxUserDict
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_new() -> Box<VoicevoxUserDict> {
-    let _ = init_logger();
+    init_logger_once();
     Default::default()
 }
 
@@ -1121,7 +1126,7 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
     user_dict: &VoicevoxUserDict,
     dict_path: *const c_char,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let dict_path = ensure_utf8(unsafe { CStr::from_ptr(dict_path) })?;
         user_dict.dict.load(dict_path)?;
@@ -1151,7 +1156,7 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
     word: *const VoicevoxUserDictWord,
     output_word_uuid: NonNull<[u8; 16]>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let word = word.read_unaligned().try_into_word()?;
         let uuid = user_dict.dict.add_word(word)?;
@@ -1179,7 +1184,7 @@ pub unsafe extern "C" fn voicevox_user_dict_update_word(
     word_uuid: &[u8; 16],
     word: *const VoicevoxUserDictWord,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
         let word = word.read_unaligned().try_into_word()?;
@@ -1204,7 +1209,7 @@ pub extern "C" fn voicevox_user_dict_remove_word(
     user_dict: &VoicevoxUserDict,
     word_uuid: &[u8; 16],
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
         user_dict.dict.remove_word(word_uuid)?;
@@ -1230,7 +1235,7 @@ pub unsafe extern "C" fn voicevox_user_dict_to_json(
     user_dict: &VoicevoxUserDict,
     output_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     let json = user_dict.dict.to_json();
     let json = CString::new(json).expect("\\0を含まない文字列であることが保証されている");
     output_json
@@ -1253,7 +1258,7 @@ pub extern "C" fn voicevox_user_dict_import(
     user_dict: &VoicevoxUserDict,
     other_dict: &VoicevoxUserDict,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         user_dict.dict.import(&other_dict.dict)?;
         Ok(())
@@ -1274,7 +1279,7 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
     user_dict: &VoicevoxUserDict,
     path: *const c_char,
 ) -> VoicevoxResultCode {
-    let _ = init_logger();
+    init_logger_once();
     into_result_code_with_error((|| {
         let path = ensure_utf8(CStr::from_ptr(path))?;
         user_dict.dict.save(path)?;
@@ -1291,6 +1296,6 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_delete(user_dict: Box<VoicevoxUserDict>) {
-    let _ = init_logger();
+    init_logger_once();
     drop(user_dict);
 }

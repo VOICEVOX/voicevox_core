@@ -100,7 +100,7 @@ fn set_message(message: &str) {
 
 #[no_mangle]
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
-    let _ = init_logger();
+    init_logger_once();
     let result = (|| {
         let synthesizer = voicevox_core::blocking::Synthesizer::new(
             (),
@@ -137,7 +137,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
 
 #[no_mangle]
 pub extern "C" fn load_model(style_id: i64) -> bool {
-    let _ = init_logger();
+    init_logger_once();
     let style_id = StyleId::new(style_id as u32);
     let model_set = voice_model_set();
     if let Some(model_id) = model_set.style_model_map.get(&style_id) {
@@ -158,33 +158,33 @@ pub extern "C" fn load_model(style_id: i64) -> bool {
 
 #[no_mangle]
 pub extern "C" fn is_model_loaded(speaker_id: i64) -> bool {
-    let _ = init_logger();
+    init_logger_once();
     ensure_initialized!(&*lock_synthesizer())
         .is_loaded_model_by_style_id(StyleId::new(speaker_id as u32))
 }
 
 #[no_mangle]
 pub extern "C" fn finalize() {
-    let _ = init_logger();
+    init_logger_once();
     *lock_synthesizer() = None;
 }
 
 #[no_mangle]
 pub extern "C" fn metas() -> *const c_char {
-    let _ = init_logger();
+    init_logger_once();
     let model_set = voice_model_set();
     model_set.all_metas_json.as_ptr()
 }
 
 #[no_mangle]
 pub extern "C" fn last_error_message() -> *const c_char {
-    let _ = init_logger();
+    init_logger_once();
     ERROR_MESSAGE.lock().unwrap().as_ptr() as *const c_char
 }
 
 #[no_mangle]
 pub extern "C" fn supported_devices() -> *const c_char {
-    let _ = init_logger();
+    init_logger_once();
     return SUPPORTED_DEVICES.as_ptr();
 
     static SUPPORTED_DEVICES: Lazy<CString> = Lazy::new(|| {
@@ -199,7 +199,7 @@ pub extern "C" fn yukarin_s_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let _ = init_logger();
+    init_logger_once();
     let synthesizer = &*lock_synthesizer();
     let result = ensure_initialized!(synthesizer).predict_duration(
         unsafe { std::slice::from_raw_parts_mut(phoneme_list, length as usize) },
@@ -230,7 +230,7 @@ pub extern "C" fn yukarin_sa_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let _ = init_logger();
+    init_logger_once();
     let synthesizer = &*lock_synthesizer();
     let result = ensure_initialized!(synthesizer).predict_intonation(
         length as usize,
@@ -264,7 +264,7 @@ pub extern "C" fn decode_forward(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    let _ = init_logger();
+    init_logger_once();
     let length = length as usize;
     let phoneme_size = phoneme_size as usize;
     let synthesizer = &*lock_synthesizer();
