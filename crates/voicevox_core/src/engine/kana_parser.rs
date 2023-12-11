@@ -191,7 +191,6 @@ pub fn create_kana(accent_phrases: &[AccentPhraseModel]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::engine::mora_list::MORA_LIST_MINIMUM;
     use pretty_assertions::assert_eq;
     use rstest::rstest;
@@ -207,7 +206,7 @@ mod tests {
     #[case(Some("O"), "_オ")]
     #[case(None, "fail")]
     fn test_text2mora_with_unvoice(#[case] mora: Option<&str>, #[case] text: &str) {
-        let text2mora = &TEXT2MORA_WITH_UNVOICE;
+        let text2mora = &super::TEXT2MORA_WITH_UNVOICE;
         assert_eq!(text2mora.len(), MORA_LIST_MINIMUM.len() * 2 - 2); // added twice except ン and ッ
         let res = text2mora.get(text);
         assert_eq!(mora.is_some(), res.is_some());
@@ -230,7 +229,7 @@ mod tests {
     #[case("'アクセントハジマリ", false)]
     #[case("不明な'文字", false)]
     fn test_text_to_accent_phrase(#[case] text: &str, #[case] result_is_ok_expected: bool) {
-        let result = text_to_accent_phrase(text);
+        let result = super::text_to_accent_phrase(text);
         assert_eq!(result.is_ok(), result_is_ok_expected, "{:?}", result);
     }
 
@@ -239,14 +238,14 @@ mod tests {
     #[case("クウハクノ'//フレーズ'", false)]
     #[case("フレー？ズノ'/トチュウニ'、ギモ'ンフ", false)]
     fn test_parse_kana(#[case] text: &str, #[case] result_is_ok_expected: bool) {
-        let result = parse_kana(text);
+        let result = super::parse_kana(text);
         assert_eq!(result.is_ok(), result_is_ok_expected, "{:?}", result);
     }
     #[rstest]
     fn test_create_kana() {
         let text = "アンドロ'イドワ、デンキ'/ヒ'_ツジノ/ユメ'オ/ミ'ルカ？";
-        let phrases = parse_kana(text).unwrap();
-        let text_created = create_kana(&phrases);
+        let phrases = super::parse_kana(text).unwrap();
+        let text_created = super::create_kana(&phrases);
         assert_eq!(text, &text_created);
     }
 }

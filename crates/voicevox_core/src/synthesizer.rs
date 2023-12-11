@@ -1,12 +1,14 @@
 use std::io::{Cursor, Write as _};
 
+use cfg_if::cfg_if;
 use enum_map::enum_map;
 
 use crate::{
     engine::{
-        create_kana, parse_kana, AccentPhraseModel, FullcontextExtractor, MoraModel, OjtPhoneme,
-        Utterance,
+        self, create_kana, parse_kana, AccentPhraseModel, FullcontextExtractor, MoraModel,
+        OjtPhoneme, Utterance,
     },
+    error::ErrorRepr,
     infer::{
         domain::{
             DecodeInput, DecodeOutput, InferenceOperationImpl, PredictDurationInput,
@@ -17,9 +19,8 @@ use crate::{
         InferenceSessionOptions,
     },
     numerics::F32Ext as _,
+    AudioQueryModel, Result, StyleId, SupportedDevices, VoiceModelId, VoiceModelMeta,
 };
-
-use super::*;
 
 /// [`blocking::Synthesizer::synthesis`]および[`tokio::Synthesizer::synthesis`]のオプション。
 ///
@@ -1379,7 +1380,7 @@ mod tests {
 
     use super::{AccelerationMode, InitializeOptions, PerformInference as _};
     use crate::{
-        engine::MoraModel, macros::tests::assert_debug_fmt_eq, open_default_vvm_file,
+        engine::MoraModel, macros::tests::assert_debug_fmt_eq, test_util::open_default_vvm_file,
         AccentPhraseModel, Result, StyleId,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;

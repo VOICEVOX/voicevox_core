@@ -2,7 +2,7 @@ use std::{ffi::CString, path::Path};
 
 use voicevox_core::{InitializeOptions, Result, VoiceModelId};
 
-use crate::{CApiResult, OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
+use crate::{helpers::CApiResult, OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
 
 impl OpenJtalkRc {
     pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {

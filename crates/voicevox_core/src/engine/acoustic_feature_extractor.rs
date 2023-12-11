@@ -104,10 +104,10 @@ impl OjtPhoneme {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use pretty_assertions::assert_eq;
+    use rstest::rstest;
 
-    use crate::*;
+    use super::OjtPhoneme;
 
     const STR_HELLO_HIHO: &str = "sil k o N n i ch i w a pau h i h o d e s U sil";
 
@@ -130,7 +130,7 @@ mod tests {
     #[case(38, "ts")]
     #[case(41, "v")]
     fn test_phoneme_list(#[case] index: usize, #[case] phoneme_str: &str) {
-        assert_eq!(PHONEME_LIST[index], phoneme_str);
+        assert_eq!(super::PHONEME_LIST[index], phoneme_str);
     }
 
     #[rstest]

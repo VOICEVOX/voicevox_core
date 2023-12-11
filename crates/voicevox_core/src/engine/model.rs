@@ -84,10 +84,11 @@ impl AudioQueryModel {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::*;
     use pretty_assertions::assert_eq;
+    use rstest::rstest;
     use serde_json::json;
+
+    use super::AudioQueryModel;
 
     #[rstest]
     fn check_audio_query_model_json_field_snake_case() {
