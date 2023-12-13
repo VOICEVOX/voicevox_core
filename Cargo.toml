@@ -13,7 +13,6 @@ async_zip = "0.0.11"
 binstall-tar = "0.4.39"
 bytes = "1.1.0"
 cbindgen = "0.24.3"
-cfg-if = "1.0.0"
 chrono = { version = "0.4.26", default-features = false }
 clap = "4.0.10"
 color-eyre = "0.6.2"
