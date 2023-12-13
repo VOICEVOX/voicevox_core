@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use super::*;
 use derive_getters::Getters;
+use derive_new::new;
 use serde::{Deserialize, Serialize};
 
 /// [`StyleId`]の実体。

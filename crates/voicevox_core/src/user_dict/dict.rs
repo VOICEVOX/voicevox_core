@@ -2,8 +2,7 @@ use indexmap::IndexMap;
 use itertools::join;
 use uuid::Uuid;
 
-use super::word::*;
-use crate::{error::ErrorRepr, Result};
+use crate::{error::ErrorRepr, Result, UserDictWord};
 
 impl self::blocking::UserDict {
     /// ユーザー辞書を作成する。

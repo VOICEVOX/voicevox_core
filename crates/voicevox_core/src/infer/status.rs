@@ -15,8 +15,8 @@ use crate::{
     infer::{InferenceOperation, ParamInfo},
     manifest::ModelInnerId,
     metas::{SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
-    voice_model::VoiceModelId,
-    Result, VoiceModelHeader,
+    voice_model::{VoiceModelHeader, VoiceModelId},
+    Result,
 };
 
 use super::{

@@ -1,9 +1,18 @@
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    env,
+    ffi::{c_char, CString},
+    sync::{Mutex, MutexGuard},
+};
 
-use super::*;
 use libc::c_int;
 
-use voicevox_core::{StyleId, __internal::interop::PerformInference as _};
+use once_cell::sync::Lazy;
+use voicevox_core::{
+    StyleId, SupportedDevices, VoiceModelId, __internal::interop::PerformInference as _,
+};
+
+use crate::init_logger_once;
 
 macro_rules! ensure_initialized {
     ($synthesizer:expr $(,)?) => {

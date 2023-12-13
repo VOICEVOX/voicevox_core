@@ -1,7 +1,11 @@
 use std::{marker::PhantomData, sync::Arc};
 
 mod convert;
-use convert::*;
+use self::convert::{
+    async_modify_accent_phrases, from_acceleration_mode, from_dataclass, from_utf8_path,
+    to_py_user_dict_word, to_py_uuid, to_pydantic_dataclass, to_pydantic_voice_model_meta,
+    to_rust_user_dict_word, to_rust_uuid, VoicevoxCoreResultExt as _,
+};
 use easy_ext::ext;
 use log::debug;
 use pyo3::{

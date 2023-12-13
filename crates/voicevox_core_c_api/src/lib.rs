@@ -10,21 +10,23 @@ mod helpers;
 mod result_code;
 mod slice_owner;
 use self::drop_check::C_STRING_DROP_CHECKER;
-use self::helpers::*;
+use self::helpers::{
+    accent_phrases_to_json, audio_query_model_to_json, ensure_utf8, into_result_code_with_error,
+    CApiError,
+};
 use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
 use anstream::{AutoStream, RawStream};
 use chrono::SecondsFormat;
 use colorchoice::ColorChoice;
 use derive_getters::Getters;
-use once_cell::sync::Lazy;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
-use std::sync::{Arc, Mutex, MutexGuard, Once};
+use std::sync::{Arc, Once};
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;

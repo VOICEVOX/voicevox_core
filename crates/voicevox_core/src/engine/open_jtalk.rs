@@ -5,7 +5,9 @@ use std::{path::Path, sync::Mutex};
 use anyhow::anyhow;
 use tempfile::NamedTempFile;
 
-use ::open_jtalk::*;
+use ::open_jtalk::{
+    mecab_dict_index, text2mecab, JpCommon, ManagedResource, Mecab, Njd, Text2MecabError,
+};
 
 use crate::error::ErrorRepr;
 
