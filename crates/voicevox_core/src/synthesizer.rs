@@ -1,6 +1,5 @@
 use std::io::{Cursor, Write as _};
 
-use cfg_if::cfg_if;
 use enum_map::enum_map;
 
 use crate::{
@@ -289,13 +288,10 @@ impl<O> self::blocking::Synthesizer<O> {
             AccelerationMode::Auto => {
                 let supported_devices = SupportedDevices::create()?;
 
-                cfg_if! {
-                    if #[cfg(feature="directml")]{
-                        *supported_devices.dml()
-
-                    } else {
-                        *supported_devices.cuda()
-                    }
+                if cfg!(feature = "directml") {
+                    *supported_devices.dml()
+                } else {
+                    *supported_devices.cuda()
                 }
             }
             AccelerationMode::Cpu => false,
@@ -327,12 +323,10 @@ impl<O> self::blocking::Synthesizer<O> {
         fn can_support_gpu_feature() -> Result<bool> {
             let supported_devices = SupportedDevices::create()?;
 
-            cfg_if! {
-                if #[cfg(feature = "directml")]{
-                    Ok(*supported_devices.dml())
-                } else{
-                    Ok(*supported_devices.cuda())
-                }
+            if cfg!(feature = "directml") {
+                Ok(*supported_devices.dml())
+            } else {
+                Ok(*supported_devices.cuda())
             }
         }
     }

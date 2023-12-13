@@ -4344,7 +4344,6 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async_zip",
- "cfg-if",
  "derive-getters",
  "derive-new",
  "derive_more",
