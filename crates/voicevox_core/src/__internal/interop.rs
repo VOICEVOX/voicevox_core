@@ -1,1 +1,1 @@
-pub use crate::synthesizer::PerformInference;
+pub use crate::synthesizer::blocking::PerformInference;
