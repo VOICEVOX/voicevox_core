@@ -11,6 +11,7 @@ directml = ["onnxruntime/directml"]
 [dependencies]
 anyhow.workspace = true
 async_zip = { workspace = true, features = ["full"] }
+az.workspace = true
 derive-getters.workspace = true
 derive-new.workspace = true
 derive_more.workspace = true
@@ -24,11 +25,13 @@ indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
 nanoid.workspace = true
 ndarray.workspace = true
+num-traits.workspace = true
 once_cell.workspace = true
 onnxruntime.workspace = true
 open_jtalk.workspace = true
 ouroboros.workspace = true
 rayon.workspace = true
+readonly.workspace = true
 regex.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
@@ -38,6 +41,7 @@ tokio = { workspace = true, features = ["rt"] } # FIXME: feature-gateする
 tracing.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox_core_macros = { path = "../voicevox_core_macros" }
+world.workspace = true
 zip.workspace = true
 
 [dev-dependencies]

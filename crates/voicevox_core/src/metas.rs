@@ -65,6 +65,9 @@ pub struct SpeakerMeta {
     version: StyleVersion,
     /// 話者のUUID。
     speaker_uuid: String,
+    /// 話者の対応機能。
+    #[serde(default)]
+    supported_features: SpeakerSupportedFeatures,
 }
 
 /// **スタイル**(_style_)のメタ情報。
@@ -74,4 +77,23 @@ pub struct StyleMeta {
     id: StyleId,
     /// スタイル名。
     name: String,
+}
+
+#[derive(Default, Deserialize, Serialize, Clone)]
+pub struct SpeakerSupportedFeatures {
+    pub(crate) permitted_synthesis_morphing: PermittedSynthesisMorphing,
+}
+
+#[derive(Deserialize, Serialize, Default, Clone, Copy)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub(crate) enum PermittedSynthesisMorphing {
+    /// 全て許可。
+    All,
+
+    /// 同じ話者内でのみ許可。
+    SelfOnly,
+
+    /// 全て禁止。
+    #[default]
+    Nothing,
 }

@@ -25,7 +25,7 @@ mod test_util;
 
 pub use self::{
     devices::SupportedDevices,
-    engine::{AccentPhraseModel, AudioQueryModel, FullcontextExtractor},
+    engine::{AccentPhraseModel, AudioQueryModel, FullcontextExtractor, MorphableTargetInfo},
     error::{Error, ErrorKind},
     metas::{
         RawStyleId, RawStyleVersion, SpeakerMeta, StyleId, StyleMeta, StyleVersion, VoiceModelMeta,

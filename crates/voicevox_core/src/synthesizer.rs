@@ -9,6 +9,12 @@ pub struct SynthesisOptions {
     pub enable_interrogative_upspeak: bool,
 }
 
+impl Default for SynthesisOptions {
+    fn default() -> Self {
+        (&TtsOptions::default()).into()
+    }
+}
+
 impl AsRef<SynthesisOptions> for SynthesisOptions {
     fn as_ref(&self) -> &SynthesisOptions {
         self
@@ -75,12 +81,20 @@ pub(crate) mod blocking {
     // (ブロッキング版をpublic APIにするならの話ではあるが)ブロッキング版はブロッキング版でコード例
     // を用意する
 
-    use std::io::{Cursor, Write as _};
+    use std::{
+        collections::BTreeMap,
+        io::{Cursor, Write as _},
+    };
 
+    use az::{Az as _, Cast};
     use enum_map::enum_map;
+    use num_traits::Float;
 
     use crate::{
-        engine::{self, create_kana, parse_kana, MoraModel, OjtPhoneme, Utterance},
+        engine::{
+            self, create_kana, parse_kana, MoraModel, MorphableTargetInfo, MorphingPair,
+            OjtPhoneme, Utterance,
+        },
         error::ErrorRepr,
         infer::{
             domain::{
@@ -92,8 +106,8 @@ pub(crate) mod blocking {
             InferenceSessionOptions,
         },
         numerics::F32Ext as _,
-        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
-        SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
+        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, SpeakerMeta, StyleId,
+        StyleMeta, SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{AccelerationMode, InferenceRuntimeImpl, InitializeOptions, TtsOptions};
@@ -222,6 +236,27 @@ pub(crate) mod blocking {
             self.status.metas()
         }
 
+        pub fn morphable_targets(
+            &self,
+            style_id: StyleId,
+        ) -> Result<BTreeMap<StyleId, MorphableTargetInfo>> {
+            let metas = &self.metas();
+
+            metas
+                .iter()
+                .flat_map(SpeakerMeta::styles)
+                .map(StyleMeta::id)
+                .map(|&target| {
+                    let style_ids = MorphingPair {
+                        base: style_id,
+                        target,
+                    };
+                    let is_morphable = self.is_synthesis_morphing_permitted(style_ids, metas)?;
+                    Ok((target, MorphableTargetInfo { is_morphable }))
+                })
+                .collect()
+        }
+
         /// AudioQueryから音声合成を行う。
         pub fn synthesis(
             &self,
@@ -229,6 +264,31 @@ pub(crate) mod blocking {
             style_id: StyleId,
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
+            let wave = &self.synthesis_impl(audio_query, style_id, options)?;
+            Ok(to_wav(wave, audio_query))
+        }
+
+        pub fn synthesis_morphing(
+            &self,
+            audio_query: &AudioQueryModel,
+            base_style_id: StyleId,
+            target_style_id: StyleId,
+            morph_rate: f32,
+        ) -> crate::Result<Vec<u8>> {
+            let style_ids = MorphingPair {
+                base: base_style_id,
+                target: target_style_id,
+            };
+            let wave = &self.synthesis_morphing_(audio_query, style_ids, morph_rate)?;
+            Ok(to_wav(wave, audio_query))
+        }
+
+        pub(crate) fn synthesis_impl(
+            &self,
+            audio_query: &AudioQueryModel,
+            style_id: StyleId,
+            options: &SynthesisOptions,
+        ) -> Result<Vec<f32>> {
             let speed_scale = *audio_query.speed_scale();
             let pitch_scale = *audio_query.pitch_scale();
             let intonation_scale = *audio_query.intonation_scale();
@@ -324,14 +384,13 @@ pub(crate) mod blocking {
             // 2次元のvectorを1次元に変換し、アドレスを連続させる
             let flatten_phoneme = phoneme.into_iter().flatten().collect::<Vec<_>>();
 
-            let wave = &self.decode(
+            return self.decode(
                 f0.len(),
                 OjtPhoneme::num_phoneme(),
                 &f0,
                 &flatten_phoneme,
                 style_id,
-            )?;
-            return Ok(to_wav(wave, audio_query));
+            );
 
             fn adjust_interrogative_accent_phrases(
                 accent_phrases: &[AccentPhraseModel],
@@ -1162,7 +1221,12 @@ pub(crate) mod blocking {
         }
     }
 
-    fn to_wav(wave: &[f32], audio_query: &AudioQueryModel) -> Vec<u8> {
+    fn to_wav<T: Float + From<i16> + From<f32> + Cast<i16>>(
+        wave: &[T],
+        audio_query: &AudioQueryModel,
+    ) -> Vec<u8> {
+        // TODO: ライブラリ(e.g. https://docs.rs/hound)を使う
+
         let volume_scale = *audio_query.volume_scale();
         let output_stereo = *audio_query.output_stereo();
         let output_sampling_rate = *audio_query.output_sampling_rate();
@@ -1197,9 +1261,13 @@ pub(crate) mod blocking {
         cur.write_all("data".as_bytes()).unwrap();
         cur.write_all(&bytes_size.to_le_bytes()).unwrap();
 
-        for value in wave {
-            let v = (value * volume_scale).clamp(-1., 1.);
-            let data = (v * 0x7fff as f32) as i16;
+        for &value in wave {
+            let v = num_traits::clamp(
+                value * <T as From<_>>::from(volume_scale),
+                -T::one(),
+                T::one(),
+            );
+            let data = (v * <T as From<_>>::from(0x7fff)).az::<i16>();
             for _ in 0..repeat_count {
                 cur.write_all(&data.to_le_bytes()).unwrap();
             }
@@ -1210,11 +1278,11 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod tokio {
-    use std::sync::Arc;
+    use std::{collections::BTreeMap, sync::Arc};
 
     use crate::{
-        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
-        SynthesisOptions, VoiceModelId, VoiceModelMeta,
+        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, MorphableTargetInfo, Result,
+        StyleId, SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{InitializeOptions, TtsOptions};
@@ -1257,6 +1325,13 @@ pub(crate) mod tokio {
             self.0.metas()
         }
 
+        pub fn morphable_targets(
+            &self,
+            style_id: StyleId,
+        ) -> Result<BTreeMap<StyleId, MorphableTargetInfo>> {
+            self.0.morphable_targets(style_id)
+        }
+
         pub async fn synthesis(
             &self,
             audio_query: &AudioQueryModel,
@@ -1269,6 +1344,27 @@ pub(crate) mod tokio {
 
             crate::task::asyncify(move || blocking.synthesis(&audio_query, style_id, &options))
                 .await
+        }
+
+        pub async fn synthesis_morphing(
+            &self,
+            audio_query: &AudioQueryModel,
+            base_style_id: StyleId,
+            target_style_id: StyleId,
+            morph_rate: f32,
+        ) -> crate::Result<Vec<u8>> {
+            let blocking = self.0.clone();
+            let audio_query = audio_query.clone();
+
+            crate::task::asyncify(move || {
+                blocking.synthesis_morphing(
+                    &audio_query,
+                    base_style_id,
+                    target_style_id,
+                    morph_rate,
+                )
+            })
+            .await
         }
 
         pub async fn create_accent_phrases_from_kana(

@@ -375,6 +375,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
+name = "az"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b7e4c2464d97fe331d41de9d5db0def0a96f4d823b8b32a2efd503578988973"
+
+[[package]]
 name = "backtrace"
 version = "0.3.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -433,6 +439,28 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
+ "which",
+]
+
+[[package]]
+name = "bindgen"
+version = "0.64.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4243e6031260db77ede97ad86c27e501d646a27ab57b59a574f725d98ab1fb4"
+dependencies = [
+ "bitflags",
+ "cexpr",
+ "clang-sys",
+ "lazy_static",
+ "lazycell",
+ "log",
+ "peeking_take_while",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "rustc-hash",
+ "shlex",
+ "syn 1.0.102",
  "which",
 ]
 
@@ -569,11 +597,12 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.73"
+version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fff2a6927b3bb87f9595d67196a70493f627687a71d87a0d692242c33f58c11"
+checksum = "f1174fb0b6ec23863f8b971027804a42614e347eafb0a95bf0b12cdae21fc4d0"
 dependencies = [
  "jobserver",
+ "libc",
 ]
 
 [[package]]
@@ -2527,7 +2556,7 @@ name = "open_jtalk-sys"
 version = "0.16.111"
 source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=a16714ce16dec76fd0e3041a7acfa484921db3b5#a16714ce16dec76fd0e3041a7acfa484921db3b5"
 dependencies = [
- "bindgen",
+ "bindgen 0.60.1",
  "cmake",
  "link-cplusplus",
 ]
@@ -3066,6 +3095,17 @@ dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
  "num_cpus",
+]
+
+[[package]]
+name = "readonly"
+version = "0.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8f439da1766942fe069954da6058b2e6c1760eb878bae76f5be9fc29f56f574"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
 ]
 
 [[package]]
@@ -4344,6 +4384,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async_zip",
+ "az",
  "derive-getters",
  "derive-new",
  "derive_more",
@@ -4359,12 +4400,14 @@ dependencies = [
  "itertools 0.10.5",
  "nanoid",
  "ndarray",
+ "num-traits",
  "once_cell",
  "onnxruntime",
  "open_jtalk",
  "ouroboros",
  "pretty_assertions",
  "rayon",
+ "readonly",
  "regex",
  "rstest",
  "serde",
@@ -4377,6 +4420,7 @@ dependencies = [
  "uuid",
  "voicevox_core_macros",
  "windows",
+ "world",
  "zip",
 ]
 
@@ -4868,6 +4912,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80d0f4e272c85def139476380b12f9ac60926689dd2e01d4923222f40580869d"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "world"
+version = "0.1.0"
+source = "git+https://github.com/White-Green/WORLD_rs.git?rev=2337a30bfa47eebd32ef418c60ae5c7b39e43b99#2337a30bfa47eebd32ef418c60ae5c7b39e43b99"
+dependencies = [
+ "once_cell",
+ "world_sys",
+]
+
+[[package]]
+name = "world_sys"
+version = "0.1.0"
+source = "git+https://github.com/White-Green/WORLD_rs.git?rev=2337a30bfa47eebd32ef418c60ae5c7b39e43b99#2337a30bfa47eebd32ef418c60ae5c7b39e43b99"
+dependencies = [
+ "bindgen 0.64.0",
+ "cc",
+ "once_cell",
+ "regex",
 ]
 
 [[package]]

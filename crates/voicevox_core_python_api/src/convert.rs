@@ -203,6 +203,7 @@ pub impl<T> voicevox_core::Result<T> {
                 ErrorKind::WordNotFound => WordNotFoundError::new_err(msg),
                 ErrorKind::UseUserDict => UseUserDictError::new_err(msg),
                 ErrorKind::InvalidWord => InvalidWordError::new_err(msg),
+                ErrorKind::Morph => todo!(),
             };
 
             [top]

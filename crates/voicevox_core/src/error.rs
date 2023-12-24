@@ -1,5 +1,5 @@
 use crate::{
-    engine::{FullContextLabelError, KanaParseError},
+    engine::{FullContextLabelError, KanaParseError, MorphError},
     user_dict::InvalidWordError,
     StyleId, VoiceModelId,
 };
@@ -20,6 +20,7 @@ pub struct Error(#[from] ErrorRepr);
     [ FullContextLabelError ];
     [ KanaParseError ];
     [ InvalidWordError ];
+    [ MorphError ];
 )]
 impl From<E> for Error {
     fn from(err: E) -> Self {
@@ -51,6 +52,7 @@ impl Error {
             ErrorRepr::WordNotFound(_) => ErrorKind::WordNotFound,
             ErrorRepr::UseUserDict(_) => ErrorKind::UseUserDict,
             ErrorRepr::InvalidWord(_) => ErrorKind::InvalidWord,
+            ErrorRepr::Morph(_) => ErrorKind::Morph,
         }
     }
 }
@@ -104,6 +106,9 @@ pub(crate) enum ErrorRepr {
 
     #[error(transparent)]
     InvalidWord(#[from] InvalidWordError),
+
+    #[error(transparent)]
+    Morph(#[from] MorphError),
 }
 
 /// エラーの種類。
@@ -145,6 +150,8 @@ pub enum ErrorKind {
     UseUserDict,
     /// ユーザー辞書の単語のバリデーションに失敗した。
     InvalidWord,
+    /// 指定された話者ペアでのモーフィングに失敗した。
+    Morph,
 }
 
 pub(crate) type LoadModelResult<T> = std::result::Result<T, LoadModelError>;
