@@ -163,11 +163,11 @@ impl MorphingPair<StyleId> {
         metas: &[SpeakerMeta],
     ) -> crate::Result<MorphingPair<(StyleId, &SpeakerMeta)>> {
         self.try_map(|style_id| {
-            metas
+            let speaker = metas
                 .iter()
                 .find(|m| m.styles().iter().any(|m| *m.id() == style_id))
-                .ok_or_else(|| ErrorRepr::StyleNotFound { style_id }.into())
-                .map(|speaker| (style_id, speaker))
+                .ok_or(ErrorRepr::StyleNotFound { style_id })?;
+            Ok((style_id, speaker))
         })
     }
 }
