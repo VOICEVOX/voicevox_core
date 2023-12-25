@@ -30,9 +30,9 @@ impl<O> crate::blocking::Synthesizer<O> {
         morph_rate: f32,
     ) -> crate::Result<Vec<f64>> {
         let metas = &self.metas();
-        let metas = style_ids.lookup_speakers(metas)?;
+        let pair = style_ids.lookup_speakers(metas)?;
 
-        Permission::new(metas)?.synthesis_morphing(self, audio_query, style_ids, morph_rate)
+        Permission::new(pair)?.synthesis_morphing(self, audio_query, morph_rate)
     }
 }
 
@@ -41,7 +41,6 @@ impl<'speakers> Permission<'speakers> {
         self,
         synthesizer: &crate::blocking::Synthesizer<impl Sized>,
         audio_query: &AudioQueryModel,
-        style_ids: MorphingPair<StyleId>,
         morph_rate: f32,
     ) -> crate::Result<Vec<f64>> {
         let morph_rate = f64::from(morph_rate);
@@ -50,13 +49,9 @@ impl<'speakers> Permission<'speakers> {
             todo!();
         }
 
-        let synthesis =
-            |style_id| synthesizer.synthesis_impl(audio_query, style_id, &Default::default());
-
-        let waves = MorphingPair {
-            base: &*synthesis(style_ids.base)?,
-            target: &synthesis(style_ids.target)?,
-        };
+        let waves = &self.styles.try_map(|style_id| {
+            synthesizer.synthesis_impl(audio_query, style_id, &Default::default())
+        })?;
 
         let morph_param = MorphingParameter::new(waves);
 
@@ -101,9 +96,9 @@ impl<'speakers> Permission<'speakers> {
         }
 
         impl MorphingParameter {
-            fn new(waves_24khb: MorphingPair<&[f32]>) -> Self {
-                let (base_f0, base_spectrogram, base_aperiodicity) = analyze(waves_24khb.base);
-                let (_, target_spectrogram, _) = analyze(waves_24khb.target);
+            fn new(waves_24khz: &MorphingPair<Vec<f32>>) -> Self {
+                let (base_f0, base_spectrogram, base_aperiodicity) = analyze(&waves_24khz.base);
+                let (_, target_spectrogram, _) = analyze(&waves_24khz.target);
 
                 Self {
                     base_f0,
@@ -145,19 +140,35 @@ pub(crate) struct MorphingPair<T> {
     pub(crate) target: T,
 }
 
+impl<T> MorphingPair<T> {
+    fn map<S>(self, mut f: impl FnMut(T) -> S) -> MorphingPair<S> {
+        let base = f(self.base);
+        let target = f(self.target);
+        MorphingPair { base, target }
+    }
+
+    fn try_map<S, E>(
+        self,
+        mut f: impl FnMut(T) -> std::result::Result<S, E>,
+    ) -> std::result::Result<MorphingPair<S>, E> {
+        let base = f(self.base)?;
+        let target = f(self.target)?;
+        Ok(MorphingPair { base, target })
+    }
+}
+
 impl MorphingPair<StyleId> {
-    fn lookup_speakers(self, metas: &[SpeakerMeta]) -> crate::Result<MorphingPair<&SpeakerMeta>> {
-        let lookup_speaker = |style_id| {
+    fn lookup_speakers(
+        self,
+        metas: &[SpeakerMeta],
+    ) -> crate::Result<MorphingPair<(StyleId, &SpeakerMeta)>> {
+        self.try_map(|style_id| {
             metas
                 .iter()
                 .find(|m| m.styles().iter().any(|m| *m.id() == style_id))
-                .ok_or(ErrorRepr::StyleNotFound { style_id })
-        };
-
-        let base = lookup_speaker(self.base)?;
-        let target = lookup_speaker(self.target)?;
-
-        Ok(MorphingPair { base, target })
+                .ok_or_else(|| ErrorRepr::StyleNotFound { style_id }.into())
+                .map(|speaker| (style_id, speaker))
+        })
     }
 }
 
@@ -167,21 +178,26 @@ impl MorphingPair<StyleId> {
 //
 // ===============================================================================================
 mod permission {
-    use crate::{metas::PermittedSynthesisMorphing, SpeakerMeta};
+    use std::marker::PhantomData;
 
-    use super::MorphError;
-    use super::MorphingPair;
+    use crate::{metas::PermittedSynthesisMorphing, SpeakerMeta, StyleId};
 
+    use super::{MorphError, MorphingPair};
+
+    // FIXME: Rust Analyzerが脱糖後の可視性を勘違いして激怒するので、`readonly`はやめて普通に
+    // getterを生やす
     #[readonly::make]
     pub(super) struct Permission<'speakers> {
-        pub(super) metas: MorphingPair<&'speakers SpeakerMeta>,
+        pub(super) styles: MorphingPair<StyleId>,
+        marker: PhantomData<&'speakers ()>,
     }
 
     impl<'speakers> Permission<'speakers> {
         pub(super) fn new(
-            metas: MorphingPair<&'speakers SpeakerMeta>,
+            pair: MorphingPair<(StyleId, &'speakers SpeakerMeta)>,
         ) -> std::result::Result<Self, MorphError> {
-            match metas.permissions() {
+            match pair.map(|(_, speaker)| speaker.supported_features().permitted_synthesis_morphing)
+            {
                 MorphingPair {
                     base: PermittedSynthesisMorphing::All,
                     target: PermittedSynthesisMorphing::All,
@@ -190,23 +206,15 @@ mod permission {
                 MorphingPair {
                     base: PermittedSynthesisMorphing::SelfOnly,
                     target: PermittedSynthesisMorphing::SelfOnly,
-                } if metas.base.speaker_uuid() == metas.target.speaker_uuid() => {}
+                } if pair.base.1.speaker_uuid() == pair.target.1.speaker_uuid() => {}
 
                 _ => return Err(MorphError),
             }
 
-            Ok(Self { metas })
-        }
-    }
-
-    impl<'speakers> MorphingPair<&'speakers SpeakerMeta> {
-        fn permissions(self) -> MorphingPair<PermittedSynthesisMorphing> {
-            let Self { base, target } = self;
-
-            MorphingPair {
-                base: base.supported_features().permitted_synthesis_morphing,
-                target: target.supported_features().permitted_synthesis_morphing,
-            }
+            Ok(Self {
+                styles: pair.map(|(style_id, _)| style_id),
+                marker: PhantomData,
+            })
         }
     }
 }
