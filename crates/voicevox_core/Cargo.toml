@@ -31,7 +31,6 @@ onnxruntime.workspace = true
 open_jtalk.workspace = true
 ouroboros.workspace = true
 rayon.workspace = true
-readonly.workspace = true
 regex.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["preserve_order"] }

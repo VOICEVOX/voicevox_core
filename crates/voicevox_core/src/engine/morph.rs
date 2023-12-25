@@ -49,7 +49,7 @@ impl<'speakers> Permission<'speakers> {
             todo!();
         }
 
-        let waves = &self.styles.try_map(|style_id| {
+        let waves = &self.styles().try_map(|style_id| {
             synthesizer.synthesis_impl(audio_query, style_id, &Default::default())
         })?;
 
@@ -184,11 +184,8 @@ mod permission {
 
     use super::{MorphError, MorphingPair};
 
-    // FIXME: Rust Analyzerが脱糖後の可視性を勘違いして激怒するので、`readonly`はやめて普通に
-    // getterを生やす
-    #[readonly::make]
     pub(super) struct Permission<'speakers> {
-        pub(super) styles: MorphingPair<StyleId>,
+        styles: MorphingPair<StyleId>,
         marker: PhantomData<&'speakers ()>,
     }
 
@@ -219,6 +216,10 @@ mod permission {
                 styles: pair.map(|(style_id, _)| style_id),
                 marker: PhantomData,
             })
+        }
+
+        pub(super) fn styles(&self) -> MorphingPair<StyleId> {
+            self.styles
         }
     }
 }
