@@ -6,7 +6,7 @@ use world::{
 
 use crate::{error::ErrorRepr, AudioQueryModel, SpeakerMeta, StyleId};
 
-use self::permit::MorphablePair;
+use self::permit::MorphableTargets;
 
 // FIXME: 許可対象外のときと、WORLDがなんかエラーを吐いたときとに分割する
 #[derive(Error, Debug)]
@@ -20,7 +20,7 @@ impl<O> crate::blocking::Synthesizer<O> {
         metas: &[SpeakerMeta],
     ) -> crate::Result<bool> {
         let metas = style_ids.lookup_speakers(metas)?;
-        Ok(MorphablePair::permit(metas).is_ok())
+        Ok(MorphableTargets::permit(metas).is_ok())
     }
 
     pub(crate) fn synthesis_morphing_(
@@ -32,11 +32,11 @@ impl<O> crate::blocking::Synthesizer<O> {
         let metas = &self.metas();
         let pair = style_ids.lookup_speakers(metas)?;
 
-        MorphablePair::permit(pair)?.synthesis_morphing(self, audio_query, morph_rate)
+        MorphableTargets::permit(pair)?.synthesis_morphing(self, audio_query, morph_rate)
     }
 }
 
-impl<'speakers> MorphablePair<'speakers> {
+impl<'speakers> MorphableTargets<'speakers> {
     fn synthesis_morphing(
         self,
         synthesizer: &crate::blocking::Synthesizer<impl Sized>,
@@ -184,12 +184,12 @@ mod permit {
 
     use super::{MorphError, MorphingPair};
 
-    pub(super) struct MorphablePair<'speakers> {
+    pub(super) struct MorphableTargets<'speakers> {
         inner: MorphingPair<StyleId>,
         marker: PhantomData<&'speakers ()>,
     }
 
-    impl<'speakers> MorphablePair<'speakers> {
+    impl<'speakers> MorphableTargets<'speakers> {
         pub(super) fn permit(
             pair: MorphingPair<(StyleId, &'speakers SpeakerMeta)>,
         ) -> std::result::Result<Self, MorphError> {
