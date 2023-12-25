@@ -19,8 +19,8 @@ impl<O> crate::blocking::Synthesizer<O> {
         style_ids: MorphingPair<StyleId>,
         metas: &[SpeakerMeta],
     ) -> crate::Result<bool> {
-        let metas = style_ids.lookup_speakers(metas)?;
-        Ok(MorphableTargets::permit(metas).is_ok())
+        let pair = style_ids.lookup_speakers(metas)?;
+        Ok(MorphableTargets::permit(pair).is_ok())
     }
 
     pub(crate) fn synthesis_morphing_(
@@ -36,7 +36,7 @@ impl<O> crate::blocking::Synthesizer<O> {
     }
 }
 
-impl<'speakers> MorphableTargets<'speakers> {
+impl<'metas> MorphableTargets<'metas> {
     fn synthesis_morphing(
         self,
         synthesizer: &crate::blocking::Synthesizer<impl Sized>,
@@ -184,14 +184,14 @@ mod permit {
 
     use super::{MorphError, MorphingPair};
 
-    pub(super) struct MorphableTargets<'speakers> {
+    pub(super) struct MorphableTargets<'metas> {
         inner: MorphingPair<StyleId>,
-        marker: PhantomData<&'speakers ()>,
+        marker: PhantomData<&'metas ()>,
     }
 
-    impl<'speakers> MorphableTargets<'speakers> {
+    impl<'metas> MorphableTargets<'metas> {
         pub(super) fn permit(
-            pair: MorphingPair<(StyleId, &'speakers SpeakerMeta)>,
+            pair: MorphingPair<(StyleId, &'metas SpeakerMeta)>,
         ) -> std::result::Result<Self, MorphError> {
             match pair.map(|(_, speaker)| {
                 (
