@@ -196,17 +196,21 @@ mod permission {
         pub(super) fn new(
             pair: MorphingPair<(StyleId, &'speakers SpeakerMeta)>,
         ) -> std::result::Result<Self, MorphError> {
-            match pair.map(|(_, speaker)| speaker.supported_features().permitted_synthesis_morphing)
-            {
+            match pair.map(|(_, speaker)| {
+                (
+                    speaker.supported_features().permitted_synthesis_morphing,
+                    speaker.speaker_uuid(),
+                )
+            }) {
                 MorphingPair {
-                    base: PermittedSynthesisMorphing::All,
-                    target: PermittedSynthesisMorphing::All,
+                    base: (PermittedSynthesisMorphing::All, _),
+                    target: (PermittedSynthesisMorphing::All, _),
                 } => {}
 
                 MorphingPair {
-                    base: PermittedSynthesisMorphing::SelfOnly,
-                    target: PermittedSynthesisMorphing::SelfOnly,
-                } if pair.base.1.speaker_uuid() == pair.target.1.speaker_uuid() => {}
+                    base: (PermittedSynthesisMorphing::SelfOnly, base_speaker_uuid),
+                    target: (PermittedSynthesisMorphing::SelfOnly, target_speaker_uuid),
+                } if base_speaker_uuid == target_speaker_uuid => {}
 
                 _ => return Err(MorphError),
             }
