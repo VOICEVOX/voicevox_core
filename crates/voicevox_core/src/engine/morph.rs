@@ -6,7 +6,7 @@ use world::{
 
 use crate::{error::ErrorRepr, AudioQueryModel, SpeakerMeta, StyleId};
 
-use self::permission::Permission;
+use self::permit::MorphablePair;
 
 // FIXME: 許可対象外のときと、WORLDがなんかエラーを吐いたときとに分割する
 #[derive(Error, Debug)]
@@ -20,7 +20,7 @@ impl<O> crate::blocking::Synthesizer<O> {
         metas: &[SpeakerMeta],
     ) -> crate::Result<bool> {
         let metas = style_ids.lookup_speakers(metas)?;
-        Ok(Permission::new(metas).is_ok())
+        Ok(MorphablePair::permit(metas).is_ok())
     }
 
     pub(crate) fn synthesis_morphing_(
@@ -32,11 +32,11 @@ impl<O> crate::blocking::Synthesizer<O> {
         let metas = &self.metas();
         let pair = style_ids.lookup_speakers(metas)?;
 
-        Permission::new(pair)?.synthesis_morphing(self, audio_query, morph_rate)
+        MorphablePair::permit(pair)?.synthesis_morphing(self, audio_query, morph_rate)
     }
 }
 
-impl<'speakers> Permission<'speakers> {
+impl<'speakers> MorphablePair<'speakers> {
     fn synthesis_morphing(
         self,
         synthesizer: &crate::blocking::Synthesizer<impl Sized>,
@@ -49,7 +49,7 @@ impl<'speakers> Permission<'speakers> {
             todo!();
         }
 
-        let waves = &self.styles().try_map(|style_id| {
+        let waves = &self.get().try_map(|style_id| {
             synthesizer.synthesis_impl(audio_query, style_id, &Default::default())
         })?;
 
@@ -177,20 +177,20 @@ impl MorphingPair<StyleId> {
 // DO NOT BYPASS THIS OR YOU MAY VIOLATE THE ToS OF THE MODELS
 //
 // ===============================================================================================
-mod permission {
+mod permit {
     use std::marker::PhantomData;
 
     use crate::{metas::PermittedSynthesisMorphing, SpeakerMeta, StyleId};
 
     use super::{MorphError, MorphingPair};
 
-    pub(super) struct Permission<'speakers> {
-        styles: MorphingPair<StyleId>,
+    pub(super) struct MorphablePair<'speakers> {
+        inner: MorphingPair<StyleId>,
         marker: PhantomData<&'speakers ()>,
     }
 
-    impl<'speakers> Permission<'speakers> {
-        pub(super) fn new(
+    impl<'speakers> MorphablePair<'speakers> {
+        pub(super) fn permit(
             pair: MorphingPair<(StyleId, &'speakers SpeakerMeta)>,
         ) -> std::result::Result<Self, MorphError> {
             match pair.map(|(_, speaker)| {
@@ -213,13 +213,13 @@ mod permission {
             }
 
             Ok(Self {
-                styles: pair.map(|(style_id, _)| style_id),
+                inner: pair.map(|(style_id, _)| style_id),
                 marker: PhantomData,
             })
         }
 
-        pub(super) fn styles(&self) -> MorphingPair<StyleId> {
-            self.styles
+        pub(super) fn get(&self) -> MorphingPair<StyleId> {
+            self.inner
         }
     }
 }
