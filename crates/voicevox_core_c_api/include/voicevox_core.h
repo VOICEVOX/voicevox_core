@@ -178,6 +178,10 @@ enum VoicevoxResultCode
    * UUIDの変換に失敗した
    */
   VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
+  /**
+   * 指定された話者ペアでのモーフィングが不可能
+   */
+  VOICEVOX_RESULT_MORPH_ERROR = 28,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
