@@ -11,7 +11,10 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     sync::Mutex,
 };
-pub use typing::*;
+
+pub use self::typing::{
+    DecodeExampleData, DurationExampleData, ExampleData, IntonationExampleData,
+};
 
 pub const OPEN_JTALK_DIC_DIR: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),

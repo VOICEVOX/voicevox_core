@@ -1,5 +1,5 @@
 use crate::{
-    common::{throw_if_err, JavaApiError, RUNTIME},
+    common::{throw_if_err, JavaApiError},
     enum_object, object, object_type,
 };
 
@@ -18,10 +18,6 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'loca
     builder: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        // ロガーを起動
-        // FIXME: `throw_if_err`を`run`とかに改名し、`init_logger`をその中に移動
-        let _ = *RUNTIME;
-
         let mut options = voicevox_core::InitializeOptions::default();
 
         let acceleration_mode = env
@@ -50,9 +46,11 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'loca
         options.cpu_num_threads = cpu_num_threads.i().expect("cpuNumThreads is not integer") as u16;
 
         let open_jtalk = env
-            .get_rust_field::<_, _, voicevox_core::OpenJtalk>(&open_jtalk, "handle")?
+            .get_rust_field::<_, _, voicevox_core::blocking::OpenJtalk>(&open_jtalk, "handle")?
             .clone();
-        let internal = voicevox_core::Synthesizer::new(open_jtalk, Box::leak(Box::new(options)))?;
+        let internal = Arc::new(voicevox_core::blocking::Synthesizer::new(
+            open_jtalk, &options,
+        )?);
         env.set_rust_field(&this, "handle", internal)?;
         Ok(())
     })
@@ -64,7 +62,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsGpuMode
 ) -> jboolean {
     throw_if_err(env, false, |env| {
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
@@ -80,7 +78,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsGetMetasJ
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
@@ -101,14 +99,14 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsLoadVoice
 ) {
     throw_if_err(env, (), |env| {
         let model = env
-            .get_rust_field::<_, _, Arc<voicevox_core::VoiceModel>>(&model, "handle")?
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::VoiceModel>>(&model, "handle")?
             .clone();
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
-        RUNTIME.block_on(internal.load_voice_model(&model))?;
+        internal.load_voice_model(&model)?;
         Ok(())
     })
 }
@@ -123,7 +121,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsUnloadVoi
         let model_id: String = env.get_string(&model_id)?.into();
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
@@ -146,7 +144,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsLoadedV
         let model_id: String = env.get_string(&model_id)?.into();
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
@@ -172,14 +170,13 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
 
-        let audio_query = RUNTIME.block_on(
-            internal.audio_query_from_kana(&kana, voicevox_core::StyleId::new(style_id)),
-        )?;
+        let audio_query =
+            internal.audio_query_from_kana(&kana, voicevox_core::StyleId::new(style_id))?;
 
         let query_json = serde_json::to_string(&audio_query).expect("should not fail");
 
@@ -201,13 +198,12 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
 
-        let audio_query =
-            RUNTIME.block_on(internal.audio_query(&text, voicevox_core::StyleId::new(style_id)))?;
+        let audio_query = internal.audio_query(&text, voicevox_core::StyleId::new(style_id))?;
 
         let query_json = serde_json::to_string(&audio_query).expect("should not fail");
 
@@ -231,14 +227,13 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhr
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
 
-        let accent_phrases = RUNTIME.block_on(
-            internal.create_accent_phrases_from_kana(&kana, voicevox_core::StyleId::new(style_id)),
-        )?;
+        let accent_phrases = internal
+            .create_accent_phrases_from_kana(&kana, voicevox_core::StyleId::new(style_id))?;
 
         let query_json = serde_json::to_string(&accent_phrases).expect("should not fail");
 
@@ -260,14 +255,13 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhr
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
 
-        let accent_phrases = RUNTIME.block_on(
-            internal.create_accent_phrases(&text, voicevox_core::StyleId::new(style_id)),
-        )?;
+        let accent_phrases =
+            internal.create_accent_phrases(&text, voicevox_core::StyleId::new(style_id))?;
 
         let query_json = serde_json::to_string(&accent_phrases).expect("should not fail");
 
@@ -291,14 +285,13 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
 
-        let replaced_accent_phrases = RUNTIME.block_on(
-            internal.replace_mora_data(&accent_phrases, voicevox_core::StyleId::new(style_id)),
-        )?;
+        let replaced_accent_phrases =
+            internal.replace_mora_data(&accent_phrases, voicevox_core::StyleId::new(style_id))?;
 
         let replaced_accent_phrases_json =
             serde_json::to_string(&replaced_accent_phrases).expect("should not fail");
@@ -323,17 +316,13 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplacePh
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
 
-        let replaced_accent_phrases = {
-            RUNTIME.block_on(
-                internal
-                    .replace_phoneme_length(&accent_phrases, voicevox_core::StyleId::new(style_id)),
-            )?
-        };
+        let replaced_accent_phrases = internal
+            .replace_phoneme_length(&accent_phrases, voicevox_core::StyleId::new(style_id))?;
 
         let replaced_accent_phrases_json =
             serde_json::to_string(&replaced_accent_phrases).expect("should not fail");
@@ -356,14 +345,13 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
 
-        let replaced_accent_phrases = RUNTIME.block_on(
-            internal.replace_mora_pitch(&accent_phrases, voicevox_core::StyleId::new(style_id)),
-        )?;
+        let replaced_accent_phrases =
+            internal.replace_mora_pitch(&accent_phrases, voicevox_core::StyleId::new(style_id))?;
 
         let replaced_accent_phrases_json =
             serde_json::to_string(&replaced_accent_phrases).expect("should not fail");
@@ -387,7 +375,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsSynthesis
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
@@ -397,11 +385,11 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsSynthesis
                 enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
                 // ..Default::default()
             };
-            RUNTIME.block_on(internal.synthesis(
+            internal.synthesis(
                 &audio_query,
                 voicevox_core::StyleId::new(style_id),
                 &options,
-            ))?
+            )?
         };
 
         let j_bytes = env.byte_array_from_slice(&wave)?;
@@ -423,7 +411,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTtsFromKa
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
@@ -433,11 +421,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTtsFromKa
                 enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
                 // ..Default::default()
             };
-            RUNTIME.block_on(internal.tts_from_kana(
-                &kana,
-                voicevox_core::StyleId::new(style_id),
-                &options,
-            ))?
+            internal.tts_from_kana(&kana, voicevox_core::StyleId::new(style_id), &options)?
         };
 
         let j_bytes = env.byte_array_from_slice(&wave)?;
@@ -459,7 +443,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTts<'loca
         let style_id = style_id as u32;
 
         let internal = env
-            .get_rust_field::<_, _, voicevox_core::Synthesizer<voicevox_core::OpenJtalk>>(
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
             )?
             .clone();
@@ -469,11 +453,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTts<'loca
                 enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
                 // ..Default::default()
             };
-            RUNTIME.block_on(internal.tts(
-                &text,
-                voicevox_core::StyleId::new(style_id),
-                &options,
-            ))?
+            internal.tts(&text, voicevox_core::StyleId::new(style_id), &options)?
         };
 
         let j_bytes = env.byte_array_from_slice(&wave)?;

@@ -1,7 +1,12 @@
 use std::{marker::PhantomData, sync::Arc};
 
 mod convert;
-use convert::*;
+use self::convert::{
+    async_modify_accent_phrases, from_acceleration_mode, from_dataclass, from_utf8_path,
+    to_py_user_dict_word, to_py_uuid, to_pydantic_dataclass, to_pydantic_voice_model_meta,
+    to_rust_user_dict_word, to_rust_uuid, VoicevoxCoreResultExt as _,
+};
+use easy_ext::ext;
 use log::debug;
 use pyo3::{
     create_exception,
@@ -18,7 +23,7 @@ use voicevox_core::{
 
 #[pymodule]
 #[pyo3(name = "_rust")]
-fn rust(_: Python<'_>, module: &PyModule) -> PyResult<()> {
+fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
 
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
@@ -26,12 +31,31 @@ fn rust(_: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_wrapped(wrap_pyfunction!(_validate_pronunciation))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
 
-    module.add_class::<Synthesizer>()?;
-    module.add_class::<OpenJtalk>()?;
-    module.add_class::<VoiceModel>()?;
-    module.add_class::<UserDict>()?;
+    add_exceptions(module)?;
 
-    add_exceptions(module)
+    let blocking_module = PyModule::new(py, "voicevox_core._rust.blocking")?;
+    blocking_module.add_class::<self::blocking::Synthesizer>()?;
+    blocking_module.add_class::<self::blocking::OpenJtalk>()?;
+    blocking_module.add_class::<self::blocking::VoiceModel>()?;
+    blocking_module.add_class::<self::blocking::UserDict>()?;
+    module.add_and_register_submodule(blocking_module)?;
+
+    let asyncio_module = PyModule::new(py, "voicevox_core._rust.asyncio")?;
+    asyncio_module.add_class::<self::Synthesizer>()?;
+    asyncio_module.add_class::<self::OpenJtalk>()?;
+    asyncio_module.add_class::<self::VoiceModel>()?;
+    asyncio_module.add_class::<self::UserDict>()?;
+    module.add_and_register_submodule(asyncio_module)
+}
+
+#[ext]
+impl PyModule {
+    // https://github.com/PyO3/pyo3/issues/1517#issuecomment-808664021
+    fn add_and_register_submodule(&self, module: &PyModule) -> PyResult<()> {
+        let sys = self.py().import("sys")?;
+        sys.getattr("modules")?.set_item(module.name()?, module)?;
+        self.add_submodule(module)
+    }
 }
 
 macro_rules! exceptions {
@@ -73,7 +97,7 @@ exceptions! {
 #[pyclass]
 #[derive(Clone)]
 struct VoiceModel {
-    model: voicevox_core::VoiceModel,
+    model: voicevox_core::tokio::VoiceModel,
 }
 
 #[pyfunction]
@@ -94,7 +118,7 @@ impl VoiceModel {
         #[pyo3(from_py_with = "from_utf8_path")] path: String,
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let model = voicevox_core::VoiceModel::from_path(path).await;
+            let model = voicevox_core::tokio::VoiceModel::from_path(path).await;
             let model = Python::with_gil(|py| model.into_py_result(py))?;
             Ok(Self { model })
         })
@@ -114,7 +138,7 @@ impl VoiceModel {
 #[pyclass]
 #[derive(Clone)]
 struct OpenJtalk {
-    open_jtalk: voicevox_core::OpenJtalk,
+    open_jtalk: voicevox_core::tokio::OpenJtalk,
 }
 
 #[pymethods]
@@ -126,7 +150,7 @@ impl OpenJtalk {
         py: Python<'_>,
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let open_jtalk = voicevox_core::OpenJtalk::new(open_jtalk_dict_dir).await;
+            let open_jtalk = voicevox_core::tokio::OpenJtalk::new(open_jtalk_dict_dir).await;
             let open_jtalk = Python::with_gil(|py| open_jtalk.into_py_result(py))?;
             Ok(Self { open_jtalk })
         })
@@ -144,7 +168,7 @@ impl OpenJtalk {
 
 #[pyclass]
 struct Synthesizer {
-    synthesizer: Closable<voicevox_core::Synthesizer<voicevox_core::OpenJtalk>, Self>,
+    synthesizer: Closable<voicevox_core::tokio::Synthesizer<voicevox_core::tokio::OpenJtalk>, Self>,
 }
 
 #[pymethods]
@@ -160,7 +184,7 @@ impl Synthesizer {
         #[pyo3(from_py_with = "from_acceleration_mode")] acceleration_mode: AccelerationMode,
         cpu_num_threads: u16,
     ) -> PyResult<Self> {
-        let synthesizer = voicevox_core::Synthesizer::new(
+        let synthesizer = voicevox_core::tokio::Synthesizer::new(
             open_jtalk.open_jtalk.clone(),
             &InitializeOptions {
                 acceleration_mode,
@@ -338,7 +362,7 @@ impl Synthesizer {
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let synthesizer = self.synthesizer.get()?.clone();
-        modify_accent_phrases(
+        async_modify_accent_phrases(
             accent_phrases,
             StyleId::new(style_id),
             py,
@@ -353,7 +377,7 @@ impl Synthesizer {
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let synthesizer = self.synthesizer.get()?.clone();
-        modify_accent_phrases(
+        async_modify_accent_phrases(
             accent_phrases,
             StyleId::new(style_id),
             py,
@@ -368,7 +392,7 @@ impl Synthesizer {
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let synthesizer = self.synthesizer.get()?.clone();
-        modify_accent_phrases(
+        async_modify_accent_phrases(
             accent_phrases,
             StyleId::new(style_id),
             py,
@@ -530,7 +554,7 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
 #[pyclass]
 #[derive(Default, Debug, Clone)]
 struct UserDict {
-    dict: Arc<voicevox_core::UserDict>,
+    dict: Arc<voicevox_core::tokio::UserDict>,
 }
 
 #[pymethods]
@@ -607,5 +631,427 @@ impl UserDict {
                 .collect::<PyResult<Vec<_>>>()
         })?;
         Ok(words.into_py_dict(py))
+    }
+}
+
+mod blocking {
+    use std::sync::Arc;
+
+    use pyo3::{
+        pyclass, pymethods,
+        types::{IntoPyDict as _, PyBytes, PyDict, PyList},
+        PyAny, PyObject, PyRef, PyResult, Python,
+    };
+    use uuid::Uuid;
+    use voicevox_core::{
+        AccelerationMode, AudioQueryModel, InitializeOptions, StyleId, SynthesisOptions,
+        TtsOptions, UserDictWord, VoiceModelId,
+    };
+
+    use crate::{convert::VoicevoxCoreResultExt as _, Closable};
+
+    #[pyclass]
+    #[derive(Clone)]
+    pub(crate) struct VoiceModel {
+        model: voicevox_core::blocking::VoiceModel,
+    }
+
+    #[pymethods]
+    impl VoiceModel {
+        #[staticmethod]
+        fn from_path(
+            py: Python<'_>,
+            #[pyo3(from_py_with = "crate::convert::from_utf8_path")] path: String,
+        ) -> PyResult<Self> {
+            let model = voicevox_core::blocking::VoiceModel::from_path(path).into_py_result(py)?;
+            Ok(Self { model })
+        }
+
+        #[getter]
+        fn id(&self) -> &str {
+            self.model.id().raw_voice_model_id()
+        }
+
+        #[getter]
+        fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
+            crate::convert::to_pydantic_voice_model_meta(self.model.metas(), py).unwrap()
+        }
+    }
+
+    #[pyclass]
+    #[derive(Clone)]
+    pub(crate) struct OpenJtalk {
+        open_jtalk: voicevox_core::blocking::OpenJtalk,
+    }
+
+    #[pymethods]
+    impl OpenJtalk {
+        #[new]
+        fn new(
+            #[pyo3(from_py_with = "super::from_utf8_path")] open_jtalk_dict_dir: String,
+            py: Python<'_>,
+        ) -> PyResult<Self> {
+            let open_jtalk =
+                voicevox_core::blocking::OpenJtalk::new(open_jtalk_dict_dir).into_py_result(py)?;
+            Ok(Self { open_jtalk })
+        }
+
+        fn use_user_dict(&self, user_dict: UserDict, py: Python<'_>) -> PyResult<()> {
+            self.open_jtalk
+                .use_user_dict(&user_dict.dict)
+                .into_py_result(py)
+        }
+    }
+
+    #[pyclass]
+    pub(crate) struct Synthesizer {
+        synthesizer: Closable<
+            voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>,
+            Self,
+        >,
+    }
+
+    #[pymethods]
+    impl Synthesizer {
+        #[new]
+        #[pyo3(signature =(
+            open_jtalk,
+            acceleration_mode = InitializeOptions::default().acceleration_mode,
+            cpu_num_threads = InitializeOptions::default().cpu_num_threads,
+        ))]
+        fn new(
+            open_jtalk: OpenJtalk,
+            #[pyo3(from_py_with = "crate::convert::from_acceleration_mode")]
+            acceleration_mode: AccelerationMode,
+            cpu_num_threads: u16,
+            py: Python<'_>,
+        ) -> PyResult<Self> {
+            let inner = voicevox_core::blocking::Synthesizer::new(
+                open_jtalk.open_jtalk.clone(),
+                &InitializeOptions {
+                    acceleration_mode,
+                    cpu_num_threads,
+                },
+            )
+            .into_py_result(py)?;
+            Ok(Self {
+                synthesizer: Closable::new(inner),
+            })
+        }
+
+        fn __repr__(&self) -> &'static str {
+            "Synthesizer { .. }"
+        }
+
+        fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
+            slf.synthesizer.get()?;
+            Ok(slf)
+        }
+
+        fn __exit__(
+            &mut self,
+            #[allow(unused_variables)] exc_type: &PyAny,
+            #[allow(unused_variables)] exc_value: &PyAny,
+            #[allow(unused_variables)] traceback: &PyAny,
+        ) {
+            self.close();
+        }
+
+        #[getter]
+        fn is_gpu_mode(&self) -> PyResult<bool> {
+            let synthesizer = self.synthesizer.get()?;
+            Ok(synthesizer.is_gpu_mode())
+        }
+
+        #[getter]
+        fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
+            let synthesizer = self.synthesizer.get()?;
+            crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
+        }
+
+        fn load_voice_model(&mut self, model: &PyAny, py: Python<'_>) -> PyResult<()> {
+            let model: VoiceModel = model.extract()?;
+            self.synthesizer
+                .get()?
+                .load_voice_model(&model.model)
+                .into_py_result(py)
+        }
+
+        fn unload_voice_model(&mut self, voice_model_id: &str, py: Python<'_>) -> PyResult<()> {
+            self.synthesizer
+                .get()?
+                .unload_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
+                .into_py_result(py)
+        }
+
+        fn is_loaded_voice_model(&self, voice_model_id: &str) -> PyResult<bool> {
+            Ok(self
+                .synthesizer
+                .get()?
+                .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string())))
+        }
+
+        fn audio_query_from_kana<'py>(
+            &self,
+            kana: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let synthesizer = self.synthesizer.get()?;
+
+            let audio_query = synthesizer
+                .audio_query_from_kana(kana, StyleId::new(style_id))
+                .into_py_result(py)?;
+
+            let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
+            crate::convert::to_pydantic_dataclass(audio_query, class)
+        }
+
+        fn audio_query<'py>(
+            &self,
+            text: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let synthesizesr = self.synthesizer.get()?;
+
+            let audio_query = synthesizesr
+                .audio_query(text, StyleId::new(style_id))
+                .into_py_result(py)?;
+
+            let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
+            crate::convert::to_pydantic_dataclass(audio_query, class)
+        }
+
+        fn create_accent_phrases_from_kana<'py>(
+            &self,
+            kana: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<Vec<&'py PyAny>> {
+            let synthesizer = self.synthesizer.get()?;
+
+            let accent_phrases = synthesizer
+                .create_accent_phrases_from_kana(kana, StyleId::new(style_id))
+                .into_py_result(py)?;
+
+            let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
+            accent_phrases
+                .iter()
+                .map(|ap| crate::convert::to_pydantic_dataclass(ap, class))
+                .collect()
+        }
+
+        fn create_accent_phrases<'py>(
+            &self,
+            text: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<Vec<&'py PyAny>> {
+            let synthesizer = self.synthesizer.get()?;
+
+            let accent_phrases = synthesizer
+                .create_accent_phrases(text, StyleId::new(style_id))
+                .into_py_result(py)?;
+
+            let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
+            accent_phrases
+                .iter()
+                .map(|ap| crate::convert::to_pydantic_dataclass(ap, class))
+                .collect()
+        }
+
+        fn replace_mora_data<'py>(
+            &self,
+            accent_phrases: &'py PyList,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<Vec<&'py PyAny>> {
+            let synthesizer = self.synthesizer.get()?;
+            crate::convert::blocking_modify_accent_phrases(
+                accent_phrases,
+                StyleId::new(style_id),
+                py,
+                |a, s| synthesizer.replace_mora_data(&a, s),
+            )
+        }
+
+        fn replace_phoneme_length<'py>(
+            &self,
+            accent_phrases: &'py PyList,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<Vec<&'py PyAny>> {
+            let synthesizer = self.synthesizer.get()?;
+            crate::convert::blocking_modify_accent_phrases(
+                accent_phrases,
+                StyleId::new(style_id),
+                py,
+                |a, s| synthesizer.replace_phoneme_length(&a, s),
+            )
+        }
+
+        fn replace_mora_pitch<'py>(
+            &self,
+            accent_phrases: &'py PyList,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<Vec<&'py PyAny>> {
+            let synthesizer = self.synthesizer.get()?;
+            crate::convert::blocking_modify_accent_phrases(
+                accent_phrases,
+                StyleId::new(style_id),
+                py,
+                |a, s| synthesizer.replace_mora_pitch(&a, s),
+            )
+        }
+
+        #[pyo3(signature=(
+            audio_query,
+            style_id,
+            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+        ))]
+        fn synthesis<'py>(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQueryModel,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyBytes> {
+            let wav = &self
+                .synthesizer
+                .get()?
+                .synthesis(
+                    &audio_query,
+                    StyleId::new(style_id),
+                    &SynthesisOptions {
+                        enable_interrogative_upspeak,
+                    },
+                )
+                .into_py_result(py)?;
+            Ok(PyBytes::new(py, wav))
+        }
+
+        #[pyo3(signature=(
+            kana,
+            style_id,
+            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+        ))]
+        fn tts_from_kana<'py>(
+            &self,
+            kana: &str,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyBytes> {
+            let style_id = StyleId::new(style_id);
+            let options = &TtsOptions {
+                enable_interrogative_upspeak,
+            };
+            let wav = &self
+                .synthesizer
+                .get()?
+                .tts_from_kana(kana, style_id, options)
+                .into_py_result(py)?;
+            Ok(PyBytes::new(py, wav))
+        }
+
+        #[pyo3(signature=(
+            text,
+            style_id,
+            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+        ))]
+        fn tts<'py>(
+            &self,
+            text: &str,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyBytes> {
+            let style_id = StyleId::new(style_id);
+            let options = &TtsOptions {
+                enable_interrogative_upspeak,
+            };
+            let wav = &self
+                .synthesizer
+                .get()?
+                .tts(text, style_id, options)
+                .into_py_result(py)?;
+            Ok(PyBytes::new(py, wav))
+        }
+
+        fn close(&mut self) {
+            self.synthesizer.close()
+        }
+    }
+
+    #[pyclass]
+    #[derive(Default, Debug, Clone)]
+    pub(crate) struct UserDict {
+        dict: Arc<voicevox_core::blocking::UserDict>,
+    }
+
+    #[pymethods]
+    impl UserDict {
+        #[new]
+        fn new() -> Self {
+            Self::default()
+        }
+
+        fn load(&self, path: &str, py: Python<'_>) -> PyResult<()> {
+            self.dict.load(path).into_py_result(py)
+        }
+
+        fn save(&self, path: &str, py: Python<'_>) -> PyResult<()> {
+            self.dict.save(path).into_py_result(py)
+        }
+
+        fn add_word(
+            &mut self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
+            py: Python<'_>,
+        ) -> PyResult<PyObject> {
+            let uuid = self.dict.add_word(word).into_py_result(py)?;
+
+            crate::convert::to_py_uuid(py, uuid)
+        }
+
+        fn update_word(
+            &mut self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] word_uuid: Uuid,
+            #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
+            py: Python<'_>,
+        ) -> PyResult<()> {
+            self.dict.update_word(word_uuid, word).into_py_result(py)
+        }
+
+        fn remove_word(
+            &mut self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] word_uuid: Uuid,
+            py: Python<'_>,
+        ) -> PyResult<()> {
+            self.dict.remove_word(word_uuid).into_py_result(py)?;
+            Ok(())
+        }
+
+        fn import_dict(&mut self, other: &UserDict, py: Python<'_>) -> PyResult<()> {
+            self.dict.import(&other.dict).into_py_result(py)?;
+            Ok(())
+        }
+
+        #[getter]
+        fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
+            let words = self.dict.with_words(|words| {
+                words
+                    .iter()
+                    .map(|(&uuid, word)| {
+                        let uuid = crate::convert::to_py_uuid(py, uuid)?;
+                        let word = crate::convert::to_py_user_dict_word(py, word)?;
+                        Ok((uuid, word))
+                    })
+                    .collect::<PyResult<Vec<_>>>()
+            })?;
+            Ok(words.into_py_dict(py))
+        }
     }
 }

@@ -1,4 +1,9 @@
-# ユーザー辞書の単語が反映されるかをテストする。
+"""
+ユーザー辞書の単語が反映されるかをテストする。
+
+``test_pseudo_raii_for_blocking_synthesizer`` と対になる。
+"""
+
 # AudioQueryのkanaを比較して変化するかどうかで判断する。
 
 from uuid import UUID
@@ -10,9 +15,9 @@ import voicevox_core  # noqa: F401
 
 @pytest.mark.asyncio
 async def test_user_dict_load() -> None:
-    open_jtalk = await voicevox_core.OpenJtalk.new(conftest.open_jtalk_dic_dir)
-    model = await voicevox_core.VoiceModel.from_path(conftest.model_dir)
-    synthesizer = voicevox_core.Synthesizer(open_jtalk)
+    open_jtalk = await voicevox_core.asyncio.OpenJtalk.new(conftest.open_jtalk_dic_dir)
+    model = await voicevox_core.asyncio.VoiceModel.from_path(conftest.model_dir)
+    synthesizer = voicevox_core.asyncio.Synthesizer(open_jtalk)
 
     await synthesizer.load_voice_model(model)
 
@@ -20,7 +25,7 @@ async def test_user_dict_load() -> None:
         "this_word_should_not_exist_in_default_dictionary", style_id=0
     )
 
-    temp_dict = voicevox_core.UserDict()
+    temp_dict = voicevox_core.asyncio.UserDict()
     uuid = temp_dict.add_word(
         voicevox_core.UserDictWord(
             surface="this_word_should_not_exist_in_default_dictionary",

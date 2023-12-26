@@ -245,8 +245,9 @@ impl UserDictWord {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rstest::rstest;
+
+    use super::{InvalidWordError, UserDictWord, UserDictWordType};
 
     #[rstest]
     #[case("abcdefg", "ａｂｃｄｅｆｇ")]
@@ -254,7 +255,7 @@ mod tests {
     #[case("a_b_c_d_e_f_g", "ａ＿ｂ＿ｃ＿ｄ＿ｅ＿ｆ＿ｇ")]
     #[case("a b c d e f g", "ａ　ｂ　ｃ　ｄ　ｅ　ｆ　ｇ")]
     fn to_zenkaku_works(#[case] before: &str, #[case] after: &str) {
-        assert_eq!(to_zenkaku(before), after);
+        assert_eq!(super::to_zenkaku(before), after);
     }
 
     #[rstest]
@@ -285,7 +286,7 @@ mod tests {
         #[case] pronunciation: &str,
         #[case] expected_error_message: Option<&str>,
     ) {
-        let result = validate_pronunciation(pronunciation);
+        let result = super::validate_pronunciation(pronunciation);
 
         if let Some(expected_error_message) = expected_error_message {
             match result {

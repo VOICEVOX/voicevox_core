@@ -1,3 +1,6 @@
+"""asyncio版のサンプルコードです。"""
+
+import asyncio
 import dataclasses
 import json
 import logging
@@ -7,10 +10,10 @@ from typing import Tuple
 
 import voicevox_core
 from voicevox_core import AccelerationMode, AudioQuery
-from voicevox_core.blocking import OpenJtalk, Synthesizer, VoiceModel
+from voicevox_core.asyncio import OpenJtalk, Synthesizer, VoiceModel
 
 
-def main() -> None:
+async def main() -> None:
     logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s")
     logger = logging.getLogger(__name__)
     logger.setLevel("DEBUG")
@@ -30,21 +33,21 @@ def main() -> None:
 
     logger.info("%s", f"Initializing ({acceleration_mode=}, {open_jtalk_dict_dir=})")
     synthesizer = Synthesizer(
-        OpenJtalk(open_jtalk_dict_dir), acceleration_mode=acceleration_mode
+        await OpenJtalk.new(open_jtalk_dict_dir), acceleration_mode=acceleration_mode
     )
 
     logger.debug("%s", f"{synthesizer.metas=}")
     logger.debug("%s", f"{synthesizer.is_gpu_mode=}")
 
     logger.info("%s", f"Loading `{vvm_path}`")
-    model = VoiceModel.from_path(vvm_path)
-    synthesizer.load_voice_model(model)
+    model = await VoiceModel.from_path(vvm_path)
+    await synthesizer.load_voice_model(model)
 
     logger.info("%s", f"Creating an AudioQuery from {text!r}")
-    audio_query = synthesizer.audio_query(text, style_id)
+    audio_query = await synthesizer.audio_query(text, style_id)
 
     logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
-    wav = synthesizer.synthesis(audio_query, style_id)
+    wav = await synthesizer.synthesis(audio_query, style_id)
 
     out.write_bytes(wav)
     logger.info("%s", f"Wrote `{out}`")
@@ -95,4 +98,4 @@ def display_as_json(audio_query: AudioQuery) -> str:
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
