@@ -93,6 +93,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "aliasable"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "250f629c0161ad8107cf89319e990051fae62832fd343083bea452d93e2205fd"
+
+[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1641,9 +1647,9 @@ checksum = "2c6201b9ff9fd90a5a3bac2e56a830d0caa509576f0e503818ee82c181b3437a"
 
 [[package]]
 name = "heck"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"
+checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 
 [[package]]
 name = "hermit-abi"
@@ -2000,6 +2006,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2316,7 +2331,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af5a8477ac96877b5bd1fd67e0c28736c12943aba24eda92b127e036b0c8f400"
 dependencies = [
  "indexmap 1.9.1",
- "itertools",
+ "itertools 0.10.5",
  "ndarray",
  "noisy_float",
  "num-integer",
@@ -2553,6 +2568,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ff7415e9ae3fff1225851df9e0d9e4e5479f947619774677a63572e55e80eff"
 
 [[package]]
+name = "ouroboros"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c86de06555b970aec45229b27291b53154f21a5743a163419f4e4c0b065dcde"
+dependencies = [
+ "aliasable",
+ "ouroboros_macro",
+ "static_assertions",
+]
+
+[[package]]
+name = "ouroboros_macro"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cad0c4b129e9696e37cb712b243777b90ef489a0bfaa0ac34e7d9b860e4f134"
+dependencies = [
+ "heck",
+ "itertools 0.11.0",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
+]
+
+[[package]]
 name = "output_vt100"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2755,7 +2795,7 @@ checksum = "59230a63c37f3e18569bdb90e4a89cbf5bf8b06fea0b84e65ea10cc4df47addd"
 dependencies = [
  "concolor",
  "difflib",
- "itertools",
+ "itertools 0.10.5",
  "predicates-core",
  "yansi",
 ]
@@ -3611,6 +3651,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "static_assertions"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
 name = "stdweb"
 version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4298,7 +4344,6 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async_zip",
- "cfg-if",
  "derive-getters",
  "derive-new",
  "derive_more",
@@ -4311,13 +4356,15 @@ dependencies = [
  "heck",
  "humansize",
  "indexmap 2.0.0",
- "itertools",
+ "itertools 0.10.5",
  "nanoid",
  "ndarray",
  "once_cell",
  "onnxruntime",
  "open_jtalk",
+ "ouroboros",
  "pretty_assertions",
+ "rayon",
  "regex",
  "rstest",
  "serde",
@@ -4330,6 +4377,7 @@ dependencies = [
  "uuid",
  "voicevox_core_macros",
  "windows",
+ "zip",
 ]
 
 [[package]]
@@ -4349,7 +4397,7 @@ dependencies = [
  "easy-ext",
  "futures",
  "inventory",
- "itertools",
+ "itertools 0.10.5",
  "libc",
  "libloading",
  "libtest-mimic",
@@ -4365,7 +4413,6 @@ dependencies = [
  "tempfile",
  "test_util",
  "thiserror",
- "tokio",
  "toml 0.7.2",
  "tracing",
  "tracing-subscriber",
@@ -4384,7 +4431,6 @@ dependencies = [
  "jni",
  "once_cell",
  "serde_json",
- "tokio",
  "tracing",
  "tracing-subscriber",
  "uuid",

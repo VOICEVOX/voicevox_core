@@ -1,11 +1,17 @@
 use std::{error::Error as _, iter};
 
 use derive_more::From;
-use jni::{objects::JThrowable, JNIEnv};
-use once_cell::sync::Lazy;
-use tokio::runtime::Runtime;
+use jni::{
+    objects::{JObject, JThrowable},
+    JNIEnv,
+};
 
-pub static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
+// FIXME: 別ファイルに分離する
+#[no_mangle]
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_Dll_00024LoggerInitializer_initLogger(
+    _: JNIEnv<'_>,
+    _: JObject<'_>,
+) {
     if cfg!(target_os = "android") {
         android_logger::init_once(
             android_logger::Config::default()
@@ -25,6 +31,7 @@ pub static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
         };
         use tracing_subscriber::{fmt::format::Writer, EnvFilter};
 
+        // FIXME: `try_init` → `init` （subscriberは他に存在しないはずなので）
         let _ = tracing_subscriber::fmt()
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
@@ -57,8 +64,7 @@ pub static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
             ) && env::var_os("NO_COLOR").is_none()
         }
     }
-    Runtime::new().unwrap()
-});
+}
 
 #[macro_export]
 macro_rules! object {

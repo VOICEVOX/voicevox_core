@@ -1,7 +1,7 @@
+use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
-use super::*;
-use crate::{infer::InferenceRuntime, synthesizer::InferenceRuntimeImpl};
+use crate::{infer::InferenceRuntime, synthesizer::InferenceRuntimeImpl, Result};
 
 /// このライブラリで利用可能なデバイスの情報。
 ///
@@ -53,7 +53,10 @@ impl SupportedDevices {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use rstest::rstest;
+
+    use super::SupportedDevices;
+
     #[rstest]
     fn supported_devices_create_works() {
         let result = SupportedDevices::create();

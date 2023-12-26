@@ -64,5 +64,11 @@ abstract class Dll {
         throw new RuntimeException("Failed to load Voicevox Core DLL for " + target, e);
       }
     }
+
+    new LoggerInitializer().initLogger();
+  }
+
+  static class LoggerInitializer {
+    native void initLogger();
   }
 }

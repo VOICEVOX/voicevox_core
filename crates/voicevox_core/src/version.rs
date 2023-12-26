@@ -6,10 +6,10 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::*;
+    use rstest::rstest;
+
     #[rstest]
     fn get_version_works() {
-        assert_eq!("0.0.0", VERSION);
+        assert_eq!("0.0.0", super::VERSION);
     }
 }

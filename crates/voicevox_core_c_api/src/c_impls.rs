@@ -1,29 +1,29 @@
 use std::{ffi::CString, path::Path};
 
-use voicevox_core::{InitializeOptions, OpenJtalk, Result, Synthesizer, VoiceModel, VoiceModelId};
+use voicevox_core::{InitializeOptions, Result, VoiceModelId};
 
-use crate::{CApiResult, OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
+use crate::{helpers::CApiResult, OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
 
 impl OpenJtalkRc {
-    pub(crate) async fn new(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {
+    pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {
         Ok(Self {
-            open_jtalk: OpenJtalk::new(open_jtalk_dic_dir).await?,
+            open_jtalk: voicevox_core::blocking::OpenJtalk::new(open_jtalk_dic_dir)?,
         })
     }
 }
 
 impl VoicevoxSynthesizer {
     pub(crate) fn new(open_jtalk: &OpenJtalkRc, options: &InitializeOptions) -> Result<Self> {
-        // ロガーを起動
-        // FIXME: `into_result_code_with_error`を`run`とかに改名し、`init_logger`をその中に移動
-        let _ = *crate::RUNTIME;
-
-        let synthesizer = Synthesizer::new(open_jtalk.open_jtalk.clone(), options)?;
+        let synthesizer =
+            voicevox_core::blocking::Synthesizer::new(open_jtalk.open_jtalk.clone(), options)?;
         Ok(Self { synthesizer })
     }
 
-    pub(crate) async fn load_voice_model(&self, model: &VoiceModel) -> CApiResult<()> {
-        self.synthesizer.load_voice_model(model).await?;
+    pub(crate) fn load_voice_model(
+        &self,
+        model: &voicevox_core::blocking::VoiceModel,
+    ) -> CApiResult<()> {
+        self.synthesizer.load_voice_model(model)?;
         Ok(())
     }
 
@@ -39,8 +39,8 @@ impl VoicevoxSynthesizer {
 }
 
 impl VoicevoxVoiceModel {
-    pub(crate) async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
-        let model = VoiceModel::from_path(path).await?;
+    pub(crate) fn from_path(path: impl AsRef<Path>) -> Result<Self> {
+        let model = voicevox_core::blocking::VoiceModel::from_path(path)?;
         let id = CString::new(model.id().raw_voice_model_id().as_str()).unwrap();
         let metas = CString::new(serde_json::to_string(model.metas()).unwrap()).unwrap();
         Ok(Self { model, id, metas })
