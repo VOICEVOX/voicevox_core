@@ -486,7 +486,6 @@ files = [
 ]
 
 [package.dependencies]
-patchelf = {version = "*", optional = true, markers = "extra == \"patchelf\""}
 tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
 
 [package.extras]
@@ -1110,4 +1109,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.13"
-content-hash = "48460c7058c12c92329d903cd128a99741195bc0688b920b3b31ed8466431622"
+content-hash = "39c905ee1d976c1ad0f898674b8212041bfbdf31e2d88a7f274e2c971f91d230"
