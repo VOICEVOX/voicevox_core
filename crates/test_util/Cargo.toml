@@ -1,8 +1,6 @@
 [package]
 name = "test_util"
-version = "0.0.0"
 edition.workspace = true
-publish.workspace = true
 
 [dependencies]
 async_zip = { workspace = true, features = ["full"] }
