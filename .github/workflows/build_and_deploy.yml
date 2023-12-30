@@ -376,26 +376,90 @@ jobs:
         with:
           name: voicevox_core-aarch64-apple-ios
           path: artifact/voicevox_core-aarch64-apple-ios
-      - name: Create fat binary
+      - name: Create aarch64 Framework 
         run: |
-          mkdir -p "artifact/voicevox_core-sim"
-          lipo -create "artifact/voicevox_core-x86_64-apple-ios/libvoicevox_core.dylib" "artifact/voicevox_core-aarch64-apple-ios-sim/libvoicevox_core.dylib" -output "artifact/voicevox_core-sim/libvoicevox_core.dylib"
+          mkdir -p "Framework-aarch64"
+          cp -vr crates/voicevox_core_c_api/xcframework/Frameworks/aarch64/ Framework-aarch64/
+          cp -v artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h \
+            Framework-aarch64/voicevox_core.framework/Headers/voicevox_core.h
+          lipo -create artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib \
+            -output Framework-aarch64/voicevox_core.framework/voicevox_core
+
+      - name: Change aarch64 @rpath 
+        run: |
+          # 自身の@rpathを変更
+          install_name_tool -id @rpath/voicevox_core.framework/voicevox_core Framework-aarch64/voicevox_core.framework/voicevox_core
+
+          # onnixruntimeの@rpathを変更
+          # 依存関係を調べると@rpath/libonnxruntime.A.BB.C.dylibのような文字列があるので、
+          # これを@rpath/framework/libonnxruntime.A.BB.C.dylibに変更したい。
+
+          # dylib名取得
+          output=$(otool -L Framework-aarch64/voicevox_core.framework/voicevox_core)
+          matched_line=$(echo "$output" | grep "@rpath" | grep "libonnxruntime")
+          if [[ $matched_line ]]; then
+            if [[ $matched_line =~ (@rpath/([^ ]+\.dylib)) ]]; then
+              dylib_string=${BASH_REMATCH[2]}
+            else
+              echo "Expected pattern not found in the matched line"
+              echo "$output"
+              exit 1
+            fi
+          else
+            echo "No line containing '@rpath' and 'libonnxruntime' found"
+            echo "$output"
+            exit 1
+          fi
+          echo "onnx dylib file name: $dylib_string"
+
+          # onnxruntimeへの@rpathを変更
+          install_name_tool -change "@rpath/$dylib_string" "@rpath/onnxruntime.framework/$dylib_string" Framework-aarch64/voicevox_core.framework/voicevox_core
+
+      - name: Create sim Framework 
+        run: |
+          mkdir -p "Framework-sim"
+          cp -vr crates/voicevox_core_c_api/xcframework/Frameworks/sim/ Framework-sim/
+          cp -v artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h \
+            Framework-sim/voicevox_core.framework/Headers/voicevox_core.h
+          lipo -create artifact/voicevox_core-x86_64-apple-ios/libvoicevox_core.dylib \
+            artifact/voicevox_core-aarch64-apple-ios-sim/libvoicevox_core.dylib \
+            -output Framework-sim/voicevox_core.framework/voicevox_core
+      
+      - name: Change sim @rpath   
+        run: |
+          # 自身の@rpathを変更
+          install_name_tool -id @rpath/voicevox_core.framework/voicevox_core Framework-sim/voicevox_core.framework/voicevox_core
+          
+          # 方針はaarch64同じ
+          # dylib名取得
+          output=$(otool -L Framework-sim/voicevox_core.framework/voicevox_core)
+          matched_line=$(echo "$output" | grep "@rpath" | grep "libonnxruntime")
+          if [[ $matched_line ]]; then
+            if [[ $matched_line =~ (@rpath/([^ ]+\.dylib)) ]]; then
+              dylib_string=${BASH_REMATCH[2]}
+            else
+              echo "Expected pattern not found in the matched line"
+              echo "$output"
+              exit 1
+            fi
+          else
+            echo "No line containing '@rpath' and 'libonnxruntime' found"
+            echo "$output"
+            exit 1
+          fi
+          echo "onnx dylib file name: $dylib_string"
+
+          # onnxruntimeへの@rpathを変更
+          install_name_tool -change "@rpath/$dylib_string" "@rpath/onnxruntime.framework/$dylib_string" Framework-sim/voicevox_core.framework/voicevox_core
+
       - name: Create XCFramework
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
-          # 必要なファイルだけコピー
-          mkdir -p "Headers-sim"
-          cp -v artifact/voicevox_core-x86_64-apple-ios/voicevox_core.h "Headers-sim"
-          cp -v crates/voicevox_core_c_api/xcframework/Headers/module.modulemap "Headers-sim"
-          mkdir -p "Headers-aarch64"
-          cp -v artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h "Headers-aarch64"
-          cp -v crates/voicevox_core_c_api/xcframework/Headers/module.modulemap "Headers-aarch64"
           xcodebuild -create-xcframework \
-            -library "artifact/voicevox_core-sim/libvoicevox_core.dylib" \
-            -headers "Headers-sim" \
-            -library "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib" \
-            -headers "Headers-aarch64" \
+            -framework "Framework-sim/voicevox_core.framework" \
+            -framework "Framework-aarch64/voicevox_core.framework" \
             -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
+
       - name: Archive artifact
         run: |
           cd artifact/${{ env.ASSET_NAME }}
