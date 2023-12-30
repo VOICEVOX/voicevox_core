@@ -15,7 +15,7 @@ pub type RawStyleId = u32;
 ///
 /// [**話者**(_speaker_)]: SpeakerMeta
 /// [**スタイル**(_style_)]: StyleMeta
-#[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Hash, Deserialize, Serialize, new, Debug)]
 pub struct StyleId(RawStyleId);
 
 impl StyleId {
@@ -84,7 +84,7 @@ pub struct SpeakerSupportedFeatures {
     pub(crate) permitted_synthesis_morphing: PermittedSynthesisMorphing,
 }
 
-#[derive(Deserialize, Serialize, Default, Clone, Copy)]
+#[derive(Deserialize, Serialize, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub(crate) enum PermittedSynthesisMorphing {
     /// 全て許可。

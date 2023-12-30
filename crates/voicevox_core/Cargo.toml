@@ -45,6 +45,7 @@ zip.workspace = true
 
 [dev-dependencies]
 heck.workspace = true
+lit2.workspace = true
 pretty_assertions.workspace = true
 rstest.workspace = true
 test_util.workspace = true

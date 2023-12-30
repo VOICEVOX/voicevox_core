@@ -2201,6 +2201,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef53942eb7bf7ff43a617b3e2c1c4a5ecf5944a7c1bc12d7ee39bbb15e5c1519"
 
 [[package]]
+name = "lit2"
+version = "1.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcd0c289759ba04eac993bb32289580c7b37955957f8928cab7b29d54cdf89de"
+
+[[package]]
 name = "lock_api"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4387,6 +4393,7 @@ dependencies = [
  "humansize",
  "indexmap 2.0.0",
  "itertools 0.10.5",
+ "lit2",
  "nanoid",
  "ndarray",
  "num-traits",

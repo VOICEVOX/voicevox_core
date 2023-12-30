@@ -1481,10 +1481,12 @@ mod tests {
 
     use super::{blocking::PerformInference as _, AccelerationMode, InitializeOptions};
     use crate::{
-        engine::MoraModel, macros::tests::assert_debug_fmt_eq, test_util::open_default_vvm_file,
-        AccentPhraseModel, Result, StyleId,
+        engine::MoraModel, macros::tests::assert_debug_fmt_eq, metas::PermittedSynthesisMorphing,
+        test_util::open_default_vvm_file, AccentPhraseModel, MorphableTargetInfo, Result, StyleId,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
+    use indexmap::{indexmap, IndexMap};
+    use lit2::btreemap;
     use rstest::rstest;
 
     #[rstest]
@@ -1552,6 +1554,102 @@ mod tests {
             expected,
             "expected is_model_loaded return value against style_id `{style_id}` is `{expected}`, but got `{}`",
             !expected
+        );
+    }
+
+    #[tokio::test]
+    async fn morphable_targets_works() {
+        let (permissions, morphable_targets) = {
+            let synthesizer = super::tokio::Synthesizer::new(
+                (),
+                &InitializeOptions {
+                    acceleration_mode: AccelerationMode::Cpu,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+
+            let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+            synthesizer.load_voice_model(model).await.unwrap();
+
+            let permissions = synthesizer
+                .metas()
+                .iter()
+                .map(|speaker| {
+                    let permissions = speaker
+                        .styles()
+                        .iter()
+                        .map(move |style| {
+                            (
+                                *style.id(),
+                                speaker.supported_features().permitted_synthesis_morphing,
+                            )
+                        })
+                        .collect();
+                    (speaker.speaker_uuid().clone(), permissions)
+                })
+                .collect::<IndexMap<_, IndexMap<_, _>>>();
+
+            let morphable_targets =
+                move |style_id| synthesizer.morphable_targets(style_id).unwrap();
+
+            (permissions, morphable_targets)
+        };
+
+        pretty_assertions::assert_eq!(
+            indexmap! {
+                "574bc678-8370-44be-b941-08e46e7b47d7".to_owned() => indexmap! {
+                    StyleId::new(0) => PermittedSynthesisMorphing::Nothing,
+                },
+                "dd9ccd75-75f6-40ce-a3db-960cbed2e905".to_owned() => indexmap! {
+                    StyleId::new(1) => PermittedSynthesisMorphing::All,
+                },
+                "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3".to_owned() => indexmap! {
+                    StyleId::new(302) => PermittedSynthesisMorphing::SelfOnly,
+                    StyleId::new(303) => PermittedSynthesisMorphing::SelfOnly,
+                },
+            },
+            permissions,
+        );
+
+        pretty_assertions::assert_eq!(
+            btreemap! {
+                StyleId::new(0) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(1) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(302) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(303) => MorphableTargetInfo { is_morphable: false },
+            },
+            morphable_targets(StyleId::new(0)),
+        );
+
+        pretty_assertions::assert_eq!(
+            btreemap! {
+                StyleId::new(0) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(1) => MorphableTargetInfo { is_morphable: true },
+                StyleId::new(302) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(303) => MorphableTargetInfo { is_morphable: false },
+            },
+            morphable_targets(StyleId::new(1)),
+        );
+
+        pretty_assertions::assert_eq!(
+            btreemap! {
+                StyleId::new(0) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(1) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(302) => MorphableTargetInfo { is_morphable: true },
+                StyleId::new(303) => MorphableTargetInfo { is_morphable: true },
+            },
+            morphable_targets(StyleId::new(302)),
+        );
+
+        pretty_assertions::assert_eq!(
+            btreemap! {
+                StyleId::new(0) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(1) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(302) => MorphableTargetInfo { is_morphable: true },
+                StyleId::new(303) => MorphableTargetInfo { is_morphable: true },
+            },
+            morphable_targets(StyleId::new(303)),
         );
     }
 

@@ -82,7 +82,7 @@ impl AudioQueryModel {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, PartialEq, Debug)]
 pub struct MorphableTargetInfo {
     pub is_morphable: bool,
 }
