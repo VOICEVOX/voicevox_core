@@ -86,7 +86,7 @@ jobs:
               "artifact_name": "windows-x86-cpu",
               "whl_local_version": "cpu",
               "use_cuda": false,
-              "can_skip_in_simple_test": true
+              "can_skip_in_simple_test": false
             },
             {
               "os": "ubuntu-20.04",
