@@ -208,7 +208,7 @@ jobs:
             git fetch private refs/tags/${{ env.PRODUCTION_REPOSITORY_TAG }}
             git -c user.name=dummy -c user.email=dummy@dummy.dummy merge FETCH_HEAD
           ) > /dev/null 2>&1
-      - if: matrix.os == 'windows-2019'
+      - if: matrix.os == 'windows-2019' && matrix.target == 'x86_64-pc-windows-msvc'
         name: Install Clang
         uses: KyleMayes/install-llvm-action@v1
         with:
