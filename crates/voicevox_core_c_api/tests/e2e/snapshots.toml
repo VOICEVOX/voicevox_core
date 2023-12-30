@@ -10,7 +10,10 @@ metas = '''
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7"
+    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    }
   },
   {
     "name": "dummy2",
@@ -21,7 +24,10 @@ metas = '''
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905"
+    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    }
   },
   {
     "name": "dummy3",
@@ -36,7 +42,10 @@ metas = '''
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3"
+    "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    }
   }
 ]'''
 stderr.windows = '''
@@ -93,7 +102,10 @@ metas = '''
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7"
+    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    }
   },
   {
     "name": "dummy2",
@@ -104,7 +116,10 @@ metas = '''
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905"
+    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    }
   },
   {
     "name": "dummy3",
@@ -119,7 +134,10 @@ metas = '''
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3"
+    "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    }
   }
 ]'''
 stderr.windows = '''
