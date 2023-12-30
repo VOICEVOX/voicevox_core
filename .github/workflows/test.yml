@@ -125,6 +125,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
+      - name: Install mingw-w64-x86_64-clang
+        if: matrix.os == 'windows-2019'
+        uses: msys2/setup-msys2@v2
+        with:
+          install: mingw-w64-x86_64-clang
       - name: Set up Python 3.8
         uses: actions/setup-python@v4
         with:
