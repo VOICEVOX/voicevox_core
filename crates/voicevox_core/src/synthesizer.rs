@@ -1,5 +1,7 @@
 use crate::infer::runtimes::Onnxruntime;
 
+pub(crate) const DEFAULT_SAMPLING_RATE: u32 = 24000;
+
 /// [`blocking::Synthesizer::synthesis`]および[`tokio::Synthesizer::synthesis`]のオプション。
 ///
 /// [`blocking::Synthesizer::synthesis`]: blocking::Synthesizer::synthesis
@@ -111,8 +113,6 @@ pub(crate) mod blocking {
     };
 
     use super::{AccelerationMode, InferenceRuntimeImpl, InitializeOptions, TtsOptions};
-
-    const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {

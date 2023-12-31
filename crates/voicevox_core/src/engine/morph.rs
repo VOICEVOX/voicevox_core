@@ -4,7 +4,9 @@ use world::{
     spectrogram_like::SpectrogramLike,
 };
 
-use crate::{error::ErrorRepr, AudioQueryModel, SpeakerMeta, StyleId};
+use crate::{
+    error::ErrorRepr, synthesizer::DEFAULT_SAMPLING_RATE, AudioQueryModel, SpeakerMeta, StyleId,
+};
 
 use self::permit::MorphableTargets;
 
@@ -45,7 +47,9 @@ impl<'metas> MorphableTargets<'metas> {
     ) -> crate::Result<Vec<f64>> {
         let morph_rate = f64::from(morph_rate);
 
-        if *audio_query.output_sampling_rate() != 24000 || *audio_query.output_stereo() {
+        if *audio_query.output_sampling_rate() != DEFAULT_SAMPLING_RATE
+            || *audio_query.output_stereo()
+        {
             todo!();
         }
 
@@ -82,7 +86,7 @@ impl<'metas> MorphableTargets<'metas> {
             &morph_param.base_aperiodicity,
             None,
             FRAME_PERIOD,
-            24000,
+            DEFAULT_SAMPLING_RATE,
         )
         .map_err(|_| todo!());
 
@@ -96,9 +100,9 @@ impl<'metas> MorphableTargets<'metas> {
         }
 
         impl MorphingParameter {
-            fn new(waves_24khz: &MorphingPair<Vec<f32>>) -> Self {
-                let (base_f0, base_spectrogram, base_aperiodicity) = analyze(&waves_24khz.base);
-                let (_, target_spectrogram, _) = analyze(&waves_24khz.target);
+            fn new(wave: &MorphingPair<Vec<f32>>) -> Self {
+                let (base_f0, base_spectrogram, base_aperiodicity) = analyze(&wave.base);
+                let (_, target_spectrogram, _) = analyze(&wave.target);
 
                 Self {
                     base_f0,
@@ -111,7 +115,7 @@ impl<'metas> MorphableTargets<'metas> {
 
         fn analyze(wave: &[f32]) -> (Box<[f64]>, SpectrogramLike<f64>, SpectrogramLike<f64>) {
             let analyzer = {
-                let mut analyzer = SignalAnalyzerBuilder::new(24000);
+                let mut analyzer = SignalAnalyzerBuilder::new(DEFAULT_SAMPLING_RATE);
                 analyzer.harvest_option_mut().set_frame_period(FRAME_PERIOD);
                 analyzer.build(wave.iter().copied().map(Into::into).collect())
             };
