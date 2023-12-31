@@ -88,7 +88,11 @@ impl<'metas> MorphableTargets<'metas> {
             FRAME_PERIOD,
             DEFAULT_SAMPLING_RATE,
         )
-        .map_err(|_| todo!());
+        .map_err(|_| {
+            // FIXME: ここをどうするか考える。ただしここのエラーは入力配列が巨大すぎる
+            // (`world::synthesis::SynthesisError::TooLargeValue`)ときに限るはず
+            todo!()
+        });
 
         const FRAME_PERIOD: f64 = 1.;
 
