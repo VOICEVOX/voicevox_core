@@ -19,12 +19,12 @@ impl<O> crate::blocking::Synthesizer<O> {
         Ok(MorphableTargets::permit(pair).is_ok())
     }
 
-    pub(crate) fn synthesis_morphing_wave(
+    pub(crate) fn synthesis_morphing_(
         &self,
         audio_query: &AudioQueryModel,
         style_ids: MorphingPair<StyleId>,
         morph_rate: f32,
-    ) -> crate::Result<Vec<f64>> {
+    ) -> crate::Result<Vec<u8>> {
         let metas = &self.metas();
         let pair = style_ids.lookup_speakers(metas)?;
 
@@ -38,7 +38,7 @@ impl<'metas> MorphableTargets<'metas> {
         synthesizer: &crate::blocking::Synthesizer<impl Sized>,
         audio_query: &AudioQueryModel,
         morph_rate: f32,
-    ) -> crate::Result<Vec<f64>> {
+    ) -> crate::Result<Vec<u8>> {
         let morph_rate = f64::from(morph_rate);
 
         if *audio_query.output_sampling_rate() != DEFAULT_SAMPLING_RATE
@@ -74,7 +74,7 @@ impl<'metas> MorphableTargets<'metas> {
             }
         }
 
-        return world::synthesis::synthesis(
+        let wave = &world::synthesis::synthesis(
             &morph_param.base_f0,
             &morph_spectrogram,
             &morph_param.base_aperiodicity,
@@ -82,11 +82,13 @@ impl<'metas> MorphableTargets<'metas> {
             FRAME_PERIOD,
             DEFAULT_SAMPLING_RATE,
         )
-        .map_err(|_| {
+        .unwrap_or_else(|_| {
             // FIXME: ここをどうするか考える。ただしここのエラーは入力配列が巨大すぎる
             // (`world::synthesis::SynthesisError::TooLargeValue`)ときに限るはず
             todo!()
         });
+
+        return Ok(super::to_wav(wave, audio_query));
 
         const FRAME_PERIOD: f64 = 1.;
 
