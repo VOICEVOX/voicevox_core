@@ -176,11 +176,6 @@ impl MorphingPair<StyleId> {
     }
 }
 
-// ==========================================WARNING==============================================
-//
-// DO NOT BYPASS THIS OR YOU MAY VIOLATE THE ToS OF THE MODELS
-//
-// ===============================================================================================
 mod permit {
     use std::marker::PhantomData;
 
