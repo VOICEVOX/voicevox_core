@@ -83,7 +83,7 @@ impl<'metas> MorphableTargets<'metas> {
             DEFAULT_SAMPLING_RATE,
         )
         .unwrap_or_else(|_| {
-            // FIXME: ここをどうするか考える。ただしここのエラーは入力配列が巨大すぎる
+            // FIXME: ここをどうするか考える。ただしここのエラーはspectrogramが巨大すぎる
             // (`world::synthesis::SynthesisError::TooLargeValue`)ときに限るはず
             todo!()
         });
