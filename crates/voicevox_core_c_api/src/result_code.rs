@@ -55,8 +55,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR = 24,
     /// UUIDの変換に失敗した
     VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
-    /// 指定された話者ペアでのモーフィングが不可能
-    VOICEVOX_RESULT_MORPH_ERROR = 28,
+    /// 要求された機能を話者が持っていない
+    VOICEVOX_RESULT_SPEAKER_FEATURE_ERROR = 28,
 }
 
 pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static CStr {
@@ -109,6 +109,8 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
             cstr!("ユーザー辞書の単語のバリデーションに失敗しました")
         }
         VOICEVOX_RESULT_INVALID_UUID_ERROR => cstr!("UUIDの変換に失敗しました"),
-        VOICEVOX_RESULT_MORPH_ERROR => cstr!("指定された話者ペアでのモーフィングはできません"),
+        VOICEVOX_RESULT_SPEAKER_FEATURE_ERROR => {
+            cstr!("要求された機能を話者は持っていません")
+        }
     }
 }

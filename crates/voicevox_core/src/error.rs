@@ -1,5 +1,5 @@
 use crate::{
-    engine::{FullContextLabelError, KanaParseError, MorphError},
+    engine::{FullContextLabelError, KanaParseError},
     user_dict::InvalidWordError,
     StyleId, VoiceModelId,
 };
@@ -20,7 +20,7 @@ pub struct Error(#[from] ErrorRepr);
     [ FullContextLabelError ];
     [ KanaParseError ];
     [ InvalidWordError ];
-    [ MorphError ];
+    [ SpeakerFeatureError ];
 )]
 impl From<E> for Error {
     fn from(err: E) -> Self {
@@ -52,7 +52,7 @@ impl Error {
             ErrorRepr::WordNotFound(_) => ErrorKind::WordNotFound,
             ErrorRepr::UseUserDict(_) => ErrorKind::UseUserDict,
             ErrorRepr::InvalidWord(_) => ErrorKind::InvalidWord,
-            ErrorRepr::Morph(_) => ErrorKind::Morph,
+            ErrorRepr::SpeakerFeature(_) => ErrorKind::SpeakerFeature,
         }
     }
 }
@@ -108,7 +108,7 @@ pub(crate) enum ErrorRepr {
     InvalidWord(#[from] InvalidWordError),
 
     #[error(transparent)]
-    Morph(#[from] MorphError),
+    SpeakerFeature(#[from] SpeakerFeatureError),
 }
 
 /// エラーの種類。
@@ -150,8 +150,8 @@ pub enum ErrorKind {
     UseUserDict,
     /// ユーザー辞書の単語のバリデーションに失敗した。
     InvalidWord,
-    /// 指定された話者ペアでのモーフィングに失敗した。
-    Morph,
+    /// 要求された機能を話者が持っていない。
+    SpeakerFeature,
 }
 
 pub(crate) type LoadModelResult<T> = std::result::Result<T, LoadModelError>;
@@ -178,4 +178,21 @@ pub(crate) enum LoadModelErrorKind {
     StyleAlreadyLoaded { id: StyleId },
     #[display(fmt = "モデルデータを読むことができませんでした")]
     InvalidModelData,
+}
+
+#[derive(Error, Debug)]
+#[error("`{speaker_name}` ({speaker_uuid})は以下の機能を持ちません: {context}")]
+pub(crate) struct SpeakerFeatureError {
+    pub(crate) speaker_name: String,
+    pub(crate) speaker_uuid: String,
+    pub(crate) context: SpeakerFeatureErrorKind,
+}
+
+#[derive(derive_more::Display, Debug)]
+pub(crate) enum SpeakerFeatureErrorKind {
+    #[display(fmt = "`{target_speaker_name}` ({target_speaker_uuid})に対するモーフィング")]
+    Morph {
+        target_speaker_name: String,
+        target_speaker_uuid: String,
+    },
 }

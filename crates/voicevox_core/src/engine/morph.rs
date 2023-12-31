@@ -1,4 +1,3 @@
-use thiserror::Error;
 use world::{
     signal_analyzer::{AnalyzeResult, SignalAnalyzerBuilder},
     spectrogram_like::SpectrogramLike,
@@ -9,11 +8,6 @@ use crate::{
 };
 
 use self::permit::MorphableTargets;
-
-// FIXME: 許可対象外のときと、WORLDがなんかエラーを吐いたときとに分割する
-#[derive(Error, Debug)]
-#[error("指定された話者ペアでのモーフィングに失敗しました")]
-pub(crate) struct MorphError;
 
 impl<O> crate::blocking::Synthesizer<O> {
     pub(crate) fn is_synthesis_morphing_permitted(
@@ -188,9 +182,13 @@ impl MorphingPair<StyleId> {
 mod permit {
     use std::marker::PhantomData;
 
-    use crate::{metas::PermittedSynthesisMorphing, SpeakerMeta, StyleId};
+    use crate::{
+        error::{SpeakerFeatureError, SpeakerFeatureErrorKind},
+        metas::PermittedSynthesisMorphing,
+        SpeakerMeta, StyleId,
+    };
 
-    use super::{MorphError, MorphingPair};
+    use super::MorphingPair;
 
     pub(super) struct MorphableTargets<'metas> {
         inner: MorphingPair<StyleId>,
@@ -200,11 +198,11 @@ mod permit {
     impl<'metas> MorphableTargets<'metas> {
         pub(super) fn permit(
             pair: MorphingPair<(StyleId, &'metas SpeakerMeta)>,
-        ) -> std::result::Result<Self, MorphError> {
+        ) -> std::result::Result<Self, SpeakerFeatureError> {
             match pair.map(|(_, speaker)| {
                 (
                     speaker.supported_features().permitted_synthesis_morphing,
-                    speaker.speaker_uuid(),
+                    speaker,
                 )
             }) {
                 MorphingPair {
@@ -213,11 +211,23 @@ mod permit {
                 } => {}
 
                 MorphingPair {
-                    base: (PermittedSynthesisMorphing::SelfOnly, base_speaker_uuid),
-                    target: (PermittedSynthesisMorphing::SelfOnly, target_speaker_uuid),
-                } if base_speaker_uuid == target_speaker_uuid => {}
+                    base: (PermittedSynthesisMorphing::SelfOnly, base),
+                    target: (PermittedSynthesisMorphing::SelfOnly, target),
+                } if base.speaker_uuid() == target.speaker_uuid() => {}
 
-                _ => return Err(MorphError),
+                MorphingPair {
+                    base: (_, base),
+                    target: (_, target),
+                } => {
+                    return Err(SpeakerFeatureError {
+                        speaker_name: base.name().clone(),
+                        speaker_uuid: base.speaker_uuid().clone(),
+                        context: SpeakerFeatureErrorKind::Morph {
+                            target_speaker_name: target.name().clone(),
+                            target_speaker_uuid: target.speaker_uuid().clone(),
+                        },
+                    })
+                }
             }
 
             Ok(Self {
