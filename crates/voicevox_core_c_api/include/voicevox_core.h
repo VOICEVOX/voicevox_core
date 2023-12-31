@@ -179,9 +179,9 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
   /**
-   * 指定された話者ペアでのモーフィングが不可能
+   * 要求された機能を話者が持っていない
    */
-  VOICEVOX_RESULT_MORPH_ERROR = 28,
+  VOICEVOX_RESULT_SPEAKER_FEATURE_ERROR = 28,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
