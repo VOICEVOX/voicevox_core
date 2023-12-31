@@ -112,7 +112,10 @@ pub(crate) mod blocking {
         StyleMeta, SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
 
-    use super::{AccelerationMode, InferenceRuntimeImpl, InitializeOptions, TtsOptions};
+    use super::{
+        AccelerationMode, InferenceRuntimeImpl, InitializeOptions, TtsOptions,
+        DEFAULT_SAMPLING_RATE,
+    };
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
@@ -264,7 +267,7 @@ pub(crate) mod blocking {
             style_id: StyleId,
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
-            let wave = &self.synthesis_impl(audio_query, style_id, options)?;
+            let wave = &self.synthesis_wave(audio_query, style_id, options)?;
             Ok(to_wav(wave, audio_query))
         }
 
@@ -279,11 +282,11 @@ pub(crate) mod blocking {
                 base: base_style_id,
                 target: target_style_id,
             };
-            let wave = &self.synthesis_morphing_(audio_query, style_ids, morph_rate)?;
+            let wave = &self.synthesis_morphing_wave(audio_query, style_ids, morph_rate)?;
             Ok(to_wav(wave, audio_query))
         }
 
-        pub(crate) fn synthesis_impl(
+        pub(crate) fn synthesis_wave(
             &self,
             audio_query: &AudioQueryModel,
             style_id: StyleId,

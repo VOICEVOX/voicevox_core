@@ -25,7 +25,7 @@ impl<O> crate::blocking::Synthesizer<O> {
         Ok(MorphableTargets::permit(pair).is_ok())
     }
 
-    pub(crate) fn synthesis_morphing_(
+    pub(crate) fn synthesis_morphing_wave(
         &self,
         audio_query: &AudioQueryModel,
         style_ids: MorphingPair<StyleId>,
@@ -54,7 +54,7 @@ impl<'metas> MorphableTargets<'metas> {
         }
 
         let waves = &self.get().try_map(|style_id| {
-            synthesizer.synthesis_impl(audio_query, style_id, &Default::default())
+            synthesizer.synthesis_wave(audio_query, style_id, &Default::default())
         })?;
 
         let morph_param = MorphingParameter::new(waves);
