@@ -22,6 +22,9 @@ build-backend = "maturin"
 [tool.isort]
 profile = "black"
 
+[tool.pyright]
+executionEnvironments = [{ root = "python/test" }, { root = "python" }]
+
 [tool.maturin]
 module-name = "voicevox_core._rust"
 bindings = "pyo3"
