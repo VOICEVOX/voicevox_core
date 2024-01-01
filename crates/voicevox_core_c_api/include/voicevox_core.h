@@ -644,6 +644,19 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_create_supported_devices_json(char **output_supported_devices_json);
 
 /**
+ * \safety{
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_create_morphable_targets_json(const struct VoicevoxSynthesizer *synthesizer,
+                                                                      VoicevoxStyleId style_id,
+                                                                      char **output);
+
+/**
  * AquesTalk風記法から、AudioQueryをJSONとして生成する。
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -903,6 +916,25 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
                                                   uint8_t **output_wav);
 
 /**
+ * \safety{
+ * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+ * - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_synthesis_morphing(const struct VoicevoxSynthesizer *synthesizer,
+                                                           const char *audio_query_json,
+                                                           VoicevoxStyleId base_style_id,
+                                                           VoicevoxStyleId target_style_id,
+                                                           float morph_rate,
+                                                           uintptr_t *output_wav_length,
+                                                           uint8_t **output_wav);
+
+/**
  * デフォルトのテキスト音声合成オプションを生成する
  * @return テキスト音声合成オプション
  */
@@ -982,6 +1014,7 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  * - `json`は以下のAPIで得られたポインタでなくてはいけない。
  *     - ::voicevox_create_supported_devices_json
  *     - ::voicevox_synthesizer_create_metas_json
+ *     - ::voicevox_synthesizer_create_morphable_targets_json
  *     - ::voicevox_synthesizer_create_audio_query
  *     - ::voicevox_synthesizer_create_accent_phrases
  *     - ::voicevox_synthesizer_replace_mora_data
@@ -1006,6 +1039,7 @@ void voicevox_json_free(char *json);
  * \safety{
  * - `wav`は以下のAPIで得られたポインタでなくてはいけない。
  *     - ::voicevox_synthesizer_synthesis
+ *     - ::voicevox_synthesizer_synthesis_morphing
  *     - ::voicevox_synthesizer_tts
  * - `wav`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
  * - `wav`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。

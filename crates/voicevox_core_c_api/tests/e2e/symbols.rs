@@ -59,6 +59,14 @@ pub(crate) struct Symbols<'lib> {
         Symbol<'lib, unsafe extern "C" fn(*const VoicevoxSynthesizer) -> *mut c_char>,
     pub(crate) voicevox_create_supported_devices_json:
         Symbol<'lib, unsafe extern "C" fn(*mut *mut c_char) -> VoicevoxResultCode>,
+    pub(crate) voicevox_synthesizer_create_morphable_targets_json: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxSynthesizer,
+            VoicevoxStyleId,
+            *mut *mut c_char,
+        ) -> VoicevoxResultCode,
+    >,
     pub(crate) voicevox_synthesizer_create_audio_query_from_kana: Symbol<
         'lib,
         unsafe extern "C" fn(
@@ -86,6 +94,18 @@ pub(crate) struct Symbols<'lib> {
             *const c_char,
             VoicevoxStyleId,
             VoicevoxSynthesisOptions,
+            *mut usize,
+            *mut *mut u8,
+        ) -> VoicevoxResultCode,
+    >,
+    pub(crate) voicevox_synthesizer_synthesis_morphing: Symbol<
+        'lib,
+        unsafe extern "C" fn(
+            *const VoicevoxSynthesizer,
+            *const c_char,
+            VoicevoxStyleId,
+            VoicevoxStyleId,
+            f32,
             *mut usize,
             *mut *mut u8,
         ) -> VoicevoxResultCode,
@@ -222,10 +242,12 @@ impl<'lib> Symbols<'lib> {
             voicevox_synthesizer_is_loaded_voice_model,
             voicevox_synthesizer_create_metas_json,
             voicevox_create_supported_devices_json,
+            voicevox_synthesizer_create_morphable_targets_json,
             voicevox_synthesizer_create_audio_query_from_kana,
             voicevox_synthesizer_create_audio_query,
             voicevox_make_default_synthesis_options,
             voicevox_synthesizer_synthesis,
+            voicevox_synthesizer_synthesis_morphing,
             voicevox_make_default_tts_options,
             voicevox_synthesizer_tts_from_kana,
             voicevox_synthesizer_tts,
@@ -260,7 +282,7 @@ type OpenJtalkRc = c_void;
 type VoicevoxVoiceModel = c_void;
 type VoicevoxVoiceModelId = *const c_char;
 type VoicevoxSynthesizer = c_void;
-type VoicevoxStyleId = u32;
+pub(crate) type VoicevoxStyleId = u32;
 
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, EnumIter)]
@@ -289,6 +311,7 @@ pub(crate) enum VoicevoxResultCode {
     VOICEVOX_RESULT_USE_USER_DICT_ERROR = 23,
     VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR = 24,
     VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
+    VOICEVOX_RESULT_SPEAKER_FEATURE = 28,
 }
 
 #[repr(i32)]
