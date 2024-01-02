@@ -68,7 +68,8 @@ impl<'metas> MorphableTargets<'metas> {
                 morph_spectrogram,
                 itertools::zip_eq(base_spectrogram, target_spectrogram),
             ) {
-                *morph_spectrogram = base_spectrogram * (1. - morph_rate) + target_spectrogram;
+                *morph_spectrogram =
+                    base_spectrogram * (1. - morph_rate) + target_spectrogram * morph_rate;
             }
         }
 
