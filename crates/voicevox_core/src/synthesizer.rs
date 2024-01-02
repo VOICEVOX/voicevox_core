@@ -234,6 +234,10 @@ pub(crate) mod blocking {
             self.status.metas()
         }
 
+        /// 全スタイルごとに、指定されたスタイルとのペアでモーフィング機能が利用可能かどうかを返す。
+        ///
+        /// 話者およびそのメタ情報の`.supported_features.permitted_synthesis_morphing`の組み合わせに
+        /// よって決定される。
         pub fn morphable_targets(
             &self,
             style_id: StyleId,
@@ -266,6 +270,7 @@ pub(crate) mod blocking {
             Ok(engine::to_wav(wave, audio_query))
         }
 
+        /// 2人の話者でモーフィングした音声を合成する。
         pub fn synthesis_morphing(
             &self,
             audio_query: &AudioQueryModel,
@@ -1267,6 +1272,10 @@ pub(crate) mod tokio {
             self.0.metas()
         }
 
+        /// 全スタイルごとに、指定されたスタイルとのペアでモーフィング機能が利用可能かどうかを返す。
+        ///
+        /// 話者およびそのメタ情報の`.supported_features.permitted_synthesis_morphing`の組み合わせに
+        /// よって決定される。
         pub fn morphable_targets(
             &self,
             style_id: StyleId,
@@ -1288,6 +1297,7 @@ pub(crate) mod tokio {
                 .await
         }
 
+        /// 2人の話者でモーフィングした音声を合成する。
         pub async fn synthesis_morphing(
             &self,
             audio_query: &AudioQueryModel,

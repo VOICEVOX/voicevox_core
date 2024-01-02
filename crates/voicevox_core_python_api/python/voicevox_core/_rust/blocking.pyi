@@ -97,7 +97,22 @@ class Synthesizer:
         ...
     def morphable_targets(
         self, style_id: Union[StyleId, int]
-    ) -> Dict[StyleId, MorphableTargetInfo]: ...
+    ) -> Dict[StyleId, MorphableTargetInfo]:
+        """
+        全スタイルごとに、指定されたスタイルとのペアでモーフィング機能が利用可能かどうかを返す。
+
+        話者およびそのメタ情報の ``.supported_features.permitted_synthesis_morphing`` の組み合わせによって決定される。
+
+        Parameters
+        ----------
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        モーフィング機能の利用可否の一覧。
+        """
+        ...
     def load_voice_model(self, model: VoiceModel) -> None:
         """
         モデルを読み込む。
@@ -299,7 +314,26 @@ class Synthesizer:
         base_style_id: Union[StyleId, int],
         target_style_id: Union[StyleId, int],
         morph_rate: float,
-    ) -> bytes: ...
+    ) -> bytes:
+        """
+        2人の話者でモーフィングした音声を合成する。
+
+        Parameters
+        ----------
+        audio_query
+            :class:`AudioQuery` 。
+        base_style_id
+            ベースのスタイルのID。
+        target_style_id
+            モーフィング先スタイルのID。
+        morph_rate
+            モーフィングの割合。
+
+        Returns
+        -------
+        WAVデータ。
+        """
+        ...
     def tts_from_kana(
         self,
         kana: str,

@@ -54,6 +54,12 @@ public class Synthesizer extends Dll {
     return rawMetas;
   }
 
+  /**
+   * 全スタイルごとに、指定されたスタイルとのペアでモーフィング機能が利用可能かどうかを返す。
+   *
+   * @param styleId スタイルID。
+   * @return モーフィング機能の利用可否の一覧。
+   */
   @Nonnull
   public Map<Integer, MorphableTargetInfo> morphableTargets(int styleId) {
     String json = rsMorphableTargetsJson(styleId);
@@ -254,6 +260,16 @@ public class Synthesizer extends Dll {
     return new SynthesisConfigurator(this, audioQuery, styleId);
   }
 
+  /**
+   * 2人の話者でモーフィングした音声を合成する。
+   *
+   * @param audioQuery {@link AudioQuery}。
+   * @param baseStyleId ベースのスタイルのID。
+   * @param targetStyleId モーフィング先スタイルのID。
+   * @param morphRate モーフィングの割合。
+   * @return WAVデータ。
+   * @throws InferenceFailedException 推論に失敗した場合。
+   */
   @Nonnull
   public byte[] synthesisMorphing(
       AudioQuery audioQuery, int baseStyleId, int targetStyleId, double morphRate)

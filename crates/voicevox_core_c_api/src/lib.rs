@@ -505,6 +505,25 @@ pub unsafe extern "C" fn voicevox_create_supported_devices_json(
     })())
 }
 
+/// 全スタイルごとに、指定されたスタイルとのペアでモーフィング機能が利用可能かどうかを返す。
+///
+/// 話者およびそのメタ情報の `.supported_features.permitted_synthesis_morphing` の組み合わせによって決定される。
+///
+/// JSONの解放は ::voicevox_json_free で行う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] style_id スタイルID
+///
+/// @returns 結果コード
+///
+/// \example{
+/// ```c
+/// char *morphable_targets;
+/// VoicevoxResultCode result = voicevox_synthesizer_create_morphable_targets_json(
+///     synthesizer, style_id, &morphable_targets);
+/// ```
+/// }
+///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
 /// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -904,6 +923,20 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     })())
 }
 
+/// 2人の話者でモーフィングした音声を合成する。
+///
+/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] audio_query_json AudioQueryのJSON文字列
+/// @param [in] base_style_id ベースのスタイルのID
+/// @param [in] target_style_id モーフィング先スタイルのID
+/// @param [in] morph_rate モーフィングの割合
+/// @param [out] output_wav_length 出力のバイト長
+/// @param [out] output_wav 出力先
+///
+/// @returns 結果コード
+///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
 /// - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
