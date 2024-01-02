@@ -105,7 +105,7 @@ pub(crate) struct Symbols<'lib> {
             *const c_char,
             VoicevoxStyleId,
             VoicevoxStyleId,
-            f32,
+            f64,
             *mut usize,
             *mut *mut u8,
         ) -> VoicevoxResultCode,

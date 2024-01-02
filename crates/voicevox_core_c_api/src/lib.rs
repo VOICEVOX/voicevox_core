@@ -916,7 +916,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis_morphing(
     audio_query_json: *const c_char,
     base_style_id: VoicevoxStyleId,
     target_style_id: VoicevoxStyleId,
-    morph_rate: f32,
+    morph_rate: f64,
     output_wav_length: NonNull<usize>,
     output_wav: NonNull<*mut u8>,
 ) -> VoicevoxResultCode {

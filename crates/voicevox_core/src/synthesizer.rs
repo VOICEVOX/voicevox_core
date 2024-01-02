@@ -271,7 +271,7 @@ pub(crate) mod blocking {
             audio_query: &AudioQueryModel,
             base_style_id: StyleId,
             target_style_id: StyleId,
-            morph_rate: f32,
+            morph_rate: f64,
         ) -> crate::Result<Vec<u8>> {
             let style_ids = MorphingPair {
                 base: base_style_id,
@@ -1293,7 +1293,7 @@ pub(crate) mod tokio {
             audio_query: &AudioQueryModel,
             base_style_id: StyleId,
             target_style_id: StyleId,
-            morph_rate: f32,
+            morph_rate: f64,
         ) -> crate::Result<Vec<u8>> {
             let blocking = self.0.clone();
             let audio_query = audio_query.clone();

@@ -453,7 +453,7 @@ impl Synthesizer {
         #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQueryModel,
         base_style_id: u32,
         target_style_id: u32,
-        morph_rate: f32,
+        morph_rate: f64,
         py: Python<'py>,
     ) -> PyResult<&'py PyAny> {
         let synthesizer = self.synthesizer.get()?.clone();
@@ -1003,7 +1003,7 @@ mod blocking {
             #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQueryModel,
             base_style_id: u32,
             target_style_id: u32,
-            morph_rate: f32,
+            morph_rate: f64,
             py: Python<'py>,
         ) -> PyResult<&'py PyBytes> {
             let wav = &self

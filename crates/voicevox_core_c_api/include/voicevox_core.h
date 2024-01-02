@@ -930,7 +930,7 @@ VoicevoxResultCode voicevox_synthesizer_synthesis_morphing(const struct Voicevox
                                                            const char *audio_query_json,
                                                            VoicevoxStyleId base_style_id,
                                                            VoicevoxStyleId target_style_id,
-                                                           float morph_rate,
+                                                           double morph_rate,
                                                            uintptr_t *output_wav_length,
                                                            uint8_t **output_wav);
 

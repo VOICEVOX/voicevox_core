@@ -133,7 +133,7 @@ impl assert_cdylib::TestCase for TestCase {
             )?[&self.target_style];
 
         let result = {
-            const MORPH_RATE: f32 = 0.5;
+            const MORPH_RATE: f64 = 0.5;
 
             let mut wav_length = MaybeUninit::uninit();
             let mut wav = MaybeUninit::uninit();

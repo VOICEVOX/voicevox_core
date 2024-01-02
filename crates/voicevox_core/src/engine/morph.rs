@@ -23,7 +23,7 @@ impl<O> crate::blocking::Synthesizer<O> {
         &self,
         audio_query: &AudioQueryModel,
         style_ids: MorphingPair<StyleId>,
-        morph_rate: f32,
+        morph_rate: f64,
     ) -> crate::Result<Vec<u8>> {
         let metas = &self.metas();
         let pair = style_ids.lookup_speakers(metas)?;
@@ -37,10 +37,8 @@ impl<'metas> MorphableTargets<'metas> {
         self,
         synthesizer: &crate::blocking::Synthesizer<impl Sized>,
         audio_query: &AudioQueryModel,
-        morph_rate: f32,
+        morph_rate: f64,
     ) -> crate::Result<Vec<u8>> {
-        let morph_rate = f64::from(morph_rate);
-
         if *audio_query.output_sampling_rate() != DEFAULT_SAMPLING_RATE
             || *audio_query.output_stereo()
         {
