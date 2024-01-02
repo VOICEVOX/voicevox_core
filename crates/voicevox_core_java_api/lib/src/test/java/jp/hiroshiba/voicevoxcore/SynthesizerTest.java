@@ -8,8 +8,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
+import jp.hiroshiba.voicevoxcore.Synthesizer.MorphableTargetInfo;
 import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
+import jp.hiroshiba.voicevoxcore.exceptions.StyleNotFoundException;
 import org.junit.jupiter.api.Test;
 
 class SynthesizerTest extends TestUtils {
@@ -24,6 +27,44 @@ class SynthesizerTest extends TestUtils {
     Synthesizer synthesizer =
         Synthesizer.builder(openJtalk).accelerationMode(Synthesizer.AccelerationMode.CPU).build();
     assertFalse(synthesizer.isGpuMode());
+  }
+
+  @Test
+  void checkMorphableTargets() throws InvalidModelDataException {
+    OpenJtalk openJtalk = loadOpenJtalk();
+    Synthesizer synthesizer =
+        Synthesizer.builder(openJtalk).accelerationMode(Synthesizer.AccelerationMode.CPU).build();
+
+    synthesizer.loadVoiceModel(loadModel());
+
+    Map<Integer, MorphableTargetInfo> morphableTargets = synthesizer.morphableTargets(0);
+    assertFalse(morphableTargets.get(0).isMorphable);
+    assertFalse(morphableTargets.get(1).isMorphable);
+    assertFalse(morphableTargets.get(302).isMorphable);
+    assertFalse(morphableTargets.get(303).isMorphable);
+
+    morphableTargets = synthesizer.morphableTargets(1);
+    assertFalse(morphableTargets.get(0).isMorphable);
+    assertTrue(morphableTargets.get(1).isMorphable);
+    assertFalse(morphableTargets.get(302).isMorphable);
+    assertFalse(morphableTargets.get(303).isMorphable);
+
+    morphableTargets = synthesizer.morphableTargets(302);
+    assertFalse(morphableTargets.get(0).isMorphable);
+    assertFalse(morphableTargets.get(1).isMorphable);
+    assertTrue(morphableTargets.get(302).isMorphable);
+    assertTrue(morphableTargets.get(303).isMorphable);
+
+    morphableTargets = synthesizer.morphableTargets(303);
+    assertFalse(morphableTargets.get(0).isMorphable);
+    assertFalse(morphableTargets.get(1).isMorphable);
+    assertTrue(morphableTargets.get(302).isMorphable);
+    assertTrue(morphableTargets.get(303).isMorphable);
+
+    try {
+      synthesizer.morphableTargets(2);
+    } catch (StyleNotFoundException e) {
+    }
   }
 
   boolean checkAllMoras(

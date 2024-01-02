@@ -1,10 +1,14 @@
 package jp.hiroshiba.voicevoxcore;
 
 import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.reflect.TypeToken;
 import jakarta.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 
@@ -48,6 +52,17 @@ public class Synthesizer extends Dll {
       throw new NullPointerException("metas");
     }
     return rawMetas;
+  }
+
+  @Nonnull
+  public Map<Integer, MorphableTargetInfo> morphableTargets(int styleId) {
+    String json = rsMorphableTargetsJson(styleId);
+    Map<Integer, MorphableTargetInfo> ret =
+        new Gson().fromJson(json, new TypeToken<Map<Integer, MorphableTargetInfo>>() {}.getType());
+    if (ret == null) {
+      throw new NullPointerException();
+    }
+    return ret;
   }
 
   /**
@@ -239,6 +254,14 @@ public class Synthesizer extends Dll {
     return new SynthesisConfigurator(this, audioQuery, styleId);
   }
 
+  @Nonnull
+  public byte[] synthesisMorphing(
+      AudioQuery audioQuery, int baseStyleId, int targetStyleId, double morphRate)
+      throws InferenceFailedException {
+    String audioQueryJson = new Gson().toJson(audioQuery);
+    return rsSynthesisMorphing(audioQueryJson, baseStyleId, targetStyleId, morphRate);
+  }
+
   /**
    * AquesTalk風記法をもとに音声合成を実行するためのオブジェクトを生成する。
    *
@@ -271,6 +294,8 @@ public class Synthesizer extends Dll {
 
   @Nonnull
   private native String rsGetMetasJson();
+
+  private native String rsMorphableTargetsJson(int styleId);
 
   private native void rsLoadVoiceModel(VoiceModel voiceModel) throws InvalidModelDataException;
 
@@ -307,6 +332,11 @@ public class Synthesizer extends Dll {
   @Nonnull
   private native byte[] rsSynthesis(
       String queryJson, int styleId, boolean enableInterrogativeUpspeak)
+      throws InferenceFailedException;
+
+  @Nonnull
+  private native byte[] rsSynthesisMorphing(
+      String queryJson, int baseStyleId, int targetStyleId, double morphRate)
       throws InferenceFailedException;
 
   @Nonnull
@@ -473,6 +503,16 @@ public class Synthesizer extends Dll {
         throw new IllegalArgumentException("styleId");
       }
       return synthesizer.rsTtsFromKana(this.kana, this.styleId, this.interrogativeUpspeak);
+    }
+  }
+
+  public static class MorphableTargetInfo {
+    @SerializedName("is_morphable")
+    @Expose
+    public final boolean isMorphable;
+
+    private MorphableTargetInfo() {
+      isMorphable = false;
     }
   }
 
