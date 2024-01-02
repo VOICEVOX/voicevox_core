@@ -34,6 +34,24 @@ x : str
 """
 
 
+class PermittedSynthesisMorphing(str, Enum):
+    ALL = "ALL"
+    """全て許可。"""
+
+    SELF_ONLY = "SELF_ONLY"
+    """同じ話者内でのみ許可。"""
+
+    NOTHING = "NOTHING"
+    """全て禁止。"""
+
+
+@pydantic.dataclasses.dataclass
+class SpeakerSupportedFeatures:
+    permitted_synthesis_morphing: PermittedSynthesisMorphing = (
+        PermittedSynthesisMorphing.NOTHING
+    )
+
+
 @pydantic.dataclasses.dataclass
 class StyleMeta:
     """**スタイル** (_style_)のメタ情報。"""
@@ -60,6 +78,14 @@ class SpeakerMeta:
 
     version: StyleVersion
     """話者のUUID。"""
+
+    supported_features: SpeakerSupportedFeatures = SpeakerSupportedFeatures()
+    """話者の対応機能。"""
+
+
+@pydantic.dataclasses.dataclass(frozen=True)
+class MorphableTargetInfo:
+    is_morphable: bool
 
 
 @pydantic.dataclasses.dataclass

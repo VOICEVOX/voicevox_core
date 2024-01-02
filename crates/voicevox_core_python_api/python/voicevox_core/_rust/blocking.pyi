@@ -7,6 +7,7 @@ if TYPE_CHECKING:
         AccelerationMode,
         AccentPhrase,
         AudioQuery,
+        MorphableTargetInfo,
         SpeakerMeta,
         StyleId,
         UserDictWord,
@@ -94,6 +95,9 @@ class Synthesizer:
     def metas(self) -> List[SpeakerMeta]:
         """メタ情報。"""
         ...
+    def morphable_targets(
+        self, style_id: Union[StyleId, int]
+    ) -> Dict[StyleId, MorphableTargetInfo]: ...
     def load_voice_model(self, model: VoiceModel) -> None:
         """
         モデルを読み込む。
@@ -289,6 +293,13 @@ class Synthesizer:
         WAVデータ。
         """
         ...
+    def synthesis_morphing(
+        self,
+        audio_query: AudioQuery,
+        base_style_id: Union[StyleId, int],
+        target_style_id: Union[StyleId, int],
+        morph_rate: float,
+    ) -> bytes: ...
     def tts_from_kana(
         self,
         kana: str,

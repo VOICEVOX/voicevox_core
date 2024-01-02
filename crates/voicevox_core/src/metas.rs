@@ -81,6 +81,7 @@ pub struct StyleMeta {
 
 #[derive(Default, Deserialize, Serialize, Clone)]
 pub struct SpeakerSupportedFeatures {
+    #[serde(default)]
     pub(crate) permitted_synthesis_morphing: PermittedSynthesisMorphing,
 }
 

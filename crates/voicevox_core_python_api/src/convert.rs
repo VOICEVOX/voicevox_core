@@ -17,8 +17,8 @@ use crate::{
     ExtractFullContextLabelError, GetSupportedDevicesError, GpuSupportError, InferenceFailedError,
     InvalidModelDataError, InvalidWordError, LoadUserDictError, ModelAlreadyLoadedError,
     ModelNotFoundError, NotLoadedOpenjtalkDictError, OpenZipFileError, ParseKanaError,
-    ReadZipEntryError, SaveUserDictError, StyleAlreadyLoadedError, StyleNotFoundError,
-    UseUserDictError, WordNotFoundError,
+    ReadZipEntryError, SaveUserDictError, SpeakerFeatureError, StyleAlreadyLoadedError,
+    StyleNotFoundError, UseUserDictError, WordNotFoundError,
 };
 
 pub fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
@@ -203,7 +203,7 @@ pub impl<T> voicevox_core::Result<T> {
                 ErrorKind::WordNotFound => WordNotFoundError::new_err(msg),
                 ErrorKind::UseUserDict => UseUserDictError::new_err(msg),
                 ErrorKind::InvalidWord => InvalidWordError::new_err(msg),
-                ErrorKind::SpeakerFeature => todo!(),
+                ErrorKind::SpeakerFeature => SpeakerFeatureError::new_err(msg),
             };
 
             [top]
