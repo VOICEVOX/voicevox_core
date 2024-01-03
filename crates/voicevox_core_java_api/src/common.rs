@@ -146,7 +146,7 @@ where
                             WordNotFound,
                             UseUserDict,
                             InvalidWord,
-                            SpeakerFeature, // TODO
+                            SpeakerFeature,
                         );
 
                         let mut sources =
