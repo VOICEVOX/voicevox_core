@@ -13,5 +13,4 @@ pub(crate) use self::full_context_label::{FullContextLabelError, Utterance};
 pub(crate) use self::kana_parser::{create_kana, parse_kana, KanaParseError};
 pub use self::model::{AccentPhraseModel, AudioQueryModel, MoraModel, MorphableTargetInfo};
 pub(crate) use self::mora_list::mora2text;
-pub(crate) use self::morph::MorphingPair;
 pub use self::open_jtalk::FullcontextExtractor;

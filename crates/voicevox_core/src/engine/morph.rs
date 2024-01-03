@@ -1,16 +1,40 @@
+use std::collections::BTreeMap;
+
 use world::{
     signal_analyzer::{AnalyzeResult, SignalAnalyzerBuilder},
     spectrogram_like::SpectrogramLike,
 };
 
 use crate::{
-    error::ErrorRepr, synthesizer::DEFAULT_SAMPLING_RATE, AudioQueryModel, SpeakerMeta, StyleId,
+    error::ErrorRepr, synthesizer::DEFAULT_SAMPLING_RATE, AudioQueryModel, MorphableTargetInfo,
+    SpeakerMeta, StyleId, StyleMeta,
 };
 
 use self::permit::MorphableTargets;
 
 impl<O> crate::blocking::Synthesizer<O> {
-    pub(crate) fn is_synthesis_morphing_permitted(
+    pub(crate) fn morphable_targets_(
+        &self,
+        style_id: StyleId,
+    ) -> crate::Result<BTreeMap<StyleId, MorphableTargetInfo>> {
+        let metas = &self.metas();
+
+        metas
+            .iter()
+            .flat_map(SpeakerMeta::styles)
+            .map(StyleMeta::id)
+            .map(|&target| {
+                let style_ids = MorphingPair {
+                    base: style_id,
+                    target,
+                };
+                let is_morphable = self.is_synthesis_morphing_permitted(style_ids, metas)?;
+                Ok((target, MorphableTargetInfo { is_morphable }))
+            })
+            .collect()
+    }
+
+    fn is_synthesis_morphing_permitted(
         &self,
         style_ids: MorphingPair<StyleId>,
         metas: &[SpeakerMeta],
@@ -22,11 +46,17 @@ impl<O> crate::blocking::Synthesizer<O> {
     pub(crate) fn synthesis_morphing_(
         &self,
         audio_query: &AudioQueryModel,
-        style_ids: MorphingPair<StyleId>,
+        base_style_id: StyleId,
+        target_style_id: StyleId,
         morph_rate: f64,
     ) -> crate::Result<Vec<u8>> {
         let metas = &self.metas();
-        let pair = style_ids.lookup_speakers(metas)?;
+
+        let pair = MorphingPair {
+            base: base_style_id,
+            target: target_style_id,
+        }
+        .lookup_speakers(metas)?;
 
         MorphableTargets::permit(pair)?.synthesis_morphing(self, audio_query, morph_rate)
     }
@@ -132,9 +162,9 @@ impl<'metas> MorphableTargets<'metas> {
 }
 
 #[derive(Clone, Copy)]
-pub(crate) struct MorphingPair<T> {
-    pub(crate) base: T,
-    pub(crate) target: T,
+struct MorphingPair<T> {
+    base: T,
+    target: T,
 }
 
 impl<T> MorphingPair<T> {

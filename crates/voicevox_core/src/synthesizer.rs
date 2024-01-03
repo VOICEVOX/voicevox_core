@@ -89,8 +89,7 @@ pub(crate) mod blocking {
 
     use crate::{
         engine::{
-            self, create_kana, parse_kana, MoraModel, MorphableTargetInfo, MorphingPair,
-            OjtPhoneme, Utterance,
+            self, create_kana, parse_kana, MoraModel, MorphableTargetInfo, OjtPhoneme, Utterance,
         },
         error::ErrorRepr,
         infer::{
@@ -103,8 +102,8 @@ pub(crate) mod blocking {
             InferenceSessionOptions,
         },
         numerics::F32Ext as _,
-        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, SpeakerMeta, StyleId,
-        StyleMeta, SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
+        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
+        SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{
@@ -242,21 +241,7 @@ pub(crate) mod blocking {
             &self,
             style_id: StyleId,
         ) -> Result<BTreeMap<StyleId, MorphableTargetInfo>> {
-            let metas = &self.metas();
-
-            metas
-                .iter()
-                .flat_map(SpeakerMeta::styles)
-                .map(StyleMeta::id)
-                .map(|&target| {
-                    let style_ids = MorphingPair {
-                        base: style_id,
-                        target,
-                    };
-                    let is_morphable = self.is_synthesis_morphing_permitted(style_ids, metas)?;
-                    Ok((target, MorphableTargetInfo { is_morphable }))
-                })
-                .collect()
+            self.morphable_targets_(style_id)
         }
 
         /// AudioQueryから音声合成を行う。
@@ -278,11 +263,7 @@ pub(crate) mod blocking {
             target_style_id: StyleId,
             morph_rate: f64,
         ) -> crate::Result<Vec<u8>> {
-            let style_ids = MorphingPair {
-                base: base_style_id,
-                target: target_style_id,
-            };
-            self.synthesis_morphing_(audio_query, style_ids, morph_rate)
+            self.synthesis_morphing_(audio_query, base_style_id, target_style_id, morph_rate)
         }
 
         pub(crate) fn synthesis_wave(
