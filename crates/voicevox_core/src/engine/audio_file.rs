@@ -9,7 +9,7 @@ pub(crate) fn to_wav<T: Float + From<i16> + From<f32> + Cast<i16>>(
     wave: &[T],
     audio_query: &AudioQueryModel,
 ) -> Vec<u8> {
-    // TODO: ライブラリ(e.g. https://docs.rs/hound)を使う
+    // TODO: ライブラリ(e.g. https://docs.rs/rubato & https://docs.rs/hound)を使う
 
     let volume_scale = *audio_query.volume_scale();
     let output_stereo = *audio_query.output_stereo();

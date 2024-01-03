@@ -39,12 +39,6 @@ impl<'metas> MorphableTargets<'metas> {
         audio_query: &AudioQueryModel,
         morph_rate: f64,
     ) -> crate::Result<Vec<u8>> {
-        if *audio_query.output_sampling_rate() != DEFAULT_SAMPLING_RATE
-            || *audio_query.output_stereo()
-        {
-            todo!();
-        }
-
         let waves = &self.get().try_map(|style_id| {
             synthesizer.synthesis_wave(audio_query, style_id, &Default::default())
         })?;
