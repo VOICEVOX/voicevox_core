@@ -100,8 +100,6 @@ stderr.unix = ""
 
 [morph.'{"text":"こんにちは、音声合成の世界へようこそ","base_style":1,"target_style":302}']
 ok = false
-# FIXME: 以下の部分が`#[error(transparent)]`ではなく`#[error("{0}")]`となっているために、このようなエラー表示になってしまっている
-# https://github.com/VOICEVOX/voicevox_core/blob/4e13bca5a55a08d7aea08af4f949462bd284b1c1/crates/voicevox_core_c_api/src/helpers.rs#L67
 stderr.windows = '''
 {windows-video-cards}
 {timestamp} ERROR voicevox_core::helpers: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング

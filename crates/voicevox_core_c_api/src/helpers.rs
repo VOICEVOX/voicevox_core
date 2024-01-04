@@ -65,6 +65,12 @@ pub(crate) type CApiResult<T> = std::result::Result<T, CApiError>;
 
 #[derive(Error, Debug)]
 pub enum CApiError {
+    // FIXME: こんな感じになってしまう。`#[error(transparent)]`とするべき
+    //
+    // ```
+    // {timestamp} ERROR voicevox_core::helpers: `0`に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています
+    // {timestamp} ERROR voicevox_core::helpers: Caused by: `0`に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています
+    // ```
     #[error("{0}")]
     RustApi(#[from] voicevox_core::Error),
     #[error("UTF-8として不正な入力です")]

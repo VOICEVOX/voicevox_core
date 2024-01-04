@@ -183,6 +183,7 @@ pub impl<T> voicevox_core::Result<T> {
         use voicevox_core::ErrorKind;
 
         self.map_err(|err| {
+            // FIXME: `KeyError`を継承しているエラーでは、`msg`が`repr`で表示されてしまう
             let msg = err.to_string();
             let top = match err.kind() {
                 ErrorKind::NotLoadedOpenjtalkDict => NotLoadedOpenjtalkDictError::new_err(msg),

@@ -81,11 +81,9 @@ async def test_morph(
                 await synthesizer.synthesis_morphing(query, base, target, MORPH_RATE)
 
 
-def test_morphable_targets_raises_for_unknown_style(synthesizer: Synthesizer) -> None:
+def test_morphable_targets_denies_unknown_style(synthesizer: Synthesizer) -> None:
     STYLE_ID = StyleId(9999)
 
-    # FIXME: `KeyError.__init__`を通しているため、メッセージが`repr`で表示されてしまう
-    # https://github.com/VOICEVOX/voicevox_core/blob/4e13bca5a55a08d7aea08af4f949462bd284b1c1/crates/voicevox_core_python_api/src/convert.rs#L186-L206
     with pytest.raises(
         StyleNotFoundError,
         match=f"^'`{STYLE_ID}`に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています'$",

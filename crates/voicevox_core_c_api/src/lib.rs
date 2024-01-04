@@ -536,9 +536,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_morphable_targets_json(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let morphable_targets = &synthesizer
-            .synthesizer
-            .morphable_targets(StyleId::new(style_id))?;
+        let style_id = StyleId::new(style_id);
+        let morphable_targets = &synthesizer.synthesizer.morphable_targets(style_id)?;
         let morphable_targets = serde_json::to_string(morphable_targets).expect("should not fail");
         let morphable_targets = CString::new(morphable_targets).expect("should not end with NUL");
         output.as_ptr().write_unaligned(

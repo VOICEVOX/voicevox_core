@@ -151,7 +151,7 @@ class SynthesizerTest extends TestUtils {
     }
   }
 
-  static Stream<MorphParams> morphParamsProvider() {
+  private static Stream<MorphParams> morphParamsProvider() {
     return Stream.of(
         new MorphParams(
             0,
@@ -196,7 +196,7 @@ class SynthesizerTest extends TestUtils {
   }
 
   // TODO: Lombokを使う
-  static class MorphParams {
+  private static class MorphParams {
     private final int baseStyleId;
     private final SortedMap<Integer, Boolean> targets;
 
