@@ -9,11 +9,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.stream.Stream;
 import jp.hiroshiba.voicevoxcore.Synthesizer.MorphableTargetInfo;
 import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
+import jp.hiroshiba.voicevoxcore.exceptions.SpeakerFeatureException;
 import jp.hiroshiba.voicevoxcore.exceptions.StyleNotFoundException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class SynthesizerTest extends TestUtils {
   @FunctionalInterface
@@ -27,44 +33,6 @@ class SynthesizerTest extends TestUtils {
     Synthesizer synthesizer =
         Synthesizer.builder(openJtalk).accelerationMode(Synthesizer.AccelerationMode.CPU).build();
     assertFalse(synthesizer.isGpuMode());
-  }
-
-  @Test
-  void checkMorphableTargets() throws InvalidModelDataException {
-    OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer =
-        Synthesizer.builder(openJtalk).accelerationMode(Synthesizer.AccelerationMode.CPU).build();
-
-    synthesizer.loadVoiceModel(loadModel());
-
-    Map<Integer, MorphableTargetInfo> morphableTargets = synthesizer.morphableTargets(0);
-    assertFalse(morphableTargets.get(0).isMorphable);
-    assertFalse(morphableTargets.get(1).isMorphable);
-    assertFalse(morphableTargets.get(302).isMorphable);
-    assertFalse(morphableTargets.get(303).isMorphable);
-
-    morphableTargets = synthesizer.morphableTargets(1);
-    assertFalse(morphableTargets.get(0).isMorphable);
-    assertTrue(morphableTargets.get(1).isMorphable);
-    assertFalse(morphableTargets.get(302).isMorphable);
-    assertFalse(morphableTargets.get(303).isMorphable);
-
-    morphableTargets = synthesizer.morphableTargets(302);
-    assertFalse(morphableTargets.get(0).isMorphable);
-    assertFalse(morphableTargets.get(1).isMorphable);
-    assertTrue(morphableTargets.get(302).isMorphable);
-    assertTrue(morphableTargets.get(303).isMorphable);
-
-    morphableTargets = synthesizer.morphableTargets(303);
-    assertFalse(morphableTargets.get(0).isMorphable);
-    assertFalse(morphableTargets.get(1).isMorphable);
-    assertTrue(morphableTargets.get(302).isMorphable);
-    assertTrue(morphableTargets.get(303).isMorphable);
-
-    try {
-      synthesizer.morphableTargets(2);
-    } catch (StyleNotFoundException e) {
-    }
   }
 
   boolean checkAllMoras(
@@ -151,5 +119,110 @@ class SynthesizerTest extends TestUtils {
     Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
     synthesizer.loadVoiceModel(model);
     synthesizer.tts("こんにちは", model.metas[0].styles[0].id);
+  }
+
+  @ParameterizedTest
+  @MethodSource("morphParamsProvider")
+  void checkMorphing(MorphParams params)
+      throws InvalidModelDataException, InferenceFailedException {
+    OpenJtalk openJtalk = loadOpenJtalk();
+    Synthesizer synthesizer =
+        Synthesizer.builder(openJtalk).accelerationMode(Synthesizer.AccelerationMode.CPU).build();
+
+    synthesizer.loadVoiceModel(loadModel());
+
+    int baseStyleId = params.getBaseStyleId();
+    AudioQuery query = synthesizer.createAudioQuery("こんにちは", baseStyleId);
+    Map<Integer, MorphableTargetInfo> morphableTargets = synthesizer.morphableTargets(baseStyleId);
+
+    for (Map.Entry<Integer, Boolean> entry : params.getTargets().entrySet()) {
+      int targetStyleId = entry.getKey();
+      boolean shouldSuccess = entry.getValue();
+
+      assertTrue(morphableTargets.get(targetStyleId).isMorphable == shouldSuccess);
+
+      try {
+        // TODO: スナップショットテストをやる
+        synthesizer.synthesisMorphing(query, baseStyleId, targetStyleId, 0.5);
+        assertTrue(shouldSuccess);
+      } catch (SpeakerFeatureException e) {
+        assertFalse(shouldSuccess);
+      }
+    }
+  }
+
+  static Stream<MorphParams> morphParamsProvider() {
+    return Stream.of(
+        new MorphParams(
+            0,
+            new TreeMap<Integer, Boolean>() {
+              {
+                put(0, false);
+                put(1, false);
+                put(302, false);
+                put(303, false);
+              }
+            }),
+        new MorphParams(
+            1,
+            new TreeMap<Integer, Boolean>() {
+              {
+                put(0, false);
+                put(1, true);
+                put(302, false);
+                put(303, false);
+              }
+            }),
+        new MorphParams(
+            302,
+            new TreeMap<Integer, Boolean>() {
+              {
+                put(0, false);
+                put(1, false);
+                put(302, true);
+                put(303, true);
+              }
+            }),
+        new MorphParams(
+            303,
+            new TreeMap<Integer, Boolean>() {
+              {
+                put(0, false);
+                put(1, false);
+                put(302, true);
+                put(303, true);
+              }
+            }));
+  }
+
+  // TODO: Lombokを使う
+  static class MorphParams {
+    private final int baseStyleId;
+    private final SortedMap<Integer, Boolean> targets;
+
+    MorphParams(int baseStyleId, SortedMap<Integer, Boolean> targets) {
+      this.baseStyleId = baseStyleId;
+      this.targets = targets;
+    }
+
+    int getBaseStyleId() {
+      return baseStyleId;
+    }
+
+    SortedMap<Integer, Boolean> getTargets() {
+      return targets;
+    }
+  }
+
+  @Test
+  void checkMorphableTargetsDeniesUnknownStyle() {
+    OpenJtalk openJtalk = loadOpenJtalk();
+    Synthesizer synthesizer =
+        Synthesizer.builder(openJtalk).accelerationMode(Synthesizer.AccelerationMode.CPU).build();
+
+    try {
+      synthesizer.morphableTargets(0);
+    } catch (StyleNotFoundException e) {
+    }
   }
 }

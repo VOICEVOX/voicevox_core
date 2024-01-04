@@ -132,6 +132,7 @@ impl assert_cdylib::TestCase for TestCase {
                 CStr::from_ptr(morphable_targets).to_bytes(),
             )?[&self.target_style];
 
+        // TODO: スナップショットテストをやる
         let result = {
             const MORPH_RATE: f64 = 0.5;
 
