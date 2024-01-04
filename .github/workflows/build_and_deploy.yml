@@ -413,7 +413,7 @@ jobs:
           echo "onnx dylib file name: $dylib_string"
 
           # onnxruntimeへの@rpathを変更
-          install_name_tool -change "@rpath/$dylib_string" "@rpath/onnxruntime.framework/$dylib_string" Framework-aarch64/voicevox_core.framework/voicevox_core
+          install_name_tool -change "@rpath/$dylib_string" "@rpath/onnxruntime.framework/onnxruntime" Framework-aarch64/voicevox_core.framework/voicevox_core
 
       - name: Create sim Framework 
         run: |
@@ -450,7 +450,7 @@ jobs:
           echo "onnx dylib file name: $dylib_string"
 
           # onnxruntimeへの@rpathを変更
-          install_name_tool -change "@rpath/$dylib_string" "@rpath/onnxruntime.framework/$dylib_string" Framework-sim/voicevox_core.framework/voicevox_core
+          install_name_tool -change "@rpath/$dylib_string" "@rpath/onnxruntime.framework/onnxruntime" Framework-sim/voicevox_core.framework/voicevox_core
 
       - name: Create XCFramework
         run: |
