@@ -378,7 +378,7 @@ jobs:
           path: artifact/voicevox_core-aarch64-apple-ios
       - name: Create aarch64 Framework 
         run: |
-          mkdir -p "Framework-aarch64"
+          mkdir -p "Framework-aarch64/voicevox_core.framework/Headers"
           cp -vr crates/voicevox_core_c_api/xcframework/Frameworks/aarch64/ Framework-aarch64/
           cp -v artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h \
             Framework-aarch64/voicevox_core.framework/Headers/voicevox_core.h
@@ -417,7 +417,7 @@ jobs:
 
       - name: Create sim Framework 
         run: |
-          mkdir -p "Framework-sim"
+          mkdir -p "Framework-sim/voicevox_core.framework/Headers"
           cp -vr crates/voicevox_core_c_api/xcframework/Frameworks/sim/ Framework-sim/
           cp -v artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h \
             Framework-sim/voicevox_core.framework/Headers/voicevox_core.h
