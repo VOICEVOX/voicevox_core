@@ -10,7 +10,7 @@ use crate::{
     SpeakerMeta, StyleId, StyleMeta,
 };
 
-use self::permit::MorphableTargets;
+use self::permit::MorphableStyles;
 
 impl<O> crate::blocking::Synthesizer<O> {
     pub(crate) fn morphable_targets_(
@@ -40,7 +40,7 @@ impl<O> crate::blocking::Synthesizer<O> {
         metas: &[SpeakerMeta],
     ) -> crate::Result<bool> {
         let pair = style_ids.lookup_speakers(metas)?;
-        Ok(MorphableTargets::permit(pair).is_ok())
+        Ok(MorphableStyles::permit(pair).is_ok())
     }
 
     pub(crate) fn synthesis_morphing_(
@@ -58,11 +58,11 @@ impl<O> crate::blocking::Synthesizer<O> {
         }
         .lookup_speakers(metas)?;
 
-        MorphableTargets::permit(pair)?.synthesis_morphing(self, audio_query, morph_rate)
+        MorphableStyles::permit(pair)?.synthesis_morphing(self, audio_query, morph_rate)
     }
 }
 
-impl<'metas> MorphableTargets<'metas> {
+impl<'metas> MorphableStyles<'metas> {
     fn synthesis_morphing(
         self,
         synthesizer: &crate::blocking::Synthesizer<impl Sized>,
@@ -210,12 +210,12 @@ mod permit {
 
     use super::MorphingPair;
 
-    pub(super) struct MorphableTargets<'metas> {
+    pub(super) struct MorphableStyles<'metas> {
         inner: MorphingPair<StyleId>,
         marker: PhantomData<&'metas ()>,
     }
 
-    impl<'metas> MorphableTargets<'metas> {
+    impl<'metas> MorphableStyles<'metas> {
         pub(super) fn permit(
             pair: MorphingPair<(StyleId, &'metas SpeakerMeta)>,
         ) -> std::result::Result<Self, SpeakerFeatureError> {
