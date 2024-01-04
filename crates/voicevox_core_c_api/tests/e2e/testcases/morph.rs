@@ -22,25 +22,79 @@ use crate::{
     },
 };
 
+const TEXT: &CStr = cstr!("こんにちは、音声合成の世界へようこそ");
+const MORPH_RATE: f64 = 0.5;
+
 case!(TestCase {
-    text: "こんにちは、音声合成の世界へようこそ".to_owned(),
+    base_style: 0,
+    target_style: 0,
+});
+case!(TestCase {
+    base_style: 0,
+    target_style: 1,
+});
+case!(TestCase {
+    base_style: 0,
+    target_style: 302,
+});
+case!(TestCase {
+    base_style: 0,
+    target_style: 303,
+});
+
+case!(TestCase {
+    base_style: 1,
+    target_style: 0,
+});
+case!(TestCase {
     base_style: 1,
     target_style: 1,
 });
 case!(TestCase {
-    text: "こんにちは、音声合成の世界へようこそ".to_owned(),
+    base_style: 1,
+    target_style: 302,
+});
+case!(TestCase {
+    base_style: 1,
+    target_style: 303,
+});
+
+case!(TestCase {
+    base_style: 302,
+    target_style: 0,
+});
+case!(TestCase {
+    base_style: 302,
+    target_style: 1,
+});
+case!(TestCase {
+    base_style: 302,
+    target_style: 302,
+});
+case!(TestCase {
     base_style: 302,
     target_style: 303,
 });
+
 case!(TestCase {
-    text: "こんにちは、音声合成の世界へようこそ".to_owned(),
-    base_style: 1,
+    base_style: 303,
+    target_style: 0,
+});
+case!(TestCase {
+    base_style: 303,
+    target_style: 1,
+});
+case!(TestCase {
+    base_style: 303,
     target_style: 302,
+});
+case!(TestCase {
+    base_style: 303,
+    target_style: 303,
 });
 
 #[derive(Serialize, Deserialize)]
 struct TestCase {
-    text: String,
     base_style: VoicevoxStyleId,
     target_style: VoicevoxStyleId,
 }
@@ -107,10 +161,9 @@ impl assert_cdylib::TestCase for TestCase {
 
         let audio_query = {
             let mut audio_query = MaybeUninit::uninit();
-            let text = CString::new(&*self.text).unwrap();
             assert_ok(voicevox_synthesizer_create_audio_query(
                 synthesizer,
-                text.as_ptr(),
+                TEXT.as_ptr(),
                 self.base_style,
                 audio_query.as_mut_ptr(),
             ));
@@ -134,8 +187,6 @@ impl assert_cdylib::TestCase for TestCase {
 
         // TODO: スナップショットテストをやる
         let result = {
-            const MORPH_RATE: f64 = 0.5;
-
             let mut wav_length = MaybeUninit::uninit();
             let mut wav = MaybeUninit::uninit();
             let result = voicevox_synthesizer_synthesis_morphing(
