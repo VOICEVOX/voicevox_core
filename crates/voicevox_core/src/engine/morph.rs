@@ -1,5 +1,8 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, iter};
 
+use easy_ext::ext;
+use ndarray::{Array, Array2};
+use num_traits::Zero;
 use world::{
     signal_analyzer::{AnalyzeResult, SignalAnalyzerBuilder},
     spectrogram_like::SpectrogramLike,
@@ -73,34 +76,20 @@ impl<'metas> MorphableStyles<'metas> {
             synthesizer.synthesis_wave(audio_query, style_id, &Default::default())
         })?;
 
-        let morph_param = MorphingParameter::new(waves);
+        let MorphingParameter {
+            base_f0,
+            base_aperiodicity,
+            base_spectrogram,
+            target_spectrogram,
+        } = &MorphingParameter::new(waves);
 
-        let mut morph_spectrogram = SpectrogramLike::<f64>::new(
-            morph_param.base_spectrogram.time_axis_size(),
-            morph_param.base_spectrogram.frequency_axis_size(),
-        );
-
-        // FIXME: サイズ違いの場合は"resize"する
-        for (morph_spectrogram, (base_spectrogram, target_spectrogram)) in itertools::zip_eq(
-            morph_spectrogram.lines_mut(),
-            itertools::zip_eq(
-                morph_param.base_spectrogram.lines(),
-                morph_param.target_spectrogram.lines(),
-            ),
-        ) {
-            for (morph_spectrogram, (base_spectrogram, target_spectrogram)) in itertools::zip_eq(
-                morph_spectrogram,
-                itertools::zip_eq(base_spectrogram, target_spectrogram),
-            ) {
-                *morph_spectrogram =
-                    base_spectrogram * (1. - morph_rate) + target_spectrogram * morph_rate;
-            }
-        }
+        let morph_spectrogram =
+            &(base_spectrogram * (1. - morph_rate) + target_spectrogram * morph_rate).into();
 
         let wave = &world::synthesis::synthesis(
-            &morph_param.base_f0,
-            &morph_spectrogram,
-            &morph_param.base_aperiodicity,
+            base_f0,
+            morph_spectrogram,
+            base_aperiodicity,
             None,
             FRAME_PERIOD,
             DEFAULT_SAMPLING_RATE,
@@ -118,14 +107,18 @@ impl<'metas> MorphableStyles<'metas> {
         struct MorphingParameter {
             base_f0: Box<[f64]>,
             base_aperiodicity: SpectrogramLike<f64>,
-            base_spectrogram: SpectrogramLike<f64>,
-            target_spectrogram: SpectrogramLike<f64>,
+            base_spectrogram: Array2<f64>,
+            target_spectrogram: Array2<f64>,
         }
 
         impl MorphingParameter {
             fn new(wave: &MorphingPair<Vec<f32>>) -> Self {
                 let (base_f0, base_spectrogram, base_aperiodicity) = analyze(&wave.base);
                 let (_, target_spectrogram, _) = analyze(&wave.target);
+
+                let base_spectrogram = Array::from(base_spectrogram);
+                let target_spectrogram =
+                    Array::from(target_spectrogram).resize(base_spectrogram.dim());
 
                 Self {
                     base_f0,
@@ -199,6 +192,23 @@ impl MorphingPair<StyleId> {
     }
 }
 
+#[ext(Array2Ext)]
+impl<T: Zero + Copy> Array2<T> {
+    fn resize(self, (nrows, ncols): (usize, usize)) -> Self {
+        if self.dim() == (nrows, ncols) {
+            return self;
+        }
+
+        let mut ret = Array2::zeros((nrows, ncols));
+        for (ret, this) in iter::zip(ret.rows_mut(), self.rows()) {
+            for (ret, this) in iter::zip(ret, this) {
+                *ret = *this;
+            }
+        }
+        ret
+    }
+}
+
 mod permit {
     use std::marker::PhantomData;
 
@@ -259,5 +269,24 @@ mod permit {
         pub(super) fn get(&self) -> MorphingPair<StyleId> {
             self.inner
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ndarray::{array, Array2};
+    use rstest::rstest;
+
+    use super::Array2Ext as _;
+
+    #[rstest]
+    #[case(array![[1]], (2, 2), array![[1, 0], [0, 0]])]
+    #[case(array![[1, 1], [1, 1]], (1, 1), array![[1]])]
+    fn resize_works(
+        #[case] arr: Array2<i32>,
+        #[case] dim: (usize, usize),
+        #[case] expected: Array2<i32>,
+    ) {
+        pretty_assertions::assert_eq!(expected, arr.resize(dim));
     }
 }

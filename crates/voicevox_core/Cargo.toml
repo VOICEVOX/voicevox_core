@@ -40,7 +40,7 @@ tokio = { workspace = true, features = ["rt"] } # FIXME: feature-gateする
 tracing.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox_core_macros = { path = "../voicevox_core_macros" }
-world.workspace = true
+world = { workspace = true, features = ["ndarray"] }
 zip.workspace = true
 
 [dev-dependencies]
