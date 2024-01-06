@@ -157,6 +157,58 @@ impl VoicevoxCore {
         )
     }
 
+    pub fn predict_sing_consonant_length(
+        &mut self,
+        consonant_vector: &[i64],
+        vowel_vector: &[i64],
+        note_duration_vector: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<i64>> {
+        self.synthesis_engine
+            .inference_core_mut()
+            .predict_sing_consonant_length(
+                consonant_vector,
+                vowel_vector,
+                note_duration_vector,
+                speaker_id,
+            )
+    }
+
+    pub fn predict_sing_f0(
+        &mut self,
+        phoneme_vector: &[i64],
+        note_vector: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        self.synthesis_engine
+            .inference_core_mut()
+            .predict_sing_f0(phoneme_vector, note_vector, speaker_id)
+    }
+
+    pub fn predict_sing_volume(
+        &mut self,
+        phoneme_vector: &[i64],
+        note_vector: &[i64],
+        f0_vector: &[f32],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        self.synthesis_engine
+            .inference_core_mut()
+            .predict_sing_volume(phoneme_vector, note_vector, f0_vector, speaker_id)
+    }
+
+    pub fn source_filter_decode(
+        &mut self,
+        phoneme_vector: &[i64],
+        f0: &[f32],
+        volume: &[f32],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        self.synthesis_engine
+            .inference_core_mut()
+            .source_filter_decode(phoneme_vector, f0, volume, speaker_id)
+    }
+
     pub fn audio_query(
         &mut self,
         text: &str,
