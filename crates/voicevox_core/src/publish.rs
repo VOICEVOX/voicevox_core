@@ -384,7 +384,7 @@ impl InferenceCore {
     }
     pub fn is_model_loaded(&self, speaker_id: u32) -> bool {
         if let Some(status) = self.status_option.as_ref() {
-            if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
+            if let Some((model_index, _)) = get_talk_model_index_and_speaker_id(speaker_id) {
                 status.is_talk_model_loaded(model_index)
             } else {
                 false
@@ -417,7 +417,7 @@ impl InferenceCore {
         }
 
         let (model_index, speaker_id) =
-            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
+            if let Some((model_index, speaker_id)) = get_talk_model_index_and_speaker_id(speaker_id) {
                 (model_index, speaker_id)
             } else {
                 return Err(Error::InvalidSpeakerId { speaker_id });
@@ -470,7 +470,7 @@ impl InferenceCore {
         }
 
         let (model_index, speaker_id) =
-            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
+            if let Some((model_index, speaker_id)) = get_talk_model_index_and_speaker_id(speaker_id) {
                 (model_index, speaker_id)
             } else {
                 return Err(Error::InvalidSpeakerId { speaker_id });
@@ -528,7 +528,7 @@ impl InferenceCore {
         }
 
         let (model_index, speaker_id) =
-            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
+            if let Some((model_index, speaker_id)) = get_talk_model_index_and_speaker_id(speaker_id) {
                 (model_index, speaker_id)
             } else {
                 return Err(Error::InvalidSpeakerId { speaker_id });
@@ -637,7 +637,7 @@ pub static SUPPORTED_DEVICES: Lazy<SupportedDevices> =
 pub static SUPPORTED_DEVICES_CSTRING: Lazy<CString> =
     Lazy::new(|| CString::new(SUPPORTED_DEVICES.to_json().to_string()).unwrap());
 
-fn get_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
+fn get_talk_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
     MODEL_FILE_SET.talk_speaker_id_map.get(&speaker_id).copied()
 }
 
@@ -851,7 +851,7 @@ mod tests {
         #[case] speaker_id: u32,
         #[case] expected: Option<(usize, u32)>,
     ) {
-        let actual = get_model_index_and_speaker_id(speaker_id);
+        let actual = get_talk_model_index_and_speaker_id(speaker_id);
         assert_eq!(expected, actual);
     }
 
