@@ -31,7 +31,7 @@ pub(crate) static MODEL_FILE_SET: Lazy<ModelFileSet> = Lazy::new(|| {
 });
 
 pub struct Status {
-    models: StatusModels,
+    talk_models: StatusModels,
     light_session_options: SessionOptions, // 軽いモデルはこちらを使う
     heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
     supported_styles: BTreeSet<u32>,
@@ -50,9 +50,9 @@ struct SessionOptions {
 }
 
 pub(crate) struct ModelFileSet {
-    pub(crate) speaker_id_map: BTreeMap<u32, (usize, u32)>,
+    pub(crate) talk_speaker_id_map: BTreeMap<u32, (usize, u32)>,
     pub(crate) metas_str: String,
-    models: Vec<TalkModel>,
+    talk_models: Vec<TalkModel>,
 }
 
 impl ModelFileSet {
@@ -76,7 +76,7 @@ impl ModelFileSet {
 
         let metas_str = fs_err::read_to_string(path("metas.json"))?;
 
-        let models = model_file::TALK_MODEL_FILE_NAMES
+        let talk_models = model_file::TALK_MODEL_FILE_NAMES
             .iter()
             .map(
                 |&TalkModelFileNames {
@@ -97,16 +97,16 @@ impl ModelFileSet {
             .collect::<anyhow::Result<_>>()?;
 
         return Ok(Self {
-            speaker_id_map: model_file::SPEAKER_ID_MAP.iter().copied().collect(),
+            talk_speaker_id_map: model_file::TALK_SPEAKER_ID_MAP.iter().copied().collect(),
             metas_str,
-            models,
+            talk_models,
         });
 
         const ROOT_DIR_ENV_NAME: &str = "VV_MODELS_ROOT_DIR";
     }
 
-    pub(crate) fn models_count(&self) -> usize {
-        self.models.len()
+    pub(crate) fn talk_models_count(&self) -> usize {
+        self.talk_models.len()
     }
 }
 
@@ -205,7 +205,7 @@ unsafe impl Send for Status {}
 impl Status {
     pub fn new(use_gpu: bool, cpu_num_threads: u16) -> Self {
         Self {
-            models: StatusModels {
+            talk_models: StatusModels {
                 predict_duration: BTreeMap::new(),
                 predict_intonation: BTreeMap::new(),
                 decode: BTreeMap::new(),
@@ -229,9 +229,9 @@ impl Status {
         Ok(())
     }
 
-    pub fn load_model(&mut self, model_index: usize) -> Result<()> {
-        if model_index < MODEL_FILE_SET.models.len() {
-            let model = &MODEL_FILE_SET.models[model_index];
+    pub fn load_talk_model(&mut self, model_index: usize) -> Result<()> {
+        if model_index < MODEL_FILE_SET.talk_models.len() {
+            let model = &MODEL_FILE_SET.talk_models[model_index];
             let predict_duration_session =
                 self.new_session(&model.predict_duration_model, &self.light_session_options)?;
             let predict_intonation_session =
@@ -239,14 +239,14 @@ impl Status {
             let decode_model =
                 self.new_session(&model.decode_model, &self.heavy_session_options)?;
 
-            self.models
+            self.talk_models
                 .predict_duration
                 .insert(model_index, predict_duration_session);
-            self.models
+            self.talk_models
                 .predict_intonation
                 .insert(model_index, predict_intonation_session);
 
-            self.models.decode.insert(model_index, decode_model);
+            self.talk_models.decode.insert(model_index, decode_model);
 
             Ok(())
         } else {
@@ -254,10 +254,10 @@ impl Status {
         }
     }
 
-    pub fn is_model_loaded(&self, model_index: usize) -> bool {
-        self.models.predict_duration.contains_key(&model_index)
-            && self.models.predict_intonation.contains_key(&model_index)
-            && self.models.decode.contains_key(&model_index)
+    pub fn is_talk_model_loaded(&self, model_index: usize) -> bool {
+        self.talk_models.predict_duration.contains_key(&model_index)
+            && self.talk_models.predict_intonation.contains_key(&model_index)
+            && self.talk_models.decode.contains_key(&model_index)
     }
 
     fn new_session(
@@ -311,7 +311,7 @@ impl Status {
         model_index: usize,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model) = self.models.predict_duration.get_mut(&model_index) {
+        if let Some(model) = self.talk_models.predict_duration.get_mut(&model_index) {
             if let Ok(output_tensors) = model.run(inputs) {
                 Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
@@ -327,7 +327,7 @@ impl Status {
         model_index: usize,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model) = self.models.predict_intonation.get_mut(&model_index) {
+        if let Some(model) = self.talk_models.predict_intonation.get_mut(&model_index) {
             if let Ok(output_tensors) = model.run(inputs) {
                 Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
@@ -343,7 +343,7 @@ impl Status {
         model_index: usize,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model) = self.models.decode.get_mut(&model_index) {
+        if let Some(model) = self.talk_models.decode.get_mut(&model_index) {
             if let Ok(output_tensors) = model.run(inputs) {
                 Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
@@ -382,9 +382,9 @@ mod tests {
             cpu_num_threads,
             status.heavy_session_options.cpu_num_threads
         );
-        assert!(status.models.predict_duration.is_empty());
-        assert!(status.models.predict_intonation.is_empty());
-        assert!(status.models.decode.is_empty());
+        assert!(status.talk_models.predict_duration.is_empty());
+        assert!(status.talk_models.predict_intonation.is_empty());
+        assert!(status.talk_models.decode.is_empty());
         assert!(status.supported_styles.is_empty());
     }
 
@@ -405,27 +405,27 @@ mod tests {
     }
 
     #[rstest]
-    fn status_load_model_works() {
+    fn status_load_talk_model_works() {
         let mut status = Status::new(false, 0);
-        let result = status.load_model(0);
+        let result = status.load_talk_model(0);
         assert_debug_fmt_eq!(Ok(()), result);
-        assert_eq!(1, status.models.predict_duration.len());
-        assert_eq!(1, status.models.predict_intonation.len());
-        assert_eq!(1, status.models.decode.len());
+        assert_eq!(1, status.talk_models.predict_duration.len());
+        assert_eq!(1, status.talk_models.predict_intonation.len());
+        assert_eq!(1, status.talk_models.decode.len());
     }
 
     #[rstest]
-    fn status_is_model_loaded_works() {
+    fn status_is_talk_model_loaded_works() {
         let mut status = Status::new(false, 0);
         let model_index = 0;
         assert!(
-            !status.is_model_loaded(model_index),
+            !status.is_talk_model_loaded(model_index),
             "model should  not be loaded"
         );
-        let result = status.load_model(model_index);
+        let result = status.load_talk_model(model_index);
         assert_debug_fmt_eq!(Ok(()), result);
         assert!(
-            status.is_model_loaded(model_index),
+            status.is_talk_model_loaded(model_index),
             "model should be loaded"
         );
     }

@@ -4,8 +4,7 @@ pub(super) fn decrypt(content: &[u8]) -> std::result::Result<Vec<u8>, DecryptMod
     Ok(content.to_owned())
 }
 
-pub(super) const SPEAKER_ID_MAP: &[(u32, (usize, u32))] =
-    &[(0, (0, 0)), (1, (0, 1))];
+pub(super) const TALK_SPEAKER_ID_MAP: &[(u32, (usize, u32))] = &[(0, (0, 0)), (1, (0, 1))];
 
 pub(super) const TALK_MODEL_FILE_NAMES: &[TalkModelFileNames] = &[
     TalkModelFileNames {

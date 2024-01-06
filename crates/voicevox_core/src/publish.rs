@@ -344,8 +344,8 @@ impl InferenceCore {
             status.load_metas()?;
 
             if load_all_models {
-                for model_index in 0..MODEL_FILE_SET.models_count() {
-                    status.load_model(model_index)?;
+                for model_index in 0..MODEL_FILE_SET.talk_models_count() {
+                    status.load_talk_model(model_index)?;
                 }
             }
 
@@ -374,7 +374,7 @@ impl InferenceCore {
                 .as_mut()
                 .ok_or(Error::UninitializedStatus)?;
             if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
-                status.load_model(model_index)
+                status.load_talk_model(model_index)
             } else {
                 Err(Error::InvalidSpeakerId { speaker_id })
             }
@@ -385,7 +385,7 @@ impl InferenceCore {
     pub fn is_model_loaded(&self, speaker_id: u32) -> bool {
         if let Some(status) = self.status_option.as_ref() {
             if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
-                status.is_model_loaded(model_index)
+                status.is_talk_model_loaded(model_index)
             } else {
                 false
             }
@@ -423,7 +423,7 @@ impl InferenceCore {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= MODEL_FILE_SET.models_count() {
+        if model_index >= MODEL_FILE_SET.talk_models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -476,7 +476,7 @@ impl InferenceCore {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= MODEL_FILE_SET.models_count() {
+        if model_index >= MODEL_FILE_SET.talk_models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -534,7 +534,7 @@ impl InferenceCore {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= MODEL_FILE_SET.models_count() {
+        if model_index >= MODEL_FILE_SET.talk_models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -638,7 +638,7 @@ pub static SUPPORTED_DEVICES_CSTRING: Lazy<CString> =
     Lazy::new(|| CString::new(SUPPORTED_DEVICES.to_json().to_string()).unwrap());
 
 fn get_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
-    MODEL_FILE_SET.speaker_id_map.get(&speaker_id).copied()
+    MODEL_FILE_SET.talk_speaker_id_map.get(&speaker_id).copied()
 }
 
 pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
