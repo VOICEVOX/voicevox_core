@@ -511,7 +511,7 @@ impl Status {
         &mut self,
         model_index: usize,
         inputs: Vec<&mut dyn AnyArray>,
-    ) -> Result<Vec<i32>> {
+    ) -> Result<Vec<i64>> {
         if let Some(model) = self
             .sing_style_models
             .predict_sing_consonant_length
