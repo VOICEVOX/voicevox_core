@@ -116,6 +116,16 @@ struct TalkModelFileNames {
     decode_model: &'static str,
 }
 
+struct SingStyleModelFileNames {
+    predict_sing_consonant_length_model: &'static str,
+    predict_sing_f0_model: &'static str,
+    predict_sing_volume_model: &'static str,
+}
+
+struct SourceFilterModelFileNames {
+    source_filter_decode_model: &'static str,
+}
+
 #[derive(thiserror::Error, Debug)]
 #[error("不正なモデルファイルです")]
 struct DecryptModelError;
