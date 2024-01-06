@@ -347,6 +347,12 @@ impl InferenceCore {
                 for model_index in 0..MODEL_FILE_SET.talk_models_count() {
                     status.load_talk_model(model_index)?;
                 }
+                for model_index in 0..MODEL_FILE_SET.sing_style_models_count() {
+                    status.load_sing_style_model(model_index)?;
+                }
+                for model_index in 0..MODEL_FILE_SET.source_filter_models_count() {
+                    status.load_source_filter_model(model_index)?;
+                }
             }
 
             self.status_option = Some(status);
@@ -373,10 +379,25 @@ impl InferenceCore {
                 .status_option
                 .as_mut()
                 .ok_or(Error::UninitializedStatus)?;
-            if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
+            if let Some((model_index, _)) = get_talk_model_index_and_speaker_id(speaker_id) {
                 status.load_talk_model(model_index)
             } else {
-                Err(Error::InvalidSpeakerId { speaker_id })
+                // ハミング機能及び歌機能モデルはどちらかが存在しない事があるので、どちらかが存在しない場合でも無視する
+                let mut loaded = false;
+                if let Some((model_index, _)) = get_sing_style_model_index_and_speaker_id(speaker_id) {
+                    status.load_sing_style_model(model_index)?;
+                    loaded = true;
+                }
+                if let Some((model_index, _)) = get_source_filter_model_index_and_speaker_id(speaker_id) {
+                    status.load_source_filter_model(model_index)?;
+                    loaded = true;
+                }
+
+                if loaded {
+                    Ok(())
+                } else {
+                    Err(Error::InvalidSpeakerId { speaker_id })
+                }
             }
         } else {
             Err(Error::UninitializedStatus)
@@ -387,7 +408,15 @@ impl InferenceCore {
             if let Some((model_index, _)) = get_talk_model_index_and_speaker_id(speaker_id) {
                 status.is_talk_model_loaded(model_index)
             } else {
-                false
+                // ハミング機能及び歌機能モデルはどちらかが存在しない事があるので、どちらかが存在しない場合でも無視する
+                let mut loaded = false;
+                if let Some((model_index, _)) = get_sing_style_model_index_and_speaker_id(speaker_id) {
+                    loaded |= status.is_sing_style_model_loaded(model_index);
+                }
+                if let Some((model_index, _)) = get_source_filter_model_index_and_speaker_id(speaker_id) {
+                    loaded |= status.is_source_filter_model_loaded(model_index);
+                }
+                loaded
             }
         } else {
             false
@@ -574,6 +603,172 @@ impl InferenceCore {
             .map(|output| Self::trim_padding_from_output(output, padding_size))
     }
 
+    pub fn predict_sing_consonant_length(
+        &mut self,
+        consonant_vector: &[i64],
+        vowel_vector: &[i64],
+        note_duration_vector: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<i64>> {
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) =
+            if let Some((model_index, speaker_id)) = get_sing_style_model_index_and_speaker_id(speaker_id) {
+                (model_index, speaker_id)
+            } else {
+                return Err(Error::InvalidSpeakerId { speaker_id });
+            };
+
+        if model_index >= MODEL_FILE_SET.sing_style_models_count() {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        let mut consonant_vector_array = NdArray::new(ndarray::arr1(consonant_vector));
+        let mut vowel_vector_array = NdArray::new(ndarray::arr1(vowel_vector));
+        let mut note_duration_vector_array = NdArray::new(ndarray::arr1(note_duration_vector));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> =
+            vec![&mut consonant_vector_array, &mut vowel_vector_array, &mut note_duration_vector_array, &mut speaker_id_array];
+
+        status.predict_sing_consonant_length_session_run(model_index, input_tensors)
+    }
+
+    pub fn predict_sing_f0(
+        &mut self,
+        phoneme_vector: &[i64],
+        note_vector: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) =
+            if let Some((model_index, speaker_id)) = get_sing_style_model_index_and_speaker_id(speaker_id) {
+                (model_index, speaker_id)
+            } else {
+                return Err(Error::InvalidSpeakerId { speaker_id });
+            };
+
+        if model_index >= MODEL_FILE_SET.sing_style_models_count() {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
+        let mut note_vector_array = NdArray::new(ndarray::arr1(note_vector));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> =
+            vec![&mut phoneme_vector_array, &mut note_vector_array, &mut speaker_id_array];
+
+        status.predict_sing_f0_session_run(model_index, input_tensors)
+    }
+
+    pub fn predict_sing_volume(
+        &mut self,
+        phoneme_vector: &[i64],
+        note_vector: &[i64],
+        _f0_vector: &[f32],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) =
+            if let Some((model_index, speaker_id)) = get_sing_style_model_index_and_speaker_id(speaker_id) {
+                (model_index, speaker_id)
+            } else {
+                return Err(Error::InvalidSpeakerId { speaker_id });
+            };
+
+        if model_index >= MODEL_FILE_SET.sing_style_models_count() {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        // TODO: f0を使う
+        let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
+        let mut note_vector_array = NdArray::new(ndarray::arr1(note_vector));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> =
+            vec![&mut phoneme_vector_array, &mut note_vector_array, &mut speaker_id_array];
+
+        status.predict_sing_volume_session_run(model_index, input_tensors)
+    }
+
+    pub fn source_filter_decode(
+        &mut self,
+        phoneme_vector: &[i64],
+        f0: &[f32],
+        volume: &[f32],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) =
+            if let Some((model_index, speaker_id)) = get_source_filter_model_index_and_speaker_id(speaker_id) {
+                (model_index, speaker_id)
+            } else {
+                return Err(Error::InvalidSpeakerId { speaker_id });
+            };
+
+        if model_index >= MODEL_FILE_SET.source_filter_models_count() {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
+        let mut f0_array = NdArray::new(ndarray::arr1(f0));
+        let mut volume_array = NdArray::new(ndarray::arr1(volume));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> =
+            vec![&mut phoneme_vector_array, &mut f0_array, &mut volume_array, &mut speaker_id_array];
+
+        status.source_filter_decode_session_run(model_index, input_tensors)
+    }
+
     fn make_f0_with_padding(
         f0_slice: &[f32],
         length_with_padding: usize,
@@ -639,6 +834,14 @@ pub static SUPPORTED_DEVICES_CSTRING: Lazy<CString> =
 
 fn get_talk_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
     MODEL_FILE_SET.talk_speaker_id_map.get(&speaker_id).copied()
+}
+
+fn get_sing_style_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
+    MODEL_FILE_SET.sing_style_speaker_id_map.get(&speaker_id).copied()
+}
+
+fn get_source_filter_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
+    MODEL_FILE_SET.source_filter_speaker_id_map.get(&speaker_id).copied()
 }
 
 pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
