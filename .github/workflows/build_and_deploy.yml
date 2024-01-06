@@ -376,7 +376,7 @@ jobs:
         with:
           name: voicevox_core-aarch64-apple-ios
           path: artifact/voicevox_core-aarch64-apple-ios
-      - name: Create aarch64 Framework 
+      - name: Create aarch64 Framework
         run: |
           mkdir -p "Framework-aarch64/voicevox_core.framework/Headers"
           cp -vr crates/voicevox_core_c_api/xcframework/Frameworks/aarch64/ Framework-aarch64/
@@ -385,7 +385,7 @@ jobs:
           lipo -create artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib \
             -output Framework-aarch64/voicevox_core.framework/voicevox_core
 
-      - name: Change aarch64 @rpath 
+      - name: Change aarch64 @rpath
         run: |
           # 自身の@rpathを変更
           install_name_tool -id @rpath/voicevox_core.framework/voicevox_core Framework-aarch64/voicevox_core.framework/voicevox_core
@@ -424,14 +424,13 @@ jobs:
           lipo -create artifact/voicevox_core-x86_64-apple-ios/libvoicevox_core.dylib \
             artifact/voicevox_core-aarch64-apple-ios-sim/libvoicevox_core.dylib \
             -output Framework-sim/voicevox_core.framework/voicevox_core
-      
+
       - name: Change sim @rpath   
         run: |
           # 自身の@rpathを変更
           install_name_tool -id @rpath/voicevox_core.framework/voicevox_core Framework-sim/voicevox_core.framework/voicevox_core
-          
-          # 方針はaarch64同じ
-          # dylib名取得
+
+          # dylib名取得(方針はaarch64同じ)
           output=$(otool -L Framework-sim/voicevox_core.framework/voicevox_core)
           matched_line=$(echo "$output" | grep "@rpath" | grep "libonnxruntime")
           if [[ $matched_line ]]; then
