@@ -51,8 +51,12 @@ struct SessionOptions {
 
 pub(crate) struct ModelFileSet {
     pub(crate) talk_speaker_id_map: BTreeMap<u32, (usize, u32)>,
+    pub(crate) sing_style_speaker_id_map: BTreeMap<u32, (usize, u32)>,
+    pub(crate) source_filter_speaker_id_map: BTreeMap<u32, (usize, u32)>,
     pub(crate) metas_str: String,
     talk_models: Vec<TalkModel>,
+    sing_style_models: Vec<SingStyleModel>,
+    source_filter_models: Vec<SourceFilterModel>,
 }
 
 impl ModelFileSet {
@@ -96,10 +100,48 @@ impl ModelFileSet {
             )
             .collect::<anyhow::Result<_>>()?;
 
+        let sing_style_models = model_file::SING_STYLE_MODEL_FILE_NAMES
+            .iter()
+            .map(
+                |&SingStyleModelFileNames {
+                     predict_sing_consonant_length_model,
+                     predict_sing_f0_model,
+                     predict_sing_volume_model,
+                 }| {
+                    let predict_sing_consonant_length_model = ModelFile::new(&path(predict_sing_consonant_length_model))?;
+                    let predict_sing_f0_model = ModelFile::new(&path(predict_sing_f0_model))?;
+                    let predict_sing_volume_model = ModelFile::new(&path(predict_sing_volume_model))?;
+                    Ok(SingStyleModel {
+                        predict_sing_consonant_length_model,
+                        predict_sing_f0_model,
+                        predict_sing_volume_model,
+                    })
+                },
+            )
+            .collect::<anyhow::Result<_>>()?;
+
+        let source_filter_models = model_file::SOURCE_FILTER_MODEL_FILE_NAMES
+            .iter()
+            .map(
+                |&SourceFilterModelFileNames {
+                     source_filter_decode_model,
+                 }| {
+                    let source_filter_decode_model = ModelFile::new(&path(source_filter_decode_model))?;
+                    Ok(SourceFilterModel {
+                        source_filter_decode_model,
+                    })
+                },
+            )
+            .collect::<anyhow::Result<_>>()?;
+
         return Ok(Self {
             talk_speaker_id_map: model_file::TALK_SPEAKER_ID_MAP.iter().copied().collect(),
+            sing_style_speaker_id_map: model_file::SING_STYLE_SPEAKER_ID_MAP.iter().copied().collect(),
+            source_filter_speaker_id_map: model_file::SOURCE_FILTER_SPEAKER_ID_MAP.iter().copied().collect(),
             metas_str,
             talk_models,
+            sing_style_models,
+            source_filter_models,
         });
 
         const ROOT_DIR_ENV_NAME: &str = "VV_MODELS_ROOT_DIR";
@@ -107,6 +149,14 @@ impl ModelFileSet {
 
     pub(crate) fn talk_models_count(&self) -> usize {
         self.talk_models.len()
+    }
+
+    pub(crate) fn sing_style_models_count(&self) -> usize {
+        self.sing_style_models.len()
+    }
+
+    pub(crate) fn source_filter_models_count(&self) -> usize {
+        self.source_filter_models.len()
     }
 }
 
@@ -134,6 +184,16 @@ struct TalkModel {
     predict_duration_model: ModelFile,
     predict_intonation_model: ModelFile,
     decode_model: ModelFile,
+}
+
+struct SingStyleModel {
+    predict_sing_consonant_length_model: ModelFile,
+    predict_sing_f0_model: ModelFile,
+    predict_sing_volume_model: ModelFile,
+}
+
+struct SourceFilterModel {
+    source_filter_decode_model: ModelFile,
 }
 
 struct ModelFile {
