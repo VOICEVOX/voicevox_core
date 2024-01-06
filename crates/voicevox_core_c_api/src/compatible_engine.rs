@@ -157,3 +157,117 @@ pub extern "C" fn decode_forward(
         }
     }
 }
+
+#[no_mangle]
+pub extern "C" fn predict_sing_consonant_length_forward(
+    length: i64,
+    consonant: *mut i64,
+    vowel: *mut i64,
+    note_duration: *mut i64,
+    speaker_id: *mut i64,
+    output: *mut i64,
+) -> bool {
+    let length = length as usize;
+    let result = lock_internal().predict_sing_consonant_length(
+        unsafe { std::slice::from_raw_parts(consonant, length) },
+        unsafe { std::slice::from_raw_parts(vowel, length) },
+        unsafe { std::slice::from_raw_parts(note_duration, length) },
+        unsafe { *speaker_id as u32 },
+    );
+    match result {
+        Ok(output_vec) => {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length) };
+            output_slice.clone_from_slice(&output_vec);
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn predict_sing_f0_forward(
+    length: i64,
+    phoneme: *mut i64,
+    note: *mut i64,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    let length = length as usize;
+    let result = lock_internal().predict_sing_f0(
+        unsafe { std::slice::from_raw_parts(phoneme, length) },
+        unsafe { std::slice::from_raw_parts(note, length) },
+        unsafe { *speaker_id as u32 },
+    );
+    match result {
+        Ok(output_vec) => {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length) };
+            output_slice.clone_from_slice(&output_vec);
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn predict_sing_volume_forward(
+    length: i64,
+    phoneme: *mut i64,
+    note: *mut i64,
+    f0: *mut f32,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    let length = length as usize;
+    let result = lock_internal().predict_sing_volume(
+        unsafe { std::slice::from_raw_parts(phoneme, length) },
+        unsafe { std::slice::from_raw_parts(note, length) },
+        unsafe { std::slice::from_raw_parts(f0, length) },
+        unsafe { *speaker_id as u32 },
+    );
+    match result {
+        Ok(output_vec) => {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length) };
+            output_slice.clone_from_slice(&output_vec);
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn source_filter_decode_forward(
+    length: i64,
+    phoneme: *mut i64,
+    f0: *mut f32,
+    volume: *mut f32,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    let length = length as usize;
+    let result = lock_internal().source_filter_decode(
+        unsafe { std::slice::from_raw_parts(phoneme, length) },
+        unsafe { std::slice::from_raw_parts(f0, length) },
+        unsafe { std::slice::from_raw_parts(volume, length) },
+        unsafe { *speaker_id as u32 },
+    );
+    match result {
+        Ok(output_vec) => {
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };
+            output_slice.clone_from_slice(&output_vec);
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
