@@ -506,6 +506,82 @@ impl Status {
             Err(Error::InvalidModelIndex { model_index })
         }
     }
+
+    pub fn predict_sing_consonant_length_session_run(
+        &mut self,
+        model_index: usize,
+        inputs: Vec<&mut dyn AnyArray>,
+    ) -> Result<Vec<i32>> {
+        if let Some(model) = self
+            .sing_style_models
+            .predict_sing_consonant_length
+            .get_mut(&model_index)
+        {
+            if let Ok(output_tensors) = model.run(inputs) {
+                Ok(output_tensors[0].as_slice().unwrap().to_owned())
+            } else {
+                Err(Error::InferenceFailed)
+            }
+        } else {
+            Err(Error::InvalidModelIndex { model_index })
+        }
+    }
+
+    pub fn predict_sing_f0_session_run(
+        &mut self,
+        model_index: usize,
+        inputs: Vec<&mut dyn AnyArray>,
+    ) -> Result<Vec<f32>> {
+        if let Some(model) = self.sing_style_models.predict_sing_f0.get_mut(&model_index) {
+            if let Ok(output_tensors) = model.run(inputs) {
+                Ok(output_tensors[0].as_slice().unwrap().to_owned())
+            } else {
+                Err(Error::InferenceFailed)
+            }
+        } else {
+            Err(Error::InvalidModelIndex { model_index })
+        }
+    }
+
+    pub fn predict_sing_volume_session_run(
+        &mut self,
+        model_index: usize,
+        inputs: Vec<&mut dyn AnyArray>,
+    ) -> Result<Vec<f32>> {
+        if let Some(model) = self
+            .sing_style_models
+            .predict_sing_volume
+            .get_mut(&model_index)
+        {
+            if let Ok(output_tensors) = model.run(inputs) {
+                Ok(output_tensors[0].as_slice().unwrap().to_owned())
+            } else {
+                Err(Error::InferenceFailed)
+            }
+        } else {
+            Err(Error::InvalidModelIndex { model_index })
+        }
+    }
+
+    pub fn source_filter_decode_session_run(
+        &mut self,
+        model_index: usize,
+        inputs: Vec<&mut dyn AnyArray>,
+    ) -> Result<Vec<f32>> {
+        if let Some(model) = self
+            .source_filter_models
+            .source_filter_decode
+            .get_mut(&model_index)
+        {
+            if let Ok(output_tensors) = model.run(inputs) {
+                Ok(output_tensors[0].as_slice().unwrap().to_owned())
+            } else {
+                Err(Error::InferenceFailed)
+            }
+        } else {
+            Err(Error::InvalidModelIndex { model_index })
+        }
+    }
 }
 
 #[cfg(test)]
