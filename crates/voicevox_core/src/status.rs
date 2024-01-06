@@ -31,16 +31,28 @@ pub(crate) static MODEL_FILE_SET: Lazy<ModelFileSet> = Lazy::new(|| {
 });
 
 pub struct Status {
-    talk_models: StatusModels,
+    talk_models: StatusTalkModels,
+    sing_style_models: StatusSingStyleModels,
+    source_filter_models: StatusSourceFilterModels,
     light_session_options: SessionOptions, // 軽いモデルはこちらを使う
     heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
     supported_styles: BTreeSet<u32>,
 }
 
-struct StatusModels {
+struct StatusTalkModels {
     predict_duration: BTreeMap<usize, Session<'static>>,
     predict_intonation: BTreeMap<usize, Session<'static>>,
     decode: BTreeMap<usize, Session<'static>>,
+}
+
+struct StatusSingStyleModels {
+    predict_sing_consonant_length: BTreeMap<usize, Session<'static>>,
+    predict_sing_f0: BTreeMap<usize, Session<'static>>,
+    predict_sing_volume: BTreeMap<usize, Session<'static>>,
+}
+
+struct StatusSourceFilterModels {
+    source_filter_decode: BTreeMap<usize, Session<'static>>,
 }
 
 #[derive(new, Getters)]
@@ -275,10 +287,18 @@ unsafe impl Send for Status {}
 impl Status {
     pub fn new(use_gpu: bool, cpu_num_threads: u16) -> Self {
         Self {
-            talk_models: StatusModels {
+            talk_models: StatusTalkModels {
                 predict_duration: BTreeMap::new(),
                 predict_intonation: BTreeMap::new(),
                 decode: BTreeMap::new(),
+            },
+            sing_style_models: StatusSingStyleModels {
+                predict_sing_consonant_length: BTreeMap::new(),
+                predict_sing_f0: BTreeMap::new(),
+                predict_sing_volume: BTreeMap::new(),
+            },
+            source_filter_models: StatusSourceFilterModels {
+                source_filter_decode: BTreeMap::new(),
             },
             light_session_options: SessionOptions::new(cpu_num_threads, false),
             heavy_session_options: SessionOptions::new(cpu_num_threads, use_gpu),
@@ -328,6 +348,69 @@ impl Status {
         self.talk_models.predict_duration.contains_key(&model_index)
             && self.talk_models.predict_intonation.contains_key(&model_index)
             && self.talk_models.decode.contains_key(&model_index)
+    }
+
+    pub fn load_sing_style_model(&mut self, model_index: usize) -> Result<()> {
+        if model_index < MODEL_FILE_SET.sing_style_models.len() {
+            let model = &MODEL_FILE_SET.sing_style_models[model_index];
+            let predict_sing_consonant_length_session =
+                self.new_session(&model.predict_sing_consonant_length_model, &self.light_session_options)?;
+            let predict_sing_f0_session =
+                self.new_session(&model.predict_sing_f0_model, &self.light_session_options)?;
+            let predict_sing_volume_session =
+                self.new_session(&model.predict_sing_volume_model, &self.light_session_options)?;
+
+            self.sing_style_models.predict_sing_consonant_length.insert(
+                model_index,
+                predict_sing_consonant_length_session,
+            );
+            self.sing_style_models
+                .predict_sing_f0
+                .insert(model_index, predict_sing_f0_session);
+            self.sing_style_models
+                .predict_sing_volume
+                .insert(model_index, predict_sing_volume_session);
+
+            Ok(())
+        } else {
+            Err(Error::InvalidModelIndex { model_index })
+        }
+    }
+
+    pub fn is_sing_style_model_loaded(&self, model_index: usize) -> bool {
+        self.sing_style_models
+            .predict_sing_consonant_length
+            .contains_key(&model_index)
+            && self
+                .sing_style_models
+                .predict_sing_f0
+                .contains_key(&model_index)
+            && self
+                .sing_style_models
+                .predict_sing_volume
+                .contains_key(&model_index)
+    }
+
+    pub fn load_source_filter_model(&mut self, model_index: usize) -> Result<()> {
+        if model_index < MODEL_FILE_SET.source_filter_models.len() {
+            let model = &MODEL_FILE_SET.source_filter_models[model_index];
+            let source_filter_decode_session =
+                self.new_session(&model.source_filter_decode_model, &self.heavy_session_options)?;
+
+            self.source_filter_models
+                .source_filter_decode
+                .insert(model_index, source_filter_decode_session);
+
+            Ok(())
+        } else {
+            Err(Error::InvalidModelIndex { model_index })
+        }
+    }
+
+    pub fn is_source_filter_model_loaded(&self, model_index: usize) -> bool {
+        self.source_filter_models
+            .source_filter_decode
+            .contains_key(&model_index)
     }
 
     fn new_session(
