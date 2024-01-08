@@ -120,9 +120,11 @@ impl ModelFileSet {
                      predict_sing_f0_model,
                      predict_sing_volume_model,
                  }| {
-                    let predict_sing_consonant_length_model = ModelFile::new(&path(predict_sing_consonant_length_model))?;
+                    let predict_sing_consonant_length_model =
+                        ModelFile::new(&path(predict_sing_consonant_length_model))?;
                     let predict_sing_f0_model = ModelFile::new(&path(predict_sing_f0_model))?;
-                    let predict_sing_volume_model = ModelFile::new(&path(predict_sing_volume_model))?;
+                    let predict_sing_volume_model =
+                        ModelFile::new(&path(predict_sing_volume_model))?;
                     Ok(SingTeacherModel {
                         predict_sing_consonant_length_model,
                         predict_sing_f0_model,
@@ -134,22 +136,22 @@ impl ModelFileSet {
 
         let sf_decode_models = model_file::SF_DECODE_MODEL_FILE_NAMES
             .iter()
-            .map(
-                |&SfDecodeModelFileNames {
-                     sf_decode_model,
-                 }| {
-                    let sf_decode_model = ModelFile::new(&path(sf_decode_model))?;
-                    Ok(SfDecodeModel {
-                        sf_decode_model,
-                    })
-                },
-            )
+            .map(|&SfDecodeModelFileNames { sf_decode_model }| {
+                let sf_decode_model = ModelFile::new(&path(sf_decode_model))?;
+                Ok(SfDecodeModel { sf_decode_model })
+            })
             .collect::<anyhow::Result<_>>()?;
 
         return Ok(Self {
             talk_speaker_id_map: model_file::TALK_SPEAKER_ID_MAP.iter().copied().collect(),
-            sing_teacher_speaker_id_map: model_file::SING_TEACHER_SPEAKER_ID_MAP.iter().copied().collect(),
-            sf_decode_speaker_id_map: model_file::SF_DECODE_SPEAKER_ID_MAP.iter().copied().collect(),
+            sing_teacher_speaker_id_map: model_file::SING_TEACHER_SPEAKER_ID_MAP
+                .iter()
+                .copied()
+                .collect(),
+            sf_decode_speaker_id_map: model_file::SF_DECODE_SPEAKER_ID_MAP
+                .iter()
+                .copied()
+                .collect(),
             metas_str,
             talk_models,
             sing_teacher_models,
@@ -346,24 +348,30 @@ impl Status {
 
     pub fn is_talk_model_loaded(&self, model_index: usize) -> bool {
         self.talk_models.predict_duration.contains_key(&model_index)
-            && self.talk_models.predict_intonation.contains_key(&model_index)
+            && self
+                .talk_models
+                .predict_intonation
+                .contains_key(&model_index)
             && self.talk_models.decode.contains_key(&model_index)
     }
 
     pub fn load_sing_teacher_model(&mut self, model_index: usize) -> Result<()> {
         if model_index < MODEL_FILE_SET.sing_teacher_models.len() {
             let model = &MODEL_FILE_SET.sing_teacher_models[model_index];
-            let predict_sing_consonant_length_session =
-                self.new_session(&model.predict_sing_consonant_length_model, &self.light_session_options)?;
+            let predict_sing_consonant_length_session = self.new_session(
+                &model.predict_sing_consonant_length_model,
+                &self.light_session_options,
+            )?;
             let predict_sing_f0_session =
                 self.new_session(&model.predict_sing_f0_model, &self.light_session_options)?;
-            let predict_sing_volume_session =
-                self.new_session(&model.predict_sing_volume_model, &self.light_session_options)?;
+            let predict_sing_volume_session = self.new_session(
+                &model.predict_sing_volume_model,
+                &self.light_session_options,
+            )?;
 
-            self.sing_teacher_models.predict_sing_consonant_length.insert(
-                model_index,
-                predict_sing_consonant_length_session,
-            );
+            self.sing_teacher_models
+                .predict_sing_consonant_length
+                .insert(model_index, predict_sing_consonant_length_session);
             self.sing_teacher_models
                 .predict_sing_f0
                 .insert(model_index, predict_sing_f0_session);
@@ -408,9 +416,7 @@ impl Status {
     }
 
     pub fn is_sf_decode_model_loaded(&self, model_index: usize) -> bool {
-        self.sf_decode_models
-            .sf_decode
-            .contains_key(&model_index)
+        self.sf_decode_models.sf_decode.contains_key(&model_index)
     }
 
     fn new_session(
@@ -532,7 +538,11 @@ impl Status {
         model_index: usize,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model) = self.sing_teacher_models.predict_sing_f0.get_mut(&model_index) {
+        if let Some(model) = self
+            .sing_teacher_models
+            .predict_sing_f0
+            .get_mut(&model_index)
+        {
             if let Ok(output_tensors) = model.run(inputs) {
                 Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
@@ -568,11 +578,7 @@ impl Status {
         model_index: usize,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model) = self
-            .sf_decode_models
-            .sf_decode
-            .get_mut(&model_index)
-        {
+        if let Some(model) = self.sf_decode_models.sf_decode.get_mut(&model_index) {
             if let Ok(output_tensors) = model.run(inputs) {
                 Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
@@ -658,6 +664,6 @@ mod tests {
             "model should be loaded"
         );
     }
-    
+
     // TODO: sing系のテスト足す
 }
