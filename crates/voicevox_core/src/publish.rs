@@ -1174,6 +1174,8 @@ mod tests {
         assert_eq!(result.unwrap().len(), vowel_phoneme_vector.len());
     }
 
+    # TODO: sing系のテストを足す
+
     #[rstest]
     fn decode_works() {
         let internal = VoicevoxCore::new_with_mutex();
