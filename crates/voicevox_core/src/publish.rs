@@ -159,54 +159,54 @@ impl VoicevoxCore {
 
     pub fn predict_sing_consonant_length(
         &mut self,
-        consonant_vector: &[i64],
-        vowel_vector: &[i64],
-        note_duration_vector: &[i64],
+        consonant: &[i64],
+        vowel: &[i64],
+        note_duration: &[i64],
         speaker_id: u32,
     ) -> Result<Vec<i64>> {
         self.synthesis_engine
             .inference_core_mut()
             .predict_sing_consonant_length(
-                consonant_vector,
-                vowel_vector,
-                note_duration_vector,
+                consonant,
+                vowel,
+                note_duration,
                 speaker_id,
             )
     }
 
     pub fn predict_sing_f0(
         &mut self,
-        phoneme_vector: &[i64],
-        note_vector: &[i64],
+        phoneme: &[i64],
+        note: &[i64],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
-            .predict_sing_f0(phoneme_vector, note_vector, speaker_id)
+            .predict_sing_f0(phoneme, note, speaker_id)
     }
 
     pub fn predict_sing_volume(
         &mut self,
-        phoneme_vector: &[i64],
-        note_vector: &[i64],
-        f0_vector: &[f32],
+        phoneme: &[i64],
+        note: &[i64],
+        f0: &[f32],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
-            .predict_sing_volume(phoneme_vector, note_vector, f0_vector, speaker_id)
+            .predict_sing_volume(phoneme, note, f0, speaker_id)
     }
 
     pub fn sf_decode(
         &mut self,
-        phoneme_vector: &[i64],
+        phoneme: &[i64],
         f0: &[f32],
         volume: &[f32],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
-            .sf_decode(phoneme_vector, f0, volume, speaker_id)
+            .sf_decode(phoneme, f0, volume, speaker_id)
     }
 
     pub fn audio_query(
@@ -657,9 +657,9 @@ impl InferenceCore {
 
     pub fn predict_sing_consonant_length(
         &mut self,
-        consonant_vector: &[i64],
-        vowel_vector: &[i64],
-        note_duration_vector: &[i64],
+        consonant: &[i64],
+        vowel: &[i64],
+        note_duration: &[i64],
         speaker_id: u32,
     ) -> Result<Vec<i64>> {
         if !self.initialized {
@@ -686,21 +686,21 @@ impl InferenceCore {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let mut consonant_vector_array = NdArray::new(ndarray::arr1(consonant_vector));
-        let mut vowel_vector_array = NdArray::new(ndarray::arr1(vowel_vector));
-        let mut note_duration_vector_array = NdArray::new(ndarray::arr1(note_duration_vector));
+        let mut consonant_array = NdArray::new(ndarray::arr1(consonant));
+        let mut vowel_array = NdArray::new(ndarray::arr1(vowel));
+        let mut note_duration_array = NdArray::new(ndarray::arr1(note_duration));
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
-            vec![&mut consonant_vector_array, &mut vowel_vector_array, &mut note_duration_vector_array, &mut speaker_id_array];
+            vec![&mut consonant_array, &mut vowel_array, &mut note_duration_array, &mut speaker_id_array];
 
         status.predict_sing_consonant_length_session_run(model_index, input_tensors)
     }
 
     pub fn predict_sing_f0(
         &mut self,
-        phoneme_vector: &[i64],
-        note_vector: &[i64],
+        phoneme: &[i64],
+        note: &[i64],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
@@ -727,21 +727,21 @@ impl InferenceCore {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
-        let mut note_vector_array = NdArray::new(ndarray::arr1(note_vector));
+        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme));
+        let mut note_array = NdArray::new(ndarray::arr1(note));
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
-            vec![&mut phoneme_vector_array, &mut note_vector_array, &mut speaker_id_array];
+            vec![&mut phoneme_array, &mut note_array, &mut speaker_id_array];
 
         status.predict_sing_f0_session_run(model_index, input_tensors)
     }
 
     pub fn predict_sing_volume(
         &mut self,
-        phoneme_vector: &[i64],
-        note_vector: &[i64],
-        _f0_vector: &[f32],
+        phoneme: &[i64],
+        note: &[i64],
+        _f0: &[f32],
         speaker_id: u32,
     ) -> Result<Vec<f32>> {
         if !self.initialized {
@@ -769,19 +769,19 @@ impl InferenceCore {
         }
 
         // TODO: f0を使う
-        let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
-        let mut note_vector_array = NdArray::new(ndarray::arr1(note_vector));
+        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme));
+        let mut note_array = NdArray::new(ndarray::arr1(note));
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
-            vec![&mut phoneme_vector_array, &mut note_vector_array, &mut speaker_id_array];
+            vec![&mut phoneme_array, &mut note_array, &mut speaker_id_array];
 
         status.predict_sing_volume_session_run(model_index, input_tensors)
     }
 
     pub fn sf_decode(
         &mut self,
-        phoneme_vector: &[i64],
+        phoneme: &[i64],
         f0: &[f32],
         volume: &[f32],
         speaker_id: u32,
@@ -810,13 +810,13 @@ impl InferenceCore {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
+        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme));
         let mut f0_array = NdArray::new(ndarray::arr1(f0));
         let mut volume_array = NdArray::new(ndarray::arr1(volume));
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
-            vec![&mut phoneme_vector_array, &mut f0_array, &mut volume_array, &mut speaker_id_array];
+            vec![&mut phoneme_array, &mut f0_array, &mut volume_array, &mut speaker_id_array];
 
         status.sf_decode_session_run(model_index, input_tensors)
     }
