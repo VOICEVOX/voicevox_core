@@ -140,21 +140,6 @@ impl VoicevoxCore {
             )
     }
 
-    pub fn predict_contour(
-        &mut self,
-        length: usize,
-        f0_discrete: &[f32],
-        phoneme_vector: &[i64],
-        speaker_id: u32,
-    ) -> Result<Vec<f32>> {
-        self.synthesis_engine.inference_core_mut().predict_contour(
-            length,
-            f0_discrete,
-            phoneme_vector,
-            speaker_id,
-        )
-    }
-
     pub fn decode(
         &mut self,
         length: usize,
@@ -170,6 +155,53 @@ impl VoicevoxCore {
             phoneme_vector,
             speaker_id,
         )
+    }
+
+    pub fn predict_sing_consonant_length(
+        &mut self,
+        consonant: &[i64],
+        vowel: &[i64],
+        note_duration: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<i64>> {
+        self.synthesis_engine
+            .inference_core_mut()
+            .predict_sing_consonant_length(consonant, vowel, note_duration, speaker_id)
+    }
+
+    pub fn predict_sing_f0(
+        &mut self,
+        phoneme: &[i64],
+        note: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        self.synthesis_engine
+            .inference_core_mut()
+            .predict_sing_f0(phoneme, note, speaker_id)
+    }
+
+    pub fn predict_sing_volume(
+        &mut self,
+        phoneme: &[i64],
+        note: &[i64],
+        f0: &[f32],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        self.synthesis_engine
+            .inference_core_mut()
+            .predict_sing_volume(phoneme, note, f0, speaker_id)
+    }
+
+    pub fn sf_decode(
+        &mut self,
+        phoneme: &[i64],
+        f0: &[f32],
+        volume: &[f32],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        self.synthesis_engine
+            .inference_core_mut()
+            .sf_decode(phoneme, f0, volume, speaker_id)
     }
 
     pub fn audio_query(
@@ -297,8 +329,14 @@ impl InferenceCore {
             status.load_metas()?;
 
             if load_all_models {
-                for model_index in 0..MODEL_FILE_SET.models_count() {
-                    status.load_model(model_index)?;
+                for model_index in 0..MODEL_FILE_SET.talk_models_count() {
+                    status.load_talk_model(model_index)?;
+                }
+                for model_index in 0..MODEL_FILE_SET.sing_teacher_models_count() {
+                    status.load_sing_teacher_model(model_index)?;
+                }
+                for model_index in 0..MODEL_FILE_SET.sf_decode_models_count() {
+                    status.load_sf_decode_model(model_index)?;
                 }
             }
 
@@ -326,10 +364,28 @@ impl InferenceCore {
                 .status_option
                 .as_mut()
                 .ok_or(Error::UninitializedStatus)?;
-            if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
-                status.load_model(model_index)
+            if let Some((model_index, _)) = get_talk_model_index_and_speaker_id(speaker_id) {
+                status.load_talk_model(model_index)
             } else {
-                Err(Error::InvalidSpeakerId { speaker_id })
+                // ハミング機能及び歌機能モデルはどちらかが存在しない事があるので、どちらかが存在しない場合でも無視する
+                let mut loaded = false;
+                if let Some((model_index, _)) =
+                    get_sing_teacher_model_index_and_speaker_id(speaker_id)
+                {
+                    status.load_sing_teacher_model(model_index)?;
+                    loaded = true;
+                }
+                if let Some((model_index, _)) = get_sf_decode_model_index_and_speaker_id(speaker_id)
+                {
+                    status.load_sf_decode_model(model_index)?;
+                    loaded = true;
+                }
+
+                if loaded {
+                    Ok(())
+                } else {
+                    Err(Error::InvalidSpeakerId { speaker_id })
+                }
             }
         } else {
             Err(Error::UninitializedStatus)
@@ -337,10 +393,21 @@ impl InferenceCore {
     }
     pub fn is_model_loaded(&self, speaker_id: u32) -> bool {
         if let Some(status) = self.status_option.as_ref() {
-            if let Some((model_index, _)) = get_model_index_and_speaker_id(speaker_id) {
-                status.is_model_loaded(model_index)
+            if let Some((model_index, _)) = get_talk_model_index_and_speaker_id(speaker_id) {
+                status.is_talk_model_loaded(model_index)
             } else {
-                false
+                // ハミング機能及び歌機能モデルはどちらかが存在しない事があるので、どちらかが存在しない場合でも無視する
+                let mut loaded = false;
+                if let Some((model_index, _)) =
+                    get_sing_teacher_model_index_and_speaker_id(speaker_id)
+                {
+                    loaded |= status.is_sing_teacher_model_loaded(model_index);
+                }
+                if let Some((model_index, _)) = get_sf_decode_model_index_and_speaker_id(speaker_id)
+                {
+                    loaded |= status.is_sf_decode_model_loaded(model_index);
+                }
+                loaded
             }
         } else {
             false
@@ -369,14 +436,15 @@ impl InferenceCore {
             return Err(Error::InvalidSpeakerId { speaker_id });
         }
 
-        let (model_index, speaker_id) =
-            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
-                (model_index, speaker_id)
-            } else {
-                return Err(Error::InvalidSpeakerId { speaker_id });
-            };
+        let (model_index, speaker_id) = if let Some((model_index, speaker_id)) =
+            get_talk_model_index_and_speaker_id(speaker_id)
+        {
+            (model_index, speaker_id)
+        } else {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        };
 
-        if model_index >= MODEL_FILE_SET.models_count() {
+        if model_index >= MODEL_FILE_SET.talk_models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -422,14 +490,15 @@ impl InferenceCore {
             return Err(Error::InvalidSpeakerId { speaker_id });
         }
 
-        let (model_index, speaker_id) =
-            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
-                (model_index, speaker_id)
-            } else {
-                return Err(Error::InvalidSpeakerId { speaker_id });
-            };
+        let (model_index, speaker_id) = if let Some((model_index, speaker_id)) =
+            get_talk_model_index_and_speaker_id(speaker_id)
+        {
+            (model_index, speaker_id)
+        } else {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        };
 
-        if model_index >= MODEL_FILE_SET.models_count() {
+        if model_index >= MODEL_FILE_SET.talk_models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -459,59 +528,6 @@ impl InferenceCore {
         status.predict_intonation_session_run(model_index, input_tensors)
     }
 
-    pub fn predict_contour(
-        &mut self,
-        length: usize,
-        f0_discrete: &[f32],
-        phoneme_vector: &[i64],
-        speaker_id: u32,
-    ) -> Result<Vec<f32>> {
-        if !self.initialized {
-            return Err(Error::UninitializedStatus);
-        }
-
-        let status = self
-            .status_option
-            .as_mut()
-            .ok_or(Error::UninitializedStatus)?;
-
-        if !status.validate_speaker_id(speaker_id) {
-            return Err(Error::InvalidSpeakerId { speaker_id });
-        }
-
-        let (model_index, speaker_id) =
-            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
-                (model_index, speaker_id)
-            } else {
-                return Err(Error::InvalidSpeakerId { speaker_id });
-            };
-
-        if model_index >= MODEL_FILE_SET.models_count() {
-            return Err(Error::InvalidModelIndex { model_index });
-        }
-
-        let mut f0_discrete_array =
-            NdArray::new(ndarray::arr1(f0_discrete).into_shape([length, 1]).unwrap());
-        let mut phoneme_vector_array = NdArray::new(ndarray::arr1(phoneme_vector));
-        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
-
-        let input_tensors: Vec<&mut dyn AnyArray> = vec![
-            &mut f0_discrete_array,
-            &mut phoneme_vector_array,
-            &mut speaker_id_array,
-        ];
-
-        let (mut f0_contour, voiced) =
-            status.predict_contour_session_run(model_index, input_tensors)?;
-        for (f0_contour_item, voiced_item) in f0_contour.iter_mut().zip(voiced.iter()) {
-            if *voiced_item < 0.0 {
-                *f0_contour_item = 0.0;
-            }
-        }
-
-        Ok(f0_contour)
-    }
-
     pub fn decode(
         &mut self,
         length: usize,
@@ -533,14 +549,15 @@ impl InferenceCore {
             return Err(Error::InvalidSpeakerId { speaker_id });
         }
 
-        let (model_index, speaker_id) =
-            if let Some((model_index, speaker_id)) = get_model_index_and_speaker_id(speaker_id) {
-                (model_index, speaker_id)
-            } else {
-                return Err(Error::InvalidSpeakerId { speaker_id });
-            };
+        let (model_index, speaker_id) = if let Some((model_index, speaker_id)) =
+            get_talk_model_index_and_speaker_id(speaker_id)
+        {
+            (model_index, speaker_id)
+        } else {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        };
 
-        if model_index >= MODEL_FILE_SET.models_count() {
+        if model_index >= MODEL_FILE_SET.talk_models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -578,6 +595,184 @@ impl InferenceCore {
         status
             .decode_session_run(model_index, input_tensors)
             .map(|output| Self::trim_padding_from_output(output, padding_size))
+    }
+
+    pub fn predict_sing_consonant_length(
+        &mut self,
+        consonant: &[i64],
+        vowel: &[i64],
+        note_duration: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<i64>> {
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) = if let Some((model_index, speaker_id)) =
+            get_sing_teacher_model_index_and_speaker_id(speaker_id)
+        {
+            (model_index, speaker_id)
+        } else {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        };
+
+        if model_index >= MODEL_FILE_SET.sing_teacher_models_count() {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        let mut consonant_array = NdArray::new(ndarray::arr1(consonant));
+        let mut vowel_array = NdArray::new(ndarray::arr1(vowel));
+        let mut note_duration_array = NdArray::new(ndarray::arr1(note_duration));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> = vec![
+            &mut consonant_array,
+            &mut vowel_array,
+            &mut note_duration_array,
+            &mut speaker_id_array,
+        ];
+
+        status.predict_sing_consonant_length_session_run(model_index, input_tensors)
+    }
+
+    pub fn predict_sing_f0(
+        &mut self,
+        phoneme: &[i64],
+        note: &[i64],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) = if let Some((model_index, speaker_id)) =
+            get_sing_teacher_model_index_and_speaker_id(speaker_id)
+        {
+            (model_index, speaker_id)
+        } else {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        };
+
+        if model_index >= MODEL_FILE_SET.sing_teacher_models_count() {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme));
+        let mut note_array = NdArray::new(ndarray::arr1(note));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> =
+            vec![&mut phoneme_array, &mut note_array, &mut speaker_id_array];
+
+        status.predict_sing_f0_session_run(model_index, input_tensors)
+    }
+
+    pub fn predict_sing_volume(
+        &mut self,
+        phoneme: &[i64],
+        note: &[i64],
+        _f0: &[f32],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) = if let Some((model_index, speaker_id)) =
+            get_sing_teacher_model_index_and_speaker_id(speaker_id)
+        {
+            (model_index, speaker_id)
+        } else {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        };
+
+        if model_index >= MODEL_FILE_SET.sing_teacher_models_count() {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        // TODO: f0を使う
+        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme));
+        let mut note_array = NdArray::new(ndarray::arr1(note));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> =
+            vec![&mut phoneme_array, &mut note_array, &mut speaker_id_array];
+
+        status.predict_sing_volume_session_run(model_index, input_tensors)
+    }
+
+    pub fn sf_decode(
+        &mut self,
+        phoneme: &[i64],
+        f0: &[f32],
+        volume: &[f32],
+        speaker_id: u32,
+    ) -> Result<Vec<f32>> {
+        if !self.initialized {
+            return Err(Error::UninitializedStatus);
+        }
+
+        let status = self
+            .status_option
+            .as_mut()
+            .ok_or(Error::UninitializedStatus)?;
+
+        if !status.validate_speaker_id(speaker_id) {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        }
+
+        let (model_index, speaker_id) = if let Some((model_index, speaker_id)) =
+            get_sf_decode_model_index_and_speaker_id(speaker_id)
+        {
+            (model_index, speaker_id)
+        } else {
+            return Err(Error::InvalidSpeakerId { speaker_id });
+        };
+
+        if model_index >= MODEL_FILE_SET.sf_decode_models_count() {
+            return Err(Error::InvalidModelIndex { model_index });
+        }
+
+        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme));
+        let mut f0_array = NdArray::new(ndarray::arr1(f0));
+        let mut volume_array = NdArray::new(ndarray::arr1(volume));
+        let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
+
+        let input_tensors: Vec<&mut dyn AnyArray> = vec![
+            &mut phoneme_array,
+            &mut f0_array,
+            &mut volume_array,
+            &mut speaker_id_array,
+        ];
+
+        status.sf_decode_session_run(model_index, input_tensors)
     }
 
     fn make_f0_with_padding(
@@ -643,8 +838,22 @@ pub static SUPPORTED_DEVICES: Lazy<SupportedDevices> =
 pub static SUPPORTED_DEVICES_CSTRING: Lazy<CString> =
     Lazy::new(|| CString::new(SUPPORTED_DEVICES.to_json().to_string()).unwrap());
 
-fn get_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
-    MODEL_FILE_SET.speaker_id_map.get(&speaker_id).copied()
+fn get_talk_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
+    MODEL_FILE_SET.talk_speaker_id_map.get(&speaker_id).copied()
+}
+
+fn get_sing_teacher_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
+    MODEL_FILE_SET
+        .sing_teacher_speaker_id_map
+        .get(&speaker_id)
+        .copied()
+}
+
+fn get_sf_decode_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
+    MODEL_FILE_SET
+        .sf_decode_speaker_id_map
+        .get(&speaker_id)
+        .copied()
 }
 
 pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {
@@ -853,7 +1062,7 @@ mod tests {
         #[case] speaker_id: u32,
         #[case] expected: Option<(usize, u32)>,
     ) {
-        let actual = get_model_index_and_speaker_id(speaker_id);
+        let actual = get_talk_model_index_and_speaker_id(speaker_id);
         assert_eq!(expected, actual);
     }
 
@@ -921,43 +1130,7 @@ mod tests {
         assert_eq!(result.unwrap().len(), vowel_phoneme_vector.len());
     }
 
-    #[rstest]
-    fn predict_contour_works() {
-        let internal = VoicevoxCore::new_with_mutex();
-        internal
-            .lock()
-            .unwrap()
-            .initialize(InitializeOptions {
-                load_all_models: true,
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            })
-            .unwrap();
-
-        // 「テスト」という文章に対応する入力
-        const F0_LENGTH: usize = 69;
-        let mut f0_discrete = [0.; F0_LENGTH];
-        f0_discrete[9..24].fill(5.905218);
-        f0_discrete[37..60].fill(5.565851);
-
-        let mut phoneme = [0; F0_LENGTH];
-        phoneme[0..9].fill(0);
-        phoneme[9..13].fill(37);
-        phoneme[13..24].fill(14);
-        phoneme[24..30].fill(35);
-        phoneme[30..37].fill(6);
-        phoneme[37..45].fill(37);
-        phoneme[45..60].fill(30);
-        phoneme[60..69].fill(0);
-
-        let result = internal
-            .lock()
-            .unwrap()
-            .predict_contour(F0_LENGTH, &f0_discrete, &phoneme, 2);
-
-        assert!(result.is_ok(), "{result:?}");
-        assert_eq!(result.unwrap().len(), F0_LENGTH);
-    }
+    // TODO: sing系のテストを足す
 
     #[rstest]
     fn decode_works() {
