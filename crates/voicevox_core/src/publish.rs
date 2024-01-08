@@ -402,7 +402,7 @@ impl InferenceCore {
                 for model_index in 0..MODEL_FILE_SET.sing_style_models_count() {
                     status.load_sing_style_model(model_index)?;
                 }
-                for model_index in 0..MODEL_FILE_SET.sf_models_count() {
+                for model_index in 0..MODEL_FILE_SET.sf_decode_models_count() {
                     status.load_sf_decode_model(model_index)?;
                 }
             }
@@ -806,7 +806,7 @@ impl InferenceCore {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= MODEL_FILE_SET.sf_models_count() {
+        if model_index >= MODEL_FILE_SET.sf_decode_models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 

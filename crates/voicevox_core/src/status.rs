@@ -167,7 +167,7 @@ impl ModelFileSet {
         self.sing_style_models.len()
     }
 
-    pub(crate) fn sf_models_count(&self) -> usize {
+    pub(crate) fn sf_decode_models_count(&self) -> usize {
         self.sf_decode_models.len()
     }
 }
