@@ -1,4 +1,4 @@
-use super::{DecryptModelError, TalkModelFileNames, SingTeacherModelFileNames, SfModelFileNames};
+use super::{DecryptModelError, TalkModelFileNames, SingTeacherModelFileNames, SfDecodeModelFileNames};
 
 pub(super) fn decrypt(content: &[u8]) -> std::result::Result<Vec<u8>, DecryptModelError> {
     Ok(content.to_owned())
@@ -15,7 +15,7 @@ pub(super) const TALK_MODEL_FILE_NAMES: &[TalkModelFileNames] = &[
 ];
 
 // TODO: 変更する
-pub(super) const SING_STYLE_SPEAKER_ID_MAP: &[(u32, (usize, u32))] = &[(0, (0, 0)), (1, (0, 1))];
+pub(super) const SING_TEACHER_SPEAKER_ID_MAP: &[(u32, (usize, u32))] = &[(0, (0, 0)), (1, (0, 1))];
 
 pub(super) const SING_TEACHER_MODEL_FILE_NAMES: &[SingTeacherModelFileNames] = &[
     SingTeacherModelFileNames {
@@ -25,10 +25,10 @@ pub(super) const SING_TEACHER_MODEL_FILE_NAMES: &[SingTeacherModelFileNames] = &
     },
 ];
 
-pub(super) const SOURCE_FILTER_SPEAKER_ID_MAP: &[(u32, (usize, u32))] = &[(0, (0, 0)), (1, (0, 1))];
+pub(super) const SF_DECODE_SPEAKER_ID_MAP: &[(u32, (usize, u32))] = &[(0, (0, 0)), (1, (0, 1))];
 
-pub(super) const SOURCE_FILTER_MODEL_FILE_NAMES: &[SfModelFileNames] = &[
-    SfModelFileNames {
+pub(super) const SF_DECODE_MODEL_FILE_NAMES: &[SfDecodeModelFileNames] = &[
+    SfDecodeModelFileNames {
         sf_decode_model: "decode-1.onnx",
     },
 ];

@@ -132,10 +132,10 @@ impl ModelFileSet {
             )
             .collect::<anyhow::Result<_>>()?;
 
-        let sf_decode_models = model_file::SOURCE_FILTER_MODEL_FILE_NAMES
+        let sf_decode_models = model_file::SF_DECODE_MODEL_FILE_NAMES
             .iter()
             .map(
-                |&SfModelFileNames {
+                |&SfDecodeModelFileNames {
                      sf_decode_model,
                  }| {
                     let sf_decode_model = ModelFile::new(&path(sf_decode_model))?;
@@ -148,8 +148,8 @@ impl ModelFileSet {
 
         return Ok(Self {
             talk_speaker_id_map: model_file::TALK_SPEAKER_ID_MAP.iter().copied().collect(),
-            sing_teacher_speaker_id_map: model_file::SING_STYLE_SPEAKER_ID_MAP.iter().copied().collect(),
-            sf_decode_speaker_id_map: model_file::SOURCE_FILTER_SPEAKER_ID_MAP.iter().copied().collect(),
+            sing_teacher_speaker_id_map: model_file::SING_TEACHER_SPEAKER_ID_MAP.iter().copied().collect(),
+            sf_decode_speaker_id_map: model_file::SF_DECODE_SPEAKER_ID_MAP.iter().copied().collect(),
             metas_str,
             talk_models,
             sing_teacher_models,
@@ -184,7 +184,7 @@ struct SingTeacherModelFileNames {
     predict_sing_volume_model: &'static str,
 }
 
-struct SfModelFileNames {
+struct SfDecodeModelFileNames {
     sf_decode_model: &'static str,
 }
 
