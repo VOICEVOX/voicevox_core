@@ -1,4 +1,4 @@
-use super::{DecryptModelError, TalkModelFileNames, SingStyleModelFileNames, SourceFilterModelFileNames};
+use super::{DecryptModelError, TalkModelFileNames, SingStyleModelFileNames, SfModelFileNames};
 
 pub(super) fn decrypt(content: &[u8]) -> std::result::Result<Vec<u8>, DecryptModelError> {
     Ok(content.to_owned())
@@ -27,9 +27,9 @@ pub(super) const SING_STYLE_MODEL_FILE_NAMES: &[SingStyleModelFileNames] = &[
 
 pub(super) const SOURCE_FILTER_SPEAKER_ID_MAP: &[(u32, (usize, u32))] = &[(0, (0, 0)), (1, (0, 1))];
 
-pub(super) const SOURCE_FILTER_MODEL_FILE_NAMES: &[SourceFilterModelFileNames] = &[
-    SourceFilterModelFileNames {
-        source_filter_decode_model: "decode-1.onnx",
+pub(super) const SOURCE_FILTER_MODEL_FILE_NAMES: &[SfModelFileNames] = &[
+    SfModelFileNames {
+        sf_decode_model: "decode-1.onnx",
     },
 ];
 

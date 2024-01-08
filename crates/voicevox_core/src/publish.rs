@@ -197,7 +197,7 @@ impl VoicevoxCore {
             .predict_sing_volume(phoneme_vector, note_vector, f0_vector, speaker_id)
     }
 
-    pub fn source_filter_decode(
+    pub fn sf_decode(
         &mut self,
         phoneme_vector: &[i64],
         f0: &[f32],
@@ -206,7 +206,7 @@ impl VoicevoxCore {
     ) -> Result<Vec<f32>> {
         self.synthesis_engine
             .inference_core_mut()
-            .source_filter_decode(phoneme_vector, f0, volume, speaker_id)
+            .sf_decode(phoneme_vector, f0, volume, speaker_id)
     }
 
     pub fn audio_query(
@@ -402,8 +402,8 @@ impl InferenceCore {
                 for model_index in 0..MODEL_FILE_SET.sing_style_models_count() {
                     status.load_sing_style_model(model_index)?;
                 }
-                for model_index in 0..MODEL_FILE_SET.source_filter_models_count() {
-                    status.load_source_filter_model(model_index)?;
+                for model_index in 0..MODEL_FILE_SET.sf_models_count() {
+                    status.load_sf_decode_model(model_index)?;
                 }
             }
 
@@ -440,8 +440,8 @@ impl InferenceCore {
                     status.load_sing_style_model(model_index)?;
                     loaded = true;
                 }
-                if let Some((model_index, _)) = get_source_filter_model_index_and_speaker_id(speaker_id) {
-                    status.load_source_filter_model(model_index)?;
+                if let Some((model_index, _)) = get_sf_decode_model_index_and_speaker_id(speaker_id) {
+                    status.load_sf_decode_model(model_index)?;
                     loaded = true;
                 }
 
@@ -465,8 +465,8 @@ impl InferenceCore {
                 if let Some((model_index, _)) = get_sing_style_model_index_and_speaker_id(speaker_id) {
                     loaded |= status.is_sing_style_model_loaded(model_index);
                 }
-                if let Some((model_index, _)) = get_source_filter_model_index_and_speaker_id(speaker_id) {
-                    loaded |= status.is_source_filter_model_loaded(model_index);
+                if let Some((model_index, _)) = get_sf_decode_model_index_and_speaker_id(speaker_id) {
+                    loaded |= status.is_sf_decode_model_loaded(model_index);
                 }
                 loaded
             }
@@ -779,7 +779,7 @@ impl InferenceCore {
         status.predict_sing_volume_session_run(model_index, input_tensors)
     }
 
-    pub fn source_filter_decode(
+    pub fn sf_decode(
         &mut self,
         phoneme_vector: &[i64],
         f0: &[f32],
@@ -800,13 +800,13 @@ impl InferenceCore {
         }
 
         let (model_index, speaker_id) =
-            if let Some((model_index, speaker_id)) = get_source_filter_model_index_and_speaker_id(speaker_id) {
+            if let Some((model_index, speaker_id)) = get_sf_decode_model_index_and_speaker_id(speaker_id) {
                 (model_index, speaker_id)
             } else {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= MODEL_FILE_SET.source_filter_models_count() {
+        if model_index >= MODEL_FILE_SET.sf_models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -818,7 +818,7 @@ impl InferenceCore {
         let input_tensors: Vec<&mut dyn AnyArray> =
             vec![&mut phoneme_vector_array, &mut f0_array, &mut volume_array, &mut speaker_id_array];
 
-        status.source_filter_decode_session_run(model_index, input_tensors)
+        status.sf_decode_session_run(model_index, input_tensors)
     }
 
     fn make_f0_with_padding(
@@ -892,8 +892,8 @@ fn get_sing_style_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, 
     MODEL_FILE_SET.sing_style_speaker_id_map.get(&speaker_id).copied()
 }
 
-fn get_source_filter_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
-    MODEL_FILE_SET.source_filter_speaker_id_map.get(&speaker_id).copied()
+fn get_sf_decode_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
+    MODEL_FILE_SET.sf_decode_speaker_id_map.get(&speaker_id).copied()
 }
 
 pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static str {

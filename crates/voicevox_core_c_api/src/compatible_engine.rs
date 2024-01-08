@@ -244,7 +244,7 @@ pub extern "C" fn predict_sing_volume_forward(
 }
 
 #[no_mangle]
-pub extern "C" fn source_filter_decode_forward(
+pub extern "C" fn sf_decode_forward(
     length: i64,
     phoneme: *mut i64,
     f0: *mut f32,
@@ -253,7 +253,7 @@ pub extern "C" fn source_filter_decode_forward(
     output: *mut f32,
 ) -> bool {
     let length = length as usize;
-    let result = lock_internal().source_filter_decode(
+    let result = lock_internal().sf_decode(
         unsafe { std::slice::from_raw_parts(phoneme, length) },
         unsafe { std::slice::from_raw_parts(f0, length) },
         unsafe { std::slice::from_raw_parts(volume, length) },

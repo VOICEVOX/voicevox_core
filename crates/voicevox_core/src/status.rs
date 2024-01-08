@@ -33,7 +33,7 @@ pub(crate) static MODEL_FILE_SET: Lazy<ModelFileSet> = Lazy::new(|| {
 pub struct Status {
     talk_models: StatusTalkModels,
     sing_style_models: StatusSingStyleModels,
-    source_filter_models: StatusSourceFilterModels,
+    sf_decode_models: StatusSfModels,
     light_session_options: SessionOptions, // 軽いモデルはこちらを使う
     heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
     supported_styles: BTreeSet<u32>,
@@ -51,8 +51,8 @@ struct StatusSingStyleModels {
     predict_sing_volume: BTreeMap<usize, Session<'static>>,
 }
 
-struct StatusSourceFilterModels {
-    source_filter_decode: BTreeMap<usize, Session<'static>>,
+struct StatusSfModels {
+    sf_decode: BTreeMap<usize, Session<'static>>,
 }
 
 #[derive(new, Getters)]
@@ -64,11 +64,11 @@ struct SessionOptions {
 pub(crate) struct ModelFileSet {
     pub(crate) talk_speaker_id_map: BTreeMap<u32, (usize, u32)>,
     pub(crate) sing_style_speaker_id_map: BTreeMap<u32, (usize, u32)>,
-    pub(crate) source_filter_speaker_id_map: BTreeMap<u32, (usize, u32)>,
+    pub(crate) sf_decode_speaker_id_map: BTreeMap<u32, (usize, u32)>,
     pub(crate) metas_str: String,
     talk_models: Vec<TalkModel>,
     sing_style_models: Vec<SingStyleModel>,
-    source_filter_models: Vec<SourceFilterModel>,
+    sf_decode_models: Vec<SfDecodeModel>,
 }
 
 impl ModelFileSet {
@@ -132,15 +132,15 @@ impl ModelFileSet {
             )
             .collect::<anyhow::Result<_>>()?;
 
-        let source_filter_models = model_file::SOURCE_FILTER_MODEL_FILE_NAMES
+        let sf_decode_models = model_file::SOURCE_FILTER_MODEL_FILE_NAMES
             .iter()
             .map(
-                |&SourceFilterModelFileNames {
-                     source_filter_decode_model,
+                |&SfModelFileNames {
+                     sf_decode_model,
                  }| {
-                    let source_filter_decode_model = ModelFile::new(&path(source_filter_decode_model))?;
-                    Ok(SourceFilterModel {
-                        source_filter_decode_model,
+                    let sf_decode_model = ModelFile::new(&path(sf_decode_model))?;
+                    Ok(SfDecodeModel {
+                        sf_decode_model,
                     })
                 },
             )
@@ -149,11 +149,11 @@ impl ModelFileSet {
         return Ok(Self {
             talk_speaker_id_map: model_file::TALK_SPEAKER_ID_MAP.iter().copied().collect(),
             sing_style_speaker_id_map: model_file::SING_STYLE_SPEAKER_ID_MAP.iter().copied().collect(),
-            source_filter_speaker_id_map: model_file::SOURCE_FILTER_SPEAKER_ID_MAP.iter().copied().collect(),
+            sf_decode_speaker_id_map: model_file::SOURCE_FILTER_SPEAKER_ID_MAP.iter().copied().collect(),
             metas_str,
             talk_models,
             sing_style_models,
-            source_filter_models,
+            sf_decode_models,
         });
 
         const ROOT_DIR_ENV_NAME: &str = "VV_MODELS_ROOT_DIR";
@@ -167,8 +167,8 @@ impl ModelFileSet {
         self.sing_style_models.len()
     }
 
-    pub(crate) fn source_filter_models_count(&self) -> usize {
-        self.source_filter_models.len()
+    pub(crate) fn sf_models_count(&self) -> usize {
+        self.sf_decode_models.len()
     }
 }
 
@@ -184,8 +184,8 @@ struct SingStyleModelFileNames {
     predict_sing_volume_model: &'static str,
 }
 
-struct SourceFilterModelFileNames {
-    source_filter_decode_model: &'static str,
+struct SfModelFileNames {
+    sf_decode_model: &'static str,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -204,8 +204,8 @@ struct SingStyleModel {
     predict_sing_volume_model: ModelFile,
 }
 
-struct SourceFilterModel {
-    source_filter_decode_model: ModelFile,
+struct SfDecodeModel {
+    sf_decode_model: ModelFile,
 }
 
 struct ModelFile {
@@ -297,8 +297,8 @@ impl Status {
                 predict_sing_f0: BTreeMap::new(),
                 predict_sing_volume: BTreeMap::new(),
             },
-            source_filter_models: StatusSourceFilterModels {
-                source_filter_decode: BTreeMap::new(),
+            sf_decode_models: StatusSfModels {
+                sf_decode: BTreeMap::new(),
             },
             light_session_options: SessionOptions::new(cpu_num_threads, false),
             heavy_session_options: SessionOptions::new(cpu_num_threads, use_gpu),
@@ -391,15 +391,15 @@ impl Status {
                 .contains_key(&model_index)
     }
 
-    pub fn load_source_filter_model(&mut self, model_index: usize) -> Result<()> {
-        if model_index < MODEL_FILE_SET.source_filter_models.len() {
-            let model = &MODEL_FILE_SET.source_filter_models[model_index];
-            let source_filter_decode_session =
-                self.new_session(&model.source_filter_decode_model, &self.heavy_session_options)?;
+    pub fn load_sf_decode_model(&mut self, model_index: usize) -> Result<()> {
+        if model_index < MODEL_FILE_SET.sf_decode_models.len() {
+            let model = &MODEL_FILE_SET.sf_decode_models[model_index];
+            let sf_decode_session =
+                self.new_session(&model.sf_decode_model, &self.heavy_session_options)?;
 
-            self.source_filter_models
-                .source_filter_decode
-                .insert(model_index, source_filter_decode_session);
+            self.sf_decode_models
+                .sf_decode
+                .insert(model_index, sf_decode_session);
 
             Ok(())
         } else {
@@ -407,9 +407,9 @@ impl Status {
         }
     }
 
-    pub fn is_source_filter_model_loaded(&self, model_index: usize) -> bool {
-        self.source_filter_models
-            .source_filter_decode
+    pub fn is_sf_decode_model_loaded(&self, model_index: usize) -> bool {
+        self.sf_decode_models
+            .sf_decode
             .contains_key(&model_index)
     }
 
@@ -563,14 +563,14 @@ impl Status {
         }
     }
 
-    pub fn source_filter_decode_session_run(
+    pub fn sf_decode_session_run(
         &mut self,
         model_index: usize,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
         if let Some(model) = self
-            .source_filter_models
-            .source_filter_decode
+            .sf_decode_models
+            .sf_decode
             .get_mut(&model_index)
         {
             if let Ok(output_tensors) = model.run(inputs) {
