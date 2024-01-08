@@ -1174,7 +1174,7 @@ mod tests {
         assert_eq!(result.unwrap().len(), vowel_phoneme_vector.len());
     }
 
-    # TODO: sing系のテストを足す
+    // TODO: sing系のテストを足す
 
     #[rstest]
     fn decode_works() {

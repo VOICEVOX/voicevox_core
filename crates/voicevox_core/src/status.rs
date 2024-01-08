@@ -659,5 +659,5 @@ mod tests {
         );
     }
     
-    # TODO: sing系のテスト足す
+    // TODO: sing系のテスト足す
 }
