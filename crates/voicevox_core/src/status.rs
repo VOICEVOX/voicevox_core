@@ -32,7 +32,7 @@ pub(crate) static MODEL_FILE_SET: Lazy<ModelFileSet> = Lazy::new(|| {
 
 pub struct Status {
     talk_models: StatusTalkModels,
-    sing_style_models: StatusSingStyleModels,
+    sing_teacher_models: StatusSingTeacherModels,
     sf_decode_models: StatusSfModels,
     light_session_options: SessionOptions, // 軽いモデルはこちらを使う
     heavy_session_options: SessionOptions, // 重いモデルはこちらを使う
@@ -45,7 +45,7 @@ struct StatusTalkModels {
     decode: BTreeMap<usize, Session<'static>>,
 }
 
-struct StatusSingStyleModels {
+struct StatusSingTeacherModels {
     predict_sing_consonant_length: BTreeMap<usize, Session<'static>>,
     predict_sing_f0: BTreeMap<usize, Session<'static>>,
     predict_sing_volume: BTreeMap<usize, Session<'static>>,
@@ -63,11 +63,11 @@ struct SessionOptions {
 
 pub(crate) struct ModelFileSet {
     pub(crate) talk_speaker_id_map: BTreeMap<u32, (usize, u32)>,
-    pub(crate) sing_style_speaker_id_map: BTreeMap<u32, (usize, u32)>,
+    pub(crate) sing_teacher_speaker_id_map: BTreeMap<u32, (usize, u32)>,
     pub(crate) sf_decode_speaker_id_map: BTreeMap<u32, (usize, u32)>,
     pub(crate) metas_str: String,
     talk_models: Vec<TalkModel>,
-    sing_style_models: Vec<SingStyleModel>,
+    sing_teacher_models: Vec<SingTeacherModel>,
     sf_decode_models: Vec<SfDecodeModel>,
 }
 
@@ -112,10 +112,10 @@ impl ModelFileSet {
             )
             .collect::<anyhow::Result<_>>()?;
 
-        let sing_style_models = model_file::SING_STYLE_MODEL_FILE_NAMES
+        let sing_teacher_models = model_file::SING_TEACHER_MODEL_FILE_NAMES
             .iter()
             .map(
-                |&SingStyleModelFileNames {
+                |&SingTeacherModelFileNames {
                      predict_sing_consonant_length_model,
                      predict_sing_f0_model,
                      predict_sing_volume_model,
@@ -123,7 +123,7 @@ impl ModelFileSet {
                     let predict_sing_consonant_length_model = ModelFile::new(&path(predict_sing_consonant_length_model))?;
                     let predict_sing_f0_model = ModelFile::new(&path(predict_sing_f0_model))?;
                     let predict_sing_volume_model = ModelFile::new(&path(predict_sing_volume_model))?;
-                    Ok(SingStyleModel {
+                    Ok(SingTeacherModel {
                         predict_sing_consonant_length_model,
                         predict_sing_f0_model,
                         predict_sing_volume_model,
@@ -148,11 +148,11 @@ impl ModelFileSet {
 
         return Ok(Self {
             talk_speaker_id_map: model_file::TALK_SPEAKER_ID_MAP.iter().copied().collect(),
-            sing_style_speaker_id_map: model_file::SING_STYLE_SPEAKER_ID_MAP.iter().copied().collect(),
+            sing_teacher_speaker_id_map: model_file::SING_STYLE_SPEAKER_ID_MAP.iter().copied().collect(),
             sf_decode_speaker_id_map: model_file::SOURCE_FILTER_SPEAKER_ID_MAP.iter().copied().collect(),
             metas_str,
             talk_models,
-            sing_style_models,
+            sing_teacher_models,
             sf_decode_models,
         });
 
@@ -163,8 +163,8 @@ impl ModelFileSet {
         self.talk_models.len()
     }
 
-    pub(crate) fn sing_style_models_count(&self) -> usize {
-        self.sing_style_models.len()
+    pub(crate) fn sing_teacher_models_count(&self) -> usize {
+        self.sing_teacher_models.len()
     }
 
     pub(crate) fn sf_decode_models_count(&self) -> usize {
@@ -178,7 +178,7 @@ struct TalkModelFileNames {
     decode_model: &'static str,
 }
 
-struct SingStyleModelFileNames {
+struct SingTeacherModelFileNames {
     predict_sing_consonant_length_model: &'static str,
     predict_sing_f0_model: &'static str,
     predict_sing_volume_model: &'static str,
@@ -198,7 +198,7 @@ struct TalkModel {
     decode_model: ModelFile,
 }
 
-struct SingStyleModel {
+struct SingTeacherModel {
     predict_sing_consonant_length_model: ModelFile,
     predict_sing_f0_model: ModelFile,
     predict_sing_volume_model: ModelFile,
@@ -292,7 +292,7 @@ impl Status {
                 predict_intonation: BTreeMap::new(),
                 decode: BTreeMap::new(),
             },
-            sing_style_models: StatusSingStyleModels {
+            sing_teacher_models: StatusSingTeacherModels {
                 predict_sing_consonant_length: BTreeMap::new(),
                 predict_sing_f0: BTreeMap::new(),
                 predict_sing_volume: BTreeMap::new(),
@@ -350,9 +350,9 @@ impl Status {
             && self.talk_models.decode.contains_key(&model_index)
     }
 
-    pub fn load_sing_style_model(&mut self, model_index: usize) -> Result<()> {
-        if model_index < MODEL_FILE_SET.sing_style_models.len() {
-            let model = &MODEL_FILE_SET.sing_style_models[model_index];
+    pub fn load_sing_teacher_model(&mut self, model_index: usize) -> Result<()> {
+        if model_index < MODEL_FILE_SET.sing_teacher_models.len() {
+            let model = &MODEL_FILE_SET.sing_teacher_models[model_index];
             let predict_sing_consonant_length_session =
                 self.new_session(&model.predict_sing_consonant_length_model, &self.light_session_options)?;
             let predict_sing_f0_session =
@@ -360,14 +360,14 @@ impl Status {
             let predict_sing_volume_session =
                 self.new_session(&model.predict_sing_volume_model, &self.light_session_options)?;
 
-            self.sing_style_models.predict_sing_consonant_length.insert(
+            self.sing_teacher_models.predict_sing_consonant_length.insert(
                 model_index,
                 predict_sing_consonant_length_session,
             );
-            self.sing_style_models
+            self.sing_teacher_models
                 .predict_sing_f0
                 .insert(model_index, predict_sing_f0_session);
-            self.sing_style_models
+            self.sing_teacher_models
                 .predict_sing_volume
                 .insert(model_index, predict_sing_volume_session);
 
@@ -377,16 +377,16 @@ impl Status {
         }
     }
 
-    pub fn is_sing_style_model_loaded(&self, model_index: usize) -> bool {
-        self.sing_style_models
+    pub fn is_sing_teacher_model_loaded(&self, model_index: usize) -> bool {
+        self.sing_teacher_models
             .predict_sing_consonant_length
             .contains_key(&model_index)
             && self
-                .sing_style_models
+                .sing_teacher_models
                 .predict_sing_f0
                 .contains_key(&model_index)
             && self
-                .sing_style_models
+                .sing_teacher_models
                 .predict_sing_volume
                 .contains_key(&model_index)
     }
@@ -513,7 +513,7 @@ impl Status {
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<i64>> {
         if let Some(model) = self
-            .sing_style_models
+            .sing_teacher_models
             .predict_sing_consonant_length
             .get_mut(&model_index)
         {
@@ -532,7 +532,7 @@ impl Status {
         model_index: usize,
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
-        if let Some(model) = self.sing_style_models.predict_sing_f0.get_mut(&model_index) {
+        if let Some(model) = self.sing_teacher_models.predict_sing_f0.get_mut(&model_index) {
             if let Ok(output_tensors) = model.run(inputs) {
                 Ok(output_tensors[0].as_slice().unwrap().to_owned())
             } else {
@@ -549,7 +549,7 @@ impl Status {
         inputs: Vec<&mut dyn AnyArray>,
     ) -> Result<Vec<f32>> {
         if let Some(model) = self
-            .sing_style_models
+            .sing_teacher_models
             .predict_sing_volume
             .get_mut(&model_index)
         {

@@ -1,4 +1,4 @@
-use super::{DecryptModelError, TalkModelFileNames, SingStyleModelFileNames, SfModelFileNames};
+use super::{DecryptModelError, TalkModelFileNames, SingTeacherModelFileNames, SfModelFileNames};
 
 pub(super) fn decrypt(content: &[u8]) -> std::result::Result<Vec<u8>, DecryptModelError> {
     Ok(content.to_owned())
@@ -17,8 +17,8 @@ pub(super) const TALK_MODEL_FILE_NAMES: &[TalkModelFileNames] = &[
 // TODO: 変更する
 pub(super) const SING_STYLE_SPEAKER_ID_MAP: &[(u32, (usize, u32))] = &[(0, (0, 0)), (1, (0, 1))];
 
-pub(super) const SING_STYLE_MODEL_FILE_NAMES: &[SingStyleModelFileNames] = &[
-    SingStyleModelFileNames {
+pub(super) const SING_TEACHER_MODEL_FILE_NAMES: &[SingTeacherModelFileNames] = &[
+    SingTeacherModelFileNames {
         predict_sing_consonant_length_model: "predict_duration-1.onnx",
         predict_sing_f0_model: "predict_intonation-1.onnx",
         predict_sing_volume_model: "predict_intonation-1.onnx",

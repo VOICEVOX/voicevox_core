@@ -399,8 +399,8 @@ impl InferenceCore {
                 for model_index in 0..MODEL_FILE_SET.talk_models_count() {
                     status.load_talk_model(model_index)?;
                 }
-                for model_index in 0..MODEL_FILE_SET.sing_style_models_count() {
-                    status.load_sing_style_model(model_index)?;
+                for model_index in 0..MODEL_FILE_SET.sing_teacher_models_count() {
+                    status.load_sing_teacher_model(model_index)?;
                 }
                 for model_index in 0..MODEL_FILE_SET.sf_decode_models_count() {
                     status.load_sf_decode_model(model_index)?;
@@ -436,8 +436,8 @@ impl InferenceCore {
             } else {
                 // ハミング機能及び歌機能モデルはどちらかが存在しない事があるので、どちらかが存在しない場合でも無視する
                 let mut loaded = false;
-                if let Some((model_index, _)) = get_sing_style_model_index_and_speaker_id(speaker_id) {
-                    status.load_sing_style_model(model_index)?;
+                if let Some((model_index, _)) = get_sing_teacher_model_index_and_speaker_id(speaker_id) {
+                    status.load_sing_teacher_model(model_index)?;
                     loaded = true;
                 }
                 if let Some((model_index, _)) = get_sf_decode_model_index_and_speaker_id(speaker_id) {
@@ -462,8 +462,8 @@ impl InferenceCore {
             } else {
                 // ハミング機能及び歌機能モデルはどちらかが存在しない事があるので、どちらかが存在しない場合でも無視する
                 let mut loaded = false;
-                if let Some((model_index, _)) = get_sing_style_model_index_and_speaker_id(speaker_id) {
-                    loaded |= status.is_sing_style_model_loaded(model_index);
+                if let Some((model_index, _)) = get_sing_teacher_model_index_and_speaker_id(speaker_id) {
+                    loaded |= status.is_sing_teacher_model_loaded(model_index);
                 }
                 if let Some((model_index, _)) = get_sf_decode_model_index_and_speaker_id(speaker_id) {
                     loaded |= status.is_sf_decode_model_loaded(model_index);
@@ -676,13 +676,13 @@ impl InferenceCore {
         }
 
         let (model_index, speaker_id) =
-            if let Some((model_index, speaker_id)) = get_sing_style_model_index_and_speaker_id(speaker_id) {
+            if let Some((model_index, speaker_id)) = get_sing_teacher_model_index_and_speaker_id(speaker_id) {
                 (model_index, speaker_id)
             } else {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= MODEL_FILE_SET.sing_style_models_count() {
+        if model_index >= MODEL_FILE_SET.sing_teacher_models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -717,13 +717,13 @@ impl InferenceCore {
         }
 
         let (model_index, speaker_id) =
-            if let Some((model_index, speaker_id)) = get_sing_style_model_index_and_speaker_id(speaker_id) {
+            if let Some((model_index, speaker_id)) = get_sing_teacher_model_index_and_speaker_id(speaker_id) {
                 (model_index, speaker_id)
             } else {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= MODEL_FILE_SET.sing_style_models_count() {
+        if model_index >= MODEL_FILE_SET.sing_teacher_models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -758,13 +758,13 @@ impl InferenceCore {
         }
 
         let (model_index, speaker_id) =
-            if let Some((model_index, speaker_id)) = get_sing_style_model_index_and_speaker_id(speaker_id) {
+            if let Some((model_index, speaker_id)) = get_sing_teacher_model_index_and_speaker_id(speaker_id) {
                 (model_index, speaker_id)
             } else {
                 return Err(Error::InvalidSpeakerId { speaker_id });
             };
 
-        if model_index >= MODEL_FILE_SET.sing_style_models_count() {
+        if model_index >= MODEL_FILE_SET.sing_teacher_models_count() {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
@@ -888,8 +888,8 @@ fn get_talk_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> 
     MODEL_FILE_SET.talk_speaker_id_map.get(&speaker_id).copied()
 }
 
-fn get_sing_style_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
-    MODEL_FILE_SET.sing_style_speaker_id_map.get(&speaker_id).copied()
+fn get_sing_teacher_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
+    MODEL_FILE_SET.sing_teacher_speaker_id_map.get(&speaker_id).copied()
 }
 
 fn get_sf_decode_model_index_and_speaker_id(speaker_id: u32) -> Option<(usize, u32)> {
