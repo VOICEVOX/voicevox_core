@@ -2545,17 +2545,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ort-sys"
-version = "2.0.0-alpha.4"
-source = "git+https://github.com/qryxip/ort.git?rev=b5e05bbff02421a8873e17e991e2d76d06848a9c#b5e05bbff02421a8873e17e991e2d76d06848a9c"
-dependencies = [
- "flate2",
- "sha2 0.10.6",
- "tar",
- "ureq",
-]
-
-[[package]]
 name = "os_pipe"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4342,6 +4331,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
+name = "voicevox-ort"
+version = "2.0.0-alpha.4"
+source = "git+https://github.com/qryxip/ort.git?rev=2dc81ef7b23f789d0eed2376ed66d3d85943a55a#2dc81ef7b23f789d0eed2376ed66d3d85943a55a"
+dependencies = [
+ "half",
+ "ndarray",
+ "thiserror",
+ "tracing",
+ "voicevox-ort-sys",
+]
+
+[[package]]
+name = "voicevox-ort-sys"
+version = "2.0.0-alpha.4"
+source = "git+https://github.com/qryxip/ort.git?rev=2dc81ef7b23f789d0eed2376ed66d3d85943a55a#2dc81ef7b23f789d0eed2376ed66d3d85943a55a"
+dependencies = [
+ "flate2",
+ "sha2 0.10.6",
+ "tar",
+ "ureq",
+]
+
+[[package]]
 name = "voicevox_core"
 version = "0.0.0"
 dependencies = [
@@ -4377,8 +4389,8 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+ "voicevox-ort",
  "voicevox_core_macros",
- "voicevox_ort",
  "windows",
  "zip",
 ]
@@ -4464,18 +4476,6 @@ dependencies = [
  "tracing",
  "uuid",
  "voicevox_core",
-]
-
-[[package]]
-name = "voicevox_ort"
-version = "2.0.0-alpha.4"
-source = "git+https://github.com/qryxip/ort.git?rev=b5e05bbff02421a8873e17e991e2d76d06848a9c#b5e05bbff02421a8873e17e991e2d76d06848a9c"
-dependencies = [
- "half",
- "ndarray",
- "ort-sys",
- "thiserror",
- "tracing",
 ]
 
 [[package]]
