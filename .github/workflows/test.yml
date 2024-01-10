@@ -72,8 +72,8 @@ jobs:
         with:
           python-version: "3.8"
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
-      - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv --all-features --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv --all-features -- -D clippy::all -D warnings --no-deps
       - run: cargo fmt -- --check
 
   rust-unit-test:
