@@ -6,7 +6,8 @@ publish.workspace = true
 
 [features]
 default = []
-directml = ["onnxruntime/directml"]
+cuda = ["voicevox_ort/cuda"]
+directml = ["voicevox_ort/directml"]
 
 [dependencies]
 anyhow.workspace = true
@@ -25,7 +26,6 @@ itertools.workspace = true
 nanoid.workspace = true
 ndarray.workspace = true
 once_cell.workspace = true
-onnxruntime.workspace = true
 open_jtalk.workspace = true
 ouroboros.workspace = true
 rayon.workspace = true
@@ -38,6 +38,7 @@ tokio = { workspace = true, features = ["rt"] } # FIXME: feature-gateする
 tracing.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox_core_macros = { path = "../voicevox_core_macros" }
+voicevox_ort = { workspace = true, features = ["ndarray", "download-binaries"] }
 zip.workspace = true
 
 [dev-dependencies]

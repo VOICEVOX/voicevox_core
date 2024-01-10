@@ -81,9 +81,9 @@ voicevox_core = { path = "crates/voicevox_core" }
 windows = "0.43.0"
 zip = "0.6.3"
 
-[workspace.dependencies.onnxruntime]
-git = "https://github.com/VOICEVOX/onnxruntime-rs.git"
-rev = "ebb9dcb9b26ee681889b52b6db3b4f642b04a250"
+[workspace.dependencies.voicevox_ort]
+git = "https://github.com/qryxip/ort.git"
+rev = "b5e05bbff02421a8873e17e991e2d76d06848a9c"
 
 [workspace.dependencies.open_jtalk]
 git = "https://github.com/VOICEVOX/open_jtalk-rs.git"

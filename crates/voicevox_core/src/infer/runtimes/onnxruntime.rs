@@ -1,17 +1,19 @@
-use std::{fmt::Debug, vec};
+use std::{
+    ffi::{c_char, CStr},
+    fmt::Debug,
+    ptr::null_mut,
+    vec,
+};
 
 use anyhow::anyhow;
 use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
-use once_cell::sync::Lazy;
-use onnxruntime::{
-    environment::Environment, GraphOptimizationLevel, LoggingLevel, TensorElementDataType,
-    TypeToTensorElementDataType,
+use ort::{
+    ExecutionProviderDispatch, GraphOptimizationLevel, IntoTensorElementType, TensorElementType,
+    ValueType,
 };
 
 use crate::{devices::SupportedDevices, error::ErrorRepr};
-
-use self::assert_send::AssertSend;
 
 use super::super::{
     DecryptModelError, InferenceRuntime, InferenceSessionOptions, InputScalarKind,
@@ -22,17 +24,41 @@ use super::super::{
 pub(crate) enum Onnxruntime {}
 
 impl InferenceRuntime for Onnxruntime {
-    type Session = AssertSend<onnxruntime::session::Session<'static>>;
+    type Session = ort::Session;
     type RunContext<'a> = OnnxruntimeRunContext<'a>;
 
     fn supported_devices() -> crate::Result<SupportedDevices> {
+        #![allow(unsafe_code)]
+
+        // TODO: `InferenceRuntime::init`と`InitInferenceRuntimeError`を作る
+        build_ort_env_once().unwrap();
+
+        // Almost copied from VOICEVOX/onnxruntime-rs
+        let providers = (|| -> ort::Result<_> {
+            let mut len = 0;
+            let mut providers: *mut *mut c_char = null_mut();
+            let status =
+                unsafe { ort::api().GetAvailableProviders.unwrap()(&mut providers, &mut len) };
+            status_to_result(status).map_err(ort::Error::GetAvailableProviders)?;
+            let mut return_providers = Vec::with_capacity(len as usize);
+            for i in 0..len {
+                return_providers.push(unsafe {
+                    CStr::from_ptr(*(providers.offset(i as isize)))
+                        .to_str()
+                        .unwrap()
+                        .to_string()
+                });
+            }
+            let status = unsafe { ort::api().ReleaseAvailableProviders.unwrap()(providers, len) };
+            status_to_result(status).map_err(ort::Error::GetAvailableProviders)?;
+            Ok(return_providers)
+        })()
+        .map_err(Into::into)
+        .map_err(ErrorRepr::GetSupportedDevices)?;
+
         let mut cuda_support = false;
         let mut dml_support = false;
-        for provider in onnxruntime::session::get_available_providers()
-            .map_err(Into::into)
-            .map_err(ErrorRepr::GetSupportedDevices)?
-            .iter()
-        {
+        for provider in providers {
             match provider.as_str() {
                 "CUDAExecutionProvider" => cuda_support = true,
                 "DmlExecutionProvider" => dml_support = true,
@@ -40,11 +66,20 @@ impl InferenceRuntime for Onnxruntime {
             }
         }
 
-        Ok(SupportedDevices {
+        return Ok(SupportedDevices {
             cpu: true,
             cuda: cuda_support,
             dml: dml_support,
-        })
+        });
+
+        fn status_to_result(
+            status: *const impl Sized,
+        ) -> std::result::Result<(), ort::ErrorInternal> {
+            if !status.is_null() {
+                todo!("error here");
+            }
+            Ok(())
+        }
     }
 
     fn new_session(
@@ -55,48 +90,50 @@ impl InferenceRuntime for Onnxruntime {
         Vec<ParamInfo<InputScalarKind>>,
         Vec<ParamInfo<OutputScalarKind>>,
     )> {
-        let mut builder = ENVIRONMENT
-            .new_session_builder()?
-            .with_optimization_level(GraphOptimizationLevel::Basic)?
-            .with_intra_op_num_threads(options.cpu_num_threads.into())?
-            .with_inter_op_num_threads(options.cpu_num_threads.into())?;
+        // TODO: `InferenceRuntime::init`と`InitInferenceRuntimeError`を作る
+        build_ort_env_once().unwrap();
 
-        if options.use_gpu {
-            #[cfg(feature = "directml")]
-            {
-                use onnxruntime::ExecutionMode;
-
-                builder = builder
-                    .with_disable_mem_pattern()?
-                    .with_execution_mode(ExecutionMode::ORT_SEQUENTIAL)?
-                    .with_append_execution_provider_directml(0)?;
-            }
-
-            #[cfg(not(feature = "directml"))]
-            {
-                builder = builder.with_append_execution_provider_cuda(Default::default())?;
-            }
-        }
+        // TODO:
+        // - with_intra_op_num_threads
+        let builder = ort::Session::builder()?
+            .with_optimization_level(GraphOptimizationLevel::Level1)?
+            .with_execution_providers([if options.use_gpu && cfg!(feature = "directml") {
+                // TODO:
+                // with_disable_mem_pattern
+                // ExecutionMode::ORT_SEQUENTIAL
+                ExecutionProviderDispatch::DirectML(Default::default())
+            } else if options.use_gpu && cfg!(feature = "cuda") {
+                ExecutionProviderDispatch::CUDA(Default::default())
+            } else {
+                ExecutionProviderDispatch::CPU(Default::default())
+            }])?;
 
         let model = model()?;
-        let sess = AssertSend::from(builder.with_model_from_memory(model)?);
+        let sess = builder.with_model_from_memory(&{ model })?;
 
         let input_param_infos = sess
             .inputs
             .iter()
             .map(|info| {
-                let dt = match info.input_type {
-                    TensorElementDataType::Float => Ok(InputScalarKind::Float32),
-                    TensorElementDataType::Uint8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8"),
-                    TensorElementDataType::Int8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8"),
-                    TensorElementDataType::Uint16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16"),
-                    TensorElementDataType::Int16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16"),
-                    TensorElementDataType::Int32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32"),
-                    TensorElementDataType::Int64 => Ok(InputScalarKind::Int64),
-                    TensorElementDataType::String => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING"),
-                    TensorElementDataType::Double => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE"),
-                    TensorElementDataType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
-                    TensorElementDataType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
+                let ValueType::Tensor { ty, .. } = info.input_type else {
+                    todo!()
+                };
+
+                let dt = match ty {
+                    TensorElementType::Float32 => Ok(InputScalarKind::Float32),
+                    TensorElementType::Uint8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8"),
+                    TensorElementType::Int8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8"),
+                    TensorElementType::Uint16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16"),
+                    TensorElementType::Int16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16"),
+                    TensorElementType::Int32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32"),
+                    TensorElementType::Int64 => Ok(InputScalarKind::Int64),
+                    TensorElementType::String => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING"),
+                    TensorElementType::Bfloat16 => todo!(),
+                    TensorElementType::Float16 => todo!(),
+                    TensorElementType::Float64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE"),
+                    TensorElementType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
+                    TensorElementType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
+                    TensorElementType::Bool => todo!(),
                 }
                 .map_err(|actual| {
                     anyhow!("unsupported input datatype `{actual}` for `{}`", info.name)
@@ -105,7 +142,7 @@ impl InferenceRuntime for Onnxruntime {
                 Ok(ParamInfo {
                     name: info.name.clone().into(),
                     dt,
-                    ndim: Some(info.dimensions.len()),
+                    ndim: info.input_type.tensor_dimensions().map(|d| d.len()),
                 })
             })
             .collect::<anyhow::Result<_>>()?;
@@ -114,18 +151,25 @@ impl InferenceRuntime for Onnxruntime {
             .outputs
             .iter()
             .map(|info| {
-                let dt = match info.output_type {
-                    TensorElementDataType::Float => Ok(OutputScalarKind::Float32),
-                    TensorElementDataType::Uint8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8"),
-                    TensorElementDataType::Int8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8"),
-                    TensorElementDataType::Uint16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16"),
-                    TensorElementDataType::Int16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16"),
-                    TensorElementDataType::Int32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32"),
-                    TensorElementDataType::Int64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64"),
-                    TensorElementDataType::String => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING"),
-                    TensorElementDataType::Double => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE"),
-                    TensorElementDataType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
-                    TensorElementDataType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
+                let ValueType::Tensor { ty, .. } = info.output_type else {
+                    todo!()
+                };
+
+                let dt = match ty {
+                    TensorElementType::Float32 => Ok(OutputScalarKind::Float32),
+                    TensorElementType::Uint8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8"),
+                    TensorElementType::Int8 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8"),
+                    TensorElementType::Uint16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16"),
+                    TensorElementType::Int16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16"),
+                    TensorElementType::Int32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32"),
+                    TensorElementType::Int64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64"),
+                    TensorElementType::String => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING"),
+                    TensorElementType::Bfloat16 => todo!(),
+                    TensorElementType::Float16 => todo!(),
+                    TensorElementType::Float64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE"),
+                    TensorElementType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
+                    TensorElementType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
+                    TensorElementType::Bool => todo!(),
                 }
                 .map_err(|actual| {
                     anyhow!("unsupported output datatype `{actual}` for `{}`", info.name)
@@ -134,73 +178,69 @@ impl InferenceRuntime for Onnxruntime {
                 Ok(ParamInfo {
                     name: info.name.clone().into(),
                     dt,
-                    ndim: Some(info.dimensions.len()),
+                    ndim: info.output_type.tensor_dimensions().map(|d| d.len()),
                 })
             })
             .collect::<anyhow::Result<_>>()?;
 
-        return Ok((sess, input_param_infos, output_param_infos));
-
-        static ENVIRONMENT: Lazy<Environment> = Lazy::new(|| {
-            Environment::builder()
-                .with_name(env!("CARGO_PKG_NAME"))
-                .with_log_level(LOGGING_LEVEL)
-                .build()
-                .unwrap()
-        });
-
-        const LOGGING_LEVEL: LoggingLevel = if cfg!(debug_assertions) {
-            LoggingLevel::Verbose
-        } else {
-            LoggingLevel::Warning
-        };
+        Ok((sess, input_param_infos, output_param_infos))
     }
 
     fn run(
-        OnnxruntimeRunContext { sess, mut inputs }: OnnxruntimeRunContext<'_>,
+        OnnxruntimeRunContext { sess, inputs }: OnnxruntimeRunContext<'_>,
     ) -> anyhow::Result<Vec<OutputTensor>> {
-        // FIXME: 現状では`f32`のみ対応。実行時にsessionからdatatypeが取れるので、別の型の対応も
-        // おそらく可能ではあるが、それが必要になるよりもortクレートへの引越しが先になると思われる
-        // のでこのままにする。
+        let outputs = sess.run(&*inputs)?;
+        (0..outputs.len())
+            .map(|i| {
+                let output = &outputs[i];
+                let dtype = output.dtype()?;
 
-        if !sess
-            .outputs
-            .iter()
-            .all(|info| matches!(info.output_type, TensorElementDataType::Float))
-        {
-            unimplemented!(
-                "currently only `ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT` is supported for output",
-            );
-        }
+                if !matches!(
+                    dtype,
+                    ValueType::Tensor {
+                        ty: TensorElementType::Float32,
+                        ..
+                    }
+                ) {
+                    todo!();
+                }
 
-        let outputs = sess.run::<f32>(inputs.iter_mut().map(|t| &mut **t as &mut _).collect())?;
-
-        Ok(outputs
-            .iter()
-            .map(|o| OutputTensor::Float32((*o).clone().into_owned()))
-            .collect())
+                let tensor = output.extract_tensor::<f32>()?;
+                Ok(OutputTensor::Float32(tensor.view().clone().into_owned()))
+            })
+            .collect()
     }
 }
 
+fn build_ort_env_once() -> ort::Result<()> {
+    static ONCE: once_cell::sync::OnceCell<()> = once_cell::sync::OnceCell::new();
+
+    // FIXME: ログレベルを絞る
+
+    ONCE.get_or_try_init(|| ort::init().with_name(env!("CARGO_PKG_NAME")).commit())?;
+    Ok(())
+}
+
 pub(crate) struct OnnxruntimeRunContext<'sess> {
-    sess: &'sess mut AssertSend<onnxruntime::session::Session<'static>>,
-    inputs: Vec<Box<dyn onnxruntime::session::AnyArray>>,
+    sess: &'sess mut ort::Session,
+    inputs: Vec<ort::Value>,
 }
 
 impl OnnxruntimeRunContext<'_> {
     fn push_input(
         &mut self,
-        input: Array<impl TypeToTensorElementDataType + Debug + 'static, impl Dimension + 'static>,
+        input: Array<
+            impl IntoTensorElementType + Debug + Clone + 'static,
+            impl Dimension + 'static,
+        >,
     ) {
         self.inputs
-            .push(Box::new(onnxruntime::session::NdArray::new(input)));
+            .push(input.try_into().unwrap_or_else(|_| todo!()));
     }
 }
 
-impl<'sess> From<&'sess mut AssertSend<onnxruntime::session::Session<'static>>>
-    for OnnxruntimeRunContext<'sess>
-{
-    fn from(sess: &'sess mut AssertSend<onnxruntime::session::Session<'static>>) -> Self {
+impl<'sess> From<&'sess mut ort::Session> for OnnxruntimeRunContext<'sess> {
+    fn from(sess: &'sess mut ort::Session) -> Self {
         Self {
             sess,
             inputs: vec![],
@@ -217,38 +257,4 @@ impl PushInputTensor for OnnxruntimeRunContext<'_> {
     fn method(&mut self, tensor: Array<T, impl Dimension + 'static>) {
         self.push_input(tensor);
     }
-}
-
-// FIXME: 以下のことをちゃんと確認した後、onnxruntime-rs側で`Session`が`Send`であると宣言する。
-// https://github.com/VOICEVOX/voicevox_core/issues/307#issuecomment-1276184614
-mod assert_send {
-    use std::ops::{Deref, DerefMut};
-
-    pub(crate) struct AssertSend<T>(T);
-
-    impl From<onnxruntime::session::Session<'static>>
-        for AssertSend<onnxruntime::session::Session<'static>>
-    {
-        fn from(session: onnxruntime::session::Session<'static>) -> Self {
-            Self(session)
-        }
-    }
-
-    impl<T> Deref for AssertSend<T> {
-        type Target = T;
-
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
-    }
-
-    impl<T> DerefMut for AssertSend<T> {
-        fn deref_mut(&mut self) -> &mut Self::Target {
-            &mut self.0
-        }
-    }
-
-    // SAFETY: `Session` is probably "send"able.
-    #[allow(unsafe_code)]
-    unsafe impl<T> Send for AssertSend<T> {}
 }

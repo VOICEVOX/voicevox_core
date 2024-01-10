@@ -58,7 +58,6 @@ jobs:
               "target": "x86_64-pc-windows-msvc",
               "artifact_name": "windows-x64-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -67,16 +66,14 @@ jobs:
               "target": "x86_64-pc-windows-msvc",
               "artifact_name": "windows-x64-directml",
               "whl_local_version": "directml",
-              "use_cuda": false,
               "can_skip_in_simple_test": false
             },
             {
               "os": "windows-2019",
-              "features": "",
+              "features": "cuda",
               "target": "x86_64-pc-windows-msvc",
               "artifact_name": "windows-x64-cuda",
               "whl_local_version": "cuda",
-              "use_cuda": true,
               "can_skip_in_simple_test": true
             },
             {
@@ -85,7 +82,6 @@ jobs:
               "target": "i686-pc-windows-msvc",
               "artifact_name": "windows-x86-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -94,16 +90,14 @@ jobs:
               "target": "x86_64-unknown-linux-gnu",
               "artifact_name": "linux-x64-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
               "os": "ubuntu-20.04",
-              "features": "",
+              "features": "cuda",
               "target": "x86_64-unknown-linux-gnu",
               "artifact_name": "linux-x64-gpu",
               "whl_local_version": "cuda",
-              "use_cuda": true,
               "can_skip_in_simple_test": false
             },
             {
@@ -112,7 +106,6 @@ jobs:
               "target": "aarch64-unknown-linux-gnu",
               "artifact_name": "linux-arm64-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -120,7 +113,6 @@ jobs:
               "features": "",
               "target": "aarch64-linux-android",
               "artifact_name": "android-arm64-cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -128,7 +120,6 @@ jobs:
               "features": "",
               "target": "x86_64-linux-android",
               "artifact_name": "android-x86_64-cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -137,7 +128,6 @@ jobs:
               "target": "aarch64-apple-darwin",
               "artifact_name": "osx-arm64-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": false
             },
             {
@@ -146,7 +136,6 @@ jobs:
               "target": "x86_64-apple-darwin",
               "artifact_name": "osx-x64-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -154,7 +143,6 @@ jobs:
               "features": "",
               "target": "aarch64-apple-ios",
               "artifact_name": "ios-arm64-cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -162,7 +150,6 @@ jobs:
               "features": "",
               "target": "aarch64-apple-ios-sim",
               "artifact_name": "ios-arm64-cpu-sim",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -170,7 +157,6 @@ jobs:
               "features": "",
               "target": "x86_64-apple-ios",
               "artifact_name": "ios-x64-cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             }
           ]'
@@ -268,7 +254,6 @@ jobs:
           fi
         env:
           RUSTFLAGS: -C panic=abort
-          ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_python_api
         if: matrix.whl_local_version
         id: build-voicevox-core-python-api
@@ -286,8 +271,6 @@ jobs:
             build > /dev/null 2>&1
           fi
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
-        env:
-          ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_java_api
         if: contains(matrix.target, 'android')
         run: |

@@ -32,8 +32,6 @@ fn main() -> anyhow::Result<()> {
             // featuresの差分を出さないように`cargo build`することができればonnxruntime-sysの
             // ビルド自体がされないのだが、このバイナリから`cargo build`の状況を知るのは無理に近い
             ("ORT_OUT_DIR", ""),
-            // DirectMLとCUDAは無効化
-            ("ORT_USE_CUDA", "0"),
         ];
         const RUNTIME_ENVS: &'static [(&'static str, &'static str)] =
             &[("VV_MODELS_ROOT_DIR", "../../model")];
