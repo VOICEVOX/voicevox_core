@@ -288,7 +288,7 @@ jobs:
           cp -v crates/voicevox_core_c_api/include/voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
           cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
-          cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
+          cp -v -n target/${{ matrix.target }}/release/{,lib}onnxruntime*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
           rm -f artifact/${{ env.ASSET_NAME }}/libonnxruntime.{so,dylib}
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
