@@ -1,6 +1,6 @@
 use std::{fmt::Debug, vec};
 
-use anyhow::{anyhow, ensure};
+use anyhow::{anyhow, bail, ensure};
 use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
@@ -80,7 +80,11 @@ impl InferenceRuntime for Onnxruntime {
             .iter()
             .map(|info| {
                 let ValueType::Tensor { ty, .. } = info.input_type else {
-                    todo!()
+                    bail!(
+                        "unexpected input value type for `{}`. currently `ONNX_TYPE_TENSOR` and \
+                         `ONNX_TYPE_SPARSETENSOR` is supported",
+                        info.name,
+                    );
                 };
 
                 let dt = match ty {
@@ -92,12 +96,12 @@ impl InferenceRuntime for Onnxruntime {
                     TensorElementType::Int32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32"),
                     TensorElementType::Int64 => Ok(InputScalarKind::Int64),
                     TensorElementType::String => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING"),
-                    TensorElementType::Bfloat16 => todo!(),
-                    TensorElementType::Float16 => todo!(),
+                    TensorElementType::Bfloat16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16"),
+                    TensorElementType::Float16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16"),
                     TensorElementType::Float64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE"),
                     TensorElementType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
                     TensorElementType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
-                    TensorElementType::Bool => todo!(),
+                    TensorElementType::Bool => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL"),
                 }
                 .map_err(|actual| {
                     anyhow!("unsupported input datatype `{actual}` for `{}`", info.name)
@@ -116,7 +120,11 @@ impl InferenceRuntime for Onnxruntime {
             .iter()
             .map(|info| {
                 let ValueType::Tensor { ty, .. } = info.output_type else {
-                    todo!()
+                    bail!(
+                        "unexpected output value type for `{}`. currently `ONNX_TYPE_TENSOR` and \
+                         `ONNX_TYPE_SPARSETENSOR` is supported",
+                        info.name,
+                    );
                 };
 
                 let dt = match ty {
@@ -128,12 +136,12 @@ impl InferenceRuntime for Onnxruntime {
                     TensorElementType::Int32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32"),
                     TensorElementType::Int64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64"),
                     TensorElementType::String => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING"),
-                    TensorElementType::Bfloat16 => todo!(),
-                    TensorElementType::Float16 => todo!(),
+                    TensorElementType::Bfloat16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16"),
+                    TensorElementType::Float16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16"),
                     TensorElementType::Float64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE"),
                     TensorElementType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
                     TensorElementType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
-                    TensorElementType::Bool => todo!(),
+                    TensorElementType::Bool => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL"),
                 }
                 .map_err(|actual| {
                     anyhow!("unsupported output datatype `{actual}` for `{}`", info.name)
@@ -159,18 +167,20 @@ impl InferenceRuntime for Onnxruntime {
                 let output = &outputs[i];
                 let dtype = output.dtype()?;
 
-                if !matches!(
-                    dtype,
-                    ValueType::Tensor {
-                        ty: TensorElementType::Float32,
-                        ..
-                    }
-                ) {
-                    todo!();
-                }
+                let ValueType::Tensor { ty, .. } = dtype else {
+                    bail!(
+                        "unexpected output. currently `ONNX_TYPE_TENSOR` and \
+                         `ONNX_TYPE_SPARSETENSOR` is supported",
+                    );
+                };
 
-                let tensor = output.extract_tensor::<f32>()?;
-                Ok(OutputTensor::Float32(tensor.view().clone().into_owned()))
+                match ty {
+                    TensorElementType::Float32 => {
+                        let tensor = output.extract_tensor::<f32>()?;
+                        Ok(OutputTensor::Float32(tensor.view().clone().into_owned()))
+                    }
+                    _ => bail!("unexpected output tensor element data type"),
+                }
             })
             .collect()
     }
@@ -197,9 +207,10 @@ impl OnnxruntimeRunContext<'_> {
             impl IntoTensorElementType + Debug + Clone + 'static,
             impl Dimension + 'static,
         >,
-    ) {
-        self.inputs
-            .push(input.try_into().unwrap_or_else(|_| todo!()));
+    ) -> anyhow::Result<()> {
+        let input = input.try_into()?;
+        self.inputs.push(input);
+        Ok(())
     }
 }
 
@@ -218,7 +229,7 @@ impl PushInputTensor for OnnxruntimeRunContext<'_> {
         [ push_int64 ]   [ i64 ];
         [ push_float32 ] [ f32 ];
     )]
-    fn method(&mut self, tensor: Array<T, impl Dimension + 'static>) {
-        self.push_input(tensor);
+    fn method(&mut self, tensor: Array<T, impl Dimension + 'static>) -> anyhow::Result<()> {
+        self.push_input(tensor)
     }
 }
