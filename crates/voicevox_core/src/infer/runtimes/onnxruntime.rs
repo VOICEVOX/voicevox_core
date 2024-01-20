@@ -1,14 +1,10 @@
-use std::{
-    ffi::{c_char, CStr},
-    fmt::Debug,
-    ptr::null_mut,
-    vec,
-};
+use std::{fmt::Debug, vec};
 
-use anyhow::anyhow;
+use anyhow::{anyhow, ensure};
 use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
+    CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider, ExecutionProvider as _,
     ExecutionProviderDispatch, GraphOptimizationLevel, IntoTensorElementType, TensorElementType,
     ValueType,
 };
@@ -33,53 +29,21 @@ impl InferenceRuntime for Onnxruntime {
         // TODO: `InferenceRuntime::init`と`InitInferenceRuntimeError`を作る
         build_ort_env_once().unwrap();
 
-        // Almost copied from VOICEVOX/onnxruntime-rs
-        let providers = (|| -> ort::Result<_> {
-            let mut len = 0;
-            let mut providers: *mut *mut c_char = null_mut();
-            let status =
-                unsafe { ort::api().GetAvailableProviders.unwrap()(&mut providers, &mut len) };
-            status_to_result(status).map_err(ort::Error::GetAvailableProviders)?;
-            let mut return_providers = Vec::with_capacity(len as usize);
-            for i in 0..len {
-                return_providers.push(unsafe {
-                    CStr::from_ptr(*(providers.offset(i as isize)))
-                        .to_str()
-                        .unwrap()
-                        .to_string()
-                });
-            }
-            let status = unsafe { ort::api().ReleaseAvailableProviders.unwrap()(providers, len) };
-            status_to_result(status).map_err(ort::Error::GetAvailableProviders)?;
-            Ok(return_providers)
+        (|| {
+            let cpu = CPUExecutionProvider::default().is_available()?;
+            let cuda = CUDAExecutionProvider::default().is_available()?;
+            let dml = DirectMLExecutionProvider::default().is_available()?;
+
+            ensure!(cpu, "missing `CPUExecutionProvider`");
+
+            Ok(SupportedDevices {
+                cpu: true,
+                cuda,
+                dml,
+            })
         })()
+        .map_err(ErrorRepr::GetSupportedDevices)
         .map_err(Into::into)
-        .map_err(ErrorRepr::GetSupportedDevices)?;
-
-        let mut cuda_support = false;
-        let mut dml_support = false;
-        for provider in providers {
-            match provider.as_str() {
-                "CUDAExecutionProvider" => cuda_support = true,
-                "DmlExecutionProvider" => dml_support = true,
-                _ => {}
-            }
-        }
-
-        return Ok(SupportedDevices {
-            cpu: true,
-            cuda: cuda_support,
-            dml: dml_support,
-        });
-
-        fn status_to_result(
-            status: *const impl Sized,
-        ) -> std::result::Result<(), ort::ErrorInternal> {
-            if !status.is_null() {
-                todo!("error here");
-            }
-            Ok(())
-        }
     }
 
     fn new_session(
