@@ -19,8 +19,14 @@ pub fn merge<'a>(metas: impl IntoIterator<Item = &'a SpeakerMeta>) -> Vec<Speake
             )
         })
         .into_values()
-        .sorted_by_key(|SpeakerMeta { styles, .. }| {
-            styles.iter().map(|&StyleMeta { id, .. }| id).min()
+        .map(|mut speaker| {
+            speaker
+                .styles
+                .sort_unstable_by_key(|&StyleMeta { id, .. }| id);
+            speaker
+        })
+        .sorted_unstable_by_key(|SpeakerMeta { styles, .. }| {
+            styles.first().map(|&StyleMeta { id, .. }| id)
         })
         .collect()
 }
