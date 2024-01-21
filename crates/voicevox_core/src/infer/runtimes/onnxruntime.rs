@@ -8,6 +8,7 @@ use ort::{
     ExecutionProviderDispatch, GraphOptimizationLevel, IntoTensorElementType, TensorElementType,
     ValueType,
 };
+use tracing::warn;
 
 use crate::{devices::SupportedDevices, error::ErrorRepr};
 
@@ -57,20 +58,32 @@ impl InferenceRuntime for Onnxruntime {
         // TODO: `InferenceRuntime::init`と`InitInferenceRuntimeError`を作る
         build_ort_env_once().unwrap();
 
-        // TODO:
-        // - with_intra_op_num_threads
+        let cpu_num_threads = options.cpu_num_threads.try_into().unwrap_or_else(|_| {
+            warn!(
+                "`cpu_num_threads={}` is too large. Setting it to 32767",
+                options.cpu_num_threads,
+            );
+            i16::MAX
+        });
+
         let builder = ort::Session::builder()?
             .with_optimization_level(GraphOptimizationLevel::Level1)?
-            .with_execution_providers([if options.use_gpu && cfg!(feature = "directml") {
-                // TODO:
-                // with_disable_mem_pattern
-                // ExecutionMode::ORT_SEQUENTIAL
-                ExecutionProviderDispatch::DirectML(Default::default())
-            } else if options.use_gpu && cfg!(feature = "cuda") {
-                ExecutionProviderDispatch::CUDA(Default::default())
-            } else {
-                ExecutionProviderDispatch::CPU(Default::default())
-            }])?;
+            .with_intra_threads(cpu_num_threads)?;
+
+        let builder = if options.use_gpu && cfg!(feature = "directml") {
+            builder
+                .with_execution_providers([
+                    ExecutionProviderDispatch::DirectML(Default::default()),
+                ])?
+                .with_parallel_execution(false)?
+                .with_memory_pattern(false)?
+        } else if options.use_gpu && cfg!(feature = "cuda") {
+            builder
+                .with_execution_providers([ExecutionProviderDispatch::CUDA(Default::default())])?
+        } else {
+            builder
+                .with_execution_providers([ExecutionProviderDispatch::CPU(Default::default())])?
+        };
 
         let model = model()?;
         let sess = builder.with_model_from_memory(&{ model })?;
