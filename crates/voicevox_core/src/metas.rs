@@ -2,7 +2,28 @@ use std::fmt::Display;
 
 use derive_getters::Getters;
 use derive_new::new;
+use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
+
+pub fn merge<'a>(metas: impl IntoIterator<Item = &'a SpeakerMeta>) -> Vec<SpeakerMeta> {
+    metas
+        .into_iter()
+        .into_grouping_map_by(|speaker| &speaker.speaker_uuid)
+        .aggregate::<_, SpeakerMeta>(|acc, _, speaker| {
+            Some(
+                acc.map(|mut acc| {
+                    acc.styles.extend(speaker.styles.clone());
+                    acc
+                })
+                .unwrap_or_else(|| speaker.clone()),
+            )
+        })
+        .into_values()
+        .sorted_by_key(|SpeakerMeta { styles, .. }| {
+            styles.iter().map(|&StyleMeta { id, .. }| id).min()
+        })
+        .collect()
+}
 
 /// [`StyleId`]の実体。
 ///
@@ -65,6 +86,26 @@ pub struct SpeakerMeta {
     version: StyleVersion,
     /// 話者のUUID。
     speaker_uuid: String,
+}
+
+impl SpeakerMeta {
+    pub(crate) fn eq_except_styles(&self, other: &Self) -> bool {
+        let Self {
+            name: name1,
+            styles: _,
+            version: version1,
+            speaker_uuid: speaker_uuid1,
+        } = self;
+
+        let Self {
+            name: name2,
+            styles: _,
+            version: version2,
+            speaker_uuid: speaker_uuid2,
+        } = other;
+
+        (name1, version1, speaker_uuid1) == (name2, version2, speaker_uuid2)
+    }
 }
 
 /// **スタイル**(_style_)のメタ情報。

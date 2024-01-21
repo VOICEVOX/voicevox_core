@@ -14,7 +14,7 @@ use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{InferenceOperation, ParamInfo},
     manifest::ModelInnerId,
-    metas::{SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
+    metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
     voice_model::{VoiceModelHeader, VoiceModelId},
     Result,
 };
@@ -130,11 +130,7 @@ struct LoadedModel<R: InferenceRuntime, D: InferenceDomain> {
 
 impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
     fn metas(&self) -> VoiceModelMeta {
-        self.0
-            .values()
-            .flat_map(|LoadedModel { metas, .. }| metas)
-            .cloned()
-            .collect()
+        metas::merge(self.0.values().flat_map(|LoadedModel { metas, .. }| metas))
     }
 
     fn ids_for(&self, style_id: StyleId) -> Result<(VoiceModelId, ModelInnerId)> {
@@ -184,20 +180,33 @@ impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
     ///
     /// # Errors
     ///
-    /// 音声モデルIDかスタイルIDが`model_header`と重複するとき、エラーを返す。
+    /// 次の場合にエラーを返す。
+    ///
+    /// - 音声モデルIDかスタイルIDが`model_header`と重複するとき
+    /// - 同じ`speaker_uuid`で、スタイル以外でプロパティが異なっている話者があるとき
     fn ensure_acceptable(&self, model_header: &VoiceModelHeader) -> LoadModelResult<()> {
-        let loaded = self.styles();
-        let external = model_header
-            .metas
-            .iter()
-            .flat_map(|speaker| speaker.styles());
-
         let error = |context| LoadModelError {
             path: model_header.path.clone(),
             context,
             source: None,
         };
 
+        let loaded = self.speakers();
+        let external = model_header.metas.iter();
+        if let Some((_loaded, _external)) =
+            iproduct!(loaded, external).find(|(loaded, external)| {
+                loaded.speaker_uuid() == external.speaker_uuid()
+                    && !loaded.eq_except_styles(external)
+            })
+        {
+            todo!("same `speaker_uuid` but different properties");
+        }
+
+        let loaded = self.styles();
+        let external = model_header
+            .metas
+            .iter()
+            .flat_map(|speaker| speaker.styles());
         if self.0.contains_key(&model_header.id) {
             return Err(error(LoadModelErrorKind::ModelAlreadyLoaded {
                 id: model_header.id.clone(),
@@ -242,11 +251,12 @@ impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
         Ok(())
     }
 
+    fn speakers(&self) -> impl Iterator<Item = &SpeakerMeta> {
+        self.0.values().flat_map(|LoadedModel { metas, .. }| metas)
+    }
+
     fn styles(&self) -> impl Iterator<Item = &StyleMeta> {
-        self.0
-            .values()
-            .flat_map(|LoadedModel { metas, .. }| metas)
-            .flat_map(|speaker| speaker.styles())
+        self.speakers().flat_map(|speaker| speaker.styles())
     }
 }
 
