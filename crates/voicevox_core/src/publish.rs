@@ -474,6 +474,7 @@ impl InferenceCore {
                 }
                 // ハミング機能及び歌機能モデルの両方が存在しなかった時はloaded = falseにする
                 if !model_found {
+                    // FIXME: ワーニングを出すか、エラーにする
                     loaded = false
                 }
                 loaded
