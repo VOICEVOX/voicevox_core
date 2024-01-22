@@ -397,15 +397,23 @@ impl InferenceCore {
                 status.is_talk_model_loaded(model_index)
             } else {
                 // ハミング機能及び歌機能モデルはどちらかが存在しない事があるので、どちらかが存在しない場合でも無視する
-                let mut loaded = false;
+                let mut loaded = true;
+                let mut model_found = false;
                 if let Some((model_index, _)) =
                     get_sing_teacher_model_index_and_speaker_id(speaker_id)
                 {
-                    loaded |= status.is_sing_teacher_model_loaded(model_index);
+                    loaded &= status.is_sing_teacher_model_loaded(model_index);
+                    model_found = true;
                 }
                 if let Some((model_index, _)) = get_sf_decode_model_index_and_speaker_id(speaker_id)
                 {
-                    loaded |= status.is_sf_decode_model_loaded(model_index);
+                    loaded &= status.is_sf_decode_model_loaded(model_index);
+                    model_found = true;
+                }
+                // ハミング機能及び歌機能モデルの両方が存在しなかった時はloaded = falseにする
+                if !model_found {
+                    // FIXME: ワーニングを出すか、エラーにする
+                    loaded = false
                 }
                 loaded
             }
