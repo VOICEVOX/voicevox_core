@@ -201,9 +201,6 @@ impl InferenceRuntime for Onnxruntime {
 
 fn build_ort_env_once() -> ort::Result<()> {
     static ONCE: once_cell::sync::OnceCell<()> = once_cell::sync::OnceCell::new();
-
-    // FIXME: ログレベルを絞る
-
     ONCE.get_or_try_init(|| ort::init().with_name(env!("CARGO_PKG_NAME")).commit())?;
     Ok(())
 }
