@@ -83,7 +83,7 @@ zip = "0.6.3"
 
 [workspace.dependencies.voicevox-ort]
 git = "https://github.com/qryxip/ort.git"
-rev = "f00ab54e72d4ec8050b4ed0ce66ab1df2eaa3e83"
+rev = "5dd2fcb8e5dc0533013a0e5ebe59962fd0035e98"
 
 [workspace.dependencies.open_jtalk]
 git = "https://github.com/VOICEVOX/open_jtalk-rs.git"
