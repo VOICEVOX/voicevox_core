@@ -64,9 +64,8 @@ fn init_logger_once() {
                 } else {
                     "warn"
                 };
-                EnvFilter::from(format!(
-                    "error,voicevox_core=info,voicevox_core_c_api=info,ort={ORT_LOGGING_LEVEL}"
-                ))
+                format!("error,voicevox_core=info,voicevox_core_c_api=info,ort={ORT_LOGGING_LEVEL}")
+                    .into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(ansi)
