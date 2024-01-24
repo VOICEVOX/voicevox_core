@@ -382,8 +382,8 @@ jobs:
           cp -vr crates/voicevox_core_c_api/xcframework/Frameworks/aarch64/ Framework-aarch64/
           cp -v artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h \
             Framework-aarch64/voicevox_core.framework/Headers/voicevox_core.h
-          lipo -create artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib \
-            -output Framework-aarch64/voicevox_core.framework/voicevox_core
+          cp -v artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib \
+            Framework-aarch64/voicevox_core.framework/voicevox_core
 
       - name: Change aarch64 @rpath
         run: |
