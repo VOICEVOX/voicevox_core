@@ -699,9 +699,9 @@ impl InferenceCore {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let mut consonant_array = NdArray::new(ndarray::arr1(consonant));
-        let mut vowel_array = NdArray::new(ndarray::arr1(vowel));
-        let mut note_duration_array = NdArray::new(ndarray::arr1(note_duration));
+        let mut consonant_array = NdArray::new(ndarray::arr1(consonant).into_shape([1, consonant.len()]).unwrap());
+        let mut vowel_array = NdArray::new(ndarray::arr1(vowel).into_shape([1, vowel.len()]).unwrap());
+        let mut note_duration_array = NdArray::new(ndarray::arr1(note_duration).into_shape([1, note_duration.len()]).unwrap());
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> = vec![
@@ -745,8 +745,8 @@ impl InferenceCore {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme));
-        let mut note_array = NdArray::new(ndarray::arr1(note));
+        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme).into_shape([1, phoneme.len()]).unwrap());
+        let mut note_array = NdArray::new(ndarray::arr1(note).into_shape([1, note.len()]).unwrap());
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
@@ -788,8 +788,8 @@ impl InferenceCore {
         }
 
         // TODO: f0を使う
-        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme));
-        let mut note_array = NdArray::new(ndarray::arr1(note));
+        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme).into_shape([1, phoneme.len()]).unwrap());
+        let mut note_array = NdArray::new(ndarray::arr1(note).into_shape([1, note.len()]).unwrap());
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> =
@@ -830,9 +830,9 @@ impl InferenceCore {
             return Err(Error::InvalidModelIndex { model_index });
         }
 
-        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme));
-        let mut f0_array = NdArray::new(ndarray::arr1(f0));
-        let mut volume_array = NdArray::new(ndarray::arr1(volume));
+        let mut phoneme_array = NdArray::new(ndarray::arr1(phoneme).into_shape([1, phoneme.len()]).unwrap());
+        let mut f0_array = NdArray::new(ndarray::arr1(f0).into_shape([1, f0.len()]).unwrap());
+        let mut volume_array = NdArray::new(ndarray::arr1(volume).into_shape([1, volume.len()]).unwrap());
         let mut speaker_id_array = NdArray::new(ndarray::arr1(&[speaker_id as i64]));
 
         let input_tensors: Vec<&mut dyn AnyArray> = vec![
