@@ -128,7 +128,13 @@ pub(crate) mod blocking {
     }
 
     impl Inner {
-        // FIXME: 中断可能にする
+        // TODO: 中断可能にする
+        pub(super) fn unload_user_dict(&self) -> crate::result::Result<()> {
+            let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
+            mecab.load_with_userdic(&self.dict_dir, None)
+        }
+
+        // TODO: 中断可能にする
         pub(super) fn use_user_dict(&self, words: &str) -> crate::result::Result<()> {
             let result = {
                 // ユーザー辞書用のcsvを作成
@@ -210,6 +216,9 @@ pub(crate) mod tokio {
             user_dict: &crate::tokio::UserDict,
         ) -> crate::result::Result<()> {
             let inner = self.0 .0.clone();
+            if user_dict.is_empty() {
+                return crate::task::asyncify(move || inner.unload_user_dict()).await;
+            }
             let words = user_dict.to_mecab_format();
             crate::task::asyncify(move || inner.use_user_dict(&words)).await
         }
