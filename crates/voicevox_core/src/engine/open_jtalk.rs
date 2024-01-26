@@ -134,7 +134,15 @@ pub(crate) mod blocking {
         // TODO: 中断可能にする
         pub(super) fn unload_user_dict(&self) -> crate::result::Result<()> {
             let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
-            mecab.load_with_userdic(&self.dict_dir, None)
+            let result = mecab.load_with_userdic(self.dict_dir.as_ref(), None);
+
+            if !result {
+                return Err(
+                    ErrorRepr::UseUserDict(anyhow!("辞書のアンロードに失敗しました")).into(),
+                );
+            }
+
+            Ok(())
         }
 
         // TODO: 中断可能にする
