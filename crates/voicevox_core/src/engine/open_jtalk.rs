@@ -67,6 +67,9 @@ pub(crate) mod blocking {
             &self,
             user_dict: &crate::blocking::UserDict,
         ) -> crate::result::Result<()> {
+            if user_dict.is_empty() {
+                return self.0.unload_user_dict();
+            }
             let words = &user_dict.to_mecab_format();
             self.0.use_user_dict(words)
         }
