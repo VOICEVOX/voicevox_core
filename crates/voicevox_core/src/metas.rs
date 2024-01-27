@@ -6,6 +6,15 @@ use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
+/// [`speaker_uuid`]をキーとして複数の[`SpeakerMeta`]をマージする。
+///
+/// マージする際話者は[`speaker_order`]、スタイルは[`style_order`]をもとに安定ソートされる。
+/// `speaker_order`が無い話者と`style_order`に属さないスタイルは、そうでないものよりも後ろに
+/// 置かれる。
+///
+/// [`speaker_uuid`]: SpeakerMeta::speaker_uuid
+/// [`speaker_order`]: SpeakerMeta::speaker_order
+/// [`style_order`]: SpeakerMeta::style_order
 pub fn merge<'a>(metas: impl IntoIterator<Item = &'a SpeakerMeta>) -> Vec<SpeakerMeta> {
     return metas
         .into_iter()
