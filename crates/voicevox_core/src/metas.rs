@@ -2,33 +2,36 @@ use std::fmt::Display;
 
 use derive_getters::Getters;
 use derive_new::new;
+use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 
 pub fn merge<'a>(metas: impl IntoIterator<Item = &'a SpeakerMeta>) -> Vec<SpeakerMeta> {
-    metas
+    return metas
         .into_iter()
-        .into_grouping_map_by(|speaker| &speaker.speaker_uuid)
-        .aggregate::<_, SpeakerMeta>(|acc, _, speaker| {
-            Some(
-                acc.map(|mut acc| {
-                    acc.styles.extend(speaker.styles.clone());
-                    acc
-                })
-                .unwrap_or_else(|| speaker.clone()),
-            )
+        .fold(IndexMap::<_, SpeakerMeta>::new(), |mut acc, speaker| {
+            acc.entry(&speaker.speaker_uuid)
+                .and_modify(|acc| acc.styles.extend(speaker.styles.clone()))
+                .or_insert_with(|| speaker.clone());
+            acc
         })
         .into_values()
-        .map(|mut speaker| {
-            speaker
-                .styles
-                .sort_unstable_by_key(|&StyleMeta { id, .. }| id);
-            speaker
+        .update(|speaker| {
+            speaker.styles.sort_by_key(|StyleMeta { id, .. }| {
+                key(speaker
+                    .style_order
+                    .get_index_of(id)
+                    .map(|i| i.try_into().unwrap()))
+            });
         })
-        .sorted_unstable_by_key(|SpeakerMeta { styles, .. }| {
-            styles.first().map(|&StyleMeta { id, .. }| id)
-        })
-        .collect()
+        .sorted_by_key(|&SpeakerMeta { speaker_order, .. }| key(speaker_order))
+        .collect();
+
+    fn key(order: Option<u32>) -> impl Ord {
+        order
+            .map(Into::into)
+            .unwrap_or_else(|| u64::from(u32::MAX) + 1)
+    }
 }
 
 /// [`StyleId`]の実体。
@@ -42,7 +45,7 @@ pub type RawStyleId = u32;
 ///
 /// [**話者**(_speaker_)]: SpeakerMeta
 /// [**スタイル**(_style_)]: StyleMeta
-#[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Ord, Hash, PartialOrd, Deserialize, Serialize, new, Debug)]
 pub struct StyleId(RawStyleId);
 
 impl StyleId {
@@ -92,6 +95,17 @@ pub struct SpeakerMeta {
     version: StyleVersion,
     /// 話者のUUID。
     speaker_uuid: String,
+    /// 話者の順番。
+    ///
+    /// `SpeakerMeta`の列は、この値に対して昇順に並んでいるべきである。
+    speaker_order: Option<u32>,
+    /// 話者に属するスタイルの順番。
+    ///
+    /// [`styles`]はこの並びに沿うべきである。
+    ///
+    /// [`styles`]: Self::styles
+    #[serde(default)]
+    style_order: IndexSet<StyleId>,
 }
 
 impl SpeakerMeta {
@@ -101,6 +115,8 @@ impl SpeakerMeta {
             styles: _,
             version: version1,
             speaker_uuid: speaker_uuid1,
+            speaker_order: speaker_order1,
+            style_order: style_order1,
         } = self;
 
         let Self {
@@ -108,9 +124,12 @@ impl SpeakerMeta {
             styles: _,
             version: version2,
             speaker_uuid: speaker_uuid2,
+            speaker_order: speaker_order2,
+            style_order: style_order2,
         } = other;
 
-        (name1, version1, speaker_uuid1) == (name2, version2, speaker_uuid2)
+        (name1, version1, speaker_uuid1, speaker_order1, style_order1)
+            == (name2, version2, speaker_uuid2, speaker_order2, style_order2)
     }
 }
 

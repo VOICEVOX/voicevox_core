@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.util.LinkedHashSet;
 
 /** 音声モデル。 */
 public class VoiceModel extends Dll {
@@ -68,6 +70,26 @@ public class VoiceModel extends Dll {
     @Nonnull
     public final String version;
 
+    /**
+     * 話者の順番。
+     *
+     * <p>{@code SpeakerMeta}の列は、この値に対して昇順に並んでいるべきである。
+     */
+    @SerializedName("speaker_order")
+    @Expose
+    @Nullable
+    public final Integer speakerOrder;
+
+    /**
+     * 話者に属するスタイルの順番。
+     *
+     * <p>{@link #styles}はこの並びに沿うべきである。
+     */
+    @SerializedName("style_order")
+    @Expose
+    @Nonnull
+    public final LinkedHashSet<Integer> styleOrder;
+
     private SpeakerMeta() {
       // GSONからコンストラクトするため、このメソッドは呼ばれることは無い。
       // このメソッドは@Nonnullを満たすために必要。
@@ -75,6 +97,8 @@ public class VoiceModel extends Dll {
       this.styles = new StyleMeta[0];
       this.speakerUuid = "";
       this.version = "";
+      this.speakerOrder = null;
+      this.styleOrder = new LinkedHashSet<>();
     }
   }
 

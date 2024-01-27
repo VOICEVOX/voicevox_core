@@ -8,6 +8,7 @@ use std::{
 use anyhow::bail;
 use educe::Educe;
 use enum_map::{Enum as _, EnumMap};
+use indexmap::IndexMap;
 use itertools::{iproduct, Itertools as _};
 
 use crate::{
@@ -119,7 +120,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
 #[derive(Educe)]
 #[educe(Default(bound = "R: InferenceRuntime, D: InferenceDomain"))]
 struct LoadedModels<R: InferenceRuntime, D: InferenceDomain>(
-    BTreeMap<VoiceModelId, LoadedModel<R, D>>,
+    IndexMap<VoiceModelId, LoadedModel<R, D>>,
 );
 
 struct LoadedModel<R: InferenceRuntime, D: InferenceDomain> {
