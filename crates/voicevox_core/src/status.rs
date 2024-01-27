@@ -619,6 +619,10 @@ mod tests {
         assert!(status.talk_models.predict_duration.is_empty());
         assert!(status.talk_models.predict_intonation.is_empty());
         assert!(status.talk_models.decode.is_empty());
+        assert!(status.sing_teacher_models.predict_sing_consonant_length.is_empty());
+        assert!(status.sing_teacher_models.predict_sing_f0.is_empty());
+        assert!(status.sing_teacher_models.predict_sing_volume.is_empty());
+        assert!(status.sf_decode_models.sf_decode.is_empty());
         assert!(status.supported_styles.is_empty());
     }
 
@@ -664,5 +668,53 @@ mod tests {
         );
     }
 
-    // TODO: sing系のテスト足す
+    #[rstest]
+    fn status_load_sing_teacher_model_works() {
+        let mut status = Status::new(false, 0);
+        let result = status.load_sing_teacher_model(0);
+        assert_eq!(Ok(()), result);
+        assert_eq!(1, status.sing_teacher_models.predict_sing_consonant_length.len());
+        assert_eq!(1, status.sing_teacher_models.predict_sing_f0.len());
+        assert_eq!(1, status.sing_teacher_models.predict_sing_volume.len());
+    }
+
+    #[rstest]
+    fn status_is_sing_teacher_model_loaded_works() {
+        let mut status = Status::new(false, 0);
+        let model_index = 0;
+        assert!(
+            !status.is_sing_teacher_model_loaded(model_index),
+            "model should  not be loaded"
+        );
+        let result = status.load_sing_teacher_model(model_index);
+        assert_eq!(Ok(()), result);
+        assert!(
+            status.is_sing_teacher_model_loaded(model_index),
+            "model should be loaded"
+        );
+    }
+
+    #[rstest]
+    fn status_load_sf_decode_model_works() {
+        let mut status = Status::new(false, 0);
+        let result = status.load_sf_decode_model(0);
+        assert_eq!(Ok(()), result);
+        assert_eq!(1, status.sf_decode_models.sf_decode.len());
+    }
+
+    #[rstest]
+    fn status_is_sf_decode_model_loaded_works() {
+        let mut status = Status::new(false, 0);
+        let model_index = 0;
+        assert!(
+            !status.is_sf_decode_model_loaded(model_index),
+            "model should  not be loaded"
+        );
+        let result = status.load_sf_decode_model(model_index);
+        assert_eq!(Ok(()), result);
+        assert!(
+            status.is_sf_decode_model_loaded(model_index),
+            "model should be loaded"
+        );
+    }
 }
