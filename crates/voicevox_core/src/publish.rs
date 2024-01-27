@@ -1210,6 +1210,114 @@ mod tests {
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
     }
 
+    // #[rstest]
+    // fn predict_sing_f0_works() {
+    //     let internal = VoicevoxCore::new_with_mutex();
+    //     internal
+    //         .lock()
+    //         .unwrap()
+    //         .initialize(InitializeOptions {
+    //             load_all_models: true,
+    //             acceleration_mode: AccelerationMode::Cpu,
+    //             ..Default::default()
+    //         })
+    //         .unwrap();
+
+    //     // 「テスト」という文章に対応する入力
+    //     let phoneme_vector = [0, 37, 14, 35, 6, 37, 30, 0];
+    //     let note_vector = [0, 30, 30, 40, 40, 50, 50, 0];
+
+    //     let sing_teacher_speaker_id = 6000;
+    //     let result = internal.lock().unwrap().predict_sing_f0(
+    //         &phoneme_vector,
+    //         &note_vector,
+    //         sing_teacher_speaker_id,
+    //     );
+
+    //     assert!(result.is_ok(), "{result:?}");
+    //     assert_eq!(result.unwrap().len(), phoneme_vector.len());
+    // }
+
+    // #[rstest]
+    // fn predict_sing_volume_works() {
+    //     let internal = VoicevoxCore::new_with_mutex();
+    //     internal
+    //         .lock()
+    //         .unwrap()
+    //         .initialize(InitializeOptions {
+    //             load_all_models: true,
+    //             acceleration_mode: AccelerationMode::Cpu,
+    //             ..Default::default()
+    //         })
+    //         .unwrap();
+
+    //     // 「テスト」という文章に対応する入力
+    //     let phoneme_vector = [0, 37, 14, 35, 6, 37, 30, 0];
+    //     let note_vector = [0, 30, 30, 40, 40, 50, 50, 0];
+    //     let f0_vector = [0., 5.905218, 5.905218, 0., 0., 5.565851, 5.565851, 0.];
+
+    //     let sing_teacher_speaker_id = 6000;
+    //     let result = internal.lock().unwrap().predict_sing_volume(
+    //         &phoneme_vector,
+    //         &note_vector,
+    //         &f0_vector,
+    //         sing_teacher_speaker_id,
+    //     );
+
+    //     assert!(result.is_ok(), "{result:?}");
+    //     assert_eq!(result.unwrap().len(), phoneme_vector.len());
+    // }
+
+    // #[rstest]
+    // fn sf_decode_works() {
+    //     let internal = VoicevoxCore::new_with_mutex();
+    //     internal
+    //         .lock()
+    //         .unwrap()
+    //         .initialize(InitializeOptions {
+    //             acceleration_mode: AccelerationMode::Cpu,
+    //             load_all_models: true,
+    //             ..Default::default()
+    //         })
+    //         .unwrap();
+
+    //     // 「テスト」という文章に対応する入力
+    //     const F0_LENGTH: usize = 69;
+    //     let mut f0 = [0.; F0_LENGTH];
+    //     f0[9..24].fill(5.905218);
+    //     f0[37..60].fill(5.565851);
+
+    //     let mut volume = [0.; F0_LENGTH];
+    //     volume[9..24].fill(0.5);
+    //     volume[24..37].fill(0.2);
+    //     volume[37..60].fill(1.0);
+
+    //     let mut phoneme = [0; F0_LENGTH];
+    //     let mut set_one = |index, range| {
+    //         for i in range {
+    //             phoneme[i] = index;
+    //         }
+    //     };
+    //     set_one(0, 0..9);
+    //     set_one(37, 9..13);
+    //     set_one(14, 13..24);
+    //     set_one(35, 24..30);
+    //     set_one(6, 30..37);
+    //     set_one(37, 37..45);
+    //     set_one(30, 45..60);
+    //     set_one(0, 60..69);
+
+    //     let sf_decoder_speaker_id = 3000;
+    //     let result =
+    //         internal
+    //             .lock()
+    //             .unwrap()
+    //             .sf_decode(&phoneme, &f0, &volume, sf_decoder_speaker_id);
+
+    //     assert!(result.is_ok(), "{result:?}");
+    //     assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
+    // }
+
     type TextConsonantVowelData =
         [(&'static [(&'static str, &'static str, &'static str)], usize)];
 

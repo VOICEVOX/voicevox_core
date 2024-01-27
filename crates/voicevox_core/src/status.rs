@@ -626,8 +626,8 @@ mod tests {
     fn status_load_metas_works() {
         let mut status = Status::new(true, 0);
         let result = status.load_metas();
-        assert_eq!(Ok(()), result);
-        let expected = BTreeSet::from([0, 1, 2, 3]);
+        assert_debug_fmt_eq!(Ok(()), result);
+        let expected = BTreeSet::from([0, 1, 2, 3, 3000, 6000]);
         assert_eq!(expected, status.supported_styles);
     }
 
