@@ -67,6 +67,8 @@ pub(crate) mod blocking {
             &self,
             user_dict: &crate::blocking::UserDict,
         ) -> crate::result::Result<()> {
+            // 空の辞書を読み込もうとするとクラッシュするので、空の辞書を読み込もうとした時は
+            // 辞書のアンロード処理に分岐させる。
             if user_dict.is_empty() {
                 return self.0.unload_user_dict();
             }
@@ -226,6 +228,8 @@ pub(crate) mod tokio {
             user_dict: &crate::tokio::UserDict,
         ) -> crate::result::Result<()> {
             let inner = self.0 .0.clone();
+            // 空の辞書を読み込もうとするとクラッシュするので、空の辞書を読み込もうとした時は
+            // 辞書のアンロード処理に分岐させる。
             if user_dict.is_empty() {
                 return crate::task::asyncify(move || inner.unload_user_dict()).await;
             }
