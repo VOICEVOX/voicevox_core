@@ -23,5 +23,14 @@
     ],
     "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
     "version": "0.0.1"
+  },
+  {
+    "name": "dummy4",
+    "styles": [
+      { "name": "style4-1", "id": 3000, "type": "sf_decoder" },
+      { "name": "style4-2", "id": 6000, "type": "sing_teacher" }
+    ],
+    "speaker_uuid": "32478dc2-4c8b-44f7-b041-c836e0df6d56",
+    "version": "0.0.1"
   }
 ]
