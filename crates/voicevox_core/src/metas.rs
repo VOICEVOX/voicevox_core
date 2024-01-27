@@ -141,3 +141,121 @@ pub struct StyleMeta {
     /// スタイル名。
     name: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use once_cell::sync::Lazy;
+    use serde_json::json;
+
+    #[test]
+    fn merge_works() -> anyhow::Result<()> {
+        static INPUT: Lazy<serde_json::Value> = Lazy::new(|| {
+            json!([
+                {
+                    "name": "B",
+                    "styles": [
+                        {
+                            "id": 3,
+                            "name": "B_1"
+                        }
+                    ],
+                    "version": "0.0.0",
+                    "speaker_uuid": "f34ab151-c0f5-4e0a-9ad2-51ce30dba24d",
+                    "speaker_order": 1,
+                    "style_order": [
+                        3
+                    ]
+                },
+                {
+                    "name": "A",
+                    "styles": [
+                        {
+                            "id": 2,
+                            "name": "A_3"
+                        }
+                    ],
+                    "version": "0.0.0",
+                    "speaker_uuid": "d6fd707c-a451-48e9-8f00-fe9ee3bf6264",
+                    "speaker_order": 0,
+                    "style_order": [
+                        1,
+                        0,
+                        2
+                    ]
+                },
+                {
+                    "name": "A",
+                    "styles": [
+                        {
+                            "id": 1,
+                            "name": "A_1"
+                        },
+                        {
+                            "id": 0,
+                            "name": "A_2"
+                        }
+                    ],
+                    "version": "0.0.0",
+                    "speaker_uuid": "d6fd707c-a451-48e9-8f00-fe9ee3bf6264",
+                    "speaker_order": 0,
+                    "style_order": [
+                        1,
+                        0,
+                        2
+                    ]
+                }
+            ])
+        });
+
+        static EXPECTED: Lazy<serde_json::Value> = Lazy::new(|| {
+            json!([
+                {
+                    "name": "A",
+                    "styles": [
+                        {
+                            "id": 1,
+                            "name": "A_1"
+                        },
+                        {
+                            "id": 0,
+                            "name": "A_2"
+                        },
+                        {
+                            "id": 2,
+                            "name": "A_3"
+                        }
+                    ],
+                    "version": "0.0.0",
+                    "speaker_uuid": "d6fd707c-a451-48e9-8f00-fe9ee3bf6264",
+                    "speaker_order": 0,
+                    "style_order": [
+                        1,
+                        0,
+                        2
+                    ]
+                },
+                {
+                    "name": "B",
+                    "styles": [
+                        {
+                            "id": 3,
+                            "name": "B_1"
+                        }
+                    ],
+                    "version": "0.0.0",
+                    "speaker_uuid": "f34ab151-c0f5-4e0a-9ad2-51ce30dba24d",
+                    "speaker_order": 1,
+                    "style_order": [
+                        3
+                    ]
+                }
+            ])
+        });
+
+        let input = &serde_json::from_value::<Vec<_>>(INPUT.clone())?;
+        let actual = serde_json::to_value(&super::merge(input))?;
+
+        pretty_assertions::assert_eq!(*EXPECTED, actual);
+        Ok(())
+    }
+}
