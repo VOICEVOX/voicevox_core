@@ -626,7 +626,7 @@ mod tests {
     fn status_load_metas_works() {
         let mut status = Status::new(true, 0);
         let result = status.load_metas();
-        assert_debug_fmt_eq!(Ok(()), result);
+        assert_eq!(Ok(()), result);
         let expected = BTreeSet::from([0, 1, 2, 3, 3000, 6000]);
         assert_eq!(expected, status.supported_styles);
     }
@@ -642,7 +642,7 @@ mod tests {
     fn status_load_talk_model_works() {
         let mut status = Status::new(false, 0);
         let result = status.load_talk_model(0);
-        assert_debug_fmt_eq!(Ok(()), result);
+        assert_eq!(Ok(()), result);
         assert_eq!(1, status.talk_models.predict_duration.len());
         assert_eq!(1, status.talk_models.predict_intonation.len());
         assert_eq!(1, status.talk_models.decode.len());
@@ -657,7 +657,7 @@ mod tests {
             "model should  not be loaded"
         );
         let result = status.load_talk_model(model_index);
-        assert_debug_fmt_eq!(Ok(()), result);
+        assert_eq!(Ok(()), result);
         assert!(
             status.is_talk_model_loaded(model_index),
             "model should be loaded"
