@@ -184,7 +184,6 @@ impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
     /// 次の場合にエラーを返す。
     ///
     /// - 音声モデルIDかスタイルIDが`model_header`と重複するとき
-    /// - 同じ`speaker_uuid`で、スタイル以外でプロパティが異なっている話者があるとき
     fn ensure_acceptable(&self, model_header: &VoiceModelHeader) -> LoadModelResult<()> {
         let error = |context| LoadModelError {
             path: model_header.path.clone(),
@@ -194,13 +193,10 @@ impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
 
         let loaded = self.speakers();
         let external = model_header.metas.iter();
-        if let Some((_loaded, _external)) =
-            iproduct!(loaded, external).find(|(loaded, external)| {
-                loaded.speaker_uuid() == external.speaker_uuid()
-                    && !loaded.eq_except_styles(external)
-            })
-        {
-            todo!("same `speaker_uuid` but different properties");
+        for (loaded, external) in iproduct!(loaded, external) {
+            if loaded.speaker_uuid() == external.speaker_uuid() {
+                loaded.warn_diff_except_styles(external);
+            }
         }
 
         let loaded = self.styles();
@@ -252,7 +248,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
         Ok(())
     }
 
-    fn speakers(&self) -> impl Iterator<Item = &SpeakerMeta> {
+    fn speakers(&self) -> impl Iterator<Item = &SpeakerMeta> + Clone {
         self.0.values().flat_map(|LoadedModel { metas, .. }| metas)
     }
 

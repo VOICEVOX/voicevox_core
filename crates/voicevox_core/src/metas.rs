@@ -1,10 +1,11 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 use derive_getters::Getters;
 use derive_new::new;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 /// [`speaker_uuid`]をキーとして複数の[`SpeakerMeta`]をマージする。
 ///
@@ -118,7 +119,10 @@ pub struct SpeakerMeta {
 }
 
 impl SpeakerMeta {
-    pub(crate) fn eq_except_styles(&self, other: &Self) -> bool {
+    /// # Panics
+    ///
+    /// `speaker_uuid`が異なるときパニックする。
+    pub(crate) fn warn_diff_except_styles(&self, other: &Self) {
         let Self {
             name: name1,
             styles: _,
@@ -137,8 +141,30 @@ impl SpeakerMeta {
             style_order: style_order2,
         } = other;
 
-        (name1, version1, speaker_uuid1, speaker_order1, style_order1)
-            == (name2, version2, speaker_uuid2, speaker_order2, style_order2)
+        if speaker_uuid1 != speaker_uuid2 {
+            panic!("must be equal: {speaker_uuid1} != {speaker_uuid2:?}");
+        }
+
+        warn_diff(speaker_uuid1, "name", name1, name2);
+        warn_diff(speaker_uuid1, "version", version1, version2);
+        warn_diff(
+            speaker_uuid1,
+            "speaker_order",
+            speaker_order1,
+            speaker_order2,
+        );
+        warn_diff(speaker_uuid1, "style_order", style_order1, style_order2);
+
+        fn warn_diff<T: PartialEq + Debug>(
+            speaker_uuid: &str,
+            field_name: &str,
+            left: &T,
+            right: &T,
+        ) {
+            if left != right {
+                warn!("`{speaker_uuid}`: different `{field_name}` ({left:?} != {right:?})");
+            }
+        }
     }
 }
 
