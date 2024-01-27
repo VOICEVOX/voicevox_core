@@ -137,9 +137,10 @@ pub(crate) mod blocking {
             let result = mecab.load_with_userdic(self.dict_dir.as_ref(), None);
 
             if !result {
-                return Err(
-                    ErrorRepr::UseUserDict(anyhow!("辞書のアンロードに失敗しました")).into(),
-                );
+                return Err(ErrorRepr::UseUserDict(anyhow!(
+                    "辞書が空のため、辞書をアンロードしようとしましたが、失敗しました。"
+                ))
+                .into());
             }
 
             Ok(())
@@ -147,7 +148,9 @@ pub(crate) mod blocking {
 
         // TODO: 中断可能にする
         pub(super) fn use_user_dict(&self, words: &str) -> crate::result::Result<()> {
-            let result = {
+            let temp_dict = NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
+            let temp_dict_path = temp_dict.into_temp_path();
+            {
                 // ユーザー辞書用のcsvを作成
                 let mut temp_csv =
                     NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
@@ -155,9 +158,6 @@ pub(crate) mod blocking {
                     .write_all(words.as_ref())
                     .map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
                 let temp_csv_path = temp_csv.into_temp_path();
-                let temp_dict =
-                    NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
-                let temp_dict_path = temp_dict.into_temp_path();
 
                 // Mecabでユーザー辞書をコンパイル
                 // TODO: エラー（SEGV）が出るパターンを把握し、それをRust側で防ぐ。
@@ -174,16 +174,15 @@ pub(crate) mod blocking {
                     temp_csv_path.to_str().unwrap(),
                     "-q",
                 ]);
+            }
 
-                let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
+            let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
 
-                mecab.load_with_userdic(self.dict_dir.as_ref(), Some(Path::new(&temp_dict_path)))
-            };
+            let result =
+                mecab.load_with_userdic(self.dict_dir.as_ref(), Some(Path::new(&temp_dict_path)));
 
             if !result {
-                return Err(
-                    ErrorRepr::UseUserDict(anyhow!("辞書のコンパイルに失敗しました")).into(),
-                );
+                return Err(ErrorRepr::UseUserDict(anyhow!("辞書を読み込めませんでした。")).into());
             }
 
             Ok(())
