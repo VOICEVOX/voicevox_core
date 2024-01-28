@@ -27,5 +27,5 @@ pub(super) const SF_DECODE_SPEAKER_ID_MAP: &[(u32, (usize, u32))] = &[(3000, (0,
 
 pub(super) const SF_DECODE_MODEL_FILE_NAMES: &[SfDecodeModelFileNames] =
     &[SfDecodeModelFileNames {
-        sf_decode_model: "sf_decoder-0.onnx",
+        sf_decode_model: "sf_decode-0.onnx",
     }];
