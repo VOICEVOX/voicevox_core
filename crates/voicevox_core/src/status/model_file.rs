@@ -14,23 +14,18 @@ pub(super) const TALK_MODEL_FILE_NAMES: &[TalkModelFileNames] = &[TalkModelFileN
     decode_model: "decode-0.onnx",
 }];
 
-// TODO: 変更する
 pub(super) const SING_TEACHER_SPEAKER_ID_MAP: &[(u32, (usize, u32))] = &[(6000, (0, 0))];
 
 pub(super) const SING_TEACHER_MODEL_FILE_NAMES: &[SingTeacherModelFileNames] =
     &[SingTeacherModelFileNames {
-        predict_sing_consonant_length_model: "predict_duration-1.onnx",
-        predict_sing_f0_model: "predict_intonation-1.onnx",
-        predict_sing_volume_model: "predict_intonation-1.onnx",
-        // predict_sing_consonant_length_model: "predict_sing_consonant_length-0.onnx",
-        // predict_sing_f0_model: "predict_sing_f0-0.onnx",
-        // predict_sing_volume_model: "predict_sing_volume-0.onnx",
+        predict_sing_consonant_length_model: "predict_sing_consonant_length-0.onnx",
+        predict_sing_f0_model: "predict_sing_f0-0.onnx",
+        predict_sing_volume_model: "predict_sing_volume-0.onnx",
     }];
 
 pub(super) const SF_DECODE_SPEAKER_ID_MAP: &[(u32, (usize, u32))] = &[(3000, (0, 0))];
 
 pub(super) const SF_DECODE_MODEL_FILE_NAMES: &[SfDecodeModelFileNames] =
     &[SfDecodeModelFileNames {
-        sf_decode_model: "decode-1.onnx",
-        // sf_decode_model: "sf_decoder-0.onnx",
+        sf_decode_model: "sf_decode-0.onnx",
     }];

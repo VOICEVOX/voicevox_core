@@ -8,4 +8,4 @@ NdArray="NdArray" # onnxruntime::session::NdArray
 [default.extend-words]
 
 [files]
-extend-exclude = ["*.svg"]
+extend-exclude = ["*.svg", "*.onnx"]
