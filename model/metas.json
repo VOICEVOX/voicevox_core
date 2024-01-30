@@ -1,17 +1,13 @@
 [
   {
     "name": "dummy1",
-    "styles": [
-      { "name": "style1", "id": 0 }
-    ],
+    "styles": [{ "name": "style1", "id": 0 }],
     "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
     "version": "0.0.1"
   },
   {
     "name": "dummy2",
-    "styles": [
-      { "name": "style2", "id": 1 }
-    ],
+    "styles": [{ "name": "style2", "id": 1 }],
     "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
     "version": "0.0.1"
   },
@@ -27,8 +23,8 @@
   {
     "name": "dummy4",
     "styles": [
-      { "name": "style4-1", "id": 3000, "type": "sf_decoder" },
-      { "name": "style4-2", "id": 6000, "type": "sing_teacher" }
+      { "name": "style4-1", "id": 3000, "type": "frame_decode" },
+      { "name": "style4-2", "id": 6000, "type": "singing_teacher" }
     ],
     "speaker_uuid": "32478dc2-4c8b-44f7-b041-c836e0df6d56",
     "version": "0.0.1"

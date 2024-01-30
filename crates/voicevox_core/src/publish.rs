@@ -1307,12 +1307,12 @@ mod tests {
         set_one(30, 45..60);
         set_one(0, 60..69);
 
-        let sf_decoder_speaker_id = 3000;
+        let sf_decode_speaker_id = 3000;
         let result =
             internal
                 .lock()
                 .unwrap()
-                .sf_decode(&phoneme, &f0, &volume, sf_decoder_speaker_id);
+                .sf_decode(&phoneme, &f0, &volume, sf_decode_speaker_id);
 
         assert!(result.is_ok(), "{result:?}");
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
