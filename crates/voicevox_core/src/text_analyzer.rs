@@ -8,38 +8,36 @@ pub trait TextAnalyzer {
 }
 
 /// AquesTalk風記法からAccentPhraseの配列を生成するTextAnalyzer
-pub struct KanaParser {}
+pub struct KanaAnalyzer;
 
-impl KanaParser {
+impl KanaAnalyzer {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl TextAnalyzer for KanaParser {
+impl TextAnalyzer for KanaAnalyzer {
     fn analyze(&self, text: &str) -> Result<Vec<AccentPhraseModel>> {
         Ok(parse_kana(text)?)
     }
 }
 
 /// OpenJtalkからAccentPhraseの配列を生成するTextAnalyzer
-pub struct OpenJtalk<O> {
-    open_jtalk: O,
-}
+pub struct OpenJTalkAnalyzer<O>(O);
 
-impl<O> OpenJtalk<O> {
+impl<O> OpenJTalkAnalyzer<O> {
     pub fn new(open_jtalk: O) -> Self {
-        Self { open_jtalk }
+        Self(open_jtalk)
     }
 }
 
-impl<O: FullcontextExtractor> TextAnalyzer for OpenJtalk<O> {
+impl<O: FullcontextExtractor> TextAnalyzer for OpenJTalkAnalyzer<O> {
     fn analyze(&self, text: &str) -> Result<Vec<AccentPhraseModel>> {
         if text.is_empty() {
             return Ok(Vec::new());
         }
 
-        let utterance = Utterance::extract_full_context_label(&self.open_jtalk, text)?;
+        let utterance = Utterance::extract_full_context_label(&self.0, text)?;
 
         let accent_phrases: Vec<AccentPhraseModel> = utterance
             .breath_groups()

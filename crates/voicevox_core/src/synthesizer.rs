@@ -92,7 +92,7 @@ pub(crate) mod blocking {
             InferenceSessionOptions,
         },
         numerics::F32Ext as _,
-        text_analyzer::{KanaParser, OpenJtalk, TextAnalyzer},
+        text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
         AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
         SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
@@ -104,8 +104,8 @@ pub(crate) mod blocking {
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
         pub(super) status: Status<InferenceRuntimeImpl, InferenceDomainImpl>,
-        open_jtalk: OpenJtalk<O>,
-        kana_parser: KanaParser,
+        open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
+        kana_analyzer: KanaAnalyzer,
         use_gpu: bool,
     }
 
@@ -178,8 +178,8 @@ pub(crate) mod blocking {
 
             return Ok(Self {
                 status,
-                open_jtalk: OpenJtalk::new(open_jtalk),
-                kana_parser: KanaParser::new(),
+                open_jtalk_analyzer: OpenJTalkAnalyzer::new(open_jtalk),
+                kana_analyzer: KanaAnalyzer::new(),
                 use_gpu,
             });
 
@@ -460,7 +460,7 @@ pub(crate) mod blocking {
             kana: &str,
             style_id: StyleId,
         ) -> Result<Vec<AccentPhraseModel>> {
-            let accent_phrases = self.kana_parser.analyze(kana)?;
+            let accent_phrases = self.kana_analyzer.analyze(kana)?;
             self.replace_mora_data(&accent_phrases, style_id)
         }
 
@@ -747,7 +747,7 @@ pub(crate) mod blocking {
             text: &str,
             style_id: StyleId,
         ) -> Result<Vec<AccentPhraseModel>> {
-            let accent_phrases = self.open_jtalk.analyze(text)?;
+            let accent_phrases = self.open_jtalk_analyzer.analyze(text)?;
             self.replace_mora_data(&accent_phrases, style_id)
         }
 
