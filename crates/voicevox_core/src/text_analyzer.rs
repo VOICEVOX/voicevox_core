@@ -8,6 +8,7 @@ pub trait TextAnalyzer {
 }
 
 /// AquesTalk風記法からAccentPhraseの配列を生成するTextAnalyzer
+#[derive(Clone)]
 pub struct KanaAnalyzer;
 
 impl KanaAnalyzer {
@@ -26,6 +27,7 @@ impl TextAnalyzer for KanaAnalyzer {
 }
 
 /// OpenJtalkからAccentPhraseの配列を生成するTextAnalyzer
+#[derive(Clone)]
 pub struct OpenJTalkAnalyzer<O>(O);
 
 impl<O> OpenJTalkAnalyzer<O> {
