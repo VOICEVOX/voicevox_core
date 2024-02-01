@@ -12,6 +12,7 @@ mod numerics;
 mod result;
 mod synthesizer;
 mod task;
+mod text_analyzer;
 mod user_dict;
 mod version;
 mod voice_model;
