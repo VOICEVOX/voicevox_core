@@ -18,6 +18,9 @@ impl KanaAnalyzer {
 
 impl TextAnalyzer for KanaAnalyzer {
     fn analyze(&self, text: &str) -> Result<Vec<AccentPhraseModel>> {
+        if text.is_empty() {
+            return Ok(Vec::new());
+        }
         Ok(parse_kana(text)?)
     }
 }
@@ -36,74 +39,75 @@ impl<O: FullcontextExtractor> TextAnalyzer for OpenJTalkAnalyzer<O> {
         if text.is_empty() {
             return Ok(Vec::new());
         }
-
         let utterance = Utterance::extract_full_context_label(&self.0, text)?;
-
-        let accent_phrases: Vec<AccentPhraseModel> = utterance
-            .breath_groups()
-            .iter()
-            .enumerate()
-            .fold(Vec::new(), |mut accum_vec, (i, breath_group)| {
-                accum_vec.extend(breath_group.accent_phrases().iter().enumerate().map(
-                    |(j, accent_phrase)| {
-                        let moras = accent_phrase
-                            .moras()
-                            .iter()
-                            .map(|mora| {
-                                let mora_text = mora
-                                    .phonemes()
-                                    .iter()
-                                    .map(|phoneme| phoneme.phoneme().to_string())
-                                    .collect::<Vec<_>>()
-                                    .join("");
-
-                                let (consonant, consonant_length) =
-                                    if let Some(consonant) = mora.consonant() {
-                                        (Some(consonant.phoneme().to_string()), Some(0.))
-                                    } else {
-                                        (None, None)
-                                    };
-
-                                MoraModel::new(
-                                    mora_to_text(mora_text),
-                                    consonant,
-                                    consonant_length,
-                                    mora.vowel().phoneme().into(),
-                                    0.,
-                                    0.,
-                                )
-                            })
-                            .collect();
-
-                        let pause_mora = if i != utterance.breath_groups().len() - 1
-                            && j == breath_group.accent_phrases().len() - 1
-                        {
-                            Some(MoraModel::new(
-                                "、".into(),
-                                None,
-                                None,
-                                "pau".into(),
-                                0.,
-                                0.,
-                            ))
-                        } else {
-                            None
-                        };
-
-                        AccentPhraseModel::new(
-                            moras,
-                            *accent_phrase.accent(),
-                            pause_mora,
-                            *accent_phrase.is_interrogative(),
-                        )
-                    },
-                ));
-
-                accum_vec
-            });
-
-        Ok(accent_phrases)
+        Ok(utterance_to_accent_phrases(utterance))
     }
+}
+
+fn utterance_to_accent_phrases(utterance: Utterance) -> Vec<AccentPhraseModel> {
+    let accent_phrases: Vec<AccentPhraseModel> = utterance.breath_groups().iter().enumerate().fold(
+        Vec::new(),
+        |mut accum_vec, (i, breath_group)| {
+            accum_vec.extend(breath_group.accent_phrases().iter().enumerate().map(
+                |(j, accent_phrase)| {
+                    let moras = accent_phrase
+                        .moras()
+                        .iter()
+                        .map(|mora| {
+                            let mora_text = mora
+                                .phonemes()
+                                .iter()
+                                .map(|phoneme| phoneme.phoneme().to_string())
+                                .collect::<Vec<_>>()
+                                .join("");
+
+                            let (consonant, consonant_length) =
+                                if let Some(consonant) = mora.consonant() {
+                                    (Some(consonant.phoneme().to_string()), Some(0.))
+                                } else {
+                                    (None, None)
+                                };
+
+                            MoraModel::new(
+                                mora_to_text(mora_text),
+                                consonant,
+                                consonant_length,
+                                mora.vowel().phoneme().into(),
+                                0.,
+                                0.,
+                            )
+                        })
+                        .collect();
+
+                    let pause_mora = if i != utterance.breath_groups().len() - 1
+                        && j == breath_group.accent_phrases().len() - 1
+                    {
+                        Some(MoraModel::new(
+                            "、".into(),
+                            None,
+                            None,
+                            "pau".into(),
+                            0.,
+                            0.,
+                        ))
+                    } else {
+                        None
+                    };
+
+                    AccentPhraseModel::new(
+                        moras,
+                        *accent_phrase.accent(),
+                        pause_mora,
+                        *accent_phrase.is_interrogative(),
+                    )
+                },
+            ));
+
+            accum_vec
+        },
+    );
+
+    accent_phrases
 }
 
 fn mora_to_text(mora: impl AsRef<str>) -> String {
