@@ -99,11 +99,6 @@ pub(crate) mod blocking {
                 "\n",
             )
         }
-
-        /// ユーザー辞書が空かどうかを返す。
-        pub(crate) fn is_empty(&self) -> bool {
-            self.words.lock().unwrap().is_empty()
-        }
     }
 }
 
@@ -178,11 +173,6 @@ pub(crate) mod tokio {
         /// MeCabで使用する形式に変換する。
         pub(crate) fn to_mecab_format(&self) -> String {
             self.0.to_mecab_format()
-        }
-
-        /// ユーザー辞書が空かどうかを返す。
-        pub(crate) fn is_empty(&self) -> bool {
-            self.0.is_empty()
         }
     }
 }
