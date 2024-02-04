@@ -67,11 +67,6 @@ pub(crate) mod blocking {
             &self,
             user_dict: &crate::blocking::UserDict,
         ) -> crate::result::Result<()> {
-            // 空の辞書を読み込もうとするとクラッシュするので、空の辞書を読み込もうとした時は
-            // 辞書のアンロード処理に分岐させる。
-            if user_dict.is_empty() {
-                return self.0.unload_user_dict();
-            }
             let words = &user_dict.to_mecab_format();
             self.0.use_user_dict(words)
         }
@@ -134,22 +129,22 @@ pub(crate) mod blocking {
 
     impl Inner {
         // TODO: 中断可能にする
-        pub(super) fn unload_user_dict(&self) -> crate::result::Result<()> {
-            let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
-            let result = mecab.load_with_userdic(self.dict_dir.as_ref(), None);
-
-            if !result {
-                return Err(ErrorRepr::UseUserDict(anyhow!(
-                    "辞書が空のため、辞書をアンロードしようとしましたが、失敗しました。"
-                ))
-                .into());
-            }
-
-            Ok(())
-        }
-
-        // TODO: 中断可能にする
         pub(super) fn use_user_dict(&self, words: &str) -> crate::result::Result<()> {
+            // 空の辞書を読み込もうとするとクラッシュするので、空の辞書を読み込もうとした時は
+            // 辞書のアンロードを行う。
+            if words.is_empty() {
+                let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
+                let result = mecab.load_with_userdic(self.dict_dir.as_ref(), None);
+
+                if !result {
+                    return Err(ErrorRepr::UseUserDict(anyhow!(
+                        "辞書が空のため、辞書をアンロードしようとしましたが、失敗しました。"
+                    ))
+                    .into());
+                }
+
+                return Ok(());
+            }
             let temp_dict = NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
             let temp_dict_path = temp_dict.into_temp_path();
             {
@@ -228,11 +223,6 @@ pub(crate) mod tokio {
             user_dict: &crate::tokio::UserDict,
         ) -> crate::result::Result<()> {
             let inner = self.0 .0.clone();
-            // 空の辞書を読み込もうとするとクラッシュするので、空の辞書を読み込もうとした時は
-            // 辞書のアンロード処理に分岐させる。
-            if user_dict.is_empty() {
-                return crate::task::asyncify(move || inner.unload_user_dict()).await;
-            }
             let words = user_dict.to_mecab_format();
             crate::task::asyncify(move || inner.use_user_dict(&words)).await
         }
