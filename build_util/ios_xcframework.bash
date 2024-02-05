@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 
-echo "* Get original onnixruntime file name from rpath"
+echo "* Get original onnxruntime file name from rpath"
 output=$(otool -L "Framework-aarch64/voicevox_core.framework/voicevox_core")
 matched_line=$(echo "$output" | grep "@rpath" | grep "libonnxruntime")
 if [[ $matched_line ]]; then
@@ -17,7 +17,7 @@ else
     echo "$output"
     exit 1
 fi
-echo "Origial onnx dylib file name: $dylib_string"
+echo "Original onnx dylib file name: $dylib_string"
 
 echo "* Create aarch64 Framework"
 mkdir -p "Framework-aarch64/voicevox_core.framework/Headers"
