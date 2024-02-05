@@ -2,7 +2,7 @@
 set -eu
 
 echo "* Get original onnxruntime file name from rpath"
-output=$(otool -L "Framework-aarch64/voicevox_core.framework/voicevox_core")
+output=$(otool -L "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib")
 matched_line=$(echo "$output" | grep "@rpath" | grep "libonnxruntime")
 if [[ $matched_line ]]; then
     if [[ $matched_line =~ (@rpath/([^ ]+\.dylib)) ]]; then
