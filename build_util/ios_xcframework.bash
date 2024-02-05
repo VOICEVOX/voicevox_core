@@ -19,43 +19,37 @@ else
 fi
 echo "Original onnx dylib file name: $dylib_string"
 
-echo "* Create aarch64 Framework"
-mkdir -p "Framework-aarch64/voicevox_core.framework/Headers"
-cp -vr "crates/voicevox_core_c_api/xcframework/Frameworks/aarch64/" \
-    "Framework-aarch64/"
-cp -v "artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h" \
-    "Framework-aarch64/voicevox_core.framework/Headers/voicevox_core.h"
+arches=("aarch64" "sim")
+for arch in "${arches[@]}"; do
+    echo "* copy Framework-${arch} template"
+    mkdir -p "Framework-${arch}/voicevox_core.framework/Headers"
+    cp -vr "crates/voicevox_core_c_api/xcframework/Frameworks/${arch}/" "Framework-${arch}/"
+    cp -v "artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h" \
+        "Framework-${arch}/voicevox_core.framework/Headers/voicevox_core.h"
+done
+
+echo "* Create dylib"
+# aarch64はdylibをコピー
 cp -v "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib" \
     "Framework-aarch64/voicevox_core.framework/voicevox_core"
 
-echo "* Change aarch64 @rpath"
-# 自身への@rpathを変更
-install_name_tool -id "@rpath/voicevox_core.framework/voicevox_core" \
-    "Framework-aarch64/voicevox_core.framework/voicevox_core"
-# 依存ライブラリを調べると@rpath/libonnxruntime.A.BB.C.dylibの文字列があるので、
-# これを@rpath/onnxruntime.framework/onnxruntimeに変更したい。
-# onnxruntimeへの@rpathを変更
-install_name_tool -change "@rpath/$dylib_string" \
-    "@rpath/onnxruntime.framework/onnxruntime" \
-    "Framework-aarch64/voicevox_core.framework/voicevox_core"
-
-echo "* Create sim Framework"
-mkdir -p "Framework-sim/voicevox_core.framework/Headers"
-cp -vr "crates/voicevox_core_c_api/xcframework/Frameworks/sim/" "Framework-sim/"
-cp -v "artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h" \
-    "Framework-sim/voicevox_core.framework/Headers/voicevox_core.h"
+# simはx86_64とarrch64を合わせてdylib作成
 lipo -create "artifact/voicevox_core-x86_64-apple-ios/libvoicevox_core.dylib" \
     "artifact/voicevox_core-aarch64-apple-ios-sim/libvoicevox_core.dylib" \
     -output "Framework-sim/voicevox_core.framework/voicevox_core"
 
-echo "* Change sim @rpath"   
-# 自身への@rpathを変更
-install_name_tool -id "@rpath/voicevox_core.framework/voicevox_core" \
-    "Framework-sim/voicevox_core.framework/voicevox_core"
-# onnxruntimeへの@rpathを変更
-install_name_tool -change "@rpath/$dylib_string" \
-    "@rpath/onnxruntime.framework/onnxruntime" \
-    "Framework-sim/voicevox_core.framework/voicevox_core"
+for arch in "${arches[@]}"; do
+    echo "* Change ${arch} @rpath"
+    # 自身への@rpathを変更
+    install_name_tool -id "@rpath/voicevox_core.framework/voicevox_core" \
+        "Framework-${arch}/voicevox_core.framework/voicevox_core"
+
+    # 依存ライブラリonnxruntimeへの@rpathを変更
+    install_name_tool -change "@rpath/$dylib_string" \
+        "@rpath/onnxruntime.framework/onnxruntime" \
+        "Framework-${arch}/voicevox_core.framework/voicevox_core"
+done
+
 
 echo "* Create XCFramework"
 mkdir -p "artifact/${ASSET_NAME}"
