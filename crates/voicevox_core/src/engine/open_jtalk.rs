@@ -130,21 +130,20 @@ pub(crate) mod blocking {
     impl Inner {
         // TODO: 中断可能にする
         pub(super) fn use_user_dict(&self, words: &str) -> crate::result::Result<()> {
-            // 空の辞書を読み込もうとするとクラッシュするので、空の辞書を読み込もうとした時は
-            // 辞書のアンロードを行う。
+            // 空の辞書を読み込もうとするとクラッシュするのでユーザー辞書なしでロード
             if words.is_empty() {
-                self.load_userdic(None)
+                self.load_with_userdic(None)
             } else {
                 // ユーザー辞書用のcsvを作成
-                let temp_dict =
-                    NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
-                let temp_dict_path = temp_dict.into_temp_path();
                 let mut temp_csv =
                     NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
                 temp_csv
                     .write_all(words.as_ref())
                     .map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
                 let temp_csv_path = temp_csv.into_temp_path();
+                let temp_dict =
+                    NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
+                let temp_dict_path = temp_dict.into_temp_path();
 
                 // Mecabでユーザー辞書をコンパイル
                 // TODO: エラー（SEGV）が出るパターンを把握し、それをRust側で防ぐ。
@@ -162,10 +161,10 @@ pub(crate) mod blocking {
                     "-q",
                 ]);
 
-                self.load_userdic(Some(temp_dict_path.as_ref()))
+                self.load_with_userdic(Some(temp_dict_path.as_ref()))
             }
         }
-        fn load_userdic(&self, dict_path: Option<&Path>) -> crate::result::Result<()> {
+        fn load_with_userdic(&self, dict_path: Option<&Path>) -> crate::result::Result<()> {
             let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
 
             let result = mecab.load_with_userdic(self.dict_dir.as_ref(), dict_path);
