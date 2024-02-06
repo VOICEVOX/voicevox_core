@@ -1,6 +1,6 @@
 import dataclasses
 from enum import Enum
-from typing import Dict, List, NewType, Optional
+from typing import List, NewType, Optional
 
 import pydantic
 
@@ -44,6 +44,13 @@ class StyleMeta:
     id: StyleId
     """スタイルID。"""
 
+    order: Optional[int] = None
+    """
+    話者の順番。
+
+    :attr:`SpeakerMeta.styles` は、この値に対して昇順に並んでいるべきである。
+    """
+
 
 @pydantic.dataclasses.dataclass
 class SpeakerMeta:
@@ -61,18 +68,11 @@ class SpeakerMeta:
     version: StyleVersion
     """話者のUUID。"""
 
-    speaker_order: Optional[int] = None
+    order: Optional[int] = None
     """
     話者の順番。
 
     ``SpeakerMeta`` の列は、この値に対して昇順に並んでいるべきである。
-    """
-
-    style_order: List[StyleId] = dataclasses.field(default_factory=list)
-    """
-    話者に属するスタイルの順番。
-
-    :attr:`styles` はこの並びに沿うべきである。
     """
 
 
