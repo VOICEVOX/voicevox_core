@@ -133,22 +133,12 @@ pub(crate) mod blocking {
             // 空の辞書を読み込もうとするとクラッシュするので、空の辞書を読み込もうとした時は
             // 辞書のアンロードを行う。
             if words.is_empty() {
-                let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
-                let result = mecab.load_with_userdic(self.dict_dir.as_ref(), None);
-
-                if !result {
-                    return Err(ErrorRepr::UseUserDict(anyhow!(
-                        "辞書が空のため、辞書をアンロードしようとしましたが、失敗しました。"
-                    ))
-                    .into());
-                }
-
-                return Ok(());
-            }
-            let temp_dict = NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
-            let temp_dict_path = temp_dict.into_temp_path();
-            {
+                self.load_userdic(None)
+            } else {
                 // ユーザー辞書用のcsvを作成
+                let temp_dict =
+                    NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
+                let temp_dict_path = temp_dict.into_temp_path();
                 let mut temp_csv =
                     NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
                 temp_csv
@@ -171,17 +161,18 @@ pub(crate) mod blocking {
                     temp_csv_path.to_str().unwrap(),
                     "-q",
                 ]);
-            }
 
+                self.load_userdic(Some(temp_dict_path.as_ref()))
+            }
+        }
+        fn load_userdic(&self, dict_path: Option<&Path>) -> crate::result::Result<()> {
             let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
 
-            let result =
-                mecab.load_with_userdic(self.dict_dir.as_ref(), Some(Path::new(&temp_dict_path)));
+            let result = mecab.load_with_userdic(self.dict_dir.as_ref(), dict_path);
 
             if !result {
                 return Err(ErrorRepr::UseUserDict(anyhow!("辞書を読み込めませんでした。")).into());
             }
-
             Ok(())
         }
     }
