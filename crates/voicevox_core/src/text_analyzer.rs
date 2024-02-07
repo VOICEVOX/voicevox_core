@@ -11,12 +11,6 @@ pub trait TextAnalyzer {
 #[derive(Clone)]
 pub struct KanaAnalyzer;
 
-impl KanaAnalyzer {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
 impl TextAnalyzer for KanaAnalyzer {
     fn analyze(&self, text: &str) -> Result<Vec<AccentPhraseModel>> {
         if text.is_empty() {
