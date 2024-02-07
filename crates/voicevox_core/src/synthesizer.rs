@@ -179,7 +179,7 @@ pub(crate) mod blocking {
             return Ok(Self {
                 status,
                 open_jtalk_analyzer: OpenJTalkAnalyzer::new(open_jtalk),
-                kana_analyzer: KanaAnalyzer::new(),
+                kana_analyzer: KanaAnalyzer {},
                 use_gpu,
             });
 
