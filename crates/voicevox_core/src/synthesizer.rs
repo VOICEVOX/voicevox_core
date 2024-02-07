@@ -80,7 +80,9 @@ pub(crate) mod blocking {
     use enum_map::enum_map;
 
     use crate::{
-        engine::{self, create_kana, parse_kana, MoraModel, OjtPhoneme, Utterance},
+        engine::{
+            self, create_kana, extract_full_context_label, parse_kana, MoraModel, OjtPhoneme,
+        },
         error::ErrorRepr,
         infer::{
             domain::{
@@ -747,70 +749,7 @@ pub(crate) mod blocking {
                 return Ok(Vec::new());
             }
 
-            let utterance = Utterance::extract_full_context_label(&self.open_jtalk, text)?;
-
-            let accent_phrases: Vec<AccentPhraseModel> = utterance
-                .breath_groups()
-                .iter()
-                .enumerate()
-                .fold(Vec::new(), |mut accum_vec, (i, breath_group)| {
-                    accum_vec.extend(breath_group.accent_phrases().iter().enumerate().map(
-                        |(j, accent_phrase)| {
-                            let moras = accent_phrase
-                                .moras()
-                                .iter()
-                                .map(|mora| {
-                                    let mora_text = mora
-                                        .phonemes()
-                                        .iter()
-                                        .map(|phoneme| phoneme.phoneme().to_string())
-                                        .collect::<Vec<_>>()
-                                        .join("");
-
-                                    let (consonant, consonant_length) =
-                                        if let Some(consonant) = mora.consonant() {
-                                            (Some(consonant.phoneme().to_string()), Some(0.))
-                                        } else {
-                                            (None, None)
-                                        };
-
-                                    MoraModel::new(
-                                        mora_to_text(mora_text),
-                                        consonant,
-                                        consonant_length,
-                                        mora.vowel().phoneme().into(),
-                                        0.,
-                                        0.,
-                                    )
-                                })
-                                .collect();
-
-                            let pause_mora = if i != utterance.breath_groups().len() - 1
-                                && j == breath_group.accent_phrases().len() - 1
-                            {
-                                Some(MoraModel::new(
-                                    "、".into(),
-                                    None,
-                                    None,
-                                    "pau".into(),
-                                    0.,
-                                    0.,
-                                ))
-                            } else {
-                                None
-                            };
-
-                            AccentPhraseModel::new(
-                                moras,
-                                *accent_phrase.accent(),
-                                pause_mora,
-                                *accent_phrase.is_interrogative(),
-                            )
-                        },
-                    ));
-
-                    accum_vec
-                });
+            let accent_phrases = extract_full_context_label(&self.open_jtalk, text)?;
 
             self.replace_mora_data(&accent_phrases, style_id)
         }
