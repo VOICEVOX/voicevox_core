@@ -73,6 +73,7 @@ fn generate_accentphrases(
     })
     .filter_map(|labels| {
         let moras = match generate_moras(labels) {
+            Ok(moras) if moras.is_empty() => return None,
             Ok(moras) => moras,
             Err(err) => return Some(Err(err)),
         };
