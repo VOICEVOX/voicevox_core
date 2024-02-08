@@ -50,16 +50,16 @@ pub(crate) fn extract_full_context_label(
             source: Some(anyhow::anyhow!("{}", source)),
         })?;
 
-    generate_accentphrases(parsed_labels).map_err(|context| FullContextLabelError {
+    generate_accent_phrases(&parsed_labels).map_err(|context| FullContextLabelError {
         context,
         source: None,
     })
 }
 
-fn generate_accentphrases(
-    utterance: Vec<Label>,
+fn generate_accent_phrases(
+    utterance: &[Label],
 ) -> std::result::Result<Vec<AccentPhraseModel>, ErrorKind> {
-    SplitGroupByKey::new(&utterance, |label| {
+    SplitByKey::new(utterance, |label| {
         (
             label
                 .breath_group_curr
@@ -120,8 +120,8 @@ fn generate_accentphrases(
     .collect::<std::result::Result<Vec<_>, _>>()
 }
 
-fn generate_moras(labels: &[Label]) -> std::result::Result<Vec<MoraModel>, ErrorKind> {
-    SplitGroupByKey::new(labels, |label| {
+fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<MoraModel>, ErrorKind> {
+    SplitByKey::new(accent_phrase, |label| {
         label.mora.as_ref().map(|mora| mora.position_forward)
     })
     .filter_map(|labels| {
@@ -169,16 +169,16 @@ fn generate_mora(consonant: Option<&Label>, vowel: &Label) -> MoraModel {
 }
 
 #[derive(new)]
-struct SplitGroupByKey<'a, T, F, V>
+struct SplitByKey<'a, T, F, V>
 where
     F: FnMut(&T) -> V,
     V: Eq,
 {
     array: &'a [T],
-    func: F,
+    pred: F,
 }
 
-impl<'a, T, F, V> Iterator for SplitGroupByKey<'a, T, F, V>
+impl<'a, T, F, V> Iterator for SplitByKey<'a, T, F, V>
 where
     F: FnMut(&T) -> V,
     V: Eq,
@@ -192,7 +192,7 @@ where
         let mut index = 0;
         let mut current_v = None;
         while let Some(item) = self.array.get(index) {
-            let v = Some((self.func)(item));
+            let v = Some((self.pred)(item));
             if current_v.is_some() && current_v != v {
                 break;
             }
