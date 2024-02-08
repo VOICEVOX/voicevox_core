@@ -50,13 +50,13 @@ pub(crate) fn extract_full_context_label(
             source: Some(anyhow::anyhow!("{}", source)),
         })?;
 
-    convert_to_accentphrase_models(parsed_labels).map_err(|context| FullContextLabelError {
+    generate_accentphrases(parsed_labels).map_err(|context| FullContextLabelError {
         context,
         source: None,
     })
 }
 
-fn convert_to_accentphrase_models(
+fn generate_accentphrases(
     utterance: Vec<Label>,
 ) -> std::result::Result<Vec<AccentPhraseModel>, ErrorKind> {
     SplitGroupByKey::new(&utterance, |label| {
@@ -72,7 +72,7 @@ fn convert_to_accentphrase_models(
         )
     })
     .filter_map(|labels| {
-        let moras = match convert_moras(labels) {
+        let moras = match generate_moras(labels) {
             Ok(moras) => moras,
             Err(err) => return Some(Err(err)),
         };
@@ -112,15 +112,15 @@ fn convert_to_accentphrase_models(
     .collect::<std::result::Result<Vec<_>, _>>()
 }
 
-fn convert_moras(labels: &[Label]) -> std::result::Result<Vec<MoraModel>, ErrorKind> {
-    SplitGroupByKey::new(&labels, |label| {
+fn generate_moras(labels: &[Label]) -> std::result::Result<Vec<MoraModel>, ErrorKind> {
+    SplitGroupByKey::new(labels, |label| {
         label.mora.as_ref().map(|mora| mora.position_forward)
     })
     .filter_map(|labels| {
         let mut label_iter = labels.iter().filter(|label| label.mora.is_some());
         let mora_model = match (label_iter.next(), label_iter.next(), label_iter.next()) {
-            (Some(consonant), Some(vowel), None) => convert_labels(Some(consonant), vowel),
-            (Some(vowel), None, None) => convert_labels(None, vowel),
+            (Some(consonant), Some(vowel), None) => generate_mora(Some(consonant), vowel),
+            (Some(vowel), None, None) => generate_mora(None, vowel),
             (None, None, None) => return None,
             _ => return Some(Err(ErrorKind::TooLongMora)),
         };
@@ -129,17 +129,16 @@ fn convert_moras(labels: &[Label]) -> std::result::Result<Vec<MoraModel>, ErrorK
     .collect::<std::result::Result<Vec<_>, _>>()
 }
 
-fn convert_labels(consonant: Option<&Label>, vowel: &Label) -> MoraModel {
+fn generate_mora(consonant: Option<&Label>, vowel: &Label) -> MoraModel {
     let consonant_phoneme = consonant.and_then(|c| c.phoneme.c.to_owned());
     let vowel_phoneme = vowel.phoneme.c.as_deref().unwrap();
-    let vowel_phoneme_normalized = match vowel_phoneme {
-        vowel_phoneme @ ("A" | "I" | "U" | "E" | "O") => vowel_phoneme.to_lowercase(),
-        vowel_phoneme => vowel_phoneme.to_string(),
-    };
     let mora_text = format!(
         "{}{}",
         consonant_phoneme.as_deref().unwrap_or(""),
-        vowel_phoneme_normalized
+        match vowel_phoneme {
+            phoneme @ ("A" | "I" | "U" | "E" | "O") => phoneme.to_lowercase(),
+            phoneme => phoneme.to_string(),
+        }
     );
     MoraModel::new(
         engine::mora2text(&mora_text).to_string(),
