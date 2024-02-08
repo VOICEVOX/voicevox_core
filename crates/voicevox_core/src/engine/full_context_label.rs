@@ -113,11 +113,6 @@ fn convert_to_accentphrase_models(
 }
 
 fn convert_moras(labels: &[Label]) -> std::result::Result<Vec<MoraModel>, ErrorKind> {
-    dbg!(labels
-        .iter()
-        .map(|l| l.phoneme.c.as_deref().unwrap())
-        .collect::<Vec<_>>());
-
     SplitGroupByKey::new(&labels, |label| {
         label.mora.as_ref().map(|mora| mora.position_forward)
     })
