@@ -87,6 +87,7 @@ fn generate_accentphrases(
             return None;
         };
 
+        // Breath Groupの中で最後のアクセント句かつ，Utteranceの中で最後のBreath Groupでない場合は次がpauになる
         let pause_mora = if ap_curr.accent_phrase_position_backward == 1
             && bg_curr.breath_group_position_backward != 1
         {
@@ -102,9 +103,15 @@ fn generate_accentphrases(
             None
         };
 
+        // workaround for VOICEVOX/voicevox_engine#55
+        let mut accent = ap_curr.accent_position as usize;
+        if accent > moras.len() {
+            accent = moras.len();
+        }
+
         Some(Ok(AccentPhraseModel::new(
             moras,
-            ap_curr.accent_position as usize,
+            accent,
             pause_mora,
             ap_curr.is_interrogative,
         )))
@@ -121,8 +128,18 @@ fn generate_moras(labels: &[Label]) -> std::result::Result<Vec<MoraModel>, Error
         let mora_model = match (label_iter.next(), label_iter.next(), label_iter.next()) {
             (Some(consonant), Some(vowel), None) => generate_mora(Some(consonant), vowel),
             (Some(vowel), None, None) => generate_mora(None, vowel),
-            (None, None, None) => return None,
-            _ => return Some(Err(ErrorKind::TooLongMora)),
+
+            // silやpau以外の音素がないモーラは含めない
+            (None, _, _) => return None,
+            // 音素が3つ以上あるとき
+            (Some(first), _, Some(_)) => {
+                if first.mora.as_ref().map(|mora| mora.position_forward) == Some(49) {
+                    // position_forwardが飽和している場合は正常として扱う
+                    return None;
+                } else {
+                    return Some(Err(ErrorKind::TooLongMora));
+                }
+            }
         };
         Some(Ok(mora_model))
     })
