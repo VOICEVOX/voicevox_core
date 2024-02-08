@@ -78,15 +78,9 @@ fn generate_accent_phrases(
             Err(err) => return Some(Err(err)),
         };
 
-        let Some(label) = labels.first() else {
-            return None;
-        };
-        let Some(ap_curr) = label.accent_phrase_curr.as_ref() else {
-            return None;
-        };
-        let Some(bg_curr) = label.breath_group_curr.as_ref() else {
-            return None;
-        };
+        let label = labels.first()?;
+        let ap_curr = label.accent_phrase_curr.as_ref()?;
+        let bg_curr = label.breath_group_curr.as_ref()?;
 
         // Breath Groupの中で最後のアクセント句かつ，Utteranceの中で最後のBreath Groupでない場合は次がpauになる
         let pause_mora = if ap_curr.accent_phrase_position_backward == 1
@@ -105,10 +99,7 @@ fn generate_accent_phrases(
         };
 
         // workaround for VOICEVOX/voicevox_engine#55
-        let mut accent = ap_curr.accent_position as usize;
-        if accent > moras.len() {
-            accent = moras.len();
-        }
+        let accent = (ap_curr.accent_position as usize).min(moras.len());
 
         Some(Ok(AccentPhraseModel::new(
             moras,
