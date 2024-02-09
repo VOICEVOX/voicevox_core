@@ -41,7 +41,9 @@ static VOICE_MODEL_SET: Lazy<VoiceModelSet> = Lazy::new(|| {
         .iter()
         .map(|vvm| (vvm.id().clone(), vvm.clone()))
         .collect();
-    let metas: Vec<_> = all_vvms.iter().flat_map(|vvm| vvm.metas()).collect();
+    let metas = voicevox_core::__internal::interop::merge_metas(
+        all_vvms.iter().flat_map(|vvm| vvm.metas()),
+    );
     let mut style_model_map = BTreeMap::default();
     for vvm in all_vvms.iter() {
         for meta in vvm.metas().iter() {
