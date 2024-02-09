@@ -38,7 +38,7 @@ echo "Original onnx dylib file name: $dylib_string"
 
 echo "* Copy Framework template"
 arches=("aarch64" "sim")
-artifacts=(${IOS_AARCH64_PATH} ${IOS_AARCH64_SIM_PATH})
+artifacts=("${IOS_AARCH64_PATH}" "${IOS_AARCH64_SIM_PATH}")
 for i in "${!arches[@]}"; do
     arch="${arches[$i]}"
     artifact="${artifacts[$i]}"
