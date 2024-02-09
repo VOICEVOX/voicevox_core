@@ -1,7 +1,22 @@
 #!/usr/bin/env bash
 set -eu
 
-
+if [ ! -v IOS_X86_64_PATH ]; then # 入力用：X86_64用のモジュールのディレクトリ(simulator)
+    echo "IOS_X86_64_PATHが未定義です" 
+    exit 1 
+fi 
+if [ ! -v IOS_AARCH64_SIM_PATH ]; then # 入力用：AARCH64_SIM用のモジュールのディレクトリ(simulator)
+    echo "IOS_AARCH64_SIM_PATHが未定義です" 
+    exit 1 
+fi 
+if [ ! -v IOS_AARCH64_PATH ]; then # 入力用： AARCH64用のモジュールのディレクトリ(実機)
+    echo "IOS_AARCH64_PATHが未定義です" 
+    exit 1 
+fi 
+if [ ! -v ASSET_PATH ]; then # 出力用： ASSETのディレクトリ 
+    echo "ASSET_PATHが未定義です" 
+    exit 1 
+fi 
 
 echo "* Get original onnxruntime file name from rpath"
 output=$(otool -L "${IOS_AARCH64_PATH}/libvoicevox_core.dylib")
@@ -21,12 +36,13 @@ else
 fi
 echo "Original onnx dylib file name: $dylib_string"
 
+echo "* Copy Framework template"
 arches=("aarch64" "sim")
 artifacts=(${IOS_AARCH64_PATH} ${IOS_AARCH64_SIM_PATH})
 for i in "${!arches[@]}"; do
     arch="${arches[$i]}"
     artifact="${artifacts[$i]}"
-    echo "* copy Framework-${arch} template"
+    echo "* Copy Framework-${arch} template"
     mkdir -p "Framework-${arch}/voicevox_core.framework/Headers"
     cp -vr "crates/voicevox_core_c_api/xcframework/Frameworks/${arch}/" "Framework-${arch}/"
     cp -v "${artifact}/voicevox_core.h" \
