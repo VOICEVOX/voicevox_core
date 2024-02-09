@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -eu
 
+
+
 echo "* Get original onnxruntime file name from rpath"
-output=$(otool -L "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib")
+output=$(otool -L "${IOS_AARCH64_PATH}/libvoicevox_core.dylib")
 matched_line=$(echo "$output" | grep "@rpath" | grep "libonnxruntime")
 if [[ $matched_line ]]; then
     if [[ $matched_line =~ (@rpath/([^ ]+\.dylib)) ]]; then
@@ -20,22 +22,25 @@ fi
 echo "Original onnx dylib file name: $dylib_string"
 
 arches=("aarch64" "sim")
-for arch in "${arches[@]}"; do
+artifacts=(${IOS_AARCH64_PATH} ${IOS_AARCH64_SIM_PATH})
+for i in "${!arches[@]}"; do
+    arch="${arches[$i]}"
+    artifact="${artifacts[$i]}"
     echo "* copy Framework-${arch} template"
     mkdir -p "Framework-${arch}/voicevox_core.framework/Headers"
     cp -vr "crates/voicevox_core_c_api/xcframework/Frameworks/${arch}/" "Framework-${arch}/"
-    cp -v "artifact/voicevox_core-${arch}-apple-ios/voicevox_core.h" \
+    cp -v "${artifact}/voicevox_core.h" \
         "Framework-${arch}/voicevox_core.framework/Headers/voicevox_core.h"
 done
 
 echo "* Create dylib"
 # aarch64はdylibをコピー
-cp -v "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib" \
+cp -v "${IOS_AARCH64_PATH}/libvoicevox_core.dylib" \
     "Framework-aarch64/voicevox_core.framework/voicevox_core"
 
 # simはx86_64とarrch64を合わせてdylib作成
-lipo -create "artifact/voicevox_core-x86_64-apple-ios/libvoicevox_core.dylib" \
-    "artifact/voicevox_core-aarch64-apple-ios-sim/libvoicevox_core.dylib" \
+lipo -create "${IOS_X86_64_PATH}/libvoicevox_core.dylib" \
+    "${IOS_AARCH64_SIM_PATH}/libvoicevox_core.dylib" \
     -output "Framework-sim/voicevox_core.framework/voicevox_core"
 
 for arch in "${arches[@]}"; do
@@ -52,8 +57,8 @@ done
 
 
 echo "* Create XCFramework"
-mkdir -p "artifact/${ASSET_NAME}"
+mkdir -p "${ASSET_PATH}"
 xcodebuild -create-xcframework \
     -framework "Framework-sim/voicevox_core.framework" \
     -framework "Framework-aarch64/voicevox_core.framework" \
-    -output "artifact/${ASSET_NAME}/voicevox_core.xcframework"
+    -output "${ASSET_PATH}/voicevox_core.xcframework"

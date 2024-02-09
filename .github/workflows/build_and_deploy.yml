@@ -361,27 +361,32 @@ jobs:
     needs: [config, build_and_deploy]
     runs-on: macos-12
     env:
+      IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
+      IOS_AARCH64_SIM_PATH: artifact/voicevox_core-aarch64-apple-ios-sim
+      IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
       ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
+      ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v2
         with:
           name: voicevox_core-x86_64-apple-ios
-          path: artifact/voicevox_core-x86_64-apple-ios
+          path:  ${{ env.IOS_X86_64_PATH }}
+#          path: artifact/voicevox_core-x86_64-apple-ios
       - uses: actions/download-artifact@v2
         with:
           name: voicevox_core-aarch64-apple-ios-sim
-          path: artifact/voicevox_core-aarch64-apple-ios-sim
+          path: ${{ env.IOS_AARCH64_SIM_PATH }}
       - uses: actions/download-artifact@v2
         with:
           name: voicevox_core-aarch64-apple-ios
-          path: artifact/voicevox_core-aarch64-apple-ios
+          path: ${{ env.IOS_AARCH64_PATH }}
       - name: Create xcframework
         run: |
           build_util/make_ios_xcframework.bash          
       - name: Archive artifact
         run: |
-          cd artifact/${{ env.ASSET_NAME }}
+          cd ${{ env.ASSET_PATH }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
