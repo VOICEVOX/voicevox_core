@@ -128,9 +128,12 @@ pub(crate) mod blocking {
     }
 
     impl Inner {
-        // FIXME: 中断可能にする
+        // TODO: 中断可能にする
         pub(super) fn use_user_dict(&self, words: &str) -> crate::result::Result<()> {
-            let result = {
+            // 空の辞書を読み込もうとするとクラッシュするのでユーザー辞書なしでロード
+            if words.is_empty() {
+                self.load_with_userdic(None)
+            } else {
                 // ユーザー辞書用のcsvを作成
                 let mut temp_csv =
                     NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
@@ -158,17 +161,17 @@ pub(crate) mod blocking {
                     "-q",
                 ]);
 
-                let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
+                self.load_with_userdic(Some(temp_dict_path.as_ref()))
+            }
+        }
+        fn load_with_userdic(&self, dict_path: Option<&Path>) -> crate::result::Result<()> {
+            let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
 
-                mecab.load_with_userdic(self.dict_dir.as_ref(), Some(Path::new(&temp_dict_path)))
-            };
+            let result = mecab.load_with_userdic(self.dict_dir.as_ref(), dict_path);
 
             if !result {
-                return Err(
-                    ErrorRepr::UseUserDict(anyhow!("辞書のコンパイルに失敗しました")).into(),
-                );
+                return Err(ErrorRepr::UseUserDict(anyhow!("辞書を読み込めませんでした。")).into());
             }
-
             Ok(())
         }
     }
