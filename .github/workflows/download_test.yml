@@ -7,14 +7,16 @@ on:
         description: "テスト対象のコアのバージョン。無指定時はprerelease込みの最新release。"
         type: string
         required: false
-  push:
-    branches:
-      - main
-  pull_request:
-    paths:
-      - "Cargo.*"
-      - "crates/downloader/**"
-      - ".github/workflows/download_test.yml"
+  # 新しいビルドができるまで、このworkflowが壊れて動かないことを許容する
+  # https://github.com/VOICEVOX/voicevox_core/issues/741#issuecomment-1935303742
+  #push:
+  #  branches:
+  #    - main
+  #pull_request:
+  #  paths:
+  #    - "Cargo.*"
+  #    - "crates/downloader/**"
+  #    - ".github/workflows/download_test.yml"
 
 env:
   VERSION: ${{ inputs.version || 'prerelease-latest' }}

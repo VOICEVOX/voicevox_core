@@ -6,37 +6,44 @@ metas = '''
     "styles": [
       {
         "id": 0,
-        "name": "style1"
+        "name": "style1",
+        "order": null
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7"
+    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+    "order": null
   },
   {
     "name": "dummy2",
     "styles": [
       {
         "id": 1,
-        "name": "style2"
+        "name": "style2",
+        "order": null
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905"
+    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
+    "order": null
   },
   {
     "name": "dummy3",
     "styles": [
       {
         "id": 302,
-        "name": "style3-1"
+        "name": "style3-1",
+        "order": null
       },
       {
         "id": 303,
-        "name": "style3-2"
+        "name": "style3-2",
+        "order": null
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3"
+    "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
+    "order": null
   }
 ]'''
 stderr.windows = '''
@@ -89,37 +96,44 @@ metas = '''
     "styles": [
       {
         "id": 0,
-        "name": "style1"
+        "name": "style1",
+        "order": null
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7"
+    "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+    "order": null
   },
   {
     "name": "dummy2",
     "styles": [
       {
         "id": 1,
-        "name": "style2"
+        "name": "style2",
+        "order": null
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905"
+    "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
+    "order": null
   },
   {
     "name": "dummy3",
     "styles": [
       {
         "id": 302,
-        "name": "style3-1"
+        "name": "style3-1",
+        "order": null
       },
       {
         "id": 303,
-        "name": "style3-2"
+        "name": "style3-2",
+        "order": null
       }
     ],
     "version": "0.0.1",
-    "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3"
+    "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
+    "order": null
   }
 ]'''
 stderr.windows = '''
