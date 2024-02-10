@@ -191,6 +191,9 @@ mod tests {
                     ],
                     "version": "0.0.0",
                     "speaker_uuid": "f34ab151-c0f5-4e0a-9ad2-51ce30dba24d",
+                    "supported_features": {
+                        "permitted_synthesis_morphing": "SELF_ONLY"
+                    },
                     "order": 1
                 },
                 {
@@ -204,6 +207,9 @@ mod tests {
                     ],
                     "version": "0.0.0",
                     "speaker_uuid": "d6fd707c-a451-48e9-8f00-fe9ee3bf6264",
+                    "supported_features": {
+                        "permitted_synthesis_morphing": "SELF_ONLY"
+                    },
                     "order": 0
                 },
                 {
@@ -222,6 +228,9 @@ mod tests {
                     ],
                     "version": "0.0.0",
                     "speaker_uuid": "d6fd707c-a451-48e9-8f00-fe9ee3bf6264",
+                    "supported_features": {
+                        "permitted_synthesis_morphing": "SELF_ONLY"
+                    },
                     "order": 0
                 }
             ])
@@ -250,6 +259,9 @@ mod tests {
                     ],
                     "version": "0.0.0",
                     "speaker_uuid": "d6fd707c-a451-48e9-8f00-fe9ee3bf6264",
+                    "supported_features": {
+                        "permitted_synthesis_morphing": "SELF_ONLY"
+                    },
                     "order": 0
                 },
                 {
@@ -263,6 +275,9 @@ mod tests {
                     ],
                     "version": "0.0.0",
                     "speaker_uuid": "f34ab151-c0f5-4e0a-9ad2-51ce30dba24d",
+                    "supported_features": {
+                        "permitted_synthesis_morphing": "SELF_ONLY"
+                    },
                     "order": 1
                 }
             ])
