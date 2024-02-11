@@ -25,8 +25,6 @@ impl InferenceRuntime for Onnxruntime {
     type RunContext<'a> = OnnxruntimeRunContext<'a>;
 
     fn supported_devices() -> crate::Result<SupportedDevices> {
-        #![allow(unsafe_code)]
-
         // TODO: `InferenceRuntime::init`と`InitInferenceRuntimeError`を作る
         build_ort_env_once().unwrap();
 
@@ -123,7 +121,7 @@ impl InferenceRuntime for Onnxruntime {
                 Ok(ParamInfo {
                     name: info.name.clone().into(),
                     dt,
-                    ndim: info.input_type.tensor_dimensions().map(|d| d.len()),
+                    ndim: info.input_type.tensor_dimensions().map(Vec::len),
                 })
             })
             .collect::<anyhow::Result<_>>()?;
@@ -175,12 +173,12 @@ impl InferenceRuntime for Onnxruntime {
         OnnxruntimeRunContext { sess, inputs }: OnnxruntimeRunContext<'_>,
     ) -> anyhow::Result<Vec<OutputTensor>> {
         let outputs = sess.run(&*inputs)?;
+
         (0..outputs.len())
             .map(|i| {
                 let output = &outputs[i];
-                let dtype = output.dtype()?;
 
-                let ValueType::Tensor { ty, .. } = dtype else {
+                let ValueType::Tensor { ty, .. } = output.dtype()? else {
                     bail!(
                         "unexpected output. currently `ONNX_TYPE_TENSOR` and \
                          `ONNX_TYPE_SPARSETENSOR` is supported",
@@ -189,8 +187,8 @@ impl InferenceRuntime for Onnxruntime {
 
                 match ty {
                     TensorElementType::Float32 => {
-                        let tensor = output.extract_tensor::<f32>()?;
-                        Ok(OutputTensor::Float32(tensor.view().clone().into_owned()))
+                        let output = output.extract_tensor::<f32>()?;
+                        Ok(OutputTensor::Float32(output.view().clone().into_owned()))
                     }
                     _ => bail!("unexpected output tensor element data type"),
                 }
@@ -206,7 +204,7 @@ fn build_ort_env_once() -> ort::Result<()> {
 }
 
 pub(crate) struct OnnxruntimeRunContext<'sess> {
-    sess: &'sess mut ort::Session,
+    sess: &'sess ort::Session,
     inputs: Vec<ort::Value>,
 }
 
