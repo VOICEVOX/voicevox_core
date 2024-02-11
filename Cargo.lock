@@ -554,6 +554,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c59e92b5a388f549b863a7bea62612c09f24c8393560709a54558a9abdfb3b9c"
 
 [[package]]
+name = "castaway"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a17ed5635fc8536268e5d4de1e22e81ac34419e5f052d4d51f4e01dcc263fcc"
+dependencies = [
+ "rustversion",
+]
+
+[[package]]
 name = "cbindgen"
 version = "0.24.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -775,6 +784,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "compact_str"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f86b9c4c00838774a6d902ef931eff7470720c51d90c2e32cfe15dc304737b3f"
+dependencies = [
+ "castaway",
+ "cfg-if",
+ "itoa",
+ "ryu",
+ "static_assertions",
+]
+
+[[package]]
 name = "concolor"
 version = "0.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -920,6 +942,12 @@ checksum = "edbafec5fa1f196ca66527c1b12c2ec4745ca14b50f1ad8f9f6f720b55d11fac"
 dependencies = [
  "cfg-if",
 ]
+
+[[package]]
+name = "crunchy"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 
 [[package]]
 name = "crypto-common"
@@ -1624,6 +1652,16 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
+]
+
+[[package]]
+name = "half"
+version = "2.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc52e53916c08643f1b56ec082790d1e86a32e58dc5268f897f313fbae7b4872"
+dependencies = [
+ "cfg-if",
+ "crunchy",
 ]
 
 [[package]]
@@ -2469,30 +2507,6 @@ name = "once_cell"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
-
-[[package]]
-name = "onnxruntime"
-version = "0.1.0"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=ebb9dcb9b26ee681889b52b6db3b4f642b04a250#ebb9dcb9b26ee681889b52b6db3b4f642b04a250"
-dependencies = [
- "lazy_static",
- "ndarray",
- "onnxruntime-sys",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "onnxruntime-sys"
-version = "0.0.25"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=ebb9dcb9b26ee681889b52b6db3b4f642b04a250#ebb9dcb9b26ee681889b52b6db3b4f642b04a250"
-dependencies = [
- "flate2",
- "once_cell",
- "tar",
- "ureq",
- "zip",
-]
 
 [[package]]
 name = "opaque-debug"
@@ -4261,7 +4275,6 @@ checksum = "b97acb4c28a254fd7a4aeec976c46a7fa404eac4d7c134b30c75144846d7cb8f"
 dependencies = [
  "base64 0.13.0",
  "chunked_transfer",
- "flate2",
  "log",
  "once_cell",
  "rustls",
@@ -4327,6 +4340,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
+name = "voicevox-ort"
+version = "2.0.0-rc.0"
+source = "git+https://github.com/qryxip/ort.git?rev=37af007322f0dd5a21e536ab3bcf727970f1283a#37af007322f0dd5a21e536ab3bcf727970f1283a"
+dependencies = [
+ "compact_str",
+ "half",
+ "ndarray",
+ "thiserror",
+ "tracing",
+ "voicevox-ort-sys",
+]
+
+[[package]]
+name = "voicevox-ort-sys"
+version = "2.0.0-rc.0"
+source = "git+https://github.com/qryxip/ort.git?rev=37af007322f0dd5a21e536ab3bcf727970f1283a#37af007322f0dd5a21e536ab3bcf727970f1283a"
+dependencies = [
+ "flate2",
+ "sha2 0.10.6",
+ "tar",
+ "ureq",
+]
+
+[[package]]
 name = "voicevox_core"
 version = "0.0.0"
 dependencies = [
@@ -4349,7 +4386,6 @@ dependencies = [
  "nanoid",
  "ndarray",
  "once_cell",
- "onnxruntime",
  "open_jtalk",
  "ouroboros",
  "pretty_assertions",
@@ -4364,6 +4400,7 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+ "voicevox-ort",
  "voicevox_core_macros",
  "windows",
  "zip",
