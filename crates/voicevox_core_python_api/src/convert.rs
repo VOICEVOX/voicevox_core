@@ -1,5 +1,6 @@
 use std::{error::Error as _, future::Future, iter, path::PathBuf};
 
+use camino::Utf8PathBuf;
 use easy_ext::ext;
 use pyo3::{
     exceptions::{PyException, PyValueError},
@@ -38,10 +39,12 @@ pub fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
     }
 }
 
-pub fn from_utf8_path(ob: &PyAny) -> PyResult<String> {
+// FIXME: `VoiceModel`や`UserDict`についてはこれではなく、`PathBuf::extract`を直接使うようにする
+pub fn from_utf8_path(ob: &PyAny) -> PyResult<Utf8PathBuf> {
     PathBuf::extract(ob)?
         .into_os_string()
         .into_string()
+        .map(Utf8PathBuf::from)
         .map_err(|s| PyValueError::new_err(format!("{s:?} cannot be encoded to UTF-8")))
 }
 

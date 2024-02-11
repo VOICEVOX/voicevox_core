@@ -6,6 +6,7 @@ use self::convert::{
     to_py_user_dict_word, to_py_uuid, to_pydantic_dataclass, to_pydantic_voice_model_meta,
     to_rust_user_dict_word, to_rust_uuid, VoicevoxCoreResultExt as _,
 };
+use camino::Utf8PathBuf;
 use easy_ext::ext;
 use log::debug;
 use pyo3::{
@@ -115,7 +116,7 @@ impl VoiceModel {
     #[staticmethod]
     fn from_path(
         py: Python<'_>,
-        #[pyo3(from_py_with = "from_utf8_path")] path: String,
+        #[pyo3(from_py_with = "from_utf8_path")] path: Utf8PathBuf,
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let model = voicevox_core::tokio::VoiceModel::from_path(path).await;
@@ -146,7 +147,7 @@ impl OpenJtalk {
     #[allow(clippy::new_ret_no_self)]
     #[staticmethod]
     fn new(
-        #[pyo3(from_py_with = "from_utf8_path")] open_jtalk_dict_dir: String,
+        #[pyo3(from_py_with = "from_utf8_path")] open_jtalk_dict_dir: Utf8PathBuf,
         py: Python<'_>,
     ) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
@@ -637,6 +638,7 @@ impl UserDict {
 mod blocking {
     use std::sync::Arc;
 
+    use camino::Utf8PathBuf;
     use pyo3::{
         pyclass, pymethods,
         types::{IntoPyDict as _, PyBytes, PyDict, PyList},
@@ -661,7 +663,7 @@ mod blocking {
         #[staticmethod]
         fn from_path(
             py: Python<'_>,
-            #[pyo3(from_py_with = "crate::convert::from_utf8_path")] path: String,
+            #[pyo3(from_py_with = "crate::convert::from_utf8_path")] path: Utf8PathBuf,
         ) -> PyResult<Self> {
             let model = voicevox_core::blocking::VoiceModel::from_path(path).into_py_result(py)?;
             Ok(Self { model })
@@ -688,7 +690,7 @@ mod blocking {
     impl OpenJtalk {
         #[new]
         fn new(
-            #[pyo3(from_py_with = "super::from_utf8_path")] open_jtalk_dict_dir: String,
+            #[pyo3(from_py_with = "super::from_utf8_path")] open_jtalk_dict_dir: Utf8PathBuf,
             py: Python<'_>,
         ) -> PyResult<Self> {
             let open_jtalk =

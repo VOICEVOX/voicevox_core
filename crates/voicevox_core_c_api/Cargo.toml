@@ -18,6 +18,7 @@ directml = ["voicevox_core/directml"]
 [dependencies]
 anstream = { workspace = true, default-features = false, features = ["auto"] }
 anstyle-query.workspace = true
+camino.workspace = true
 chrono = { workspace = true, default-features = false, features = ["clock"] }
 colorchoice.workspace = true
 cstr.workspace = true
