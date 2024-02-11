@@ -12,6 +12,7 @@ cuda = ["voicevox_core/cuda"]
 directml = ["voicevox_core/directml"]
 
 [dependencies]
+camino.workspace = true
 easy-ext.workspace = true
 log.workspace = true
 pyo3 = { workspace = true, features = ["abi3-py38", "extension-module"] }

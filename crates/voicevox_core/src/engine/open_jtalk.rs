@@ -15,11 +15,11 @@ pub trait FullcontextExtractor: Clone + Send + Sync + 'static {
 pub(crate) mod blocking {
     use std::{
         io::Write as _,
-        path::Path,
         sync::{Arc, Mutex},
     };
 
-    use anyhow::anyhow;
+    use anyhow::Context as _;
+    use camino::{Utf8Path, Utf8PathBuf};
     use open_jtalk::{mecab_dict_index, text2mecab, JpCommon, ManagedResource, Mecab, Njd};
     use tempfile::NamedTempFile;
 
@@ -32,12 +32,8 @@ pub(crate) mod blocking {
     pub struct OpenJtalk(pub(super) Arc<Inner>);
 
     impl self::OpenJtalk {
-        pub fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
-            let dict_dir = open_jtalk_dict_dir
-                .as_ref()
-                .to_str()
-                .unwrap_or_else(|| todo!()) // FIXME: `camino::Utf8Path`を要求するようにする
-                .to_owned();
+        pub fn new(open_jtalk_dict_dir: impl AsRef<Utf8Path>) -> crate::result::Result<Self> {
+            let dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
 
             // FIXME: この`{}`はGitのdiffを抑えるためだけに存在
             {
@@ -47,11 +43,12 @@ pub(crate) mod blocking {
                     jpcommon: ManagedResource::initialize(),
                 };
 
-                let result = resources.mecab.load(&*dict_dir);
-                if !result {
-                    // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
-                    return Err(ErrorRepr::NotLoadedOpenjtalkDict.into());
-                }
+                // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
+                resources
+                    .mecab
+                    .load(&*dict_dir)
+                    .inspect_err(|e| tracing::error!("{e:?}"))
+                    .map_err(|_| ErrorRepr::NotLoadedOpenjtalkDict)?;
 
                 Ok(Self(Arc::new(Inner {
                     resources: Mutex::new(resources),
@@ -124,7 +121,7 @@ pub(crate) mod blocking {
 
     pub(super) struct Inner {
         resources: std::sync::Mutex<Resources>,
-        dict_dir: String, // FIXME: `camino::Utf8PathBuf`にする
+        dict_dir: Utf8PathBuf,
     }
 
     impl Inner {
@@ -145,34 +142,37 @@ pub(crate) mod blocking {
                     NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
                 let temp_dict_path = temp_dict.into_temp_path();
 
+                // FIXME: `.unwrap()`ではなく、エラーとして回収する
+                let temp_csv_path = Utf8Path::from_path(temp_csv_path.as_ref()).unwrap();
+                let temp_dict_path = Utf8Path::from_path(temp_dict_path.as_ref()).unwrap();
+
                 // Mecabでユーザー辞書をコンパイル
                 // TODO: エラー（SEGV）が出るパターンを把握し、それをRust側で防ぐ。
                 mecab_dict_index(&[
                     "mecab-dict-index",
                     "-d",
-                    &self.dict_dir,
+                    self.dict_dir.as_ref(),
                     "-u",
-                    temp_dict_path.to_str().unwrap(),
+                    temp_dict_path.as_ref(),
                     "-f",
                     "utf-8",
                     "-t",
                     "utf-8",
-                    temp_csv_path.to_str().unwrap(),
+                    temp_csv_path.as_ref(),
                     "-q",
                 ]);
 
-                self.load_with_userdic(Some(temp_dict_path.as_ref()))
+                self.load_with_userdic(Some(temp_dict_path))
             }
         }
-        fn load_with_userdic(&self, dict_path: Option<&Path>) -> crate::result::Result<()> {
+        fn load_with_userdic(&self, dict_path: Option<&Utf8Path>) -> crate::result::Result<()> {
             let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
 
-            let result = mecab.load_with_userdic(self.dict_dir.as_ref(), dict_path);
-
-            if !result {
-                return Err(ErrorRepr::UseUserDict(anyhow!("辞書を読み込めませんでした。")).into());
-            }
-            Ok(())
+            mecab
+                .load_with_userdic(self.dict_dir.as_ref(), dict_path)
+                .context("辞書を読み込めませんでした。")
+                .map_err(ErrorRepr::UseUserDict)
+                .map_err(Into::into)
         }
     }
 
@@ -188,7 +188,7 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod tokio {
-    use std::path::Path;
+    use camino::Utf8Path;
 
     use super::FullcontextExtractor;
 
@@ -197,7 +197,7 @@ pub(crate) mod tokio {
     pub struct OpenJtalk(super::blocking::OpenJtalk);
 
     impl self::OpenJtalk {
-        pub async fn new(open_jtalk_dict_dir: impl AsRef<Path>) -> crate::result::Result<Self> {
+        pub async fn new(open_jtalk_dict_dir: impl AsRef<Utf8Path>) -> crate::result::Result<Self> {
             let open_jtalk_dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
             let blocking =
                 crate::task::asyncify(|| super::blocking::OpenJtalk::new(open_jtalk_dict_dir))
