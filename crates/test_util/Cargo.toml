@@ -4,6 +4,7 @@ edition.workspace = true
 
 [dependencies]
 async_zip = { workspace = true, features = ["full"] }
+futures-lite.workspace = true
 once_cell.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true

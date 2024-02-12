@@ -288,13 +288,13 @@ pub(crate) mod tokio {
 
     #[derive(new)]
     struct AsyncVvmEntryReader {
-        reader: async_zip::read::fs::ZipFileReader,
+        reader: async_zip::tokio::read::fs::ZipFileReader,
         entry_map: HashMap<String, AsyncVvmEntry>,
     }
 
     impl AsyncVvmEntryReader {
         async fn open(path: &Path) -> LoadModelResult<Self> {
-            let reader = async_zip::read::fs::ZipFileReader::new(path)
+            let reader = async_zip::tokio::read::fs::ZipFileReader::new(path)
                 .await
                 .map_err(|source| LoadModelError {
                     path: path.to_owned(),
@@ -305,17 +305,14 @@ pub(crate) mod tokio {
                 .file()
                 .entries()
                 .iter()
-                .filter(|e| !e.entry().dir())
-                .enumerate()
-                .map(|(i, e)| {
-                    (
-                        e.entry().filename().to_string(),
-                        AsyncVvmEntry {
-                            index: i,
-                            entry: e.entry().clone(),
-                        },
-                    )
+                .flat_map(|e| {
+                    // 非UTF-8のファイルを利用することはないため、無視する
+                    let filename = e.filename().as_str().ok()?;
+                    (!e.dir().ok()?).then_some(())?;
+                    Some((filename.to_owned(), (**e).clone()))
                 })
+                .enumerate()
+                .map(|(i, (filename, entry))| (filename, AsyncVvmEntry { index: i, entry }))
                 .collect();
             Ok(AsyncVvmEntryReader::new(reader, entry_map))
         }
@@ -336,11 +333,9 @@ pub(crate) mod tokio {
                     .entry_map
                     .get(filename)
                     .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
-                let mut manifest_reader = self.reader.entry(me.index).await?;
+                let mut manifest_reader = self.reader.reader_with_entry(me.index).await?;
                 let mut buf = Vec::with_capacity(me.entry.uncompressed_size() as usize);
-                manifest_reader
-                    .read_to_end_checked(&mut buf, &me.entry)
-                    .await?;
+                manifest_reader.read_to_end_checked(&mut buf).await?;
                 Ok::<_, anyhow::Error>(buf)
             }
             .await
