@@ -10,7 +10,7 @@ directml = ["onnxruntime/directml"]
 
 [dependencies]
 anyhow.workspace = true
-async_zip = { workspace = true, features = ["full"] }
+async_zip = { workspace = true, features = ["deflate"] }
 camino.workspace = true
 derive-getters.workspace = true
 derive-new.workspace = true

@@ -51,8 +51,7 @@ pub async fn convert_zip_vvm(dir: impl AsRef<Path>) -> PathBuf {
         fs::create_dir_all(out_file_path.parent().unwrap())
             .await
             .unwrap();
-        let out_file = File::create(&out_file_path).await.unwrap();
-        let mut writer = ZipFileWriter::with_tokio(out_file);
+        let mut writer = ZipFileWriter::new(vec![]);
 
         for entry in dir.read_dir().unwrap().flatten() {
             let entry_builder = ZipEntryBuilder::new(
@@ -66,7 +65,8 @@ pub async fn convert_zip_vvm(dir: impl AsRef<Path>) -> PathBuf {
             entry_writer.write_all(&buf).await.unwrap();
             entry_writer.close().await.unwrap();
         }
-        writer.close().await.unwrap();
+        let zip = writer.close().await.unwrap();
+        fs::write(&out_file_path, zip).await.unwrap();
     }
     out_file_path
 }

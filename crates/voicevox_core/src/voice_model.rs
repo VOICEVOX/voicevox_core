@@ -287,20 +287,24 @@ pub(crate) mod tokio {
     }
 
     #[derive(new)]
-    struct AsyncVvmEntryReader {
-        reader: async_zip::tokio::read::fs::ZipFileReader,
+    struct AsyncVvmEntryReader<'a> {
+        path: &'a Path,
+        reader: async_zip::base::read::mem::ZipFileReader,
         entry_map: HashMap<String, AsyncVvmEntry>,
     }
 
-    impl AsyncVvmEntryReader {
-        async fn open(path: &Path) -> LoadModelResult<Self> {
-            let reader = async_zip::tokio::read::fs::ZipFileReader::new(path)
-                .await
-                .map_err(|source| LoadModelError {
-                    path: path.to_owned(),
-                    context: LoadModelErrorKind::OpenZipFile,
-                    source: Some(source.into()),
-                })?;
+    impl<'a> AsyncVvmEntryReader<'a> {
+        async fn open(path: &'a Path) -> LoadModelResult<Self> {
+            let reader = async {
+                let file = fs_err::tokio::read(path).await?;
+                async_zip::base::read::mem::ZipFileReader::new(file).await
+            }
+            .await
+            .map_err(|source| LoadModelError {
+                path: path.to_owned(),
+                context: LoadModelErrorKind::OpenZipFile,
+                source: Some(source.into()),
+            })?;
             let entry_map: HashMap<_, _> = reader
                 .file()
                 .entries()
@@ -314,12 +318,12 @@ pub(crate) mod tokio {
                 .enumerate()
                 .map(|(i, (filename, entry))| (filename, AsyncVvmEntry { index: i, entry }))
                 .collect();
-            Ok(AsyncVvmEntryReader::new(reader, entry_map))
+            Ok(AsyncVvmEntryReader::new(path, reader, entry_map))
         }
         async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> LoadModelResult<T> {
             let bytes = self.read_vvm_entry(filename).await?;
             serde_json::from_slice(&bytes).map_err(|source| LoadModelError {
-                path: self.reader.path().to_owned(),
+                path: self.path.to_owned(),
                 context: LoadModelErrorKind::ReadZipEntry {
                     filename: filename.to_owned(),
                 },
@@ -340,7 +344,7 @@ pub(crate) mod tokio {
             }
             .await
             .map_err(|source| LoadModelError {
-                path: self.reader.path().to_owned(),
+                path: self.path.to_owned(),
                 context: LoadModelErrorKind::ReadZipEntry {
                     filename: filename.to_owned(),
                 },
