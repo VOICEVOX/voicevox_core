@@ -117,7 +117,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fa490e751f3878eb9accb9f18988eca52c2337ce000a8bf31ef50d4c723ca9e"
 dependencies = [
  "android_log-sys",
- "env_logger 0.10.0",
+ "env_logger",
  "log",
  "once_cell",
 ]
@@ -421,15 +421,13 @@ checksum = "8a32fd6af2b5827bce66c29053ba0e7c42b9dcab01835835058558c10851a46b"
 
 [[package]]
 name = "bindgen"
-version = "0.60.1"
+version = "0.62.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "062dddbc1ba4aca46de6338e2bf87771414c335f7b2f2036e8f3e9befebf88e6"
+checksum = "c6720a8b7b2d39dd533285ed438d458f65b31b5c257e6ac7bb3d7e82844dd722"
 dependencies = [
  "bitflags 1.3.2",
  "cexpr",
  "clang-sys",
- "clap 3.2.22",
- "env_logger 0.9.1",
  "lazy_static",
  "lazycell",
  "log",
@@ -439,6 +437,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
+ "syn 1.0.102",
  "which",
 ]
 
@@ -582,6 +581,12 @@ name = "cache-padded"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1db59621ec70f09c5e9b597b220c7a2b43611f4710dc03ceb8748637775692c"
+
+[[package]]
+name = "camino"
+version = "1.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c59e92b5a388f549b863a7bea62612c09f24c8393560709a54558a9abdfb3b9c"
 
 [[package]]
 name = "cbindgen"
@@ -1312,19 +1317,6 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c90bf5f19754d10198ccb95b70664fc925bd1fc090a0fd9a6ebc54acc8cd6272"
-dependencies = [
- "atty",
- "humantime",
- "log",
- "regex",
- "termcolor",
-]
-
-[[package]]
-name = "env_logger"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85cdab6a89accf66733ad5a1693a4dcced6aeff64602b634530dd73c1f3ee9f0"
@@ -1824,12 +1816,6 @@ checksum = "4e682e2bd70ecbcce5209f11a992a4ba001fea8e60acf7860ce007629e6d2756"
 dependencies = [
  "libm",
 ]
-
-[[package]]
-name = "humantime"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hyper"
@@ -2558,8 +2544,9 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "open_jtalk"
 version = "0.1.25"
-source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=a16714ce16dec76fd0e3041a7acfa484921db3b5#a16714ce16dec76fd0e3041a7acfa484921db3b5"
+source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=70c76bb54522830e92803038191bf533ba68ce85#70c76bb54522830e92803038191bf533ba68ce85"
 dependencies = [
+ "camino",
  "open_jtalk-sys",
  "thiserror",
 ]
@@ -2567,9 +2554,9 @@ dependencies = [
 [[package]]
 name = "open_jtalk-sys"
 version = "0.16.111"
-source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=a16714ce16dec76fd0e3041a7acfa484921db3b5#a16714ce16dec76fd0e3041a7acfa484921db3b5"
+source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=70c76bb54522830e92803038191bf533ba68ce85#70c76bb54522830e92803038191bf533ba68ce85"
 dependencies = [
- "bindgen 0.60.1",
+ "bindgen 0.62.0",
  "cmake",
  "link-cplusplus",
 ]
@@ -4397,6 +4384,7 @@ dependencies = [
  "anyhow",
  "async_zip",
  "az",
+ "camino",
  "derive-getters",
  "derive-new",
  "derive_more",
@@ -4444,6 +4432,7 @@ dependencies = [
  "anstyle-query",
  "anyhow",
  "assert_cmd",
+ "camino",
  "chrono",
  "clap 4.0.10",
  "colorchoice",
@@ -4507,6 +4496,7 @@ dependencies = [
 name = "voicevox_core_python_api"
 version = "0.0.0"
 dependencies = [
+ "camino",
  "easy-ext",
  "log",
  "pyo3",
