@@ -84,9 +84,11 @@ fn generate_accent_phrases(
             continue;
         }
 
-        let Some((Some(ap_curr), Some(bg_curr))) = labels
-            .first()
-            .map(|label| (&label.accent_phrase_curr, &label.breath_group_curr))
+        let Some(Label {
+            accent_phrase_curr: Some(ap_curr),
+            breath_group_curr: Some(bg_curr),
+            ..
+        }) = labels.first()
         else {
             continue;
         };
