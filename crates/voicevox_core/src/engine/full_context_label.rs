@@ -176,21 +176,14 @@ where
 {
     type Item = &'a [T];
     fn next(&mut self) -> Option<Self::Item> {
-        if self.array.is_empty() {
-            return None;
-        }
+        let (first, rest) = self.array.split_first()?;
+        let v = (self.pred)(first);
+        let pos = rest
+            .iter()
+            .position(|x| (self.pred)(x) != v)
+            .map_or(self.array.len(), |x| x + 1); // translate to index of `self.array`
 
-        let mut index = 0;
-        let mut current_v = None;
-        while let Some(item) = self.array.get(index) {
-            let v = Some((self.pred)(item));
-            if current_v.is_some() && current_v != v {
-                break;
-            }
-            current_v = v;
-            index += 1;
-        }
-        let (result, rest) = self.array.split_at(index);
+        let (result, rest) = self.array.split_at(pos);
         self.array = rest;
         Some(result)
     }
