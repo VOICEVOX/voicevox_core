@@ -112,30 +112,33 @@ fn generate_accent_phrases(
 }
 
 fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<MoraModel>, ErrorKind> {
-    SplitByKey::new(accent_phrase, |label| {
+    let mut moras = Vec::with_capacity(accent_phrase.len());
+    let split = SplitByKey::new(accent_phrase, |label| {
         label.mora.as_ref().map(|mora| mora.position_forward)
-    })
-    .filter_map(|labels| {
+    });
+    for labels in split {
         let mut label_iter = labels.iter().filter(|label| label.mora.is_some());
-        let mora_model = match (label_iter.next(), label_iter.next(), label_iter.next()) {
-            (Some(consonant), Some(vowel), None) => generate_mora(Some(consonant), vowel),
-            (Some(vowel), None, None) => generate_mora(None, vowel),
-
+        match (label_iter.next(), label_iter.next(), label_iter.next()) {
+            (Some(consonant), Some(vowel), None) => {
+                let mora = generate_mora(Some(consonant), vowel);
+                moras.push(mora);
+            }
+            (Some(vowel), None, None) => {
+                let mora = generate_mora(None, vowel);
+                moras.push(mora);
+            }
             // silやpau以外の音素がないモーラは含めない
-            (None, _, _) => return None,
+            (None, _, _) => {}
             // 音素が3つ以上あるとき
             (Some(first), _, Some(_)) => {
-                if first.mora.as_ref().map(|mora| mora.position_forward) == Some(49) {
-                    // position_forwardが飽和している場合は正常として扱う
-                    return None;
-                } else {
-                    return Some(Err(ErrorKind::TooLongMora));
+                // position_forwardが飽和している場合は正常として扱う
+                if first.mora.as_ref().map(|mora| mora.position_forward) != Some(49) {
+                    return Err(ErrorKind::TooLongMora);
                 }
             }
-        };
-        Some(Ok(mora_model))
-    })
-    .collect::<std::result::Result<Vec<_>, _>>()
+        }
+    }
+    Ok(moras)
 }
 
 fn generate_mora(consonant: Option<&Label>, vowel: &Label) -> MoraModel {
