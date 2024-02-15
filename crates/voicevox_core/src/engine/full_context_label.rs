@@ -59,7 +59,14 @@ pub(crate) fn extract_full_context_label(
 fn generate_accent_phrases(
     utterance: &[Label],
 ) -> std::result::Result<Vec<AccentPhraseModel>, ErrorKind> {
-    SplitByKey::new(utterance, |label| {
+    let mut accent_phrases = Vec::with_capacity(
+        utterance
+            .first()
+            .map(|label| label.utterance.accent_phrase_count as usize)
+            .unwrap_or(0),
+    );
+
+    let split = SplitByKey::new(utterance, |label| {
         (
             label
                 .breath_group_curr
@@ -70,17 +77,19 @@ fn generate_accent_phrases(
                 .as_ref()
                 .map(|ap| ap.accent_phrase_position_forward),
         )
-    })
-    .filter_map(|labels| {
-        let moras = match generate_moras(labels) {
-            Ok(moras) if moras.is_empty() => return None,
-            Ok(moras) => moras,
-            Err(err) => return Some(Err(err)),
-        };
+    });
+    for labels in split {
+        let moras = generate_moras(labels)?;
+        if moras.is_empty() {
+            continue;
+        }
 
-        let label = labels.first()?;
-        let ap_curr = label.accent_phrase_curr.as_ref()?;
-        let bg_curr = label.breath_group_curr.as_ref()?;
+        let Some((Some(ap_curr), Some(bg_curr))) = labels
+            .first()
+            .map(|label| (&label.accent_phrase_curr, &label.breath_group_curr))
+        else {
+            continue;
+        };
 
         // Breath Groupの中で最後のアクセント句かつ，Utteranceの中で最後のBreath Groupでない場合は次がpauになる
         let pause_mora = if ap_curr.accent_phrase_position_backward == 1
@@ -101,18 +110,19 @@ fn generate_accent_phrases(
         // workaround for VOICEVOX/voicevox_engine#55
         let accent = (ap_curr.accent_position as usize).min(moras.len());
 
-        Some(Ok(AccentPhraseModel::new(
+        accent_phrases.push(AccentPhraseModel::new(
             moras,
             accent,
             pause_mora,
             ap_curr.is_interrogative,
-        )))
-    })
-    .collect::<std::result::Result<Vec<_>, _>>()
+        ))
+    }
+    Ok(accent_phrases)
 }
 
 fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<MoraModel>, ErrorKind> {
     let mut moras = Vec::with_capacity(accent_phrase.len());
+
     let split = SplitByKey::new(accent_phrase, |label| {
         label.mora.as_ref().map(|mora| mora.position_forward)
     });
