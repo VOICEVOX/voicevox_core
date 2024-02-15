@@ -44,6 +44,13 @@ class StyleMeta:
     id: StyleId
     """スタイルID。"""
 
+    order: Optional[int] = None
+    """
+    話者の順番。
+
+    :attr:`SpeakerMeta.styles` は、この値に対して昇順に並んでいるべきである。
+    """
+
 
 @pydantic.dataclasses.dataclass
 class SpeakerMeta:
@@ -60,6 +67,13 @@ class SpeakerMeta:
 
     version: StyleVersion
     """話者のUUID。"""
+
+    order: Optional[int] = None
+    """
+    話者の順番。
+
+    ``SpeakerMeta`` の列は、この値に対して昇順に並んでいるべきである。
+    """
 
 
 @pydantic.dataclasses.dataclass

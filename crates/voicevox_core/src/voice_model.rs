@@ -15,7 +15,17 @@ pub type RawVoiceModelId = String;
 
 /// 音声モデルID。
 #[derive(
-    PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, new, Getters, derive_more::Display, Debug,
+    PartialEq,
+    Eq,
+    Clone,
+    Ord,
+    Hash,
+    PartialOrd,
+    Deserialize,
+    new,
+    Getters,
+    derive_more::Display,
+    Debug,
 )]
 pub struct VoiceModelId {
     raw_voice_model_id: RawVoiceModelId,
