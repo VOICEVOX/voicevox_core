@@ -106,7 +106,7 @@ fn utterance_to_accent_phrases(utterance: Utterance) -> Vec<AccentPhraseModel> {
     accent_phrases
 }
 
-fn mora_to_text(mora: impl AsRef<str>) -> String {
+pub fn mora_to_text(mora: impl AsRef<str>) -> String {
     let last_char = mora.as_ref().chars().last().unwrap();
     let mora = if ['A', 'I', 'U', 'E', 'O'].contains(&last_char) {
         format!(

@@ -80,7 +80,7 @@ pub(crate) mod blocking {
     use enum_map::enum_map;
 
     use crate::{
-        engine::{self, create_kana, MoraModel, OjtPhoneme},
+        engine::{create_kana, MoraModel, OjtPhoneme},
         error::ErrorRepr,
         infer::{
             domain::{
@@ -92,7 +92,7 @@ pub(crate) mod blocking {
             InferenceSessionOptions,
         },
         numerics::F32Ext as _,
-        text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
+        text_analyzer::{mora_to_text, KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
         AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
         SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
@@ -179,7 +179,7 @@ pub(crate) mod blocking {
             return Ok(Self {
                 status,
                 open_jtalk_analyzer: OpenJTalkAnalyzer::new(open_jtalk),
-                kana_analyzer: KanaAnalyzer {},
+                kana_analyzer: KanaAnalyzer,
                 use_gpu,
             });
 
@@ -1109,21 +1109,6 @@ pub(crate) mod blocking {
         }
 
         (consonant_phoneme_list, vowel_phoneme_list, vowel_indexes)
-    }
-
-    fn mora_to_text(mora: impl AsRef<str>) -> String {
-        let last_char = mora.as_ref().chars().last().unwrap();
-        let mora = if ['A', 'I', 'U', 'E', 'O'].contains(&last_char) {
-            format!(
-                "{}{}",
-                &mora.as_ref()[0..mora.as_ref().len() - 1],
-                last_char.to_lowercase()
-            )
-        } else {
-            mora.as_ref().to_string()
-        };
-        // もしカタカナに変換できなければ、引数で与えた文字列がそのまま返ってくる
-        engine::mora2text(&mora).to_string()
     }
 
     impl AudioQueryModel {
