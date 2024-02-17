@@ -175,6 +175,7 @@ pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
             phoneme => phoneme.to_string(),
         }
     );
+    // もしカタカナに変換できなければ、引数で与えた文字列がそのまま返ってくる
     engine::mora2text(&mora_text).to_string()
 }
 
