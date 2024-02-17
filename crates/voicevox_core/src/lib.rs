@@ -18,6 +18,7 @@ mod voice_model;
 
 pub mod __internal;
 pub mod blocking;
+pub mod text_analyzer;
 pub mod tokio;
 
 #[cfg(test)]
