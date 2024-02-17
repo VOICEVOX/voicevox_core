@@ -1,5 +1,5 @@
 use crate::{
-    engine::{self, extract_full_context_label, parse_kana},
+    engine::{extract_full_context_label, parse_kana},
     AccentPhraseModel, FullcontextExtractor, Result,
 };
 
@@ -37,19 +37,4 @@ impl<O: FullcontextExtractor> TextAnalyzer for OpenJTalkAnalyzer<O> {
         }
         Ok(extract_full_context_label(&self.0, text)?)
     }
-}
-
-pub fn mora_to_text(mora: impl AsRef<str>) -> String {
-    let last_char = mora.as_ref().chars().last().unwrap();
-    let mora = if ['A', 'I', 'U', 'E', 'O'].contains(&last_char) {
-        format!(
-            "{}{}",
-            &mora.as_ref()[0..mora.as_ref().len() - 1],
-            last_char.to_lowercase()
-        )
-    } else {
-        mora.as_ref().to_string()
-    };
-    // もしカタカナに変換できなければ、引数で与えた文字列がそのまま返ってくる
-    engine::mora2text(&mora).to_string()
 }

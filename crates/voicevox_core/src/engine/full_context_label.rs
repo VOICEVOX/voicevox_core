@@ -156,22 +156,26 @@ fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<MoraModel>
 fn generate_mora(consonant: Option<&Label>, vowel: &Label) -> MoraModel {
     let consonant_phoneme = consonant.and_then(|c| c.phoneme.c.to_owned());
     let vowel_phoneme = vowel.phoneme.c.as_deref().unwrap();
-    let mora_text = format!(
-        "{}{}",
-        consonant_phoneme.as_deref().unwrap_or(""),
-        match vowel_phoneme {
-            phoneme @ ("A" | "I" | "U" | "E" | "O") => phoneme.to_lowercase(),
-            phoneme => phoneme.to_string(),
-        }
-    );
     MoraModel::new(
-        engine::mora2text(&mora_text).to_string(),
+        mora_to_text(consonant_phoneme.as_deref(), vowel_phoneme),
         consonant_phoneme,
         consonant.and(Some(0.0)),
         vowel_phoneme.to_string(),
         0.0,
         0.0,
     )
+}
+
+pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
+    let mora_text = format!(
+        "{}{}",
+        consonant.as_deref().unwrap_or(""),
+        match vowel {
+            phoneme @ ("A" | "I" | "U" | "E" | "O") => phoneme.to_lowercase(),
+            phoneme => phoneme.to_string(),
+        }
+    );
+    engine::mora2text(&mora_text).to_string()
 }
 
 #[derive(new)]
