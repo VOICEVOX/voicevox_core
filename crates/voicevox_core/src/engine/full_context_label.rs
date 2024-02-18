@@ -47,7 +47,7 @@ pub(crate) fn extract_full_context_label(
         .collect::<std::result::Result<Vec<_>, _>>()
         .map_err(|source| FullContextLabelError {
             context: ErrorKind::Jlabel,
-            source: Some(anyhow::anyhow!("{}", source)),
+            source: Some(anyhow::anyhow!(source)),
         })?;
 
     generate_accent_phrases(&parsed_labels).map_err(|context| FullContextLabelError {
