@@ -62,7 +62,7 @@ fn generate_accent_phrases(
     let mut accent_phrases = Vec::with_capacity(
         utterance
             .first()
-            .map(|label| label.utterance.accent_phrase_count as usize)
+            .map(|label| label.utterance.accent_phrase_count.into())
             .unwrap_or(0),
     );
 
@@ -110,7 +110,7 @@ fn generate_accent_phrases(
         };
 
         // workaround for VOICEVOX/voicevox_engine#55
-        let accent = (ap_curr.accent_position as usize).min(moras.len());
+        let accent = usize::from(ap_curr.accent_position).min(moras.len());
 
         accent_phrases.push(AccentPhraseModel::new(
             moras,
