@@ -180,40 +180,19 @@ pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
 #[easy_ext::ext]
 impl<T> [T] {
     /// Returns an iterator over subslices grouped by return value of `pred`.
-    ///
-    /// Unlike the approach using `itertools::Itertools::group_by`, `split_by` does not require additional memory allocation.
-    fn split_by<'a, F, V>(&'a self, pred: F) -> impl Iterator<Item = &'a [T]>
+    fn split_by<'a, F, V>(&'a self, mut pred: F) -> impl Iterator<Item = &'a [T]>
     where
         T: 'a,
         F: FnMut(&'a T) -> V,
         V: Eq,
     {
-        struct SplitBy<'a, T, F> {
-            array: &'a [T],
-            pred: F,
-        }
-
-        impl<'a, T, F, V> Iterator for SplitBy<'a, T, F>
-        where
-            F: FnMut(&'a T) -> V,
-            V: Eq,
-        {
-            type Item = &'a [T];
-            fn next(&mut self) -> Option<Self::Item> {
-                let (first, rest) = self.array.split_first()?;
-                let v = (self.pred)(first);
-                let pos = rest
-                    .iter()
-                    .position(|x| (self.pred)(x) != v)
-                    .map_or(self.array.len(), |x| x + 1); // translate to index of `self.array`
-
-                let (result, rest) = self.array.split_at(pos);
-                self.array = rest;
-                Some(result)
-            }
-        }
-
-        SplitBy { array: self, pred }
+        use itertools::Itertools as _;
+        self.iter().enumerate().batching(move |it| {
+            let (i, k) = it.next()?;
+            let v = pred(k);
+            let n = it.take_while_ref(|(_, x)| pred(x) == v).count();
+            Some(&self[i..=i + n])
+        })
     }
 }
 
