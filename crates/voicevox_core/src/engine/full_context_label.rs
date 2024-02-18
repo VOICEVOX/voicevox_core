@@ -169,7 +169,7 @@ fn generate_mora(consonant: Option<&Label>, vowel: &Label) -> MoraModel {
 pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
     let mora_text = format!(
         "{}{}",
-        consonant.as_deref().unwrap_or(""),
+        consonant.unwrap_or(""),
         match vowel {
             phoneme @ ("A" | "I" | "U" | "E" | "O") => phoneme.to_lowercase(),
             phoneme => phoneme.to_string(),
