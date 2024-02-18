@@ -4,7 +4,6 @@ use crate::{
     engine::{self, open_jtalk::FullcontextExtractor, MoraModel},
     AccentPhraseModel,
 };
-use derive_new::new;
 use jlabel::Label;
 
 // FIXME: 入力テキストをここで持って、メッセージに含む
@@ -66,7 +65,7 @@ fn generate_accent_phrases(
             .unwrap_or(0),
     );
 
-    let split = SplitByKey::new(utterance, |label| {
+    let split = utterance.split_by(|label| {
         (
             label
                 .breath_group_curr
@@ -125,9 +124,8 @@ fn generate_accent_phrases(
 fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<MoraModel>, ErrorKind> {
     let mut moras = Vec::with_capacity(accent_phrase.len());
 
-    let split = SplitByKey::new(accent_phrase, |label| {
-        label.mora.as_ref().map(|mora| mora.position_forward)
-    });
+    let split =
+        accent_phrase.split_by(|label| label.mora.as_ref().map(|mora| mora.position_forward));
     for labels in split {
         let mut label_iter = labels.iter().filter(|label| label.mora.is_some());
         match (label_iter.next(), label_iter.next(), label_iter.next()) {
@@ -179,32 +177,56 @@ pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
     engine::mora2text(&mora_text).to_string()
 }
 
-#[derive(new)]
-struct SplitByKey<'a, T, F, V>
-where
-    F: FnMut(&T) -> V,
-    V: Eq,
-{
-    array: &'a [T],
-    pred: F,
+#[easy_ext::ext]
+impl<T> [T] {
+    /// Returns an iterator over subslices grouped by return value of `pred`.
+    ///
+    /// Unlike the approach using `itertools::Itertools::group_by`, `split_by` does not require additional memory allocation.
+    fn split_by<'a, F, V>(&'a self, pred: F) -> impl Iterator<Item = &'a [T]>
+    where
+        T: 'a,
+        F: FnMut(&'a T) -> V,
+        V: Eq,
+    {
+        struct SplitBy<'a, T, F> {
+            array: &'a [T],
+            pred: F,
+        }
+
+        impl<'a, T, F, V> Iterator for SplitBy<'a, T, F>
+        where
+            F: FnMut(&'a T) -> V,
+            V: Eq,
+        {
+            type Item = &'a [T];
+            fn next(&mut self) -> Option<Self::Item> {
+                let (first, rest) = self.array.split_first()?;
+                let v = (self.pred)(first);
+                let pos = rest
+                    .iter()
+                    .position(|x| (self.pred)(x) != v)
+                    .map_or(self.array.len(), |x| x + 1); // translate to index of `self.array`
+
+                let (result, rest) = self.array.split_at(pos);
+                self.array = rest;
+                Some(result)
+            }
+        }
+
+        SplitBy { array: self, pred }
+    }
 }
 
-impl<'a, T, F, V> Iterator for SplitByKey<'a, T, F, V>
-where
-    F: FnMut(&T) -> V,
-    V: Eq,
-{
-    type Item = &'a [T];
-    fn next(&mut self) -> Option<Self::Item> {
-        let (first, rest) = self.array.split_first()?;
-        let v = (self.pred)(first);
-        let pos = rest
-            .iter()
-            .position(|x| (self.pred)(x) != v)
-            .map_or(self.array.len(), |x| x + 1); // translate to index of `self.array`
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-        let (result, rest) = self.array.split_at(pos);
-        self.array = rest;
-        Some(result)
+    #[test]
+    fn split_by() {
+        let mut split = [0, 0, 1, 1, 1, -5].split_by(|n| n);
+        assert_eq!(split.next(), Some([0, 0].as_slice()));
+        assert_eq!(split.next(), Some([1, 1, 1].as_slice()));
+        assert_eq!(split.next(), Some([-5].as_slice()));
+        assert_eq!(split.next(), None);
     }
 }
