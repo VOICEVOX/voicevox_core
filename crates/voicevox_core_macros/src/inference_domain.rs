@@ -223,22 +223,28 @@ pub(crate) fn derive_inference_input_signature(
             fn make_run_context<R: crate::infer::InferenceRuntime>(
                 self,
                 sess: &mut R::Session,
-            ) -> R::RunContext<'_> {
+            ) -> ::anyhow::Result<R::RunContext<'_>> {
                 let mut ctx = <R::RunContext<'_> as ::std::convert::From<_>>::from(sess);
                 #(
-                    __ArrayExt::push_to_ctx(self.#field_names, &mut ctx);
+                    __ArrayExt::push_to_ctx(self.#field_names, &mut ctx)?;
                 )*
-                return ctx;
+                return ::std::result::Result::Ok(ctx);
 
                 trait __ArrayExt {
-                    fn push_to_ctx(self, ctx: &mut impl crate::infer::PushInputTensor);
+                    fn push_to_ctx(
+                        self,
+                        ctx: &mut impl crate::infer::PushInputTensor,
+                    ) -> ::anyhow::Result<()>;
                 }
 
                 impl<A: crate::infer::InputScalar, D: ::ndarray::Dimension + 'static> __ArrayExt
                     for ::ndarray::Array<A, D>
                 {
-                    fn push_to_ctx(self, ctx: &mut impl crate::infer::PushInputTensor) {
-                        A::push_tensor_to_ctx(self, ctx);
+                    fn push_to_ctx(
+                        self,
+                        ctx: &mut impl crate::infer::PushInputTensor,
+                    ) -> ::anyhow::Result<()> {
+                        A::push_tensor_to_ctx(self, ctx)
                     }
                 }
             }

@@ -8,6 +8,7 @@ publish.workspace = true
 crate-type = ["cdylib"]
 
 [features]
+cuda = ["voicevox_core/cuda"]
 directml = ["voicevox_core/directml"]
 
 [dependencies]
