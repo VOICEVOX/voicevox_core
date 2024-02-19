@@ -287,42 +287,43 @@ pub(crate) mod tokio {
     }
 
     #[derive(new)]
-    struct AsyncVvmEntryReader {
-        reader: async_zip::read::fs::ZipFileReader,
+    struct AsyncVvmEntryReader<'a> {
+        path: &'a Path,
+        reader: async_zip::base::read::mem::ZipFileReader,
         entry_map: HashMap<String, AsyncVvmEntry>,
     }
 
-    impl AsyncVvmEntryReader {
-        async fn open(path: &Path) -> LoadModelResult<Self> {
-            let reader = async_zip::read::fs::ZipFileReader::new(path)
-                .await
-                .map_err(|source| LoadModelError {
-                    path: path.to_owned(),
-                    context: LoadModelErrorKind::OpenZipFile,
-                    source: Some(source.into()),
-                })?;
+    impl<'a> AsyncVvmEntryReader<'a> {
+        async fn open(path: &'a Path) -> LoadModelResult<Self> {
+            let reader = async {
+                let file = fs_err::tokio::read(path).await?;
+                async_zip::base::read::mem::ZipFileReader::new(file).await
+            }
+            .await
+            .map_err(|source| LoadModelError {
+                path: path.to_owned(),
+                context: LoadModelErrorKind::OpenZipFile,
+                source: Some(source.into()),
+            })?;
             let entry_map: HashMap<_, _> = reader
                 .file()
                 .entries()
                 .iter()
-                .filter(|e| !e.entry().dir())
-                .enumerate()
-                .map(|(i, e)| {
-                    (
-                        e.entry().filename().to_string(),
-                        AsyncVvmEntry {
-                            index: i,
-                            entry: e.entry().clone(),
-                        },
-                    )
+                .flat_map(|e| {
+                    // 非UTF-8のファイルを利用することはないため、無視する
+                    let filename = e.filename().as_str().ok()?;
+                    (!e.dir().ok()?).then_some(())?;
+                    Some((filename.to_owned(), (**e).clone()))
                 })
+                .enumerate()
+                .map(|(i, (filename, entry))| (filename, AsyncVvmEntry { index: i, entry }))
                 .collect();
-            Ok(AsyncVvmEntryReader::new(reader, entry_map))
+            Ok(AsyncVvmEntryReader::new(path, reader, entry_map))
         }
         async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> LoadModelResult<T> {
             let bytes = self.read_vvm_entry(filename).await?;
             serde_json::from_slice(&bytes).map_err(|source| LoadModelError {
-                path: self.reader.path().to_owned(),
+                path: self.path.to_owned(),
                 context: LoadModelErrorKind::ReadZipEntry {
                     filename: filename.to_owned(),
                 },
@@ -336,16 +337,14 @@ pub(crate) mod tokio {
                     .entry_map
                     .get(filename)
                     .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
-                let mut manifest_reader = self.reader.entry(me.index).await?;
+                let mut manifest_reader = self.reader.reader_with_entry(me.index).await?;
                 let mut buf = Vec::with_capacity(me.entry.uncompressed_size() as usize);
-                manifest_reader
-                    .read_to_end_checked(&mut buf, &me.entry)
-                    .await?;
+                manifest_reader.read_to_end_checked(&mut buf).await?;
                 Ok::<_, anyhow::Error>(buf)
             }
             .await
             .map_err(|source| LoadModelError {
-                path: self.reader.path().to_owned(),
+                path: self.path.to_owned(),
                 context: LoadModelErrorKind::ReadZipEntry {
                     filename: filename.to_owned(),
                 },
