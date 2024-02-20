@@ -131,22 +131,20 @@ fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<MoraModel>
             }
             // silやpau以外の音素がないモーラは含めない
             [] => {}
-            // 音素が3つ以上あるとき
-            [first, ..] => {
-                // position_forwardとposition_backwardが飽和している場合は無視する
-                if !matches!(
-                    first,
-                    Label {
-                        mora: Some(Mora {
-                            position_forward: 49,
-                            position_backward: 49,
-                            ..
-                        }),
+
+            // 音素が3つ以上ある場合：
+            // position_forwardとposition_backwardが飽和している場合は無視する
+            [Label {
+                mora:
+                    Some(Mora {
+                        position_forward: 49,
+                        position_backward: 49,
                         ..
-                    }
-                ) {
-                    return Err(ErrorKind::TooLongMora);
-                }
+                    }),
+                ..
+            }, ..] => {}
+            _ => {
+                return Err(ErrorKind::TooLongMora);
             }
         }
     }
