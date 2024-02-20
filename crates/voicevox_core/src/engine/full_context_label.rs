@@ -4,7 +4,7 @@ use crate::{
     engine::{self, open_jtalk::FullcontextExtractor, MoraModel},
     AccentPhraseModel,
 };
-use jlabel::Label;
+use jlabel::{Label, Mora};
 use smallvec::SmallVec;
 
 // FIXME: 入力テキストをここで持って、メッセージに含む
@@ -133,8 +133,18 @@ fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<MoraModel>
             [] => {}
             // 音素が3つ以上あるとき
             [first, ..] => {
-                // position_forwardが飽和している場合は正常として扱う
-                if first.mora.as_ref().map(|mora| mora.position_forward) != Some(49) {
+                // position_forwardとposition_backwardが飽和している場合は無視する
+                if !matches!(
+                    first,
+                    Label {
+                        mora: Some(Mora {
+                            position_forward: 49,
+                            position_backward: 49,
+                            ..
+                        }),
+                        ..
+                    }
+                ) {
                     return Err(ErrorKind::TooLongMora);
                 }
             }
