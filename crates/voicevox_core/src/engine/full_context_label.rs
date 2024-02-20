@@ -5,6 +5,7 @@ use crate::{
     AccentPhraseModel,
 };
 use jlabel::Label;
+use smallvec::SmallVec;
 
 // FIXME: 入力テキストをここで持って、メッセージに含む
 #[derive(thiserror::Error, Debug)]
@@ -117,20 +118,21 @@ fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<MoraModel>
 
     let split = accent_phrase.chunk_by(|a, b| a.mora == b.mora);
     for labels in split {
-        let mut label_iter = labels.iter().filter(|label| label.mora.is_some());
-        match (label_iter.next(), label_iter.next(), label_iter.next()) {
-            (Some(consonant), Some(vowel), None) => {
+        let labels: SmallVec<[&Label; 3]> =
+            labels.iter().filter(|label| label.mora.is_some()).collect();
+        match labels[..] {
+            [consonant, vowel] => {
                 let mora = generate_mora(Some(consonant), vowel);
                 moras.push(mora);
             }
-            (Some(vowel), None, None) => {
+            [vowel] => {
                 let mora = generate_mora(None, vowel);
                 moras.push(mora);
             }
             // silやpau以外の音素がないモーラは含めない
-            (None, _, _) => {}
+            [] => {}
             // 音素が3つ以上あるとき
-            (Some(first), _, Some(_)) => {
+            [first, ..] => {
                 // position_forwardが飽和している場合は正常として扱う
                 if first.mora.as_ref().map(|mora| mora.position_forward) != Some(49) {
                     return Err(ErrorKind::TooLongMora);
