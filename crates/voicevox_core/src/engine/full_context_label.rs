@@ -259,7 +259,7 @@ mod chunk_by {
         use super::TChunkBy;
 
         #[test]
-        fn split_by() {
+        fn chunk_by() {
             let mut split = [0, 0, 1, 1, 1, -5].chunk_by(|a, b| a == b);
             assert_eq!(split.next(), Some([0, 0].as_slice()));
             assert_eq!(split.next(), Some([1, 1, 1].as_slice()));
