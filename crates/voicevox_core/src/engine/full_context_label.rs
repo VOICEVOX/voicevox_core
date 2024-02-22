@@ -721,7 +721,7 @@ mod tests {
     #[apply(label_cases)]
     fn parse_labels(_text: &str, labels: &[&str], accent_phrase: &[AccentPhraseModel]) {
         let parsed_labels = labels
-            .into_iter()
+            .iter()
             .map(|s| Label::from_str(s).unwrap())
             .collect::<Vec<_>>();
 
