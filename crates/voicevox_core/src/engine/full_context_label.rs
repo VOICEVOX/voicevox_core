@@ -281,18 +281,25 @@ mod chunk_by {
 
 #[cfg(test)]
 mod tests {
+    use ::test_util::OPEN_JTALK_DIC_DIR;
     use rstest::rstest;
 
     use std::str::FromStr;
 
-    use crate::engine::full_context_label::generate_accent_phrases;
-    use crate::{engine::MoraModel, AccentPhraseModel};
+    use crate::{
+        engine::{
+            full_context_label::{extract_full_context_label, generate_accent_phrases},
+            open_jtalk::FullcontextExtractor,
+            MoraModel,
+        },
+        AccentPhraseModel,
+    };
     use jlabel::Label;
 
     #[rstest]
     #[case(
+        "いぇ",
         &[
-            // いぇ
             "xx^xx-sil+y=e/A:xx+xx+xx/B:xx-xx_xx/C:xx_xx+xx/D:xx+xx_xx/E:xx_xx!xx_xx-xx/F:xx_xx#xx_xx@xx_xx|xx_xx/G:1_1%0_xx_xx/H:xx_xx/I:xx-xx@xx+xx&xx-xx|xx+xx/J:1_1/K:1+1-1",
             "xx^sil-y+e=sil/A:0+1+1/B:xx-xx_xx/C:09_xx+xx/D:xx+xx_xx/E:xx_xx!xx_xx-xx/F:1_1#0_xx@1_1|1_1/G:xx_xx%xx_xx_xx/H:xx_xx/I:1-1@1+1&1-1|1+1/J:xx_xx/K:1+1-1",
             "sil^y-e+sil=xx/A:0+1+1/B:xx-xx_xx/C:09_xx+xx/D:xx+xx_xx/E:xx_xx!xx_xx-xx/F:1_1#0_xx@1_1|1_1/G:xx_xx%xx_xx_xx/H:xx_xx/I:1-1@1+1&1-1|1+1/J:xx_xx/K:1+1-1",
@@ -315,8 +322,8 @@ mod tests {
         ]
     )]
     #[case(
+        "んーっ",
         &[
-            // んーっ
             "xx^xx-sil+N=N/A:xx+xx+xx/B:xx-xx_xx/C:xx_xx+xx/D:09+xx_xx/E:xx_xx!xx_xx-xx/F:xx_xx#xx_xx@xx_xx|xx_xx/G:3_3%0_xx_xx/H:xx_xx/I:xx-xx@xx+xx&xx-xx|xx+xx/J:1_3/K:1+1-3",
             "xx^sil-N+N=cl/A:-2+1+3/B:xx-xx_xx/C:09_xx+xx/D:09+xx_xx/E:xx_xx!xx_xx-xx/F:3_3#0_xx@1_1|1_3/G:xx_xx%xx_xx_xx/H:xx_xx/I:1-3@1+1&1-1|1+3/J:xx_xx/K:1+1-3",
             "sil^N-N+cl=sil/A:-1+2+2/B:xx-xx_xx/C:09_xx+xx/D:09+xx_xx/E:xx_xx!xx_xx-xx/F:3_3#0_xx@1_1|1_3/G:xx_xx%xx_xx_xx/H:xx_xx/I:1-3@1+1&1-1|1+3/J:xx_xx/K:1+1-3",
@@ -358,8 +365,8 @@ mod tests {
         ]
     )]
     #[case(
+        "これはテストです",
         &[
-            // これはテストです
             "xx^xx-sil+k=o/A:xx+xx+xx/B:xx-xx_xx/C:xx_xx+xx/D:04+xx_xx/E:xx_xx!xx_xx-xx/F:xx_xx#xx_xx@xx_xx|xx_xx/G:3_3%0_xx_xx/H:xx_xx/I:xx-xx@xx+xx&xx-xx|xx+xx/J:2_8/K:1+2-8",
             "xx^sil-k+o=r/A:-2+1+3/B:xx-xx_xx/C:04_xx+xx/D:24+xx_xx/E:xx_xx!xx_xx-xx/F:3_3#0_xx@1_2|1_8/G:5_1%0_xx_1/H:xx_xx/I:2-8@1+1&1-2|1+8/J:xx_xx/K:1+2-8",
             "sil^k-o+r=e/A:-2+1+3/B:xx-xx_xx/C:04_xx+xx/D:24+xx_xx/E:xx_xx!xx_xx-xx/F:3_3#0_xx@1_2|1_8/G:5_1%0_xx_1/H:xx_xx/I:2-8@1+1&1-2|1+8/J:xx_xx/K:1+2-8",
@@ -378,7 +385,8 @@ mod tests {
             "d^e-s+U=sil/A:4+5+1/B:03-xx_xx/C:10_7+2/D:xx+xx_xx/E:3_3!0_xx-1/F:5_1#0_xx@2_1|4_5/G:xx_xx%xx_xx_xx/H:xx_xx/I:2-8@1+1&1-2|1+8/J:xx_xx/K:1+2-8",
             "e^s-U+sil=xx/A:4+5+1/B:03-xx_xx/C:10_7+2/D:xx+xx_xx/E:3_3!0_xx-1/F:5_1#0_xx@2_1|4_5/G:xx_xx%xx_xx_xx/H:xx_xx/I:2-8@1+1&1-2|1+8/J:xx_xx/K:1+2-8",
             "s^U-sil+xx=xx/A:xx+xx+xx/B:10-7_2/C:xx_xx+xx/D:xx+xx_xx/E:5_1!0_xx-xx/F:xx_xx#xx_xx@xx_xx|xx_xx/G:xx_xx%xx_xx_xx/H:2_8/I:xx-xx@xx+xx&xx-xx|xx+xx/J:xx_xx/K:1+2-8",
-        ],&[
+        ],
+        &[
             AccentPhraseModel::new(
                 vec![
                     MoraModel::new(
@@ -460,8 +468,8 @@ mod tests {
         ]
     )]
     #[case(
+        "１、１０００、１００万、１億？",
         &[
-            // １、１０００、１００万、１億？
             "xx^xx-sil+i=ch/A:xx+xx+xx/B:xx-xx_xx/C:xx_xx+xx/D:05+xx_xx/E:xx_xx!xx_xx-xx/F:xx_xx#xx_xx@xx_xx|xx_xx/G:2_2%0_xx_xx/H:xx_xx/I:xx-xx@xx+xx&xx-xx|xx+xx/J:1_2/K:4+4-12",
             "xx^sil-i+ch=i/A:-1+1+2/B:xx-xx_xx/C:05_xx+xx/D:05+xx_xx/E:xx_xx!xx_xx-xx/F:2_2#0_xx@1_1|1_2/G:2_1%0_xx_0/H:xx_xx/I:1-2@1+4&1-4|1+12/J:1_2/K:4+4-12",
             "sil^i-ch+i=pau/A:0+2+1/B:xx-xx_xx/C:05_xx+xx/D:05+xx_xx/E:xx_xx!xx_xx-xx/F:2_2#0_xx@1_1|1_2/G:2_1%0_xx_0/H:xx_xx/I:1-2@1+4&1-4|1+12/J:1_2/K:4+4-12",
@@ -601,8 +609,8 @@ mod tests {
         ]
     )]
     #[case(
+        "クヮルテット。あーあ、。",
         &[
-            // クヮルテット。あーあ、。
             "xx^xx-sil+kw=a/A:xx+xx+xx/B:xx-xx_xx/C:xx_xx+xx/D:02+xx_xx/E:xx_xx!xx_xx-xx/F:xx_xx#xx_xx@xx_xx|xx_xx/G:5_3%0_xx_xx/H:xx_xx/I:xx-xx@xx+xx&xx-xx|xx+xx/J:1_5/K:2+3-8",
             "xx^sil-kw+a=r/A:-2+1+5/B:xx-xx_xx/C:02_xx+xx/D:09+xx_xx/E:xx_xx!xx_xx-xx/F:5_3#0_xx@1_1|1_5/G:2_1%0_xx_0/H:xx_xx/I:1-5@1+2&1-3|1+8/J:2_3/K:2+3-8",
             "sil^kw-a+r=u/A:-2+1+5/B:xx-xx_xx/C:02_xx+xx/D:09+xx_xx/E:xx_xx!xx_xx-xx/F:5_3#0_xx@1_1|1_5/G:2_1%0_xx_0/H:xx_xx/I:1-5@1+2&1-3|1+8/J:2_3/K:2+3-8",
@@ -691,7 +699,17 @@ mod tests {
             ),
         ]
     )]
-    fn parse_labels(#[case] labels: &[&str], #[case] accent_phrase: &[AccentPhraseModel]) {
+    #[tokio::test]
+    async fn parse_labels(
+        #[case] text: &str,
+        #[case] labels: &[&str],
+        #[case] accent_phrase: &[AccentPhraseModel],
+    ) {
+        let openjtalk = crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+            .await
+            .unwrap();
+        assert_eq!(&openjtalk.extract_fullcontext(text).unwrap(), labels);
+
         let parsed_labels = labels
             .into_iter()
             .map(|s| Label::from_str(s).unwrap())
@@ -699,6 +717,11 @@ mod tests {
 
         assert_eq!(
             &generate_accent_phrases(&parsed_labels).unwrap(),
+            accent_phrase
+        );
+
+        assert_eq!(
+            &extract_full_context_label(&openjtalk, text).unwrap(),
             accent_phrase
         );
     }
