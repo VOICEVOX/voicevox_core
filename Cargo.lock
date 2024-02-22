@@ -3214,6 +3214,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rstest_reuse"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88530b681abe67924d42cca181d070e3ac20e0740569441a9e35a7cedd2b34a4"
+dependencies = [
+ "quote",
+ "rand 0.8.5",
+ "rustc_version 0.4.0",
+ "syn 2.0.48",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4366,6 +4378,7 @@ dependencies = [
  "rayon",
  "regex",
  "rstest",
+ "rstest_reuse",
  "serde",
  "serde_json",
  "smallvec",

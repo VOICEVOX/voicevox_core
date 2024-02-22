@@ -23,6 +23,8 @@ pub mod tokio;
 
 #[cfg(test)]
 mod test_util;
+#[cfg(test)]
+use rstest_reuse;
 
 pub use self::{
     devices::SupportedDevices,

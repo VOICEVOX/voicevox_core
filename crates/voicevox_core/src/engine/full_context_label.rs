@@ -281,6 +281,8 @@ mod chunk_by {
 
 #[cfg(test)]
 mod tests {
+    use rstest_reuse::*;
+
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use rstest::rstest;
 
@@ -296,6 +298,7 @@ mod tests {
     };
     use jlabel::Label;
 
+    #[template]
     #[rstest]
     #[case(
         "いぇ",
@@ -699,17 +702,24 @@ mod tests {
             ),
         ]
     )]
-    #[tokio::test]
-    async fn parse_labels(
+    fn label_cases(
         #[case] text: &str,
         #[case] labels: &[&str],
         #[case] accent_phrase: &[AccentPhraseModel],
     ) {
+    }
+
+    #[apply(label_cases)]
+    #[tokio::test]
+    async fn openjtalk(text: &str, labels: &[&str], _accent_phrase: &[AccentPhraseModel]) {
         let openjtalk = crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
             .await
             .unwrap();
         assert_eq!(&openjtalk.extract_fullcontext(text).unwrap(), labels);
+    }
 
+    #[apply(label_cases)]
+    fn parse_labels(_text: &str, labels: &[&str], accent_phrase: &[AccentPhraseModel]) {
         let parsed_labels = labels
             .into_iter()
             .map(|s| Label::from_str(s).unwrap())
@@ -719,7 +729,18 @@ mod tests {
             &generate_accent_phrases(&parsed_labels).unwrap(),
             accent_phrase
         );
+    }
 
+    #[apply(label_cases)]
+    #[tokio::test]
+    async fn extract_fullcontext(
+        text: &str,
+        _labels: &[&str],
+        accent_phrase: &[AccentPhraseModel],
+    ) {
+        let openjtalk = crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+            .await
+            .unwrap();
         assert_eq!(
             &extract_full_context_label(&openjtalk, text).unwrap(),
             accent_phrase
