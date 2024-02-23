@@ -352,7 +352,7 @@ mod tests {
         AccentPhraseModel,
     };
 
-    fn mora_model(text: &str, consonant: Option<&str>, vowel: &str) -> MoraModel {
+    fn mora(text: &str, consonant: Option<&str>, vowel: &str) -> MoraModel {
         MoraModel::new(
             text.into(),
             consonant.map(|c| c.into()),
@@ -375,7 +375,7 @@ mod tests {
         ],
         &[
             AccentPhraseModel::new(
-                vec![mora_model("イェ", Some("y"), "e")],
+                vec![mora("イェ", Some("y"), "e")],
                 1,
                 None,
                 false,
@@ -394,9 +394,9 @@ mod tests {
         &[
             AccentPhraseModel::new(
                 vec![
-                    mora_model("ン", None, "N"),
-                    mora_model("ン", None, "N"),
-                    mora_model("ッ", None, "cl"),
+                    mora("ン", None, "N"),
+                    mora("ン", None, "N"),
+                    mora("ッ", None, "cl"),
                 ],
                 3,
                 None,
@@ -429,9 +429,9 @@ mod tests {
         &[
             AccentPhraseModel::new(
                 vec![
-                    mora_model("コ", Some("k"), "o"),
-                    mora_model("レ", Some("r"), "e"),
-                    mora_model("ワ", Some("w"), "a"),
+                    mora("コ", Some("k"), "o"),
+                    mora("レ", Some("r"), "e"),
+                    mora("ワ", Some("w"), "a"),
                 ],
                 3,
                 None,
@@ -439,11 +439,11 @@ mod tests {
             ),
             AccentPhraseModel::new(
                 vec![
-                    mora_model("テ", Some("t"), "e"),
-                    mora_model("ス", Some("s"), "U"),
-                    mora_model("ト", Some("t"), "o"),
-                    mora_model("デ", Some("d"), "e"),
-                    mora_model("ス", Some("s"), "U"),
+                    mora("テ", Some("t"), "e"),
+                    mora("ス", Some("s"), "U"),
+                    mora("ト", Some("t"), "o"),
+                    mora("デ", Some("d"), "e"),
+                    mora("ス", Some("s"), "U"),
                 ],
                 1,
                 None,
@@ -482,39 +482,39 @@ mod tests {
         &[
             AccentPhraseModel::new(
                 vec![
-                    mora_model("イ", None, "i"),
-                    mora_model("チ", Some("ch"), "i"),
+                    mora("イ", None, "i"),
+                    mora("チ", Some("ch"), "i"),
                 ],
                 2,
-                Some(mora_model("、", None, "pau")),
+                Some(mora("、", None, "pau")),
                 false,
             ),
             AccentPhraseModel::new(
                 vec![
-                    mora_model("セ", Some("s"), "e"),
-                    mora_model("ン", None, "N"),
+                    mora("セ", Some("s"), "e"),
+                    mora("ン", None, "N"),
                 ],
                 1,
-                Some(mora_model("、", None, "pau")),
+                Some(mora("、", None, "pau")),
                 false,
             ),
             AccentPhraseModel::new(
                 vec![
-                    mora_model("ヒャ", Some("hy"), "a"),
-                    mora_model("ク", Some("k"), "u"),
-                    mora_model("マ", Some("m"), "a"),
-                    mora_model("ン", None, "N"),
+                    mora("ヒャ", Some("hy"), "a"),
+                    mora("ク", Some("k"), "u"),
+                    mora("マ", Some("m"), "a"),
+                    mora("ン", None, "N"),
                 ],
                 3,
-                Some(mora_model("、", None, "pau")),
+                Some(mora("、", None, "pau")),
                 false,
             ),
             AccentPhraseModel::new(
                 vec![
-                    mora_model("イ", None, "i"),
-                    mora_model("チ", Some("ch"), "i"),
-                    mora_model("オ", None, "o"),
-                    mora_model("ク", Some("k"), "u"),
+                    mora("イ", None, "i"),
+                    mora("チ", Some("ch"), "i"),
+                    mora("オ", None, "o"),
+                    mora("ク", Some("k"), "u"),
                 ],
                 2,
                 None,
@@ -544,27 +544,27 @@ mod tests {
         &[
             AccentPhraseModel::new(
                 vec![
-                    mora_model("クヮ", Some("kw"), "a"),
-                    mora_model("ル", Some("r"), "u"),
-                    mora_model("テ", Some("t"), "e"),
-                    mora_model("ッ", None, "cl"),
-                    mora_model("ト", Some("t"), "o"),
+                    mora("クヮ", Some("kw"), "a"),
+                    mora("ル", Some("r"), "u"),
+                    mora("テ", Some("t"), "e"),
+                    mora("ッ", None, "cl"),
+                    mora("ト", Some("t"), "o"),
                 ],
                 3,
-                Some(mora_model("、", None, "pau")),
+                Some(mora("、", None, "pau")),
                 false,
             ),
             AccentPhraseModel::new(
                 vec![
-                    mora_model("ア", None, "a"),
-                    mora_model("ア", None, "a"),
+                    mora("ア", None, "a"),
+                    mora("ア", None, "a"),
                 ],
                 1,
                 None,
                 false,
             ),
             AccentPhraseModel::new(
-                vec![mora_model("ア", None, "a")],
+                vec![mora("ア", None, "a")],
                 1,
                 None,
                 false,
