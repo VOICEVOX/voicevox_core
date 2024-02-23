@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::{marker::PhantomData, path::PathBuf, sync::Arc};
 
 mod convert;
 use self::convert::{
@@ -13,7 +13,7 @@ use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
     pyclass, pyfunction, pymethods, pymodule,
-    types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyModule},
+    types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyModule, PyString},
     wrap_pyfunction, PyAny, PyObject, PyRef, PyResult, PyTypeInfo, Python, ToPyObject,
 };
 use uuid::Uuid;
@@ -114,10 +114,7 @@ fn supported_devices(py: Python<'_>) -> PyResult<&PyAny> {
 #[pymethods]
 impl VoiceModel {
     #[staticmethod]
-    fn from_path(
-        py: Python<'_>,
-        #[pyo3(from_py_with = "from_utf8_path")] path: Utf8PathBuf,
-    ) -> PyResult<&PyAny> {
+    fn from_path(py: Python<'_>, path: PathBuf) -> PyResult<&PyAny> {
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let model = voicevox_core::tokio::VoiceModel::from_path(path).await;
             let model = Python::with_gil(|py| model.into_py_result(py))?;
@@ -247,7 +244,12 @@ impl Synthesizer {
             .into_py_result(py)
     }
 
-    fn is_loaded_voice_model(&self, voice_model_id: &str) -> PyResult<bool> {
+    // C APIの挙動と一貫性を持たせる。
+    fn is_loaded_voice_model(&self, voice_model_id: &PyString) -> PyResult<bool> {
+        let Ok(voice_model_id) = voice_model_id.to_str() else {
+            // 与えられたIDがUTF-8ではない場合、それに対応する`VoicdModel`は確実に存在しない
+            return Ok(false);
+        };
         Ok(self
             .synthesizer
             .get()?
@@ -636,12 +638,12 @@ impl UserDict {
 }
 
 mod blocking {
-    use std::sync::Arc;
+    use std::{path::PathBuf, sync::Arc};
 
     use camino::Utf8PathBuf;
     use pyo3::{
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyBytes, PyDict, PyList},
+        types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyString},
         PyAny, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
@@ -661,10 +663,7 @@ mod blocking {
     #[pymethods]
     impl VoiceModel {
         #[staticmethod]
-        fn from_path(
-            py: Python<'_>,
-            #[pyo3(from_py_with = "crate::convert::from_utf8_path")] path: Utf8PathBuf,
-        ) -> PyResult<Self> {
+        fn from_path(py: Python<'_>, path: PathBuf) -> PyResult<Self> {
             let model = voicevox_core::blocking::VoiceModel::from_path(path).into_py_result(py)?;
             Ok(Self { model })
         }
@@ -786,7 +785,12 @@ mod blocking {
                 .into_py_result(py)
         }
 
-        fn is_loaded_voice_model(&self, voice_model_id: &str) -> PyResult<bool> {
+        // C APIの挙動と一貫性を持たせる。
+        fn is_loaded_voice_model(&self, voice_model_id: &PyString) -> PyResult<bool> {
+            let Ok(voice_model_id) = voice_model_id.to_str() else {
+                // 与えられたIDがUTF-8ではない場合、それに対応する`VoicdModel`は確実に存在しない
+                return Ok(false);
+            };
             Ok(self
                 .synthesizer
                 .get()?
