@@ -441,8 +441,10 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
     model_id: VoicevoxVoiceModelId,
 ) -> bool {
     init_logger_once();
-    // FIXME: 不正なUTF-8文字列に対し、正式なエラーとするか黙って`false`を返す
-    let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) }).unwrap();
+    let Ok(raw_model_id) = ensure_utf8(unsafe { CStr::from_ptr(model_id) }) else {
+        // 与えられたIDがUTF-8ではない場合、それに対応する`VoicdModel`は確実に存在しない
+        return false;
+    };
     synthesizer
         .synthesizer()
         .is_loaded_voice_model(&VoiceModelId::new(raw_model_id.into()))
