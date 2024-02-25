@@ -18,7 +18,7 @@ class VoiceModel:
     音声モデル。"""
 
     @staticmethod
-    def from_path(path: Union[PathLike, str]) -> VoiceModel:
+    def from_path(path: Union[str, PathLike[str]]) -> VoiceModel:
         """
         VVMファイルから ``VoiceModel`` を生成する。
 
@@ -47,7 +47,7 @@ class OpenJtalk:
         Open JTalkの辞書ディレクトリ。
     """
 
-    def __init__(self, open_jtalk_dict_dir: Union[PathLike, str]) -> None: ...
+    def __init__(self, open_jtalk_dict_dir: Union[str, PathLike[str]]) -> None: ...
     def use_user_dict(self, user_dict: UserDict) -> None:
         """
         ユーザー辞書を設定する。
