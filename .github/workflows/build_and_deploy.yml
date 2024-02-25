@@ -372,7 +372,6 @@ jobs:
         with:
           name: voicevox_core-x86_64-apple-ios
           path:  ${{ env.IOS_X86_64_PATH }}
-#          path: artifact/voicevox_core-x86_64-apple-ios
       - uses: actions/download-artifact@v2
         with:
           name: voicevox_core-aarch64-apple-ios-sim
