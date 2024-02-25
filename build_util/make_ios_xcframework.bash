@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 set -eu
 
-if [ ! -v IOS_X86_64_PATH ]; then # 入力用：X86_64用のモジュールのディレクトリ(simulator)
-    echo "IOS_X86_64_PATHが未定義です" 
-    exit 1 
-fi 
-if [ ! -v IOS_AARCH64_SIM_PATH ]; then # 入力用：AARCH64_SIM用のモジュールのディレクトリ(simulator)
-    echo "IOS_AARCH64_SIM_PATHが未定義です" 
-    exit 1 
-fi 
-if [ ! -v IOS_AARCH64_PATH ]; then # 入力用： AARCH64用のモジュールのディレクトリ(実機)
-    echo "IOS_AARCH64_PATHが未定義です" 
-    exit 1 
-fi 
-if [ ! -v ASSET_PATH ]; then # 出力用： ASSETのディレクトリ 
-    echo "ASSET_PATHが未定義です" 
-    exit 1 
-fi 
+if [ ! -v IOS_X86_64_PATH ]; then # X86_64用のモジュールのディレクトリ(simulator)
+    echo "IOS_X86_64_PATHが未定義です"
+    exit 1
+fi
+if [ ! -v IOS_AARCH64_SIM_PATH ]; then # AARCH64_SIM用のモジュールのディレクトリ(simulator)
+    echo "IOS_AARCH64_SIM_PATHが未定義です"
+    exit 1
+fi
+if [ ! -v IOS_AARCH64_PATH ]; then # AARCH64用のモジュールのディレクトリ(実機)
+    echo "IOS_AARCH64_PATHが未定義です"
+    exit 1
+fi
+if [ ! -v OUTPUT_ASSET_PATH ]; then # 出力するASSETのディレクトリ
+    echo "OUTPUT_ASSET_PATHが未定義です"
+    exit 1
+fi
 
 echo "* Get original onnxruntime file name from rpath"
 output=$(otool -L "${IOS_AARCH64_PATH}/libvoicevox_core.dylib")
@@ -71,10 +71,9 @@ for arch in "${arches[@]}"; do
         "Framework-${arch}/voicevox_core.framework/voicevox_core"
 done
 
-
 echo "* Create XCFramework"
-mkdir -p "${ASSET_PATH}"
+mkdir -p "${OUTPUT_ASSET_PATH}"
 xcodebuild -create-xcframework \
     -framework "Framework-sim/voicevox_core.framework" \
     -framework "Framework-aarch64/voicevox_core.framework" \
-    -output "${ASSET_PATH}/voicevox_core.xcframework"
+    -output "${OUTPUT_ASSET_PATH}/voicevox_core.xcframework"
