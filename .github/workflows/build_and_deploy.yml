@@ -242,7 +242,7 @@ jobs:
       - name: Raplace resource
         if: inputs.is_production
         shell: bash
-        run: |
+        run:
           mv -f download/resource/core/README.md ./README.md
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
@@ -315,7 +315,7 @@ jobs:
           cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
-        run: |
+        run:
           bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
@@ -415,7 +415,7 @@ jobs:
       - name: Raplace resource
         if: inputs.is_production
         shell: bash
-        run: |
+        run:
           rm -r ./model; mv download/fat_resource/core/model ./model
       - name: Create artifact
         run: |
@@ -457,7 +457,7 @@ jobs:
       - name: Install cargo-edit
         run: cargo binstall cargo-edit@^0.11 --no-confirm
       - name: set cargo version
-        run: |
+        run:
           cargo set-version "$VERSION" -p voicevox_core_java_api
 
       - name: "Download artifact (android-arm64-cpu)"
