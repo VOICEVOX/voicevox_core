@@ -80,7 +80,7 @@ pub(crate) mod blocking {
     use enum_map::enum_map;
 
     use crate::{
-        engine::{create_kana, MoraModel, OjtPhoneme},
+        engine::{create_kana, mora_to_text, MoraModel, OjtPhoneme},
         error::ErrorRepr,
         infer::{
             domain::{
@@ -92,7 +92,7 @@ pub(crate) mod blocking {
             InferenceSessionOptions,
         },
         numerics::F32Ext as _,
-        text_analyzer::{mora_to_text, KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
+        text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
         AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
         SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
@@ -376,7 +376,7 @@ pub(crate) mod blocking {
                 let pitch = (*last_mora.pitch() + ADJUST_PITCH).min(MAX_PITCH);
 
                 MoraModel::new(
-                    mora_to_text(last_mora.vowel()),
+                    mora_to_text(None, last_mora.vowel()),
                     None,
                     None,
                     last_mora.vowel().clone(),

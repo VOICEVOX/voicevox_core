@@ -23,6 +23,7 @@ fs-err = { workspace = true, features = ["tokio"] }
 futures.workspace = true
 indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
+jlabel.workspace = true
 nanoid.workspace = true
 ndarray.workspace = true
 once_cell.workspace = true
@@ -33,6 +34,7 @@ rayon.workspace = true
 regex.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
+smallvec.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["rt"] } # FIXME: feature-gateする

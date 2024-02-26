@@ -1,5 +1,5 @@
 use crate::{
-    engine::{self, parse_kana, MoraModel, Utterance},
+    engine::{extract_full_context_label, parse_kana},
     AccentPhraseModel, FullcontextExtractor, Result,
 };
 
@@ -35,88 +35,6 @@ impl<O: FullcontextExtractor> TextAnalyzer for OpenJTalkAnalyzer<O> {
         if text.is_empty() {
             return Ok(Vec::new());
         }
-        let utterance = Utterance::extract_full_context_label(&self.0, text)?;
-        Ok(utterance_to_accent_phrases(utterance))
+        Ok(extract_full_context_label(&self.0, text)?)
     }
-}
-
-fn utterance_to_accent_phrases(utterance: Utterance) -> Vec<AccentPhraseModel> {
-    let accent_phrases: Vec<AccentPhraseModel> = utterance.breath_groups().iter().enumerate().fold(
-        Vec::new(),
-        |mut accum_vec, (i, breath_group)| {
-            accum_vec.extend(breath_group.accent_phrases().iter().enumerate().map(
-                |(j, accent_phrase)| {
-                    let moras = accent_phrase
-                        .moras()
-                        .iter()
-                        .map(|mora| {
-                            let mora_text = mora
-                                .phonemes()
-                                .iter()
-                                .map(|phoneme| phoneme.phoneme().to_string())
-                                .collect::<Vec<_>>()
-                                .join("");
-
-                            let (consonant, consonant_length) =
-                                if let Some(consonant) = mora.consonant() {
-                                    (Some(consonant.phoneme().to_string()), Some(0.))
-                                } else {
-                                    (None, None)
-                                };
-
-                            MoraModel::new(
-                                mora_to_text(mora_text),
-                                consonant,
-                                consonant_length,
-                                mora.vowel().phoneme().into(),
-                                0.,
-                                0.,
-                            )
-                        })
-                        .collect();
-
-                    let pause_mora = if i != utterance.breath_groups().len() - 1
-                        && j == breath_group.accent_phrases().len() - 1
-                    {
-                        Some(MoraModel::new(
-                            "、".into(),
-                            None,
-                            None,
-                            "pau".into(),
-                            0.,
-                            0.,
-                        ))
-                    } else {
-                        None
-                    };
-
-                    AccentPhraseModel::new(
-                        moras,
-                        *accent_phrase.accent(),
-                        pause_mora,
-                        *accent_phrase.is_interrogative(),
-                    )
-                },
-            ));
-
-            accum_vec
-        },
-    );
-
-    accent_phrases
-}
-
-pub fn mora_to_text(mora: impl AsRef<str>) -> String {
-    let last_char = mora.as_ref().chars().last().unwrap();
-    let mora = if ['A', 'I', 'U', 'E', 'O'].contains(&last_char) {
-        format!(
-            "{}{}",
-            &mora.as_ref()[0..mora.as_ref().len() - 1],
-            last_char.to_lowercase()
-        )
-    } else {
-        mora.as_ref().to_string()
-    };
-    // もしカタカナに変換できなければ、引数で与えた文字列がそのまま返ってくる
-    engine::mora2text(&mora).to_string()
 }
