@@ -380,7 +380,7 @@ jobs:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
       - name: Create xcframework
-        run: |
+        run:
           build_util/make_ios_xcframework.bash
         env:
           OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
