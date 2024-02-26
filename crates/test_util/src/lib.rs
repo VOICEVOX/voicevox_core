@@ -1,6 +1,7 @@
 mod typing;
 
-use async_zip::{write::ZipFileWriter, Compression, ZipEntryBuilder};
+use async_zip::{base::write::ZipFileWriter, Compression, ZipEntryBuilder};
+use futures_lite::AsyncWriteExt as _;
 use once_cell::sync::Lazy;
 use std::{
     collections::HashMap,
@@ -8,7 +9,7 @@ use std::{
 };
 use tokio::{
     fs::{self, File},
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::AsyncReadExt,
     sync::Mutex,
 };
 
@@ -50,18 +51,11 @@ pub async fn convert_zip_vvm(dir: impl AsRef<Path>) -> PathBuf {
         fs::create_dir_all(out_file_path.parent().unwrap())
             .await
             .unwrap();
-        let mut out_file = File::create(&out_file_path).await.unwrap();
-        let mut writer = ZipFileWriter::new(&mut out_file);
+        let mut writer = ZipFileWriter::new(vec![]);
 
         for entry in dir.read_dir().unwrap().flatten() {
             let entry_builder = ZipEntryBuilder::new(
-                entry
-                    .path()
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string(),
+                entry.path().file_name().unwrap().to_str().unwrap().into(),
                 Compression::Deflate,
             );
             let mut entry_writer = writer.write_entry_stream(entry_builder).await.unwrap();
@@ -71,7 +65,8 @@ pub async fn convert_zip_vvm(dir: impl AsRef<Path>) -> PathBuf {
             entry_writer.write_all(&buf).await.unwrap();
             entry_writer.close().await.unwrap();
         }
-        writer.close().await.unwrap();
+        let zip = writer.close().await.unwrap();
+        fs::write(&out_file_path, zip).await.unwrap();
     }
     out_file_path
 }

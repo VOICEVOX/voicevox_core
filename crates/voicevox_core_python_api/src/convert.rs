@@ -39,7 +39,7 @@ pub fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
     }
 }
 
-// FIXME: `VoiceModel`や`UserDict`についてはこれではなく、`PathBuf::extract`を直接使うようにする
+// FIXME: `UserDict`についてはこれではなく、`PathBuf::extract`を直接使うようにする
 pub fn from_utf8_path(ob: &PyAny) -> PyResult<Utf8PathBuf> {
     PathBuf::extract(ob)?
         .into_os_string()

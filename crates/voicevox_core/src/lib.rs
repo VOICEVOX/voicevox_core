@@ -18,10 +18,16 @@ mod voice_model;
 
 pub mod __internal;
 pub mod blocking;
+pub mod text_analyzer;
 pub mod tokio;
 
 #[cfg(test)]
 mod test_util;
+
+// https://crates.io/crates/rstest_reuse#use-rstest_resuse-at-the-top-of-your-crate
+#[allow(clippy::single_component_path_imports)]
+#[cfg(test)]
+use rstest_reuse;
 
 pub use self::{
     devices::SupportedDevices,

@@ -1,4 +1,4 @@
-from pathlib import Path
+from os import PathLike
 from typing import TYPE_CHECKING, Dict, List, Literal, Union
 from uuid import UUID
 
@@ -19,7 +19,7 @@ class VoiceModel:
     音声モデル。"""
 
     @staticmethod
-    async def from_path(path: Union[Path, str]) -> VoiceModel:
+    async def from_path(path: Union[str, PathLike[str]]) -> VoiceModel:
         """
         VVMファイルから ``VoiceModel`` を生成する。
 
@@ -44,7 +44,7 @@ class OpenJtalk:
     """
 
     @staticmethod
-    async def new(open_jtalk_dict_dir: Union[Path, str]) -> "OpenJtalk":
+    async def new(open_jtalk_dict_dir: Union[str, PathLike[str]]) -> "OpenJtalk":
         """
         ``OpenJTalk`` を生成する。
 

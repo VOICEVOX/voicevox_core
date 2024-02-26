@@ -88,9 +88,7 @@ pub(crate) mod blocking {
     use enum_map::enum_map;
 
     use crate::{
-        engine::{
-            self, create_kana, parse_kana, MoraModel, MorphableTargetInfo, OjtPhoneme, Utterance,
-        },
+        engine::{self, create_kana, mora_to_text, MoraModel, MorphableTargetInfo, OjtPhoneme},
         error::ErrorRepr,
         infer::{
             domain::{
@@ -102,6 +100,7 @@ pub(crate) mod blocking {
             InferenceSessionOptions,
         },
         numerics::F32Ext as _,
+        text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
         AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
         SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
@@ -114,7 +113,8 @@ pub(crate) mod blocking {
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
         pub(super) status: Status<InferenceRuntimeImpl, InferenceDomainImpl>,
-        open_jtalk: O,
+        open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
+        kana_analyzer: KanaAnalyzer,
         use_gpu: bool,
     }
 
@@ -187,7 +187,8 @@ pub(crate) mod blocking {
 
             return Ok(Self {
                 status,
-                open_jtalk,
+                open_jtalk_analyzer: OpenJTalkAnalyzer::new(open_jtalk),
+                kana_analyzer: KanaAnalyzer,
                 use_gpu,
             });
 
@@ -415,7 +416,7 @@ pub(crate) mod blocking {
                 let pitch = (*last_mora.pitch() + ADJUST_PITCH).min(MAX_PITCH);
 
                 MoraModel::new(
-                    mora_to_text(last_mora.vowel()),
+                    mora_to_text(None, last_mora.vowel()),
                     None,
                     None,
                     last_mora.vowel().clone(),
@@ -453,7 +454,8 @@ pub(crate) mod blocking {
             kana: &str,
             style_id: StyleId,
         ) -> Result<Vec<AccentPhraseModel>> {
-            self.replace_mora_data(&parse_kana(kana)?, style_id)
+            let accent_phrases = self.kana_analyzer.analyze(kana)?;
+            self.replace_mora_data(&accent_phrases, style_id)
         }
 
         /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
@@ -739,75 +741,7 @@ pub(crate) mod blocking {
             text: &str,
             style_id: StyleId,
         ) -> Result<Vec<AccentPhraseModel>> {
-            if text.is_empty() {
-                return Ok(Vec::new());
-            }
-
-            let utterance = Utterance::extract_full_context_label(&self.open_jtalk, text)?;
-
-            let accent_phrases: Vec<AccentPhraseModel> = utterance
-                .breath_groups()
-                .iter()
-                .enumerate()
-                .fold(Vec::new(), |mut accum_vec, (i, breath_group)| {
-                    accum_vec.extend(breath_group.accent_phrases().iter().enumerate().map(
-                        |(j, accent_phrase)| {
-                            let moras = accent_phrase
-                                .moras()
-                                .iter()
-                                .map(|mora| {
-                                    let mora_text = mora
-                                        .phonemes()
-                                        .iter()
-                                        .map(|phoneme| phoneme.phoneme().to_string())
-                                        .collect::<Vec<_>>()
-                                        .join("");
-
-                                    let (consonant, consonant_length) =
-                                        if let Some(consonant) = mora.consonant() {
-                                            (Some(consonant.phoneme().to_string()), Some(0.))
-                                        } else {
-                                            (None, None)
-                                        };
-
-                                    MoraModel::new(
-                                        mora_to_text(mora_text),
-                                        consonant,
-                                        consonant_length,
-                                        mora.vowel().phoneme().into(),
-                                        0.,
-                                        0.,
-                                    )
-                                })
-                                .collect();
-
-                            let pause_mora = if i != utterance.breath_groups().len() - 1
-                                && j == breath_group.accent_phrases().len() - 1
-                            {
-                                Some(MoraModel::new(
-                                    "、".into(),
-                                    None,
-                                    None,
-                                    "pau".into(),
-                                    0.,
-                                    0.,
-                                ))
-                            } else {
-                                None
-                            };
-
-                            AccentPhraseModel::new(
-                                moras,
-                                *accent_phrase.accent(),
-                                pause_mora,
-                                *accent_phrase.is_interrogative(),
-                            )
-                        },
-                    ));
-
-                    accum_vec
-                });
-
+            let accent_phrases = self.open_jtalk_analyzer.analyze(text)?;
             self.replace_mora_data(&accent_phrases, style_id)
         }
 
@@ -1169,21 +1103,6 @@ pub(crate) mod blocking {
         }
 
         (consonant_phoneme_list, vowel_phoneme_list, vowel_indexes)
-    }
-
-    fn mora_to_text(mora: impl AsRef<str>) -> String {
-        let last_char = mora.as_ref().chars().last().unwrap();
-        let mora = if ['A', 'I', 'U', 'E', 'O'].contains(&last_char) {
-            format!(
-                "{}{}",
-                &mora.as_ref()[0..mora.as_ref().len() - 1],
-                last_char.to_lowercase()
-            )
-        } else {
-            mora.as_ref().to_string()
-        };
-        // もしカタカナに変換できなければ、引数で与えた文字列がそのまま返ってくる
-        engine::mora2text(&mora).to_string()
     }
 
     impl AudioQueryModel {
