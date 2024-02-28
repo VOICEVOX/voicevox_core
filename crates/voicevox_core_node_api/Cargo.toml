@@ -1,0 +1,15 @@
+[package]
+name = "voicevox_core_node_api"
+version = "0.1.0"
+description = "VOICEVOX CORE の Java バインディング。"
+license = "MIT"
+edition = "2021"
+exclude = ["index.node"]
+
+[lib]
+crate-type = ["cdylib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+neon = "1"
