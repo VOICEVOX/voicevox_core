@@ -1,18 +1,18 @@
 {
-    "name": "voicevox_core_node_api-darwin-arm64",
-    "version": "0.0.0",
-    "os": [
-        "darwin"
-    ],
-    "cpu": [
-        "arm64"
-    ],
-    "main": "voicevox_core_node_api.darwin-arm64.node",
-    "files": [
-        "voicevox_core_node_api.darwin-arm64.node"
-    ],
-    "license": "MIT",
-    "engines": {
-        "node": ">= 10"
-    }
+  "name": "voicevox_core_node_api-darwin-arm64",
+  "version": "0.0.0",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "voicevox_core_node_api.darwin-arm64.node",
+  "files": [
+    "voicevox_core_node_api.darwin-arm64.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
 }
