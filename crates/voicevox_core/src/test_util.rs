@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::Result;
 
-pub async fn open_default_vvm_file() -> crate::tokio::VoiceModel {
+pub(crate) async fn open_default_vvm_file() -> crate::tokio::VoiceModel {
     crate::tokio::VoiceModel::from_path(
         ::test_util::convert_zip_vvm(
             PathBuf::from(env!("CARGO_WORKSPACE_DIR"))
