@@ -61,7 +61,7 @@ static PHONEME_MAP: Lazy<HashMap<&str, i64>> = Lazy::new(|| {
 });
 
 #[derive(Debug, Clone, PartialEq, new, Default, Getters)]
-pub struct OjtPhoneme {
+pub(crate) struct OjtPhoneme {
     phoneme: String,
     #[allow(dead_code)]
     start: f32,
@@ -70,15 +70,15 @@ pub struct OjtPhoneme {
 }
 
 impl OjtPhoneme {
-    pub fn num_phoneme() -> usize {
+    pub(crate) fn num_phoneme() -> usize {
         PHONEME_MAP.len()
     }
 
-    pub fn space_phoneme() -> String {
+    fn space_phoneme() -> String {
         "pau".into()
     }
 
-    pub fn phoneme_id(&self) -> i64 {
+    pub(crate) fn phoneme_id(&self) -> i64 {
         if self.phoneme.is_empty() {
             -1
         } else {
@@ -86,7 +86,7 @@ impl OjtPhoneme {
         }
     }
 
-    pub fn convert(phonemes: &[OjtPhoneme]) -> Vec<OjtPhoneme> {
+    pub(crate) fn convert(phonemes: &[OjtPhoneme]) -> Vec<OjtPhoneme> {
         let mut phonemes = phonemes.to_owned();
         if let Some(first_phoneme) = phonemes.first_mut() {
             if first_phoneme.phoneme.contains("sil") {

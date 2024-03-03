@@ -63,7 +63,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
 pub(crate) type CApiResult<T> = std::result::Result<T, CApiError>;
 
 #[derive(Error, Debug)]
-pub enum CApiError {
+pub(crate) enum CApiError {
     #[error("{0}")]
     RustApi(#[from] voicevox_core::Error),
     #[error("UTF-8として不正な入力です")]

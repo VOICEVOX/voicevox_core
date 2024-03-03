@@ -12,13 +12,13 @@ mod numerics;
 mod result;
 mod synthesizer;
 mod task;
+mod text_analyzer;
 mod user_dict;
 mod version;
 mod voice_model;
 
 pub mod __internal;
 pub mod blocking;
-pub mod text_analyzer;
 pub mod tokio;
 
 #[cfg(test)]
