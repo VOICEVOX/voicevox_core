@@ -1,9 +1,39 @@
 #![deny(clippy::all)]
 
+use napi::{Error, Result};
+
+use voicevox_core::SupportedDevices;
+
 #[macro_use]
 extern crate napi_derive;
 
+#[napi(js_name = "SupportedDevices")]
+pub struct JsSupportedDevices {
+    handle: SupportedDevices,
+}
+
 #[napi]
-pub fn sum(a: i32, b: i32) -> i32 {
-    a + b
+impl JsSupportedDevices {
+    #[napi(factory)]
+    pub fn create() -> Result<Self> {
+        match SupportedDevices::create() {
+            Ok(val) => Ok(JsSupportedDevices { handle: val }),
+            Err(err) => Err(Error::from_reason(err.to_string())),
+        }
+    }
+
+    #[napi(getter)]
+    pub fn cpu(&self) -> bool {
+        self.handle.cpu
+    }
+
+    #[napi(getter)]
+    pub fn cuda(&self) -> bool {
+        self.handle.cuda
+    }
+
+    #[napi(getter)]
+    pub fn dml(&self) -> bool {
+        self.handle.dml
+    }
 }
