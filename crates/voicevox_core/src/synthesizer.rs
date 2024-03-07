@@ -201,8 +201,10 @@ pub(crate) mod blocking {
 
         /// 音声モデルを読み込む。
         pub fn load_voice_model(&self, model: &crate::blocking::VoiceModel) -> Result<()> {
-            let model_bytes = &model.read_inference_models()?;
-            self.status.insert_model(model.header(), model_bytes)
+            if let Some(model_bytes) = model.read_inference_models()? {
+                self.status.insert_model(model.header(), &model_bytes)?;
+            }
+            Ok(())
         }
 
         /// 音声モデルの読み込みを解除する。
@@ -1157,8 +1159,10 @@ pub(crate) mod tokio {
         }
 
         pub async fn load_voice_model(&self, model: &crate::tokio::VoiceModel) -> Result<()> {
-            let model_bytes = &model.read_inference_models().await?;
-            self.0.status.insert_model(model.header(), model_bytes)
+            if let Some(model_bytes) = model.read_inference_models().await? {
+                self.0.status.insert_model(model.header(), &model_bytes)?;
+            }
+            Ok(())
         }
 
         pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {

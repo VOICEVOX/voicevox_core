@@ -41,9 +41,14 @@ pub struct Manifest {
     #[allow(dead_code)]
     manifest_version: ManifestVersion,
     metas_filename: String,
-    decode_filename: String,
-    predict_duration_filename: String,
-    predict_intonation_filename: String,
+    talk_model_filenames: Option<TalkModelFilenames>,
     #[serde(default)]
     style_id_to_model_inner_id: BTreeMap<StyleId, ModelInnerId>,
+}
+
+#[derive(Deserialize, Clone)]
+pub(crate) struct TalkModelFilenames {
+    pub(crate) predict_duration: String,
+    pub(crate) predict_intonation: String,
+    pub(crate) decode: String,
 }

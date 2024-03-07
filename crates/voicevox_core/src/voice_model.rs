@@ -82,7 +82,7 @@ pub(crate) mod blocking {
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
         infer::domain::InferenceOperationImpl,
-        manifest::Manifest,
+        manifest::{Manifest, TalkModelFilenames},
         VoiceModelMeta,
     };
 
@@ -99,21 +99,30 @@ pub(crate) mod blocking {
     impl self::VoiceModel {
         pub(crate) fn read_inference_models(
             &self,
-        ) -> LoadModelResult<EnumMap<InferenceOperationImpl, Vec<u8>>> {
+        ) -> LoadModelResult<Option<EnumMap<InferenceOperationImpl, Vec<u8>>>> {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
-            let model_bytes = [
-                self.header.manifest.predict_duration_filename(),
-                self.header.manifest.predict_intonation_filename(),
-                self.header.manifest.decode_filename(),
-            ]
-            .into_par_iter()
-            .map(|filename| reader.read_vvm_entry(filename))
-            .collect::<std::result::Result<Vec<_>, _>>()?
-            .try_into()
-            .unwrap_or_else(|_| panic!("should be same length"));
+            self.header
+                .manifest
+                .talk_model_filenames()
+                .as_ref()
+                .map(
+                    |TalkModelFilenames {
+                         predict_duration,
+                         predict_intonation,
+                         decode,
+                     }| {
+                        let model_bytes = [predict_duration, predict_intonation, decode]
+                            .into_par_iter()
+                            .map(|filename| reader.read_vvm_entry(filename))
+                            .collect::<std::result::Result<Vec<_>, _>>()?
+                            .try_into()
+                            .unwrap_or_else(|_| panic!("should be same length"));
 
-            Ok(EnumMap::from_array(model_bytes))
+                        Ok(EnumMap::from_array(model_bytes))
+                    },
+                )
+                .transpose()
         }
 
         /// VVMファイルから`VoiceModel`をコンストラクトする。
@@ -211,7 +220,7 @@ pub(crate) mod tokio {
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
         infer::domain::InferenceOperationImpl,
-        manifest::Manifest,
+        manifest::{Manifest, TalkModelFilenames},
         Result, VoiceModelMeta,
     };
 
@@ -228,24 +237,34 @@ pub(crate) mod tokio {
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
-        ) -> LoadModelResult<EnumMap<InferenceOperationImpl, Vec<u8>>> {
+        ) -> LoadModelResult<Option<EnumMap<InferenceOperationImpl, Vec<u8>>>> {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
+
+            let Some(TalkModelFilenames {
+                predict_duration,
+                predict_intonation,
+                decode,
+            }) = self.header.manifest.talk_model_filenames()
+            else {
+                return Ok(None);
+            };
+
             let (
                 decode_model_result,
                 predict_duration_model_result,
                 predict_intonation_model_result,
             ) = join3(
-                reader.read_vvm_entry(self.header.manifest.decode_filename()),
-                reader.read_vvm_entry(self.header.manifest.predict_duration_filename()),
-                reader.read_vvm_entry(self.header.manifest.predict_intonation_filename()),
+                reader.read_vvm_entry(decode),
+                reader.read_vvm_entry(predict_duration),
+                reader.read_vvm_entry(predict_intonation),
             )
             .await;
 
-            Ok(EnumMap::from_array([
+            Ok(Some(EnumMap::from_array([
                 predict_duration_model_result?,
                 predict_intonation_model_result?,
                 decode_model_result?,
-            ]))
+            ])))
         }
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {

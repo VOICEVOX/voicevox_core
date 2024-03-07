@@ -400,7 +400,7 @@ mod tests {
             enum_map!(_ => InferenceSessionOptions::new(0, false)),
         );
         let model = &open_default_vvm_file().await;
-        let model_bytes = &model.read_inference_models().await.unwrap();
+        let model_bytes = &model.read_inference_models().await.unwrap().unwrap();
         let result = status.insert_model(model.header(), model_bytes);
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
@@ -414,7 +414,7 @@ mod tests {
         );
         let vvm = open_default_vvm_file().await;
         let model_header = vvm.header();
-        let model_bytes = &vvm.read_inference_models().await.unwrap();
+        let model_bytes = &vvm.read_inference_models().await.unwrap().unwrap();
         assert!(
             !status.is_loaded_model(&model_header.id),
             "model should  not be loaded"
