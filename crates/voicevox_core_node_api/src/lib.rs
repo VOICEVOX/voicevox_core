@@ -1,3 +1,5 @@
+#![deny(clippy::all)]
+
 pub mod devices;
 
 #[macro_use]

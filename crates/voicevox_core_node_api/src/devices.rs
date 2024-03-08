@@ -1,5 +1,3 @@
-#![deny(clippy::all)]
-
 use napi::{Error, Result};
 
 use voicevox_core::SupportedDevices;
