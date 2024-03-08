@@ -52,7 +52,7 @@ pub struct AudioQuery {
     pub output_stereo: bool,
     /// \[読み取り専用\] AquesTalk風記法。
     ///
-    /// [`Synthesizer::audio_query`]が返すもののみ`Some`となる。入力としてのAudioQueryでは無視され
+    /// [`Synthesizer::audio_query`]が返すもののみ`string`となる。入力としてのAudioQueryでは無視され
     /// る。
     ///
     /// [`Synthesizer::audio_query`]: crate::Synthesizer::audio_query

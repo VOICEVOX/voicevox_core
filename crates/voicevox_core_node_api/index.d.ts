@@ -49,7 +49,7 @@ export interface AudioQuery {
   /**
    * \[読み取り専用\] AquesTalk風記法。
    *
-   * [`Synthesizer::audio_query`]が返すもののみ`Some`となる。入力としてのAudioQueryでは無視され
+   * [`Synthesizer::audio_query`]が返すもののみ`string`となる。入力としてのAudioQueryでは無視され
    * る。
    *
    * [`Synthesizer::audio_query`]: crate::Synthesizer::audio_query
@@ -57,10 +57,38 @@ export interface AudioQuery {
   kana?: string
 }
 export type JsSupportedDevices = SupportedDevices
+/**
+ * このライブラリで利用可能なデバイスの情報。
+ *
+ * あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったと
+ * しても`cuda`や`dml`は`true`を示しうる。
+ */
 export class SupportedDevices {
+  /** `SupportedDevices`をコンストラクトする。 */
   static create(): JsSupportedDevices
+  /**
+   * CPUが利用可能。
+   *
+   * 常に`true`。
+   */
   get cpu(): boolean
+  /**
+   * CUDAが利用可能。
+   *
+   * ONNX Runtimeの[CUDA Execution Provider] (`CUDAExecutionProvider`)に対応する。必要な環境につ
+   * いてはそちらを参照。
+   *
+   * [CUDA Execution Provider]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
+   */
   get cuda(): boolean
+  /**
+   * DirectMLが利用可能。
+   *
+   * ONNX Runtimeの[DirectML Execution Provider] (`DmlExecutionProvider`)に対応する。必要な環境に
+   * ついてはそちらを参照。
+   *
+   * [DirectML Execution Provider]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
+   */
   get dml(): boolean
   toJson(): any
 }
