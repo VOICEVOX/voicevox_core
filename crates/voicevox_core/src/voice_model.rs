@@ -213,7 +213,7 @@ pub(crate) mod tokio {
 
     use derive_new::new;
     use enum_map::EnumMap;
-    use futures::future::join3;
+    use futures::future::{join3, OptionFuture};
     use nanoid::nanoid;
     use serde::de::DeserializeOwned;
 
@@ -240,31 +240,32 @@ pub(crate) mod tokio {
         ) -> LoadModelResult<Option<EnumMap<InferenceOperationImpl, Vec<u8>>>> {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
 
-            let Some(TalkModelFilenames {
-                predict_duration,
-                predict_intonation,
-                decode,
-            }) = self.header.manifest.talk_model_filenames()
-            else {
-                return Ok(None);
-            };
+            OptionFuture::from(self.header.manifest.talk_model_filenames().as_ref().map(
+                |TalkModelFilenames {
+                     predict_duration,
+                     predict_intonation,
+                     decode,
+                 }| async {
+                    let (
+                        decode_model_result,
+                        predict_duration_model_result,
+                        predict_intonation_model_result,
+                    ) = join3(
+                        reader.read_vvm_entry(decode),
+                        reader.read_vvm_entry(predict_duration),
+                        reader.read_vvm_entry(predict_intonation),
+                    )
+                    .await;
 
-            let (
-                decode_model_result,
-                predict_duration_model_result,
-                predict_intonation_model_result,
-            ) = join3(
-                reader.read_vvm_entry(decode),
-                reader.read_vvm_entry(predict_duration),
-                reader.read_vvm_entry(predict_intonation),
-            )
-            .await;
-
-            Ok(Some(EnumMap::from_array([
-                predict_duration_model_result?,
-                predict_intonation_model_result?,
-                decode_model_result?,
-            ])))
+                    Ok(EnumMap::from_array([
+                        predict_duration_model_result?,
+                        predict_intonation_model_result?,
+                        decode_model_result?,
+                    ]))
+                },
+            ))
+            .await
+            .transpose()
         }
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
