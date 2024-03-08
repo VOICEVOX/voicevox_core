@@ -9,4 +9,5 @@ export class SupportedDevices {
   get cpu(): boolean
   get cuda(): boolean
   get dml(): boolean
+  toJson(): any
 }

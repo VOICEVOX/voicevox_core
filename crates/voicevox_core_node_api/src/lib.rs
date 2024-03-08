@@ -36,4 +36,9 @@ impl JsSupportedDevices {
     pub fn dml(&self) -> bool {
         self.handle.dml
     }
+
+    #[napi]
+    pub fn to_json(&self) -> serde_json::Value {
+        self.handle.to_json()
+    }
 }
