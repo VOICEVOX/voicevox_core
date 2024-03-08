@@ -2,21 +2,21 @@ use enum_map::Enum;
 use macros::{InferenceInputSignature, InferenceOperation, InferenceOutputSignature};
 use ndarray::{Array0, Array1, Array2};
 
-use super::{
+use super::super::{
     InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
 };
 
-pub(crate) enum InferenceDomainImpl {}
+pub(crate) enum TalkDomain {}
 
-impl InferenceDomain for InferenceDomainImpl {
-    type Operation = InferenceOperationImpl;
+impl InferenceDomain for TalkDomain {
+    type Operation = TalkOperation;
 }
 
 #[derive(Clone, Copy, Enum, InferenceOperation)]
 #[inference_operation(
-    type Domain = InferenceDomainImpl;
+    type Domain = TalkDomain;
 )]
-pub(crate) enum InferenceOperationImpl {
+pub(crate) enum TalkOperation {
     #[inference_operation(
         type Input = PredictDurationInput;
         type Output = PredictDurationOutput;

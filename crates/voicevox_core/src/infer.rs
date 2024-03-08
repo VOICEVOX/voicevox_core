@@ -1,9 +1,9 @@
-pub(crate) mod domain;
+pub(crate) mod domains;
 mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod status;
 
-use std::{borrow::Cow, fmt::Debug};
+use std::{borrow::Cow, convert::Infallible, fmt::Debug, marker::PhantomData};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -12,6 +12,8 @@ use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
 
 use crate::SupportedDevices;
+
+use self::status::Status;
 
 pub(crate) trait InferenceRuntime: 'static {
     type Session: Sized + Send + 'static;
@@ -184,3 +186,19 @@ pub(crate) enum ExtractError {
 #[derive(Error, Debug)]
 #[error("不正なモデルファイルです")]
 pub(crate) struct DecryptModelError;
+
+pub(crate) trait InferenceDomainAssociation {
+    type Target<D: InferenceDomain>;
+}
+
+pub(crate) enum InferenceModelsByInferenceDomain {}
+
+impl InferenceDomainAssociation for InferenceModelsByInferenceDomain {
+    type Target<D: InferenceDomain> = Option<EnumMap<D::Operation, Vec<u8>>>;
+}
+
+pub(crate) struct StatusByInferenceDomain<R>(Infallible, PhantomData<fn() -> R>);
+
+impl<R: InferenceRuntime> InferenceDomainAssociation for StatusByInferenceDomain<R> {
+    type Target<D: InferenceDomain> = Status<R, D>;
+}

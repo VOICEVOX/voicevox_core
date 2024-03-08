@@ -351,7 +351,7 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        infer::domain::{InferenceDomainImpl, InferenceOperationImpl},
+        infer::domains::{TalkDomain, TalkOperation},
         macros::tests::assert_debug_fmt_eq,
         synthesizer::InferenceRuntimeImpl,
         test_util::open_default_vvm_file,
@@ -371,23 +371,23 @@ mod tests {
         let light_session_options = InferenceSessionOptions::new(cpu_num_threads, false);
         let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
         let session_options = enum_map! {
-            InferenceOperationImpl::PredictDuration
-            | InferenceOperationImpl::PredictIntonation => light_session_options,
-            InferenceOperationImpl::Decode => heavy_session_options,
+            TalkOperation::PredictDuration
+            | TalkOperation::PredictIntonation => light_session_options,
+            TalkOperation::Decode => heavy_session_options,
         };
-        let status = Status::<InferenceRuntimeImpl, InferenceDomainImpl>::new(session_options);
+        let status = Status::<InferenceRuntimeImpl, TalkDomain>::new(session_options);
 
         assert_eq!(
             light_session_options,
-            status.session_options[InferenceOperationImpl::PredictDuration],
+            status.session_options[TalkOperation::PredictDuration],
         );
         assert_eq!(
             light_session_options,
-            status.session_options[InferenceOperationImpl::PredictIntonation],
+            status.session_options[TalkOperation::PredictIntonation],
         );
         assert_eq!(
             heavy_session_options,
-            status.session_options[InferenceOperationImpl::Decode],
+            status.session_options[TalkOperation::Decode],
         );
 
         assert!(status.loaded_models.lock().unwrap().0.is_empty());
@@ -396,11 +396,11 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_load_model_works() {
-        let status = Status::<InferenceRuntimeImpl, InferenceDomainImpl>::new(
+        let status = Status::<InferenceRuntimeImpl, TalkDomain>::new(
             enum_map!(_ => InferenceSessionOptions::new(0, false)),
         );
         let model = &open_default_vvm_file().await;
-        let model_bytes = &model.read_inference_models().await.unwrap().unwrap();
+        let model_bytes = &model.read_inference_models().await.unwrap().talk.unwrap();
         let result = status.insert_model(model.header(), model_bytes);
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
@@ -409,12 +409,12 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_is_model_loaded_works() {
-        let status = Status::<InferenceRuntimeImpl, InferenceDomainImpl>::new(
+        let status = Status::<InferenceRuntimeImpl, TalkDomain>::new(
             enum_map!(_ => InferenceSessionOptions::new(0, false)),
         );
         let vvm = open_default_vvm_file().await;
         let model_header = vvm.header();
-        let model_bytes = &vvm.read_inference_models().await.unwrap().unwrap();
+        let model_bytes = &vvm.read_inference_models().await.unwrap().talk.unwrap();
         assert!(
             !status.is_loaded_model(&model_header.id),
             "model should  not be loaded"
