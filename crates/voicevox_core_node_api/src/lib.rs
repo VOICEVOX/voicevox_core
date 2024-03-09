@@ -1,13 +1,17 @@
 #![deny(clippy::all)]
 
+pub(crate) fn convert_result<T>(result: voicevox_core::Result<T>) -> napi::Result<T> {
+    result.map_err(|err| napi::Error::from_reason(err.to_string()))
+}
+
 #[napi]
 pub mod blocking {
-    use napi::Result;
+    use napi::{Error, Result};
+    use uuid::Uuid;
     use voicevox_core::blocking::{OpenJtalk, UserDict};
 
-    fn convert_result<T>(result: voicevox_core::Result<T>) -> napi::Result<T> {
-        result.map_err(|err| napi::Error::from_reason(err.to_string()))
-    }
+    use crate::convert_result;
+    use crate::word::UserDictWord;
 
     /// テキスト解析器としてのOpen JTalk。
     #[napi(js_name = "OpenJtalk")]
@@ -41,19 +45,66 @@ pub mod blocking {
         handle: UserDict,
     }
 
+    fn parse_uuid(uuid: String) -> Result<Uuid> {
+        Uuid::try_parse(&uuid).map_err(|err| Error::from_reason(err.to_string()))
+    }
+
     #[napi]
     impl JsUserDict {
+        /// ユーザー辞書を作成する。
         #[napi(constructor)]
         pub fn new() -> Self {
             JsUserDict {
                 handle: UserDict::new(),
             }
         }
+
+        /// ユーザー辞書をファイルから読み込む。
+        ///
+        /// @throws ファイルが読めなかった、または内容が不正だった場合はエラーを返す。
+        #[napi]
+        pub fn load(&self, store_path: String) -> Result<()> {
+            convert_result(self.handle.load(&store_path))
+        }
+
+        /// ユーザー辞書に単語を追加する。
+        #[napi]
+        pub fn add_word(&self, word: UserDictWord) -> Result<String> {
+            convert_result(self.handle.add_word(word.convert()?)).map(|uuid| uuid.to_string())
+        }
+
+        /// ユーザー辞書の単語を変更する。
+        #[napi]
+        pub fn update_word(&self, word_uuid: String, new_word: UserDictWord) -> Result<()> {
+            convert_result(
+                self.handle
+                    .update_word(parse_uuid(word_uuid)?, new_word.convert()?),
+            )
+        }
+
+        /// ユーザー辞書から単語を削除する。
+        #[napi]
+        pub fn remove_word(&self, word_uuid: String) -> Result<UserDictWord> {
+            convert_result(self.handle.remove_word(parse_uuid(word_uuid)?))
+                .map(|word| UserDictWord::from(word))
+        }
+
+        /// 他のユーザー辞書をインポートする。
+        #[napi]
+        pub fn import(&self, other: &JsUserDict) -> Result<()> {
+            convert_result(self.handle.import(&other.handle))
+        }
+
+        /// ユーザー辞書を保存する。
+        pub fn save(&self, store_path: String) -> Result<()> {
+            convert_result(self.handle.save(&store_path))
+        }
     }
 }
 
 pub mod devices;
 pub mod model;
+pub mod word;
 
 #[macro_use]
 extern crate napi_derive;
