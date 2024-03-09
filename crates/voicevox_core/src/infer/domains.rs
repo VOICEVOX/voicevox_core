@@ -6,7 +6,7 @@ pub(crate) use self::talk::{
 };
 
 use super::{
-    InferenceDomainAssociation, InferenceDomainSet, TryMapInferenceDomainAssociationTarget,
+    ConvertInferenceDomainAssociationTarget, InferenceDomainAssociation, InferenceDomainSet,
 };
 
 pub(crate) enum InferenceDomainSetImpl {}
@@ -15,7 +15,7 @@ impl InferenceDomainSet for InferenceDomainSetImpl {
     type ByInferenceDomain<A: InferenceDomainAssociation> = ByInferenceDomain<A>;
 
     fn try_ref_map<
-        F: TryMapInferenceDomainAssociationTarget<Self, A1, A2, E>,
+        F: ConvertInferenceDomainAssociationTarget<Self, A1, A2, E>,
         A1: InferenceDomainAssociation,
         A2: InferenceDomainAssociation,
         E,

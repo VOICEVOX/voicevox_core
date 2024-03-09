@@ -15,8 +15,8 @@ use itertools::{iproduct, Itertools as _};
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
-        InferenceDomainAssociation, InferenceDomainSet, InferenceOperation, ParamInfo,
-        TryMapInferenceDomainAssociationTarget,
+        ConvertInferenceDomainAssociationTarget, InferenceDomainAssociation, InferenceDomainSet,
+        InferenceOperation, ParamInfo,
     },
     manifest::ModelInnerId,
     metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
@@ -77,7 +77,7 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> Status<R, S> {
         }
 
         impl<R: InferenceRuntime, S: InferenceDomainSet>
-            TryMapInferenceDomainAssociationTarget<
+            ConvertInferenceDomainAssociationTarget<
                 S,
                 InferenceModelsByInferenceDomain,
                 OptionalSessionSetByDomain<R>,
@@ -199,7 +199,6 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> LoadedModels<R, S> {
     fn get<I>(&self, model_id: &VoiceModelId) -> SessionCell<R, I>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature,
         <I::Signature as InferenceSignature>::Domain: InferenceDomain<Set = S>,
     {
         <I::Signature as InferenceSignature>::Domain::visit(&self.0[model_id].session_sets)

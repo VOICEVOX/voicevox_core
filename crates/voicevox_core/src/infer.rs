@@ -36,7 +36,7 @@ pub(crate) trait InferenceDomainSet {
     type ByInferenceDomain<A: InferenceDomainAssociation>;
 
     fn try_ref_map<
-        F: TryMapInferenceDomainAssociationTarget<Self, A1, A2, E>,
+        F: ConvertInferenceDomainAssociationTarget<Self, A1, A2, E>,
         A1: InferenceDomainAssociation,
         A2: InferenceDomainAssociation,
         E,
@@ -46,7 +46,7 @@ pub(crate) trait InferenceDomainSet {
     ) -> Result<Self::ByInferenceDomain<A2>, E>;
 }
 
-pub(crate) trait TryMapInferenceDomainAssociationTarget<
+pub(crate) trait ConvertInferenceDomainAssociationTarget<
     S: InferenceDomainSet + ?Sized,
     A1: InferenceDomainAssociation,
     A2: InferenceDomainAssociation,
