@@ -20,13 +20,13 @@ use crate::{
     },
     manifest::ModelInnerId,
     metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
-    voice_model::{VoiceModelHeader, VoiceModelId},
+    voice_model::{InferenceModelsByInferenceDomain, VoiceModelHeader, VoiceModelId},
     Result,
 };
 
 use super::{
-    model_file, InferenceDomain, InferenceInputSignature, InferenceModelsByInferenceDomain,
-    InferenceRuntime, InferenceSessionOptions, InferenceSignature,
+    model_file, InferenceDomain, InferenceInputSignature, InferenceRuntime,
+    InferenceSessionOptions, InferenceSignature,
 };
 
 pub(crate) struct Status<R: InferenceRuntime, S: InferenceDomainSet> {

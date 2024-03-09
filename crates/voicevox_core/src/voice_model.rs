@@ -1,8 +1,10 @@
 use derive_getters::Getters;
 use derive_new::new;
+use enum_map::EnumMap;
 use serde::Deserialize;
 
 use crate::{
+    infer::{InferenceDomain, InferenceDomainAssociation},
     manifest::{Manifest, ModelInnerId},
     SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta,
 };
@@ -67,6 +69,12 @@ impl VoiceModelHeader {
     }
 }
 
+pub(crate) enum InferenceModelsByInferenceDomain {}
+
+impl InferenceDomainAssociation for InferenceModelsByInferenceDomain {
+    type Target<D: InferenceDomain> = Option<EnumMap<D::Operation, Vec<u8>>>;
+}
+
 pub(crate) mod blocking {
     use std::{
         io::{self, Cursor},
@@ -81,12 +89,12 @@ pub(crate) mod blocking {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::{domains::ByInferenceDomain, InferenceModelsByInferenceDomain},
+        infer::domains::ByInferenceDomain,
         manifest::{Manifest, TalkModelFilenames},
         VoiceModelMeta,
     };
 
-    use super::{VoiceModelHeader, VoiceModelId};
+    use super::{InferenceModelsByInferenceDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -222,12 +230,12 @@ pub(crate) mod tokio {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::{domains::ByInferenceDomain, InferenceModelsByInferenceDomain},
+        infer::domains::ByInferenceDomain,
         manifest::{Manifest, TalkModelFilenames},
         Result, VoiceModelMeta,
     };
 
-    use super::{VoiceModelHeader, VoiceModelId};
+    use super::{InferenceModelsByInferenceDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
