@@ -17,17 +17,17 @@ use syn::parse_macro_input;
 /// use enum_map::Enum;
 /// use macros::InferenceOperation;
 ///
-/// pub(crate) enum InferenceDomainImpl {}
+/// pub(crate) enum TalkDomain {}
 ///
-/// impl InferenceDomain for InferenceDomainImpl {
-///     type Operation = InferenceOperationImpl;
+/// impl InferenceDomain for TalkDomain {
+///     type Operation = TalkOperation;
 /// }
 ///
 /// #[derive(Clone, Copy, Enum, InferenceOperation)]
 /// #[inference_operation(
-///     type Domain = InferenceDomainImpl;
+///     type Domain = TalkDomain;
 /// )]
-/// pub(crate) enum InferenceOperationImpl {
+/// pub(crate) enum TalkOperation {
 ///     #[inference_operation(
 ///         type Input = PredictDurationInput;
 ///         type Output = PredictDurationOutput;
