@@ -7,8 +7,8 @@ version = "0.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-napi = { version = "2", features = ["napi4", "serde-json"] }
-napi-derive = "2"
+napi = { version = "2.16.0", features = ["napi4", "serde-json"] }
+napi-derive = "2.16.0"
 voicevox_core.workspace = true
 serde_json.workspace = true
 
