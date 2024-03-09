@@ -5,7 +5,28 @@ pub(crate) use self::talk::{
     PredictIntonationOutput, TalkDomain, TalkOperation,
 };
 
-use super::InferenceDomainAssociation;
+use super::{
+    InferenceDomainAssociation, InferenceDomainSet, TryMapInferenceDomainAssociationTarget,
+};
+
+pub(crate) enum InferenceDomainSetImpl {}
+
+impl InferenceDomainSet for InferenceDomainSetImpl {
+    type ByInferenceDomain<A: InferenceDomainAssociation> = ByInferenceDomain<A>;
+
+    fn try_ref_map<
+        F: TryMapInferenceDomainAssociationTarget<Self, A1, A2, E>,
+        A1: InferenceDomainAssociation,
+        A2: InferenceDomainAssociation,
+        E,
+    >(
+        by_domain: &Self::ByInferenceDomain<A1>,
+        f: F,
+    ) -> Result<Self::ByInferenceDomain<A2>, E> {
+        let talk = f.try_ref_map(&by_domain.talk)?;
+        Ok(ByInferenceDomain { talk })
+    }
+}
 
 pub(crate) struct ByInferenceDomain<A: InferenceDomainAssociation> {
     pub(crate) talk: A::Target<TalkDomain>,

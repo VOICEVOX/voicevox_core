@@ -1,5 +1,6 @@
 use std::{
     collections::{BTreeMap, HashMap},
+    convert::Infallible,
     fmt::Display,
     marker::PhantomData,
     sync::Arc,
@@ -13,7 +14,10 @@ use itertools::{iproduct, Itertools as _};
 
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
-    infer::{InferenceOperation, ParamInfo},
+    infer::{
+        InferenceDomainAssociation, InferenceDomainSet, InferenceOperation, ParamInfo,
+        TryMapInferenceDomainAssociationTarget,
+    },
     manifest::ModelInnerId,
     metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
     voice_model::{VoiceModelHeader, VoiceModelId},
@@ -21,17 +25,17 @@ use crate::{
 };
 
 use super::{
-    model_file, InferenceDomain, InferenceInputSignature, InferenceRuntime,
-    InferenceSessionOptions, InferenceSignature,
+    model_file, InferenceDomain, InferenceInputSignature, InferenceModelsByInferenceDomain,
+    InferenceRuntime, InferenceSessionOptions, InferenceSignature,
 };
 
-pub(crate) struct Status<R: InferenceRuntime, D: InferenceDomain> {
-    loaded_models: std::sync::Mutex<LoadedModels<R, D>>,
-    session_options: EnumMap<D::Operation, InferenceSessionOptions>,
+pub(crate) struct Status<R: InferenceRuntime, S: InferenceDomainSet> {
+    loaded_models: std::sync::Mutex<LoadedModels<R, S>>,
+    session_options: S::ByInferenceDomain<SessionOptionsByDomain>,
 }
 
-impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
-    pub(crate) fn new(session_options: EnumMap<D::Operation, InferenceSessionOptions>) -> Self {
+impl<R: InferenceRuntime, S: InferenceDomainSet> Status<R, S> {
+    pub(crate) fn new(session_options: S::ByInferenceDomain<SessionOptionsByDomain>) -> Self {
         Self {
             loaded_models: Default::default(),
             session_options,
@@ -41,27 +45,57 @@ impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
     pub(crate) fn insert_model(
         &self,
         model_header: &VoiceModelHeader,
-        model_bytes: &EnumMap<D::Operation, Vec<u8>>,
+        model_bytes: &S::ByInferenceDomain<InferenceModelsByInferenceDomain>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
             .unwrap()
             .ensure_acceptable(model_header)?;
 
-        let session_set =
-            SessionSet::new(model_bytes, &self.session_options).map_err(|source| {
-                LoadModelError {
-                    path: model_header.path.clone(),
-                    context: LoadModelErrorKind::InvalidModelData,
-                    source: Some(source),
-                }
-            })?;
+        let session_set = S::try_ref_map(
+            model_bytes,
+            CreateSessionSet {
+                session_options: &self.session_options,
+                marker: PhantomData,
+            },
+        )
+        .map_err(|source| LoadModelError {
+            path: model_header.path.clone(),
+            context: LoadModelErrorKind::InvalidModelData,
+            source: Some(source),
+        })?;
 
         self.loaded_models
             .lock()
             .unwrap()
             .insert(model_header, session_set)?;
-        Ok(())
+        return Ok(());
+
+        struct CreateSessionSet<'a, R, S: InferenceDomainSet> {
+            session_options: &'a S::ByInferenceDomain<SessionOptionsByDomain>,
+            marker: PhantomData<fn() -> R>,
+        }
+
+        impl<R: InferenceRuntime, S: InferenceDomainSet>
+            TryMapInferenceDomainAssociationTarget<
+                S,
+                InferenceModelsByInferenceDomain,
+                OptionalSessionSetByDomain<R>,
+                anyhow::Error,
+            > for CreateSessionSet<'_, R, S>
+        {
+            fn try_ref_map<D: InferenceDomain<Set = S>>(
+                &self,
+                model_bytes: &<InferenceModelsByInferenceDomain as InferenceDomainAssociation>::Target<D>,
+            ) -> anyhow::Result<
+                <OptionalSessionSetByDomain<R> as InferenceDomainAssociation>::Target<D>,
+            > {
+                model_bytes
+                    .as_ref()
+                    .map(|model_bytes| SessionSet::new(model_bytes, D::visit(self.session_options)))
+                    .transpose()
+            }
+        }
     }
 
     pub(crate) fn unload_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
@@ -107,7 +141,8 @@ impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
     ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Domain = D>,
+        I::Signature: InferenceSignature,
+        <I::Signature as InferenceSignature>::Domain: InferenceDomain<Set = S>,
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
         sess.run(input)
@@ -118,18 +153,18 @@ impl<R: InferenceRuntime, D: InferenceDomain> Status<R, D> {
 ///
 /// この構造体のメソッドは、すべて一瞬で完了すべきである。
 #[derive(Educe)]
-#[educe(Default(bound = "R: InferenceRuntime, D: InferenceDomain"))]
-struct LoadedModels<R: InferenceRuntime, D: InferenceDomain>(
-    IndexMap<VoiceModelId, LoadedModel<R, D>>,
+#[educe(Default(bound = "R: InferenceRuntime, S: InferenceDomainSet"))]
+struct LoadedModels<R: InferenceRuntime, S: InferenceDomainSet>(
+    IndexMap<VoiceModelId, LoadedModel<R, S>>,
 );
 
-struct LoadedModel<R: InferenceRuntime, D: InferenceDomain> {
+struct LoadedModel<R: InferenceRuntime, S: InferenceDomainSet> {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_set: SessionSet<R, D>,
+    session_sets: S::ByInferenceDomain<OptionalSessionSetByDomain<R>>,
 }
 
-impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
+impl<R: InferenceRuntime, S: InferenceDomainSet> LoadedModels<R, S> {
     fn metas(&self) -> VoiceModelMeta {
         metas::merge(self.0.values().flat_map(|LoadedModel { metas, .. }| metas))
     }
@@ -164,9 +199,13 @@ impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
     fn get<I>(&self, model_id: &VoiceModelId) -> SessionCell<R, I>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Domain = D>,
+        I::Signature: InferenceSignature,
+        <I::Signature as InferenceSignature>::Domain: InferenceDomain<Set = S>,
     {
-        self.0[model_id].session_set.get()
+        <I::Signature as InferenceSignature>::Domain::visit(&self.0[model_id].session_sets)
+            .as_ref()
+            .unwrap_or_else(|| todo!("`ensure_acceptable`で検査する"))
+            .get()
     }
 
     fn contains_voice_model(&self, model_id: &VoiceModelId) -> bool {
@@ -222,7 +261,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
     fn insert(
         &mut self,
         model_header: &VoiceModelHeader,
-        session_set: SessionSet<R, D>,
+        session_sets: S::ByInferenceDomain<OptionalSessionSetByDomain<R>>,
     ) -> Result<()> {
         self.ensure_acceptable(model_header)?;
 
@@ -231,7 +270,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> LoadedModels<R, D> {
             LoadedModel {
                 model_inner_ids: model_header.model_inner_ids(),
                 metas: model_header.metas.clone(),
-                session_set,
+                session_sets,
             },
         );
         assert!(prev.is_none());
@@ -344,6 +383,18 @@ impl<R: InferenceRuntime, I: InferenceInputSignature> SessionCell<R, I> {
     }
 }
 
+pub(crate) enum SessionOptionsByDomain {}
+
+impl InferenceDomainAssociation for SessionOptionsByDomain {
+    type Target<D: InferenceDomain> = EnumMap<D::Operation, InferenceSessionOptions>;
+}
+
+struct OptionalSessionSetByDomain<R>(Infallible, PhantomData<fn() -> R>);
+
+impl<R: InferenceRuntime> InferenceDomainAssociation for OptionalSessionSetByDomain<R> {
+    type Target<D: InferenceDomain> = Option<SessionSet<R, D>>;
+}
+
 #[cfg(test)]
 mod tests {
     use enum_map::enum_map;
@@ -351,7 +402,7 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        infer::domains::{TalkDomain, TalkOperation},
+        infer::domains::{ByInferenceDomain, InferenceDomainSetImpl, TalkOperation},
         macros::tests::assert_debug_fmt_eq,
         synthesizer::InferenceRuntimeImpl,
         test_util::open_default_vvm_file,
@@ -370,24 +421,26 @@ mod tests {
     fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: u16) {
         let light_session_options = InferenceSessionOptions::new(cpu_num_threads, false);
         let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
-        let session_options = enum_map! {
-            TalkOperation::PredictDuration
-            | TalkOperation::PredictIntonation => light_session_options,
-            TalkOperation::Decode => heavy_session_options,
+        let session_options = ByInferenceDomain {
+            talk: enum_map! {
+                TalkOperation::PredictDuration
+                | TalkOperation::PredictIntonation => light_session_options,
+                TalkOperation::Decode => heavy_session_options,
+            },
         };
-        let status = Status::<InferenceRuntimeImpl, TalkDomain>::new(session_options);
+        let status = Status::<InferenceRuntimeImpl, InferenceDomainSetImpl>::new(session_options);
 
         assert_eq!(
             light_session_options,
-            status.session_options[TalkOperation::PredictDuration],
+            status.session_options.talk[TalkOperation::PredictDuration],
         );
         assert_eq!(
             light_session_options,
-            status.session_options[TalkOperation::PredictIntonation],
+            status.session_options.talk[TalkOperation::PredictIntonation],
         );
         assert_eq!(
             heavy_session_options,
-            status.session_options[TalkOperation::Decode],
+            status.session_options.talk[TalkOperation::Decode],
         );
 
         assert!(status.loaded_models.lock().unwrap().0.is_empty());
@@ -396,11 +449,12 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_load_model_works() {
-        let status = Status::<InferenceRuntimeImpl, TalkDomain>::new(
-            enum_map!(_ => InferenceSessionOptions::new(0, false)),
-        );
+        let status =
+            Status::<InferenceRuntimeImpl, InferenceDomainSetImpl>::new(ByInferenceDomain {
+                talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
+            });
         let model = &open_default_vvm_file().await;
-        let model_bytes = &model.read_inference_models().await.unwrap().talk.unwrap();
+        let model_bytes = &model.read_inference_models().await.unwrap();
         let result = status.insert_model(model.header(), model_bytes);
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
@@ -409,12 +463,13 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_is_model_loaded_works() {
-        let status = Status::<InferenceRuntimeImpl, TalkDomain>::new(
-            enum_map!(_ => InferenceSessionOptions::new(0, false)),
-        );
+        let status =
+            Status::<InferenceRuntimeImpl, InferenceDomainSetImpl>::new(ByInferenceDomain {
+                talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
+            });
         let vvm = open_default_vvm_file().await;
         let model_header = vvm.header();
-        let model_bytes = &vvm.read_inference_models().await.unwrap().talk.unwrap();
+        let model_bytes = &vvm.read_inference_models().await.unwrap();
         assert!(
             !status.is_loaded_model(&model_header.id),
             "model should  not be loaded"

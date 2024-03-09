@@ -84,12 +84,12 @@ pub(crate) mod blocking {
         error::ErrorRepr,
         infer::{
             domains::{
-                ByInferenceDomain, DecodeInput, DecodeOutput, PredictDurationInput,
-                PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput,
-                TalkOperation,
+                ByInferenceDomain, DecodeInput, DecodeOutput, InferenceDomainSetImpl,
+                PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
+                PredictIntonationOutput, TalkOperation,
             },
             status::Status,
-            InferenceSessionOptions, StatusByInferenceDomain,
+            InferenceSessionOptions,
         },
         numerics::F32Ext as _,
         text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
@@ -103,7 +103,7 @@ pub(crate) mod blocking {
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
-        pub(super) statuses: ByInferenceDomain<StatusByInferenceDomain<InferenceRuntimeImpl>>,
+        pub(super) status: Status<InferenceRuntimeImpl, InferenceDomainSetImpl>,
         open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
         kana_analyzer: KanaAnalyzer,
         use_gpu: bool,
@@ -170,14 +170,16 @@ pub(crate) mod blocking {
             let heavy_session_options =
                 InferenceSessionOptions::new(options.cpu_num_threads, use_gpu);
 
-            let talk = Status::new(enum_map! {
-                TalkOperation::PredictDuration
-                | TalkOperation::PredictIntonation => light_session_options,
-                TalkOperation::Decode => heavy_session_options,
+            let status = Status::new(ByInferenceDomain {
+                talk: enum_map! {
+                    TalkOperation::PredictDuration
+                    | TalkOperation::PredictIntonation => light_session_options,
+                    TalkOperation::Decode => heavy_session_options,
+                },
             });
 
             return Ok(Self {
-                statuses: ByInferenceDomain { talk },
+                status,
                 open_jtalk_analyzer: OpenJTalkAnalyzer::new(open_jtalk),
                 kana_analyzer: KanaAnalyzer,
                 use_gpu,
@@ -201,34 +203,28 @@ pub(crate) mod blocking {
 
         /// 音声モデルを読み込む。
         pub fn load_voice_model(&self, model: &crate::blocking::VoiceModel) -> Result<()> {
-            let ByInferenceDomain { talk } = model.read_inference_models()?;
-
-            if let Some(model_bytes) = talk {
-                self.statuses
-                    .talk
-                    .insert_model(model.header(), &model_bytes)?;
-            }
-            Ok(())
+            let model_bytes = &model.read_inference_models()?;
+            self.status.insert_model(model.header(), model_bytes)
         }
 
         /// 音声モデルの読み込みを解除する。
         pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
-            self.statuses.talk.unload_model(voice_model_id)
+            self.status.unload_model(voice_model_id)
         }
 
         /// 指定したIDの音声モデルが読み込まれているか判定する。
         pub fn is_loaded_voice_model(&self, voice_model_id: &VoiceModelId) -> bool {
-            self.statuses.talk.is_loaded_model(voice_model_id)
+            self.status.is_loaded_model(voice_model_id)
         }
 
         #[doc(hidden)]
         pub fn is_loaded_model_by_style_id(&self, style_id: StyleId) -> bool {
-            self.statuses.talk.is_loaded_model_by_style_id(style_id)
+            self.status.is_loaded_model_by_style_id(style_id)
         }
 
         /// 今読み込んでいる音声モデルのメタ情報を返す。
         pub fn metas(&self) -> VoiceModelMeta {
-            self.statuses.talk.metas()
+            self.status.metas()
         }
 
         /// AudioQueryから音声合成を行う。
@@ -838,15 +834,15 @@ pub(crate) mod blocking {
     impl<O> PerformInference for self::Synthesizer<O> {
         fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
             // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.statuses.talk.validate_speaker_id(style_id) {
+            if !self.status.validate_speaker_id(style_id) {
                 return Err(ErrorRepr::StyleNotFound { style_id }.into());
             }
 
-            let (model_id, model_inner_id) = self.statuses.talk.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
 
             let PredictDurationOutput {
                 phoneme_length: output,
-            } = self.statuses.talk.run_session(
+            } = self.status.run_session(
                 &model_id,
                 PredictDurationInput {
                     phoneme_list: ndarray::arr1(phoneme_vector),
@@ -878,13 +874,13 @@ pub(crate) mod blocking {
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
             // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.statuses.talk.validate_speaker_id(style_id) {
+            if !self.status.validate_speaker_id(style_id) {
                 return Err(ErrorRepr::StyleNotFound { style_id }.into());
             }
 
-            let (model_id, model_inner_id) = self.statuses.talk.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
 
-            let PredictIntonationOutput { f0_list: output } = self.statuses.talk.run_session(
+            let PredictIntonationOutput { f0_list: output } = self.status.run_session(
                 &model_id,
                 PredictIntonationInput {
                     length: ndarray::arr0(length as i64),
@@ -910,11 +906,11 @@ pub(crate) mod blocking {
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
             // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.statuses.talk.validate_speaker_id(style_id) {
+            if !self.status.validate_speaker_id(style_id) {
                 return Err(ErrorRepr::StyleNotFound { style_id }.into());
             }
 
-            let (model_id, model_inner_id) = self.statuses.talk.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
 
             // 音が途切れてしまうのを避けるworkaround処理が入っている
             // TODO: 改善したらここのpadding処理を取り除く
@@ -932,7 +928,7 @@ pub(crate) mod blocking {
                 padding_size,
             );
 
-            let DecodeOutput { wave: output } = self.statuses.talk.run_session(
+            let DecodeOutput { wave: output } = self.status.run_session(
                 &model_id,
                 DecodeInput {
                     f0: ndarray::arr1(&f0_with_padding)
@@ -1140,8 +1136,8 @@ pub(crate) mod tokio {
     use std::sync::Arc;
 
     use crate::{
-        infer::domains::ByInferenceDomain, AccentPhraseModel, AudioQueryModel,
-        FullcontextExtractor, Result, StyleId, SynthesisOptions, VoiceModelId, VoiceModelMeta,
+        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
+        SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{InitializeOptions, TtsOptions};
@@ -1163,15 +1159,8 @@ pub(crate) mod tokio {
         }
 
         pub async fn load_voice_model(&self, model: &crate::tokio::VoiceModel) -> Result<()> {
-            let ByInferenceDomain { talk } = model.read_inference_models().await?;
-
-            if let Some(model_bytes) = talk {
-                self.0
-                    .statuses
-                    .talk
-                    .insert_model(model.header(), &model_bytes)?;
-            }
-            Ok(())
+            let model_bytes = &model.read_inference_models().await?;
+            self.0.status.insert_model(model.header(), model_bytes)
         }
 
         pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {

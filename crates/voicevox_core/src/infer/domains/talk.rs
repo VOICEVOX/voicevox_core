@@ -2,14 +2,25 @@ use enum_map::Enum;
 use macros::{InferenceInputSignature, InferenceOperation, InferenceOutputSignature};
 use ndarray::{Array0, Array1, Array2};
 
-use super::super::{
-    InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
+use super::{
+    super::{
+        InferenceDomain, InferenceDomainAssociation, InferenceDomainSet,
+        InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
+    },
+    InferenceDomainSetImpl,
 };
 
 pub(crate) enum TalkDomain {}
 
 impl InferenceDomain for TalkDomain {
+    type Set = InferenceDomainSetImpl;
     type Operation = TalkOperation;
+
+    fn visit<A: InferenceDomainAssociation>(
+        by_domain: &<Self::Set as InferenceDomainSet>::ByInferenceDomain<A>,
+    ) -> &A::Target<Self> {
+        &by_domain.talk
+    }
 }
 
 #[derive(Clone, Copy, Enum, InferenceOperation)]

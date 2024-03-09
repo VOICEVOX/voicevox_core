@@ -3,7 +3,7 @@ mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod status;
 
-use std::{borrow::Cow, convert::Infallible, fmt::Debug, marker::PhantomData};
+use std::{borrow::Cow, fmt::Debug};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -12,8 +12,6 @@ use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
 
 use crate::SupportedDevices;
-
-use self::status::Status;
 
 pub(crate) trait InferenceRuntime: 'static {
     type Session: Sized + Send + 'static;
@@ -35,8 +33,13 @@ pub(crate) trait InferenceRuntime: 'static {
 }
 
 /// ある`VoiceModel`が提供する推論操作の集合を示す。
-pub(crate) trait InferenceDomain {
+pub(crate) trait InferenceDomain: Sized {
+    type Set: InferenceDomainSet;
     type Operation: InferenceOperation;
+
+    fn visit<A: InferenceDomainAssociation>(
+        by_domain: &<Self::Set as InferenceDomainSet>::ByInferenceDomain<A>,
+    ) -> &A::Target<Self>;
 }
 
 /// `InferenceDomain`の推論操作を表す列挙型。
@@ -187,6 +190,33 @@ pub(crate) enum ExtractError {
 #[error("不正なモデルファイルです")]
 pub(crate) struct DecryptModelError;
 
+pub(crate) trait InferenceDomainSet {
+    type ByInferenceDomain<A: InferenceDomainAssociation>;
+
+    fn try_ref_map<
+        F: TryMapInferenceDomainAssociationTarget<Self, A1, A2, E>,
+        A1: InferenceDomainAssociation,
+        A2: InferenceDomainAssociation,
+        E,
+    >(
+        by_domain: &Self::ByInferenceDomain<A1>,
+        f: F,
+    ) -> Result<Self::ByInferenceDomain<A2>, E>;
+}
+
+pub(crate) trait TryMapInferenceDomainAssociationTarget<
+    S: InferenceDomainSet + ?Sized,
+    A1: InferenceDomainAssociation,
+    A2: InferenceDomainAssociation,
+    E,
+>
+{
+    fn try_ref_map<D: InferenceDomain<Set = S>>(
+        &self,
+        x: &A1::Target<D>,
+    ) -> Result<A2::Target<D>, E>;
+}
+
 pub(crate) trait InferenceDomainAssociation {
     type Target<D: InferenceDomain>;
 }
@@ -195,10 +225,4 @@ pub(crate) enum InferenceModelsByInferenceDomain {}
 
 impl InferenceDomainAssociation for InferenceModelsByInferenceDomain {
     type Target<D: InferenceDomain> = Option<EnumMap<D::Operation, Vec<u8>>>;
-}
-
-pub(crate) struct StatusByInferenceDomain<R>(Infallible, PhantomData<fn() -> R>);
-
-impl<R: InferenceRuntime> InferenceDomainAssociation for StatusByInferenceDomain<R> {
-    type Target<D: InferenceDomain> = Status<R, D>;
 }
