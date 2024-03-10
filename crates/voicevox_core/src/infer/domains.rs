@@ -6,28 +6,32 @@ pub(crate) use self::talk::{
 };
 
 use super::{
-    ConvertInferenceDomainAssociationTarget, InferenceDomainAssociation, InferenceDomainSet,
+    ConvertInferenceDomainAssociationTarget, InferenceDomainAssociation, InferenceDomainGroup,
+    InferenceDomainMap,
 };
 
-pub(crate) enum InferenceDomainSetImpl {}
+pub(crate) enum InferenceDomainGroupImpl {}
 
-impl InferenceDomainSet for InferenceDomainSetImpl {
-    type ByInferenceDomain<A: InferenceDomainAssociation> = ByInferenceDomain<A>;
+impl InferenceDomainGroup for InferenceDomainGroupImpl {
+    type Map<A: InferenceDomainAssociation> = InferenceDomainMapImpl<A>;
+}
+
+pub(crate) struct InferenceDomainMapImpl<A: InferenceDomainAssociation> {
+    pub(crate) talk: A::Target<TalkDomain>,
+}
+
+impl<A: InferenceDomainAssociation> InferenceDomainMap<A> for InferenceDomainMapImpl<A> {
+    type Group = InferenceDomainGroupImpl;
 
     fn try_ref_map<
-        F: ConvertInferenceDomainAssociationTarget<Self, A1, A2, E>,
-        A1: InferenceDomainAssociation,
+        F: ConvertInferenceDomainAssociationTarget<Self::Group, A, A2, E>,
         A2: InferenceDomainAssociation,
         E,
     >(
-        by_domain: &Self::ByInferenceDomain<A1>,
+        &self,
         f: F,
-    ) -> Result<Self::ByInferenceDomain<A2>, E> {
-        let talk = f.try_ref_map(&by_domain.talk)?;
-        Ok(ByInferenceDomain { talk })
+    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<A2>, E> {
+        let talk = f.try_ref_map(&self.talk)?;
+        Ok(InferenceDomainMapImpl { talk })
     }
-}
-
-pub(crate) struct ByInferenceDomain<A: InferenceDomainAssociation> {
-    pub(crate) talk: A::Target<TalkDomain>,
 }

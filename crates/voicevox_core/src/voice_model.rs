@@ -89,7 +89,7 @@ pub(crate) mod blocking {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::{domains::ByInferenceDomain, Optional},
+        infer::{domains::InferenceDomainMapImpl, Optional},
         manifest::{Manifest, TalkModelFilenames},
         VoiceModelMeta,
     };
@@ -107,7 +107,7 @@ pub(crate) mod blocking {
     impl self::VoiceModel {
         pub(crate) fn read_inference_models(
             &self,
-        ) -> LoadModelResult<ByInferenceDomain<Optional<InferenceModelsByInferenceDomain>>>
+        ) -> LoadModelResult<InferenceDomainMapImpl<Optional<InferenceModelsByInferenceDomain>>>
         {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
@@ -134,7 +134,7 @@ pub(crate) mod blocking {
                 )
                 .transpose()?;
 
-            Ok(ByInferenceDomain { talk })
+            Ok(InferenceDomainMapImpl { talk })
         }
 
         /// VVMファイルから`VoiceModel`をコンストラクトする。
@@ -231,7 +231,7 @@ pub(crate) mod tokio {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::{domains::ByInferenceDomain, Optional},
+        infer::{domains::InferenceDomainMapImpl, Optional},
         manifest::{Manifest, TalkModelFilenames},
         Result, VoiceModelMeta,
     };
@@ -249,7 +249,7 @@ pub(crate) mod tokio {
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
-        ) -> LoadModelResult<ByInferenceDomain<Optional<InferenceModelsByInferenceDomain>>>
+        ) -> LoadModelResult<InferenceDomainMapImpl<Optional<InferenceModelsByInferenceDomain>>>
         {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
 
@@ -281,7 +281,7 @@ pub(crate) mod tokio {
                 .await
                 .transpose()?;
 
-            Ok(ByInferenceDomain { talk })
+            Ok(InferenceDomainMapImpl { talk })
         }
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {

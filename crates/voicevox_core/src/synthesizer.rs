@@ -84,7 +84,7 @@ pub(crate) mod blocking {
         error::ErrorRepr,
         infer::{
             domains::{
-                ByInferenceDomain, DecodeInput, DecodeOutput, InferenceDomainSetImpl,
+                DecodeInput, DecodeOutput, InferenceDomainGroupImpl, InferenceDomainMapImpl,
                 PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
                 PredictIntonationOutput, TalkOperation,
             },
@@ -103,7 +103,7 @@ pub(crate) mod blocking {
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
-        pub(super) status: Status<InferenceRuntimeImpl, InferenceDomainSetImpl>,
+        pub(super) status: Status<InferenceRuntimeImpl, InferenceDomainGroupImpl>,
         open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
         kana_analyzer: KanaAnalyzer,
         use_gpu: bool,
@@ -170,7 +170,7 @@ pub(crate) mod blocking {
             let heavy_session_options =
                 InferenceSessionOptions::new(options.cpu_num_threads, use_gpu);
 
-            let status = Status::new(ByInferenceDomain {
+            let status = Status::new(InferenceDomainMapImpl {
                 talk: enum_map! {
                     TalkOperation::PredictDuration
                     | TalkOperation::PredictIntonation => light_session_options,

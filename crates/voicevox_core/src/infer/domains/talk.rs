@@ -4,22 +4,22 @@ use ndarray::{Array0, Array1, Array2};
 
 use super::{
     super::{
-        InferenceDomain, InferenceDomainAssociation, InferenceDomainSet,
+        InferenceDomain, InferenceDomainAssociation, InferenceDomainGroup,
         InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
     },
-    InferenceDomainSetImpl,
+    InferenceDomainGroupImpl,
 };
 
 pub(crate) enum TalkDomain {}
 
 impl InferenceDomain for TalkDomain {
-    type Set = InferenceDomainSetImpl;
+    type Group = InferenceDomainGroupImpl;
     type Operation = TalkOperation;
 
     fn visit<A: InferenceDomainAssociation>(
-        by_domain: &<Self::Set as InferenceDomainSet>::ByInferenceDomain<A>,
+        map: &<Self::Group as InferenceDomainGroup>::Map<A>,
     ) -> &A::Target<Self> {
-        &by_domain.talk
+        &map.talk
     }
 }
 

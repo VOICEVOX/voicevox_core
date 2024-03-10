@@ -32,28 +32,31 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
-pub(crate) trait InferenceDomainSet {
-    type ByInferenceDomain<A: InferenceDomainAssociation>;
+pub(crate) trait InferenceDomainGroup {
+    type Map<A: InferenceDomainAssociation>: InferenceDomainMap<A, Group = Self>;
+}
+
+pub(crate) trait InferenceDomainMap<A: InferenceDomainAssociation> {
+    type Group: InferenceDomainGroup;
 
     fn try_ref_map<
-        F: ConvertInferenceDomainAssociationTarget<Self, A1, A2, E>,
-        A1: InferenceDomainAssociation,
+        F: ConvertInferenceDomainAssociationTarget<Self::Group, A, A2, E>,
         A2: InferenceDomainAssociation,
         E,
     >(
-        by_domain: &Self::ByInferenceDomain<A1>,
+        &self,
         f: F,
-    ) -> Result<Self::ByInferenceDomain<A2>, E>;
+    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<A2>, E>;
 }
 
 pub(crate) trait ConvertInferenceDomainAssociationTarget<
-    S: InferenceDomainSet + ?Sized,
+    G: InferenceDomainGroup + ?Sized,
     A1: InferenceDomainAssociation,
     A2: InferenceDomainAssociation,
     E,
 >
 {
-    fn try_ref_map<D: InferenceDomain<Set = S>>(
+    fn try_ref_map<D: InferenceDomain<Group = G>>(
         &self,
         x: &A1::Target<D>,
     ) -> Result<A2::Target<D>, E>;
@@ -71,11 +74,11 @@ impl<A: InferenceDomainAssociation> InferenceDomainAssociation for Optional<A> {
 
 /// ある`VoiceModel`が提供する推論操作の集合を示す。
 pub(crate) trait InferenceDomain: Sized {
-    type Set: InferenceDomainSet;
+    type Group: InferenceDomainGroup;
     type Operation: InferenceOperation;
 
     fn visit<A: InferenceDomainAssociation>(
-        by_domain: &<Self::Set as InferenceDomainSet>::ByInferenceDomain<A>,
+        map: &<Self::Group as InferenceDomainGroup>::Map<A>,
     ) -> &A::Target<Self>;
 }
 

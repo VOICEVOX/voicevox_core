@@ -15,7 +15,7 @@ use itertools::{iproduct, Itertools as _};
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
-        ConvertInferenceDomainAssociationTarget, InferenceDomainAssociation, InferenceDomainSet,
+        ConvertInferenceDomainAssociationTarget, InferenceDomainAssociation, InferenceDomainGroup,
         InferenceOperation, ParamInfo,
     },
     manifest::ModelInnerId,
@@ -25,17 +25,17 @@ use crate::{
 };
 
 use super::{
-    model_file, InferenceDomain, InferenceInputSignature, InferenceRuntime,
-    InferenceSessionOptions, InferenceSignature, Optional,
+    model_file, InferenceDomain, InferenceDomainMap as _, InferenceInputSignature,
+    InferenceRuntime, InferenceSessionOptions, InferenceSignature, Optional,
 };
 
-pub(crate) struct Status<R: InferenceRuntime, S: InferenceDomainSet> {
+pub(crate) struct Status<R: InferenceRuntime, S: InferenceDomainGroup> {
     loaded_models: std::sync::Mutex<LoadedModels<R, S>>,
-    session_options: S::ByInferenceDomain<SessionOptionsByDomain>,
+    session_options: S::Map<SessionOptionsByDomain>,
 }
 
-impl<R: InferenceRuntime, S: InferenceDomainSet> Status<R, S> {
-    pub(crate) fn new(session_options: S::ByInferenceDomain<SessionOptionsByDomain>) -> Self {
+impl<R: InferenceRuntime, S: InferenceDomainGroup> Status<R, S> {
+    pub(crate) fn new(session_options: S::Map<SessionOptionsByDomain>) -> Self {
         Self {
             loaded_models: Default::default(),
             session_options,
@@ -45,25 +45,23 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> Status<R, S> {
     pub(crate) fn insert_model(
         &self,
         model_header: &VoiceModelHeader,
-        model_bytes: &S::ByInferenceDomain<Optional<InferenceModelsByInferenceDomain>>,
+        model_bytes: &S::Map<Optional<InferenceModelsByInferenceDomain>>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
             .unwrap()
             .ensure_acceptable(model_header)?;
 
-        let session_set = S::try_ref_map(
-            model_bytes,
-            CreateSessionSet {
+        let session_set = model_bytes
+            .try_ref_map(CreateSessionSet {
                 session_options: &self.session_options,
                 marker: PhantomData,
-            },
-        )
-        .map_err(|source| LoadModelError {
-            path: model_header.path.clone(),
-            context: LoadModelErrorKind::InvalidModelData,
-            source: Some(source),
-        })?;
+            })
+            .map_err(|source| LoadModelError {
+                path: model_header.path.clone(),
+                context: LoadModelErrorKind::InvalidModelData,
+                source: Some(source),
+            })?;
 
         self.loaded_models
             .lock()
@@ -71,12 +69,12 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> Status<R, S> {
             .insert(model_header, session_set)?;
         return Ok(());
 
-        struct CreateSessionSet<'a, R, S: InferenceDomainSet> {
-            session_options: &'a S::ByInferenceDomain<SessionOptionsByDomain>,
+        struct CreateSessionSet<'a, R, S: InferenceDomainGroup> {
+            session_options: &'a S::Map<SessionOptionsByDomain>,
             marker: PhantomData<fn() -> R>,
         }
 
-        impl<R: InferenceRuntime, S: InferenceDomainSet>
+        impl<R: InferenceRuntime, S: InferenceDomainGroup>
             ConvertInferenceDomainAssociationTarget<
                 S,
                 Optional<InferenceModelsByInferenceDomain>,
@@ -84,7 +82,7 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> Status<R, S> {
                 anyhow::Error,
             > for CreateSessionSet<'_, R, S>
         {
-            fn try_ref_map<D: InferenceDomain<Set = S>>(
+            fn try_ref_map<D: InferenceDomain<Group = S>>(
                 &self,
                 model_bytes: &<Optional<InferenceModelsByInferenceDomain> as InferenceDomainAssociation>::Target<D>,
             ) -> anyhow::Result<
@@ -142,7 +140,7 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> Status<R, S> {
     where
         I: InferenceInputSignature,
         I::Signature: InferenceSignature,
-        <I::Signature as InferenceSignature>::Domain: InferenceDomain<Set = S>,
+        <I::Signature as InferenceSignature>::Domain: InferenceDomain<Group = S>,
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
         sess.run(input)
@@ -153,18 +151,18 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> Status<R, S> {
 ///
 /// この構造体のメソッドは、すべて一瞬で完了すべきである。
 #[derive(Educe)]
-#[educe(Default(bound = "R: InferenceRuntime, S: InferenceDomainSet"))]
-struct LoadedModels<R: InferenceRuntime, S: InferenceDomainSet>(
+#[educe(Default(bound = "R: InferenceRuntime, S: InferenceDomainGroup"))]
+struct LoadedModels<R: InferenceRuntime, S: InferenceDomainGroup>(
     IndexMap<VoiceModelId, LoadedModel<R, S>>,
 );
 
-struct LoadedModel<R: InferenceRuntime, S: InferenceDomainSet> {
+struct LoadedModel<R: InferenceRuntime, S: InferenceDomainGroup> {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_sets: S::ByInferenceDomain<Optional<SessionSetByDomain<R>>>,
+    session_sets: S::Map<Optional<SessionSetByDomain<R>>>,
 }
 
-impl<R: InferenceRuntime, S: InferenceDomainSet> LoadedModels<R, S> {
+impl<R: InferenceRuntime, S: InferenceDomainGroup> LoadedModels<R, S> {
     fn metas(&self) -> VoiceModelMeta {
         metas::merge(self.0.values().flat_map(|LoadedModel { metas, .. }| metas))
     }
@@ -199,7 +197,7 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> LoadedModels<R, S> {
     fn get<I>(&self, model_id: &VoiceModelId) -> SessionCell<R, I>
     where
         I: InferenceInputSignature,
-        <I::Signature as InferenceSignature>::Domain: InferenceDomain<Set = S>,
+        <I::Signature as InferenceSignature>::Domain: InferenceDomain<Group = S>,
     {
         <I::Signature as InferenceSignature>::Domain::visit(&self.0[model_id].session_sets)
             .as_ref()
@@ -260,7 +258,7 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> LoadedModels<R, S> {
     fn insert(
         &mut self,
         model_header: &VoiceModelHeader,
-        session_sets: S::ByInferenceDomain<Optional<SessionSetByDomain<R>>>,
+        session_sets: S::Map<Optional<SessionSetByDomain<R>>>,
     ) -> Result<()> {
         self.ensure_acceptable(model_header)?;
 
@@ -401,7 +399,7 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
-        infer::domains::{ByInferenceDomain, InferenceDomainSetImpl, TalkOperation},
+        infer::domains::{InferenceDomainGroupImpl, InferenceDomainMapImpl, TalkOperation},
         macros::tests::assert_debug_fmt_eq,
         synthesizer::InferenceRuntimeImpl,
         test_util::open_default_vvm_file,
@@ -420,14 +418,14 @@ mod tests {
     fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: u16) {
         let light_session_options = InferenceSessionOptions::new(cpu_num_threads, false);
         let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
-        let session_options = ByInferenceDomain {
+        let session_options = InferenceDomainMapImpl {
             talk: enum_map! {
                 TalkOperation::PredictDuration
                 | TalkOperation::PredictIntonation => light_session_options,
                 TalkOperation::Decode => heavy_session_options,
             },
         };
-        let status = Status::<InferenceRuntimeImpl, InferenceDomainSetImpl>::new(session_options);
+        let status = Status::<InferenceRuntimeImpl, InferenceDomainGroupImpl>::new(session_options);
 
         assert_eq!(
             light_session_options,
@@ -449,7 +447,7 @@ mod tests {
     #[tokio::test]
     async fn status_load_model_works() {
         let status =
-            Status::<InferenceRuntimeImpl, InferenceDomainSetImpl>::new(ByInferenceDomain {
+            Status::<InferenceRuntimeImpl, InferenceDomainGroupImpl>::new(InferenceDomainMapImpl {
                 talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
             });
         let model = &open_default_vvm_file().await;
@@ -463,7 +461,7 @@ mod tests {
     #[tokio::test]
     async fn status_is_model_loaded_works() {
         let status =
-            Status::<InferenceRuntimeImpl, InferenceDomainSetImpl>::new(ByInferenceDomain {
+            Status::<InferenceRuntimeImpl, InferenceDomainGroupImpl>::new(InferenceDomainMapImpl {
                 talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
             });
         let vvm = open_default_vvm_file().await;
