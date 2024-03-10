@@ -3,7 +3,7 @@ mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod status;
 
-use std::{borrow::Cow, fmt::Debug};
+use std::{borrow::Cow, convert::Infallible, fmt::Debug, marker::PhantomData};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -61,6 +61,12 @@ pub(crate) trait ConvertInferenceDomainAssociationTarget<
 
 pub(crate) trait InferenceDomainAssociation {
     type Target<D: InferenceDomain>;
+}
+
+pub(crate) struct Optional<A>(Infallible, PhantomData<fn() -> A>);
+
+impl<A: InferenceDomainAssociation> InferenceDomainAssociation for Optional<A> {
+    type Target<D: InferenceDomain> = Option<A::Target<D>>;
 }
 
 /// ある`VoiceModel`が提供する推論操作の集合を示す。

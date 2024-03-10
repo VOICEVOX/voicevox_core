@@ -72,7 +72,7 @@ impl VoiceModelHeader {
 pub(crate) enum InferenceModelsByInferenceDomain {}
 
 impl InferenceDomainAssociation for InferenceModelsByInferenceDomain {
-    type Target<D: InferenceDomain> = Option<EnumMap<D::Operation, Vec<u8>>>;
+    type Target<D: InferenceDomain> = EnumMap<D::Operation, Vec<u8>>;
 }
 
 pub(crate) mod blocking {
@@ -89,7 +89,7 @@ pub(crate) mod blocking {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::domains::ByInferenceDomain,
+        infer::{domains::ByInferenceDomain, Optional},
         manifest::{Manifest, TalkModelFilenames},
         VoiceModelMeta,
     };
@@ -107,7 +107,8 @@ pub(crate) mod blocking {
     impl self::VoiceModel {
         pub(crate) fn read_inference_models(
             &self,
-        ) -> LoadModelResult<ByInferenceDomain<InferenceModelsByInferenceDomain>> {
+        ) -> LoadModelResult<ByInferenceDomain<Optional<InferenceModelsByInferenceDomain>>>
+        {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
             let talk = self
@@ -230,7 +231,7 @@ pub(crate) mod tokio {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::domains::ByInferenceDomain,
+        infer::{domains::ByInferenceDomain, Optional},
         manifest::{Manifest, TalkModelFilenames},
         Result, VoiceModelMeta,
     };
@@ -248,7 +249,8 @@ pub(crate) mod tokio {
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
-        ) -> LoadModelResult<ByInferenceDomain<InferenceModelsByInferenceDomain>> {
+        ) -> LoadModelResult<ByInferenceDomain<Optional<InferenceModelsByInferenceDomain>>>
+        {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
 
             let talk =

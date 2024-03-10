@@ -26,7 +26,7 @@ use crate::{
 
 use super::{
     model_file, InferenceDomain, InferenceInputSignature, InferenceRuntime,
-    InferenceSessionOptions, InferenceSignature,
+    InferenceSessionOptions, InferenceSignature, Optional,
 };
 
 pub(crate) struct Status<R: InferenceRuntime, S: InferenceDomainSet> {
@@ -45,7 +45,7 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> Status<R, S> {
     pub(crate) fn insert_model(
         &self,
         model_header: &VoiceModelHeader,
-        model_bytes: &S::ByInferenceDomain<InferenceModelsByInferenceDomain>,
+        model_bytes: &S::ByInferenceDomain<Optional<InferenceModelsByInferenceDomain>>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
@@ -79,16 +79,16 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> Status<R, S> {
         impl<R: InferenceRuntime, S: InferenceDomainSet>
             ConvertInferenceDomainAssociationTarget<
                 S,
-                InferenceModelsByInferenceDomain,
-                OptionalSessionSetByDomain<R>,
+                Optional<InferenceModelsByInferenceDomain>,
+                Optional<SessionSetByDomain<R>>,
                 anyhow::Error,
             > for CreateSessionSet<'_, R, S>
         {
             fn try_ref_map<D: InferenceDomain<Set = S>>(
                 &self,
-                model_bytes: &<InferenceModelsByInferenceDomain as InferenceDomainAssociation>::Target<D>,
+                model_bytes: &<Optional<InferenceModelsByInferenceDomain> as InferenceDomainAssociation>::Target<D>,
             ) -> anyhow::Result<
-                <OptionalSessionSetByDomain<R> as InferenceDomainAssociation>::Target<D>,
+                <Optional<SessionSetByDomain<R>> as InferenceDomainAssociation>::Target<D>,
             > {
                 model_bytes
                     .as_ref()
@@ -161,7 +161,7 @@ struct LoadedModels<R: InferenceRuntime, S: InferenceDomainSet>(
 struct LoadedModel<R: InferenceRuntime, S: InferenceDomainSet> {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_sets: S::ByInferenceDomain<OptionalSessionSetByDomain<R>>,
+    session_sets: S::ByInferenceDomain<Optional<SessionSetByDomain<R>>>,
 }
 
 impl<R: InferenceRuntime, S: InferenceDomainSet> LoadedModels<R, S> {
@@ -260,7 +260,7 @@ impl<R: InferenceRuntime, S: InferenceDomainSet> LoadedModels<R, S> {
     fn insert(
         &mut self,
         model_header: &VoiceModelHeader,
-        session_sets: S::ByInferenceDomain<OptionalSessionSetByDomain<R>>,
+        session_sets: S::ByInferenceDomain<Optional<SessionSetByDomain<R>>>,
     ) -> Result<()> {
         self.ensure_acceptable(model_header)?;
 
@@ -388,10 +388,10 @@ impl InferenceDomainAssociation for SessionOptionsByDomain {
     type Target<D: InferenceDomain> = EnumMap<D::Operation, InferenceSessionOptions>;
 }
 
-struct OptionalSessionSetByDomain<R>(Infallible, PhantomData<fn() -> R>);
+struct SessionSetByDomain<R>(Infallible, PhantomData<fn() -> R>);
 
-impl<R: InferenceRuntime> InferenceDomainAssociation for OptionalSessionSetByDomain<R> {
-    type Target<D: InferenceDomain> = Option<SessionSet<R, D>>;
+impl<R: InferenceRuntime> InferenceDomainAssociation for SessionSetByDomain<R> {
+    type Target<D: InferenceDomain> = SessionSet<R, D>;
 }
 
 #[cfg(test)]
