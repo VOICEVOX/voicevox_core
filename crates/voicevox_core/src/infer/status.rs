@@ -1,4 +1,5 @@
 use std::{
+    any,
     collections::{BTreeMap, HashMap},
     convert::Infallible,
     fmt::Display,
@@ -131,10 +132,7 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
     ///
     /// # Panics
     ///
-    /// 次の場合にパニックする。
-    ///
-    /// - `self`が`model_id`を含んでいないとき
-    /// - 対応する`InferenceDomain`が欠けているとき
+    /// `self`が`model_id`を含んでいないとき、パニックする。
     pub(crate) fn run_session<I>(
         &self,
         model_id: &VoiceModelId,
@@ -208,12 +206,14 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
         <I::Signature as InferenceSignature>::Domain::visit(&self.0[model_id].session_sets)
             .as_ref()
             .unwrap_or_else(|| {
-                let type_name =
-                    std::any::type_name::<<I::Signature as InferenceSignature>::Domain>()
-                        .split("::")
-                        .last()
-                        .unwrap();
-                panic!("missing session set for `{type_name}`");
+                let type_name = any::type_name::<<I::Signature as InferenceSignature>::Domain>()
+                    .split("::")
+                    .last()
+                    .unwrap();
+                panic!(
+                    "missing session set for `{type_name}` (should be checked in \
+                     `ensure_acceptable`)",
+                );
             })
             .get()
     }
