@@ -22,12 +22,13 @@ use crate::{
     manifest::ModelInnerId,
     metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
     voice_model::{ModelData, ModelDataByInferenceDomain, VoiceModelHeader, VoiceModelId},
-    Result,
+    Result, StyleType,
 };
 
 use super::{
-    model_file, InferenceDomain, InferenceDomainMap as _, InferenceInputSignature,
-    InferenceRuntime, InferenceSessionOptions, InferenceSignature, Optional,
+    model_file, InferenceDomain, InferenceDomainAssociationTargetPredicate,
+    InferenceDomainMap as _, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
+    InferenceSignature, Optional,
 };
 
 pub(crate) struct Status<R: InferenceRuntime, G: InferenceDomainGroup> {
@@ -132,12 +133,10 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
             .contains_voice_model(voice_model_id)
     }
 
+    // FIXME: この関数はcompatible_engineとテストでのみ使われるが、テストのために`StyleType`を
+    // 引数に含めるようにする
     pub(crate) fn is_loaded_model_by_style_id(&self, style_id: StyleId) -> bool {
         self.loaded_models.lock().unwrap().contains_style(style_id)
-    }
-
-    pub(crate) fn validate_speaker_id(&self, style_id: StyleId) -> bool {
-        self.is_loaded_model_by_style_id(style_id)
     }
 
     /// 推論を実行する。
@@ -191,12 +190,14 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
             .0
             .iter()
             .find(|(_, LoadedModel { metas, .. })| {
-                metas
-                    .iter()
-                    .flat_map(SpeakerMeta::styles)
-                    .any(|style| *style.id() == style_id)
+                metas.iter().flat_map(SpeakerMeta::styles).any(|style| {
+                    *style.id() == style_id && D::style_types().contains(style.r#type())
+                })
             })
-            .ok_or(ErrorRepr::StyleNotFound { style_id })?;
+            .ok_or(ErrorRepr::StyleNotFound {
+                style_id,
+                style_types: D::style_types(),
+            })?;
 
         let model_inner_id = D::visit(by_domain)
             .as_ref()
@@ -280,11 +281,17 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
             .metas
             .iter()
             .flat_map(|speaker| speaker.styles());
-        if let Some(style_type) = external
-            .clone()
-            .map(StyleMeta::r#type)
-            .copied()
-            .find(|&t| !model_bytes_or_sessions.contains_for(t))
+        if let Some(style_type) =
+            external
+                .clone()
+                .map(StyleMeta::r#type)
+                .copied()
+                .find(|&style_type| {
+                    !model_bytes_or_sessions.any(ContainsForStyleType {
+                        style_type,
+                        marker: PhantomData,
+                    })
+                })
         {
             return Err(error(LoadModelErrorKind::MissingModelData { style_type }));
         }
@@ -295,7 +302,25 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
                 id: *style.id(),
             }));
         }
-        Ok(())
+        return Ok(());
+
+        struct ContainsForStyleType<A> {
+            style_type: StyleType,
+            marker: PhantomData<fn() -> A>,
+        }
+
+        impl<A: InferenceDomainAssociation> InferenceDomainAssociationTargetPredicate
+            for ContainsForStyleType<A>
+        {
+            type Association = Optional<A>;
+
+            fn test<D: InferenceDomain>(
+                &self,
+                x: &<Self::Association as InferenceDomainAssociation>::Target<D>,
+            ) -> bool {
+                D::style_types().contains(&self.style_type) && x.is_some()
+            }
+        }
     }
 
     fn insert(

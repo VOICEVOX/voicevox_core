@@ -164,7 +164,20 @@ pub struct StyleMeta {
 }
 
 /// **スタイル**(_style_)に対応するモデルの種類。
-#[derive(Default, Clone, Copy, Debug, strum::Display, Deserialize, Serialize)]
+#[derive(
+    Default,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Debug,
+    strum::Display,
+    Deserialize,
+    Serialize,
+)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum StyleType {

@@ -3,7 +3,9 @@ mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod status;
 
-use std::{borrow::Cow, convert::Infallible, fmt::Debug, marker::PhantomData};
+use std::{
+    borrow::Cow, collections::BTreeSet, convert::Infallible, fmt::Debug, marker::PhantomData,
+};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -39,9 +41,9 @@ pub(crate) trait InferenceDomainGroup {
 pub(crate) trait InferenceDomainMap<A: InferenceDomainAssociation> {
     type Group: InferenceDomainGroup;
 
-    fn contains_for(&self, style_type: StyleType) -> bool
+    fn any<P>(&self, p: P) -> bool
     where
-        A: InferenceDomainOptionAssociation;
+        P: InferenceDomainAssociationTargetPredicate<Association = A>;
 
     fn try_ref_map<
         F: ConvertInferenceDomainAssociationTarget<Self::Group, A, A2, E>,
@@ -51,6 +53,14 @@ pub(crate) trait InferenceDomainMap<A: InferenceDomainAssociation> {
         &self,
         f: F,
     ) -> Result<<Self::Group as InferenceDomainGroup>::Map<A2>, E>;
+}
+
+pub(crate) trait InferenceDomainAssociationTargetPredicate {
+    type Association: InferenceDomainAssociation;
+    fn test<D: InferenceDomain>(
+        &self,
+        x: &<Self::Association as InferenceDomainAssociation>::Target<D>,
+    ) -> bool;
 }
 
 pub(crate) trait ConvertInferenceDomainAssociationTarget<
@@ -70,26 +80,18 @@ pub(crate) trait InferenceDomainAssociation {
     type Target<D: InferenceDomain>;
 }
 
-pub(crate) trait InferenceDomainOptionAssociation: InferenceDomainAssociation {
-    fn is_some<D: InferenceDomain>(x: &Self::Target<D>) -> bool;
-}
-
 pub(crate) struct Optional<A>(Infallible, PhantomData<fn() -> A>);
 
 impl<A: InferenceDomainAssociation> InferenceDomainAssociation for Optional<A> {
     type Target<D: InferenceDomain> = Option<A::Target<D>>;
 }
 
-impl<A: InferenceDomainAssociation> InferenceDomainOptionAssociation for Optional<A> {
-    fn is_some<D: InferenceDomain>(x: &Self::Target<D>) -> bool {
-        x.is_some()
-    }
-}
-
 /// ある`VoiceModel`が提供する推論操作の集合を示す。
 pub(crate) trait InferenceDomain: Sized {
     type Group: InferenceDomainGroup;
     type Operation: InferenceOperation;
+
+    fn style_types() -> &'static BTreeSet<StyleType>;
 
     fn visit<A: InferenceDomainAssociation>(
         map: &<Self::Group as InferenceDomainGroup>::Map<A>,

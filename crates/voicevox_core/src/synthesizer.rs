@@ -833,11 +833,6 @@ pub(crate) mod blocking {
 
     impl<O> PerformInference for self::Synthesizer<O> {
         fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
             let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictDurationOutput {
@@ -873,11 +868,6 @@ pub(crate) mod blocking {
             end_accent_phrase_vector: &[i64],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
             let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictIntonationOutput { f0_list: output } = self.status.run_session(
@@ -905,11 +895,6 @@ pub(crate) mod blocking {
             phoneme_vector: &[f32],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
             let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             // 音が途切れてしまうのを避けるworkaround処理が入っている

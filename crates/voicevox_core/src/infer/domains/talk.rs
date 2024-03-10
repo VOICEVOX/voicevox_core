@@ -1,6 +1,11 @@
+use std::collections::BTreeSet;
+
 use enum_map::Enum;
 use macros::{InferenceInputSignature, InferenceOperation, InferenceOutputSignature};
 use ndarray::{Array0, Array1, Array2};
+use once_cell::sync::Lazy;
+
+use crate::StyleType;
 
 use super::{
     super::{
@@ -15,6 +20,12 @@ pub(crate) enum TalkDomain {}
 impl InferenceDomain for TalkDomain {
     type Group = InferenceDomainGroupImpl;
     type Operation = TalkOperation;
+
+    fn style_types() -> &'static BTreeSet<StyleType> {
+        static STYLE_TYPES: Lazy<BTreeSet<StyleType>> =
+            Lazy::new(|| BTreeSet::from([StyleType::Talk]));
+        &STYLE_TYPES
+    }
 
     fn visit<A: InferenceDomainAssociation>(
         map: &<Self::Group as InferenceDomainGroup>::Map<A>,
