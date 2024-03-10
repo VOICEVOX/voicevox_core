@@ -72,7 +72,7 @@ pub(crate) mod blocking {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::{domains::InferenceDomainMapImpl, Optional},
+        infer::domains::InferenceDomainMapImpl,
         manifest::{Manifest, TalkManifest},
         VoiceModelMeta,
     };
@@ -90,7 +90,7 @@ pub(crate) mod blocking {
     impl self::VoiceModel {
         pub(crate) fn read_inference_models(
             &self,
-        ) -> LoadModelResult<InferenceDomainMapImpl<Optional<ModelDataByInferenceDomain>>> {
+        ) -> LoadModelResult<InferenceDomainMapImpl<Option<ModelDataByInferenceDomain>>> {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
             let talk = self
@@ -221,7 +221,7 @@ pub(crate) mod tokio {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::{domains::InferenceDomainMapImpl, Optional},
+        infer::domains::InferenceDomainMapImpl,
         manifest::{Manifest, TalkManifest},
         Result, VoiceModelMeta,
     };
@@ -239,7 +239,7 @@ pub(crate) mod tokio {
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
-        ) -> LoadModelResult<InferenceDomainMapImpl<Optional<ModelDataByInferenceDomain>>> {
+        ) -> LoadModelResult<InferenceDomainMapImpl<Option<ModelDataByInferenceDomain>>> {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
 
             let talk = OptionFuture::from(self.header.manifest.talk().as_ref().map(

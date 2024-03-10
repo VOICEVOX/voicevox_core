@@ -3,9 +3,7 @@ mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod status;
 
-use std::{
-    borrow::Cow, collections::BTreeSet, convert::Infallible, fmt::Debug, marker::PhantomData,
-};
+use std::{borrow::Cow, collections::BTreeSet, fmt::Debug};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -34,7 +32,7 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
-pub(crate) trait InferenceDomainGroup {
+pub(crate) trait InferenceDomainGroup: Sized {
     type Map<A: InferenceDomainAssociation>: InferenceDomainMap<A, Group = Self>;
 }
 
@@ -64,7 +62,7 @@ pub(crate) trait InferenceDomainAssociationTargetPredicate {
 }
 
 pub(crate) trait ConvertInferenceDomainAssociationTarget<
-    G: InferenceDomainGroup + ?Sized,
+    G: InferenceDomainGroup,
     A1: InferenceDomainAssociation,
     A2: InferenceDomainAssociation,
     E,
@@ -80,9 +78,13 @@ pub(crate) trait InferenceDomainAssociation {
     type Target<D: InferenceDomain>;
 }
 
-pub(crate) struct Optional<A>(Infallible, PhantomData<fn() -> A>);
+impl<A1: InferenceDomainAssociation, A2: InferenceDomainAssociation> InferenceDomainAssociation
+    for (A1, A2)
+{
+    type Target<D: InferenceDomain> = (A1::Target<D>, A2::Target<D>);
+}
 
-impl<A: InferenceDomainAssociation> InferenceDomainAssociation for Optional<A> {
+impl<A: InferenceDomainAssociation> InferenceDomainAssociation for Option<A> {
     type Target<D: InferenceDomain> = Option<A::Target<D>>;
 }
 
