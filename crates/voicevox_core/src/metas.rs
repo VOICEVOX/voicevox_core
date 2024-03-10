@@ -164,7 +164,8 @@ pub struct StyleMeta {
 }
 
 /// **スタイル**(_style_)に対応するモデルの種類。
-#[derive(Default, Clone, Copy, Deserialize, Serialize)]
+#[derive(Default, Clone, Copy, Debug, strum::Display, Deserialize, Serialize)]
+#[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum StyleType {
     /// 音声合成クエリの作成と音声合成が可能。

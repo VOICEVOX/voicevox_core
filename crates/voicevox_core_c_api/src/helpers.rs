@@ -39,6 +39,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 ReadZipEntry => VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR,
                 ModelAlreadyLoaded => VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR,
                 StyleAlreadyLoaded => VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR,
+                MissingModelData => VOICEVOX_RESULT_MISSING_MODEL_DATA_ERROR,
                 InvalidModelData => VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR,
                 GetSupportedDevices => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
                 StyleNotFound => VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,

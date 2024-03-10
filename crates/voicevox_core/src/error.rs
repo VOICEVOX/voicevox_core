@@ -1,7 +1,7 @@
 use crate::{
     engine::{FullContextLabelError, KanaParseError},
     user_dict::InvalidWordError,
-    StyleId, VoiceModelId,
+    StyleId, StyleType, VoiceModelId,
 };
 //use engine::
 use duplicate::duplicate_item;
@@ -38,6 +38,7 @@ impl Error {
                 LoadModelErrorKind::ReadZipEntry { .. } => ErrorKind::ReadZipEntry,
                 LoadModelErrorKind::ModelAlreadyLoaded { .. } => ErrorKind::ModelAlreadyLoaded,
                 LoadModelErrorKind::StyleAlreadyLoaded { .. } => ErrorKind::StyleAlreadyLoaded,
+                LoadModelErrorKind::MissingModelData { .. } => ErrorKind::MissingModelData,
                 LoadModelErrorKind::InvalidModelData => ErrorKind::InvalidModelData,
             },
             ErrorRepr::GetSupportedDevices(_) => ErrorKind::GetSupportedDevices,
@@ -121,6 +122,8 @@ pub enum ErrorKind {
     ModelAlreadyLoaded,
     /// すでに読み込まれているスタイルを読み込もうとした。
     StyleAlreadyLoaded,
+    /// モデルデータが見つからなかった。
+    MissingModelData,
     /// 無効なモデルデータ。
     InvalidModelData,
     /// サポートされているデバイス情報取得に失敗した。
@@ -169,6 +172,8 @@ pub(crate) enum LoadModelErrorKind {
     ModelAlreadyLoaded { id: VoiceModelId },
     #[display(fmt = "スタイル`{id}`は既に読み込まれています")]
     StyleAlreadyLoaded { id: StyleId },
+    #[display(fmt = "`{style_type}`に対応するモデルデータがありませんでした")]
+    MissingModelData { style_type: StyleType },
     #[display(fmt = "モデルデータを読むことができませんでした")]
     InvalidModelData,
 }

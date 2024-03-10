@@ -11,7 +11,7 @@ use enum_map::{Enum, EnumMap};
 use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
 
-use crate::SupportedDevices;
+use crate::{StyleType, SupportedDevices};
 
 pub(crate) trait InferenceRuntime: 'static {
     type Session: Sized + Send + 'static;
@@ -38,6 +38,10 @@ pub(crate) trait InferenceDomainGroup {
 
 pub(crate) trait InferenceDomainMap<A: InferenceDomainAssociation> {
     type Group: InferenceDomainGroup;
+
+    fn contains_for(&self, style_type: StyleType) -> bool
+    where
+        A: InferenceDomainOptionAssociation;
 
     fn try_ref_map<
         F: ConvertInferenceDomainAssociationTarget<Self::Group, A, A2, E>,
@@ -66,10 +70,20 @@ pub(crate) trait InferenceDomainAssociation {
     type Target<D: InferenceDomain>;
 }
 
+pub(crate) trait InferenceDomainOptionAssociation: InferenceDomainAssociation {
+    fn is_some<D: InferenceDomain>(x: &Self::Target<D>) -> bool;
+}
+
 pub(crate) struct Optional<A>(Infallible, PhantomData<fn() -> A>);
 
 impl<A: InferenceDomainAssociation> InferenceDomainAssociation for Optional<A> {
     type Target<D: InferenceDomain> = Option<A::Target<D>>;
+}
+
+impl<A: InferenceDomainAssociation> InferenceDomainOptionAssociation for Optional<A> {
+    fn is_some<D: InferenceDomain>(x: &Self::Target<D>) -> bool {
+        x.is_some()
+    }
 }
 
 /// ある`VoiceModel`が提供する推論操作の集合を示す。

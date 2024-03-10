@@ -50,7 +50,7 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> Status<R, S> {
         self.loaded_models
             .lock()
             .unwrap()
-            .ensure_acceptable(model_header)?;
+            .ensure_acceptable(model_header, model_bytes)?;
 
         let session_set = model_bytes
             .try_ref_map(CreateSessionSet {
@@ -131,7 +131,10 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> Status<R, S> {
     ///
     /// # Panics
     ///
-    /// `self`が`model_id`を含んでいないとき、パニックする。
+    /// 次の場合にパニックする。
+    ///
+    /// - `self`が`model_id`を含んでいないとき
+    /// - 対応する`InferenceDomain`が欠けているとき
     pub(crate) fn run_session<I>(
         &self,
         model_id: &VoiceModelId,
@@ -193,7 +196,10 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> LoadedModels<R, S> {
 
     /// # Panics
     ///
-    /// `self`が`model_id`を含んでいないとき、パニックする。
+    /// 次の場合にパニックする。
+    ///
+    /// - `self`が`model_id`を含んでいないとき
+    /// - 対応する`InferenceDomain`が欠けているとき
     fn get<I>(&self, model_id: &VoiceModelId) -> SessionCell<R, I>
     where
         I: InferenceInputSignature,
@@ -201,7 +207,14 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> LoadedModels<R, S> {
     {
         <I::Signature as InferenceSignature>::Domain::visit(&self.0[model_id].session_sets)
             .as_ref()
-            .unwrap_or_else(|| todo!("`ensure_acceptable`で検査する"))
+            .unwrap_or_else(|| {
+                let type_name =
+                    std::any::type_name::<<I::Signature as InferenceSignature>::Domain>()
+                        .split("::")
+                        .last()
+                        .unwrap();
+                panic!("missing session set for `{type_name}`");
+            })
             .get()
     }
 
@@ -219,13 +232,24 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> LoadedModels<R, S> {
     ///
     /// 次の場合にエラーを返す。
     ///
-    /// - 音声モデルIDかスタイルIDが`model_header`と重複するとき
-    fn ensure_acceptable(&self, model_header: &VoiceModelHeader) -> LoadModelResult<()> {
+    /// - 現在持っている音声モデルIDかスタイルIDが`model_header`と重複するとき
+    /// - 必要であるはずの`InferenceDomain`のモデルデータが欠けているとき
+    fn ensure_acceptable(
+        &self,
+        model_header: &VoiceModelHeader,
+        model_bytes_or_sessions: &S::Map<Optional<impl InferenceDomainAssociation>>,
+    ) -> LoadModelResult<()> {
         let error = |context| LoadModelError {
             path: model_header.path.clone(),
             context,
             source: None,
         };
+
+        if self.0.contains_key(&model_header.id) {
+            return Err(error(LoadModelErrorKind::ModelAlreadyLoaded {
+                id: model_header.id.clone(),
+            }));
+        }
 
         let loaded = self.speakers();
         let external = model_header.metas.iter();
@@ -240,10 +264,13 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> LoadedModels<R, S> {
             .metas
             .iter()
             .flat_map(|speaker| speaker.styles());
-        if self.0.contains_key(&model_header.id) {
-            return Err(error(LoadModelErrorKind::ModelAlreadyLoaded {
-                id: model_header.id.clone(),
-            }));
+        if let Some(style_type) = external
+            .clone()
+            .map(StyleMeta::r#type)
+            .copied()
+            .find(|&t| !model_bytes_or_sessions.contains_for(t))
+        {
+            return Err(error(LoadModelErrorKind::MissingModelData { style_type }));
         }
         if let Some((style, _)) =
             iproduct!(loaded, external).find(|(loaded, external)| loaded.id() == external.id())
@@ -260,7 +287,7 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> LoadedModels<R, S> {
         model_header: &VoiceModelHeader,
         session_sets: S::Map<Optional<SessionSetByDomain<R>>>,
     ) -> Result<()> {
-        self.ensure_acceptable(model_header)?;
+        self.ensure_acceptable(model_header, &session_sets)?;
 
         let prev = self.0.insert(
             model_header.id.clone(),

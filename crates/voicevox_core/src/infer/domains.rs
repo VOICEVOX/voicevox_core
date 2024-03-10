@@ -1,5 +1,7 @@
 mod talk;
 
+use crate::StyleType;
+
 pub(crate) use self::talk::{
     DecodeInput, DecodeOutput, PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
     PredictIntonationOutput, TalkDomain, TalkOperation,
@@ -7,7 +9,7 @@ pub(crate) use self::talk::{
 
 use super::{
     ConvertInferenceDomainAssociationTarget, InferenceDomainAssociation, InferenceDomainGroup,
-    InferenceDomainMap,
+    InferenceDomainMap, InferenceDomainOptionAssociation,
 };
 
 pub(crate) enum InferenceDomainGroupImpl {}
@@ -22,6 +24,15 @@ pub(crate) struct InferenceDomainMapImpl<A: InferenceDomainAssociation> {
 
 impl<A: InferenceDomainAssociation> InferenceDomainMap<A> for InferenceDomainMapImpl<A> {
     type Group = InferenceDomainGroupImpl;
+
+    fn contains_for(&self, style_type: StyleType) -> bool
+    where
+        A: InferenceDomainOptionAssociation,
+    {
+        match style_type {
+            StyleType::Talk => A::is_some(&self.talk),
+        }
+    }
 
     fn try_ref_map<
         F: ConvertInferenceDomainAssociationTarget<Self::Group, A, A2, E>,
