@@ -29,13 +29,13 @@ use super::{
     InferenceRuntime, InferenceSessionOptions, InferenceSignature, Optional,
 };
 
-pub(crate) struct Status<R: InferenceRuntime, S: InferenceDomainGroup> {
-    loaded_models: std::sync::Mutex<LoadedModels<R, S>>,
-    session_options: S::Map<SessionOptionsByDomain>,
+pub(crate) struct Status<R: InferenceRuntime, G: InferenceDomainGroup> {
+    loaded_models: std::sync::Mutex<LoadedModels<R, G>>,
+    session_options: G::Map<SessionOptionsByDomain>,
 }
 
-impl<R: InferenceRuntime, S: InferenceDomainGroup> Status<R, S> {
-    pub(crate) fn new(session_options: S::Map<SessionOptionsByDomain>) -> Self {
+impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
+    pub(crate) fn new(session_options: G::Map<SessionOptionsByDomain>) -> Self {
         Self {
             loaded_models: Default::default(),
             session_options,
@@ -45,7 +45,7 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> Status<R, S> {
     pub(crate) fn insert_model(
         &self,
         model_header: &VoiceModelHeader,
-        model_bytes: &S::Map<Optional<InferenceModelsByInferenceDomain>>,
+        model_bytes: &G::Map<Optional<InferenceModelsByInferenceDomain>>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
@@ -69,20 +69,20 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> Status<R, S> {
             .insert(model_header, session_set)?;
         return Ok(());
 
-        struct CreateSessionSet<'a, R, S: InferenceDomainGroup> {
-            session_options: &'a S::Map<SessionOptionsByDomain>,
+        struct CreateSessionSet<'a, R, G: InferenceDomainGroup> {
+            session_options: &'a G::Map<SessionOptionsByDomain>,
             marker: PhantomData<fn() -> R>,
         }
 
-        impl<R: InferenceRuntime, S: InferenceDomainGroup>
+        impl<R: InferenceRuntime, G: InferenceDomainGroup>
             ConvertInferenceDomainAssociationTarget<
-                S,
+                G,
                 Optional<InferenceModelsByInferenceDomain>,
                 Optional<SessionSetByDomain<R>>,
                 anyhow::Error,
-            > for CreateSessionSet<'_, R, S>
+            > for CreateSessionSet<'_, R, G>
         {
-            fn try_ref_map<D: InferenceDomain<Group = S>>(
+            fn try_ref_map<D: InferenceDomain<Group = G>>(
                 &self,
                 model_bytes: &<Optional<InferenceModelsByInferenceDomain> as InferenceDomainAssociation>::Target<D>,
             ) -> anyhow::Result<
@@ -143,7 +143,7 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> Status<R, S> {
     where
         I: InferenceInputSignature,
         I::Signature: InferenceSignature,
-        <I::Signature as InferenceSignature>::Domain: InferenceDomain<Group = S>,
+        <I::Signature as InferenceSignature>::Domain: InferenceDomain<Group = G>,
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
         sess.run(input)
@@ -154,18 +154,18 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> Status<R, S> {
 ///
 /// この構造体のメソッドは、すべて一瞬で完了すべきである。
 #[derive(Educe)]
-#[educe(Default(bound = "R: InferenceRuntime, S: InferenceDomainGroup"))]
-struct LoadedModels<R: InferenceRuntime, S: InferenceDomainGroup>(
-    IndexMap<VoiceModelId, LoadedModel<R, S>>,
+#[educe(Default(bound = "R: InferenceRuntime, G: InferenceDomainGroup"))]
+struct LoadedModels<R: InferenceRuntime, G: InferenceDomainGroup>(
+    IndexMap<VoiceModelId, LoadedModel<R, G>>,
 );
 
-struct LoadedModel<R: InferenceRuntime, S: InferenceDomainGroup> {
+struct LoadedModel<R: InferenceRuntime, G: InferenceDomainGroup> {
     model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_sets: S::Map<Optional<SessionSetByDomain<R>>>,
+    session_sets: G::Map<Optional<SessionSetByDomain<R>>>,
 }
 
-impl<R: InferenceRuntime, S: InferenceDomainGroup> LoadedModels<R, S> {
+impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
     fn metas(&self) -> VoiceModelMeta {
         metas::merge(self.0.values().flat_map(|LoadedModel { metas, .. }| metas))
     }
@@ -203,7 +203,7 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> LoadedModels<R, S> {
     fn get<I>(&self, model_id: &VoiceModelId) -> SessionCell<R, I>
     where
         I: InferenceInputSignature,
-        <I::Signature as InferenceSignature>::Domain: InferenceDomain<Group = S>,
+        <I::Signature as InferenceSignature>::Domain: InferenceDomain<Group = G>,
     {
         <I::Signature as InferenceSignature>::Domain::visit(&self.0[model_id].session_sets)
             .as_ref()
@@ -237,7 +237,7 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> LoadedModels<R, S> {
     fn ensure_acceptable(
         &self,
         model_header: &VoiceModelHeader,
-        model_bytes_or_sessions: &S::Map<Optional<impl InferenceDomainAssociation>>,
+        model_bytes_or_sessions: &G::Map<Optional<impl InferenceDomainAssociation>>,
     ) -> LoadModelResult<()> {
         let error = |context| LoadModelError {
             path: model_header.path.clone(),
@@ -285,7 +285,7 @@ impl<R: InferenceRuntime, S: InferenceDomainGroup> LoadedModels<R, S> {
     fn insert(
         &mut self,
         model_header: &VoiceModelHeader,
-        session_sets: S::Map<Optional<SessionSetByDomain<R>>>,
+        session_sets: G::Map<Optional<SessionSetByDomain<R>>>,
     ) -> Result<()> {
         self.ensure_acceptable(model_header, &session_sets)?;
 
