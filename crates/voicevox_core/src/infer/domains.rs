@@ -20,15 +20,22 @@ pub(crate) struct InferenceDomainMapImpl<A: InferenceDomainAssociation> {
     pub(crate) talk: A::Target<TalkDomain>,
 }
 
-impl<A: InferenceDomainAssociation> InferenceDomainMap<A> for InferenceDomainMapImpl<A> {
+impl<A: InferenceDomainAssociation> InferenceDomainMap for InferenceDomainMapImpl<A> {
     type Group = InferenceDomainGroupImpl;
+    type Association = A;
 
-    fn any(&self, p: impl InferenceDomainAssociationTargetPredicate<InputAssociation = A>) -> bool {
+    fn any(
+        &self,
+        p: impl InferenceDomainAssociationTargetPredicate<InputAssociation = Self::Association>,
+    ) -> bool {
         p.test(&self.talk)
     }
 
     fn try_ref_map<
-        F: InferenceDomainAssociationTargetFunction<Group = Self::Group, InputAssociation = A>,
+        F: InferenceDomainAssociationTargetFunction<
+            Group = Self::Group,
+            InputAssociation = Self::Association,
+        >,
     >(
         &self,
         f: F,

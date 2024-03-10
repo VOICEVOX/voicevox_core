@@ -33,16 +33,23 @@ pub(crate) trait InferenceRuntime: 'static {
 }
 
 pub(crate) trait InferenceDomainGroup: Sized {
-    type Map<A: InferenceDomainAssociation>: InferenceDomainMap<A, Group = Self>;
+    type Map<A: InferenceDomainAssociation>: InferenceDomainMap<Group = Self, Association = A>;
 }
 
-pub(crate) trait InferenceDomainMap<A: InferenceDomainAssociation> {
+pub(crate) trait InferenceDomainMap {
     type Group: InferenceDomainGroup;
+    type Association: InferenceDomainAssociation;
 
-    fn any(&self, p: impl InferenceDomainAssociationTargetPredicate<InputAssociation = A>) -> bool;
+    fn any(
+        &self,
+        p: impl InferenceDomainAssociationTargetPredicate<InputAssociation = Self::Association>,
+    ) -> bool;
 
     fn try_ref_map<
-        F: InferenceDomainAssociationTargetFunction<Group = Self::Group, InputAssociation = A>,
+        F: InferenceDomainAssociationTargetFunction<
+            Group = Self::Group,
+            InputAssociation = Self::Association,
+        >,
     >(
         &self,
         f: F,

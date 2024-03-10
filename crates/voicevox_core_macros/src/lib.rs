@@ -21,6 +21,7 @@ use syn::parse_macro_input;
 ///
 /// impl InferenceDomain for TalkDomain {
 ///     type Operation = TalkOperation;
+///     // ...
 /// }
 ///
 /// #[derive(Clone, Copy, Enum, InferenceOperation)]
