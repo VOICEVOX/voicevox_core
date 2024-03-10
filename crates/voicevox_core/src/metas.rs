@@ -154,10 +154,22 @@ pub struct StyleMeta {
     id: StyleId,
     /// スタイル名。
     name: String,
+    /// スタイルに対応するモデルの種類。
+    #[serde(default)]
+    r#type: StyleType,
     /// スタイルの順番。
     ///
     /// [`SpeakerMeta::styles`]は、この値に対して昇順に並んでいるべきである。
     order: Option<u32>,
+}
+
+/// **スタイル**(_style_)に対応するモデルの種類。
+#[derive(Default, Clone, Copy, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StyleType {
+    /// 音声合成クエリの作成と音声合成が可能。
+    #[default]
+    Talk,
 }
 
 #[cfg(test)]
@@ -175,6 +187,7 @@ mod tests {
                         {
                             "id": 3,
                             "name": "B_1",
+                            "type": "talk",
                             "order": 0
                         }
                     ],
@@ -188,6 +201,7 @@ mod tests {
                         {
                             "id": 2,
                             "name": "A_3",
+                            "type": "talk",
                             "order": 2
                         }
                     ],
@@ -201,11 +215,13 @@ mod tests {
                         {
                             "id": 1,
                             "name": "A_1",
+                            "type": "talk",
                             "order": 0
                         },
                         {
                             "id": 0,
                             "name": "A_2",
+                            "type": "talk",
                             "order": 1
                         }
                     ],
@@ -224,16 +240,19 @@ mod tests {
                         {
                             "id": 1,
                             "name": "A_1",
+                            "type": "talk",
                             "order": 0
                         },
                         {
                             "id": 0,
                             "name": "A_2",
+                            "type": "talk",
                             "order": 1
                         },
                         {
                             "id": 2,
                             "name": "A_3",
+                            "type": "talk",
                             "order": 2
                         }
                     ],
@@ -247,6 +266,7 @@ mod tests {
                         {
                             "id": 3,
                             "name": "B_1",
+                            "type": "talk",
                             "order": 0
                         }
                     ],
