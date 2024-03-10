@@ -21,7 +21,7 @@ use crate::{
     },
     manifest::ModelInnerId,
     metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
-    voice_model::{InferenceModelsByInferenceDomain, VoiceModelHeader, VoiceModelId},
+    voice_model::{ModelData, ModelDataByInferenceDomain, VoiceModelHeader, VoiceModelId},
     Result,
 };
 
@@ -46,7 +46,7 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
     pub(crate) fn insert_model(
         &self,
         model_header: &VoiceModelHeader,
-        model_bytes: &G::Map<Optional<InferenceModelsByInferenceDomain>>,
+        model_bytes: &G::Map<Optional<ModelDataByInferenceDomain>>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
@@ -78,20 +78,29 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
         impl<R: InferenceRuntime, G: InferenceDomainGroup>
             ConvertInferenceDomainAssociationTarget<
                 G,
-                Optional<InferenceModelsByInferenceDomain>,
-                Optional<SessionSetByDomain<R>>,
+                Optional<ModelDataByInferenceDomain>,
+                Optional<ModelInnerIdsAndSessionSetByDomain<R>>,
                 anyhow::Error,
             > for CreateSessionSet<'_, R, G>
         {
             fn try_ref_map<D: InferenceDomain<Group = G>>(
                 &self,
-                model_bytes: &<Optional<InferenceModelsByInferenceDomain> as InferenceDomainAssociation>::Target<D>,
+                model_data: &<Optional<ModelDataByInferenceDomain> as InferenceDomainAssociation>::Target<D>,
             ) -> anyhow::Result<
-                <Optional<SessionSetByDomain<R>> as InferenceDomainAssociation>::Target<D>,
-            > {
-                model_bytes
+                <Optional<ModelInnerIdsAndSessionSetByDomain<R>> as InferenceDomainAssociation>::Target<D>,
+            >{
+                model_data
                     .as_ref()
-                    .map(|model_bytes| SessionSet::new(model_bytes, D::visit(self.session_options)))
+                    .map(
+                        |ModelData {
+                             model_inner_ids,
+                             model_bytes,
+                         }| {
+                            let session_set =
+                                SessionSet::new(model_bytes, D::visit(self.session_options))?;
+                            Ok((model_inner_ids.clone(), session_set))
+                        },
+                    )
                     .transpose()
             }
         }
@@ -105,8 +114,15 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
         self.loaded_models.lock().unwrap().metas()
     }
 
-    pub(crate) fn ids_for(&self, style_id: StyleId) -> Result<(VoiceModelId, ModelInnerId)> {
-        self.loaded_models.lock().unwrap().ids_for(style_id)
+    /// あるスタイルに対応する`VoiceModelId`と`ModelInnerId`の組を返す。
+    ///
+    /// `StyleId` → `ModelInnerId`のマッピングが存在しない場合は、`ModelInnerId`としては
+    /// `style_id`と同じ値を返す。
+    pub(crate) fn ids_for<D: InferenceDomain<Group = G>>(
+        &self,
+        style_id: StyleId,
+    ) -> Result<(VoiceModelId, ModelInnerId)> {
+        self.loaded_models.lock().unwrap().ids_for::<D>(style_id)
     }
 
     pub(crate) fn is_loaded_model(&self, voice_model_id: &VoiceModelId) -> bool {
@@ -158,9 +174,8 @@ struct LoadedModels<R: InferenceRuntime, G: InferenceDomainGroup>(
 );
 
 struct LoadedModel<R: InferenceRuntime, G: InferenceDomainGroup> {
-    model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
     metas: VoiceModelMeta,
-    session_sets: G::Map<Optional<SessionSetByDomain<R>>>,
+    by_domain: G::Map<Optional<ModelInnerIdsAndSessionSetByDomain<R>>>,
 }
 
 impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
@@ -168,13 +183,11 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
         metas::merge(self.0.values().flat_map(|LoadedModel { metas, .. }| metas))
     }
 
-    fn ids_for(&self, style_id: StyleId) -> Result<(VoiceModelId, ModelInnerId)> {
-        let (
-            model_id,
-            LoadedModel {
-                model_inner_ids, ..
-            },
-        ) = self
+    fn ids_for<D: InferenceDomain<Group = G>>(
+        &self,
+        style_id: StyleId,
+    ) -> Result<(VoiceModelId, ModelInnerId)> {
+        let (model_id, LoadedModel { by_domain, .. }) = self
             .0
             .iter()
             .find(|(_, LoadedModel { metas, .. })| {
@@ -185,9 +198,10 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
             })
             .ok_or(ErrorRepr::StyleNotFound { style_id })?;
 
-        let model_inner_id = *model_inner_ids
-            .get(&style_id)
-            .expect("`model_inner_ids` should contains all of the style IDs in the model");
+        let model_inner_id = D::visit(by_domain)
+            .as_ref()
+            .and_then(|(model_inner_ids, _)| model_inner_ids.get(&style_id).copied())
+            .unwrap_or_else(|| ModelInnerId::new(style_id.raw_id()));
 
         Ok((model_id.clone(), model_inner_id))
     }
@@ -203,19 +217,21 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
         I: InferenceInputSignature,
         <I::Signature as InferenceSignature>::Domain: InferenceDomain<Group = G>,
     {
-        <I::Signature as InferenceSignature>::Domain::visit(&self.0[model_id].session_sets)
-            .as_ref()
-            .unwrap_or_else(|| {
-                let type_name = any::type_name::<<I::Signature as InferenceSignature>::Domain>()
-                    .split("::")
-                    .last()
-                    .unwrap();
-                panic!(
-                    "missing session set for `{type_name}` (should be checked in \
-                     `ensure_acceptable`)",
-                );
-            })
-            .get()
+        let (_, session_set) =
+            <I::Signature as InferenceSignature>::Domain::visit(&self.0[model_id].by_domain)
+                .as_ref()
+                .unwrap_or_else(|| {
+                    let type_name =
+                        any::type_name::<<I::Signature as InferenceSignature>::Domain>()
+                            .split("::")
+                            .last()
+                            .unwrap();
+                    panic!(
+                        "missing session set for `{type_name}` (should be checked in \
+                         `ensure_acceptable`)",
+                    );
+                });
+        session_set.get()
     }
 
     fn contains_voice_model(&self, model_id: &VoiceModelId) -> bool {
@@ -285,16 +301,15 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
     fn insert(
         &mut self,
         model_header: &VoiceModelHeader,
-        session_sets: G::Map<Optional<SessionSetByDomain<R>>>,
+        session_sets: G::Map<Optional<ModelInnerIdsAndSessionSetByDomain<R>>>,
     ) -> Result<()> {
         self.ensure_acceptable(model_header, &session_sets)?;
 
         let prev = self.0.insert(
             model_header.id.clone(),
             LoadedModel {
-                model_inner_ids: model_header.model_inner_ids(),
                 metas: model_header.metas.clone(),
-                session_sets,
+                by_domain: session_sets,
             },
         );
         assert!(prev.is_none());
@@ -413,10 +428,10 @@ impl InferenceDomainAssociation for SessionOptionsByDomain {
     type Target<D: InferenceDomain> = EnumMap<D::Operation, InferenceSessionOptions>;
 }
 
-struct SessionSetByDomain<R>(Infallible, PhantomData<fn() -> R>);
+struct ModelInnerIdsAndSessionSetByDomain<R>(Infallible, PhantomData<fn() -> R>);
 
-impl<R: InferenceRuntime> InferenceDomainAssociation for SessionSetByDomain<R> {
-    type Target<D: InferenceDomain> = SessionSet<R, D>;
+impl<R: InferenceRuntime> InferenceDomainAssociation for ModelInnerIdsAndSessionSetByDomain<R> {
+    type Target<D: InferenceDomain> = (BTreeMap<StyleId, ModelInnerId>, SessionSet<R, D>);
 }
 
 #[cfg(test)]

@@ -86,7 +86,7 @@ pub(crate) mod blocking {
             domains::{
                 DecodeInput, DecodeOutput, InferenceDomainGroupImpl, InferenceDomainMapImpl,
                 PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
-                PredictIntonationOutput, TalkOperation,
+                PredictIntonationOutput, TalkDomain, TalkOperation,
             },
             status::Status,
             InferenceSessionOptions,
@@ -838,7 +838,7 @@ pub(crate) mod blocking {
                 return Err(ErrorRepr::StyleNotFound { style_id }.into());
             }
 
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictDurationOutput {
                 phoneme_length: output,
@@ -878,7 +878,7 @@ pub(crate) mod blocking {
                 return Err(ErrorRepr::StyleNotFound { style_id }.into());
             }
 
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictIntonationOutput { f0_list: output } = self.status.run_session(
                 &model_id,
@@ -910,7 +910,7 @@ pub(crate) mod blocking {
                 return Err(ErrorRepr::StyleNotFound { style_id }.into());
             }
 
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             // 音が途切れてしまうのを避けるworkaround処理が入っている
             // TODO: 改善したらここのpadding処理を取り除く
