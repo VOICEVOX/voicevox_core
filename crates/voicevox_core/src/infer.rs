@@ -39,39 +39,35 @@ pub(crate) trait InferenceDomainGroup: Sized {
 pub(crate) trait InferenceDomainMap<A: InferenceDomainAssociation> {
     type Group: InferenceDomainGroup;
 
-    fn any<P>(&self, p: P) -> bool
-    where
-        P: InferenceDomainAssociationTargetPredicate<Association = A>;
+    fn any(&self, p: impl InferenceDomainAssociationTargetPredicate<InputAssociation = A>) -> bool;
 
     fn try_ref_map<
-        F: ConvertInferenceDomainAssociationTarget<Self::Group, A, A2, E>,
-        A2: InferenceDomainAssociation,
-        E,
+        F: InferenceDomainAssociationTargetFunction<Group = Self::Group, InputAssociation = A>,
     >(
         &self,
         f: F,
-    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<A2>, E>;
+    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<F::OutputAssociation>, F::Error>;
 }
 
 pub(crate) trait InferenceDomainAssociationTargetPredicate {
-    type Association: InferenceDomainAssociation;
+    type InputAssociation: InferenceDomainAssociation;
+
     fn test<D: InferenceDomain>(
         &self,
-        x: &<Self::Association as InferenceDomainAssociation>::Target<D>,
+        x: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
     ) -> bool;
 }
 
-pub(crate) trait ConvertInferenceDomainAssociationTarget<
-    G: InferenceDomainGroup,
-    A1: InferenceDomainAssociation,
-    A2: InferenceDomainAssociation,
-    E,
->
-{
-    fn try_ref_map<D: InferenceDomain<Group = G>>(
+pub(crate) trait InferenceDomainAssociationTargetFunction {
+    type Group: InferenceDomainGroup;
+    type InputAssociation: InferenceDomainAssociation;
+    type OutputAssociation: InferenceDomainAssociation;
+    type Error;
+
+    fn try_ref_map<D: InferenceDomain<Group = Self::Group>>(
         &self,
-        x: &A1::Target<D>,
-    ) -> Result<A2::Target<D>, E>;
+        x: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
+    ) -> Result<<Self::OutputAssociation as InferenceDomainAssociation>::Target<D>, Self::Error>;
 }
 
 pub(crate) trait InferenceDomainAssociation {

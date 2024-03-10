@@ -6,7 +6,7 @@ pub(crate) use self::talk::{
 };
 
 use super::{
-    ConvertInferenceDomainAssociationTarget, InferenceDomainAssociation,
+    InferenceDomainAssociation, InferenceDomainAssociationTargetFunction,
     InferenceDomainAssociationTargetPredicate, InferenceDomainGroup, InferenceDomainMap,
 };
 
@@ -23,21 +23,16 @@ pub(crate) struct InferenceDomainMapImpl<A: InferenceDomainAssociation> {
 impl<A: InferenceDomainAssociation> InferenceDomainMap<A> for InferenceDomainMapImpl<A> {
     type Group = InferenceDomainGroupImpl;
 
-    fn any<P>(&self, p: P) -> bool
-    where
-        P: InferenceDomainAssociationTargetPredicate<Association = A>,
-    {
+    fn any(&self, p: impl InferenceDomainAssociationTargetPredicate<InputAssociation = A>) -> bool {
         p.test(&self.talk)
     }
 
     fn try_ref_map<
-        F: ConvertInferenceDomainAssociationTarget<Self::Group, A, A2, E>,
-        A2: InferenceDomainAssociation,
-        E,
+        F: InferenceDomainAssociationTargetFunction<Group = Self::Group, InputAssociation = A>,
     >(
         &self,
         f: F,
-    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<A2>, E> {
+    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<F::OutputAssociation>, F::Error> {
         let talk = f.try_ref_map(&self.talk)?;
         Ok(InferenceDomainMapImpl { talk })
     }

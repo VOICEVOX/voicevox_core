@@ -72,8 +72,8 @@ pub(crate) enum ErrorRepr {
     GetSupportedDevices(#[source] anyhow::Error),
 
     #[error(
-        "`{style_id}` ([{style_types}])に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読\
-         み込みが解除されています",
+        "`{style_id}` ([{style_types}])に対するスタイルが見つかりませんでした。音声モデルが\
+         読み込まれていないか、読み込みが解除されています",
         style_types = style_types.iter().format(", ")
     )]
     StyleNotFound {

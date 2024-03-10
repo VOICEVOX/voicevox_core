@@ -22,8 +22,7 @@ impl InferenceDomain for TalkDomain {
     type Operation = TalkOperation;
 
     fn style_types() -> &'static BTreeSet<StyleType> {
-        static STYLE_TYPES: Lazy<BTreeSet<StyleType>> =
-            Lazy::new(|| BTreeSet::from([StyleType::Talk]));
+        static STYLE_TYPES: Lazy<BTreeSet<StyleType>> = Lazy::new(|| [StyleType::Talk].into());
         &STYLE_TYPES
     }
 

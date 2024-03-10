@@ -16,7 +16,7 @@ use itertools::{iproduct, Itertools as _};
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
-        ConvertInferenceDomainAssociationTarget, InferenceDomainAssociation, InferenceDomainGroup,
+        InferenceDomainAssociation, InferenceDomainAssociationTargetFunction, InferenceDomainGroup,
         InferenceOperation, ParamInfo,
     },
     manifest::ModelInnerId,
@@ -76,20 +76,21 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
             marker: PhantomData<fn() -> R>,
         }
 
-        impl<R: InferenceRuntime, G: InferenceDomainGroup>
-            ConvertInferenceDomainAssociationTarget<
-                G,
-                Option<ModelDataByInferenceDomain>,
-                Option<(ModelInnerIdsByDomain, SessionSetByDomain<R>)>,
-                anyhow::Error,
-            > for CreateSessionSet<'_, R, G>
+        impl<R: InferenceRuntime, G: InferenceDomainGroup> InferenceDomainAssociationTargetFunction
+            for CreateSessionSet<'_, R, G>
         {
-            fn try_ref_map<D: InferenceDomain<Group = G>>(
+            type Group = G;
+            type InputAssociation = Option<ModelDataByInferenceDomain>;
+            type OutputAssociation = Option<(ModelInnerIdsByDomain, SessionSetByDomain<R>)>;
+            type Error = anyhow::Error;
+
+            fn try_ref_map<D: InferenceDomain<Group = Self::Group>>(
                 &self,
-                model_data: &<Option<ModelDataByInferenceDomain> as InferenceDomainAssociation>::Target<D>,
-            ) -> anyhow::Result<
-                <Option<(ModelInnerIdsByDomain, SessionSetByDomain<R>)> as InferenceDomainAssociation>::Target<D>,
-            >{
+                model_data: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
+            ) -> std::result::Result<
+                <Self::OutputAssociation as InferenceDomainAssociation>::Target<D>,
+                Self::Error,
+            > {
                 model_data
                     .as_ref()
                     .map(
@@ -312,11 +313,11 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
         impl<A: InferenceDomainAssociation> InferenceDomainAssociationTargetPredicate
             for ContainsForStyleType<A>
         {
-            type Association = Option<A>;
+            type InputAssociation = Option<A>;
 
             fn test<D: InferenceDomain>(
                 &self,
-                x: &<Self::Association as InferenceDomainAssociation>::Target<D>,
+                x: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
             ) -> bool {
                 D::style_types().contains(&self.style_type) && x.is_some()
             }
