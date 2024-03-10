@@ -151,6 +151,10 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR = 26,
   /**
+   * モデルデータが見つからなかった
+   */
+  VOICEVOX_RESULT_MISSING_MODEL_DATA_ERROR = 28,
+  /**
    * 無効なモデルデータ
    */
   VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 27,
