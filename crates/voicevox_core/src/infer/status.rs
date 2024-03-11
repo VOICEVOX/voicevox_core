@@ -269,17 +269,17 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
             .metas
             .iter()
             .flat_map(|speaker| speaker.styles());
-        if let Some(style_type) =
-            external
-                .clone()
-                .map(StyleMeta::r#type)
-                .copied()
-                .find(|&style_type| {
-                    !model_bytes_or_sessions.any(ContainsForStyleType {
-                        style_type,
-                        marker: PhantomData,
-                    })
+        if let Some(style_type) = external
+            .clone()
+            .map(StyleMeta::r#type)
+            .copied()
+            .unique()
+            .find(|&style_type| {
+                !model_bytes_or_sessions.any(ContainsForStyleType {
+                    style_type,
+                    marker: PhantomData,
                 })
+            })
         {
             return Err(error(LoadModelErrorKind::MissingModelData { style_type }));
         }
