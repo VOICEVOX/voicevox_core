@@ -50,5 +50,7 @@ pub(crate) struct TalkManifest {
     pub(crate) predict_intonation_filename: String,
     pub(crate) decode_filename: String,
     #[serde(default)]
-    pub(crate) style_id_to_model_inner_id: BTreeMap<StyleId, ModelInnerId>,
+    pub(crate) style_id_to_model_inner_id: StyleIdToModelInnerId,
 }
+
+pub(crate) type StyleIdToModelInnerId = BTreeMap<StyleId, ModelInnerId>;

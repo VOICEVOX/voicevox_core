@@ -5,10 +5,10 @@ use serde::Deserialize;
 
 use crate::{
     infer::{InferenceDomain, InferenceDomainAssociation},
-    manifest::{Manifest, ModelInnerId},
-    StyleId, VoiceModelMeta,
+    manifest::Manifest,
+    VoiceModelMeta,
 };
-use std::{collections::BTreeMap, path::PathBuf};
+use std::path::PathBuf;
 
 /// [`VoiceModelId`]の実体。
 ///
@@ -47,15 +47,10 @@ pub(crate) struct VoiceModelHeader {
     pub(crate) path: PathBuf,
 }
 
-pub(crate) struct ModelData<D: InferenceDomain> {
-    pub(crate) model_inner_ids: BTreeMap<StyleId, ModelInnerId>,
-    pub(crate) model_bytes: EnumMap<D::Operation, Vec<u8>>,
-}
+pub(crate) enum ModelBytesByInferenceDomain {}
 
-pub(crate) enum ModelDataByInferenceDomain {}
-
-impl InferenceDomainAssociation for ModelDataByInferenceDomain {
-    type Target<D: InferenceDomain> = ModelData<D>;
+impl InferenceDomainAssociation for ModelBytesByInferenceDomain {
+    type Target<D: InferenceDomain> = EnumMap<D::Operation, Vec<u8>>;
 }
 
 pub(crate) mod blocking {
@@ -73,11 +68,11 @@ pub(crate) mod blocking {
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
         infer::domains::InferenceDomainMapImpl,
-        manifest::{Manifest, TalkManifest},
+        manifest::{Manifest, StyleIdToModelInnerId, TalkManifest},
         VoiceModelMeta,
     };
 
-    use super::{ModelData, ModelDataByInferenceDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesByInferenceDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -90,7 +85,9 @@ pub(crate) mod blocking {
     impl self::VoiceModel {
         pub(crate) fn read_inference_models(
             &self,
-        ) -> LoadModelResult<InferenceDomainMapImpl<Option<ModelDataByInferenceDomain>>> {
+        ) -> LoadModelResult<
+            InferenceDomainMapImpl<Option<(StyleIdToModelInnerId, ModelBytesByInferenceDomain)>>,
+        > {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
             let talk = self
@@ -116,10 +113,9 @@ pub(crate) mod blocking {
                         .try_into()
                         .unwrap_or_else(|_| panic!("should be same length"));
 
-                        Ok(ModelData {
-                            model_inner_ids: style_id_to_model_inner_id.clone(),
-                            model_bytes: EnumMap::from_array(model_bytes),
-                        })
+                        let model_bytes = EnumMap::from_array(model_bytes);
+
+                        Ok((style_id_to_model_inner_id.clone(), model_bytes))
                     },
                 )
                 .transpose()?;
@@ -222,11 +218,11 @@ pub(crate) mod tokio {
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
         infer::domains::InferenceDomainMapImpl,
-        manifest::{Manifest, TalkManifest},
+        manifest::{Manifest, StyleIdToModelInnerId, TalkManifest},
         Result, VoiceModelMeta,
     };
 
-    use super::{ModelData, ModelDataByInferenceDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesByInferenceDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -239,7 +235,9 @@ pub(crate) mod tokio {
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
-        ) -> LoadModelResult<InferenceDomainMapImpl<Option<ModelDataByInferenceDomain>>> {
+        ) -> LoadModelResult<
+            InferenceDomainMapImpl<Option<(StyleIdToModelInnerId, ModelBytesByInferenceDomain)>>,
+        > {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
 
             let talk = OptionFuture::from(self.header.manifest.talk().as_ref().map(
@@ -260,14 +258,13 @@ pub(crate) mod tokio {
                     )
                     .await;
 
-                    Ok(ModelData {
-                        model_inner_ids: style_id_to_model_inner_id.clone(),
-                        model_bytes: EnumMap::from_array([
-                            predict_duration_model_result?,
-                            predict_intonation_model_result?,
-                            decode_model_result?,
-                        ]),
-                    })
+                    let model_bytes = EnumMap::from_array([
+                        predict_duration_model_result?,
+                        predict_intonation_model_result?,
+                        decode_model_result?,
+                    ]);
+
+                    Ok((style_id_to_model_inner_id.clone(), model_bytes))
                 },
             ))
             .await

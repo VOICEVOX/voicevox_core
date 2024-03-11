@@ -1,10 +1,5 @@
 use std::{
-    any,
-    collections::{BTreeMap, HashMap},
-    convert::Infallible,
-    fmt::Display,
-    marker::PhantomData,
-    sync::Arc,
+    any, collections::HashMap, convert::Infallible, fmt::Display, marker::PhantomData, sync::Arc,
 };
 
 use anyhow::bail;
@@ -15,20 +10,17 @@ use itertools::{iproduct, Itertools as _};
 
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
-    infer::{
-        InferenceDomainAssociation, InferenceDomainAssociationTargetFunction, InferenceDomainGroup,
-        InferenceOperation, ParamInfo,
-    },
-    manifest::ModelInnerId,
+    manifest::{ModelInnerId, StyleIdToModelInnerId},
     metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
-    voice_model::{ModelData, ModelDataByInferenceDomain, VoiceModelHeader, VoiceModelId},
+    voice_model::{ModelBytesByInferenceDomain, VoiceModelHeader, VoiceModelId},
     Result, StyleType,
 };
 
 use super::{
-    model_file, InferenceDomain, InferenceDomainAssociationTargetPredicate,
-    InferenceDomainMap as _, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
-    InferenceSignature,
+    model_file, InferenceDomain, InferenceDomainAssociation,
+    InferenceDomainAssociationTargetFunction, InferenceDomainAssociationTargetPredicate,
+    InferenceDomainGroup, InferenceDomainMap as _, InferenceInputSignature, InferenceOperation,
+    InferenceRuntime, InferenceSessionOptions, InferenceSignature, ParamInfo,
 };
 
 pub(crate) struct Status<R: InferenceRuntime, G: InferenceDomainGroup> {
@@ -47,7 +39,7 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
     pub(crate) fn insert_model(
         &self,
         model_header: &VoiceModelHeader,
-        model_bytes: &G::Map<Option<ModelDataByInferenceDomain>>,
+        model_bytes: &G::Map<Option<(StyleIdToModelInnerId, ModelBytesByInferenceDomain)>>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
@@ -80,8 +72,8 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
             for CreateSessionSet<'_, R, G>
         {
             type Group = G;
-            type InputAssociation = Option<ModelDataByInferenceDomain>;
-            type OutputAssociation = Option<(ModelInnerIdsByDomain, SessionSetByDomain<R>)>;
+            type InputAssociation = Option<(StyleIdToModelInnerId, ModelBytesByInferenceDomain)>;
+            type OutputAssociation = Option<(StyleIdToModelInnerId, SessionSetByDomain<R>)>;
             type Error = anyhow::Error;
 
             fn try_ref_map<D: InferenceDomain<Group = Self::Group>>(
@@ -93,16 +85,11 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
             > {
                 model_data
                     .as_ref()
-                    .map(
-                        |ModelData {
-                             model_inner_ids,
-                             model_bytes,
-                         }| {
-                            let session_set =
-                                SessionSet::new(model_bytes, D::visit(self.session_options))?;
-                            Ok((model_inner_ids.clone(), session_set))
-                        },
-                    )
+                    .map(|(model_inner_ids, model_bytes)| {
+                        let session_set =
+                            SessionSet::new(model_bytes, D::visit(self.session_options))?;
+                        Ok((model_inner_ids.clone(), session_set))
+                    })
                     .transpose()
             }
         }
@@ -175,7 +162,7 @@ struct LoadedModels<R: InferenceRuntime, G: InferenceDomainGroup>(
 
 struct LoadedModel<R: InferenceRuntime, G: InferenceDomainGroup> {
     metas: VoiceModelMeta,
-    by_domain: G::Map<Option<(ModelInnerIdsByDomain, SessionSetByDomain<R>)>>,
+    by_domain: G::Map<Option<(StyleIdToModelInnerId, SessionSetByDomain<R>)>>,
 }
 
 impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
@@ -327,15 +314,15 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
     fn insert(
         &mut self,
         model_header: &VoiceModelHeader,
-        session_sets: G::Map<Option<(ModelInnerIdsByDomain, SessionSetByDomain<R>)>>,
+        by_domain: G::Map<Option<(StyleIdToModelInnerId, SessionSetByDomain<R>)>>,
     ) -> Result<()> {
-        self.ensure_acceptable(model_header, &session_sets)?;
+        self.ensure_acceptable(model_header, &by_domain)?;
 
         let prev = self.0.insert(
             model_header.id.clone(),
             LoadedModel {
                 metas: model_header.metas.clone(),
-                by_domain: session_sets,
+                by_domain,
             },
         );
         assert!(prev.is_none());
@@ -452,12 +439,6 @@ pub(crate) enum SessionOptionsByDomain {}
 
 impl InferenceDomainAssociation for SessionOptionsByDomain {
     type Target<D: InferenceDomain> = EnumMap<D::Operation, InferenceSessionOptions>;
-}
-
-enum ModelInnerIdsByDomain {}
-
-impl InferenceDomainAssociation for ModelInnerIdsByDomain {
-    type Target<D: InferenceDomain> = BTreeMap<StyleId, ModelInnerId>;
 }
 
 struct SessionSetByDomain<R>(Infallible, PhantomData<fn() -> R>);
