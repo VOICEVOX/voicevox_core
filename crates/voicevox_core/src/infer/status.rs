@@ -17,7 +17,7 @@ use crate::{
 };
 
 use super::{
-    model_file, InferenceDomain, InferenceDomainAssociation,
+    model_file, ForAllInferenceDomain, InferenceDomain, InferenceDomainAssociation,
     InferenceDomainAssociationTargetFunction, InferenceDomainAssociationTargetPredicate,
     InferenceDomainGroup, InferenceDomainMap as _, InferenceInputSignature, InferenceOperation,
     InferenceRuntime, InferenceSessionOptions, InferenceSignature, ParamInfo,
@@ -39,7 +39,12 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
     pub(crate) fn insert_model(
         &self,
         model_header: &VoiceModelHeader,
-        model_bytes: &G::Map<Option<(StyleIdToModelInnerId, ModelBytesByInferenceDomain)>>,
+        model_bytes: &G::Map<
+            Option<(
+                ForAllInferenceDomain<StyleIdToModelInnerId>,
+                ModelBytesByInferenceDomain,
+            )>,
+        >,
     ) -> Result<()> {
         self.loaded_models
             .lock()
@@ -72,8 +77,14 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
             for CreateSessionSet<'_, R, G>
         {
             type Group = G;
-            type InputAssociation = Option<(StyleIdToModelInnerId, ModelBytesByInferenceDomain)>;
-            type OutputAssociation = Option<(StyleIdToModelInnerId, SessionSetByDomain<R>)>;
+            type InputAssociation = Option<(
+                ForAllInferenceDomain<StyleIdToModelInnerId>,
+                ModelBytesByInferenceDomain,
+            )>;
+            type OutputAssociation = Option<(
+                ForAllInferenceDomain<StyleIdToModelInnerId>,
+                SessionSetByDomain<R>,
+            )>;
             type Error = anyhow::Error;
 
             fn try_ref_map<D: InferenceDomain<Group = Self::Group>>(
@@ -162,7 +173,13 @@ struct LoadedModels<R: InferenceRuntime, G: InferenceDomainGroup>(
 
 struct LoadedModel<R: InferenceRuntime, G: InferenceDomainGroup> {
     metas: VoiceModelMeta,
-    by_domain: G::Map<Option<(StyleIdToModelInnerId, SessionSetByDomain<R>)>>,
+    #[allow(clippy::type_complexity)]
+    by_domain: G::Map<
+        Option<(
+            ForAllInferenceDomain<StyleIdToModelInnerId>,
+            SessionSetByDomain<R>,
+        )>,
+    >,
 }
 
 impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
@@ -311,10 +328,16 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
         }
     }
 
+    #[allow(clippy::type_complexity)]
     fn insert(
         &mut self,
         model_header: &VoiceModelHeader,
-        by_domain: G::Map<Option<(StyleIdToModelInnerId, SessionSetByDomain<R>)>>,
+        by_domain: G::Map<
+            Option<(
+                ForAllInferenceDomain<StyleIdToModelInnerId>,
+                SessionSetByDomain<R>,
+            )>,
+        >,
     ) -> Result<()> {
         self.ensure_acceptable(model_header, &by_domain)?;
 

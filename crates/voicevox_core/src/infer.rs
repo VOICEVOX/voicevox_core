@@ -3,11 +3,7 @@ mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod status;
 
-use std::{
-    borrow::Cow,
-    collections::{BTreeMap, BTreeSet},
-    fmt::Debug,
-};
+use std::{borrow::Cow, collections::BTreeSet, fmt::Debug};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -95,8 +91,10 @@ impl<A: InferenceDomainAssociation> InferenceDomainAssociation for Option<A> {
     type Target<D: InferenceDomain> = Option<A::Target<D>>;
 }
 
-impl<K, V> InferenceDomainAssociation for BTreeMap<K, V> {
-    type Target<D: InferenceDomain> = Self;
+pub(crate) struct ForAllInferenceDomain<T>(pub(crate) T);
+
+impl<T> InferenceDomainAssociation for ForAllInferenceDomain<T> {
+    type Target<D: InferenceDomain> = T;
 }
 
 /// ある`VoiceModel`が提供する推論操作の集合を示す。

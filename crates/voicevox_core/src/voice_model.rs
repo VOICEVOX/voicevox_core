@@ -67,7 +67,7 @@ pub(crate) mod blocking {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::domains::InferenceDomainMapImpl,
+        infer::{domains::InferenceDomainMapImpl, ForAllInferenceDomain},
         manifest::{Manifest, StyleIdToModelInnerId, TalkManifest},
         VoiceModelMeta,
     };
@@ -83,10 +83,16 @@ pub(crate) mod blocking {
     }
 
     impl self::VoiceModel {
+        #[allow(clippy::type_complexity)]
         pub(crate) fn read_inference_models(
             &self,
         ) -> LoadModelResult<
-            InferenceDomainMapImpl<Option<(StyleIdToModelInnerId, ModelBytesByInferenceDomain)>>,
+            InferenceDomainMapImpl<
+                Option<(
+                    ForAllInferenceDomain<StyleIdToModelInnerId>,
+                    ModelBytesByInferenceDomain,
+                )>,
+            >,
         > {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
@@ -217,7 +223,7 @@ pub(crate) mod tokio {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::domains::InferenceDomainMapImpl,
+        infer::{domains::InferenceDomainMapImpl, ForAllInferenceDomain},
         manifest::{Manifest, StyleIdToModelInnerId, TalkManifest},
         Result, VoiceModelMeta,
     };
@@ -236,7 +242,12 @@ pub(crate) mod tokio {
         pub(crate) async fn read_inference_models(
             &self,
         ) -> LoadModelResult<
-            InferenceDomainMapImpl<Option<(StyleIdToModelInnerId, ModelBytesByInferenceDomain)>>,
+            InferenceDomainMapImpl<
+                Option<(
+                    ForAllInferenceDomain<StyleIdToModelInnerId>,
+                    ModelBytesByInferenceDomain,
+                )>,
+            >,
         > {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
 
