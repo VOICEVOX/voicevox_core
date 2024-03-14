@@ -1,6 +1,7 @@
-use std::{collections::BTreeMap, fmt::Display};
+use std::{collections::BTreeMap, fmt::Display, sync::Arc};
 
 use derive_getters::Getters;
+use derive_more::Deref;
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 
@@ -53,4 +54,6 @@ pub(crate) struct TalkManifest {
     pub(crate) style_id_to_model_inner_id: StyleIdToModelInnerId,
 }
 
-pub(crate) type StyleIdToModelInnerId = BTreeMap<StyleId, ModelInnerId>;
+#[derive(Default, Clone, Deref, Deserialize)]
+#[deref(forward)]
+pub(crate) struct StyleIdToModelInnerId(Arc<BTreeMap<StyleId, ModelInnerId>>);

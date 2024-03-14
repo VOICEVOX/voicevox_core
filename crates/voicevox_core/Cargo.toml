@@ -32,7 +32,7 @@ open_jtalk.workspace = true
 ouroboros.workspace = true
 rayon.workspace = true
 regex.workspace = true
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 smallvec.workspace = true
 strum = { workspace = true, features = ["derive"] }
