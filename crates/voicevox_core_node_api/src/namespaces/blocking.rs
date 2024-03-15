@@ -3,9 +3,10 @@
 pub mod blocking {
     use napi::{Error, Result};
     use uuid::Uuid;
-    use voicevox_core::blocking::{OpenJtalk, UserDict};
+    use voicevox_core::blocking::{OpenJtalk, Synthesizer, UserDict};
 
     use crate::convert_result;
+    use crate::synthesizer::InitializeOptions;
     use crate::word::UserDictWord;
 
     /// テキスト解析器としてのOpen JTalk。
@@ -93,6 +94,31 @@ pub mod blocking {
         /// ユーザー辞書を保存する。
         pub fn save(&self, store_path: String) -> Result<()> {
             convert_result(self.handle.save(&store_path))
+        }
+    }
+
+    #[napi(js_name = "Synthesizer")]
+    pub struct JsSynthesizer {
+        handle: Synthesizer<OpenJtalk>,
+    }
+
+    #[napi]
+    impl JsSynthesizer {
+        /// `Synthesizer`をコンストラクトする。
+        #[napi(constructor)]
+        pub fn new(open_jtalk: &JsOpenJtalk, options: Option<InitializeOptions>) -> Result<Self> {
+            Ok(JsSynthesizer {
+                handle: convert_result(Synthesizer::new(
+                    open_jtalk.handle.clone(),
+                    &(options.unwrap_or_default().convert()?),
+                ))?,
+            })
+        }
+
+        /// ハードウェアアクセラレーションがGPUモードか判定する。
+        #[napi]
+        pub fn is_gpu_mode(&self) -> bool {
+            self.handle.is_gpu_mode()
         }
     }
 }

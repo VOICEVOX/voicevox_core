@@ -7,6 +7,7 @@ pub(crate) fn convert_result<T>(result: voicevox_core::Result<T>) -> napi::Resul
 pub mod devices;
 pub mod model;
 pub mod namespaces;
+pub mod synthesizer;
 pub mod word;
 
 #[macro_use]
