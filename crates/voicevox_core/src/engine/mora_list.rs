@@ -186,7 +186,7 @@ pub(super) const MORA_LIST_MINIMUM: &[[&str; 3]] = &[
     ["ア", "", "a"],
 ];
 
-pub fn mora2text(mora: &str) -> &str {
+pub(crate) fn mora2text(mora: &str) -> &str {
     for &[text, consonant, vowel] in MORA_LIST_MINIMUM {
         if mora.len() >= consonant.len()
             && &mora[..consonant.len()] == consonant

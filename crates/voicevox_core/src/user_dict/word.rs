@@ -219,7 +219,7 @@ pub enum UserDictWordType {
 }
 
 impl UserDictWord {
-    pub fn to_mecab_format(&self) -> String {
+    pub(super) fn to_mecab_format(&self) -> String {
         let pos = PART_OF_SPEECH_DETAIL.get(&self.word_type).unwrap();
         format!(
             "{},{},{},{},{},{},{},{},{},{},{},{},{},{}/{},{}",

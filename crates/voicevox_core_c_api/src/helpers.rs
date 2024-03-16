@@ -64,7 +64,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
 pub(crate) type CApiResult<T> = std::result::Result<T, CApiError>;
 
 #[derive(Error, Debug)]
-pub enum CApiError {
+pub(crate) enum CApiError {
     // FIXME: こんな感じになってしまう。`#[error(transparent)]`とするべき
     //
     // ```

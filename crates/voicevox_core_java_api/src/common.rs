@@ -29,7 +29,7 @@ macro_rules! enum_object {
     };
 }
 
-pub fn throw_if_err<T, F>(mut env: JNIEnv<'_>, fallback: T, inner: F) -> T
+pub(crate) fn throw_if_err<T, F>(mut env: JNIEnv<'_>, fallback: T, inner: F) -> T
 where
     F: FnOnce(&mut JNIEnv<'_>) -> Result<T, JavaApiError>,
 {
@@ -156,7 +156,7 @@ where
 }
 
 #[derive(From, Debug)]
-pub enum JavaApiError {
+pub(crate) enum JavaApiError {
     #[from]
     RustApi(voicevox_core::Error),
 

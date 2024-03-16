@@ -163,7 +163,7 @@ pub(crate) fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> 
     Ok(parsed_result)
 }
 
-pub fn create_kana(accent_phrases: &[AccentPhraseModel]) -> String {
+pub(crate) fn create_kana(accent_phrases: &[AccentPhraseModel]) -> String {
     let mut text = String::new();
     for phrase in accent_phrases {
         let moras = phrase.moras();

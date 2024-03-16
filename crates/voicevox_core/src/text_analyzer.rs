@@ -3,13 +3,13 @@ use crate::{
     AccentPhraseModel, FullcontextExtractor, Result,
 };
 
-pub trait TextAnalyzer {
+pub(crate) trait TextAnalyzer {
     fn analyze(&self, text: &str) -> Result<Vec<AccentPhraseModel>>;
 }
 
 /// AquesTalk風記法からAccentPhraseの配列を生成するTextAnalyzer
 #[derive(Clone)]
-pub struct KanaAnalyzer;
+pub(crate) struct KanaAnalyzer;
 
 impl TextAnalyzer for KanaAnalyzer {
     fn analyze(&self, text: &str) -> Result<Vec<AccentPhraseModel>> {
@@ -22,10 +22,10 @@ impl TextAnalyzer for KanaAnalyzer {
 
 /// OpenJtalkからAccentPhraseの配列を生成するTextAnalyzer
 #[derive(Clone)]
-pub struct OpenJTalkAnalyzer<O>(O);
+pub(crate) struct OpenJTalkAnalyzer<O>(O);
 
 impl<O> OpenJTalkAnalyzer<O> {
-    pub fn new(open_jtalk: O) -> Self {
+    pub(crate) fn new(open_jtalk: O) -> Self {
         Self(open_jtalk)
     }
 }
