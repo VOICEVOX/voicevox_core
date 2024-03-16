@@ -184,6 +184,15 @@ pub enum StyleType {
     /// 音声合成クエリの作成と音声合成が可能。
     #[default]
     Talk,
+
+    /// 歌唱音声合成用のクエリの作成が可能。
+    SingingTeacher,
+
+    /// 歌唱音声合成が可能。
+    FrameDecode,
+
+    /// 歌唱音声合成用のクエリの作成と歌唱音声合成が可能。
+    Sing,
 }
 
 #[cfg(test)]
