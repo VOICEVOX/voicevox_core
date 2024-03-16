@@ -3,9 +3,10 @@
 pub mod blocking {
     use napi::{Error, Result};
     use uuid::Uuid;
-    use voicevox_core::blocking::{OpenJtalk, Synthesizer, UserDict};
+    use voicevox_core::blocking::{OpenJtalk, Synthesizer, UserDict, VoiceModel};
 
     use crate::convert_result;
+    use crate::metas::JsSpeakerMeta;
     use crate::synthesizer::InitializeOptions;
     use crate::word::UserDictWord;
 
@@ -119,6 +120,39 @@ pub mod blocking {
         #[napi]
         pub fn is_gpu_mode(&self) -> bool {
             self.handle.is_gpu_mode()
+        }
+    }
+
+    /// 音声モデル。
+    ///
+    /// VVMファイルと対応する。
+    #[napi(js_name = "VoiceModel")]
+    pub struct JsVoiceModel {
+        handle: VoiceModel,
+    }
+
+    #[napi]
+    impl JsVoiceModel {
+        /// VVMファイルから`VoiceModel`をコンストラクトする。
+        #[napi(factory)]
+        pub fn from_path(path: String) -> Result<JsVoiceModel> {
+            convert_result(VoiceModel::from_path(&path).map(|handle| JsVoiceModel { handle }))
+        }
+
+        /// ID。
+        #[napi(getter)]
+        pub fn id(&self) -> String {
+            self.handle.id().to_string()
+        }
+
+        /// メタ情報。
+        #[napi(getter)]
+        pub fn metas(&self) -> Vec<JsSpeakerMeta> {
+            self.handle
+                .metas()
+                .into_iter()
+                .map(|handle| JsSpeakerMeta::from(handle.to_owned()))
+                .collect()
         }
     }
 }
