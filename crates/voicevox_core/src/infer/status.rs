@@ -87,7 +87,7 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
             )>;
             type Error = anyhow::Error;
 
-            fn try_ref_map<D: InferenceDomain<Group = Self::Group>>(
+            fn apply<D: InferenceDomain<Group = Self::Group>>(
                 &self,
                 model_data: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
             ) -> std::result::Result<

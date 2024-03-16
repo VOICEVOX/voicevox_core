@@ -71,7 +71,7 @@ pub(crate) trait InferenceDomainAssociationTargetFunction {
     type OutputAssociation: InferenceDomainAssociation;
     type Error;
 
-    fn try_ref_map<D: InferenceDomain<Group = Self::Group>>(
+    fn apply<D: InferenceDomain<Group = Self::Group>>(
         &self,
         x: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
     ) -> Result<<Self::OutputAssociation as InferenceDomainAssociation>::Target<D>, Self::Error>;

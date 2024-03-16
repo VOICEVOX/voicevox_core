@@ -40,7 +40,7 @@ impl<A: InferenceDomainAssociation> InferenceDomainMap for InferenceDomainMapImp
         &self,
         f: F,
     ) -> Result<<Self::Group as InferenceDomainGroup>::Map<F::OutputAssociation>, F::Error> {
-        let talk = f.try_ref_map(&self.talk)?;
+        let talk = f.apply(&self.talk)?;
         Ok(InferenceDomainMapImpl { talk })
     }
 }
