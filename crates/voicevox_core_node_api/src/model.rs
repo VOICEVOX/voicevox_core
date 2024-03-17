@@ -97,7 +97,7 @@ pub struct AudioQuery {
     pub output_stereo: bool,
     /// @readonly AquesTalk風記法。
     ///
-    /// {@link blocking.Synthesizer#audio_query}が返すもののみ`string`となる。入力としてのAudioQueryでは無視され
+    /// {@link blocking.Synthesizer#audioQuery}が返すもののみ`string`となる。入力としてのAudioQueryでは無視され
     /// る。
     pub kana: Option<String>,
 }

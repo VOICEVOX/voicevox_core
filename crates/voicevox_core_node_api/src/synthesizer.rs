@@ -57,3 +57,25 @@ impl Into<voicevox_core::SynthesisOptions> for SynthesisOptions {
         }
     }
 }
+
+/// {@link blocking.Synthesizer#synthesis}および{@link promises.Synthesizer#synthesis}のオプション。
+#[napi(object)]
+pub struct TtsOptions {
+    pub enable_interrogative_upspeak: Option<bool>,
+}
+
+impl Default for TtsOptions {
+    fn default() -> Self {
+        TtsOptions {
+            enable_interrogative_upspeak: Some(true),
+        }
+    }
+}
+
+impl Into<voicevox_core::TtsOptions> for TtsOptions {
+    fn into(self) -> voicevox_core::TtsOptions {
+        voicevox_core::TtsOptions {
+            enable_interrogative_upspeak: self.enable_interrogative_upspeak.unwrap_or(true),
+        }
+    }
+}

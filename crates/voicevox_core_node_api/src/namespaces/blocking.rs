@@ -1,6 +1,7 @@
 /// ブロッキング版API。
 #[napi]
 pub mod blocking {
+    use napi::bindgen_prelude::Buffer;
     use napi::{Error, Result};
     use uuid::Uuid;
     use voicevox_core::blocking::{OpenJtalk, Synthesizer, UserDict, VoiceModel};
@@ -9,7 +10,7 @@ pub mod blocking {
     use crate::convert_result;
     use crate::metas::JsSpeakerMeta;
     use crate::model::{AccentPhrase, AudioQuery};
-    use crate::synthesizer::InitializeOptions;
+    use crate::synthesizer::{InitializeOptions, TtsOptions};
     use crate::word::UserDictWord;
 
     /// テキスト解析器としてのOpen JTalk。
@@ -163,12 +164,13 @@ pub mod blocking {
             audio_query: AudioQuery,
             style_id: u32,
             options: Option<crate::synthesizer::SynthesisOptions>,
-        ) -> Result<Vec<u8>> {
+        ) -> Result<Buffer> {
             convert_result(self.handle.synthesis(
                 &(audio_query.convert()?),
                 StyleId::new(style_id),
                 &(options.unwrap_or_default().into()),
             ))
+            .map(|vec| vec.into())
         }
 
         /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
@@ -238,6 +240,60 @@ pub mod blocking {
                     .audio_query_from_kana(kana.as_str(), StyleId::new(style_id)),
             )?;
             AudioQuery::convert_from(&result).map_err(|err| err.into())
+        }
+
+        /// AquesTalk風記法から音声合成を行う。
+        #[napi]
+        pub fn tts_from_kana(
+            &self,
+            kana: String,
+            style_id: u32,
+            options: Option<TtsOptions>,
+        ) -> Result<Buffer> {
+            convert_result(self.handle.tts_from_kana(
+                kana.as_str(),
+                StyleId::new(style_id),
+                &options.unwrap_or_default().into(),
+            ))
+            .map(|vec| vec.into())
+        }
+
+        #[napi]
+        pub fn create_accent_phrases(
+            &self,
+            text: String,
+            style_id: u32,
+        ) -> Result<Vec<AccentPhrase>> {
+            let models = convert_result(
+                self.handle
+                    .create_accent_phrases(text.as_str(), StyleId::new(style_id)),
+            )?;
+            AccentPhrase::convert_from_slice(&models).map_err(|err| err.into())
+        }
+
+        /// 日本語のテキストから[AudioQuery]を生成する。
+        #[napi]
+        pub fn audio_query(&self, text: String, style_id: u32) -> Result<AudioQuery> {
+            let model = convert_result(
+                self.handle
+                    .audio_query(text.as_str(), StyleId::new(style_id)),
+            )?;
+            AudioQuery::convert_from(&model).map_err(|err| err.into())
+        }
+
+        /// 日本語のテキストから音声合成を行う。
+        pub fn tts(
+            &self,
+            text: String,
+            style_id: u32,
+            options: Option<TtsOptions>,
+        ) -> Result<Buffer> {
+            convert_result(self.handle.tts(
+                text.as_str(),
+                StyleId::new(style_id),
+                &options.unwrap_or_default().into(),
+            ))
+            .map(|vec| vec.into())
         }
     }
 
