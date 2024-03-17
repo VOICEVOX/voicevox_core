@@ -4,10 +4,11 @@ pub mod blocking {
     use napi::{Error, Result};
     use uuid::Uuid;
     use voicevox_core::blocking::{OpenJtalk, Synthesizer, UserDict, VoiceModel};
-    use voicevox_core::VoiceModelId;
+    use voicevox_core::{StyleId, VoiceModelId};
 
     use crate::convert_result;
     use crate::metas::JsSpeakerMeta;
+    use crate::model::{AccentPhrase, AudioQuery};
     use crate::synthesizer::InitializeOptions;
     use crate::word::UserDictWord;
 
@@ -153,6 +154,90 @@ pub mod blocking {
                 .into_iter()
                 .map(|meta| JsSpeakerMeta::from(meta))
                 .collect()
+        }
+
+        /// AudioQueryから音声合成を行う。
+        #[napi]
+        pub fn synthesis(
+            &self,
+            audio_query: AudioQuery,
+            style_id: u32,
+            options: Option<crate::synthesizer::SynthesisOptions>,
+        ) -> Result<Vec<u8>> {
+            convert_result(self.handle.synthesis(
+                &(audio_query.convert()?),
+                StyleId::new(style_id),
+                &(options.unwrap_or_default().into()),
+            ))
+        }
+
+        /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
+        #[napi]
+        pub fn create_accent_phrases_from_kana(
+            &self,
+            kana: String,
+            style_id: u32,
+        ) -> Result<Vec<AccentPhrase>> {
+            let models = convert_result(
+                self.handle
+                    .create_accent_phrases_from_kana(kana.as_str(), StyleId::new(style_id)),
+            )?;
+            AccentPhrase::convert_from_slice(&models).map_err(|err| err.into())
+        }
+
+        /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
+        #[napi]
+        pub fn replace_mora_data(
+            &self,
+            accent_phrases: Vec<AccentPhrase>,
+            style_id: u32,
+        ) -> Result<Vec<AccentPhrase>> {
+            let models = AccentPhrase::convert_slice(&accent_phrases)?;
+            let result = convert_result(
+                self.handle
+                    .replace_mora_data(&models, StyleId::new(style_id)),
+            )?;
+            AccentPhrase::convert_from_slice(&result).map_err(|err| err.into())
+        }
+
+        /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
+        #[napi]
+        pub fn replace_phoneme_length(
+            &self,
+            accent_phrases: Vec<AccentPhrase>,
+            style_id: u32,
+        ) -> Result<Vec<AccentPhrase>> {
+            let models = AccentPhrase::convert_slice(&accent_phrases)?;
+            let result = convert_result(
+                self.handle
+                    .replace_phoneme_length(&models, StyleId::new(style_id)),
+            )?;
+            AccentPhrase::convert_from_slice(&result).map_err(|err| err.into())
+        }
+
+        /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
+        #[napi]
+        pub fn replace_mora_pitch(
+            &self,
+            accent_phrases: Vec<AccentPhrase>,
+            style_id: u32,
+        ) -> Result<Vec<AccentPhrase>> {
+            let models = AccentPhrase::convert_slice(&accent_phrases)?;
+            let result = convert_result(
+                self.handle
+                    .replace_mora_pitch(&models, StyleId::new(style_id)),
+            )?;
+            AccentPhrase::convert_from_slice(&result).map_err(|err| err.into())
+        }
+
+        /// AquesTalk風記法から[AudioQuery]を生成する。
+        #[napi]
+        pub fn audio_query_from_kana(&self, kana: String, style_id: u32) -> Result<AudioQuery> {
+            let result = convert_result(
+                self.handle
+                    .audio_query_from_kana(kana.as_str(), StyleId::new(style_id)),
+            )?;
+            AudioQuery::convert_from(&result).map_err(|err| err.into())
         }
     }
 

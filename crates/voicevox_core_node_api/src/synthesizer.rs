@@ -34,3 +34,26 @@ impl InitializeOptions {
         })
     }
 }
+
+/// {@link blocking.Synthesizer#synthesis}および{@link promises.Synthesizer#synthesis}のオプション。
+#[napi(object)]
+pub struct SynthesisOptions {
+    /// 疑問文の調整を有効にするかどうか。
+    pub enable_interrogative_upspeak: Option<bool>,
+}
+
+impl Default for SynthesisOptions {
+    fn default() -> Self {
+        SynthesisOptions {
+            enable_interrogative_upspeak: Some(true),
+        }
+    }
+}
+
+impl Into<voicevox_core::SynthesisOptions> for SynthesisOptions {
+    fn into(self) -> voicevox_core::SynthesisOptions {
+        voicevox_core::SynthesisOptions {
+            enable_interrogative_upspeak: self.enable_interrogative_upspeak.unwrap_or(true),
+        }
+    }
+}
