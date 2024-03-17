@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use voicevox_core::{AccentPhraseModel, AudioQueryModel};
 
+/// モーラ（子音＋母音）ごとの情報。
 #[derive(Deserialize, Serialize)]
 #[napi(object)]
 pub struct Mora {
@@ -20,6 +21,7 @@ pub struct Mora {
     pub pitch: f64,
 }
 
+/// AccentPhrase (アクセント句ごとの情報)。
 #[derive(Deserialize, Serialize)]
 #[napi(object)]
 pub struct AccentPhrase {
@@ -65,6 +67,7 @@ impl AccentPhrase {
     }
 }
 
+/// AudioQuery (音声合成用のクエリ)。
 #[derive(Deserialize, Serialize)]
 #[napi(object)]
 pub struct AudioQuery {

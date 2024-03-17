@@ -101,6 +101,7 @@ pub mod blocking {
         }
     }
 
+    /// 音声シンセサイザ。
     #[napi(js_name = "Synthesizer")]
     pub struct JsSynthesizer {
         handle: Synthesizer<OpenJtalk>,
@@ -258,6 +259,7 @@ pub mod blocking {
             .map(|vec| vec.into())
         }
 
+        /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
         #[napi]
         pub fn create_accent_phrases(
             &self,
@@ -282,6 +284,7 @@ pub mod blocking {
         }
 
         /// 日本語のテキストから音声合成を行う。
+        #[napi]
         pub fn tts(
             &self,
             text: String,
