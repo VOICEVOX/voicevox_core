@@ -30,7 +30,7 @@ impl JsSpeakerMeta {
             .styles()
             .iter()
             .map(|style| StyleMeta {
-                id: style.id().to_string(),
+                id: style.id().raw_id(),
                 name: style.name().to_owned(),
                 order: style.order().to_owned(),
             })
@@ -68,7 +68,7 @@ impl From<SpeakerMeta> for JsSpeakerMeta {
 #[napi(object)]
 pub struct StyleMeta {
     /// スタイルID。
-    pub id: String,
+    pub id: u32,
 
     /// スタイル名。
     pub name: String,
