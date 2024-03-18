@@ -2,7 +2,7 @@
 #[napi]
 pub mod blocking {
     use napi::bindgen_prelude::Buffer;
-    use napi::{Error, Result};
+    use napi::{Env, Error, Result};
     use uuid::Uuid;
     use voicevox_core::blocking::{OpenJtalk, Synthesizer, UserDict, VoiceModel};
     use voicevox_core::{StyleId, VoiceModelId};
@@ -59,6 +59,18 @@ pub mod blocking {
             }
         }
 
+        /// このオブジェクトの{@link Record}としての表現
+        #[napi(getter, ts_return_type = "Record<string, UserDictWord>")]
+        pub fn words(&self, env: Env) -> Result<napi::bindgen_prelude::Object> {
+            self.handle.with_words(|map| {
+                let mut obj = env.create_object()?;
+                for (uuid, word) in map {
+                    obj.set(uuid.to_string(), UserDictWord::from(word))?
+                }
+                Ok(obj)
+            })
+        }
+
         /// ユーザー辞書をファイルから読み込む。
         ///
         /// @throws ファイルが読めなかった、または内容が不正だった場合はエラーを返す。
@@ -86,16 +98,17 @@ pub mod blocking {
         #[napi]
         pub fn remove_word(&self, word_uuid: String) -> Result<UserDictWord> {
             convert_result(self.handle.remove_word(parse_uuid(word_uuid)?))
-                .map(|word| UserDictWord::from(word))
+                .map(|word| UserDictWord::from(&word))
         }
 
         /// 他のユーザー辞書をインポートする。
         #[napi]
-        pub fn import(&self, other: &JsUserDict) -> Result<()> {
+        pub fn import_dict(&self, other: &JsUserDict) -> Result<()> {
             convert_result(self.handle.import(&other.handle))
         }
 
         /// ユーザー辞書を保存する。
+        #[napi]
         pub fn save(&self, store_path: String) -> Result<()> {
             convert_result(self.handle.save(&store_path))
         }

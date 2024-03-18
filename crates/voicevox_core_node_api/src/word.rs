@@ -48,11 +48,11 @@ impl UserDictWord {
     }
 }
 
-impl From<voicevox_core::UserDictWord> for UserDictWord {
-    fn from(value: voicevox_core::UserDictWord) -> Self {
+impl From<&voicevox_core::UserDictWord> for UserDictWord {
+    fn from(value: &voicevox_core::UserDictWord) -> Self {
         UserDictWord {
-            surface: value.surface,
-            pronunciation: value.pronunciation,
+            surface: value.surface.to_owned(),
+            pronunciation: value.pronunciation.to_owned(),
             accent_type: Some(value.accent_type as i64),
             word_type: Some(match value.word_type {
                 UserDictWordType::ProperNoun => String::from("PROPER_NOUN"),
