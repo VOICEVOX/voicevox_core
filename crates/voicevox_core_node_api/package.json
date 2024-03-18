@@ -1,8 +1,12 @@
 {
     "name": "voicevox_core",
     "version": "0.0.0",
-    "main": "index.js",
-    "types": "index.d.ts",
+    "exports": {
+        ".": {
+            "require": "./index.js",
+            "types": "./index.d.ts"
+        }
+    },
     "napi": {
         "name": "voicevox_core",
         "triples": {
