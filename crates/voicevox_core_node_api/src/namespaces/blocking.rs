@@ -120,8 +120,8 @@ pub mod blocking {
             })
         }
 
-        /// ハードウェアアクセラレーションがGPUモードか判定する。
-        #[napi]
+        /// ハードウェアアクセラレーションがGPUモードかどうか。
+        #[napi(getter)]
         pub fn is_gpu_mode(&self) -> bool {
             self.handle.is_gpu_mode()
         }
@@ -148,8 +148,8 @@ pub mod blocking {
                 .is_loaded_voice_model(&VoiceModelId::new(voice_model_id))
         }
 
-        /// 今読み込んでいる音声モデルのメタ情報を返す。
-        #[napi]
+        /// 今読み込んでいる音声モデルのメタ情報。
+        #[napi(getter)]
         pub fn metas(&self) -> Vec<JsSpeakerMeta> {
             self.handle
                 .metas()

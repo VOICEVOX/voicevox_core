@@ -15,7 +15,7 @@ test('ハードウエアアクセラレーションモードが指定したと�
     const synthesizer = new blocking.Synthesizer(openJtalk, {
         accelerationMode: 'CPU'
     });
-    t.false(synthesizer.isGpuMode());
+    t.false(synthesizer.isGpuMode);
 })
 
 test('VoiceModelのロード・アンロード時にモデル数を正しく取得できること', (t) => {
@@ -25,13 +25,13 @@ test('VoiceModelのロード・アンロード時にモデル数を正しく取�
     const openJtalk = loadOpenJtalk();
     const synthesizer = new blocking.Synthesizer(openJtalk);
 
-    t.is(synthesizer.metas().length, 0);
+    t.is(synthesizer.metas.length, 0);
 
     synthesizer.loadVoiceModel(model);
-    t.is(synthesizer.metas().length, model.metas.length);
+    t.is(synthesizer.metas.length, model.metas.length);
 
     synthesizer.unloadVoiceModel(model.id);
 
-    t.is(synthesizer.metas().length, 0)
+    t.is(synthesizer.metas.length, 0)
     t.false(synthesizer.isLoadedVoiceModel(model.id));
 })
