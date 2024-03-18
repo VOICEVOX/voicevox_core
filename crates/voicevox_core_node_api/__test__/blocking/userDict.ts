@@ -15,9 +15,6 @@ test("単語を追加した辞書をロードするとAudioQueryのkanaが変化
     userDict.addWord({
         surface: "this_word_should_not_exist_in_default_dictionary",
         pronunciation: "テスト",
-        accentType: 1,
-        wordType: "COMMON_NOUN",
-        priority: 1,
     });
     openJtalk.useUserDict(userDict);
     const query2 = synthesizer.audioQuery(
