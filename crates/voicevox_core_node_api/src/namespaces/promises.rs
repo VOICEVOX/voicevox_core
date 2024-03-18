@@ -1,9 +1,9 @@
-/// ブロッキング版API。
+/// Promise版API。
 #[napi]
-pub mod blocking {
+pub mod promises {
     use napi::bindgen_prelude::Buffer;
     use napi::{Env, Result};
-    use voicevox_core::blocking::{OpenJtalk, Synthesizer, UserDict, VoiceModel};
+    use voicevox_core::tokio::{OpenJtalk, Synthesizer, UserDict, VoiceModel};
     use voicevox_core::{StyleId, VoiceModelId};
 
     use crate::metas::JsSpeakerMeta;
@@ -18,12 +18,15 @@ pub mod blocking {
         handle: OpenJtalk,
     }
 
+    /// ユーザー辞書を設定する。
+    ///
+    /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
     #[napi]
     impl JsOpenJtalk {
         #[napi(factory)]
-        pub fn create(open_jtalk_dict_dir: String) -> Result<JsOpenJtalk> {
+        pub async fn create(open_jtalk_dict_dir: String) -> Result<JsOpenJtalk> {
             Ok(JsOpenJtalk {
-                handle: convert_result(OpenJtalk::new(open_jtalk_dict_dir))?,
+                handle: convert_result(OpenJtalk::new(open_jtalk_dict_dir).await)?,
             })
         }
 
@@ -31,8 +34,8 @@ pub mod blocking {
         ///
         /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
         #[napi]
-        pub fn use_user_dict(&self, user_dict: &JsUserDict) -> Result<()> {
-            convert_result(self.handle.use_user_dict(&user_dict.handle))
+        pub async fn use_user_dict(&self, user_dict: &JsUserDict) -> Result<()> {
+            convert_result(self.handle.use_user_dict(&user_dict.handle).await)
         }
     }
 
@@ -70,8 +73,8 @@ pub mod blocking {
         ///
         /// @throws ファイルが読めなかった、または内容が不正だった場合はエラーを返す。
         #[napi]
-        pub fn load(&self, store_path: String) -> Result<()> {
-            convert_result(self.handle.load(&store_path))
+        pub async fn load(&self, store_path: String) -> Result<()> {
+            convert_result(self.handle.load(&store_path).await)
         }
 
         /// ユーザー辞書に単語を追加する。
@@ -104,8 +107,8 @@ pub mod blocking {
 
         /// ユーザー辞書を保存する。
         #[napi]
-        pub fn save(&self, store_path: String) -> Result<()> {
-            convert_result(self.handle.save(&store_path))
+        pub async fn save(&self, store_path: String) -> Result<()> {
+            convert_result(self.handle.save(&store_path).await)
         }
     }
 
@@ -136,8 +139,8 @@ pub mod blocking {
 
         /// 音声モデルを読み込む。
         #[napi]
-        pub fn load_voice_model(&self, model: &JsVoiceModel) -> Result<()> {
-            convert_result(self.handle.load_voice_model(&model.handle))
+        pub async fn load_voice_model(&self, model: &JsVoiceModel) -> Result<()> {
+            convert_result(self.handle.load_voice_model(&model.handle).await)
         }
 
         /// 音声モデルの読み込みを解除する。
@@ -168,37 +171,42 @@ pub mod blocking {
 
         /// AudioQueryから音声合成を行う。
         #[napi]
-        pub fn synthesis(
+        pub async fn synthesis(
             &self,
             audio_query: AudioQuery,
             style_id: u32,
             options: Option<crate::synthesizer::SynthesisOptions>,
         ) -> Result<Buffer> {
-            convert_result(self.handle.synthesis(
-                &(audio_query.convert()?),
-                StyleId::new(style_id),
-                &(options.unwrap_or_default().into()),
-            ))
+            convert_result(
+                self.handle
+                    .synthesis(
+                        &(audio_query.convert()?),
+                        StyleId::new(style_id),
+                        &(options.unwrap_or_default().into()),
+                    )
+                    .await,
+            )
             .map(|vec| vec.into())
         }
 
         /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
         #[napi]
-        pub fn create_accent_phrases_from_kana(
+        pub async fn create_accent_phrases_from_kana(
             &self,
             kana: String,
             style_id: u32,
         ) -> Result<Vec<AccentPhrase>> {
             let models = convert_result(
                 self.handle
-                    .create_accent_phrases_from_kana(kana.as_str(), StyleId::new(style_id)),
+                    .create_accent_phrases_from_kana(kana.as_str(), StyleId::new(style_id))
+                    .await,
             )?;
             AccentPhrase::convert_from_slice(&models).map_err(|err| err.into())
         }
 
         /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
         #[napi]
-        pub fn replace_mora_data(
+        pub async fn replace_mora_data(
             &self,
             accent_phrases: Vec<AccentPhrase>,
             style_id: u32,
@@ -206,14 +214,15 @@ pub mod blocking {
             let models = AccentPhrase::convert_slice(&accent_phrases)?;
             let result = convert_result(
                 self.handle
-                    .replace_mora_data(&models, StyleId::new(style_id)),
+                    .replace_mora_data(&models, StyleId::new(style_id))
+                    .await,
             )?;
             AccentPhrase::convert_from_slice(&result).map_err(|err| err.into())
         }
 
         /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
         #[napi]
-        pub fn replace_phoneme_length(
+        pub async fn replace_phoneme_length(
             &self,
             accent_phrases: Vec<AccentPhrase>,
             style_id: u32,
@@ -221,14 +230,15 @@ pub mod blocking {
             let models = AccentPhrase::convert_slice(&accent_phrases)?;
             let result = convert_result(
                 self.handle
-                    .replace_phoneme_length(&models, StyleId::new(style_id)),
+                    .replace_phoneme_length(&models, StyleId::new(style_id))
+                    .await,
             )?;
             AccentPhrase::convert_from_slice(&result).map_err(|err| err.into())
         }
 
         /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
         #[napi]
-        pub fn replace_mora_pitch(
+        pub async fn replace_mora_pitch(
             &self,
             accent_phrases: Vec<AccentPhrase>,
             style_id: u32,
@@ -236,74 +246,90 @@ pub mod blocking {
             let models = AccentPhrase::convert_slice(&accent_phrases)?;
             let result = convert_result(
                 self.handle
-                    .replace_mora_pitch(&models, StyleId::new(style_id)),
+                    .replace_mora_pitch(&models, StyleId::new(style_id))
+                    .await,
             )?;
             AccentPhrase::convert_from_slice(&result).map_err(|err| err.into())
         }
 
         /// AquesTalk風記法から[AudioQuery]を生成する。
         #[napi]
-        pub fn audio_query_from_kana(&self, kana: String, style_id: u32) -> Result<AudioQuery> {
+        pub async fn audio_query_from_kana(
+            &self,
+            kana: String,
+            style_id: u32,
+        ) -> Result<AudioQuery> {
             let result = convert_result(
                 self.handle
-                    .audio_query_from_kana(kana.as_str(), StyleId::new(style_id)),
+                    .audio_query_from_kana(kana.as_str(), StyleId::new(style_id))
+                    .await,
             )?;
             AudioQuery::convert_from(&result).map_err(|err| err.into())
         }
 
         /// AquesTalk風記法から音声合成を行う。
         #[napi]
-        pub fn tts_from_kana(
+        pub async fn tts_from_kana(
             &self,
             kana: String,
             style_id: u32,
             options: Option<TtsOptions>,
         ) -> Result<Buffer> {
-            convert_result(self.handle.tts_from_kana(
-                kana.as_str(),
-                StyleId::new(style_id),
-                &options.unwrap_or_default().into(),
-            ))
+            convert_result(
+                self.handle
+                    .tts_from_kana(
+                        kana.as_str(),
+                        StyleId::new(style_id),
+                        &options.unwrap_or_default().into(),
+                    )
+                    .await,
+            )
             .map(|vec| vec.into())
         }
 
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
         #[napi]
-        pub fn create_accent_phrases(
+        pub async fn create_accent_phrases(
             &self,
             text: String,
             style_id: u32,
         ) -> Result<Vec<AccentPhrase>> {
             let models = convert_result(
                 self.handle
-                    .create_accent_phrases(text.as_str(), StyleId::new(style_id)),
+                    .create_accent_phrases(text.as_str(), StyleId::new(style_id))
+                    .await,
             )?;
             AccentPhrase::convert_from_slice(&models).map_err(|err| err.into())
         }
 
         /// 日本語のテキストから[AudioQuery]を生成する。
         #[napi]
-        pub fn audio_query(&self, text: String, style_id: u32) -> Result<AudioQuery> {
+        pub async fn audio_query(&self, text: String, style_id: u32) -> Result<AudioQuery> {
             let model = convert_result(
                 self.handle
-                    .audio_query(text.as_str(), StyleId::new(style_id)),
+                    .audio_query(text.as_str(), StyleId::new(style_id))
+                    .await,
             )?;
             AudioQuery::convert_from(&model).map_err(|err| err.into())
         }
 
         /// 日本語のテキストから音声合成を行う。
         #[napi]
-        pub fn tts(
+        pub async fn tts(
             &self,
             text: String,
             style_id: u32,
             options: Option<TtsOptions>,
         ) -> Result<Buffer> {
-            convert_result(self.handle.tts(
-                text.as_str(),
-                StyleId::new(style_id),
-                &options.unwrap_or_default().into(),
-            ))
+            convert_result(
+                self.handle
+                    .tts(
+                        text.as_str(),
+                        StyleId::new(style_id),
+                        &options.unwrap_or_default().into(),
+                    )
+                    .await,
+            )
             .map(|vec| vec.into())
         }
     }
@@ -320,8 +346,12 @@ pub mod blocking {
     impl JsVoiceModel {
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         #[napi(factory)]
-        pub fn from_path(path: String) -> Result<JsVoiceModel> {
-            convert_result(VoiceModel::from_path(&path).map(|handle| JsVoiceModel { handle }))
+        pub async fn from_path(path: String) -> Result<JsVoiceModel> {
+            convert_result(
+                VoiceModel::from_path(&path)
+                    .await
+                    .map(|handle| JsVoiceModel { handle }),
+            )
         }
 
         /// ID。
@@ -341,5 +371,3 @@ pub mod blocking {
         }
     }
 }
-
-pub use blocking::{JsOpenJtalk, JsUserDict};

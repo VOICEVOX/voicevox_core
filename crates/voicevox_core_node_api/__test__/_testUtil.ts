@@ -1,4 +1,5 @@
 import path from "path";
+import { AccentPhrase, Mora } from "..";
 
 export const openJtalkDicDir = path.join(
     __dirname,
@@ -16,3 +17,21 @@ export const modelFile = path.join(
     "model",
     "sample.vvm",
 );
+
+export function checkAllMoras(
+    accentPhrases: AccentPhrase[],
+    otherAccentPhrases: AccentPhrase[],
+    checker: (mora: Mora, otherMora: Mora) => boolean,
+): boolean {
+    for (let i = 0; i < accentPhrases.length; i++) {
+        const accentPhrase = accentPhrases[i];
+        for (let j = 0; j < accentPhrase.moras.length; j++) {
+            const mora = accentPhrase.moras[j];
+            const otherMora = otherAccentPhrases[i].moras[j];
+            if (!checker(mora, otherMora)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}

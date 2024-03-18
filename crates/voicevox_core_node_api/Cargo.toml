@@ -7,7 +7,7 @@ version = "0.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-napi = { version = "2.16.0", features = ["napi4", "serde-json"] }
+napi = { version = "2.16.0", features = ["napi4", "serde-json", "tokio_rt"] }
 napi-derive = "2.16.0"
 voicevox_core.workspace = true
 serde.workspace = true
