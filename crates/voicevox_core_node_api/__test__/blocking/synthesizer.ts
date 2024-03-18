@@ -1,6 +1,6 @@
 import test from "ava";
-import { modelFile, openJtalkDicDir } from "../_testUtil";
-import { AccentPhrase, Mora, blocking } from "../..";
+import { modelFile, openJtalkDicDir, checkAllMoras } from "../_testUtil";
+import { blocking } from "../..";
 
 function loadOpenJtalk() {
     return blocking.OpenJtalk.create(openJtalkDicDir);
@@ -8,24 +8,6 @@ function loadOpenJtalk() {
 
 function loadModel() {
     return blocking.VoiceModel.fromPath(modelFile);
-}
-
-function checkAllMoras(
-    accentPhrases: AccentPhrase[],
-    otherAccentPhrases: AccentPhrase[],
-    checker: (mora: Mora, otherMora: Mora) => boolean,
-): boolean {
-    for (let i = 0; i < accentPhrases.length; i++) {
-        const accentPhrase = accentPhrases[i];
-        for (let j = 0; j < accentPhrase.moras.length; j++) {
-            const mora = accentPhrase.moras[j];
-            const otherMora = otherAccentPhrases[i].moras[j];
-            if (!checker(mora, otherMora)) {
-                return false;
-            }
-        }
-    }
-    return true;
 }
 
 test("ハードウエアアクセラレーションモードが指定したとおりに設定されること", (t) => {
