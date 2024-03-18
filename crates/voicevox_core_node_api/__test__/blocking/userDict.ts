@@ -1,6 +1,6 @@
 import test from 'ava';
 import { blocking } from '../..';
-import { modelFile, openJtalkDicDir } from '../testUtil';
+import { modelFile, openJtalkDicDir } from '../_testUtil';
 
 test('単語を追加した辞書をロードするとAudioQueryのkanaが変化すること', (t) => {
     const openJtalk = blocking.OpenJtalk.create(openJtalkDicDir);
