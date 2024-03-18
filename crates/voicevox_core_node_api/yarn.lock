@@ -1702,9 +1702,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"voicevox_core_node_api@workspace:.":
+"voicevox_core@workspace:.":
   version: 0.0.0-use.local
-  resolution: "voicevox_core_node_api@workspace:."
+  resolution: "voicevox_core@workspace:."
   dependencies:
     "@napi-rs/cli": "npm:^2.18.0"
     "@swc-node/register": "npm:^1.9.0"

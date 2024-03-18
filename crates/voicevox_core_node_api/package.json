@@ -1,10 +1,10 @@
 {
-    "name": "voicevox_core_node_api",
+    "name": "voicevox_core",
     "version": "0.0.0",
     "main": "index.js",
     "types": "index.d.ts",
     "napi": {
-        "name": "voicevox_core_node_api",
+        "name": "voicevox_core",
         "triples": {
             "additional": [
                 "aarch64-apple-darwin",
