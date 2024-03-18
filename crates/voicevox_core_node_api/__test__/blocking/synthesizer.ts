@@ -1,6 +1,6 @@
 import test from "ava";
 import { modelFile, openJtalkDicDir, checkAllMoras } from "../_testUtil";
-import { blocking } from "../..";
+import { blocking } from "voicevox_core";
 
 function loadOpenJtalk() {
     return blocking.OpenJtalk.create(openJtalkDicDir);

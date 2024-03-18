@@ -1,5 +1,5 @@
 import test from "ava";
-import { SupportedDevices } from "../index";
+import { SupportedDevices } from "voicevox_core";
 
 test("サポートされているデバイス情報", (t) => {
     const supportedDevices = SupportedDevices.create();

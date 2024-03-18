@@ -1,7 +1,7 @@
 import fs from "fs";
 import os from "os";
 import test from "ava";
-import { blocking } from "../..";
+import { blocking } from "voicevox_core";
 import { modelFile, openJtalkDicDir } from "../_testUtil";
 import path from "path";
 

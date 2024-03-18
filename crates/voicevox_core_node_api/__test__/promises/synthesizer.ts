@@ -1,6 +1,6 @@
 import test from "ava";
 import { modelFile, openJtalkDicDir, checkAllMoras } from "../_testUtil";
-import { promises } from "../..";
+import { promises } from "voicevox_core";
 
 async function loadOpenJtalk() {
     return await promises.OpenJtalk.create(openJtalkDicDir);

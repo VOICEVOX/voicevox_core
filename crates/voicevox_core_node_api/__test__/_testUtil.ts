@@ -1,5 +1,5 @@
 import path from "path";
-import { AccentPhrase, Mora } from "..";
+import { AccentPhrase, Mora } from "voicevox_core";
 
 export const openJtalkDicDir = path.join(
     __dirname,

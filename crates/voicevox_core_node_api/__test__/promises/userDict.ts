@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import os from "os";
 import test from "ava";
-import { promises } from "../..";
+import { promises } from "voicevox_core";
 import { modelFile, openJtalkDicDir } from "../_testUtil";
 import path from "path";
 
