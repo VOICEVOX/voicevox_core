@@ -1,18 +1,18 @@
 import test from "ava";
 import { modelFile, openJtalkDicDir, checkAllMoras } from "../_testUtil";
-import { blocking } from "voicevox_core";
+import { OpenJtalk, Synthesizer, VoiceModel } from "voicevox_core/blocking";
 
 function loadOpenJtalk() {
-    return blocking.OpenJtalk.create(openJtalkDicDir);
+    return OpenJtalk.create(openJtalkDicDir);
 }
 
 function loadModel() {
-    return blocking.VoiceModel.fromPath(modelFile);
+    return VoiceModel.fromPath(modelFile);
 }
 
 test("ハードウエアアクセラレーションモードが指定したとおりに設定されること", (t) => {
     const openJtalk = loadOpenJtalk();
-    const synthesizer = new blocking.Synthesizer(openJtalk, {
+    const synthesizer = new Synthesizer(openJtalk, {
         accelerationMode: "CPU",
     });
     t.false(synthesizer.isGpuMode);
@@ -23,7 +23,7 @@ test("VoiceModelのロード・アンロード時にモデル数を正しく取�
     t.true(model.metas.length >= 1);
 
     const openJtalk = loadOpenJtalk();
-    const synthesizer = new blocking.Synthesizer(openJtalk);
+    const synthesizer = new Synthesizer(openJtalk);
 
     t.is(synthesizer.metas.length, 0);
 
@@ -39,7 +39,7 @@ test("VoiceModelのロード・アンロード時にモデル数を正しく取�
 test("AudioQueryからの合成でエラーが発生しないこと", (t) => {
     const model = loadModel();
     const openJtalk = loadOpenJtalk();
-    const synthesizer = new blocking.Synthesizer(openJtalk);
+    const synthesizer = new Synthesizer(openJtalk);
     synthesizer.loadVoiceModel(model);
     const query = synthesizer.audioQuery(
         "こんにちは",
@@ -53,7 +53,7 @@ test("AudioQueryからの合成でエラーが発生しないこと", (t) => {
 test("パラメータを変えてAccentPhraseを生成し直すとモーラの値が変わること", (t) => {
     const model = loadModel();
     const openJtalk = loadOpenJtalk();
-    const synthesizer = new blocking.Synthesizer(openJtalk);
+    const synthesizer = new Synthesizer(openJtalk);
     synthesizer.loadVoiceModel(model);
     const accentPhrases = synthesizer.createAccentPhrases(
         "こんにちは",
@@ -99,7 +99,7 @@ test("パラメータを変えてAccentPhraseを生成し直すとモーラの�
 test("日本語のテキストからの音声合成でエラーが発生しないこと", (t) => {
     const model = loadModel();
     const openJtalk = loadOpenJtalk();
-    const synthesizer = new blocking.Synthesizer(openJtalk);
+    const synthesizer = new Synthesizer(openJtalk);
     synthesizer.loadVoiceModel(model);
     t.notThrows(() =>
         synthesizer.tts("こんにちは", model.metas[0].styles[0].id),

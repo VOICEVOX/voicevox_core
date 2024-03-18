@@ -1,18 +1,18 @@
 import test from "ava";
 import { modelFile, openJtalkDicDir, checkAllMoras } from "../_testUtil";
-import { promises } from "voicevox_core";
+import { OpenJtalk, Synthesizer, VoiceModel } from "voicevox_core/promises";
 
 async function loadOpenJtalk() {
-    return await promises.OpenJtalk.create(openJtalkDicDir);
+    return await OpenJtalk.create(openJtalkDicDir);
 }
 
 async function loadModel() {
-    return await promises.VoiceModel.fromPath(modelFile);
+    return await VoiceModel.fromPath(modelFile);
 }
 
 test("ハードウエアアクセラレーションモードが指定したとおりに設定されること", async (t) => {
     const openJtalk = await loadOpenJtalk();
-    const synthesizer = new promises.Synthesizer(openJtalk, {
+    const synthesizer = new Synthesizer(openJtalk, {
         accelerationMode: "CPU",
     });
     t.false(synthesizer.isGpuMode);
@@ -23,7 +23,7 @@ test("VoiceModelのロード・アンロード時にモデル数を正しく取�
     t.true(model.metas.length >= 1);
 
     const openJtalk = await loadOpenJtalk();
-    const synthesizer = new promises.Synthesizer(openJtalk);
+    const synthesizer = new Synthesizer(openJtalk);
 
     t.is(synthesizer.metas.length, 0);
 
@@ -39,7 +39,7 @@ test("VoiceModelのロード・アンロード時にモデル数を正しく取�
 test("AudioQueryからの合成でエラーが発生しないこと", async (t) => {
     const model = await loadModel();
     const openJtalk = await loadOpenJtalk();
-    const synthesizer = new promises.Synthesizer(openJtalk);
+    const synthesizer = new Synthesizer(openJtalk);
     await synthesizer.loadVoiceModel(model);
     const query = await synthesizer.audioQuery(
         "こんにちは",
@@ -53,7 +53,7 @@ test("AudioQueryからの合成でエラーが発生しないこと", async (t) 
 test("パラメータを変えてAccentPhraseを生成し直すとモーラの値が変わること", async (t) => {
     const model = await loadModel();
     const openJtalk = await loadOpenJtalk();
-    const synthesizer = new promises.Synthesizer(openJtalk);
+    const synthesizer = new Synthesizer(openJtalk);
     await synthesizer.loadVoiceModel(model);
     const accentPhrases = await synthesizer.createAccentPhrases(
         "こんにちは",
@@ -99,7 +99,7 @@ test("パラメータを変えてAccentPhraseを生成し直すとモーラの�
 test("日本語のテキストからの音声合成でエラーが発生しないこと", async (t) => {
     const model = await loadModel();
     const openJtalk = await loadOpenJtalk();
-    const synthesizer = new promises.Synthesizer(openJtalk);
+    const synthesizer = new Synthesizer(openJtalk);
     await synthesizer.loadVoiceModel(model);
     t.notThrows(() =>
         synthesizer.tts("こんにちは", model.metas[0].styles[0].id),

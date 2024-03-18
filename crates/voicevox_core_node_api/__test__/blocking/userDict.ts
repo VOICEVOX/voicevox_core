@@ -1,20 +1,25 @@
 import fs from "fs";
 import os from "os";
 import test from "ava";
-import { blocking } from "voicevox_core";
+import {
+    OpenJtalk,
+    UserDict,
+    Synthesizer,
+    VoiceModel,
+} from "voicevox_core/blocking";
 import { modelFile, openJtalkDicDir } from "../_testUtil";
 import path from "path";
 
 test("単語を追加した辞書をロードするとAudioQueryのkanaが変化すること", (t) => {
-    const openJtalk = blocking.OpenJtalk.create(openJtalkDicDir);
-    const model = blocking.VoiceModel.fromPath(modelFile);
-    const synthesizer = new blocking.Synthesizer(openJtalk);
+    const openJtalk = OpenJtalk.create(openJtalkDicDir);
+    const model = VoiceModel.fromPath(modelFile);
+    const synthesizer = new Synthesizer(openJtalk);
     synthesizer.loadVoiceModel(model);
     const query1 = synthesizer.audioQuery(
         "this_word_should_not_exist_in_default_dictionary",
         model.metas[0].styles[0].id,
     );
-    const userDict = new blocking.UserDict();
+    const userDict = new UserDict();
     userDict.addWord({
         surface: "this_word_should_not_exist_in_default_dictionary",
         pronunciation: "テスト",
@@ -28,7 +33,7 @@ test("単語を追加した辞書をロードするとAudioQueryのkanaが変化
 });
 
 test("ユーザー辞書の操作を正常に行えること", (t) => {
-    const dictA = new blocking.UserDict();
+    const dictA = new UserDict();
 
     // 単語の追加
     const uuidA = dictA.addWord({
@@ -47,7 +52,7 @@ test("ユーザー辞書の操作を正常に行えること", (t) => {
     t.is(dictA.words[uuidA].pronunciation, "フガ");
 
     // ユーザー辞書のインポート
-    const dictB = new blocking.UserDict();
+    const dictB = new UserDict();
     const uuidB = dictB.addWord({
         surface: "foo",
         pronunciation: "フー",
@@ -56,7 +61,7 @@ test("ユーザー辞書の操作を正常に行えること", (t) => {
     t.true(uuidB in dictA.words);
 
     /// ユーザー辞書のエクスポート
-    const dictC = new blocking.UserDict();
+    const dictC = new UserDict();
     const uuidC = dictC.addWord({
         surface: "bar",
         pronunciation: "バー",

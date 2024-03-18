@@ -5,6 +5,14 @@
         ".": {
             "require": "./index.js",
             "types": "./index.d.ts"
+        },
+        "./blocking": {
+            "require": "./exports/blocking.js",
+            "types": "./exports/blocking.d.ts"
+        },
+        "./promises": {
+            "require": "./exports/promises.js",
+            "types": "./exports/promises.d.ts"
         }
     },
     "napi": {

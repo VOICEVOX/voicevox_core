@@ -1,20 +1,25 @@
 import fs from "fs/promises";
 import os from "os";
 import test from "ava";
-import { promises } from "voicevox_core";
+import {
+    OpenJtalk,
+    UserDict,
+    Synthesizer,
+    VoiceModel,
+} from "voicevox_core/promises";
 import { modelFile, openJtalkDicDir } from "../_testUtil";
 import path from "path";
 
 test("単語を追加した辞書をロードするとAudioQueryのkanaが変化すること", async (t) => {
-    const openJtalk = await promises.OpenJtalk.create(openJtalkDicDir);
-    const model = await promises.VoiceModel.fromPath(modelFile);
-    const synthesizer = new promises.Synthesizer(openJtalk);
+    const openJtalk = await OpenJtalk.create(openJtalkDicDir);
+    const model = await VoiceModel.fromPath(modelFile);
+    const synthesizer = new Synthesizer(openJtalk);
     synthesizer.loadVoiceModel(model);
     const query1 = synthesizer.audioQuery(
         "this_word_should_not_exist_in_default_dictionary",
         model.metas[0].styles[0].id,
     );
-    const userDict = new promises.UserDict();
+    const userDict = new UserDict();
     userDict.addWord({
         surface: "this_word_should_not_exist_in_default_dictionary",
         pronunciation: "テスト",
@@ -28,7 +33,7 @@ test("単語を追加した辞書をロードするとAudioQueryのkanaが変化
 });
 
 test("ユーザー辞書の操作を正常に行えること", async (t) => {
-    const dictA = new promises.UserDict();
+    const dictA = new UserDict();
 
     // 単語の追加
     const uuidA = dictA.addWord({
@@ -47,7 +52,7 @@ test("ユーザー辞書の操作を正常に行えること", async (t) => {
     t.is(dictA.words[uuidA].pronunciation, "フガ");
 
     // ユーザー辞書のインポート
-    const dictB = new promises.UserDict();
+    const dictB = new UserDict();
     const uuidB = dictB.addWord({
         surface: "foo",
         pronunciation: "フー",
@@ -56,7 +61,7 @@ test("ユーザー辞書の操作を正常に行えること", async (t) => {
     t.true(uuidB in dictA.words);
 
     /// ユーザー辞書のエクスポート
-    const dictC = new promises.UserDict();
+    const dictC = new UserDict();
     const uuidC = dictC.addWord({
         surface: "bar",
         pronunciation: "バー",
