@@ -53,8 +53,8 @@ yarn で依存ライブラリをダウンロードし、`build` タスクによ�
 
 ## ドキュメント
 
-`yarn run docs` でドキュメントを生成できます。
+`yarn docs` でドキュメントを生成できます。
 
 ```console
-❯ yarn run docs
+❯ yarn docs
 ```
