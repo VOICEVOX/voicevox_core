@@ -36,6 +36,7 @@
         "@types/node": "^20.11.28",
         "ava": "^6.0.1",
         "prettier": "^3.2.5",
+        "typedoc": "^0.25.12",
         "typescript": "^5.4.2"
     },
     "ava": {
@@ -60,7 +61,8 @@
         "prepublishOnly": "napi prepublish -t npm",
         "test": "ava",
         "universal": "napi universal",
-        "version": "napi version"
+        "version": "napi version",
+        "docs": "npx typedoc --options typedoc.json"
     },
     "packageManager": "yarn@4.1.0"
 }

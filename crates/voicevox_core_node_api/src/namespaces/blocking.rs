@@ -241,7 +241,7 @@ pub mod blocking {
             AccentPhrase::convert_from_slice(&result).map_err(|err| err.into())
         }
 
-        /// AquesTalk風記法から[AudioQuery]を生成する。
+        /// AquesTalk風記法から{@link AudioQuery}を生成する。
         #[napi]
         pub fn audio_query_from_kana(&self, kana: String, style_id: u32) -> Result<AudioQuery> {
             let result = convert_result(
@@ -281,7 +281,7 @@ pub mod blocking {
             AccentPhrase::convert_from_slice(&models).map_err(|err| err.into())
         }
 
-        /// 日本語のテキストから[AudioQuery]を生成する。
+        /// 日本語のテキストから{@link AudioQuery}を生成する。
         #[napi]
         pub fn audio_query(&self, text: String, style_id: u32) -> Result<AudioQuery> {
             let model = convert_result(
