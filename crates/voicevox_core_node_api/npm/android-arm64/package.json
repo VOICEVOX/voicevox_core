@@ -1,5 +1,5 @@
 {
-    "name": "voicevox_core_node_api-android-arm64",
+    "name": "voicevox_core-android-arm64",
     "version": "0.0.0",
     "os": [
         "android"
@@ -7,9 +7,9 @@
     "cpu": [
         "arm64"
     ],
-    "main": "voicevox_core_node_api.android-arm64.node",
+    "main": "voicevox_core.android-arm64.node",
     "files": [
-        "voicevox_core_node_api.android-arm64.node"
+        "voicevox_core.android-arm64.node"
     ],
     "license": "MIT",
     "engines": {

@@ -1,5 +1,5 @@
 {
-    "name": "voicevox_core_node_api-darwin-x64",
+    "name": "voicevox_core-darwin-x64",
     "version": "0.0.0",
     "os": [
         "darwin"
@@ -7,9 +7,9 @@
     "cpu": [
         "x64"
     ],
-    "main": "voicevox_core_node_api.darwin-x64.node",
+    "main": "voicevox_core.darwin-x64.node",
     "files": [
-        "voicevox_core_node_api.darwin-x64.node"
+        "voicevox_core.darwin-x64.node"
     ],
     "license": "MIT",
     "engines": {

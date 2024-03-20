@@ -1,5 +1,5 @@
 {
-    "name": "voicevox_core_node_api-linux-arm64-gnu",
+    "name": "voicevox_core-linux-arm64-gnu",
     "version": "0.0.0",
     "os": [
         "linux"
@@ -7,9 +7,9 @@
     "cpu": [
         "arm64"
     ],
-    "main": "voicevox_core_node_api.linux-arm64-gnu.node",
+    "main": "voicevox_core.linux-arm64-gnu.node",
     "files": [
-        "voicevox_core_node_api.linux-arm64-gnu.node"
+        "voicevox_core.linux-arm64-gnu.node"
     ],
     "license": "MIT",
     "engines": {
