@@ -239,11 +239,10 @@ jobs:
           repository: VOICEVOX/voicevox_resource
           ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
           path: download/resource
-      - name: Raplace resource
+      - name: Replace resource
         if: inputs.is_production
         shell: bash
-        run:
-          mv -f download/resource/core/README.md ./README.md
+        run: mv -f download/resource/core/README.md ./README.md
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-edit
@@ -289,7 +288,7 @@ jobs:
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_java_api
-        if: contains(matrix.target, 'android')
+        if: "!contains(matrix.target, 'ios')"
         run: |
           function build() {
             cargo build -p voicevox_core_java_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
@@ -315,8 +314,7 @@ jobs:
           cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
-        run:
-          bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
+        run: bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
@@ -350,7 +348,7 @@ jobs:
             ${{ steps.build-voicevox-core-python-api.outputs.whl }}
           target_commitish: ${{ github.sha }}
       - name: Upload voicevox_core_java_api artifact
-        if: fromJson(needs.config.outputs.deploy) && contains(matrix.target, 'android')
+        if: fromJson(needs.config.outputs.deploy) && !contains(matrix.target, 'ios')
         uses: actions/upload-artifact@v3
         with:
           name: voicevox_core_java_api-${{ matrix.artifact_name }}
@@ -380,10 +378,10 @@ jobs:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
       - name: Create xcframework
-        id: create-xcframework 
+        id: create-xcframework
         run: |
           build_util/make_ios_xcframework.bash
-          echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT" 
+          echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT"
         env:
           OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
       - name: Archive artifact
@@ -414,11 +412,10 @@ jobs:
           repository: VOICEVOX/voicevox_fat_resource
           ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
           path: download/fat_resource
-      - name: Raplace resource
+      - name: Replace resource
         if: inputs.is_production
         shell: bash
-        run:
-          rm -r ./model; mv download/fat_resource/core/model ./model
+        run: rm -r ./model; mv download/fat_resource/core/model ./model
       - name: Create artifact
         run: |
           mkdir "artifact"
@@ -459,40 +456,65 @@ jobs:
       - name: Install cargo-edit
         run: cargo binstall cargo-edit@^0.11 --no-confirm
       - name: set cargo version
-        run:
-          cargo set-version "$VERSION" -p voicevox_core_java_api
+        run: cargo set-version "$VERSION" -p voicevox_core_java_api
 
-      - name: "Download artifact (android-arm64-cpu)"
-        uses: actions/download-artifact@v3
+      - name: "Download artifact"
+        uses: actions/download-artifact@v4
         with:
-          name: voicevox_core_java_api-android-arm64-cpu
-          path: artifact/android-arm64-cpu
-
-      - name: "Download artifact (android-x86_64-cpu)"
-        uses: actions/download-artifact@v3
-        with:
-          name: voicevox_core_java_api-android-x86_64-cpu
-          path: artifact/android-x86_64-cpu
+          name: voicevox_core_java_api-*
+          path: artifacts/
 
       - name: Print tree
-        run: tree artifact
+        run: tree artifacts
 
-      - name: Build voicevoxcore-android
+      - name: Build voicevoxcore
         run: |
-          rm -rf crates/voicevox_core_java_api/lib/src/main/resources/dll
-          cat <<EOF | while read -r line; do
-          android-arm64-cpu|arm64-v8a
-          android-x86_64-cpu|x86_64
+          function setup_dll() {
+            rm -rf crates/voicevox_core_java_api/lib/src/main/resources/dll
+            rm -rf crates/voicevox_core_java_api/lib/src/main/resources/jniLibs
+            while IFS= read -r line; do
+              IFS=' ' read -r artifact_name target <<< "$line"
+              mkdir -p crates/voicevox_core_java_api/lib/src/main/resources/$1/$target
+              cp -v artifacts/voicevox_core_java_api-$artifact_name/*.dll crates/voicevox_core_java_api/lib/src/main/resources/$1/$target/ || true
+              cp -v artifacts/voicevox_core_java_api-$artifact_name/*.so crates/voicevox_core_java_api/lib/src/main/resources/$1/$target/ || true
+              cp -v artifacts/voicevox_core_java_api-$artifact_name/*.dylib crates/voicevox_core_java_api/lib/src/main/resources/$1/$target/ || true
+              echo "$artifact_name => $1/$target"
+            done
+          }
+
+          # desktop: cpu
+          setup_dll dll <<EOF
+          windows-x64-cpu windows-x64
+          windows-x86-cpu windows-x86
+          linux-x64-cpu linux-x64
+          linux-arm64-cpu linux-arm64
+          osx-x64-cpu macos-x64
+          osx-arm64-cpu macos-arm64
           EOF
-            IFS='|' read -r artifact_name target <<< "$line"
-            mkdir "crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/${target}/"
-            cp -v "artifact/$artifact_name"/* "crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/${target}/"
-          done
+
+          OS=desktop DEVICE=cpu gradle publishToMavenLocal
+
+          # desktop: gpu
+          setup_dll dll <<EOF
+          windows-x64-directml windows-x64
+          windows-x86-cpu windows-x86
+          linux-x64-cuda linux-x64
+          linux-arm64-cpu linux-arm64
+          osx-x64-cpu macos-x64
+          osx-arm64-cpu macos-arm64
+          EOF
+
+          OS=desktop DEVICE=gpu gradle publishToMavenLocal
+
+          # android: cpu
+          setup_dll jniLibs <<EOF
+          android-arm64-cpu arm64-v8a
+          android-x86_64-cpu x86_64
+          EOF
 
           cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/arm64-v8a/
           cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/x86_64/
 
-          cd crates/voicevox_core_java_api
           OS=android DEVICE=cpu gradle publishToMavenLocal
 
       - name: Package
