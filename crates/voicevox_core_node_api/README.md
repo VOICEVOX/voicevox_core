@@ -36,25 +36,25 @@ VOICEVOX CORE の Node.js バインディングです。
 
 ## ビルド
 
-yarn で依存ライブラリをダウンロードし、`build` タスクによって `index.d.ts`, `index.js` および `node` 拡張子のネイティブモジュールを生成します。
+npm で依存ライブラリをダウンロードし、`build` タスクによって `index.d.ts`, `index.js` および `node` 拡張子のネイティブモジュールを生成します。
 
 ```console
-❯ yarn
-❯ yarn build
+❯ npm install
+❯ npm run build
 ```
 
 ## テスト
 
-`yarn test` でテストを行うことができます。
+`npm test` でテストを行うことができます。
 
 ```console
-❯ yarn test
+❯ npm test
 ```
 
 ## ドキュメント
 
-`yarn docs` でドキュメントを生成できます。
+`npm run docs` でドキュメントを生成できます。
 
 ```console
-❯ yarn docs
+❯ npm run docs
 ```
