@@ -15,7 +15,7 @@ pub mod blocking {
     /// テキスト解析器としてのOpen JTalk。
     #[napi(js_name = "OpenJtalk")]
     pub struct JsOpenJtalk {
-        handle: OpenJtalk,
+        open_jtalk: OpenJtalk,
     }
 
     #[napi]
@@ -23,7 +23,7 @@ pub mod blocking {
         #[napi(factory)]
         pub fn create(open_jtalk_dict_dir: String) -> Result<JsOpenJtalk> {
             Ok(JsOpenJtalk {
-                handle: convert_result(OpenJtalk::new(open_jtalk_dict_dir))?,
+                open_jtalk: convert_result(OpenJtalk::new(open_jtalk_dict_dir))?,
             })
         }
 
@@ -32,7 +32,7 @@ pub mod blocking {
         /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
         #[napi]
         pub fn use_user_dict(&self, user_dict: &JsUserDict) -> Result<()> {
-            convert_result(self.handle.use_user_dict(&user_dict.handle))
+            convert_result(self.open_jtalk.use_user_dict(&user_dict.user_dict))
         }
     }
 
@@ -41,7 +41,7 @@ pub mod blocking {
     /// 単語はJSONとの相互変換のために挿入された順序を保つ。
     #[napi(js_name = "UserDict")]
     pub struct JsUserDict {
-        handle: UserDict,
+        user_dict: UserDict,
     }
 
     #[napi]
@@ -50,14 +50,14 @@ pub mod blocking {
         #[napi(constructor)]
         pub fn new() -> Self {
             JsUserDict {
-                handle: UserDict::new(),
+                user_dict: UserDict::new(),
             }
         }
 
         /// このオブジェクトの{@link Record}としての表現
         #[napi(getter, ts_return_type = "Record<string, UserDictWord>")]
         pub fn words(&self, env: Env) -> Result<napi::bindgen_prelude::Object> {
-            self.handle.with_words(|map| {
+            self.user_dict.with_words(|map| {
                 let mut obj = env.create_object()?;
                 for (uuid, word) in map {
                     obj.set(uuid.to_string(), UserDictWord::from(word))?
@@ -71,20 +71,20 @@ pub mod blocking {
         /// @throws ファイルが読めなかった、または内容が不正だった場合はエラーを返す。
         #[napi]
         pub fn load(&self, store_path: String) -> Result<()> {
-            convert_result(self.handle.load(&store_path))
+            convert_result(self.user_dict.load(&store_path))
         }
 
         /// ユーザー辞書に単語を追加する。
         #[napi]
         pub fn add_word(&self, word: UserDictWord) -> Result<String> {
-            convert_result(self.handle.add_word(word.convert()?)).map(|uuid| uuid.to_string())
+            convert_result(self.user_dict.add_word(word.convert()?)).map(|uuid| uuid.to_string())
         }
 
         /// ユーザー辞書の単語を変更する。
         #[napi]
         pub fn update_word(&self, word_uuid: String, new_word: UserDictWord) -> Result<()> {
             convert_result(
-                self.handle
+                self.user_dict
                     .update_word(parse_uuid(word_uuid)?, new_word.convert()?),
             )
         }
@@ -92,27 +92,27 @@ pub mod blocking {
         /// ユーザー辞書から単語を削除する。
         #[napi]
         pub fn remove_word(&self, word_uuid: String) -> Result<UserDictWord> {
-            convert_result(self.handle.remove_word(parse_uuid(word_uuid)?))
+            convert_result(self.user_dict.remove_word(parse_uuid(word_uuid)?))
                 .map(|word| UserDictWord::from(&word))
         }
 
         /// 他のユーザー辞書をインポートする。
         #[napi]
         pub fn import_dict(&self, other: &JsUserDict) -> Result<()> {
-            convert_result(self.handle.import(&other.handle))
+            convert_result(self.user_dict.import(&other.user_dict))
         }
 
         /// ユーザー辞書を保存する。
         #[napi]
         pub fn save(&self, store_path: String) -> Result<()> {
-            convert_result(self.handle.save(&store_path))
+            convert_result(self.user_dict.save(&store_path))
         }
     }
 
     /// 音声シンセサイザ。
     #[napi(js_name = "Synthesizer")]
     pub struct JsSynthesizer {
-        handle: Synthesizer<OpenJtalk>,
+        synthesizer: Synthesizer<OpenJtalk>,
     }
 
     #[napi]
@@ -121,8 +121,8 @@ pub mod blocking {
         #[napi(constructor)]
         pub fn new(open_jtalk: &JsOpenJtalk, options: Option<InitializeOptions>) -> Result<Self> {
             Ok(JsSynthesizer {
-                handle: convert_result(Synthesizer::new(
-                    open_jtalk.handle.clone(),
+                synthesizer: convert_result(Synthesizer::new(
+                    open_jtalk.open_jtalk.clone(),
                     &(options.unwrap_or_default().convert()?),
                 ))?,
             })
@@ -131,20 +131,20 @@ pub mod blocking {
         /// ハードウェアアクセラレーションがGPUモードかどうか。
         #[napi(getter)]
         pub fn is_gpu_mode(&self) -> bool {
-            self.handle.is_gpu_mode()
+            self.synthesizer.is_gpu_mode()
         }
 
         /// 音声モデルを読み込む。
         #[napi]
         pub fn load_voice_model(&self, model: &JsVoiceModel) -> Result<()> {
-            convert_result(self.handle.load_voice_model(&model.handle))
+            convert_result(self.synthesizer.load_voice_model(&model.voice_model))
         }
 
         /// 音声モデルの読み込みを解除する。
         #[napi]
         pub fn unload_voice_model(&self, voice_model_id: String) -> Result<()> {
             convert_result(
-                self.handle
+                self.synthesizer
                     .unload_voice_model(&VoiceModelId::new(voice_model_id)),
             )
         }
@@ -152,14 +152,14 @@ pub mod blocking {
         /// 指定したIDの音声モデルが読み込まれているか判定する。
         #[napi]
         pub fn is_loaded_voice_model(&self, voice_model_id: String) -> bool {
-            self.handle
+            self.synthesizer
                 .is_loaded_voice_model(&VoiceModelId::new(voice_model_id))
         }
 
         /// 今読み込んでいる音声モデルのメタ情報。
         #[napi(getter)]
         pub fn metas(&self) -> Vec<JsSpeakerMeta> {
-            self.handle
+            self.synthesizer
                 .metas()
                 .into_iter()
                 .map(|meta| JsSpeakerMeta::from(meta))
@@ -174,7 +174,7 @@ pub mod blocking {
             style_id: u32,
             options: Option<crate::synthesizer::SynthesisOptions>,
         ) -> Result<Buffer> {
-            convert_result(self.handle.synthesis(
+            convert_result(self.synthesizer.synthesis(
                 &(audio_query.convert()?),
                 StyleId::new(style_id),
                 &(options.unwrap_or_default().into()),
@@ -190,7 +190,7 @@ pub mod blocking {
             style_id: u32,
         ) -> Result<Vec<AccentPhrase>> {
             let models = convert_result(
-                self.handle
+                self.synthesizer
                     .create_accent_phrases_from_kana(kana.as_str(), StyleId::new(style_id)),
             )?;
             AccentPhrase::convert_from_slice(&models).map_err(|err| err.into())
@@ -205,7 +205,7 @@ pub mod blocking {
         ) -> Result<Vec<AccentPhrase>> {
             let models = AccentPhrase::convert_slice(&accent_phrases)?;
             let result = convert_result(
-                self.handle
+                self.synthesizer
                     .replace_mora_data(&models, StyleId::new(style_id)),
             )?;
             AccentPhrase::convert_from_slice(&result).map_err(|err| err.into())
@@ -220,7 +220,7 @@ pub mod blocking {
         ) -> Result<Vec<AccentPhrase>> {
             let models = AccentPhrase::convert_slice(&accent_phrases)?;
             let result = convert_result(
-                self.handle
+                self.synthesizer
                     .replace_phoneme_length(&models, StyleId::new(style_id)),
             )?;
             AccentPhrase::convert_from_slice(&result).map_err(|err| err.into())
@@ -235,7 +235,7 @@ pub mod blocking {
         ) -> Result<Vec<AccentPhrase>> {
             let models = AccentPhrase::convert_slice(&accent_phrases)?;
             let result = convert_result(
-                self.handle
+                self.synthesizer
                     .replace_mora_pitch(&models, StyleId::new(style_id)),
             )?;
             AccentPhrase::convert_from_slice(&result).map_err(|err| err.into())
@@ -245,7 +245,7 @@ pub mod blocking {
         #[napi]
         pub fn audio_query_from_kana(&self, kana: String, style_id: u32) -> Result<AudioQuery> {
             let result = convert_result(
-                self.handle
+                self.synthesizer
                     .audio_query_from_kana(kana.as_str(), StyleId::new(style_id)),
             )?;
             AudioQuery::convert_from(&result).map_err(|err| err.into())
@@ -259,7 +259,7 @@ pub mod blocking {
             style_id: u32,
             options: Option<TtsOptions>,
         ) -> Result<Buffer> {
-            convert_result(self.handle.tts_from_kana(
+            convert_result(self.synthesizer.tts_from_kana(
                 kana.as_str(),
                 StyleId::new(style_id),
                 &options.unwrap_or_default().into(),
@@ -275,7 +275,7 @@ pub mod blocking {
             style_id: u32,
         ) -> Result<Vec<AccentPhrase>> {
             let models = convert_result(
-                self.handle
+                self.synthesizer
                     .create_accent_phrases(text.as_str(), StyleId::new(style_id)),
             )?;
             AccentPhrase::convert_from_slice(&models).map_err(|err| err.into())
@@ -285,7 +285,7 @@ pub mod blocking {
         #[napi]
         pub fn audio_query(&self, text: String, style_id: u32) -> Result<AudioQuery> {
             let model = convert_result(
-                self.handle
+                self.synthesizer
                     .audio_query(text.as_str(), StyleId::new(style_id)),
             )?;
             AudioQuery::convert_from(&model).map_err(|err| err.into())
@@ -299,7 +299,7 @@ pub mod blocking {
             style_id: u32,
             options: Option<TtsOptions>,
         ) -> Result<Buffer> {
-            convert_result(self.handle.tts(
+            convert_result(self.synthesizer.tts(
                 text.as_str(),
                 StyleId::new(style_id),
                 &options.unwrap_or_default().into(),
@@ -313,7 +313,7 @@ pub mod blocking {
     /// VVMファイルと対応する。
     #[napi(js_name = "VoiceModel")]
     pub struct JsVoiceModel {
-        pub(super) handle: VoiceModel,
+        pub(super) voice_model: VoiceModel,
     }
 
     #[napi]
@@ -321,22 +321,24 @@ pub mod blocking {
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         #[napi(factory)]
         pub fn from_path(path: String) -> Result<JsVoiceModel> {
-            convert_result(VoiceModel::from_path(&path).map(|handle| JsVoiceModel { handle }))
+            convert_result(
+                VoiceModel::from_path(&path).map(|voice_model| JsVoiceModel { voice_model }),
+            )
         }
 
         /// ID。
         #[napi(getter)]
         pub fn id(&self) -> String {
-            self.handle.id().to_string()
+            self.voice_model.id().to_string()
         }
 
         /// メタ情報。
         #[napi(getter)]
         pub fn metas(&self) -> Vec<JsSpeakerMeta> {
-            self.handle
+            self.voice_model
                 .metas()
                 .into_iter()
-                .map(|handle| JsSpeakerMeta::from(handle.to_owned()))
+                .map(|speaker_meta| JsSpeakerMeta::from(speaker_meta.to_owned()))
                 .collect()
         }
     }

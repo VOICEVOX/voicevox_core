@@ -8,7 +8,7 @@ use voicevox_core::SupportedDevices;
 /// しても`cuda`や`dml`は`true`を示しうる。
 #[napi(js_name = "SupportedDevices")]
 pub struct JsSupportedDevices {
-    handle: SupportedDevices,
+    supported_devices: SupportedDevices,
 }
 
 #[napi]
@@ -17,7 +17,9 @@ impl JsSupportedDevices {
     #[napi(factory)]
     pub fn create() -> Result<Self> {
         match SupportedDevices::create() {
-            Ok(val) => Ok(JsSupportedDevices { handle: val }),
+            Ok(val) => Ok(JsSupportedDevices {
+                supported_devices: val,
+            }),
             Err(err) => Err(Error::from_reason(err.to_string())),
         }
     }
@@ -27,7 +29,7 @@ impl JsSupportedDevices {
     /// 常に`true`。
     #[napi(getter)]
     pub fn cpu(&self) -> bool {
-        self.handle.cpu
+        self.supported_devices.cpu
     }
 
     /// CUDAが利用可能。
@@ -38,7 +40,7 @@ impl JsSupportedDevices {
     /// [CUDA Execution Provider]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
     #[napi(getter)]
     pub fn cuda(&self) -> bool {
-        self.handle.cuda
+        self.supported_devices.cuda
     }
 
     /// DirectMLが利用可能。
@@ -49,11 +51,11 @@ impl JsSupportedDevices {
     /// [DirectML Execution Provider]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
     #[napi(getter)]
     pub fn dml(&self) -> bool {
-        self.handle.dml
+        self.supported_devices.dml
     }
 
     #[napi]
     pub fn to_json(&self) -> serde_json::Value {
-        self.handle.to_json()
+        self.supported_devices.to_json()
     }
 }
