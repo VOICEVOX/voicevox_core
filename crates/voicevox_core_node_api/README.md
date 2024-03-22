@@ -20,10 +20,6 @@ VOICEVOX CORE の Node.js バインディングです。
 │   ├── blocking.js
 │   ├── promises.d.ts
 │   └── promises.js
-├── npm                  : それぞれの環境でのパッケージです。
-│   └── ...
-│       ├── package.json
-│       └── README.md
 ├── package.json
 ├── README.md
 ├── src                  : Rust で書かれたソースファイルです。
