@@ -469,15 +469,16 @@ jobs:
 
       - name: Build voicevoxcore
         run: |
+          cd crates/voicevox_core_java_api
           function setup_dll() {
             rm -rf crates/voicevox_core_java_api/lib/src/main/resources/dll
             rm -rf crates/voicevox_core_java_api/lib/src/main/resources/jniLibs
             while IFS= read -r line; do
               IFS=' ' read -r artifact_name target <<< "$line"
               mkdir -p crates/voicevox_core_java_api/lib/src/main/resources/$1/$target
-              cp -v artifacts/voicevox_core_java_api-$artifact_name/*.dll crates/voicevox_core_java_api/lib/src/main/resources/$1/$target/ || true
-              cp -v artifacts/voicevox_core_java_api-$artifact_name/*.so crates/voicevox_core_java_api/lib/src/main/resources/$1/$target/ || true
-              cp -v artifacts/voicevox_core_java_api-$artifact_name/*.dylib crates/voicevox_core_java_api/lib/src/main/resources/$1/$target/ || true
+              cp -v artifacts/voicevox_core_java_api-$artifact_name/*.dll lib/src/main/resources/$1/$target/ || true
+              cp -v artifacts/voicevox_core_java_api-$artifact_name/*.so lib/src/main/resources/$1/$target/ || true
+              cp -v artifacts/voicevox_core_java_api-$artifact_name/*.dylib lib/src/main/resources/$1/$target/ || true
               echo "$artifact_name => $1/$target"
             done
           }
@@ -512,8 +513,8 @@ jobs:
           android-x86_64-cpu x86_64
           EOF
 
-          cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/arm64-v8a/
-          cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/x86_64/
+          cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/arm64-v8a/
+          cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/x86_64/
 
           OS=android DEVICE=cpu gradle publishToMavenLocal
 
