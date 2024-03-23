@@ -493,9 +493,9 @@ jobs:
 
           OS=desktop DEVICE=cpu gradle publishToMavenLocal
 
-          # desktop: gpu
+          # desktop: cuda
           setup_dll dll <<EOF
-          windows-x64-directml windows-x64
+          windows-x64-cuda windows-x64
           windows-x86-cpu windows-x86
           linux-x64-cuda linux-x64
           linux-arm64-cpu linux-arm64
@@ -503,7 +503,19 @@ jobs:
           osx-arm64-cpu macos-arm64
           EOF
 
-          OS=desktop DEVICE=gpu gradle publishToMavenLocal
+          OS=desktop DEVICE=cuda gradle publishToMavenLocal
+
+          # desktop: directml
+          setup_dll dll <<EOF
+          windows-x64-directml windows-x64
+          windows-x86-cpu windows-x86
+          linux-x64-cpu linux-x64
+          linux-arm64-cpu linux-arm64
+          osx-x64-cpu macos-x64
+          osx-arm64-cpu macos-arm64
+          EOF
+
+          OS=desktop DEVICE=directml gradle publishToMavenLocal
 
           # android: cpu
           setup_dll jniLibs <<EOF
