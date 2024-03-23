@@ -311,7 +311,7 @@ jobs:
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
           mkdir java_artifact
-          cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
+          cp -v target/${{ matrix.target }}/release/*voicevox_core_java_api.{dll,so,dylib} "java_artifact" || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
         run: bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
