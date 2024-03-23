@@ -461,7 +461,7 @@ jobs:
       - name: "Download artifact"
         uses: actions/download-artifact@v4
         with:
-          name: voicevox_core_java_api-*
+          pattern: voicevox_core_java_api-*
           path: artifacts/
 
       - name: Print tree
