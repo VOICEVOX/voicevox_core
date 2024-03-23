@@ -8,6 +8,8 @@ use crate::{
 };
 use std::{collections::BTreeMap, path::PathBuf};
 
+/// VVM ファイルの定義と形式は[ドキュメント](docs/vvm.md)を参照。
+
 /// [`VoiceModelId`]の実体。
 ///
 /// [`VoiceModelId`]: VoiceModelId
