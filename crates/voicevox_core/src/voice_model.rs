@@ -1,3 +1,7 @@
+//! 音声モデル（ VVM ファイル）。
+//!
+//! VVM ファイルの定義と形式は[ドキュメント](../../../docs/vvm.md)を参照。
+
 use derive_getters::Getters;
 use derive_new::new;
 use serde::Deserialize;
@@ -7,8 +11,6 @@ use crate::{
     SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta,
 };
 use std::{collections::BTreeMap, path::PathBuf};
-
-/// VVM ファイルの定義と形式は[ドキュメント](docs/vvm.md)を参照。
 
 /// [`VoiceModelId`]の実体。
 ///
