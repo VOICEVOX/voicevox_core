@@ -475,8 +475,8 @@ jobs:
             rm -rf lib/src/main/resources/jniLibs
             while IFS= read -r line; do
               IFS=' ' read -r artifact_name target <<< "$line"
-              mkdir -p lib/src/main/resources/$1/$target
-              cp -v ../../artifacts/voicevox_core_java_api-$artifact_name/*.{dll,so,dylib} lib/src/main/resources/$1/$target/ || true
+              mkdir -p "lib/src/main/resources/$1/$target"
+              cp -v "../../artifacts/voicevox_core_java_api-$artifact_name"/*.{dll,so,dylib} "lib/src/main/resources/$1/$target/" || true
               echo "$artifact_name => $1/$target"
             done
           }
