@@ -12,7 +12,7 @@ plugins {
     id "com.diffplug.spotless" version "6.20.0"
 }
 
-def boolean isGpu = gradle.ext.targetDevice == 'gpu'
+def boolean isGpu = ["directml", "cuda"].contains(gradle.ext.targetDevice)
 
 version = gradle.ext.version
 

@@ -53,7 +53,7 @@ Java プロジェクトを動かすには、
 # または
 ❯ cp ../../target/debug/libvoicevox_core_java_api.so lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so
 ❯ ./gradlew test
-❯ DEVICE=gpu ./gradlew test
+❯ DEVICE=cuda ./gradlew test
 ❯ OS=android ./gradlew test
 ```
 
@@ -67,7 +67,7 @@ Java プロジェクトを動かすには、
 ❯ cargo build --release
 ❯ cp ../../target/release/libvoicevox_core_java_api.so lib/src/main/resources/dll/[target]/libvoicevox_core_java_api.so
 ❯ ./gradlew build
-❯ DEVICE=gpu ./gradlew build
+❯ DEVICE=cuda ./gradlew build
 ❯ OS=android ./gradlew build
 ```
 
