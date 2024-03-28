@@ -1,0 +1,68 @@
+{
+  "name": "voicevox_core",
+  "version": "0.0.0",
+  "exports": {
+    ".": {
+      "require": "./index.js",
+      "types": "./index.d.ts"
+    },
+    "./blocking": {
+      "require": "./exports/blocking.js",
+      "types": "./exports/blocking.d.ts"
+    },
+    "./promises": {
+      "require": "./exports/promises.js",
+      "types": "./exports/promises.d.ts"
+    }
+  },
+  "napi": {
+    "name": "voicevox_core",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin",
+        "aarch64-linux-android",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-musl"
+      ]
+    }
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.0",
+    "@swc-node/register": "^1.9.0",
+    "@swc/core": "^1.4.8",
+    "@types/node": "^20.11.28",
+    "ava": "^6.0.1",
+    "prettier": "^3.2.5",
+    "typedoc": "^0.25.12",
+    "typescript": "^5.4.2"
+  },
+  "ava": {
+    "timeout": "3m",
+    "files": [
+      "__test__/**/*"
+    ],
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "@swc-node/register"
+    ]
+  },
+  "engines": {
+    "node": ">= 10"
+  },
+  "scripts": {
+    "artifacts": "napi artifacts",
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "prepublishOnly": "napi prepublish -t npm",
+    "test": "ava",
+    "universal": "napi universal",
+    "version": "napi version",
+    "docs": "npx typedoc --options typedoc.json"
+  },
+  "packageManager": "yarn@4.1.0"
+}

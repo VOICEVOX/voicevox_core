@@ -1,0 +1,21 @@
+[package]
+edition = "2021"
+name = "voicevox_core_node_api"
+version = "0.0.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "2.16.0", features = ["napi4", "serde-json", "tokio_rt"] }
+napi-derive = "2.16.0"
+voicevox_core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+
+[build-dependencies]
+napi-build = "2"
+
+[profile.release]
+lto = true
