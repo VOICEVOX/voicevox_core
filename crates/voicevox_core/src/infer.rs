@@ -1,9 +1,9 @@
-pub(crate) mod domain;
+pub(crate) mod domains;
 mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod status;
 
-use std::{borrow::Cow, fmt::Debug};
+use std::{borrow::Cow, collections::BTreeSet, fmt::Debug};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -11,7 +11,7 @@ use enum_map::{Enum, EnumMap};
 use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
 
-use crate::SupportedDevices;
+use crate::{StyleType, SupportedDevices};
 
 pub(crate) trait InferenceRuntime: 'static {
     type Session: Sized + Send + 'static;
@@ -32,9 +32,81 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
+pub(crate) trait InferenceDomainGroup: Sized {
+    type Map<A: InferenceDomainAssociation>: InferenceDomainMap<Group = Self, Association = A>;
+}
+
+pub(crate) trait InferenceDomainMap {
+    type Group: InferenceDomainGroup;
+    type Association: InferenceDomainAssociation;
+
+    fn any(
+        &self,
+        p: impl InferenceDomainAssociationTargetPredicate<InputAssociation = Self::Association>,
+    ) -> bool;
+
+    fn try_ref_map<
+        F: InferenceDomainAssociationTargetFunction<
+            Group = Self::Group,
+            InputAssociation = Self::Association,
+        >,
+    >(
+        &self,
+        f: F,
+    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<F::OutputAssociation>, F::Error>;
+}
+
+pub(crate) trait InferenceDomainAssociationTargetPredicate {
+    type InputAssociation: InferenceDomainAssociation;
+
+    fn test<D: InferenceDomain>(
+        &self,
+        x: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
+    ) -> bool;
+}
+
+pub(crate) trait InferenceDomainAssociationTargetFunction {
+    type Group: InferenceDomainGroup;
+    type InputAssociation: InferenceDomainAssociation;
+    type OutputAssociation: InferenceDomainAssociation;
+    type Error;
+
+    fn apply<D: InferenceDomain<Group = Self::Group>>(
+        &self,
+        x: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
+    ) -> Result<<Self::OutputAssociation as InferenceDomainAssociation>::Target<D>, Self::Error>;
+}
+
+pub(crate) trait InferenceDomainAssociation {
+    type Target<D: InferenceDomain>;
+}
+
+impl<A1: InferenceDomainAssociation, A2: InferenceDomainAssociation> InferenceDomainAssociation
+    for (A1, A2)
+{
+    type Target<D: InferenceDomain> = (A1::Target<D>, A2::Target<D>);
+}
+
+impl<A: InferenceDomainAssociation> InferenceDomainAssociation for Option<A> {
+    type Target<D: InferenceDomain> = Option<A::Target<D>>;
+}
+
+pub(crate) struct ForAllInferenceDomain<T>(pub(crate) T);
+
+impl<T> InferenceDomainAssociation for ForAllInferenceDomain<T> {
+    type Target<D: InferenceDomain> = T;
+}
+
 /// ある`VoiceModel`が提供する推論操作の集合を示す。
-pub(crate) trait InferenceDomain {
+pub(crate) trait InferenceDomain: Sized {
+    type Group: InferenceDomainGroup;
     type Operation: InferenceOperation;
+
+    fn style_types() -> &'static BTreeSet<StyleType>;
+
+    fn visit<A: InferenceDomainAssociation>(
+        map: &<Self::Group as InferenceDomainGroup>::Map<A>,
+    ) -> &A::Target<Self>;
 }
 
 /// `InferenceDomain`の推論操作を表す列挙型。

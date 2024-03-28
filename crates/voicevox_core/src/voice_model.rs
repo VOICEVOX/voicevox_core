@@ -1,12 +1,14 @@
 use derive_getters::Getters;
 use derive_new::new;
+use enum_map::EnumMap;
 use serde::Deserialize;
 
 use crate::{
-    manifest::{Manifest, ModelInnerId},
-    SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta,
+    infer::{InferenceDomain, InferenceDomainAssociation},
+    manifest::Manifest,
+    VoiceModelMeta,
 };
-use std::{collections::BTreeMap, path::PathBuf};
+use std::path::PathBuf;
 
 /// [`VoiceModelId`]の実体。
 ///
@@ -45,26 +47,10 @@ pub(crate) struct VoiceModelHeader {
     pub(crate) path: PathBuf,
 }
 
-impl VoiceModelHeader {
-    /// モデル内のすべてのスタイルに対するモデル内IDを取得する。
-    ///
-    /// モデル内IDのマッピングが存在しない場合はそのままスタイルIDを返す。
-    pub(crate) fn model_inner_ids(&self) -> BTreeMap<StyleId, ModelInnerId> {
-        self.metas
-            .iter()
-            .flat_map(SpeakerMeta::styles)
-            .map(StyleMeta::id)
-            .map(|&style_id| {
-                let model_inner_id = self
-                    .manifest
-                    .style_id_to_model_inner_id()
-                    .get(&style_id)
-                    .copied()
-                    .unwrap_or_else(|| ModelInnerId::new(style_id.raw_id()));
-                (style_id, model_inner_id)
-            })
-            .collect()
-    }
+pub(crate) enum ModelBytesByInferenceDomain {}
+
+impl InferenceDomainAssociation for ModelBytesByInferenceDomain {
+    type Target<D: InferenceDomain> = EnumMap<D::Operation, Vec<u8>>;
 }
 
 pub(crate) mod blocking {
@@ -81,12 +67,12 @@ pub(crate) mod blocking {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::domain::InferenceOperationImpl,
-        manifest::Manifest,
+        infer::{domains::InferenceDomainMapImpl, ForAllInferenceDomain},
+        manifest::{Manifest, StyleIdToModelInnerId, TalkManifest},
         VoiceModelMeta,
     };
 
-    use super::{VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesByInferenceDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -97,23 +83,50 @@ pub(crate) mod blocking {
     }
 
     impl self::VoiceModel {
+        #[allow(clippy::type_complexity)]
         pub(crate) fn read_inference_models(
             &self,
-        ) -> LoadModelResult<EnumMap<InferenceOperationImpl, Vec<u8>>> {
+        ) -> LoadModelResult<
+            InferenceDomainMapImpl<
+                Option<(
+                    ForAllInferenceDomain<StyleIdToModelInnerId>,
+                    ModelBytesByInferenceDomain,
+                )>,
+            >,
+        > {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
-            let model_bytes = [
-                self.header.manifest.predict_duration_filename(),
-                self.header.manifest.predict_intonation_filename(),
-                self.header.manifest.decode_filename(),
-            ]
-            .into_par_iter()
-            .map(|filename| reader.read_vvm_entry(filename))
-            .collect::<std::result::Result<Vec<_>, _>>()?
-            .try_into()
-            .unwrap_or_else(|_| panic!("should be same length"));
+            let talk = self
+                .header
+                .manifest
+                .talk()
+                .as_ref()
+                .map(
+                    |TalkManifest {
+                         predict_duration_filename,
+                         predict_intonation_filename,
+                         decode_filename,
+                         style_id_to_model_inner_id,
+                     }| {
+                        let model_bytes = [
+                            predict_duration_filename,
+                            predict_intonation_filename,
+                            decode_filename,
+                        ]
+                        .into_par_iter()
+                        .map(|filename| reader.read_vvm_entry(filename))
+                        .collect::<std::result::Result<Vec<_>, _>>()?
+                        .try_into()
+                        .unwrap_or_else(|_| panic!("should be same length"));
 
-            Ok(EnumMap::from_array(model_bytes))
+                        let model_bytes = EnumMap::from_array(model_bytes);
+
+                        Ok((style_id_to_model_inner_id.clone(), model_bytes))
+                    },
+                )
+                .transpose()?;
+
+            Ok(InferenceDomainMapImpl { talk })
         }
 
         /// VVMファイルから`VoiceModel`をコンストラクトする。
@@ -204,18 +217,18 @@ pub(crate) mod tokio {
 
     use derive_new::new;
     use enum_map::EnumMap;
-    use futures::future::join3;
+    use futures::future::{join3, OptionFuture};
     use nanoid::nanoid;
     use serde::de::DeserializeOwned;
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::domain::InferenceOperationImpl,
-        manifest::Manifest,
+        infer::{domains::InferenceDomainMapImpl, ForAllInferenceDomain},
+        manifest::{Manifest, StyleIdToModelInnerId, TalkManifest},
         Result, VoiceModelMeta,
     };
 
-    use super::{VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesByInferenceDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -228,24 +241,47 @@ pub(crate) mod tokio {
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
-        ) -> LoadModelResult<EnumMap<InferenceOperationImpl, Vec<u8>>> {
+        ) -> LoadModelResult<
+            InferenceDomainMapImpl<
+                Option<(
+                    ForAllInferenceDomain<StyleIdToModelInnerId>,
+                    ModelBytesByInferenceDomain,
+                )>,
+            >,
+        > {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
-            let (
-                decode_model_result,
-                predict_duration_model_result,
-                predict_intonation_model_result,
-            ) = join3(
-                reader.read_vvm_entry(self.header.manifest.decode_filename()),
-                reader.read_vvm_entry(self.header.manifest.predict_duration_filename()),
-                reader.read_vvm_entry(self.header.manifest.predict_intonation_filename()),
-            )
-            .await;
 
-            Ok(EnumMap::from_array([
-                predict_duration_model_result?,
-                predict_intonation_model_result?,
-                decode_model_result?,
-            ]))
+            let talk = OptionFuture::from(self.header.manifest.talk().as_ref().map(
+                |TalkManifest {
+                     predict_duration_filename,
+                     predict_intonation_filename,
+                     decode_filename,
+                     style_id_to_model_inner_id,
+                 }| async {
+                    let (
+                        decode_model_result,
+                        predict_duration_model_result,
+                        predict_intonation_model_result,
+                    ) = join3(
+                        reader.read_vvm_entry(decode_filename),
+                        reader.read_vvm_entry(predict_duration_filename),
+                        reader.read_vvm_entry(predict_intonation_filename),
+                    )
+                    .await;
+
+                    let model_bytes = EnumMap::from_array([
+                        predict_duration_model_result?,
+                        predict_intonation_model_result?,
+                        decode_model_result?,
+                    ]);
+
+                    Ok((style_id_to_model_inner_id.clone(), model_bytes))
+                },
+            ))
+            .await
+            .transpose()?;
+
+            Ok(InferenceDomainMapImpl { talk })
         }
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {

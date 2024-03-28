@@ -41,6 +41,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR = 18,
     /// すでに読み込まれているスタイルを読み込もうとした
     VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR = 26,
+    /// モデルデータが見つからなかった
+    VOICEVOX_RESULT_MISSING_MODEL_DATA_ERROR = 28,
     /// 無効なモデルデータ
     VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR = 27,
     /// ユーザー辞書を読み込めなかった
@@ -94,6 +96,7 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR => {
             cstr!("同じIDのスタイルを読むことはできません")
         }
+        VOICEVOX_RESULT_MISSING_MODEL_DATA_ERROR => cstr!("モデルデータがありませんでした"),
         VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR => {
             cstr!("モデルデータを読むことができませんでした")
         }

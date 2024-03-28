@@ -71,6 +71,7 @@ where
                             ReadZipEntry,
                             ModelAlreadyLoaded,
                             StyleAlreadyLoaded,
+                            MissingModelData,
                             InvalidModelData,
                             GetSupportedDevices,
                             StyleNotFound,

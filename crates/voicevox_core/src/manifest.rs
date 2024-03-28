@@ -1,6 +1,7 @@
-use std::{collections::BTreeMap, fmt::Display};
+use std::{collections::BTreeMap, fmt::Display, sync::Arc};
 
 use derive_getters::Getters;
+use derive_more::Deref;
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 
@@ -41,9 +42,18 @@ pub struct Manifest {
     #[allow(dead_code)]
     manifest_version: ManifestVersion,
     metas_filename: String,
-    decode_filename: String,
-    predict_duration_filename: String,
-    predict_intonation_filename: String,
-    #[serde(default)]
-    style_id_to_model_inner_id: BTreeMap<StyleId, ModelInnerId>,
+    talk: Option<TalkManifest>,
 }
+
+#[derive(Deserialize, Clone)]
+pub(crate) struct TalkManifest {
+    pub(crate) predict_duration_filename: String,
+    pub(crate) predict_intonation_filename: String,
+    pub(crate) decode_filename: String,
+    #[serde(default)]
+    pub(crate) style_id_to_model_inner_id: StyleIdToModelInnerId,
+}
+
+#[derive(Default, Clone, Deref, Deserialize)]
+#[deref(forward)]
+pub(crate) struct StyleIdToModelInnerId(Arc<BTreeMap<StyleId, ModelInnerId>>);

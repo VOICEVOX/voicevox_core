@@ -1,11 +1,13 @@
 {
   "manifest_version": "0.0.0",
   "metas_filename": "metas.json",
-  "decode_filename": "decode.onnx",
-  "predict_duration_filename": "predict_duration.onnx",
-  "predict_intonation_filename": "predict_intonation.onnx",
-  "style_id_to_model_inner_id": {
-    "302": 2,
-    "303": 3
+  "talk": {
+    "predict_duration_filename": "predict_duration.onnx",
+    "predict_intonation_filename": "predict_intonation.onnx",
+    "decode_filename": "decode.onnx",
+    "style_id_to_model_inner_id": {
+      "302": 2,
+      "303": 3
+    }
   }
 }

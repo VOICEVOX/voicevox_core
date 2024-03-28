@@ -7,6 +7,7 @@ metas = '''
       {
         "id": 0,
         "name": "style1",
+        "type": "talk",
         "order": null
       }
     ],
@@ -20,6 +21,7 @@ metas = '''
       {
         "id": 1,
         "name": "style2",
+        "type": "talk",
         "order": null
       }
     ],
@@ -33,11 +35,13 @@ metas = '''
       {
         "id": 302,
         "name": "style3-1",
+        "type": "talk",
         "order": null
       },
       {
         "id": 303,
         "name": "style3-2",
+        "type": "talk",
         "order": null
       }
     ],
@@ -97,6 +101,7 @@ metas = '''
       {
         "id": 0,
         "name": "style1",
+        "type": "talk",
         "order": null
       }
     ],
@@ -110,6 +115,7 @@ metas = '''
       {
         "id": 1,
         "name": "style2",
+        "type": "talk",
         "order": null
       }
     ],
@@ -123,11 +129,13 @@ metas = '''
       {
         "id": 302,
         "name": "style3-1",
+        "type": "talk",
         "order": null
       },
       {
         "id": 303,
         "name": "style3-2",
+        "type": "talk",
         "order": null
       }
     ],

@@ -47,6 +47,11 @@ class StyleAlreadyLoadedError(Exception):
 
     ...
 
+class MissingModelDataError(Exception):
+    """モデルデータが見つからなかった。"""
+
+    ...
+
 class InvalidModelDataError(Exception):
     """無効なモデルデータ。"""
 
