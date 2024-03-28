@@ -82,6 +82,11 @@ impl AudioQueryModel {
     }
 }
 
+#[derive(Deserialize, Serialize, PartialEq, Debug)]
+pub struct MorphableTargetInfo {
+    pub is_morphable: bool,
+}
+
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;

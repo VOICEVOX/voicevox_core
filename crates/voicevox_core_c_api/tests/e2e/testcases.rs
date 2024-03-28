@@ -1,6 +1,7 @@
 mod compatible_engine;
 mod compatible_engine_load_model_before_initialize;
 mod global_info;
+mod morph;
 mod simple_tts;
 mod synthesizer_new_output_json;
 mod tts_via_audio_query;

@@ -5,10 +5,10 @@ use crate::{
 
 use jni::{
     objects::{JObject, JString},
-    sys::{jboolean, jint, jobject},
+    sys::{jboolean, jdouble, jint, jobject},
     JNIEnv,
 };
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 #[no_mangle]
 unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'local>(
@@ -88,6 +88,29 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsGetMetasJ
         let j_metas_json = env.new_string(metas_json)?;
 
         Ok(j_metas_json.into_raw())
+    })
+}
+
+#[no_mangle]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsMorphableTargetsJson<
+    'local,
+>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    style_id: jint,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let internal = env
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
+                &this, "handle",
+            )?
+            .clone();
+
+        let style_id = voicevox_core::StyleId::new(style_id as _);
+
+        let json = &internal.morphable_targets(style_id)?;
+        let json = env.new_string(serde_json::to_string(json).expect("should not fail"))?;
+        Ok(json.into_raw())
     })
 }
 
@@ -395,6 +418,41 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsSynthesis
         let j_bytes = env.byte_array_from_slice(&wave)?;
 
         Ok(j_bytes.into_raw())
+    })
+}
+
+#[no_mangle]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsSynthesisMorphing<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    audio_query: JString<'local>,
+    base_style_id: jint,
+    target_style_id: jint,
+    morph_rate: jdouble,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let audio_query = &env.get_string(&audio_query)?;
+        let audio_query = &Cow::<str>::from(audio_query);
+        let audio_query = &serde_json::from_str::<voicevox_core::AudioQueryModel>(audio_query)
+            .map_err(JavaApiError::DeJson)?;
+
+        let base_style_id = voicevox_core::StyleId::new(base_style_id as _);
+        let target_style_id = voicevox_core::StyleId::new(target_style_id as _);
+
+        let internal = env
+            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
+                &this, "handle",
+            )?
+            .clone();
+
+        let wav = &internal.synthesis_morphing(
+            audio_query,
+            base_style_id,
+            target_style_id,
+            morph_rate,
+        )?;
+        let wav = env.byte_array_from_slice(wav)?;
+        Ok(wav.into_raw())
     })
 }
 

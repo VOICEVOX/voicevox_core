@@ -11,6 +11,7 @@ directml = ["onnxruntime/directml"]
 [dependencies]
 anyhow.workspace = true
 async_zip = { workspace = true, features = ["deflate"] }
+az.workspace = true
 camino.workspace = true
 derive-getters.workspace = true
 derive-new.workspace = true
@@ -26,6 +27,7 @@ itertools.workspace = true
 jlabel.workspace = true
 nanoid.workspace = true
 ndarray.workspace = true
+num-traits.workspace = true
 once_cell.workspace = true
 onnxruntime.workspace = true
 open_jtalk.workspace = true
@@ -41,10 +43,12 @@ tokio = { workspace = true, features = ["rt"] } # FIXME: feature-gateする
 tracing.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox_core_macros = { path = "../voicevox_core_macros" }
+world = { workspace = true, features = ["ndarray"] }
 zip.workspace = true
 
 [dev-dependencies]
 heck.workspace = true
+lit2.workspace = true
 pretty_assertions.workspace = true
 rstest.workspace = true
 rstest_reuse.workspace = true

@@ -83,6 +83,7 @@ where
                             WordNotFound,
                             UseUserDict,
                             InvalidWord,
+                            SpeakerFeature,
                         );
 
                         let mut sources =
