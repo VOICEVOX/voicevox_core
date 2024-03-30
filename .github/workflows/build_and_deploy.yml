@@ -288,7 +288,7 @@ jobs:
         env:
           ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_java_api
-        if: "!contains(matrix.target, 'ios')"
+        if: ${{ !contains(matrix.target, 'ios') }}
         run: |
           function build() {
             cargo build -p voicevox_core_java_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
