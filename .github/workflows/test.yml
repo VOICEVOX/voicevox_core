@@ -156,7 +156,8 @@ jobs:
           metadata=$(cargo metadata --format-version 1)
           version=$(
               jq -r '
-                (.workspace_members[] | select(startswith("xtask "))) as $xtask
+                .workspace_members as $workspace_members
+                  | (.packages[] | select(.name == "xtask").id | select(. as $id | $workspace_members | index($id))) as $xtask
                   | (.resolve.nodes[] | select(.id == $xtask).deps[] | select(.name == "cbindgen").pkg) as $cbindgen
                   | .packages[] | select(.id == $cbindgen).version
                 ' <<< "$metadata"

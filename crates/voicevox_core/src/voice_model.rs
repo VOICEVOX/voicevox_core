@@ -1,3 +1,7 @@
+//! 音声モデル（ VVM ファイル）。
+//!
+//! VVM ファイルの定義と形式は[ドキュメント](../../../docs/vvm.md)を参照。
+
 use derive_getters::Getters;
 use derive_new::new;
 use serde::Deserialize;

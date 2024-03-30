@@ -177,8 +177,8 @@ pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
     engine::mora2text(&mora_text).to_string()
 }
 
-// FIXME: Remove `chunk_by` module after Rust 1.77.0 is released as stable.
-use chunk_by::*;
+// FIXME: Rust 1.77の新機能導入と共にこれを消す
+#[allow(unused_imports)]
 mod chunk_by {
     // Implementations in this module were copied from
     // [Rust](https://github.com/rust-lang/rust/blob/746a58d4359786e4aebb372a30829706fa5a968f/library/core/src/slice/iter.rs).
