@@ -506,7 +506,7 @@ jobs:
           clean_dlls
           copy_dll windows-x64-cuda windows-x64
           copy_dll windows-x86-cpu windows-x86
-          copy_dll linux-x64-cuda linux-x64
+          copy_dll linux-x64-gpu linux-x64
           copy_dll linux-arm64-cpu linux-arm64
           copy_dll osx-x64-cpu macos-x64
           copy_dll osx-arm64-cpu macos-arm64
