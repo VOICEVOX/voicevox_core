@@ -34,6 +34,7 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
+/// このライブラリにおけるすべての`InferenceDomain`が属する集合。
 pub(crate) trait InferenceDomainGroup: Sized {
     type Map<V: InferenceDomainMapValueProjection>: InferenceDomainMap<
         Group = Self,
@@ -41,15 +42,20 @@ pub(crate) trait InferenceDomainGroup: Sized {
     >;
 }
 
+/// `InferenceDomain`をキーとしたマップ。
+///
+/// バリューの型は`InferenceDomain`ごとに`ValueProjection`によって変換される。
 pub(crate) trait InferenceDomainMap {
     type Group: InferenceDomainGroup;
     type ValueProjection: InferenceDomainMapValueProjection;
 
+    /// ある条件に合致するバリューが存在するかを調べる。
     fn any(
         &self,
         p: impl InferenceDomainMapValuePredicate<InputProjection = Self::ValueProjection>,
     ) -> bool;
 
+    /// バリューをそれぞれ変換する。
     fn ref_map<
         F: InferenceDomainMapValueFunction<
             Group = Self::Group,
@@ -60,6 +66,7 @@ pub(crate) trait InferenceDomainMap {
         f: F,
     ) -> <Self::Group as InferenceDomainGroup>::Map<F::OutputProjection>;
 
+    /// バリューに対してそれぞれfallibleな変換をする。
     fn try_ref_map<
         F: InferenceDomainMapValueTryFunction<
             Group = Self::Group,
@@ -71,6 +78,7 @@ pub(crate) trait InferenceDomainMap {
     ) -> Result<<Self::Group as InferenceDomainGroup>::Map<F::OutputProjection>, F::Error>;
 }
 
+/// `ForAllInferenceDomain::any`のための、多相な関数を表わすオブジェクト。
 pub(crate) trait InferenceDomainMapValuePredicate {
     type InputProjection: InferenceDomainMapValueProjection;
 
@@ -80,6 +88,7 @@ pub(crate) trait InferenceDomainMapValuePredicate {
     ) -> bool;
 }
 
+/// `ForAllInferenceDomain::ref_map`のための、多相な関数を表わすオブジェクト。
 pub(crate) trait InferenceDomainMapValueFunction {
     type Group: InferenceDomainGroup;
     type InputProjection: InferenceDomainMapValueProjection;
@@ -91,6 +100,7 @@ pub(crate) trait InferenceDomainMapValueFunction {
     ) -> <Self::OutputProjection as InferenceDomainMapValueProjection>::Target<D>;
 }
 
+/// `ForAllInferenceDomain::try_ref_map`のための、多相な関数を表わすオブジェクト。
 pub(crate) trait InferenceDomainMapValueTryFunction {
     type Group: InferenceDomainGroup;
     type InputProjection: InferenceDomainMapValueProjection;
@@ -103,6 +113,7 @@ pub(crate) trait InferenceDomainMapValueTryFunction {
     ) -> Result<<Self::OutputProjection as InferenceDomainMapValueProjection>::Target<D>, Self::Error>;
 }
 
+/// `InferenceDomainMap`のバリューの型を`InferenceDomain`ごとに変更するためのもの。
 pub(crate) trait InferenceDomainMapValueProjection {
     type Target<D: InferenceDomain>;
 }
@@ -117,19 +128,29 @@ impl<V: InferenceDomainMapValueProjection> InferenceDomainMapValueProjection for
     type Target<D: InferenceDomain> = Option<V::Target<D>>;
 }
 
+/// `InferenceDomain`によらずバリューの型をすべて同じにする`InferenceDomainMapValueProjection`。
 pub(crate) struct ForAllInferenceDomain<T>(Infallible, PhantomData<T>);
 
 impl<T> InferenceDomainMapValueProjection for ForAllInferenceDomain<T> {
     type Target<D: InferenceDomain> = T;
 }
 
-/// ある`VoiceModel`が提供する推論操作の集合を示す。
+/// 共に扱われるべき推論操作の集合を示す。
 pub(crate) trait InferenceDomain: Sized {
     type Group: InferenceDomainGroup;
     type Operation: InferenceOperation;
 
+    /// 対応する`StyleType`。
+    ///
+    /// 複数の`InferenceDomain`に対応する`StyleType`があってもよい。
+    ///
+    /// また、どの`InferenceDomain`にも属さない`StyleType`があってもよい。そのような`StyleType`は
+    /// 音声モデルのロード時に単に拒否されるべきである。
     fn style_types() -> &'static BTreeSet<StyleType>;
 
+    /// ある`InferenceDomainMap`に対し、自身に対応するバリューを得る。
+    ///
+    /// `map.get::<Self>()`と脳内で置き換えると理解しやすいかもしれない。
     fn visit<V: InferenceDomainMapValueProjection>(
         map: &<Self::Group as InferenceDomainGroup>::Map<V>,
     ) -> &V::Target<Self>;

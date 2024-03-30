@@ -307,6 +307,8 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
         }
         return Ok(());
 
+        /// `existences`に対し、値が`true`かつ`style_type`が対応しているような`InferenceDomain`が
+        /// あるかどうかを調べる。
         struct ContainsForStyleType {
             style_type: StyleType,
         }
