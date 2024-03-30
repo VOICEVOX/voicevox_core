@@ -3,7 +3,9 @@ mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod status;
 
-use std::{borrow::Cow, collections::BTreeSet, fmt::Debug};
+use std::{
+    borrow::Cow, collections::BTreeSet, convert::Infallible, fmt::Debug, marker::PhantomData,
+};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -115,7 +117,7 @@ impl<V: InferenceDomainMapValueProjection> InferenceDomainMapValueProjection for
     type Target<D: InferenceDomain> = Option<V::Target<D>>;
 }
 
-pub(crate) struct ForAllInferenceDomain<T>(pub(crate) T);
+pub(crate) struct ForAllInferenceDomain<T>(Infallible, PhantomData<T>);
 
 impl<T> InferenceDomainMapValueProjection for ForAllInferenceDomain<T> {
     type Target<D: InferenceDomain> = T;
