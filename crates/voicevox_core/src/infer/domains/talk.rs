@@ -9,7 +9,7 @@ use crate::StyleType;
 
 use super::{
     super::{
-        InferenceDomain, InferenceDomainAssociation, InferenceDomainGroup,
+        InferenceDomain, InferenceDomainGroup, InferenceDomainMapValueProjection,
         InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
     },
     InferenceDomainGroupImpl,
@@ -26,9 +26,9 @@ impl InferenceDomain for TalkDomain {
         &STYLE_TYPES
     }
 
-    fn visit<A: InferenceDomainAssociation>(
-        map: &<Self::Group as InferenceDomainGroup>::Map<A>,
-    ) -> &A::Target<Self> {
+    fn visit<V: InferenceDomainMapValueProjection>(
+        map: &<Self::Group as InferenceDomainGroup>::Map<V>,
+    ) -> &V::Target<Self> {
         &map.talk
     }
 }

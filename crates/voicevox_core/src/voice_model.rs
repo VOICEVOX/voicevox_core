@@ -8,7 +8,7 @@ use enum_map::EnumMap;
 use serde::Deserialize;
 
 use crate::{
-    infer::{InferenceDomain, InferenceDomainAssociation},
+    infer::{InferenceDomain, InferenceDomainMapValueProjection},
     manifest::Manifest,
     VoiceModelMeta,
 };
@@ -53,7 +53,7 @@ pub(crate) struct VoiceModelHeader {
 
 pub(crate) enum ModelBytesByInferenceDomain {}
 
-impl InferenceDomainAssociation for ModelBytesByInferenceDomain {
+impl InferenceDomainMapValueProjection for ModelBytesByInferenceDomain {
     type Target<D: InferenceDomain> = EnumMap<D::Operation, Vec<u8>>;
 }
 

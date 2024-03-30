@@ -6,40 +6,40 @@ pub(crate) use self::talk::{
 };
 
 use super::{
-    InferenceDomainAssociation, InferenceDomainAssociationTargetFunction,
-    InferenceDomainAssociationTargetPredicate, InferenceDomainGroup, InferenceDomainMap,
+    InferenceDomainGroup, InferenceDomainMap, InferenceDomainMapValueFunction,
+    InferenceDomainMapValuePredicate, InferenceDomainMapValueProjection,
 };
 
 pub(crate) enum InferenceDomainGroupImpl {}
 
 impl InferenceDomainGroup for InferenceDomainGroupImpl {
-    type Map<A: InferenceDomainAssociation> = InferenceDomainMapImpl<A>;
+    type Map<V: InferenceDomainMapValueProjection> = InferenceDomainMapImpl<V>;
 }
 
-pub(crate) struct InferenceDomainMapImpl<A: InferenceDomainAssociation> {
-    pub(crate) talk: A::Target<TalkDomain>,
+pub(crate) struct InferenceDomainMapImpl<V: InferenceDomainMapValueProjection> {
+    pub(crate) talk: V::Target<TalkDomain>,
 }
 
-impl<A: InferenceDomainAssociation> InferenceDomainMap for InferenceDomainMapImpl<A> {
+impl<V: InferenceDomainMapValueProjection> InferenceDomainMap for InferenceDomainMapImpl<V> {
     type Group = InferenceDomainGroupImpl;
-    type Association = A;
+    type ValueProjection = V;
 
     fn any(
         &self,
-        p: impl InferenceDomainAssociationTargetPredicate<InputAssociation = Self::Association>,
+        p: impl InferenceDomainMapValuePredicate<InputProjection = Self::ValueProjection>,
     ) -> bool {
         p.test(&self.talk)
     }
 
     fn try_ref_map<
-        F: InferenceDomainAssociationTargetFunction<
+        F: InferenceDomainMapValueFunction<
             Group = Self::Group,
-            InputAssociation = Self::Association,
+            InputProjection = Self::ValueProjection,
         >,
     >(
         &self,
         f: F,
-    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<F::OutputAssociation>, F::Error> {
+    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<F::OutputProjection>, F::Error> {
         let talk = f.apply(&self.talk)?;
         Ok(InferenceDomainMapImpl { talk })
     }

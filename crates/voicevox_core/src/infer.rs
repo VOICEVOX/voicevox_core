@@ -33,67 +33,70 @@ pub(crate) trait InferenceRuntime: 'static {
 }
 
 pub(crate) trait InferenceDomainGroup: Sized {
-    type Map<A: InferenceDomainAssociation>: InferenceDomainMap<Group = Self, Association = A>;
+    type Map<V: InferenceDomainMapValueProjection>: InferenceDomainMap<
+        Group = Self,
+        ValueProjection = V,
+    >;
 }
 
 pub(crate) trait InferenceDomainMap {
     type Group: InferenceDomainGroup;
-    type Association: InferenceDomainAssociation;
+    type ValueProjection: InferenceDomainMapValueProjection;
 
     fn any(
         &self,
-        p: impl InferenceDomainAssociationTargetPredicate<InputAssociation = Self::Association>,
+        p: impl InferenceDomainMapValuePredicate<InputProjection = Self::ValueProjection>,
     ) -> bool;
 
     fn try_ref_map<
-        F: InferenceDomainAssociationTargetFunction<
+        F: InferenceDomainMapValueFunction<
             Group = Self::Group,
-            InputAssociation = Self::Association,
+            InputProjection = Self::ValueProjection,
         >,
     >(
         &self,
         f: F,
-    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<F::OutputAssociation>, F::Error>;
+    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<F::OutputProjection>, F::Error>;
 }
 
-pub(crate) trait InferenceDomainAssociationTargetPredicate {
-    type InputAssociation: InferenceDomainAssociation;
+pub(crate) trait InferenceDomainMapValuePredicate {
+    type InputProjection: InferenceDomainMapValueProjection;
 
     fn test<D: InferenceDomain>(
         &self,
-        x: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
+        x: &<Self::InputProjection as InferenceDomainMapValueProjection>::Target<D>,
     ) -> bool;
 }
 
-pub(crate) trait InferenceDomainAssociationTargetFunction {
+pub(crate) trait InferenceDomainMapValueFunction {
     type Group: InferenceDomainGroup;
-    type InputAssociation: InferenceDomainAssociation;
-    type OutputAssociation: InferenceDomainAssociation;
+    type InputProjection: InferenceDomainMapValueProjection;
+    type OutputProjection: InferenceDomainMapValueProjection;
     type Error;
 
     fn apply<D: InferenceDomain<Group = Self::Group>>(
         &self,
-        x: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
-    ) -> Result<<Self::OutputAssociation as InferenceDomainAssociation>::Target<D>, Self::Error>;
+        x: &<Self::InputProjection as InferenceDomainMapValueProjection>::Target<D>,
+    ) -> Result<<Self::OutputProjection as InferenceDomainMapValueProjection>::Target<D>, Self::Error>;
 }
 
-pub(crate) trait InferenceDomainAssociation {
+pub(crate) trait InferenceDomainMapValueProjection {
     type Target<D: InferenceDomain>;
 }
 
-impl<A1: InferenceDomainAssociation, A2: InferenceDomainAssociation> InferenceDomainAssociation
-    for (A1, A2)
+impl<V1: InferenceDomainMapValueProjection, V2: InferenceDomainMapValueProjection>
+    InferenceDomainMapValueProjection for (V1, V2)
 {
-    type Target<D: InferenceDomain> = (A1::Target<D>, A2::Target<D>);
+    type Target<D: InferenceDomain> = (V1::Target<D>, V2::Target<D>);
 }
 
-impl<A: InferenceDomainAssociation> InferenceDomainAssociation for Option<A> {
-    type Target<D: InferenceDomain> = Option<A::Target<D>>;
+impl<V: InferenceDomainMapValueProjection> InferenceDomainMapValueProjection for Option<V> {
+    type Target<D: InferenceDomain> = Option<V::Target<D>>;
 }
 
 pub(crate) struct ForAllInferenceDomain<T>(pub(crate) T);
 
-impl<T> InferenceDomainAssociation for ForAllInferenceDomain<T> {
+impl<T> InferenceDomainMapValueProjection for ForAllInferenceDomain<T> {
     type Target<D: InferenceDomain> = T;
 }
 
@@ -104,9 +107,9 @@ pub(crate) trait InferenceDomain: Sized {
 
     fn style_types() -> &'static BTreeSet<StyleType>;
 
-    fn visit<A: InferenceDomainAssociation>(
-        map: &<Self::Group as InferenceDomainGroup>::Map<A>,
-    ) -> &A::Target<Self>;
+    fn visit<V: InferenceDomainMapValueProjection>(
+        map: &<Self::Group as InferenceDomainGroup>::Map<V>,
+    ) -> &V::Target<Self>;
 }
 
 /// `InferenceDomain`の推論操作を表す列挙型。

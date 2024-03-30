@@ -17,9 +17,9 @@ use crate::{
 };
 
 use super::{
-    model_file, ForAllInferenceDomain, InferenceDomain, InferenceDomainAssociation,
-    InferenceDomainAssociationTargetFunction, InferenceDomainAssociationTargetPredicate,
-    InferenceDomainGroup, InferenceDomainMap as _, InferenceInputSignature, InferenceOperation,
+    model_file, ForAllInferenceDomain, InferenceDomain, InferenceDomainGroup,
+    InferenceDomainMap as _, InferenceDomainMapValueFunction, InferenceDomainMapValuePredicate,
+    InferenceDomainMapValueProjection, InferenceInputSignature, InferenceOperation,
     InferenceRuntime, InferenceSessionOptions, InferenceSignature, ParamInfo,
 };
 
@@ -73,15 +73,15 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
             marker: PhantomData<fn() -> R>,
         }
 
-        impl<R: InferenceRuntime, G: InferenceDomainGroup> InferenceDomainAssociationTargetFunction
+        impl<R: InferenceRuntime, G: InferenceDomainGroup> InferenceDomainMapValueFunction
             for CreateSessionSet<'_, R, G>
         {
             type Group = G;
-            type InputAssociation = Option<(
+            type InputProjection = Option<(
                 ForAllInferenceDomain<StyleIdToModelInnerId>,
                 ModelBytesByInferenceDomain,
             )>;
-            type OutputAssociation = Option<(
+            type OutputProjection = Option<(
                 ForAllInferenceDomain<StyleIdToModelInnerId>,
                 SessionSetByDomain<R>,
             )>;
@@ -89,9 +89,11 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
 
             fn apply<D: InferenceDomain<Group = Self::Group>>(
                 &self,
-                model_data: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
+                model_data: &<Self::InputProjection as InferenceDomainMapValueProjection>::Target<
+                    D,
+                >,
             ) -> std::result::Result<
-                <Self::OutputAssociation as InferenceDomainAssociation>::Target<D>,
+                <Self::OutputProjection as InferenceDomainMapValueProjection>::Target<D>,
                 Self::Error,
             > {
                 model_data
@@ -259,7 +261,7 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
     fn ensure_acceptable(
         &self,
         model_header: &VoiceModelHeader,
-        model_bytes_or_sessions: &G::Map<Option<impl InferenceDomainAssociation>>,
+        model_bytes_or_sessions: &G::Map<Option<impl InferenceDomainMapValueProjection>>,
     ) -> LoadModelResult<()> {
         let error = |context| LoadModelError {
             path: model_header.path.clone(),
@@ -309,19 +311,19 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
         }
         return Ok(());
 
-        struct ContainsForStyleType<A> {
+        struct ContainsForStyleType<V> {
             style_type: StyleType,
-            marker: PhantomData<fn() -> A>,
+            marker: PhantomData<fn() -> V>,
         }
 
-        impl<A: InferenceDomainAssociation> InferenceDomainAssociationTargetPredicate
-            for ContainsForStyleType<A>
+        impl<V: InferenceDomainMapValueProjection> InferenceDomainMapValuePredicate
+            for ContainsForStyleType<V>
         {
-            type InputAssociation = Option<A>;
+            type InputProjection = Option<V>;
 
             fn test<D: InferenceDomain>(
                 &self,
-                x: &<Self::InputAssociation as InferenceDomainAssociation>::Target<D>,
+                x: &<Self::InputProjection as InferenceDomainMapValueProjection>::Target<D>,
             ) -> bool {
                 D::style_types().contains(&self.style_type) && x.is_some()
             }
@@ -460,13 +462,13 @@ impl<R: InferenceRuntime, I: InferenceInputSignature> SessionCell<R, I> {
 
 pub(crate) enum SessionOptionsByDomain {}
 
-impl InferenceDomainAssociation for SessionOptionsByDomain {
+impl InferenceDomainMapValueProjection for SessionOptionsByDomain {
     type Target<D: InferenceDomain> = EnumMap<D::Operation, InferenceSessionOptions>;
 }
 
 struct SessionSetByDomain<R>(Infallible, PhantomData<fn() -> R>);
 
-impl<R: InferenceRuntime> InferenceDomainAssociation for SessionSetByDomain<R> {
+impl<R: InferenceRuntime> InferenceDomainMapValueProjection for SessionSetByDomain<R> {
     type Target<D: InferenceDomain> = SessionSet<R, D>;
 }
 
