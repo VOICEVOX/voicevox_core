@@ -470,58 +470,57 @@ jobs:
       - name: Build voicevoxcore
         run: |
           cd crates/voicevox_core_java_api
-          function setup_dll() {
+          function copy_dll() {
+            artifact_name=$1
+            target=$2
+            root=$(echo $1 | grep -q android && echo jniLibs || echo dll)
+            dest="lib/src/main/resources/$root/$target"
+            mkdir -p $dest
+            cp -v "../../artifacts/voicevox_core_java_api-$artifact_name"/*.{dll,so,dylib} $dest
+            echo "$artifact_name => $dest"
+          }
+          function clean_dlls() {
             rm -rf lib/src/main/resources/dll
             rm -rf lib/src/main/resources/jniLibs
-            while IFS= read -r line; do
-              IFS=' ' read -r artifact_name target <<< "$line"
-              mkdir -p "lib/src/main/resources/$1/$target"
-              cp -v "../../artifacts/voicevox_core_java_api-$artifact_name"/*.{dll,so,dylib} "lib/src/main/resources/$1/$target/" || true
-              echo "$artifact_name => $1/$target"
-            done
           }
 
           # desktop: cpu
-          setup_dll dll <<EOF
-          windows-x64-cpu windows-x64
-          windows-x86-cpu windows-x86
-          linux-x64-cpu linux-x64
-          linux-arm64-cpu linux-arm64
-          osx-x64-cpu macos-x64
-          osx-arm64-cpu macos-arm64
-          EOF
+          clean_dlls
+          copy_dll windows-x64-cpu windows-x64
+          copy_dll windows-x86-cpu windows-x86
+          copy_dll linux-x64-cpu linux-x64
+          copy_dll linux-arm64-cpu linux-arm64
+          copy_dll osx-x64-cpu macos-x64
+          copy_dll osx-arm64-cpu macos-arm64
 
           OS=desktop DEVICE=cpu gradle publishToMavenLocal
 
           # desktop: cuda
-          setup_dll dll <<EOF
-          windows-x64-cuda windows-x64
-          windows-x86-cpu windows-x86
-          linux-x64-cuda linux-x64
-          linux-arm64-cpu linux-arm64
-          osx-x64-cpu macos-x64
-          osx-arm64-cpu macos-arm64
-          EOF
+          clean_dlls
+          copy_dll windows-x64-cuda windows-x64
+          copy_dll windows-x86-cpu windows-x86
+          copy_dll linux-x64-cuda linux-x64
+          copy_dll linux-arm64-cpu linux-arm64
+          copy_dll osx-x64-cpu macos-x64
+          copy_dll osx-arm64-cpu macos-arm64
 
           OS=desktop DEVICE=cuda gradle publishToMavenLocal
 
           # desktop: directml
-          setup_dll dll <<EOF
-          windows-x64-directml windows-x64
-          windows-x86-cpu windows-x86
-          linux-x64-cpu linux-x64
-          linux-arm64-cpu linux-arm64
-          osx-x64-cpu macos-x64
-          osx-arm64-cpu macos-arm64
-          EOF
+          clean_dlls
+          copy_dll windows-x64-directml windows-x64
+          copy_dll windows-x86-cpu windows-x86
+          copy_dll linux-x64-cpu linux-x64
+          copy_dll linux-arm64-cpu linux-arm64
+          copy_dll osx-x64-cpu macos-x64
+          copy_dll osx-arm64-cpu macos-arm64
 
           OS=desktop DEVICE=directml gradle publishToMavenLocal
 
           # android: cpu
-          setup_dll jniLibs <<EOF
-          android-arm64-cpu arm64-v8a
-          android-x86_64-cpu x86_64
-          EOF
+          clean_dlls
+          copy_dll android-arm64-cpu arm64-v8a
+          copy_dll android-x86_64-cpu x86_64
 
           cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/arm64-v8a/
           cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/x86_64/
