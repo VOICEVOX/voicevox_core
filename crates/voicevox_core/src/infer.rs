@@ -48,8 +48,18 @@ pub(crate) trait InferenceDomainMap {
         p: impl InferenceDomainMapValuePredicate<InputProjection = Self::ValueProjection>,
     ) -> bool;
 
-    fn try_ref_map<
+    fn ref_map<
         F: InferenceDomainMapValueFunction<
+            Group = Self::Group,
+            InputProjection = Self::ValueProjection,
+        >,
+    >(
+        &self,
+        f: F,
+    ) -> <Self::Group as InferenceDomainGroup>::Map<F::OutputProjection>;
+
+    fn try_ref_map<
+        F: InferenceDomainMapValueTryFunction<
             Group = Self::Group,
             InputProjection = Self::ValueProjection,
         >,
@@ -69,6 +79,17 @@ pub(crate) trait InferenceDomainMapValuePredicate {
 }
 
 pub(crate) trait InferenceDomainMapValueFunction {
+    type Group: InferenceDomainGroup;
+    type InputProjection: InferenceDomainMapValueProjection;
+    type OutputProjection: InferenceDomainMapValueProjection;
+
+    fn apply<D: InferenceDomain<Group = Self::Group>>(
+        &self,
+        x: &<Self::InputProjection as InferenceDomainMapValueProjection>::Target<D>,
+    ) -> <Self::OutputProjection as InferenceDomainMapValueProjection>::Target<D>;
+}
+
+pub(crate) trait InferenceDomainMapValueTryFunction {
     type Group: InferenceDomainGroup;
     type InputProjection: InferenceDomainMapValueProjection;
     type OutputProjection: InferenceDomainMapValueProjection;

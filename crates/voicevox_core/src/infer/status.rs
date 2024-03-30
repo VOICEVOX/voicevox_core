@@ -3,6 +3,7 @@ use std::{
 };
 
 use anyhow::bail;
+use derive_new::new;
 use educe::Educe;
 use enum_map::{Enum as _, EnumMap};
 use indexmap::IndexMap;
@@ -19,8 +20,8 @@ use crate::{
 use super::{
     model_file, ForAllInferenceDomain, InferenceDomain, InferenceDomainGroup,
     InferenceDomainMap as _, InferenceDomainMapValueFunction, InferenceDomainMapValuePredicate,
-    InferenceDomainMapValueProjection, InferenceInputSignature, InferenceOperation,
-    InferenceRuntime, InferenceSessionOptions, InferenceSignature, ParamInfo,
+    InferenceDomainMapValueProjection, InferenceDomainMapValueTryFunction, InferenceInputSignature,
+    InferenceOperation, InferenceRuntime, InferenceSessionOptions, InferenceSignature, ParamInfo,
 };
 
 pub(crate) struct Status<R: InferenceRuntime, G: InferenceDomainGroup> {
@@ -49,7 +50,7 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
         self.loaded_models
             .lock()
             .unwrap()
-            .ensure_acceptable(model_header, model_bytes)?;
+            .ensure_acceptable(model_header, model_bytes.ref_map(EachIsSome::new()))?;
 
         let session_set = model_bytes
             .try_ref_map(CreateSessionSet {
@@ -73,7 +74,7 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> Status<R, G> {
             marker: PhantomData<fn() -> R>,
         }
 
-        impl<R: InferenceRuntime, G: InferenceDomainGroup> InferenceDomainMapValueFunction
+        impl<R: InferenceRuntime, G: InferenceDomainGroup> InferenceDomainMapValueTryFunction
             for CreateSessionSet<'_, R, G>
         {
             type Group = G;
@@ -261,7 +262,7 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
     fn ensure_acceptable(
         &self,
         model_header: &VoiceModelHeader,
-        model_bytes_or_sessions: &G::Map<Option<impl InferenceDomainMapValueProjection>>,
+        existences: G::Map<ForAllInferenceDomain<bool>>,
     ) -> LoadModelResult<()> {
         let error = |context| LoadModelError {
             path: model_header.path.clone(),
@@ -293,12 +294,7 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
             .map(StyleMeta::r#type)
             .copied()
             .unique()
-            .find(|&style_type| {
-                !model_bytes_or_sessions.any(ContainsForStyleType {
-                    style_type,
-                    marker: PhantomData,
-                })
-            })
+            .find(|&style_type| !existences.any(ContainsForStyleType { style_type }))
         {
             return Err(error(LoadModelErrorKind::MissingModelData { style_type }));
         }
@@ -311,21 +307,18 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
         }
         return Ok(());
 
-        struct ContainsForStyleType<V> {
+        struct ContainsForStyleType {
             style_type: StyleType,
-            marker: PhantomData<fn() -> V>,
         }
 
-        impl<V: InferenceDomainMapValueProjection> InferenceDomainMapValuePredicate
-            for ContainsForStyleType<V>
-        {
-            type InputProjection = Option<V>;
+        impl InferenceDomainMapValuePredicate for ContainsForStyleType {
+            type InputProjection = ForAllInferenceDomain<bool>;
 
             fn test<D: InferenceDomain>(
                 &self,
-                x: &<Self::InputProjection as InferenceDomainMapValueProjection>::Target<D>,
+                domain_exists: &<Self::InputProjection as InferenceDomainMapValueProjection>::Target<D>,
             ) -> bool {
-                D::style_types().contains(&self.style_type) && x.is_some()
+                D::style_types().contains(&self.style_type) && *domain_exists
             }
         }
     }
@@ -341,7 +334,7 @@ impl<R: InferenceRuntime, G: InferenceDomainGroup> LoadedModels<R, G> {
             )>,
         >,
     ) -> Result<()> {
-        self.ensure_acceptable(model_header, &by_domain)?;
+        self.ensure_acceptable(model_header, by_domain.ref_map(EachIsSome::new()))?;
 
         let prev = self.0.insert(
             model_header.id.clone(),
@@ -470,6 +463,26 @@ struct SessionSetByDomain<R>(Infallible, PhantomData<fn() -> R>);
 
 impl<R: InferenceRuntime> InferenceDomainMapValueProjection for SessionSetByDomain<R> {
     type Target<D: InferenceDomain> = SessionSet<R, D>;
+}
+
+#[derive(new)]
+struct EachIsSome<G: InferenceDomainGroup, V: InferenceDomainMapValueProjection>(
+    #[new(default)] PhantomData<fn() -> (G, V)>,
+);
+
+impl<G: InferenceDomainGroup, V: InferenceDomainMapValueProjection> InferenceDomainMapValueFunction
+    for EachIsSome<G, V>
+{
+    type Group = G;
+    type InputProjection = Option<V>;
+    type OutputProjection = ForAllInferenceDomain<bool>;
+
+    fn apply<D: InferenceDomain<Group = Self::Group>>(
+        &self,
+        x: &<Self::InputProjection as InferenceDomainMapValueProjection>::Target<D>,
+    ) -> <Self::OutputProjection as InferenceDomainMapValueProjection>::Target<D> {
+        x.is_some()
+    }
 }
 
 #[cfg(test)]

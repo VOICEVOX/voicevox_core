@@ -6,8 +6,8 @@ pub(crate) use self::talk::{
 };
 
 use super::{
-    InferenceDomainGroup, InferenceDomainMap, InferenceDomainMapValueFunction,
-    InferenceDomainMapValuePredicate, InferenceDomainMapValueProjection,
+    InferenceDomainGroup, InferenceDomainMap, InferenceDomainMapValuePredicate,
+    InferenceDomainMapValueProjection, InferenceDomainMapValueTryFunction,
 };
 
 pub(crate) enum InferenceDomainGroupImpl {}
@@ -31,8 +31,21 @@ impl<V: InferenceDomainMapValueProjection> InferenceDomainMap for InferenceDomai
         p.test(&self.talk)
     }
 
+    fn ref_map<
+        F: super::InferenceDomainMapValueFunction<
+            Group = Self::Group,
+            InputProjection = Self::ValueProjection,
+        >,
+    >(
+        &self,
+        f: F,
+    ) -> <Self::Group as InferenceDomainGroup>::Map<F::OutputProjection> {
+        let talk = f.apply(&self.talk);
+        InferenceDomainMapImpl { talk }
+    }
+
     fn try_ref_map<
-        F: InferenceDomainMapValueFunction<
+        F: InferenceDomainMapValueTryFunction<
             Group = Self::Group,
             InputProjection = Self::ValueProjection,
         >,
