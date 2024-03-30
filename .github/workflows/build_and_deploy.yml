@@ -476,8 +476,15 @@ jobs:
             root=$(echo "$1" | grep -q android && echo jniLibs || echo dll)
             dest="lib/src/main/resources/$root/$target"
             mkdir -p "$dest"
-            cp -v "../../artifacts/voicevox_core_java_api-$artifact_name"/*.{dll,so,dylib} "$dest"
-            echo "$artifact_name => $dest"
+            cp -v "../../artifacts/voicevox_core_java_api-$artifact_name"/*.{dll,so,dylib} "$dest" || true
+            # こうするしかないはず。echoを使わない書き方があるかもしれないが、シンプルに面倒。
+            # shellcheck disable=SC2086
+            if [ "$(echo $dest/*)" = "$dest/*" ]; then
+              echo "No dll found in $artifact_name"
+              exit 1
+            else
+              echo "$artifact_name => $dest"
+            fi
           }
           function clean_dlls() {
             rm -rf lib/src/main/resources/dll
