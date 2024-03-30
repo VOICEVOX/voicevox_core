@@ -473,10 +473,10 @@ jobs:
           function copy_dll() {
             artifact_name=$1
             target=$2
-            root=$(echo $1 | grep -q android && echo jniLibs || echo dll)
+            root=$(echo "$1" | grep -q android && echo jniLibs || echo dll)
             dest="lib/src/main/resources/$root/$target"
-            mkdir -p $dest
-            cp -v "../../artifacts/voicevox_core_java_api-$artifact_name"/*.{dll,so,dylib} $dest
+            mkdir -p "$dest"
+            cp -v "../../artifacts/voicevox_core_java_api-$artifact_name"/*.{dll,so,dylib} "$dest"
             echo "$artifact_name => $dest"
           }
           function clean_dlls() {
