@@ -3,7 +3,8 @@ name = "test_util"
 edition.workspace = true
 
 [dependencies]
-async_zip = { workspace = true, features = ["full"] }
+async_zip = { workspace = true, features = ["deflate"] }
+futures-lite.workspace = true
 once_cell.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true

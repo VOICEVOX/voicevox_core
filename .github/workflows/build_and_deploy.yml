@@ -228,7 +228,7 @@ jobs:
       - name: Raplace resource
         if: inputs.is_production
         shell: bash
-        run: |
+        run:
           mv -f download/resource/core/README.md ./README.md
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
@@ -298,7 +298,7 @@ jobs:
           cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
-        run: |
+        run:
           bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
@@ -344,44 +344,34 @@ jobs:
     needs: [config, build_and_deploy]
     runs-on: macos-12
     env:
+      IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
+      IOS_AARCH64_SIM_PATH: artifact/voicevox_core-aarch64-apple-ios-sim
+      IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
       ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v2
         with:
           name: voicevox_core-x86_64-apple-ios
-          path: artifact/voicevox_core-x86_64-apple-ios
+          path: ${{ env.IOS_X86_64_PATH }}
       - uses: actions/download-artifact@v2
         with:
           name: voicevox_core-aarch64-apple-ios-sim
-          path: artifact/voicevox_core-aarch64-apple-ios-sim
+          path: ${{ env.IOS_AARCH64_SIM_PATH }}
       - uses: actions/download-artifact@v2
         with:
           name: voicevox_core-aarch64-apple-ios
-          path: artifact/voicevox_core-aarch64-apple-ios
-      - name: Create fat binary
+          path: ${{ env.IOS_AARCH64_PATH }}
+      - name: Create xcframework
+        id: create-xcframework 
         run: |
-          mkdir -p "artifact/voicevox_core-sim"
-          lipo -create "artifact/voicevox_core-x86_64-apple-ios/libvoicevox_core.dylib" "artifact/voicevox_core-aarch64-apple-ios-sim/libvoicevox_core.dylib" -output "artifact/voicevox_core-sim/libvoicevox_core.dylib"
-      - name: Create XCFramework
-        run: |
-          mkdir -p "artifact/${{ env.ASSET_NAME }}"
-          # 必要なファイルだけコピー
-          mkdir -p "Headers-sim"
-          cp -v artifact/voicevox_core-x86_64-apple-ios/voicevox_core.h "Headers-sim"
-          cp -v crates/voicevox_core_c_api/xcframework/Headers/module.modulemap "Headers-sim"
-          mkdir -p "Headers-aarch64"
-          cp -v artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h "Headers-aarch64"
-          cp -v crates/voicevox_core_c_api/xcframework/Headers/module.modulemap "Headers-aarch64"
-          xcodebuild -create-xcframework \
-            -library "artifact/voicevox_core-sim/libvoicevox_core.dylib" \
-            -headers "Headers-sim" \
-            -library "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib" \
-            -headers "Headers-aarch64" \
-            -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
+          build_util/make_ios_xcframework.bash
+          echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT" 
+        env:
+          OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
       - name: Archive artifact
         run: |
-          cd artifact/${{ env.ASSET_NAME }}
+          cd ${{ steps.create-xcframework.outputs.output_asset_path }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
@@ -410,7 +400,7 @@ jobs:
       - name: Raplace resource
         if: inputs.is_production
         shell: bash
-        run: |
+        run:
           rm -r ./model; mv download/fat_resource/core/model ./model
       - name: Create artifact
         run: |
@@ -452,7 +442,7 @@ jobs:
       - name: Install cargo-edit
         run: cargo binstall cargo-edit@^0.11 --no-confirm
       - name: set cargo version
-        run: |
+        run:
           cargo set-version "$VERSION" -p voicevox_core_java_api
 
       - name: "Download artifact (android-arm64-cpu)"

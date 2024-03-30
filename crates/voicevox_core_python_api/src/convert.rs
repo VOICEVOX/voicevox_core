@@ -22,7 +22,7 @@ use crate::{
     UseUserDictError, WordNotFoundError,
 };
 
-pub fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
+pub(crate) fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
     let py = ob.py();
 
     let class = py.import("voicevox_core")?.getattr("AccelerationMode")?;
@@ -39,8 +39,8 @@ pub fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
     }
 }
 
-// FIXME: `VoiceModel`や`UserDict`についてはこれではなく、`PathBuf::extract`を直接使うようにする
-pub fn from_utf8_path(ob: &PyAny) -> PyResult<Utf8PathBuf> {
+// FIXME: `UserDict`についてはこれではなく、`PathBuf::extract`を直接使うようにする
+pub(crate) fn from_utf8_path(ob: &PyAny) -> PyResult<Utf8PathBuf> {
     PathBuf::extract(ob)?
         .into_os_string()
         .into_string()
@@ -48,7 +48,7 @@ pub fn from_utf8_path(ob: &PyAny) -> PyResult<Utf8PathBuf> {
         .map_err(|s| PyValueError::new_err(format!("{s:?} cannot be encoded to UTF-8")))
 }
 
-pub fn from_dataclass<T: DeserializeOwned>(ob: &PyAny) -> PyResult<T> {
+pub(crate) fn from_dataclass<T: DeserializeOwned>(ob: &PyAny) -> PyResult<T> {
     let py = ob.py();
 
     let ob = py.import("dataclasses")?.call_method1("asdict", (ob,))?;
@@ -59,7 +59,7 @@ pub fn from_dataclass<T: DeserializeOwned>(ob: &PyAny) -> PyResult<T> {
     serde_json::from_str(json).into_py_value_result()
 }
 
-pub fn to_pydantic_voice_model_meta<'py>(
+pub(crate) fn to_pydantic_voice_model_meta<'py>(
     metas: &VoiceModelMeta,
     py: Python<'py>,
 ) -> PyResult<Vec<&'py PyAny>> {
@@ -74,7 +74,7 @@ pub fn to_pydantic_voice_model_meta<'py>(
         .collect::<PyResult<Vec<_>>>()
 }
 
-pub fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {
+pub(crate) fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {
     let py = class.py();
 
     let x = serde_json::to_string(&x).into_py_value_result()?;
@@ -108,7 +108,7 @@ pub(crate) fn blocking_modify_accent_phrases<'py>(
         .collect()
 }
 
-pub fn async_modify_accent_phrases<'py, Fun, Fut>(
+pub(crate) fn async_modify_accent_phrases<'py, Fun, Fut>(
     accent_phrases: &'py PyList,
     speaker_id: StyleId,
     py: Python<'py>,
@@ -145,16 +145,16 @@ where
     )
 }
 
-pub fn to_rust_uuid(ob: &PyAny) -> PyResult<Uuid> {
+pub(crate) fn to_rust_uuid(ob: &PyAny) -> PyResult<Uuid> {
     let uuid = ob.getattr("hex")?.extract::<String>()?;
     uuid.parse::<Uuid>().into_py_value_result()
 }
-pub fn to_py_uuid(py: Python<'_>, uuid: Uuid) -> PyResult<PyObject> {
+pub(crate) fn to_py_uuid(py: Python<'_>, uuid: Uuid) -> PyResult<PyObject> {
     let uuid = uuid.hyphenated().to_string();
     let uuid = py.import("uuid")?.call_method1("UUID", (uuid,))?;
     Ok(uuid.to_object(py))
 }
-pub fn to_rust_user_dict_word(ob: &PyAny) -> PyResult<voicevox_core::UserDictWord> {
+pub(crate) fn to_rust_user_dict_word(ob: &PyAny) -> PyResult<voicevox_core::UserDictWord> {
     voicevox_core::UserDictWord::new(
         ob.getattr("surface")?.extract()?,
         ob.getattr("pronunciation")?.extract()?,
@@ -164,7 +164,7 @@ pub fn to_rust_user_dict_word(ob: &PyAny) -> PyResult<voicevox_core::UserDictWor
     )
     .into_py_result(ob.py())
 }
-pub fn to_py_user_dict_word<'py>(
+pub(crate) fn to_py_user_dict_word<'py>(
     py: Python<'py>,
     word: &voicevox_core::UserDictWord,
 ) -> PyResult<&'py PyAny> {
@@ -174,14 +174,14 @@ pub fn to_py_user_dict_word<'py>(
         .downcast()?;
     to_pydantic_dataclass(word, class)
 }
-pub fn to_rust_word_type(word_type: &PyAny) -> PyResult<UserDictWordType> {
+pub(crate) fn to_rust_word_type(word_type: &PyAny) -> PyResult<UserDictWordType> {
     let name = word_type.getattr("name")?.extract::<String>()?;
 
     serde_json::from_value::<UserDictWordType>(json!(name)).into_py_value_result()
 }
 
 #[ext(VoicevoxCoreResultExt)]
-pub impl<T> voicevox_core::Result<T> {
+pub(crate) impl<T> voicevox_core::Result<T> {
     fn into_py_result(self, py: Python<'_>) -> PyResult<T> {
         use voicevox_core::ErrorKind;
 

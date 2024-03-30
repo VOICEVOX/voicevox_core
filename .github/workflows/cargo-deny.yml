@@ -13,7 +13,7 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-deny
-        run: cargo binstall cargo-deny@^0.13 --no-confirm --log-level debug
+        run: cargo binstall cargo-deny@^0.14 --no-confirm --log-level debug
       - name: cargo-deny
         run: |
           if ${{ !!github.event.release }}; then

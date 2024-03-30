@@ -12,6 +12,7 @@ mod numerics;
 mod result;
 mod synthesizer;
 mod task;
+mod text_analyzer;
 mod user_dict;
 mod version;
 mod voice_model;
@@ -22,6 +23,11 @@ pub mod tokio;
 
 #[cfg(test)]
 mod test_util;
+
+// https://crates.io/crates/rstest_reuse#use-rstest_resuse-at-the-top-of-your-crate
+#[allow(clippy::single_component_path_imports)]
+#[cfg(test)]
+use rstest_reuse;
 
 pub use self::{
     devices::SupportedDevices,
