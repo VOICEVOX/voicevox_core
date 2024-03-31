@@ -100,9 +100,9 @@ impl ModelFileSet {
                      predict_intonation_model,
                      decode_model,
                  }| {
-                    let predict_duration_model = ModelFile::new(&path(predict_duration_model))?;
-                    let predict_intonation_model = ModelFile::new(&path(predict_intonation_model))?;
-                    let decode_model = ModelFile::new(&path(decode_model))?;
+                    let predict_duration_model = path(predict_duration_model);
+                    let predict_intonation_model = path(predict_intonation_model);
+                    let decode_model = path(decode_model);
                     Ok(TalkModel {
                         predict_duration_model,
                         predict_intonation_model,
@@ -121,10 +121,9 @@ impl ModelFileSet {
                      predict_sing_volume_model,
                  }| {
                     let predict_sing_consonant_length_model =
-                        ModelFile::new(&path(predict_sing_consonant_length_model))?;
-                    let predict_sing_f0_model = ModelFile::new(&path(predict_sing_f0_model))?;
-                    let predict_sing_volume_model =
-                        ModelFile::new(&path(predict_sing_volume_model))?;
+                        path(predict_sing_consonant_length_model);
+                    let predict_sing_f0_model = path(predict_sing_f0_model);
+                    let predict_sing_volume_model = path(predict_sing_volume_model);
                     Ok(SingTeacherModel {
                         predict_sing_consonant_length_model,
                         predict_sing_f0_model,
@@ -137,7 +136,7 @@ impl ModelFileSet {
         let sf_decode_models = model_file::SF_DECODE_MODEL_FILE_NAMES
             .iter()
             .map(|&SfDecodeModelFileNames { sf_decode_model }| {
-                let sf_decode_model = ModelFile::new(&path(sf_decode_model))?;
+                let sf_decode_model = path(sf_decode_model);
                 Ok(SfDecodeModel { sf_decode_model })
             })
             .collect::<anyhow::Result<_>>()?;
@@ -195,34 +194,19 @@ struct SfDecodeModelFileNames {
 struct DecryptModelError;
 
 struct TalkModel {
-    predict_duration_model: ModelFile,
-    predict_intonation_model: ModelFile,
-    decode_model: ModelFile,
+    predict_duration_model: PathBuf,
+    predict_intonation_model: PathBuf,
+    decode_model: PathBuf,
 }
 
 struct SingTeacherModel {
-    predict_sing_consonant_length_model: ModelFile,
-    predict_sing_f0_model: ModelFile,
-    predict_sing_volume_model: ModelFile,
+    predict_sing_consonant_length_model: PathBuf,
+    predict_sing_f0_model: PathBuf,
+    predict_sing_volume_model: PathBuf,
 }
 
 struct SfDecodeModel {
-    sf_decode_model: ModelFile,
-}
-
-struct ModelFile {
-    path: PathBuf,
-    content: Vec<u8>,
-}
-
-impl ModelFile {
-    fn new(path: &Path) -> anyhow::Result<Self> {
-        let content = fs_err::read(path)?;
-        Ok(Self {
-            path: path.to_owned(),
-            content,
-        })
-    }
+    sf_decode_model: PathBuf,
 }
 
 #[derive(Deserialize, Getters)]
@@ -421,12 +405,18 @@ impl Status {
 
     fn new_session(
         &self,
-        model_file: &ModelFile,
+        model_file: &Path,
         session_options: &SessionOptions,
     ) -> Result<Session<'static>> {
-        self.new_session_from_bytes(|| model_file::decrypt(&model_file.content), session_options)
+        let model_bytes = &match fs_err::read(model_file) {
+            Ok(model_bytes) => model_bytes,
+            Err(err) => {
+                panic!("ファイルを読み込めなかったためクラッシュします: {err}");
+            }
+        };
+        self.new_session_from_bytes(|| model_file::decrypt(model_bytes), session_options)
             .map_err(|source| Error::LoadModel {
-                path: model_file.path.clone(),
+                path: model_file.to_owned(),
                 source,
             })
     }
