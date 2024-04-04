@@ -128,16 +128,14 @@ fn generate_c_api_rs_bindings() -> anyhow::Result<()> {
     static ADDITIONAL_C_BINDINGS_PATH: &str = "./compatible_engine.h";
 
     let out_dir = Utf8PathBuf::from(env::var("OUT_DIR").unwrap());
-    let rs_bindings_path = out_dir.join("c_api.rs");
     bindgen::Builder::default()
         .header(C_BINDINGS_PATH)
         .header(ADDITIONAL_C_BINDINGS_PATH)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .dynamic_library_name("CApi")
         .generate()?
-        .write_to_file(&rs_bindings_path)?;
+        .write_to_file(out_dir.join("c_api.rs"))?;
     println!("cargo:rerun-if-changed={C_BINDINGS_PATH}");
     println!("cargo:rerun-if-changed={ADDITIONAL_C_BINDINGS_PATH}");
-    println!("cargo:rerun-if-changed={rs_bindings_path}");
     Ok(())
 }
