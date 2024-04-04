@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-typedef int32_t VoicevoxResultCode;
+#include "../voicevox_core_c_api/include/voicevox_core.h"
 
 bool initialize(bool use_gpu, int cpu_num_threads, bool load_all_models);
 
