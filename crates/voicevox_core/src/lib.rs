@@ -8,7 +8,6 @@ mod infer;
 mod macros;
 mod manifest;
 mod metas;
-mod numerics;
 mod result;
 mod synthesizer;
 mod task;

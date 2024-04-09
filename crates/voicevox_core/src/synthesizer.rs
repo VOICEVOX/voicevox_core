@@ -99,7 +99,6 @@ pub(crate) mod blocking {
             status::Status,
             InferenceSessionOptions,
         },
-        numerics::F32Ext as _,
         text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
         AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
         SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
@@ -343,8 +342,8 @@ pub(crate) mod blocking {
                     // VOICEVOX ENGINEと挙動を合わせるため、四捨五入ではなく偶数丸めをする
                     //
                     // https://github.com/VOICEVOX/voicevox_engine/issues/552
-                    let phoneme_length = ((*phoneme_length * RATE).round_ties_even_() / speed_scale)
-                        .round_ties_even_() as usize;
+                    let phoneme_length = ((*phoneme_length * RATE).round_ties_even() / speed_scale)
+                        .round_ties_even() as usize;
                     let phoneme_id = phoneme_data_list[i].phoneme_id();
 
                     for _ in 0..phoneme_length {

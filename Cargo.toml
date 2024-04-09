@@ -19,7 +19,7 @@ chrono = { version = "0.4.26", default-features = false }
 clap = "4.0.10"
 color-eyre = "0.6.2"
 colorchoice = "1.0.0"
-cstr = "0.2.11"
+cstr = "0.2.11" # https://github.com/dtolnay/syn/issues/1502
 derive-getters = "0.2.0"
 derive-new = "0.5.9"
 derive_more = "0.99.17"
