@@ -20,7 +20,3 @@ impl<T> InferenceDomainMapValues for (T,) {
 impl<A> InferenceDomainMapValues for [A] {
     type Talk = A;
 }
-
-impl<V: InferenceDomainMapValues> InferenceDomainMapValues for Option<V> {
-    type Talk = Option<V::Talk>;
-}
