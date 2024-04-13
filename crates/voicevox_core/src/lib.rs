@@ -9,6 +9,7 @@ mod macros;
 mod manifest;
 mod metas;
 mod result;
+mod status;
 mod synthesizer;
 mod task;
 mod text_analyzer;
