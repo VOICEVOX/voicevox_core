@@ -3,9 +3,7 @@ mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod session_set;
 
-use std::{
-    borrow::Cow, collections::BTreeSet, convert::Infallible, fmt::Debug, marker::PhantomData,
-};
+use std::{borrow::Cow, collections::BTreeSet, fmt::Debug};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -34,47 +32,8 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
-/// このライブラリにおけるすべての`InferenceDomain`が属する集合。
-pub(crate) trait InferenceDomainGroup: Sized {
-    type Map<V: InferenceDomainMapValueProjection>: InferenceDomainMap<
-        Group = Self,
-        ValueProjection = V,
-    >;
-}
-
-/// `InferenceDomain`をキーとしたマップ。
-///
-/// バリューの型は`InferenceDomain`ごとに`ValueProjection`によって変換される。
-pub(crate) trait InferenceDomainMap {
-    type Group: InferenceDomainGroup;
-    type ValueProjection: InferenceDomainMapValueProjection;
-}
-
-/// `InferenceDomainMap`のバリューの型を`InferenceDomain`ごとに変更するためのもの。
-pub(crate) trait InferenceDomainMapValueProjection {
-    type Target<D: InferenceDomain>;
-}
-
-impl<V1: InferenceDomainMapValueProjection, V2: InferenceDomainMapValueProjection>
-    InferenceDomainMapValueProjection for (V1, V2)
-{
-    type Target<D: InferenceDomain> = (V1::Target<D>, V2::Target<D>);
-}
-
-impl<V: InferenceDomainMapValueProjection> InferenceDomainMapValueProjection for Option<V> {
-    type Target<D: InferenceDomain> = Option<V::Target<D>>;
-}
-
-/// `InferenceDomain`によらずバリューの型をすべて同じにする`InferenceDomainMapValueProjection`。
-pub(crate) struct ForAllInferenceDomain<T>(Infallible, PhantomData<T>);
-
-impl<T> InferenceDomainMapValueProjection for ForAllInferenceDomain<T> {
-    type Target<D: InferenceDomain> = T;
-}
-
 /// 共に扱われるべき推論操作の集合を示す。
 pub(crate) trait InferenceDomain: Sized {
-    type Group: InferenceDomainGroup;
     type Operation: InferenceOperation;
 
     /// 対応する`StyleType`。
@@ -84,13 +43,6 @@ pub(crate) trait InferenceDomain: Sized {
     /// また、どの`InferenceDomain`にも属さない`StyleType`があってもよい。そのような`StyleType`は
     /// 音声モデルのロード時に単に拒否されるべきである。
     fn style_types() -> &'static BTreeSet<StyleType>;
-
-    /// ある`InferenceDomainMap`に対し、自身に対応するバリューを得る。
-    ///
-    /// `map.get::<Self>()`と脳内で置き換えると理解しやすいかもしれない。
-    fn visit<V: InferenceDomainMapValueProjection>(
-        map: &<Self::Group as InferenceDomainGroup>::Map<V>,
-    ) -> &V::Target<Self>;
 }
 
 /// `InferenceDomain`の推論操作を表す列挙型。

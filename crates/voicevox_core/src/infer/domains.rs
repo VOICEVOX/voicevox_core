@@ -5,19 +5,22 @@ pub(crate) use self::talk::{
     PredictIntonationOutput, TalkDomain, TalkOperation,
 };
 
-use super::{InferenceDomainGroup, InferenceDomainMap, InferenceDomainMapValueProjection};
-
-pub(crate) enum InferenceDomainGroupImpl {}
-
-impl InferenceDomainGroup for InferenceDomainGroupImpl {
-    type Map<V: InferenceDomainMapValueProjection> = InferenceDomainMapImpl<V>;
+pub(crate) struct InferenceDomainMap<V: InferenceDomainMapValues + ?Sized> {
+    pub(crate) talk: V::Talk,
 }
 
-pub(crate) struct InferenceDomainMapImpl<V: InferenceDomainMapValueProjection> {
-    pub(crate) talk: V::Target<TalkDomain>,
+pub(crate) trait InferenceDomainMapValues {
+    type Talk;
 }
 
-impl<V: InferenceDomainMapValueProjection> InferenceDomainMap for InferenceDomainMapImpl<V> {
-    type Group = InferenceDomainGroupImpl;
-    type ValueProjection = V;
+impl<T> InferenceDomainMapValues for (T,) {
+    type Talk = T;
+}
+
+impl<A> InferenceDomainMapValues for [A] {
+    type Talk = A;
+}
+
+impl<V: InferenceDomainMapValues> InferenceDomainMapValues for Option<V> {
+    type Talk = Option<V::Talk>;
 }

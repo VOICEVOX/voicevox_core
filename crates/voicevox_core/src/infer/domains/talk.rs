@@ -7,29 +7,18 @@ use once_cell::sync::Lazy;
 
 use crate::StyleType;
 
-use super::{
-    super::{
-        InferenceDomain, InferenceDomainGroup, InferenceDomainMapValueProjection,
-        InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
-    },
-    InferenceDomainGroupImpl,
+use super::super::{
+    InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
 };
 
 pub(crate) enum TalkDomain {}
 
 impl InferenceDomain for TalkDomain {
-    type Group = InferenceDomainGroupImpl;
     type Operation = TalkOperation;
 
     fn style_types() -> &'static BTreeSet<StyleType> {
         static STYLE_TYPES: Lazy<BTreeSet<StyleType>> = Lazy::new(|| [StyleType::Talk].into());
         &STYLE_TYPES
-    }
-
-    fn visit<V: InferenceDomainMapValueProjection>(
-        map: &<Self::Group as InferenceDomainGroup>::Map<V>,
-    ) -> &V::Target<Self> {
-        &map.talk
     }
 }
 

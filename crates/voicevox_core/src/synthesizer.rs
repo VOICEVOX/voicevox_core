@@ -84,7 +84,7 @@ pub(crate) mod blocking {
         error::ErrorRepr,
         infer::{
             domains::{
-                DecodeInput, DecodeOutput, InferenceDomainMapImpl, PredictDurationInput,
+                DecodeInput, DecodeOutput, InferenceDomainMap, PredictDurationInput,
                 PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput, TalkDomain,
                 TalkOperation,
             },
@@ -169,7 +169,7 @@ pub(crate) mod blocking {
             let heavy_session_options =
                 InferenceSessionOptions::new(options.cpu_num_threads, use_gpu);
 
-            let status = Status::new(InferenceDomainMapImpl {
+            let status = Status::new(InferenceDomainMap {
                 talk: enum_map! {
                     TalkOperation::PredictDuration
                     | TalkOperation::PredictIntonation => light_session_options,

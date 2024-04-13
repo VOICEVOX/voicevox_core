@@ -8,8 +8,8 @@ use enum_map::EnumMap;
 use serde::Deserialize;
 
 use crate::{
-    infer::{InferenceDomain, InferenceDomainMapValueProjection},
-    manifest::Manifest,
+    infer::domains::TalkOperation,
+    manifest::{Manifest, StyleIdToModelInnerId},
     VoiceModelMeta,
 };
 use std::path::PathBuf;
@@ -18,6 +18,9 @@ use std::path::PathBuf;
 ///
 /// [`VoiceModelId`]: VoiceModelId
 pub type RawVoiceModelId = String;
+
+pub(crate) type ModelBytesByDomain =
+    (Option<(StyleIdToModelInnerId, EnumMap<TalkOperation, Vec<u8>>)>,);
 
 /// 音声モデルID。
 #[derive(
@@ -51,12 +54,6 @@ pub(crate) struct VoiceModelHeader {
     pub(crate) path: PathBuf,
 }
 
-pub(crate) enum ModelBytesByInferenceDomain {}
-
-impl InferenceDomainMapValueProjection for ModelBytesByInferenceDomain {
-    type Target<D: InferenceDomain> = EnumMap<D::Operation, Vec<u8>>;
-}
-
 pub(crate) mod blocking {
     use std::{
         io::{self, Cursor},
@@ -71,12 +68,12 @@ pub(crate) mod blocking {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::{domains::InferenceDomainMapImpl, ForAllInferenceDomain},
-        manifest::{Manifest, StyleIdToModelInnerId, TalkManifest},
+        infer::domains::InferenceDomainMap,
+        manifest::{Manifest, TalkManifest},
         VoiceModelMeta,
     };
 
-    use super::{ModelBytesByInferenceDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -87,17 +84,9 @@ pub(crate) mod blocking {
     }
 
     impl self::VoiceModel {
-        #[allow(clippy::type_complexity)]
         pub(crate) fn read_inference_models(
             &self,
-        ) -> LoadModelResult<
-            InferenceDomainMapImpl<
-                Option<(
-                    ForAllInferenceDomain<StyleIdToModelInnerId>,
-                    ModelBytesByInferenceDomain,
-                )>,
-            >,
-        > {
+        ) -> LoadModelResult<InferenceDomainMap<ModelBytesByDomain>> {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
             let talk = self
@@ -130,7 +119,7 @@ pub(crate) mod blocking {
                 )
                 .transpose()?;
 
-            Ok(InferenceDomainMapImpl { talk })
+            Ok(InferenceDomainMap { talk })
         }
 
         /// VVMファイルから`VoiceModel`をコンストラクトする。
@@ -227,12 +216,12 @@ pub(crate) mod tokio {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::{domains::InferenceDomainMapImpl, ForAllInferenceDomain},
-        manifest::{Manifest, StyleIdToModelInnerId, TalkManifest},
+        infer::domains::InferenceDomainMap,
+        manifest::{Manifest, TalkManifest},
         Result, VoiceModelMeta,
     };
 
-    use super::{ModelBytesByInferenceDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -245,14 +234,7 @@ pub(crate) mod tokio {
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
-        ) -> LoadModelResult<
-            InferenceDomainMapImpl<
-                Option<(
-                    ForAllInferenceDomain<StyleIdToModelInnerId>,
-                    ModelBytesByInferenceDomain,
-                )>,
-            >,
-        > {
+        ) -> LoadModelResult<InferenceDomainMap<ModelBytesByDomain>> {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
 
             let talk = OptionFuture::from(self.header.manifest.talk().as_ref().map(
@@ -285,7 +267,7 @@ pub(crate) mod tokio {
             .await
             .transpose()?;
 
-            Ok(InferenceDomainMapImpl { talk })
+            Ok(InferenceDomainMap { talk })
         }
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
