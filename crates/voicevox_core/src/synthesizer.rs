@@ -84,9 +84,9 @@ pub(crate) mod blocking {
         error::ErrorRepr,
         infer::{
             domains::{
-                DecodeInput, DecodeOutput, InferenceDomainGroupImpl, InferenceDomainMapImpl,
-                PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
-                PredictIntonationOutput, TalkDomain, TalkOperation,
+                DecodeInput, DecodeOutput, InferenceDomainMapImpl, PredictDurationInput,
+                PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput, TalkDomain,
+                TalkOperation,
             },
             InferenceSessionOptions,
         },
@@ -102,7 +102,7 @@ pub(crate) mod blocking {
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
-        pub(super) status: Status<InferenceRuntimeImpl, InferenceDomainGroupImpl>,
+        pub(super) status: Status<InferenceRuntimeImpl>,
         open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
         kana_analyzer: KanaAnalyzer,
         use_gpu: bool,

@@ -48,69 +48,6 @@ pub(crate) trait InferenceDomainGroup: Sized {
 pub(crate) trait InferenceDomainMap {
     type Group: InferenceDomainGroup;
     type ValueProjection: InferenceDomainMapValueProjection;
-
-    /// ある条件に合致するバリューが存在するかを調べる。
-    fn any(
-        &self,
-        p: impl InferenceDomainMapValuePredicate<InputProjection = Self::ValueProjection>,
-    ) -> bool;
-
-    /// バリューをそれぞれ変換する。
-    fn ref_map<
-        F: InferenceDomainMapValueFunction<
-            Group = Self::Group,
-            InputProjection = Self::ValueProjection,
-        >,
-    >(
-        &self,
-        f: F,
-    ) -> <Self::Group as InferenceDomainGroup>::Map<F::OutputProjection>;
-
-    /// バリューに対してそれぞれfallibleな変換をする。
-    fn try_ref_map<
-        F: InferenceDomainMapValueTryFunction<
-            Group = Self::Group,
-            InputProjection = Self::ValueProjection,
-        >,
-    >(
-        &self,
-        f: F,
-    ) -> Result<<Self::Group as InferenceDomainGroup>::Map<F::OutputProjection>, F::Error>;
-}
-
-/// `ForAllInferenceDomain::any`のための、多相な関数を表わすオブジェクト。
-pub(crate) trait InferenceDomainMapValuePredicate {
-    type InputProjection: InferenceDomainMapValueProjection;
-
-    fn test<D: InferenceDomain>(
-        &self,
-        x: &<Self::InputProjection as InferenceDomainMapValueProjection>::Target<D>,
-    ) -> bool;
-}
-
-/// `ForAllInferenceDomain::ref_map`のための、多相な関数を表わすオブジェクト。
-pub(crate) trait InferenceDomainMapValueFunction {
-    type Group: InferenceDomainGroup;
-    type InputProjection: InferenceDomainMapValueProjection;
-    type OutputProjection: InferenceDomainMapValueProjection;
-
-    fn apply<D: InferenceDomain<Group = Self::Group>>(
-        &self,
-        x: &<Self::InputProjection as InferenceDomainMapValueProjection>::Target<D>,
-    ) -> <Self::OutputProjection as InferenceDomainMapValueProjection>::Target<D>;
-}
-
-/// `ForAllInferenceDomain::try_ref_map`のための、多相な関数を表わすオブジェクト。
-pub(crate) trait InferenceDomainMapValueTryFunction {
-    type Group: InferenceDomainGroup;
-    type InputProjection: InferenceDomainMapValueProjection;
-    type OutputProjection: InferenceDomainMapValueProjection;
-    type Error;
-
-    fn apply<D: InferenceDomain<Group = Self::Group>>(
-        &self,
-        x: &<Self::InputProjection as InferenceDomainMapValueProjection>::Target<D>,
-    ) -> Result<<Self::OutputProjection as InferenceDomainMapValueProjection>::Target<D>, Self::Error>;
 }
 
 /// `InferenceDomainMap`のバリューの型を`InferenceDomain`ごとに変更するためのもの。
