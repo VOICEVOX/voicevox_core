@@ -16,7 +16,7 @@ use crate::{
     },
     manifest::{ModelInnerId, StyleIdToModelInnerId},
     metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
-    voice_model::{ModelBytesByDomain, VoiceModelHeader, VoiceModelId},
+    voice_model::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId},
     Result, StyleType,
 };
 
@@ -36,14 +36,14 @@ impl<R: InferenceRuntime> Status<R> {
     pub(crate) fn insert_model(
         &self,
         model_header: &VoiceModelHeader,
-        model_bytes: &InferenceDomainMap<ModelBytesByDomain>,
+        model_contents: &InferenceDomainMap<ModelBytesWithInnerIdsByDomain>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
             .unwrap()
-            .ensure_acceptable(model_header, model_bytes.each_is_some())?;
+            .ensure_acceptable(model_header, model_contents.each_is_some())?;
 
-        let session_sets_with_inner_ids = model_bytes
+        let session_sets_with_inner_ids = model_contents
             .create_session_sets(&self.session_options)
             .map_err(|source| LoadModelError {
                 path: model_header.path.clone(),
@@ -317,7 +317,7 @@ impl<R: InferenceRuntime> InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>
     }
 }
 
-impl InferenceDomainMap<ModelBytesByDomain> {
+impl InferenceDomainMap<ModelBytesWithInnerIdsByDomain> {
     fn create_session_sets<R: InferenceRuntime>(
         &self,
         session_options: &InferenceDomainMap<SessionOptionsByDomain>,
@@ -423,8 +423,8 @@ mod tests {
             talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
         });
         let model = &open_default_vvm_file().await;
-        let model_bytes = &model.read_inference_models().await.unwrap();
-        let result = status.insert_model(model.header(), model_bytes);
+        let model_contents = &model.read_inference_models().await.unwrap();
+        let result = status.insert_model(model.header(), model_contents);
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
     }
@@ -437,12 +437,12 @@ mod tests {
         });
         let vvm = open_default_vvm_file().await;
         let model_header = vvm.header();
-        let model_bytes = &vvm.read_inference_models().await.unwrap();
+        let model_contents = &vvm.read_inference_models().await.unwrap();
         assert!(
             !status.is_loaded_model(&model_header.id),
             "model should  not be loaded"
         );
-        let result = status.insert_model(model_header, model_bytes);
+        let result = status.insert_model(model_header, model_contents);
         assert_debug_fmt_eq!(Ok(()), result);
         assert!(
             status.is_loaded_model(&model_header.id),

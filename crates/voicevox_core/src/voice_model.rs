@@ -19,7 +19,7 @@ use std::path::PathBuf;
 /// [`VoiceModelId`]: VoiceModelId
 pub type RawVoiceModelId = String;
 
-pub(crate) type ModelBytesByDomain =
+pub(crate) type ModelBytesWithInnerIdsByDomain =
     (Option<(StyleIdToModelInnerId, EnumMap<TalkOperation, Vec<u8>>)>,);
 
 /// 音声モデルID。
@@ -73,7 +73,7 @@ pub(crate) mod blocking {
         VoiceModelMeta,
     };
 
-    use super::{ModelBytesByDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -86,7 +86,7 @@ pub(crate) mod blocking {
     impl self::VoiceModel {
         pub(crate) fn read_inference_models(
             &self,
-        ) -> LoadModelResult<InferenceDomainMap<ModelBytesByDomain>> {
+        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerIdsByDomain>> {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
             let talk = self
@@ -221,7 +221,7 @@ pub(crate) mod tokio {
         Result, VoiceModelMeta,
     };
 
-    use super::{ModelBytesByDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -234,7 +234,7 @@ pub(crate) mod tokio {
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
-        ) -> LoadModelResult<InferenceDomainMap<ModelBytesByDomain>> {
+        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerIdsByDomain>> {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
 
             let talk = OptionFuture::from(self.header.manifest.talk().as_ref().map(
