@@ -21,7 +21,8 @@ use crate::{
 
 type SessionOptionsByDomain = (EnumMap<TalkOperation, InferenceSessionOptions>,);
 
-type SessionSetsByDomain<R> = (Option<(StyleIdToModelInnerId, SessionSet<R, TalkDomain>)>,);
+type SessionSetsWithInnerIdsByDomain<R> =
+    (Option<(StyleIdToModelInnerId, SessionSet<R, TalkDomain>)>,);
 
 pub(crate) struct Status<R: InferenceRuntime> {
     loaded_models: std::sync::Mutex<LoadedModels<R>>,
@@ -128,19 +129,19 @@ impl<R: InferenceRuntime> Status<R> {
 
 pub(crate) trait InferenceDomainExt: InferenceDomain {
     fn visit<R: InferenceRuntime>(
-        map: &InferenceDomainMap<SessionSetsByDomain<R>>,
+        map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
     ) -> Option<&(StyleIdToModelInnerId, SessionSet<R, Self>)>;
 }
 
 impl InferenceDomainExt for TalkDomain {
     fn visit<R: InferenceRuntime>(
-        map: &InferenceDomainMap<SessionSetsByDomain<R>>,
+        map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
     ) -> Option<&(StyleIdToModelInnerId, SessionSet<R, Self>)> {
         map.talk.as_ref()
     }
 }
 
-impl<R: InferenceRuntime> InferenceDomainMap<SessionSetsByDomain<R>> {
+impl<R: InferenceRuntime> InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>> {
     fn get<D: InferenceDomainExt>(&self) -> Option<&(StyleIdToModelInnerId, SessionSet<R, D>)> {
         D::visit(self)
     }
@@ -155,7 +156,7 @@ struct LoadedModels<R: InferenceRuntime>(IndexMap<VoiceModelId, LoadedModel<R>>)
 
 struct LoadedModel<R: InferenceRuntime> {
     metas: VoiceModelMeta,
-    by_domain: InferenceDomainMap<SessionSetsByDomain<R>>,
+    session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
 }
 
 impl<R: InferenceRuntime> LoadedModels<R> {
@@ -167,7 +168,13 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         &self,
         style_id: StyleId,
     ) -> Result<(VoiceModelId, ModelInnerId)> {
-        let (model_id, LoadedModel { by_domain, .. }) = self
+        let (
+            model_id,
+            LoadedModel {
+                session_sets_with_inner_ids,
+                ..
+            },
+        ) = self
             .0
             .iter()
             .find(|(_, LoadedModel { metas, .. })| {
@@ -180,7 +187,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
                 style_types: D::style_types(),
             })?;
 
-        let model_inner_id = by_domain
+        let model_inner_id = session_sets_with_inner_ids
             .get::<D>()
             .as_ref()
             .and_then(|(model_inner_ids, _)| model_inner_ids.get(&style_id).copied())
@@ -201,7 +208,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         <I::Signature as InferenceSignature>::Domain: InferenceDomainExt,
     {
         let (_, session_set) = self.0[model_id]
-            .by_domain
+            .session_sets_with_inner_ids
             .get::<<I::Signature as InferenceSignature>::Domain>()
             .as_ref()
             .unwrap_or_else(|| {
@@ -289,15 +296,15 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     fn insert(
         &mut self,
         model_header: &VoiceModelHeader,
-        by_domain: InferenceDomainMap<SessionSetsByDomain<R>>,
+        session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
     ) -> Result<()> {
-        self.ensure_acceptable(model_header, by_domain.each_is_some())?;
+        self.ensure_acceptable(model_header, session_sets_with_inner_ids.each_is_some())?;
 
         let prev = self.0.insert(
             model_header.id.clone(),
             LoadedModel {
                 metas: model_header.metas.clone(),
-                by_domain,
+                session_sets_with_inner_ids,
             },
         );
         assert!(prev.is_none());
