@@ -211,7 +211,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
                     .unwrap();
                 panic!(
                     "missing session set for `{type_name}` (should be checked in \
-                         `ensure_acceptable` and `ids_for`)",
+                     `ensure_acceptable` and `ids_for`)",
                 );
             });
         session_set.get()
