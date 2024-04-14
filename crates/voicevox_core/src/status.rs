@@ -1,5 +1,6 @@
 use std::any;
 
+use duplicate::{duplicate, duplicate_item};
 use educe::Educe;
 use enum_map::EnumMap;
 use indexmap::IndexMap;
@@ -16,13 +17,8 @@ use crate::{
     manifest::{ModelInnerId, StyleIdToModelInnerId},
     metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
     voice_model::{ModelBytesByDomain, VoiceModelHeader, VoiceModelId},
-    Result,
+    Result, StyleType,
 };
-
-type SessionOptionsByDomain = (EnumMap<TalkOperation, InferenceSessionOptions>,);
-
-type SessionSetsWithInnerIdsByDomain<R> =
-    (Option<(StyleIdToModelInnerId, SessionSet<R, TalkDomain>)>,);
 
 pub(crate) struct Status<R: InferenceRuntime> {
     loaded_models: std::sync::Mutex<LoadedModels<R>>,
@@ -47,27 +43,18 @@ impl<R: InferenceRuntime> Status<R> {
             .unwrap()
             .ensure_acceptable(model_header, model_bytes.each_is_some())?;
 
-        let session_set = (|| {
-            let talk = model_bytes
-                .talk
-                .as_ref()
-                .map(|(model_inner_ids, model_bytes)| {
-                    let session_set = SessionSet::new(model_bytes, &self.session_options.talk)?;
-                    Ok::<_, anyhow::Error>((model_inner_ids.clone(), session_set))
-                })
-                .transpose()?;
-            Ok(InferenceDomainMap { talk })
-        })()
-        .map_err(|source| LoadModelError {
-            path: model_header.path.clone(),
-            context: LoadModelErrorKind::InvalidModelData,
-            source: Some(source),
-        })?;
+        let session_sets_with_inner_ids = model_bytes
+            .create_session_sets(&self.session_options)
+            .map_err(|source| LoadModelError {
+                path: model_header.path.clone(),
+                context: LoadModelErrorKind::InvalidModelData,
+                source: Some(source),
+            })?;
 
         self.loaded_models
             .lock()
             .unwrap()
-            .insert(model_header, session_set)?;
+            .insert(model_header, session_sets_with_inner_ids)?;
         Ok(())
     }
 
@@ -124,26 +111,6 @@ impl<R: InferenceRuntime> Status<R> {
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
         sess.run(input)
-    }
-}
-
-pub(crate) trait InferenceDomainExt: InferenceDomain {
-    fn visit<R: InferenceRuntime>(
-        map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
-    ) -> Option<&(StyleIdToModelInnerId, SessionSet<R, Self>)>;
-}
-
-impl InferenceDomainExt for TalkDomain {
-    fn visit<R: InferenceRuntime>(
-        map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
-    ) -> Option<&(StyleIdToModelInnerId, SessionSet<R, Self>)> {
-        map.talk.as_ref()
-    }
-}
-
-impl<R: InferenceRuntime> InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>> {
-    fn get<D: InferenceDomainExt>(&self) -> Option<&(StyleIdToModelInnerId, SessionSet<R, D>)> {
-        D::visit(self)
     }
 }
 
@@ -275,11 +242,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             .map(StyleMeta::r#type)
             .copied()
             .unique()
-            .find(|style_type| !{
-                let InferenceDomainMap { talk } = existences;
-                // (p → q) = (¬p ∨ q)
-                !TalkDomain::style_types().contains(style_type) || talk
-            })
+            .find(|&style_type| !existences.accepts(style_type))
         {
             return Err(error(LoadModelErrorKind::MissingModelData { style_type }));
         }
@@ -330,6 +293,54 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     }
 }
 
+pub(crate) trait InferenceDomainExt: InferenceDomain {
+    fn visit<R: InferenceRuntime>(
+        map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
+    ) -> Option<&(StyleIdToModelInnerId, SessionSet<R, Self>)>;
+}
+
+#[duplicate_item(
+    T              field;
+    [ TalkDomain ] [ talk ];
+)]
+impl InferenceDomainExt for T {
+    fn visit<R: InferenceRuntime>(
+        map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
+    ) -> Option<&(StyleIdToModelInnerId, SessionSet<R, Self>)> {
+        map.field.as_ref()
+    }
+}
+
+impl<R: InferenceRuntime> InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>> {
+    fn get<D: InferenceDomainExt>(&self) -> Option<&(StyleIdToModelInnerId, SessionSet<R, D>)> {
+        D::visit(self)
+    }
+}
+
+impl InferenceDomainMap<ModelBytesByDomain> {
+    fn create_session_sets<R: InferenceRuntime>(
+        &self,
+        session_options: &InferenceDomainMap<SessionOptionsByDomain>,
+    ) -> anyhow::Result<InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>> {
+        duplicate! {
+            [
+                field;
+                [ talk ];
+            ]
+            let field = self
+                .field
+                .as_ref()
+                .map(|(model_inner_ids, model_bytes)| {
+                    let session_set = SessionSet::new(model_bytes, &session_options.field)?;
+                    Ok::<_, anyhow::Error>((model_inner_ids.clone(), session_set))
+                })
+                .transpose()?;
+        }
+
+        Ok(InferenceDomainMap { talk })
+    }
+}
+
 impl<T> InferenceDomainMap<(Option<T>,)> {
     fn each_is_some(&self) -> InferenceDomainMap<[bool]> {
         InferenceDomainMap {
@@ -337,6 +348,19 @@ impl<T> InferenceDomainMap<(Option<T>,)> {
         }
     }
 }
+
+impl InferenceDomainMap<[bool]> {
+    fn accepts(&self, style_type: StyleType) -> bool {
+        let InferenceDomainMap { talk } = *self;
+        // (p → q) = (¬p ∨ q)
+        !TalkDomain::style_types().contains(&style_type) || talk
+    }
+}
+
+type SessionOptionsByDomain = (EnumMap<TalkOperation, InferenceSessionOptions>,);
+
+type SessionSetsWithInnerIdsByDomain<R> =
+    (Option<(StyleIdToModelInnerId, SessionSet<R, TalkDomain>)>,);
 
 #[cfg(test)]
 mod tests {
