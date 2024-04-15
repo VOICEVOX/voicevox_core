@@ -8,7 +8,6 @@ use std::ffi::{CStr, CString};
 use std::mem::MaybeUninit;
 use test_util::OPEN_JTALK_DIC_DIR;
 
-use cstr::cstr;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 
@@ -50,8 +49,8 @@ impl assert_cdylib::TestCase for TestCase {
 
         let word = {
             let mut word = voicevox_user_dict_word_make(
-                cstr!("this_word_should_not_exist_in_default_dictionary").as_ptr(),
-                cstr!("アイウエオ").as_ptr(),
+                c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
+                c"アイウエオ".as_ptr(),
             );
             word.word_type = VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;
             word.priority = 10;
@@ -64,7 +63,7 @@ impl assert_cdylib::TestCase for TestCase {
         let model = {
             let mut model = MaybeUninit::uninit();
             assert_ok(voicevox_voice_model_new_from_path(
-                cstr!("../../model/sample.vvm").as_ptr(),
+                c"../../model/sample.vvm".as_ptr(),
                 model.as_mut_ptr(),
             ));
             model.assume_init()
@@ -98,7 +97,7 @@ impl assert_cdylib::TestCase for TestCase {
         let mut audio_query_without_dict = std::ptr::null_mut();
         assert_ok(voicevox_synthesizer_create_audio_query(
             synthesizer,
-            cstr!("this_word_should_not_exist_in_default_dictionary").as_ptr(),
+            c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
             STYLE_ID,
             &mut audio_query_without_dict,
         ));
@@ -111,7 +110,7 @@ impl assert_cdylib::TestCase for TestCase {
         let mut audio_query_with_dict = std::ptr::null_mut();
         assert_ok(voicevox_synthesizer_create_audio_query(
             synthesizer,
-            cstr!("this_word_should_not_exist_in_default_dictionary").as_ptr(),
+            c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
             STYLE_ID,
             &mut audio_query_with_dict,
         ));

@@ -1,7 +1,6 @@
 use std::{collections::HashMap, ffi::CString, mem::MaybeUninit};
 
 use assert_cmd::assert::AssertResult;
-use cstr::cstr;
 use libloading::Library;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -45,7 +44,7 @@ impl assert_cdylib::TestCase for TestCase {
         let model = {
             let mut model = MaybeUninit::uninit();
             assert_ok(voicevox_voice_model_new_from_path(
-                cstr!("../../model/sample.vvm").as_ptr(),
+                c"../../model/sample.vvm".as_ptr(),
                 model.as_mut_ptr(),
             ));
             model.assume_init()
