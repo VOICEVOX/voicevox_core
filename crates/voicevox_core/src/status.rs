@@ -106,7 +106,6 @@ impl<R: InferenceRuntime> Status<R> {
     ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
         I: InferenceInputSignature,
-        I::Signature: InferenceSignature,
         <I::Signature as InferenceSignature>::Domain: InferenceDomainExt,
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
