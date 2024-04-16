@@ -1017,7 +1017,6 @@ pub(crate) mod blocking {
         }
 
         fn list_windows_video_cards() -> windows::core::Result<Vec<DXGI_ADAPTER_DESC>> {
-            #[allow(unsafe_code)]
             unsafe {
                 let factory = CreateDXGIFactory::<IDXGIFactory>()?;
                 (0..)
