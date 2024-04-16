@@ -2514,7 +2514,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 [[package]]
 name = "open_jtalk"
 version = "0.1.25"
-source = "git+https://github.com/qryxip/open_jtalk-rs.git?rev=f79e6855a65e96576a8c983ca26fcc2228298a20#f79e6855a65e96576a8c983ca26fcc2228298a20"
+source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=e1940f3fd61a48bed5bbec8cd2645e13923b1f80#e1940f3fd61a48bed5bbec8cd2645e13923b1f80"
 dependencies = [
  "camino",
  "open_jtalk-sys",
@@ -2524,7 +2524,7 @@ dependencies = [
 [[package]]
 name = "open_jtalk-sys"
 version = "0.16.111"
-source = "git+https://github.com/qryxip/open_jtalk-rs.git?rev=f79e6855a65e96576a8c983ca26fcc2228298a20#f79e6855a65e96576a8c983ca26fcc2228298a20"
+source = "git+https://github.com/VOICEVOX/open_jtalk-rs.git?rev=e1940f3fd61a48bed5bbec8cd2645e13923b1f80#e1940f3fd61a48bed5bbec8cd2645e13923b1f80"
 dependencies = [
  "bindgen",
  "cmake",
