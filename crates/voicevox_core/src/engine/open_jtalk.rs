@@ -183,7 +183,6 @@ pub(crate) mod blocking {
     }
 
     // FIXME: open_jtalk-rs側で宣言する
-    #[allow(unsafe_code)]
     unsafe impl Send for Resources {}
 }
 

@@ -249,6 +249,5 @@ mod assert_send {
     }
 
     // SAFETY: `Session` is probably "send"able.
-    #[allow(unsafe_code)]
     unsafe impl<T> Send for AssertSend<T> {}
 }
