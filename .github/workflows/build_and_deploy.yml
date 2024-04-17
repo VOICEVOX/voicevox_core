@@ -475,7 +475,7 @@ jobs:
             target=$2
             root=$(echo "$1" | grep -q android && echo jniLibs || echo dll)
             dest="lib/src/main/resources/$root/$target"
-            case "$target" in
+            case "$artifact_name" in
               windows-*) ext=dll ;;
               osx-*)     ext=dylib ;;
               linux-*)   ext=so ;;
