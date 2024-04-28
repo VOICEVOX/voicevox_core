@@ -40,5 +40,5 @@ gradle.ext {
   gsonVersion = '2.10.1'
   jakartaValidationVersion = '3.0.2'
   jakartaAnnotationVersion = '2.1.1'
-  onnxruntimeVersion = '1.17.0'
+  onnxruntimeVersion = '1.17.1'
 }
