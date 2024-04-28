@@ -79,6 +79,7 @@ pub(crate) trait InferenceInputSignature: Send + 'static {
 pub(crate) trait InputScalar: Sized {
     const KIND: InputScalarKind;
 
+    // TODO: `Array`ではなく`ArrayView`を取ることができるかもしれない
     fn push_tensor_to_ctx(
         tensor: Array<Self, impl Dimension + 'static>,
         visitor: &mut impl PushInputTensor,

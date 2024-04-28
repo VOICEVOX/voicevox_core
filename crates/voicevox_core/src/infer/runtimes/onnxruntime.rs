@@ -8,7 +8,6 @@ use ort::{
     ExecutionProviderDispatch, GraphOptimizationLevel, IntoTensorElementType, TensorElementType,
     ValueType,
 };
-use tracing::warn;
 
 use crate::{devices::SupportedDevices, error::ErrorRepr};
 
@@ -56,17 +55,9 @@ impl InferenceRuntime for Onnxruntime {
         // TODO: `InferenceRuntime::init`と`InitInferenceRuntimeError`を作る
         build_ort_env_once().unwrap();
 
-        let cpu_num_threads = options.cpu_num_threads.try_into().unwrap_or_else(|_| {
-            warn!(
-                "`cpu_num_threads={}` is too large. Setting it to 32767",
-                options.cpu_num_threads,
-            );
-            i16::MAX
-        });
-
         let builder = ort::Session::builder()?
             .with_optimization_level(GraphOptimizationLevel::Level1)?
-            .with_intra_threads(cpu_num_threads)?;
+            .with_intra_threads(options.cpu_num_threads.into())?;
 
         let builder = if options.use_gpu && cfg!(feature = "directml") {
             builder
@@ -84,7 +75,7 @@ impl InferenceRuntime for Onnxruntime {
         };
 
         let model = model()?;
-        let sess = builder.with_model_from_memory(&{ model })?;
+        let sess = builder.commit_from_memory(&{ model })?;
 
         let input_param_infos = sess
             .inputs
@@ -187,8 +178,8 @@ impl InferenceRuntime for Onnxruntime {
 
                 match ty {
                     TensorElementType::Float32 => {
-                        let output = output.extract_tensor::<f32>()?;
-                        Ok(OutputTensor::Float32(output.view().clone().into_owned()))
+                        let output = output.try_extract_tensor::<f32>()?;
+                        Ok(OutputTensor::Float32(output.into_owned()))
                     }
                     _ => bail!("unexpected output tensor element data type"),
                 }
@@ -205,7 +196,7 @@ fn build_ort_env_once() -> ort::Result<()> {
 
 pub(crate) struct OnnxruntimeRunContext<'sess> {
     sess: &'sess ort::Session,
-    inputs: Vec<ort::Value>,
+    inputs: Vec<ort::SessionInputValue<'static>>,
 }
 
 impl OnnxruntimeRunContext<'_> {
@@ -216,7 +207,7 @@ impl OnnxruntimeRunContext<'_> {
             impl Dimension + 'static,
         >,
     ) -> anyhow::Result<()> {
-        let input = input.try_into()?;
+        let input = ort::Value::from_array(input)?.into();
         self.inputs.push(input);
         Ok(())
     }
