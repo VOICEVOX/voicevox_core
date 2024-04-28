@@ -5,8 +5,7 @@ use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
     CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider, ExecutionProvider as _,
-    ExecutionProviderDispatch, GraphOptimizationLevel, IntoTensorElementType, TensorElementType,
-    ValueType,
+    GraphOptimizationLevel, IntoTensorElementType, TensorElementType, ValueType,
 };
 
 use crate::{devices::SupportedDevices, error::ErrorRepr};
@@ -55,24 +54,18 @@ impl InferenceRuntime for Onnxruntime {
         // TODO: `InferenceRuntime::init`と`InitInferenceRuntimeError`を作る
         build_ort_env_once().unwrap();
 
-        let builder = ort::Session::builder()?
+        let mut builder = ort::Session::builder()?
             .with_optimization_level(GraphOptimizationLevel::Level1)?
             .with_intra_threads(options.cpu_num_threads.into())?;
 
-        let builder = if options.use_gpu && cfg!(feature = "directml") {
-            builder
-                .with_execution_providers([
-                    ExecutionProviderDispatch::DirectML(Default::default()),
-                ])?
+        if options.use_gpu && cfg!(feature = "directml") {
+            builder = builder
                 .with_parallel_execution(false)?
-                .with_memory_pattern(false)?
+                .with_memory_pattern(false)?;
+            DirectMLExecutionProvider::default().register(&builder)?;
         } else if options.use_gpu && cfg!(feature = "cuda") {
-            builder
-                .with_execution_providers([ExecutionProviderDispatch::CUDA(Default::default())])?
-        } else {
-            builder
-                .with_execution_providers([ExecutionProviderDispatch::CPU(Default::default())])?
-        };
+            CUDAExecutionProvider::default().register(&builder)?;
+        }
 
         let model = model()?;
         let sess = builder.commit_from_memory(&{ model })?;
