@@ -10,6 +10,7 @@ anyhow = "1.0.65"
 assert_cmd = "2.0.8"
 async-std = "1.12.0"
 async_zip = "=0.0.16"
+bindgen = "0.69.4"
 binstall-tar = "0.4.39"
 bytes = "1.1.0"
 camino = "1.1.6"
@@ -92,7 +93,7 @@ rev = "59e94ac87732e9da3f83ebbd542a3062f3cf2264"
 
 [workspace.dependencies.open_jtalk]
 git = "https://github.com/VOICEVOX/open_jtalk-rs.git"
-rev = "70c76bb54522830e92803038191bf533ba68ce85"
+rev = "e1940f3fd61a48bed5bbec8cd2645e13923b1f80"
 
 # FIXME: iOS対応のpull request(https://github.com/wesleywiser/process_path/pull/16)がマージされる見込みが無いため
 [workspace.dependencies.process_path]

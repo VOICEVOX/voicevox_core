@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::ensure;
 use async_std::io::ReadExt as _;
+use camino::Utf8PathBuf;
 use flate2::read::GzDecoder;
 use tar::Archive;
 
@@ -28,7 +29,8 @@ async fn main() -> anyhow::Result<()> {
 
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/typing.rs");
-    Ok(())
+
+    generate_c_api_rs_bindings()
 }
 
 /// OpenJTalkの辞書をダウンロードして展開する。
@@ -118,5 +120,22 @@ fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
         serde_json::to_string(&test_data)?,
     )?;
 
+    Ok(())
+}
+
+fn generate_c_api_rs_bindings() -> anyhow::Result<()> {
+    static C_BINDINGS_PATH: &str = "../voicevox_core_c_api/include/voicevox_core.h";
+    static ADDITIONAL_C_BINDINGS_PATH: &str = "./compatible_engine.h";
+
+    let out_dir = Utf8PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindgen::Builder::default()
+        .header(C_BINDINGS_PATH)
+        .header(ADDITIONAL_C_BINDINGS_PATH)
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .dynamic_library_name("CApi")
+        .generate()?
+        .write_to_file(out_dir.join("c_api.rs"))?;
+    println!("cargo:rerun-if-changed={C_BINDINGS_PATH}");
+    println!("cargo:rerun-if-changed={ADDITIONAL_C_BINDINGS_PATH}");
     Ok(())
 }
