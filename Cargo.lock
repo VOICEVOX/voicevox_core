@@ -4409,20 +4409,22 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "voicevox-ort"
-version = "2.0.0-rc.1"
-source = "git+https://github.com/qryxip/ort.git?rev=59e94ac87732e9da3f83ebbd542a3062f3cf2264#59e94ac87732e9da3f83ebbd542a3062f3cf2264"
+version = "2.0.0-rc.2"
+source = "git+https://github.com/qryxip/ort.git?rev=075031a0bddf31b696995097894e45eab32ba73e#075031a0bddf31b696995097894e45eab32ba73e"
 dependencies = [
  "half",
+ "js-sys",
  "ndarray",
  "thiserror",
  "tracing",
  "voicevox-ort-sys",
+ "web-sys",
 ]
 
 [[package]]
 name = "voicevox-ort-sys"
-version = "2.0.0-rc.1"
-source = "git+https://github.com/qryxip/ort.git?rev=59e94ac87732e9da3f83ebbd542a3062f3cf2264#59e94ac87732e9da3f83ebbd542a3062f3cf2264"
+version = "2.0.0-rc.2"
+source = "git+https://github.com/qryxip/ort.git?rev=075031a0bddf31b696995097894e45eab32ba73e#075031a0bddf31b696995097894e45eab32ba73e"
 dependencies = [
  "flate2",
  "sha2 0.10.6",
