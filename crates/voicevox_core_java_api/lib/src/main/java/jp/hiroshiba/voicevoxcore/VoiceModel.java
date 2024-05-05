@@ -130,7 +130,7 @@ public class VoiceModel extends Dll {
   /** スタイル（style）に対応するモデルの種類。 */
   public static enum StyleType {
     /** 音声合成クエリの作成と音声合成が可能。 */
-    @SerializedName("TALK")
+    @SerializedName("talk")
     @Expose
     TALK,
   }

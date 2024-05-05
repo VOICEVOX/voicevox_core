@@ -37,7 +37,7 @@ x : str
 class StyleType(str, Enum):
     """**スタイル** (_style_)に対応するモデルの種類。"""
 
-    TALK = "TALK"
+    TALK = "talk"
     """音声合成クエリの作成と音声合成が可能。"""
 
 
