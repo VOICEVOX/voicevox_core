@@ -451,3 +451,102 @@ pub(crate) mod tokio {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use once_cell::sync::Lazy;
+    use rstest::{fixture, rstest};
+    use serde_json::json;
+
+    use crate::{
+        manifest::{ManifestDomains, TalkManifest},
+        SpeakerMeta, StyleType,
+    };
+
+    #[rstest]
+    #[case(
+        &ManifestDomains {
+            talk: None,
+        },
+        &[],
+        Ok(())
+    )]
+    #[case(
+        &ManifestDomains {
+            talk: Some(TALK_MANIFEST.clone()),
+        },
+        &[speaker(&[StyleType::Talk])],
+        Ok(())
+    )]
+    #[case(
+        &ManifestDomains {
+            talk: Some(TALK_MANIFEST.clone()),
+        },
+        &[speaker(&[StyleType::Talk, StyleType::Sing])],
+        Ok(())
+    )]
+    #[case(
+        &ManifestDomains {
+            talk: None,
+        },
+        &[speaker(&[StyleType::Talk])],
+        Err(())
+    )]
+    fn check_acceptable_works(
+        #[case] manifest: &ManifestDomains,
+        #[case] metas: &[SpeakerMeta],
+        #[case] expected: std::result::Result<(), ()>,
+    ) {
+        let actual = manifest.check_acceptable(metas).map_err(|_| ());
+        assert_eq!(expected, actual);
+    }
+
+    static TALK_MANIFEST: Lazy<TalkManifest> = Lazy::new(|| TalkManifest {
+        predict_duration_filename: "".to_owned(),
+        predict_intonation_filename: "".to_owned(),
+        decode_filename: "".to_owned(),
+        style_id_to_model_inner_id: Default::default(),
+    });
+
+    #[fixture]
+    fn talk_speaker() -> SpeakerMeta {
+        serde_json::from_value(json!({
+            "name": "dummy",
+            "styles": [
+                {
+                    "id": 0,
+                    "name": "style1",
+                    "type": "talk",
+                    "order": 0
+                }
+            ],
+            "version": "0.0.1",
+            "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+            "order": 0
+        }))
+        .unwrap()
+    }
+
+    fn speaker(style_types: &'static [StyleType]) -> SpeakerMeta {
+        let styles = style_types
+            .iter()
+            .map(|style_type| {
+                json!({
+                    "id": 0,
+                    "name": "style1",
+                    "type": style_type,
+                    "order": null
+                })
+            })
+            .collect::<Vec<_>>();
+
+        serde_json::from_value(json!({
+            "name": "dummy",
+            "styles": styles,
+            "version": "0.0.1",
+            "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+            "order": null
+        }))
+        .unwrap()
+    }
+}
