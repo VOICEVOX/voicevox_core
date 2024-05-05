@@ -56,6 +56,8 @@ pub(crate) struct VoiceModelHeader {
     pub(crate) id: VoiceModelId,
     manifest: Manifest,
     /// メタ情報。
+    ///
+    /// `manifest`が対応していない`StyleType`のスタイルは含まれるべきではない。
     pub(crate) metas: VoiceModelMeta,
     pub(crate) path: PathBuf,
 }
@@ -100,6 +102,9 @@ impl VoiceModelHeader {
 }
 
 impl ManifestDomains {
+    /// manifestとして対応していない`StyleType`に対してエラーを発する。
+    ///
+    /// `Status`はこのバリデーションを信頼し、`InferenceDomain`の不足時にパニックする。
     fn check_acceptable(&self, metas: &[SpeakerMeta]) -> std::result::Result<(), StyleType> {
         let err = metas
             .iter()
