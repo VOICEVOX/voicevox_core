@@ -206,6 +206,9 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     ///
     /// - 現在持っている音声モデルIDかスタイルIDが`model_header`と重複するとき
     /// - 必要であるはずの`InferenceDomain`のモデルデータが欠けているとき
+    // FIXME: コメントとテストを書く
+    // - https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1589978521
+    // - https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1589976759
     fn ensure_acceptable(&self, model_header: &VoiceModelHeader) -> LoadModelResult<()> {
         let error = |context| LoadModelError {
             path: model_header.path.clone(),
@@ -218,6 +221,8 @@ impl<R: InferenceRuntime> LoadedModels<R> {
                 id: model_header.id.clone(),
             }));
         }
+
+        // FIXME: https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1590200343
 
         let loaded = self.speakers();
         let external = model_header.metas.iter();
