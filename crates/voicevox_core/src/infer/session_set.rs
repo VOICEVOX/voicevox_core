@@ -11,11 +11,11 @@ use super::{
     InferenceSessionOptions, InferenceSignature, ParamInfo,
 };
 
-pub(crate) struct SessionSet<R: InferenceRuntime, D: InferenceDomain>(
+pub(crate) struct InferenceSessionSet<R: InferenceRuntime, D: InferenceDomain>(
     EnumMap<D::Operation, Arc<std::sync::Mutex<R::Session>>>,
 );
 
-impl<R: InferenceRuntime, D: InferenceDomain> SessionSet<R, D> {
+impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
     pub(crate) fn new(
         model_bytes: &EnumMap<D::Operation, Vec<u8>>,
         options: &EnumMap<D::Operation, InferenceSessionOptions>,
@@ -70,25 +70,25 @@ impl<R: InferenceRuntime, D: InferenceDomain> SessionSet<R, D> {
     }
 }
 
-impl<R: InferenceRuntime, D: InferenceDomain> SessionSet<R, D> {
-    pub(crate) fn get<I>(&self) -> SessionCell<R, I>
+impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
+    pub(crate) fn get<I>(&self) -> InferenceSessionCell<R, I>
     where
         I: InferenceInputSignature,
         I::Signature: InferenceSignature<Domain = D>,
     {
-        SessionCell {
+        InferenceSessionCell {
             inner: self.0[I::Signature::OPERATION].clone(),
             marker: PhantomData,
         }
     }
 }
 
-pub(crate) struct SessionCell<R: InferenceRuntime, I> {
+pub(crate) struct InferenceSessionCell<R: InferenceRuntime, I> {
     inner: Arc<std::sync::Mutex<R::Session>>,
     marker: PhantomData<fn(I)>,
 }
 
-impl<R: InferenceRuntime, I: InferenceInputSignature> SessionCell<R, I> {
+impl<R: InferenceRuntime, I: InferenceInputSignature> InferenceSessionCell<R, I> {
     pub(crate) fn run(
         self,
         input: I,

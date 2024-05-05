@@ -10,7 +10,7 @@ use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
         domains::{InferenceDomainMap, TalkDomain, TalkOperation},
-        session_set::{SessionCell, SessionSet},
+        session_set::{InferenceSessionCell, InferenceSessionSet},
         InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
         InferenceSignature,
     },
@@ -168,7 +168,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     ///
     /// - `self`が`model_id`を含んでいないとき
     /// - 対応する`InferenceDomain`が欠けているとき
-    fn get<I>(&self, model_id: &VoiceModelId) -> SessionCell<R, I>
+    fn get<I>(&self, model_id: &VoiceModelId) -> InferenceSessionCell<R, I>
     where
         I: InferenceInputSignature,
         <I::Signature as InferenceSignature>::Domain: InferenceDomainExt,
@@ -295,7 +295,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
 pub(crate) trait InferenceDomainExt: InferenceDomain {
     fn visit<R: InferenceRuntime>(
         map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
-    ) -> Option<&(StyleIdToModelInnerId, SessionSet<R, Self>)>;
+    ) -> Option<&(StyleIdToModelInnerId, InferenceSessionSet<R, Self>)>;
 }
 
 #[duplicate_item(
@@ -305,13 +305,15 @@ pub(crate) trait InferenceDomainExt: InferenceDomain {
 impl InferenceDomainExt for T {
     fn visit<R: InferenceRuntime>(
         map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
-    ) -> Option<&(StyleIdToModelInnerId, SessionSet<R, Self>)> {
+    ) -> Option<&(StyleIdToModelInnerId, InferenceSessionSet<R, Self>)> {
         map.field.as_ref()
     }
 }
 
 impl<R: InferenceRuntime> InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>> {
-    fn get<D: InferenceDomainExt>(&self) -> Option<&(StyleIdToModelInnerId, SessionSet<R, D>)> {
+    fn get<D: InferenceDomainExt>(
+        &self,
+    ) -> Option<&(StyleIdToModelInnerId, InferenceSessionSet<R, D>)> {
         D::visit(self)
     }
 }
@@ -330,7 +332,7 @@ impl InferenceDomainMap<ModelBytesWithInnerIdsByDomain> {
                 .field
                 .as_ref()
                 .map(|(model_inner_ids, model_bytes)| {
-                    let session_set = SessionSet::new(model_bytes, &session_options.field)?;
+                    let session_set = InferenceSessionSet::new(model_bytes, &session_options.field)?;
                     Ok::<_, anyhow::Error>((model_inner_ids.clone(), session_set))
                 })
                 .transpose()?;
@@ -359,7 +361,7 @@ impl InferenceDomainMap<[bool]> {
 type SessionOptionsByDomain = (EnumMap<TalkOperation, InferenceSessionOptions>,);
 
 type SessionSetsWithInnerIdsByDomain<R> =
-    (Option<(StyleIdToModelInnerId, SessionSet<R, TalkDomain>)>,);
+    (Option<(StyleIdToModelInnerId, InferenceSessionSet<R, TalkDomain>)>,);
 
 #[cfg(test)]
 mod tests {
