@@ -5,6 +5,7 @@
 use anyhow::anyhow;
 use derive_getters::Getters;
 use derive_new::new;
+use easy_ext::ext;
 use enum_map::EnumMap;
 use itertools::Itertools as _;
 use serde::Deserialize;
@@ -13,7 +14,7 @@ use crate::{
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
         domains::{TalkDomain, TalkOperation},
-        InferenceDomain as _,
+        InferenceDomain,
     },
     manifest::{Manifest, ManifestDomains, StyleIdToModelInnerId},
     SpeakerMeta, StyleMeta, StyleType, VoiceModelMeta,
@@ -120,10 +121,27 @@ impl ManifestDomains {
         }
     }
 
+    /// メタ情報にタイプが`style_type`のスタイルが含まれることを許容するかどうか。
+    ///
+    /// 例えば`self.talk`が`None`のとき、`StyleType::Talk`に対して`false`を返す。
     fn accepts(&self, style_type: StyleType) -> bool {
         let Self { talk } = self;
-        // (p ⟹ q) = (¬p ∨ q)
-        !TalkDomain::style_types().contains(&style_type) || talk.is_some()
+
+        return TalkDomain::contains(style_type).implies(|| talk.is_some());
+
+        #[ext]
+        impl<D: InferenceDomain> D {
+            fn contains(style_type: StyleType) -> bool {
+                Self::style_types().contains(&style_type)
+            }
+        }
+
+        #[ext]
+        impl bool {
+            fn implies(self, other: impl FnOnce() -> Self) -> Self {
+                !self || other()
+            }
+        }
     }
 }
 
