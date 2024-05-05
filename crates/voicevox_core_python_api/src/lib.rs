@@ -71,7 +71,7 @@ exceptions! {
     ReadZipEntryError: PyException;
     ModelAlreadyLoadedError: PyException;
     StyleAlreadyLoadedError: PyException;
-    MissingModelDataError: PyException;
+    InvalidModelFormatError: PyException;
     InvalidModelDataError: PyException;
     GetSupportedDevicesError: PyException;
     StyleNotFoundError: PyKeyError;

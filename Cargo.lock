@@ -4435,6 +4435,7 @@ dependencies = [
  "rstest_reuse",
  "serde",
  "serde_json",
+ "serde_with",
  "smallvec",
  "strum",
  "tempfile",

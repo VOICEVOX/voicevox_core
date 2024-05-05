@@ -2,17 +2,23 @@
 //!
 //! VVM ファイルの定義と形式は[ドキュメント](../../../docs/vvm.md)を参照。
 
+use anyhow::anyhow;
 use derive_getters::Getters;
 use derive_new::new;
 use enum_map::EnumMap;
+use itertools::Itertools as _;
 use serde::Deserialize;
 
 use crate::{
-    infer::domains::TalkOperation,
-    manifest::{Manifest, StyleIdToModelInnerId},
-    VoiceModelMeta,
+    error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
+    infer::{
+        domains::{TalkDomain, TalkOperation},
+        InferenceDomain as _,
+    },
+    manifest::{Manifest, ManifestDomains, StyleIdToModelInnerId},
+    SpeakerMeta, StyleMeta, StyleType, VoiceModelMeta,
 };
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// [`VoiceModelId`]の実体。
 ///
@@ -54,6 +60,68 @@ pub(crate) struct VoiceModelHeader {
     pub(crate) path: PathBuf,
 }
 
+impl VoiceModelHeader {
+    fn new(
+        id: VoiceModelId,
+        manifest: Manifest,
+        metas: &[u8],
+        path: &Path,
+    ) -> LoadModelResult<Self> {
+        let metas =
+            serde_json::from_slice::<VoiceModelMeta>(metas).map_err(|source| LoadModelError {
+                path: path.to_owned(),
+                context: LoadModelErrorKind::InvalidModelFormat,
+                source: Some(
+                    anyhow::Error::from(source)
+                        .context(format!("{}が不正です", manifest.metas_filename())),
+                ),
+            })?;
+
+        manifest
+            .domains()
+            .check_acceptable(&metas)
+            .map_err(|style_type| LoadModelError {
+                path: path.to_owned(),
+                context: LoadModelErrorKind::InvalidModelFormat,
+                source: Some(anyhow!(
+                    "{metas_filename}には`{style_type}`のスタイルが存在しますが、manifest.jsonでの\
+                     対応がありません",
+                    metas_filename = manifest.metas_filename(),
+                )),
+            })?;
+
+        Ok(Self {
+            id,
+            manifest,
+            metas,
+            path: path.to_owned(),
+        })
+    }
+}
+
+impl ManifestDomains {
+    fn check_acceptable(&self, metas: &[SpeakerMeta]) -> std::result::Result<(), StyleType> {
+        let err = metas
+            .iter()
+            .flat_map(SpeakerMeta::styles)
+            .map(StyleMeta::r#type)
+            .copied()
+            .unique()
+            .find(|&style_type| !self.accepts(style_type));
+
+        match err {
+            Some(err) => Err(err),
+            None => Ok(()),
+        }
+    }
+
+    fn accepts(&self, style_type: StyleType) -> bool {
+        let Self { talk } = self;
+        // (p ⟹ q) = (¬p ∨ q)
+        !TalkDomain::style_types().contains(&style_type) || talk.is_some()
+    }
+}
+
 pub(crate) mod blocking {
     use std::{
         io::{self, Cursor},
@@ -92,7 +160,8 @@ pub(crate) mod blocking {
             let talk = self
                 .header
                 .manifest
-                .talk()
+                .domains()
+                .talk
                 .as_ref()
                 .map(
                     |TalkManifest {
@@ -124,20 +193,13 @@ pub(crate) mod blocking {
 
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         pub fn from_path(path: impl AsRef<Path>) -> crate::Result<Self> {
-            let path = path.as_ref().to_owned();
-            let reader = BlockingVvmEntryReader::open(&path)?;
+            let path = path.as_ref();
+            let reader = BlockingVvmEntryReader::open(path)?;
             let manifest = reader.read_vvm_json::<Manifest>("manifest.json")?;
-            let metas = reader.read_vvm_json(manifest.metas_filename())?;
+            let metas = &reader.read_vvm_entry(manifest.metas_filename())?;
             let id = VoiceModelId::new(nanoid!());
-
-            Ok(Self {
-                header: VoiceModelHeader {
-                    id,
-                    metas,
-                    manifest,
-                    path,
-                },
-            })
+            let header = VoiceModelHeader::new(id, manifest, metas, path)?;
+            Ok(Self { header })
         }
 
         /// ID。
@@ -179,12 +241,13 @@ pub(crate) mod blocking {
             })
         }
 
+        // FIXME: manifest.json専用になっているので、そういう関数名にする
         fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> LoadModelResult<T> {
             let bytes = &self.read_vvm_entry(filename)?;
             serde_json::from_slice(bytes).map_err(|source| LoadModelError {
                 path: self.borrow_path().clone(),
-                context: LoadModelErrorKind::OpenZipFile,
-                source: Some(source.into()),
+                context: LoadModelErrorKind::InvalidModelFormat,
+                source: Some(anyhow::Error::from(source).context(format!("{filename}が不正です"))),
             })
         }
 
@@ -237,7 +300,7 @@ pub(crate) mod tokio {
         ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerIdsByDomain>> {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
 
-            let talk = OptionFuture::from(self.header.manifest.talk().as_ref().map(
+            let talk = OptionFuture::from(self.header.manifest.domains().talk.as_ref().map(
                 |TalkManifest {
                      predict_duration_filename,
                      predict_intonation_filename,
@@ -273,19 +336,10 @@ pub(crate) mod tokio {
         pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
             let reader = AsyncVvmEntryReader::open(path.as_ref()).await?;
             let manifest = reader.read_vvm_json::<Manifest>("manifest.json").await?;
-            let metas = reader
-                .read_vvm_json::<VoiceModelMeta>(manifest.metas_filename())
-                .await?;
+            let metas = &reader.read_vvm_entry(manifest.metas_filename()).await?;
             let id = VoiceModelId::new(nanoid!());
-
-            Ok(Self {
-                header: VoiceModelHeader {
-                    id,
-                    metas,
-                    manifest,
-                    path: path.as_ref().into(),
-                },
-            })
+            let header = VoiceModelHeader::new(id, manifest, metas, path.as_ref())?;
+            Ok(Self { header })
         }
 
         /// ID。
@@ -342,14 +396,13 @@ pub(crate) mod tokio {
                 .collect();
             Ok(AsyncVvmEntryReader::new(path, reader, entry_map))
         }
+        // FIXME: manifest.json専用になっているので、そういう関数名にする
         async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> LoadModelResult<T> {
             let bytes = self.read_vvm_entry(filename).await?;
             serde_json::from_slice(&bytes).map_err(|source| LoadModelError {
                 path: self.path.to_owned(),
-                context: LoadModelErrorKind::ReadZipEntry {
-                    filename: filename.to_owned(),
-                },
-                source: Some(source.into()),
+                context: LoadModelErrorKind::InvalidModelFormat,
+                source: Some(anyhow::Error::from(source).context(format!("{filename}が不正です"))),
             })
         }
 

@@ -4,7 +4,7 @@ use duplicate::{duplicate, duplicate_item};
 use educe::Educe;
 use enum_map::EnumMap;
 use indexmap::IndexMap;
-use itertools::{iproduct, Itertools as _};
+use itertools::iproduct;
 
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
@@ -17,7 +17,7 @@ use crate::{
     manifest::{ModelInnerId, StyleIdToModelInnerId},
     metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
     voice_model::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId},
-    Result, StyleType,
+    Result,
 };
 
 pub(crate) struct Status<R: InferenceRuntime> {
@@ -41,7 +41,7 @@ impl<R: InferenceRuntime> Status<R> {
         self.loaded_models
             .lock()
             .unwrap()
-            .ensure_acceptable(model_header, model_contents.each_is_some())?;
+            .ensure_acceptable(model_header)?;
 
         let session_sets_with_inner_ids = model_contents
             .create_session_sets(&self.session_options)
@@ -184,7 +184,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
                     .unwrap();
                 panic!(
                     "missing session set for `{type_name}` (should be checked in \
-                     `ensure_acceptable` and `ids_for`)",
+                     `VoiceModelHeader::new` and `ids_for`)",
                 );
             });
         session_set.get()
@@ -206,11 +206,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     ///
     /// - 現在持っている音声モデルIDかスタイルIDが`model_header`と重複するとき
     /// - 必要であるはずの`InferenceDomain`のモデルデータが欠けているとき
-    fn ensure_acceptable(
-        &self,
-        model_header: &VoiceModelHeader,
-        existences: InferenceDomainMap<[bool]>,
-    ) -> LoadModelResult<()> {
+    fn ensure_acceptable(&self, model_header: &VoiceModelHeader) -> LoadModelResult<()> {
         let error = |context| LoadModelError {
             path: model_header.path.clone(),
             context,
@@ -236,15 +232,6 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             .metas
             .iter()
             .flat_map(|speaker| speaker.styles());
-        if let Some(style_type) = external
-            .clone()
-            .map(StyleMeta::r#type)
-            .copied()
-            .unique()
-            .find(|&style_type| !existences.accepts(style_type))
-        {
-            return Err(error(LoadModelErrorKind::MissingModelData { style_type }));
-        }
         if let Some((style, _)) =
             iproduct!(loaded, external).find(|(loaded, external)| loaded.id() == external.id())
         {
@@ -260,7 +247,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         model_header: &VoiceModelHeader,
         session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
     ) -> Result<()> {
-        self.ensure_acceptable(model_header, session_sets_with_inner_ids.each_is_some())?;
+        self.ensure_acceptable(model_header)?;
 
         let prev = self.0.insert(
             model_header.id.clone(),
@@ -339,22 +326,6 @@ impl InferenceDomainMap<ModelBytesWithInnerIdsByDomain> {
         }
 
         Ok(InferenceDomainMap { talk })
-    }
-}
-
-impl<T> InferenceDomainMap<(Option<T>,)> {
-    fn each_is_some(&self) -> InferenceDomainMap<[bool]> {
-        InferenceDomainMap {
-            talk: self.talk.is_some(),
-        }
-    }
-}
-
-impl InferenceDomainMap<[bool]> {
-    fn accepts(&self, style_type: StyleType) -> bool {
-        let InferenceDomainMap { talk } = *self;
-        // (p → q) = (¬p ∨ q)
-        !TalkDomain::style_types().contains(&style_type) || talk
     }
 }
 

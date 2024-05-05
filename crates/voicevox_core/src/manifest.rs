@@ -4,6 +4,7 @@ use derive_getters::Getters;
 use derive_more::Deref;
 use derive_new::new;
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 
 use crate::StyleId;
 
@@ -42,7 +43,13 @@ pub struct Manifest {
     #[allow(dead_code)]
     manifest_version: ManifestVersion,
     metas_filename: String,
-    talk: Option<TalkManifest>,
+    #[serde(flatten)]
+    domains: ManifestDomains,
+}
+
+#[derive(Deserialize, Clone)]
+pub(crate) struct ManifestDomains {
+    pub(crate) talk: Option<TalkManifest>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -54,6 +61,9 @@ pub(crate) struct TalkManifest {
     pub(crate) style_id_to_model_inner_id: StyleIdToModelInnerId,
 }
 
+#[serde_as]
 #[derive(Default, Clone, Deref, Deserialize)]
 #[deref(forward)]
-pub(crate) struct StyleIdToModelInnerId(Arc<BTreeMap<StyleId, ModelInnerId>>);
+pub(crate) struct StyleIdToModelInnerId(
+    #[serde_as(as = "Arc<BTreeMap<DisplayFromStr, _>>")] Arc<BTreeMap<StyleId, ModelInnerId>>,
+);

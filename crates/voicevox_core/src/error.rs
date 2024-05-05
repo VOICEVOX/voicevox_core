@@ -39,7 +39,7 @@ impl Error {
                 LoadModelErrorKind::ReadZipEntry { .. } => ErrorKind::ReadZipEntry,
                 LoadModelErrorKind::ModelAlreadyLoaded { .. } => ErrorKind::ModelAlreadyLoaded,
                 LoadModelErrorKind::StyleAlreadyLoaded { .. } => ErrorKind::StyleAlreadyLoaded,
-                LoadModelErrorKind::MissingModelData { .. } => ErrorKind::MissingModelData,
+                LoadModelErrorKind::InvalidModelFormat { .. } => ErrorKind::InvalidModelFormat,
                 LoadModelErrorKind::InvalidModelData => ErrorKind::InvalidModelData,
             },
             ErrorRepr::GetSupportedDevices(_) => ErrorKind::GetSupportedDevices,
@@ -123,12 +123,12 @@ pub enum ErrorKind {
     OpenZipFile,
     /// ZIP内のファイルが読めなかった。
     ReadZipEntry,
+    /// モデルの形式が不正。
+    InvalidModelFormat,
     /// すでに読み込まれている音声モデルを読み込もうとした。
     ModelAlreadyLoaded,
     /// すでに読み込まれているスタイルを読み込もうとした。
     StyleAlreadyLoaded,
-    /// モデルデータが見つからなかった。
-    MissingModelData,
     /// 無効なモデルデータ。
     InvalidModelData,
     /// サポートされているデバイス情報取得に失敗した。
@@ -173,12 +173,12 @@ pub(crate) enum LoadModelErrorKind {
     OpenZipFile,
     #[display(fmt = "`{filename}`を読み取れませんでした")]
     ReadZipEntry { filename: String },
+    #[display(fmt = "モデルの形式が不正です")]
+    InvalidModelFormat,
     #[display(fmt = "モデル`{id}`は既に読み込まれています")]
     ModelAlreadyLoaded { id: VoiceModelId },
     #[display(fmt = "スタイル`{id}`は既に読み込まれています")]
     StyleAlreadyLoaded { id: StyleId },
-    #[display(fmt = "`{style_type}`に対応するモデルデータがありませんでした")]
-    MissingModelData { style_type: StyleType },
     #[display(fmt = "モデルデータを読むことができませんでした")]
     InvalidModelData,
 }

@@ -49,7 +49,20 @@ pub type RawStyleId = u32;
 ///
 /// [**話者**(_speaker_)]: SpeakerMeta
 /// [**スタイル**(_style_)]: StyleMeta
-#[derive(PartialEq, Eq, Clone, Copy, Ord, Hash, PartialOrd, Deserialize, Serialize, new, Debug)]
+#[derive(
+    PartialEq,
+    Eq,
+    Clone,
+    Copy,
+    Ord,
+    Hash,
+    PartialOrd,
+    derive_more::FromStr,
+    Deserialize,
+    Serialize,
+    new,
+    Debug,
+)]
 pub struct StyleId(RawStyleId);
 
 impl StyleId {
