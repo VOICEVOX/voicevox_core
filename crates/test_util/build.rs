@@ -39,7 +39,7 @@ async fn download_open_jtalk_dict(dist: &Path) -> anyhow::Result<()> {
     );
 
     let res = reqwest::get(&download_url).await?;
-    ensure!(res.status().is_success(), "{}", res.status());
+    ensure!(res.status() == 200, "{}", res.status());
 
     let bytes = res.bytes().await?;
     let dict_tar = GzDecoder::new(&*bytes);
