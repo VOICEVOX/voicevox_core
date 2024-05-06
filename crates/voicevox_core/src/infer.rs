@@ -14,6 +14,7 @@ use thiserror::Error;
 use crate::{StyleType, SupportedDevices};
 
 pub(crate) trait InferenceRuntime: 'static {
+    // TODO: "session"とは何なのかを定め、ドキュメントを書く。`InferenceSessionSet`も同様。
     type Session: Sized + Send + 'static;
     type RunContext<'a>: From<&'a mut Self::Session> + PushInputTensor;
 
