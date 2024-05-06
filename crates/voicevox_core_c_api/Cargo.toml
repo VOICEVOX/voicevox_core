@@ -21,7 +21,6 @@ anstyle-query.workspace = true
 camino.workspace = true
 chrono = { workspace = true, default-features = false, features = ["clock"] }
 colorchoice.workspace = true
-cstr.workspace = true
 derive-getters.workspace = true
 futures.workspace = true
 itertools.workspace = true

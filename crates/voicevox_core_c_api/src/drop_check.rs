@@ -107,8 +107,6 @@ impl CStringDropChecker {
 mod tests {
     use std::ffi::{c_char, CStr};
 
-    use cstr::cstr;
-
     use super::CStringDropChecker;
 
     #[test]
@@ -118,7 +116,7 @@ mod tests {
     )]
     fn it_denies_duplicated_char_ptr() {
         let checker = CStringDropChecker::new();
-        let s = cstr!("").to_owned();
+        let s = c"".to_owned();
         checker.whitelist(checker.whitelist(s));
     }
 
