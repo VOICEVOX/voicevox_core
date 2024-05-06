@@ -1,5 +1,6 @@
 use std::{
-    env, path::{Path, PathBuf}
+    env,
+    path::{Path, PathBuf},
 };
 
 use anyhow::ensure;
