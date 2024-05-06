@@ -16,10 +16,10 @@ use voicevox_core::{
 
 use crate::{
     ExtractFullContextLabelError, GetSupportedDevicesError, GpuSupportError, InferenceFailedError,
-    InvalidModelDataError, InvalidWordError, LoadUserDictError, ModelAlreadyLoadedError,
-    ModelNotFoundError, NotLoadedOpenjtalkDictError, OpenZipFileError, ParseKanaError,
-    ReadZipEntryError, SaveUserDictError, StyleAlreadyLoadedError, StyleNotFoundError,
-    UseUserDictError, WordNotFoundError,
+    InvalidModelDataError, InvalidModelFormatError, InvalidWordError, LoadUserDictError,
+    ModelAlreadyLoadedError, ModelNotFoundError, NotLoadedOpenjtalkDictError, OpenZipFileError,
+    ParseKanaError, ReadZipEntryError, SaveUserDictError, StyleAlreadyLoadedError,
+    StyleNotFoundError, UseUserDictError, WordNotFoundError,
 };
 
 pub(crate) fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
@@ -194,6 +194,7 @@ pub(crate) impl<T> voicevox_core::Result<T> {
                 ErrorKind::ReadZipEntry => ReadZipEntryError::new_err(msg),
                 ErrorKind::ModelAlreadyLoaded => ModelAlreadyLoadedError::new_err(msg),
                 ErrorKind::StyleAlreadyLoaded => StyleAlreadyLoadedError::new_err(msg),
+                ErrorKind::InvalidModelFormat => InvalidModelFormatError::new_err(msg),
                 ErrorKind::InvalidModelData => InvalidModelDataError::new_err(msg),
                 ErrorKind::GetSupportedDevices => GetSupportedDevicesError::new_err(msg),
                 ErrorKind::StyleNotFound => StyleNotFoundError::new_err(msg),

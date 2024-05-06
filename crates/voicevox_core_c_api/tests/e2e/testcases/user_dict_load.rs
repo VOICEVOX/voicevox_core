@@ -1,7 +1,6 @@
 // ユーザー辞書の登録によって読みが変化することを確認するテスト。
 // 辞書ロード前後でAudioQueryのkanaが変化するかどうかで確認する。
 
-use crate::symbols::{VoicevoxInitializeOptions, VoicevoxResultCode};
 use assert_cmd::assert::AssertResult;
 use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
@@ -10,11 +9,11 @@ use test_util::OPEN_JTALK_DIC_DIR;
 
 use libloading::Library;
 use serde::{Deserialize, Serialize};
+use test_util::c_api::{self, CApi, VoicevoxInitializeOptions, VoicevoxResultCode};
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     snapshots,
-    symbols::{Symbols, VoicevoxAccelerationMode, VoicevoxUserDictWordType},
 };
 
 case!(TestCase);
@@ -24,45 +23,30 @@ struct TestCase;
 
 #[typetag::serde(name = "user_dict_load")]
 impl assert_cdylib::TestCase for TestCase {
-    unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
-        let Symbols {
-            voicevox_user_dict_word_make,
-            voicevox_user_dict_new,
-            voicevox_user_dict_add_word,
-            voicevox_user_dict_delete,
-            voicevox_make_default_initialize_options,
-            voicevox_open_jtalk_rc_new,
-            voicevox_open_jtalk_rc_use_user_dict,
-            voicevox_open_jtalk_rc_delete,
-            voicevox_voice_model_new_from_path,
-            voicevox_voice_model_delete,
-            voicevox_synthesizer_new,
-            voicevox_synthesizer_delete,
-            voicevox_synthesizer_load_voice_model,
-            voicevox_synthesizer_create_audio_query,
-            ..
-        } = Symbols::new(lib)?;
+    unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
+        let lib = CApi::from_library(lib)?;
 
-        let dict = voicevox_user_dict_new();
+        let dict = lib.voicevox_user_dict_new();
 
         let mut word_uuid = [0u8; 16];
 
         let word = {
-            let mut word = voicevox_user_dict_word_make(
+            let mut word = lib.voicevox_user_dict_word_make(
                 c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
                 c"アイウエオ".as_ptr(),
             );
-            word.word_type = VoicevoxUserDictWordType::VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;
+            word.word_type =
+                c_api::VoicevoxUserDictWordType_VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;
             word.priority = 10;
 
             word
         };
 
-        assert_ok(voicevox_user_dict_add_word(dict, &word, &mut word_uuid));
+        assert_ok(lib.voicevox_user_dict_add_word(dict, &word, &mut word_uuid));
 
         let model = {
             let mut model = MaybeUninit::uninit();
-            assert_ok(voicevox_voice_model_new_from_path(
+            assert_ok(lib.voicevox_voice_model_new_from_path(
                 c"../../model/sample.vvm".as_ptr(),
                 model.as_mut_ptr(),
             ));
@@ -72,30 +56,30 @@ impl assert_cdylib::TestCase for TestCase {
         let openjtalk = {
             let mut openjtalk = MaybeUninit::uninit();
             let open_jtalk_dic_dir = CString::new(OPEN_JTALK_DIC_DIR).unwrap();
-            assert_ok(voicevox_open_jtalk_rc_new(
-                open_jtalk_dic_dir.as_ptr(),
-                openjtalk.as_mut_ptr(),
-            ));
+            assert_ok(
+                lib.voicevox_open_jtalk_rc_new(open_jtalk_dic_dir.as_ptr(), openjtalk.as_mut_ptr()),
+            );
             openjtalk.assume_init()
         };
 
         let synthesizer = {
             let mut synthesizer = MaybeUninit::uninit();
-            assert_ok(voicevox_synthesizer_new(
+            assert_ok(lib.voicevox_synthesizer_new(
                 openjtalk,
                 VoicevoxInitializeOptions {
-                    acceleration_mode: VoicevoxAccelerationMode::VOICEVOX_ACCELERATION_MODE_CPU,
-                    ..voicevox_make_default_initialize_options()
+                    acceleration_mode:
+                        c_api::VoicevoxAccelerationMode_VOICEVOX_ACCELERATION_MODE_CPU,
+                    ..lib.voicevox_make_default_initialize_options()
                 },
                 synthesizer.as_mut_ptr(),
             ));
             synthesizer.assume_init()
         };
 
-        assert_ok(voicevox_synthesizer_load_voice_model(synthesizer, model));
+        assert_ok(lib.voicevox_synthesizer_load_voice_model(synthesizer, model));
 
         let mut audio_query_without_dict = std::ptr::null_mut();
-        assert_ok(voicevox_synthesizer_create_audio_query(
+        assert_ok(lib.voicevox_synthesizer_create_audio_query(
             synthesizer,
             c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
             STYLE_ID,
@@ -105,10 +89,10 @@ impl assert_cdylib::TestCase for TestCase {
             CStr::from_ptr(audio_query_without_dict).to_str()?,
         )?;
 
-        assert_ok(voicevox_open_jtalk_rc_use_user_dict(openjtalk, dict));
+        assert_ok(lib.voicevox_open_jtalk_rc_use_user_dict(openjtalk, dict));
 
         let mut audio_query_with_dict = std::ptr::null_mut();
-        assert_ok(voicevox_synthesizer_create_audio_query(
+        assert_ok(lib.voicevox_synthesizer_create_audio_query(
             synthesizer,
             c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
             STYLE_ID,
@@ -124,15 +108,15 @@ impl assert_cdylib::TestCase for TestCase {
             audio_query_with_dict.get("kana")
         );
 
-        voicevox_voice_model_delete(model);
-        voicevox_open_jtalk_rc_delete(openjtalk);
-        voicevox_synthesizer_delete(synthesizer);
-        voicevox_user_dict_delete(dict);
+        lib.voicevox_voice_model_delete(model);
+        lib.voicevox_open_jtalk_rc_delete(openjtalk);
+        lib.voicevox_synthesizer_delete(synthesizer);
+        lib.voicevox_user_dict_delete(dict);
 
         return Ok(());
 
         fn assert_ok(result_code: VoicevoxResultCode) {
-            std::assert_eq!(VoicevoxResultCode::VOICEVOX_RESULT_OK, result_code);
+            std::assert_eq!(c_api::VoicevoxResultCode_VOICEVOX_RESULT_OK, result_code);
         }
         const STYLE_ID: u32 = 0;
     }
