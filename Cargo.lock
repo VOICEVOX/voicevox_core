@@ -3926,6 +3926,7 @@ dependencies = [
  "futures-lite 2.2.0",
  "libloading",
  "once_cell",
+ "reqwest",
  "serde",
  "serde_json",
  "surf",

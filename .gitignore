@@ -43,3 +43,12 @@ target
 
 # Documents
 public/
+
+# 一時的な追加
+libonnxruntime.so.1.13.1
+libvoicevox_core.so
+README.txt
+VERSION
+voicevox_core.h
+model/
+open_jtalk_dic_utf_8-1.11/

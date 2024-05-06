@@ -14,12 +14,13 @@ mod typing;
 
 const DIC_DIR_NAME: &str = "open_jtalk_dic_utf_8-1.11";
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let mut dist = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
     dist.push("data");
 
     let dic_dir = dist.join(DIC_DIR_NAME);
+
     if !dic_dir.try_exists()? {
         download_open_jtalk_dict(&dist).await?;
         ensure!(dic_dir.exists(), "`{}` does not exist", dic_dir.display());
@@ -39,6 +40,8 @@ async fn download_open_jtalk_dict(dist: &Path) -> anyhow::Result<()> {
         "https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/{DIC_DIR_NAME}.tar.gz"
     );
 
+    // let req = reqwest::get(&download_url).await?;
+    // ensure!(req.status().is_success(), "{}", req.status());
     let req = surf::get(download_url);
     let client = surf::client().with(surf::middleware::Redirect::default());
     let mut res = client.send(req).await.map_err(surf::Error::into_inner)?;
