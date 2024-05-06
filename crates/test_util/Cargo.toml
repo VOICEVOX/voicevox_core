@@ -22,7 +22,7 @@ fs-err.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 surf.workspace = true
-reqwest = { workspace = true, features = ["native-tls"] }
+reqwest = { workspace = true, features = ["rustls-tls"] }
 tar.workspace = true
 
 [lints.rust]
