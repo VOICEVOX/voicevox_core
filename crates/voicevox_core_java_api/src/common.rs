@@ -69,6 +69,7 @@ where
                             GpuSupport,
                             OpenZipFile,
                             ReadZipEntry,
+                            InvalidModelFormat,
                             ModelAlreadyLoaded,
                             StyleAlreadyLoaded,
                             InvalidModelData,

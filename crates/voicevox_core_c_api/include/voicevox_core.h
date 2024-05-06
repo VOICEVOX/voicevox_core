@@ -143,6 +143,10 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR = 17,
   /**
+   * モデルの形式が不正
+   */
+  VOICEVOX_RESULT_INVALID_MODEL_HEADER_ERROR = 28,
+  /**
    * すでに読み込まれている音声モデルを読み込もうとした
    */
   VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR = 18,
@@ -181,7 +185,7 @@ enum VoicevoxResultCode
   /**
    * 要求された機能を話者が持っていない
    */
-  VOICEVOX_RESULT_SPEAKER_FEATURE_ERROR = 28,
+  VOICEVOX_RESULT_SPEAKER_FEATURE_ERROR = 29,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;

@@ -9,6 +9,7 @@ mod macros;
 mod manifest;
 mod metas;
 mod result;
+mod status;
 mod synthesizer;
 mod task;
 mod text_analyzer;
@@ -33,7 +34,8 @@ pub use self::{
     engine::{AccentPhraseModel, AudioQueryModel, FullcontextExtractor, MorphableTargetInfo},
     error::{Error, ErrorKind},
     metas::{
-        RawStyleId, RawStyleVersion, SpeakerMeta, StyleId, StyleMeta, StyleVersion, VoiceModelMeta,
+        RawStyleId, RawStyleVersion, SpeakerMeta, StyleId, StyleMeta, StyleType, StyleVersion,
+        VoiceModelMeta,
     },
     result::Result,
     synthesizer::{AccelerationMode, InitializeOptions, SynthesisOptions, TtsOptions},

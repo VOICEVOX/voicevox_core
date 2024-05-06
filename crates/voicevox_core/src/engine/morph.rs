@@ -9,8 +9,10 @@ use world::{
 };
 
 use crate::{
-    error::ErrorRepr, synthesizer::DEFAULT_SAMPLING_RATE, AudioQueryModel, MorphableTargetInfo,
-    SpeakerMeta, StyleId, StyleMeta,
+    error::ErrorRepr,
+    infer::{domains::TalkDomain, InferenceDomain as _},
+    synthesizer::DEFAULT_SAMPLING_RATE,
+    AudioQueryModel, MorphableTargetInfo, SpeakerMeta, StyleId, StyleMeta, StyleType,
 };
 
 use self::permit::MorphableStyles;
@@ -42,7 +44,7 @@ impl<O> crate::blocking::Synthesizer<O> {
         style_ids: MorphingPair<StyleId>,
         metas: &[SpeakerMeta],
     ) -> crate::Result<bool> {
-        let pair = style_ids.lookup_speakers(metas)?;
+        let pair = style_ids.lookup_talk_speakers(metas)?;
         Ok(MorphableStyles::permit(pair).is_ok())
     }
 
@@ -59,7 +61,7 @@ impl<O> crate::blocking::Synthesizer<O> {
             base: base_style_id,
             target: target_style_id,
         }
-        .lookup_speakers(metas)?;
+        .lookup_talk_speakers(metas)?;
 
         MorphableStyles::permit(pair)?.synthesis_morphing(self, audio_query, morph_rate)
     }
@@ -178,15 +180,22 @@ impl<T> MorphingPair<T> {
 }
 
 impl MorphingPair<StyleId> {
-    fn lookup_speakers(
+    fn lookup_talk_speakers(
         self,
         metas: &[SpeakerMeta],
     ) -> crate::Result<MorphingPair<(StyleId, &SpeakerMeta)>> {
         self.try_map(|style_id| {
             let speaker = metas
                 .iter()
-                .find(|m| m.styles().iter().any(|m| *m.id() == style_id))
-                .ok_or(ErrorRepr::StyleNotFound { style_id })?;
+                .find(|m| {
+                    m.styles().iter().any(|m| {
+                        *m.id() == style_id && TalkDomain::style_types().contains(&StyleType::Talk)
+                    })
+                })
+                .ok_or(ErrorRepr::StyleNotFound {
+                    style_id,
+                    style_types: TalkDomain::style_types(),
+                })?;
             Ok((style_id, speaker))
         })
     }

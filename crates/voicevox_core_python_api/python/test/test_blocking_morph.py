@@ -84,7 +84,7 @@ def test_morphable_targets_denies_unknown_style(synthesizer: Synthesizer) -> Non
 
     with pytest.raises(
         StyleNotFoundError,
-        match=f"^'`{STYLE_ID}`に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています'$",
+        match=rf"^'`{STYLE_ID}` \(\[talk\]\)に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています'$",
     ):
         synthesizer.morphable_targets(STYLE_ID)
 

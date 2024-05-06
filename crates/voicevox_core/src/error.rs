@@ -1,11 +1,12 @@
 use crate::{
     engine::{FullContextLabelError, KanaParseError},
     user_dict::InvalidWordError,
-    StyleId, VoiceModelId,
+    StyleId, StyleType, VoiceModelId,
 };
 //use engine::
 use duplicate::duplicate_item;
-use std::path::PathBuf;
+use itertools::Itertools as _;
+use std::{collections::BTreeSet, path::PathBuf};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -39,6 +40,7 @@ impl Error {
                 LoadModelErrorKind::ReadZipEntry { .. } => ErrorKind::ReadZipEntry,
                 LoadModelErrorKind::ModelAlreadyLoaded { .. } => ErrorKind::ModelAlreadyLoaded,
                 LoadModelErrorKind::StyleAlreadyLoaded { .. } => ErrorKind::StyleAlreadyLoaded,
+                LoadModelErrorKind::InvalidModelFormat { .. } => ErrorKind::InvalidModelFormat,
                 LoadModelErrorKind::InvalidModelData => ErrorKind::InvalidModelData,
             },
             ErrorRepr::GetSupportedDevices(_) => ErrorKind::GetSupportedDevices,
@@ -72,10 +74,14 @@ pub(crate) enum ErrorRepr {
     GetSupportedDevices(#[source] anyhow::Error),
 
     #[error(
-        "`{style_id}`に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読\
-         み込みが解除されています"
+        "`{style_id}` ([{style_types}])に対するスタイルが見つかりませんでした。音声モデルが\
+         読み込まれていないか、読み込みが解除されています",
+        style_types = style_types.iter().format(", ")
     )]
-    StyleNotFound { style_id: StyleId },
+    StyleNotFound {
+        style_id: StyleId,
+        style_types: &'static BTreeSet<StyleType>,
+    },
 
     #[error(
         "`{model_id}`に対する音声モデルが見つかりませんでした。読み込まれていないか、読み込みが既\
@@ -122,6 +128,8 @@ pub enum ErrorKind {
     OpenZipFile,
     /// ZIP内のファイルが読めなかった。
     ReadZipEntry,
+    /// モデルの形式が不正。
+    InvalidModelFormat,
     /// すでに読み込まれている音声モデルを読み込もうとした。
     ModelAlreadyLoaded,
     /// すでに読み込まれているスタイルを読み込もうとした。
@@ -172,6 +180,8 @@ pub(crate) enum LoadModelErrorKind {
     OpenZipFile,
     #[display(fmt = "`{filename}`を読み取れませんでした")]
     ReadZipEntry { filename: String },
+    #[display(fmt = "モデルの形式が不正です")]
+    InvalidModelFormat,
     #[display(fmt = "モデル`{id}`は既に読み込まれています")]
     ModelAlreadyLoaded { id: VoiceModelId },
     #[display(fmt = "スタイル`{id}`は既に読み込まれています")]

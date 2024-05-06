@@ -7,6 +7,7 @@ metas = '''
       {
         "id": 0,
         "name": "style1",
+        "type": "talk",
         "order": null
       }
     ],
@@ -23,6 +24,7 @@ metas = '''
       {
         "id": 1,
         "name": "style2",
+        "type": "talk",
         "order": null
       }
     ],
@@ -39,11 +41,13 @@ metas = '''
       {
         "id": 302,
         "name": "style3-1",
+        "type": "talk",
         "order": null
       },
       {
         "id": 303,
         "name": "style3-2",
+        "type": "talk",
         "order": null
       }
     ],
@@ -88,7 +92,7 @@ result_messages.22 = "ユーザー辞書に単語が見つかりませんでし�
 result_messages.23 = "OpenJTalkのユーザー辞書の設定に失敗しました"
 result_messages.24 = "ユーザー辞書の単語のバリデーションに失敗しました"
 result_messages.25 = "UUIDの変換に失敗しました"
-result_messages.28 = "要求された機能を話者は持っていません"
+result_messages.29 = "要求された機能を話者は持っていません"
 stderr = ""
 
 [morph.'{"base_style":0,"target_style":0}']
@@ -274,6 +278,7 @@ metas = '''
       {
         "id": 0,
         "name": "style1",
+        "type": "talk",
         "order": null
       }
     ],
@@ -290,6 +295,7 @@ metas = '''
       {
         "id": 1,
         "name": "style2",
+        "type": "talk",
         "order": null
       }
     ],
@@ -306,11 +312,13 @@ metas = '''
       {
         "id": 302,
         "name": "style3-1",
+        "type": "talk",
         "order": null
       },
       {
         "id": 303,
         "name": "style3-2",
+        "type": "talk",
         "order": null
       }
     ],

@@ -34,6 +34,34 @@ x : str
 """
 
 
+class StyleType(str, Enum):
+    """**スタイル** (_style_)に対応するモデルの種類。"""
+
+    TALK = "talk"
+    """音声合成クエリの作成と音声合成が可能。"""
+
+
+@pydantic.dataclasses.dataclass
+class StyleMeta:
+    """**スタイル** (_style_)のメタ情報。"""
+
+    name: str
+    """スタイル名。"""
+
+    id: StyleId
+    """スタイルID。"""
+
+    type: StyleType = dataclasses.field(default=StyleType.TALK)
+    """スタイルに対応するモデルの種類。"""
+
+    order: Optional[int] = None
+    """
+    話者の順番。
+
+    :attr:`SpeakerMeta.styles` は、この値に対して昇順に並んでいるべきである。
+    """
+
+
 class PermittedSynthesisMorphing(str, Enum):
     ALL = "ALL"
     """全て許可。"""
@@ -50,24 +78,6 @@ class SpeakerSupportedFeatures:
     permitted_synthesis_morphing: PermittedSynthesisMorphing = (
         PermittedSynthesisMorphing.NOTHING
     )
-
-
-@pydantic.dataclasses.dataclass
-class StyleMeta:
-    """**スタイル** (_style_)のメタ情報。"""
-
-    name: str
-    """スタイル名。"""
-
-    id: StyleId
-    """スタイルID。"""
-
-    order: Optional[int] = None
-    """
-    話者の順番。
-
-    :attr:`SpeakerMeta.styles` は、この値に対して昇順に並んでいるべきである。
-    """
 
 
 @pydantic.dataclasses.dataclass
