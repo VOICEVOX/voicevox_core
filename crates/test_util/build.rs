@@ -19,7 +19,6 @@ async fn main() -> anyhow::Result<()> {
     dist.push("data");
 
     let dic_dir = dist.join(DIC_DIR_NAME);
-
     if !dic_dir.try_exists()? {
         download_open_jtalk_dict(&dist).await?;
         ensure!(dic_dir.exists(), "`{}` does not exist", dic_dir.display());
@@ -47,7 +46,6 @@ async fn download_open_jtalk_dict(dist: &Path) -> anyhow::Result<()> {
 
     let mut dict_archive = Archive::new(dict_tar);
     dict_archive.unpack(dist)?;
-
     Ok(())
 }
 
