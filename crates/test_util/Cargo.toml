@@ -13,6 +13,7 @@ tokio = { workspace = true, features = ["fs", "io-util", "sync"] }
 
 [build-dependencies]
 anyhow.workspace = true
+async-std = { workspace = true, features = ["attributes"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 bindgen.workspace = true
 camino.workspace = true
@@ -20,6 +21,7 @@ flate2.workspace = true
 fs-err.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
+surf.workspace = true
 reqwest = { workspace = true, features = ["rustls-tls"] }
 tar.workspace = true
 
