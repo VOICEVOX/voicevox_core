@@ -1,3 +1,6 @@
+name: rustup toolchain install from file
+description: rust-toolchainファイルをもとにRustのツールチェーンをインストールする。
+
 inputs:
   targets:
     required: false
