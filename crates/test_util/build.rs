@@ -4,7 +4,6 @@ use std::{
 };
 
 use anyhow::ensure;
-use async_std::io::ReadExt as _;
 use camino::Utf8PathBuf;
 use flate2::read::GzDecoder;
 use tar::Archive;
@@ -14,7 +13,7 @@ mod typing;
 
 const DIC_DIR_NAME: &str = "open_jtalk_dic_utf_8-1.11";
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let mut dist = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
     dist.push("data");
@@ -39,13 +38,11 @@ async fn download_open_jtalk_dict(dist: &Path) -> anyhow::Result<()> {
         "https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/{DIC_DIR_NAME}.tar.gz"
     );
 
-    let req = surf::get(download_url);
-    let client = surf::client().with(surf::middleware::Redirect::default());
-    let mut res = client.send(req).await.map_err(surf::Error::into_inner)?;
+    let res = reqwest::get(&download_url).await?;
     ensure!(res.status() == 200, "{}", res.status());
-    let mut body_bytes = Vec::with_capacity(100 * 1024 * 1024);
-    res.read_to_end(&mut body_bytes).await?;
-    let dict_tar = GzDecoder::new(&body_bytes[..]);
+
+    let bytes = res.bytes().await?;
+    let dict_tar = GzDecoder::new(&*bytes);
 
     let mut dict_archive = Archive::new(dict_tar);
     dict_archive.unpack(dist)?;
