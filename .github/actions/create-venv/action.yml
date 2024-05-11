@@ -1,3 +1,6 @@
+name: Create venv
+description: Pythonの仮想環境を作成し、$PATHと$VIRTUAL_ENVを設定する。
+
 runs:
   using: composite
   steps:
