@@ -328,7 +328,7 @@ jobs:
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
       - name: Upload artifact to build XCFramework
         if: contains(matrix.target, 'ios')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: voicevox_core-${{ matrix.target }}
           path: artifact/${{ env.ASSET_NAME }}
@@ -356,7 +356,7 @@ jobs:
           target_commitish: ${{ github.sha }}
       - name: Upload voicevox_core_java_api artifact
         if: fromJson(needs.config.outputs.deploy) && contains(matrix.target, 'android')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: voicevox_core_java_api-${{ matrix.artifact_name }}
           path: java_artifact
@@ -372,15 +372,15 @@ jobs:
       ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: voicevox_core-x86_64-apple-ios
           path: ${{ env.IOS_X86_64_PATH }}
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: voicevox_core-aarch64-apple-ios-sim
           path: ${{ env.IOS_AARCH64_SIM_PATH }}
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
@@ -451,7 +451,7 @@ jobs:
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "adopt"
