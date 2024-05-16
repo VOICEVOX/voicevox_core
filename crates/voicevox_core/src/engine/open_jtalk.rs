@@ -181,10 +181,6 @@ pub(crate) mod blocking {
         njd: ManagedResource<Njd>,
         jpcommon: ManagedResource<JpCommon>,
     }
-
-    // FIXME: open_jtalk-rs側で宣言する
-    #[allow(unsafe_code)]
-    unsafe impl Send for Resources {}
 }
 
 pub(crate) mod tokio {

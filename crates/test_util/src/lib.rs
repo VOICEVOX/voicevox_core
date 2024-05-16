@@ -1,5 +1,17 @@
 mod typing;
 
+#[allow(
+    non_camel_case_types,
+    non_snake_case,
+    non_upper_case_globals,
+    unused_extern_crates,
+    clippy::missing_safety_doc,
+    clippy::too_many_arguments
+)]
+pub mod c_api {
+    include!(concat!(env!("OUT_DIR"), "/c_api.rs"));
+}
+
 use async_zip::{base::write::ZipFileWriter, Compression, ZipEntryBuilder};
 use futures_lite::AsyncWriteExt as _;
 use once_cell::sync::Lazy;

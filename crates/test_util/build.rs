@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::ensure;
-use async_std::io::ReadExt as _;
+use camino::Utf8PathBuf;
 use flate2::read::GzDecoder;
 use tar::Archive;
 
@@ -13,7 +13,7 @@ mod typing;
 
 const DIC_DIR_NAME: &str = "open_jtalk_dic_utf_8-1.11";
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let mut dist = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
     dist.push("data");
@@ -28,7 +28,8 @@ async fn main() -> anyhow::Result<()> {
 
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/typing.rs");
-    Ok(())
+
+    generate_c_api_rs_bindings()
 }
 
 /// OpenJTalkの辞書をダウンロードして展開する。
@@ -37,13 +38,11 @@ async fn download_open_jtalk_dict(dist: &Path) -> anyhow::Result<()> {
         "https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/{DIC_DIR_NAME}.tar.gz"
     );
 
-    let req = surf::get(download_url);
-    let client = surf::client().with(surf::middleware::Redirect::default());
-    let mut res = client.send(req).await.map_err(surf::Error::into_inner)?;
+    let res = reqwest::get(&download_url).await?;
     ensure!(res.status() == 200, "{}", res.status());
-    let mut body_bytes = Vec::with_capacity(100 * 1024 * 1024);
-    res.read_to_end(&mut body_bytes).await?;
-    let dict_tar = GzDecoder::new(&body_bytes[..]);
+
+    let bytes = res.bytes().await?;
+    let dict_tar = GzDecoder::new(&*bytes);
 
     let mut dict_archive = Archive::new(dict_tar);
     dict_archive.unpack(dist)?;
@@ -118,5 +117,22 @@ fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
         serde_json::to_string(&test_data)?,
     )?;
 
+    Ok(())
+}
+
+fn generate_c_api_rs_bindings() -> anyhow::Result<()> {
+    static C_BINDINGS_PATH: &str = "../voicevox_core_c_api/include/voicevox_core.h";
+    static ADDITIONAL_C_BINDINGS_PATH: &str = "./compatible_engine.h";
+
+    let out_dir = Utf8PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindgen::Builder::default()
+        .header(C_BINDINGS_PATH)
+        .header(ADDITIONAL_C_BINDINGS_PATH)
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .dynamic_library_name("CApi")
+        .generate()?
+        .write_to_file(out_dir.join("c_api.rs"))?;
+    println!("cargo:rerun-if-changed={C_BINDINGS_PATH}");
+    println!("cargo:rerun-if-changed={ADDITIONAL_C_BINDINGS_PATH}");
     Ok(())
 }

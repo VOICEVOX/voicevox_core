@@ -37,6 +37,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR = 16,
     /// ZIP内のファイルが読めなかった
     VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR = 17,
+    /// モデルの形式が不正
+    VOICEVOX_RESULT_INVALID_MODEL_HEADER_ERROR = 28,
     /// すでに読み込まれている音声モデルを読み込もうとした
     VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR = 18,
     /// すでに読み込まれているスタイルを読み込もうとした
@@ -90,6 +92,7 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR => {
             cstr!("ZIP内のファイルを読むことができませんでした")
         }
+        VOICEVOX_RESULT_INVALID_MODEL_HEADER_ERROR => cstr!("モデルの形式が不正です"),
         VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR => cstr!("同じIDのモデルを読むことはできません"),
         VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR => {
             cstr!("同じIDのスタイルを読むことはできません")

@@ -83,15 +83,14 @@ pub(crate) mod blocking {
         engine::{create_kana, mora_to_text, MoraModel, OjtPhoneme},
         error::ErrorRepr,
         infer::{
-            domain::{
-                DecodeInput, DecodeOutput, InferenceDomainImpl, InferenceOperationImpl,
-                PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
-                PredictIntonationOutput,
+            domains::{
+                DecodeInput, DecodeOutput, InferenceDomainMap, PredictDurationInput,
+                PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput, TalkDomain,
+                TalkOperation,
             },
-            status::Status,
             InferenceSessionOptions,
         },
-        numerics::F32Ext as _,
+        status::Status,
         text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
         AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
         SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
@@ -103,7 +102,7 @@ pub(crate) mod blocking {
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
-        pub(super) status: Status<InferenceRuntimeImpl, InferenceDomainImpl>,
+        pub(super) status: Status<InferenceRuntimeImpl>,
         open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
         kana_analyzer: KanaAnalyzer,
         use_gpu: bool,
@@ -170,10 +169,12 @@ pub(crate) mod blocking {
             let heavy_session_options =
                 InferenceSessionOptions::new(options.cpu_num_threads, use_gpu);
 
-            let status = Status::new(enum_map! {
-                InferenceOperationImpl::PredictDuration
-                | InferenceOperationImpl::PredictIntonation => light_session_options,
-                InferenceOperationImpl::Decode => heavy_session_options,
+            let status = Status::new(InferenceDomainMap {
+                talk: enum_map! {
+                    TalkOperation::PredictDuration
+                    | TalkOperation::PredictIntonation => light_session_options,
+                    TalkOperation::Decode => heavy_session_options,
+                },
             });
 
             return Ok(Self {
@@ -302,8 +303,8 @@ pub(crate) mod blocking {
                     // VOICEVOX ENGINEと挙動を合わせるため、四捨五入ではなく偶数丸めをする
                     //
                     // https://github.com/VOICEVOX/voicevox_engine/issues/552
-                    let phoneme_length = ((*phoneme_length * RATE).round_ties_even_() / speed_scale)
-                        .round_ties_even_() as usize;
+                    let phoneme_length = ((*phoneme_length * RATE).round_ties_even() / speed_scale)
+                        .round_ties_even() as usize;
                     let phoneme_id = phoneme_data_list[i].phoneme_id();
 
                     for _ in 0..phoneme_length {
@@ -831,12 +832,7 @@ pub(crate) mod blocking {
 
     impl<O> PerformInference for self::Synthesizer<O> {
         fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictDurationOutput {
                 phoneme_length: output,
@@ -871,12 +867,7 @@ pub(crate) mod blocking {
             end_accent_phrase_vector: &[i64],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictIntonationOutput { f0_list: output } = self.status.run_session(
                 &model_id,
@@ -903,12 +894,7 @@ pub(crate) mod blocking {
             phoneme_vector: &[f32],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             // 音が途切れてしまうのを避けるworkaround処理が入っている
             // TODO: 改善したらここのpadding処理を取り除く
@@ -1018,7 +1004,6 @@ pub(crate) mod blocking {
         }
 
         fn list_windows_video_cards() -> windows::core::Result<Vec<DXGI_ADAPTER_DESC>> {
-            #[allow(unsafe_code)]
             unsafe {
                 let factory = CreateDXGIFactory::<IDXGIFactory>()?;
                 (0..)

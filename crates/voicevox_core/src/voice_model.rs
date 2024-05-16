@@ -1,17 +1,33 @@
+//! 音声モデル（ VVM ファイル）。
+//!
+//! VVM ファイルの定義と形式は[ドキュメント](../../../docs/vvm.md)を参照。
+
+use anyhow::anyhow;
 use derive_getters::Getters;
 use derive_new::new;
+use easy_ext::ext;
+use enum_map::EnumMap;
+use itertools::Itertools as _;
 use serde::Deserialize;
 
 use crate::{
-    manifest::{Manifest, ModelInnerId},
-    SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta,
+    error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
+    infer::{
+        domains::{TalkDomain, TalkOperation},
+        InferenceDomain,
+    },
+    manifest::{Manifest, ManifestDomains, StyleIdToModelInnerId},
+    SpeakerMeta, StyleMeta, StyleType, VoiceModelMeta,
 };
-use std::{collections::BTreeMap, path::PathBuf};
+use std::path::{Path, PathBuf};
 
 /// [`VoiceModelId`]の実体。
 ///
 /// [`VoiceModelId`]: VoiceModelId
 pub type RawVoiceModelId = String;
+
+pub(crate) type ModelBytesWithInnerIdsByDomain =
+    (Option<(StyleIdToModelInnerId, EnumMap<TalkOperation, Vec<u8>>)>,);
 
 /// 音声モデルID。
 #[derive(
@@ -41,29 +57,91 @@ pub(crate) struct VoiceModelHeader {
     pub(crate) id: VoiceModelId,
     manifest: Manifest,
     /// メタ情報。
+    ///
+    /// `manifest`が対応していない`StyleType`のスタイルは含まれるべきではない。
     pub(crate) metas: VoiceModelMeta,
     pub(crate) path: PathBuf,
 }
 
 impl VoiceModelHeader {
-    /// モデル内のすべてのスタイルに対するモデル内IDを取得する。
+    fn new(
+        id: VoiceModelId,
+        manifest: Manifest,
+        metas: &[u8],
+        path: &Path,
+    ) -> LoadModelResult<Self> {
+        let metas =
+            serde_json::from_slice::<VoiceModelMeta>(metas).map_err(|source| LoadModelError {
+                path: path.to_owned(),
+                context: LoadModelErrorKind::InvalidModelFormat,
+                source: Some(
+                    anyhow::Error::from(source)
+                        .context(format!("{}が不正です", manifest.metas_filename())),
+                ),
+            })?;
+
+        manifest
+            .domains()
+            .check_acceptable(&metas)
+            .map_err(|style_type| LoadModelError {
+                path: path.to_owned(),
+                context: LoadModelErrorKind::InvalidModelFormat,
+                source: Some(anyhow!(
+                    "{metas_filename}には`{style_type}`のスタイルが存在しますが、manifest.jsonでの\
+                     対応がありません",
+                    metas_filename = manifest.metas_filename(),
+                )),
+            })?;
+
+        Ok(Self {
+            id,
+            manifest,
+            metas,
+            path: path.to_owned(),
+        })
+    }
+}
+
+impl ManifestDomains {
+    /// manifestとして対応していない`StyleType`に対してエラーを発する。
     ///
-    /// モデル内IDのマッピングが存在しない場合はそのままスタイルIDを返す。
-    pub(crate) fn model_inner_ids(&self) -> BTreeMap<StyleId, ModelInnerId> {
-        self.metas
+    /// `Status`はこのバリデーションを信頼し、`InferenceDomain`の不足時にパニックする。
+    fn check_acceptable(&self, metas: &[SpeakerMeta]) -> std::result::Result<(), StyleType> {
+        let err = metas
             .iter()
             .flat_map(SpeakerMeta::styles)
-            .map(StyleMeta::id)
-            .map(|&style_id| {
-                let model_inner_id = self
-                    .manifest
-                    .style_id_to_model_inner_id()
-                    .get(&style_id)
-                    .copied()
-                    .unwrap_or_else(|| ModelInnerId::new(style_id.raw_id()));
-                (style_id, model_inner_id)
-            })
-            .collect()
+            .map(StyleMeta::r#type)
+            .copied()
+            .unique()
+            .find(|&style_type| !self.accepts(style_type));
+
+        match err {
+            Some(err) => Err(err),
+            None => Ok(()),
+        }
+    }
+
+    /// メタ情報にタイプが`style_type`のスタイルが含まれることを許容するかどうか。
+    ///
+    /// 例えば`self.talk`が`None`のとき、`StyleType::Talk`に対して`false`を返す。
+    fn accepts(&self, style_type: StyleType) -> bool {
+        let Self { talk } = self;
+
+        return TalkDomain::contains(style_type).implies(|| talk.is_some());
+
+        #[ext]
+        impl<D: InferenceDomain> D {
+            fn contains(style_type: StyleType) -> bool {
+                Self::style_types().contains(&style_type)
+            }
+        }
+
+        #[ext]
+        impl bool {
+            fn implies(self, other: impl FnOnce() -> Self) -> Self {
+                !self || other()
+            }
+        }
     }
 }
 
@@ -81,12 +159,12 @@ pub(crate) mod blocking {
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::domain::InferenceOperationImpl,
-        manifest::Manifest,
+        infer::domains::InferenceDomainMap,
+        manifest::{Manifest, TalkManifest},
         VoiceModelMeta,
     };
 
-    use super::{VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -99,39 +177,52 @@ pub(crate) mod blocking {
     impl self::VoiceModel {
         pub(crate) fn read_inference_models(
             &self,
-        ) -> LoadModelResult<EnumMap<InferenceOperationImpl, Vec<u8>>> {
+        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerIdsByDomain>> {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
-            let model_bytes = [
-                self.header.manifest.predict_duration_filename(),
-                self.header.manifest.predict_intonation_filename(),
-                self.header.manifest.decode_filename(),
-            ]
-            .into_par_iter()
-            .map(|filename| reader.read_vvm_entry(filename))
-            .collect::<std::result::Result<Vec<_>, _>>()?
-            .try_into()
-            .unwrap_or_else(|_| panic!("should be same length"));
+            let talk = self
+                .header
+                .manifest
+                .domains()
+                .talk
+                .as_ref()
+                .map(
+                    |TalkManifest {
+                         predict_duration_filename,
+                         predict_intonation_filename,
+                         decode_filename,
+                         style_id_to_model_inner_id,
+                     }| {
+                        let model_bytes = [
+                            predict_duration_filename,
+                            predict_intonation_filename,
+                            decode_filename,
+                        ]
+                        .into_par_iter()
+                        .map(|filename| reader.read_vvm_entry(filename))
+                        .collect::<std::result::Result<Vec<_>, _>>()?
+                        .try_into()
+                        .unwrap_or_else(|_| panic!("should be same length"));
 
-            Ok(EnumMap::from_array(model_bytes))
+                        let model_bytes = EnumMap::from_array(model_bytes);
+
+                        Ok((style_id_to_model_inner_id.clone(), model_bytes))
+                    },
+                )
+                .transpose()?;
+
+            Ok(InferenceDomainMap { talk })
         }
 
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         pub fn from_path(path: impl AsRef<Path>) -> crate::Result<Self> {
-            let path = path.as_ref().to_owned();
-            let reader = BlockingVvmEntryReader::open(&path)?;
+            let path = path.as_ref();
+            let reader = BlockingVvmEntryReader::open(path)?;
             let manifest = reader.read_vvm_json::<Manifest>("manifest.json")?;
-            let metas = reader.read_vvm_json(manifest.metas_filename())?;
+            let metas = &reader.read_vvm_entry(manifest.metas_filename())?;
             let id = VoiceModelId::new(nanoid!());
-
-            Ok(Self {
-                header: VoiceModelHeader {
-                    id,
-                    metas,
-                    manifest,
-                    path,
-                },
-            })
+            let header = VoiceModelHeader::new(id, manifest, metas, path)?;
+            Ok(Self { header })
         }
 
         /// ID。
@@ -173,12 +264,13 @@ pub(crate) mod blocking {
             })
         }
 
+        // FIXME: manifest.json専用になっているので、そういう関数名にする
         fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> LoadModelResult<T> {
             let bytes = &self.read_vvm_entry(filename)?;
             serde_json::from_slice(bytes).map_err(|source| LoadModelError {
                 path: self.borrow_path().clone(),
-                context: LoadModelErrorKind::OpenZipFile,
-                source: Some(source.into()),
+                context: LoadModelErrorKind::InvalidModelFormat,
+                source: Some(anyhow::Error::from(source).context(format!("{filename}が不正です"))),
             })
         }
 
@@ -204,18 +296,18 @@ pub(crate) mod tokio {
 
     use derive_new::new;
     use enum_map::EnumMap;
-    use futures::future::join3;
+    use futures::future::{join3, OptionFuture};
     use nanoid::nanoid;
     use serde::de::DeserializeOwned;
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::domain::InferenceOperationImpl,
-        manifest::Manifest,
+        infer::domains::InferenceDomainMap,
+        manifest::{Manifest, TalkManifest},
         Result, VoiceModelMeta,
     };
 
-    use super::{VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -228,42 +320,49 @@ pub(crate) mod tokio {
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
-        ) -> LoadModelResult<EnumMap<InferenceOperationImpl, Vec<u8>>> {
+        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerIdsByDomain>> {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
-            let (
-                decode_model_result,
-                predict_duration_model_result,
-                predict_intonation_model_result,
-            ) = join3(
-                reader.read_vvm_entry(self.header.manifest.decode_filename()),
-                reader.read_vvm_entry(self.header.manifest.predict_duration_filename()),
-                reader.read_vvm_entry(self.header.manifest.predict_intonation_filename()),
-            )
-            .await;
 
-            Ok(EnumMap::from_array([
-                predict_duration_model_result?,
-                predict_intonation_model_result?,
-                decode_model_result?,
-            ]))
+            let talk = OptionFuture::from(self.header.manifest.domains().talk.as_ref().map(
+                |TalkManifest {
+                     predict_duration_filename,
+                     predict_intonation_filename,
+                     decode_filename,
+                     style_id_to_model_inner_id,
+                 }| async {
+                    let (
+                        decode_model_result,
+                        predict_duration_model_result,
+                        predict_intonation_model_result,
+                    ) = join3(
+                        reader.read_vvm_entry(decode_filename),
+                        reader.read_vvm_entry(predict_duration_filename),
+                        reader.read_vvm_entry(predict_intonation_filename),
+                    )
+                    .await;
+
+                    let model_bytes = EnumMap::from_array([
+                        predict_duration_model_result?,
+                        predict_intonation_model_result?,
+                        decode_model_result?,
+                    ]);
+
+                    Ok((style_id_to_model_inner_id.clone(), model_bytes))
+                },
+            ))
+            .await
+            .transpose()?;
+
+            Ok(InferenceDomainMap { talk })
         }
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
             let reader = AsyncVvmEntryReader::open(path.as_ref()).await?;
             let manifest = reader.read_vvm_json::<Manifest>("manifest.json").await?;
-            let metas = reader
-                .read_vvm_json::<VoiceModelMeta>(manifest.metas_filename())
-                .await?;
+            let metas = &reader.read_vvm_entry(manifest.metas_filename()).await?;
             let id = VoiceModelId::new(nanoid!());
-
-            Ok(Self {
-                header: VoiceModelHeader {
-                    id,
-                    metas,
-                    manifest,
-                    path: path.as_ref().into(),
-                },
-            })
+            let header = VoiceModelHeader::new(id, manifest, metas, path.as_ref())?;
+            Ok(Self { header })
         }
 
         /// ID。
@@ -320,14 +419,13 @@ pub(crate) mod tokio {
                 .collect();
             Ok(AsyncVvmEntryReader::new(path, reader, entry_map))
         }
+        // FIXME: manifest.json専用になっているので、そういう関数名にする
         async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> LoadModelResult<T> {
             let bytes = self.read_vvm_entry(filename).await?;
             serde_json::from_slice(&bytes).map_err(|source| LoadModelError {
                 path: self.path.to_owned(),
-                context: LoadModelErrorKind::ReadZipEntry {
-                    filename: filename.to_owned(),
-                },
-                source: Some(source.into()),
+                context: LoadModelErrorKind::InvalidModelFormat,
+                source: Some(anyhow::Error::from(source).context(format!("{filename}が不正です"))),
             })
         }
 
@@ -351,5 +449,104 @@ pub(crate) mod tokio {
                 source: Some(source),
             })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use once_cell::sync::Lazy;
+    use rstest::{fixture, rstest};
+    use serde_json::json;
+
+    use crate::{
+        manifest::{ManifestDomains, TalkManifest},
+        SpeakerMeta, StyleType,
+    };
+
+    #[rstest]
+    #[case(
+        &ManifestDomains {
+            talk: None,
+        },
+        &[],
+        Ok(())
+    )]
+    #[case(
+        &ManifestDomains {
+            talk: Some(TALK_MANIFEST.clone()),
+        },
+        &[speaker(&[StyleType::Talk])],
+        Ok(())
+    )]
+    #[case(
+        &ManifestDomains {
+            talk: Some(TALK_MANIFEST.clone()),
+        },
+        &[speaker(&[StyleType::Talk, StyleType::Sing])],
+        Ok(())
+    )]
+    #[case(
+        &ManifestDomains {
+            talk: None,
+        },
+        &[speaker(&[StyleType::Talk])],
+        Err(())
+    )]
+    fn check_acceptable_works(
+        #[case] manifest: &ManifestDomains,
+        #[case] metas: &[SpeakerMeta],
+        #[case] expected: std::result::Result<(), ()>,
+    ) {
+        let actual = manifest.check_acceptable(metas).map_err(|_| ());
+        assert_eq!(expected, actual);
+    }
+
+    static TALK_MANIFEST: Lazy<TalkManifest> = Lazy::new(|| TalkManifest {
+        predict_duration_filename: "".to_owned(),
+        predict_intonation_filename: "".to_owned(),
+        decode_filename: "".to_owned(),
+        style_id_to_model_inner_id: Default::default(),
+    });
+
+    #[fixture]
+    fn talk_speaker() -> SpeakerMeta {
+        serde_json::from_value(json!({
+            "name": "dummy",
+            "styles": [
+                {
+                    "id": 0,
+                    "name": "style1",
+                    "type": "talk",
+                    "order": 0
+                }
+            ],
+            "version": "0.0.1",
+            "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+            "order": 0
+        }))
+        .unwrap()
+    }
+
+    fn speaker(style_types: &'static [StyleType]) -> SpeakerMeta {
+        let styles = style_types
+            .iter()
+            .map(|style_type| {
+                json!({
+                    "id": 0,
+                    "name": "style1",
+                    "type": style_type,
+                    "order": null
+                })
+            })
+            .collect::<Vec<_>>();
+
+        serde_json::from_value(json!({
+            "name": "dummy",
+            "styles": styles,
+            "version": "0.0.1",
+            "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+            "order": null
+        }))
+        .unwrap()
     }
 }

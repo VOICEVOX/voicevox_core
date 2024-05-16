@@ -5,6 +5,7 @@ edition.workspace = true
 [dependencies]
 async_zip = { workspace = true, features = ["deflate"] }
 futures-lite.workspace = true
+libloading.workspace = true
 once_cell.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
@@ -12,14 +13,16 @@ tokio = { workspace = true, features = ["fs", "io-util", "sync"] }
 
 [build-dependencies]
 anyhow.workspace = true
-async-std = { workspace = true, features = ["attributes"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+bindgen.workspace = true
+camino.workspace = true
 flate2.workspace = true
 fs-err.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
-surf.workspace = true
+reqwest = { workspace = true, features = ["rustls-tls"] }
 tar.workspace = true
 
 [lints.rust]
-unsafe_code = "forbid"
+unsafe_code = "allow" # C APIのbindgen
 rust_2018_idioms = "warn"

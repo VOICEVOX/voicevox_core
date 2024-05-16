@@ -32,9 +32,11 @@ open_jtalk.workspace = true
 ouroboros.workspace = true
 rayon.workspace = true
 regex.workspace = true
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
+serde_with.workspace = true
 smallvec.workspace = true
+strum = { workspace = true, features = ["derive"] }
 tempfile.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["rt"] } # FIXME: feature-gateする
@@ -56,5 +58,8 @@ humansize.workspace = true
 windows = { workspace = true, features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
 
 [lints.rust]
-unsafe_code = "deny" # FIXME: あまり意味が無くなっているため潔く`allow`にする。あるいはunsafeを撲滅する
+# FIXME: `unsafe impl Send`のもあるが、以下2つのマージにより消える予定
+# * https://github.com/VOICEVOX/voicevox_core/pull/725
+# * https://github.com/VOICEVOX/voicevox_core/pull/772
+unsafe_code = "allow" # WindowsのGPU情報表示に、Win32を利用
 rust_2018_idioms = "warn"
