@@ -57,9 +57,9 @@ Options:
 ## 実行例
 
 ```console
-❯ ./gradlew run --args="--vvm ../../model/sample.vvm"
+❯ ./gradlew run --args="--vvm ../../crates/test_util/data/model/sample.vvm"
 Inititalizing: AUTO, ./open_jtalk_dic_utf_8-1.11
-Loading: ../../model/sample.vvm
+Loading: ../../crates/test_util/data/model/sample.vvm
 Creating an AudioQuery from the text: この音声は、ボイスボックスを使用して、出力されています。
 Synthesizing...
 Saving the audio to ./output.wav
