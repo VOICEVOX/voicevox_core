@@ -3147,12 +3147,11 @@ name = "test_util"
 version = "0.0.0"
 dependencies = [
  "anyhow",
- "async_zip",
  "bindgen 0.69.4",
  "camino",
  "flate2",
  "fs-err",
- "futures-lite",
+ "indoc",
  "libloading",
  "once_cell",
  "reqwest",
@@ -3160,6 +3159,7 @@ dependencies = [
  "serde_json",
  "tar",
  "tokio",
+ "zip",
 ]
 
 [[package]]

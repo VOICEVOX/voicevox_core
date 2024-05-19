@@ -1,3 +1,5 @@
+use test_util::c_api::VV_MODELS_ROOT_DIR;
+
 mod assert_cdylib;
 mod float_assert;
 mod log_mask;
@@ -33,6 +35,6 @@ fn main() -> anyhow::Result<()> {
             ("ORT_USE_CUDA", "0"),
         ];
         const RUNTIME_ENVS: &'static [(&'static str, &'static str)] =
-            &[("VV_MODELS_ROOT_DIR", "../../model")];
+            &[("VV_MODELS_ROOT_DIR", VV_MODELS_ROOT_DIR)];
     }
 }

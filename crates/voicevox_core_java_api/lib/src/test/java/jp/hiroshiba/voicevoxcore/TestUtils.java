@@ -6,7 +6,7 @@ class TestUtils {
   VoiceModel loadModel() {
     // cwdはvoicevox_core/crates/voicevox_core_java_api/lib
     String cwd = System.getProperty("user.dir");
-    File path = new File(cwd + "/../../../model/sample.vvm");
+    File path = new File(cwd + "/../../test_util/data/model/sample.vvm");
 
     try {
       return new VoiceModel(path.getCanonicalPath());
