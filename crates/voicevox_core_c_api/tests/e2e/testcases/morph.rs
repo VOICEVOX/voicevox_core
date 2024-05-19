@@ -112,7 +112,7 @@ impl assert_cdylib::TestCase for TestCase {
         let model = {
             let mut model = MaybeUninit::uninit();
             assert_ok(lib.voicevox_voice_model_new_from_path(
-                cstr!("../../model/sample.vvm").as_ptr(),
+                cstr!("../test_util/data/sample.vvm").as_ptr(),
                 model.as_mut_ptr(),
             ));
             model.assume_init()
