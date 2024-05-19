@@ -8,12 +8,11 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use voicevox_core::SupportedDevices;
 
-use test_util::EXAMPLE_DATA;
+use test_util::{c_api::CApi, EXAMPLE_DATA};
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     float_assert, snapshots,
-    symbols::Symbols,
 };
 
 case!(TestCase);
@@ -23,43 +22,32 @@ struct TestCase;
 
 #[typetag::serde(name = "compatible_engine")]
 impl assert_cdylib::TestCase for TestCase {
-    unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
-        let Symbols {
-            initialize,
-            load_model,
-            is_model_loaded,
-            finalize,
-            metas,
-            supported_devices,
-            yukarin_s_forward,
-            yukarin_sa_forward,
-            decode_forward,
-            ..
-        } = Symbols::new(lib)?;
+    unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
+        let lib = CApi::from_library(lib)?;
 
         let metas_json = {
-            let metas_json = metas();
+            let metas_json = lib.metas();
             let metas_json = CStr::from_ptr(metas_json).to_str()?;
             serde_json::to_string_pretty(&metas_json.parse::<serde_json::Value>()?).unwrap()
         };
 
         let supported_devices = {
-            let supported_devices = supported_devices();
+            let supported_devices = lib.supported_devices();
             CStr::from_ptr(supported_devices)
                 .to_str()?
                 .parse::<serde_json::Value>()?
         };
 
-        assert!(initialize(false, 0, false));
+        assert!(lib.initialize(false, 0, false));
 
-        assert!(!is_model_loaded(EXAMPLE_DATA.speaker_id));
-        assert!(load_model(EXAMPLE_DATA.speaker_id));
-        assert!(is_model_loaded(EXAMPLE_DATA.speaker_id));
+        assert!(!lib.is_model_loaded(EXAMPLE_DATA.speaker_id));
+        assert!(lib.load_model(EXAMPLE_DATA.speaker_id));
+        assert!(lib.is_model_loaded(EXAMPLE_DATA.speaker_id));
 
         // テスト用テキストは"t e s u t o"
         let phoneme_length = {
             let mut phoneme_length = [0.; 8];
-            assert!(yukarin_s_forward(
+            assert!(lib.yukarin_s_forward(
                 EXAMPLE_DATA.duration.length,
                 EXAMPLE_DATA.duration.phoneme_vector.as_ptr() as *mut i64,
                 &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
@@ -70,7 +58,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         let intonation_list = {
             let mut intonation_list = [0.; 5];
-            assert!(yukarin_sa_forward(
+            assert!(lib.yukarin_sa_forward(
                 EXAMPLE_DATA.intonation.length,
                 EXAMPLE_DATA.intonation.vowel_phoneme_vector.as_ptr() as *mut i64,
                 EXAMPLE_DATA.intonation.consonant_phoneme_vector.as_ptr() as *mut i64,
@@ -86,7 +74,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         let wave = {
             let mut wave = vec![0.; 256 * EXAMPLE_DATA.decode.f0_length as usize];
-            assert!(decode_forward(
+            assert!(lib.decode_forward(
                 EXAMPLE_DATA.decode.f0_length,
                 EXAMPLE_DATA.decode.phoneme_size,
                 EXAMPLE_DATA.decode.f0_vector.as_ptr() as *mut f32,
@@ -108,7 +96,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         assert!(wave.iter().copied().all(f32::is_normal));
 
-        finalize();
+        lib.finalize();
         Ok(())
     }
 

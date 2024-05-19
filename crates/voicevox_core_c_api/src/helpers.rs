@@ -37,6 +37,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 GpuSupport => VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
                 OpenZipFile => VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR,
                 ReadZipEntry => VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR,
+                InvalidModelFormat => VOICEVOX_RESULT_INVALID_MODEL_HEADER_ERROR,
                 ModelAlreadyLoaded => VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR,
                 StyleAlreadyLoaded => VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR,
                 InvalidModelData => VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR,

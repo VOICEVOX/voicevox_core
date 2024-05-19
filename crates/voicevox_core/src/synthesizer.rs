@@ -83,14 +83,14 @@ pub(crate) mod blocking {
         engine::{create_kana, mora_to_text, MoraModel, OjtPhoneme},
         error::ErrorRepr,
         infer::{
-            domain::{
-                DecodeInput, DecodeOutput, InferenceDomainImpl, InferenceOperationImpl,
-                PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
-                PredictIntonationOutput,
+            domains::{
+                DecodeInput, DecodeOutput, InferenceDomainMap, PredictDurationInput,
+                PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput, TalkDomain,
+                TalkOperation,
             },
-            status::Status,
             InferenceSessionOptions,
         },
+        status::Status,
         text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
         AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
         SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
@@ -102,7 +102,7 @@ pub(crate) mod blocking {
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
-        pub(super) status: Status<InferenceRuntimeImpl, InferenceDomainImpl>,
+        pub(super) status: Status<InferenceRuntimeImpl>,
         open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
         kana_analyzer: KanaAnalyzer,
         use_gpu: bool,
@@ -169,10 +169,12 @@ pub(crate) mod blocking {
             let heavy_session_options =
                 InferenceSessionOptions::new(options.cpu_num_threads, use_gpu);
 
-            let status = Status::new(enum_map! {
-                InferenceOperationImpl::PredictDuration
-                | InferenceOperationImpl::PredictIntonation => light_session_options,
-                InferenceOperationImpl::Decode => heavy_session_options,
+            let status = Status::new(InferenceDomainMap {
+                talk: enum_map! {
+                    TalkOperation::PredictDuration
+                    | TalkOperation::PredictIntonation => light_session_options,
+                    TalkOperation::Decode => heavy_session_options,
+                },
             });
 
             return Ok(Self {
@@ -441,6 +443,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -680,6 +683,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -728,6 +732,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -760,6 +765,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -830,12 +836,7 @@ pub(crate) mod blocking {
 
     impl<O> PerformInference for self::Synthesizer<O> {
         fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictDurationOutput {
                 phoneme_length: output,
@@ -870,12 +871,7 @@ pub(crate) mod blocking {
             end_accent_phrase_vector: &[i64],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictIntonationOutput { f0_list: output } = self.status.run_session(
                 &model_id,
@@ -902,12 +898,7 @@ pub(crate) mod blocking {
             phoneme_vector: &[f32],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             // 音が途切れてしまうのを避けるworkaround処理が入っている
             // TODO: 改善したらここのpadding処理を取り除く
@@ -1304,8 +1295,7 @@ mod tests {
 
     use super::{blocking::PerformInference as _, AccelerationMode, InitializeOptions};
     use crate::{
-        engine::MoraModel, macros::tests::assert_debug_fmt_eq, test_util::open_default_vvm_file,
-        AccentPhraseModel, Result, StyleId,
+        engine::MoraModel, macros::tests::assert_debug_fmt_eq, AccentPhraseModel, Result, StyleId,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use rstest::rstest;
@@ -1324,7 +1314,7 @@ mod tests {
         .unwrap();
 
         let result = syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await;
 
         assert_debug_fmt_eq!(
@@ -1366,7 +1356,7 @@ mod tests {
             "expected is_model_loaded to return false, but got true",
         );
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1391,7 +1381,7 @@ mod tests {
         .unwrap();
 
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1421,7 +1411,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1460,7 +1450,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 

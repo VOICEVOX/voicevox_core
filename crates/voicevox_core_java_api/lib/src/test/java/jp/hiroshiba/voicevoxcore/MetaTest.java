@@ -13,7 +13,7 @@ class MetaTest {
   void checkLoad() {
     // cwdはvoicevox_core/crates/voicevox_core_java_api/lib
     String cwd = System.getProperty("user.dir");
-    File path = new File(cwd + "/../../../model/sample.vvm");
+    File path = new File(cwd + "/../../test_util/data/model/sample.vvm");
     VoiceModel model = new VoiceModel(path.getAbsolutePath());
     assertNotNull(model.metas);
   }

@@ -1,15 +1,14 @@
+use test_util::c_api::VV_MODELS_ROOT_DIR;
+
 mod assert_cdylib;
 mod float_assert;
 mod log_mask;
 mod snapshots;
-mod symbols;
 mod testcases;
 
 // voicevox_core_c_apiのcdylibを対象にテストを行う。
 //
-// C APIの定義を変更する場合:
-// 1. symbols.rsの実装を変更する。
-// 2. 1.によってコンパイルが通らなくなったら、適宜修正する。
+// C APIの定義を変更した場合は、テスト実行前に`cargo xtask update-c-header`を実行すること。
 //
 // テストを追加する場合:
 // 1. testcases/{テスト名}.rsを追加し、testcases.rsでマウントする。
@@ -36,6 +35,6 @@ fn main() -> anyhow::Result<()> {
             ("ORT_USE_CUDA", "0"),
         ];
         const RUNTIME_ENVS: &'static [(&'static str, &'static str)] =
-            &[("VV_MODELS_ROOT_DIR", "../../model")];
+            &[("VV_MODELS_ROOT_DIR", VV_MODELS_ROOT_DIR)];
     }
 }

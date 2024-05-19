@@ -4,17 +4,18 @@ use std::{
 };
 
 use assert_cmd::assert::AssertResult;
-use cstr::cstr;
 use libloading::Library;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use test_util::OPEN_JTALK_DIC_DIR;
+use test_util::{
+    c_api::{self, CApi, VoicevoxInitializeOptions, VoicevoxResultCode},
+    OPEN_JTALK_DIC_DIR,
+};
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
     snapshots,
-    symbols::{Symbols, VoicevoxAccelerationMode, VoicevoxInitializeOptions, VoicevoxResultCode},
 };
 
 case!(TestCase);
@@ -24,37 +25,26 @@ struct TestCase;
 
 #[typetag::serde(name = "synthesizer_new_output_json")]
 impl assert_cdylib::TestCase for TestCase {
-    unsafe fn exec(&self, lib: &Library) -> anyhow::Result<()> {
-        let Symbols {
-            voicevox_make_default_initialize_options,
-            voicevox_voice_model_new_from_path,
-            voicevox_open_jtalk_rc_new,
-            voicevox_open_jtalk_rc_delete,
-            voicevox_synthesizer_new,
-            voicevox_synthesizer_delete,
-            voicevox_synthesizer_create_metas_json,
-            voicevox_synthesizer_load_voice_model,
-            voicevox_json_free,
-            ..
-        } = Symbols::new(lib)?;
+    unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
+        let lib = CApi::from_library(lib)?;
 
         let openjtalk = {
             let mut openjtalk = MaybeUninit::uninit();
             let open_jtalk_dic_dir = CString::new(OPEN_JTALK_DIC_DIR).unwrap();
-            assert_ok(voicevox_open_jtalk_rc_new(
-                open_jtalk_dic_dir.as_ptr(),
-                openjtalk.as_mut_ptr(),
-            ));
+            assert_ok(
+                lib.voicevox_open_jtalk_rc_new(open_jtalk_dic_dir.as_ptr(), openjtalk.as_mut_ptr()),
+            );
             openjtalk.assume_init()
         };
 
         let synthesizer = {
             let mut synthesizer = MaybeUninit::uninit();
-            assert_ok(voicevox_synthesizer_new(
+            assert_ok(lib.voicevox_synthesizer_new(
                 openjtalk,
                 VoicevoxInitializeOptions {
-                    acceleration_mode: VoicevoxAccelerationMode::VOICEVOX_ACCELERATION_MODE_CPU,
-                    ..voicevox_make_default_initialize_options()
+                    acceleration_mode:
+                        c_api::VoicevoxAccelerationMode_VOICEVOX_ACCELERATION_MODE_CPU,
+                    ..lib.voicevox_make_default_initialize_options()
                 },
                 synthesizer.as_mut_ptr(),
             ));
@@ -63,32 +53,32 @@ impl assert_cdylib::TestCase for TestCase {
 
         let model = {
             let mut model = MaybeUninit::uninit();
-            assert_ok(voicevox_voice_model_new_from_path(
-                cstr!("../../model/sample.vvm").as_ptr(),
+            assert_ok(lib.voicevox_voice_model_new_from_path(
+                c_api::SAMPLE_VOICE_MODEL_FILE_PATH.as_ptr(),
                 model.as_mut_ptr(),
             ));
             model.assume_init()
         };
 
-        assert_ok(voicevox_synthesizer_load_voice_model(synthesizer, model));
+        assert_ok(lib.voicevox_synthesizer_load_voice_model(synthesizer, model));
 
         let metas_json = {
-            let raw = voicevox_synthesizer_create_metas_json(synthesizer);
+            let raw = lib.voicevox_synthesizer_create_metas_json(synthesizer);
             let metas_json = &CStr::from_ptr(raw).to_str()?.parse::<serde_json::Value>()?;
             let metas_json = serde_json::to_string_pretty(metas_json).unwrap();
-            voicevox_json_free(raw);
+            lib.voicevox_json_free(raw);
             metas_json
         };
 
         std::assert_eq!(SNAPSHOTS.metas, metas_json);
 
-        voicevox_open_jtalk_rc_delete(openjtalk);
-        voicevox_synthesizer_delete(synthesizer);
+        lib.voicevox_open_jtalk_rc_delete(openjtalk);
+        lib.voicevox_synthesizer_delete(synthesizer);
 
         return Ok(());
 
         fn assert_ok(result_code: VoicevoxResultCode) {
-            std::assert_eq!(VoicevoxResultCode::VOICEVOX_RESULT_OK, result_code);
+            std::assert_eq!(c_api::VoicevoxResultCode_VOICEVOX_RESULT_OK, result_code);
         }
     }
 

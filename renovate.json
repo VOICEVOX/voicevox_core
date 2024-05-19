@@ -8,12 +8,12 @@
     {
       "groupSlug": "rust",
       "groupName": "Rust",
-      "matchPackagePatterns": "^Rust$"
+      "matchDepPatterns": "^Rust$"
     },
     {
       "groupSlug": "others",
       "groupName": "Others",
-      "excludePackagePatterns": "^Rust$",
+      "excludeDepPatterns": "^Rust$",
       "dependencyDashboardApproval": true
     }
   ],

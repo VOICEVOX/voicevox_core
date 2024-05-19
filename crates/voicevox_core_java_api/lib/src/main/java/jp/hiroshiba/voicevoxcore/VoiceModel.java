@@ -103,6 +103,12 @@ public class VoiceModel extends Dll {
     @Expose
     public final int id;
 
+    /** スタイルに対応するモデルの種類。 */
+    @SerializedName("type")
+    @Expose
+    @Nonnull
+    public final StyleType type;
+
     /**
      * 話者の順番。
      *
@@ -116,7 +122,16 @@ public class VoiceModel extends Dll {
     private StyleMeta() {
       this.name = "";
       this.id = 0;
+      this.type = StyleType.TALK;
       this.order = null;
     }
+  }
+
+  /** スタイル（style）に対応するモデルの種類。 */
+  public static enum StyleType {
+    /** 音声合成クエリの作成と音声合成が可能。 */
+    @SerializedName("talk")
+    @Expose
+    TALK,
   }
 }
