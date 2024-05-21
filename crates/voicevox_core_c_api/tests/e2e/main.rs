@@ -1,3 +1,5 @@
+use test_util::c_api::VV_MODELS_ROOT_DIR;
+
 mod assert_cdylib;
 mod float_assert;
 mod log_mask;
@@ -23,6 +25,6 @@ fn main() -> anyhow::Result<()> {
         const TARGET_DIR: &'static str = "../../target";
         const CDYLIB_NAME: &'static str = "voicevox_core";
         const RUNTIME_ENVS: &'static [(&'static str, &'static str)] =
-            &[("VV_MODELS_ROOT_DIR", "../../model")];
+            &[("VV_MODELS_ROOT_DIR", VV_MODELS_ROOT_DIR)];
     }
 }

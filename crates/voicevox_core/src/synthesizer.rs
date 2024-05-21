@@ -443,6 +443,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -682,6 +683,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -730,6 +732,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -762,6 +765,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -1291,8 +1295,7 @@ mod tests {
 
     use super::{blocking::PerformInference as _, AccelerationMode, InitializeOptions};
     use crate::{
-        engine::MoraModel, macros::tests::assert_debug_fmt_eq, test_util::open_default_vvm_file,
-        AccentPhraseModel, Result, StyleId,
+        engine::MoraModel, macros::tests::assert_debug_fmt_eq, AccentPhraseModel, Result, StyleId,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use rstest::rstest;
@@ -1311,7 +1314,7 @@ mod tests {
         .unwrap();
 
         let result = syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await;
 
         assert_debug_fmt_eq!(
@@ -1353,7 +1356,7 @@ mod tests {
             "expected is_model_loaded to return false, but got true",
         );
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1378,7 +1381,7 @@ mod tests {
         .unwrap();
 
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1408,7 +1411,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1447,7 +1450,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
