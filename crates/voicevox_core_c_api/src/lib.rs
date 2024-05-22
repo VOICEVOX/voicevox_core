@@ -59,7 +59,13 @@ fn init_logger_once() {
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
             } else {
-                "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
+                pub const ORT_LOGGING_LEVEL: &str = if cfg!(debug_assertions) {
+                    "info"
+                } else {
+                    "warn"
+                };
+                format!("error,voicevox_core=info,voicevox_core_c_api=info,ort={ORT_LOGGING_LEVEL}")
+                    .into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(ansi)

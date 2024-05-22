@@ -427,12 +427,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "chunked_transfer"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fff857943da45f546682664a79488be82e69e43c1a7a2307679ab9afb3a66d2e"
-
-[[package]]
 name = "cipher"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -683,6 +677,12 @@ checksum = "edbafec5fa1f196ca66527c1b12c2ec4745ca14b50f1ad8f9f6f720b55d11fac"
 dependencies = [
  "cfg-if",
 ]
+
+[[package]]
+name = "crunchy"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 
 [[package]]
 name = "crypto-common"
@@ -1279,6 +1279,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "half"
+version = "2.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc52e53916c08643f1b56ec082790d1e86a32e58dc5268f897f313fbae7b4872"
+dependencies = [
+ "cfg-if",
+ "crunchy",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1410,7 +1420,7 @@ checksum = "1788965e61b367cd03a62950836d5cd41560c3577d90e40e0819373194d1661c"
 dependencies = [
  "http",
  "hyper",
- "rustls",
+ "rustls 0.20.6",
  "tokio",
  "tokio-rustls",
 ]
@@ -1994,30 +2004,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
-name = "onnxruntime"
-version = "0.1.0"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=ebb9dcb9b26ee681889b52b6db3b4f642b04a250#ebb9dcb9b26ee681889b52b6db3b4f642b04a250"
-dependencies = [
- "lazy_static",
- "ndarray",
- "onnxruntime-sys",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "onnxruntime-sys"
-version = "0.0.25"
-source = "git+https://github.com/VOICEVOX/onnxruntime-rs.git?rev=ebb9dcb9b26ee681889b52b6db3b4f642b04a250#ebb9dcb9b26ee681889b52b6db3b4f642b04a250"
-dependencies = [
- "flate2",
- "once_cell",
- "tar",
- "ureq",
- "zip",
-]
-
-[[package]]
 name = "opaque-debug"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2598,7 +2584,7 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
- "rustls",
+ "rustls 0.20.6",
  "rustls-pemfile",
  "serde",
  "serde_json",
@@ -2611,7 +2597,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "webpki-roots",
+ "webpki-roots 0.22.5",
  "winreg",
 ]
 
@@ -2729,12 +2715,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustls"
+version = "0.21.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd8d6c9f025a446bc4d18ad9632e69aec8f287aa84499ee335599fabd20c3fd8"
+dependencies = [
+ "log",
+ "ring",
+ "rustls-webpki",
+ "sct",
+]
+
+[[package]]
 name = "rustls-pemfile"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d194b56d58803a43635bdc398cd17e383d6f71f9182b9a192c127ca42494a59b"
 dependencies = [
  "base64 0.21.0",
+]
+
+[[package]]
+name = "rustls-webpki"
+version = "0.101.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c7d5dece342910d9ba34d259310cae3e0154b873b35408b787b59bce53d34fe"
+dependencies = [
+ "ring",
+ "untrusted",
 ]
 
 [[package]]
@@ -3262,7 +3270,7 @@ version = "0.23.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c43ee83903113e03984cb9e5cebe6c04a5116269e900e3ddba8f068a62adda59"
 dependencies = [
- "rustls",
+ "rustls 0.20.6",
  "tokio",
  "webpki",
 ]
@@ -3480,19 +3488,17 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "ureq"
-version = "2.5.0"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b97acb4c28a254fd7a4aeec976c46a7fa404eac4d7c134b30c75144846d7cb8f"
+checksum = "f5ccd538d4a604753ebc2f17cd9946e89b77bf87f6a8e2309667c6f2e87855e3"
 dependencies = [
- "base64 0.13.0",
- "chunked_transfer",
- "flate2",
+ "base64 0.21.0",
  "log",
  "once_cell",
- "rustls",
+ "rustls 0.21.7",
+ "rustls-webpki",
  "url",
- "webpki",
- "webpki-roots",
+ "webpki-roots 0.25.4",
 ]
 
 [[package]]
@@ -3536,6 +3542,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
+name = "voicevox-ort"
+version = "2.0.0-rc.2"
+source = "git+https://github.com/VOICEVOX/ort.git?rev=a2d6ae22327869e896bf4c16828734d09516d2d9#a2d6ae22327869e896bf4c16828734d09516d2d9"
+dependencies = [
+ "half",
+ "js-sys",
+ "ndarray",
+ "thiserror",
+ "tracing",
+ "voicevox-ort-sys",
+ "web-sys",
+]
+
+[[package]]
+name = "voicevox-ort-sys"
+version = "2.0.0-rc.2"
+source = "git+https://github.com/VOICEVOX/ort.git?rev=a2d6ae22327869e896bf4c16828734d09516d2d9#a2d6ae22327869e896bf4c16828734d09516d2d9"
+dependencies = [
+ "flate2",
+ "sha2",
+ "tar",
+ "ureq",
+]
+
+[[package]]
 name = "voicevox_core"
 version = "0.0.0"
 dependencies = [
@@ -3559,7 +3590,6 @@ dependencies = [
  "nanoid",
  "ndarray",
  "once_cell",
- "onnxruntime",
  "open_jtalk",
  "ouroboros",
  "pretty_assertions",
@@ -3578,6 +3608,7 @@ dependencies = [
  "tokio",
  "tracing",
  "uuid",
+ "voicevox-ort",
  "voicevox_core_macros",
  "windows",
  "zip",
@@ -3796,6 +3827,12 @@ checksum = "368bfe657969fb01238bb756d351dcade285e0f6fcbd36dcb23359a5169975be"
 dependencies = [
  "webpki",
 ]
+
+[[package]]
+name = "webpki-roots"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1"
 
 [[package]]
 name = "which"
