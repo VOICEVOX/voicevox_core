@@ -58,7 +58,6 @@ jobs:
               "target": "x86_64-pc-windows-msvc",
               "artifact_name": "windows-x64-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -67,16 +66,14 @@ jobs:
               "target": "x86_64-pc-windows-msvc",
               "artifact_name": "windows-x64-directml",
               "whl_local_version": "directml",
-              "use_cuda": false,
               "can_skip_in_simple_test": false
             },
             {
               "os": "windows-2019",
-              "features": "",
+              "features": "cuda",
               "target": "x86_64-pc-windows-msvc",
               "artifact_name": "windows-x64-cuda",
               "whl_local_version": "cuda",
-              "use_cuda": true,
               "can_skip_in_simple_test": true
             },
             {
@@ -85,7 +82,6 @@ jobs:
               "target": "i686-pc-windows-msvc",
               "artifact_name": "windows-x86-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -94,16 +90,14 @@ jobs:
               "target": "x86_64-unknown-linux-gnu",
               "artifact_name": "linux-x64-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
               "os": "ubuntu-20.04",
-              "features": "",
+              "features": "cuda",
               "target": "x86_64-unknown-linux-gnu",
               "artifact_name": "linux-x64-gpu",
               "whl_local_version": "cuda",
-              "use_cuda": true,
               "can_skip_in_simple_test": false
             },
             {
@@ -112,7 +106,6 @@ jobs:
               "target": "aarch64-unknown-linux-gnu",
               "artifact_name": "linux-arm64-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -120,7 +113,6 @@ jobs:
               "features": "",
               "target": "aarch64-linux-android",
               "artifact_name": "android-arm64-cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -128,7 +120,6 @@ jobs:
               "features": "",
               "target": "x86_64-linux-android",
               "artifact_name": "android-x86_64-cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -137,7 +128,6 @@ jobs:
               "target": "aarch64-apple-darwin",
               "artifact_name": "osx-arm64-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": false
             },
             {
@@ -146,7 +136,6 @@ jobs:
               "target": "x86_64-apple-darwin",
               "artifact_name": "osx-x64-cpu",
               "whl_local_version": "cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -154,7 +143,6 @@ jobs:
               "features": "",
               "target": "aarch64-apple-ios",
               "artifact_name": "ios-arm64-cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -162,7 +150,6 @@ jobs:
               "features": "",
               "target": "aarch64-apple-ios-sim",
               "artifact_name": "ios-arm64-cpu-sim",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -170,7 +157,6 @@ jobs:
               "features": "",
               "target": "x86_64-apple-ios",
               "artifact_name": "ios-x64-cpu",
-              "use_cuda": false,
               "can_skip_in_simple_test": true
             }
           ]'
@@ -242,7 +228,7 @@ jobs:
       - name: Raplace resource
         if: inputs.is_production
         shell: bash
-        run: |
+        run:
           mv -f download/resource/core/README.md ./README.md
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
@@ -268,7 +254,6 @@ jobs:
           fi
         env:
           RUSTFLAGS: -C panic=abort
-          ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_python_api
         if: matrix.whl_local_version
         id: build-voicevox-core-python-api
@@ -286,8 +271,6 @@ jobs:
             build > /dev/null 2>&1
           fi
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
-        env:
-          ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_java_api
         if: contains(matrix.target, 'android')
         run: |
@@ -305,7 +288,7 @@ jobs:
           cp -v crates/voicevox_core_c_api/include/voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
           cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
-          cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
+          cp -v -n target/${{ matrix.target }}/release/{,lib}onnxruntime*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
           rm -f artifact/${{ env.ASSET_NAME }}/libonnxruntime.{so,dylib}
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
@@ -315,7 +298,7 @@ jobs:
           cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
-        run: |
+        run:
           bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
@@ -323,7 +306,7 @@ jobs:
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
       - name: Upload artifact to build XCFramework
         if: contains(matrix.target, 'ios')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: voicevox_core-${{ matrix.target }}
           path: artifact/${{ env.ASSET_NAME }}
@@ -351,7 +334,7 @@ jobs:
           target_commitish: ${{ github.sha }}
       - name: Upload voicevox_core_java_api artifact
         if: fromJson(needs.config.outputs.deploy) && contains(matrix.target, 'android')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: voicevox_core_java_api-${{ matrix.artifact_name }}
           path: java_artifact
@@ -361,44 +344,34 @@ jobs:
     needs: [config, build_and_deploy]
     runs-on: macos-12
     env:
+      IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
+      IOS_AARCH64_SIM_PATH: artifact/voicevox_core-aarch64-apple-ios-sim
+      IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
       ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: voicevox_core-x86_64-apple-ios
-          path: artifact/voicevox_core-x86_64-apple-ios
-      - uses: actions/download-artifact@v2
+          path: ${{ env.IOS_X86_64_PATH }}
+      - uses: actions/download-artifact@v4
         with:
           name: voicevox_core-aarch64-apple-ios-sim
-          path: artifact/voicevox_core-aarch64-apple-ios-sim
-      - uses: actions/download-artifact@v2
+          path: ${{ env.IOS_AARCH64_SIM_PATH }}
+      - uses: actions/download-artifact@v4
         with:
           name: voicevox_core-aarch64-apple-ios
-          path: artifact/voicevox_core-aarch64-apple-ios
-      - name: Create fat binary
+          path: ${{ env.IOS_AARCH64_PATH }}
+      - name: Create xcframework
+        id: create-xcframework 
         run: |
-          mkdir -p "artifact/voicevox_core-sim"
-          lipo -create "artifact/voicevox_core-x86_64-apple-ios/libvoicevox_core.dylib" "artifact/voicevox_core-aarch64-apple-ios-sim/libvoicevox_core.dylib" -output "artifact/voicevox_core-sim/libvoicevox_core.dylib"
-      - name: Create XCFramework
-        run: |
-          mkdir -p "artifact/${{ env.ASSET_NAME }}"
-          # 必要なファイルだけコピー
-          mkdir -p "Headers-sim"
-          cp -v artifact/voicevox_core-x86_64-apple-ios/voicevox_core.h "Headers-sim"
-          cp -v crates/voicevox_core_c_api/xcframework/Headers/module.modulemap "Headers-sim"
-          mkdir -p "Headers-aarch64"
-          cp -v artifact/voicevox_core-aarch64-apple-ios/voicevox_core.h "Headers-aarch64"
-          cp -v crates/voicevox_core_c_api/xcframework/Headers/module.modulemap "Headers-aarch64"
-          xcodebuild -create-xcframework \
-            -library "artifact/voicevox_core-sim/libvoicevox_core.dylib" \
-            -headers "Headers-sim" \
-            -library "artifact/voicevox_core-aarch64-apple-ios/libvoicevox_core.dylib" \
-            -headers "Headers-aarch64" \
-            -output "artifact/${{ env.ASSET_NAME }}/voicevox_core.xcframework"
+          build_util/make_ios_xcframework.bash
+          echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT" 
+        env:
+          OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
       - name: Archive artifact
         run: |
-          cd artifact/${{ env.ASSET_NAME }}
+          cd ${{ steps.create-xcframework.outputs.output_asset_path }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
@@ -427,7 +400,7 @@ jobs:
       - name: Raplace resource
         if: inputs.is_production
         shell: bash
-        run: |
+        run:
           rm -r ./model; mv download/fat_resource/core/model ./model
       - name: Create artifact
         run: |
@@ -456,7 +429,7 @@ jobs:
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "adopt"
@@ -469,7 +442,7 @@ jobs:
       - name: Install cargo-edit
         run: cargo binstall cargo-edit@^0.11 --no-confirm
       - name: set cargo version
-        run: |
+        run:
           cargo set-version "$VERSION" -p voicevox_core_java_api
 
       - name: "Download artifact (android-arm64-cpu)"

@@ -1,24 +1,15 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::marker::PhantomData;
 
 mod convert;
-use self::convert::{
-    async_modify_accent_phrases, from_acceleration_mode, from_dataclass, from_utf8_path,
-    to_py_user_dict_word, to_py_uuid, to_pydantic_dataclass, to_pydantic_voice_model_meta,
-    to_rust_user_dict_word, to_rust_uuid, VoicevoxCoreResultExt as _,
-};
+use self::convert::{from_utf8_path, to_pydantic_dataclass, VoicevoxCoreResultExt as _};
 use easy_ext::ext;
 use log::debug;
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
-    pyclass, pyfunction, pymethods, pymodule,
-    types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyModule},
-    wrap_pyfunction, PyAny, PyObject, PyRef, PyResult, PyTypeInfo, Python, ToPyObject,
-};
-use uuid::Uuid;
-use voicevox_core::{
-    AccelerationMode, AudioQueryModel, InitializeOptions, StyleId, SynthesisOptions, TtsOptions,
-    UserDictWord, VoiceModelId,
+    pyfunction, pymodule,
+    types::PyModule,
+    wrap_pyfunction, PyAny, PyResult, PyTypeInfo, Python,
 };
 
 #[pymodule]
@@ -41,10 +32,10 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add_and_register_submodule(blocking_module)?;
 
     let asyncio_module = PyModule::new(py, "voicevox_core._rust.asyncio")?;
-    asyncio_module.add_class::<self::Synthesizer>()?;
-    asyncio_module.add_class::<self::OpenJtalk>()?;
-    asyncio_module.add_class::<self::VoiceModel>()?;
-    asyncio_module.add_class::<self::UserDict>()?;
+    asyncio_module.add_class::<self::asyncio::Synthesizer>()?;
+    asyncio_module.add_class::<self::asyncio::OpenJtalk>()?;
+    asyncio_module.add_class::<self::asyncio::VoiceModel>()?;
+    asyncio_module.add_class::<self::asyncio::UserDict>()?;
     module.add_and_register_submodule(asyncio_module)
 }
 
@@ -80,6 +71,7 @@ exceptions! {
     ReadZipEntryError: PyException;
     ModelAlreadyLoadedError: PyException;
     StyleAlreadyLoadedError: PyException;
+    InvalidModelFormatError: PyException;
     InvalidModelDataError: PyException;
     GetSupportedDevicesError: PyException;
     StyleNotFoundError: PyKeyError;
@@ -94,12 +86,6 @@ exceptions! {
     InvalidWordError: PyValueError;
 }
 
-#[pyclass]
-#[derive(Clone)]
-struct VoiceModel {
-    model: voicevox_core::tokio::VoiceModel,
-}
-
 #[pyfunction]
 fn supported_devices(py: Python<'_>) -> PyResult<&PyAny> {
     let class = py
@@ -108,395 +94,6 @@ fn supported_devices(py: Python<'_>) -> PyResult<&PyAny> {
         .downcast()?;
     let s = voicevox_core::SupportedDevices::create().into_py_result(py)?;
     to_pydantic_dataclass(s, class)
-}
-
-#[pymethods]
-impl VoiceModel {
-    #[staticmethod]
-    fn from_path(
-        py: Python<'_>,
-        #[pyo3(from_py_with = "from_utf8_path")] path: String,
-    ) -> PyResult<&PyAny> {
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let model = voicevox_core::tokio::VoiceModel::from_path(path).await;
-            let model = Python::with_gil(|py| model.into_py_result(py))?;
-            Ok(Self { model })
-        })
-    }
-
-    #[getter]
-    fn id(&self) -> &str {
-        self.model.id().raw_voice_model_id()
-    }
-
-    #[getter]
-    fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
-        to_pydantic_voice_model_meta(self.model.metas(), py).unwrap()
-    }
-}
-
-#[pyclass]
-#[derive(Clone)]
-struct OpenJtalk {
-    open_jtalk: voicevox_core::tokio::OpenJtalk,
-}
-
-#[pymethods]
-impl OpenJtalk {
-    #[allow(clippy::new_ret_no_self)]
-    #[staticmethod]
-    fn new(
-        #[pyo3(from_py_with = "from_utf8_path")] open_jtalk_dict_dir: String,
-        py: Python<'_>,
-    ) -> PyResult<&PyAny> {
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let open_jtalk = voicevox_core::tokio::OpenJtalk::new(open_jtalk_dict_dir).await;
-            let open_jtalk = Python::with_gil(|py| open_jtalk.into_py_result(py))?;
-            Ok(Self { open_jtalk })
-        })
-    }
-
-    fn use_user_dict<'py>(&self, user_dict: UserDict, py: Python<'py>) -> PyResult<&'py PyAny> {
-        let this = self.open_jtalk.clone();
-
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let result = this.use_user_dict(&user_dict.dict).await;
-            Python::with_gil(|py| result.into_py_result(py))
-        })
-    }
-}
-
-#[pyclass]
-struct Synthesizer {
-    synthesizer: Closable<voicevox_core::tokio::Synthesizer<voicevox_core::tokio::OpenJtalk>, Self>,
-}
-
-#[pymethods]
-impl Synthesizer {
-    #[new]
-    #[pyo3(signature =(
-        open_jtalk,
-        acceleration_mode = InitializeOptions::default().acceleration_mode,
-        cpu_num_threads = InitializeOptions::default().cpu_num_threads,
-    ))]
-    fn new(
-        open_jtalk: OpenJtalk,
-        #[pyo3(from_py_with = "from_acceleration_mode")] acceleration_mode: AccelerationMode,
-        cpu_num_threads: u16,
-    ) -> PyResult<Self> {
-        let synthesizer = voicevox_core::tokio::Synthesizer::new(
-            open_jtalk.open_jtalk.clone(),
-            &InitializeOptions {
-                acceleration_mode,
-                cpu_num_threads,
-            },
-        );
-        let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?;
-        let synthesizer = Closable::new(synthesizer);
-        Ok(Self { synthesizer })
-    }
-
-    fn __repr__(&self) -> &'static str {
-        "Synthesizer { .. }"
-    }
-
-    fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
-        slf.synthesizer.get()?;
-        Ok(slf)
-    }
-
-    fn __exit__(
-        &mut self,
-        #[allow(unused_variables)] exc_type: &PyAny,
-        #[allow(unused_variables)] exc_value: &PyAny,
-        #[allow(unused_variables)] traceback: &PyAny,
-    ) {
-        self.close();
-    }
-
-    #[getter]
-    fn is_gpu_mode(&self) -> PyResult<bool> {
-        let synthesizer = self.synthesizer.get()?;
-        Ok(synthesizer.is_gpu_mode())
-    }
-
-    #[getter]
-    fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
-        let synthesizer = self.synthesizer.get()?;
-        to_pydantic_voice_model_meta(&synthesizer.metas(), py)
-    }
-
-    fn load_voice_model<'py>(
-        &mut self,
-        model: &'py PyAny,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyAny> {
-        let model: VoiceModel = model.extract()?;
-        let synthesizer = self.synthesizer.get()?.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let result = synthesizer.load_voice_model(&model.model).await;
-            Python::with_gil(|py| result.into_py_result(py))
-        })
-    }
-
-    fn unload_voice_model(&mut self, voice_model_id: &str, py: Python<'_>) -> PyResult<()> {
-        self.synthesizer
-            .get()?
-            .unload_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
-            .into_py_result(py)
-    }
-
-    fn is_loaded_voice_model(&self, voice_model_id: &str) -> PyResult<bool> {
-        Ok(self
-            .synthesizer
-            .get()?
-            .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string())))
-    }
-
-    fn audio_query_from_kana<'py>(
-        &self,
-        kana: &str,
-        style_id: u32,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.get()?.clone();
-        let kana = kana.to_owned();
-        pyo3_asyncio::tokio::future_into_py_with_locals(
-            py,
-            pyo3_asyncio::tokio::get_current_locals(py)?,
-            async move {
-                let audio_query = synthesizer
-                    .audio_query_from_kana(&kana, StyleId::new(style_id))
-                    .await;
-
-                Python::with_gil(|py| {
-                    let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
-                    let ret = to_pydantic_dataclass(audio_query.into_py_result(py)?, class)?;
-                    Ok(ret.to_object(py))
-                })
-            },
-        )
-    }
-
-    fn audio_query<'py>(&self, text: &str, style_id: u32, py: Python<'py>) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.get()?.clone();
-        let text = text.to_owned();
-        pyo3_asyncio::tokio::future_into_py_with_locals(
-            py,
-            pyo3_asyncio::tokio::get_current_locals(py)?,
-            async move {
-                let audio_query = synthesizer.audio_query(&text, StyleId::new(style_id)).await;
-
-                Python::with_gil(|py| {
-                    let audio_query = audio_query.into_py_result(py)?;
-                    let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
-                    let ret = to_pydantic_dataclass(audio_query, class)?;
-                    Ok(ret.to_object(py))
-                })
-            },
-        )
-    }
-
-    fn create_accent_phrases_from_kana<'py>(
-        &self,
-        kana: &str,
-        style_id: u32,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.get()?.clone();
-        let kana = kana.to_owned();
-        pyo3_asyncio::tokio::future_into_py_with_locals(
-            py,
-            pyo3_asyncio::tokio::get_current_locals(py)?,
-            async move {
-                let accent_phrases = synthesizer
-                    .create_accent_phrases_from_kana(&kana, StyleId::new(style_id))
-                    .await;
-                Python::with_gil(|py| {
-                    let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
-                    let accent_phrases = accent_phrases
-                        .into_py_result(py)?
-                        .iter()
-                        .map(|ap| to_pydantic_dataclass(ap, class))
-                        .collect::<PyResult<Vec<_>>>();
-                    let list = PyList::new(py, accent_phrases);
-                    Ok(list.to_object(py))
-                })
-            },
-        )
-    }
-
-    fn create_accent_phrases<'py>(
-        &self,
-        text: &str,
-        style_id: u32,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.get()?.clone();
-        let text = text.to_owned();
-        pyo3_asyncio::tokio::future_into_py_with_locals(
-            py,
-            pyo3_asyncio::tokio::get_current_locals(py)?,
-            async move {
-                let accent_phrases = synthesizer
-                    .create_accent_phrases(&text, StyleId::new(style_id))
-                    .await;
-                Python::with_gil(|py| {
-                    let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
-                    let accent_phrases = accent_phrases
-                        .into_py_result(py)?
-                        .iter()
-                        .map(|ap| to_pydantic_dataclass(ap, class))
-                        .collect::<PyResult<Vec<_>>>();
-                    let list = PyList::new(py, accent_phrases);
-                    Ok(list.to_object(py))
-                })
-            },
-        )
-    }
-
-    fn replace_mora_data<'py>(
-        &self,
-        accent_phrases: &'py PyList,
-        style_id: u32,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.get()?.clone();
-        async_modify_accent_phrases(
-            accent_phrases,
-            StyleId::new(style_id),
-            py,
-            |a, s| async move { synthesizer.replace_mora_data(&a, s).await },
-        )
-    }
-
-    fn replace_phoneme_length<'py>(
-        &self,
-        accent_phrases: &'py PyList,
-        style_id: u32,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.get()?.clone();
-        async_modify_accent_phrases(
-            accent_phrases,
-            StyleId::new(style_id),
-            py,
-            |a, s| async move { synthesizer.replace_phoneme_length(&a, s).await },
-        )
-    }
-
-    fn replace_mora_pitch<'py>(
-        &self,
-        accent_phrases: &'py PyList,
-        style_id: u32,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.get()?.clone();
-        async_modify_accent_phrases(
-            accent_phrases,
-            StyleId::new(style_id),
-            py,
-            |a, s| async move { synthesizer.replace_mora_pitch(&a, s).await },
-        )
-    }
-
-    #[pyo3(signature=(audio_query,style_id,enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak))]
-    fn synthesis<'py>(
-        &self,
-        #[pyo3(from_py_with = "from_dataclass")] audio_query: AudioQueryModel,
-        style_id: u32,
-        enable_interrogative_upspeak: bool,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyAny> {
-        let synthesizer = self.synthesizer.get()?.clone();
-        pyo3_asyncio::tokio::future_into_py_with_locals(
-            py,
-            pyo3_asyncio::tokio::get_current_locals(py)?,
-            async move {
-                let wav = synthesizer
-                    .synthesis(
-                        &audio_query,
-                        StyleId::new(style_id),
-                        &SynthesisOptions {
-                            enable_interrogative_upspeak,
-                        },
-                    )
-                    .await;
-                Python::with_gil(|py| {
-                    let wav = wav.into_py_result(py)?;
-                    Ok(PyBytes::new(py, &wav).to_object(py))
-                })
-            },
-        )
-    }
-
-    #[pyo3(signature=(
-        kana,
-        style_id,
-        enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
-    ))]
-    fn tts_from_kana<'py>(
-        &self,
-        kana: &str,
-        style_id: u32,
-        enable_interrogative_upspeak: bool,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyAny> {
-        let style_id = StyleId::new(style_id);
-        let options = TtsOptions {
-            enable_interrogative_upspeak,
-        };
-        let synthesizer = self.synthesizer.get()?.clone();
-        let kana = kana.to_owned();
-        pyo3_asyncio::tokio::future_into_py_with_locals(
-            py,
-            pyo3_asyncio::tokio::get_current_locals(py)?,
-            async move {
-                let wav = synthesizer.tts_from_kana(&kana, style_id, &options).await;
-
-                Python::with_gil(|py| {
-                    let wav = wav.into_py_result(py)?;
-                    Ok(PyBytes::new(py, &wav).to_object(py))
-                })
-            },
-        )
-    }
-
-    #[pyo3(signature=(
-        text,
-        style_id,
-        enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
-    ))]
-    fn tts<'py>(
-        &self,
-        text: &str,
-        style_id: u32,
-        enable_interrogative_upspeak: bool,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyAny> {
-        let style_id = StyleId::new(style_id);
-        let options = TtsOptions {
-            enable_interrogative_upspeak,
-        };
-        let synthesizer = self.synthesizer.get()?.clone();
-        let text = text.to_owned();
-        pyo3_asyncio::tokio::future_into_py_with_locals(
-            py,
-            pyo3_asyncio::tokio::get_current_locals(py)?,
-            async move {
-                let wav = synthesizer.tts(&text, style_id, &options).await;
-
-                Python::with_gil(|py| {
-                    let wav = wav.into_py_result(py)?;
-                    Ok(PyBytes::new(py, &wav).to_object(py))
-                })
-            },
-        )
-    }
-
-    fn close(&mut self) {
-        self.synthesizer.close()
-    }
 }
 
 struct Closable<T, C: PyTypeInfo> {
@@ -551,95 +148,13 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
     Ok(voicevox_core::__internal::to_zenkaku(text))
 }
 
-#[pyclass]
-#[derive(Default, Debug, Clone)]
-struct UserDict {
-    dict: Arc<voicevox_core::tokio::UserDict>,
-}
-
-#[pymethods]
-impl UserDict {
-    #[new]
-    fn new() -> Self {
-        Self::default()
-    }
-
-    fn load<'py>(&self, path: &str, py: Python<'py>) -> PyResult<&'py PyAny> {
-        let this = self.dict.clone();
-        let path = path.to_owned();
-
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let result = this.load(&path).await;
-            Python::with_gil(|py| result.into_py_result(py))
-        })
-    }
-
-    fn save<'py>(&self, path: &str, py: Python<'py>) -> PyResult<&'py PyAny> {
-        let this = self.dict.clone();
-        let path = path.to_owned();
-
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let result = this.save(&path).await;
-            Python::with_gil(|py| result.into_py_result(py))
-        })
-    }
-
-    fn add_word(
-        &mut self,
-        #[pyo3(from_py_with = "to_rust_user_dict_word")] word: UserDictWord,
-        py: Python<'_>,
-    ) -> PyResult<PyObject> {
-        let uuid = self.dict.add_word(word).into_py_result(py)?;
-
-        to_py_uuid(py, uuid)
-    }
-
-    fn update_word(
-        &mut self,
-        #[pyo3(from_py_with = "to_rust_uuid")] word_uuid: Uuid,
-        #[pyo3(from_py_with = "to_rust_user_dict_word")] word: UserDictWord,
-        py: Python<'_>,
-    ) -> PyResult<()> {
-        self.dict.update_word(word_uuid, word).into_py_result(py)?;
-        Ok(())
-    }
-
-    fn remove_word(
-        &mut self,
-        #[pyo3(from_py_with = "to_rust_uuid")] word_uuid: Uuid,
-        py: Python<'_>,
-    ) -> PyResult<()> {
-        self.dict.remove_word(word_uuid).into_py_result(py)?;
-        Ok(())
-    }
-
-    fn import_dict(&mut self, other: &UserDict, py: Python<'_>) -> PyResult<()> {
-        self.dict.import(&other.dict).into_py_result(py)?;
-        Ok(())
-    }
-
-    #[getter]
-    fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
-        let words = self.dict.with_words(|words| {
-            words
-                .iter()
-                .map(|(&uuid, word)| {
-                    let uuid = to_py_uuid(py, uuid)?;
-                    let word = to_py_user_dict_word(py, word)?;
-                    Ok((uuid, word))
-                })
-                .collect::<PyResult<Vec<_>>>()
-        })?;
-        Ok(words.into_py_dict(py))
-    }
-}
-
 mod blocking {
-    use std::sync::Arc;
+    use std::{path::PathBuf, sync::Arc};
 
+    use camino::Utf8PathBuf;
     use pyo3::{
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyBytes, PyDict, PyList},
+        types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyString},
         PyAny, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
@@ -659,10 +174,7 @@ mod blocking {
     #[pymethods]
     impl VoiceModel {
         #[staticmethod]
-        fn from_path(
-            py: Python<'_>,
-            #[pyo3(from_py_with = "crate::convert::from_utf8_path")] path: String,
-        ) -> PyResult<Self> {
+        fn from_path(py: Python<'_>, path: PathBuf) -> PyResult<Self> {
             let model = voicevox_core::blocking::VoiceModel::from_path(path).into_py_result(py)?;
             Ok(Self { model })
         }
@@ -688,7 +200,7 @@ mod blocking {
     impl OpenJtalk {
         #[new]
         fn new(
-            #[pyo3(from_py_with = "super::from_utf8_path")] open_jtalk_dict_dir: String,
+            #[pyo3(from_py_with = "super::from_utf8_path")] open_jtalk_dict_dir: Utf8PathBuf,
             py: Python<'_>,
         ) -> PyResult<Self> {
             let open_jtalk =
@@ -784,7 +296,12 @@ mod blocking {
                 .into_py_result(py)
         }
 
-        fn is_loaded_voice_model(&self, voice_model_id: &str) -> PyResult<bool> {
+        // C APIの挙動と一貫性を持たせる。
+        fn is_loaded_voice_model(&self, voice_model_id: &PyString) -> PyResult<bool> {
+            let Ok(voice_model_id) = voice_model_id.to_str() else {
+                // 与えられたIDがUTF-8ではない場合、それに対応する`VoicdModel`は確実に存在しない
+                return Ok(false);
+            };
             Ok(self
                 .synthesizer
                 .get()?
@@ -1023,6 +540,515 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<()> {
             self.dict.update_word(word_uuid, word).into_py_result(py)
+        }
+
+        fn remove_word(
+            &mut self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] word_uuid: Uuid,
+            py: Python<'_>,
+        ) -> PyResult<()> {
+            self.dict.remove_word(word_uuid).into_py_result(py)?;
+            Ok(())
+        }
+
+        fn import_dict(&mut self, other: &UserDict, py: Python<'_>) -> PyResult<()> {
+            self.dict.import(&other.dict).into_py_result(py)?;
+            Ok(())
+        }
+
+        #[getter]
+        fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
+            let words = self.dict.with_words(|words| {
+                words
+                    .iter()
+                    .map(|(&uuid, word)| {
+                        let uuid = crate::convert::to_py_uuid(py, uuid)?;
+                        let word = crate::convert::to_py_user_dict_word(py, word)?;
+                        Ok((uuid, word))
+                    })
+                    .collect::<PyResult<Vec<_>>>()
+            })?;
+            Ok(words.into_py_dict(py))
+        }
+    }
+}
+
+mod asyncio {
+    use std::{path::PathBuf, sync::Arc};
+
+    use camino::Utf8PathBuf;
+    use pyo3::{
+        pyclass, pymethods,
+        types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyString},
+        PyAny, PyObject, PyRef, PyResult, Python, ToPyObject as _,
+    };
+    use uuid::Uuid;
+    use voicevox_core::{
+        AccelerationMode, AudioQueryModel, InitializeOptions, StyleId, SynthesisOptions,
+        TtsOptions, UserDictWord, VoiceModelId,
+    };
+
+    use crate::{convert::VoicevoxCoreResultExt as _, Closable};
+
+    #[pyclass]
+    #[derive(Clone)]
+    pub(crate) struct VoiceModel {
+        model: voicevox_core::tokio::VoiceModel,
+    }
+
+    #[pymethods]
+    impl VoiceModel {
+        #[staticmethod]
+        fn from_path(py: Python<'_>, path: PathBuf) -> PyResult<&PyAny> {
+            pyo3_asyncio::tokio::future_into_py(py, async move {
+                let model = voicevox_core::tokio::VoiceModel::from_path(path).await;
+                let model = Python::with_gil(|py| model.into_py_result(py))?;
+                Ok(Self { model })
+            })
+        }
+
+        #[getter]
+        fn id(&self) -> &str {
+            self.model.id().raw_voice_model_id()
+        }
+
+        #[getter]
+        fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
+            crate::convert::to_pydantic_voice_model_meta(self.model.metas(), py).unwrap()
+        }
+    }
+
+    #[pyclass]
+    #[derive(Clone)]
+    pub(crate) struct OpenJtalk {
+        open_jtalk: voicevox_core::tokio::OpenJtalk,
+    }
+
+    #[pymethods]
+    impl OpenJtalk {
+        #[allow(clippy::new_ret_no_self)]
+        #[staticmethod]
+        fn new(
+            #[pyo3(from_py_with = "crate::convert::from_utf8_path")]
+            open_jtalk_dict_dir: Utf8PathBuf,
+            py: Python<'_>,
+        ) -> PyResult<&PyAny> {
+            pyo3_asyncio::tokio::future_into_py(py, async move {
+                let open_jtalk = voicevox_core::tokio::OpenJtalk::new(open_jtalk_dict_dir).await;
+                let open_jtalk = Python::with_gil(|py| open_jtalk.into_py_result(py))?;
+                Ok(Self { open_jtalk })
+            })
+        }
+
+        fn use_user_dict<'py>(&self, user_dict: UserDict, py: Python<'py>) -> PyResult<&'py PyAny> {
+            let this = self.open_jtalk.clone();
+
+            pyo3_asyncio::tokio::future_into_py(py, async move {
+                let result = this.use_user_dict(&user_dict.dict).await;
+                Python::with_gil(|py| result.into_py_result(py))
+            })
+        }
+    }
+
+    #[pyclass]
+    pub(crate) struct Synthesizer {
+        synthesizer:
+            Closable<voicevox_core::tokio::Synthesizer<voicevox_core::tokio::OpenJtalk>, Self>,
+    }
+
+    #[pymethods]
+    impl Synthesizer {
+        #[new]
+        #[pyo3(signature =(
+            open_jtalk,
+            acceleration_mode = InitializeOptions::default().acceleration_mode,
+            cpu_num_threads = InitializeOptions::default().cpu_num_threads,
+        ))]
+        fn new(
+            open_jtalk: OpenJtalk,
+            #[pyo3(from_py_with = "crate::convert::from_acceleration_mode")]
+            acceleration_mode: AccelerationMode,
+            cpu_num_threads: u16,
+        ) -> PyResult<Self> {
+            let synthesizer = voicevox_core::tokio::Synthesizer::new(
+                open_jtalk.open_jtalk.clone(),
+                &InitializeOptions {
+                    acceleration_mode,
+                    cpu_num_threads,
+                },
+            );
+            let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?;
+            let synthesizer = Closable::new(synthesizer);
+            Ok(Self { synthesizer })
+        }
+
+        fn __repr__(&self) -> &'static str {
+            "Synthesizer { .. }"
+        }
+
+        fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
+            slf.synthesizer.get()?;
+            Ok(slf)
+        }
+
+        fn __exit__(
+            &mut self,
+            #[allow(unused_variables)] exc_type: &PyAny,
+            #[allow(unused_variables)] exc_value: &PyAny,
+            #[allow(unused_variables)] traceback: &PyAny,
+        ) {
+            self.close();
+        }
+
+        #[getter]
+        fn is_gpu_mode(&self) -> PyResult<bool> {
+            let synthesizer = self.synthesizer.get()?;
+            Ok(synthesizer.is_gpu_mode())
+        }
+
+        #[getter]
+        fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
+            let synthesizer = self.synthesizer.get()?;
+            crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
+        }
+
+        fn load_voice_model<'py>(
+            &mut self,
+            model: &'py PyAny,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let model: VoiceModel = model.extract()?;
+            let synthesizer = self.synthesizer.get()?.clone();
+            pyo3_asyncio::tokio::future_into_py(py, async move {
+                let result = synthesizer.load_voice_model(&model.model).await;
+                Python::with_gil(|py| result.into_py_result(py))
+            })
+        }
+
+        fn unload_voice_model(&mut self, voice_model_id: &str, py: Python<'_>) -> PyResult<()> {
+            self.synthesizer
+                .get()?
+                .unload_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
+                .into_py_result(py)
+        }
+
+        // C APIの挙動と一貫性を持たせる。
+        fn is_loaded_voice_model(&self, voice_model_id: &PyString) -> PyResult<bool> {
+            let Ok(voice_model_id) = voice_model_id.to_str() else {
+                // 与えられたIDがUTF-8ではない場合、それに対応する`VoicdModel`は確実に存在しない
+                return Ok(false);
+            };
+            Ok(self
+                .synthesizer
+                .get()?
+                .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string())))
+        }
+
+        fn audio_query_from_kana<'py>(
+            &self,
+            kana: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let synthesizer = self.synthesizer.get()?.clone();
+            let kana = kana.to_owned();
+            pyo3_asyncio::tokio::future_into_py_with_locals(
+                py,
+                pyo3_asyncio::tokio::get_current_locals(py)?,
+                async move {
+                    let audio_query = synthesizer
+                        .audio_query_from_kana(&kana, StyleId::new(style_id))
+                        .await;
+
+                    Python::with_gil(|py| {
+                        let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
+                        let ret = crate::convert::to_pydantic_dataclass(
+                            audio_query.into_py_result(py)?,
+                            class,
+                        )?;
+                        Ok(ret.to_object(py))
+                    })
+                },
+            )
+        }
+
+        fn audio_query<'py>(
+            &self,
+            text: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let synthesizer = self.synthesizer.get()?.clone();
+            let text = text.to_owned();
+            pyo3_asyncio::tokio::future_into_py_with_locals(
+                py,
+                pyo3_asyncio::tokio::get_current_locals(py)?,
+                async move {
+                    let audio_query = synthesizer.audio_query(&text, StyleId::new(style_id)).await;
+
+                    Python::with_gil(|py| {
+                        let audio_query = audio_query.into_py_result(py)?;
+                        let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
+                        let ret = crate::convert::to_pydantic_dataclass(audio_query, class)?;
+                        Ok(ret.to_object(py))
+                    })
+                },
+            )
+        }
+
+        fn create_accent_phrases_from_kana<'py>(
+            &self,
+            kana: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let synthesizer = self.synthesizer.get()?.clone();
+            let kana = kana.to_owned();
+            pyo3_asyncio::tokio::future_into_py_with_locals(
+                py,
+                pyo3_asyncio::tokio::get_current_locals(py)?,
+                async move {
+                    let accent_phrases = synthesizer
+                        .create_accent_phrases_from_kana(&kana, StyleId::new(style_id))
+                        .await;
+                    Python::with_gil(|py| {
+                        let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
+                        let accent_phrases = accent_phrases
+                            .into_py_result(py)?
+                            .iter()
+                            .map(|ap| crate::convert::to_pydantic_dataclass(ap, class))
+                            .collect::<PyResult<Vec<_>>>();
+                        let list = PyList::new(py, accent_phrases);
+                        Ok(list.to_object(py))
+                    })
+                },
+            )
+        }
+
+        fn create_accent_phrases<'py>(
+            &self,
+            text: &str,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let synthesizer = self.synthesizer.get()?.clone();
+            let text = text.to_owned();
+            pyo3_asyncio::tokio::future_into_py_with_locals(
+                py,
+                pyo3_asyncio::tokio::get_current_locals(py)?,
+                async move {
+                    let accent_phrases = synthesizer
+                        .create_accent_phrases(&text, StyleId::new(style_id))
+                        .await;
+                    Python::with_gil(|py| {
+                        let class = py.import("voicevox_core")?.getattr("AccentPhrase")?;
+                        let accent_phrases = accent_phrases
+                            .into_py_result(py)?
+                            .iter()
+                            .map(|ap| crate::convert::to_pydantic_dataclass(ap, class))
+                            .collect::<PyResult<Vec<_>>>();
+                        let list = PyList::new(py, accent_phrases);
+                        Ok(list.to_object(py))
+                    })
+                },
+            )
+        }
+
+        fn replace_mora_data<'py>(
+            &self,
+            accent_phrases: &'py PyList,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let synthesizer = self.synthesizer.get()?.clone();
+            crate::convert::async_modify_accent_phrases(
+                accent_phrases,
+                StyleId::new(style_id),
+                py,
+                |a, s| async move { synthesizer.replace_mora_data(&a, s).await },
+            )
+        }
+
+        fn replace_phoneme_length<'py>(
+            &self,
+            accent_phrases: &'py PyList,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let synthesizer = self.synthesizer.get()?.clone();
+            crate::convert::async_modify_accent_phrases(
+                accent_phrases,
+                StyleId::new(style_id),
+                py,
+                |a, s| async move { synthesizer.replace_phoneme_length(&a, s).await },
+            )
+        }
+
+        fn replace_mora_pitch<'py>(
+            &self,
+            accent_phrases: &'py PyList,
+            style_id: u32,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let synthesizer = self.synthesizer.get()?.clone();
+            crate::convert::async_modify_accent_phrases(
+                accent_phrases,
+                StyleId::new(style_id),
+                py,
+                |a, s| async move { synthesizer.replace_mora_pitch(&a, s).await },
+            )
+        }
+
+        #[pyo3(signature=(audio_query,style_id,enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak))]
+        fn synthesis<'py>(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQueryModel,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let synthesizer = self.synthesizer.get()?.clone();
+            pyo3_asyncio::tokio::future_into_py_with_locals(
+                py,
+                pyo3_asyncio::tokio::get_current_locals(py)?,
+                async move {
+                    let wav = synthesizer
+                        .synthesis(
+                            &audio_query,
+                            StyleId::new(style_id),
+                            &SynthesisOptions {
+                                enable_interrogative_upspeak,
+                            },
+                        )
+                        .await;
+                    Python::with_gil(|py| {
+                        let wav = wav.into_py_result(py)?;
+                        Ok(PyBytes::new(py, &wav).to_object(py))
+                    })
+                },
+            )
+        }
+
+        #[pyo3(signature=(
+            kana,
+            style_id,
+            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+        ))]
+        fn tts_from_kana<'py>(
+            &self,
+            kana: &str,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let style_id = StyleId::new(style_id);
+            let options = TtsOptions {
+                enable_interrogative_upspeak,
+            };
+            let synthesizer = self.synthesizer.get()?.clone();
+            let kana = kana.to_owned();
+            pyo3_asyncio::tokio::future_into_py_with_locals(
+                py,
+                pyo3_asyncio::tokio::get_current_locals(py)?,
+                async move {
+                    let wav = synthesizer.tts_from_kana(&kana, style_id, &options).await;
+
+                    Python::with_gil(|py| {
+                        let wav = wav.into_py_result(py)?;
+                        Ok(PyBytes::new(py, &wav).to_object(py))
+                    })
+                },
+            )
+        }
+
+        #[pyo3(signature=(
+            text,
+            style_id,
+            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+        ))]
+        fn tts<'py>(
+            &self,
+            text: &str,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let style_id = StyleId::new(style_id);
+            let options = TtsOptions {
+                enable_interrogative_upspeak,
+            };
+            let synthesizer = self.synthesizer.get()?.clone();
+            let text = text.to_owned();
+            pyo3_asyncio::tokio::future_into_py_with_locals(
+                py,
+                pyo3_asyncio::tokio::get_current_locals(py)?,
+                async move {
+                    let wav = synthesizer.tts(&text, style_id, &options).await;
+
+                    Python::with_gil(|py| {
+                        let wav = wav.into_py_result(py)?;
+                        Ok(PyBytes::new(py, &wav).to_object(py))
+                    })
+                },
+            )
+        }
+
+        fn close(&mut self) {
+            self.synthesizer.close()
+        }
+    }
+
+    #[pyclass]
+    #[derive(Default, Debug, Clone)]
+    pub(crate) struct UserDict {
+        dict: Arc<voicevox_core::tokio::UserDict>,
+    }
+
+    #[pymethods]
+    impl UserDict {
+        #[new]
+        fn new() -> Self {
+            Self::default()
+        }
+
+        fn load<'py>(&self, path: &str, py: Python<'py>) -> PyResult<&'py PyAny> {
+            let this = self.dict.clone();
+            let path = path.to_owned();
+
+            pyo3_asyncio::tokio::future_into_py(py, async move {
+                let result = this.load(&path).await;
+                Python::with_gil(|py| result.into_py_result(py))
+            })
+        }
+
+        fn save<'py>(&self, path: &str, py: Python<'py>) -> PyResult<&'py PyAny> {
+            let this = self.dict.clone();
+            let path = path.to_owned();
+
+            pyo3_asyncio::tokio::future_into_py(py, async move {
+                let result = this.save(&path).await;
+                Python::with_gil(|py| result.into_py_result(py))
+            })
+        }
+
+        fn add_word(
+            &mut self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
+            py: Python<'_>,
+        ) -> PyResult<PyObject> {
+            let uuid = self.dict.add_word(word).into_py_result(py)?;
+
+            crate::convert::to_py_uuid(py, uuid)
+        }
+
+        fn update_word(
+            &mut self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] word_uuid: Uuid,
+            #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
+            py: Python<'_>,
+        ) -> PyResult<()> {
+            self.dict.update_word(word_uuid, word).into_py_result(py)?;
+            Ok(())
         }
 
         fn remove_word(

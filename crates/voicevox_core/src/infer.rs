@@ -1,9 +1,9 @@
-pub(crate) mod domain;
+pub(crate) mod domains;
 mod model_file;
 pub(crate) mod runtimes;
-pub(crate) mod status;
+pub(crate) mod session_set;
 
-use std::{borrow::Cow, fmt::Debug};
+use std::{borrow::Cow, collections::BTreeSet, fmt::Debug};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -11,9 +11,10 @@ use enum_map::{Enum, EnumMap};
 use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
 
-use crate::SupportedDevices;
+use crate::{StyleType, SupportedDevices};
 
 pub(crate) trait InferenceRuntime: 'static {
+    // TODO: "session"とは何なのかを定め、ドキュメントを書く。`InferenceSessionSet`も同様。
     type Session: Sized + Send + 'static;
     type RunContext<'a>: From<&'a mut Self::Session> + PushInputTensor;
 
@@ -32,9 +33,17 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run(ctx: Self::RunContext<'_>) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
-/// ある`VoiceModel`が提供する推論操作の集合を示す。
-pub(crate) trait InferenceDomain {
+/// 共に扱われるべき推論操作の集合を示す。
+pub(crate) trait InferenceDomain: Sized {
     type Operation: InferenceOperation;
+
+    /// 対応する`StyleType`。
+    ///
+    /// 複数の`InferenceDomain`に対応する`StyleType`があってもよい。
+    ///
+    /// また、どの`InferenceDomain`にも属さない`StyleType`があってもよい。そのような`StyleType`は
+    /// 音声モデルのロード時に単に拒否されるべきである。
+    fn style_types() -> &'static BTreeSet<StyleType>;
 }
 
 /// `InferenceDomain`の推論操作を表す列挙型。
@@ -70,16 +79,20 @@ pub(crate) trait InferenceSignature: Sized + Send + 'static {
 pub(crate) trait InferenceInputSignature: Send + 'static {
     type Signature: InferenceSignature<Input = Self>;
     const PARAM_INFOS: &'static [ParamInfo<InputScalarKind>];
-    fn make_run_context<R: InferenceRuntime>(self, sess: &mut R::Session) -> R::RunContext<'_>;
+    fn make_run_context<R: InferenceRuntime>(
+        self,
+        sess: &mut R::Session,
+    ) -> anyhow::Result<R::RunContext<'_>>;
 }
 
 pub(crate) trait InputScalar: Sized {
     const KIND: InputScalarKind;
 
+    // TODO: `Array`ではなく`ArrayView`を取ることができるかもしれない
     fn push_tensor_to_ctx(
         tensor: Array<Self, impl Dimension + 'static>,
         visitor: &mut impl PushInputTensor,
-    );
+    ) -> anyhow::Result<()>;
 }
 
 #[duplicate_item(
@@ -93,8 +106,8 @@ impl InputScalar for T {
     fn push_tensor_to_ctx(
         tensor: Array<Self, impl Dimension + 'static>,
         ctx: &mut impl PushInputTensor,
-    ) {
-        ctx.push(tensor);
+    ) -> anyhow::Result<()> {
+        ctx.push(tensor)
     }
 }
 
@@ -108,8 +121,8 @@ pub(crate) enum InputScalarKind {
 }
 
 pub(crate) trait PushInputTensor {
-    fn push_int64(&mut self, tensor: Array<i64, impl Dimension + 'static>);
-    fn push_float32(&mut self, tensor: Array<f32, impl Dimension + 'static>);
+    fn push_int64(&mut self, tensor: Array<i64, impl Dimension + 'static>) -> anyhow::Result<()>;
+    fn push_float32(&mut self, tensor: Array<f32, impl Dimension + 'static>) -> anyhow::Result<()>;
 }
 
 /// 推論操作の出力シグネチャ。

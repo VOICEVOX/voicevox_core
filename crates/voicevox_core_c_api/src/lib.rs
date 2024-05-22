@@ -59,7 +59,13 @@ fn init_logger_once() {
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
             } else {
-                "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
+                pub const ORT_LOGGING_LEVEL: &str = if cfg!(debug_assertions) {
+                    "info"
+                } else {
+                    "warn"
+                };
+                format!("error,voicevox_core=info,voicevox_core_c_api=info,ort={ORT_LOGGING_LEVEL}")
+                    .into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(ansi)
@@ -441,8 +447,10 @@ pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
     model_id: VoicevoxVoiceModelId,
 ) -> bool {
     init_logger_once();
-    // FIXME: 不正なUTF-8文字列に対し、正式なエラーとするか黙って`false`を返す
-    let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) }).unwrap();
+    let Ok(raw_model_id) = ensure_utf8(unsafe { CStr::from_ptr(model_id) }) else {
+        // 与えられたIDがUTF-8ではない場合、それに対応する`VoicdModel`は確実に存在しない
+        return false;
+    };
     synthesizer
         .synthesizer()
         .is_loaded_voice_model(&VoiceModelId::new(raw_model_id.into()))

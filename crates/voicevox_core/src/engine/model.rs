@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 /* 各フィールドのjsonフィールド名はsnake_caseとする*/
 
 /// モーラ（子音＋母音）ごとの情報。
-#[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
+#[derive(Clone, Debug, new, Getters, Deserialize, Serialize, PartialEq)]
 pub struct MoraModel {
     /// 文字。
     text: String,
@@ -22,7 +22,7 @@ pub struct MoraModel {
 }
 
 /// AccentPhrase (アクセント句ごとの情報)。
-#[derive(Clone, Debug, new, Getters, Deserialize, Serialize)]
+#[derive(Clone, Debug, new, Getters, Deserialize, Serialize, PartialEq)]
 pub struct AccentPhraseModel {
     /// モーラの配列。
     moras: Vec<MoraModel>,

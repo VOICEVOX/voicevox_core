@@ -1,11 +1,12 @@
 use std::{ffi::CString, path::Path};
 
+use camino::Utf8Path;
 use voicevox_core::{InitializeOptions, Result, VoiceModelId};
 
 use crate::{helpers::CApiResult, OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
 
 impl OpenJtalkRc {
-    pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Path>) -> Result<Self> {
+    pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Utf8Path>) -> Result<Self> {
         Ok(Self {
             open_jtalk: voicevox_core::blocking::OpenJtalk::new(open_jtalk_dic_dir)?,
         })

@@ -80,18 +80,18 @@ pub(crate) mod blocking {
     use enum_map::enum_map;
 
     use crate::{
-        engine::{self, create_kana, parse_kana, MoraModel, OjtPhoneme, Utterance},
+        engine::{create_kana, mora_to_text, MoraModel, OjtPhoneme},
         error::ErrorRepr,
         infer::{
-            domain::{
-                DecodeInput, DecodeOutput, InferenceDomainImpl, InferenceOperationImpl,
-                PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
-                PredictIntonationOutput,
+            domains::{
+                DecodeInput, DecodeOutput, InferenceDomainMap, PredictDurationInput,
+                PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput, TalkDomain,
+                TalkOperation,
             },
-            status::Status,
             InferenceSessionOptions,
         },
-        numerics::F32Ext as _,
+        status::Status,
+        text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
         AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
         SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
@@ -102,8 +102,9 @@ pub(crate) mod blocking {
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
-        pub(super) status: Status<InferenceRuntimeImpl, InferenceDomainImpl>,
-        open_jtalk: O,
+        pub(super) status: Status<InferenceRuntimeImpl>,
+        open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
+        kana_analyzer: KanaAnalyzer,
         use_gpu: bool,
     }
 
@@ -168,15 +169,18 @@ pub(crate) mod blocking {
             let heavy_session_options =
                 InferenceSessionOptions::new(options.cpu_num_threads, use_gpu);
 
-            let status = Status::new(enum_map! {
-                InferenceOperationImpl::PredictDuration
-                | InferenceOperationImpl::PredictIntonation => light_session_options,
-                InferenceOperationImpl::Decode => heavy_session_options,
+            let status = Status::new(InferenceDomainMap {
+                talk: enum_map! {
+                    TalkOperation::PredictDuration
+                    | TalkOperation::PredictIntonation => light_session_options,
+                    TalkOperation::Decode => heavy_session_options,
+                },
             });
 
             return Ok(Self {
                 status,
-                open_jtalk,
+                open_jtalk_analyzer: OpenJTalkAnalyzer::new(open_jtalk),
+                kana_analyzer: KanaAnalyzer,
                 use_gpu,
             });
 
@@ -299,8 +303,8 @@ pub(crate) mod blocking {
                     // VOICEVOX ENGINEと挙動を合わせるため、四捨五入ではなく偶数丸めをする
                     //
                     // https://github.com/VOICEVOX/voicevox_engine/issues/552
-                    let phoneme_length = ((*phoneme_length * RATE).round_ties_even_() / speed_scale)
-                        .round_ties_even_() as usize;
+                    let phoneme_length = ((*phoneme_length * RATE).round_ties_even() / speed_scale)
+                        .round_ties_even() as usize;
                     let phoneme_id = phoneme_data_list[i].phoneme_id();
 
                     for _ in 0..phoneme_length {
@@ -373,7 +377,7 @@ pub(crate) mod blocking {
                 let pitch = (*last_mora.pitch() + ADJUST_PITCH).min(MAX_PITCH);
 
                 MoraModel::new(
-                    mora_to_text(last_mora.vowel()),
+                    mora_to_text(None, last_mora.vowel()),
                     None,
                     None,
                     last_mora.vowel().clone(),
@@ -439,6 +443,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -457,7 +462,8 @@ pub(crate) mod blocking {
             kana: &str,
             style_id: StyleId,
         ) -> Result<Vec<AccentPhraseModel>> {
-            self.replace_mora_data(&parse_kana(kana)?, style_id)
+            let accent_phrases = self.kana_analyzer.analyze(kana)?;
+            self.replace_mora_data(&accent_phrases, style_id)
         }
 
         /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
@@ -677,6 +683,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -725,6 +732,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -743,75 +751,7 @@ pub(crate) mod blocking {
             text: &str,
             style_id: StyleId,
         ) -> Result<Vec<AccentPhraseModel>> {
-            if text.is_empty() {
-                return Ok(Vec::new());
-            }
-
-            let utterance = Utterance::extract_full_context_label(&self.open_jtalk, text)?;
-
-            let accent_phrases: Vec<AccentPhraseModel> = utterance
-                .breath_groups()
-                .iter()
-                .enumerate()
-                .fold(Vec::new(), |mut accum_vec, (i, breath_group)| {
-                    accum_vec.extend(breath_group.accent_phrases().iter().enumerate().map(
-                        |(j, accent_phrase)| {
-                            let moras = accent_phrase
-                                .moras()
-                                .iter()
-                                .map(|mora| {
-                                    let mora_text = mora
-                                        .phonemes()
-                                        .iter()
-                                        .map(|phoneme| phoneme.phoneme().to_string())
-                                        .collect::<Vec<_>>()
-                                        .join("");
-
-                                    let (consonant, consonant_length) =
-                                        if let Some(consonant) = mora.consonant() {
-                                            (Some(consonant.phoneme().to_string()), Some(0.))
-                                        } else {
-                                            (None, None)
-                                        };
-
-                                    MoraModel::new(
-                                        mora_to_text(mora_text),
-                                        consonant,
-                                        consonant_length,
-                                        mora.vowel().phoneme().into(),
-                                        0.,
-                                        0.,
-                                    )
-                                })
-                                .collect();
-
-                            let pause_mora = if i != utterance.breath_groups().len() - 1
-                                && j == breath_group.accent_phrases().len() - 1
-                            {
-                                Some(MoraModel::new(
-                                    "、".into(),
-                                    None,
-                                    None,
-                                    "pau".into(),
-                                    0.,
-                                    0.,
-                                ))
-                            } else {
-                                None
-                            };
-
-                            AccentPhraseModel::new(
-                                moras,
-                                *accent_phrase.accent(),
-                                pause_mora,
-                                *accent_phrase.is_interrogative(),
-                            )
-                        },
-                    ));
-
-                    accum_vec
-                });
-
+            let accent_phrases = self.open_jtalk_analyzer.analyze(text)?;
             self.replace_mora_data(&accent_phrases, style_id)
         }
 
@@ -825,6 +765,7 @@ pub(crate) mod blocking {
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -895,12 +836,7 @@ pub(crate) mod blocking {
 
     impl<O> PerformInference for self::Synthesizer<O> {
         fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictDurationOutput {
                 phoneme_length: output,
@@ -935,12 +871,7 @@ pub(crate) mod blocking {
             end_accent_phrase_vector: &[i64],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictIntonationOutput { f0_list: output } = self.status.run_session(
                 &model_id,
@@ -967,12 +898,7 @@ pub(crate) mod blocking {
             phoneme_vector: &[f32],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            // FIXME: `Status::ids_for`があるため、ここは不要なはず
-            if !self.status.validate_speaker_id(style_id) {
-                return Err(ErrorRepr::StyleNotFound { style_id }.into());
-            }
-
-            let (model_id, model_inner_id) = self.status.ids_for(style_id)?;
+            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             // 音が途切れてしまうのを避けるworkaround処理が入っている
             // TODO: 改善したらここのpadding処理を取り除く
@@ -1082,7 +1008,6 @@ pub(crate) mod blocking {
         }
 
         fn list_windows_video_cards() -> windows::core::Result<Vec<DXGI_ADAPTER_DESC>> {
-            #[allow(unsafe_code)]
             unsafe {
                 let factory = CreateDXGIFactory::<IDXGIFactory>()?;
                 (0..)
@@ -1173,21 +1098,6 @@ pub(crate) mod blocking {
         }
 
         (consonant_phoneme_list, vowel_phoneme_list, vowel_indexes)
-    }
-
-    fn mora_to_text(mora: impl AsRef<str>) -> String {
-        let last_char = mora.as_ref().chars().last().unwrap();
-        let mora = if ['A', 'I', 'U', 'E', 'O'].contains(&last_char) {
-            format!(
-                "{}{}",
-                &mora.as_ref()[0..mora.as_ref().len() - 1],
-                last_char.to_lowercase()
-            )
-        } else {
-            mora.as_ref().to_string()
-        };
-        // もしカタカナに変換できなければ、引数で与えた文字列がそのまま返ってくる
-        engine::mora2text(&mora).to_string()
     }
 
     impl AudioQueryModel {
@@ -1385,8 +1295,7 @@ mod tests {
 
     use super::{blocking::PerformInference as _, AccelerationMode, InitializeOptions};
     use crate::{
-        engine::MoraModel, macros::tests::assert_debug_fmt_eq, test_util::open_default_vvm_file,
-        AccentPhraseModel, Result, StyleId,
+        engine::MoraModel, macros::tests::assert_debug_fmt_eq, AccentPhraseModel, Result, StyleId,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use rstest::rstest;
@@ -1405,7 +1314,7 @@ mod tests {
         .unwrap();
 
         let result = syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await;
 
         assert_debug_fmt_eq!(
@@ -1447,7 +1356,7 @@ mod tests {
             "expected is_model_loaded to return false, but got true",
         );
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1472,7 +1381,7 @@ mod tests {
         .unwrap();
 
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1502,7 +1411,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1541,7 +1450,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&open_default_vvm_file().await)
+            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 

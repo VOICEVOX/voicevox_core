@@ -37,6 +37,11 @@ class ReadZipEntryError(Exception):
 
     ...
 
+class InvalidModelFormatError(Exception):
+    """モデルの形式が不正。"""
+
+    ...
+
 class ModelAlreadyLoadedError(Exception):
     """すでに読み込まれている音声モデルを読み込もうとした。"""
 

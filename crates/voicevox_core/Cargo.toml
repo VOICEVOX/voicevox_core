@@ -6,11 +6,13 @@ publish.workspace = true
 
 [features]
 default = []
-directml = ["onnxruntime/directml"]
+cuda = ["voicevox-ort/cuda"]
+directml = ["voicevox-ort/directml"]
 
 [dependencies]
 anyhow.workspace = true
-async_zip = { workspace = true, features = ["full"] }
+async_zip = { workspace = true, features = ["deflate"] }
+camino.workspace = true
 derive-getters.workspace = true
 derive-new.workspace = true
 derive_more.workspace = true
@@ -22,28 +24,33 @@ fs-err = { workspace = true, features = ["tokio"] }
 futures.workspace = true
 indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
+jlabel.workspace = true
 nanoid.workspace = true
 ndarray.workspace = true
 once_cell.workspace = true
-onnxruntime.workspace = true
 open_jtalk.workspace = true
 ouroboros.workspace = true
 rayon.workspace = true
 regex.workspace = true
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
+serde_with.workspace = true
+smallvec.workspace = true
+strum = { workspace = true, features = ["derive"] }
 tempfile.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["rt"] } # FIXME: feature-gateする
 tracing.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox_core_macros = { path = "../voicevox_core_macros" }
+voicevox-ort = { workspace = true, features = ["ndarray", "download-binaries"] }
 zip.workspace = true
 
 [dev-dependencies]
 heck.workspace = true
 pretty_assertions.workspace = true
 rstest.workspace = true
+rstest_reuse.workspace = true
 test_util.workspace = true
 tokio = { workspace = true, features = ["rt", "macros"] }
 
@@ -52,5 +59,8 @@ humansize.workspace = true
 windows = { workspace = true, features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
 
 [lints.rust]
-unsafe_code = "deny" # FIXME: あまり意味が無くなっているため潔く`allow`にする。あるいはunsafeを撲滅する
+# FIXME: `unsafe impl Send`のもあるが、以下2つのマージにより消える予定
+# * https://github.com/VOICEVOX/voicevox_core/pull/725
+# * https://github.com/VOICEVOX/voicevox_core/pull/772
+unsafe_code = "allow" # WindowsのGPU情報表示に、Win32を利用
 rust_2018_idioms = "warn"
