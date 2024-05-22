@@ -1,5 +1,5 @@
 {
-  "manifest_version": "0.0.0",
+  "vvm_format_version": "1",
   "metas_filename": "metas.json",
   "talk": {
     "predict_duration_filename": "predict_duration.onnx",
