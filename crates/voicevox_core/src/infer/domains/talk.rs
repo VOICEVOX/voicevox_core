@@ -16,6 +16,8 @@ pub(crate) enum TalkDomain {}
 impl InferenceDomain for TalkDomain {
     type Operation = TalkOperation;
 
+    // FIXME: `Self::style_types().contains(_)`のショートハンドとして、ここに
+    // `Self::contains: fn(StyleType) -> bool`を生やす
     fn style_types() -> &'static BTreeSet<StyleType> {
         static STYLE_TYPES: Lazy<BTreeSet<StyleType>> = Lazy::new(|| [StyleType::Talk].into());
         &STYLE_TYPES

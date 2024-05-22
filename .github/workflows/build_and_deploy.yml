@@ -194,6 +194,11 @@ jobs:
             git fetch private refs/tags/${{ env.PRODUCTION_REPOSITORY_TAG }}
             git -c user.name=dummy -c user.email=dummy@dummy.dummy merge FETCH_HEAD
           ) > /dev/null 2>&1
+      - if: matrix.os == 'windows-2019'
+        name: Install Clang
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: "16.0"
       - name: Set up Python 3.8
         if: matrix.whl_local_version
         uses: actions/setup-python@v4

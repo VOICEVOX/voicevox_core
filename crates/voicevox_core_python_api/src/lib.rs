@@ -84,6 +84,7 @@ exceptions! {
     WordNotFoundError: PyKeyError;
     UseUserDictError: PyException;
     InvalidWordError: PyValueError;
+    SpeakerFeatureError: PyValueError;
 }
 
 #[pyfunction]
@@ -281,6 +282,23 @@ mod blocking {
             crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
         }
 
+        fn morphable_targets<'py>(&self, style_id: u32, py: Python<'py>) -> PyResult<&'py PyDict> {
+            let class = py.import("voicevox_core")?.getattr("MorphableTargetInfo")?;
+
+            let morphable_targets = self
+                .synthesizer
+                .get()?
+                .morphable_targets(StyleId::new(style_id))
+                .into_py_result(py)?
+                .into_iter()
+                .map(|(k, v)| {
+                    let v = crate::convert::to_pydantic_dataclass(v, class)?;
+                    Ok((k.raw_id(), v))
+                })
+                .collect::<PyResult<Vec<_>>>()?;
+            Ok(morphable_targets.into_py_dict(py))
+        }
+
         fn load_voice_model(&mut self, model: &PyAny, py: Python<'_>) -> PyResult<()> {
             let model: VoiceModel = model.extract()?;
             self.synthesizer
@@ -444,6 +462,27 @@ mod blocking {
                     &SynthesisOptions {
                         enable_interrogative_upspeak,
                     },
+                )
+                .into_py_result(py)?;
+            Ok(PyBytes::new(py, wav))
+        }
+
+        fn synthesis_morphing<'py>(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQueryModel,
+            base_style_id: u32,
+            target_style_id: u32,
+            morph_rate: f64,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyBytes> {
+            let wav = &self
+                .synthesizer
+                .get()?
+                .synthesis_morphing(
+                    &audio_query,
+                    StyleId::new(base_style_id),
+                    StyleId::new(target_style_id),
+                    morph_rate,
                 )
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
@@ -712,6 +751,23 @@ mod asyncio {
             crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
         }
 
+        fn morphable_targets<'py>(&self, style_id: u32, py: Python<'py>) -> PyResult<&'py PyDict> {
+            let class = py.import("voicevox_core")?.getattr("MorphableTargetInfo")?;
+
+            let morphable_targets = self
+                .synthesizer
+                .get()?
+                .morphable_targets(StyleId::new(style_id))
+                .into_py_result(py)?
+                .into_iter()
+                .map(|(k, v)| {
+                    let v = crate::convert::to_pydantic_dataclass(v, class)?;
+                    Ok((k.raw_id(), v))
+                })
+                .collect::<PyResult<Vec<_>>>()?;
+            Ok(morphable_targets.into_py_dict(py))
+        }
+
         fn load_voice_model<'py>(
             &mut self,
             model: &'py PyAny,
@@ -921,6 +977,37 @@ mod asyncio {
                             },
                         )
                         .await;
+                    Python::with_gil(|py| {
+                        let wav = wav.into_py_result(py)?;
+                        Ok(PyBytes::new(py, &wav).to_object(py))
+                    })
+                },
+            )
+        }
+
+        fn synthesis_morphing<'py>(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQueryModel,
+            base_style_id: u32,
+            target_style_id: u32,
+            morph_rate: f64,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            let synthesizer = self.synthesizer.get()?.clone();
+
+            pyo3_asyncio::tokio::future_into_py_with_locals(
+                py,
+                pyo3_asyncio::tokio::get_current_locals(py)?,
+                async move {
+                    let wav = synthesizer
+                        .synthesis_morphing(
+                            &audio_query,
+                            StyleId::new(base_style_id),
+                            StyleId::new(target_style_id),
+                            morph_rate,
+                        )
+                        .await;
+
                     Python::with_gil(|py| {
                         let wav = wav.into_py_result(py)?;
                         Ok(PyBytes::new(py, &wav).to_object(py))

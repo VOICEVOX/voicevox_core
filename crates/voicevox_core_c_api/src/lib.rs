@@ -513,6 +513,50 @@ pub unsafe extern "C" fn voicevox_create_supported_devices_json(
     })())
 }
 
+/// 全スタイルごとに、指定されたスタイルとのペアでモーフィング機能が利用可能かどうかを返す。
+///
+/// 話者およびそのメタ情報の `.supported_features.permitted_synthesis_morphing` の組み合わせによって決定される。
+///
+/// JSONの解放は ::voicevox_json_free で行う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] style_id スタイルID
+///
+/// @returns 結果コード
+///
+/// \example{
+/// ```c
+/// char *morphable_targets;
+/// VoicevoxResultCode result = voicevox_synthesizer_create_morphable_targets_json(
+///     synthesizer, style_id, &morphable_targets);
+/// ```
+/// }
+///
+/// \safety{
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_create_morphable_targets_json(
+    synthesizer: &VoicevoxSynthesizer,
+    style_id: VoicevoxStyleId,
+    output: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let style_id = StyleId::new(style_id);
+        let morphable_targets = &synthesizer.synthesizer.morphable_targets(style_id)?;
+        let morphable_targets = serde_json::to_string(morphable_targets).expect("should not fail");
+        let morphable_targets = CString::new(morphable_targets).expect("should not end with NUL");
+        output.as_ptr().write_unaligned(
+            C_STRING_DROP_CHECKER
+                .whitelist(morphable_targets)
+                .into_raw(),
+        );
+        Ok(())
+    })())
+}
+
 /// AquesTalk風記法から、AudioQueryをJSONとして生成する。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -886,6 +930,52 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     })())
 }
 
+/// 2人の話者でモーフィングした音声を合成する。
+///
+/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] audio_query_json AudioQueryのJSON文字列
+/// @param [in] base_style_id ベースのスタイルのID
+/// @param [in] target_style_id モーフィング先スタイルのID
+/// @param [in] morph_rate モーフィングの割合
+/// @param [out] output_wav_length 出力のバイト長
+/// @param [out] output_wav 出力先
+///
+/// @returns 結果コード
+///
+/// \safety{
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_synthesizer_synthesis_morphing(
+    synthesizer: &VoicevoxSynthesizer,
+    audio_query_json: *const c_char,
+    base_style_id: VoicevoxStyleId,
+    target_style_id: VoicevoxStyleId,
+    morph_rate: f64,
+    output_wav_length: NonNull<usize>,
+    output_wav: NonNull<*mut u8>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let audio_query_json = ensure_utf8(CStr::from_ptr(audio_query_json))?;
+        let audio_query = &serde_json::from_str::<AudioQueryModel>(audio_query_json)
+            .map_err(CApiError::InvalidAudioQuery)?;
+        let wav = synthesizer.synthesizer().synthesis_morphing(
+            audio_query,
+            StyleId::new(base_style_id),
+            StyleId::new(target_style_id),
+            morph_rate,
+        )?;
+        U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length);
+        Ok(())
+    })())
+}
+
 /// ::voicevox_synthesizer_tts のオプション。
 #[repr(C)]
 pub struct VoicevoxTtsOptions {
@@ -991,6 +1081,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// - `json`は以下のAPIで得られたポインタでなくてはいけない。
 ///     - ::voicevox_create_supported_devices_json
 ///     - ::voicevox_synthesizer_create_metas_json
+///     - ::voicevox_synthesizer_create_morphable_targets_json
 ///     - ::voicevox_synthesizer_create_audio_query
 ///     - ::voicevox_synthesizer_create_accent_phrases
 ///     - ::voicevox_synthesizer_replace_mora_data
@@ -1014,6 +1105,7 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
 /// \safety{
 /// - `wav`は以下のAPIで得られたポインタでなくてはいけない。
 ///     - ::voicevox_synthesizer_synthesis
+///     - ::voicevox_synthesizer_synthesis_morphing
 ///     - ::voicevox_synthesizer_tts
 /// - `wav`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
 /// - `wav`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。

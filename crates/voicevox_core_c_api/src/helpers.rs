@@ -52,6 +52,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 WordNotFound => VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR,
                 UseUserDict => VOICEVOX_RESULT_USE_USER_DICT_ERROR,
                 InvalidWord => VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR,
+                SpeakerFeature => VOICEVOX_RESULT_SPEAKER_FEATURE_ERROR,
             },
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
@@ -65,6 +66,12 @@ pub(crate) type CApiResult<T> = std::result::Result<T, CApiError>;
 
 #[derive(Error, Debug)]
 pub(crate) enum CApiError {
+    // FIXME: こんな感じになってしまう。`#[error(transparent)]`とするべき
+    //
+    // ```
+    // {timestamp} ERROR voicevox_core::helpers: `0`に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています
+    // {timestamp} ERROR voicevox_core::helpers: Caused by: `0`に対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています
+    // ```
     #[error("{0}")]
     RustApi(#[from] voicevox_core::Error),
     #[error("UTF-8として不正な入力です")]

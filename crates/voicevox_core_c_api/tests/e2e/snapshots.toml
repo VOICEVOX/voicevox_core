@@ -13,6 +13,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    },
     "order": null
   },
   {
@@ -27,6 +30,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
+    "supported_features": {
+      "permitted_synthesis_morphing": "ALL"
+    },
     "order": null
   },
   {
@@ -47,6 +53,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
+    "supported_features": {
+      "permitted_synthesis_morphing": "SELF_ONLY"
+    },
     "order": null
   }
 ]'''
@@ -83,7 +92,175 @@ result_messages.22 = "ユーザー辞書に単語が見つかりませんでし�
 result_messages.23 = "OpenJTalkのユーザー辞書の設定に失敗しました"
 result_messages.24 = "ユーザー辞書の単語のバリデーションに失敗しました"
 result_messages.25 = "UUIDの変換に失敗しました"
+result_messages.29 = "要求された機能を話者は持っていません"
 stderr = ""
+
+[morph.'{"base_style":0,"target_style":0}']
+ok = false
+stderr.windows = '''
+{windows-video-cards}
+{timestamp} ERROR voicevox_core::helpers: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+'''
+stderr.unix = '''
+{timestamp} ERROR voicevox_core::helpers: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+'''
+
+[morph.'{"base_style":0,"target_style":1}']
+ok = false
+stderr.windows = '''
+{windows-video-cards}
+{timestamp} ERROR voicevox_core::helpers: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+'''
+stderr.unix = '''
+{timestamp} ERROR voicevox_core::helpers: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+'''
+
+[morph.'{"base_style":0,"target_style":302}']
+ok = false
+stderr.windows = '''
+{windows-video-cards}
+{timestamp} ERROR voicevox_core::helpers: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+'''
+stderr.unix = '''
+{timestamp} ERROR voicevox_core::helpers: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+'''
+
+[morph.'{"base_style":0,"target_style":303}']
+ok = false
+stderr.windows = '''
+{windows-video-cards}
+{timestamp} ERROR voicevox_core::helpers: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+'''
+stderr.unix = '''
+{timestamp} ERROR voicevox_core::helpers: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+'''
+
+[morph.'{"base_style":1,"target_style":0}']
+ok = false
+stderr.windows = '''
+{windows-video-cards}
+{timestamp} ERROR voicevox_core::helpers: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+'''
+stderr.unix = '''
+{timestamp} ERROR voicevox_core::helpers: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+'''
+
+[morph.'{"base_style":1,"target_style":1}']
+ok = true
+stderr.windows = '''
+{windows-video-cards}
+'''
+stderr.unix = ""
+
+[morph.'{"base_style":1,"target_style":302}']
+ok = false
+stderr.windows = '''
+{windows-video-cards}
+{timestamp} ERROR voicevox_core::helpers: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+'''
+stderr.unix = '''
+{timestamp} ERROR voicevox_core::helpers: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+'''
+
+[morph.'{"base_style":1,"target_style":303}']
+ok = false
+stderr.windows = '''
+{windows-video-cards}
+{timestamp} ERROR voicevox_core::helpers: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+'''
+stderr.unix = '''
+{timestamp} ERROR voicevox_core::helpers: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)は以下の機能を持ちません: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)に対するモーフィング
+'''
+
+[morph.'{"base_style":302,"target_style":0}']
+ok = false
+stderr.windows = '''
+{windows-video-cards}
+{timestamp} ERROR voicevox_core::helpers: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+'''
+stderr.unix = '''
+{timestamp} ERROR voicevox_core::helpers: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+'''
+
+[morph.'{"base_style":302,"target_style":1}']
+ok = false
+stderr.windows = '''
+{windows-video-cards}
+{timestamp} ERROR voicevox_core::helpers: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+'''
+stderr.unix = '''
+{timestamp} ERROR voicevox_core::helpers: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+'''
+
+[morph.'{"base_style":302,"target_style":302}']
+ok = true
+stderr.windows = '''
+{windows-video-cards}
+'''
+stderr.unix = ""
+
+[morph.'{"base_style":302,"target_style":303}']
+ok = true
+stderr.windows = '''
+{windows-video-cards}
+'''
+stderr.unix = ""
+
+[morph.'{"base_style":303,"target_style":0}']
+ok = false
+stderr.windows = '''
+{windows-video-cards}
+{timestamp} ERROR voicevox_core::helpers: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+'''
+stderr.unix = '''
+{timestamp} ERROR voicevox_core::helpers: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy1` (574bc678-8370-44be-b941-08e46e7b47d7)に対するモーフィング
+'''
+
+[morph.'{"base_style":303,"target_style":1}']
+ok = false
+stderr.windows = '''
+{windows-video-cards}
+{timestamp} ERROR voicevox_core::helpers: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+'''
+stderr.unix = '''
+{timestamp} ERROR voicevox_core::helpers: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+{timestamp} ERROR voicevox_core::helpers: Caused by: `dummy3` (5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3)は以下の機能を持ちません: `dummy2` (dd9ccd75-75f6-40ce-a3db-960cbed2e905)に対するモーフィング
+'''
+
+[morph.'{"base_style":303,"target_style":302}']
+ok = true
+stderr.windows = '''
+{windows-video-cards}
+'''
+stderr.unix = ""
+
+[morph.'{"base_style":303,"target_style":303}']
+ok = true
+stderr.windows = '''
+{windows-video-cards}
+'''
+stderr.unix = ""
 
 [simple_tts]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
@@ -107,6 +284,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    },
     "order": null
   },
   {
@@ -121,6 +301,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
+    "supported_features": {
+      "permitted_synthesis_morphing": "ALL"
+    },
     "order": null
   },
   {
@@ -141,6 +324,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
+    "supported_features": {
+      "permitted_synthesis_morphing": "SELF_ONLY"
+    },
     "order": null
   }
 ]'''

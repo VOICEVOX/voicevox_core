@@ -1,5 +1,7 @@
 use crate::infer::runtimes::Onnxruntime;
 
+pub(crate) const DEFAULT_SAMPLING_RATE: u32 = 24000;
+
 /// [`blocking::Synthesizer::synthesis`]および[`tokio::Synthesizer::synthesis`]のオプション。
 ///
 /// [`blocking::Synthesizer::synthesis`]: blocking::Synthesizer::synthesis
@@ -7,6 +9,12 @@ use crate::infer::runtimes::Onnxruntime;
 #[derive(Clone)]
 pub struct SynthesisOptions {
     pub enable_interrogative_upspeak: bool,
+}
+
+impl Default for SynthesisOptions {
+    fn default() -> Self {
+        (&TtsOptions::default()).into()
+    }
 }
 
 impl AsRef<SynthesisOptions> for SynthesisOptions {
@@ -75,12 +83,12 @@ pub(crate) mod blocking {
     // (ブロッキング版をpublic APIにするならの話ではあるが)ブロッキング版はブロッキング版でコード例
     // を用意する
 
-    use std::io::{Cursor, Write as _};
+    use std::collections::BTreeMap;
 
     use enum_map::enum_map;
 
     use crate::{
-        engine::{create_kana, mora_to_text, MoraModel, OjtPhoneme},
+        engine::{self, create_kana, mora_to_text, MoraModel, MorphableTargetInfo, OjtPhoneme},
         error::ErrorRepr,
         infer::{
             domains::{
@@ -96,9 +104,10 @@ pub(crate) mod blocking {
         SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
 
-    use super::{AccelerationMode, InferenceRuntimeImpl, InitializeOptions, TtsOptions};
-
-    const DEFAULT_SAMPLING_RATE: u32 = 24000;
+    use super::{
+        AccelerationMode, InferenceRuntimeImpl, InitializeOptions, TtsOptions,
+        DEFAULT_SAMPLING_RATE,
+    };
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
@@ -226,6 +235,17 @@ pub(crate) mod blocking {
             self.status.metas()
         }
 
+        /// 全スタイルごとに、指定されたスタイルとのペアでモーフィング機能が利用可能かどうかを返す。
+        ///
+        /// 話者およびそのメタ情報の`.supported_features.permitted_synthesis_morphing`の組み合わせに
+        /// よって決定される。
+        pub fn morphable_targets(
+            &self,
+            style_id: StyleId,
+        ) -> Result<BTreeMap<StyleId, MorphableTargetInfo>> {
+            self.morphable_targets_(style_id)
+        }
+
         /// AudioQueryから音声合成を行う。
         pub fn synthesis(
             &self,
@@ -233,6 +253,27 @@ pub(crate) mod blocking {
             style_id: StyleId,
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
+            let wave = &self.synthesis_wave(audio_query, style_id, options)?;
+            Ok(engine::to_wav(wave, audio_query))
+        }
+
+        /// 2人の話者でモーフィングした音声を合成する。
+        pub fn synthesis_morphing(
+            &self,
+            audio_query: &AudioQueryModel,
+            base_style_id: StyleId,
+            target_style_id: StyleId,
+            morph_rate: f64,
+        ) -> crate::Result<Vec<u8>> {
+            self.synthesis_morphing_(audio_query, base_style_id, target_style_id, morph_rate)
+        }
+
+        pub(crate) fn synthesis_wave(
+            &self,
+            audio_query: &AudioQueryModel,
+            style_id: StyleId,
+            options: &SynthesisOptions,
+        ) -> Result<Vec<f32>> {
             let speed_scale = *audio_query.speed_scale();
             let pitch_scale = *audio_query.pitch_scale();
             let intonation_scale = *audio_query.intonation_scale();
@@ -328,14 +369,13 @@ pub(crate) mod blocking {
             // 2次元のvectorを1次元に変換し、アドレスを連続させる
             let flatten_phoneme = phoneme.into_iter().flatten().collect::<Vec<_>>();
 
-            let wave = &self.decode(
+            return self.decode(
                 f0.len(),
                 OjtPhoneme::num_phoneme(),
                 &f0,
                 &flatten_phoneme,
                 style_id,
-            )?;
-            return Ok(to_wav(wave, audio_query));
+            );
 
             fn adjust_interrogative_accent_phrases(
                 accent_phrases: &[AccentPhraseModel],
@@ -384,52 +424,6 @@ pub(crate) mod blocking {
                     FIX_VOWEL_LENGTH,
                     pitch,
                 )
-            }
-
-            fn to_wav(wave: &[f32], audio_query: &AudioQueryModel) -> Vec<u8> {
-                let volume_scale = *audio_query.volume_scale();
-                let output_stereo = *audio_query.output_stereo();
-                let output_sampling_rate = *audio_query.output_sampling_rate();
-
-                // TODO: 44.1kHzなどの対応
-
-                let num_channels: u16 = if output_stereo { 2 } else { 1 };
-                let bit_depth: u16 = 16;
-                let repeat_count: u32 =
-                    (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
-                let block_size: u16 = bit_depth * num_channels / 8;
-
-                let bytes_size = wave.len() as u32 * repeat_count * 2;
-                let wave_size = bytes_size + 44;
-
-                let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
-                let mut cur = Cursor::new(buf);
-
-                cur.write_all("RIFF".as_bytes()).unwrap();
-                cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
-                cur.write_all("WAVEfmt ".as_bytes()).unwrap();
-                cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
-                cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
-                cur.write_all(&num_channels.to_le_bytes()).unwrap();
-                cur.write_all(&output_sampling_rate.to_le_bytes()).unwrap();
-
-                let block_rate = output_sampling_rate * block_size as u32;
-
-                cur.write_all(&block_rate.to_le_bytes()).unwrap();
-                cur.write_all(&block_size.to_le_bytes()).unwrap();
-                cur.write_all(&bit_depth.to_le_bytes()).unwrap();
-                cur.write_all("data".as_bytes()).unwrap();
-                cur.write_all(&bytes_size.to_le_bytes()).unwrap();
-
-                for value in wave {
-                    let v = (value * volume_scale).clamp(-1., 1.);
-                    let data = (v * 0x7fff as f32) as i16;
-                    for _ in 0..repeat_count {
-                        cur.write_all(&data.to_le_bytes()).unwrap();
-                    }
-                }
-
-                cur.into_inner()
             }
         }
 
@@ -1120,11 +1114,11 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod tokio {
-    use std::sync::Arc;
+    use std::{collections::BTreeMap, sync::Arc};
 
     use crate::{
-        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
-        SynthesisOptions, VoiceModelId, VoiceModelMeta,
+        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, MorphableTargetInfo, Result,
+        StyleId, SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{InitializeOptions, TtsOptions};
@@ -1167,6 +1161,17 @@ pub(crate) mod tokio {
             self.0.metas()
         }
 
+        /// 全スタイルごとに、指定されたスタイルとのペアでモーフィング機能が利用可能かどうかを返す。
+        ///
+        /// 話者およびそのメタ情報の`.supported_features.permitted_synthesis_morphing`の組み合わせに
+        /// よって決定される。
+        pub fn morphable_targets(
+            &self,
+            style_id: StyleId,
+        ) -> Result<BTreeMap<StyleId, MorphableTargetInfo>> {
+            self.0.morphable_targets(style_id)
+        }
+
         pub async fn synthesis(
             &self,
             audio_query: &AudioQueryModel,
@@ -1179,6 +1184,28 @@ pub(crate) mod tokio {
 
             crate::task::asyncify(move || blocking.synthesis(&audio_query, style_id, &options))
                 .await
+        }
+
+        /// 2人の話者でモーフィングした音声を合成する。
+        pub async fn synthesis_morphing(
+            &self,
+            audio_query: &AudioQueryModel,
+            base_style_id: StyleId,
+            target_style_id: StyleId,
+            morph_rate: f64,
+        ) -> crate::Result<Vec<u8>> {
+            let blocking = self.0.clone();
+            let audio_query = audio_query.clone();
+
+            crate::task::asyncify(move || {
+                blocking.synthesis_morphing(
+                    &audio_query,
+                    base_style_id,
+                    target_style_id,
+                    morph_rate,
+                )
+            })
+            .await
         }
 
         pub async fn create_accent_phrases_from_kana(
@@ -1295,9 +1322,12 @@ mod tests {
 
     use super::{blocking::PerformInference as _, AccelerationMode, InitializeOptions};
     use crate::{
-        engine::MoraModel, macros::tests::assert_debug_fmt_eq, AccentPhraseModel, Result, StyleId,
+        engine::MoraModel, macros::tests::assert_debug_fmt_eq, metas::PermittedSynthesisMorphing,
+        AccentPhraseModel, MorphableTargetInfo, Result, StyleId,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
+    use indexmap::{indexmap, IndexMap};
+    use lit2::btreemap;
     use rstest::rstest;
 
     #[rstest]
@@ -1365,6 +1395,102 @@ mod tests {
             expected,
             "expected is_model_loaded return value against style_id `{style_id}` is `{expected}`, but got `{}`",
             !expected
+        );
+    }
+
+    #[tokio::test]
+    async fn morphable_targets_works() {
+        let (permissions, morphable_targets) = {
+            let synthesizer = super::tokio::Synthesizer::new(
+                (),
+                &InitializeOptions {
+                    acceleration_mode: AccelerationMode::Cpu,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+
+            let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+            synthesizer.load_voice_model(model).await.unwrap();
+
+            let permissions = synthesizer
+                .metas()
+                .iter()
+                .map(|speaker| {
+                    let permissions = speaker
+                        .styles()
+                        .iter()
+                        .map(move |style| {
+                            (
+                                *style.id(),
+                                speaker.supported_features().permitted_synthesis_morphing,
+                            )
+                        })
+                        .collect();
+                    (speaker.speaker_uuid().clone(), permissions)
+                })
+                .collect::<IndexMap<_, IndexMap<_, _>>>();
+
+            let morphable_targets =
+                move |style_id| synthesizer.morphable_targets(style_id).unwrap();
+
+            (permissions, morphable_targets)
+        };
+
+        pretty_assertions::assert_eq!(
+            indexmap! {
+                "574bc678-8370-44be-b941-08e46e7b47d7".to_owned() => indexmap! {
+                    StyleId::new(0) => PermittedSynthesisMorphing::Nothing,
+                },
+                "dd9ccd75-75f6-40ce-a3db-960cbed2e905".to_owned() => indexmap! {
+                    StyleId::new(1) => PermittedSynthesisMorphing::All,
+                },
+                "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3".to_owned() => indexmap! {
+                    StyleId::new(302) => PermittedSynthesisMorphing::SelfOnly,
+                    StyleId::new(303) => PermittedSynthesisMorphing::SelfOnly,
+                },
+            },
+            permissions,
+        );
+
+        pretty_assertions::assert_eq!(
+            btreemap! {
+                StyleId::new(0) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(1) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(302) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(303) => MorphableTargetInfo { is_morphable: false },
+            },
+            morphable_targets(StyleId::new(0)),
+        );
+
+        pretty_assertions::assert_eq!(
+            btreemap! {
+                StyleId::new(0) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(1) => MorphableTargetInfo { is_morphable: true },
+                StyleId::new(302) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(303) => MorphableTargetInfo { is_morphable: false },
+            },
+            morphable_targets(StyleId::new(1)),
+        );
+
+        pretty_assertions::assert_eq!(
+            btreemap! {
+                StyleId::new(0) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(1) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(302) => MorphableTargetInfo { is_morphable: true },
+                StyleId::new(303) => MorphableTargetInfo { is_morphable: true },
+            },
+            morphable_targets(StyleId::new(302)),
+        );
+
+        pretty_assertions::assert_eq!(
+            btreemap! {
+                StyleId::new(0) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(1) => MorphableTargetInfo { is_morphable: false },
+                StyleId::new(302) => MorphableTargetInfo { is_morphable: true },
+                StyleId::new(303) => MorphableTargetInfo { is_morphable: true },
+            },
+            morphable_targets(StyleId::new(303)),
         );
     }
 

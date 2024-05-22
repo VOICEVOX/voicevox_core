@@ -18,8 +18,8 @@ use crate::{
     ExtractFullContextLabelError, GetSupportedDevicesError, GpuSupportError, InferenceFailedError,
     InvalidModelDataError, InvalidModelFormatError, InvalidWordError, LoadUserDictError,
     ModelAlreadyLoadedError, ModelNotFoundError, NotLoadedOpenjtalkDictError, OpenZipFileError,
-    ParseKanaError, ReadZipEntryError, SaveUserDictError, StyleAlreadyLoadedError,
-    StyleNotFoundError, UseUserDictError, WordNotFoundError,
+    ParseKanaError, ReadZipEntryError, SaveUserDictError, SpeakerFeatureError,
+    StyleAlreadyLoadedError, StyleNotFoundError, UseUserDictError, WordNotFoundError,
 };
 
 pub(crate) fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
@@ -186,6 +186,7 @@ pub(crate) impl<T> voicevox_core::Result<T> {
         use voicevox_core::ErrorKind;
 
         self.map_err(|err| {
+            // FIXME: `KeyError`を継承しているエラーでは、`msg`が`repr`で表示されてしまう
             let msg = err.to_string();
             let top = match err.kind() {
                 ErrorKind::NotLoadedOpenjtalkDict => NotLoadedOpenjtalkDictError::new_err(msg),
@@ -207,6 +208,7 @@ pub(crate) impl<T> voicevox_core::Result<T> {
                 ErrorKind::WordNotFound => WordNotFoundError::new_err(msg),
                 ErrorKind::UseUserDict => UseUserDictError::new_err(msg),
                 ErrorKind::InvalidWord => InvalidWordError::new_err(msg),
+                ErrorKind::SpeakerFeature => SpeakerFeatureError::new_err(msg),
             };
 
             [top]

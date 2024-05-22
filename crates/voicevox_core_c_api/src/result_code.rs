@@ -57,6 +57,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR = 24,
     /// UUIDの変換に失敗した
     VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
+    /// 要求された機能を話者が持っていない
+    VOICEVOX_RESULT_SPEAKER_FEATURE_ERROR = 29,
 }
 
 pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static CStr {
@@ -110,5 +112,6 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
             cstr!("ユーザー辞書の単語のバリデーションに失敗しました")
         }
         VOICEVOX_RESULT_INVALID_UUID_ERROR => cstr!("UUIDの変換に失敗しました"),
+        VOICEVOX_RESULT_SPEAKER_FEATURE_ERROR => cstr!("要求された機能を話者は持っていません"),
     }
 }

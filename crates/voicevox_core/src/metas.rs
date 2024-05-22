@@ -112,6 +112,9 @@ pub struct SpeakerMeta {
     version: StyleVersion,
     /// 話者のUUID。
     speaker_uuid: String,
+    /// 話者の対応機能。
+    #[serde(default)]
+    supported_features: SpeakerSupportedFeatures,
     /// 話者の順番。
     ///
     /// `SpeakerMeta`の列は、この値に対して昇順に並んでいるべきである。
@@ -128,6 +131,7 @@ impl SpeakerMeta {
             styles: _,
             version: version1,
             speaker_uuid: speaker_uuid1,
+            supported_features: supported_features1,
             order: order1,
         } = self;
 
@@ -136,6 +140,7 @@ impl SpeakerMeta {
             styles: _,
             version: version2,
             speaker_uuid: speaker_uuid2,
+            supported_features: supported_features2,
             order: order2,
         } = other;
 
@@ -145,6 +150,12 @@ impl SpeakerMeta {
 
         warn_diff(speaker_uuid1, "name", name1, name2);
         warn_diff(speaker_uuid1, "version", version1, version2);
+        warn_diff(
+            speaker_uuid1,
+            "supported_features",
+            supported_features1,
+            supported_features2,
+        );
         warn_diff(speaker_uuid1, "order", order1, order2);
 
         fn warn_diff<T: PartialEq + Debug>(
@@ -229,6 +240,9 @@ mod tests {
                     ],
                     "version": "0.0.0",
                     "speaker_uuid": "f34ab151-c0f5-4e0a-9ad2-51ce30dba24d",
+                    "supported_features": {
+                        "permitted_synthesis_morphing": "SELF_ONLY"
+                    },
                     "order": 1
                 },
                 {
@@ -243,6 +257,9 @@ mod tests {
                     ],
                     "version": "0.0.0",
                     "speaker_uuid": "d6fd707c-a451-48e9-8f00-fe9ee3bf6264",
+                    "supported_features": {
+                        "permitted_synthesis_morphing": "SELF_ONLY"
+                    },
                     "order": 0
                 },
                 {
@@ -263,6 +280,9 @@ mod tests {
                     ],
                     "version": "0.0.0",
                     "speaker_uuid": "d6fd707c-a451-48e9-8f00-fe9ee3bf6264",
+                    "supported_features": {
+                        "permitted_synthesis_morphing": "SELF_ONLY"
+                    },
                     "order": 0
                 }
             ])
@@ -294,6 +314,9 @@ mod tests {
                     ],
                     "version": "0.0.0",
                     "speaker_uuid": "d6fd707c-a451-48e9-8f00-fe9ee3bf6264",
+                    "supported_features": {
+                        "permitted_synthesis_morphing": "SELF_ONLY"
+                    },
                     "order": 0
                 },
                 {
@@ -308,6 +331,9 @@ mod tests {
                     ],
                     "version": "0.0.0",
                     "speaker_uuid": "f34ab151-c0f5-4e0a-9ad2-51ce30dba24d",
+                    "supported_features": {
+                        "permitted_synthesis_morphing": "SELF_ONLY"
+                    },
                     "order": 1
                 }
             ])
@@ -319,4 +345,24 @@ mod tests {
         pretty_assertions::assert_eq!(*EXPECTED, actual);
         Ok(())
     }
+}
+
+#[derive(Default, Deserialize, Serialize, Clone, PartialEq, Debug)]
+pub struct SpeakerSupportedFeatures {
+    #[serde(default)]
+    pub(crate) permitted_synthesis_morphing: PermittedSynthesisMorphing,
+}
+
+#[derive(Deserialize, Serialize, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub(crate) enum PermittedSynthesisMorphing {
+    /// 全て許可。
+    All,
+
+    /// 同じ話者内でのみ許可。
+    SelfOnly,
+
+    /// 全て禁止。
+    #[default]
+    Nothing,
 }

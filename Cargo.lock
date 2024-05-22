@@ -197,6 +197,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
+name = "az"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b7e4c2464d97fe331d41de9d5db0def0a96f4d823b8b32a2efd503578988973"
+
+[[package]]
 name = "backtrace"
 version = "0.3.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1714,6 +1720,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef53942eb7bf7ff43a617b3e2c1c4a5ecf5944a7c1bc12d7ee39bbb15e5c1519"
 
 [[package]]
+name = "lit2"
+version = "1.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcd0c289759ba04eac993bb32289580c7b37955957f8928cab7b29d54cdf89de"
+
+[[package]]
 name = "lock_api"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1999,9 +2011,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
+checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 
 [[package]]
 name = "opaque-debug"
@@ -2513,14 +2525,14 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.10.0"
+version = "1.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d119d7c7ca818f8a53c300863d4f87566aac09943aef5b355bb83969dae75d87"
+checksum = "c117dbdfde9c8308975b6a18d71f3f385c89461f7b3fb054288ecf2a2058ba4c"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-automata 0.4.1",
- "regex-syntax 0.8.1",
+ "regex-automata 0.4.6",
+ "regex-syntax 0.8.3",
 ]
 
 [[package]]
@@ -2534,13 +2546,13 @@ dependencies = [
 
 [[package]]
 name = "regex-automata"
-version = "0.4.1"
+version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "465c6fc0621e4abc4187a2bda0937bfd4f722c2730b29562e19689ea796c9a4b"
+checksum = "86b83b8b9847f9bf95ef68afb0b8e6cdb80f498442f5179a29fad448fcc1eaea"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-syntax 0.8.1",
+ "regex-syntax 0.8.3",
 ]
 
 [[package]]
@@ -2557,9 +2569,9 @@ checksum = "dbb5fb1acd8a1a18b3dd5be62d25485eb770e05afb408a9627d14d451bae12da"
 
 [[package]]
 name = "regex-syntax"
-version = "0.8.1"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56d84fdd47036b038fc80dd333d10b6aab10d5d31f4a366e20014def75328d33"
+checksum = "adad44e29e4c806119491a7f06f03de4d1af22c3a680dd47f1e6e179439d1f56"
 
 [[package]]
 name = "reqwest"
@@ -3572,6 +3584,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async_zip",
+ "az",
  "camino",
  "derive-getters",
  "derive-new",
@@ -3587,8 +3600,10 @@ dependencies = [
  "indexmap 2.0.0",
  "itertools 0.10.5",
  "jlabel",
+ "lit2",
  "nanoid",
  "ndarray",
+ "num-traits",
  "once_cell",
  "open_jtalk",
  "ouroboros",
@@ -3611,6 +3626,7 @@ dependencies = [
  "voicevox-ort",
  "voicevox_core_macros",
  "windows",
+ "world",
  "zip",
 ]
 
@@ -4088,6 +4104,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80d0f4e272c85def139476380b12f9ac60926689dd2e01d4923222f40580869d"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "world"
+version = "0.1.0"
+source = "git+https://github.com/White-Green/WORLD_rs.git?rev=37c0d11691afd42e37c627a2a964459c9eaf77b3#37c0d11691afd42e37c627a2a964459c9eaf77b3"
+dependencies = [
+ "ndarray",
+ "once_cell",
+ "world_sys",
+]
+
+[[package]]
+name = "world_sys"
+version = "0.1.0"
+source = "git+https://github.com/White-Green/WORLD_rs.git?rev=37c0d11691afd42e37c627a2a964459c9eaf77b3#37c0d11691afd42e37c627a2a964459c9eaf77b3"
+dependencies = [
+ "bindgen 0.69.4",
+ "cc",
+ "once_cell",
+ "regex",
 ]
 
 [[package]]
