@@ -94,9 +94,8 @@ impl<R: InferenceRuntime, I: InferenceInputSignature> InferenceSessionCell<R, I>
         input: I,
     ) -> crate::Result<<I::Signature as InferenceSignature>::Output> {
         let inner = &mut self.inner.lock().unwrap();
-        let ctx = input.make_run_context::<R>(inner);
-        R::run(ctx)
-            .and_then(TryInto::try_into)
-            .map_err(|e| ErrorRepr::InferenceFailed(e).into())
+        (|| R::run(input.make_run_context::<R>(inner)?)?.try_into())()
+            .map_err(ErrorRepr::InferenceFailed)
+            .map_err(Into::into)
     }
 }
