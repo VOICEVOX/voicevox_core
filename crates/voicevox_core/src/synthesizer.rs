@@ -836,7 +836,7 @@ pub(crate) mod blocking {
 
     impl<O> PerformInference for self::Synthesizer<O> {
         fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
-            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
+            let (model_id, inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictDurationOutput {
                 phoneme_length: output,
@@ -844,7 +844,7 @@ pub(crate) mod blocking {
                 &model_id,
                 PredictDurationInput {
                     phoneme_list: ndarray::arr1(phoneme_vector),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                    speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )?;
             let mut output = output.into_raw_vec();
@@ -871,7 +871,7 @@ pub(crate) mod blocking {
             end_accent_phrase_vector: &[i64],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
+            let (model_id, inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictIntonationOutput { f0_list: output } = self.status.run_session(
                 &model_id,
@@ -883,7 +883,7 @@ pub(crate) mod blocking {
                     end_accent_list: ndarray::arr1(end_accent_vector),
                     start_accent_phrase_list: ndarray::arr1(start_accent_phrase_vector),
                     end_accent_phrase_list: ndarray::arr1(end_accent_phrase_vector),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                    speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )?;
 
@@ -898,7 +898,7 @@ pub(crate) mod blocking {
             phoneme_vector: &[f32],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
+            let (model_id, inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             // 音が途切れてしまうのを避けるworkaround処理が入っている
             // TODO: 改善したらここのpadding処理を取り除く
@@ -925,7 +925,7 @@ pub(crate) mod blocking {
                     phoneme: ndarray::arr1(&phoneme_with_padding)
                         .into_shape([length_with_padding, phoneme_size])
                         .unwrap(),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                    speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )?;
 

@@ -14,9 +14,9 @@ use crate::{
         InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
         InferenceSignature,
     },
-    manifest::{ModelInnerId, StyleIdToModelInnerId},
+    manifest::{InnerVoiceId, StyleIdToInnerVoiceId},
     metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
-    voice_model::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId},
+    voice_model::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId},
     Result,
 };
 
@@ -36,7 +36,7 @@ impl<R: InferenceRuntime> Status<R> {
     pub(crate) fn insert_model(
         &self,
         model_header: &VoiceModelHeader,
-        model_contents: &InferenceDomainMap<ModelBytesWithInnerIdsByDomain>,
+        model_contents: &InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
@@ -66,14 +66,14 @@ impl<R: InferenceRuntime> Status<R> {
         self.loaded_models.lock().unwrap().metas()
     }
 
-    /// あるスタイルに対応する`VoiceModelId`と`ModelInnerId`の組を返す。
+    /// あるスタイルに対応する`VoiceModelId`と`InnerVoiceId`の組を返す。
     ///
-    /// `StyleId` → `ModelInnerId`のマッピングが存在しない場合は、`ModelInnerId`としては
+    /// `StyleId` → `InnerVoiceId`のマッピングが存在しない場合は、`InnerVoiceId`としては
     /// `style_id`と同じ値を返す。
     pub(crate) fn ids_for<D: InferenceDomainExt>(
         &self,
         style_id: StyleId,
-    ) -> Result<(VoiceModelId, ModelInnerId)> {
+    ) -> Result<(VoiceModelId, InnerVoiceId)> {
         self.loaded_models.lock().unwrap().ids_for::<D>(style_id)
     }
 
@@ -122,7 +122,7 @@ struct LoadedModels<R: InferenceRuntime>(IndexMap<VoiceModelId, LoadedModel<R>>)
 
 struct LoadedModel<R: InferenceRuntime> {
     metas: VoiceModelMeta,
-    session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
+    session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>,
 }
 
 impl<R: InferenceRuntime> LoadedModels<R> {
@@ -133,7 +133,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     fn ids_for<D: InferenceDomainExt>(
         &self,
         style_id: StyleId,
-    ) -> Result<(VoiceModelId, ModelInnerId)> {
+    ) -> Result<(VoiceModelId, InnerVoiceId)> {
         let (
             model_id,
             LoadedModel {
@@ -153,13 +153,13 @@ impl<R: InferenceRuntime> LoadedModels<R> {
                 style_types: D::style_types(),
             })?;
 
-        let model_inner_id = session_sets_with_inner_ids
+        let inner_voice_id = session_sets_with_inner_ids
             .get::<D>()
             .as_ref()
-            .and_then(|(model_inner_ids, _)| model_inner_ids.get(&style_id).copied())
-            .unwrap_or_else(|| ModelInnerId::new(style_id.raw_id()));
+            .and_then(|(inner_voice_ids, _)| inner_voice_ids.get(&style_id).copied())
+            .unwrap_or_else(|| InnerVoiceId::new(style_id.raw_id()));
 
-        Ok((model_id.clone(), model_inner_id))
+        Ok((model_id.clone(), inner_voice_id))
     }
 
     /// # Panics
@@ -250,7 +250,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     fn insert(
         &mut self,
         model_header: &VoiceModelHeader,
-        session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
+        session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>,
     ) -> Result<()> {
         self.ensure_acceptable(model_header)?;
 
@@ -286,8 +286,8 @@ impl<R: InferenceRuntime> LoadedModels<R> {
 
 pub(crate) trait InferenceDomainExt: InferenceDomain {
     fn visit<R: InferenceRuntime>(
-        map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
-    ) -> Option<&(StyleIdToModelInnerId, InferenceSessionSet<R, Self>)>;
+        map: &InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>,
+    ) -> Option<&(StyleIdToInnerVoiceId, InferenceSessionSet<R, Self>)>;
 }
 
 #[duplicate_item(
@@ -296,25 +296,25 @@ pub(crate) trait InferenceDomainExt: InferenceDomain {
 )]
 impl InferenceDomainExt for T {
     fn visit<R: InferenceRuntime>(
-        map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
-    ) -> Option<&(StyleIdToModelInnerId, InferenceSessionSet<R, Self>)> {
+        map: &InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>,
+    ) -> Option<&(StyleIdToInnerVoiceId, InferenceSessionSet<R, Self>)> {
         map.field.as_ref()
     }
 }
 
-impl<R: InferenceRuntime> InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>> {
+impl<R: InferenceRuntime> InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>> {
     fn get<D: InferenceDomainExt>(
         &self,
-    ) -> Option<&(StyleIdToModelInnerId, InferenceSessionSet<R, D>)> {
+    ) -> Option<&(StyleIdToInnerVoiceId, InferenceSessionSet<R, D>)> {
         D::visit(self)
     }
 }
 
-impl InferenceDomainMap<ModelBytesWithInnerIdsByDomain> {
+impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
     fn create_session_sets<R: InferenceRuntime>(
         &self,
         session_options: &InferenceDomainMap<SessionOptionsByDomain>,
-    ) -> anyhow::Result<InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>> {
+    ) -> anyhow::Result<InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>> {
         duplicate! {
             [
                 field;
@@ -323,9 +323,9 @@ impl InferenceDomainMap<ModelBytesWithInnerIdsByDomain> {
             let field = self
                 .field
                 .as_ref()
-                .map(|(model_inner_ids, model_bytes)| {
+                .map(|(inner_voice_ids, model_bytes)| {
                     let session_set = InferenceSessionSet::new(model_bytes, &session_options.field)?;
-                    Ok::<_, anyhow::Error>((model_inner_ids.clone(), session_set))
+                    Ok::<_, anyhow::Error>((inner_voice_ids.clone(), session_set))
                 })
                 .transpose()?;
         }
@@ -336,8 +336,8 @@ impl InferenceDomainMap<ModelBytesWithInnerIdsByDomain> {
 
 type SessionOptionsByDomain = (EnumMap<TalkOperation, InferenceSessionOptions>,);
 
-type SessionSetsWithInnerIdsByDomain<R> =
-    (Option<(StyleIdToModelInnerId, InferenceSessionSet<R, TalkDomain>)>,);
+type SessionSetsWithInnerVoiceIdsByDomain<R> =
+    (Option<(StyleIdToInnerVoiceId, InferenceSessionSet<R, TalkDomain>)>,);
 
 #[cfg(test)]
 mod tests {
