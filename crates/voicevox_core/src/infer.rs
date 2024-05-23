@@ -79,16 +79,20 @@ pub(crate) trait InferenceSignature: Sized + Send + 'static {
 pub(crate) trait InferenceInputSignature: Send + 'static {
     type Signature: InferenceSignature<Input = Self>;
     const PARAM_INFOS: &'static [ParamInfo<InputScalarKind>];
-    fn make_run_context<R: InferenceRuntime>(self, sess: &mut R::Session) -> R::RunContext<'_>;
+    fn make_run_context<R: InferenceRuntime>(
+        self,
+        sess: &mut R::Session,
+    ) -> anyhow::Result<R::RunContext<'_>>;
 }
 
 pub(crate) trait InputScalar: Sized {
     const KIND: InputScalarKind;
 
+    // TODO: `Array`ではなく`ArrayView`を取ることができるかもしれない
     fn push_tensor_to_ctx(
         tensor: Array<Self, impl Dimension + 'static>,
         visitor: &mut impl PushInputTensor,
-    );
+    ) -> anyhow::Result<()>;
 }
 
 #[duplicate_item(
@@ -102,8 +106,8 @@ impl InputScalar for T {
     fn push_tensor_to_ctx(
         tensor: Array<Self, impl Dimension + 'static>,
         ctx: &mut impl PushInputTensor,
-    ) {
-        ctx.push(tensor);
+    ) -> anyhow::Result<()> {
+        ctx.push(tensor)
     }
 }
 
@@ -117,8 +121,8 @@ pub(crate) enum InputScalarKind {
 }
 
 pub(crate) trait PushInputTensor {
-    fn push_int64(&mut self, tensor: Array<i64, impl Dimension + 'static>);
-    fn push_float32(&mut self, tensor: Array<f32, impl Dimension + 'static>);
+    fn push_int64(&mut self, tensor: Array<i64, impl Dimension + 'static>) -> anyhow::Result<()>;
+    fn push_float32(&mut self, tensor: Array<f32, impl Dimension + 'static>) -> anyhow::Result<()>;
 }
 
 /// 推論操作の出力シグネチャ。

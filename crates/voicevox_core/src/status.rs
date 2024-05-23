@@ -352,7 +352,6 @@ mod tests {
         },
         macros::tests::assert_debug_fmt_eq,
         synthesizer::InferenceRuntimeImpl,
-        test_util::open_default_vvm_file,
     };
 
     use super::Status;
@@ -399,7 +398,7 @@ mod tests {
         let status = Status::<InferenceRuntimeImpl>::new(InferenceDomainMap {
             talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
         });
-        let model = &open_default_vvm_file().await;
+        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
         let model_contents = &model.read_inference_models().await.unwrap();
         let result = status.insert_model(model.header(), model_contents);
         assert_debug_fmt_eq!(Ok(()), result);
@@ -412,7 +411,7 @@ mod tests {
         let status = Status::<InferenceRuntimeImpl>::new(InferenceDomainMap {
             talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
         });
-        let vvm = open_default_vvm_file().await;
+        let vvm = &crate::tokio::VoiceModel::sample().await.unwrap();
         let model_header = vvm.header();
         let model_contents = &vvm.read_inference_models().await.unwrap();
         assert!(
