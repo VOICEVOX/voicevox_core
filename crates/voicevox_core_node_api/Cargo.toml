@@ -1,10 +1,14 @@
 [package]
-edition = "2021"
 name = "voicevox_core_node_api"
 version = "0.0.0"
+edition.workspace = true
+publish.workspace = true
 
 [lib]
 crate-type = ["cdylib"]
+
+[features]
+directml = ["voicevox_core/directml"]
 
 [dependencies]
 napi = { version = "2.16.0", features = ["napi4", "serde-json", "tokio_rt"] }
@@ -16,6 +20,3 @@ uuid.workspace = true
 
 [build-dependencies]
 napi-build = "2"
-
-[profile.release]
-lto = true
