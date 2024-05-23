@@ -1,7 +1,12 @@
 use std::{error::Error as _, iter};
 
 use derive_more::From;
-use jni::{objects::JThrowable, JNIEnv};
+use easy_ext::ext;
+use jni::{
+    objects::{JObject, JThrowable},
+    JNIEnv,
+};
+use uuid::Uuid;
 
 #[macro_export]
 macro_rules! object {
@@ -167,4 +172,24 @@ pub(crate) enum JavaApiError {
     Uuid(uuid::Error),
 
     DeJson(serde_json::Error),
+}
+
+#[ext(JNIEnvExt)]
+pub(crate) impl JNIEnv<'_> {
+    fn new_uuid(&mut self, uuid: Uuid) -> jni::errors::Result<JObject<'_>> {
+        let uuid = uuid.as_u128();
+        let msbs = i64::try_from(uuid >> 64).expect("128 - 64 = 64").into();
+        let lsbs = (uuid as i64).into();
+        self.new_object("java/util/UUID", "(JJ)V", &[msbs, lsbs])
+    }
+
+    fn get_uuid(&mut self, obj: &JObject<'_>) -> jni::errors::Result<Uuid> {
+        let mut get_bits = |name| {
+            let v = self.call_method(obj, name, "()J", &[])?.j()?;
+            Ok::<_, jni::errors::Error>(u128::from(v as u64))
+        };
+        let msbs = get_bits("getMostSignificantBits")?;
+        let lsbs = get_bits("getLeastSignificantBits")?;
+        Ok(Uuid::from_u128((msbs << 64) + lsbs))
+    }
 }

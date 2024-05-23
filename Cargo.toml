@@ -47,7 +47,6 @@ libc = "0.2.134"
 libloading = "0.7.3"
 libtest-mimic = "0.6.0"
 log = "0.4.17"
-nanoid = "0.4.0"
 ndarray = "0.15.6"
 ndarray-stats = "0.5.1"
 octocrab = { version = "0.19.0", default-features = false }

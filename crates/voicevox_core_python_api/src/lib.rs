@@ -154,13 +154,13 @@ mod blocking {
     use camino::Utf8PathBuf;
     use pyo3::{
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyString},
+        types::{IntoPyDict as _, PyBytes, PyDict, PyList},
         PyAny, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
     use voicevox_core::{
         AccelerationMode, AudioQueryModel, InitializeOptions, StyleId, SynthesisOptions,
-        TtsOptions, UserDictWord, VoiceModelId,
+        TtsOptions, UserDictWord,
     };
 
     use crate::{convert::VoicevoxCoreResultExt as _, Closable};
@@ -180,8 +180,9 @@ mod blocking {
         }
 
         #[getter]
-        fn id(&self) -> &str {
-            self.model.id().raw_voice_model_id()
+        fn id(&self, py: Python<'_>) -> PyResult<PyObject> {
+            let id = *self.model.id().raw_voice_model_id();
+            crate::convert::to_py_uuid(py, id)
         }
 
         #[getter]
@@ -289,23 +290,26 @@ mod blocking {
                 .into_py_result(py)
         }
 
-        fn unload_voice_model(&mut self, voice_model_id: &str, py: Python<'_>) -> PyResult<()> {
+        fn unload_voice_model(
+            &mut self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] voice_model_id: Uuid,
+            py: Python<'_>,
+        ) -> PyResult<()> {
             self.synthesizer
                 .get()?
-                .unload_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
+                .unload_voice_model(voice_model_id.into())
                 .into_py_result(py)
         }
 
         // C APIの挙動と一貫性を持たせる。
-        fn is_loaded_voice_model(&self, voice_model_id: &PyString) -> PyResult<bool> {
-            let Ok(voice_model_id) = voice_model_id.to_str() else {
-                // 与えられたIDがUTF-8ではない場合、それに対応する`VoicdModel`は確実に存在しない
-                return Ok(false);
-            };
+        fn is_loaded_voice_model(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] voice_model_id: Uuid,
+        ) -> PyResult<bool> {
             Ok(self
                 .synthesizer
                 .get()?
-                .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string())))
+                .is_loaded_voice_model(voice_model_id.into()))
         }
 
         fn audio_query_from_kana<'py>(
@@ -579,13 +583,13 @@ mod asyncio {
     use camino::Utf8PathBuf;
     use pyo3::{
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyString},
+        types::{IntoPyDict as _, PyBytes, PyDict, PyList},
         PyAny, PyObject, PyRef, PyResult, Python, ToPyObject as _,
     };
     use uuid::Uuid;
     use voicevox_core::{
         AccelerationMode, AudioQueryModel, InitializeOptions, StyleId, SynthesisOptions,
-        TtsOptions, UserDictWord, VoiceModelId,
+        TtsOptions, UserDictWord,
     };
 
     use crate::{convert::VoicevoxCoreResultExt as _, Closable};
@@ -608,8 +612,9 @@ mod asyncio {
         }
 
         #[getter]
-        fn id(&self) -> &str {
-            self.model.id().raw_voice_model_id()
+        fn id(&self, py: Python<'_>) -> PyResult<PyObject> {
+            let id = *self.model.id().raw_voice_model_id();
+            crate::convert::to_py_uuid(py, id)
         }
 
         #[getter]
@@ -725,23 +730,26 @@ mod asyncio {
             })
         }
 
-        fn unload_voice_model(&mut self, voice_model_id: &str, py: Python<'_>) -> PyResult<()> {
+        fn unload_voice_model(
+            &mut self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] voice_model_id: Uuid,
+            py: Python<'_>,
+        ) -> PyResult<()> {
             self.synthesizer
                 .get()?
-                .unload_voice_model(&VoiceModelId::new(voice_model_id.to_string()))
+                .unload_voice_model(voice_model_id.into())
                 .into_py_result(py)
         }
 
         // C APIの挙動と一貫性を持たせる。
-        fn is_loaded_voice_model(&self, voice_model_id: &PyString) -> PyResult<bool> {
-            let Ok(voice_model_id) = voice_model_id.to_str() else {
-                // 与えられたIDがUTF-8ではない場合、それに対応する`VoicdModel`は確実に存在しない
-                return Ok(false);
-            };
+        fn is_loaded_voice_model(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] voice_model_id: Uuid,
+        ) -> PyResult<bool> {
             Ok(self
                 .synthesizer
                 .get()?
-                .is_loaded_voice_model(&VoiceModelId::new(voice_model_id.to_string())))
+                .is_loaded_voice_model(voice_model_id.into()))
         }
 
         fn audio_query_from_kana<'py>(

@@ -5,13 +5,14 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import java.util.UUID;
 
 /** 音声モデル。 */
 public class VoiceModel extends Dll {
   private long handle;
 
   /** ID。 */
-  @Nonnull public final String id;
+  @Nonnull public final UUID id;
 
   /** メタ情報。 */
   @Nonnull public final SpeakerMeta[] metas;
@@ -36,7 +37,7 @@ public class VoiceModel extends Dll {
   private native void rsFromPath(String modelPath);
 
   @Nonnull
-  private native String rsGetId();
+  private native UUID rsGetId();
 
   @Nonnull
   private native String rsGetMetasJson();

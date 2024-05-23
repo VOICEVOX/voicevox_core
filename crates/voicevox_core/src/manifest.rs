@@ -6,7 +6,7 @@ use derive_new::new;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
-use crate::StyleId;
+use crate::{StyleId, VoiceModelId};
 
 pub type RawManifestVersion = String;
 #[derive(Deserialize, Clone, Debug, PartialEq, new)]
@@ -38,10 +38,9 @@ impl Display for ModelInnerId {
 
 #[derive(Deserialize, Getters, Clone)]
 pub struct Manifest {
-    // FIXME: UUIDにする
-    // https://github.com/VOICEVOX/voicevox_core/issues/581
     #[allow(dead_code)]
     manifest_version: ManifestVersion,
+    pub(crate) id: VoiceModelId,
     metas_filename: String,
     #[serde(flatten)]
     domains: ManifestDomains,

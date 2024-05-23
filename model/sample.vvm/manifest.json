@@ -1,5 +1,6 @@
 {
   "manifest_version": "0.0.0",
+  "id": "018fa5b1-146c-71e9-b523-6f6dabcf05fe",
   "metas_filename": "metas.json",
   "talk": {
     "predict_duration_filename": "predict_duration.onnx",

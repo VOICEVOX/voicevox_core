@@ -58,7 +58,7 @@ impl<R: InferenceRuntime> Status<R> {
         Ok(())
     }
 
-    pub(crate) fn unload_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
+    pub(crate) fn unload_model(&self, voice_model_id: VoiceModelId) -> Result<()> {
         self.loaded_models.lock().unwrap().remove(voice_model_id)
     }
 
@@ -77,7 +77,7 @@ impl<R: InferenceRuntime> Status<R> {
         self.loaded_models.lock().unwrap().ids_for::<D>(style_id)
     }
 
-    pub(crate) fn is_loaded_model(&self, voice_model_id: &VoiceModelId) -> bool {
+    pub(crate) fn is_loaded_model(&self, voice_model_id: VoiceModelId) -> bool {
         self.loaded_models
             .lock()
             .unwrap()
@@ -101,7 +101,7 @@ impl<R: InferenceRuntime> Status<R> {
     /// `self`が`model_id`を含んでいないとき、パニックする。
     pub(crate) fn run_session<I>(
         &self,
-        model_id: &VoiceModelId,
+        model_id: VoiceModelId,
         input: I,
     ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
@@ -159,7 +159,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             .and_then(|(model_inner_ids, _)| model_inner_ids.get(&style_id).copied())
             .unwrap_or_else(|| ModelInnerId::new(style_id.raw_id()));
 
-        Ok((model_id.clone(), model_inner_id))
+        Ok((*model_id, model_inner_id))
     }
 
     /// # Panics
@@ -168,12 +168,12 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     ///
     /// - `self`が`model_id`を含んでいないとき
     /// - 対応する`InferenceDomain`が欠けているとき
-    fn get<I>(&self, model_id: &VoiceModelId) -> InferenceSessionCell<R, I>
+    fn get<I>(&self, model_id: VoiceModelId) -> InferenceSessionCell<R, I>
     where
         I: InferenceInputSignature,
         <I::Signature as InferenceSignature>::Domain: InferenceDomainExt,
     {
-        let (_, session_set) = self.0[model_id]
+        let (_, session_set) = self.0[&model_id]
             .session_sets_with_inner_ids
             .get::<<I::Signature as InferenceSignature>::Domain>()
             .as_ref()
@@ -190,8 +190,8 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         session_set.get()
     }
 
-    fn contains_voice_model(&self, model_id: &VoiceModelId) -> bool {
-        self.0.contains_key(model_id)
+    fn contains_voice_model(&self, model_id: VoiceModelId) -> bool {
+        self.0.contains_key(&model_id)
     }
 
     fn contains_style(&self, style_id: StyleId) -> bool {
@@ -216,9 +216,9 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             source: None,
         };
 
-        if self.0.contains_key(&model_header.id) {
+        if self.0.contains_key(&model_header.manifest.id) {
             return Err(error(LoadModelErrorKind::ModelAlreadyLoaded {
-                id: model_header.id.clone(),
+                id: model_header.manifest.id,
             }));
         }
 
@@ -255,7 +255,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         self.ensure_acceptable(model_header)?;
 
         let prev = self.0.insert(
-            model_header.id.clone(),
+            model_header.manifest.id,
             LoadedModel {
                 metas: model_header.metas.clone(),
                 session_sets_with_inner_ids,
@@ -265,12 +265,9 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         Ok(())
     }
 
-    fn remove(&mut self, model_id: &VoiceModelId) -> Result<()> {
-        if self.0.remove(model_id).is_none() {
-            return Err(ErrorRepr::ModelNotFound {
-                model_id: model_id.clone(),
-            }
-            .into());
+    fn remove(&mut self, model_id: VoiceModelId) -> Result<()> {
+        if self.0.remove(&model_id).is_none() {
+            return Err(ErrorRepr::ModelNotFound { model_id }.into());
         }
         Ok(())
     }
@@ -415,13 +412,13 @@ mod tests {
         let model_header = vvm.header();
         let model_contents = &vvm.read_inference_models().await.unwrap();
         assert!(
-            !status.is_loaded_model(&model_header.id),
+            !status.is_loaded_model(model_header.manifest.id),
             "model should  not be loaded"
         );
         let result = status.insert_model(model_header, model_contents);
         assert_debug_fmt_eq!(Ok(()), result);
         assert!(
-            status.is_loaded_model(&model_header.id),
+            status.is_loaded_model(model_header.manifest.id),
             "model should be loaded",
         );
     }

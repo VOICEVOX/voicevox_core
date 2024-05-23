@@ -1823,15 +1823,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nanoid"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ffa00dec017b5b1a8b7cf5e2c008bfda1aa7e0697ac1508b491fdf2622fb4d8"
-dependencies = [
- "rand",
-]
-
-[[package]]
 name = "ndarray"
 version = "0.15.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3587,7 +3578,6 @@ dependencies = [
  "indexmap 2.0.0",
  "itertools 0.10.5",
  "jlabel",
- "nanoid",
  "ndarray",
  "once_cell",
  "open_jtalk",
@@ -3662,6 +3652,7 @@ dependencies = [
  "android_logger",
  "chrono",
  "derive_more",
+ "easy-ext",
  "jni",
  "once_cell",
  "serde_json",

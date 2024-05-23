@@ -1,5 +1,5 @@
 use crate::{
-    common::{throw_if_err, JavaApiError},
+    common::{throw_if_err, JNIEnvExt as _, JavaApiError},
     enum_object, object, object_type,
 };
 
@@ -115,10 +115,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsLoadVoice
 unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsUnloadVoiceModel<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
-    model_id: JString<'local>,
+    model_id: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let model_id: String = env.get_string(&model_id)?.into();
+        let model_id = env.get_uuid(&model_id)?.into();
 
         let internal = env
             .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
@@ -126,7 +126,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsUnloadVoi
             )?
             .clone();
 
-        internal.unload_voice_model(&voicevox_core::VoiceModelId::new(model_id))?;
+        internal.unload_voice_model(model_id)?;
 
         Ok(())
     })
@@ -138,10 +138,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsLoadedV
 >(
     env: JNIEnv<'local>,
     this: JObject<'local>,
-    model_id: JString<'local>,
+    model_id: JObject<'local>,
 ) -> jboolean {
     throw_if_err(env, false, |env| {
-        let model_id: String = env.get_string(&model_id)?.into();
+        let model_id = env.get_uuid(&model_id)?.into();
 
         let internal = env
             .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
@@ -149,7 +149,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsLoadedV
             )?
             .clone();
 
-        let is_loaded = internal.is_loaded_voice_model(&voicevox_core::VoiceModelId::new(model_id));
+        let is_loaded = internal.is_loaded_voice_model(model_id);
 
         Ok(is_loaded)
     })
