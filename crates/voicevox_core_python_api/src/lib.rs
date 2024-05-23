@@ -301,7 +301,6 @@ mod blocking {
                 .into_py_result(py)
         }
 
-        // C APIの挙動と一貫性を持たせる。
         fn is_loaded_voice_model(
             &self,
             #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] voice_model_id: Uuid,
@@ -741,7 +740,6 @@ mod asyncio {
                 .into_py_result(py)
         }
 
-        // C APIの挙動と一貫性を持たせる。
         fn is_loaded_voice_model(
             &self,
             #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] voice_model_id: Uuid,
