@@ -24,6 +24,7 @@ chrono = { workspace = true, default-features = false, features = ["clock"] }
 colorchoice.workspace = true
 cstr.workspace = true
 derive-getters.workspace = true
+easy-ext.workspace = true
 futures.workspace = true
 itertools.workspace = true
 libc.workspace = true

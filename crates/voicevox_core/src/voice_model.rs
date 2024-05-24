@@ -4,11 +4,13 @@
 
 use anyhow::anyhow;
 use derive_getters::Getters;
+use derive_more::From;
 use derive_new::new;
 use easy_ext::ext;
 use enum_map::EnumMap;
 use itertools::Itertools as _;
 use serde::Deserialize;
+use uuid::Uuid;
 
 use crate::{
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
@@ -16,7 +18,7 @@ use crate::{
         domains::{TalkDomain, TalkOperation},
         InferenceDomain,
     },
-    manifest::{Manifest, ManifestDomains, StyleIdToModelInnerId},
+    manifest::{Manifest, ManifestDomains, StyleIdToInnerVoiceId},
     SpeakerMeta, StyleMeta, StyleType, VoiceModelMeta,
 };
 use std::path::{Path, PathBuf};
@@ -24,16 +26,17 @@ use std::path::{Path, PathBuf};
 /// [`VoiceModelId`]の実体。
 ///
 /// [`VoiceModelId`]: VoiceModelId
-pub type RawVoiceModelId = String;
+pub type RawVoiceModelId = Uuid;
 
-pub(crate) type ModelBytesWithInnerIdsByDomain =
-    (Option<(StyleIdToModelInnerId, EnumMap<TalkOperation, Vec<u8>>)>,);
+pub(crate) type ModelBytesWithInnerVoiceIdsByDomain =
+    (Option<(StyleIdToInnerVoiceId, EnumMap<TalkOperation, Vec<u8>>)>,);
 
 /// 音声モデルID。
 #[derive(
     PartialEq,
     Eq,
     Clone,
+    Copy,
     Ord,
     Hash,
     PartialOrd,
@@ -42,7 +45,9 @@ pub(crate) type ModelBytesWithInnerIdsByDomain =
     Getters,
     derive_more::Display,
     Debug,
+    From,
 )]
+#[serde(transparent)]
 pub struct VoiceModelId {
     raw_voice_model_id: RawVoiceModelId,
 }
@@ -53,9 +58,7 @@ pub struct VoiceModelId {
 /// モデルの`[u8]`と分けて`Status`に渡す。
 #[derive(Clone)]
 pub(crate) struct VoiceModelHeader {
-    /// ID。
-    pub(crate) id: VoiceModelId,
-    manifest: Manifest,
+    pub(crate) manifest: Manifest,
     /// メタ情報。
     ///
     /// `manifest`が対応していない`StyleType`のスタイルは含まれるべきではない。
@@ -64,12 +67,7 @@ pub(crate) struct VoiceModelHeader {
 }
 
 impl VoiceModelHeader {
-    fn new(
-        id: VoiceModelId,
-        manifest: Manifest,
-        metas: &[u8],
-        path: &Path,
-    ) -> LoadModelResult<Self> {
+    fn new(manifest: Manifest, metas: &[u8], path: &Path) -> LoadModelResult<Self> {
         let metas =
             serde_json::from_slice::<VoiceModelMeta>(metas).map_err(|source| LoadModelError {
                 path: path.to_owned(),
@@ -94,7 +92,6 @@ impl VoiceModelHeader {
             })?;
 
         Ok(Self {
-            id,
             manifest,
             metas,
             path: path.to_owned(),
@@ -151,8 +148,8 @@ pub(crate) mod blocking {
         path::Path,
     };
 
+    use easy_ext::ext;
     use enum_map::EnumMap;
-    use nanoid::nanoid;
     use ouroboros::self_referencing;
     use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
     use serde::de::DeserializeOwned;
@@ -164,7 +161,7 @@ pub(crate) mod blocking {
         VoiceModelMeta,
     };
 
-    use super::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -177,7 +174,7 @@ pub(crate) mod blocking {
     impl self::VoiceModel {
         pub(crate) fn read_inference_models(
             &self,
-        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerIdsByDomain>> {
+        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
             let talk = self
@@ -191,7 +188,7 @@ pub(crate) mod blocking {
                          predict_duration_filename,
                          predict_intonation_filename,
                          decode_filename,
-                         style_id_to_model_inner_id,
+                         style_id_to_inner_voice_id,
                      }| {
                         let model_bytes = [
                             predict_duration_filename,
@@ -206,7 +203,7 @@ pub(crate) mod blocking {
 
                         let model_bytes = EnumMap::from_array(model_bytes);
 
-                        Ok((style_id_to_model_inner_id.clone(), model_bytes))
+                        Ok((style_id_to_inner_voice_id.clone(), model_bytes))
                     },
                 )
                 .transpose()?;
@@ -220,14 +217,13 @@ pub(crate) mod blocking {
             let reader = BlockingVvmEntryReader::open(path)?;
             let manifest = reader.read_vvm_json::<Manifest>("manifest.json")?;
             let metas = &reader.read_vvm_entry(manifest.metas_filename())?;
-            let id = VoiceModelId::new(nanoid!());
-            let header = VoiceModelHeader::new(id, manifest, metas, path)?;
+            let header = VoiceModelHeader::new(manifest, metas, path)?;
             Ok(Self { header })
         }
 
         /// ID。
-        pub fn id(&self) -> &VoiceModelId {
-            &self.header.id
+        pub fn id(&self) -> VoiceModelId {
+            self.header.manifest.id
         }
 
         /// メタ情報。
@@ -289,6 +285,13 @@ pub(crate) mod blocking {
             })
         }
     }
+
+    #[ext(IdRef)]
+    pub impl VoiceModel {
+        fn id_ref(&self) -> &VoiceModelId {
+            &self.header.manifest.id
+        }
+    }
 }
 
 pub(crate) mod tokio {
@@ -297,7 +300,6 @@ pub(crate) mod tokio {
     use derive_new::new;
     use enum_map::EnumMap;
     use futures::future::{join3, OptionFuture};
-    use nanoid::nanoid;
     use serde::de::DeserializeOwned;
 
     use crate::{
@@ -307,7 +309,7 @@ pub(crate) mod tokio {
         Result, VoiceModelMeta,
     };
 
-    use super::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -320,7 +322,7 @@ pub(crate) mod tokio {
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
-        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerIdsByDomain>> {
+        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
 
             let talk = OptionFuture::from(self.header.manifest.domains().talk.as_ref().map(
@@ -328,7 +330,7 @@ pub(crate) mod tokio {
                      predict_duration_filename,
                      predict_intonation_filename,
                      decode_filename,
-                     style_id_to_model_inner_id,
+                     style_id_to_inner_voice_id,
                  }| async {
                     let (
                         decode_model_result,
@@ -347,7 +349,7 @@ pub(crate) mod tokio {
                         decode_model_result?,
                     ]);
 
-                    Ok((style_id_to_model_inner_id.clone(), model_bytes))
+                    Ok((style_id_to_inner_voice_id.clone(), model_bytes))
                 },
             ))
             .await
@@ -360,14 +362,13 @@ pub(crate) mod tokio {
             let reader = AsyncVvmEntryReader::open(path.as_ref()).await?;
             let manifest = reader.read_vvm_json::<Manifest>("manifest.json").await?;
             let metas = &reader.read_vvm_entry(manifest.metas_filename()).await?;
-            let id = VoiceModelId::new(nanoid!());
-            let header = VoiceModelHeader::new(id, manifest, metas, path.as_ref())?;
+            let header = VoiceModelHeader::new(manifest, metas, path.as_ref())?;
             Ok(Self { header })
         }
 
         /// ID。
-        pub fn id(&self) -> &VoiceModelId {
-            &self.header.id
+        pub fn id(&self) -> VoiceModelId {
+            self.header.manifest.id
         }
 
         /// メタ情報。
@@ -505,7 +506,7 @@ mod tests {
         predict_duration_filename: "".to_owned(),
         predict_intonation_filename: "".to_owned(),
         decode_filename: "".to_owned(),
-        style_id_to_model_inner_id: Default::default(),
+        style_id_to_inner_voice_id: Default::default(),
     });
 
     #[fixture]

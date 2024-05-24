@@ -1,5 +1,7 @@
+use easy_ext::ext;
 use std::{error::Error as _, ffi::CStr, fmt::Debug, iter};
-use voicevox_core::{AudioQueryModel, UserDictWord};
+use uuid::Uuid;
+use voicevox_core::{AudioQueryModel, UserDictWord, VoiceModelId};
 
 use thiserror::Error;
 use tracing::error;
@@ -160,6 +162,13 @@ impl Default for VoicevoxSynthesisOptions {
         Self {
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
         }
+    }
+}
+
+#[ext(UuidBytesExt)]
+pub(crate) impl uuid::Bytes {
+    fn to_model_id(self) -> VoiceModelId {
+        Uuid::from_bytes(self).into()
     }
 }
 

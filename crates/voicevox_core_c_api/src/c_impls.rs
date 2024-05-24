@@ -5,6 +5,9 @@ use voicevox_core::{InitializeOptions, Result, VoiceModelId};
 
 use crate::{helpers::CApiResult, OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
 
+// FIXME: 中身(Rust API)を直接操作するかラッパーメソッド越しにするのかが混在していて、一貫性を
+// 欠いている
+
 impl OpenJtalkRc {
     pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Utf8Path>) -> Result<Self> {
         Ok(Self {
@@ -28,7 +31,7 @@ impl VoicevoxSynthesizer {
         Ok(())
     }
 
-    pub(crate) fn unload_voice_model(&self, model_id: &VoiceModelId) -> Result<()> {
+    pub(crate) fn unload_voice_model(&self, model_id: VoiceModelId) -> Result<()> {
         self.synthesizer.unload_voice_model(model_id)?;
         Ok(())
     }
@@ -42,8 +45,7 @@ impl VoicevoxSynthesizer {
 impl VoicevoxVoiceModel {
     pub(crate) fn from_path(path: impl AsRef<Path>) -> Result<Self> {
         let model = voicevox_core::blocking::VoiceModel::from_path(path)?;
-        let id = CString::new(model.id().raw_voice_model_id().as_str()).unwrap();
         let metas = CString::new(serde_json::to_string(model.metas()).unwrap()).unwrap();
-        Ok(Self { model, id, metas })
+        Ok(Self { model, metas })
     }
 }

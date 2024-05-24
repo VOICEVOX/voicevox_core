@@ -25,7 +25,6 @@ futures.workspace = true
 indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
 jlabel.workspace = true
-nanoid.workspace = true
 ndarray.workspace = true
 once_cell.workspace = true
 open_jtalk.workspace = true

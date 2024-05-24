@@ -207,12 +207,12 @@ pub(crate) mod blocking {
         }
 
         /// 音声モデルの読み込みを解除する。
-        pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
+        pub fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> Result<()> {
             self.status.unload_model(voice_model_id)
         }
 
         /// 指定したIDの音声モデルが読み込まれているか判定する。
-        pub fn is_loaded_voice_model(&self, voice_model_id: &VoiceModelId) -> bool {
+        pub fn is_loaded_voice_model(&self, voice_model_id: VoiceModelId) -> bool {
             self.status.is_loaded_model(voice_model_id)
         }
 
@@ -836,15 +836,15 @@ pub(crate) mod blocking {
 
     impl<O> PerformInference for self::Synthesizer<O> {
         fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
-            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
+            let (model_id, inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictDurationOutput {
                 phoneme_length: output,
             } = self.status.run_session(
-                &model_id,
+                model_id,
                 PredictDurationInput {
                     phoneme_list: ndarray::arr1(phoneme_vector),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                    speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )?;
             let mut output = output.into_raw_vec();
@@ -871,10 +871,10 @@ pub(crate) mod blocking {
             end_accent_phrase_vector: &[i64],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
+            let (model_id, inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictIntonationOutput { f0_list: output } = self.status.run_session(
-                &model_id,
+                model_id,
                 PredictIntonationInput {
                     length: ndarray::arr0(length as i64),
                     vowel_phoneme_list: ndarray::arr1(vowel_phoneme_vector),
@@ -883,7 +883,7 @@ pub(crate) mod blocking {
                     end_accent_list: ndarray::arr1(end_accent_vector),
                     start_accent_phrase_list: ndarray::arr1(start_accent_phrase_vector),
                     end_accent_phrase_list: ndarray::arr1(end_accent_phrase_vector),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                    speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )?;
 
@@ -898,7 +898,7 @@ pub(crate) mod blocking {
             phoneme_vector: &[f32],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
+            let (model_id, inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             // 音が途切れてしまうのを避けるworkaround処理が入っている
             // TODO: 改善したらここのpadding処理を取り除く
@@ -917,7 +917,7 @@ pub(crate) mod blocking {
             );
 
             let DecodeOutput { wave: output } = self.status.run_session(
-                &model_id,
+                model_id,
                 DecodeInput {
                     f0: ndarray::arr1(&f0_with_padding)
                         .into_shape([length_with_padding, 1])
@@ -925,7 +925,7 @@ pub(crate) mod blocking {
                     phoneme: ndarray::arr1(&phoneme_with_padding)
                         .into_shape([length_with_padding, phoneme_size])
                         .unwrap(),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                    speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )?;
 
@@ -1150,11 +1150,11 @@ pub(crate) mod tokio {
             self.0.status.insert_model(model.header(), model_bytes)
         }
 
-        pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
+        pub fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> Result<()> {
             self.0.unload_voice_model(voice_model_id)
         }
 
-        pub fn is_loaded_voice_model(&self, voice_model_id: &VoiceModelId) -> bool {
+        pub fn is_loaded_voice_model(&self, voice_model_id: VoiceModelId) -> bool {
             self.0.is_loaded_voice_model(voice_model_id)
         }
 

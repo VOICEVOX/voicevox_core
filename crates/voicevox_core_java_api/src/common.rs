@@ -1,7 +1,12 @@
 use std::{error::Error as _, iter};
 
 use derive_more::From;
-use jni::{objects::JThrowable, JNIEnv};
+use easy_ext::ext;
+use jni::{
+    objects::{JObject, JThrowable},
+    JNIEnv,
+};
+use uuid::Uuid;
 
 #[macro_export]
 macro_rules! object {
@@ -167,4 +172,52 @@ pub(crate) enum JavaApiError {
     Uuid(uuid::Error),
 
     DeJson(serde_json::Error),
+}
+
+#[ext(JNIEnvExt)]
+pub(crate) impl JNIEnv<'_> {
+    fn new_uuid(&mut self, uuid: Uuid) -> jni::errors::Result<JObject<'_>> {
+        let (msbs, lsbs) = split_uuid(uuid);
+        self.new_object("java/util/UUID", "(JJ)V", &[msbs.into(), lsbs.into()])
+    }
+
+    fn get_uuid(&mut self, obj: &JObject<'_>) -> jni::errors::Result<Uuid> {
+        let mut get_bits = |method_name| self.call_method(obj, method_name, "()J", &[])?.j();
+        let msbs = get_bits("getMostSignificantBits")?;
+        let lsbs = get_bits("getLeastSignificantBits")?;
+        Ok(construct_uuid(msbs, lsbs))
+    }
+}
+
+fn split_uuid(uuid: Uuid) -> (i64, i64) {
+    let uuid = uuid.as_u128();
+    let msbs = (uuid >> 64) as _;
+    let lsbs = uuid as _;
+    (msbs, lsbs)
+}
+
+fn construct_uuid(msbs: i64, lsbs: i64) -> Uuid {
+    return Uuid::from_u128((to_u128(msbs) << 64) + to_u128(lsbs));
+
+    fn to_u128(bits: i64) -> u128 {
+        (bits as u64).into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+    use rstest::rstest;
+    use uuid::{uuid, Uuid};
+
+    #[rstest]
+    #[case(uuid!("a1a2a3a4-b1b2-c1c2-d1d2-e1e2e3e4e5e6"))]
+    #[case(uuid!("00000000-0000-0000-0000-000000000000"))]
+    #[case(uuid!("00000000-0000-0000-ffff-ffffffffffff"))]
+    #[case(uuid!("ffffffff-ffff-ffff-0000-000000000000"))]
+    #[case(uuid!("ffffffff-ffff-ffff-ffff-ffffffffffff"))]
+    fn uuid_conversion_works(#[case] uuid: Uuid) {
+        let (msbs, lsbs) = super::split_uuid(uuid);
+        assert_eq!(uuid, super::construct_uuid(msbs, lsbs));
+    }
 }
