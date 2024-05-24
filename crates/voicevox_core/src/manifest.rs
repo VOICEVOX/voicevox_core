@@ -37,7 +37,10 @@ impl<'de> Deserialize<'de> for FormatVersionV1 {
             {
                 match v {
                     "1" => Ok(FormatVersionV1),
-                    v => Err(E::custom(format!("未知の`vvm_format_version`です: `{v}`"))),
+                    v => Err(E::custom(format!(
+                        "`vvm_format_version={v}`とありますが、これは未知のフォーマットです。\
+                         新しいバージョンのVOICEVOX COREであれば対応しているかもしれません"
+                    ))),
                 }
             }
         }
@@ -106,7 +109,10 @@ mod tests {
     #[case("{\"vvm_format_version\":\"1\"}", Ok(()))]
     #[case(
         "{\"vvm_format_version\":\"2\"}",
-        Err("未知の`vvm_format_version`です: `2` at line 1 column 25")
+        Err(
+            "`vvm_format_version=2`とありますが、これは未知のフォーマットです。新しいバージョンの\
+             VOICEVOX COREであれば対応しているかもしれません at line 1 column 25"
+        )
     )]
     fn vvm_format_version_works(
         #[case] input: &str,
