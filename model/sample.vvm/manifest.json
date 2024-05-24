@@ -1,5 +1,5 @@
 {
-  "manifest_version": "0.0.0",
+  "vvm_format_version": 1,
   "id": "018fa5b1-146c-71e9-b523-6f6dabcf05fe",
   "metas_filename": "metas.json",
   "talk": {
