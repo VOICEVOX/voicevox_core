@@ -20,7 +20,7 @@ impl<'de> Deserialize<'de> for FormatVersionV1 {
     where
         D: Deserializer<'de>,
     {
-        return deserializer.deserialize_str(Visitor);
+        return deserializer.deserialize_any(Visitor);
 
         struct Visitor;
 
@@ -28,15 +28,15 @@ impl<'de> Deserialize<'de> for FormatVersionV1 {
             type Value = FormatVersionV1;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter.write_str("a string")
+                formatter.write_str("an unsigned integer")
             }
 
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
                 match v {
-                    "1" => Ok(FormatVersionV1),
+                    1 => Ok(FormatVersionV1),
                     v => Err(E::custom(format!(
                         "未知の形式です（`vvm_format_version={v}`）。新しいバージョンのVOICEVOX \
                          COREであれば対応しているかもしれません",
@@ -106,12 +106,12 @@ mod tests {
     use super::FormatVersionV1;
 
     #[rstest]
-    #[case("{\"vvm_format_version\":\"1\"}", Ok(()))]
+    #[case("{\"vvm_format_version\":1}", Ok(()))]
     #[case(
-        "{\"vvm_format_version\":\"2\"}",
+        "{\"vvm_format_version\":2}",
         Err(
             "未知の形式です（`vvm_format_version=2`）。新しいバージョンのVOICEVOX COREであれば対応\
-             しているかもしれません at line 1 column 25",
+             しているかもしれません at line 1 column 23",
         )
     )]
     fn vvm_format_version_works(
