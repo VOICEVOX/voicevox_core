@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 class VoiceModelTest extends TestUtils {
   @Test
-  void checkUuid() throws IOException {
+  void idShouldBePreservedAsIs() throws IOException {
     UUID expected = UUID.fromString(Manifest.readJson().id);
     UUID actual = loadModel().id;
     assertEquals(expected, actual);
