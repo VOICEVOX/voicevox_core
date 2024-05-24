@@ -19,18 +19,18 @@ impl Display for ManifestVersion {
 }
 
 /// モデル内IDの実体
-pub type RawModelInnerId = u32;
+pub type RawInnerVoiceId = u32;
 /// モデル内ID
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
-pub struct ModelInnerId(RawModelInnerId);
+pub struct InnerVoiceId(RawInnerVoiceId);
 
-impl ModelInnerId {
-    pub fn raw_id(self) -> RawModelInnerId {
+impl InnerVoiceId {
+    pub fn raw_id(self) -> RawInnerVoiceId {
         self.0
     }
 }
 
-impl Display for ModelInnerId {
+impl Display for InnerVoiceId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.raw_id())
     }
@@ -57,12 +57,12 @@ pub(crate) struct TalkManifest {
     pub(crate) predict_intonation_filename: String,
     pub(crate) decode_filename: String,
     #[serde(default)]
-    pub(crate) style_id_to_model_inner_id: StyleIdToModelInnerId,
+    pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
 #[serde_as]
 #[derive(Default, Clone, Deref, Deserialize)]
 #[deref(forward)]
-pub(crate) struct StyleIdToModelInnerId(
-    #[serde_as(as = "Arc<BTreeMap<DisplayFromStr, _>>")] Arc<BTreeMap<StyleId, ModelInnerId>>,
+pub(crate) struct StyleIdToInnerVoiceId(
+    #[serde_as(as = "Arc<BTreeMap<DisplayFromStr, _>>")] Arc<BTreeMap<StyleId, InnerVoiceId>>,
 );

@@ -18,7 +18,7 @@ use crate::{
         domains::{TalkDomain, TalkOperation},
         InferenceDomain,
     },
-    manifest::{Manifest, ManifestDomains, StyleIdToModelInnerId},
+    manifest::{Manifest, ManifestDomains, StyleIdToInnerVoiceId},
     SpeakerMeta, StyleMeta, StyleType, VoiceModelMeta,
 };
 use std::path::{Path, PathBuf};
@@ -28,8 +28,8 @@ use std::path::{Path, PathBuf};
 /// [`VoiceModelId`]: VoiceModelId
 pub type RawVoiceModelId = Uuid;
 
-pub(crate) type ModelBytesWithInnerIdsByDomain =
-    (Option<(StyleIdToModelInnerId, EnumMap<TalkOperation, Vec<u8>>)>,);
+pub(crate) type ModelBytesWithInnerVoiceIdsByDomain =
+    (Option<(StyleIdToInnerVoiceId, EnumMap<TalkOperation, Vec<u8>>)>,);
 
 /// 音声モデルID。
 #[derive(
@@ -161,7 +161,7 @@ pub(crate) mod blocking {
         VoiceModelMeta,
     };
 
-    use super::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -174,7 +174,7 @@ pub(crate) mod blocking {
     impl self::VoiceModel {
         pub(crate) fn read_inference_models(
             &self,
-        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerIdsByDomain>> {
+        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
             let reader = BlockingVvmEntryReader::open(&self.header.path)?;
 
             let talk = self
@@ -188,7 +188,7 @@ pub(crate) mod blocking {
                          predict_duration_filename,
                          predict_intonation_filename,
                          decode_filename,
-                         style_id_to_model_inner_id,
+                         style_id_to_inner_voice_id,
                      }| {
                         let model_bytes = [
                             predict_duration_filename,
@@ -203,7 +203,7 @@ pub(crate) mod blocking {
 
                         let model_bytes = EnumMap::from_array(model_bytes);
 
-                        Ok((style_id_to_model_inner_id.clone(), model_bytes))
+                        Ok((style_id_to_inner_voice_id.clone(), model_bytes))
                     },
                 )
                 .transpose()?;
@@ -309,7 +309,7 @@ pub(crate) mod tokio {
         Result, VoiceModelMeta,
     };
 
-    use super::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -322,7 +322,7 @@ pub(crate) mod tokio {
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
-        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerIdsByDomain>> {
+        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
             let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
 
             let talk = OptionFuture::from(self.header.manifest.domains().talk.as_ref().map(
@@ -330,7 +330,7 @@ pub(crate) mod tokio {
                      predict_duration_filename,
                      predict_intonation_filename,
                      decode_filename,
-                     style_id_to_model_inner_id,
+                     style_id_to_inner_voice_id,
                  }| async {
                     let (
                         decode_model_result,
@@ -349,7 +349,7 @@ pub(crate) mod tokio {
                         decode_model_result?,
                     ]);
 
-                    Ok((style_id_to_model_inner_id.clone(), model_bytes))
+                    Ok((style_id_to_inner_voice_id.clone(), model_bytes))
                 },
             ))
             .await
@@ -506,7 +506,7 @@ mod tests {
         predict_duration_filename: "".to_owned(),
         predict_intonation_filename: "".to_owned(),
         decode_filename: "".to_owned(),
-        style_id_to_model_inner_id: Default::default(),
+        style_id_to_inner_voice_id: Default::default(),
     });
 
     #[fixture]
