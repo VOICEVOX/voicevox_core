@@ -5,6 +5,7 @@ import jakarta.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 
@@ -65,7 +66,7 @@ public class Synthesizer extends Dll {
    *
    * @param voiceModelId 読み込みを解除する音声モデルのID。
    */
-  public void unloadVoiceModel(String voiceModelId) {
+  public void unloadVoiceModel(UUID voiceModelId) {
     rsUnloadVoiceModel(voiceModelId);
   }
 
@@ -75,7 +76,7 @@ public class Synthesizer extends Dll {
    * @param voiceModelId 音声モデルのID。
    * @return 指定した音声モデルのIDが読み込まれているかどうか。
    */
-  public boolean isLoadedVoiceModel(String voiceModelId) {
+  public boolean isLoadedVoiceModel(UUID voiceModelId) {
     return rsIsLoadedVoiceModel(voiceModelId);
   }
 
@@ -274,9 +275,9 @@ public class Synthesizer extends Dll {
 
   private native void rsLoadVoiceModel(VoiceModel voiceModel) throws InvalidModelDataException;
 
-  private native void rsUnloadVoiceModel(String voiceModelId);
+  private native void rsUnloadVoiceModel(UUID voiceModelId);
 
-  private native boolean rsIsLoadedVoiceModel(String voiceModelId);
+  private native boolean rsIsLoadedVoiceModel(UUID voiceModelId);
 
   @Nonnull
   private native String rsAudioQueryFromKana(String kana, int styleId)

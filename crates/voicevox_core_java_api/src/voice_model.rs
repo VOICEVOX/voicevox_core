@@ -1,6 +1,6 @@
 use std::{borrow::Cow, sync::Arc};
 
-use crate::common::throw_if_err;
+use crate::common::{throw_if_err, JNIEnvExt as _};
 use jni::{
     objects::{JObject, JString},
     sys::jobject,
@@ -35,9 +35,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModel_rsGetId<'loc
             .get_rust_field::<_, _, Arc<voicevox_core::blocking::VoiceModel>>(&this, "handle")?
             .clone();
 
-        let id = internal.id().raw_voice_model_id();
-
-        let id = env.new_string(id)?;
+        let id = env.new_uuid(*internal.id().raw_voice_model_id())?;
 
         Ok(id.into_raw())
     })

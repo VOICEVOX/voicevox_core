@@ -104,7 +104,7 @@ class Synthesizer:
             読み込むモデルのスタイルID。
         """
         ...
-    def unload_voice_model(self, voice_model_id: Union[VoiceModelId, str]) -> None:
+    def unload_voice_model(self, voice_model_id: Union[VoiceModelId, UUID]) -> None:
         """
         音声モデルの読み込みを解除する。
 
@@ -114,7 +114,7 @@ class Synthesizer:
             音声モデルID。
         """
         ...
-    def is_loaded_voice_model(self, voice_model_id: Union[VoiceModelId, str]) -> bool:
+    def is_loaded_voice_model(self, voice_model_id: Union[VoiceModelId, UUID]) -> bool:
         """
         指定したvoice_model_idのモデルが読み込まれているか判定する。
 

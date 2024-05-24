@@ -1,6 +1,7 @@
 import dataclasses
 from enum import Enum
 from typing import List, NewType, Optional
+from uuid import UUID
 
 import pydantic
 
@@ -24,13 +25,13 @@ Parameters
 x : str
 """
 
-VoiceModelId = NewType("VoiceModelId", str)
+VoiceModelId = NewType("VoiceModelId", UUID)
 """
 音声モデルID。
 
 Parameters
 ----------
-x : str
+x : UUID
 """
 
 
