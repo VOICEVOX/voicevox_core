@@ -38,8 +38,8 @@ impl<'de> Deserialize<'de> for FormatVersionV1 {
                 match v {
                     "1" => Ok(FormatVersionV1),
                     v => Err(E::custom(format!(
-                        "`vvm_format_version={v}`とありますが、これは未知のフォーマットです。\
-                         新しいバージョンのVOICEVOX COREであれば対応しているかもしれません"
+                        "未知の形式です（`vvm_format_version={v}`）。新しいバージョンのVOICEVOX \
+                         COREであれば対応しているかもしれません",
                     ))),
                 }
             }
@@ -110,8 +110,8 @@ mod tests {
     #[case(
         "{\"vvm_format_version\":\"2\"}",
         Err(
-            "`vvm_format_version=2`とありますが、これは未知のフォーマットです。新しいバージョンの\
-             VOICEVOX COREであれば対応しているかもしれません at line 1 column 25"
+            "未知の形式です（`vvm_format_version=2`）。新しいバージョンのVOICEVOX COREであれば対応\
+             しているかもしれません at line 1 column 25",
         )
     )]
     fn vvm_format_version_works(
