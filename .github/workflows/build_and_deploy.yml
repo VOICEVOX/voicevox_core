@@ -178,9 +178,9 @@ jobs:
     env:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v3 # 製品版ではない場合
+      - uses: actions/checkout@v4 # 製品版ではない場合
         if: ${{ !inputs.is_production }}
-      - uses: actions/checkout@v3 # 製品版の場合
+      - uses: actions/checkout@v4 # 製品版の場合
         if: inputs.is_production
         with:
           fetch-depth: 0 # 全履歴取得
@@ -196,7 +196,7 @@ jobs:
           ) > /dev/null 2>&1
       - name: Set up Python 3.8
         if: matrix.whl_local_version
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.8"
           architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
@@ -220,7 +220,7 @@ jobs:
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
       - name: Checkout VOICEVOX RESOURCE
         if: inputs.is_production
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: VOICEVOX/voicevox_resource
           ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
@@ -316,7 +316,7 @@ jobs:
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy) && !contains(matrix.target, 'ios')
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
@@ -325,7 +325,7 @@ jobs:
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
         if: fromJson(needs.config.outputs.deploy) && matrix.whl_local_version
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
@@ -349,7 +349,7 @@ jobs:
       IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
       ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: voicevox_core-x86_64-apple-ios
@@ -363,10 +363,10 @@ jobs:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
       - name: Create xcframework
-        id: create-xcframework 
+        id: create-xcframework
         run: |
           build_util/make_ios_xcframework.bash
-          echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT" 
+          echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT"
         env:
           OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
       - name: Archive artifact
@@ -375,7 +375,7 @@ jobs:
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
@@ -389,10 +389,10 @@ jobs:
     env:
       ASSET_NAME: model-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout VOICEVOX FAT RESOURCE
         if: inputs.is_production
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: VOICEVOX/voicevox_fat_resource
           ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
@@ -412,7 +412,7 @@ jobs:
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
@@ -425,7 +425,7 @@ jobs:
     if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
     needs: [config, build_and_deploy]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Java
@@ -446,13 +446,13 @@ jobs:
           cargo set-version "$VERSION" -p voicevox_core_java_api
 
       - name: "Download artifact (android-arm64-cpu)"
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: voicevox_core_java_api-android-arm64-cpu
           path: artifact/android-arm64-cpu
 
       - name: "Download artifact (android-x86_64-cpu)"
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: voicevox_core_java_api-android-x86_64-cpu
           path: artifact/android-x86_64-cpu
@@ -486,7 +486,7 @@ jobs:
 
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
