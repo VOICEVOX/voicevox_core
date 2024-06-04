@@ -1,6 +1,11 @@
 # Files for typos
 # Instruction:  https://github.com/marketplace/actions/typos-action#getting-started
 
+[default]
+extend-ignore-identifiers-re = [
+    "\\bPNGs\\b", # https://github.com/crate-ci/typos/issues/745
+]
+
 [default.extend-identifiers]
 NdArray="NdArray" # onnxruntime::session::NdArray
 
