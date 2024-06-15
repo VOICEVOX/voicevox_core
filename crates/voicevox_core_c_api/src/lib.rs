@@ -1161,7 +1161,7 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
     into_result_code_with_error((|| {
         let word = word.read_unaligned().try_into_word()?;
         let uuid = user_dict.dict.add_word(word)?;
-        output_word_uuid.as_ptr().copy_from(uuid.as_bytes(), 16);
+        output_word_uuid.as_ptr().write_unaligned(uuid.into_bytes());
 
         Ok(())
     })())
