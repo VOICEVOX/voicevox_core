@@ -123,7 +123,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-11",
+              "os": "macos-12",
               "features": "",
               "target": "aarch64-apple-darwin",
               "artifact_name": "osx-arm64-cpu",
@@ -131,7 +131,7 @@ jobs:
               "can_skip_in_simple_test": false
             },
             {
-              "os": "macos-11",
+              "os": "macos-12",
               "features": "",
               "target": "x86_64-apple-darwin",
               "artifact_name": "osx-x64-cpu",
