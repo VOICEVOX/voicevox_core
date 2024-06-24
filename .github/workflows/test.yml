@@ -103,8 +103,8 @@ jobs:
             { "os": "windows-2022", "features": "", "can_skip_in_simple_test": true },
             { "os": "windows-2019", "features": "directml", "can_skip_in_simple_test": false },
             { "os": "windows-2022", "features": "directml", "can_skip_in_simple_test": true },
-            { "os": "macos-11", "features": "", "can_skip_in_simple_test": false },
-            { "os": "macos-12", "features": "", "can_skip_in_simple_test": true },
+            { "os": "macos-12", "features": "", "can_skip_in_simple_test": false },
+            { "os": "macos-13", "features": "", "can_skip_in_simple_test": true },
             { "os": "ubuntu-20.04", "features": "", "can_skip_in_simple_test": false },
             { "os": "ubuntu-22.04", "features": "", "can_skip_in_simple_test": true }
           ]'
