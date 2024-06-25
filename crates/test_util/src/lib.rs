@@ -23,6 +23,9 @@ pub use self::typing::{
     DecodeExampleData, DurationExampleData, ExampleData, IntonationExampleData,
 };
 
+pub const ONNXRUNTIME_DYLIB_PATH: &str =
+    include_str!(concat!(env!("OUT_DIR"), "/onnxruntime-dylib-path.txt"));
+
 pub const OPEN_JTALK_DIC_DIR: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/data/open_jtalk_dic_utf_8-1.11"

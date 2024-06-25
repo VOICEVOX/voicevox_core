@@ -5,6 +5,7 @@ import jakarta.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
@@ -17,13 +18,25 @@ import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 public class Synthesizer extends Dll {
   private long handle;
 
-  private Synthesizer(OpenJtalk openJtalk, Builder builder) {
-    rsNew(openJtalk, builder);
+  private Synthesizer(Onnxruntime onnxruntime, OpenJtalk openJtalk, Builder builder) {
+    rsNew(onnxruntime, openJtalk, builder);
   }
 
   protected void finalize() throws Throwable {
     rsDrop();
     super.finalize();
+  }
+
+  /**
+   * ONNX Runtime。
+   *
+   * @return {@link Onnxruntime}。
+   */
+  @Nonnull
+  public Onnxruntime getOnnxruntime() {
+    Optional<Onnxruntime> onnxruntime = Onnxruntime.get();
+    assert onnxruntime.isPresent() : "`Synthesizer`のコンストラクタで要求しているはず";
+    return onnxruntime.get();
   }
 
   /**
@@ -266,7 +279,7 @@ public class Synthesizer extends Dll {
     return new TtsConfigurator(this, text, styleId);
   }
 
-  private native void rsNew(OpenJtalk openJtalk, Builder builder);
+  private native void rsNew(Onnxruntime onnxruntime, OpenJtalk openJtalk, Builder builder);
 
   private native boolean rsIsGpuMode();
 
@@ -320,8 +333,8 @@ public class Synthesizer extends Dll {
 
   private native void rsDrop();
 
-  public static Builder builder(OpenJtalk openJtalk) {
-    return new Builder(openJtalk);
+  public static Builder builder(Onnxruntime onnxruntime, OpenJtalk openJtalk) {
+    return new Builder(onnxruntime, openJtalk);
   }
 
   /**
@@ -330,6 +343,7 @@ public class Synthesizer extends Dll {
    * @see Synthesizer#builder
    */
   public static class Builder {
+    private Onnxruntime onnxruntime;
     private OpenJtalk openJtalk;
 
     @SuppressWarnings("unused")
@@ -338,7 +352,8 @@ public class Synthesizer extends Dll {
     @SuppressWarnings("unused")
     private int cpuNumThreads;
 
-    public Builder(OpenJtalk openJtalk) {
+    public Builder(Onnxruntime onnxruntime, OpenJtalk openJtalk) {
+      this.onnxruntime = onnxruntime;
       this.openJtalk = openJtalk;
     }
 
@@ -373,7 +388,7 @@ public class Synthesizer extends Dll {
      * @return {@link Synthesizer}。
      */
     public Synthesizer build() {
-      Synthesizer synthesizer = new Synthesizer(openJtalk, this);
+      Synthesizer synthesizer = new Synthesizer(onnxruntime, openJtalk, this);
       return synthesizer;
     }
   }

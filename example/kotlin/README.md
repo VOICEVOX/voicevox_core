@@ -47,6 +47,7 @@ Usage: voicevoxcoreexample options_list
 Options:
     --mode [AUTO] -> モード { Value should be one of [auto, cpu, gpu] }
     --vvm -> vvmファイルへのパス (always required) { String }
+    --onnxruntime [libonnxruntime.so.1.17.3] -> ONNX Runtimeのファイルネーム { String }
     --dictDir [./open_jtalk_dic_utf_8-1.11] -> Open JTalkの辞書ディレクトリ { String }
     --text [この音声は、ボイスボックスを使用して、出力されています。] -> 読み上げさせたい文章 { String }
     --out [./output.wav] -> 出力wavファイルのパス { String }
@@ -56,9 +57,12 @@ Options:
 
 ## 実行例
 
+<!-- FIXME: `cargo build -p test_util`するように案内するか、製品版のVVMを実行させる -->
+
 ```console
-❯ ./gradlew run --args="--vvm ../../crates/test_util/data/model/sample.vvm"
-Inititalizing: AUTO, ./open_jtalk_dic_utf_8-1.11
+❯ # Linuxの場合
+❯ ./gradlew run --args="--vvm ../../crates/test_util/data/model/sample.vvm --onnxruntime ../../crates/test_util/data/lib/libonnxruntime.so.1.17.3"
+Inititalizing: AUTO, ../../crates/test_util/data/lib/libonnxruntime.so.1.17.3, ./open_jtalk_dic_utf_8-1.11
 Loading: ../../crates/test_util/data/model/sample.vvm
 Creating an AudioQuery from the text: この音声は、ボイスボックスを使用して、出力されています。
 Synthesizing...

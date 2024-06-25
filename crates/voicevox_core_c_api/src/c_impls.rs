@@ -1,12 +1,40 @@
 use std::{ffi::CString, path::Path};
 
 use camino::Utf8Path;
+use ref_cast::ref_cast_custom;
 use voicevox_core::{InitializeOptions, Result, VoiceModelId};
 
-use crate::{helpers::CApiResult, OpenJtalkRc, VoicevoxSynthesizer, VoicevoxVoiceModel};
+use crate::{
+    helpers::CApiResult, OpenJtalkRc, VoicevoxOnnxruntime, VoicevoxSynthesizer, VoicevoxVoiceModel,
+};
 
 // FIXME: 中身(Rust API)を直接操作するかラッパーメソッド越しにするのかが混在していて、一貫性を
 // 欠いている
+
+impl VoicevoxOnnxruntime {
+    #[ref_cast_custom]
+    fn new(rust: &voicevox_core::blocking::Onnxruntime) -> &Self;
+
+    pub(crate) fn get() -> Option<&'static Self> {
+        voicevox_core::blocking::Onnxruntime::get().map(Self::new)
+    }
+
+    #[cfg(feature = "onnxruntime-libloading")]
+    pub(crate) fn load_once(filename: &std::ffi::CStr) -> CApiResult<&'static Self> {
+        use crate::helpers::ensure_utf8;
+
+        let inner = voicevox_core::blocking::Onnxruntime::load_once()
+            .filename(ensure_utf8(filename)?)
+            .exec()?;
+        Ok(Self::new(inner))
+    }
+
+    #[cfg(feature = "onnxruntime-link-dylib")]
+    pub(crate) fn init_once() -> CApiResult<&'static Self> {
+        let inner = voicevox_core::blocking::Onnxruntime::init_once()?;
+        Ok(Self::new(inner))
+    }
+}
 
 impl OpenJtalkRc {
     pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Utf8Path>) -> Result<Self> {
@@ -17,10 +45,21 @@ impl OpenJtalkRc {
 }
 
 impl VoicevoxSynthesizer {
-    pub(crate) fn new(open_jtalk: &OpenJtalkRc, options: &InitializeOptions) -> Result<Self> {
-        let synthesizer =
-            voicevox_core::blocking::Synthesizer::new(open_jtalk.open_jtalk.clone(), options)?;
+    pub(crate) fn new(
+        onnxruntime: &'static VoicevoxOnnxruntime,
+        open_jtalk: &OpenJtalkRc,
+        options: &InitializeOptions,
+    ) -> Result<Self> {
+        let synthesizer = voicevox_core::blocking::Synthesizer::new(
+            &onnxruntime.0,
+            open_jtalk.open_jtalk.clone(),
+            options,
+        )?;
         Ok(Self { synthesizer })
+    }
+
+    pub(crate) fn onnxruntime(&self) -> &'static VoicevoxOnnxruntime {
+        VoicevoxOnnxruntime::new(self.synthesizer.onnxruntime())
     }
 
     pub(crate) fn load_voice_model(

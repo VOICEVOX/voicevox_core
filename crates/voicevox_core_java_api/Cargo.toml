@@ -15,6 +15,7 @@ directml = ["voicevox_core/directml"]
 android_logger.workspace = true
 chrono = { workspace = true, default-features = false, features = ["clock"] }
 derive_more.workspace = true
+duplicate.workspace = true
 easy-ext.workspace = true
 jni.workspace = true
 once_cell.workspace = true
@@ -24,7 +25,7 @@ serde_json = { workspace = true, features = ["preserve_order"] }
 tracing = { workspace = true, features = ["log"] }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 uuid.workspace = true
-voicevox_core.workspace = true
+voicevox_core = { workspace = true, features = ["onnxruntime-libloading"] }
 
 [lints.rust]
 unsafe_code = "allow" # jni-rsが要求

@@ -6,6 +6,7 @@ use std::{
 
 use anyhow::{anyhow, ensure};
 use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata::MetadataCommand;
 use flate2::read::GzDecoder;
 use indoc::formatdoc;
 use tar::Archive;
@@ -26,6 +27,8 @@ async fn main() -> anyhow::Result<()> {
         download_open_jtalk_dict(dist.as_ref()).await?;
         ensure!(dic_dir.exists(), "`{dic_dir}` does not exist");
     }
+
+    copy_onnxruntime(out_dir.as_ref(), dist)?;
 
     create_sample_voice_model_file(out_dir, dist)?;
 
@@ -89,6 +92,35 @@ fn create_sample_voice_model_file(out_dir: &Utf8Path, dist: &Utf8Path) -> anyhow
         },
     )?;
     println!("cargo:rerun-if-changed={SRC}");
+    Ok(())
+}
+
+fn copy_onnxruntime(out_dir: &Path, dist: &Utf8Path) -> anyhow::Result<()> {
+    use std::env::consts::{DLL_PREFIX, DLL_SUFFIX};
+
+    let cargo_metadata::Metadata {
+        target_directory, ..
+    } = MetadataCommand::new()
+        .manifest_path(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"))
+        .exec()?;
+
+    const VERSION: &str = ort::downloaded_version!();
+    let filename = &if cfg!(target_os = "linux") {
+        format!("libonnxruntime.so.{VERSION}")
+    } else if cfg!(any(target_os = "macos", target_os = "ios")) {
+        format!("libonnxruntime.{VERSION}.dylib")
+    } else {
+        format!("{DLL_PREFIX}onnxruntime{DLL_SUFFIX}")
+    };
+    let src = &target_directory.join("debug").join(filename);
+    let dst_dir = &dist.join("lib");
+    let dst = &dst_dir.join(filename);
+    fs_err::create_dir_all(dst_dir)?;
+    fs_err::copy(src, dst)?;
+    println!("cargo:rerun-if-changed={src}");
+
+    fs_err::write(out_dir.join("onnxruntime-dylib-path.txt"), dst.as_str())?;
+
     Ok(())
 }
 
@@ -187,6 +219,8 @@ fn generate_c_api_rs_bindings(out_dir: &Utf8Path) -> anyhow::Result<()> {
     bindgen::Builder::default()
         .header(C_BINDINGS_PATH)
         .header(ADDITIONAL_C_BINDINGS_PATH)
+        // we test for `--feature onnxruntime-libloading`
+        .clang_arg("-DVOICEVOX_ONNXRUNTIME_LIBLOADING=")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .dynamic_library_name("CApi")
         .generate()?

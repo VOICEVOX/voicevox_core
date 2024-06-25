@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 mod convert;
-use self::convert::{from_utf8_path, to_pydantic_dataclass, VoicevoxCoreResultExt as _};
+use self::convert::{from_utf8_path, VoicevoxCoreResultExt as _};
 use easy_ext::ext;
 use log::debug;
 use pyo3::{
@@ -9,7 +9,7 @@ use pyo3::{
     exceptions::{PyException, PyKeyError, PyValueError},
     pyfunction, pymodule,
     types::PyModule,
-    wrap_pyfunction, PyAny, PyResult, PyTypeInfo, Python,
+    wrap_pyfunction, PyResult, PyTypeInfo, Python,
 };
 
 #[pymodule]
@@ -18,7 +18,6 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
 
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
-    module.add_wrapped(wrap_pyfunction!(supported_devices))?;
     module.add_wrapped(wrap_pyfunction!(_validate_pronunciation))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
 
@@ -26,6 +25,7 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
 
     let blocking_module = PyModule::new(py, "voicevox_core._rust.blocking")?;
     blocking_module.add_class::<self::blocking::Synthesizer>()?;
+    blocking_module.add_class::<self::blocking::Onnxruntime>()?;
     blocking_module.add_class::<self::blocking::OpenJtalk>()?;
     blocking_module.add_class::<self::blocking::VoiceModel>()?;
     blocking_module.add_class::<self::blocking::UserDict>()?;
@@ -33,6 +33,7 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
 
     let asyncio_module = PyModule::new(py, "voicevox_core._rust.asyncio")?;
     asyncio_module.add_class::<self::asyncio::Synthesizer>()?;
+    asyncio_module.add_class::<self::asyncio::Onnxruntime>()?;
     asyncio_module.add_class::<self::asyncio::OpenJtalk>()?;
     asyncio_module.add_class::<self::asyncio::VoiceModel>()?;
     asyncio_module.add_class::<self::asyncio::UserDict>()?;
@@ -67,6 +68,7 @@ macro_rules! exceptions {
 exceptions! {
     NotLoadedOpenjtalkDictError: PyException;
     GpuSupportError: PyException;
+    InitInferenceRuntimeError: PyException;
     OpenZipFileError: PyException;
     ReadZipEntryError: PyException;
     ModelAlreadyLoadedError: PyException;
@@ -84,16 +86,6 @@ exceptions! {
     WordNotFoundError: PyKeyError;
     UseUserDictError: PyException;
     InvalidWordError: PyValueError;
-}
-
-#[pyfunction]
-fn supported_devices(py: Python<'_>) -> PyResult<&PyAny> {
-    let class = py
-        .import("voicevox_core")?
-        .getattr("SupportedDevices")?
-        .downcast()?;
-    let s = voicevox_core::SupportedDevices::create().into_py_result(py)?;
-    to_pydantic_dataclass(s, class)
 }
 
 struct Closable<T, C: PyTypeInfo> {
@@ -149,13 +141,13 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
 }
 
 mod blocking {
-    use std::{path::PathBuf, sync::Arc};
+    use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     use camino::Utf8PathBuf;
     use pyo3::{
         pyclass, pymethods,
         types::{IntoPyDict as _, PyBytes, PyDict, PyList},
-        PyAny, PyObject, PyRef, PyResult, Python,
+        Py, PyAny, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
     use voicevox_core::{
@@ -188,6 +180,70 @@ mod blocking {
         #[getter]
         fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
             crate::convert::to_pydantic_voice_model_meta(self.model.metas(), py).unwrap()
+        }
+    }
+
+    static ONNXRUNTIME: once_cell::sync::OnceCell<Py<Onnxruntime>> =
+        once_cell::sync::OnceCell::new();
+
+    #[pyclass]
+    #[derive(Clone)]
+    pub(crate) struct Onnxruntime(&'static voicevox_core::blocking::Onnxruntime);
+
+    #[pymethods]
+    impl Onnxruntime {
+        #[classattr]
+        const LIB_NAME: &'static str = voicevox_core::blocking::Onnxruntime::LIB_NAME;
+
+        #[classattr]
+        const LIB_VERSION: &'static str = voicevox_core::blocking::Onnxruntime::LIB_VERSION;
+
+        #[classattr]
+        const LIB_VERSIONED_FILENAME: &'static str =
+            voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME;
+
+        #[classattr]
+        const LIB_UNVERSIONED_FILENAME: &'static str =
+            voicevox_core::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
+
+        #[staticmethod]
+        fn get(py: Python<'_>) -> PyResult<Option<Py<Self>>> {
+            let result = ONNXRUNTIME.get_or_try_init(|| {
+                match voicevox_core::blocking::Onnxruntime::get().map(|o| Py::new(py, Self(o))) {
+                    Some(Ok(this)) => Ok(this),
+                    Some(Err(err)) => Err(Some(err)),
+                    None => Err(None),
+                }
+            });
+
+            match result {
+                Ok(this) => Ok(Some(this.clone())),
+                Err(Some(err)) => Err(err),
+                Err(None) => Ok(None),
+            }
+        }
+
+        #[staticmethod]
+        #[pyo3(signature = (*, filename = Self::LIB_VERSIONED_FILENAME.into()))]
+        fn load_once(filename: OsString, py: Python<'_>) -> PyResult<Py<Self>> {
+            ONNXRUNTIME
+                .get_or_try_init(|| {
+                    let inner = voicevox_core::blocking::Onnxruntime::load_once()
+                        .filename(filename)
+                        .exec()
+                        .into_py_result(py)?;
+                    Py::new(py, Self(inner))
+                })
+                .cloned()
+        }
+
+        fn supported_devices<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
+            let class = py
+                .import("voicevox_core")?
+                .getattr("SupportedDevices")?
+                .downcast()?;
+            let s = self.0.supported_devices().into_py_result(py)?;
+            crate::convert::to_pydantic_dataclass(s, class)
         }
     }
 
@@ -228,11 +284,13 @@ mod blocking {
     impl Synthesizer {
         #[new]
         #[pyo3(signature =(
+            onnxruntime,
             open_jtalk,
             acceleration_mode = InitializeOptions::default().acceleration_mode,
             cpu_num_threads = InitializeOptions::default().cpu_num_threads,
         ))]
         fn new(
+            onnxruntime: Onnxruntime,
             open_jtalk: OpenJtalk,
             #[pyo3(from_py_with = "crate::convert::from_acceleration_mode")]
             acceleration_mode: AccelerationMode,
@@ -240,6 +298,7 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<Self> {
             let inner = voicevox_core::blocking::Synthesizer::new(
+                onnxruntime.0,
                 open_jtalk.open_jtalk.clone(),
                 &InitializeOptions {
                     acceleration_mode,
@@ -268,6 +327,11 @@ mod blocking {
             #[allow(unused_variables)] traceback: &PyAny,
         ) {
             self.close();
+        }
+
+        #[getter]
+        fn onnxruntime(&self) -> Py<Onnxruntime> {
+            ONNXRUNTIME.get().expect("should be initialized").clone()
         }
 
         #[getter]
@@ -577,13 +641,13 @@ mod blocking {
 }
 
 mod asyncio {
-    use std::{path::PathBuf, sync::Arc};
+    use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     use camino::Utf8PathBuf;
     use pyo3::{
         pyclass, pymethods,
         types::{IntoPyDict as _, PyBytes, PyDict, PyList},
-        PyAny, PyObject, PyRef, PyResult, Python, ToPyObject as _,
+        Py, PyAny, PyObject, PyRef, PyResult, Python, ToPyObject as _,
     };
     use uuid::Uuid;
     use voicevox_core::{
@@ -619,6 +683,71 @@ mod asyncio {
         #[getter]
         fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
             crate::convert::to_pydantic_voice_model_meta(self.model.metas(), py).unwrap()
+        }
+    }
+
+    static ONNXRUNTIME: once_cell::sync::OnceCell<Py<Onnxruntime>> =
+        once_cell::sync::OnceCell::new();
+
+    #[pyclass]
+    #[derive(Clone)]
+    pub(crate) struct Onnxruntime(&'static voicevox_core::tokio::Onnxruntime);
+
+    #[pymethods]
+    impl Onnxruntime {
+        #[classattr]
+        const LIB_NAME: &'static str = voicevox_core::tokio::Onnxruntime::LIB_NAME;
+
+        #[classattr]
+        const LIB_VERSION: &'static str = voicevox_core::tokio::Onnxruntime::LIB_VERSION;
+
+        #[classattr]
+        const LIB_VERSIONED_FILENAME: &'static str =
+            voicevox_core::tokio::Onnxruntime::LIB_VERSIONED_FILENAME;
+
+        #[classattr]
+        const LIB_UNVERSIONED_FILENAME: &'static str =
+            voicevox_core::tokio::Onnxruntime::LIB_UNVERSIONED_FILENAME;
+
+        #[staticmethod]
+        fn get(py: Python<'_>) -> PyResult<Option<Py<Self>>> {
+            let result = ONNXRUNTIME.get_or_try_init(|| {
+                match voicevox_core::tokio::Onnxruntime::get().map(|o| Py::new(py, Self(o))) {
+                    Some(Ok(this)) => Ok(this),
+                    Some(Err(err)) => Err(Some(err)),
+                    None => Err(None),
+                }
+            });
+
+            match result {
+                Ok(this) => Ok(Some(this.clone())),
+                Err(Some(err)) => Err(err),
+                Err(None) => Ok(None),
+            }
+        }
+
+        #[staticmethod]
+        #[pyo3(signature = (*, filename = Self::LIB_VERSIONED_FILENAME.into()))]
+        fn load_once(filename: OsString, py: Python<'_>) -> PyResult<&PyAny> {
+            pyo3_asyncio::tokio::future_into_py(py, async move {
+                let inner = voicevox_core::tokio::Onnxruntime::load_once()
+                    .filename(filename)
+                    .exec()
+                    .await;
+
+                ONNXRUNTIME.get_or_try_init(|| {
+                    Python::with_gil(|py| Py::new(py, Self(inner.into_py_result(py)?)))
+                })
+            })
+        }
+
+        fn supported_devices<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
+            let class = py
+                .import("voicevox_core")?
+                .getattr("SupportedDevices")?
+                .downcast()?;
+            let s = self.0.supported_devices().into_py_result(py)?;
+            crate::convert::to_pydantic_dataclass(s, class)
         }
     }
 
@@ -664,17 +793,20 @@ mod asyncio {
     impl Synthesizer {
         #[new]
         #[pyo3(signature =(
+            onnxruntime,
             open_jtalk,
             acceleration_mode = InitializeOptions::default().acceleration_mode,
             cpu_num_threads = InitializeOptions::default().cpu_num_threads,
         ))]
         fn new(
+            onnxruntime: Onnxruntime,
             open_jtalk: OpenJtalk,
             #[pyo3(from_py_with = "crate::convert::from_acceleration_mode")]
             acceleration_mode: AccelerationMode,
             cpu_num_threads: u16,
         ) -> PyResult<Self> {
             let synthesizer = voicevox_core::tokio::Synthesizer::new(
+                onnxruntime.0,
                 open_jtalk.open_jtalk.clone(),
                 &InitializeOptions {
                     acceleration_mode,
@@ -702,6 +834,11 @@ mod asyncio {
             #[allow(unused_variables)] traceback: &PyAny,
         ) {
             self.close();
+        }
+
+        #[getter]
+        fn onnxruntime(&self) -> Py<Onnxruntime> {
+            ONNXRUNTIME.get().expect("should be initialized").clone()
         }
 
         #[getter]

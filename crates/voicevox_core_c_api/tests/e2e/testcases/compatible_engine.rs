@@ -31,12 +31,10 @@ impl assert_cdylib::TestCase for TestCase {
             serde_json::to_string_pretty(&metas_json.parse::<serde_json::Value>()?).unwrap()
         };
 
-        let supported_devices = {
+        {
             let supported_devices = lib.supported_devices();
-            CStr::from_ptr(supported_devices)
-                .to_str()?
-                .parse::<serde_json::Value>()?
-        };
+            serde_json::from_str::<SupportedDevices>(CStr::from_ptr(supported_devices).to_str()?)?;
+        }
 
         assert!(lib.initialize(false, 0, false));
 
@@ -86,10 +84,6 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         std::assert_eq!(SNAPSHOTS.metas, metas_json);
-        std::assert_eq!(
-            SupportedDevices::create().unwrap().to_json(),
-            supported_devices,
-        );
 
         float_assert::close_l1(&phoneme_length, &EXAMPLE_DATA.duration.result, 0.01);
         float_assert::close_l1(&intonation_list, &EXAMPLE_DATA.intonation.result, 0.01);
@@ -103,6 +97,7 @@ impl assert_cdylib::TestCase for TestCase {
     fn assert_output(&self, output: Utf8Output) -> AssertResult {
         output
             .mask_timestamps()
+            .mask_onnxruntime_version()
             .mask_windows_video_cards()
             .assert()
             .try_success()?

@@ -34,6 +34,7 @@ impl Error {
         match &self.0 {
             ErrorRepr::NotLoadedOpenjtalkDict => ErrorKind::NotLoadedOpenjtalkDict,
             ErrorRepr::GpuSupport => ErrorKind::GpuSupport,
+            ErrorRepr::InitInferenceRuntime { .. } => ErrorKind::InitInferenceRuntime,
             ErrorRepr::LoadModel(LoadModelError { context, .. }) => match context {
                 LoadModelErrorKind::OpenZipFile => ErrorKind::OpenZipFile,
                 LoadModelErrorKind::ReadZipEntry { .. } => ErrorKind::ReadZipEntry,
@@ -64,6 +65,13 @@ pub(crate) enum ErrorRepr {
 
     #[error("GPU機能をサポートすることができません")]
     GpuSupport,
+
+    #[error("{runtime_display_name}のロードまたは初期化ができませんでした")]
+    InitInferenceRuntime {
+        runtime_display_name: &'static str,
+        #[source]
+        source: anyhow::Error,
+    },
 
     #[error(transparent)]
     LoadModel(#[from] LoadModelError),
@@ -119,6 +127,8 @@ pub enum ErrorKind {
     NotLoadedOpenjtalkDict,
     /// GPUモードがサポートされていない。
     GpuSupport,
+    /// 推論ライブラリのロードまたは初期化ができなかった。
+    InitInferenceRuntime,
     /// ZIPファイルを開くことに失敗した。
     OpenZipFile,
     /// ZIP内のファイルが読めなかった。

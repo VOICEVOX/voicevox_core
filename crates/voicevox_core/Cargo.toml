@@ -4,8 +4,14 @@ version.workspace = true
 edition.workspace = true
 publish.workspace = true
 
+[package.metadata.docs.rs]
+features = ["onnxruntime-libloading", "onnxruntime-link-dylib"]
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 default = []
+onnxruntime-libloading = ["voicevox-ort/load-dynamic"]
+onnxruntime-link-dylib = []
 cuda = ["voicevox-ort/cuda"]
 directml = ["voicevox-ort/directml"]
 
@@ -13,6 +19,7 @@ directml = ["voicevox-ort/directml"]
 anyhow.workspace = true
 async_zip = { workspace = true, features = ["deflate"] }
 camino.workspace = true
+const_format.workspace = true
 derive-getters.workspace = true
 derive-new.workspace = true
 derive_more.workspace = true
@@ -29,7 +36,9 @@ ndarray.workspace = true
 once_cell.workspace = true
 open_jtalk.workspace = true
 ouroboros.workspace = true
+process_path.workspace = true
 rayon.workspace = true
+ref-cast.workspace = true
 regex.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
@@ -41,8 +50,8 @@ thiserror.workspace = true
 tokio = { workspace = true, features = ["rt"] } # FIXME: feature-gateする
 tracing.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
+voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-voicevox"] }
 voicevox_core_macros = { path = "../voicevox_core_macros" }
-voicevox-ort = { workspace = true, features = ["ndarray", "download-binaries"] }
 zip.workspace = true
 
 [dev-dependencies]

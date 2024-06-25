@@ -4,6 +4,7 @@
 
 mod c_impls;
 /// cbindgen:ignore
+#[cfg(feature = "onnxruntime-libloading")]
 mod compatible_engine;
 mod drop_check;
 mod helpers;
@@ -20,6 +21,7 @@ use anstream::{AutoStream, RawStream};
 use chrono::SecondsFormat;
 use colorchoice::ColorChoice;
 use derive_getters::Getters;
+use ref_cast::RefCastCustom;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
@@ -32,7 +34,7 @@ use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
 use voicevox_core::__internal::interop::IdRef as _;
 use voicevox_core::{AccentPhraseModel, AudioQueryModel, TtsOptions, UserDictWord};
-use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions};
+use voicevox_core::{StyleId, SynthesisOptions};
 
 fn init_logger_once() {
     static ONCE: Once = Once::new();
@@ -60,13 +62,7 @@ fn init_logger_once() {
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
             } else {
-                pub const ORT_LOGGING_LEVEL: &str = if cfg!(debug_assertions) {
-                    "info"
-                } else {
-                    "warn"
-                };
-                format!("error,voicevox_core=info,voicevox_core_c_api=info,ort={ORT_LOGGING_LEVEL}")
-                    .into()
+                "error,voicevox_core=info,voicevox_core_c_api=info,ort=info".into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(ansi)
@@ -91,6 +87,121 @@ fn init_logger_once() {
  * これはC文脈の処理と実装をわけるためと、内部実装の変更がAPIに影響を与えにくくするためである
  * voicevox_core/publish.rsにある対応する関数とはこのファイルに定義してある公開関数からvoicevoxプレフィックスを取り除いた名前の関数である
  */
+
+#[cfg(feature = "onnxruntime-libloading")]
+#[repr(C)]
+pub struct VoicevoxLoadOnnxruntimeOptions {
+    filename: *const c_char,
+}
+
+#[cfg(feature = "onnxruntime-libloading")]
+#[no_mangle]
+pub extern "C" fn voicevox_make_default_load_onnxruntime_options() -> VoicevoxLoadOnnxruntimeOptions
+{
+    use const_format::concatcp;
+
+    const RUST_FILENAME: &str = voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME;
+    static C_FILENAME: &[u8] = concatcp!(RUST_FILENAME, "\0").as_bytes();
+
+    init_logger_once();
+
+    let filename = CStr::from_bytes_with_nul(C_FILENAME)
+        .unwrap_or_else(|e| panic!("{RUST_FILENAME:?} should not contain `\\0`: {e}"));
+    let filename = C_STRING_DROP_CHECKER.blacklist(filename).as_ptr();
+    VoicevoxLoadOnnxruntimeOptions { filename }
+}
+
+// https://github.com/mozilla/cbindgen/issues/967
+// FIXME: このコードブロックのコードが動くかどうか未確認
+/// ONNX Runtime。
+///
+/// シングルトンであり、インスタンスは高々一つ。
+///
+/// ```c
+/// const VoicevoxOnnxruntime *ort1;
+/// voicevox_onnxruntime_load_once(voicevox_make_default_load_onnxruntime_options,
+///                                &ort1);
+/// const VoicevoxOnnxruntime *ort2 = voicevox_onnxruntime_get();
+/// assert(ort1 == ort2);
+/// ```
+#[cfg(any())]
+pub struct VoicevoxOnnxruntime(!);
+
+/// cbindgen:ignore
+#[derive(RefCastCustom)]
+#[repr(transparent)]
+pub struct VoicevoxOnnxruntime(voicevox_core::blocking::Onnxruntime);
+
+/// ONNX Runtimeを初期化済みであれば、 ::VoicevoxOnnxruntime のインスタンスを得る。
+///
+/// 初期化していなければ`NULL`を返す。
+///
+/// @returns ::VoicevoxOnnxruntime のインスタンス
+#[no_mangle]
+pub extern "C" fn voicevox_onnxruntime_get() -> Option<&'static VoicevoxOnnxruntime> {
+    VoicevoxOnnxruntime::get()
+}
+
+/// ONNX Runtimeをロードして初期化する。
+///
+/// 二度目以降はパラメータに関わらず既存のインスタンスを返す。
+///
+/// @param [in] options オプション
+/// @param [out] out_onnxruntime ::VoicevoxOnnxruntime のインスタンス
+///
+/// @returns 結果コード
+///
+/// \safety{
+/// - `options.filename`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `out_onnxruntime`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+#[cfg(feature = "onnxruntime-libloading")]
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_onnxruntime_load_once(
+    options: VoicevoxLoadOnnxruntimeOptions,
+    out_onnxruntime: NonNull<&'static VoicevoxOnnxruntime>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    let filename = unsafe {
+        // SAFETY: ユーザーに要求している条件で十分
+        CStr::from_ptr(options.filename)
+    };
+    into_result_code_with_error((|| {
+        let instance = VoicevoxOnnxruntime::load_once(filename)?;
+        unsafe {
+            // SAFETY: ユーザーに要求している条件で十分
+            out_onnxruntime.as_ptr().write_unaligned(instance);
+        }
+        Ok(())
+    })())
+}
+
+/// ONNX Runtimeを初期化する。
+///
+/// 二度目以降は既存のインスタンスを返す。
+///
+/// @param [out] out_onnxruntime ::VoicevoxOnnxruntime のインスタンス
+///
+/// @returns 結果コード
+///
+/// \safety{
+/// - `out_onnxruntime`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+#[cfg(feature = "onnxruntime-link-dylib")]
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_onnxruntime_init_once(
+    out_onnxruntime: NonNull<&'static VoicevoxOnnxruntime>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let instance = VoicevoxOnnxruntime::init_once()?;
+        unsafe {
+            // SAFETY: ユーザーに要求している条件で十分
+            out_onnxruntime.as_ptr().write_unaligned(instance);
+        }
+        Ok(())
+    })())
+}
 
 /// テキスト解析器としてのOpen JTalk。
 ///
@@ -226,6 +337,7 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
     init_logger_once();
     return C_STRING_DROP_CHECKER.blacklist(VERSION).as_ptr();
 
+    // FIXME: 実行時チェックにすることでこの`unsafe`は削れるはず
     const VERSION: &CStr = unsafe {
         // SAFETY: The package version is a SemVer, so it should not contain '\0'
         CStr::from_bytes_with_nul_unchecked(concat!(env!("CARGO_PKG_VERSION"), '\0').as_bytes())
@@ -330,6 +442,7 @@ pub struct VoicevoxSynthesizer {
 
 /// ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。
 ///
+/// @param [in] onnxruntime
 /// @param [in] open_jtalk Open JTalkのオブジェクト
 /// @param [in] options オプション
 /// @param [out] out_synthesizer 構築先
@@ -337,11 +450,13 @@ pub struct VoicevoxSynthesizer {
 /// @returns 結果コード
 ///
 /// \safety{
+/// - `onnxruntime`は ::voicevox_onnxruntime_load_once または ::voicevox_onnxruntime_init_once で得たものでなければならない。
 /// - `open_jtalk`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
 /// - `out_synthesizer`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_new(
+    onnxruntime: &'static VoicevoxOnnxruntime,
     open_jtalk: &OpenJtalkRc,
     options: VoicevoxInitializeOptions,
     out_synthesizer: NonNull<Box<VoicevoxSynthesizer>>,
@@ -350,7 +465,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
     into_result_code_with_error((|| {
         let options = options.into();
 
-        let synthesizer = VoicevoxSynthesizer::new(open_jtalk, &options)?.into();
+        let synthesizer = VoicevoxSynthesizer::new(onnxruntime, open_jtalk, &options)?.into();
         out_synthesizer.as_ptr().write_unaligned(synthesizer);
         Ok(())
     })())
@@ -409,6 +524,22 @@ pub extern "C" fn voicevox_synthesizer_unload_voice_model(
     init_logger_once();
     let model_id = model_id.to_model_id();
     into_result_code_with_error(synthesizer.unload_voice_model(model_id).map_err(Into::into))
+}
+
+/// ::VoicevoxOnnxruntime のインスタンスを得る。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+///
+/// @returns ::VoicevoxOnnxruntime のインスタンス
+///
+/// \safety{
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// }
+#[no_mangle]
+pub extern "C" fn voicevox_synthesizer_get_onnxruntime(
+    synthesizer: &VoicevoxSynthesizer,
+) -> &'static VoicevoxOnnxruntime {
+    synthesizer.onnxruntime()
 }
 
 /// ハードウェアアクセラレーションがGPUモードか判定する。
@@ -473,6 +604,7 @@ pub extern "C" fn voicevox_synthesizer_create_metas_json(
 ///
 /// あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示しうる。
 ///
+/// @param [in] onnxruntime
 /// @param [out] output_supported_devices_json サポートデバイス情報のJSON文字列
 ///
 /// @returns 結果コード
@@ -480,21 +612,23 @@ pub extern "C" fn voicevox_synthesizer_create_metas_json(
 /// \example{
 /// ```c
 /// char *supported_devices;
-/// VoicevoxResultCode result = voicevox_create_supported_devices_json(&supported_devices);
+/// VoicevoxResultCode result = voicevox_onnxruntime_create_supported_devices_json(onnxruntime, &supported_devices);
 /// ```
 /// }
 ///
 /// \safety{
+/// - `onnxruntime`は ::voicevox_onnxruntime_load_once または ::voicevox_onnxruntime_init_once で得たものでなければならない。
 /// - `output_supported_devices_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_create_supported_devices_json(
+pub unsafe extern "C" fn voicevox_onnxruntime_create_supported_devices_json(
+    onnxruntime: &'static VoicevoxOnnxruntime,
     output_supported_devices_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
         let supported_devices =
-            CString::new(SupportedDevices::create()?.to_json().to_string()).unwrap();
+            CString::new(onnxruntime.0.supported_devices()?.to_json().to_string()).unwrap();
         output_supported_devices_json.as_ptr().write_unaligned(
             C_STRING_DROP_CHECKER
                 .whitelist(supported_devices)
@@ -980,7 +1114,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 ///
 /// \safety{
 /// - `json`は以下のAPIで得られたポインタでなくてはいけない。
-///     - ::voicevox_create_supported_devices_json
+///     - ::voicevox_onnxruntime_create_supported_devices_json
 ///     - ::voicevox_synthesizer_create_metas_json
 ///     - ::voicevox_synthesizer_create_audio_query
 ///     - ::voicevox_synthesizer_create_accent_phrases

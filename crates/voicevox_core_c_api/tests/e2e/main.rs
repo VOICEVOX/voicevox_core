@@ -22,6 +22,7 @@ fn main() -> anyhow::Result<()> {
     enum TestContext {}
 
     impl assert_cdylib::TestContext for TestContext {
+        const FEATURES: &'static [&'static str] = &["onnxruntime-libloading"];
         const TARGET_DIR: &'static str = "../../target";
         const CDYLIB_NAME: &'static str = "voicevox_core";
         const RUNTIME_ENVS: &'static [(&'static str, &'static str)] =

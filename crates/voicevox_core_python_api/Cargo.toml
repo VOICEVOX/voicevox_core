@@ -15,6 +15,7 @@ directml = ["voicevox_core/directml"]
 camino.workspace = true
 easy-ext.workspace = true
 log.workspace = true
+once_cell.workspace = true
 pyo3 = { workspace = true, features = ["abi3-py38", "extension-module"] }
 pyo3-asyncio = { workspace = true, features = ["tokio-runtime"] }
 pyo3-log.workspace = true
@@ -22,7 +23,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tracing = { workspace = true, features = ["log"] }
 uuid.workspace = true
-voicevox_core.workspace = true
+voicevox_core = { workspace = true, features = ["onnxruntime-libloading"] }
 
 [lints.rust]
 unsafe_code = "forbid"

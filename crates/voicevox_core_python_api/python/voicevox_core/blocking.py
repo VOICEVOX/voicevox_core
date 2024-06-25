@@ -1,4 +1,4 @@
 # pyright: reportMissingModuleSource=false
-from ._rust.blocking import OpenJtalk, Synthesizer, UserDict, VoiceModel
+from ._rust.blocking import Onnxruntime, OpenJtalk, Synthesizer, UserDict, VoiceModel
 
-__all__ = ["OpenJtalk", "Synthesizer", "UserDict", "VoiceModel"]
+__all__ = ["Onnxruntime", "OpenJtalk", "Synthesizer", "UserDict", "VoiceModel"]

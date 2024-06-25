@@ -1,4 +1,4 @@
-use std::{error::Error as _, iter};
+use std::{error::Error as _, iter, str::Utf8Error};
 
 use derive_more::From;
 use easy_ext::ext;
@@ -72,6 +72,7 @@ where
                         let class = class!(
                             NotLoadedOpenjtalkDict,
                             GpuSupport,
+                            InitInferenceRuntime,
                             OpenZipFile,
                             ReadZipEntry,
                             InvalidModelFormat,
@@ -148,6 +149,9 @@ where
                             env.throw_new("java/lang/IllegalArgumentException", error.to_string())
                         )
                     }
+                    JavaApiError::Utf8(error) => or_panic!(
+                        env.throw_new("java/lang/IllegalArgumentException", error.to_string())
+                    ),
                     JavaApiError::DeJson(error) => {
                         or_panic!(
                             env.throw_new("java/lang/IllegalArgumentException", error.to_string())
@@ -170,6 +174,9 @@ pub(crate) enum JavaApiError {
 
     #[from]
     Uuid(uuid::Error),
+
+    #[from]
+    Utf8(Utf8Error),
 
     DeJson(serde_json::Error),
 }

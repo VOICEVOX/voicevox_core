@@ -9,14 +9,3 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_GlobalInfo_rsGetVersion(
         Ok(version.into_raw())
     })
 }
-#[no_mangle]
-extern "system" fn Java_jp_hiroshiba_voicevoxcore_GlobalInfo_rsGetSupportedDevicesJson(
-    env: JNIEnv<'_>,
-) -> jobject {
-    throw_if_err(env, std::ptr::null_mut(), |env| {
-        let supported_devices = voicevox_core::SupportedDevices::create()?;
-        let json = serde_json::to_string(&supported_devices).expect("Should not fail");
-        let json = env.new_string(json)?;
-        Ok(json.into_raw())
-    })
-}

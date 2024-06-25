@@ -15,17 +15,14 @@ use super::super::{
     OutputScalarKind, OutputTensor, ParamInfo, PushInputTensor,
 };
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub(crate) enum Onnxruntime {}
-
-impl InferenceRuntime for Onnxruntime {
+// TODO: `trait AsyncRuntime`みたいなものを作って抽象化しながら同期版と非同期版に別個の役割を
+// 持たせる
+// （なぜそうしたいかの理由の一つとしては<https://github.com/VOICEVOX/voicevox_core/issues/687>）
+impl InferenceRuntime for self::blocking::Onnxruntime {
     type Session = ort::Session;
     type RunContext<'a> = OnnxruntimeRunContext<'a>;
 
-    fn supported_devices() -> crate::Result<SupportedDevices> {
-        // TODO: `InferenceRuntime::init`と`InitInferenceRuntimeError`を作る
-        build_ort_env_once().unwrap();
-
+    fn supported_devices(&self) -> crate::Result<SupportedDevices> {
         (|| {
             let cpu = CPUExecutionProvider::default().is_available()?;
             let cuda = CUDAExecutionProvider::default().is_available()?;
@@ -44,6 +41,7 @@ impl InferenceRuntime for Onnxruntime {
     }
 
     fn new_session(
+        &self,
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
         options: InferenceSessionOptions,
     ) -> anyhow::Result<(
@@ -51,9 +49,6 @@ impl InferenceRuntime for Onnxruntime {
         Vec<ParamInfo<InputScalarKind>>,
         Vec<ParamInfo<OutputScalarKind>>,
     )> {
-        // TODO: `InferenceRuntime::init`と`InitInferenceRuntimeError`を作る
-        build_ort_env_once().unwrap();
-
         let mut builder = ort::Session::builder()?
             .with_optimization_level(GraphOptimizationLevel::Level1)?
             .with_intra_threads(options.cpu_num_threads.into())?;
@@ -181,12 +176,6 @@ impl InferenceRuntime for Onnxruntime {
     }
 }
 
-fn build_ort_env_once() -> ort::Result<()> {
-    static ONCE: once_cell::sync::OnceCell<()> = once_cell::sync::OnceCell::new();
-    ONCE.get_or_try_init(|| ort::init().with_name(env!("CARGO_PKG_NAME")).commit())?;
-    Ok(())
-}
-
 pub(crate) struct OnnxruntimeRunContext<'sess> {
     sess: &'sess ort::Session,
     inputs: Vec<ort::SessionInputValue<'static>>,
@@ -223,5 +212,359 @@ impl PushInputTensor for OnnxruntimeRunContext<'_> {
     )]
     fn method(&mut self, tensor: Array<T, impl Dimension + 'static>) -> anyhow::Result<()> {
         self.push_input(tensor)
+    }
+}
+
+pub(crate) mod blocking {
+    use ort::EnvHandle;
+    use ref_cast::{ref_cast_custom, RefCastCustom};
+
+    use crate::{error::ErrorRepr, SupportedDevices};
+
+    use super::super::super::InferenceRuntime;
+
+    /// ONNX Runtime。
+    ///
+    /// シングルトンであり、インスタンスは高々一つ。
+    ///
+    /// # Rust APIにおけるインスタンスの共有
+    ///
+    /// インスタンスは[voicevox-ort]側に作られる。Rustのクレートとしてこのライブラリを利用する場合、
+    /// Tokio版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
+    ///
+    /// ```
+    /// # use voicevox_core as another_lib;
+    /// #
+    /// # fn main() -> anyhow::Result<()> {
+    /// # if cfg!(windows) {
+    /// #     // Windows\System32\onnxruntime.dllを回避
+    /// #     voicevox_core::blocking::Onnxruntime::load_once()
+    /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
+    /// #         .exec()?;
+    /// # }
+    /// let ort1 = voicevox_core::blocking::Onnxruntime::load_once().exec()?;
+    /// let ort2 = another_lib::tokio::Onnxruntime::get().expect("`ort1`と同一のはず");
+    /// assert_eq!(ptr_addr(ort1), ptr_addr(ort2));
+    ///
+    /// fn ptr_addr(obj: &impl Sized) -> usize {
+    ///     obj as *const _ as _
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [voicevox-ort]: https://github.com/VOICEVOX/ort
+    #[derive(Debug, RefCastCustom)]
+    #[repr(transparent)]
+    pub struct Onnxruntime {
+        _inner: EnvHandle,
+    }
+
+    impl Onnxruntime {
+        /// ONNX Runtimeのライブラリ名。
+        #[cfg(feature = "onnxruntime-libloading")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        pub const LIB_NAME: &'static str = "onnxruntime";
+
+        /// 推奨されるONNX Runtimeのバージョン。
+        #[cfg(feature = "onnxruntime-libloading")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        pub const LIB_VERSION: &'static str = ort::downloaded_version!();
+
+        /// [`LIB_NAME`]と[`LIB_VERSION`]からなる動的ライブラリのファイル名。
+        ///
+        /// WindowsとAndroidでは[`LIB_UNVERSIONED_FILENAME`]と同じ。
+        ///
+        /// [`LIB_NAME`]: Self::LIB_NAME
+        /// [`LIB_VERSION`]: Self::LIB_VERSION
+        /// [`LIB_UNVERSIONED_FILENAME`]: Self::LIB_UNVERSIONED_FILENAME
+        #[cfg(feature = "onnxruntime-libloading")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        pub const LIB_VERSIONED_FILENAME: &'static str = if cfg!(target_os = "linux") {
+            const_format::concatcp!(
+                "lib",
+                Onnxruntime::LIB_NAME,
+                ".so.",
+                Onnxruntime::LIB_VERSION,
+            )
+        } else if cfg!(any(target_os = "macos", target_os = "ios")) {
+            const_format::concatcp!(
+                "lib",
+                Onnxruntime::LIB_NAME,
+                ".",
+                Onnxruntime::LIB_VERSION,
+                ".dylib",
+            )
+        } else {
+            Self::LIB_UNVERSIONED_FILENAME
+        };
+
+        /// [`LIB_NAME`]からなる動的ライブラリのファイル名。
+        ///
+        /// [`LIB_NAME`]: Self::LIB_NAME
+        #[cfg(feature = "onnxruntime-libloading")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        pub const LIB_UNVERSIONED_FILENAME: &'static str = const_format::concatcp!(
+            std::env::consts::DLL_PREFIX,
+            Onnxruntime::LIB_NAME,
+            std::env::consts::DLL_SUFFIX,
+        );
+
+        #[ref_cast_custom]
+        const fn new(inner: &EnvHandle) -> &Self;
+
+        /// インスタンスが既に作られているならそれを得る。
+        ///
+        /// 作られていなければ`None`を返す。
+        pub fn get() -> Option<&'static Self> {
+            EnvHandle::get().map(Self::new)
+        }
+
+        fn once(
+            init: impl FnOnce() -> anyhow::Result<&'static EnvHandle>,
+        ) -> crate::Result<&'static Self> {
+            let inner = init().map_err(|source| ErrorRepr::InitInferenceRuntime {
+                runtime_display_name: "ONNX Runtime",
+                source,
+            })?;
+            Ok(Self::new(inner))
+        }
+
+        /// ONNX Runtimeをロードして初期化する。
+        ///
+        /// 一度成功したら、以後は引数を無視して同じ参照を返す。
+        #[cfg(feature = "onnxruntime-libloading")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        pub fn load_once() -> LoadOnce {
+            LoadOnce::default()
+        }
+
+        /// ONNX Runtimeを初期化する。
+        ///
+        /// 一度成功したら以後は同じ参照を返す。
+        #[cfg(feature = "onnxruntime-link-dylib")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-link-dylib")))]
+        pub fn init_once() -> crate::Result<&'static Self> {
+            Self::once(|| ort::try_init(None))
+        }
+
+        #[cfg(test)]
+        pub(crate) fn from_test_util_data() -> anyhow::Result<&'static Self> {
+            #[cfg(feature = "onnxruntime-libloading")]
+            {
+                Self::load_once()
+                    .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
+                    .exec()
+                    .map_err(Into::into)
+            }
+
+            #[cfg(feature = "onnxruntime-link-dylib")]
+            {
+                Self::init_once().map_err(Into::into)
+            }
+        }
+
+        /// このライブラリで利用可能なデバイスの情報を取得する。
+        pub fn supported_devices(&self) -> crate::Result<SupportedDevices> {
+            <Self as InferenceRuntime>::supported_devices(self)
+        }
+    }
+
+    /// [`Onnxruntime::load_once`]のビルダー。
+    #[cfg(feature = "onnxruntime-libloading")]
+    pub struct LoadOnce {
+        filename: std::ffi::OsString,
+    }
+
+    #[cfg(feature = "onnxruntime-libloading")]
+    impl Default for LoadOnce {
+        fn default() -> Self {
+            let filename = Onnxruntime::LIB_VERSIONED_FILENAME.into();
+            Self { filename }
+        }
+    }
+
+    #[cfg(feature = "onnxruntime-libloading")]
+    impl LoadOnce {
+        /// ONNX Runtimeのfilenameを指定する。
+        ///
+        /// デフォルトは[`Onnxruntime::LIB_VERSIONED_FILENAME`]。filenameは
+        /// `dlopen`/`LoadLibraryExW`の引数に使われる。
+        pub fn filename(mut self, filename: impl Into<std::ffi::OsString>) -> Self {
+            self.filename = filename.into();
+            self
+        }
+
+        /// 実行する。
+        pub fn exec(self) -> crate::Result<&'static Onnxruntime> {
+            Onnxruntime::once(|| ort::try_init_from(&self.filename, None))
+        }
+    }
+}
+
+pub(crate) mod tokio {
+    use ref_cast::{ref_cast_custom, RefCastCustom};
+
+    use crate::SupportedDevices;
+
+    /// ONNX Runtime。
+    ///
+    /// シングルトンであり、インスタンスは高々一つ。
+    ///
+    /// # Rust APIにおけるインスタンスの共有
+    ///
+    /// インスタンスは[voicevox-ort]側に作られる。Rustのクレートとしてこのライブラリを利用する場合、
+    /// ブロッキング版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
+    ///
+    /// ```
+    /// # use voicevox_core as another_lib;
+    /// #
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// # if cfg!(windows) {
+    /// #     // Windows\System32\onnxruntime.dllを回避
+    /// #     voicevox_core::blocking::Onnxruntime::load_once()
+    /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
+    /// #         .exec()?;
+    /// # }
+    /// let ort1 = voicevox_core::tokio::Onnxruntime::load_once().exec().await?;
+    /// let ort2 = another_lib::blocking::Onnxruntime::get().expect("`ort1`と同一のはず");
+    /// assert_eq!(ptr_addr(ort1), ptr_addr(ort2));
+    ///
+    /// fn ptr_addr(obj: &impl Sized) -> usize {
+    ///     obj as *const _ as _
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [voicevox-ort]: https://github.com/VOICEVOX/ort
+    #[derive(Debug, RefCastCustom)]
+    #[repr(transparent)]
+    pub struct Onnxruntime(pub(crate) super::blocking::Onnxruntime);
+
+    impl Onnxruntime {
+        /// ONNX Runtimeのライブラリ名。
+        #[cfg(feature = "onnxruntime-libloading")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        // ブロッキング版と等しいことはテストで担保
+        pub const LIB_NAME: &'static str = "onnxruntime";
+
+        /// 推奨されるONNX Runtimeのバージョン。
+        #[cfg(feature = "onnxruntime-libloading")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        // ブロッキング版と等しいことはテストで担保
+        pub const LIB_VERSION: &'static str = ort::downloaded_version!();
+
+        /// [`LIB_NAME`]と[`LIB_VERSION`]からなる動的ライブラリのファイル名。
+        ///
+        /// WindowsとAndroidでは[`LIB_UNVERSIONED_FILENAME`]と同じ。
+        ///
+        /// [`LIB_NAME`]: Self::LIB_NAME
+        /// [`LIB_VERSION`]: Self::LIB_VERSION
+        /// [`LIB_UNVERSIONED_FILENAME`]: Self::LIB_UNVERSIONED_FILENAME
+        #[cfg(feature = "onnxruntime-libloading")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        pub const LIB_VERSIONED_FILENAME: &'static str =
+            super::blocking::Onnxruntime::LIB_VERSIONED_FILENAME;
+
+        /// [`LIB_NAME`]からなる動的ライブラリのファイル名。
+        ///
+        /// [`LIB_NAME`]: Self::LIB_NAME
+        #[cfg(feature = "onnxruntime-libloading")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        pub const LIB_UNVERSIONED_FILENAME: &'static str =
+            super::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
+
+        #[ref_cast_custom]
+        pub(crate) const fn from_blocking(blocking: &super::blocking::Onnxruntime) -> &Self;
+
+        /// インスタンスが既に作られているならそれを得る。
+        ///
+        /// 作られていなければ`None`を返す。
+        pub fn get() -> Option<&'static Self> {
+            super::blocking::Onnxruntime::get().map(Self::from_blocking)
+        }
+
+        /// ONNX Runtimeをロードして初期化する。
+        ///
+        /// 一度成功したら、以後は引数を無視して同じ参照を返す。
+        #[cfg(feature = "onnxruntime-libloading")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        pub fn load_once() -> LoadOnce {
+            LoadOnce::default()
+        }
+
+        /// ONNX Runtimeを初期化する。
+        ///
+        /// 一度成功したら以後は同じ参照を返す。
+        #[cfg(feature = "onnxruntime-link-dylib")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-link-dylib")))]
+        pub async fn init_once() -> crate::Result<&'static Self> {
+            let inner = crate::task::asyncify(super::blocking::Onnxruntime::init_once).await?;
+            Ok(Self::from_blocking(inner))
+        }
+
+        #[cfg(test)]
+        pub(crate) async fn from_test_util_data() -> anyhow::Result<&'static Self> {
+            crate::task::asyncify(super::blocking::Onnxruntime::from_test_util_data)
+                .await
+                .map(Self::from_blocking)
+        }
+
+        /// このライブラリで利用可能なデバイスの情報を取得する。
+        pub fn supported_devices(&self) -> crate::Result<SupportedDevices> {
+            self.0.supported_devices()
+        }
+    }
+
+    /// [`Onnxruntime::load_once`]のビルダー。
+    #[cfg(feature = "onnxruntime-libloading")]
+    #[derive(Default)]
+    pub struct LoadOnce(super::blocking::LoadOnce);
+
+    #[cfg(feature = "onnxruntime-libloading")]
+    impl LoadOnce {
+        /// ONNX Runtimeのfilenameを指定する。
+        ///
+        /// デフォルトは[`Onnxruntime::LIB_VERSIONED_FILENAME`]。filenameは
+        /// `dlopen`/`LoadLibraryExW`の引数に使われる。
+        pub fn filename(self, filename: impl Into<std::ffi::OsString>) -> Self {
+            Self(self.0.filename(filename))
+        }
+
+        /// 実行する。
+        pub async fn exec(self) -> crate::Result<&'static Onnxruntime> {
+            let inner = crate::task::asyncify(|| self.0.exec()).await?;
+            Ok(Onnxruntime::from_blocking(inner))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    #[cfg(feature = "onnxruntime-libloading")]
+    #[test]
+    fn assert_same_lib_names_and_versions() {
+        use pretty_assertions::assert_eq;
+
+        assert_eq!(
+            super::blocking::Onnxruntime::LIB_NAME,
+            super::tokio::Onnxruntime::LIB_NAME,
+        );
+        assert_eq!(
+            super::blocking::Onnxruntime::LIB_VERSION,
+            super::tokio::Onnxruntime::LIB_VERSION,
+        );
+    }
+
+    #[rstest]
+    fn supported_devices_works() {
+        let result = super::blocking::Onnxruntime::from_test_util_data()
+            .and_then(|o| o.supported_devices().map_err(Into::into));
+        // 環境によって結果が変わるので、関数呼び出しが成功するかどうかの確認のみ行う
+        assert!(result.is_ok(), "{result:?}");
     }
 }

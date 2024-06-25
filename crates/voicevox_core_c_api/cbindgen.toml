@@ -55,7 +55,18 @@ after_includes = """
 #else // __cplusplus
 #include <stdbool.h>
 #include <stdint.h>
-#endif // __cplusplus"""
+#endif // __cplusplus
+
+//#define VOICEVOX_ONNXRUNTIME_LIBLOADING
+//#define VOICEVOX_ONNXRUNTIME_LINK_DYLIB
+
+#if !(defined(VOICEVOX_ONNXRUNTIME_LIBLOADING) || defined(VOICEVOX_ONNXRUNTIME_LINK_DYLIB))
+#error "either `VOICEVOX_ONNXRUNTIME_LIBLOADING` or `VOICEVOX_ONNXRUNTIME_LINK_DYLIB` must be enabled"
+#endif
+
+#if defined(VOICEVOX_ONNXRUNTIME_LIBLOADING) && defined(VOICEVOX_ONNXRUNTIME_LINK_DYLIB)
+#error "`VOICEVOX_ONNXRUNTIME_LIBLOADING` or `VOICEVOX_ONNXRUNTIME_LINK_DYLIB` cannot be enabled at the same time"
+#endif"""
 
 # Code Style Options
 
@@ -78,3 +89,7 @@ rename_variants = "ScreamingSnakeCase"
 [parse]
 parse_deps = true
 include = ["voicevox_core"]
+
+[defines]
+"feature = onnxruntime-libloading" = "VOICEVOX_ONNXRUNTIME_LIBLOADING"
+"feature = onnxruntime-link-dylib" = "VOICEVOX_ONNXRUNTIME_LINK_DYLIB"

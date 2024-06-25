@@ -72,8 +72,10 @@ jobs:
         with:
           python-version: "3.8"
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy -vv --all-features --tests -- -D clippy::all -D warnings --no-deps
-      - run: cargo clippy -vv --all-features -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv --features directml,cuda --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv --features directml,cuda -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv -p voicevox_core -p voicevox_core_c_api --features onnxruntime-link-dylib,directml,cuda --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv -p voicevox_core -p voicevox_core_c_api --features onnxruntime-link-dylib,directml,cuda -- -D clippy::all -D warnings --no-deps
       - run: cargo fmt -- --check
 
   rust-unit-test:
@@ -193,11 +195,13 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api -vv
+        run: cargo build -p voicevox_core_c_api --features onnxruntime-libloading -vv
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
           mkdir -p example/cpp/unix/voicevox_core/
-          cp -v crates/voicevox_core_c_api/include/voicevox_core.h example/cpp/unix/voicevox_core/
+          sed 's:^//\(#define VOICEVOX_ONNXRUNTIME_LIBLOADING\)$:\1:' \
+            crates/voicevox_core_c_api/include/voicevox_core.h \
+            > example/cpp/unix/voicevox_core/voicevox_core.h
           cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/ || true
           cp -v target/debug/libonnxruntime.so.* example/cpp/unix/voicevox_core/ || true
           cp -v target/debug/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/ || true
@@ -235,11 +239,14 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api -vv
+        run: cargo build -p voicevox_core_c_api --features onnxruntime-libloading -vv
       - name: 必要なfileをexampleのディレクトリに移動させる
+        shell: bash
         run: |
           mkdir -p example/cpp/windows/simple_tts/lib/x64
-          cp -v crates/voicevox_core_c_api/include/voicevox_core.h example/cpp/windows/simple_tts/
+          sed 's:^//\(#define VOICEVOX_ONNXRUNTIME_LIBLOADING\)$:\1:' \
+            crates/voicevox_core_c_api/include/voicevox_core.h \
+            > example/cpp/windows/simple_tts/voicevox_core.h
           cp target/debug/voicevox_core.dll.lib example/cpp/windows/simple_tts/lib/x64/voicevox_core.lib
 
       - name: Add MSBuild to PATH
