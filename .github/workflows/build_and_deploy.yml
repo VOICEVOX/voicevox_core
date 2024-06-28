@@ -41,7 +41,14 @@ defaults:
     shell: bash
 
 jobs:
-  config: # 全 jobs で利用する定数の定義。実行対象の条件をフィルタリングする。
+  # 全 jobs で利用する定数の定義。実行対象の条件をフィルタリングする。
+  #
+  # c_release_format = plain-cdylib | ios-xcframework
+  #
+  #     `plain-cdylib`の場合、動的ライブラリとその付属物をZIPに固めたものをC APIとしてリリースする。
+  #     `ios-xcframework`の場合はiOS用のXCFrameworkをC APIとしてリリースする。また、ONNX Runtimeの
+  #     リンク方法に関わるCargoフィーチャも`c_release_format`によって選択される。
+  config:
     runs-on: ubuntu-latest
     outputs:
       includes: ${{ steps.strategy_matrix.outputs.includes }}
