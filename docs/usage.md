@@ -82,7 +82,7 @@ with open("output.wav", "wb") as f:
 
 ### 1. Synthesizer の初期化
 
-ONNX Runtimeを表す`Onnxruntime`のインスタンスと、辞書などを取り扱う`OpenJtalk`のインスタンスを引数に渡して`Synthesizer`を初期化します。`Synthesizer`は音声合成だけでなく、音声モデルを複数読み込んだり、イントネーションのみを生成することもできます。
+AIエンジンの`Onnxruntime`のインスタンスと、辞書などを取り扱う`OpenJtalk`のインスタンスを引数に渡して`Synthesizer`を初期化します。`Synthesizer`は音声合成だけでなく、音声モデルを複数読み込んだり、イントネーションのみを生成することもできます。
 
 ### 2. 音声モデルの読み込み
 
