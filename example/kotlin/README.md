@@ -58,6 +58,7 @@ Options:
 ## 実行例
 
 <!-- FIXME: `cargo build -p test_util`するように案内するか、製品版のVVMを実行させる -->
+<!-- FIXME: libvoicevox_onnxruntimeになったら`--onnxruntime`を指定するのではなく、`$LD_LIBRARY_PATH`とかに入れて実行するように案内する -->
 
 ```console
 ❯ # Linuxの場合
