@@ -314,7 +314,7 @@ jobs:
             plain-cdylib) feature=VOICEVOX_LOAD_ONNXRUNTIME ;;
             ios-xcframework) feature=VOICEVOX_LINK_ONNXRUNTIME ;;
           esac
-          sed 's:^//\(#define VOICEVOX_'"$feature"'\)$:\1:' crates/voicevox_core_c_api/include/voicevox_core.h \
+          sed 's:^//\(#define '"$feature"'\)$:\1:' crates/voicevox_core_c_api/include/voicevox_core.h \
             > "artifact/${{ env.ASSET_NAME }}/voicevox_core.h"
           cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
