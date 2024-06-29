@@ -289,7 +289,7 @@ typedef struct VoicevoxUserDict VoicevoxUserDict;
  */
 typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
 
-#if defined(VOICEVOX_LINK_ONNXRUNTIME)
+#if defined(VOICEVOX_LOAD_ONNXRUNTIME)
 typedef struct VoicevoxLoadOnnxruntimeOptions {
   const char *filename;
 } VoicevoxLoadOnnxruntimeOptions;
@@ -372,7 +372,7 @@ typedef struct VoicevoxUserDictWord {
 extern "C" {
 #endif // __cplusplus
 
-#if defined(VOICEVOX_LINK_ONNXRUNTIME)
+#if defined(VOICEVOX_LOAD_ONNXRUNTIME)
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
@@ -391,7 +391,7 @@ __declspec(dllimport)
 #endif
 const struct VoicevoxOnnxruntime *voicevox_onnxruntime_get(void);
 
-#if defined(VOICEVOX_LINK_ONNXRUNTIME)
+#if defined(VOICEVOX_LOAD_ONNXRUNTIME)
 /**
  * ONNX Runtimeをロードして初期化する。
  *
@@ -414,7 +414,7 @@ VoicevoxResultCode voicevox_onnxruntime_load_once(struct VoicevoxLoadOnnxruntime
                                                   const struct VoicevoxOnnxruntime **out_onnxruntime);
 #endif
 
-#if defined(VOICEVOX_LOAD_ONNXRUNTIME)
+#if defined(VOICEVOX_LINK_ONNXRUNTIME)
 /**
  * ONNX Runtimeを初期化する。
  *
