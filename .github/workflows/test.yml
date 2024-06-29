@@ -74,8 +74,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy -vv --features directml,cuda --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -vv --features directml,cuda -- -D clippy::all -D warnings --no-deps
-      - run: cargo clippy -vv -p voicevox_core -p voicevox_core_c_api --features onnxruntime-link-dylib,directml,cuda --tests -- -D clippy::all -D warnings --no-deps
-      - run: cargo clippy -vv -p voicevox_core -p voicevox_core_c_api --features onnxruntime-link-dylib,directml,cuda -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime,directml,cuda --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime,directml,cuda -- -D clippy::all -D warnings --no-deps
       - run: cargo fmt -- --check
 
   rust-unit-test:
@@ -195,7 +195,7 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api --features onnxruntime-libloading -vv
+        run: cargo build -p voicevox_core_c_api --features load-onnxruntime -vv
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
           mkdir -p example/cpp/unix/voicevox_core/
@@ -239,7 +239,7 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api --features onnxruntime-libloading -vv
+        run: cargo build -p voicevox_core_c_api --features load-onnxruntime -vv
       - name: 必要なfileをexampleのディレクトリに移動させる
         shell: bash
         run: |
