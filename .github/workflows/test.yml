@@ -199,7 +199,7 @@ jobs:
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
           mkdir -p example/cpp/unix/voicevox_core/
-          sed 's:^//\(#define VOICEVOX_ONNXRUNTIME_LIBLOADING\)$:\1:' \
+          sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
             crates/voicevox_core_c_api/include/voicevox_core.h \
             > example/cpp/unix/voicevox_core/voicevox_core.h
           cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/ || true
@@ -244,7 +244,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p example/cpp/windows/simple_tts/lib/x64
-          sed 's:^//\(#define VOICEVOX_ONNXRUNTIME_LIBLOADING\)$:\1:' \
+          sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
             crates/voicevox_core_c_api/include/voicevox_core.h \
             > example/cpp/windows/simple_tts/voicevox_core.h
           cp target/debug/voicevox_core.dll.lib example/cpp/windows/simple_tts/lib/x64/voicevox_core.lib
