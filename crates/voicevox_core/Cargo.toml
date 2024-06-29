@@ -14,9 +14,8 @@ default = []
 # ONNX Runtimeのリンク方法を決めるフィーチャ。どちらか片方を有効化しなければならず、両方の有効化は
 # 許容されない。
 #
-# `load-onnxruntime`の場合、ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開く。
-# `link-onnxruntime`の場合はONNX Runtimeをロード時動的リンクする。またそれに伴い、
-# `struct Onnxruntime`の初期化方法も異なる。
+# `load-onnxruntime`の場合、ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開く。`link-onnxruntime`の場合
+# はONNX Runtimeをロード時動的リンクする。またそれに伴い、`struct Onnxruntime`の初期化方法も異なる。
 load-onnxruntime = ["voicevox-ort/load-dynamic"]
 link-onnxruntime = []
 

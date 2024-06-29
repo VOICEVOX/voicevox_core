@@ -290,7 +290,15 @@ typedef struct VoicevoxUserDict VoicevoxUserDict;
 typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
 
 #if defined(VOICEVOX_LOAD_ONNXRUNTIME)
+/**
+ * ::voicevox_onnxruntime_load_once のオプション。
+ */
 typedef struct VoicevoxLoadOnnxruntimeOptions {
+  /**
+   * ONNX Runtimeのfilenameを指定する。
+   *
+   * `dlopen`/`LoadLibraryExW`の引数に使われる。
+   */
   const char *filename;
 } VoicevoxLoadOnnxruntimeOptions;
 #endif
@@ -373,6 +381,11 @@ extern "C" {
 #endif // __cplusplus
 
 #if defined(VOICEVOX_LOAD_ONNXRUNTIME)
+/**
+ * デフォルトの ::voicevox_onnxruntime_load_once のオプションを生成する。
+ *
+ * @return デフォルトの ::voicevox_onnxruntime_load_once のオプション
+ */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
@@ -380,9 +393,9 @@ struct VoicevoxLoadOnnxruntimeOptions voicevox_make_default_load_onnxruntime_opt
 #endif
 
 /**
- * ONNX Runtimeを初期化済みであれば、 ::VoicevoxOnnxruntime のインスタンスを得る。
+ * ::VoicevoxOnnxruntime のインスタンスが既に作られているならそれを得る。
  *
- * 初期化していなければ`NULL`を返す。
+ * 作られていなければ`NULL`を返す。
  *
  * @returns ::VoicevoxOnnxruntime のインスタンス
  */
@@ -395,7 +408,7 @@ const struct VoicevoxOnnxruntime *voicevox_onnxruntime_get(void);
 /**
  * ONNX Runtimeをロードして初期化する。
  *
- * 二度目以降はパラメータに関わらず既存のインスタンスを返す。
+ * 一度成功したら、以後は引数を無視して同じ参照を返す。
  *
  * @param [in] options オプション
  * @param [out] out_onnxruntime ::VoicevoxOnnxruntime のインスタンス
@@ -418,7 +431,7 @@ VoicevoxResultCode voicevox_onnxruntime_load_once(struct VoicevoxLoadOnnxruntime
 /**
  * ONNX Runtimeを初期化する。
  *
- * 二度目以降は既存のインスタンスを返す。
+ * 一度成功したら以後は同じ参照を返す。
  *
  * @param [out] out_onnxruntime ::VoicevoxOnnxruntime のインスタンス
  *

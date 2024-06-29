@@ -16,5 +16,5 @@ Rust API（`voicevox_core`）およびC API（`voicevox_core_c_api`）におい�
 ❯ cargo build --release -p voicevox_core_c_api --features link-onnxruntime
 ```
 
-C APIのリリースでは`dlopen`の利用が厳しいiOSでのみ`link-onnxruntime`で、その他
-は`load-onnxruntime`でビルドしています。
+C APIのリリースでは`dlopen`の利用が厳しいiOSでのみ`link-onnxruntime`で、その他は`load-onnxruntime`で
+ビルドしています。

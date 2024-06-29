@@ -80,7 +80,7 @@ class Onnxruntime:
         """
         インスタンスが既に作られているならそれを得る。
 
-        作られていなければ `None` を返す。
+        作られていなければ ``None`` を返す。
         """
         ...
     @staticmethod
