@@ -219,8 +219,8 @@ fn generate_c_api_rs_bindings(out_dir: &Utf8Path) -> anyhow::Result<()> {
     bindgen::Builder::default()
         .header(C_BINDINGS_PATH)
         .header(ADDITIONAL_C_BINDINGS_PATH)
-        // we test for `--feature onnxruntime-libloading`
-        .clang_arg("-DVOICEVOX_ONNXRUNTIME_LIBLOADING=")
+        // we test for `--feature load-onnxruntime`
+        .clang_arg("-DVOICEVOX_LINK_ONNXRUNTIME=")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .dynamic_library_name("CApi")
         .generate()?

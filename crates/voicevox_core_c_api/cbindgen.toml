@@ -57,15 +57,15 @@ after_includes = """
 #include <stdint.h>
 #endif // __cplusplus
 
-//#define VOICEVOX_ONNXRUNTIME_LIBLOADING
-//#define VOICEVOX_ONNXRUNTIME_LINK_DYLIB
+//#define VOICEVOX_LINK_ONNXRUNTIME
+//#define VOICEVOX_LOAD_ONNXRUNTIME
 
-#if !(defined(VOICEVOX_ONNXRUNTIME_LIBLOADING) || defined(VOICEVOX_ONNXRUNTIME_LINK_DYLIB))
-#error "either `VOICEVOX_ONNXRUNTIME_LIBLOADING` or `VOICEVOX_ONNXRUNTIME_LINK_DYLIB` must be enabled"
+#if !(defined(VOICEVOX_LINK_ONNXRUNTIME) || defined(VOICEVOX_LOAD_ONNXRUNTIME))
+#error "either `VOICEVOX_LINK_ONNXRUNTIME` or `VOICEVOX_LOAD_ONNXRUNTIME` must be enabled"
 #endif
 
-#if defined(VOICEVOX_ONNXRUNTIME_LIBLOADING) && defined(VOICEVOX_ONNXRUNTIME_LINK_DYLIB)
-#error "`VOICEVOX_ONNXRUNTIME_LIBLOADING` or `VOICEVOX_ONNXRUNTIME_LINK_DYLIB` cannot be enabled at the same time"
+#if defined(VOICEVOX_LINK_ONNXRUNTIME) && defined(VOICEVOX_LOAD_ONNXRUNTIME)
+#error "`VOICEVOX_LINK_ONNXRUNTIME` or `VOICEVOX_LOAD_ONNXRUNTIME` cannot be enabled at the same time"
 #endif"""
 
 # Code Style Options
@@ -91,5 +91,5 @@ parse_deps = true
 include = ["voicevox_core"]
 
 [defines]
-"feature = onnxruntime-libloading" = "VOICEVOX_ONNXRUNTIME_LIBLOADING"
-"feature = onnxruntime-link-dylib" = "VOICEVOX_ONNXRUNTIME_LINK_DYLIB"
+"feature = load-onnxruntime" = "VOICEVOX_LINK_ONNXRUNTIME"
+"feature = link-onnxruntime" = "VOICEVOX_LOAD_ONNXRUNTIME"

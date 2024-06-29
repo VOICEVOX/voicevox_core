@@ -4,7 +4,7 @@
 
 mod c_impls;
 /// cbindgen:ignore
-#[cfg(feature = "onnxruntime-libloading")]
+#[cfg(feature = "load-onnxruntime")]
 mod compatible_engine;
 mod drop_check;
 mod helpers;
@@ -88,13 +88,13 @@ fn init_logger_once() {
  * voicevox_core/publish.rsにある対応する関数とはこのファイルに定義してある公開関数からvoicevoxプレフィックスを取り除いた名前の関数である
  */
 
-#[cfg(feature = "onnxruntime-libloading")]
+#[cfg(feature = "load-onnxruntime")]
 #[repr(C)]
 pub struct VoicevoxLoadOnnxruntimeOptions {
     filename: *const c_char,
 }
 
-#[cfg(feature = "onnxruntime-libloading")]
+#[cfg(feature = "load-onnxruntime")]
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_load_onnxruntime_options() -> VoicevoxLoadOnnxruntimeOptions
 {
@@ -155,7 +155,7 @@ pub extern "C" fn voicevox_onnxruntime_get() -> Option<&'static VoicevoxOnnxrunt
 /// - `options.filename`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `out_onnxruntime`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
-#[cfg(feature = "onnxruntime-libloading")]
+#[cfg(feature = "load-onnxruntime")]
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_onnxruntime_load_once(
     options: VoicevoxLoadOnnxruntimeOptions,
@@ -187,7 +187,7 @@ pub unsafe extern "C" fn voicevox_onnxruntime_load_once(
 /// \safety{
 /// - `out_onnxruntime`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
-#[cfg(feature = "onnxruntime-link-dylib")]
+#[cfg(feature = "link-onnxruntime")]
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_onnxruntime_init_once(
     out_onnxruntime: NonNull<&'static VoicevoxOnnxruntime>,

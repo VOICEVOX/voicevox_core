@@ -5,7 +5,7 @@ edition.workspace = true
 publish.workspace = true
 
 [package.metadata.docs.rs]
-features = ["onnxruntime-libloading", "onnxruntime-link-dylib"]
+features = ["load-onnxruntime", "link-onnxruntime"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
@@ -14,11 +14,11 @@ default = []
 # ONNX Runtimeのリンク方法を決めるフィーチャ。どちらか片方を有効化しなければならず、両方の有効化は
 # 許容されない。
 #
-# `onnxruntime-libloading`の場合、ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開く。
-# `onnxruntime-link-dylib`の場合はONNX Runtimeをロード時動的リンクする。またそれに伴い、
+# `load-onnxruntime`の場合、ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開く。
+# `link-onnxruntime`の場合はONNX Runtimeをロード時動的リンクする。またそれに伴い、
 # `struct Onnxruntime`の初期化方法も異なる。
-onnxruntime-libloading = ["voicevox-ort/load-dynamic"]
-onnxruntime-link-dylib = []
+load-onnxruntime = ["voicevox-ort/load-dynamic"]
+link-onnxruntime = []
 
 cuda = ["voicevox-ort/cuda"]
 directml = ["voicevox-ort/directml"]

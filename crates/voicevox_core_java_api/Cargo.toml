@@ -25,7 +25,7 @@ serde_json = { workspace = true, features = ["preserve_order"] }
 tracing = { workspace = true, features = ["log"] }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 uuid.workspace = true
-voicevox_core = { workspace = true, features = ["onnxruntime-libloading"] }
+voicevox_core = { workspace = true, features = ["load-onnxruntime"] }
 
 [lints.rust]
 unsafe_code = "allow" # jni-rsが要求

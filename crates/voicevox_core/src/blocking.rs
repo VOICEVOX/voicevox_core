@@ -7,7 +7,7 @@ pub use crate::{
 };
 
 pub mod onnxruntime {
-    #[cfg(feature = "onnxruntime-libloading")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+    #[cfg(feature = "load-onnxruntime")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
     pub use crate::infer::runtimes::onnxruntime::blocking::LoadOnce;
 }

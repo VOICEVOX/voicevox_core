@@ -3,18 +3,18 @@
 Rust API（`voicevox_core`）およびC API（`voicevox_core_c_api`）においては、ビルド時に
 次のCargoフィーチャのうちどちらかを選択しなければなりません。
 詳しくは[voicevox_core/Cargo.toml](../crates/voicevox_core/Cargo.toml)のコメントを参照して
-下さい。Python APIやJava APIでは`onnxruntime-libloading`のみに限定しています。
+下さい。Python APIやJava APIでは`load-onnxruntime`のみに限定しています。
 
-- `onnxruntime-libloading`
-- `onnxruntime-link-dylib`
+- `load-onnxruntime`
+- `link-onnxruntime`
 
 ```console
-❯ cargo build --release -p voicevox_core_c_api --features onnxruntime-libloading
+❯ cargo build --release -p voicevox_core_c_api --features load-onnxruntime
 ```
 
 ```console
-❯ cargo build --release -p voicevox_core_c_api --features onnxruntime-link-dylib
+❯ cargo build --release -p voicevox_core_c_api --features link-onnxruntime
 ```
 
-C APIのリリースでは`dlopen`の利用が厳しいiOSでのみ`onnxruntime-link-dylib`で、その他
-は`onnxruntime-libloading`でビルドしています。
+C APIのリリースでは`dlopen`の利用が厳しいiOSでのみ`link-onnxruntime`で、その他
+は`load-onnxruntime`でビルドしています。

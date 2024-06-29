@@ -150,7 +150,7 @@ model フォルダにある onnx モデルはダミーのため、ノイズの�
 
 ```bash
 # DLLをビルド
-cargo build --release -p voicevox_core_c_api --features onnxruntime-libloading
+cargo build --release -p voicevox_core_c_api --features load-onnxruntime
 ```
 
 DLL 用のヘッダファイルは [crates/voicevox_core_c_api/include/voicevox_core.h](https://github.com/VOICEVOX/voicevox_core/tree/main/crates/voicevox_core_c_api/include/voicevox_core.h) にあります。

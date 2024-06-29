@@ -19,7 +19,7 @@ impl VoicevoxOnnxruntime {
         voicevox_core::blocking::Onnxruntime::get().map(Self::new)
     }
 
-    #[cfg(feature = "onnxruntime-libloading")]
+    #[cfg(feature = "load-onnxruntime")]
     pub(crate) fn load_once(filename: &std::ffi::CStr) -> CApiResult<&'static Self> {
         use crate::helpers::ensure_utf8;
 
@@ -29,7 +29,7 @@ impl VoicevoxOnnxruntime {
         Ok(Self::new(inner))
     }
 
-    #[cfg(feature = "onnxruntime-link-dylib")]
+    #[cfg(feature = "link-onnxruntime")]
     pub(crate) fn init_once() -> CApiResult<&'static Self> {
         let inner = voicevox_core::blocking::Onnxruntime::init_once()?;
         Ok(Self::new(inner))

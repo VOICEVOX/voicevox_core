@@ -13,8 +13,8 @@ harness = false
 name = "e2e"
 
 [features]
-onnxruntime-libloading = ["voicevox_core/onnxruntime-libloading"]
-onnxruntime-link-dylib = ["voicevox_core/onnxruntime-link-dylib"]
+load-onnxruntime = ["voicevox_core/load-onnxruntime"]
+link-onnxruntime = ["voicevox_core/link-onnxruntime"]
 cuda = ["voicevox_core/cuda"]
 directml = ["voicevox_core/directml"]
 

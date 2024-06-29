@@ -262,13 +262,13 @@ pub(crate) mod blocking {
 
     impl Onnxruntime {
         /// ONNX Runtimeのライブラリ名。
-        #[cfg(feature = "onnxruntime-libloading")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        #[cfg(feature = "load-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub const LIB_NAME: &'static str = "onnxruntime";
 
         /// 推奨されるONNX Runtimeのバージョン。
-        #[cfg(feature = "onnxruntime-libloading")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        #[cfg(feature = "load-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub const LIB_VERSION: &'static str = ort::downloaded_version!();
 
         /// [`LIB_NAME`]と[`LIB_VERSION`]からなる動的ライブラリのファイル名。
@@ -278,8 +278,8 @@ pub(crate) mod blocking {
         /// [`LIB_NAME`]: Self::LIB_NAME
         /// [`LIB_VERSION`]: Self::LIB_VERSION
         /// [`LIB_UNVERSIONED_FILENAME`]: Self::LIB_UNVERSIONED_FILENAME
-        #[cfg(feature = "onnxruntime-libloading")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        #[cfg(feature = "load-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub const LIB_VERSIONED_FILENAME: &'static str = if cfg!(target_os = "linux") {
             const_format::concatcp!(
                 "lib",
@@ -302,8 +302,8 @@ pub(crate) mod blocking {
         /// [`LIB_NAME`]からなる動的ライブラリのファイル名。
         ///
         /// [`LIB_NAME`]: Self::LIB_NAME
-        #[cfg(feature = "onnxruntime-libloading")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        #[cfg(feature = "load-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub const LIB_UNVERSIONED_FILENAME: &'static str = const_format::concatcp!(
             std::env::consts::DLL_PREFIX,
             Onnxruntime::LIB_NAME,
@@ -333,8 +333,8 @@ pub(crate) mod blocking {
         /// ONNX Runtimeをロードして初期化する。
         ///
         /// 一度成功したら、以後は引数を無視して同じ参照を返す。
-        #[cfg(feature = "onnxruntime-libloading")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        #[cfg(feature = "load-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub fn load_once() -> LoadOnce {
             LoadOnce::default()
         }
@@ -342,15 +342,15 @@ pub(crate) mod blocking {
         /// ONNX Runtimeを初期化する。
         ///
         /// 一度成功したら以後は同じ参照を返す。
-        #[cfg(feature = "onnxruntime-link-dylib")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-link-dylib")))]
+        #[cfg(feature = "link-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "link-onnxruntime")))]
         pub fn init_once() -> crate::Result<&'static Self> {
             Self::once(|| ort::try_init(None))
         }
 
         #[cfg(test)]
         pub(crate) fn from_test_util_data() -> anyhow::Result<&'static Self> {
-            #[cfg(feature = "onnxruntime-libloading")]
+            #[cfg(feature = "load-onnxruntime")]
             {
                 Self::load_once()
                     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
@@ -358,7 +358,7 @@ pub(crate) mod blocking {
                     .map_err(Into::into)
             }
 
-            #[cfg(feature = "onnxruntime-link-dylib")]
+            #[cfg(feature = "link-onnxruntime")]
             {
                 Self::init_once().map_err(Into::into)
             }
@@ -371,12 +371,12 @@ pub(crate) mod blocking {
     }
 
     /// [`Onnxruntime::load_once`]のビルダー。
-    #[cfg(feature = "onnxruntime-libloading")]
+    #[cfg(feature = "load-onnxruntime")]
     pub struct LoadOnce {
         filename: std::ffi::OsString,
     }
 
-    #[cfg(feature = "onnxruntime-libloading")]
+    #[cfg(feature = "load-onnxruntime")]
     impl Default for LoadOnce {
         fn default() -> Self {
             let filename = Onnxruntime::LIB_VERSIONED_FILENAME.into();
@@ -384,7 +384,7 @@ pub(crate) mod blocking {
         }
     }
 
-    #[cfg(feature = "onnxruntime-libloading")]
+    #[cfg(feature = "load-onnxruntime")]
     impl LoadOnce {
         /// ONNX Runtimeのfilenameを指定する。
         ///
@@ -445,14 +445,14 @@ pub(crate) mod tokio {
 
     impl Onnxruntime {
         /// ONNX Runtimeのライブラリ名。
-        #[cfg(feature = "onnxruntime-libloading")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        #[cfg(feature = "load-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         // ブロッキング版と等しいことはテストで担保
         pub const LIB_NAME: &'static str = "onnxruntime";
 
         /// 推奨されるONNX Runtimeのバージョン。
-        #[cfg(feature = "onnxruntime-libloading")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        #[cfg(feature = "load-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         // ブロッキング版と等しいことはテストで担保
         pub const LIB_VERSION: &'static str = ort::downloaded_version!();
 
@@ -463,16 +463,16 @@ pub(crate) mod tokio {
         /// [`LIB_NAME`]: Self::LIB_NAME
         /// [`LIB_VERSION`]: Self::LIB_VERSION
         /// [`LIB_UNVERSIONED_FILENAME`]: Self::LIB_UNVERSIONED_FILENAME
-        #[cfg(feature = "onnxruntime-libloading")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        #[cfg(feature = "load-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub const LIB_VERSIONED_FILENAME: &'static str =
             super::blocking::Onnxruntime::LIB_VERSIONED_FILENAME;
 
         /// [`LIB_NAME`]からなる動的ライブラリのファイル名。
         ///
         /// [`LIB_NAME`]: Self::LIB_NAME
-        #[cfg(feature = "onnxruntime-libloading")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        #[cfg(feature = "load-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub const LIB_UNVERSIONED_FILENAME: &'static str =
             super::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
 
@@ -489,8 +489,8 @@ pub(crate) mod tokio {
         /// ONNX Runtimeをロードして初期化する。
         ///
         /// 一度成功したら、以後は引数を無視して同じ参照を返す。
-        #[cfg(feature = "onnxruntime-libloading")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-libloading")))]
+        #[cfg(feature = "load-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub fn load_once() -> LoadOnce {
             LoadOnce::default()
         }
@@ -498,8 +498,8 @@ pub(crate) mod tokio {
         /// ONNX Runtimeを初期化する。
         ///
         /// 一度成功したら以後は同じ参照を返す。
-        #[cfg(feature = "onnxruntime-link-dylib")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "onnxruntime-link-dylib")))]
+        #[cfg(feature = "link-onnxruntime")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "link-onnxruntime")))]
         pub async fn init_once() -> crate::Result<&'static Self> {
             let inner = crate::task::asyncify(super::blocking::Onnxruntime::init_once).await?;
             Ok(Self::from_blocking(inner))
@@ -519,11 +519,11 @@ pub(crate) mod tokio {
     }
 
     /// [`Onnxruntime::load_once`]のビルダー。
-    #[cfg(feature = "onnxruntime-libloading")]
+    #[cfg(feature = "load-onnxruntime")]
     #[derive(Default)]
     pub struct LoadOnce(super::blocking::LoadOnce);
 
-    #[cfg(feature = "onnxruntime-libloading")]
+    #[cfg(feature = "load-onnxruntime")]
     impl LoadOnce {
         /// ONNX Runtimeのfilenameを指定する。
         ///
@@ -545,7 +545,7 @@ pub(crate) mod tokio {
 mod tests {
     use rstest::rstest;
 
-    #[cfg(feature = "onnxruntime-libloading")]
+    #[cfg(feature = "load-onnxruntime")]
     #[test]
     fn assert_same_lib_names_and_versions() {
         use pretty_assertions::assert_eq;

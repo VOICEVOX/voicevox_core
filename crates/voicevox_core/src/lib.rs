@@ -2,27 +2,25 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-#[cfg(not(any(feature = "onnxruntime-libloading", feature = "onnxruntime-link-dylib")))]
-compile_error!("either `onnxruntime-libloading` or `onnxruntime-link-dylib` must be enabled");
+#[cfg(not(any(feature = "load-onnxruntime", feature = "link-onnxruntime")))]
+compile_error!("either `load-onnxruntime` or `link-onnxruntime` must be enabled");
 
 #[cfg(not(doc))]
 const _: () = {
-    #[cfg(all(feature = "onnxruntime-libloading", feature = "onnxruntime-link-dylib"))]
-    compile_error!(
-        "`onnxruntime-libloading` and `onnxruntime-link-dylib` cannot be enabled at the same time",
-    );
+    #[cfg(all(feature = "load-onnxruntime", feature = "link-onnxruntime"))]
+    compile_error!("`load-onnxruntime` and `link-onnxruntime` cannot be enabled at the same time");
 
     // Rust APIでvoicevox-ortを他のクレートが利用する可能性を考え、voicevox-ort側とfeatureがズレ
     // ないようにする
 
-    #[cfg(feature = "onnxruntime-libloading")]
+    #[cfg(feature = "load-onnxruntime")]
     ort::assert_load_dynamic_is_enabled!(
-        "when `onnxruntime-libloading` is enabled,`voicevox-ort/load-dynamic` must be also enabled",
+        "when `load-onnxruntime` is enabled,`voicevox-ort/load-dynamic` must be also enabled",
     );
 
-    #[cfg(feature = "onnxruntime-link-dylib")]
+    #[cfg(feature = "link-onnxruntime")]
     ort::assert_load_dynamic_is_disabled!(
-        "when `onnxruntime-link-dylib` is enabled,`voicevox-ort/load-dynamic` must be disabled",
+        "when `link-onnxruntime` is enabled,`voicevox-ort/load-dynamic` must be disabled",
     );
 };
 

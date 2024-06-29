@@ -23,7 +23,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tracing = { workspace = true, features = ["log"] }
 uuid.workspace = true
-voicevox_core = { workspace = true, features = ["onnxruntime-libloading"] }
+voicevox_core = { workspace = true, features = ["load-onnxruntime"] }
 
 [lints.rust]
 unsafe_code = "forbid"
