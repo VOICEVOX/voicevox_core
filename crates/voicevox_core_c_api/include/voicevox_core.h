@@ -382,6 +382,28 @@ extern "C" {
 
 #if defined(VOICEVOX_LOAD_ONNXRUNTIME)
 /**
+ * ONNX Runtimeの動的ライブラリの、バージョン付きのファイル名。
+ *
+ * WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_unversioned_filename と同じ。
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+const char *voicevox_get_onnxruntime_lib_versioned_filename(void);
+#endif
+
+#if defined(VOICEVOX_LOAD_ONNXRUNTIME)
+/**
+ * ONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+const char *voicevox_get_onnxruntime_lib_unversioned_filename(void);
+#endif
+
+#if defined(VOICEVOX_LOAD_ONNXRUNTIME)
+/**
  * デフォルトの ::voicevox_onnxruntime_load_once のオプションを生成する。
  *
  * @return デフォルトの ::voicevox_onnxruntime_load_once のオプション

@@ -88,6 +88,32 @@ fn init_logger_once() {
  * voicevox_core/publish.rsにある対応する関数とはこのファイルに定義してある公開関数からvoicevoxプレフィックスを取り除いた名前の関数である
  */
 
+// TODO: https://github.com/mozilla/cbindgen/issues/927
+//#[cfg(feature = "load-onnxruntime")]
+//pub const VOICEVOX_ONNXRUNTIME_LIB_NAME: &CStr = ..;
+//#[cfg(feature = "load-onnxruntime")]
+//pub const VOICEVOX_ONNXRUNTIME_LIB_VERSION: &CStr = ..;
+
+/// ONNX Runtimeの動的ライブラリの、バージョン付きのファイル名。
+///
+/// WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_unversioned_filename と同じ。
+#[cfg(feature = "load-onnxruntime")]
+#[no_mangle]
+pub extern "C" fn voicevox_get_onnxruntime_lib_versioned_filename() -> *const c_char {
+    init_logger_once();
+    let filename = VoicevoxOnnxruntime::lib_versioned_filename();
+    C_STRING_DROP_CHECKER.blacklist(filename).as_ptr()
+}
+
+/// ONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
+#[cfg(feature = "load-onnxruntime")]
+#[no_mangle]
+pub extern "C" fn voicevox_get_onnxruntime_lib_unversioned_filename() -> *const c_char {
+    init_logger_once();
+    let filename = VoicevoxOnnxruntime::lib_unversioned_filename();
+    C_STRING_DROP_CHECKER.blacklist(filename).as_ptr()
+}
+
 /// ::voicevox_onnxruntime_load_once のオプション。
 #[cfg(feature = "load-onnxruntime")]
 #[repr(C)]
@@ -105,15 +131,8 @@ pub struct VoicevoxLoadOnnxruntimeOptions {
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_load_onnxruntime_options() -> VoicevoxLoadOnnxruntimeOptions
 {
-    use const_format::concatcp;
-
-    const RUST_FILENAME: &str = voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME;
-    static C_FILENAME: &[u8] = concatcp!(RUST_FILENAME, "\0").as_bytes();
-
     init_logger_once();
-
-    let filename = CStr::from_bytes_with_nul(C_FILENAME)
-        .unwrap_or_else(|e| panic!("{RUST_FILENAME:?} should not contain `\\0`: {e}"));
+    let filename = VoicevoxOnnxruntime::lib_versioned_filename();
     let filename = C_STRING_DROP_CHECKER.blacklist(filename).as_ptr();
     VoicevoxLoadOnnxruntimeOptions { filename }
 }
