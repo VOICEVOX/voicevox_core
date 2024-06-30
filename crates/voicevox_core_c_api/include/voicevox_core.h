@@ -292,6 +292,10 @@ typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
 #if defined(VOICEVOX_LOAD_ONNXRUNTIME)
 /**
  * ::voicevox_onnxruntime_load_once のオプション。
+ *
+ * \availability{
+ *   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この型定義も利用可能になる。
+ * }
  */
 typedef struct VoicevoxLoadOnnxruntimeOptions {
   /**
@@ -385,6 +389,10 @@ extern "C" {
  * ONNX Runtimeの動的ライブラリの、バージョン付きのファイル名。
  *
  * WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_unversioned_filename と同じ。
+ *
+ * \availability{
+ *   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -395,6 +403,10 @@ const char *voicevox_get_onnxruntime_lib_versioned_filename(void);
 #if defined(VOICEVOX_LOAD_ONNXRUNTIME)
 /**
  * ONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
+ *
+ * \availability{
+ *   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -407,6 +419,10 @@ const char *voicevox_get_onnxruntime_lib_unversioned_filename(void);
  * デフォルトの ::voicevox_onnxruntime_load_once のオプションを生成する。
  *
  * @return デフォルトの ::voicevox_onnxruntime_load_once のオプション
+ *
+ * \availability{
+ *   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+ * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -437,6 +453,10 @@ const struct VoicevoxOnnxruntime *voicevox_onnxruntime_get(void);
  *
  * @returns 結果コード
  *
+ * \availability{
+ *   バイナリによって、この関数か ::voicevox_onnxruntime_init_once のどちらかのみが利用可能。
+ * }
+ *
  * \safety{
  * - `options.filename`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `out_onnxruntime`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -458,6 +478,10 @@ VoicevoxResultCode voicevox_onnxruntime_load_once(struct VoicevoxLoadOnnxruntime
  * @param [out] out_onnxruntime ::VoicevoxOnnxruntime のインスタンス
  *
  * @returns 結果コード
+ *
+ * \availability{
+ *   バイナリによって、この関数か ::voicevox_onnxruntime_load_once のどちらかのみが利用可能。
+ * }
  *
  * \safety{
  * - `out_onnxruntime`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。

@@ -97,6 +97,10 @@ fn init_logger_once() {
 /// ONNX Runtimeの動的ライブラリの、バージョン付きのファイル名。
 ///
 /// WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_unversioned_filename と同じ。
+///
+/// \availability{
+///   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+/// }
 #[cfg(feature = "load-onnxruntime")]
 #[no_mangle]
 pub extern "C" fn voicevox_get_onnxruntime_lib_versioned_filename() -> *const c_char {
@@ -106,6 +110,10 @@ pub extern "C" fn voicevox_get_onnxruntime_lib_versioned_filename() -> *const c_
 }
 
 /// ONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
+///
+/// \availability{
+///   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+/// }
 #[cfg(feature = "load-onnxruntime")]
 #[no_mangle]
 pub extern "C" fn voicevox_get_onnxruntime_lib_unversioned_filename() -> *const c_char {
@@ -115,6 +123,10 @@ pub extern "C" fn voicevox_get_onnxruntime_lib_unversioned_filename() -> *const 
 }
 
 /// ::voicevox_onnxruntime_load_once のオプション。
+///
+/// \availability{
+///   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この型定義も利用可能になる。
+/// }
 #[cfg(feature = "load-onnxruntime")]
 #[repr(C)]
 pub struct VoicevoxLoadOnnxruntimeOptions {
@@ -127,6 +139,10 @@ pub struct VoicevoxLoadOnnxruntimeOptions {
 /// デフォルトの ::voicevox_onnxruntime_load_once のオプションを生成する。
 ///
 /// @return デフォルトの ::voicevox_onnxruntime_load_once のオプション
+///
+/// \availability{
+///   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+/// }
 #[cfg(feature = "load-onnxruntime")]
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_load_onnxruntime_options() -> VoicevoxLoadOnnxruntimeOptions
@@ -177,6 +193,10 @@ pub extern "C" fn voicevox_onnxruntime_get() -> Option<&'static VoicevoxOnnxrunt
 ///
 /// @returns 結果コード
 ///
+/// \availability{
+///   バイナリによって、この関数か ::voicevox_onnxruntime_init_once のどちらかのみが利用可能。
+/// }
+///
 /// \safety{
 /// - `options.filename`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `out_onnxruntime`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -209,6 +229,10 @@ pub unsafe extern "C" fn voicevox_onnxruntime_load_once(
 /// @param [out] out_onnxruntime ::VoicevoxOnnxruntime のインスタンス
 ///
 /// @returns 結果コード
+///
+/// \availability{
+///   バイナリによって、この関数か ::voicevox_onnxruntime_load_once のどちらかのみが利用可能。
+/// }
 ///
 /// \safety{
 /// - `out_onnxruntime`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。

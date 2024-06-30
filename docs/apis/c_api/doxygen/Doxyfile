@@ -2660,6 +2660,7 @@ GENERATE_LEGEND        = YES
 
 DOT_CLEANUP            = YES
 
+ALIASES += availability{1}="<dl><dt>Availability</dt><dd>\1</dd></dl>"
 ALIASES += example{1}="<dl><dt>Example</dt><dd>\1</dd></dl>"
 ALIASES += examples{1}="<dl><dt>Examples</dt><dd>\1</dd></dl>"
 
