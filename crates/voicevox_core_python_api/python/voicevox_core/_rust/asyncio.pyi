@@ -93,7 +93,10 @@ class Onnxruntime:
         Parameters
         ----------
         filename
-            ``dlopen``/``LoadLibraryExW`` の引数に使われるfilename。
+            ONNX Runtimeのファイル名（モジュール名）もしくはファイルパス。
+            ``dlopen``/`LoadLibraryExW
+            <https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw>`_
+            の引数に使われる。
         """
         ...
     def supported_devices(self) -> SupportedDevices:

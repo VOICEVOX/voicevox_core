@@ -47,7 +47,7 @@ Usage: voicevoxcoreexample options_list
 Options:
     --mode [AUTO] -> モード { Value should be one of [auto, cpu, gpu] }
     --vvm -> vvmファイルへのパス (always required) { String }
-    --onnxruntime [libonnxruntime.so.1.17.3] -> ONNX Runtimeのファイルネーム { String }
+    --onnxruntime [libonnxruntime.so.1.17.3] -> ONNX Runtimeのファイル名（モジュール名）もしくはファイルパス { String }
     --dictDir [./open_jtalk_dic_utf_8-1.11] -> Open JTalkの辞書ディレクトリ { String }
     --text [この音声は、ボイスボックスを使用して、出力されています。] -> 読み上げさせたい文章 { String }
     --out [./output.wav] -> 出力wavファイルのパス { String }

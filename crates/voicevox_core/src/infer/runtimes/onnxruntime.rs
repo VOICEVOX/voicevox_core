@@ -386,10 +386,13 @@ pub(crate) mod blocking {
 
     #[cfg(feature = "load-onnxruntime")]
     impl LoadOnce {
-        /// ONNX Runtimeのfilenameを指定する。
+        /// ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
         ///
-        /// デフォルトは[`Onnxruntime::LIB_VERSIONED_FILENAME`]。filenameは
-        /// `dlopen`/`LoadLibraryExW`の引数に使われる。
+        /// `dlopen`/[`LoadLibraryExW`]の引数に使われる。デフォルト
+        /// は[`Onnxruntime::LIB_VERSIONED_FILENAME`]。
+        ///
+        /// [`LoadLibraryExW`]:
+        /// https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw
         pub fn filename(mut self, filename: impl Into<std::ffi::OsString>) -> Self {
             self.filename = filename.into();
             self
@@ -525,10 +528,13 @@ pub(crate) mod tokio {
 
     #[cfg(feature = "load-onnxruntime")]
     impl LoadOnce {
-        /// ONNX Runtimeのfilenameを指定する。
+        /// ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
         ///
-        /// デフォルトは[`Onnxruntime::LIB_VERSIONED_FILENAME`]。filenameは
-        /// `dlopen`/`LoadLibraryExW`の引数に使われる。
+        /// `dlopen`/[`LoadLibraryExW`]の引数に使われる。デフォルト
+        /// は[`Onnxruntime::LIB_VERSIONED_FILENAME`]。
+        ///
+        /// [`LoadLibraryExW`]:
+        /// https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw
         pub fn filename(self, filename: impl Into<std::ffi::OsString>) -> Self {
             Self(self.0.filename(filename))
         }

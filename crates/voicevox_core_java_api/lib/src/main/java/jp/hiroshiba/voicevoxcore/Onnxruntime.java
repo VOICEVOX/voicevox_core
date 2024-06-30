@@ -74,10 +74,11 @@ public class Onnxruntime extends Dll {
   /** {@link #loadOnce}のビルダー。 */
   public static class LoadOnce {
     /**
-     * ONNX Runtimeのfilenameを指定する。
+     * ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
      *
-     * @param filename {@code dlopen}/{@code LoadLibraryExW}の引数に使われるfilename。デフォルトは{@link
-     *     LIB_VERSIONED_FILENAME}。
+     * @param filename {@code dlopen}/<a
+     *     href="https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw">{@code
+     *     LoadLibraryExW}</a>の引数に使われる。デフォルトは{@link LIB_VERSIONED_FILENAME}。
      * @return このオブジェクト。
      */
     public LoadOnce filename(@Nonnull String filename) {

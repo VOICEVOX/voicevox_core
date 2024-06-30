@@ -118,9 +118,9 @@ pub extern "C" fn voicevox_get_onnxruntime_lib_unversioned_filename() -> *const 
 #[cfg(feature = "load-onnxruntime")]
 #[repr(C)]
 pub struct VoicevoxLoadOnnxruntimeOptions {
-    /// ONNX Runtimeのfilenameを指定する。
+    /// ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
     ///
-    /// `dlopen`/`LoadLibraryExW`の引数に使われる。
+    /// `dlopen`/[`LoadLibraryExW`](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw)の引数に使われる。デフォルトは ::voicevox_get_onnxruntime_lib_versioned_filename と同じ。
     filename: *const c_char,
 }
 

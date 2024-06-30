@@ -17,7 +17,7 @@ fun main(args: Array<String>) {
       parser.option(ArgType.String, fullName = "vvm", description = "vvmファイルへのパス").required()
   val onnxruntime by
       parser
-          .option(ArgType.String, description = "ONNX Runtimeのファイルネーム")
+          .option(ArgType.String, description = "ONNX Runtimeのファイル名（モジュール名）もしくはファイルパス")
           .default(Onnxruntime.LIB_VERSIONED_FILENAME)
   val dictDir by
       parser
