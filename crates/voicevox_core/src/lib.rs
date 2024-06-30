@@ -14,12 +14,14 @@ const _: () = {
     // ないようにする
 
     #[cfg(feature = "load-onnxruntime")]
-    ort::assert_load_dynamic_is_enabled!(
+    ort::assert_feature!(
+        cfg(feature = "load-dynamic"),
         "when `load-onnxruntime` is enabled,`voicevox-ort/load-dynamic` must be also enabled",
     );
 
     #[cfg(feature = "link-onnxruntime")]
-    ort::assert_load_dynamic_is_disabled!(
+    ort::assert_feature!(
+        cfg(not(feature = "load-dynamic")),
         "when `link-onnxruntime` is enabled,`voicevox-ort/load-dynamic` must be disabled",
     );
 };
