@@ -4,6 +4,19 @@
  * 無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。
  *
  * <dl>
+ *   <dt id="voicevox-core-availability">
+ *     <a href="#voicevox-core-availability">Availability</a>
+ *   </dt>
+ *
+ *   <dd>
+ *     ヘッダによって次の二つのマクロのうちどちらかが存在する。[リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSでのみ`VOICEVOX_LINK_ONNXRUNTIME`が、他のプラットフォームでは`VOICEVOX_LOAD_ONNXRUNTIME`が存在する。
+ *
+ *     - `VOICEVOX_LOAD_ONNXRUNTIME`: ::voicevox_onnxruntime_load_once と、それに付属するアイテムが利用可能になる。
+ *     - `VOICEVOX_LINK_ONNXRUNTIME`: ::voicevox_onnxruntime_init_once が利用可能になる。またこのマクロが存在するなら、このライブラリはONNX Runtimeをロード時動的リンクする。
+ *   </dd>
+ * </dl>
+ *
+ * <dl>
  *   <dt id="voicevox-core-safety">
  *     <a href="#voicevox-core-safety">⚠️ Safety</a>
  *   </dt>
@@ -294,7 +307,7 @@ typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
  * ::voicevox_onnxruntime_load_once のオプション。
  *
  * \availability{
- *   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この型定義も利用可能になる。
+ *   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
  * }
  */
 typedef struct VoicevoxLoadOnnxruntimeOptions {
@@ -391,7 +404,7 @@ extern "C" {
  * WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_unversioned_filename と同じ。
  *
  * \availability{
- *   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+ *   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
  * }
  */
 #ifdef _WIN32
@@ -405,7 +418,7 @@ const char *voicevox_get_onnxruntime_lib_versioned_filename(void);
  * ONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
  *
  * \availability{
- *   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+ *   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
  * }
  */
 #ifdef _WIN32
@@ -421,7 +434,7 @@ const char *voicevox_get_onnxruntime_lib_unversioned_filename(void);
  * @return デフォルトの ::voicevox_onnxruntime_load_once のオプション
  *
  * \availability{
- *   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+ *   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
  * }
  */
 #ifdef _WIN32
@@ -454,7 +467,7 @@ const struct VoicevoxOnnxruntime *voicevox_onnxruntime_get(void);
  * @returns 結果コード
  *
  * \availability{
- *   バイナリによって、この関数か ::voicevox_onnxruntime_init_once のどちらかのみが利用可能。
+ *   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
  * }
  *
  * \safety{
@@ -480,7 +493,7 @@ VoicevoxResultCode voicevox_onnxruntime_load_once(struct VoicevoxLoadOnnxruntime
  * @returns 結果コード
  *
  * \availability{
- *   バイナリによって、この関数か ::voicevox_onnxruntime_load_once のどちらかのみが利用可能。
+ *   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSでのみ利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
  * }
  *
  * \safety{

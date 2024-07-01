@@ -99,7 +99,7 @@ fn init_logger_once() {
 /// WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_unversioned_filename と同じ。
 ///
 /// \availability{
-///   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
 /// }
 #[cfg(feature = "load-onnxruntime")]
 #[no_mangle]
@@ -112,7 +112,7 @@ pub extern "C" fn voicevox_get_onnxruntime_lib_versioned_filename() -> *const c_
 /// ONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
 ///
 /// \availability{
-///   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
 /// }
 #[cfg(feature = "load-onnxruntime")]
 #[no_mangle]
@@ -125,7 +125,7 @@ pub extern "C" fn voicevox_get_onnxruntime_lib_unversioned_filename() -> *const 
 /// ::voicevox_onnxruntime_load_once のオプション。
 ///
 /// \availability{
-///   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この型定義も利用可能になる。
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
 /// }
 #[cfg(feature = "load-onnxruntime")]
 #[repr(C)]
@@ -141,7 +141,7 @@ pub struct VoicevoxLoadOnnxruntimeOptions {
 /// @return デフォルトの ::voicevox_onnxruntime_load_once のオプション
 ///
 /// \availability{
-///   ::voicevox_onnxruntime_load_once が利用可能なときのみ、この関数も利用可能になる。
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
 /// }
 #[cfg(feature = "load-onnxruntime")]
 #[no_mangle]
@@ -194,7 +194,7 @@ pub extern "C" fn voicevox_onnxruntime_get() -> Option<&'static VoicevoxOnnxrunt
 /// @returns 結果コード
 ///
 /// \availability{
-///   バイナリによって、この関数か ::voicevox_onnxruntime_init_once のどちらかのみが利用可能。
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
 /// }
 ///
 /// \safety{
@@ -231,7 +231,7 @@ pub unsafe extern "C" fn voicevox_onnxruntime_load_once(
 /// @returns 結果コード
 ///
 /// \availability{
-///   バイナリによって、この関数か ::voicevox_onnxruntime_load_once のどちらかのみが利用可能。
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSでのみ利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
 /// }
 ///
 /// \safety{
