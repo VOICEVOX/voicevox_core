@@ -10,10 +10,16 @@ Rust API（`voicevox_core`）およびC API（`voicevox_core_c_api`）におい�
 
 ```console
 ❯ cargo build --release -p voicevox_core_c_api --features load-onnxruntime
+❯ sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
+  crates/voicevox_core_c_api/include/voicevox_core.h \
+  > ./voicevox_core.h
 ```
 
 ```console
 ❯ cargo build --release -p voicevox_core_c_api --features link-onnxruntime
+❯ sed 's:^//\(#define VOICEVOX_LINK_ONNXRUNTIME\)$:\1:' \
+  crates/voicevox_core_c_api/include/voicevox_core.h \
+  > ./voicevox_core.h
 ```
 
 C APIのリリースでは`dlopen`の利用が厳しいiOSでのみ`link-onnxruntime`で、その他は`load-onnxruntime`で
