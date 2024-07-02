@@ -3675,7 +3675,6 @@ dependencies = [
  "open_jtalk",
  "ouroboros",
  "pretty_assertions",
- "process_path",
  "rayon",
  "ref-cast",
  "regex",
