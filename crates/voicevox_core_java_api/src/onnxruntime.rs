@@ -31,7 +31,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Onnxruntime_rsNew<'loca
     filename: JString<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let filename = env.get_string(&filename)?.to_str()?.to_owned();
+        let filename = String::from(env.get_string(&filename)?);
         let internal = voicevox_core::blocking::Onnxruntime::load_once()
             .filename(filename)
             .exec()?;

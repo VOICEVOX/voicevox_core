@@ -149,9 +149,6 @@ where
                             env.throw_new("java/lang/IllegalArgumentException", error.to_string())
                         )
                     }
-                    JavaApiError::Utf8(error) => or_panic!(
-                        env.throw_new("java/lang/IllegalArgumentException", error.to_string())
-                    ),
                     JavaApiError::DeJson(error) => {
                         or_panic!(
                             env.throw_new("java/lang/IllegalArgumentException", error.to_string())
@@ -174,9 +171,6 @@ pub(crate) enum JavaApiError {
 
     #[from]
     Uuid(uuid::Error),
-
-    #[from]
-    Utf8(Utf8Error),
 
     DeJson(serde_json::Error),
 }
