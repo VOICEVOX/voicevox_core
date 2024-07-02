@@ -1,4 +1,4 @@
-use std::{error::Error as _, iter, str::Utf8Error};
+use std::{error::Error as _, iter};
 
 use derive_more::From;
 use easy_ext::ext;
