@@ -109,7 +109,8 @@ pub(crate) mod blocking {
         ///
         /// # Example
         ///
-        /// ```
+        #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
+        #[cfg_attr(feature = "link-onnxruntime", doc = "```compile_fail")]
         /// # #[tokio::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};

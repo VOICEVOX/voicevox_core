@@ -136,8 +136,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: "cargo-integration-test-cache-${{ matrix.features }}-${{ matrix.os }}"
-      - name: Run cargo integration test
-        run: RUST_BACKTRACE=full cargo test --test "*" -vv --features ,${{ matrix.features }} -- --include-ignored
+      - name: Run cargo integration test (load-onnxruntime)
+        run: RUST_BACKTRACE=full cargo test -vv --features ,${{ matrix.features }} -- --include-ignored
+      - name: Run cargo integration test (link-onnxruntime)
+        run: RUST_BACKTRACE=full cargo test -vv -p voicevox_core --features link-onnxruntime,${{ matrix.features }}
 
   c-header:
     runs-on: ubuntu-latest

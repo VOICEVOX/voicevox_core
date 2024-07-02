@@ -232,7 +232,8 @@ pub(crate) mod blocking {
     /// インスタンスは[voicevox-ort]側に作られる。Rustのクレートとしてこのライブラリを利用する場合、
     /// Tokio版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
     ///
-    /// ```
+    #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
+    #[cfg_attr(feature = "link-onnxruntime", doc = "```compile_fail")]
     /// # use voicevox_core as another_lib;
     /// #
     /// # fn main() -> anyhow::Result<()> {
@@ -419,7 +420,8 @@ pub(crate) mod tokio {
     /// インスタンスは[voicevox-ort]側に作られる。Rustのクレートとしてこのライブラリを利用する場合、
     /// ブロッキング版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
     ///
-    /// ```
+    #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
+    #[cfg_attr(feature = "link-onnxruntime", doc = "```compile_fail")]
     /// # use voicevox_core as another_lib;
     /// #
     /// # #[tokio::main]
