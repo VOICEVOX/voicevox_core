@@ -8,9 +8,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Tuple
 
-import voicevox_core
 from voicevox_core import AccelerationMode, AudioQuery
-from voicevox_core.asyncio import OpenJtalk, Synthesizer, VoiceModel
+from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModel
 
 
 async def main() -> None:
@@ -23,17 +22,23 @@ async def main() -> None:
     (
         acceleration_mode,
         vvm_path,
+        onnxruntime_filename,
         open_jtalk_dict_dir,
         text,
         out,
         style_id,
     ) = parse_args()
 
-    logger.debug("%s", f"{voicevox_core.supported_devices()=}")
+    logger.info("%s", f"Loading ONNX Runtime ({onnxruntime_filename=})")
+    onnxruntime = await Onnxruntime.load_once(filename=onnxruntime_filename)
+
+    logger.debug("%s", f"{onnxruntime.supported_devices()=}")
 
     logger.info("%s", f"Initializing ({acceleration_mode=}, {open_jtalk_dict_dir=})")
     synthesizer = Synthesizer(
-        await OpenJtalk.new(open_jtalk_dict_dir), acceleration_mode=acceleration_mode
+        onnxruntime,
+        await OpenJtalk.new(open_jtalk_dict_dir),
+        acceleration_mode=acceleration_mode,
     )
 
     logger.debug("%s", f"{synthesizer.metas=}")
@@ -53,7 +58,7 @@ async def main() -> None:
     logger.info("%s", f"Wrote `{out}`")
 
 
-def parse_args() -> Tuple[AccelerationMode, Path, Path, str, Path, int]:
+def parse_args() -> Tuple[AccelerationMode, Path, str, Path, str, Path, int]:
     argparser = ArgumentParser()
     argparser.add_argument(
         "--mode",
@@ -65,6 +70,11 @@ def parse_args() -> Tuple[AccelerationMode, Path, Path, str, Path, int]:
         "vvm",
         type=Path,
         help="vvmファイルへのパス",
+    )
+    argparser.add_argument(
+        "--onnxruntime",
+        default=Onnxruntime.LIB_VERSIONED_FILENAME,
+        help="ONNX Runtimeのライブラリのfilename",
     )
     argparser.add_argument(
         "--dict-dir",
@@ -90,7 +100,16 @@ def parse_args() -> Tuple[AccelerationMode, Path, Path, str, Path, int]:
         help="話者IDを指定",
     )
     args = argparser.parse_args()
-    return (args.mode, args.vvm, args.dict_dir, args.text, args.out, args.style_id)
+    # FIXME: 流石に多くなってきたので、`dataclass`化する
+    return (
+        args.mode,
+        args.vvm,
+        args.onnxruntime,
+        args.dict_dir,
+        args.text,
+        args.out,
+        args.style_id,
+    )
 
 
 def display_as_json(audio_query: AudioQuery) -> str:

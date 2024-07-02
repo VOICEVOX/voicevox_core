@@ -62,11 +62,11 @@ VOICEVOX コアでは`Synthesizer`に音声モデルを読み込むことでテ�
 
 ```python
 from pprint import pprint
-from voicevox_core.blocking import OpenJtalk, Synthesizer, VoiceModel
+from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModel
 
 # 1. Synthesizerの初期化
 open_jtalk_dict_dir = "open_jtalk_dic_utf_8-1.11"
-synthesizer = Synthesizer(OpenJtalk(open_jtalk_dict_dir))
+synthesizer = Synthesizer(Onnxruntime.load_once(), OpenJtalk(open_jtalk_dict_dir))
 
 # 2. 音声モデルの読み込み
 model = VoiceModel.from_path("model/0.vvm")
@@ -82,7 +82,7 @@ with open("output.wav", "wb") as f:
 
 ### 1. Synthesizer の初期化
 
-辞書などを取り扱う`OpenJtalk`のインスタンスを引数に渡して`Synthesizer`を初期化します。`Synthesizer`は音声合成だけでなく、音声モデルを複数読み込んだり、イントネーションのみを生成することもできます。
+AIエンジンの`Onnxruntime`のインスタンスと、辞書などを取り扱う`OpenJtalk`のインスタンスを引数に渡して`Synthesizer`を初期化します。`Synthesizer`は音声合成だけでなく、音声モデルを複数読み込んだり、イントネーションのみを生成することもできます。
 
 ### 2. 音声モデルの読み込み
 

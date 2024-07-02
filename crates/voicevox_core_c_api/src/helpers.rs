@@ -1,5 +1,5 @@
 use easy_ext::ext;
-use std::{error::Error as _, ffi::CStr, fmt::Debug, iter};
+use std::{ffi::CStr, fmt::Debug, iter};
 use uuid::Uuid;
 use voicevox_core::{AudioQueryModel, UserDictWord, VoiceModelId};
 
@@ -19,14 +19,6 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
     }
     return into_result_code(result);
 
-    fn display_error(err: &CApiError) {
-        itertools::chain(
-            [err.to_string()],
-            iter::successors(err.source(), |&e| e.source()).map(|e| format!("Caused by: {e}")),
-        )
-        .for_each(|msg| error!("{msg}"));
-    }
-
     fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
         use voicevox_core::ErrorKind::*;
         use CApiError::*;
@@ -37,6 +29,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(err)) => match err.kind() {
                 NotLoadedOpenjtalkDict => VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
                 GpuSupport => VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
+                InitInferenceRuntime => VOICEVOX_RESULT_INIT_INFERENCE_RUNTIME_ERROR,
                 OpenZipFile => VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR,
                 ReadZipEntry => VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR,
                 InvalidModelFormat => VOICEVOX_RESULT_INVALID_MODEL_HEADER_ERROR,
@@ -61,6 +54,14 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(InvalidUuid(_)) => VOICEVOX_RESULT_INVALID_UUID_ERROR,
         }
     }
+}
+
+pub(crate) fn display_error(err: &impl std::error::Error) {
+    itertools::chain(
+        [err.to_string()],
+        iter::successors(err.source(), |&e| e.source()).map(|e| format!("Caused by: {e}")),
+    )
+    .for_each(|msg| error!("{msg}"));
 }
 
 pub(crate) type CApiResult<T> = std::result::Result<T, CApiError>;

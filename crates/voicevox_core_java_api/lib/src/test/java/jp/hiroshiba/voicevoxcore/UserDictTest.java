@@ -17,8 +17,9 @@ class UserDictTest extends TestUtils {
   void checkLoad()
       throws InferenceFailedException, InvalidModelDataException, LoadUserDictException {
     VoiceModel model = loadModel();
+    Onnxruntime onnxruntime = loadOnnxruntime();
     OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+    Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
     UserDict userDict = new UserDict();
     synthesizer.loadVoiceModel(model);
     AudioQuery query1 =

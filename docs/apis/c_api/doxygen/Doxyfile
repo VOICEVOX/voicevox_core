@@ -2257,7 +2257,7 @@ INCLUDE_FILE_PATTERNS  =
 # recursively expanded use the := operator instead of the = operator.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-PREDEFINED             =
+PREDEFINED             = VOICEVOX_LOAD_ONNXRUNTIME= VOICEVOX_LINK_ONNXRUNTIME=
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The
@@ -2660,6 +2660,7 @@ GENERATE_LEGEND        = YES
 
 DOT_CLEANUP            = YES
 
+ALIASES += availability{1}="<dl><dt>Availability</dt><dd>\1</dd></dl>"
 ALIASES += example{1}="<dl><dt>Example</dt><dd>\1</dd></dl>"
 ALIASES += examples{1}="<dl><dt>Examples</dt><dd>\1</dd></dl>"
 

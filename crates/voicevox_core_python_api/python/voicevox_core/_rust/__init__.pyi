@@ -1,21 +1,4 @@
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from voicevox_core import SupportedDevices
-
 __version__: str
-
-def supported_devices() -> SupportedDevices:
-    """
-    このライブラリで利用可能なデバイスの情報を取得する。
-
-    .. code-block::
-
-       import voicevox_core
-
-       supported_devices = voicevox_core.supported_devices()
-    """
-    ...
 
 class NotLoadedOpenjtalkDictError(Exception):
     """open_jtalk辞書ファイルが読み込まれていない。"""
@@ -24,6 +7,11 @@ class NotLoadedOpenjtalkDictError(Exception):
 
 class GpuSupportError(Exception):
     """GPUモードがサポートされていない。"""
+
+    ...
+
+class InitInferenceRuntimeError(Exception):
+    """推論ライブラリのロードまたは初期化ができなかった。"""
 
     ...
 

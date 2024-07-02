@@ -21,13 +21,18 @@ use crate::{
 };
 
 pub(crate) struct Status<R: InferenceRuntime> {
+    pub(crate) rt: &'static R,
     loaded_models: std::sync::Mutex<LoadedModels<R>>,
     session_options: InferenceDomainMap<SessionOptionsByDomain>,
 }
 
 impl<R: InferenceRuntime> Status<R> {
-    pub(crate) fn new(session_options: InferenceDomainMap<SessionOptionsByDomain>) -> Self {
+    pub(crate) fn new(
+        rt: &'static R,
+        session_options: InferenceDomainMap<SessionOptionsByDomain>,
+    ) -> Self {
         Self {
+            rt,
             loaded_models: Default::default(),
             session_options,
         }
@@ -44,7 +49,7 @@ impl<R: InferenceRuntime> Status<R> {
             .ensure_acceptable(model_header)?;
 
         let session_sets_with_inner_ids = model_contents
-            .create_session_sets(&self.session_options)
+            .create_session_sets(self.rt, &self.session_options)
             .map_err(|source| LoadModelError {
                 path: model_header.path.clone(),
                 context: LoadModelErrorKind::InvalidModelData,
@@ -310,6 +315,7 @@ impl<R: InferenceRuntime> InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomai
 impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
     fn create_session_sets<R: InferenceRuntime>(
         &self,
+        rt: &R,
         session_options: &InferenceDomainMap<SessionOptionsByDomain>,
     ) -> anyhow::Result<InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>> {
         duplicate! {
@@ -321,7 +327,7 @@ impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
                 .field
                 .as_ref()
                 .map(|(inner_voice_ids, model_bytes)| {
-                    let session_set = InferenceSessionSet::new(model_bytes, &session_options.field)?;
+                    let session_set = InferenceSessionSet::new(rt, model_bytes, &session_options.field)?;
                     Ok::<_, anyhow::Error>((inner_voice_ids.clone(), session_set))
                 })
                 .transpose()?;
@@ -348,7 +354,6 @@ mod tests {
             InferenceSessionOptions,
         },
         macros::tests::assert_debug_fmt_eq,
-        synthesizer::InferenceRuntimeImpl,
     };
 
     use super::Status;
@@ -371,7 +376,10 @@ mod tests {
                 TalkOperation::Decode => heavy_session_options,
             },
         };
-        let status = Status::<InferenceRuntimeImpl>::new(session_options);
+        let status = Status::new(
+            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
+            session_options,
+        );
 
         assert_eq!(
             light_session_options,
@@ -392,9 +400,12 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_load_model_works() {
-        let status = Status::<InferenceRuntimeImpl>::new(InferenceDomainMap {
-            talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
-        });
+        let status = Status::new(
+            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
+            InferenceDomainMap {
+                talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
+            },
+        );
         let model = &crate::tokio::VoiceModel::sample().await.unwrap();
         let model_contents = &model.read_inference_models().await.unwrap();
         let result = status.insert_model(model.header(), model_contents);
@@ -405,9 +416,12 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_is_model_loaded_works() {
-        let status = Status::<InferenceRuntimeImpl>::new(InferenceDomainMap {
-            talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
-        });
+        let status = Status::new(
+            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
+            InferenceDomainMap {
+                talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
+            },
+        );
         let vvm = &crate::tokio::VoiceModel::sample().await.unwrap();
         let model_header = vvm.header();
         let model_contents = &vvm.read_inference_models().await.unwrap();

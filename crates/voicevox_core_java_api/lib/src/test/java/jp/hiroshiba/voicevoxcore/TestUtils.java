@@ -15,6 +15,16 @@ class TestUtils {
     }
   }
 
+  Onnxruntime loadOnnxruntime() {
+    final String FILENAME = "../../test_util/data/lib/" + Onnxruntime.LIB_VERSIONED_FILENAME;
+
+    try {
+      return Onnxruntime.loadOnce().filename(FILENAME).exec();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   OpenJtalk loadOpenJtalk() {
     String cwd = System.getProperty("user.dir");
     File path = new File(cwd + "/../../test_util/data/open_jtalk_dic_utf_8-1.11");

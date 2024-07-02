@@ -16,10 +16,10 @@ use voicevox_core::{
 
 use crate::{
     ExtractFullContextLabelError, GetSupportedDevicesError, GpuSupportError, InferenceFailedError,
-    InvalidModelDataError, InvalidModelFormatError, InvalidWordError, LoadUserDictError,
-    ModelAlreadyLoadedError, ModelNotFoundError, NotLoadedOpenjtalkDictError, OpenZipFileError,
-    ParseKanaError, ReadZipEntryError, SaveUserDictError, StyleAlreadyLoadedError,
-    StyleNotFoundError, UseUserDictError, WordNotFoundError,
+    InitInferenceRuntimeError, InvalidModelDataError, InvalidModelFormatError, InvalidWordError,
+    LoadUserDictError, ModelAlreadyLoadedError, ModelNotFoundError, NotLoadedOpenjtalkDictError,
+    OpenZipFileError, ParseKanaError, ReadZipEntryError, SaveUserDictError,
+    StyleAlreadyLoadedError, StyleNotFoundError, UseUserDictError, WordNotFoundError,
 };
 
 pub(crate) fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
@@ -191,6 +191,7 @@ pub(crate) impl<T> voicevox_core::Result<T> {
             let top = match err.kind() {
                 ErrorKind::NotLoadedOpenjtalkDict => NotLoadedOpenjtalkDictError::new_err(msg),
                 ErrorKind::GpuSupport => GpuSupportError::new_err(msg),
+                ErrorKind::InitInferenceRuntime => InitInferenceRuntimeError::new_err(msg),
                 ErrorKind::OpenZipFile => OpenZipFileError::new_err(msg),
                 ErrorKind::ReadZipEntry => ReadZipEntryError::new_err(msg),
                 ErrorKind::ModelAlreadyLoaded => ModelAlreadyLoadedError::new_err(msg),

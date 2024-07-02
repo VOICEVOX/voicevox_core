@@ -17,6 +17,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR = 3,
     /// GPUモードがサポートされていない
     VOICEVOX_RESULT_GPU_SUPPORT_ERROR = 4,
+    /// 推論ライブラリのロードまたは初期化ができなかった
+    VOICEVOX_RESULT_INIT_INFERENCE_RUNTIME_ERROR = 29,
     /// スタイルIDに対するスタイルが見つからなかった
     VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR = 6,
     /// 音声モデルIDに対する音声モデルが見つからなかった
@@ -68,6 +70,9 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         VOICEVOX_RESULT_GPU_SUPPORT_ERROR => cstr!("GPU機能をサポートすることができません"),
         VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR => {
             cstr!("サポートされているデバイス情報取得中にエラーが発生しました")
+        }
+        VOICEVOX_RESULT_INIT_INFERENCE_RUNTIME_ERROR => {
+            cstr!("推論ライブラリのロードまたは初期化ができませんでした")
         }
         VOICEVOX_RESULT_OK => cstr!("エラーが発生しませんでした"),
         VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR => cstr!(

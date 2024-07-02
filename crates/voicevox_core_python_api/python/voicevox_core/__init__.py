@@ -19,6 +19,7 @@ from ._rust import (  # noqa: F401
     GetSupportedDevicesError,
     GpuSupportError,
     InferenceFailedError,
+    InitInferenceRuntimeError,
     InvalidModelDataError,
     InvalidWordError,
     LoadUserDictError,
@@ -34,7 +35,6 @@ from ._rust import (  # noqa: F401
     UseUserDictError,
     WordNotFoundError,
     __version__,
-    supported_devices,
 )
 
 from . import asyncio, blocking  # noqa: F401 isort: skip
@@ -50,6 +50,7 @@ __all__ = [
     "GetSupportedDevicesError",
     "GpuSupportError",
     "InferenceFailedError",
+    "InitInferenceRuntimeError",
     "InvalidModelDataError",
     "InvalidWordError",
     "LoadUserDictError",
@@ -67,7 +68,6 @@ __all__ = [
     "StyleNotFoundError",
     "StyleVersion",
     "SupportedDevices",
-    "supported_devices",
     "UseUserDictError",
     "UserDictWord",
     "UserDictWordType",

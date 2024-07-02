@@ -1,3 +1,4 @@
+# TODO: voicevox_onnxruntimeになったらやめる
 import glob
 import platform
 from ctypes import CDLL

@@ -7,7 +7,7 @@
 import conftest
 import pytest
 import pytest_asyncio
-from voicevox_core.asyncio import OpenJtalk, Synthesizer
+from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer
 
 
 def test_enter_returns_workable_self(synthesizer: Synthesizer) -> None:
@@ -38,8 +38,13 @@ def test_access_after_exit_denied(synthesizer: Synthesizer) -> None:
 
 
 @pytest_asyncio.fixture
-async def synthesizer(open_jtalk: OpenJtalk) -> Synthesizer:
-    return Synthesizer(open_jtalk)
+async def synthesizer(onnxruntime: Onnxruntime, open_jtalk: OpenJtalk) -> Synthesizer:
+    return Synthesizer(onnxruntime, open_jtalk)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def onnxruntime() -> Onnxruntime:
+    return await Onnxruntime.load_once(filename=conftest.onnxruntime_filename)
 
 
 @pytest_asyncio.fixture(scope="function")

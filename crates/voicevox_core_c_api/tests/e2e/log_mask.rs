@@ -20,6 +20,13 @@ impl Utf8Output {
         )
     }
 
+    pub(crate) fn mask_onnxruntime_version(self) -> Self {
+        self.mask_stderr(
+            static_regex!(regex::escape(ort::downloaded_version!())),
+            "{onnxruntime_version}",
+        )
+    }
+
     pub(crate) fn mask_windows_video_cards(self) -> Self {
         self.mask_stderr(
             static_regex!(

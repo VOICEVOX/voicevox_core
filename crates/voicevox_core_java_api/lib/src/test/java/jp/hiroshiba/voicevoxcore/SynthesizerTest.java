@@ -20,9 +20,12 @@ class SynthesizerTest extends TestUtils {
 
   @Test
   void checkIsGpuMode() {
+    Onnxruntime onnxruntime = loadOnnxruntime();
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer =
-        Synthesizer.builder(openJtalk).accelerationMode(Synthesizer.AccelerationMode.CPU).build();
+        Synthesizer.builder(onnxruntime, openJtalk)
+            .accelerationMode(Synthesizer.AccelerationMode.CPU)
+            .build();
     assertFalse(synthesizer.isGpuMode());
   }
 
@@ -45,9 +48,10 @@ class SynthesizerTest extends TestUtils {
 
   @Test
   void checkModel() throws InvalidModelDataException {
+    Onnxruntime onnxruntime = loadOnnxruntime();
     VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+    Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
 
     assertTrue(synthesizer.metas().length == 0);
 
@@ -65,8 +69,9 @@ class SynthesizerTest extends TestUtils {
   @Test
   void checkAudioQuery() throws InferenceFailedException, InvalidModelDataException {
     VoiceModel model = loadModel();
+    Onnxruntime onnxruntime = loadOnnxruntime();
     OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+    Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
     synthesizer.loadVoiceModel(model);
     AudioQuery query = synthesizer.createAudioQuery("こんにちは", model.metas[0].styles[0].id);
 
@@ -77,7 +82,8 @@ class SynthesizerTest extends TestUtils {
   void checkAccentPhrases() throws InferenceFailedException, InvalidModelDataException {
     VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+    Onnxruntime onnxruntime = loadOnnxruntime();
+    Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
     synthesizer.loadVoiceModel(model);
     List<AccentPhrase> accentPhrases =
         synthesizer.createAccentPhrases("こんにちは", model.metas[0].styles[0].id);
@@ -106,8 +112,9 @@ class SynthesizerTest extends TestUtils {
   @Test
   void checkTts() throws InferenceFailedException, InvalidModelDataException {
     VoiceModel model = loadModel();
+    Onnxruntime onnxruntime = loadOnnxruntime();
     OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+    Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
     synthesizer.loadVoiceModel(model);
     synthesizer.tts("こんにちは", model.metas[0].styles[0].id);
   }

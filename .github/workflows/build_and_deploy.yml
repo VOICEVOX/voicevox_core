@@ -41,7 +41,14 @@ defaults:
     shell: bash
 
 jobs:
-  config: # 全 jobs で利用する定数の定義。実行対象の条件をフィルタリングする。
+  # 全 jobs で利用する定数の定義。実行対象の条件をフィルタリングする。
+  #
+  # c_release_format = plain-cdylib | ios-xcframework
+  #
+  #     `plain-cdylib`の場合、動的ライブラリとその付属物をZIPに固めたものをC APIとしてリリースする。
+  #     `ios-xcframework`の場合はiOS用のXCFrameworkをC APIとしてリリースする。また、ONNX Runtimeの
+  #     リンク方法に関わるCargoフィーチャも`c_release_format`によって選択される。
+  config:
     runs-on: ubuntu-latest
     outputs:
       includes: ${{ steps.strategy_matrix.outputs.includes }}
@@ -57,6 +64,7 @@ jobs:
               "features": "",
               "target": "x86_64-pc-windows-msvc",
               "artifact_name": "windows-x64-cpu",
+              "c_release_format": "plain-cdylib",
               "whl_local_version": "cpu",
               "can_skip_in_simple_test": true
             },
@@ -65,6 +73,7 @@ jobs:
               "features": "directml",
               "target": "x86_64-pc-windows-msvc",
               "artifact_name": "windows-x64-directml",
+              "c_release_format": "plain-cdylib",
               "whl_local_version": "directml",
               "can_skip_in_simple_test": false
             },
@@ -73,6 +82,7 @@ jobs:
               "features": "cuda",
               "target": "x86_64-pc-windows-msvc",
               "artifact_name": "windows-x64-cuda",
+              "c_release_format": "plain-cdylib",
               "whl_local_version": "cuda",
               "can_skip_in_simple_test": true
             },
@@ -81,6 +91,7 @@ jobs:
               "features": "",
               "target": "i686-pc-windows-msvc",
               "artifact_name": "windows-x86-cpu",
+              "c_release_format": "plain-cdylib",
               "whl_local_version": "cpu",
               "can_skip_in_simple_test": true
             },
@@ -89,6 +100,7 @@ jobs:
               "features": "",
               "target": "x86_64-unknown-linux-gnu",
               "artifact_name": "linux-x64-cpu",
+              "c_release_format": "plain-cdylib",
               "whl_local_version": "cpu",
               "can_skip_in_simple_test": true
             },
@@ -97,6 +109,7 @@ jobs:
               "features": "cuda",
               "target": "x86_64-unknown-linux-gnu",
               "artifact_name": "linux-x64-gpu",
+              "c_release_format": "plain-cdylib",
               "whl_local_version": "cuda",
               "can_skip_in_simple_test": false
             },
@@ -105,6 +118,7 @@ jobs:
               "features": "",
               "target": "aarch64-unknown-linux-gnu",
               "artifact_name": "linux-arm64-cpu",
+              "c_release_format": "plain-cdylib",
               "whl_local_version": "cpu",
               "can_skip_in_simple_test": true
             },
@@ -113,6 +127,7 @@ jobs:
               "features": "",
               "target": "aarch64-linux-android",
               "artifact_name": "android-arm64-cpu",
+              "c_release_format": "plain-cdylib",
               "can_skip_in_simple_test": true
             },
             {
@@ -120,6 +135,7 @@ jobs:
               "features": "",
               "target": "x86_64-linux-android",
               "artifact_name": "android-x86_64-cpu",
+              "c_release_format": "plain-cdylib",
               "can_skip_in_simple_test": true
             },
             {
@@ -127,6 +143,7 @@ jobs:
               "features": "",
               "target": "aarch64-apple-darwin",
               "artifact_name": "osx-arm64-cpu",
+              "c_release_format": "plain-cdylib",
               "whl_local_version": "cpu",
               "can_skip_in_simple_test": false
             },
@@ -135,6 +152,7 @@ jobs:
               "features": "",
               "target": "x86_64-apple-darwin",
               "artifact_name": "osx-x64-cpu",
+              "c_release_format": "plain-cdylib",
               "whl_local_version": "cpu",
               "can_skip_in_simple_test": true
             },
@@ -143,6 +161,7 @@ jobs:
               "features": "",
               "target": "aarch64-apple-ios",
               "artifact_name": "ios-arm64-cpu",
+              "c_release_format": "ios-xcframework",
               "can_skip_in_simple_test": true
             },
             {
@@ -150,6 +169,7 @@ jobs:
               "features": "",
               "target": "aarch64-apple-ios-sim",
               "artifact_name": "ios-arm64-cpu-sim",
+              "c_release_format": "ios-xcframework",
               "can_skip_in_simple_test": true
             },
             {
@@ -157,6 +177,7 @@ jobs:
               "features": "",
               "target": "x86_64-apple-ios",
               "artifact_name": "ios-x64-cpu",
+              "c_release_format": "ios-xcframework",
               "can_skip_in_simple_test": true
             }
           ]'
@@ -244,8 +265,12 @@ jobs:
       - name: build voicevox_core_c_api
         shell: bash
         run: |
+          case ${{ matrix.c_release_format }} in
+            plain-cdylib) linking=load-onnxruntime ;;
+            ios-xcframework) linking=link-onnxruntime ;;
+          esac
           function build() {
-            cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+            cargo build -p voicevox_core_c_api -vv --features "$linking",${{ matrix.features }} --target ${{ matrix.target }} --release
           }
           if ${{ !inputs.is_production }}; then
             build
@@ -285,7 +310,12 @@ jobs:
       - name: Organize artifact
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
-          cp -v crates/voicevox_core_c_api/include/voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
+          case ${{ matrix.c_release_format }} in
+            plain-cdylib) feature=VOICEVOX_LOAD_ONNXRUNTIME ;;
+            ios-xcframework) feature=VOICEVOX_LINK_ONNXRUNTIME ;;
+          esac
+          sed 's:^//\(#define '"$feature"'\)$:\1:' crates/voicevox_core_c_api/include/voicevox_core.h \
+            > "artifact/${{ env.ASSET_NAME }}/voicevox_core.h"
           cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
           cp -v -n target/${{ matrix.target }}/release/{,lib}onnxruntime*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
@@ -305,7 +335,7 @@ jobs:
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
       - name: Upload artifact to build XCFramework
-        if: contains(matrix.target, 'ios')
+        if: matrix.c_release_format == 'ios-xcframework'
         uses: actions/upload-artifact@v4
         with:
           name: voicevox_core-${{ matrix.target }}
@@ -315,7 +345,7 @@ jobs:
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: fromJson(needs.config.outputs.deploy) && !contains(matrix.target, 'ios')
+        if: fromJson(needs.config.outputs.deploy) && matrix.c_release_format == 'plain-cdylib'
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true

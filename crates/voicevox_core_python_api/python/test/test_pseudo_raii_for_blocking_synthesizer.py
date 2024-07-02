@@ -6,7 +6,7 @@
 
 import conftest
 import pytest
-from voicevox_core.blocking import OpenJtalk, Synthesizer
+from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer
 
 
 def test_enter_returns_workable_self(synthesizer: Synthesizer) -> None:
@@ -37,8 +37,13 @@ def test_access_after_exit_denied(synthesizer: Synthesizer) -> None:
 
 
 @pytest.fixture
-def synthesizer(open_jtalk: OpenJtalk) -> Synthesizer:
-    return Synthesizer(open_jtalk)
+def synthesizer(onnxruntime: Onnxruntime, open_jtalk: OpenJtalk) -> Synthesizer:
+    return Synthesizer(onnxruntime, open_jtalk)
+
+
+@pytest.fixture(scope="session")
+def onnxruntime() -> Onnxruntime:
+    return Onnxruntime.load_once(filename=conftest.onnxruntime_filename)
 
 
 @pytest.fixture(scope="session")

@@ -33,14 +33,21 @@ int main() {
   VoicevoxInitializeOptions  initializeOptions = voicevox_make_default_initialize_options();
   std::string dict = GetOpenJTalkDict();
 
+  const VoicevoxOnnxruntime* onnxruntime;
+  auto load_ort_options = voicevox_make_default_load_onnxruntime_options();
+  auto result = voicevox_onnxruntime_load_once(load_ort_options, &onnxruntime);
+  if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
+    OutErrorMessage(result);
+    return 0;
+  }
   OpenJtalkRc* open_jtalk;
-  auto result = voicevox_open_jtalk_rc_new(dict.c_str(),&open_jtalk);
+  result = voicevox_open_jtalk_rc_new(dict.c_str(),&open_jtalk);
   if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
     OutErrorMessage(result);
     return 0;
   }
   VoicevoxSynthesizer* synthesizer;
-  result = voicevox_synthesizer_new(open_jtalk,initializeOptions,&synthesizer);
+  result = voicevox_synthesizer_new(onnxruntime,open_jtalk,initializeOptions,&synthesizer);
   if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
     OutErrorMessage(result);
     return 0;
