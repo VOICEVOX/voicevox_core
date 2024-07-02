@@ -16,6 +16,20 @@ jobs:
           submodules: true
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
+      - name: Extract the Rust version used on Docs.rs
+        id: docsrs-rust-version
+        run: |
+          page=$(curl -f https://docs.rs/about/builds)
+          date=$(
+            sed -n \
+              's:^.*<code>rustc 1\.[0-9]\+\.[0-9]\+-nightly ([0-9a-f]\{9\} \([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\))</code>.*$:\1:p' \
+              <<< "$page"
+          )
+          echo "rust-toolchain=nightly-$date" >> "$GITHUB_OUTPUT"
+      - name: Set up nightly Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.docsrs-rust-version.outputs.rust-toolchain }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -25,8 +39,8 @@ jobs:
         with:
           java-version: "11"
           distribution: "adopt"
-      - name: Install cargo-binstall
-        uses: taiki-e/install-action@cargo-binstall
+      - name: Install cargo-docs-rs
+        uses: dtolnay/install@cargo-docs-rs
       - name: Create a venv
         uses: ./.github/actions/create-venv
       - name: Install python dependencies
@@ -39,6 +53,10 @@ jobs:
         run: mkdir -p public/apis/c_api
       - name: cp docs/apis/index.html
         run: cp docs/apis/index.html public/apis/
+      - name: Generate rustdoc
+        run: |
+          cargo +${{ steps.docsrs-rust-version.outputs.rust-toolchain }} docs-rs -p voicevox_core
+          mv target/x86_64-unknown-linux-gnu/doc public/apis/rust_api
       - name: cp crates/voicevox_core_c_api/include/voicevox_core.h
         run: cp crates/voicevox_core_c_api/include/voicevox_core.h docs/apis/c_api/doxygen/
       - name: Generate doxygen document
