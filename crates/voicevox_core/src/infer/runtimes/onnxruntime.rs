@@ -233,7 +233,7 @@ pub(crate) mod blocking {
     /// Tokio版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
     ///
     #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
-    #[cfg_attr(feature = "link-onnxruntime", doc = "```compile_fail")]
+    #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
     /// # use voicevox_core as another_lib;
     /// #
     /// # fn main() -> anyhow::Result<()> {
@@ -421,7 +421,7 @@ pub(crate) mod tokio {
     /// ブロッキング版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
     ///
     #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
-    #[cfg_attr(feature = "link-onnxruntime", doc = "```compile_fail")]
+    #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
     /// # use voicevox_core as another_lib;
     /// #
     /// # #[tokio::main]
