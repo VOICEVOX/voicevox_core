@@ -1,5 +1,3 @@
-use crate::infer::runtimes::Onnxruntime;
-
 /// [`blocking::Synthesizer::synthesis`]および[`tokio::Synthesizer::synthesis`]のオプション。
 ///
 /// [`blocking::Synthesizer::synthesis`]: blocking::Synthesizer::synthesis
@@ -68,8 +66,6 @@ pub struct InitializeOptions {
     pub cpu_num_threads: u16,
 }
 
-pub(crate) type InferenceRuntimeImpl = Onnxruntime;
-
 pub(crate) mod blocking {
     // FIXME: ここのdocのコードブロックはasync版のものなので、`tokio`モジュールの方に移した上で、
     // (ブロッキング版をpublic APIにするならの話ではあるが)ブロッキング版はブロッキング版でコード例
@@ -93,16 +89,16 @@ pub(crate) mod blocking {
         status::Status,
         text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
         AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
-        SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
+        SynthesisOptions, VoiceModelId, VoiceModelMeta,
     };
 
-    use super::{AccelerationMode, InferenceRuntimeImpl, InitializeOptions, TtsOptions};
+    use super::{AccelerationMode, InitializeOptions, TtsOptions};
 
     const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
-        pub(super) status: Status<InferenceRuntimeImpl>,
+        pub(super) status: Status<crate::blocking::Onnxruntime>,
         open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
         kana_analyzer: KanaAnalyzer,
         use_gpu: bool,
@@ -113,22 +109,29 @@ pub(crate) mod blocking {
         ///
         /// # Example
         ///
-        #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
-        #[cfg_attr(not(windows), doc = "```")]
+        #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
+        #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
         /// # #[tokio::main]
         /// # async fn main() -> anyhow::Result<()> {
-        /// # use test_util::OPEN_JTALK_DIC_DIR;
+        /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};
         /// #
         /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
         /// #
         /// use std::sync::Arc;
         ///
         /// use voicevox_core::{
-        ///     tokio::{OpenJtalk, Synthesizer},
+        ///     tokio::{Onnxruntime, OpenJtalk, Synthesizer},
         ///     AccelerationMode, InitializeOptions,
         /// };
         ///
+        /// # if cfg!(windows) {
+        /// #     // Windows\System32\onnxruntime.dllを回避
+        /// #     voicevox_core::blocking::Onnxruntime::load_once()
+        /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
+        /// #         .exec()?;
+        /// # }
         /// let mut syntesizer = Synthesizer::new(
+        ///     Onnxruntime::load_once().exec().await?,
         ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
         ///     &InitializeOptions {
         ///         acceleration_mode: ACCELERATION_MODE,
@@ -139,13 +142,17 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
-        pub fn new(open_jtalk: O, options: &InitializeOptions) -> Result<Self> {
+        pub fn new(
+            onnxruntime: &'static crate::blocking::Onnxruntime,
+            open_jtalk: O,
+            options: &InitializeOptions,
+        ) -> Result<Self> {
             #[cfg(windows)]
             list_windows_video_cards();
 
             let use_gpu = match options.acceleration_mode {
                 AccelerationMode::Auto => {
-                    let supported_devices = SupportedDevices::create()?;
+                    let supported_devices = onnxruntime.supported_devices()?;
 
                     if cfg!(feature = "directml") {
                         *supported_devices.dml()
@@ -157,7 +164,7 @@ pub(crate) mod blocking {
                 AccelerationMode::Gpu => true,
             };
 
-            if use_gpu && !can_support_gpu_feature()? {
+            if use_gpu && !can_support_gpu_feature(onnxruntime)? {
                 return Err(ErrorRepr::GpuSupport.into());
             }
 
@@ -169,13 +176,16 @@ pub(crate) mod blocking {
             let heavy_session_options =
                 InferenceSessionOptions::new(options.cpu_num_threads, use_gpu);
 
-            let status = Status::new(InferenceDomainMap {
-                talk: enum_map! {
-                    TalkOperation::PredictDuration
-                    | TalkOperation::PredictIntonation => light_session_options,
-                    TalkOperation::Decode => heavy_session_options,
+            let status = Status::new(
+                onnxruntime,
+                InferenceDomainMap {
+                    talk: enum_map! {
+                        TalkOperation::PredictDuration
+                        | TalkOperation::PredictIntonation => light_session_options,
+                        TalkOperation::Decode => heavy_session_options,
+                    },
                 },
-            });
+            );
 
             return Ok(Self {
                 status,
@@ -184,8 +194,8 @@ pub(crate) mod blocking {
                 use_gpu,
             });
 
-            fn can_support_gpu_feature() -> Result<bool> {
-                let supported_devices = SupportedDevices::create()?;
+            fn can_support_gpu_feature(onnxruntime: &crate::blocking::Onnxruntime) -> Result<bool> {
+                let supported_devices = onnxruntime.supported_devices()?;
 
                 if cfg!(feature = "directml") {
                     Ok(*supported_devices.dml())
@@ -193,6 +203,10 @@ pub(crate) mod blocking {
                     Ok(*supported_devices.cuda())
                 }
             }
+        }
+
+        pub fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
+            self.status.rt
         }
 
         /// ハードウェアアクセラレーションがGPUモードか判定する。
@@ -437,13 +451,13 @@ pub(crate) mod blocking {
         ///
         /// # Example
         ///
-        #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
-        #[cfg_attr(not(windows), doc = "```")]
+        /// ```
         /// # #[tokio::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -677,13 +691,13 @@ pub(crate) mod blocking {
         ///
         /// # Example
         ///
-        #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
-        #[cfg_attr(not(windows), doc = "```")]
+        /// ```
         /// # #[tokio::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -726,13 +740,13 @@ pub(crate) mod blocking {
         ///
         /// # Example
         ///
-        #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
-        #[cfg_attr(not(windows), doc = "```")]
+        /// ```
         /// # #[tokio::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -759,13 +773,13 @@ pub(crate) mod blocking {
         ///
         /// # Examples
         ///
-        #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
-        #[cfg_attr(not(windows), doc = "```")]
+        /// ```
         /// # #[tokio::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -1135,10 +1149,18 @@ pub(crate) mod tokio {
 
     // FIXME: docを書く
     impl<O: Send + Sync + 'static> self::Synthesizer<O> {
-        pub fn new(open_jtalk: O, options: &InitializeOptions) -> Result<Self> {
-            super::blocking::Synthesizer::new(open_jtalk, options)
+        pub fn new(
+            onnxruntime: &'static crate::tokio::Onnxruntime,
+            open_jtalk: O,
+            options: &InitializeOptions,
+        ) -> Result<Self> {
+            super::blocking::Synthesizer::new(&onnxruntime.0, open_jtalk, options)
                 .map(Into::into)
                 .map(Self)
+        }
+
+        pub fn onnxruntime(&self) -> &'static crate::tokio::Onnxruntime {
+            crate::tokio::Onnxruntime::from_blocking(self.0.onnxruntime())
         }
 
         pub fn is_gpu_mode(&self) -> bool {
@@ -1305,6 +1327,9 @@ mod tests {
     #[tokio::test]
     async fn load_model_works(#[case] expected_result_at_initialized: Result<()>) {
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1328,6 +1353,9 @@ mod tests {
     #[tokio::test]
     async fn is_use_gpu_works() {
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1344,6 +1372,9 @@ mod tests {
     async fn is_loaded_model_by_style_id_works(#[case] style_id: u32, #[case] expected: bool) {
         let style_id = StyleId::new(style_id);
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1372,6 +1403,9 @@ mod tests {
     #[tokio::test]
     async fn predict_duration_works() {
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1403,6 +1437,9 @@ mod tests {
     #[tokio::test]
     async fn predict_intonation_works() {
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1442,6 +1479,9 @@ mod tests {
     #[tokio::test]
     async fn decode_works() {
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1534,6 +1574,9 @@ mod tests {
         #[case] expected_kana_text: &str,
     ) {
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
@@ -1604,6 +1647,9 @@ mod tests {
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
     ) {
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
@@ -1671,6 +1717,9 @@ mod tests {
     #[tokio::test]
     async fn create_accent_phrases_works_for_japanese_commas_and_periods() {
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
@@ -1732,6 +1781,9 @@ mod tests {
     #[tokio::test]
     async fn mora_length_works() {
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
@@ -1770,6 +1822,9 @@ mod tests {
     #[tokio::test]
     async fn mora_pitch_works() {
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
@@ -1804,6 +1859,9 @@ mod tests {
     #[tokio::test]
     async fn mora_data_works() {
         let syntesizer = super::tokio::Synthesizer::new(
+            crate::tokio::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),

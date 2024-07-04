@@ -7,7 +7,7 @@
 import conftest
 import pytest
 import pytest_asyncio
-from voicevox_core.asyncio import OpenJtalk, Synthesizer, VoiceModel
+from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModel
 
 
 def test_voice_model_metas_works(voice_model: VoiceModel) -> None:
@@ -16,7 +16,10 @@ def test_voice_model_metas_works(voice_model: VoiceModel) -> None:
 
 @pytest.mark.asyncio
 async def test_synthesizer_metas_works(voice_model: VoiceModel) -> None:
-    synthesizer = Synthesizer(await OpenJtalk.new(conftest.open_jtalk_dic_dir))
+    synthesizer = Synthesizer(
+        await Onnxruntime.load_once(filename=conftest.onnxruntime_filename),
+        await OpenJtalk.new(conftest.open_jtalk_dic_dir),
+    )
     await synthesizer.load_voice_model(voice_model)
     _ = synthesizer.metas
 

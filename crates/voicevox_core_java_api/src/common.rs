@@ -72,6 +72,7 @@ where
                         let class = class!(
                             NotLoadedOpenjtalkDict,
                             GpuSupport,
+                            InitInferenceRuntime,
                             OpenZipFile,
                             ReadZipEntry,
                             InvalidModelFormat,

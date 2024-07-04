@@ -362,6 +362,32 @@ name = "camino"
 version = "1.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c59e92b5a388f549b863a7bea62612c09f24c8393560709a54558a9abdfb3b9c"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "cargo-platform"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24b1f0365a6c6bb4020cd05806fd0d33c44d38046b8bd7f0e40814b9763cabfc"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "cargo_metadata"
+version = "0.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d886547e41f740c616ae73108f6eb70afe6d940c7bc697cb30f13daec073037"
+dependencies = [
+ "camino",
+ "cargo-platform",
+ "semver",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
 
 [[package]]
 name = "cbindgen"
@@ -443,7 +469,7 @@ checksum = "77ed9a53e5d4d9c573ae844bfac6872b159cb1d1585a83b29e7a64b7eef7332a"
 dependencies = [
  "glob",
  "libc",
- "libloading",
+ "libloading 0.7.3",
 ]
 
 [[package]]
@@ -597,6 +623,26 @@ dependencies = [
  "libc",
  "unicode-width",
  "windows-sys 0.42.0",
+]
+
+[[package]]
+name = "const_format"
+version = "0.2.32"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3a214c7af3d04997541b18d432afaff4c455e79e2029079647e72fc2bd27673"
+dependencies = [
+ "const_format_proc_macros",
+]
+
+[[package]]
+name = "const_format_proc_macros"
+version = "0.2.32"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7f6ff08fd20f4f299298a28e2dfa8a8ba1036e6cd2460ac1de7b425d76f2500"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-xid",
 ]
 
 [[package]]
@@ -1100,10 +1146,11 @@ dependencies = [
 
 [[package]]
 name = "fs-err"
-version = "2.9.0"
+version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0845fa252299212f0389d64ba26f34fa32cfe41588355f21ed507c59a0f64541"
+checksum = "88a41f105fe1d5b6b34b2055e3dc59bb79b46b48b2040b9e6c7b4b5de097aa41"
 dependencies = [
+ "autocfg",
  "tokio",
 ]
 
@@ -1676,6 +1723,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "libloading"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
+dependencies = [
+ "cfg-if",
+ "windows-targets 0.48.0",
+]
+
+[[package]]
 name = "libm"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1990,9 +2047,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
+checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 
 [[package]]
 name = "opaque-debug"
@@ -2503,6 +2560,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "ref-cast"
+version = "1.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccf0a6f84d5f1d581da8b41b47ec8600871962f2a528115b542b362d4b744931"
+dependencies = [
+ "ref-cast-impl",
+]
+
+[[package]]
+name = "ref-cast-impl"
+version = "1.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcc303e793d3734489387d205e9b186fac9c6cfacedd98cbb2e8a5943595f3e6"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.48",
+]
+
+[[package]]
 name = "regex"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2793,21 +2870,24 @@ name = "semver"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e25dfac463d778e353db5be2449d1cce89bd6fd23c9f1ea21310ce6e5a1b29c4"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "serde"
-version = "1.0.164"
+version = "1.0.203"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e8c8cf938e98f769bc164923b06dce91cea1751522f46f8466461af04c9027d"
+checksum = "7253ab4de971e72fb7be983802300c30b5a7f0c2e56fab8abfc6a214307c0094"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.164"
+version = "1.0.203"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9735b638ccc51c28bf6914d90a2e9725b377144fc612c49a611fddd1b631d68"
+checksum = "500cbc0ebeb6f46627f50f3f5811ccf6bf00643be300b4c3eabc0ef55dc5b5ba"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3136,16 +3216,18 @@ dependencies = [
  "anyhow",
  "bindgen 0.69.4",
  "camino",
+ "cargo_metadata",
  "flate2",
  "fs-err",
  "indoc",
- "libloading",
+ "libloading 0.7.3",
  "once_cell",
  "reqwest",
  "serde",
  "serde_json",
  "tar",
  "tokio",
+ "voicevox-ort",
  "zip",
 ]
 
@@ -3466,6 +3548,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0edd1e5b14653f783770bce4a4dabb4a5108a5370a5f5d8cfe8710c361f6c8b"
 
 [[package]]
+name = "unicode-xid"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
+
+[[package]]
 name = "unindent"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3535,11 +3623,14 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "voicevox-ort"
 version = "2.0.0-rc.2"
-source = "git+https://github.com/VOICEVOX/ort.git?rev=a2d6ae22327869e896bf4c16828734d09516d2d9#a2d6ae22327869e896bf4c16828734d09516d2d9"
+source = "git+https://github.com/VOICEVOX/ort.git?rev=07c047c449b959d8f76593046e139bae520d59c3#07c047c449b959d8f76593046e139bae520d59c3"
 dependencies = [
+ "anyhow",
  "half",
  "js-sys",
+ "libloading 0.8.3",
  "ndarray",
+ "once_cell",
  "thiserror",
  "tracing",
  "voicevox-ort-sys",
@@ -3549,7 +3640,7 @@ dependencies = [
 [[package]]
 name = "voicevox-ort-sys"
 version = "2.0.0-rc.2"
-source = "git+https://github.com/VOICEVOX/ort.git?rev=a2d6ae22327869e896bf4c16828734d09516d2d9#a2d6ae22327869e896bf4c16828734d09516d2d9"
+source = "git+https://github.com/VOICEVOX/ort.git?rev=07c047c449b959d8f76593046e139bae520d59c3#07c047c449b959d8f76593046e139bae520d59c3"
 dependencies = [
  "flate2",
  "sha2",
@@ -3564,6 +3655,7 @@ dependencies = [
  "anyhow",
  "async_zip",
  "camino",
+ "const_format",
  "derive-getters",
  "derive-new",
  "derive_more",
@@ -3584,6 +3676,7 @@ dependencies = [
  "ouroboros",
  "pretty_assertions",
  "rayon",
+ "ref-cast",
  "regex",
  "rstest",
  "rstest_reuse",
@@ -3616,6 +3709,7 @@ dependencies = [
  "chrono",
  "clap 4.0.10",
  "colorchoice",
+ "const_format",
  "cstr",
  "derive-getters",
  "duct",
@@ -3624,12 +3718,13 @@ dependencies = [
  "inventory",
  "itertools 0.10.5",
  "libc",
- "libloading",
+ "libloading 0.7.3",
  "libtest-mimic",
  "ndarray",
  "ndarray-stats",
  "once_cell",
  "process_path",
+ "ref-cast",
  "regex",
  "serde",
  "serde_json",
@@ -3642,6 +3737,7 @@ dependencies = [
  "tracing-subscriber",
  "typetag",
  "uuid",
+ "voicevox-ort",
  "voicevox_core",
 ]
 
@@ -3652,6 +3748,7 @@ dependencies = [
  "android_logger",
  "chrono",
  "derive_more",
+ "duplicate",
  "easy-ext",
  "jni",
  "once_cell",
@@ -3681,6 +3778,7 @@ dependencies = [
  "camino",
  "easy-ext",
  "log",
+ "once_cell",
  "pyo3",
  "pyo3-asyncio",
  "pyo3-log",

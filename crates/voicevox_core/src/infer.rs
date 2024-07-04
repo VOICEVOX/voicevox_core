@@ -18,10 +18,12 @@ pub(crate) trait InferenceRuntime: 'static {
     type Session: Sized + Send + 'static;
     type RunContext<'a>: From<&'a mut Self::Session> + PushInputTensor;
 
-    fn supported_devices() -> crate::Result<SupportedDevices>;
+    /// このライブラリで利用可能なデバイスの情報を取得する。
+    fn supported_devices(&self) -> crate::Result<SupportedDevices>;
 
     #[allow(clippy::type_complexity)]
     fn new_session(
+        &self,
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
         options: InferenceSessionOptions,
     ) -> anyhow::Result<(

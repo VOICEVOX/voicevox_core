@@ -1,3 +1,1 @@
-mod onnxruntime;
-
-pub(crate) use self::onnxruntime::Onnxruntime;
+pub(crate) mod onnxruntime;

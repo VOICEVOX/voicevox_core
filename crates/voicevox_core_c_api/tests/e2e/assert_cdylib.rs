@@ -8,6 +8,7 @@ use assert_cmd::assert::{Assert, AssertResult, OutputAssertExt as _};
 use clap::Parser as _;
 use duct::cmd;
 use easy_ext::ext;
+use itertools::Itertools as _;
 use libloading::Library;
 use libtest_mimic::{Failed, Trial};
 
@@ -46,7 +47,15 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
     // テスト対象が無いときに`cargo build`をスキップしたいが、判定部分がプライベート。
     // そのためスキップするのはCLIオプションに`--ignored`か`--include-ignored`が無いときのみ
     if args.ignored || args.include_ignored {
-        cmd!(env!("CARGO"), "build", "--release", "--lib").run()?;
+        cmd!(
+            env!("CARGO"),
+            "build",
+            "--release",
+            "--lib",
+            "--features",
+            &format!(",{}", C::FEATURES.iter().format(",")),
+        )
+        .run()?;
 
         ensure!(
             C::cdylib_path().exists(),
@@ -96,6 +105,7 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
 }
 
 pub(crate) trait TestContext {
+    const FEATURES: &'static [&'static str];
     const TARGET_DIR: &'static str;
     const CDYLIB_NAME: &'static str;
     const RUNTIME_ENVS: &'static [(&'static str, &'static str)];
