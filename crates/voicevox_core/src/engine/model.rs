@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// モーラ（子音＋母音）ごとの情報。
 #[derive(Clone, Debug, new, Getters, Deserialize, Serialize, PartialEq)]
-pub struct MoraModel {
+pub struct Mora {
     /// 文字。
     text: String,
     /// 子音の音素。
@@ -23,20 +23,20 @@ pub struct MoraModel {
 
 /// AccentPhrase (アクセント句ごとの情報)。
 #[derive(Clone, Debug, new, Getters, Deserialize, Serialize, PartialEq)]
-pub struct AccentPhraseModel {
+pub struct AccentPhrase {
     /// モーラの配列。
-    moras: Vec<MoraModel>,
+    moras: Vec<Mora>,
     /// アクセント箇所。
     accent: usize,
     /// 後ろに無音を付けるかどうか。
-    pause_mora: Option<MoraModel>,
+    pause_mora: Option<Mora>,
     /// 疑問系かどうか。
     #[serde(default)]
     is_interrogative: bool,
 }
 
-impl AccentPhraseModel {
-    pub(super) fn set_pause_mora(&mut self, pause_mora: Option<MoraModel>) {
+impl AccentPhrase {
+    pub(super) fn set_pause_mora(&mut self, pause_mora: Option<Mora>) {
         self.pause_mora = pause_mora;
     }
 
@@ -48,9 +48,9 @@ impl AccentPhraseModel {
 /// AudioQuery (音声合成用のクエリ)。
 #[allow(clippy::too_many_arguments)]
 #[derive(Clone, new, Getters, Deserialize, Serialize)]
-pub struct AudioQueryModel {
+pub struct AudioQuery {
     /// アクセント句の配列。
-    accent_phrases: Vec<AccentPhraseModel>,
+    accent_phrases: Vec<AccentPhrase>,
     /// 全体の話速。
     speed_scale: f32,
     /// 全体の音高。
@@ -76,7 +76,7 @@ pub struct AudioQueryModel {
     kana: Option<String>,
 }
 
-impl AudioQueryModel {
+impl AudioQuery {
     pub(crate) fn with_kana(self, kana: Option<String>) -> Self {
         Self { kana, ..self }
     }
@@ -88,12 +88,12 @@ mod tests {
     use rstest::rstest;
     use serde_json::json;
 
-    use super::AudioQueryModel;
+    use super::AudioQuery;
 
     #[rstest]
     fn check_audio_query_model_json_field_snake_case() {
         let audio_query_model =
-            AudioQueryModel::new(vec![], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, false, None);
+            AudioQuery::new(vec![], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, false, None);
         let val = serde_json::to_value(audio_query_model).unwrap();
         check_json_field_snake_case(&val);
     }
@@ -120,7 +120,7 @@ mod tests {
 
     #[rstest]
     fn it_accepts_json_without_optional_fields() -> anyhow::Result<()> {
-        serde_json::from_value::<AudioQueryModel>(json!({
+        serde_json::from_value::<AudioQuery>(json!({
             "accent_phrases": [
                 {
                     "moras": [

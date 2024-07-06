@@ -1,4 +1,4 @@
-use crate::engine::model::{AccentPhraseModel, MoraModel};
+use crate::engine::model::{AccentPhrase, Mora};
 use crate::engine::mora_list::MORA_LIST_MINIMUM;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -16,7 +16,7 @@ pub(crate) struct KanaParseError(String);
 
 type KanaParseResult<T> = std::result::Result<T, KanaParseError>;
 
-static TEXT2MORA_WITH_UNVOICE: Lazy<HashMap<String, MoraModel>> = Lazy::new(|| {
+static TEXT2MORA_WITH_UNVOICE: Lazy<HashMap<String, Mora>> = Lazy::new(|| {
     let mut text2mora_with_unvoice = HashMap::new();
     for [text, consonant, vowel] in MORA_LIST_MINIMUM {
         let consonant = if !consonant.is_empty() {
@@ -28,7 +28,7 @@ static TEXT2MORA_WITH_UNVOICE: Lazy<HashMap<String, MoraModel>> = Lazy::new(|| {
 
         if ["a", "i", "u", "e", "o"].contains(vowel) {
             let upper_vowel = vowel.to_uppercase();
-            let unvoice_mora = MoraModel::new(
+            let unvoice_mora = Mora::new(
                 text.to_string(),
                 consonant.clone(),
                 consonant_length,
@@ -39,7 +39,7 @@ static TEXT2MORA_WITH_UNVOICE: Lazy<HashMap<String, MoraModel>> = Lazy::new(|| {
             text2mora_with_unvoice.insert(UNVOICE_SYMBOL.to_string() + text, unvoice_mora);
         }
 
-        let mora = MoraModel::new(
+        let mora = Mora::new(
             text.to_string(),
             consonant,
             consonant_length,
@@ -52,10 +52,10 @@ static TEXT2MORA_WITH_UNVOICE: Lazy<HashMap<String, MoraModel>> = Lazy::new(|| {
     text2mora_with_unvoice
 });
 
-fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhraseModel> {
+fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhrase> {
     let phrase_vec: Vec<char> = phrase.chars().collect();
     let mut accent_index: Option<usize> = None;
-    let mut moras: Vec<MoraModel> = Vec::new();
+    let mut moras: Vec<Mora> = Vec::new();
     let mut stack = String::new();
     let mut matched_text: Option<String> = None;
     let text2mora = &TEXT2MORA_WITH_UNVOICE;
@@ -107,15 +107,10 @@ fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhraseModel> {
             "accent not found in accent phrase: {phrase}"
         )));
     }
-    Ok(AccentPhraseModel::new(
-        moras,
-        accent_index.unwrap(),
-        None,
-        false,
-    ))
+    Ok(AccentPhrase::new(moras, accent_index.unwrap(), None, false))
 }
 
-pub(crate) fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> {
+pub(crate) fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhrase>> {
     const TERMINATOR: char = '\0';
     let mut parsed_result = Vec::new();
     let chars_of_text = text.chars().chain([TERMINATOR]);
@@ -142,7 +137,7 @@ pub(crate) fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> 
             let accent_phrase = {
                 let mut accent_phrase = text_to_accent_phrase(&phrase)?;
                 if letter == PAUSE_DELIMITER {
-                    accent_phrase.set_pause_mora(Some(MoraModel::new(
+                    accent_phrase.set_pause_mora(Some(Mora::new(
                         PAUSE_DELIMITER.to_string(),
                         None,
                         None,
@@ -163,7 +158,7 @@ pub(crate) fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhraseModel>> 
     Ok(parsed_result)
 }
 
-pub(crate) fn create_kana(accent_phrases: &[AccentPhraseModel]) -> String {
+pub(crate) fn create_kana(accent_phrases: &[AccentPhrase]) -> String {
     let mut text = String::new();
     for phrase in accent_phrases {
         let moras = phrase.moras();

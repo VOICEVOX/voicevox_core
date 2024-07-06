@@ -151,8 +151,8 @@ mod blocking {
     };
     use uuid::Uuid;
     use voicevox_core::{
-        AccelerationMode, AudioQueryModel, InitializeOptions, StyleId, SynthesisOptions,
-        TtsOptions, UserDictWord,
+        AccelerationMode, AudioQuery, InitializeOptions, StyleId, SynthesisOptions, TtsOptions,
+        UserDictWord,
     };
 
     use crate::{convert::VoicevoxCoreResultExt as _, Closable};
@@ -497,7 +497,7 @@ mod blocking {
         ))]
         fn synthesis<'py>(
             &self,
-            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQueryModel,
+            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
             style_id: u32,
             enable_interrogative_upspeak: bool,
             py: Python<'py>,
@@ -651,8 +651,8 @@ mod asyncio {
     };
     use uuid::Uuid;
     use voicevox_core::{
-        AccelerationMode, AudioQueryModel, InitializeOptions, StyleId, SynthesisOptions,
-        TtsOptions, UserDictWord,
+        AccelerationMode, AudioQuery, InitializeOptions, StyleId, SynthesisOptions, TtsOptions,
+        UserDictWord,
     };
 
     use crate::{convert::VoicevoxCoreResultExt as _, Closable};
@@ -1045,7 +1045,7 @@ mod asyncio {
         #[pyo3(signature=(audio_query,style_id,enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak))]
         fn synthesis<'py>(
             &self,
-            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQueryModel,
+            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
             style_id: u32,
             enable_interrogative_upspeak: bool,
             py: Python<'py>,

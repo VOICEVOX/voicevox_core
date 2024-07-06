@@ -1,12 +1,12 @@
 use easy_ext::ext;
 use std::{ffi::CStr, fmt::Debug, iter};
 use uuid::Uuid;
-use voicevox_core::{AudioQueryModel, UserDictWord, VoiceModelId};
+use voicevox_core::{AudioQuery, UserDictWord, VoiceModelId};
 
 use thiserror::Error;
 use tracing::error;
 
-use voicevox_core::AccentPhraseModel;
+use voicevox_core::AccentPhrase;
 
 use crate::{
     result_code::VoicevoxResultCode, VoicevoxAccelerationMode, VoicevoxInitializeOptions,
@@ -80,11 +80,11 @@ pub(crate) enum CApiError {
     InvalidUuid(uuid::Error),
 }
 
-pub(crate) fn audio_query_model_to_json(audio_query_model: &AudioQueryModel) -> String {
+pub(crate) fn audio_query_model_to_json(audio_query_model: &AudioQuery) -> String {
     serde_json::to_string(audio_query_model).expect("should be always valid")
 }
 
-pub(crate) fn accent_phrases_to_json(audio_query_model: &[AccentPhraseModel]) -> String {
+pub(crate) fn accent_phrases_to_json(audio_query_model: &[AccentPhrase]) -> String {
     serde_json::to_string(audio_query_model).expect("should be always valid")
 }
 
