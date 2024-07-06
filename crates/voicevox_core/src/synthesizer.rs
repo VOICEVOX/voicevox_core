@@ -712,7 +712,7 @@ pub(crate) mod blocking {
         /// # }
         /// ```
         ///
-        /// [AudioQuery]: crate::AudioQueryModel
+        /// [AudioQuery]: crate::QueryModel
         pub fn audio_query_from_kana(&self, kana: &str, style_id: StyleId) -> Result<AudioQuery> {
             let accent_phrases = self.create_accent_phrases_from_kana(kana, style_id)?;
             Ok(AudioQuery::from_accent_phrases(accent_phrases).with_kana(Some(kana.to_owned())))
@@ -789,7 +789,7 @@ pub(crate) mod blocking {
         /// # }
         /// ```
         ///
-        /// [AudioQuery]: crate::AudioQueryModel
+        /// [AudioQuery]: crate::QueryModel
         pub fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery> {
             let accent_phrases = self.create_accent_phrases(text, style_id)?;
             Ok(AudioQuery::from_accent_phrases(accent_phrases))
