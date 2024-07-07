@@ -76,7 +76,7 @@ pub(crate) mod blocking {
     use enum_map::enum_map;
 
     use crate::{
-        engine::{create_kana, mora_to_text, MoraModel, OjtPhoneme},
+        engine::{create_kana, mora_to_text, Mora, OjtPhoneme},
         error::ErrorRepr,
         infer::{
             domains::{
@@ -88,8 +88,8 @@ pub(crate) mod blocking {
         },
         status::Status,
         text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
-        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
-        SynthesisOptions, VoiceModelId, VoiceModelMeta,
+        AccentPhrase, AudioQuery, FullcontextExtractor, Result, StyleId, SynthesisOptions,
+        VoiceModelId, VoiceModelMeta,
     };
 
     use super::{AccelerationMode, InitializeOptions, TtsOptions};
@@ -243,7 +243,7 @@ pub(crate) mod blocking {
         /// AudioQueryから音声合成を行う。
         pub fn synthesis(
             &self,
-            audio_query: &AudioQueryModel,
+            audio_query: &AudioQuery,
             style_id: StyleId,
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
@@ -352,12 +352,12 @@ pub(crate) mod blocking {
             return Ok(to_wav(wave, audio_query));
 
             fn adjust_interrogative_accent_phrases(
-                accent_phrases: &[AccentPhraseModel],
-            ) -> Vec<AccentPhraseModel> {
+                accent_phrases: &[AccentPhrase],
+            ) -> Vec<AccentPhrase> {
                 accent_phrases
                     .iter()
                     .map(|accent_phrase| {
-                        AccentPhraseModel::new(
+                        AccentPhrase::new(
                             adjust_interrogative_moras(accent_phrase),
                             *accent_phrase.accent(),
                             accent_phrase.pause_mora().clone(),
@@ -367,13 +367,13 @@ pub(crate) mod blocking {
                     .collect()
             }
 
-            fn adjust_interrogative_moras(accent_phrase: &AccentPhraseModel) -> Vec<MoraModel> {
+            fn adjust_interrogative_moras(accent_phrase: &AccentPhrase) -> Vec<Mora> {
                 let moras = accent_phrase.moras();
                 if *accent_phrase.is_interrogative() && !moras.is_empty() {
                     let last_mora = moras.last().unwrap();
                     let last_mora_pitch = *last_mora.pitch();
                     if last_mora_pitch != 0.0 {
-                        let mut new_moras: Vec<MoraModel> = Vec::with_capacity(moras.len() + 1);
+                        let mut new_moras: Vec<Mora> = Vec::with_capacity(moras.len() + 1);
                         new_moras.extend_from_slice(moras.as_slice());
                         let interrogative_mora = make_interrogative_mora(last_mora);
                         new_moras.push(interrogative_mora);
@@ -383,14 +383,14 @@ pub(crate) mod blocking {
                 moras.clone()
             }
 
-            fn make_interrogative_mora(last_mora: &MoraModel) -> MoraModel {
+            fn make_interrogative_mora(last_mora: &Mora) -> Mora {
                 const FIX_VOWEL_LENGTH: f32 = 0.15;
                 const ADJUST_PITCH: f32 = 0.3;
                 const MAX_PITCH: f32 = 6.5;
 
                 let pitch = (*last_mora.pitch() + ADJUST_PITCH).min(MAX_PITCH);
 
-                MoraModel::new(
+                Mora::new(
                     mora_to_text(None, last_mora.vowel()),
                     None,
                     None,
@@ -400,7 +400,7 @@ pub(crate) mod blocking {
                 )
             }
 
-            fn to_wav(wave: &[f32], audio_query: &AudioQueryModel) -> Vec<u8> {
+            fn to_wav(wave: &[f32], audio_query: &AudioQuery) -> Vec<u8> {
                 let volume_scale = *audio_query.volume_scale();
                 let output_stereo = *audio_query.output_stereo();
                 let output_sampling_rate = *audio_query.output_sampling_rate();
@@ -475,7 +475,7 @@ pub(crate) mod blocking {
             &self,
             kana: &str,
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let accent_phrases = self.kana_analyzer.analyze(kana)?;
             self.replace_mora_data(&accent_phrases, style_id)
         }
@@ -483,9 +483,9 @@ pub(crate) mod blocking {
         /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
         pub fn replace_mora_data(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let accent_phrases = self.replace_phoneme_length(accent_phrases, style_id)?;
             self.replace_mora_pitch(&accent_phrases, style_id)
         }
@@ -493,9 +493,9 @@ pub(crate) mod blocking {
         /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
         pub fn replace_phoneme_length(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let (_, phoneme_data_list) = initial_process(accent_phrases);
 
             let (_, _, vowel_indexes_data) = split_mora(&phoneme_data_list);
@@ -510,12 +510,12 @@ pub(crate) mod blocking {
             let new_accent_phrases = accent_phrases
                 .iter()
                 .map(|accent_phrase| {
-                    AccentPhraseModel::new(
+                    AccentPhrase::new(
                         accent_phrase
                             .moras()
                             .iter()
                             .map(|mora| {
-                                let new_mora = MoraModel::new(
+                                let new_mora = Mora::new(
                                     mora.text().clone(),
                                     mora.consonant().clone(),
                                     mora.consonant().as_ref().map(|_| {
@@ -531,7 +531,7 @@ pub(crate) mod blocking {
                             .collect(),
                         *accent_phrase.accent(),
                         accent_phrase.pause_mora().as_ref().map(|pause_mora| {
-                            let new_pause_mora = MoraModel::new(
+                            let new_pause_mora = Mora::new(
                                 pause_mora.text().clone(),
                                 pause_mora.consonant().clone(),
                                 *pause_mora.consonant_length(),
@@ -553,9 +553,9 @@ pub(crate) mod blocking {
         /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
         pub fn replace_mora_pitch(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let (_, phoneme_data_list) = initial_process(accent_phrases);
 
             let mut base_start_accent_list = vec![0];
@@ -626,12 +626,12 @@ pub(crate) mod blocking {
             let new_accent_phrases = accent_phrases
                 .iter()
                 .map(|accent_phrase| {
-                    AccentPhraseModel::new(
+                    AccentPhrase::new(
                         accent_phrase
                             .moras()
                             .iter()
                             .map(|mora| {
-                                let new_mora = MoraModel::new(
+                                let new_mora = Mora::new(
                                     mora.text().clone(),
                                     mora.consonant().clone(),
                                     *mora.consonant_length(),
@@ -645,7 +645,7 @@ pub(crate) mod blocking {
                             .collect(),
                         *accent_phrase.accent(),
                         accent_phrase.pause_mora().as_ref().map(|pause_mora| {
-                            let new_pause_mora = MoraModel::new(
+                            let new_pause_mora = Mora::new(
                                 pause_mora.text().clone(),
                                 pause_mora.consonant().clone(),
                                 *pause_mora.consonant_length(),
@@ -665,7 +665,7 @@ pub(crate) mod blocking {
 
             fn create_one_accent_list(
                 accent_list: &mut Vec<i64>,
-                accent_phrase: &AccentPhraseModel,
+                accent_phrase: &AccentPhrase,
                 point: i32,
             ) {
                 let mut one_accent_list: Vec<i64> = Vec::new();
@@ -712,15 +712,10 @@ pub(crate) mod blocking {
         /// # }
         /// ```
         ///
-        /// [AudioQuery]: crate::AudioQueryModel
-        pub fn audio_query_from_kana(
-            &self,
-            kana: &str,
-            style_id: StyleId,
-        ) -> Result<AudioQueryModel> {
+        /// [AudioQuery]: crate::AudioQuery
+        pub fn audio_query_from_kana(&self, kana: &str, style_id: StyleId) -> Result<AudioQuery> {
             let accent_phrases = self.create_accent_phrases_from_kana(kana, style_id)?;
-            Ok(AudioQueryModel::from_accent_phrases(accent_phrases)
-                .with_kana(Some(kana.to_owned())))
+            Ok(AudioQuery::from_accent_phrases(accent_phrases).with_kana(Some(kana.to_owned())))
         }
 
         /// AquesTalk風記法から音声合成を行う。
@@ -764,7 +759,7 @@ pub(crate) mod blocking {
             &self,
             text: &str,
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let accent_phrases = self.open_jtalk_analyzer.analyze(text)?;
             self.replace_mora_data(&accent_phrases, style_id)
         }
@@ -794,10 +789,10 @@ pub(crate) mod blocking {
         /// # }
         /// ```
         ///
-        /// [AudioQuery]: crate::AudioQueryModel
-        pub fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQueryModel> {
+        /// [AudioQuery]: crate::AudioQuery
+        pub fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery> {
             let accent_phrases = self.create_accent_phrases(text, style_id)?;
-            Ok(AudioQueryModel::from_accent_phrases(accent_phrases))
+            Ok(AudioQuery::from_accent_phrases(accent_phrases))
         }
 
         /// 日本語のテキストから音声合成を行う。
@@ -1036,7 +1031,7 @@ pub(crate) mod blocking {
         }
     }
 
-    fn initial_process(accent_phrases: &[AccentPhraseModel]) -> (Vec<MoraModel>, Vec<OjtPhoneme>) {
+    fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<OjtPhoneme>) {
         let flatten_moras = to_flatten_moras(accent_phrases);
 
         let mut phoneme_strings = vec!["pau".to_string()];
@@ -1052,7 +1047,7 @@ pub(crate) mod blocking {
 
         return (flatten_moras, phoneme_data_list);
 
-        fn to_flatten_moras(accent_phrases: &[AccentPhraseModel]) -> Vec<MoraModel> {
+        fn to_flatten_moras(accent_phrases: &[AccentPhrase]) -> Vec<Mora> {
             let mut flatten_moras = Vec::new();
 
             for accent_phrase in accent_phrases {
@@ -1114,8 +1109,8 @@ pub(crate) mod blocking {
         (consonant_phoneme_list, vowel_phoneme_list, vowel_indexes)
     }
 
-    impl AudioQueryModel {
-        fn from_accent_phrases(accent_phrases: Vec<AccentPhraseModel>) -> Self {
+    impl AudioQuery {
+        fn from_accent_phrases(accent_phrases: Vec<AccentPhrase>) -> Self {
             let kana = create_kana(&accent_phrases);
             Self::new(
                 accent_phrases,
@@ -1137,8 +1132,8 @@ pub(crate) mod tokio {
     use std::sync::Arc;
 
     use crate::{
-        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
-        SynthesisOptions, VoiceModelId, VoiceModelMeta,
+        AccentPhrase, AudioQuery, FullcontextExtractor, Result, StyleId, SynthesisOptions,
+        VoiceModelId, VoiceModelMeta,
     };
 
     use super::{InitializeOptions, TtsOptions};
@@ -1191,7 +1186,7 @@ pub(crate) mod tokio {
 
         pub async fn synthesis(
             &self,
-            audio_query: &AudioQueryModel,
+            audio_query: &AudioQuery,
             style_id: StyleId,
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
@@ -1207,7 +1202,7 @@ pub(crate) mod tokio {
             &self,
             kana: &str,
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let blocking = self.0.clone();
             let kana = kana.to_owned();
 
@@ -1217,9 +1212,9 @@ pub(crate) mod tokio {
 
         pub async fn replace_mora_data(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let blocking = self.0.clone();
             let accent_phrases = accent_phrases.to_owned();
 
@@ -1229,9 +1224,9 @@ pub(crate) mod tokio {
 
         pub async fn replace_phoneme_length(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let blocking = self.0.clone();
             let accent_phrases = accent_phrases.to_owned();
 
@@ -1243,9 +1238,9 @@ pub(crate) mod tokio {
 
         pub async fn replace_mora_pitch(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let blocking = self.0.clone();
             let accent_phrases = accent_phrases.to_owned();
 
@@ -1257,7 +1252,7 @@ pub(crate) mod tokio {
             &self,
             kana: &str,
             style_id: StyleId,
-        ) -> Result<AudioQueryModel> {
+        ) -> Result<AudioQuery> {
             let blocking = self.0.clone();
             let kana = kana.to_owned();
 
@@ -1283,14 +1278,14 @@ pub(crate) mod tokio {
             &self,
             text: &str,
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let blocking = self.0.clone();
             let text = text.to_owned();
 
             crate::task::asyncify(move || blocking.create_accent_phrases(&text, style_id)).await
         }
 
-        pub async fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQueryModel> {
+        pub async fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery> {
             let blocking = self.0.clone();
             let text = text.to_owned();
 
@@ -1316,9 +1311,7 @@ pub(crate) mod tokio {
 mod tests {
 
     use super::{blocking::PerformInference as _, AccelerationMode, InitializeOptions};
-    use crate::{
-        engine::MoraModel, macros::tests::assert_debug_fmt_eq, AccentPhraseModel, Result, StyleId,
-    };
+    use crate::{engine::Mora, macros::tests::assert_debug_fmt_eq, AccentPhrase, Result, StyleId};
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use rstest::rstest;
 
@@ -1740,7 +1733,7 @@ mod tests {
         assert_eq!(accent_phrases.len(), 5);
 
         // 入力テキストに「、」や「。」などの句読点が含まれていたときに
-        // AccentPhraseModel の pause_mora に期待する値をテスト
+        // AccentPhraseの pause_mora に期待する値をテスト
 
         assert!(
             accent_phrases[0].pause_mora().is_some(),
@@ -1812,7 +1805,7 @@ mod tests {
             any_mora_param_changed(
                 &accent_phrases,
                 &modified_accent_phrases,
-                MoraModel::vowel_length
+                Mora::vowel_length
             ),
             "mora_length() does not work: mora.vowel_length() is not changed."
         );
@@ -1850,7 +1843,7 @@ mod tests {
 
         // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
         assert!(
-            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::pitch),
+            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, Mora::pitch),
             "mora_pitch() does not work: mora.pitch() is not changed."
         );
     }
@@ -1887,7 +1880,7 @@ mod tests {
 
         // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
         assert!(
-            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::pitch),
+            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, Mora::pitch),
             "mora_data() does not work: mora.pitch() is not changed."
         );
         // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
@@ -1895,16 +1888,16 @@ mod tests {
             any_mora_param_changed(
                 &accent_phrases,
                 &modified_accent_phrases,
-                MoraModel::vowel_length
+                Mora::vowel_length
             ),
             "mora_data() does not work: mora.vowel_length() is not changed."
         );
     }
 
     fn any_mora_param_changed<T: PartialEq>(
-        before: &[AccentPhraseModel],
-        after: &[AccentPhraseModel],
-        param: fn(&MoraModel) -> &T,
+        before: &[AccentPhrase],
+        after: &[AccentPhrase],
+        param: fn(&Mora) -> &T,
     ) -> bool {
         std::iter::zip(before, after)
             .flat_map(move |(before, after)| std::iter::zip(before.moras(), after.moras()))

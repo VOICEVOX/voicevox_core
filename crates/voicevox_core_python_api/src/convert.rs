@@ -10,9 +10,7 @@ use pyo3::{
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
 use uuid::Uuid;
-use voicevox_core::{
-    AccelerationMode, AccentPhraseModel, StyleId, UserDictWordType, VoiceModelMeta,
-};
+use voicevox_core::{AccelerationMode, AccentPhrase, StyleId, UserDictWordType, VoiceModelMeta};
 
 use crate::{
     ExtractFullContextLabelError, GetSupportedDevicesError, GpuSupportError, InferenceFailedError,
@@ -86,15 +84,12 @@ pub(crate) fn blocking_modify_accent_phrases<'py>(
     accent_phrases: &'py PyList,
     speaker_id: StyleId,
     py: Python<'py>,
-    method: impl FnOnce(
-        Vec<AccentPhraseModel>,
-        StyleId,
-    ) -> voicevox_core::Result<Vec<AccentPhraseModel>>,
+    method: impl FnOnce(Vec<AccentPhrase>, StyleId) -> voicevox_core::Result<Vec<AccentPhrase>>,
 ) -> PyResult<Vec<&'py PyAny>> {
     let rust_accent_phrases = accent_phrases
         .iter()
         .map(from_dataclass)
-        .collect::<PyResult<Vec<AccentPhraseModel>>>()?;
+        .collect::<PyResult<Vec<AccentPhrase>>>()?;
 
     method(rust_accent_phrases, speaker_id)
         .into_py_result(py)?
@@ -115,13 +110,13 @@ pub(crate) fn async_modify_accent_phrases<'py, Fun, Fut>(
     method: Fun,
 ) -> PyResult<&'py PyAny>
 where
-    Fun: FnOnce(Vec<AccentPhraseModel>, StyleId) -> Fut + Send + 'static,
-    Fut: Future<Output = voicevox_core::Result<Vec<AccentPhraseModel>>> + Send + 'static,
+    Fun: FnOnce(Vec<AccentPhrase>, StyleId) -> Fut + Send + 'static,
+    Fut: Future<Output = voicevox_core::Result<Vec<AccentPhrase>>> + Send + 'static,
 {
     let rust_accent_phrases = accent_phrases
         .iter()
         .map(from_dataclass)
-        .collect::<PyResult<Vec<AccentPhraseModel>>>()?;
+        .collect::<PyResult<Vec<AccentPhrase>>>()?;
     pyo3_asyncio::tokio::future_into_py_with_locals(
         py,
         pyo3_asyncio::tokio::get_current_locals(py)?,

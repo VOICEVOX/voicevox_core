@@ -93,7 +93,7 @@ use rstest_reuse;
 
 pub use self::{
     devices::SupportedDevices,
-    engine::{AccentPhraseModel, AudioQueryModel, FullcontextExtractor},
+    engine::{AccentPhrase, AudioQuery, FullcontextExtractor, Mora},
     error::{Error, ErrorKind},
     metas::{
         RawStyleId, RawStyleVersion, SpeakerMeta, StyleId, StyleMeta, StyleType, StyleVersion,

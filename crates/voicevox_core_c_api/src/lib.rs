@@ -33,7 +33,7 @@ use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
 use voicevox_core::__internal::interop::IdRef as _;
-use voicevox_core::{AccentPhraseModel, AudioQueryModel, TtsOptions, UserDictWord};
+use voicevox_core::{AccentPhrase, AudioQuery, TtsOptions, UserDictWord};
 use voicevox_core::{StyleId, SynthesisOptions};
 
 fn init_logger_once() {
@@ -906,7 +906,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let accent_phrases: Vec<AccentPhraseModel> =
+        let accent_phrases: Vec<AccentPhrase> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
         let accent_phrases = synthesizer
@@ -946,7 +946,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let accent_phrases: Vec<AccentPhraseModel> =
+        let accent_phrases: Vec<AccentPhrase> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
         let accent_phrases = synthesizer
@@ -986,7 +986,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let accent_phrases: Vec<AccentPhraseModel> =
+        let accent_phrases: Vec<AccentPhrase> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
         let accent_phrases = synthesizer
@@ -1049,7 +1049,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
         let audio_query_json = CStr::from_ptr(audio_query_json)
             .to_str()
             .map_err(|_| CApiError::InvalidUtf8Input)?;
-        let audio_query: AudioQueryModel =
+        let audio_query: AudioQuery =
             serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
         let wav = synthesizer.synthesizer().synthesis(
             &audio_query,
