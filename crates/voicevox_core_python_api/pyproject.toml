@@ -28,7 +28,6 @@ executionEnvironments = [{ root = "python/test" }, { root = "python" }]
 [tool.maturin]
 module-name = "voicevox_core._rust"
 bindings = "pyo3"
-skip-auditwheel = true # Linuxでlibonnxruntime.so.*の不在を許してもらう
 python-source = "python"
 
 [tool.poetry]
