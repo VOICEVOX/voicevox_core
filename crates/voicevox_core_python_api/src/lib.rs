@@ -173,7 +173,7 @@ mod blocking {
 
         #[getter]
         fn id(&self, py: Python<'_>) -> PyResult<PyObject> {
-            let id = *self.model.id().raw_voice_model_id();
+            let id = self.model.id().raw_voice_model_id();
             crate::convert::to_py_uuid(py, id)
         }
 
@@ -676,7 +676,7 @@ mod asyncio {
 
         #[getter]
         fn id(&self, py: Python<'_>) -> PyResult<PyObject> {
-            let id = *self.model.id().raw_voice_model_id();
+            let id = self.model.id().raw_voice_model_id();
             crate::convert::to_py_uuid(py, id)
         }
 

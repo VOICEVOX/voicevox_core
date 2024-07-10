@@ -155,9 +155,9 @@ pub(crate) mod blocking {
                     let supported_devices = onnxruntime.supported_devices()?;
 
                     if cfg!(feature = "directml") {
-                        *supported_devices.dml()
+                        supported_devices.dml
                     } else {
-                        *supported_devices.cuda()
+                        supported_devices.cuda
                     }
                 }
                 AccelerationMode::Cpu => false,
@@ -198,9 +198,9 @@ pub(crate) mod blocking {
                 let supported_devices = onnxruntime.supported_devices()?;
 
                 if cfg!(feature = "directml") {
-                    Ok(*supported_devices.dml())
+                    Ok(supported_devices.dml)
                 } else {
-                    Ok(*supported_devices.cuda())
+                    Ok(supported_devices.cuda)
                 }
             }
         }
@@ -247,38 +247,44 @@ pub(crate) mod blocking {
             style_id: StyleId,
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
-            let speed_scale = *audio_query.speed_scale();
-            let pitch_scale = *audio_query.pitch_scale();
-            let intonation_scale = *audio_query.intonation_scale();
-            let pre_phoneme_length = *audio_query.pre_phoneme_length();
-            let post_phoneme_length = *audio_query.post_phoneme_length();
+            let AudioQuery {
+                accent_phrases,
+                speed_scale,
+                pitch_scale,
+                intonation_scale,
+                pre_phoneme_length,
+                post_phoneme_length,
+                ..
+            } = audio_query;
 
             let accent_phrases = if options.enable_interrogative_upspeak {
-                adjust_interrogative_accent_phrases(audio_query.accent_phrases().as_slice())
+                adjust_interrogative_accent_phrases(accent_phrases)
             } else {
-                audio_query.accent_phrases().clone()
+                accent_phrases.clone()
             };
 
             let (flatten_moras, phoneme_data_list) = initial_process(&accent_phrases);
 
-            let mut phoneme_length_list = vec![pre_phoneme_length];
+            let mut phoneme_length_list = vec![*pre_phoneme_length];
             let mut f0_list = vec![0.];
             let mut voiced_list = vec![false];
             {
                 let mut sum_of_f0_bigger_than_zero = 0.;
                 let mut count_of_f0_bigger_than_zero = 0;
 
-                for mora in flatten_moras {
-                    let consonant_length = *mora.consonant_length();
-                    let vowel_length = *mora.vowel_length();
-                    let pitch = *mora.pitch();
-
+                for Mora {
+                    consonant_length,
+                    vowel_length,
+                    pitch,
+                    ..
+                } in flatten_moras
+                {
                     if let Some(consonant_length) = consonant_length {
                         phoneme_length_list.push(consonant_length);
                     }
                     phoneme_length_list.push(vowel_length);
 
-                    let f0_single = pitch * 2.0_f32.powf(pitch_scale);
+                    let f0_single = pitch * 2.0_f32.powf(*pitch_scale);
                     f0_list.push(f0_single);
 
                     let bigger_than_zero = f0_single > 0.;
@@ -289,7 +295,7 @@ pub(crate) mod blocking {
                         count_of_f0_bigger_than_zero += 1;
                     }
                 }
-                phoneme_length_list.push(post_phoneme_length);
+                phoneme_length_list.push(*post_phoneme_length);
                 f0_list.push(0.);
                 voiced_list.push(false);
                 let mean_f0 = sum_of_f0_bigger_than_zero / (count_of_f0_bigger_than_zero as f32);
@@ -356,23 +362,23 @@ pub(crate) mod blocking {
             ) -> Vec<AccentPhrase> {
                 accent_phrases
                     .iter()
-                    .map(|accent_phrase| {
-                        AccentPhrase::new(
-                            adjust_interrogative_moras(accent_phrase),
-                            *accent_phrase.accent(),
-                            accent_phrase.pause_mora().clone(),
-                            *accent_phrase.is_interrogative(),
-                        )
+                    .map(|accent_phrase| AccentPhrase {
+                        moras: adjust_interrogative_moras(accent_phrase),
+                        ..accent_phrase.clone()
                     })
                     .collect()
             }
 
-            fn adjust_interrogative_moras(accent_phrase: &AccentPhrase) -> Vec<Mora> {
-                let moras = accent_phrase.moras();
-                if *accent_phrase.is_interrogative() && !moras.is_empty() {
+            fn adjust_interrogative_moras(
+                AccentPhrase {
+                    moras,
+                    is_interrogative,
+                    ..
+                }: &AccentPhrase,
+            ) -> Vec<Mora> {
+                if *is_interrogative && !moras.is_empty() {
                     let last_mora = moras.last().unwrap();
-                    let last_mora_pitch = *last_mora.pitch();
-                    if last_mora_pitch != 0.0 {
+                    if last_mora.pitch != 0.0 {
                         let mut new_moras: Vec<Mora> = Vec::with_capacity(moras.len() + 1);
                         new_moras.extend_from_slice(moras.as_slice());
                         let interrogative_mora = make_interrogative_mora(last_mora);
@@ -388,23 +394,27 @@ pub(crate) mod blocking {
                 const ADJUST_PITCH: f32 = 0.3;
                 const MAX_PITCH: f32 = 6.5;
 
-                let pitch = (*last_mora.pitch() + ADJUST_PITCH).min(MAX_PITCH);
+                let pitch = (last_mora.pitch + ADJUST_PITCH).min(MAX_PITCH);
 
-                Mora::new(
-                    mora_to_text(None, last_mora.vowel()),
-                    None,
-                    None,
-                    last_mora.vowel().clone(),
-                    FIX_VOWEL_LENGTH,
+                Mora {
+                    text: mora_to_text(None, &last_mora.vowel),
+                    consonant: None,
+                    consonant_length: None,
+                    vowel: last_mora.vowel.clone(),
+                    vowel_length: FIX_VOWEL_LENGTH,
                     pitch,
-                )
+                }
             }
 
-            fn to_wav(wave: &[f32], audio_query: &AudioQuery) -> Vec<u8> {
-                let volume_scale = *audio_query.volume_scale();
-                let output_stereo = *audio_query.output_stereo();
-                let output_sampling_rate = *audio_query.output_sampling_rate();
-
+            fn to_wav(
+                wave: &[f32],
+                &AudioQuery {
+                    volume_scale,
+                    output_sampling_rate,
+                    output_stereo,
+                    ..
+                }: &AudioQuery,
+            ) -> Vec<u8> {
                 // TODO: 44.1kHzなどの対応
 
                 let num_channels: u16 = if output_stereo { 2 } else { 1 };
@@ -509,41 +519,32 @@ pub(crate) mod blocking {
             let mut index = 0;
             let new_accent_phrases = accent_phrases
                 .iter()
-                .map(|accent_phrase| {
-                    AccentPhrase::new(
-                        accent_phrase
-                            .moras()
-                            .iter()
-                            .map(|mora| {
-                                let new_mora = Mora::new(
-                                    mora.text().clone(),
-                                    mora.consonant().clone(),
-                                    mora.consonant().as_ref().map(|_| {
-                                        phoneme_length[vowel_indexes_data[index + 1] as usize - 1]
-                                    }),
-                                    mora.vowel().clone(),
-                                    phoneme_length[vowel_indexes_data[index + 1] as usize],
-                                    *mora.pitch(),
-                                );
-                                index += 1;
-                                new_mora
-                            })
-                            .collect(),
-                        *accent_phrase.accent(),
-                        accent_phrase.pause_mora().as_ref().map(|pause_mora| {
-                            let new_pause_mora = Mora::new(
-                                pause_mora.text().clone(),
-                                pause_mora.consonant().clone(),
-                                *pause_mora.consonant_length(),
-                                pause_mora.vowel().clone(),
-                                phoneme_length[vowel_indexes_data[index + 1] as usize],
-                                *pause_mora.pitch(),
-                            );
+                .map(|accent_phrase| AccentPhrase {
+                    moras: accent_phrase
+                        .moras
+                        .iter()
+                        .map(|mora| {
+                            let new_mora = Mora {
+                                consonant_length: mora.consonant.as_ref().map(|_| {
+                                    phoneme_length[vowel_indexes_data[index + 1] as usize - 1]
+                                }),
+                                vowel_length: phoneme_length
+                                    [vowel_indexes_data[index + 1] as usize],
+                                ..mora.clone()
+                            };
                             index += 1;
-                            new_pause_mora
-                        }),
-                        *accent_phrase.is_interrogative(),
-                    )
+                            new_mora
+                        })
+                        .collect(),
+                    pause_mora: accent_phrase.pause_mora.as_ref().map(|pause_mora| {
+                        let new_pause_mora = Mora {
+                            vowel_length: phoneme_length[vowel_indexes_data[index + 1] as usize],
+                            ..pause_mora.clone()
+                        };
+                        index += 1;
+                        new_pause_mora
+                    }),
+                    ..accent_phrase.clone()
                 })
                 .collect();
 
@@ -563,10 +564,10 @@ pub(crate) mod blocking {
             let mut base_start_accent_phrase_list = vec![0];
             let mut base_end_accent_phrase_list = vec![0];
             for accent_phrase in accent_phrases {
-                let mut accent = usize::from(*accent_phrase.accent() != 1);
+                let mut accent = usize::from(accent_phrase.accent != 1);
                 create_one_accent_list(&mut base_start_accent_list, accent_phrase, accent as i32);
 
-                accent = *accent_phrase.accent() - 1;
+                accent = accent_phrase.accent - 1;
                 create_one_accent_list(&mut base_end_accent_list, accent_phrase, accent as i32);
                 create_one_accent_list(&mut base_start_accent_phrase_list, accent_phrase, 0);
                 create_one_accent_list(&mut base_end_accent_phrase_list, accent_phrase, -1);
@@ -625,39 +626,28 @@ pub(crate) mod blocking {
             let mut index = 0;
             let new_accent_phrases = accent_phrases
                 .iter()
-                .map(|accent_phrase| {
-                    AccentPhrase::new(
-                        accent_phrase
-                            .moras()
-                            .iter()
-                            .map(|mora| {
-                                let new_mora = Mora::new(
-                                    mora.text().clone(),
-                                    mora.consonant().clone(),
-                                    *mora.consonant_length(),
-                                    mora.vowel().clone(),
-                                    *mora.vowel_length(),
-                                    f0_list[index + 1],
-                                );
-                                index += 1;
-                                new_mora
-                            })
-                            .collect(),
-                        *accent_phrase.accent(),
-                        accent_phrase.pause_mora().as_ref().map(|pause_mora| {
-                            let new_pause_mora = Mora::new(
-                                pause_mora.text().clone(),
-                                pause_mora.consonant().clone(),
-                                *pause_mora.consonant_length(),
-                                pause_mora.vowel().clone(),
-                                *pause_mora.vowel_length(),
-                                f0_list[index + 1],
-                            );
+                .map(|accent_phrase| AccentPhrase {
+                    moras: accent_phrase
+                        .moras
+                        .iter()
+                        .map(|mora| {
+                            let new_mora = Mora {
+                                pitch: f0_list[index + 1],
+                                ..mora.clone()
+                            };
                             index += 1;
-                            new_pause_mora
-                        }),
-                        *accent_phrase.is_interrogative(),
-                    )
+                            new_mora
+                        })
+                        .collect(),
+                    pause_mora: accent_phrase.pause_mora.as_ref().map(|pause_mora| {
+                        let new_pause_mora = Mora {
+                            pitch: f0_list[index + 1],
+                            ..pause_mora.clone()
+                        };
+                        index += 1;
+                        new_pause_mora
+                    }),
+                    ..accent_phrase.clone()
                 })
                 .collect();
 
@@ -670,17 +660,16 @@ pub(crate) mod blocking {
             ) {
                 let mut one_accent_list: Vec<i64> = Vec::new();
 
-                for (i, mora) in accent_phrase.moras().iter().enumerate() {
+                for (i, mora) in accent_phrase.moras.iter().enumerate() {
                     let value = (i as i32 == point
-                        || (point < 0
-                            && i == (accent_phrase.moras().len() as i32 + point) as usize))
+                        || (point < 0 && i == (accent_phrase.moras.len() as i32 + point) as usize))
                         .into();
                     one_accent_list.push(value);
-                    if mora.consonant().is_some() {
+                    if mora.consonant.is_some() {
                         one_accent_list.push(value);
                     }
                 }
-                if accent_phrase.pause_mora().is_some() {
+                if accent_phrase.pause_mora.is_some() {
                     one_accent_list.push(0);
                 }
                 accent_list.extend(one_accent_list)
@@ -1036,10 +1025,10 @@ pub(crate) mod blocking {
 
         let mut phoneme_strings = vec!["pau".to_string()];
         for mora in flatten_moras.iter() {
-            if let Some(consonant) = mora.consonant() {
+            if let Some(consonant) = &mora.consonant {
                 phoneme_strings.push(consonant.clone())
             }
-            phoneme_strings.push(mora.vowel().clone());
+            phoneme_strings.push(mora.vowel.clone());
         }
         phoneme_strings.push("pau".to_string());
 
@@ -1050,12 +1039,14 @@ pub(crate) mod blocking {
         fn to_flatten_moras(accent_phrases: &[AccentPhrase]) -> Vec<Mora> {
             let mut flatten_moras = Vec::new();
 
-            for accent_phrase in accent_phrases {
-                let moras = accent_phrase.moras();
+            for AccentPhrase {
+                moras, pause_mora, ..
+            } in accent_phrases
+            {
                 for mora in moras {
                     flatten_moras.push(mora.clone());
                 }
-                if let Some(pause_mora) = accent_phrase.pause_mora() {
+                if let Some(pause_mora) = pause_mora {
                     flatten_moras.push(pause_mora.clone());
                 }
             }
@@ -1112,18 +1103,18 @@ pub(crate) mod blocking {
     impl AudioQuery {
         fn from_accent_phrases(accent_phrases: Vec<AccentPhrase>) -> Self {
             let kana = create_kana(&accent_phrases);
-            Self::new(
+            Self {
                 accent_phrases,
-                1.,
-                0.,
-                1.,
-                1.,
-                0.1,
-                0.1,
-                DEFAULT_SAMPLING_RATE,
-                false,
-                Some(kana),
-            )
+                speed_scale: 1.,
+                pitch_scale: 0.,
+                intonation_scale: 1.,
+                volume_scale: 1.,
+                pre_phoneme_length: 0.1,
+                post_phoneme_length: 0.1,
+                output_sampling_rate: DEFAULT_SAMPLING_RATE,
+                output_stereo: false,
+                kana: Some(kana),
+            }
         }
     }
 }
@@ -1594,41 +1585,39 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            query.accent_phrases().len(),
+            query.accent_phrases.len(),
             expected_text_consonant_vowel_data.len()
         );
 
-        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in
-            std::iter::zip(query.accent_phrases(), expected_text_consonant_vowel_data)
-        {
-            assert_eq!(
-                accent_phrase.moras().len(),
-                text_consonant_vowel_slice.len()
-            );
-            assert_eq!(accent_phrase.accent(), accent_pos);
+        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in std::iter::zip(
+            query.accent_phrases,
+            expected_text_consonant_vowel_data.iter().copied(),
+        ) {
+            assert_eq!(accent_phrase.moras.len(), text_consonant_vowel_slice.len());
+            assert_eq!(accent_phrase.accent, accent_pos);
 
-            for (mora, (text, consonant, vowel)) in
-                std::iter::zip(accent_phrase.moras(), *text_consonant_vowel_slice)
-            {
-                assert_eq!(mora.text(), text);
+            for (mora, (text, consonant, vowel)) in std::iter::zip(
+                accent_phrase.moras,
+                text_consonant_vowel_slice.iter().copied(),
+            ) {
+                assert_eq!(mora.text, text);
                 // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
-                    mora.consonant_length(),
-                    &Some(0.),
+                    mora.consonant_length,
+                    Some(0.),
                     "expected mora.consonant_length is not Some(0.0), but got Some(0.0)."
                 );
-                assert_eq!(mora.consonant(), &Some(consonant.to_string()));
-                assert_eq!(mora.vowel(), vowel);
+                assert_eq!(mora.consonant, Some(consonant.to_string()));
+                assert_eq!(mora.vowel, vowel);
                 // NOTE: 母音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
-                    mora.vowel_length(),
-                    &0.,
+                    mora.vowel_length, 0.,
                     "expected mora.vowel_length is not 0.0, but got 0.0."
                 );
             }
         }
 
-        assert_eq!(query.kana().as_deref(), Some(expected_kana_text));
+        assert_eq!(query.kana.as_deref(), Some(expected_kana_text));
     }
 
     #[rstest]
@@ -1675,31 +1664,29 @@ mod tests {
             expected_text_consonant_vowel_data.len()
         );
 
-        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in
-            std::iter::zip(accent_phrases, expected_text_consonant_vowel_data)
-        {
-            assert_eq!(
-                accent_phrase.moras().len(),
-                text_consonant_vowel_slice.len()
-            );
-            assert_eq!(accent_phrase.accent(), accent_pos);
+        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in std::iter::zip(
+            accent_phrases,
+            expected_text_consonant_vowel_data.iter().copied(),
+        ) {
+            assert_eq!(accent_phrase.moras.len(), text_consonant_vowel_slice.len());
+            assert_eq!(accent_phrase.accent, accent_pos);
 
-            for (mora, (text, consonant, vowel)) in
-                std::iter::zip(accent_phrase.moras(), *text_consonant_vowel_slice)
-            {
-                assert_eq!(mora.text(), text);
+            for (mora, (text, consonant, vowel)) in std::iter::zip(
+                accent_phrase.moras,
+                text_consonant_vowel_slice.iter().copied(),
+            ) {
+                assert_eq!(mora.text, text);
                 // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
-                    mora.consonant_length(),
-                    &Some(0.),
+                    mora.consonant_length,
+                    Some(0.),
                     "expected mora.consonant_length is not Some(0.0), but got Some(0.0)."
                 );
-                assert_eq!(mora.consonant(), &Some(consonant.to_string()));
-                assert_eq!(mora.vowel(), vowel);
+                assert_eq!(mora.consonant, Some(consonant.to_string()));
+                assert_eq!(mora.vowel, vowel);
                 // NOTE: 母音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
-                    mora.vowel_length(),
-                    &0.,
+                    mora.vowel_length, 0.,
                     "expected mora.vowel_length is not 0.0, but got 0.0."
                 );
             }
@@ -1736,36 +1723,35 @@ mod tests {
         // AccentPhraseの pause_mora に期待する値をテスト
 
         assert!(
-            accent_phrases[0].pause_mora().is_some(),
-            "accent_phrases[0].pause_mora() is None"
+            accent_phrases[0].pause_mora.is_some(),
+            "accent_phrases[0].pause_mora is None"
         );
         assert!(
-            accent_phrases[1].pause_mora().is_some(),
-            "accent_phrases[1].pause_mora() is None"
+            accent_phrases[1].pause_mora.is_some(),
+            "accent_phrases[1].pause_mora is None"
         );
         assert!(
-            accent_phrases[2].pause_mora().is_some(),
-            "accent_phrases[2].pause_mora() is None"
+            accent_phrases[2].pause_mora.is_some(),
+            "accent_phrases[2].pause_mora is None"
         );
         assert!(
-            accent_phrases[3].pause_mora().is_some(),
-            "accent_phrases[3].pause_mora() is None"
+            accent_phrases[3].pause_mora.is_some(),
+            "accent_phrases[3].pause_mora is None"
         );
         assert!(
-            accent_phrases[4].pause_mora().is_none(), // 文末の句読点は削除される
-            "accent_phrases[4].pause_mora() is not None"
+            accent_phrases[4].pause_mora.is_none(), // 文末の句読点は削除される
+            "accent_phrases[4].pause_mora is not None"
         );
 
         for accent_phrase in accent_phrases.iter().take(4) {
-            let pause_mora = accent_phrase.pause_mora().clone().unwrap();
-            assert_eq!(pause_mora.text(), "、");
-            assert_eq!(pause_mora.consonant(), &None);
-            assert_eq!(pause_mora.consonant_length(), &None);
-            assert_eq!(pause_mora.vowel(), "pau");
+            let pause_mora = accent_phrase.pause_mora.clone().unwrap();
+            assert_eq!(pause_mora.text, "、");
+            assert_eq!(pause_mora.consonant, None);
+            assert_eq!(pause_mora.consonant_length, None);
+            assert_eq!(pause_mora.vowel, "pau");
             assert_ne!(
-                pause_mora.vowel_length(),
-                &0.0,
-                "pause_mora.vowel_length() should not be 0.0"
+                pause_mora.vowel_length, 0.0,
+                "pause_mora.vowel_length should not be 0.0",
             );
         }
     }
@@ -1805,9 +1791,9 @@ mod tests {
             any_mora_param_changed(
                 &accent_phrases,
                 &modified_accent_phrases,
-                Mora::vowel_length
+                |Mora { vowel_length, .. }| vowel_length,
             ),
-            "mora_length() does not work: mora.vowel_length() is not changed."
+            "mora_length() does not work: mora.vowel_length is not changed.",
         );
     }
 
@@ -1843,8 +1829,12 @@ mod tests {
 
         // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
         assert!(
-            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, Mora::pitch),
-            "mora_pitch() does not work: mora.pitch() is not changed."
+            any_mora_param_changed(
+                &accent_phrases,
+                &modified_accent_phrases,
+                |Mora { pitch, .. }| pitch
+            ),
+            "mora_pitch() does not work: mora.pitch is not changed.",
         );
     }
 
@@ -1880,17 +1870,21 @@ mod tests {
 
         // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
         assert!(
-            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, Mora::pitch),
-            "mora_data() does not work: mora.pitch() is not changed."
+            any_mora_param_changed(
+                &accent_phrases,
+                &modified_accent_phrases,
+                |Mora { pitch, .. }| pitch,
+            ),
+            "mora_data() does not work: mora.pitch is not changed.",
         );
         // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
         assert!(
             any_mora_param_changed(
                 &accent_phrases,
                 &modified_accent_phrases,
-                Mora::vowel_length
+                |Mora { vowel_length, .. }| vowel_length,
             ),
-            "mora_data() does not work: mora.vowel_length() is not changed."
+            "mora_data() does not work: mora.vowel_length is not changed.",
         );
     }
 
@@ -1900,7 +1894,7 @@ mod tests {
         param: fn(&Mora) -> &T,
     ) -> bool {
         std::iter::zip(before, after)
-            .flat_map(move |(before, after)| std::iter::zip(before.moras(), after.moras()))
+            .flat_map(|(before, after)| std::iter::zip(&before.moras, &after.moras))
             .any(|(before, after)| param(before) != param(after))
     }
 

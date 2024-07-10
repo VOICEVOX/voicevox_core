@@ -51,8 +51,8 @@ static VOICE_MODEL_SET: Lazy<VoiceModelSet> = Lazy::new(|| {
     let mut style_model_map = BTreeMap::default();
     for vvm in all_vvms.iter() {
         for meta in vvm.metas().iter() {
-            for style in meta.styles().iter() {
-                style_model_map.insert(*style.id(), vvm.id());
+            for style in meta.styles.iter() {
+                style_model_map.insert(style.id, vvm.id());
             }
         }
     }

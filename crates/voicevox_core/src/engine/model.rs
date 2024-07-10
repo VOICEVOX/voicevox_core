@@ -1,38 +1,36 @@
-use derive_getters::Getters;
-use derive_new::new;
 use serde::{Deserialize, Serialize};
 
 /* 各フィールドのjsonフィールド名はsnake_caseとする*/
 
 /// モーラ（子音＋母音）ごとの情報。
-#[derive(Clone, Debug, new, Getters, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Mora {
     /// 文字。
-    text: String,
+    pub text: String,
     /// 子音の音素。
-    consonant: Option<String>,
+    pub consonant: Option<String>,
     /// 子音の音長。
-    consonant_length: Option<f32>,
+    pub consonant_length: Option<f32>,
     /// 母音の音素。
-    vowel: String,
+    pub vowel: String,
     /// 母音の音長。
-    vowel_length: f32,
+    pub vowel_length: f32,
     /// 音高。
-    pitch: f32,
+    pub pitch: f32,
 }
 
 /// AccentPhrase (アクセント句ごとの情報)。
-#[derive(Clone, Debug, new, Getters, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct AccentPhrase {
     /// モーラの配列。
-    moras: Vec<Mora>,
+    pub moras: Vec<Mora>,
     /// アクセント箇所。
-    accent: usize,
+    pub accent: usize,
     /// 後ろに無音を付けるかどうか。
-    pause_mora: Option<Mora>,
+    pub pause_mora: Option<Mora>,
     /// 疑問系かどうか。
     #[serde(default)]
-    is_interrogative: bool,
+    pub is_interrogative: bool,
 }
 
 impl AccentPhrase {
@@ -46,34 +44,33 @@ impl AccentPhrase {
 }
 
 /// AudioQuery (音声合成用のクエリ)。
-#[allow(clippy::too_many_arguments)]
-#[derive(Clone, new, Getters, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct AudioQuery {
     /// アクセント句の配列。
-    accent_phrases: Vec<AccentPhrase>,
+    pub accent_phrases: Vec<AccentPhrase>,
     /// 全体の話速。
-    speed_scale: f32,
+    pub speed_scale: f32,
     /// 全体の音高。
-    pitch_scale: f32,
+    pub pitch_scale: f32,
     /// 全体の抑揚。
-    intonation_scale: f32,
+    pub intonation_scale: f32,
     /// 全体の音量。
-    volume_scale: f32,
+    pub volume_scale: f32,
     /// 音声の前の無音時間。
-    pre_phoneme_length: f32,
+    pub pre_phoneme_length: f32,
     /// 音声の後の無音時間。
-    post_phoneme_length: f32,
+    pub post_phoneme_length: f32,
     /// 音声データの出力サンプリングレート。
-    output_sampling_rate: u32,
+    pub output_sampling_rate: u32,
     /// 音声データをステレオ出力するか否か。
-    output_stereo: bool,
+    pub output_stereo: bool,
     /// \[読み取り専用\] AquesTalk風記法。
     ///
     /// [`Synthesizer::audio_query`]が返すもののみ`Some`となる。入力としてのAudioQueryでは無視され
     /// る。
     ///
-    /// [`Synthesizer::audio_query`]: crate::Synthesizer::audio_query
-    kana: Option<String>,
+    /// [`Synthesizer::audio_query`]: crate::blocking::Synthesizer::audio_query
+    pub kana: Option<String>,
 }
 
 impl AudioQuery {
@@ -92,8 +89,18 @@ mod tests {
 
     #[rstest]
     fn check_audio_query_model_json_field_snake_case() {
-        let audio_query_model =
-            AudioQuery::new(vec![], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, false, None);
+        let audio_query_model = AudioQuery {
+            accent_phrases: vec![],
+            speed_scale: 0.0,
+            pitch_scale: 0.0,
+            intonation_scale: 0.0,
+            volume_scale: 0.0,
+            pre_phoneme_length: 0.0,
+            post_phoneme_length: 0.0,
+            output_sampling_rate: 0,
+            output_stereo: false,
+            kana: None,
+        };
         let val = serde_json::to_value(audio_query_model).unwrap();
         check_json_field_snake_case(&val);
     }

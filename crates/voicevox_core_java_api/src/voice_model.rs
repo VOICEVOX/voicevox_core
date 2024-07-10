@@ -35,7 +35,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModel_rsGetId<'loc
             .get_rust_field::<_, _, Arc<voicevox_core::blocking::VoiceModel>>(&this, "handle")?
             .clone();
 
-        let id = env.new_uuid(*internal.id().raw_voice_model_id())?;
+        let id = env.new_uuid(internal.id().raw_voice_model_id())?;
 
         Ok(id.into_raw())
     })
