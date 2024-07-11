@@ -149,9 +149,10 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             .0
             .iter()
             .find(|(_, LoadedModel { metas, .. })| {
-                metas.iter().flat_map(SpeakerMeta::styles).any(|style| {
-                    *style.id() == style_id && D::style_types().contains(style.r#type())
-                })
+                metas
+                    .iter()
+                    .flat_map(|SpeakerMeta { styles, .. }| styles)
+                    .any(|style| style.id == style_id && D::style_types().contains(&style.r#type))
             })
             .ok_or(ErrorRepr::StyleNotFound {
                 style_id,
@@ -200,7 +201,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     }
 
     fn contains_style(&self, style_id: StyleId) -> bool {
-        self.styles().any(|style| *style.id() == style_id)
+        self.styles().any(|style| style.id == style_id)
     }
 
     /// 音声モデルを受け入れ可能かをチェックする。
@@ -232,22 +233,21 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         let loaded = self.speakers();
         let external = model_header.metas.iter();
         for (loaded, external) in iproduct!(loaded, external) {
-            if loaded.speaker_uuid() == external.speaker_uuid() {
+            if loaded.speaker_uuid == external.speaker_uuid {
                 loaded.warn_diff_except_styles(external);
             }
         }
 
-        let loaded = self.styles();
+        let loaded = self.styles().map(|&StyleMeta { id, .. }| id);
         let external = model_header
             .metas
             .iter()
-            .flat_map(|speaker| speaker.styles());
-        if let Some((style, _)) =
-            iproduct!(loaded, external).find(|(loaded, external)| loaded.id() == external.id())
+            .flat_map(|speaker| &speaker.styles)
+            .map(|&StyleMeta { id, .. }| id);
+        if let Some((id, _)) =
+            iproduct!(loaded, external).find(|(loaded, external)| loaded == external)
         {
-            return Err(error(LoadModelErrorKind::StyleAlreadyLoaded {
-                id: *style.id(),
-            }));
+            return Err(error(LoadModelErrorKind::StyleAlreadyLoaded { id }));
         }
         Ok(())
     }
@@ -282,7 +282,8 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     }
 
     fn styles(&self) -> impl Iterator<Item = &StyleMeta> {
-        self.speakers().flat_map(|speaker| speaker.styles())
+        self.speakers()
+            .flat_map(|SpeakerMeta { styles, .. }| styles)
     }
 }
 

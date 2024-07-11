@@ -27,26 +27,27 @@ static TEXT2MORA_WITH_UNVOICE: Lazy<HashMap<String, Mora>> = Lazy::new(|| {
         let consonant_length = if consonant.is_some() { Some(0.0) } else { None };
 
         if ["a", "i", "u", "e", "o"].contains(vowel) {
-            let upper_vowel = vowel.to_uppercase();
-            let unvoice_mora = Mora::new(
-                text.to_string(),
-                consonant.clone(),
+            let vowel = vowel.to_uppercase();
+
+            let unvoice_mora = Mora {
+                text: text.to_string(),
+                consonant: consonant.clone(),
                 consonant_length,
-                upper_vowel,
-                0.,
-                0.,
-            );
+                vowel,
+                vowel_length: 0.,
+                pitch: 0.,
+            };
             text2mora_with_unvoice.insert(UNVOICE_SYMBOL.to_string() + text, unvoice_mora);
         }
 
-        let mora = Mora::new(
-            text.to_string(),
+        let mora = Mora {
+            text: text.to_string(),
             consonant,
             consonant_length,
-            vowel.to_string(),
-            0.,
-            0.,
-        );
+            vowel: vowel.to_string(),
+            vowel_length: 0.,
+            pitch: 0.,
+        };
         text2mora_with_unvoice.insert(text.to_string(), mora);
     }
     text2mora_with_unvoice
@@ -107,7 +108,12 @@ fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhrase> {
             "accent not found in accent phrase: {phrase}"
         )));
     }
-    Ok(AccentPhrase::new(moras, accent_index.unwrap(), None, false))
+    Ok(AccentPhrase {
+        moras,
+        accent: accent_index.unwrap(),
+        pause_mora: None,
+        is_interrogative: false,
+    })
 }
 
 pub(crate) fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhrase>> {
@@ -137,14 +143,14 @@ pub(crate) fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhrase>> {
             let accent_phrase = {
                 let mut accent_phrase = text_to_accent_phrase(&phrase)?;
                 if letter == PAUSE_DELIMITER {
-                    accent_phrase.set_pause_mora(Some(Mora::new(
-                        PAUSE_DELIMITER.to_string(),
-                        None,
-                        None,
-                        "pau".to_string(),
-                        0.,
-                        0.,
-                    )));
+                    accent_phrase.set_pause_mora(Some(Mora {
+                        text: PAUSE_DELIMITER.to_string(),
+                        consonant: None,
+                        consonant_length: None,
+                        vowel: "pau".to_string(),
+                        vowel_length: 0.,
+                        pitch: 0.,
+                    }));
                 }
                 accent_phrase.set_is_interrogative(is_interrogative);
                 accent_phrase
@@ -161,20 +167,19 @@ pub(crate) fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhrase>> {
 pub(crate) fn create_kana(accent_phrases: &[AccentPhrase]) -> String {
     let mut text = String::new();
     for phrase in accent_phrases {
-        let moras = phrase.moras();
-        for (index, mora) in moras.iter().enumerate() {
-            if ["A", "E", "I", "O", "U"].contains(&(*mora.vowel()).as_ref()) {
+        for (index, mora) in phrase.moras.iter().enumerate() {
+            if ["A", "E", "I", "O", "U"].contains(&&*mora.vowel) {
                 text.push(UNVOICE_SYMBOL);
             }
-            text.push_str(mora.text());
-            if index + 1 == *phrase.accent() {
+            text.push_str(&mora.text);
+            if index + 1 == phrase.accent {
                 text.push(ACCENT_SYMBOL);
             }
         }
-        if *phrase.is_interrogative() {
+        if phrase.is_interrogative {
             text.push(WIDE_INTERROGATION_MARK);
         }
-        text.push(if phrase.pause_mora().is_some() {
+        text.push(if phrase.pause_mora.is_some() {
             PAUSE_DELIMITER
         } else {
             NOPAUSE_DELIMITER
@@ -207,10 +212,10 @@ mod tests {
         assert_eq!(mora.is_some(), res.is_some());
         if let Some(res) = res {
             let mut m = String::new();
-            if let Some(ref c) = *res.consonant() {
+            if let Some(c) = &res.consonant {
                 m.push_str(c);
             }
-            m.push_str(res.vowel());
+            m.push_str(&res.vowel);
             assert_eq!(m, mora.unwrap());
         }
     }

@@ -1,11 +1,10 @@
-use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
 /// このライブラリで利用可能なデバイスの情報。
 ///
 /// あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったと
 /// しても`cuda`や`dml`は`true`を示しうる。
-#[derive(Getters, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SupportedDevices {
     /// CPUが利用可能。
     ///

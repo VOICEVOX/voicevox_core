@@ -1,6 +1,5 @@
 use std::fmt::{Debug, Display};
 
-use derive_getters::Getters;
 use derive_new::new;
 use indexmap::IndexMap;
 use itertools::Itertools as _;
@@ -102,20 +101,20 @@ impl Display for StyleVersion {
 pub type VoiceModelMeta = Vec<SpeakerMeta>;
 
 /// **話者**(_speaker_)のメタ情報。
-#[derive(Deserialize, Serialize, Getters, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct SpeakerMeta {
     /// 話者名。
-    name: String,
+    pub name: String,
     /// 話者に属するスタイル。
-    styles: Vec<StyleMeta>,
+    pub styles: Vec<StyleMeta>,
     /// 話者のバージョン。
-    version: StyleVersion,
+    pub version: StyleVersion,
     /// 話者のUUID。
-    speaker_uuid: String,
+    pub speaker_uuid: String,
     /// 話者の順番。
     ///
     /// `SpeakerMeta`の列は、この値に対して昇順に並んでいるべきである。
-    order: Option<u32>,
+    pub order: Option<u32>,
 }
 
 impl SpeakerMeta {
@@ -161,19 +160,19 @@ impl SpeakerMeta {
 }
 
 /// **スタイル**(_style_)のメタ情報。
-#[derive(Deserialize, Serialize, Getters, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct StyleMeta {
     /// スタイルID。
-    id: StyleId,
+    pub id: StyleId,
     /// スタイル名。
-    name: String,
+    pub name: String,
     /// スタイルに対応するモデルの種類。
     #[serde(default)]
-    r#type: StyleType,
+    pub r#type: StyleType,
     /// スタイルの順番。
     ///
     /// [`SpeakerMeta::styles`]は、この値に対して昇順に並んでいるべきである。
-    order: Option<u32>,
+    pub order: Option<u32>,
 }
 
 /// **スタイル**(_style_)に対応するモデルの種類。

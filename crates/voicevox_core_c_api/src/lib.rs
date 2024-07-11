@@ -449,7 +449,7 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_id(model: &VoicevoxVoiceModel) -> VoicevoxVoiceModelId<'_> {
     init_logger_once();
-    model.model.id_ref().raw_voice_model_id().as_bytes()
+    model.model.id_ref().as_bytes()
 }
 
 /// ::VoicevoxVoiceModel からメタ情報を取得する。
@@ -1281,9 +1281,9 @@ pub extern "C" fn voicevox_user_dict_word_make(
     VoicevoxUserDictWord {
         surface,
         pronunciation,
-        accent_type: UserDictWord::default().accent_type,
-        word_type: UserDictWord::default().word_type.into(),
-        priority: UserDictWord::default().priority,
+        accent_type: UserDictWord::default().accent_type(),
+        word_type: UserDictWord::default().word_type().into(),
+        priority: UserDictWord::default().priority(),
     }
 }
 

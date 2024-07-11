@@ -5,25 +5,24 @@ use crate::{
         priority2cost, MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL,
     },
 };
-use derive_getters::Getters;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{de::Error as _, Deserialize, Serialize};
 use std::ops::RangeToInclusive;
 
 /// ユーザー辞書の単語。
-#[derive(Clone, Debug, Getters, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct UserDictWord {
     /// 単語の表記。
-    pub surface: String,
+    surface: String,
     /// 単語の読み。
-    pub pronunciation: String,
+    pronunciation: String,
     /// アクセント型。
-    pub accent_type: usize,
+    accent_type: usize,
     /// 単語の種類。
-    pub word_type: UserDictWordType,
+    word_type: UserDictWordType,
     /// 単語の優先度。
-    pub priority: u32,
+    priority: u32,
 
     /// モーラ数。
     mora_count: usize,
@@ -127,6 +126,31 @@ impl UserDictWord {
             mora_count,
         })
     }
+
+    /// 単語の表記。
+    pub fn surface(&self) -> &str {
+        &self.surface
+    }
+
+    /// 単語の読み。
+    pub fn pronunciation(&self) -> &str {
+        &self.pronunciation
+    }
+
+    /// アクセント型。
+    pub fn accent_type(&self) -> usize {
+        self.accent_type
+    }
+
+    /// 単語の種類。
+    pub fn word_type(&self) -> UserDictWordType {
+        self.word_type
+    }
+
+    /// 単語の優先度。
+    pub fn priority(&self) -> u32 {
+        self.priority
+    }
 }
 
 /// カタカナの文字列が発音として有効かどうかを判定する。
@@ -203,7 +227,7 @@ pub(crate) fn to_zenkaku(surface: &str) -> String {
         .collect()
 }
 /// ユーザー辞書の単語の種類。
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UserDictWordType {
     /// 固有名詞。

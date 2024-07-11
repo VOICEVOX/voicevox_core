@@ -3,9 +3,7 @@
 //! VVM ファイルの定義と形式は[ドキュメント](../../../docs/vvm.md)を参照。
 
 use anyhow::anyhow;
-use derive_getters::Getters;
 use derive_more::From;
-use derive_new::new;
 use easy_ext::ext;
 use enum_map::EnumMap;
 use itertools::Itertools as _;
@@ -41,15 +39,16 @@ pub(crate) type ModelBytesWithInnerVoiceIdsByDomain =
     Hash,
     PartialOrd,
     Deserialize,
-    new,
-    Getters,
     derive_more::Display,
     Debug,
     From,
 )]
-#[serde(transparent)]
-pub struct VoiceModelId {
-    raw_voice_model_id: RawVoiceModelId,
+pub struct VoiceModelId(RawVoiceModelId);
+
+impl VoiceModelId {
+    pub fn raw_voice_model_id(self) -> RawVoiceModelId {
+        self.0
+    }
 }
 
 // FIXME: "header"といいつつ、VVMのファイルパスを持っている状態になっている。
@@ -106,9 +105,8 @@ impl ManifestDomains {
     fn check_acceptable(&self, metas: &[SpeakerMeta]) -> std::result::Result<(), StyleType> {
         let err = metas
             .iter()
-            .flat_map(SpeakerMeta::styles)
-            .map(StyleMeta::r#type)
-            .copied()
+            .flat_map(|SpeakerMeta { styles, .. }| styles)
+            .map(|StyleMeta { r#type, .. }| *r#type)
             .unique()
             .find(|&style_type| !self.accepts(style_type));
 
@@ -153,6 +151,7 @@ pub(crate) mod blocking {
     use ouroboros::self_referencing;
     use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
     use serde::de::DeserializeOwned;
+    use uuid::Uuid;
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
@@ -288,8 +287,8 @@ pub(crate) mod blocking {
 
     #[ext(IdRef)]
     pub impl VoiceModel {
-        fn id_ref(&self) -> &VoiceModelId {
-            &self.header.manifest.id
+        fn id_ref(&self) -> &Uuid {
+            &self.header.manifest.id.0
         }
     }
 }
