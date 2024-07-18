@@ -32,7 +32,7 @@ autoapi_options = [
 ]
 
 # templates_path = ['_templates']
-exclude_patterns = []
+exclude_patterns = ["autoapi/*/_rust/*"]
 
 
 # -- Options for HTML output -------------------------------------------------
