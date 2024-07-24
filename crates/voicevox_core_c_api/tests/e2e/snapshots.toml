@@ -53,9 +53,11 @@ metas = '''
 stderr.windows = '''
 {timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
 stderr.unix = '''
 {timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
 
 [compatible_engine_load_model_before_initialize]
@@ -97,9 +99,11 @@ output."こんにちは、音声合成の世界へようこそ".wav_length = 176
 stderr.windows = '''
 {timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
 stderr.unix = '''
 {timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
 
 [synthesizer_new_output_json]
@@ -157,9 +161,11 @@ metas = '''
 stderr.windows = '''
 {timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
 stderr.unix = '''
 {timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
 
 [tts_via_audio_query]
@@ -167,9 +173,11 @@ output."こんにちは、音声合成の世界へようこそ".wav_length = 176
 stderr.windows = '''
 {timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
 stderr.unix = '''
 {timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
 
 # FIXME: "user_dict_load"のはず
@@ -177,9 +185,11 @@ stderr.unix = '''
 stderr.windows = '''
 {timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
 stderr.unix = '''
 {timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
 
 [user_dict_manipulate]

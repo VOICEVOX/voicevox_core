@@ -1,4 +1,5 @@
 use crate::{
+    devices::DeviceAvailabilities,
     engine::{FullContextLabelError, KanaParseError},
     user_dict::InvalidWordError,
     StyleId, StyleType, VoiceModelId,
@@ -33,7 +34,7 @@ impl Error {
     pub fn kind(&self) -> ErrorKind {
         match &self.0 {
             ErrorRepr::NotLoadedOpenjtalkDict => ErrorKind::NotLoadedOpenjtalkDict,
-            ErrorRepr::GpuSupport => ErrorKind::GpuSupport,
+            ErrorRepr::GpuSupport(_) => ErrorKind::GpuSupport,
             ErrorRepr::InitInferenceRuntime { .. } => ErrorKind::InitInferenceRuntime,
             ErrorRepr::LoadModel(LoadModelError { context, .. }) => match context {
                 LoadModelErrorKind::OpenZipFile => ErrorKind::OpenZipFile,
@@ -63,8 +64,8 @@ pub(crate) enum ErrorRepr {
     #[error("OpenJTalkの辞書が読み込まれていません")]
     NotLoadedOpenjtalkDict,
 
-    #[error("GPU機能をサポートすることができません")]
-    GpuSupport,
+    #[error("GPU機能をサポートすることができません:\n{_0}")]
+    GpuSupport(DeviceAvailabilities),
 
     #[error("{runtime_display_name}のロードまたは初期化ができませんでした")]
     InitInferenceRuntime {

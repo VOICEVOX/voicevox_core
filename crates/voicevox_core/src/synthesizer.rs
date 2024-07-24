@@ -45,7 +45,7 @@ impl Default for TtsOptions {
 }
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AccelerationMode {
     /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
     #[default]
@@ -74,8 +74,10 @@ pub(crate) mod blocking {
     use std::io::{Cursor, Write as _};
 
     use enum_map::enum_map;
+    use tracing::info;
 
     use crate::{
+        devices::{DeviceSpec, GpuSpec},
         engine::{create_kana, mora_to_text, Mora, OjtPhoneme},
         error::ErrorRepr,
         infer::{
@@ -84,7 +86,7 @@ pub(crate) mod blocking {
                 PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput, TalkDomain,
                 TalkOperation,
             },
-            InferenceSessionOptions,
+            InferenceRuntime as _, InferenceSessionOptions,
         },
         status::Status,
         text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
@@ -150,31 +152,44 @@ pub(crate) mod blocking {
             #[cfg(windows)]
             list_windows_video_cards();
 
-            let use_gpu = match options.acceleration_mode {
-                AccelerationMode::Auto => {
-                    let supported_devices = onnxruntime.supported_devices()?;
-
-                    if cfg!(feature = "directml") {
-                        supported_devices.dml
-                    } else {
-                        supported_devices.cuda
-                    }
+            let test_gpus = || {
+                info!("GPUをテストします:");
+                let availabilities = crate::devices::test_gpus(
+                    GpuSpec::defaults(),
+                    crate::blocking::Onnxruntime::DISPLAY_NAME,
+                    onnxruntime.supported_devices()?,
+                    |gpu| onnxruntime.test_gpu(gpu),
+                );
+                for line in availabilities.to_string().lines() {
+                    info!("  {line}");
                 }
-                AccelerationMode::Cpu => false,
-                AccelerationMode::Gpu => true,
+                crate::Result::Ok(availabilities)
             };
 
-            if use_gpu && !can_support_gpu_feature(onnxruntime)? {
-                return Err(ErrorRepr::GpuSupport.into());
-            }
+            let device_for_heavy = match options.acceleration_mode {
+                AccelerationMode::Auto => match *test_gpus()?.oks() {
+                    [] => DeviceSpec::Cpu,
+                    [gpu, ..] => DeviceSpec::Gpu(gpu),
+                },
+                AccelerationMode::Cpu => DeviceSpec::Cpu,
+                AccelerationMode::Gpu => {
+                    let availabilities = test_gpus()?;
+                    match *availabilities.oks() {
+                        [] => return Err(ErrorRepr::GpuSupport(availabilities).into()),
+                        [gpu, ..] => DeviceSpec::Gpu(gpu),
+                    }
+                }
+            };
+
+            info!("{device_for_heavy}を利用します");
 
             // 軽いモデルはこちらを使う
             let light_session_options =
-                InferenceSessionOptions::new(options.cpu_num_threads, false);
+                InferenceSessionOptions::new(options.cpu_num_threads, DeviceSpec::Cpu);
 
             // 重いモデルはこちらを使う
             let heavy_session_options =
-                InferenceSessionOptions::new(options.cpu_num_threads, use_gpu);
+                InferenceSessionOptions::new(options.cpu_num_threads, device_for_heavy);
 
             let status = Status::new(
                 onnxruntime,
@@ -187,22 +202,14 @@ pub(crate) mod blocking {
                 },
             );
 
-            return Ok(Self {
+            let use_gpu = matches!(device_for_heavy, DeviceSpec::Gpu(_));
+
+            Ok(Self {
                 status,
                 open_jtalk_analyzer: OpenJTalkAnalyzer::new(open_jtalk),
                 kana_analyzer: KanaAnalyzer,
                 use_gpu,
-            });
-
-            fn can_support_gpu_feature(onnxruntime: &crate::blocking::Onnxruntime) -> Result<bool> {
-                let supported_devices = onnxruntime.supported_devices()?;
-
-                if cfg!(feature = "directml") {
-                    Ok(supported_devices.dml)
-                } else {
-                    Ok(supported_devices.cuda)
-                }
-            }
+            })
         }
 
         pub fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
@@ -993,13 +1000,13 @@ pub(crate) mod blocking {
             CreateDXGIFactory, IDXGIFactory, DXGI_ADAPTER_DESC, DXGI_ERROR_NOT_FOUND,
         };
 
-        info!("検出されたGPU (DirectMLには1番目のGPUが使われます):");
+        info!("検出されたGPU (DirectMLにはGPU 0が使われます):");
         match list_windows_video_cards() {
             Ok(descs) => {
-                for desc in descs {
+                for (device_id, desc) in descs.into_iter().enumerate() {
                     let description = OsString::from_wide(trim_nul(&desc.Description));
                     let vram = humansize::format_size(desc.DedicatedVideoMemory, BINARY);
-                    info!("  - {description:?} ({vram})");
+                    info!("  GPU {device_id}: {description:?} ({vram})");
                 }
             }
             Err(err) => error!("{err}"),

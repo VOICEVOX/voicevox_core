@@ -8,16 +8,11 @@ publish.workspace = true
 features = ["load-onnxruntime", "link-onnxruntime"]
 rustdoc-args = ["--cfg", "docsrs"]
 
+# rustdocを参照
 [features]
 default = []
-
-# ONNX Runtimeのリンク方法を決めるフィーチャ（rustdocを参照）。
 load-onnxruntime = ["voicevox-ort/load-dynamic"]
 link-onnxruntime = []
-
-# GPUを利用可能にするフィーチャ（rustdocを参照）。
-cuda = ["voicevox-ort/cuda"]
-directml = ["voicevox-ort/directml"]
 
 [dependencies]
 anyhow.workspace = true

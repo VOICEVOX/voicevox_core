@@ -2,8 +2,6 @@
 //!
 //! # Feature flags
 //!
-//! ## ONNX Runtimeのリンク方法を決めるフィーチャ
-//!
 //! このクレートの利用にあたっては以下の二つの[Cargoフィーチャ]のうちどちらかを有効にしなければなり
 //! ません。両方の有効化はコンパイルエラーとなります。[`Onnxruntime`]の初期化方法はこれらの
 //! フィーチャによって決まります。
@@ -12,29 +10,14 @@
 //! - **`link-onnxruntime`**: ONNX Runtimeをロード時動的リンクします。iOSのような`dlopen`の利用が
 //!     困難な環境でのみこちらを利用するべきです。_Note_:
 //!     [動的リンク対象のライブラリ名]は`onnxruntime`で固定です。変更
-//!     は`patchelf(1)`や`install_name_tool(1)`で行ってください。
-//!
-//! ## GPUを利用可能にするフィーチャ
-//!
-//! - **`cuda`**
-//! - **`directml`**
-// TODO: こんな感じ(↓)で書く
-////! - **`cuda`**: [CUDAを用いた機械学習推論]を可能にします。
-////!     - ❗ <code>[acceleration\_mode]={Gpu,Auto}</code>のときの挙動が変化します。`directml`と共に
-////!         有効化したときの挙動は未規定です。
-////! - **`directml`**: [DirectMLを用いた機械学習推論]を可能にします。
-////!     - ❗ 〃
-////!
-////! [CUDAを用いた機械学習推論]:
-////! https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
-////! [DirectMLを用いた機械学習推論]:
-////! https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
-////! [acceleration\_mode]: InitializeOptions::acceleration_mode
+//!     は`patchelf(1)`や`install_name_tool(1)`で行ってください。また、[ONNX RuntimeのGPU機能]を使う
+//!     ことはできません。
 //!
 //! [Cargoフィーチャ]: https://doc.rust-lang.org/stable/cargo/reference/features.html
 //! [動的リンク対象のライブラリ名]:
 //! https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-lib
 //! [`Onnxruntime`]: blocking::Onnxruntime
+//! [ONNX RuntimeのGPU機能]: https://onnxruntime.ai/docs/execution-providers/
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

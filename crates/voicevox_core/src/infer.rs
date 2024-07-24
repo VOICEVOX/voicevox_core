@@ -11,15 +11,24 @@ use enum_map::{Enum, EnumMap};
 use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
 
-use crate::{StyleType, SupportedDevices};
+use crate::{
+    devices::{DeviceSpec, GpuSpec},
+    StyleType, SupportedDevices,
+};
 
 pub(crate) trait InferenceRuntime: 'static {
     // TODO: "session"とは何なのかを定め、ドキュメントを書く。`InferenceSessionSet`も同様。
     type Session: Sized + Send + 'static;
     type RunContext<'a>: From<&'a mut Self::Session> + PushInputTensor;
 
-    /// このライブラリで利用可能なデバイスの情報を取得する。
+    /// 名前。
+    const DISPLAY_NAME: &'static str;
+
+    /// このランタイムで利用可能なデバイスの情報を取得する。
     fn supported_devices(&self) -> crate::Result<SupportedDevices>;
+
+    /// GPUが実際に利用できそうかどうか判定する。
+    fn test_gpu(&self, gpu: GpuSpec) -> anyhow::Result<()>;
 
     #[allow(clippy::type_complexity)]
     fn new_session(
@@ -187,7 +196,7 @@ impl<D: PartialEq> ParamInfo<D> {
 #[derive(new, Clone, Copy, PartialEq, Debug)]
 pub(crate) struct InferenceSessionOptions {
     pub(crate) cpu_num_threads: u16,
-    pub(crate) use_gpu: bool,
+    pub(crate) device: DeviceSpec,
 }
 
 #[derive(Error, Debug)]

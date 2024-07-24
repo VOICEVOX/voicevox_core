@@ -7,10 +7,6 @@ publish.workspace = true
 [lib]
 crate-type = ["cdylib"]
 
-[features]
-cuda = ["voicevox_core/cuda"]
-directml = ["voicevox_core/directml"]
-
 [dependencies]
 camino.workspace = true
 easy-ext.workspace = true
