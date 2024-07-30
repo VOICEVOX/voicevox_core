@@ -398,7 +398,10 @@ async fn find_gh_asset(
     octocrab: &Arc<Octocrab>,
     repo: &RepoName,
     git_tag_or_latest: &str,
-    asset_name: impl FnOnce(&str, Option<&str>) -> anyhow::Result<String>,
+    asset_name: impl FnOnce(
+        &str,         // タグ名
+        Option<&str>, // リリースノートの内容
+    ) -> anyhow::Result<String>,
 ) -> anyhow::Result<GhAsset> {
     let Release {
         html_url,
@@ -440,7 +443,7 @@ async fn find_gh_asset(
 /// 候補が複数あった場合、「デバイス」の数が最も小さいもののうち最初のものを選ぶ。
 fn find_onnxruntime(
     tag: &str,
-    body: &str,
+    body: &str, // リリースの"body" (i.e. リリースノートの内容)
     os: Os,
     cpu_arch: CpuArch,
     devices: &BTreeSet<Device>,
