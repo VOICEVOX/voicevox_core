@@ -16,7 +16,6 @@ flate2.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
 futures-core.workspace = true
 futures-util.workspace = true
-html-escape.workspace = true
 indicatif.workspace = true
 itertools.workspace = true
 octocrab = { workspace = true, default-features = false, features = ["rustls-tls", "stream"] }

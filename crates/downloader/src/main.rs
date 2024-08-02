@@ -267,9 +267,9 @@ async fn main() -> anyhow::Result<()> {
         octocrab,
         &onnxruntime_builder_repo,
         &onnxruntime_version,
-        |tag, body| {
+        |_, body| {
             let body = body.with_context(|| "リリースノートがありません")?;
-            find_onnxruntime(tag, body, os, cpu_arch, &devices)
+            find_onnxruntime(body, os, cpu_arch, &devices)
         },
     )
     .await?;
@@ -442,17 +442,22 @@ async fn find_gh_asset(
 ///
 /// 候補が複数あった場合、「デバイス」の数が最も小さいもののうち最初のものを選ぶ。
 fn find_onnxruntime(
-    tag: &str,
     body: &str, // リリースの"body" (i.e. リリースノートの内容)
     os: Os,
     cpu_arch: CpuArch,
     devices: &BTreeSet<Device>,
 ) -> anyhow::Result<String> {
-    let id = &format!(
-        "voicevox-onnxruntime-specs-v1format-v{}-dylibs",
-        tag.replace('.', "-"),
-    );
-    let id = html_escape::encode_double_quoted_attribute(id);
+    macro_rules! selector {
+        ($expr:expr $(,)?) => {{
+            static SELECTOR: Lazy<scraper::Selector> =
+                Lazy::new(|| scraper::Selector::parse($expr).expect("should be valid"));
+            &SELECTOR
+        }};
+    }
+
+    const TARGET: &str = "table\
+        [data-voicevox-onnxruntime-specs-format-version=\"1\"]\
+        [data-voicevox-onnxruntime-specs-type=\"dylibs\"]";
 
     comrak::parse_document(&Default::default(), body, &Default::default())
         .descendants()
@@ -464,20 +469,19 @@ fn find_onnxruntime(
         })
         .collect::<Vec<_>>()
         .iter()
-        .find_map(|html_block| {
-            html_block
-                .select(
-                    &scraper::Selector::parse(&format!("[id=\"{id}\"]")).expect("should be valid"),
-                )
-                .next()
-        })
-        .with_context(|| format!("リリースノートの中に`#{id}`が見つかりませんでした"))?
-        .select(&scraper::Selector::parse("tbody > tr").expect("should be valid"))
+        .flat_map(|html_block| html_block.select(selector!(TARGET)))
+        .exactly_one()
+        .map_err(|err| match err.count() {
+            0 => anyhow!("リリースノートの中に`{TARGET}`が見つかりませんでした"),
+            _ => anyhow!("リリースノートの中に`{TARGET}`が複数ありました"),
+        })?
+        .select(selector!("tbody > tr"))
         .map(|tr| {
-            tr.text()
-                .collect::<Vec<_>>()
-                .try_into()
-                .map_err(|_| anyhow!("リリースノート中の`#{id}`をパースできませんでした"))
+            tr.select(selector!("td"))
+                .map(|td| td.text().exactly_one().ok())
+                .collect::<Option<Vec<_>>>()
+                .and_then(|text| text.try_into().ok())
+                .with_context(|| anyhow!("リリースノート中の`{TARGET}`をパースできませんでした"))
         })
         .collect::<Result<Vec<[_; 4]>, _>>()?
         .into_iter()
