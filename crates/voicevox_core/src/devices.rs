@@ -159,12 +159,12 @@ impl Display for DeviceAvailabilities {
                 DeviceAvailability::NotSupportedByThisLib => {
                     writeln!(
                         f,
-                        "* {gpu}: Not supported by this `{name}` build",
+                        "* {gpu}: この`{name}`のビルドでは利用できません",
                         name = env!("CARGO_PKG_NAME"),
                     )
                 }
                 DeviceAvailability::NotSupportedByCurrentLoadedInferenceRuntime(name) => {
-                    writeln!(f, "* {gpu}: Not supported by the current loaded {name}")
+                    writeln!(f, "* {gpu}: {name}では利用できません")
                 }
             }?;
         }
