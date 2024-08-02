@@ -481,7 +481,7 @@ fn find_onnxruntime(
                 .map(|td| td.text().exactly_one().ok())
                 .collect::<Option<Vec<_>>>()
                 .and_then(|text| text.try_into().ok())
-                .with_context(|| anyhow!("リリースノート中の`{TARGET}`をパースできませんでした"))
+                .with_context(|| format!("リリースノート中の`{TARGET}`をパースできませんでした"))
         })
         .collect::<Result<Vec<[_; 4]>, _>>()?
         .into_iter()
