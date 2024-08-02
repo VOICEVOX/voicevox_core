@@ -200,7 +200,6 @@ pub(crate) enum GpuSpec {
 
 impl GpuSpec {
     pub(crate) fn defaults() -> Vec<Self> {
-        // TODO: 網羅性
         vec![Self::Cuda, Self::Dml]
     }
 }
@@ -213,5 +212,29 @@ impl Index<GpuSpec> for SupportedDevices {
             GpuSpec::Cuda => &self.cuda,
             GpuSpec::Dml => &self.dml,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+
+    use super::{GpuSpec, SupportedDevices};
+
+    #[test]
+    fn gpu_spec_defaults_is_exhaustive() {
+        static SUPPORTED_DEVICES: SupportedDevices = SupportedDevices::THIS; // whatever
+
+        assert_eq!(
+            {
+                #[forbid(unused_variables)]
+                let SupportedDevices { cpu: _, cuda, dml } = &SUPPORTED_DEVICES;
+                [cuda as *const _, dml as *const _]
+            },
+            *GpuSpec::defaults()
+                .into_iter()
+                .map(|gpu| &SUPPORTED_DEVICES[gpu] as *const _)
+                .collect::<Vec<_>>(),
+        );
     }
 }
