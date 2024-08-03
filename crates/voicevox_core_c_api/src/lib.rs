@@ -1,6 +1,8 @@
-// ここにあるRustdocはcbindgen向けのものである。safety documentation自体は書くが、Doxygenの慣習に従
-// い`<dt>`で書く。
-#![allow(clippy::missing_safety_doc)]
+// ここにある`#[doc]`はすべてrustdocではなくDoxygen向けのものである。
+#![allow(
+    clippy::doc_lazy_continuation,
+    clippy::missing_safety_doc // safety documentation自体は書くが、Doxygenの慣習に従い`<dt>`で書く
+)]
 
 mod c_impls;
 /// cbindgen:ignore
