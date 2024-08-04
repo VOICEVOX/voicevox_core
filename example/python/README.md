@@ -18,6 +18,8 @@ https://github.com/VOICEVOX/voicevox_core/releases/latest
 
 2. ダウンローダーを使って環境構築します。
 
+FIXME: 今は`--exclude core`がある
+
 linux/mac の場合
 
 download-linux-x64 のところはアーキテクチャや OS によって適宜読み替えてください。

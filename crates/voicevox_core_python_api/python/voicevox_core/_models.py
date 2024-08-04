@@ -90,9 +90,9 @@ class SpeakerMeta:
 @pydantic.dataclasses.dataclass
 class SupportedDevices:
     """
-    このライブラリで利用可能なデバイスの情報。
+    ONNX Runtimeとして利用可能なデバイスの情報。
 
-    あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても
+    あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても
     ``cuda`` や ``dml`` は ``True`` を示しうる。
     """
 

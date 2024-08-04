@@ -15,8 +15,6 @@ name = "e2e"
 [features]
 load-onnxruntime = ["voicevox_core/load-onnxruntime"]
 link-onnxruntime = ["voicevox_core/link-onnxruntime"]
-cuda = ["voicevox_core/cuda"]
-directml = ["voicevox_core/directml"]
 
 [dependencies]
 anstream = { workspace = true, default-features = false, features = ["auto"] }

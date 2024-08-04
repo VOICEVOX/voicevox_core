@@ -350,6 +350,7 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
+        devices::{DeviceSpec, GpuSpec},
         infer::{
             domains::{InferenceDomainMap, TalkOperation},
             InferenceSessionOptions,
@@ -360,16 +361,16 @@ mod tests {
     use super::Status;
 
     #[rstest]
-    #[case(true, 0)]
-    #[case(true, 1)]
-    #[case(true, 8)]
-    #[case(false, 2)]
-    #[case(false, 4)]
-    #[case(false, 8)]
-    #[case(false, 0)]
-    fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: u16) {
-        let light_session_options = InferenceSessionOptions::new(cpu_num_threads, false);
-        let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
+    #[case(DeviceSpec::Gpu(GpuSpec::Cuda), 0)]
+    #[case(DeviceSpec::Gpu(GpuSpec::Cuda), 1)]
+    #[case(DeviceSpec::Gpu(GpuSpec::Cuda), 8)]
+    #[case(DeviceSpec::Cpu, 2)]
+    #[case(DeviceSpec::Cpu, 4)]
+    #[case(DeviceSpec::Cpu, 8)]
+    #[case(DeviceSpec::Cpu, 0)]
+    fn status_new_works(#[case] device_for_heavy: DeviceSpec, #[case] cpu_num_threads: u16) {
+        let light_session_options = InferenceSessionOptions::new(cpu_num_threads, DeviceSpec::Cpu);
+        let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, device_for_heavy);
         let session_options = InferenceDomainMap {
             talk: enum_map! {
                 TalkOperation::PredictDuration
@@ -404,7 +405,7 @@ mod tests {
         let status = Status::new(
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
             InferenceDomainMap {
-                talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
+                talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
             },
         );
         let model = &crate::tokio::VoiceModel::sample().await.unwrap();
@@ -420,7 +421,7 @@ mod tests {
         let status = Status::new(
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
             InferenceDomainMap {
-                talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
+                talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
             },
         );
         let vvm = &crate::tokio::VoiceModel::sample().await.unwrap();

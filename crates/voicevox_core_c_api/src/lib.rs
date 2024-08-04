@@ -650,11 +650,11 @@ pub extern "C" fn voicevox_synthesizer_create_metas_json(
     C_STRING_DROP_CHECKER.whitelist(metas).into_raw()
 }
 
-/// このライブラリで利用可能なデバイスの情報を、JSONで取得する。
+/// ONNX Runtimeとして利用可能なデバイスの情報を、JSONで取得する。
 ///
 /// JSONの解放は ::voicevox_json_free で行う。
 ///
-/// あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示しうる。
+/// あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示しうる。
 ///
 /// @param [in] onnxruntime
 /// @param [out] output_supported_devices_json サポートデバイス情報のJSON文字列

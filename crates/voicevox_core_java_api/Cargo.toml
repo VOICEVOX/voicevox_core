@@ -7,10 +7,6 @@ publish.workspace = true
 [lib]
 crate-type = ["cdylib"]
 
-[features]
-cuda = ["voicevox_core/cuda"]
-directml = ["voicevox_core/directml"]
-
 [dependencies]
 android_logger.workspace = true
 chrono = { workspace = true, default-features = false, features = ["clock"] }

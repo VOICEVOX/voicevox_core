@@ -31,10 +31,10 @@ chmod +x download
 ./download
 
 # DirectML版を利用する場合
-./download --device directml
+./download --devices directml
 
 # CUDA版を利用する場合
-./download --device cuda
+./download --devices cuda
 ```
 
 `voicevox_core`ディレクトリにファイル一式がダウンロードされています。以降の説明ではこのディレクトリで作業を行います。

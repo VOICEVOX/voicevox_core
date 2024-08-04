@@ -24,10 +24,10 @@ public class GlobalInfo extends Dll {
 
   // FIXME: `Onnxruntime`に移すか、独立させる
   /**
-   * このライブラリで利用可能なデバイスの情報。
+   * ONNX Runtime利用可能なデバイスの情報。
    *
-   * <p>あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても {@link #cuda} や {@link #dml} は {@code
-   * true} を示しうる。
+   * <p>あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても {@link #cuda} や {@link #dml} は
+   * {@code true} を示しうる。
    */
   public static class SupportedDevices {
     /**

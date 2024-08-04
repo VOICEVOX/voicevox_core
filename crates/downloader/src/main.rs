@@ -1,6 +1,6 @@
 use std::{
     borrow::Cow,
-    collections::HashSet,
+    collections::{BTreeSet, HashSet},
     env,
     future::Future,
     io::{self, Cursor, Read},
@@ -9,13 +9,14 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{bail, Context as _};
+use anyhow::{anyhow, bail, Context as _};
 use bytes::Bytes;
 use clap::{Parser as _, ValueEnum};
 use flate2::read::GzDecoder;
 use futures_core::Stream;
-use futures_util::{future::OptionFuture, StreamExt as _, TryStreamExt as _};
+use futures_util::{stream::FuturesOrdered, StreamExt as _, TryStreamExt as _};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use itertools::Itertools as _;
 use octocrab::{
     models::{
         repos::{Asset, Release},
@@ -39,6 +40,7 @@ const DEFAULT_OUTPUT: &str = if cfg!(windows) {
 
 const LIB_NAME: &str = "voicevox_core";
 const DEFAULT_CORE_REPO: &str = "VOICEVOX/voicevox_core";
+const DEFAULT_ONNXRUNTIME_BUILDER_REPO: &str = "VOICEVOX/onnxruntime-builder";
 const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
 
 static OPEN_JTALK_DIC_URL: Lazy<Url> = Lazy::new(|| {
@@ -74,13 +76,17 @@ struct Args {
     #[arg(short, long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
     version: String,
 
+    /// ダウンロードするONNX Runtimeのバージョンの指定
+    #[arg(long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
+    onnxruntime_version: String,
+
     /// 追加でダウンロードするライブラリのバージョン
     #[arg(long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
     additional_libraries_version: String,
 
     /// ダウンロードするデバイスを指定する(cudaはlinuxのみ)
-    #[arg(value_enum, long, default_value(<&str>::from(Device::default())))]
-    device: Device,
+    #[arg(value_enum, long, num_args(1..), default_value(<&str>::from(Device::default())))]
+    devices: Vec<Device>,
 
     /// ダウンロードするcpuのアーキテクチャを指定する
     #[arg(value_enum, long, default_value(CpuArch::default_opt().map(<&str>::from)))]
@@ -96,6 +102,13 @@ struct Args {
     #[arg(
         long,
         value_name("REPOSITORY"),
+        default_value(DEFAULT_ONNXRUNTIME_BUILDER_REPO)
+    )]
+    onnxruntime_builder_repo: RepoName,
+
+    #[arg(
+        long,
+        value_name("REPOSITORY"),
         default_value(DEFAULT_ADDITIONAL_LIBRARIES_REPO)
     )]
     additional_libraries_repo: RepoName,
@@ -105,11 +118,14 @@ struct Args {
 enum DownloadTarget {
     Core,
     Models,
+    Onnxruntime,
     AdditionalLibraries,
     Dict,
 }
 
-#[derive(Default, ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq)]
+#[derive(
+    Default, ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq, Eq, PartialOrd, Ord,
+)]
 #[strum(serialize_all = "kebab-case")]
 enum Device {
     #[default]
@@ -156,7 +172,7 @@ impl Os {
 }
 
 #[derive(parse_display::FromStr, parse_display::Display, Clone)]
-#[from_str(regex = "(?<owner>[a-zA-Z0-9_]+)/(?<repo>[a-zA-Z0-9_]+)")]
+#[from_str(regex = "(?<owner>[a-zA-Z0-9_-]+)/(?<repo>[a-zA-Z0-9_-]+)")]
 #[display("{owner}/{repo}")]
 struct RepoName {
     owner: String,
@@ -173,13 +189,16 @@ async fn main() -> anyhow::Result<()> {
         min,
         output,
         version,
+        onnxruntime_version,
         additional_libraries_version,
-        device,
+        devices,
         cpu_arch,
         os,
         core_repo,
+        onnxruntime_builder_repo,
         additional_libraries_repo,
     } = Args::parse();
+    let devices = devices.into_iter().collect::<BTreeSet<_>>();
 
     let targets: HashSet<_> = if !only.is_empty() {
         assert!(exclude.is_empty() && !min);
@@ -224,9 +243,9 @@ async fn main() -> anyhow::Result<()> {
                  `additional-libraries-version`はダウンロード対象から除外されています",
             );
         }
-        if device == Device::Cpu {
+        if devices == [Device::Cpu].into() {
             warn!(
-                "`--device`が指定されていない、もしくは`--device=cpu`が指定されていますが、\
+                "`--devices`が指定されていない、もしくは`--devices=cpu`が指定されていますが、\
                  `additional-libraries-version`はダウンロード対象から除外されています",
             );
         }
@@ -234,44 +253,67 @@ async fn main() -> anyhow::Result<()> {
 
     let octocrab = &octocrab()?;
 
-    let core = find_gh_asset(octocrab, &core_repo, &version, |tag| {
-        let device = match (os, device) {
-            (Os::Linux, Device::Cuda) => "gpu",
-            (_, device) => device.into(),
-        };
-        format!("{LIB_NAME}-{os}-{cpu_arch}-{device}-{tag}.zip")
+    let core = find_gh_asset(octocrab, &core_repo, &version, |tag, _| {
+        Ok(format!("{LIB_NAME}-{os}-{cpu_arch}-{tag}.zip"))
     })
     .await?;
 
-    let model = find_gh_asset(octocrab, &core_repo, &version, |tag| {
-        format!("model-{tag}.zip")
+    let model = find_gh_asset(octocrab, &core_repo, &version, |tag, _| {
+        Ok(format!("model-{tag}.zip"))
     })
     .await?;
 
-    let additional_libraries = OptionFuture::from((device != Device::Cpu).then(|| {
-        find_gh_asset(
-            octocrab,
-            &additional_libraries_repo,
-            &additional_libraries_version,
-            |_| {
-                let device = match device {
-                    Device::Cpu => unreachable!(),
-                    Device::Cuda => "CUDA",
-                    Device::Directml => "DirectML",
-                };
-                format!("{device}-{os}-{cpu_arch}.zip")
-            },
-        )
-    }))
-    .await
-    .transpose()?;
+    let onnxruntime = find_gh_asset(
+        octocrab,
+        &onnxruntime_builder_repo,
+        &onnxruntime_version,
+        |_, body| {
+            let body = body.with_context(|| "リリースノートがありません")?;
+            find_onnxruntime(body, os, cpu_arch, &devices)
+        },
+    )
+    .await?;
+
+    let additional_libraries = devices
+        .iter()
+        .filter(|&&device| device != Device::Cpu)
+        .map(|&device| {
+            find_gh_asset(
+                octocrab,
+                &additional_libraries_repo,
+                &additional_libraries_version,
+                move |_, _| {
+                    Ok({
+                        let device = match device {
+                            Device::Cpu => unreachable!(),
+                            Device::Cuda => "CUDA",
+                            Device::Directml => "DirectML",
+                        };
+                        format!("{device}-{os}-{cpu_arch}.zip")
+                    })
+                },
+            )
+        })
+        .collect::<FuturesOrdered<_>>()
+        .try_collect::<Vec<_>>()
+        .await?;
 
     info!("対象OS: {os}");
     info!("対象CPUアーキテクチャ: {cpu_arch}");
-    info!("ダウンロードデバイスタイプ: {device}");
+    info!(
+        "ダウンロードデバイスタイプ: {}",
+        devices.iter().format(", "),
+    );
     info!("ダウンロード{LIB_NAME}バージョン: {}", core.tag);
-    if let Some(GhAsset { tag, .. }) = &additional_libraries {
-        info!("ダウンロード追加ライブラリバージョン: {tag}");
+    info!("ダウンロードONNX Runtimeバージョン: {}", onnxruntime.tag);
+    if !additional_libraries.is_empty() {
+        info!(
+            "ダウンロード追加ライブラリバージョン: {}",
+            additional_libraries
+                .iter()
+                .map(|GhAsset { tag, .. }| tag)
+                .format(", "),
+        );
     }
 
     let progresses = MultiProgress::new();
@@ -294,8 +336,16 @@ async fn main() -> anyhow::Result<()> {
             &progresses,
         )?);
     }
+    if targets.contains(&DownloadTarget::Onnxruntime) {
+        tasks.spawn(download_and_extract_from_gh(
+            onnxruntime,
+            Stripping::FirstDir,
+            &output.join("onnxruntime"),
+            &progresses,
+        )?);
+    }
     if targets.contains(&DownloadTarget::AdditionalLibraries) {
-        if let Some(additional_libraries) = additional_libraries {
+        for additional_libraries in additional_libraries {
             tasks.spawn(download_and_extract_from_gh(
                 additional_libraries,
                 Stripping::FirstDir,
@@ -348,11 +398,15 @@ async fn find_gh_asset(
     octocrab: &Arc<Octocrab>,
     repo: &RepoName,
     git_tag_or_latest: &str,
-    asset_name: impl FnOnce(&str) -> String,
+    asset_name: impl FnOnce(
+        &str,         // タグ名
+        Option<&str>, // リリースノートの内容
+    ) -> anyhow::Result<String>,
 ) -> anyhow::Result<GhAsset> {
     let Release {
         html_url,
         tag_name,
+        body,
         assets,
         ..
     } = {
@@ -364,7 +418,11 @@ async fn find_gh_asset(
         }?
     };
 
-    let asset_name = asset_name(&tag_name);
+    let asset_name = asset_name(&tag_name, body.as_deref()).with_context(|| {
+        format!(
+            "`{repo}`の`{tag_name}`の中から条件に合致するビルドが見つけることができませんでした",
+        )
+    })?;
     let Asset { id, name, size, .. } = assets
         .into_iter()
         .find(|Asset { name, .. }| *name == asset_name)
@@ -378,6 +436,82 @@ async fn find_gh_asset(
         name,
         size: size as _,
     })
+}
+
+/// `find_gh_asset`に用いる。
+///
+/// 候補が複数あった場合、「デバイス」の数が最も小さいもののうち最初のものを選ぶ。
+fn find_onnxruntime(
+    body: &str, // リリースの"body" (i.e. リリースノートの内容)
+    os: Os,
+    cpu_arch: CpuArch,
+    devices: &BTreeSet<Device>,
+) -> anyhow::Result<String> {
+    macro_rules! selector {
+        ($expr:expr $(,)?) => {{
+            static SELECTOR: Lazy<scraper::Selector> =
+                Lazy::new(|| scraper::Selector::parse($expr).expect("should be valid"));
+            &SELECTOR
+        }};
+    }
+
+    const TARGET: &str = "table\
+        [data-voicevox-onnxruntime-specs-format-version=\"1\"]\
+        [data-voicevox-onnxruntime-specs-type=\"dylibs\"]";
+
+    comrak::parse_document(&Default::default(), body, &Default::default())
+        .descendants()
+        .flat_map(|node| match &node.data.borrow().value {
+            comrak::nodes::NodeValue::HtmlBlock(comrak::nodes::NodeHtmlBlock {
+                literal, ..
+            }) => Some(scraper::Html::parse_fragment(literal)),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .iter()
+        .flat_map(|html_block| html_block.select(selector!(TARGET)))
+        .exactly_one()
+        .map_err(|err| match err.count() {
+            0 => anyhow!("リリースノートの中に`{TARGET}`が見つかりませんでした"),
+            _ => anyhow!("リリースノートの中に`{TARGET}`が複数ありました"),
+        })?
+        .select(selector!("tbody > tr"))
+        .map(|tr| {
+            tr.select(selector!("td"))
+                .map(|td| td.text().exactly_one().ok())
+                .collect::<Option<Vec<_>>>()
+                .and_then(|text| text.try_into().ok())
+                .with_context(|| format!("リリースノート中の`{TARGET}`をパースできませんでした"))
+        })
+        .collect::<Result<Vec<[_; 4]>, _>>()?
+        .into_iter()
+        .filter(|&[spec_os, spec_cpu_arch, spec_devices, _]| {
+            spec_os
+                == match os {
+                    Os::Windows => "Windows",
+                    Os::Linux => "Linux",
+                    Os::Osx => "macOS",
+                }
+                && spec_cpu_arch
+                    == match cpu_arch {
+                        CpuArch::X86 => "x86",
+                        CpuArch::X64 => "x86_64",
+                        CpuArch::Arm64 => "AArch64",
+                    }
+                && devices.iter().all(|device| {
+                    spec_devices.split('/').any(|spec_device| {
+                        spec_device
+                            == match device {
+                                Device::Cpu => "CPU",
+                                Device::Cuda => "CUDA",
+                                Device::Directml => "DirectML",
+                            }
+                    })
+                })
+        })
+        .min_by_key(|&[.., spec_devices, _]| spec_devices.split('/').count())
+        .map(|[.., name]| name.to_owned())
+        .with_context(|| "指定されたOS, アーキテクチャ, デバイスを含むものが見つかりませんでした")
 }
 
 fn download_and_extract_from_gh(

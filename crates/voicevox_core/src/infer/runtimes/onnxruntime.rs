@@ -8,7 +8,10 @@ use ort::{
     GraphOptimizationLevel, IntoTensorElementType, TensorElementType, ValueType,
 };
 
-use crate::{devices::SupportedDevices, error::ErrorRepr};
+use crate::{
+    devices::{DeviceSpec, GpuSpec, SupportedDevices},
+    error::ErrorRepr,
+};
 
 use super::super::{
     DecryptModelError, InferenceRuntime, InferenceSessionOptions, InputScalarKind,
@@ -21,6 +24,14 @@ use super::super::{
 impl InferenceRuntime for self::blocking::Onnxruntime {
     type Session = ort::Session;
     type RunContext<'a> = OnnxruntimeRunContext<'a>;
+
+    const DISPLAY_NAME: &'static str = if cfg!(feature = "load-onnxruntime") {
+        "現在ロードされているONNX Runtime"
+    } else if cfg!(feature = "link-onnxruntime") {
+        "現在リンクされているONNX Runtime"
+    } else {
+        panic!("either `load-onnxruntime` or `link-onnxruntime` must be enabled");
+    };
 
     fn supported_devices(&self) -> crate::Result<SupportedDevices> {
         (|| {
@@ -40,6 +51,15 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         .map_err(Into::into)
     }
 
+    fn test_gpu(&self, gpu: GpuSpec) -> anyhow::Result<()> {
+        let sess_builder = &ort::SessionBuilder::new()?;
+        match gpu {
+            GpuSpec::Cuda => CUDAExecutionProvider::default().register(sess_builder),
+            GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
+        }
+        .map_err(Into::into)
+    }
+
     fn new_session(
         &self,
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
@@ -53,14 +73,18 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             .with_optimization_level(GraphOptimizationLevel::Level1)?
             .with_intra_threads(options.cpu_num_threads.into())?;
 
-        if options.use_gpu && cfg!(feature = "directml") {
-            builder = builder
-                .with_parallel_execution(false)?
-                .with_memory_pattern(false)?;
-            DirectMLExecutionProvider::default().register(&builder)?;
-        } else if options.use_gpu && cfg!(feature = "cuda") {
-            CUDAExecutionProvider::default().register(&builder)?;
-        }
+        match options.device {
+            DeviceSpec::Cpu => {}
+            DeviceSpec::Gpu(GpuSpec::Cuda) => {
+                CUDAExecutionProvider::default().register(&builder)?;
+            }
+            DeviceSpec::Gpu(GpuSpec::Dml) => {
+                builder = builder
+                    .with_parallel_execution(false)?
+                    .with_memory_pattern(false)?;
+                DirectMLExecutionProvider::default().register(&builder)?;
+            }
+        };
 
         let model = model()?;
         let sess = builder.commit_from_memory(&{ model })?;
@@ -365,7 +389,7 @@ pub(crate) mod blocking {
             }
         }
 
-        /// このライブラリで利用可能なデバイスの情報を取得する。
+        /// ONNX Runtimeとして利用可能なデバイスの情報を取得する。
         pub fn supported_devices(&self) -> crate::Result<SupportedDevices> {
             <Self as InferenceRuntime>::supported_devices(self)
         }
@@ -517,7 +541,7 @@ pub(crate) mod tokio {
                 .map(Self::from_blocking)
         }
 
-        /// このライブラリで利用可能なデバイスの情報を取得する。
+        /// ONNX Runtimeとして利用可能なデバイスの情報を取得する。
         pub fn supported_devices(&self) -> crate::Result<SupportedDevices> {
             self.0.supported_devices()
         }
