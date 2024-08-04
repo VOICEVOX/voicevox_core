@@ -112,22 +112,20 @@ impl SupportedDevices {
     /// assert!(!SupportedDevices::THIS.cuda);
     /// assert!(!SupportedDevices::THIS.dml);
     /// ```
-    pub const THIS: Self = {
-        #[cfg(feature = "load-onnxruntime")]
-        {
-            Self {
-                cpu: true,
-                cuda: true,
-                dml: true,
-            }
+    pub const THIS: Self = if cfg!(feature = "load-onnxruntime") {
+        Self {
+            cpu: true,
+            cuda: true,
+            dml: true,
         }
-
-        #[cfg(all(not(doc), feature = "link-onnxruntime"))]
+    } else if cfg!(feature = "link-onnxruntime") {
         Self {
             cpu: true,
             cuda: false,
             dml: false,
         }
+    } else {
+        panic!("either `load-onnxruntime` or `link-onnxruntime` must be enabled");
     };
 
     pub fn to_json(self) -> serde_json::Value {

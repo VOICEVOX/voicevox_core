@@ -25,14 +25,12 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
     type Session = ort::Session;
     type RunContext<'a> = OnnxruntimeRunContext<'a>;
 
-    const DISPLAY_NAME: &'static str = {
-        #[cfg(feature = "load-onnxruntime")]
-        {
-            "現在ロードされているONNX Runtime"
-        }
-
-        #[cfg(feature = "link-onnxruntime")]
+    const DISPLAY_NAME: &'static str = if cfg!(feature = "load-onnxruntime") {
+        "現在ロードされているONNX Runtime"
+    } else if cfg!(feature = "link-onnxruntime") {
         "現在リンクされているONNX Runtime"
+    } else {
+        panic!("either `load-onnxruntime` or `link-onnxruntime` must be enabled");
     };
 
     fn supported_devices(&self) -> crate::Result<SupportedDevices> {
