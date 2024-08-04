@@ -6,7 +6,8 @@
 //! ません。両方の有効化はコンパイルエラーとなります。[`Onnxruntime`]の初期化方法はこれらの
 //! フィーチャによって決まります。
 //!
-//! - **`load-onnxruntime`**: ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開きます。
+//! - **`load-onnxruntime`**: ONNX Runtimeを`dlopen`/`LoadLibraryExW`で
+//!     開きます。[CUDA]と[DirectML]が利用できます。
 //! - **`link-onnxruntime`**: ONNX Runtimeをロード時動的リンクします。iOSのような`dlopen`の利用が
 //!     困難な環境でのみこちらを利用するべきです。_Note_:
 //!     [動的リンク対象のライブラリ名]は`onnxruntime`で固定です。変更
@@ -14,6 +15,8 @@
 //!     ことはできません。
 //!
 //! [Cargoフィーチャ]: https://doc.rust-lang.org/stable/cargo/reference/features.html
+//! [CUDA]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
+//! [DirectML]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
 //! [動的リンク対象のライブラリ名]:
 //! https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-lib
 //! [`Onnxruntime`]: blocking::Onnxruntime
