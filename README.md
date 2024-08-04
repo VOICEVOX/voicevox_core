@@ -1,3 +1,17 @@
+# VOICEVOX NEMO CORE
+
+[VOICEVOX Nemo](https://voicevox.hiroshiba.jp/nemo/) の音声合成コア。  
+[Releases](https://github.com/VOICEVOX/voicevox_nemo_core/releases) にビルド済みのコアライブラリ（.so/.dll/.dylib）があります。
+
+（エディターは [VOICEVOX](https://github.com/VOICEVOX/voicevox/) のマルチエンジン機能を利用、
+エンジンは [VOICEVOX NEMO ENGINE](https://github.com/VOICEVOX/voicevox_nemo_engine/) に詳細があります。）
+
+## API ドキュメント・サンプル
+
+[VOICEVOX CORE](https://github.com/VOICEVOX/voicevox_core/) と同じです。
+
+<details><summary>Fork元のVOICEVOX COREのREADME</summary>
+
 # VOICEVOX CORE
 
 ## **現在のmainブランチは工事中なので正しく動かないことがあります。[バージョン0.13.0](https://github.com/VOICEVOX/voicevox_core/tree/0.13.0)をご利用ください。**
@@ -140,6 +154,8 @@ typos
 **[voicevox.rb](https://github.com/sevenc-nanashi/voicevox.rb) [@sevenc-nanashi](https://github.com/sevenc-nanashi)** ･･･ VOICEVOX CORE の Ruby 向け FFI ラッパー  
 **[Node VOICEVOX Engine](https://github.com/y-chan/node-voicevox-engine) [@y-chan](https://github.com/y-chan)** ･･･ VOICEVOX ENGINE の Node.js/C++ 実装
 **[VOICEVOX ENGINE SHARP](https://github.com/yamachu/VoicevoxEngineSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX ENGINE の C# 実装  
+
+</details> <!-- Fork元のVOICEVOX ENGINEのREADME -->
 
 ## ライセンス
 
