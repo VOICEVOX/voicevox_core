@@ -72,13 +72,13 @@ jobs:
             artifact_name: linux-arm64-cpu
             whl_local_version: cpu
             use_cuda: false
-          - os: macos-11
+          - os: macos-12
             features: ""
             target: aarch64-apple-darwin
             artifact_name: osx-arm64-cpu
             whl_local_version: cpu
             use_cuda: false
-          - os: macos-11
+          - os: macos-12
             features: ""
             target: x86_64-apple-darwin
             artifact_name: osx-x64-cpu
@@ -209,10 +209,10 @@ jobs:
             os: ubuntu-20.04
           - name: download-osx-x64
             target: x86_64-apple-darwin
-            os: macos-11
+            os: macos-12
           - name: download-osx-arm64
             target: aarch64-apple-darwin
-            os: macos-11
+            os: macos-12
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
