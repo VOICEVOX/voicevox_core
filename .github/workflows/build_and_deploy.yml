@@ -107,9 +107,9 @@ jobs:
       - name: Install cbindgen
         uses: ./.github/actions/cargo-binstall-cbindgen
       - name: Install cargo-edit
-        if: ${{ env.VERSION != 'DEBUG' }}
+        # if: ${{ env.VERSION != 'DEBUG' }} # TODO: 戻す
         shell: bash
-        run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
+        run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug --locked # NOTE: release-0.15で追加
       - name: set cargo version
         if: ${{ env.VERSION != 'DEBUG' }}
         shell: bash
