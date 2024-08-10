@@ -19,7 +19,6 @@ futures-util.workspace = true
 indicatif.workspace = true
 itertools.workspace = true
 octocrab = { workspace = true, default-features = false, features = ["rustls-tls", "stream"] }
-once_cell.workspace = true
 parse-display.workspace = true
 rayon.workspace = true
 reqwest = { workspace = true, default-features = false, features = ["rustls-tls", "stream"] }

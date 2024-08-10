@@ -1,8 +1,7 @@
-use std::{collections::HashMap, ffi::CStr, mem::MaybeUninit, str};
+use std::{collections::HashMap, ffi::CStr, mem::MaybeUninit, str, sync::LazyLock};
 
 use assert_cmd::assert::AssertResult;
 use libloading::Library;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use test_util::c_api::{self, CApi, VoicevoxResultCode};
@@ -99,7 +98,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(global_info);
+static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(global_info);
 
 #[serde_as]
 #[derive(Deserialize)]

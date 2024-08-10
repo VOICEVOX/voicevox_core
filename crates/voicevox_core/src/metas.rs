@@ -209,12 +209,13 @@ pub enum StyleType {
 
 #[cfg(test)]
 mod tests {
-    use once_cell::sync::Lazy;
+    use std::sync::LazyLock;
+
     use serde_json::json;
 
     #[test]
     fn merge_works() -> anyhow::Result<()> {
-        static INPUT: Lazy<serde_json::Value> = Lazy::new(|| {
+        static INPUT: LazyLock<serde_json::Value> = LazyLock::new(|| {
             json!([
                 {
                     "name": "B",
@@ -267,7 +268,7 @@ mod tests {
             ])
         });
 
-        static EXPECTED: Lazy<serde_json::Value> = Lazy::new(|| {
+        static EXPECTED: LazyLock<serde_json::Value> = LazyLock::new(|| {
             json!([
                 {
                     "name": "A",

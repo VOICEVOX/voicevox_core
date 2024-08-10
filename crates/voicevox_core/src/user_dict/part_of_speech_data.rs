@@ -1,5 +1,5 @@
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 use crate::UserDictWordType;
 
@@ -30,8 +30,8 @@ pub(super) struct PartOfSpeechDetail {
 }
 
 // 元データ： https://github.com/VOICEVOX/voicevox_engine/blob/master/voicevox_engine/part_of_speech_data.py
-pub(super) static PART_OF_SPEECH_DETAIL: Lazy<HashMap<UserDictWordType, PartOfSpeechDetail>> =
-    Lazy::new(|| {
+pub(super) static PART_OF_SPEECH_DETAIL: LazyLock<HashMap<UserDictWordType, PartOfSpeechDetail>> =
+    LazyLock::new(|| {
         HashMap::from_iter([
             (
                 UserDictWordType::ProperNoun,

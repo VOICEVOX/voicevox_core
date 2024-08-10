@@ -1,11 +1,12 @@
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
+
 use regex::{Regex, Replacer};
 
 use crate::assert_cdylib::Utf8Output;
 
 macro_rules! static_regex {
     ($regex:expr $(,)?) => {{
-        static REGEX: Lazy<Regex> = Lazy::new(|| $regex.parse().unwrap());
+        static REGEX: LazyLock<Regex> = LazyLock::new(|| $regex.parse().unwrap());
         &REGEX
     }};
 }

@@ -1,7 +1,7 @@
+use std::{collections::HashMap, sync::LazyLock};
+
 use derive_getters::Getters;
 use derive_new::new;
-use once_cell::sync::Lazy;
-use std::collections::HashMap;
 
 #[rustfmt::skip]
 const PHONEME_LIST: &[&str] = &[
@@ -52,7 +52,7 @@ const PHONEME_LIST: &[&str] = &[
     "z",
 ];
 
-static PHONEME_MAP: Lazy<HashMap<&str, i64>> = Lazy::new(|| {
+static PHONEME_MAP: LazyLock<HashMap<&str, i64>> = LazyLock::new(|| {
     let mut m = HashMap::new();
     for (i, s) in PHONEME_LIST.iter().enumerate() {
         m.insert(*s, i as i64);
