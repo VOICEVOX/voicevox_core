@@ -218,7 +218,7 @@ pub unsafe extern "C" fn voicevox_onnxruntime_load_once(
         let instance = VoicevoxOnnxruntime::load_once(filename)?;
         unsafe {
             // SAFETY: ユーザーに要求している条件で十分
-            out_onnxruntime.as_ptr().write_unaligned(instance);
+            out_onnxruntime.write_unaligned(instance);
         }
         Ok(())
     })())
@@ -249,7 +249,7 @@ pub unsafe extern "C" fn voicevox_onnxruntime_init_once(
         let instance = VoicevoxOnnxruntime::init_once()?;
         unsafe {
             // SAFETY: ユーザーに要求している条件で十分
-            out_onnxruntime.as_ptr().write_unaligned(instance);
+            out_onnxruntime.write_unaligned(instance);
         }
         Ok(())
     })())
@@ -303,7 +303,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     into_result_code_with_error((|| {
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
         let open_jtalk = OpenJtalkRc::new(open_jtalk_dic_dir)?.into();
-        out_open_jtalk.as_ptr().write_unaligned(open_jtalk);
+        out_open_jtalk.write_unaligned(open_jtalk);
         Ok(())
     })())
 }
@@ -434,7 +434,7 @@ pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
     into_result_code_with_error((|| {
         let path = ensure_utf8(CStr::from_ptr(path))?;
         let model = VoicevoxVoiceModel::from_path(path)?.into();
-        out_model.as_ptr().write_unaligned(model);
+        out_model.write_unaligned(model);
         Ok(())
     })())
 }
@@ -518,7 +518,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
         let options = options.into();
 
         let synthesizer = VoicevoxSynthesizer::new(onnxruntime, open_jtalk, &options)?.into();
-        out_synthesizer.as_ptr().write_unaligned(synthesizer);
+        out_synthesizer.write_unaligned(synthesizer);
         Ok(())
     })())
 }
@@ -681,7 +681,7 @@ pub unsafe extern "C" fn voicevox_onnxruntime_create_supported_devices_json(
     into_result_code_with_error((|| {
         let supported_devices =
             CString::new(onnxruntime.0.supported_devices()?.to_json().to_string()).unwrap();
-        output_supported_devices_json.as_ptr().write_unaligned(
+        output_supported_devices_json.write_unaligned(
             C_STRING_DROP_CHECKER
                 .whitelist(supported_devices)
                 .into_raw(),
@@ -733,7 +733,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
         output_audio_query_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
         Ok(())
     })())
@@ -782,7 +781,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
         output_audio_query_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
         Ok(())
     })())
@@ -830,7 +828,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
@@ -877,7 +874,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
@@ -917,7 +913,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
@@ -957,7 +952,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
@@ -997,7 +991,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
@@ -1347,7 +1340,7 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
     into_result_code_with_error((|| {
         let word = word.read_unaligned().try_into_word()?;
         let uuid = user_dict.dict.add_word(word)?;
-        output_word_uuid.as_ptr().write_unaligned(uuid.into_bytes());
+        output_word_uuid.write_unaligned(uuid.into_bytes());
 
         Ok(())
     })())
@@ -1425,9 +1418,7 @@ pub unsafe extern "C" fn voicevox_user_dict_to_json(
     init_logger_once();
     let json = user_dict.dict.to_json();
     let json = CString::new(json).expect("\\0を含まない文字列であることが保証されている");
-    output_json
-        .as_ptr()
-        .write_unaligned(C_STRING_DROP_CHECKER.whitelist(json).into_raw());
+    output_json.write_unaligned(C_STRING_DROP_CHECKER.whitelist(json).into_raw());
     VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 
