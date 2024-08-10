@@ -70,8 +70,8 @@ pub(crate) struct OjtPhoneme {
 }
 
 impl OjtPhoneme {
-    pub(crate) fn num_phoneme() -> usize {
-        PHONEME_MAP.len()
+    pub(crate) const fn num_phoneme() -> usize {
+        PHONEME_LIST.len() // == PHONEME_MAP.len()
     }
 
     fn space_phoneme() -> String {
