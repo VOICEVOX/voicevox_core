@@ -10,7 +10,7 @@ macro_rules! section {
             $section_name: T,
         }
 
-        ::once_cell::sync::Lazy::new(|| {
+        ::std::sync::LazyLock::new(|| {
             let Snapshots { $section_name } =
                 ::toml::from_str(crate::snapshots::SNAPSHOTS_TOML).unwrap();
             $section_name

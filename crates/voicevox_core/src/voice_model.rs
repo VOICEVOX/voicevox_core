@@ -454,7 +454,8 @@ pub(crate) mod tokio {
 
 #[cfg(test)]
 mod tests {
-    use once_cell::sync::Lazy;
+    use std::sync::LazyLock;
+
     use rstest::{fixture, rstest};
     use serde_json::json;
 
@@ -501,7 +502,7 @@ mod tests {
         assert_eq!(expected, actual);
     }
 
-    static TALK_MANIFEST: Lazy<TalkManifest> = Lazy::new(|| TalkManifest {
+    static TALK_MANIFEST: LazyLock<TalkManifest> = LazyLock::new(|| TalkManifest {
         predict_duration_filename: "".to_owned(),
         predict_intonation_filename: "".to_owned(),
         decode_filename: "".to_owned(),

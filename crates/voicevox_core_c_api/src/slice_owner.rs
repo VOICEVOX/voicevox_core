@@ -55,8 +55,8 @@ impl<T> SliceOwner<T> {
             );
         }
 
-        out_ptr.as_ptr().write_unaligned(ptr);
-        out_len.as_ptr().write_unaligned(len);
+        out_ptr.write_unaligned(ptr);
+        out_len.write_unaligned(len);
     }
 
     /// `own_and_lend`でC API利用者に貸し出したポインタに対応する`Box<[u8]>`をデストラクトする。

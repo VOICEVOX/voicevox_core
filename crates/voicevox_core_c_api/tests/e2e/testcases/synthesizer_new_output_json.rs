@@ -1,11 +1,11 @@
 use std::{
     ffi::{CStr, CString},
     mem::MaybeUninit,
+    sync::LazyLock,
 };
 
 use assert_cmd::assert::AssertResult;
 use libloading::Library;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use test_util::{
@@ -104,7 +104,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(synthesizer_new_output_json);
+static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(synthesizer_new_output_json);
 
 #[derive(Deserialize)]
 struct Snapshots {

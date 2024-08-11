@@ -1,10 +1,10 @@
 // エンジンを起動してyukarin_s・yukarin_sa・decodeの推論を行う
 
 use std::ffi::CStr;
+use std::sync::LazyLock;
 
 use assert_cmd::assert::AssertResult;
 use libloading::Library;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use voicevox_core::SupportedDevices;
 
@@ -106,7 +106,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(compatible_engine);
+static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(compatible_engine);
 
 #[derive(Deserialize)]
 struct Snapshots {

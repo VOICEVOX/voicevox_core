@@ -265,12 +265,12 @@ pub(crate) mod blocking {
             } = audio_query;
 
             let accent_phrases = if options.enable_interrogative_upspeak {
-                adjust_interrogative_accent_phrases(accent_phrases)
+                &adjust_interrogative_accent_phrases(accent_phrases)
             } else {
-                accent_phrases.clone()
+                accent_phrases
             };
 
-            let (flatten_moras, phoneme_data_list) = initial_process(&accent_phrases);
+            let (flatten_moras, phoneme_data_list) = initial_process(accent_phrases);
 
             let mut phoneme_length_list = vec![*pre_phoneme_length];
             let mut f0_list = vec![0.];
@@ -318,7 +318,7 @@ pub(crate) mod blocking {
 
             let (_, _, vowel_indexes) = split_mora(&phoneme_data_list);
 
-            let mut phoneme: Vec<Vec<f32>> = Vec::new();
+            let mut phoneme = Vec::new();
             let mut f0: Vec<f32> = Vec::new();
             {
                 const RATE: f32 = 24000. / 256.;
@@ -335,7 +335,7 @@ pub(crate) mod blocking {
                     let phoneme_id = phoneme_data_list[i].phoneme_id();
 
                     for _ in 0..phoneme_length {
-                        let mut phonemes_vec = vec![0.; OjtPhoneme::num_phoneme()];
+                        let mut phonemes_vec = [0.; OjtPhoneme::num_phoneme()];
                         phonemes_vec[phoneme_id as usize] = 1.;
                         phoneme.push(phonemes_vec)
                     }
@@ -352,14 +352,11 @@ pub(crate) mod blocking {
                 }
             }
 
-            // 2次元のvectorを1次元に変換し、アドレスを連続させる
-            let flatten_phoneme = phoneme.into_iter().flatten().collect::<Vec<_>>();
-
             let wave = &self.decode(
                 f0.len(),
                 OjtPhoneme::num_phoneme(),
                 &f0,
-                &flatten_phoneme,
+                phoneme.as_flattened(),
                 style_id,
             )?;
             return Ok(to_wav(wave, audio_query));

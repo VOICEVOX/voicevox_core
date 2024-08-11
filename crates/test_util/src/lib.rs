@@ -17,7 +17,7 @@ pub mod c_api {
     pub const VV_MODELS_ROOT_DIR: &str = super::VV_MODELS_ROOT_DIR;
 }
 
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
 pub use self::typing::{
     DecodeExampleData, DurationExampleData, ExampleData, IntonationExampleData,
@@ -36,6 +36,6 @@ const EXAMPLE_DATA_JSON: &str = include_str!(concat!(
     "/data/example_data.json"
 ));
 
-pub static EXAMPLE_DATA: Lazy<ExampleData> = Lazy::new(|| {
+pub static EXAMPLE_DATA: LazyLock<ExampleData> = LazyLock::new(|| {
     serde_json::from_str(EXAMPLE_DATA_JSON).expect("failed to parse example_data.json")
 });

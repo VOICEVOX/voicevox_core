@@ -5,7 +5,7 @@ use std::{
     future::Future,
     io::{self, Cursor, Read},
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, LazyLock},
     time::Duration,
 };
 
@@ -24,7 +24,6 @@ use octocrab::{
     },
     Octocrab,
 };
-use once_cell::sync::Lazy;
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
 use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
@@ -43,7 +42,7 @@ const DEFAULT_CORE_REPO: &str = "VOICEVOX/voicevox_core";
 const DEFAULT_ONNXRUNTIME_BUILDER_REPO: &str = "VOICEVOX/onnxruntime-builder";
 const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
 
-static OPEN_JTALK_DIC_URL: Lazy<Url> = Lazy::new(|| {
+static OPEN_JTALK_DIC_URL: LazyLock<Url> = LazyLock::new(|| {
     "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
         .parse()
         .unwrap()
@@ -449,8 +448,8 @@ fn find_onnxruntime(
 ) -> anyhow::Result<String> {
     macro_rules! selector {
         ($expr:expr $(,)?) => {{
-            static SELECTOR: Lazy<scraper::Selector> =
-                Lazy::new(|| scraper::Selector::parse($expr).expect("should be valid"));
+            static SELECTOR: LazyLock<scraper::Selector> =
+                LazyLock::new(|| scraper::Selector::parse($expr).expect("should be valid"));
             &SELECTOR
         }};
     }
@@ -595,8 +594,8 @@ fn add_progress_bar(
 
     const INTERVAL: Duration = Duration::from_millis(100);
 
-    static PROGRESS_STYLE: Lazy<ProgressStyle> =
-        Lazy::new(|| ProgressStyle::with_template("{prefix}").unwrap());
+    static PROGRESS_STYLE: LazyLock<ProgressStyle> =
+        LazyLock::new(|| ProgressStyle::with_template("{prefix}").unwrap());
 }
 
 async fn download_and_extract(
@@ -614,15 +613,15 @@ async fn download_and_extract(
     let files = &read_archive(archive, archive_kind, pb.clone()).await?;
     return extract(files, stripping, output, pb).await;
 
-    static PROGRESS_STYLE1: Lazy<ProgressStyle> = Lazy::new(|| {
+    static PROGRESS_STYLE1: LazyLock<ProgressStyle> = LazyLock::new(|| {
         ProgressStyle::with_template(
             "{prefix:55} {bytes:>11} {bytes_per_sec:>13} {elapsed_precise} {bar} {percent:>3}%",
         )
         .unwrap()
     });
 
-    static PROGRESS_STYLE2: Lazy<ProgressStyle> =
-        Lazy::new(|| ProgressStyle::with_template("{prefix:55} {spinner} {msg}").unwrap());
+    static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
+        LazyLock::new(|| ProgressStyle::with_template("{prefix:55} {spinner} {msg}").unwrap());
 
     async fn with_style(
         pb: ProgressBar,

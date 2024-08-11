@@ -1,7 +1,10 @@
-use crate::engine::model::{AccentPhrase, Mora};
-use crate::engine::mora_list::MORA_LIST_MINIMUM;
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::sync::LazyLock;
+
+use crate::engine::{
+    model::{AccentPhrase, Mora},
+    mora_list::MORA_LIST_MINIMUM,
+};
 
 const UNVOICE_SYMBOL: char = '_';
 const ACCENT_SYMBOL: char = '\'';
@@ -16,7 +19,7 @@ pub(crate) struct KanaParseError(String);
 
 type KanaParseResult<T> = std::result::Result<T, KanaParseError>;
 
-static TEXT2MORA_WITH_UNVOICE: Lazy<HashMap<String, Mora>> = Lazy::new(|| {
+static TEXT2MORA_WITH_UNVOICE: LazyLock<HashMap<String, Mora>> = LazyLock::new(|| {
     let mut text2mora_with_unvoice = HashMap::new();
     for [text, consonant, vowel] in MORA_LIST_MINIMUM {
         let consonant = if !consonant.is_empty() {

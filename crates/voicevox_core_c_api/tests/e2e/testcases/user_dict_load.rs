@@ -1,16 +1,16 @@
 // ユーザー辞書の登録によって読みが変化することを確認するテスト。
 // 辞書ロード前後でAudioQueryのkanaが変化するかどうかで確認する。
 
-use assert_cmd::assert::AssertResult;
-use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
 use std::mem::MaybeUninit;
-use test_util::OPEN_JTALK_DIC_DIR;
+use std::sync::LazyLock;
 
+use assert_cmd::assert::AssertResult;
 use cstr::cstr;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 use test_util::c_api::{self, CApi, VoicevoxInitializeOptions, VoicevoxResultCode};
+use test_util::OPEN_JTALK_DIC_DIR;
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
@@ -144,7 +144,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(user_dict);
+static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(user_dict);
 
 #[derive(Deserialize)]
 struct Snapshots {

@@ -1,3 +1,8 @@
+use std::{ops::RangeToInclusive, sync::LazyLock};
+
+use regex::Regex;
+use serde::{de::Error as _, Deserialize, Serialize};
+
 use crate::{
     error::ErrorRepr,
     result::Result,
@@ -5,10 +10,6 @@ use crate::{
         priority2cost, MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL,
     },
 };
-use once_cell::sync::Lazy;
-use regex::Regex;
-use serde::{de::Error as _, Deserialize, Serialize};
-use std::ops::RangeToInclusive;
 
 /// ユーザー辞書の単語。
 #[derive(Clone, Debug, Serialize)]
@@ -77,8 +78,9 @@ impl InvalidWordError {
 
 type InvalidWordResult<T> = std::result::Result<T, InvalidWordError>;
 
-static PRONUNCIATION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
-static MORA_REGEX: Lazy<Regex> = Lazy::new(|| {
+static PRONUNCIATION_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
+static MORA_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
         "(?:",
         "[イ][ェ]|[ヴ][ャュョ]|[トド][ゥ]|[テデ][ィャュョ]|[デ][ェ]|[クグ][ヮ]|", // rule_others
@@ -89,7 +91,7 @@ static MORA_REGEX: Lazy<Regex> = Lazy::new(|| {
     ))
     .unwrap()
 });
-static SPACE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"\p{Z}").unwrap());
+static SPACE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\p{Z}").unwrap());
 
 impl Default for UserDictWord {
     fn default() -> Self {

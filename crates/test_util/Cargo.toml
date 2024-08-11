@@ -4,7 +4,6 @@ edition.workspace = true
 
 [dependencies]
 libloading.workspace = true
-once_cell.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 
