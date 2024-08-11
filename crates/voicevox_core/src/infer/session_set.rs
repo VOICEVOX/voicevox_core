@@ -74,8 +74,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
 impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
     pub(crate) fn get<I>(&self) -> InferenceSessionCell<R, I>
     where
-        I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Domain = D>,
+        I: InferenceInputSignature<Signature: InferenceSignature<Domain = D>>,
     {
         InferenceSessionCell {
             inner: self.0[I::Signature::OPERATION].clone(),
