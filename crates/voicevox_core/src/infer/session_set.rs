@@ -61,8 +61,8 @@ impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
                 .iter()
                 .map(|ParamInfo { name, dt, ndim }| {
                     let brackets = match *ndim {
-                        Some(ndim) => "[]".repeat(ndim),
-                        None => "[]...".to_owned(),
+                        Some(ndim) => &"[]".repeat(ndim),
+                        None => "[]...",
                     };
                     format!("{name}: {dt}{brackets}")
                 })

@@ -265,12 +265,12 @@ pub(crate) mod blocking {
             } = audio_query;
 
             let accent_phrases = if options.enable_interrogative_upspeak {
-                adjust_interrogative_accent_phrases(accent_phrases)
+                &adjust_interrogative_accent_phrases(accent_phrases)
             } else {
-                accent_phrases.clone()
+                accent_phrases
             };
 
-            let (flatten_moras, phoneme_data_list) = initial_process(&accent_phrases);
+            let (flatten_moras, phoneme_data_list) = initial_process(accent_phrases);
 
             let mut phoneme_length_list = vec![*pre_phoneme_length];
             let mut f0_list = vec![0.];
