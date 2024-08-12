@@ -35,7 +35,7 @@
       ],
       "depNameTemplate": "Rust",
       "packageNameTemplate": "rust-lang/rust",
-      "datasourceTemplate": "github-releases"
+      "datasourceTemplate": "github-tags"
     }
   ]
 }
