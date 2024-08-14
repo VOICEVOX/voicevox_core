@@ -60,7 +60,7 @@ class ModelNotFoundError(KeyError):
 
     ...
 
-class InferenceFailedError(Exception):
+class MlInferenceError(Exception):
     """推論に失敗した。"""
 
     ...

@@ -39,7 +39,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 GetSupportedDevices => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
                 StyleNotFound => VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
                 ModelNotFound => VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
-                InferenceFailed => VOICEVOX_RESULT_INFERENCE_ERROR,
+                MlInference => VOICEVOX_RESULT_ML_INFERENCE_ERROR,
                 ExtractFullContextLabel => VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
                 ParseKana => VOICEVOX_RESULT_PARSE_KANA_ERROR,
                 LoadUserDict => VOICEVOX_RESULT_LOAD_USER_DICT_ERROR,

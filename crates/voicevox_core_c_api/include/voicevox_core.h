@@ -141,7 +141,7 @@ enum VoicevoxResultCode
   /**
    * 推論に失敗した
    */
-  VOICEVOX_RESULT_INFERENCE_ERROR = 8,
+  VOICEVOX_RESULT_ML_INFERENCE_ERROR = 8,
   /**
    * コンテキストラベル出力に失敗した
    */

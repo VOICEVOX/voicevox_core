@@ -8,8 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
+import jp.hiroshiba.voicevoxcore.exceptions.MlInferenceException;
 import org.junit.jupiter.api.Test;
 
 class SynthesizerTest extends TestUtils {
@@ -67,7 +67,7 @@ class SynthesizerTest extends TestUtils {
   }
 
   @Test
-  void checkAudioQuery() throws InferenceFailedException, InvalidModelDataException {
+  void checkAudioQuery() throws MlInferenceException, InvalidModelDataException {
     VoiceModel model = loadModel();
     Onnxruntime onnxruntime = loadOnnxruntime();
     OpenJtalk openJtalk = loadOpenJtalk();
@@ -79,7 +79,7 @@ class SynthesizerTest extends TestUtils {
   }
 
   @Test
-  void checkAccentPhrases() throws InferenceFailedException, InvalidModelDataException {
+  void checkAccentPhrases() throws MlInferenceException, InvalidModelDataException {
     VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
     Onnxruntime onnxruntime = loadOnnxruntime();
@@ -110,7 +110,7 @@ class SynthesizerTest extends TestUtils {
   }
 
   @Test
-  void checkTts() throws InferenceFailedException, InvalidModelDataException {
+  void checkTts() throws MlInferenceException, InvalidModelDataException {
     VoiceModel model = loadModel();
     Onnxruntime onnxruntime = loadOnnxruntime();
     OpenJtalk openJtalk = loadOpenJtalk();

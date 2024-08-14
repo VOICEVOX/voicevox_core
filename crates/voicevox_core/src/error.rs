@@ -47,7 +47,7 @@ impl Error {
             ErrorRepr::GetSupportedDevices(_) => ErrorKind::GetSupportedDevices,
             ErrorRepr::StyleNotFound { .. } => ErrorKind::StyleNotFound,
             ErrorRepr::ModelNotFound { .. } => ErrorKind::ModelNotFound,
-            ErrorRepr::InferenceFailed { .. } => ErrorKind::InferenceFailed,
+            ErrorRepr::MlInference { .. } => ErrorKind::MlInference,
             ErrorRepr::ExtractFullContextLabel(_) => ErrorKind::ExtractFullContextLabel,
             ErrorRepr::ParseKana(_) => ErrorKind::ParseKana,
             ErrorRepr::LoadUserDict(_) => ErrorKind::LoadUserDict,
@@ -97,7 +97,7 @@ pub(crate) enum ErrorRepr {
     ModelNotFound { model_id: VoiceModelId },
 
     #[error("推論に失敗しました")]
-    InferenceFailed(#[source] anyhow::Error),
+    MlInference(#[source] anyhow::Error),
 
     #[error(transparent)]
     ExtractFullContextLabel(#[from] FullContextLabelError),
@@ -149,7 +149,7 @@ pub enum ErrorKind {
     /// 音声モデルIDに対する音声モデルが見つからなかった。
     ModelNotFound,
     /// 推論に失敗した。
-    InferenceFailed,
+    MlInference,
     /// コンテキストラベル出力に失敗した。
     ExtractFullContextLabel,
     /// AquesTalk風記法のテキストの解析に失敗した。

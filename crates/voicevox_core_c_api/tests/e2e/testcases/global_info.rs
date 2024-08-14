@@ -54,7 +54,7 @@ impl assert_cdylib::TestCase for TestCase {
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
-            c_api::VoicevoxResultCode_VOICEVOX_RESULT_INFERENCE_ERROR,
+            c_api::VoicevoxResultCode_VOICEVOX_RESULT_ML_INFERENCE_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_PARSE_KANA_ERROR,

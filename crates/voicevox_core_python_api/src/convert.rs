@@ -13,11 +13,12 @@ use uuid::Uuid;
 use voicevox_core::{AccelerationMode, AccentPhrase, StyleId, UserDictWordType, VoiceModelMeta};
 
 use crate::{
-    ExtractFullContextLabelError, GetSupportedDevicesError, GpuSupportError, InferenceFailedError,
+    ExtractFullContextLabelError, GetSupportedDevicesError, GpuSupportError,
     InitInferenceRuntimeError, InvalidModelDataError, InvalidModelFormatError, InvalidWordError,
-    LoadUserDictError, ModelAlreadyLoadedError, ModelNotFoundError, NotLoadedOpenjtalkDictError,
-    OpenZipFileError, ParseKanaError, ReadZipEntryError, SaveUserDictError,
-    StyleAlreadyLoadedError, StyleNotFoundError, UseUserDictError, WordNotFoundError,
+    LoadUserDictError, MlInferenceError, ModelAlreadyLoadedError, ModelNotFoundError,
+    NotLoadedOpenjtalkDictError, OpenZipFileError, ParseKanaError, ReadZipEntryError,
+    SaveUserDictError, StyleAlreadyLoadedError, StyleNotFoundError, UseUserDictError,
+    WordNotFoundError,
 };
 
 pub(crate) fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
@@ -196,7 +197,7 @@ pub(crate) impl<T> voicevox_core::Result<T> {
                 ErrorKind::GetSupportedDevices => GetSupportedDevicesError::new_err(msg),
                 ErrorKind::StyleNotFound => StyleNotFoundError::new_err(msg),
                 ErrorKind::ModelNotFound => ModelNotFoundError::new_err(msg),
-                ErrorKind::InferenceFailed => InferenceFailedError::new_err(msg),
+                ErrorKind::MlInference => MlInferenceError::new_err(msg),
                 ErrorKind::ExtractFullContextLabel => ExtractFullContextLabelError::new_err(msg),
                 ErrorKind::ParseKana => ParseKanaError::new_err(msg),
                 ErrorKind::LoadUserDict => LoadUserDictError::new_err(msg),
