@@ -82,7 +82,7 @@ where
                             GetSupportedDevices,
                             StyleNotFound,
                             ModelNotFound,
-                            InferenceFailed,
+                            RunModel,
                             ExtractFullContextLabel,
                             ParseKana,
                             LoadUserDict,
