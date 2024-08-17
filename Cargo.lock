@@ -2649,9 +2649,9 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pkg-config"
-version = "0.3.25"
+version = "0.3.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1df8c4ec4b0627e53bdf214615ad287367e482558cf84b109250b37464dc03ae"
+checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 
 [[package]]
 name = "plist"
@@ -3551,6 +3551,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "socks"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0c3dbbd9ae980613c6dd8e28a9407b50509d3803b57624d5dfe8315218cd58b"
+dependencies = [
+ "byteorder",
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4147,6 +4158,7 @@ dependencies = [
  "once_cell",
  "rustls 0.21.7",
  "rustls-webpki",
+ "socks",
  "url",
  "webpki-roots 0.25.4",
 ]
@@ -4199,8 +4211,8 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "voicevox-ort"
-version = "2.0.0-rc.2"
-source = "git+https://github.com/VOICEVOX/ort.git?rev=07c047c449b959d8f76593046e139bae520d59c3#07c047c449b959d8f76593046e139bae520d59c3"
+version = "2.0.0-rc.4"
+source = "git+https://github.com/VOICEVOX/ort.git?rev=8627833456a69e7841ae2a29fd184752df8de8d9#8627833456a69e7841ae2a29fd184752df8de8d9"
 dependencies = [
  "anyhow",
  "half",
@@ -4216,10 +4228,11 @@ dependencies = [
 
 [[package]]
 name = "voicevox-ort-sys"
-version = "2.0.0-rc.2"
-source = "git+https://github.com/VOICEVOX/ort.git?rev=07c047c449b959d8f76593046e139bae520d59c3#07c047c449b959d8f76593046e139bae520d59c3"
+version = "2.0.0-rc.4"
+source = "git+https://github.com/VOICEVOX/ort.git?rev=8627833456a69e7841ae2a29fd184752df8de8d9#8627833456a69e7841ae2a29fd184752df8de8d9"
 dependencies = [
  "flate2",
+ "pkg-config",
  "sha2",
  "tar",
  "ureq",

@@ -5,7 +5,7 @@ use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
     CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider, ExecutionProvider as _,
-    GraphOptimizationLevel, IntoTensorElementType, TensorElementType, ValueType,
+    GraphOptimizationLevel, PrimitiveTensorElementType, TensorElementType, ValueType,
 };
 
 use crate::{
@@ -209,7 +209,7 @@ impl OnnxruntimeRunContext<'_> {
     fn push_input(
         &mut self,
         input: Array<
-            impl IntoTensorElementType + Debug + Clone + 'static,
+            impl PrimitiveTensorElementType + Debug + Clone + 'static,
             impl Dimension + 'static,
         >,
     ) -> anyhow::Result<()> {
