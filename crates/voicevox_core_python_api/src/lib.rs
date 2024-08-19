@@ -78,7 +78,7 @@ exceptions! {
     GetSupportedDevicesError: PyException;
     StyleNotFoundError: PyKeyError;
     ModelNotFoundError: PyKeyError;
-    InferenceFailedError: PyException;
+    RunModelError: PyException;
     ExtractFullContextLabelError: PyException;
     ParseKanaError: PyValueError;
     LoadUserDictError: PyException;
