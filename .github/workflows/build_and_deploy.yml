@@ -16,11 +16,6 @@ on:
         type: boolean
         required: false
         default: false
-      is_production:
-        description: "製品版をビルドする"
-        type: boolean
-        required: false
-        default: false
   release:
     types:
       - published
@@ -158,7 +153,7 @@ jobs:
 
   build_and_deploy:
     needs: config
-    environment: ${{ inputs.is_production && 'production' || '' }} # 製品版のenvironment
+    environment: ${{ inputs.code_signing && 'production' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include: ${{ fromJson(needs.config.outputs.includes) }}
@@ -166,22 +161,7 @@ jobs:
     env:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v4 # 製品版ではない場合
-        if: ${{ !inputs.is_production }}
-      - uses: actions/checkout@v4 # 製品版の場合
-        if: inputs.is_production
-        with:
-          fetch-depth: 0 # 全履歴取得
-          token: ${{ secrets.PRODUCTION_GITHUB_TOKEN }}
-      - name: Merge production branch
-        if: inputs.is_production
-        shell: bash
-        run: |
-          (
-            git remote add private ${{ secrets.PRODUCTION_REPOSITORY_URL }}
-            git fetch private refs/tags/${{ env.PRODUCTION_REPOSITORY_TAG }}
-            git -c user.name=dummy -c user.email=dummy@dummy.dummy merge FETCH_HEAD
-          ) > /dev/null 2>&1
+      - uses: actions/checkout@v4
       - name: Set up Python 3.8
         if: matrix.python_whl
         uses: actions/setup-python@v5
@@ -206,18 +186,6 @@ jobs:
         run: |
           echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
-      - name: Checkout VOICEVOX RESOURCE
-        if: inputs.is_production
-        uses: actions/checkout@v4
-        with:
-          repository: VOICEVOX/voicevox_resource
-          ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
-          path: download/resource
-      - name: Raplace resource
-        if: inputs.is_production
-        shell: bash
-        run:
-          mv -f download/resource/core/README.md ./README.md
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-edit
@@ -228,7 +196,6 @@ jobs:
           if ${{ matrix.python_whl }}; then cargo set-version "$VERSION" -p voicevox_core_python_api; fi
       - name: cache target
         uses: Swatinem/rust-cache@v2
-        if: ${{ !inputs.is_production }}
       - name: build voicevox_core_c_api
         shell: bash
         run: |
@@ -236,14 +203,7 @@ jobs:
             plain-cdylib) linking=load-onnxruntime ;;
             ios-xcframework) linking=link-onnxruntime ;;
           esac
-          function build() {
-            cargo build -p voicevox_core_c_api -vv --features "$linking" --target ${{ matrix.target }} --release
-          }
-          if ${{ !inputs.is_production }}; then
-            build
-          else
-            build > /dev/null 2>&1
-          fi
+          cargo build -p voicevox_core_c_api -vv --features "$linking" --target ${{ matrix.target }} --release
         env:
           RUSTFLAGS: -C panic=abort
       - name: build voicevox_core_python_api
@@ -254,26 +214,11 @@ jobs:
           pip install --upgrade poetry
           poetry config virtualenvs.create false
           (cd crates/voicevox_core_python_api && poetry install --with dev)
-          function build() {
-            maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --target ${{ matrix.target }} --release
-          }
-          if ${{ !inputs.is_production }}; then
-            build
-          else
-            build > /dev/null 2>&1
-          fi
+          maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --target ${{ matrix.target }} --release
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
       - name: build voicevox_core_java_api
         if: contains(matrix.target, 'android')
-        run: |
-          function build() {
-            cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
-          }
-          if ${{ !inputs.is_production }}; then
-            build
-          else
-            build > /dev/null 2>&1
-          fi
+        run: cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
       - name: Organize artifact
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
@@ -377,25 +322,13 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
 
-  deploy_model:
+  deploy_sample_model:
     runs-on: ubuntu-latest
     needs: config
     env:
-      ASSET_NAME: model-${{ needs.config.outputs.version }}
+      ASSET_NAME: sample-model-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout VOICEVOX FAT RESOURCE
-        if: inputs.is_production
-        uses: actions/checkout@v4
-        with:
-          repository: VOICEVOX/voicevox_fat_resource
-          ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
-          path: download/fat_resource
-      - name: Raplace resource
-        if: inputs.is_production
-        shell: bash
-        run:
-          rm -r ./model; mv download/fat_resource/core/model ./model
       - name: Create artifact
         run: |
           mkdir "artifact"

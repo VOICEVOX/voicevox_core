@@ -141,7 +141,7 @@ impl assert_cdylib::TestCase for TestCase {
     fn assert_output(&self, output: Utf8Output) -> AssertResult {
         output
             .mask_timestamps()
-            .mask_onnxruntime_version()
+            .mask_onnxruntime_filename()
             .mask_windows_video_cards()
             .assert()
             .try_success()?

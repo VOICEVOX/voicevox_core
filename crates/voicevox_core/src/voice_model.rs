@@ -27,7 +27,7 @@ use std::path::{Path, PathBuf};
 pub type RawVoiceModelId = Uuid;
 
 pub(crate) type ModelBytesWithInnerVoiceIdsByDomain =
-    (Option<(StyleIdToInnerVoiceId, EnumMap<TalkOperation, Vec<u8>>)>,);
+    (Option<(StyleIdToInnerVoiceId, EnumMap<TalkOperation, ModelBytes>)>,);
 
 /// 音声モデルID。
 #[derive(
@@ -98,6 +98,11 @@ impl VoiceModelHeader {
     }
 }
 
+pub(crate) enum ModelBytes {
+    Onnx(Vec<u8>),
+    Bin(Vec<u8>),
+}
+
 impl ManifestDomains {
     /// manifestとして対応していない`StyleType`に対してエラーを発する。
     ///
@@ -156,11 +161,11 @@ pub(crate) mod blocking {
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
         infer::domains::InferenceDomainMap,
-        manifest::{Manifest, TalkManifest},
+        manifest::{Manifest, ModelFile, TalkManifest},
         VoiceModelMeta,
     };
 
-    use super::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytes, ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -184,21 +189,17 @@ pub(crate) mod blocking {
                 .as_ref()
                 .map(
                     |TalkManifest {
-                         predict_duration_filename,
-                         predict_intonation_filename,
-                         decode_filename,
+                         predict_duration,
+                         predict_intonation,
+                         decode,
                          style_id_to_inner_voice_id,
                      }| {
-                        let model_bytes = [
-                            predict_duration_filename,
-                            predict_intonation_filename,
-                            decode_filename,
-                        ]
-                        .into_par_iter()
-                        .map(|filename| reader.read_vvm_entry(filename))
-                        .collect::<std::result::Result<Vec<_>, _>>()?
-                        .try_into()
-                        .unwrap_or_else(|_| panic!("should be same length"));
+                        let model_bytes = [predict_duration, predict_intonation, decode]
+                            .into_par_iter()
+                            .map(|entry| reader.read_model_bytes(entry))
+                            .collect::<std::result::Result<Vec<_>, _>>()?
+                            .try_into()
+                            .unwrap_or_else(|_| panic!("should be same length"));
 
                         let model_bytes = EnumMap::from_array(model_bytes);
 
@@ -269,6 +270,13 @@ pub(crate) mod blocking {
             })
         }
 
+        fn read_model_bytes(&self, entry: &ModelFile) -> LoadModelResult<ModelBytes> {
+            match entry {
+                ModelFile::Onnx { filename } => self.read_vvm_entry(filename).map(ModelBytes::Onnx),
+                ModelFile::Bin { filename } => self.read_vvm_entry(filename).map(ModelBytes::Bin),
+            }
+        }
+
         fn read_vvm_entry(&self, filename: &str) -> LoadModelResult<Vec<u8>> {
             (|| {
                 let mut reader = self.borrow_reader().clone();
@@ -304,11 +312,11 @@ pub(crate) mod tokio {
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
         infer::domains::InferenceDomainMap,
-        manifest::{Manifest, TalkManifest},
+        manifest::{Manifest, ModelFile, TalkManifest},
         Result, VoiceModelMeta,
     };
 
-    use super::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
+    use super::{ModelBytes, ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
@@ -326,9 +334,9 @@ pub(crate) mod tokio {
 
             let talk = OptionFuture::from(self.header.manifest.domains().talk.as_ref().map(
                 |TalkManifest {
-                     predict_duration_filename,
-                     predict_intonation_filename,
-                     decode_filename,
+                     predict_duration,
+                     predict_intonation,
+                     decode,
                      style_id_to_inner_voice_id,
                  }| async {
                     let (
@@ -336,9 +344,9 @@ pub(crate) mod tokio {
                         predict_duration_model_result,
                         predict_intonation_model_result,
                     ) = join3(
-                        reader.read_vvm_entry(decode_filename),
-                        reader.read_vvm_entry(predict_duration_filename),
-                        reader.read_vvm_entry(predict_intonation_filename),
+                        reader.read_model_bytes(decode),
+                        reader.read_model_bytes(predict_duration),
+                        reader.read_model_bytes(predict_intonation),
                     )
                     .await;
 
@@ -429,6 +437,17 @@ pub(crate) mod tokio {
             })
         }
 
+        async fn read_model_bytes(&self, entry: &ModelFile) -> LoadModelResult<ModelBytes> {
+            match entry {
+                ModelFile::Onnx { filename } => {
+                    self.read_vvm_entry(filename).await.map(ModelBytes::Onnx)
+                }
+                ModelFile::Bin { filename } => {
+                    self.read_vvm_entry(filename).await.map(ModelBytes::Bin)
+                }
+            }
+        }
+
         async fn read_vvm_entry(&self, filename: &str) -> LoadModelResult<Vec<u8>> {
             async {
                 let me = self
@@ -460,7 +479,7 @@ mod tests {
     use serde_json::json;
 
     use crate::{
-        manifest::{ManifestDomains, TalkManifest},
+        manifest::{ManifestDomains, ModelFile, TalkManifest},
         SpeakerMeta, StyleType,
     };
 
@@ -503,9 +522,15 @@ mod tests {
     }
 
     static TALK_MANIFEST: LazyLock<TalkManifest> = LazyLock::new(|| TalkManifest {
-        predict_duration_filename: "".to_owned(),
-        predict_intonation_filename: "".to_owned(),
-        decode_filename: "".to_owned(),
+        predict_duration: ModelFile::Onnx {
+            filename: "".to_owned(),
+        },
+        predict_intonation: ModelFile::Onnx {
+            filename: "".to_owned(),
+        },
+        decode: ModelFile::Onnx {
+            filename: "".to_owned(),
+        },
         style_id_to_inner_voice_id: Default::default(),
     });
 

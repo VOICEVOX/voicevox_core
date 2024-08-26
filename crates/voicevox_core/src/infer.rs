@@ -1,5 +1,4 @@
 pub(crate) mod domains;
-mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod session_set;
 
@@ -13,6 +12,7 @@ use thiserror::Error;
 
 use crate::{
     devices::{DeviceSpec, GpuSpec},
+    voice_model::ModelBytes,
     StyleType, SupportedDevices,
 };
 
@@ -33,7 +33,7 @@ pub(crate) trait InferenceRuntime: 'static {
     #[allow(clippy::type_complexity)]
     fn new_session(
         &self,
-        model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
+        model: &ModelBytes,
         options: InferenceSessionOptions,
     ) -> anyhow::Result<(
         Self::Session,
@@ -204,7 +204,3 @@ pub(crate) enum ExtractError {
     #[error(transparent)]
     Shape(#[from] ShapeError),
 }
-
-#[derive(Error, Debug)]
-#[error("不正なモデルファイルです")]
-pub(crate) struct DecryptModelError;

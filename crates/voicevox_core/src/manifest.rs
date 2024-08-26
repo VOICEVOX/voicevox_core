@@ -82,11 +82,18 @@ pub(crate) struct ManifestDomains {
 
 #[derive(Deserialize, Clone)]
 pub(crate) struct TalkManifest {
-    pub(crate) predict_duration_filename: String,
-    pub(crate) predict_intonation_filename: String,
-    pub(crate) decode_filename: String,
+    pub(crate) predict_duration: ModelFile,
+    pub(crate) predict_intonation: ModelFile,
+    pub(crate) decode: ModelFile,
     #[serde(default)]
     pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub(crate) enum ModelFile {
+    Onnx { filename: String },
+    Bin { filename: String },
 }
 
 #[serde_as]

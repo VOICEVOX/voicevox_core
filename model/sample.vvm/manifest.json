@@ -3,9 +3,18 @@
   "id": "018fa5b1-146c-71e9-b523-6f6dabcf05fe",
   "metas_filename": "metas.json",
   "talk": {
-    "predict_duration_filename": "predict_duration.onnx",
-    "predict_intonation_filename": "predict_intonation.onnx",
-    "decode_filename": "decode.onnx",
+    "predict_duration": {
+      "type": "onnx",
+      "filename": "predict_duration.onnx"
+    },
+    "predict_intonation": {
+      "type": "onnx",
+      "filename": "predict_intonation.onnx"
+    },
+    "decode": {
+      "type": "onnx",
+      "filename": "decode.onnx"
+    },
     "style_id_to_inner_voice_id": {
       "302": 2,
       "303": 3

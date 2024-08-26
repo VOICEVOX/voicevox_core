@@ -10,7 +10,7 @@
 //!     開きます。[CUDA]と[DirectML]が利用できます。
 //! - **`link-onnxruntime`**: ONNX Runtimeをロード時動的リンクします。iOSのような`dlopen`の利用が
 //!     困難な環境でのみこちらを利用するべきです。_Note_:
-//!     [動的リンク対象のライブラリ名]は`onnxruntime`で固定です。変更
+//!     [動的リンク対象のライブラリ名]は`voicevox_onnxruntime`で固定です。変更
 //!     は`patchelf(1)`や`install_name_tool(1)`で行ってください。また、[ONNX RuntimeのGPU機能]を使う
 //!     ことはできません。
 //!
