@@ -4212,7 +4212,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "voicevox-ort"
 version = "2.0.0-rc.4"
-source = "git+https://github.com/qryxip/ort.git?rev=cb4acff0c978f3615a4dbaf2164d026185b88134#cb4acff0c978f3615a4dbaf2164d026185b88134"
+source = "git+https://github.com/qryxip/ort.git?rev=5b5b22a135bd5257b31df9156d1cb6a51fbf92f0#5b5b22a135bd5257b31df9156d1cb6a51fbf92f0"
 dependencies = [
  "anyhow",
  "half",
@@ -4229,7 +4229,7 @@ dependencies = [
 [[package]]
 name = "voicevox-ort-sys"
 version = "2.0.0-rc.4"
-source = "git+https://github.com/qryxip/ort.git?rev=cb4acff0c978f3615a4dbaf2164d026185b88134#cb4acff0c978f3615a4dbaf2164d026185b88134"
+source = "git+https://github.com/qryxip/ort.git?rev=5b5b22a135bd5257b31df9156d1cb6a51fbf92f0#5b5b22a135bd5257b31df9156d1cb6a51fbf92f0"
 dependencies = [
  "flate2",
  "pkg-config",
