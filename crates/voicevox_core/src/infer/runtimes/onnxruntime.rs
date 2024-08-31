@@ -89,7 +89,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
 
         let sess = match model {
             ModelBytes::Onnx(onnx) => builder.commit_from_memory(onnx),
-            ModelBytes::Bin(bin) => builder.commit_from_vv_bin(bin),
+            ModelBytes::VvBin(bin) => builder.commit_from_vv_bin(bin),
         }?;
 
         let input_param_infos = sess

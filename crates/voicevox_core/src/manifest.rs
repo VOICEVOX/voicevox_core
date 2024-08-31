@@ -90,10 +90,10 @@ pub(crate) struct TalkManifest {
 }
 
 #[derive(Deserialize, Clone)]
-#[serde(tag = "type", rename_all = "lowercase")]
+#[serde(tag = "type", rename_all = "kebab-case")]
 pub(crate) enum ModelFile {
     Onnx { filename: String },
-    Bin { filename: String },
+    VvBin { filename: String },
 }
 
 #[serde_as]

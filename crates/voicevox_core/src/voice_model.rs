@@ -100,7 +100,7 @@ impl VoiceModelHeader {
 
 pub(crate) enum ModelBytes {
     Onnx(Vec<u8>),
-    Bin(Vec<u8>),
+    VvBin(Vec<u8>),
 }
 
 impl ManifestDomains {
@@ -273,7 +273,9 @@ pub(crate) mod blocking {
         fn read_model_bytes(&self, entry: &ModelFile) -> LoadModelResult<ModelBytes> {
             match entry {
                 ModelFile::Onnx { filename } => self.read_vvm_entry(filename).map(ModelBytes::Onnx),
-                ModelFile::Bin { filename } => self.read_vvm_entry(filename).map(ModelBytes::Bin),
+                ModelFile::VvBin { filename } => {
+                    self.read_vvm_entry(filename).map(ModelBytes::VvBin)
+                }
             }
         }
 
@@ -442,8 +444,8 @@ pub(crate) mod tokio {
                 ModelFile::Onnx { filename } => {
                     self.read_vvm_entry(filename).await.map(ModelBytes::Onnx)
                 }
-                ModelFile::Bin { filename } => {
-                    self.read_vvm_entry(filename).await.map(ModelBytes::Bin)
+                ModelFile::VvBin { filename } => {
+                    self.read_vvm_entry(filename).await.map(ModelBytes::VvBin)
                 }
             }
         }
