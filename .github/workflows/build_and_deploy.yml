@@ -16,6 +16,13 @@ on:
         type: boolean
         required: false
         default: false
+      # TODO: ライセンス表記およびモデル配布形体の方針が固まったら廃止
+      # <https://github.com/VOICEVOX/voicevox_core/pull/825#discussion_r1740115058>
+      is_production:
+        description: "製品版をビルドする"
+        type: boolean
+        required: false
+        default: false
   release:
     types:
       - published
@@ -186,6 +193,18 @@ jobs:
         run: |
           echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
+      - name: Checkout VOICEVOX RESOURCE
+        if: inputs.is_production
+        uses: actions/checkout@v4
+        with:
+          repository: VOICEVOX/voicevox_resource
+          ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
+          path: download/resource
+      - name: Raplace resource
+        if: inputs.is_production
+        shell: bash
+        run:
+          mv -f download/resource/core/README.md ./README.md
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-edit
@@ -322,13 +341,25 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
 
-  deploy_sample_model:
+  deploy_model:
     runs-on: ubuntu-latest
     needs: config
     env:
-      ASSET_NAME: sample-model-${{ needs.config.outputs.version }}
+      ASSET_NAME: model-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout VOICEVOX FAT RESOURCE
+        if: inputs.is_production
+        uses: actions/checkout@v4
+        with:
+          repository: VOICEVOX/voicevox_fat_resource
+          ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
+          path: download/fat_resource
+      - name: Raplace resource
+        if: inputs.is_production
+        shell: bash
+        run:
+          rm -r ./model; mv download/fat_resource/core/model ./model
       - name: Create artifact
         run: |
           mkdir "artifact"
