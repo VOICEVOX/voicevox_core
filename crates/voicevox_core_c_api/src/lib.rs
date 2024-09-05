@@ -354,7 +354,10 @@ pub extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: Box<OpenJtalkRc>) {
 /// ハードウェアアクセラレーションモードを設定する設定値。
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq)]
-#[allow(non_camel_case_types)]
+#[allow(
+    non_camel_case_types,
+    reason = "実際に公開するC APIとの差異をできるだけ少なくするため"
+)]
 pub enum VoicevoxAccelerationMode {
     /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する
     VOICEVOX_ACCELERATION_MODE_AUTO = 0,
@@ -1247,7 +1250,10 @@ pub struct VoicevoxUserDictWord {
 
 /// ユーザー辞書の単語の種類。
 #[repr(i32)]
-#[allow(non_camel_case_types)]
+#[allow(
+    non_camel_case_types,
+    reason = "実際に公開するC APIとの差異をできるだけ少なくするため"
+)]
 #[derive(Copy, Clone)]
 pub enum VoicevoxUserDictWordType {
     /// 固有名詞。

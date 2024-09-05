@@ -5,10 +5,11 @@ use cstr::cstr;
 /// 処理結果を示す結果コード。
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-#[allow(non_camel_case_types)]
+#[allow(
+    non_camel_case_types,
+    reason = "実際に公開するC APIとの差異をできるだけ少なくするため"
+)]
 pub enum VoicevoxResultCode {
-    // C でのenum定義に合わせて大文字で定義している
-    // 出力フォーマットを変更すればRustでよく使われているUpperCamelにできるが、実際に出力されるコードとの差異をできるだけ少なくするため
     /// 成功
     VOICEVOX_RESULT_OK = 0,
     /// open_jtalk辞書ファイルが読み込まれていない

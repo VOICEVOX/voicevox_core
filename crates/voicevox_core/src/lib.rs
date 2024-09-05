@@ -72,8 +72,10 @@ pub mod tokio;
 #[cfg(test)]
 mod test_util;
 
-// https://crates.io/crates/rstest_reuse#use-rstest_resuse-at-the-top-of-your-crate
-#[allow(clippy::single_component_path_imports)]
+#[expect(
+    clippy::single_component_path_imports,
+    reason = "https://crates.io/crates/rstest_reuse/0.6.0#use-rstest_resuse-at-the-top-of-your-crate"
+)]
 #[cfg(test)]
 use rstest_reuse;
 

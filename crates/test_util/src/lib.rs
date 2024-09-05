@@ -8,7 +8,9 @@ include!(concat!(env!("OUT_DIR"), "/sample_voice_model_file.rs"));
     non_upper_case_globals,
     unused_extern_crates,
     clippy::missing_safety_doc,
-    clippy::too_many_arguments
+    clippy::too_many_arguments,
+    reason = "bindgenが生成するコードのため。`#[expect]`ではなく`#[allow]`なのは、bindgenが生成\
+              するコードがOSにより変わるため"
 )]
 pub mod c_api {
     include!(concat!(env!("OUT_DIR"), "/c_api.rs"));

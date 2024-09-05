@@ -322,9 +322,9 @@ mod blocking {
 
         fn __exit__(
             &mut self,
-            #[allow(unused_variables)] exc_type: &PyAny,
-            #[allow(unused_variables)] exc_value: &PyAny,
-            #[allow(unused_variables)] traceback: &PyAny,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_type: &PyAny,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_value: &PyAny,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] traceback: &PyAny,
         ) {
             self.close();
         }
@@ -759,7 +759,7 @@ mod asyncio {
 
     #[pymethods]
     impl OpenJtalk {
-        #[allow(clippy::new_ret_no_self)]
+        #[expect(clippy::new_ret_no_self, reason = "これはPython API")]
         #[staticmethod]
         fn new(
             #[pyo3(from_py_with = "crate::convert::from_utf8_path")]
@@ -829,9 +829,9 @@ mod asyncio {
 
         fn __exit__(
             &mut self,
-            #[allow(unused_variables)] exc_type: &PyAny,
-            #[allow(unused_variables)] exc_value: &PyAny,
-            #[allow(unused_variables)] traceback: &PyAny,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_type: &PyAny,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_value: &PyAny,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] traceback: &PyAny,
         ) {
             self.close();
         }
