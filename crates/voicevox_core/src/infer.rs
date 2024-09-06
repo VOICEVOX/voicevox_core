@@ -30,7 +30,11 @@ pub(crate) trait InferenceRuntime: 'static {
     /// GPUが実際に利用できそうかどうか判定する。
     fn test_gpu(&self, gpu: GpuSpec) -> anyhow::Result<()>;
 
-    #[allow(clippy::type_complexity)]
+    #[expect(
+        clippy::type_complexity,
+        reason = "ここを呼び出すのは現状一箇所なので、可読性が著しく落ちてはいないことを考えると\
+                  別にこのままでいいはず"
+    )]
     fn new_session(
         &self,
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
@@ -64,7 +68,11 @@ pub(crate) trait InferenceDomain: Sized {
 /// `::macros::InferenceOperation`により導出される。
 pub(crate) trait InferenceOperation: Copy + Enum {
     /// `{InferenceInputSignature,InferenceOutputSignature}::PARAM_INFOS`を集めたもの。
-    #[allow(clippy::type_complexity)]
+    #[expect(
+        clippy::type_complexity,
+        reason = "ここを参照するのは現状一箇所なので、可読性が著しく落ちてはいないことを考えると\
+                  別にこのままでいいはず"
+    )]
     const PARAM_INFOS: EnumMap<
         Self,
         (

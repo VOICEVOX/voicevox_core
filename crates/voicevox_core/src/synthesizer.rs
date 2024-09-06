@@ -808,7 +808,11 @@ pub(crate) mod blocking {
         /// # Performance
         ///
         /// CPU-boundな操作であるため、非同期ランタイム上では直接実行されるべきではない。
-        #[allow(clippy::too_many_arguments)]
+        #[expect(
+            clippy::too_many_arguments,
+            reason = "compatible_engineでの`predict_intonation`の形を考えると、ここの引数を構造体に\
+                      まとめたりしても可読性に寄与しない"
+        )]
         fn predict_intonation(
             &self,
             length: usize,

@@ -55,7 +55,7 @@ impl<'de> Deserialize<'de> for UserDictWord {
     }
 }
 
-#[allow(clippy::enum_variant_names)] // FIXME
+#[expect(clippy::enum_variant_names, reason = "特に理由はないので正されるべき")] // FIXME
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub(crate) enum InvalidWordError {
     #[error("{}: 無効な発音です({_1}): {_0:?}", Self::BASE_MSG)]
