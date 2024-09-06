@@ -67,7 +67,7 @@ impl Display for InnerVoiceId {
 
 #[derive(Deserialize, Getters, Clone)]
 pub struct Manifest {
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "現状はバリデーションのためだけに存在")]
     vvm_format_version: FormatVersionV1,
     pub(crate) id: VoiceModelId,
     metas_filename: String,
@@ -132,7 +132,7 @@ mod tests {
 
         #[derive(Deserialize)]
         struct ManifestPart {
-            #[allow(dead_code)]
+            #[expect(dead_code, reason = "バリデーションのためだけに存在")]
             vvm_format_version: FormatVersionV1,
         }
     }

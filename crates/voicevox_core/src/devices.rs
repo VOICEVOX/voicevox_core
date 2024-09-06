@@ -220,7 +220,10 @@ mod tests {
 
         assert_eq!(
             {
-                #[forbid(unused_variables)]
+                #[forbid(
+                    unused_variables,
+                    reason = "比較対象としてここは網羅されてなければなりません"
+                )]
                 let SupportedDevices { cpu: _, cuda, dml } = &SUPPORTED_DEVICES;
                 [cuda as *const _, dml as *const _]
             },

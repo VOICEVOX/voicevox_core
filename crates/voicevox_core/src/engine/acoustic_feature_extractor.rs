@@ -63,9 +63,8 @@ static PHONEME_MAP: LazyLock<HashMap<&str, i64>> = LazyLock::new(|| {
 #[derive(Debug, Clone, PartialEq, new, Default, Getters)]
 pub(crate) struct OjtPhoneme {
     phoneme: String,
-    #[allow(dead_code)]
+    // FIXME: derive-getters(多分)が警告を覆い隠しているが、以下の二つは使っていないはず
     start: f32,
-    #[allow(dead_code)]
     end: f32,
 }
 
