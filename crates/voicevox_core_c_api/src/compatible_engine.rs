@@ -2,7 +2,7 @@ use std::{
     collections::BTreeMap,
     env,
     ffi::{c_char, CString},
-    sync::{LazyLock, Mutex, MutexGuard},
+    sync::{Arc, LazyLock, Mutex, MutexGuard},
 };
 
 use libc::c_int;
@@ -35,10 +35,10 @@ static ONNXRUNTIME: LazyLock<&'static voicevox_core::blocking::Onnxruntime> = La
 });
 
 struct VoiceModelSet {
-    all_vvms: Vec<voicevox_core::blocking::VoiceModel>,
+    all_vvms: Vec<Arc<voicevox_core::blocking::VoiceModel>>,
     all_metas_json: CString,
     style_model_map: BTreeMap<StyleId, VoiceModelId>,
-    model_map: BTreeMap<VoiceModelId, voicevox_core::blocking::VoiceModel>,
+    model_map: BTreeMap<VoiceModelId, Arc<voicevox_core::blocking::VoiceModel>>,
 }
 
 static VOICE_MODEL_SET: LazyLock<VoiceModelSet> = LazyLock::new(|| {
@@ -66,7 +66,7 @@ static VOICE_MODEL_SET: LazyLock<VoiceModelSet> = LazyLock::new(|| {
     /// # Panics
     ///
     /// 失敗したらパニックする
-    fn get_all_models() -> Vec<voicevox_core::blocking::VoiceModel> {
+    fn get_all_models() -> Vec<Arc<voicevox_core::blocking::VoiceModel>> {
         let root_dir = if let Some(root_dir) = env::var_os(ROOT_DIR_ENV_NAME) {
             root_dir.into()
         } else {
@@ -84,7 +84,7 @@ static VOICE_MODEL_SET: LazyLock<VoiceModelSet> = LazyLock::new(|| {
             .unwrap_or_else(|e| panic!("{}が読めませんでした: {e}", root_dir.display()))
             .into_iter()
             .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "vvm"))
-            .map(|entry| voicevox_core::blocking::VoiceModel::from_path(entry.path()))
+            .map(|entry| voicevox_core::blocking::VoiceModel::from_path(entry.path()).map(Arc::new))
             .collect::<std::result::Result<_, _>>()
             .unwrap()
     }

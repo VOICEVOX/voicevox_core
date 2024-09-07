@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::{
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
-        domains::{TalkDomain, TalkOperation},
+        domains::{InferenceDomainMap, TalkDomain, TalkOperation},
         InferenceDomain,
     },
     manifest::{Manifest, ManifestDomains, StyleIdToInnerVoiceId},
@@ -55,7 +55,6 @@ impl VoiceModelId {
 /// 音声モデルが持つ、各モデルファイルの実体を除く情報。
 ///
 /// モデルの`[u8]`と分けて`Status`に渡す。
-#[derive(Clone)]
 pub(crate) struct VoiceModelHeader {
     pub(crate) manifest: Manifest,
     /// メタ情報。
@@ -98,7 +97,7 @@ impl VoiceModelHeader {
     }
 }
 
-impl ManifestDomains {
+impl InferenceDomainMap<ManifestDomains> {
     /// manifestとして対応していない`StyleType`に対してエラーを発する。
     ///
     /// `Status`はこのバリデーションを信頼し、`InferenceDomain`の不足時にパニックする。
@@ -141,169 +140,70 @@ impl ManifestDomains {
 }
 
 pub(crate) mod blocking {
-    use std::{
-        io::{self, Cursor},
-        path::Path,
-    };
+    use std::path::Path;
 
     use easy_ext::ext;
-    use enum_map::EnumMap;
-    use ouroboros::self_referencing;
-    use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
-    use serde::de::DeserializeOwned;
     use uuid::Uuid;
 
-    use crate::{
-        error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::domains::InferenceDomainMap,
-        manifest::{Manifest, TalkManifest},
-        VoiceModelMeta,
-    };
+    use crate::{error::LoadModelResult, infer::domains::InferenceDomainMap, VoiceModelMeta};
 
     use super::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
 
     /// 音声モデル。
     ///
     /// VVMファイルと対応する。
-    #[derive(Clone)]
-    pub struct VoiceModel {
-        header: VoiceModelHeader,
-    }
+    pub struct VoiceModel(super::tokio::VoiceModel);
 
     impl self::VoiceModel {
         pub(crate) fn read_inference_models(
             &self,
         ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
-            let reader = BlockingVvmEntryReader::open(&self.header.path)?;
-
-            let talk = self
-                .header
-                .manifest
-                .domains()
-                .talk
-                .as_ref()
-                .map(
-                    |TalkManifest {
-                         predict_duration_filename,
-                         predict_intonation_filename,
-                         decode_filename,
-                         style_id_to_inner_voice_id,
-                     }| {
-                        let model_bytes = [
-                            predict_duration_filename,
-                            predict_intonation_filename,
-                            decode_filename,
-                        ]
-                        .into_par_iter()
-                        .map(|filename| reader.read_vvm_entry(filename))
-                        .collect::<std::result::Result<Vec<_>, _>>()?
-                        .try_into()
-                        .unwrap_or_else(|_| panic!("should be same length"));
-
-                        let model_bytes = EnumMap::from_array(model_bytes);
-
-                        Ok((style_id_to_inner_voice_id.clone(), model_bytes))
-                    },
-                )
-                .transpose()?;
-
-            Ok(InferenceDomainMap { talk })
+            futures_lite::future::block_on(self.0.read_inference_models())
         }
 
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         pub fn from_path(path: impl AsRef<Path>) -> crate::Result<Self> {
-            let path = path.as_ref();
-            let reader = BlockingVvmEntryReader::open(path)?;
-            let manifest = reader.read_vvm_json::<Manifest>("manifest.json")?;
-            let metas = &reader.read_vvm_entry(manifest.metas_filename())?;
-            let header = VoiceModelHeader::new(manifest, metas, path)?;
-            Ok(Self { header })
+            futures_lite::future::block_on(super::tokio::VoiceModel::from_path(path)).map(Self)
         }
 
         /// ID。
         pub fn id(&self) -> VoiceModelId {
-            self.header.manifest.id
+            self.0.id()
         }
 
         /// メタ情報。
         pub fn metas(&self) -> &VoiceModelMeta {
-            &self.header.metas
+            self.0.metas()
         }
 
         pub(crate) fn header(&self) -> &VoiceModelHeader {
-            &self.header
-        }
-    }
-
-    #[self_referencing]
-    struct BlockingVvmEntryReader {
-        path: std::path::PathBuf,
-        zip: Vec<u8>,
-        #[covariant]
-        #[borrows(zip)]
-        reader: zip::ZipArchive<Cursor<&'this [u8]>>,
-    }
-
-    impl BlockingVvmEntryReader {
-        fn open(path: &Path) -> LoadModelResult<Self> {
-            (|| {
-                let zip = std::fs::read(path)?;
-                Self::try_new(path.to_owned(), zip, |zip| {
-                    zip::ZipArchive::new(Cursor::new(zip))
-                })
-            })()
-            .map_err(|source| LoadModelError {
-                path: path.to_owned(),
-                context: LoadModelErrorKind::OpenZipFile,
-                source: Some(source.into()),
-            })
-        }
-
-        // FIXME: manifest.json専用になっているので、そういう関数名にする
-        fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> LoadModelResult<T> {
-            let bytes = &self.read_vvm_entry(filename)?;
-            serde_json::from_slice(bytes).map_err(|source| LoadModelError {
-                path: self.borrow_path().clone(),
-                context: LoadModelErrorKind::InvalidModelFormat,
-                source: Some(anyhow::Error::from(source).context(format!("{filename}が不正です"))),
-            })
-        }
-
-        fn read_vvm_entry(&self, filename: &str) -> LoadModelResult<Vec<u8>> {
-            (|| {
-                let mut reader = self.borrow_reader().clone();
-                let mut entry = reader.by_name(filename)?;
-                let mut buf = Vec::with_capacity(entry.size() as _);
-                io::copy(&mut entry, &mut buf)?;
-                Ok(buf)
-            })()
-            .map_err(|source| LoadModelError {
-                path: self.borrow_path().clone(),
-                context: LoadModelErrorKind::OpenZipFile,
-                source: Some(source),
-            })
+            self.0.header()
         }
     }
 
     #[ext(IdRef)]
     pub impl VoiceModel {
         fn id_ref(&self) -> &Uuid {
-            &self.header.manifest.id.0
+            &self.header().manifest.id.0
         }
     }
 }
 
 pub(crate) mod tokio {
-    use std::{collections::HashMap, io, path::Path};
+    use std::{path::Path, sync::Arc};
 
-    use derive_new::new;
-    use enum_map::EnumMap;
-    use futures::future::{join3, OptionFuture};
-    use serde::de::DeserializeOwned;
+    use anyhow::Context as _;
+    use easy_ext::ext;
+    use enum_map::{enum_map, EnumMap};
+    use futures_util::{future::OptionFuture, TryFutureExt as _};
+    use ouroboros::self_referencing;
 
     use crate::{
         error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
-        infer::domains::InferenceDomainMap,
+        infer::{
+            domains::{InferenceDomainMap, TalkDomain, TalkOperation},
+            InferenceDomain,
+        },
         manifest::{Manifest, TalkManifest},
         Result, VoiceModelMeta,
     };
@@ -313,188 +213,272 @@ pub(crate) mod tokio {
     /// 音声モデル。
     ///
     /// VVMファイルと対応する。
-    #[derive(Clone)]
+    #[self_referencing]
     pub struct VoiceModel {
         header: VoiceModelHeader,
+
+        #[borrows(header)]
+        #[not_covariant]
+        inference_model_entries: InferenceDomainMap<InferenceModelEntries<'this>>,
     }
 
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(
             &self,
         ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
-            let reader = AsyncVvmEntryReader::open(&self.header.path).await?;
+            let path = &self.borrow_header().path;
 
-            let talk = OptionFuture::from(self.header.manifest.domains().talk.as_ref().map(
-                |TalkManifest {
-                     predict_duration_filename,
-                     predict_intonation_filename,
-                     decode_filename,
-                     style_id_to_inner_voice_id,
-                 }| async {
-                    let (
-                        decode_model_result,
-                        predict_duration_model_result,
-                        predict_intonation_model_result,
-                    ) = join3(
-                        reader.read_vvm_entry(decode_filename),
-                        reader.read_vvm_entry(predict_duration_filename),
-                        reader.read_vvm_entry(predict_intonation_filename),
-                    )
-                    .await;
+            let error = |context, source| LoadModelError {
+                path: path.to_owned(),
+                context,
+                source: Some(source),
+            };
 
-                    let model_bytes = EnumMap::from_array([
-                        predict_duration_model_result?,
-                        predict_intonation_model_result?,
-                        decode_model_result?,
-                    ]);
+            let mut zip = async_zip::base::read::seek::ZipFileReader::from_file(path)
+                .await
+                .map_err(|source| error(LoadModelErrorKind::OpenZipFile, source))?;
 
-                    Ok((style_id_to_inner_voice_id.clone(), model_bytes))
-                },
-            ))
+            macro_rules! read_file {
+                ($entry:expr $(,)?) => {{
+                    let (index, filename): (usize, Arc<str>) = $entry;
+                    zip.read_file(index)
+                        .map_err(move |source| {
+                            error(
+                                LoadModelErrorKind::ReadZipEntry {
+                                    filename: (*filename).to_owned(),
+                                },
+                                source,
+                            )
+                        })
+                        .await?
+                }};
+            }
+
+            self.with_inference_model_entries(|inference_model_entries| {
+                inference_model_entries
+                    .ref_map(InferenceDomainMap {
+                        talk: |talk| {
+                            let talk =
+                                talk.as_ref()
+                                    .map(|InferenceModelEntry { indices, manifest }| {
+                                        (
+                                            indices.map(|op, i| (i, manifest[op].clone())),
+                                            manifest.style_id_to_inner_voice_id.clone(),
+                                        )
+                                    });
+                            async {
+                                OptionFuture::from(talk.map(
+                                    |(entries, style_id_to_inner_voice_id)| async {
+                                        let [predict_duration, predict_intonation, decode] =
+                                            entries.into_array();
+
+                                        let predict_duration = read_file!(predict_duration);
+                                        let predict_intonation = read_file!(predict_intonation);
+                                        let decode = read_file!(decode);
+
+                                        let model_bytes = EnumMap::from_array([
+                                            predict_duration,
+                                            predict_intonation,
+                                            decode,
+                                        ]);
+
+                                        Ok((style_id_to_inner_voice_id, model_bytes))
+                                    },
+                                ))
+                                .await
+                                .transpose()
+                            }
+                        },
+                    })
+                    .collect_future_results()
+            })
             .await
-            .transpose()?;
-
-            Ok(InferenceDomainMap { talk })
         }
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
-            let reader = AsyncVvmEntryReader::open(path.as_ref()).await?;
-            let manifest = reader.read_vvm_json::<Manifest>("manifest.json").await?;
-            let metas = &reader.read_vvm_entry(manifest.metas_filename()).await?;
-            let header = VoiceModelHeader::new(manifest, metas, path.as_ref())?;
-            Ok(Self { header })
+            const MANIFEST_FILENAME: &str = "manifest.json";
+
+            let path = path.as_ref();
+
+            let error = |context, source| LoadModelError {
+                path: path.to_owned(),
+                context,
+                source: Some(source),
+            };
+
+            let mut zip = async_zip::base::read::seek::ZipFileReader::from_file(path)
+                .await
+                .map_err(|source| error(LoadModelErrorKind::OpenZipFile, source))?;
+
+            let manifest = &async { zip.read_file(zip.find_index(MANIFEST_FILENAME)?).await }
+                .await
+                .map_err(|source| {
+                    error(
+                        LoadModelErrorKind::ReadZipEntry {
+                            filename: MANIFEST_FILENAME.to_owned(),
+                        },
+                        source,
+                    )
+                })?;
+            let manifest = serde_json::from_slice::<Manifest>(manifest)
+                .map_err(|source| error(LoadModelErrorKind::InvalidModelFormat, source.into()))?;
+
+            let metas = &async {
+                zip.read_file(zip.find_index(manifest.metas_filename())?)
+                    .await
+            }
+            .await
+            .map_err(|source| {
+                error(
+                    LoadModelErrorKind::ReadZipEntry {
+                        filename: manifest.metas_filename().clone(),
+                    },
+                    source,
+                )
+            })?;
+
+            let header = VoiceModelHeader::new(manifest, metas, path)?;
+
+            VoiceModelTryBuilder {
+                header,
+                inference_model_entries_builder: |VoiceModelHeader { manifest, .. }| {
+                    manifest
+                        .domains()
+                        .ref_map(InferenceDomainMap {
+                            talk: |talk| {
+                                talk.as_ref()
+                                    .map(|manifest| {
+                                        let indices = enum_map! {
+                                            TalkOperation::PredictDuration => {
+                                                zip.find_index(&manifest.predict_duration_filename)?
+                                            }
+                                            TalkOperation::PredictIntonation => zip.find_index(
+                                                &manifest.predict_intonation_filename,
+                                            )?,
+                                            TalkOperation::Decode => {
+                                                zip.find_index(&manifest.decode_filename)?
+                                            }
+                                        };
+
+                                        Ok(InferenceModelEntry { indices, manifest })
+                                    })
+                                    .transpose()
+                                    .map_err(move |source| LoadModelError {
+                                        path: path.to_owned(),
+                                        context: LoadModelErrorKind::ReadZipEntry {
+                                            filename: MANIFEST_FILENAME.to_owned(),
+                                        },
+                                        source: Some(source),
+                                    })
+                            },
+                        })
+                        .collect_results()
+                        .map_err(crate::Error::from)
+                },
+            }
+            .try_build()
         }
 
         /// ID。
         pub fn id(&self) -> VoiceModelId {
-            self.header.manifest.id
+            self.borrow_header().manifest.id
         }
 
         /// メタ情報。
         pub fn metas(&self) -> &VoiceModelMeta {
-            &self.header.metas
+            &self.borrow_header().metas
         }
 
         pub(crate) fn header(&self) -> &VoiceModelHeader {
-            &self.header
+            self.borrow_header()
         }
     }
 
-    struct AsyncVvmEntry {
-        index: usize,
-        entry: async_zip::ZipEntry,
+    type InferenceModelEntries<'manifest> =
+        (Option<InferenceModelEntry<TalkDomain, &'manifest TalkManifest>>,);
+
+    struct InferenceModelEntry<D: InferenceDomain, M> {
+        indices: EnumMap<D::Operation, usize>,
+        manifest: M,
     }
 
-    #[derive(new)]
-    struct AsyncVvmEntryReader<'a> {
-        path: &'a Path,
-        reader: async_zip::base::read::mem::ZipFileReader,
-        entry_map: HashMap<String, AsyncVvmEntry>,
-    }
-
-    impl<'a> AsyncVvmEntryReader<'a> {
-        async fn open(path: &'a Path) -> LoadModelResult<Self> {
-            let reader = async {
-                let file = fs_err::tokio::read(path).await?;
-                async_zip::base::read::mem::ZipFileReader::new(file).await
-            }
-            .await
-            .map_err(|source| LoadModelError {
-                path: path.to_owned(),
-                context: LoadModelErrorKind::OpenZipFile,
-                source: Some(source.into()),
+    #[ext]
+    impl async_zip::base::read::seek::ZipFileReader<futures_util::io::BufReader<async_fs::File>> {
+        async fn from_file(path: &Path) -> anyhow::Result<Self>
+        where
+            Self: Sized,
+        {
+            let zip = async_fs::File::open(path).await.with_context(|| {
+                // fs-errのと同じにする
+                format!("failed to open file `{}`", path.display())
             })?;
-            let entry_map: HashMap<_, _> = reader
+            let zip = futures_util::io::BufReader::new(zip);
+            let zip = async_zip::base::read::seek::ZipFileReader::new(zip).await?;
+            Ok(zip)
+        }
+
+        fn find_index(&self, filename: &str) -> anyhow::Result<usize> {
+            let (idx, _) = self
                 .file()
                 .entries()
                 .iter()
-                .flat_map(|e| {
-                    // 非UTF-8のファイルを利用することはないため、無視する
-                    let filename = e.filename().as_str().ok()?;
-                    (!e.dir().ok()?).then_some(())?;
-                    Some((filename.to_owned(), (**e).clone()))
-                })
                 .enumerate()
-                .map(|(i, (filename, entry))| (filename, AsyncVvmEntry { index: i, entry }))
-                .collect();
-            Ok(AsyncVvmEntryReader::new(path, reader, entry_map))
-        }
-        // FIXME: manifest.json専用になっているので、そういう関数名にする
-        async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> LoadModelResult<T> {
-            let bytes = self.read_vvm_entry(filename).await?;
-            serde_json::from_slice(&bytes).map_err(|source| LoadModelError {
-                path: self.path.to_owned(),
-                context: LoadModelErrorKind::InvalidModelFormat,
-                source: Some(anyhow::Error::from(source).context(format!("{filename}が不正です"))),
-            })
+                .find(|(_, e)| e.filename().as_str().ok() == Some(filename))
+                .with_context(|| "could not find `{filename}`")?;
+            Ok(idx)
         }
 
-        async fn read_vvm_entry(&self, filename: &str) -> LoadModelResult<Vec<u8>> {
-            async {
-                let me = self
-                    .entry_map
-                    .get(filename)
-                    .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
-                let mut manifest_reader = self.reader.reader_with_entry(me.index).await?;
-                let mut buf = Vec::with_capacity(me.entry.uncompressed_size() as usize);
-                manifest_reader.read_to_end_checked(&mut buf).await?;
-                Ok::<_, anyhow::Error>(buf)
-            }
-            .await
-            .map_err(|source| LoadModelError {
-                path: self.path.to_owned(),
-                context: LoadModelErrorKind::ReadZipEntry {
-                    filename: filename.to_owned(),
-                },
-                source: Some(source),
-            })
+        async fn read_file(&mut self, index: usize) -> anyhow::Result<Vec<u8>> {
+            let mut rdr = self.reader_with_entry(index).await?;
+            let mut buf = Vec::with_capacity(rdr.entry().uncompressed_size() as usize);
+            rdr.read_to_end_checked(&mut buf).await?;
+            Ok(buf)
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::LazyLock;
-
     use rstest::{fixture, rstest};
     use serde_json::json;
 
     use crate::{
+        infer::domains::InferenceDomainMap,
         manifest::{ManifestDomains, TalkManifest},
         SpeakerMeta, StyleType,
     };
 
     #[rstest]
     #[case(
-        &ManifestDomains {
+        &InferenceDomainMap {
             talk: None,
         },
         &[],
         Ok(())
     )]
     #[case(
-        &ManifestDomains {
-            talk: Some(TALK_MANIFEST.clone()),
+        &InferenceDomainMap {
+            talk: Some(TalkManifest::default()),
         },
         &[speaker(&[StyleType::Talk])],
         Ok(())
     )]
     #[case(
-        &ManifestDomains {
-            talk: Some(TALK_MANIFEST.clone()),
+        &InferenceDomainMap {
+            talk: Some(TalkManifest::default()),
         },
         &[speaker(&[StyleType::Talk, StyleType::Sing])],
         Ok(())
     )]
     #[case(
-        &ManifestDomains {
+        &InferenceDomainMap {
             talk: None,
         },
         &[speaker(&[StyleType::Talk])],
         Err(())
     )]
     fn check_acceptable_works(
-        #[case] manifest: &ManifestDomains,
+        #[case] manifest: &InferenceDomainMap<ManifestDomains>,
         #[case] metas: &[SpeakerMeta],
         #[case] expected: std::result::Result<(), ()>,
     ) {
@@ -502,13 +486,7 @@ mod tests {
         assert_eq!(expected, actual);
     }
 
-    static TALK_MANIFEST: LazyLock<TalkManifest> = LazyLock::new(|| TalkManifest {
-        predict_duration_filename: "".to_owned(),
-        predict_intonation_filename: "".to_owned(),
-        decode_filename: "".to_owned(),
-        style_id_to_inner_voice_id: Default::default(),
-    });
-
+    // FIXME: これ使ってないのでは？
     #[fixture]
     fn talk_speaker() -> SpeakerMeta {
         serde_json::from_value(json!({

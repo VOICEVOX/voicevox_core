@@ -16,6 +16,7 @@ link-onnxruntime = []
 
 [dependencies]
 anyhow.workspace = true
+async-fs.workspace = true
 async_zip = { workspace = true, features = ["deflate"] }
 camino.workspace = true
 const_format.workspace = true
@@ -27,14 +28,15 @@ easy-ext.workspace = true
 educe.workspace = true
 enum-map.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
-futures.workspace = true
+futures-io.workspace = true
+futures-lite.workspace = true
+futures-util = { workspace = true, features = ["io"] }
 indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
 jlabel.workspace = true
 ndarray.workspace = true
 open_jtalk.workspace = true
 ouroboros.workspace = true
-rayon.workspace = true
 ref-cast.workspace = true
 regex.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
@@ -49,7 +51,6 @@ tracing.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-voicevox"] }
 voicevox_core_macros = { path = "../voicevox_core_macros" }
-zip.workspace = true
 
 [dev-dependencies]
 heck.workspace = true

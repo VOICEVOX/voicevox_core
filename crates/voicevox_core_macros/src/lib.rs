@@ -1,6 +1,8 @@
 #![warn(rust_2018_idioms)]
 
+mod extract;
 mod inference_domain;
+mod manifest;
 
 use syn::parse_macro_input;
 
@@ -98,6 +100,13 @@ pub fn derive_inference_output_signature(
 ) -> proc_macro::TokenStream {
     let input = &parse_macro_input!(input);
     from_syn(inference_domain::derive_inference_output_signature(input))
+}
+
+#[cfg(not(doctest))]
+#[proc_macro_derive(Index, attributes(index))]
+pub fn derive_index(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = &parse_macro_input!(input);
+    from_syn(manifest::derive_index(input))
 }
 
 fn from_syn(result: syn::Result<proc_macro2::TokenStream>) -> proc_macro::TokenStream {

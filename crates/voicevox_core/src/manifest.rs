@@ -10,7 +10,10 @@ use derive_new::new;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
-use crate::{StyleId, VoiceModelId};
+use crate::{
+    infer::domains::{InferenceDomainMap, TalkOperation},
+    StyleId, VoiceModelId,
+};
 
 #[derive(Clone)]
 struct FormatVersionV1;
@@ -65,26 +68,31 @@ impl Display for InnerVoiceId {
     }
 }
 
-#[derive(Deserialize, Getters, Clone)]
+#[derive(Deserialize, Getters)]
 pub struct Manifest {
     #[expect(dead_code, reason = "現状はバリデーションのためだけに存在")]
     vvm_format_version: FormatVersionV1,
     pub(crate) id: VoiceModelId,
     metas_filename: String,
     #[serde(flatten)]
-    domains: ManifestDomains,
+    domains: InferenceDomainMap<ManifestDomains>,
 }
 
-#[derive(Deserialize, Clone)]
-pub(crate) struct ManifestDomains {
-    pub(crate) talk: Option<TalkManifest>,
-}
+pub(crate) type ManifestDomains = (Option<TalkManifest>,);
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, macros::Index)]
+#[cfg_attr(test, derive(Default))]
+#[index(TalkOperation)]
 pub(crate) struct TalkManifest {
-    pub(crate) predict_duration_filename: String,
-    pub(crate) predict_intonation_filename: String,
-    pub(crate) decode_filename: String,
+    #[index(TalkOperation::PredictDuration)]
+    pub(crate) predict_duration_filename: Arc<str>,
+
+    #[index(TalkOperation::PredictIntonation)]
+    pub(crate) predict_intonation_filename: Arc<str>,
+
+    #[index(TalkOperation::Decode)]
+    pub(crate) decode_filename: Arc<str>,
+
     #[serde(default)]
     pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
