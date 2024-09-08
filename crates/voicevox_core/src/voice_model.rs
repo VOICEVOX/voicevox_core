@@ -448,13 +448,56 @@ pub(crate) mod tokio {
         }
     }
 
+    type InferenceModelEntries<'manifest> =
+        (Option<InferenceModelEntry<TalkDomain, &'manifest TalkManifest>>,);
+
+    struct InferenceModelEntry<D: InferenceDomain, M> {
+        indices: EnumMap<D::Operation, usize>,
+        manifest: M,
+    }
+
+    #[ext]
+    impl async_zip::base::read::seek::ZipFileReader<futures_util::io::BufReader<async_fs::File>> {
+        async fn from_file(path: &Path) -> anyhow::Result<Self>
+        where
+            Self: Sized, // 自明
+        {
+            let zip = async_fs::File::open(path).await.with_context(|| {
+                // fs-errのと同じにする
+                format!("failed to open file `{}`", path.display())
+            })?;
+            let zip = futures_util::io::BufReader::new(zip);
+            let zip = async_zip::base::read::seek::ZipFileReader::new(zip).await?;
+            Ok(zip)
+        }
+
+        fn find_index(&self, filename: &str) -> anyhow::Result<usize> {
+            let (idx, _) = self
+                .file()
+                .entries()
+                .iter()
+                .enumerate()
+                .find(|(_, e)| e.filename().as_str().ok() == Some(filename))
+                .with_context(|| "could not find `{filename}`")?;
+            Ok(idx)
+        }
+
+        async fn read_file(&mut self, index: usize) -> anyhow::Result<Vec<u8>> {
+            let mut rdr = self.reader_with_entry(index).await?;
+            let mut buf = Vec::with_capacity(rdr.entry().uncompressed_size() as usize);
+            rdr.read_to_end_checked(&mut buf).await?;
+            Ok(buf)
+        }
+    }
+
+    #[rustfmt::skip]
     #[cfg(any())] // FIXME: Gitのdiffを抑えるためだけに残してある状態
+    const _: () = {
     struct AsyncVvmEntry {
         index: usize,
         entry: async_zip::ZipEntry,
     }
 
-    #[cfg(any())] // FIXME: Gitのdiffを抑えるためだけに残してある状態
     #[derive(new)]
     struct AsyncVvmEntryReader<'a> {
         path: &'a Path,
@@ -462,7 +505,6 @@ pub(crate) mod tokio {
         entry_map: HashMap<String, AsyncVvmEntry>,
     }
 
-    #[cfg(any())] // FIXME: Gitのdiffを抑えるためだけに残してある状態
     impl<'a> AsyncVvmEntryReader<'a> {
         async fn open(path: &'a Path) -> LoadModelResult<Self> {
             let reader = async {
@@ -521,48 +563,7 @@ pub(crate) mod tokio {
             })
         }
     }
-
-    type InferenceModelEntries<'manifest> =
-        (Option<InferenceModelEntry<TalkDomain, &'manifest TalkManifest>>,);
-
-    struct InferenceModelEntry<D: InferenceDomain, M> {
-        indices: EnumMap<D::Operation, usize>,
-        manifest: M,
-    }
-
-    #[ext]
-    impl async_zip::base::read::seek::ZipFileReader<futures_util::io::BufReader<async_fs::File>> {
-        async fn from_file(path: &Path) -> anyhow::Result<Self>
-        where
-            Self: Sized, // 自明
-        {
-            let zip = async_fs::File::open(path).await.with_context(|| {
-                // fs-errのと同じにする
-                format!("failed to open file `{}`", path.display())
-            })?;
-            let zip = futures_util::io::BufReader::new(zip);
-            let zip = async_zip::base::read::seek::ZipFileReader::new(zip).await?;
-            Ok(zip)
-        }
-
-        fn find_index(&self, filename: &str) -> anyhow::Result<usize> {
-            let (idx, _) = self
-                .file()
-                .entries()
-                .iter()
-                .enumerate()
-                .find(|(_, e)| e.filename().as_str().ok() == Some(filename))
-                .with_context(|| "could not find `{filename}`")?;
-            Ok(idx)
-        }
-
-        async fn read_file(&mut self, index: usize) -> anyhow::Result<Vec<u8>> {
-            let mut rdr = self.reader_with_entry(index).await?;
-            let mut buf = Vec::with_capacity(rdr.entry().uncompressed_size() as usize);
-            rdr.read_to_end_checked(&mut buf).await?;
-            Ok(buf)
-        }
-    }
+    };
 }
 
 #[cfg(test)]
