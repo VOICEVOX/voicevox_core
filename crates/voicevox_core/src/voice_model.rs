@@ -342,7 +342,7 @@ pub(crate) mod tokio {
                             }
                         },
                     })
-                    .collect_future_results()
+                    .join()
             })
             .await
         }
@@ -425,7 +425,7 @@ pub(crate) mod tokio {
                                     })
                             },
                         })
-                        .collect_results()
+                        .collect()
                         .map_err(crate::Error::from)
                 },
             }

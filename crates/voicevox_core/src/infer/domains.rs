@@ -34,14 +34,14 @@ impl<T> InferenceDomainMap<(T,)> {
 }
 
 impl<T, E> InferenceDomainMap<(Result<T, E>,)> {
-    pub(crate) fn collect_results(self) -> Result<InferenceDomainMap<(T,)>, E> {
+    pub(crate) fn collect(self) -> Result<InferenceDomainMap<(T,)>, E> {
         let talk = self.talk?;
         Ok(InferenceDomainMap { talk })
     }
 }
 
 impl<Ft: Future<Output = Result<T, E>>, T, E> InferenceDomainMap<(Ft,)> {
-    pub(crate) async fn collect_future_results(self) -> Result<InferenceDomainMap<(T,)>, E> {
+    pub(crate) async fn join(self) -> Result<InferenceDomainMap<(T,)>, E> {
         let talk = self.talk.await?;
         Ok(InferenceDomainMap { talk })
     }
