@@ -307,7 +307,8 @@ pub(crate) mod tokio {
 
             self.with_inference_model_entries(|inference_model_entries| {
                 inference_model_entries
-                    .ref_map(InferenceDomainMap {
+                    .each_ref()
+                    .map(InferenceDomainMap {
                         talk: |talk| {
                             let talk =
                                 talk.as_ref()
@@ -395,7 +396,8 @@ pub(crate) mod tokio {
                 inference_model_entries_builder: |VoiceModelHeader { manifest, .. }| {
                     manifest
                         .domains()
-                        .ref_map(InferenceDomainMap {
+                        .each_ref()
+                        .map(InferenceDomainMap {
                             talk: |talk| {
                                 talk.as_ref()
                                     .map(|manifest| {
