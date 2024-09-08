@@ -181,6 +181,57 @@ pub(crate) mod blocking {
         }
     }
 
+    // FIXME: Gitのdiffを抑えるためだけにコメントアウト状態で残してある状態
+    //#[self_referencing]
+    //struct BlockingVvmEntryReader {
+    //    path: std::path::PathBuf,
+    //    zip: Vec<u8>,
+    //    #[covariant]
+    //    #[borrows(zip)]
+    //    reader: zip::ZipArchive<Cursor<&'this [u8]>>,
+    //}
+    //
+    //impl BlockingVvmEntryReader {
+    //    fn open(path: &Path) -> LoadModelResult<Self> {
+    //        (|| {
+    //            let zip = std::fs::read(path)?;
+    //            Self::try_new(path.to_owned(), zip, |zip| {
+    //                zip::ZipArchive::new(Cursor::new(zip))
+    //            })
+    //        })()
+    //        .map_err(|source| LoadModelError {
+    //            path: path.to_owned(),
+    //            context: LoadModelErrorKind::OpenZipFile,
+    //            source: Some(source.into()),
+    //        })
+    //    }
+    //
+    //    // FIXME: manifest.json専用になっているので、そういう関数名にする
+    //    fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> LoadModelResult<T> {
+    //        let bytes = &self.read_vvm_entry(filename)?;
+    //        serde_json::from_slice(bytes).map_err(|source| LoadModelError {
+    //            path: self.borrow_path().clone(),
+    //            context: LoadModelErrorKind::InvalidModelFormat,
+    //            source: Some(anyhow::Error::from(source).context(format!("{filename}が不正です"))),
+    //        })
+    //    }
+    //
+    //    fn read_vvm_entry(&self, filename: &str) -> LoadModelResult<Vec<u8>> {
+    //        (|| {
+    //            let mut reader = self.borrow_reader().clone();
+    //            let mut entry = reader.by_name(filename)?;
+    //            let mut buf = Vec::with_capacity(entry.size() as _);
+    //            io::copy(&mut entry, &mut buf)?;
+    //            Ok(buf)
+    //        })()
+    //        .map_err(|source| LoadModelError {
+    //            path: self.borrow_path().clone(),
+    //            context: LoadModelErrorKind::OpenZipFile,
+    //            source: Some(source),
+    //        })
+    //    }
+    //}
+
     #[ext(IdRef)]
     pub impl VoiceModel {
         fn id_ref(&self) -> &Uuid {
@@ -391,6 +442,80 @@ pub(crate) mod tokio {
 
         pub(crate) fn header(&self) -> &VoiceModelHeader {
             self.borrow_header()
+        }
+    }
+
+    #[cfg(any())] // FIXME: Gitのdiffを抑えるためだけに残してある状態
+    struct AsyncVvmEntry {
+        index: usize,
+        entry: async_zip::ZipEntry,
+    }
+
+    #[cfg(any())] // FIXME: Gitのdiffを抑えるためだけに残してある状態
+    #[derive(new)]
+    struct AsyncVvmEntryReader<'a> {
+        path: &'a Path,
+        reader: async_zip::base::read::mem::ZipFileReader,
+        entry_map: HashMap<String, AsyncVvmEntry>,
+    }
+
+    #[cfg(any())] // FIXME: Gitのdiffを抑えるためだけに残してある状態
+    impl<'a> AsyncVvmEntryReader<'a> {
+        async fn open(path: &'a Path) -> LoadModelResult<Self> {
+            let reader = async {
+                let file = fs_err::tokio::read(path).await?;
+                async_zip::base::read::mem::ZipFileReader::new(file).await
+            }
+            .await
+            .map_err(|source| LoadModelError {
+                path: path.to_owned(),
+                context: LoadModelErrorKind::OpenZipFile,
+                source: Some(source.into()),
+            })?;
+            let entry_map: HashMap<_, _> = reader
+                .file()
+                .entries()
+                .iter()
+                .flat_map(|e| {
+                    // 非UTF-8のファイルを利用することはないため、無視する
+                    let filename = e.filename().as_str().ok()?;
+                    (!e.dir().ok()?).then_some(())?;
+                    Some((filename.to_owned(), (**e).clone()))
+                })
+                .enumerate()
+                .map(|(i, (filename, entry))| (filename, AsyncVvmEntry { index: i, entry }))
+                .collect();
+            Ok(AsyncVvmEntryReader::new(path, reader, entry_map))
+        }
+        // FIXME: manifest.json専用になっているので、そういう関数名にする
+        async fn read_vvm_json<T: DeserializeOwned>(&self, filename: &str) -> LoadModelResult<T> {
+            let bytes = self.read_vvm_entry(filename).await?;
+            serde_json::from_slice(&bytes).map_err(|source| LoadModelError {
+                path: self.path.to_owned(),
+                context: LoadModelErrorKind::InvalidModelFormat,
+                source: Some(anyhow::Error::from(source).context(format!("{filename}が不正です"))),
+            })
+        }
+
+        async fn read_vvm_entry(&self, filename: &str) -> LoadModelResult<Vec<u8>> {
+            async {
+                let me = self
+                    .entry_map
+                    .get(filename)
+                    .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
+                let mut manifest_reader = self.reader.reader_with_entry(me.index).await?;
+                let mut buf = Vec::with_capacity(me.entry.uncompressed_size() as usize);
+                manifest_reader.read_to_end_checked(&mut buf).await?;
+                Ok::<_, anyhow::Error>(buf)
+            }
+            .await
+            .map_err(|source| LoadModelError {
+                path: self.path.to_owned(),
+                context: LoadModelErrorKind::ReadZipEntry {
+                    filename: filename.to_owned(),
+                },
+                source: Some(source),
+            })
         }
     }
 
