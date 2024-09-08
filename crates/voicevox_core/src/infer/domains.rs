@@ -40,10 +40,10 @@ impl<T, E> InferenceDomainMap<(Result<T, E>,)> {
     }
 }
 
-impl<Ft: Future<Output = Result<T, E>>, T, E> InferenceDomainMap<(Ft,)> {
-    pub(crate) async fn join(self) -> Result<InferenceDomainMap<(T,)>, E> {
-        let talk = self.talk.await?;
-        Ok(InferenceDomainMap { talk })
+impl<T: Future> InferenceDomainMap<(T,)> {
+    pub(crate) async fn join(self) -> InferenceDomainMap<(T::Output,)> {
+        let talk = self.talk.await;
+        InferenceDomainMap { talk }
     }
 }
 

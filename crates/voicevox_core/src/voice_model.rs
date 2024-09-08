@@ -246,7 +246,7 @@ pub(crate) mod tokio {
     use anyhow::Context as _;
     use easy_ext::ext;
     use enum_map::{enum_map, EnumMap};
-    use futures_util::{future::OptionFuture, TryFutureExt as _};
+    use futures_util::{future::OptionFuture, FutureExt as _, TryFutureExt as _};
     use ouroboros::self_referencing;
 
     use crate::{
@@ -343,6 +343,7 @@ pub(crate) mod tokio {
                         },
                     })
                     .join()
+                    .map(InferenceDomainMap::collect)
             })
             .await
         }
