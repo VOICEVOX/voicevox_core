@@ -531,7 +531,7 @@ pub(crate) mod tokio {
     impl async_zip::base::read::seek::ZipFileReader<futures_util::io::BufReader<async_fs::File>> {
         async fn from_file(path: &Path) -> anyhow::Result<Self>
         where
-            Self: Sized,
+            Self: Sized, // 自明
         {
             let zip = async_fs::File::open(path).await.with_context(|| {
                 // fs-errのと同じにする

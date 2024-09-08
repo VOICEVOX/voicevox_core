@@ -102,11 +102,33 @@ pub fn derive_inference_output_signature(
     from_syn(inference_domain::derive_inference_output_signature(input))
 }
 
+/// 構造体のフィールドを取得できる`std::ops::Index`の実装を導出する。
+///
+/// # Example
+///
+/// ```
+// use macros::IndexForFields;
+//
+// #[derive(IndexForFields)]
+// #[index_for_fields(TalkOperation)]
+// pub(crate) struct TalkManifest {
+//     #[index_for_fields(TalkOperation::PredictDuration)]
+//     pub(crate) predict_duration_filename: Arc<str>,
+//
+//     #[index_for_fields(TalkOperation::PredictIntonation)]
+//     pub(crate) predict_intonation_filename: Arc<str>,
+//
+//     #[index_for_fields(TalkOperation::Decode)]
+//     pub(crate) decode_filename: Arc<str>,
+//
+//     // …
+// }
+/// ```
 #[cfg(not(doctest))]
-#[proc_macro_derive(Index, attributes(index))]
-pub fn derive_index(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+#[proc_macro_derive(IndexForFields, attributes(index_for_fields))]
+pub fn derive_index_for_fields(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = &parse_macro_input!(input);
-    from_syn(manifest::derive_index(input))
+    from_syn(manifest::derive_index_for_fields(input))
 }
 
 fn from_syn(result: syn::Result<proc_macro2::TokenStream>) -> proc_macro::TokenStream {

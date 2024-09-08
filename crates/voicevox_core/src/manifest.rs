@@ -7,6 +7,7 @@ use std::{
 use derive_getters::Getters;
 use derive_more::Deref;
 use derive_new::new;
+use macros::IndexForFields;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -80,17 +81,17 @@ pub struct Manifest {
 
 pub(crate) type ManifestDomains = (Option<TalkManifest>,);
 
-#[derive(Deserialize, macros::Index)]
+#[derive(Deserialize, IndexForFields)]
 #[cfg_attr(test, derive(Default))]
-#[index(TalkOperation)]
+#[index_for_fields(TalkOperation)]
 pub(crate) struct TalkManifest {
-    #[index(TalkOperation::PredictDuration)]
+    #[index_for_fields(TalkOperation::PredictDuration)]
     pub(crate) predict_duration_filename: Arc<str>,
 
-    #[index(TalkOperation::PredictIntonation)]
+    #[index_for_fields(TalkOperation::PredictIntonation)]
     pub(crate) predict_intonation_filename: Arc<str>,
 
-    #[index(TalkOperation::Decode)]
+    #[index_for_fields(TalkOperation::Decode)]
     pub(crate) decode_filename: Arc<str>,
 
     #[serde(default)]

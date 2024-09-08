@@ -2,7 +2,9 @@ use proc_macro2::Span;
 use quote::quote;
 use syn::{Attribute, DeriveInput, Expr, Meta, Type};
 
-pub(crate) fn derive_index(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
+pub(crate) fn derive_index_for_fields(
+    input: &DeriveInput,
+) -> syn::Result<proc_macro2::TokenStream> {
     let DeriveInput {
         attrs,
         ident,
@@ -14,10 +16,15 @@ pub(crate) fn derive_index(input: &DeriveInput) -> syn::Result<proc_macro2::Toke
     let idx = attrs
         .iter()
         .find_map(|Attribute { meta, .. }| match meta {
-            Meta::List(list) if list.path.is_ident("index") => Some(list),
+            Meta::List(list) if list.path.is_ident("index_for_fields") => Some(list),
             _ => None,
         })
-        .ok_or_else(|| syn::Error::new(Span::call_site(), "missing `#[index(…)]`"))?
+        .ok_or_else(|| {
+            syn::Error::new(
+                Span::call_site(),
+                "missing `#[index_for_fields(…)]` in the struct itself",
+            )
+        })?
         .parse_args::<Type>()?;
 
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
@@ -26,7 +33,7 @@ pub(crate) fn derive_index(input: &DeriveInput) -> syn::Result<proc_macro2::Toke
         .into_iter()
         .flat_map(|(attrs, name, ty)| {
             let list = attrs.iter().find_map(|Attribute { meta, .. }| match meta {
-                Meta::List(list) if list.path.is_ident("index") => Some(list),
+                Meta::List(list) if list.path.is_ident("index_for_fields") => Some(list),
                 _ => None,
             })?;
             Some((list, name, ty))
@@ -37,9 +44,9 @@ pub(crate) fn derive_index(input: &DeriveInput) -> syn::Result<proc_macro2::Toke
         })
         .collect::<syn::Result<Vec<_>>>()?;
 
-    let (_, _, output) = targets
-        .first()
-        .ok_or_else(|| syn::Error::new(Span::call_site(), "no fields with `#[index(…)]`"))?;
+    let (_, _, output) = targets.first().ok_or_else(|| {
+        syn::Error::new(Span::call_site(), "no fields have `#[index_for_fields(…)]`")
+    })?;
 
     let arms = targets
         .iter()
