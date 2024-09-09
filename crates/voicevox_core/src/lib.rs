@@ -48,6 +48,7 @@ const _: () = {
     );
 };
 
+mod asyncs;
 mod devices;
 /// cbindgen:ignore
 mod engine;
