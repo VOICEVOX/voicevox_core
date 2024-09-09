@@ -13,7 +13,7 @@ use derive_more::From;
 use easy_ext::ext;
 use enum_map::enum_map;
 use enum_map::EnumMap;
-use futures_io::{AsyncRead, AsyncSeek};
+use futures_io::{AsyncBufRead, AsyncSeek};
 use futures_util::future::{FutureExt as _, OptionFuture, TryFutureExt as _};
 use itertools::Itertools as _;
 use ouroboros::self_referencing;
@@ -260,20 +260,21 @@ struct InferenceModelEntry<D: InferenceDomain, M> {
 impl<A: Async> A {
     async fn open_zip(
         path: &Path,
-    ) -> anyhow::Result<async_zip::base::read::seek::ZipFileReader<impl AsyncRead + AsyncSeek + '_>>
-    {
+    ) -> anyhow::Result<
+        async_zip::base::read::seek::ZipFileReader<impl AsyncBufRead + AsyncSeek + '_>,
+    > {
         let zip = Self::open_file(path).await.with_context(|| {
             // fs-errのと同じにする
             format!("failed to open file `{}`", path.display())
         })?;
-        let zip = futures_util::io::BufReader::new(zip);
+        let zip = futures_util::io::BufReader::new(zip); // async_zip v0.0.16では不要、v0.0.17では必要
         let zip = async_zip::base::read::seek::ZipFileReader::new(zip).await?;
         Ok(zip)
     }
 }
 
 #[ext]
-impl<R: AsyncRead + AsyncSeek + Unpin> async_zip::base::read::seek::ZipFileReader<R> {
+impl<R: AsyncBufRead + AsyncSeek + Unpin> async_zip::base::read::seek::ZipFileReader<R> {
     fn find_index(&self, filename: &str) -> anyhow::Result<usize> {
         let (idx, _) = self
             .file()
