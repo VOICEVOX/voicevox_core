@@ -53,6 +53,7 @@ mod devices;
 /// cbindgen:ignore
 mod engine;
 mod error;
+mod future;
 mod infer;
 mod macros;
 mod manifest;

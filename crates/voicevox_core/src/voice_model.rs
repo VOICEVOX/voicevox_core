@@ -395,8 +395,8 @@ pub(crate) mod blocking {
     use uuid::Uuid;
 
     use crate::{
-        asyncs::Unstoppable, error::LoadModelResult, infer::domains::InferenceDomainMap,
-        VoiceModelMeta,
+        asyncs::Unstoppable, error::LoadModelResult, future::FutureExt as _,
+        infer::domains::InferenceDomainMap, VoiceModelMeta,
     };
 
     use super::{Inner, ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
@@ -410,12 +410,12 @@ pub(crate) mod blocking {
         pub(crate) fn read_inference_models(
             &self,
         ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
-            futures_lite::future::block_on(self.0.read_inference_models())
+            self.0.read_inference_models().block_on()
         }
 
         /// VVMファイルから`VoiceModel`をコンストラクトする。
         pub fn from_path(path: impl AsRef<Path>) -> crate::Result<Self> {
-            futures_lite::future::block_on(Inner::from_path(path)).map(Self)
+            Inner::from_path(path).block_on().map(Self)
         }
 
         /// ID。
