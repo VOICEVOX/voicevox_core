@@ -439,8 +439,8 @@ pub(crate) mod tokio {
     use std::path::Path;
 
     use crate::{
-        asyncs::SmolBlocking, error::LoadModelResult, infer::domains::InferenceDomainMap, Result,
-        VoiceModelMeta,
+        asyncs::BlockingThreadPool, error::LoadModelResult, infer::domains::InferenceDomainMap,
+        Result, VoiceModelMeta,
     };
 
     use super::{Inner, ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
@@ -448,7 +448,7 @@ pub(crate) mod tokio {
     /// 音声モデル。
     ///
     /// VVMファイルと対応する。
-    pub struct VoiceModel(Inner<SmolBlocking>);
+    pub struct VoiceModel(Inner<BlockingThreadPool>);
 
     impl self::VoiceModel {
         pub(crate) async fn read_inference_models(

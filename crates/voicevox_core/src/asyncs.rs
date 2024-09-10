@@ -45,9 +45,9 @@ impl Async for Unstoppable {
 /// [blocking]クレートで駆動する。
 ///
 /// [blocking](https://docs.rs/crate/blocking)
-pub(crate) enum SmolBlocking {}
+pub(crate) enum BlockingThreadPool {}
 
-impl Async for SmolBlocking {
+impl Async for BlockingThreadPool {
     async fn open_file(path: impl AsRef<Path>) -> io::Result<impl AsyncRead + AsyncSeek + Unpin> {
         async_fs::File::open(path).await
     }
