@@ -1,7 +1,5 @@
 mod talk;
 
-use std::future::Future;
-
 use educe::Educe;
 use serde::{Deserialize, Deserializer};
 
@@ -37,13 +35,6 @@ impl<T, E> InferenceDomainMap<(Result<T, E>,)> {
     pub(crate) fn collect(self) -> Result<InferenceDomainMap<(T,)>, E> {
         let talk = self.talk?;
         Ok(InferenceDomainMap { talk })
-    }
-}
-
-impl<T: Future> InferenceDomainMap<(T,)> {
-    pub(crate) async fn join_all(self) -> InferenceDomainMap<(T::Output,)> {
-        let talk = self.talk.await;
-        InferenceDomainMap { talk }
     }
 }
 

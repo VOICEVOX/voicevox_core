@@ -14,7 +14,7 @@ use easy_ext::ext;
 use enum_map::enum_map;
 use enum_map::EnumMap;
 use futures_io::{AsyncBufRead, AsyncSeek};
-use futures_util::future::{FutureExt as _, OptionFuture, TryFutureExt as _};
+use futures_util::future::{OptionFuture, TryFutureExt as _};
 use itertools::Itertools as _;
 use ouroboros::self_referencing;
 use serde::Deserialize;
@@ -208,47 +208,39 @@ impl<A: Async> Inner<A> {
             }};
         }
 
-        self.with_inference_model_entries(|inference_model_entries| {
-            inference_model_entries
-                .each_ref()
-                .map(InferenceDomainMap {
+        let InferenceDomainMap { talk } =
+            self.with_inference_model_entries(|inference_model_entries| {
+                inference_model_entries.each_ref().map(InferenceDomainMap {
                     talk: |talk| {
-                        let talk =
-                            talk.as_ref()
-                                .map(|InferenceModelEntry { indices, manifest }| {
-                                    (
-                                        indices.map(|op, i| (i, manifest[op].clone())),
-                                        manifest.style_id_to_inner_voice_id.clone(),
-                                    )
-                                });
-                        async {
-                            OptionFuture::from(talk.map(
-                                |(entries, style_id_to_inner_voice_id)| async {
-                                    let [predict_duration, predict_intonation, decode] =
-                                        entries.into_array();
-
-                                    let predict_duration = read_file!(predict_duration);
-                                    let predict_intonation = read_file!(predict_intonation);
-                                    let decode = read_file!(decode);
-
-                                    let model_bytes = EnumMap::from_array([
-                                        predict_duration,
-                                        predict_intonation,
-                                        decode,
-                                    ]);
-
-                                    Ok((style_id_to_inner_voice_id, model_bytes))
-                                },
-                            ))
-                            .await
-                            .transpose()
-                        }
+                        talk.as_ref()
+                            .map(|InferenceModelEntry { indices, manifest }| {
+                                (
+                                    indices.map(|op, i| (i, manifest[op].clone())),
+                                    manifest.style_id_to_inner_voice_id.clone(),
+                                )
+                            })
                     },
                 })
-                .join_all()
-                .map(InferenceDomainMap::collect)
-        })
+            });
+
+        let talk = OptionFuture::from(talk.map(
+            |(entries, style_id_to_inner_voice_id)| async move {
+                let [predict_duration, predict_intonation, decode] = entries.into_array();
+
+                let predict_duration = read_file!(predict_duration);
+                let predict_intonation = read_file!(predict_intonation);
+                let decode = read_file!(decode);
+
+                let model_bytes =
+                    EnumMap::from_array([predict_duration, predict_intonation, decode]);
+
+                Ok((style_id_to_inner_voice_id, model_bytes))
+            },
+        ))
         .await
+        .transpose()?;
+
+        Ok(InferenceDomainMap { talk })
     }
 }
 
@@ -264,9 +256,8 @@ struct InferenceModelEntry<D: InferenceDomain, M> {
 impl<A: Async> A {
     async fn open_zip(
         path: &Path,
-    ) -> anyhow::Result<
-        async_zip::base::read::seek::ZipFileReader<impl AsyncBufRead + AsyncSeek + '_>,
-    > {
+    ) -> anyhow::Result<async_zip::base::read::seek::ZipFileReader<impl AsyncBufRead + AsyncSeek>>
+    {
         let zip = Self::open_file(path).await.with_context(|| {
             // fs-errのと同じにする
             format!("failed to open file `{}`", path.display())
