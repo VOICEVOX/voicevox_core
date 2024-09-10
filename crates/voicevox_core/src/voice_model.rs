@@ -71,7 +71,7 @@ struct Inner<A> {
 
     // `_marker`とすると、`borrow__marker`のような名前のメソッドが生成されて`non_snake_case`が
     // 起動してしまう
-    marker: PhantomData<fn(&mut A)>,
+    marker: PhantomData<fn(A) -> A>,
 }
 
 impl<A: Async> Inner<A> {
@@ -144,12 +144,13 @@ impl<A: Async> Inner<A> {
                                     Ok(InferenceModelEntry { indices, manifest })
                                 })
                                 .transpose()
-                                .map_err(move |source| LoadModelError {
-                                    path: path.to_owned(),
-                                    context: LoadModelErrorKind::ReadZipEntry {
-                                        filename: MANIFEST_FILENAME.to_owned(),
-                                    },
-                                    source: Some(source),
+                                .map_err(move |source| {
+                                    error(
+                                        LoadModelErrorKind::ReadZipEntry {
+                                            filename: MANIFEST_FILENAME.to_owned(),
+                                        },
+                                        source,
+                                    )
                                 })
                         },
                     })
@@ -309,27 +310,32 @@ pub(crate) struct VoiceModelHeader {
 
 impl VoiceModelHeader {
     fn new(manifest: Manifest, metas: &[u8], path: &Path) -> LoadModelResult<Self> {
-        let metas =
-            serde_json::from_slice::<VoiceModelMeta>(metas).map_err(|source| LoadModelError {
-                path: path.to_owned(),
-                context: LoadModelErrorKind::InvalidModelFormat,
-                source: Some(
-                    anyhow::Error::from(source)
-                        .context(format!("{}が不正です", manifest.metas_filename())),
-                ),
-            })?;
+        let error = |context, source| LoadModelError {
+            path: path.to_owned(),
+            context,
+            source: Some(source),
+        };
+
+        let metas = serde_json::from_slice::<VoiceModelMeta>(metas).map_err(|source| {
+            error(
+                LoadModelErrorKind::InvalidModelFormat,
+                anyhow::Error::from(source)
+                    .context(format!("{}が不正です", manifest.metas_filename())),
+            )
+        })?;
 
         manifest
             .domains()
             .check_acceptable(&metas)
-            .map_err(|style_type| LoadModelError {
-                path: path.to_owned(),
-                context: LoadModelErrorKind::InvalidModelFormat,
-                source: Some(anyhow!(
-                    "{metas_filename}には`{style_type}`のスタイルが存在しますが、manifest.jsonでの\
-                     対応がありません",
-                    metas_filename = manifest.metas_filename(),
-                )),
+            .map_err(|style_type| {
+                error(
+                    LoadModelErrorKind::InvalidModelFormat,
+                    anyhow!(
+                        "{metas_filename}には`{style_type}`のスタイルが存在しますが、manifest.json\
+                         での対応がありません",
+                        metas_filename = manifest.metas_filename(),
+                    ),
+                )
             })?;
 
         Ok(Self {

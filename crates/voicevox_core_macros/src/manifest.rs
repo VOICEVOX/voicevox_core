@@ -5,6 +5,8 @@ use syn::{Attribute, DeriveInput, Expr, Meta, Type};
 pub(crate) fn derive_index_for_fields(
     input: &DeriveInput,
 ) -> syn::Result<proc_macro2::TokenStream> {
+    const ATTR_NAME: &str = "index_for_fields";
+
     let DeriveInput {
         attrs,
         ident,
@@ -16,13 +18,13 @@ pub(crate) fn derive_index_for_fields(
     let idx = attrs
         .iter()
         .find_map(|Attribute { meta, .. }| match meta {
-            Meta::List(list) if list.path.is_ident("index_for_fields") => Some(list),
+            Meta::List(list) if list.path.is_ident(ATTR_NAME) => Some(list),
             _ => None,
         })
         .ok_or_else(|| {
             syn::Error::new(
                 Span::call_site(),
-                "missing `#[index_for_fields(…)]` in the struct itself",
+                format!("missing `#[{ATTR_NAME}(…)]` in the struct itself"),
             )
         })?
         .parse_args::<Type>()?;
@@ -31,21 +33,24 @@ pub(crate) fn derive_index_for_fields(
 
     let targets = crate::extract::struct_fields(data)?
         .into_iter()
-        .flat_map(|(attrs, name, ty)| {
-            let list = attrs.iter().find_map(|Attribute { meta, .. }| match meta {
-                Meta::List(list) if list.path.is_ident("index_for_fields") => Some(list),
+        .flat_map(|(attrs, name, output)| {
+            let meta = attrs.iter().find_map(|Attribute { meta, .. }| match meta {
+                Meta::List(meta) if meta.path.is_ident(ATTR_NAME) => Some(meta),
                 _ => None,
             })?;
-            Some((list, name, ty))
+            Some((meta, name, output))
         })
-        .map(|(list, name, ty)| {
-            let key = list.parse_args::<Expr>()?;
-            Ok((key, name, ty))
+        .map(|(meta, name, output)| {
+            let key = meta.parse_args::<Expr>()?;
+            Ok((key, name, output))
         })
         .collect::<syn::Result<Vec<_>>>()?;
 
     let (_, _, output) = targets.first().ok_or_else(|| {
-        syn::Error::new(Span::call_site(), "no fields have `#[index_for_fields(…)]`")
+        syn::Error::new(
+            Span::call_site(),
+            format!("no fields have `#[{ATTR_NAME}(…)]`"),
+        )
     })?;
 
     let arms = targets

@@ -20,16 +20,16 @@ pub(crate) struct InferenceDomainMap<V: InferenceDomainMapValues + ?Sized> {
 
 impl<T> InferenceDomainMap<(T,)> {
     pub(crate) fn each_ref(&self) -> InferenceDomainMap<(&T,)> {
-        InferenceDomainMap { talk: &self.talk }
+        let talk = &self.talk;
+        InferenceDomainMap { talk }
     }
 
     pub(crate) fn map<T2, Ft: FnOnce(T) -> T2>(
         self,
         fs: InferenceDomainMap<(Ft,)>,
     ) -> InferenceDomainMap<(T2,)> {
-        InferenceDomainMap {
-            talk: (fs.talk)(self.talk),
-        }
+        let talk = (fs.talk)(self.talk);
+        InferenceDomainMap { talk }
     }
 }
 

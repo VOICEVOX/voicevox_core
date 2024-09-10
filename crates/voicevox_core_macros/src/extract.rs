@@ -1,8 +1,8 @@
-use syn::{spanned::Spanned as _, Data, DataEnum, DataStruct, DataUnion, Field, Fields, Type};
+use syn::{
+    spanned::Spanned as _, Attribute, Data, DataEnum, DataStruct, DataUnion, Field, Fields, Type,
+};
 
-pub(crate) fn struct_fields(
-    data: &Data,
-) -> syn::Result<Vec<(&[syn::Attribute], &syn::Ident, &Type)>> {
+pub(crate) fn struct_fields(data: &Data) -> syn::Result<Vec<(&[Attribute], &syn::Ident, &Type)>> {
     let fields = match data {
         Data::Struct(DataStruct {
             fields: Fields::Named(fields),
