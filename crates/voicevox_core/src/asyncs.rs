@@ -1,3 +1,19 @@
+//! 非同期操作の実装の切り替えを行う。
+//!
+//! 「[ブロッキング版API]」と「[非同期版API]」との違いはここに集約される
+//! …予定。現在は[`crate::voice_model`]のみで利用している。
+//!
+//! # Motivation
+//!
+//! [blocking]クレートで駆動する非同期処理はランタイムが無くても動作する。そのため非同期版APIを
+//! もとにブロッキング版APIを構成することはできる。しかし将来WASMビルドすることを考えると、スレッド
+//! がまともに扱えないため機能しなくなってしまう。そのためWASM化を見越したブロッキング版APIのため
+//! に[`Unstoppable`]を用意している。
+//!
+//! [ブロッキング版API]: crate::blocking
+//! [非同期版API]: crate::tokio
+//! [blocking]: https://docs.rs/crate/blocking
+
 use std::{
     io::{self, Read as _, Seek as _, SeekFrom},
     path::Path,
@@ -12,6 +28,10 @@ pub(crate) trait Async: 'static {
 }
 
 /// "async"としての責務を放棄し、すべてをブロックする。
+///
+/// [ブロッキング版API]用。
+///
+/// [ブロッキング版API]: crate::blocking
 pub(crate) enum Unstoppable {}
 
 impl Async for Unstoppable {
@@ -44,7 +64,10 @@ impl Async for Unstoppable {
 
 /// [blocking]クレートで駆動する。
 ///
+/// [非同期版API]用。
+///
 /// [blocking]: https://docs.rs/crate/blocking
+/// [非同期版API]: crate::tokio
 pub(crate) enum BlockingThreadPool {}
 
 impl Async for BlockingThreadPool {
