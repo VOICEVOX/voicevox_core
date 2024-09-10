@@ -90,22 +90,25 @@ impl<A: Async> Inner<A> {
             .await
             .map_err(|source| error(LoadModelErrorKind::OpenZipFile, source))?;
 
-        let manifest = &async { zip.read_file(zip.find_index(MANIFEST_FILENAME)?).await }
-            .await
-            .map_err(|source| {
-                error(
-                    LoadModelErrorKind::ReadZipEntry {
-                        filename: MANIFEST_FILENAME.to_owned(),
-                    },
-                    source,
-                )
-            })?;
+        let manifest = &async {
+            let idx = zip.find_entry_index(MANIFEST_FILENAME)?;
+            zip.read_file(idx).await
+        }
+        .await
+        .map_err(|source| {
+            error(
+                LoadModelErrorKind::ReadZipEntry {
+                    filename: MANIFEST_FILENAME.to_owned(),
+                },
+                source,
+            )
+        })?;
         let manifest = serde_json::from_slice::<Manifest>(manifest)
             .map_err(|source| error(LoadModelErrorKind::InvalidModelFormat, source.into()))?;
 
         let metas = &async {
-            zip.read_file(zip.find_index(manifest.metas_filename())?)
-                .await
+            let idx = zip.find_entry_index(manifest.metas_filename())?;
+            zip.read_file(idx).await
         }
         .await
         .map_err(|source| {
@@ -131,13 +134,13 @@ impl<A: Async> Inner<A> {
                                 .map(|manifest| {
                                     let indices = enum_map! {
                                         TalkOperation::PredictDuration => {
-                                            zip.find_index(&manifest.predict_duration_filename)?
+                                            zip.find_entry_index(&manifest.predict_duration_filename)?
                                         }
-                                        TalkOperation::PredictIntonation => zip.find_index(
+                                        TalkOperation::PredictIntonation => zip.find_entry_index(
                                             &manifest.predict_intonation_filename,
                                         )?,
                                         TalkOperation::Decode => {
-                                            zip.find_index(&manifest.decode_filename)?
+                                            zip.find_entry_index(&manifest.decode_filename)?
                                         }
                                     };
 
@@ -276,7 +279,7 @@ impl<A: Async> A {
 
 #[ext]
 impl<R: AsyncBufRead + AsyncSeek + Unpin> async_zip::base::read::seek::ZipFileReader<R> {
-    fn find_index(&self, filename: &str) -> anyhow::Result<usize> {
+    fn find_entry_index(&self, filename: &str) -> anyhow::Result<usize> {
         let (idx, _) = self
             .file()
             .entries()
