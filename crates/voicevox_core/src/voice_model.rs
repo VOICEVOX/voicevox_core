@@ -11,8 +11,7 @@ use std::{
 use anyhow::{anyhow, Context as _};
 use derive_more::From;
 use easy_ext::ext;
-use enum_map::enum_map;
-use enum_map::EnumMap;
+use enum_map::{enum_map, EnumMap};
 use futures_io::{AsyncBufRead, AsyncSeek};
 use futures_util::future::{OptionFuture, TryFutureExt as _};
 use itertools::Itertools as _;

@@ -107,22 +107,22 @@ pub fn derive_inference_output_signature(
 /// # Example
 ///
 /// ```
-// use macros::IndexForFields;
-//
-// #[derive(IndexForFields)]
-// #[index_for_fields(TalkOperation)]
-// pub(crate) struct TalkManifest {
-//     #[index_for_fields(TalkOperation::PredictDuration)]
-//     pub(crate) predict_duration_filename: Arc<str>,
-//
-//     #[index_for_fields(TalkOperation::PredictIntonation)]
-//     pub(crate) predict_intonation_filename: Arc<str>,
-//
-//     #[index_for_fields(TalkOperation::Decode)]
-//     pub(crate) decode_filename: Arc<str>,
-//
-//     // …
-// }
+/// use macros::IndexForFields;
+///
+/// #[derive(IndexForFields)]
+/// #[index_for_fields(TalkOperation)]
+/// pub(crate) struct TalkManifest {
+///     #[index_for_fields(TalkOperation::PredictDuration)]
+///     pub(crate) predict_duration_filename: Arc<str>,
+///
+///     #[index_for_fields(TalkOperation::PredictIntonation)]
+///     pub(crate) predict_intonation_filename: Arc<str>,
+///
+///     #[index_for_fields(TalkOperation::Decode)]
+///     pub(crate) decode_filename: Arc<str>,
+///
+///     // …
+/// }
 /// ```
 #[cfg(not(doctest))]
 #[proc_macro_derive(IndexForFields, attributes(index_for_fields))]

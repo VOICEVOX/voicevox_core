@@ -44,7 +44,7 @@ impl Async for Unstoppable {
 
 /// [blocking]クレートで駆動する。
 ///
-/// [blocking](https://docs.rs/crate/blocking)
+/// [blocking]: https://docs.rs/crate/blocking
 pub(crate) enum BlockingThreadPool {}
 
 impl Async for BlockingThreadPool {
