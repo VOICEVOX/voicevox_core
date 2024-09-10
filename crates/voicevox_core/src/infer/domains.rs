@@ -41,7 +41,7 @@ impl<T, E> InferenceDomainMap<(Result<T, E>,)> {
 }
 
 impl<T: Future> InferenceDomainMap<(T,)> {
-    pub(crate) async fn join(self) -> InferenceDomainMap<(T::Output,)> {
+    pub(crate) async fn join_all(self) -> InferenceDomainMap<(T::Output,)> {
         let talk = self.talk.await;
         InferenceDomainMap { talk }
     }

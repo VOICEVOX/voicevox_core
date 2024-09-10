@@ -242,7 +242,7 @@ impl<A: Async> Inner<A> {
                         }
                     },
                 })
-                .join()
+                .join_all()
                 .map(InferenceDomainMap::collect)
         })
         .await
