@@ -7,10 +7,14 @@ use std::{
 use derive_getters::Getters;
 use derive_more::Deref;
 use derive_new::new;
+use macros::IndexForFields;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
-use crate::{StyleId, VoiceModelId};
+use crate::{
+    infer::domains::{InferenceDomainMap, TalkOperation},
+    StyleId, VoiceModelId,
+};
 
 #[derive(Clone)]
 struct FormatVersionV1;
@@ -65,35 +69,56 @@ impl Display for InnerVoiceId {
     }
 }
 
-#[derive(Deserialize, Getters, Clone)]
+#[derive(Deserialize, Getters)]
 pub struct Manifest {
     #[expect(dead_code, reason = "現状はバリデーションのためだけに存在")]
     vvm_format_version: FormatVersionV1,
     pub(crate) id: VoiceModelId,
     metas_filename: String,
     #[serde(flatten)]
-    domains: ManifestDomains,
+    domains: InferenceDomainMap<ManifestDomains>,
 }
 
-#[derive(Deserialize, Clone)]
-pub(crate) struct ManifestDomains {
-    pub(crate) talk: Option<TalkManifest>,
-}
+pub(crate) type ManifestDomains = (Option<TalkManifest>,);
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, IndexForFields)]
+#[cfg_attr(test, derive(Default))]
+#[index_for_fields(TalkOperation)]
 pub(crate) struct TalkManifest {
+    #[index_for_fields(TalkOperation::PredictDuration)]
     pub(crate) predict_duration: ModelFile,
+
+    #[index_for_fields(TalkOperation::PredictIntonation)]
     pub(crate) predict_intonation: ModelFile,
+
+    #[index_for_fields(TalkOperation::Decode)]
     pub(crate) decode: ModelFile,
+
     #[serde(default)]
     pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
 #[derive(Deserialize, Clone)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub(crate) enum ModelFile {
-    Onnx { filename: String },
-    VvBin { filename: String },
+pub(crate) struct ModelFile {
+    pub(crate) r#type: ModelFileType,
+    pub(crate) filename: Arc<str>,
+}
+
+#[cfg(test)]
+impl Default for ModelFile {
+    fn default() -> Self {
+        Self {
+            r#type: ModelFileType::Onnx,
+            filename: "".into(),
+        }
+    }
+}
+
+#[derive(Deserialize, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum ModelFileType {
+    Onnx,
+    VvBin,
 }
 
 #[serde_as]

@@ -3,8 +3,8 @@ use quote::quote;
 use syn::{
     parse::{Parse, ParseStream},
     spanned::Spanned as _,
-    Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Field, Fields, Generics,
-    ItemType, Type, Variant,
+    Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Fields, Generics, ItemType,
+    Type, Variant,
 };
 
 pub(crate) fn derive_inference_operation(
@@ -178,11 +178,11 @@ pub(crate) fn derive_inference_input_signature(
 
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    let fields = struct_fields(data)?;
+    let fields = crate::extract::struct_fields(data)?;
 
     let param_infos = fields
         .iter()
-        .map(|(name, ty)| {
+        .map(|(_, name, ty)| {
             let name = name.to_string();
             quote! {
                 crate::infer::ParamInfo {
@@ -194,7 +194,7 @@ pub(crate) fn derive_inference_input_signature(
         })
         .collect::<proc_macro2::TokenStream>();
 
-    let field_names = fields.iter().map(|(name, _)| name);
+    let field_names = fields.iter().map(|(_, name, _)| name);
 
     return Ok(quote! {
         impl #impl_generics crate::infer::InferenceInputSignature for #ident #ty_generics
@@ -277,12 +277,12 @@ pub(crate) fn derive_inference_output_signature(
 
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    let fields = struct_fields(data)?;
+    let fields = crate::extract::struct_fields(data)?;
     let num_fields = fields.len();
 
     let param_infos = fields
         .iter()
-        .map(|(name, ty)| {
+        .map(|(_, name, ty)| {
             let name = name.to_string();
             quote! {
                 crate::infer::ParamInfo {
@@ -294,7 +294,7 @@ pub(crate) fn derive_inference_output_signature(
         })
         .collect::<proc_macro2::TokenStream>();
 
-    let field_names = fields.iter().map(|(name, _)| name);
+    let field_names = fields.iter().map(|(_, name, _)| name);
 
     Ok(quote! {
         impl #impl_generics crate::infer::InferenceOutputSignature for #ident #ty_generics
@@ -347,30 +347,6 @@ pub(crate) fn derive_inference_output_signature(
             }
         }
     })
-}
-
-fn struct_fields(data: &Data) -> syn::Result<Vec<(&syn::Ident, &Type)>> {
-    let fields = match data {
-        Data::Struct(DataStruct {
-            fields: Fields::Named(fields),
-            ..
-        }) => fields,
-        Data::Struct(DataStruct { fields, .. }) => {
-            return Err(syn::Error::new(fields.span(), "expect named fields"));
-        }
-        Data::Enum(DataEnum { enum_token, .. }) => {
-            return Err(syn::Error::new(enum_token.span(), "expected a struct"));
-        }
-        Data::Union(DataUnion { union_token, .. }) => {
-            return Err(syn::Error::new(union_token.span(), "expected a struct"));
-        }
-    };
-
-    Ok(fields
-        .named
-        .iter()
-        .map(|Field { ident, ty, .. }| (ident.as_ref().expect("should be named"), ty))
-        .collect())
 }
 
 fn unit_enum_variants(data: &Data) -> syn::Result<Vec<(&[Attribute], &syn::Ident)>> {

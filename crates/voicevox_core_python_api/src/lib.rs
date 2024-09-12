@@ -160,14 +160,16 @@ mod blocking {
     #[pyclass]
     #[derive(Clone)]
     pub(crate) struct VoiceModel {
-        model: voicevox_core::blocking::VoiceModel,
+        model: Arc<voicevox_core::blocking::VoiceModel>,
     }
 
     #[pymethods]
     impl VoiceModel {
         #[staticmethod]
         fn from_path(py: Python<'_>, path: PathBuf) -> PyResult<Self> {
-            let model = voicevox_core::blocking::VoiceModel::from_path(path).into_py_result(py)?;
+            let model = voicevox_core::blocking::VoiceModel::from_path(path)
+                .into_py_result(py)?
+                .into();
             Ok(Self { model })
         }
 
@@ -660,7 +662,7 @@ mod asyncio {
     #[pyclass]
     #[derive(Clone)]
     pub(crate) struct VoiceModel {
-        model: voicevox_core::tokio::VoiceModel,
+        model: Arc<voicevox_core::tokio::VoiceModel>,
     }
 
     #[pymethods]
@@ -669,7 +671,7 @@ mod asyncio {
         fn from_path(py: Python<'_>, path: PathBuf) -> PyResult<&PyAny> {
             pyo3_asyncio::tokio::future_into_py(py, async move {
                 let model = voicevox_core::tokio::VoiceModel::from_path(path).await;
-                let model = Python::with_gil(|py| model.into_py_result(py))?;
+                let model = Python::with_gil(|py| model.into_py_result(py))?.into();
                 Ok(Self { model })
             })
         }

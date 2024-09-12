@@ -26,7 +26,6 @@ const_format.workspace = true
 cstr.workspace = true
 derive-getters.workspace = true
 easy-ext.workspace = true
-futures.workspace = true
 itertools.workspace = true
 libc.workspace = true
 process_path.workspace = true
