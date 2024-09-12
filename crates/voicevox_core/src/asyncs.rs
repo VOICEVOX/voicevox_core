@@ -8,7 +8,7 @@
 //! [blocking]クレートで駆動する非同期処理はランタイムが無くても動作する。そのため非同期版APIを
 //! もとにブロッキング版APIを構成することはできる。しかし将来WASMビルドすることを考えると、スレッド
 //! がまともに扱えないため機能しなくなってしまう。そのためWASM化を見越したブロッキング版APIのため
-//! に[`Unstoppable`]を用意している。
+//! に[`SingleTasked`]を用意している。
 //!
 //! [ブロッキング版API]: crate::blocking
 //! [非同期版API]: crate::tokio
@@ -27,20 +27,25 @@ pub(crate) trait Async: 'static {
     async fn open_file(path: impl AsRef<Path>) -> io::Result<impl AsyncRead + AsyncSeek + Unpin>;
 }
 
-/// "async"としての責務を放棄し、すべてをブロックする。
+/// エグゼキュータが非同期タスクの並行実行をしないことを仮定する、[`Async`]の実装。
 ///
 /// [ブロッキング版API]用。
 ///
+/// # Performance
+///
+/// `async`の中でブロッキング操作を直接行う。そのためTokioやasync-stdのような通常の非同期ランタイム
+/// 上で動くべきではない。
+///
 /// [ブロッキング版API]: crate::blocking
-pub(crate) enum Unstoppable {}
+pub(crate) enum SingleTasked {}
 
-impl Async for Unstoppable {
+impl Async for SingleTasked {
     async fn open_file(path: impl AsRef<Path>) -> io::Result<impl AsyncRead + AsyncSeek + Unpin> {
-        return std::fs::File::open(path).map(UnstoppableFile);
+        return std::fs::File::open(path).map(BlockingFile);
 
-        struct UnstoppableFile(std::fs::File);
+        struct BlockingFile(std::fs::File);
 
-        impl AsyncRead for UnstoppableFile {
+        impl AsyncRead for BlockingFile {
             fn poll_read(
                 mut self: Pin<&mut Self>,
                 _: &mut task::Context<'_>,
@@ -50,7 +55,7 @@ impl Async for Unstoppable {
             }
         }
 
-        impl AsyncSeek for UnstoppableFile {
+        impl AsyncSeek for BlockingFile {
             fn poll_seek(
                 mut self: Pin<&mut Self>,
                 _: &mut task::Context<'_>,
@@ -62,7 +67,7 @@ impl Async for Unstoppable {
     }
 }
 
-/// [blocking]クレートで駆動する。
+/// [blocking]クレートで駆動する[`Async`]の実装。
 ///
 /// [非同期版API]用。
 ///

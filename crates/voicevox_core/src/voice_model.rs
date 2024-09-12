@@ -388,7 +388,7 @@ pub(crate) mod blocking {
     use uuid::Uuid;
 
     use crate::{
-        asyncs::Unstoppable, error::LoadModelResult, future::FutureExt as _,
+        asyncs::SingleTasked, error::LoadModelResult, future::FutureExt as _,
         infer::domains::InferenceDomainMap, VoiceModelMeta,
     };
 
@@ -397,7 +397,7 @@ pub(crate) mod blocking {
     /// 音声モデル。
     ///
     /// VVMファイルと対応する。
-    pub struct VoiceModel(Inner<Unstoppable>);
+    pub struct VoiceModel(Inner<SingleTasked>);
 
     impl self::VoiceModel {
         pub(crate) fn read_inference_models(
