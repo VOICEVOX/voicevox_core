@@ -434,7 +434,7 @@ pub(crate) mod blocking {
     }
 }
 
-pub(crate) mod tokio {
+pub(crate) mod nonblocking {
     use std::path::Path;
 
     use crate::{
@@ -447,6 +447,13 @@ pub(crate) mod tokio {
     /// 音声モデル。
     ///
     /// VVMファイルと対応する。
+    ///
+    /// # Performance
+    ///
+    /// [blocking]クレートにより動いている。詳しくは[`nonblocking`モジュールのドキュメント]を参照。
+    ///
+    /// [blocking]: https://docs.rs/crate/blocking
+    /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
     pub struct VoiceModel(Inner<BlockingThreadPool>);
 
     impl self::VoiceModel {

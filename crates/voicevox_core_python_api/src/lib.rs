@@ -662,7 +662,7 @@ mod asyncio {
     #[pyclass]
     #[derive(Clone)]
     pub(crate) struct VoiceModel {
-        model: Arc<voicevox_core::tokio::VoiceModel>,
+        model: Arc<voicevox_core::nonblocking::VoiceModel>,
     }
 
     #[pymethods]
@@ -670,7 +670,7 @@ mod asyncio {
         #[staticmethod]
         fn from_path(py: Python<'_>, path: PathBuf) -> PyResult<&PyAny> {
             pyo3_asyncio::tokio::future_into_py(py, async move {
-                let model = voicevox_core::tokio::VoiceModel::from_path(path).await;
+                let model = voicevox_core::nonblocking::VoiceModel::from_path(path).await;
                 let model = Python::with_gil(|py| model.into_py_result(py))?.into();
                 Ok(Self { model })
             })
@@ -693,33 +693,36 @@ mod asyncio {
 
     #[pyclass]
     #[derive(Clone)]
-    pub(crate) struct Onnxruntime(&'static voicevox_core::tokio::Onnxruntime);
+    pub(crate) struct Onnxruntime(&'static voicevox_core::nonblocking::Onnxruntime);
 
     #[pymethods]
     impl Onnxruntime {
         #[classattr]
-        const LIB_NAME: &'static str = voicevox_core::tokio::Onnxruntime::LIB_NAME;
+        const LIB_NAME: &'static str = voicevox_core::nonblocking::Onnxruntime::LIB_NAME;
 
         #[classattr]
-        const LIB_VERSION: &'static str = voicevox_core::tokio::Onnxruntime::LIB_VERSION;
+        const LIB_VERSION: &'static str = voicevox_core::nonblocking::Onnxruntime::LIB_VERSION;
 
         #[classattr]
         const LIB_VERSIONED_FILENAME: &'static str =
-            voicevox_core::tokio::Onnxruntime::LIB_VERSIONED_FILENAME;
+            voicevox_core::nonblocking::Onnxruntime::LIB_VERSIONED_FILENAME;
 
         #[classattr]
         const LIB_UNVERSIONED_FILENAME: &'static str =
-            voicevox_core::tokio::Onnxruntime::LIB_UNVERSIONED_FILENAME;
+            voicevox_core::nonblocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
 
         #[staticmethod]
         fn get(py: Python<'_>) -> PyResult<Option<Py<Self>>> {
-            let result = ONNXRUNTIME.get_or_try_init(|| {
-                match voicevox_core::tokio::Onnxruntime::get().map(|o| Py::new(py, Self(o))) {
-                    Some(Ok(this)) => Ok(this),
-                    Some(Err(err)) => Err(Some(err)),
-                    None => Err(None),
-                }
-            });
+            let result =
+                ONNXRUNTIME.get_or_try_init(
+                    || match voicevox_core::nonblocking::Onnxruntime::get()
+                        .map(|o| Py::new(py, Self(o)))
+                    {
+                        Some(Ok(this)) => Ok(this),
+                        Some(Err(err)) => Err(Some(err)),
+                        None => Err(None),
+                    },
+                );
 
             match result {
                 Ok(this) => Ok(Some(this.clone())),
@@ -732,7 +735,7 @@ mod asyncio {
         #[pyo3(signature = (*, filename = Self::LIB_VERSIONED_FILENAME.into()))]
         fn load_once(filename: OsString, py: Python<'_>) -> PyResult<&PyAny> {
             pyo3_asyncio::tokio::future_into_py(py, async move {
-                let inner = voicevox_core::tokio::Onnxruntime::load_once()
+                let inner = voicevox_core::nonblocking::Onnxruntime::load_once()
                     .filename(filename)
                     .exec()
                     .await;
@@ -756,7 +759,7 @@ mod asyncio {
     #[pyclass]
     #[derive(Clone)]
     pub(crate) struct OpenJtalk {
-        open_jtalk: voicevox_core::tokio::OpenJtalk,
+        open_jtalk: voicevox_core::nonblocking::OpenJtalk,
     }
 
     #[pymethods]
@@ -769,7 +772,8 @@ mod asyncio {
             py: Python<'_>,
         ) -> PyResult<&PyAny> {
             pyo3_asyncio::tokio::future_into_py(py, async move {
-                let open_jtalk = voicevox_core::tokio::OpenJtalk::new(open_jtalk_dict_dir).await;
+                let open_jtalk =
+                    voicevox_core::nonblocking::OpenJtalk::new(open_jtalk_dict_dir).await;
                 let open_jtalk = Python::with_gil(|py| open_jtalk.into_py_result(py))?;
                 Ok(Self { open_jtalk })
             })
@@ -787,8 +791,10 @@ mod asyncio {
 
     #[pyclass]
     pub(crate) struct Synthesizer {
-        synthesizer:
-            Closable<voicevox_core::tokio::Synthesizer<voicevox_core::tokio::OpenJtalk>, Self>,
+        synthesizer: Closable<
+            voicevox_core::nonblocking::Synthesizer<voicevox_core::nonblocking::OpenJtalk>,
+            Self,
+        >,
     }
 
     #[pymethods]
@@ -807,7 +813,7 @@ mod asyncio {
             acceleration_mode: AccelerationMode,
             cpu_num_threads: u16,
         ) -> PyResult<Self> {
-            let synthesizer = voicevox_core::tokio::Synthesizer::new(
+            let synthesizer = voicevox_core::nonblocking::Synthesizer::new(
                 onnxruntime.0,
                 open_jtalk.open_jtalk.clone(),
                 &InitializeOptions {
@@ -1146,7 +1152,7 @@ mod asyncio {
     #[pyclass]
     #[derive(Default, Debug, Clone)]
     pub(crate) struct UserDict {
-        dict: Arc<voicevox_core::tokio::UserDict>,
+        dict: Arc<voicevox_core::nonblocking::UserDict>,
     }
 
     #[pymethods]

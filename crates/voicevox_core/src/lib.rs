@@ -69,7 +69,7 @@ mod voice_model;
 
 pub mod __internal;
 pub mod blocking;
-pub mod tokio;
+pub mod nonblocking;
 
 #[cfg(test)]
 mod test_util;
