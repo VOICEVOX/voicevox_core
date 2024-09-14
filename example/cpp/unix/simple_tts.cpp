@@ -47,8 +47,8 @@ int main(int argc, char *argv[]) {
     if (path.extension() != ".vvm") {
       continue;
     }
-    VoicevoxVoiceModel* model;
-    result = voicevox_voice_model_new_from_path(path.c_str(), &model);
+    VoicevoxVoiceModelFile* model;
+    result = voicevox_voice_model_file_open(path.c_str(), &model);
     if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
       std::cerr << voicevox_error_result_to_message(result) << std::endl;
       return 0;
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
       std::cerr << voicevox_error_result_to_message(result) << std::endl;
       return 0;
     }
-    voicevox_voice_model_delete(model);
+    voicevox_voice_model_file_close(model);
   }
 
   std::cout << "音声生成中..." << std::endl;

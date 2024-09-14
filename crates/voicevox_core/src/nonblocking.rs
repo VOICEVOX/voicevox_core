@@ -15,7 +15,7 @@
 pub use crate::{
     engine::open_jtalk::nonblocking::OpenJtalk,
     infer::runtimes::onnxruntime::nonblocking::Onnxruntime, synthesizer::nonblocking::Synthesizer,
-    user_dict::dict::nonblocking::UserDict, voice_model::nonblocking::VoiceModel,
+    user_dict::dict::nonblocking::UserDict, voice_model::nonblocking::VoiceModelFile,
 };
 
 pub mod onnxruntime {

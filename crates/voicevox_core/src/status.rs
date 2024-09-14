@@ -408,7 +408,7 @@ mod tests {
                 talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
             },
         );
-        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         let model_contents = &model.read_inference_models().await.unwrap();
         let result = status.insert_model(model.header(), model_contents);
         assert_debug_fmt_eq!(Ok(()), result);
@@ -424,7 +424,7 @@ mod tests {
                 talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
             },
         );
-        let vvm = &crate::nonblocking::VoiceModel::sample().await.unwrap();
+        let vvm = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         let model_header = vvm.header();
         let model_contents = &vvm.read_inference_models().await.unwrap();
         assert!(

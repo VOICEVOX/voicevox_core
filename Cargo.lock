@@ -4364,6 +4364,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-fs",
+ "async-lock",
  "async_zip",
  "blocking",
  "camino",
@@ -4484,8 +4485,10 @@ dependencies = [
 name = "voicevox_core_python_api"
 version = "0.0.0"
 dependencies = [
+ "blocking",
  "camino",
  "easy-ext",
+ "futures-util",
  "log",
  "once_cell",
  "pyo3",

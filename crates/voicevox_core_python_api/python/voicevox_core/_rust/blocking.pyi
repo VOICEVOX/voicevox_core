@@ -14,19 +14,33 @@ if TYPE_CHECKING:
         VoiceModelId,
     )
 
-class VoiceModel:
+class VoiceModelFile:
     """
-    音声モデル。"""
+    音声モデルファイル。"""
 
     @staticmethod
-    def from_path(path: Union[str, PathLike[str]]) -> VoiceModel:
+    def open(path: Union[str, PathLike[str]]) -> VoiceModelFile:
         """
-        VVMファイルから ``VoiceModel`` を生成する。
+        VVMファイルを開く。
 
         Parameters
         ----------
         path
             VVMファイルへのパス。
+        """
+        ...
+    def close(self) -> None:
+        """
+        VVMファイルを閉じる。
+
+        Caveats
+        -------
+        このメソッドが呼ばれた段階で :attr:`Synthesizer.load_voice_model`
+        からのアクセスが継続中の場合、例外が発生する。
+
+        他の言語バインディング、例えばJava
+        APIではアクセスが全部終わるのを待ってから処理に移るようになっており、将来的にはPython
+        APIも同様になるかもしれない。
         """
         ...
     @property
@@ -37,6 +51,8 @@ class VoiceModel:
     def metas(self) -> List[SpeakerMeta]:
         """メタ情報。"""
         ...
+    def __enter__(self) -> "VoiceModelFile": ...
+    def __exit__(self, exc_type, exc_value, traceback) -> None: ...
 
 class Onnxruntime:
     """
@@ -169,7 +185,7 @@ class Synthesizer:
     def metas(self) -> List[SpeakerMeta]:
         """メタ情報。"""
         ...
-    def load_voice_model(self, model: VoiceModel) -> None:
+    def load_voice_model(self, model: VoiceModelFile) -> None:
         """
         モデルを読み込む。
 

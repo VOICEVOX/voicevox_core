@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Tuple
 
 from voicevox_core import AccelerationMode, AudioQuery
-from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModel
+from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
 async def main() -> None:
@@ -45,8 +45,8 @@ async def main() -> None:
     logger.debug("%s", f"{synthesizer.is_gpu_mode=}")
 
     logger.info("%s", f"Loading `{vvm_path}`")
-    model = await VoiceModel.from_path(vvm_path)
-    await synthesizer.load_voice_model(model)
+    async with await VoiceModelFile.open(vvm_path) as model:
+        await synthesizer.load_voice_model(model)
 
     logger.info("%s", f"Creating an AudioQuery from {text!r}")
     audio_query = await synthesizer.audio_query(text, style_id)

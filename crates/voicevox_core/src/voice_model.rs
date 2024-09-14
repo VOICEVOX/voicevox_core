@@ -3,7 +3,7 @@
 //! VVM ファイルの定義と形式は[ドキュメント](../../../docs/vvm.md)を参照。
 
 use std::{
-    marker::PhantomData,
+    collections::HashMap,
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -12,7 +12,7 @@ use anyhow::{anyhow, Context as _};
 use derive_more::From;
 use easy_ext::ext;
 use enum_map::{enum_map, EnumMap};
-use futures_io::{AsyncBufRead, AsyncSeek};
+use futures_io::{AsyncBufRead, AsyncRead, AsyncSeek};
 use futures_util::future::{OptionFuture, TryFutureExt as _};
 use itertools::Itertools as _;
 use ouroboros::self_referencing;
@@ -20,7 +20,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    asyncs::Async,
+    asyncs::{Async, Mutex as _},
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
         domains::{InferenceDomainMap, TalkDomain, TalkOperation},
@@ -61,20 +61,18 @@ impl VoiceModelId {
 }
 
 #[self_referencing]
-struct Inner<A> {
+struct Inner<A: Async> {
     header: VoiceModelHeader,
 
     #[borrows(header)]
     #[not_covariant]
     inference_model_entries: InferenceDomainMap<InferenceModelEntries<'this>>,
 
-    // `_marker`とすると、`borrow__marker`のような名前のメソッドが生成されて`non_snake_case`が
-    // 起動してしまう
-    marker: PhantomData<fn(A) -> A>,
+    zip: A::Mutex<A::RoFile>,
 }
 
 impl<A: Async> Inner<A> {
-    async fn from_path(path: impl AsRef<Path>) -> crate::Result<Self> {
+    async fn open(path: impl AsRef<Path>) -> crate::Result<Self> {
         const MANIFEST_FILENAME: &str = "manifest.json";
 
         let path = path.as_ref();
@@ -89,8 +87,16 @@ impl<A: Async> Inner<A> {
             .await
             .map_err(|source| error(LoadModelErrorKind::OpenZipFile, source))?;
 
+        let indices = zip.entry_indices_by_utf8_filenames();
+        let find_entry_index = |filename: &str| {
+            indices
+                .get(filename)
+                .with_context(|| "could not find `{filename}`")
+                .copied()
+        };
+
         let manifest = &async {
-            let idx = zip.find_entry_index(MANIFEST_FILENAME)?;
+            let idx = find_entry_index(MANIFEST_FILENAME)?;
             zip.read_file(idx).await
         }
         .await
@@ -106,7 +112,7 @@ impl<A: Async> Inner<A> {
             .map_err(|source| error(LoadModelErrorKind::InvalidModelFormat, source.into()))?;
 
         let metas = &async {
-            let idx = zip.find_entry_index(manifest.metas_filename())?;
+            let idx = find_entry_index(manifest.metas_filename())?;
             zip.read_file(idx).await
         }
         .await
@@ -133,13 +139,13 @@ impl<A: Async> Inner<A> {
                                 .map(|manifest| {
                                     let indices = enum_map! {
                                         TalkOperation::PredictDuration => {
-                                            zip.find_entry_index(&manifest.predict_duration_filename)?
+                                            find_entry_index(&manifest.predict_duration_filename)?
                                         }
-                                        TalkOperation::PredictIntonation => zip.find_entry_index(
-                                            &manifest.predict_intonation_filename,
-                                        )?,
+                                        TalkOperation::PredictIntonation => {
+                                            find_entry_index(&manifest.predict_intonation_filename)?
+                                        }
                                         TalkOperation::Decode => {
-                                            zip.find_entry_index(&manifest.decode_filename)?
+                                            find_entry_index(&manifest.decode_filename)?
                                         }
                                     };
 
@@ -159,7 +165,7 @@ impl<A: Async> Inner<A> {
                     .collect()
                     .map_err(crate::Error::from)
             },
-            marker: PhantomData,
+            zip: zip.into_inner().into_inner().into(),
         }
         .try_build()
     }
@@ -187,9 +193,10 @@ impl<A: Async> Inner<A> {
             source: Some(source),
         };
 
-        let mut zip = A::open_zip(path)
+        let zip = &mut *self.borrow_zip().lock().await;
+        let mut zip = async_zip::base::read::seek::ZipFileReader::with_bufreader(zip)
             .await
-            .map_err(|source| error(LoadModelErrorKind::OpenZipFile, source))?;
+            .map_err(|source| error(LoadModelErrorKind::OpenZipFile, source.into()))?;
 
         macro_rules! read_file {
             ($entry:expr $(,)?) => {{
@@ -255,29 +262,40 @@ struct InferenceModelEntry<D: InferenceDomain, M> {
 impl<A: Async> A {
     async fn open_zip(
         path: &Path,
-    ) -> anyhow::Result<async_zip::base::read::seek::ZipFileReader<impl AsyncBufRead + AsyncSeek>>
-    {
-        let zip = Self::open_file(path).await.with_context(|| {
+    ) -> anyhow::Result<
+        async_zip::base::read::seek::ZipFileReader<futures_util::io::BufReader<A::RoFile>>,
+    > {
+        let zip = Self::open_file_ro(path).await.with_context(|| {
             // fs-errのと同じにする
             format!("failed to open file `{}`", path.display())
         })?;
-        let zip = futures_util::io::BufReader::new(zip); // async_zip v0.0.16では不要、v0.0.17では必要
-        let zip = async_zip::base::read::seek::ZipFileReader::new(zip).await?;
+        let zip = async_zip::base::read::seek::ZipFileReader::with_bufreader(zip).await?;
         Ok(zip)
+    }
+}
+
+// `BufReader`はasync_zip v0.0.16では不要、v0.0.17では必要
+#[ext]
+impl<R: AsyncRead + AsyncSeek + Unpin>
+    async_zip::base::read::seek::ZipFileReader<futures_util::io::BufReader<R>>
+{
+    async fn with_bufreader(rdr: R) -> async_zip::error::Result<Self>
+    where
+        Self: Sized, // trivial
+    {
+        Self::new(futures_util::io::BufReader::new(rdr)).await
     }
 }
 
 #[ext]
 impl<R: AsyncBufRead + AsyncSeek + Unpin> async_zip::base::read::seek::ZipFileReader<R> {
-    fn find_entry_index(&self, filename: &str) -> anyhow::Result<usize> {
-        let (idx, _) = self
-            .file()
+    fn entry_indices_by_utf8_filenames(&self) -> HashMap<String, usize> {
+        self.file()
             .entries()
             .iter()
             .enumerate()
-            .find(|(_, e)| e.filename().as_str().ok() == Some(filename))
-            .with_context(|| "could not find `{filename}`")?;
-        Ok(idx)
+            .flat_map(|(i, e)| e.filename().as_str().map(|s| (s.to_owned(), i)))
+            .collect()
     }
 
     async fn read_file(&mut self, index: usize) -> anyhow::Result<Vec<u8>> {
@@ -394,21 +412,21 @@ pub(crate) mod blocking {
 
     use super::{Inner, ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
 
-    /// 音声モデル。
+    /// 音声モデルファイル。
     ///
     /// VVMファイルと対応する。
-    pub struct VoiceModel(Inner<SingleTasked>);
+    pub struct VoiceModelFile(Inner<SingleTasked>);
 
-    impl self::VoiceModel {
+    impl self::VoiceModelFile {
         pub(crate) fn read_inference_models(
             &self,
         ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
             self.0.read_inference_models().block_on()
         }
 
-        /// VVMファイルから`VoiceModel`をコンストラクトする。
-        pub fn from_path(path: impl AsRef<Path>) -> crate::Result<Self> {
-            Inner::from_path(path).block_on().map(Self)
+        /// VVMファイルを開く。
+        pub fn open(path: impl AsRef<Path>) -> crate::Result<Self> {
+            Inner::open(path).block_on().map(Self)
         }
 
         /// ID。
@@ -427,7 +445,7 @@ pub(crate) mod blocking {
     }
 
     #[ext(IdRef)]
-    pub impl VoiceModel {
+    pub impl VoiceModelFile {
         fn id_ref(&self) -> &Uuid {
             &self.header().manifest.id.0
         }
@@ -444,7 +462,7 @@ pub(crate) mod nonblocking {
 
     use super::{Inner, ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
 
-    /// 音声モデル。
+    /// 音声モデルファイル。
     ///
     /// VVMファイルと対応する。
     ///
@@ -454,17 +472,23 @@ pub(crate) mod nonblocking {
     ///
     /// [blocking]: https://docs.rs/crate/blocking
     /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
-    pub struct VoiceModel(Inner<BlockingThreadPool>);
+    pub struct VoiceModelFile(Inner<BlockingThreadPool>);
 
-    impl self::VoiceModel {
+    impl self::VoiceModelFile {
         pub(crate) async fn read_inference_models(
             &self,
         ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
             self.0.read_inference_models().await
         }
-        /// VVMファイルから`VoiceModel`をコンストラクトする。
-        pub async fn from_path(path: impl AsRef<Path>) -> Result<Self> {
-            Inner::from_path(path).await.map(Self)
+
+        /// VVMファイルを開く。
+        pub async fn open(path: impl AsRef<Path>) -> Result<Self> {
+            Inner::open(path).await.map(Self)
+        }
+
+        /// VVMファイルを閉じる。
+        pub async fn close(self) {
+            self.0.into_heads().zip.into_inner().close().await;
         }
 
         /// ID。

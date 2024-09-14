@@ -19,7 +19,7 @@ async def test_user_dict_load() -> None:
         filename=conftest.onnxruntime_filename
     )
     open_jtalk = await voicevox_core.asyncio.OpenJtalk.new(conftest.open_jtalk_dic_dir)
-    model = await voicevox_core.asyncio.VoiceModel.from_path(conftest.model_dir)
+    model = await voicevox_core.asyncio.VoiceModelFile.open(conftest.model_dir)
     synthesizer = voicevox_core.asyncio.Synthesizer(onnxruntime, open_jtalk)
 
     await synthesizer.load_voice_model(model)

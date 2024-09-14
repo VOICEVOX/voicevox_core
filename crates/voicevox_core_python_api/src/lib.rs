@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{fmt::Display, marker::PhantomData, mem, sync::Arc};
 
 mod convert;
 use self::convert::{from_utf8_path, VoicevoxCoreResultExt as _};
@@ -8,8 +8,8 @@ use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
     pyfunction, pymodule,
-    types::PyModule,
-    wrap_pyfunction, PyResult, PyTypeInfo, Python,
+    types::{PyList, PyModule},
+    wrap_pyfunction, Py, PyObject, PyResult, PyTypeInfo, Python,
 };
 
 #[pymodule]
@@ -27,7 +27,7 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     blocking_module.add_class::<self::blocking::Synthesizer>()?;
     blocking_module.add_class::<self::blocking::Onnxruntime>()?;
     blocking_module.add_class::<self::blocking::OpenJtalk>()?;
-    blocking_module.add_class::<self::blocking::VoiceModel>()?;
+    blocking_module.add_class::<self::blocking::VoiceModelFile>()?;
     blocking_module.add_class::<self::blocking::UserDict>()?;
     module.add_and_register_submodule(blocking_module)?;
 
@@ -35,7 +35,7 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     asyncio_module.add_class::<self::asyncio::Synthesizer>()?;
     asyncio_module.add_class::<self::asyncio::Onnxruntime>()?;
     asyncio_module.add_class::<self::asyncio::OpenJtalk>()?;
-    asyncio_module.add_class::<self::asyncio::VoiceModel>()?;
+    asyncio_module.add_class::<self::asyncio::VoiceModelFile>()?;
     asyncio_module.add_class::<self::asyncio::UserDict>()?;
     module.add_and_register_submodule(asyncio_module)
 }
@@ -116,18 +116,48 @@ impl<T, C: PyTypeInfo> Closable<T, C> {
         }
     }
 
-    fn close(&mut self) {
+    #[must_use = "中身は明示的に`drop`でdropすること"]
+    fn close(&mut self) -> Option<T> {
         if matches!(self.content, MaybeClosed::Open(_)) {
             debug!("Closing a {}", C::NAME);
         }
-        self.content = MaybeClosed::Closed;
+        match mem::replace(&mut self.content, MaybeClosed::Closed) {
+            MaybeClosed::Open(content) => Some(content),
+            MaybeClosed::Closed => None,
+        }
+    }
+}
+
+impl<T, C: PyTypeInfo> Closable<Arc<T>, C> {
+    fn close_arc<F, M>(&mut self, display: F) -> PyResult<Option<T>>
+    where
+        F: FnOnce(&T) -> M,
+        M: Display,
+    {
+        self.close()
+            .map(|this| {
+                let display = display(&this);
+                Arc::into_inner(this).ok_or_else(|| {
+                    PyException::new_err(format!(
+                        "この`{}` ({display})はまだ使われています",
+                        C::NAME,
+                    ))
+                })
+            })
+            .transpose()
     }
 }
 
 impl<T, C: PyTypeInfo> Drop for Closable<T, C> {
     fn drop(&mut self) {
-        self.close();
+        drop(self.close());
     }
+}
+
+#[derive(Clone)]
+struct VoiceModelFileImmutableFields {
+    id: PyObject,
+    metas: Py<PyList>,
 }
 
 #[pyfunction]
@@ -155,33 +185,72 @@ mod blocking {
         UserDictWord,
     };
 
-    use crate::{convert::VoicevoxCoreResultExt as _, Closable};
+    use crate::{convert::VoicevoxCoreResultExt as _, Closable, VoiceModelFileImmutableFields};
 
     #[pyclass]
     #[derive(Clone)]
-    pub(crate) struct VoiceModel {
-        model: Arc<voicevox_core::blocking::VoiceModel>,
+    pub(crate) struct VoiceModelFile {
+        model: Arc<std::sync::Mutex<Closable<Arc<voicevox_core::blocking::VoiceModelFile>, Self>>>,
+        immut_fields: VoiceModelFileImmutableFields,
     }
 
     #[pymethods]
-    impl VoiceModel {
+    impl VoiceModelFile {
         #[staticmethod]
-        fn from_path(py: Python<'_>, path: PathBuf) -> PyResult<Self> {
-            let model = voicevox_core::blocking::VoiceModel::from_path(path)
-                .into_py_result(py)?
-                .into();
-            Ok(Self { model })
+        fn open(py: Python<'_>, path: PathBuf) -> PyResult<Self> {
+            let model = voicevox_core::blocking::VoiceModelFile::open(path).into_py_result(py)?;
+
+            let id = crate::convert::to_py_uuid(py, model.id().raw_voice_model_id())?;
+            let metas = crate::convert::to_pydantic_voice_model_meta(model.metas(), py)?.into();
+
+            let model = std::sync::Mutex::new(Closable::new(model.into())).into();
+
+            Ok(Self {
+                model,
+                immut_fields: VoiceModelFileImmutableFields { id, metas },
+            })
+        }
+
+        fn close(&self) -> PyResult<()> {
+            let this = self.lock().close_arc(|this| this.id())?;
+            drop(this);
+            Ok(())
         }
 
         #[getter]
-        fn id(&self, py: Python<'_>) -> PyResult<PyObject> {
-            let id = self.model.id().raw_voice_model_id();
-            crate::convert::to_py_uuid(py, id)
+        fn id(&self) -> PyObject {
+            self.immut_fields.id.clone()
         }
 
         #[getter]
-        fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
-            crate::convert::to_pydantic_voice_model_meta(self.model.metas(), py).unwrap()
+        fn metas(&self) -> Py<PyList> {
+            self.immut_fields.metas.clone()
+        }
+
+        fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
+            slf.lock().get()?;
+            Ok(slf)
+        }
+
+        fn __exit__(
+            &self,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_type: &PyAny,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_value: &PyAny,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] traceback: &PyAny,
+        ) -> PyResult<()> {
+            self.close()
+        }
+    }
+
+    impl VoiceModelFile {
+        /// # Panics
+        ///
+        /// `Mutex`が"poisoned"な状態なときパニックする。
+        fn lock(
+            &self,
+        ) -> std::sync::MutexGuard<'_, Closable<Arc<voicevox_core::blocking::VoiceModelFile>, Self>>
+        {
+            self.model.lock().unwrap_or_else(|e| panic!("{e}"))
         }
     }
 
@@ -343,17 +412,15 @@ mod blocking {
         }
 
         #[getter]
-        fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
+        fn metas<'py>(&self, py: Python<'py>) -> PyResult<&'py PyList> {
             let synthesizer = self.synthesizer.get()?;
             crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
         }
 
         fn load_voice_model(&mut self, model: &PyAny, py: Python<'_>) -> PyResult<()> {
-            let model: VoiceModel = model.extract()?;
-            self.synthesizer
-                .get()?
-                .load_voice_model(&model.model)
-                .into_py_result(py)
+            let this = self.synthesizer.get()?;
+            let model = &model.extract::<VoiceModelFile>()?.lock().get()?.clone();
+            this.load_voice_model(model).into_py_result(py)
         }
 
         fn unload_voice_model(
@@ -567,7 +634,7 @@ mod blocking {
         }
 
         fn close(&mut self) {
-            self.synthesizer.close()
+            drop(self.synthesizer.close());
         }
     }
 
@@ -646,10 +713,11 @@ mod asyncio {
     use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     use camino::Utf8PathBuf;
+    use futures_util::FutureExt as _;
     use pyo3::{
         pyclass, pymethods,
         types::{IntoPyDict as _, PyBytes, PyDict, PyList},
-        Py, PyAny, PyObject, PyRef, PyResult, Python, ToPyObject as _,
+        Py, PyAny, PyErr, PyObject, PyRef, PyResult, Python, ToPyObject as _,
     };
     use uuid::Uuid;
     use voicevox_core::{
@@ -657,34 +725,90 @@ mod asyncio {
         UserDictWord,
     };
 
-    use crate::{convert::VoicevoxCoreResultExt as _, Closable};
+    use crate::{convert::VoicevoxCoreResultExt as _, Closable, VoiceModelFileImmutableFields};
 
     #[pyclass]
     #[derive(Clone)]
-    pub(crate) struct VoiceModel {
-        model: Arc<voicevox_core::nonblocking::VoiceModel>,
+    pub(crate) struct VoiceModelFile {
+        model:
+            Arc<std::sync::Mutex<Closable<Arc<voicevox_core::nonblocking::VoiceModelFile>, Self>>>,
+        immut_fields: VoiceModelFileImmutableFields,
     }
 
     #[pymethods]
-    impl VoiceModel {
+    impl VoiceModelFile {
         #[staticmethod]
-        fn from_path(py: Python<'_>, path: PathBuf) -> PyResult<&PyAny> {
+        fn open(py: Python<'_>, path: PathBuf) -> PyResult<&PyAny> {
             pyo3_asyncio::tokio::future_into_py(py, async move {
-                let model = voicevox_core::nonblocking::VoiceModel::from_path(path).await;
-                let model = Python::with_gil(|py| model.into_py_result(py))?.into();
-                Ok(Self { model })
+                let model = voicevox_core::nonblocking::VoiceModelFile::open(path).await;
+                let (model, id, metas) = Python::with_gil(|py| {
+                    let model = Python::with_gil(|py| model.into_py_result(py))?;
+                    let id = crate::convert::to_py_uuid(py, model.id().raw_voice_model_id())?;
+                    let metas =
+                        crate::convert::to_pydantic_voice_model_meta(model.metas(), py)?.into();
+                    Ok::<_, PyErr>((model, id, metas))
+                })?;
+
+                let model = std::sync::Mutex::new(Closable::new(model.into())).into();
+
+                Ok(Self {
+                    model,
+                    immut_fields: VoiceModelFileImmutableFields { id, metas },
+                })
             })
         }
 
-        #[getter]
-        fn id(&self, py: Python<'_>) -> PyResult<PyObject> {
-            let id = self.model.id().raw_voice_model_id();
-            crate::convert::to_py_uuid(py, id)
+        fn close<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
+            let this = self.lock().close_arc(|this| this.id())?;
+            match this {
+                Some(this) => pyo3_asyncio::tokio::future_into_py(py, this.close().map(Ok)),
+                None => pyo3_asyncio::tokio::future_into_py(py, async { Ok(()) }),
+            }
         }
 
         #[getter]
-        fn metas<'py>(&self, py: Python<'py>) -> Vec<&'py PyAny> {
-            crate::convert::to_pydantic_voice_model_meta(self.model.metas(), py).unwrap()
+        fn id(&self) -> PyObject {
+            self.immut_fields.id.clone()
+        }
+
+        #[getter]
+        fn metas(&self) -> Py<PyList> {
+            self.immut_fields.metas.clone()
+        }
+
+        fn __aenter__(slf: PyRef<'_, Self>) -> PyResult<&PyAny> {
+            slf.lock().get()?;
+
+            let py = slf.py();
+            let asyncio_future = py.import("asyncio")?.getattr("Future")?;
+            let running_loop = pyo3_asyncio::get_running_loop(py)?;
+            let fut = asyncio_future.call((), Some([("loop", running_loop)].into_py_dict(py)))?;
+            fut.call_method1("set_result", (slf,))?;
+            Ok(fut)
+        }
+
+        fn __aexit__<'py>(
+            &self,
+            #[expect(unused_variables, reason = "`__aexit__`としては必要")] exc_type: &'py PyAny,
+            #[expect(unused_variables, reason = "`__aexit__`としては必要")] exc_value: &'py PyAny,
+            #[expect(unused_variables, reason = "`__aexit__`としては必要")] traceback: &'py PyAny,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            self.close(py)
+        }
+    }
+
+    impl VoiceModelFile {
+        /// # Panics
+        ///
+        /// `Mutex`が"poisoned"な状態なときパニックする。
+        fn lock(
+            &self,
+        ) -> std::sync::MutexGuard<
+            '_,
+            Closable<Arc<voicevox_core::nonblocking::VoiceModelFile>, Self>,
+        > {
+            self.model.lock().unwrap_or_else(|e| panic!("{e}"))
         }
     }
 
@@ -856,7 +980,7 @@ mod asyncio {
         }
 
         #[getter]
-        fn metas<'py>(&self, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
+        fn metas<'py>(&self, py: Python<'py>) -> PyResult<&'py PyList> {
             let synthesizer = self.synthesizer.get()?;
             crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
         }
@@ -866,10 +990,11 @@ mod asyncio {
             model: &'py PyAny,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let model: VoiceModel = model.extract()?;
+            let model: VoiceModelFile = model.extract()?;
             let synthesizer = self.synthesizer.get()?.clone();
             pyo3_asyncio::tokio::future_into_py(py, async move {
-                let result = synthesizer.load_voice_model(&model.model).await;
+                let model = &model.lock().get()?.clone();
+                let result = synthesizer.load_voice_model(model).await;
                 Python::with_gil(|py| result.into_py_result(py))
             })
         }
@@ -1145,7 +1270,7 @@ mod asyncio {
         }
 
         fn close(&mut self) {
-            self.synthesizer.close()
+            drop(self.synthesizer.close());
         }
     }
 

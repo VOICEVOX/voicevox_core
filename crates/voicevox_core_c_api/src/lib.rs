@@ -399,13 +399,13 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
     };
 }
 
-/// 音声モデル。
+/// 音声モデルファイル。
 ///
 /// VVMファイルと対応する。
-/// <b>構築</b>(_construction_)は ::voicevox_voice_model_new_from_path で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_delete で行う。
+/// <b>構築</b>(_construction_)は ::voicevox_voice_model_file_open で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_file_close で行う。
 #[derive(Getters)]
-pub struct VoicevoxVoiceModel {
-    model: voicevox_core::blocking::VoiceModel,
+pub struct VoicevoxVoiceModelFile {
+    model: voicevox_core::blocking::VoiceModelFile,
     metas: CString,
 }
 
@@ -417,7 +417,7 @@ pub type VoicevoxVoiceModelId<'a> = &'a [u8; 16];
 /// VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
 pub type VoicevoxStyleId = u32;
 
-/// VVMファイルから ::VoicevoxVoiceModel を<b>構築</b>(_construct_)する。
+/// VVMファイルを開く。
 ///
 /// @param [in] path vvmファイルへのUTF-8のファイルパス
 /// @param [out] out_model 構築先
@@ -429,60 +429,64 @@ pub type VoicevoxStyleId = u32;
 /// - `out_model`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
+pub unsafe extern "C" fn voicevox_voice_model_file_open(
     path: *const c_char,
-    out_model: NonNull<Box<VoicevoxVoiceModel>>,
+    out_model: NonNull<Box<VoicevoxVoiceModelFile>>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
         let path = ensure_utf8(CStr::from_ptr(path))?;
-        let model = VoicevoxVoiceModel::from_path(path)?.into();
+        let model = VoicevoxVoiceModelFile::open(path)?.into();
         out_model.write_unaligned(model);
         Ok(())
     })())
 }
 
-/// ::VoicevoxVoiceModel からIDを取得する。
+/// ::VoicevoxVoiceModelFile からIDを取得する。
 ///
 /// @param [in] model 音声モデル
 ///
 /// @returns 音声モデルID
 ///
 /// \safety{
-/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
 /// }
 #[no_mangle]
-pub extern "C" fn voicevox_voice_model_id(model: &VoicevoxVoiceModel) -> VoicevoxVoiceModelId<'_> {
+pub extern "C" fn voicevox_voice_model_file_id(
+    model: &VoicevoxVoiceModelFile,
+) -> VoicevoxVoiceModelId<'_> {
     init_logger_once();
     model.model.id_ref().as_bytes()
 }
 
-/// ::VoicevoxVoiceModel からメタ情報を取得する。
+/// ::VoicevoxVoiceModelFile からメタ情報を取得する。
 ///
 /// @param [in] model 音声モデル
 ///
 /// @returns メタ情報のJSON文字列
 ///
 /// \safety{
-/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
 /// - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`model`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
 /// }
 #[no_mangle]
-pub extern "C" fn voicevox_voice_model_get_metas_json(model: &VoicevoxVoiceModel) -> *const c_char {
+pub extern "C" fn voicevox_voice_model_file_get_metas_json(
+    model: &VoicevoxVoiceModelFile,
+) -> *const c_char {
     init_logger_once();
     model.metas().as_ptr()
 }
 
-/// ::VoicevoxVoiceModel を<b>破棄</b>(_destruct_)する。
+/// ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
 ///
 /// @param [in] model 破棄対象
 ///
 /// \safety{
-/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また既にこの関数で解放されていてはいけない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また既にこの関数で解放されていてはいけない。
 /// - `model`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
 /// }
 #[no_mangle]
-pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
+pub extern "C" fn voicevox_voice_model_file_close(model: Box<VoicevoxVoiceModelFile>) {
     init_logger_once();
     drop(model);
 }
@@ -506,7 +510,7 @@ pub struct VoicevoxSynthesizer {
 ///
 /// \safety{
 /// - `onnxruntime`は ::voicevox_onnxruntime_load_once または ::voicevox_onnxruntime_init_once で得たものでなければならない。
-/// - `open_jtalk`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
+/// - `open_jtalk`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
 /// - `out_synthesizer`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
@@ -549,12 +553,12 @@ pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesiz
 ///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
-/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_load_voice_model(
     synthesizer: &VoicevoxSynthesizer,
-    model: &VoicevoxVoiceModel,
+    model: &VoicevoxVoiceModelFile,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error(synthesizer.load_voice_model(model.model()))

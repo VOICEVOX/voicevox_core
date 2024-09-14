@@ -60,16 +60,17 @@ pub(crate) fn from_dataclass<T: DeserializeOwned>(ob: &PyAny) -> PyResult<T> {
 pub(crate) fn to_pydantic_voice_model_meta<'py>(
     metas: &VoiceModelMeta,
     py: Python<'py>,
-) -> PyResult<Vec<&'py PyAny>> {
+) -> PyResult<&'py PyList> {
     let class = py
         .import("voicevox_core")?
         .getattr("SpeakerMeta")?
         .downcast()?;
 
-    metas
+    let metas = metas
         .iter()
         .map(|m| to_pydantic_dataclass(m, class))
-        .collect::<PyResult<Vec<_>>>()
+        .collect::<PyResult<Vec<_>>>()?;
+    Ok(PyList::new(py, metas))
 }
 
 pub(crate) fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {
@@ -144,7 +145,6 @@ pub(crate) fn to_rust_uuid(ob: &PyAny) -> PyResult<Uuid> {
     let uuid = ob.getattr("hex")?.extract::<String>()?;
     uuid.parse::<Uuid>().into_py_value_result()
 }
-// FIXME: `to_object`は必要無いのでは?
 pub(crate) fn to_py_uuid(py: Python<'_>, uuid: Uuid) -> PyResult<PyObject> {
     let uuid = uuid.hyphenated().to_string();
     let uuid = py.import("uuid")?.call_method1("UUID", (uuid,))?;
