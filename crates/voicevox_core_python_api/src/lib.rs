@@ -155,9 +155,9 @@ impl<T, C: PyTypeInfo> Drop for Closable<T, C> {
 }
 
 #[derive(Clone)]
-struct VoiceModelFileImmutableFields {
-    id: PyObject,
-    metas: Py<PyList>,
+struct VoiceModelFilePyFields {
+    id: PyObject,      // `NewType("VoiceModelId", UUID)`
+    metas: Py<PyList>, // `list[SpeakerMeta]`
 }
 
 #[pyfunction]
@@ -185,13 +185,13 @@ mod blocking {
         UserDictWord,
     };
 
-    use crate::{convert::VoicevoxCoreResultExt as _, Closable, VoiceModelFileImmutableFields};
+    use crate::{convert::VoicevoxCoreResultExt as _, Closable, VoiceModelFilePyFields};
 
     #[pyclass]
     #[derive(Clone)]
     pub(crate) struct VoiceModelFile {
         model: Arc<std::sync::Mutex<Closable<Arc<voicevox_core::blocking::VoiceModelFile>, Self>>>,
-        immut_fields: VoiceModelFileImmutableFields,
+        immut_fields: VoiceModelFilePyFields,
     }
 
     #[pymethods]
@@ -207,7 +207,7 @@ mod blocking {
 
             Ok(Self {
                 model,
-                immut_fields: VoiceModelFileImmutableFields { id, metas },
+                immut_fields: VoiceModelFilePyFields { id, metas },
             })
         }
 
@@ -725,14 +725,14 @@ mod asyncio {
         UserDictWord,
     };
 
-    use crate::{convert::VoicevoxCoreResultExt as _, Closable, VoiceModelFileImmutableFields};
+    use crate::{convert::VoicevoxCoreResultExt as _, Closable, VoiceModelFilePyFields};
 
     #[pyclass]
     #[derive(Clone)]
     pub(crate) struct VoiceModelFile {
         model:
             Arc<std::sync::Mutex<Closable<Arc<voicevox_core::nonblocking::VoiceModelFile>, Self>>>,
-        immut_fields: VoiceModelFileImmutableFields,
+        immut_fields: VoiceModelFilePyFields,
     }
 
     #[pymethods]
@@ -753,7 +753,7 @@ mod asyncio {
 
                 Ok(Self {
                     model,
-                    immut_fields: VoiceModelFileImmutableFields { id, metas },
+                    immut_fields: VoiceModelFilePyFields { id, metas },
                 })
             })
         }
