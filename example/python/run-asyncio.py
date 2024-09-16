@@ -57,6 +57,10 @@ async def main() -> None:
     out.write_bytes(wav)
     logger.info("%s", f"Wrote `{out}`")
 
+    logger.info("%s", f"Creating the Synthesizer")
+    async with synthesizer:
+        pass
+
 
 def parse_args() -> Tuple[AccelerationMode, Path, str, Path, str, Path, int]:
     argparser = ArgumentParser()

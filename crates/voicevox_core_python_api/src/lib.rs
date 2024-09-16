@@ -1,9 +1,14 @@
-use std::{fmt::Display, marker::PhantomData, mem, sync::Arc};
+use std::{
+    marker::PhantomData,
+    mem,
+    ops::{Deref, DerefMut},
+};
 
 mod convert;
 use self::convert::{from_utf8_path, VoicevoxCoreResultExt as _};
 use easy_ext::ext;
-use log::debug;
+use log::{debug, warn};
+use ouroboros::self_referencing;
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
@@ -88,9 +93,9 @@ exceptions! {
     InvalidWordError: PyValueError;
 }
 
-struct Closable<T, C: PyTypeInfo> {
-    content: MaybeClosed<T>,
-    marker: PhantomData<C>,
+struct Closable<T: 'static, C: PyTypeInfo, A: Async> {
+    content: A::RwLock<MaybeClosed<T>>,
+    marker: PhantomData<(C, A)>,
 }
 
 enum MaybeClosed<T> {
@@ -98,59 +103,171 @@ enum MaybeClosed<T> {
     Closed,
 }
 
-impl<T, C: PyTypeInfo> Closable<T, C> {
+impl<T: 'static, C: PyTypeInfo, A: Async> Closable<T, C, A> {
     fn new(content: T) -> Self {
         Self {
-            content: MaybeClosed::Open(content),
+            content: MaybeClosed::Open(content).into(),
             marker: PhantomData,
         }
     }
 
-    fn get(&self) -> PyResult<&T> {
-        match &self.content {
-            MaybeClosed::Open(content) => Ok(content),
-            MaybeClosed::Closed => Err(PyValueError::new_err(format!(
-                "The `{}` is closed",
-                C::NAME,
-            ))),
+    fn read(&self) -> PyResult<impl Deref<Target = T> + '_> {
+        let lock = self
+            .content
+            .try_read_()
+            .map_err(|_| PyValueError::new_err(format!("The `{}` is closed", C::NAME)))?;
+
+        return MappedLockTryBuilder::<'_, A::RwLock<MaybeClosed<T>>, _, _, _> {
+            lock,
+            content_builder: |lock| match &**lock {
+                MaybeClosed::Open(content) => Ok(content),
+                MaybeClosed::Closed => Err(PyValueError::new_err(format!(
+                    "The `{}` is closed",
+                    C::NAME,
+                ))),
+            },
+        }
+        .try_build();
+
+        // https://github.com/rust-lang/rust/issues/117108
+        #[self_referencing]
+        struct MappedLock<'a, L: RwLock, T: 'static> {
+            lock: L::RwLockReadGuard<'a>,
+
+            #[borrows(lock)]
+            content: &'this T,
+        }
+
+        impl<'a, L: RwLock, T: 'static> Deref for MappedLock<'a, L, T> {
+            type Target = T;
+
+            fn deref(&self) -> &Self::Target {
+                self.borrow_content()
+            }
         }
     }
 
-    #[must_use = "中身は明示的に`drop`でdropすること"]
-    fn close(&mut self) -> Option<T> {
-        if matches!(self.content, MaybeClosed::Open(_)) {
+    async fn close_(&self) -> Option<T> {
+        let lock = &mut *match self.content.try_write_() {
+            Ok(lock) => lock,
+            Err(()) => {
+                warn!("The `{}` is still in use. Waiting before closing", C::NAME);
+                self.content.write_().await
+            }
+        };
+
+        if matches!(*lock, MaybeClosed::Open(_)) {
             debug!("Closing a {}", C::NAME);
         }
-        match mem::replace(&mut self.content, MaybeClosed::Closed) {
+        match mem::replace(lock, MaybeClosed::Closed) {
             MaybeClosed::Open(content) => Some(content),
             MaybeClosed::Closed => None,
         }
     }
 }
 
-impl<T, C: PyTypeInfo> Closable<Arc<T>, C> {
-    fn close_arc<F, M>(&mut self, display: F) -> PyResult<Option<T>>
-    where
-        F: FnOnce(&T) -> M,
-        M: Display,
-    {
-        self.close()
-            .map(|this| {
-                let display = display(&this);
-                Arc::into_inner(this).ok_or_else(|| {
-                    PyException::new_err(format!(
-                        "この`{}` ({display})はまだ使われています",
-                        C::NAME,
-                    ))
-                })
-            })
-            .transpose()
+impl<T: 'static, C: PyTypeInfo> Closable<T, C, SingleTasked> {
+    #[must_use = "中身は明示的に`drop`でdropすること"]
+    fn close(&self) -> Option<T> {
+        futures_lite::future::block_on(self.close_())
     }
 }
 
-impl<T, C: PyTypeInfo> Drop for Closable<T, C> {
+impl<T: 'static, C: PyTypeInfo> Closable<T, C, Tokio> {
+    #[must_use = "中身は明示的に`drop`でdropすること"]
+    async fn close(&self) -> Option<T> {
+        self.close_().await
+    }
+}
+
+impl<T: 'static, C: PyTypeInfo, A: Async> Drop for Closable<T, C, A> {
     fn drop(&mut self) {
-        drop(self.close());
+        warn!(
+            "デストラクタにより`{}`のクローズが行われます。可能な限り`{}`でクローズするようにして\
+             下さい",
+            C::NAME,
+            A::EXIT_METHOD
+        );
+        *self.content.blocking_write_() = MaybeClosed::Closed;
+    }
+}
+
+trait Async {
+    const EXIT_METHOD: &str;
+    type RwLock<T: 'static>: RwLock<Item = T>;
+}
+
+enum SingleTasked {}
+enum Tokio {}
+
+impl Async for SingleTasked {
+    const EXIT_METHOD: &str = "__exit__";
+    type RwLock<T: 'static> = std::sync::RwLock<T>;
+}
+
+impl Async for Tokio {
+    const EXIT_METHOD: &str = "__aexit__";
+    type RwLock<T: 'static> = tokio::sync::RwLock<T>;
+}
+
+// `'static`制約はouroborosのため
+trait RwLock: From<Self::Item> + 'static {
+    type Item: 'static;
+    type RwLockReadGuard<'a>: Deref<Target = Self::Item>;
+    type RwLockWriteGuard<'a>: DerefMut<Target = Self::Item>;
+    fn try_read_(&self) -> Result<Self::RwLockReadGuard<'_>, ()>;
+    async fn write_(&self) -> Self::RwLockWriteGuard<'_>;
+    fn blocking_write_(&self) -> Self::RwLockWriteGuard<'_>;
+    fn try_write_(&self) -> Result<Self::RwLockWriteGuard<'_>, ()>;
+}
+
+impl<T: 'static> RwLock for std::sync::RwLock<T> {
+    type Item = T;
+    type RwLockReadGuard<'a> = std::sync::RwLockReadGuard<'a, Self::Item>;
+    type RwLockWriteGuard<'a> = std::sync::RwLockWriteGuard<'a, Self::Item>;
+
+    fn try_read_(&self) -> Result<Self::RwLockReadGuard<'_>, ()> {
+        self.try_read().map_err(|e| match e {
+            std::sync::TryLockError::Poisoned(e) => panic!("{e}"),
+            std::sync::TryLockError::WouldBlock => (),
+        })
+    }
+
+    async fn write_(&self) -> Self::RwLockWriteGuard<'_> {
+        self.blocking_write_()
+    }
+
+    fn blocking_write_(&self) -> Self::RwLockWriteGuard<'_> {
+        self.write().unwrap_or_else(|e| panic!("{e}"))
+    }
+
+    fn try_write_(&self) -> Result<Self::RwLockWriteGuard<'_>, ()> {
+        self.try_write().map_err(|e| match e {
+            std::sync::TryLockError::Poisoned(e) => panic!("{e}"),
+            std::sync::TryLockError::WouldBlock => (),
+        })
+    }
+}
+
+impl<T: 'static> RwLock for tokio::sync::RwLock<T> {
+    type Item = T;
+    type RwLockReadGuard<'a> = tokio::sync::RwLockReadGuard<'a, Self::Item>;
+    type RwLockWriteGuard<'a> = tokio::sync::RwLockWriteGuard<'a, Self::Item>;
+
+    fn try_read_(&self) -> Result<Self::RwLockReadGuard<'_>, ()> {
+        self.try_read().map_err(|_| ())
+    }
+
+    async fn write_(&self) -> Self::RwLockWriteGuard<'_> {
+        self.write().await
+    }
+
+    fn blocking_write_(&self) -> Self::RwLockWriteGuard<'_> {
+        self.blocking_write()
+    }
+
+    fn try_write_(&self) -> Result<Self::RwLockWriteGuard<'_>, ()> {
+        self.try_write().map_err(|_| ())
     }
 }
 
@@ -185,13 +302,15 @@ mod blocking {
         UserDictWord,
     };
 
-    use crate::{convert::VoicevoxCoreResultExt as _, Closable, VoiceModelFilePyFields};
+    use crate::{
+        convert::VoicevoxCoreResultExt as _, Closable, SingleTasked, VoiceModelFilePyFields,
+    };
 
     #[pyclass]
     #[derive(Clone)]
     pub(crate) struct VoiceModelFile {
-        model: Arc<std::sync::Mutex<Closable<Arc<voicevox_core::blocking::VoiceModelFile>, Self>>>,
-        immut_fields: VoiceModelFilePyFields,
+        model: Arc<Closable<voicevox_core::blocking::VoiceModelFile, Self, SingleTasked>>,
+        fields: VoiceModelFilePyFields,
     }
 
     #[pymethods]
@@ -203,32 +322,31 @@ mod blocking {
             let id = crate::convert::to_py_uuid(py, model.id().raw_voice_model_id())?;
             let metas = crate::convert::to_pydantic_voice_model_meta(model.metas(), py)?.into();
 
-            let model = std::sync::Mutex::new(Closable::new(model.into())).into();
+            let model = Closable::new(model).into();
 
             Ok(Self {
                 model,
-                immut_fields: VoiceModelFilePyFields { id, metas },
+                fields: VoiceModelFilePyFields { id, metas },
             })
         }
 
-        fn close(&self) -> PyResult<()> {
-            let this = self.lock().close_arc(|this| this.id())?;
+        fn close(&self) {
+            let this = self.model.close();
             drop(this);
-            Ok(())
         }
 
         #[getter]
         fn id(&self) -> PyObject {
-            self.immut_fields.id.clone()
+            self.fields.id.clone()
         }
 
         #[getter]
         fn metas(&self) -> Py<PyList> {
-            self.immut_fields.metas.clone()
+            self.fields.metas.clone()
         }
 
         fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
-            slf.lock().get()?;
+            slf.model.read()?;
             Ok(slf)
         }
 
@@ -237,20 +355,8 @@ mod blocking {
             #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_type: &PyAny,
             #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_value: &PyAny,
             #[expect(unused_variables, reason = "`__exit__`としては必要")] traceback: &PyAny,
-        ) -> PyResult<()> {
-            self.close()
-        }
-    }
-
-    impl VoiceModelFile {
-        /// # Panics
-        ///
-        /// `Mutex`が"poisoned"な状態なときパニックする。
-        fn lock(
-            &self,
-        ) -> std::sync::MutexGuard<'_, Closable<Arc<voicevox_core::blocking::VoiceModelFile>, Self>>
-        {
-            self.model.lock().unwrap_or_else(|e| panic!("{e}"))
+        ) {
+            self.close();
         }
     }
 
@@ -348,6 +454,7 @@ mod blocking {
         synthesizer: Closable<
             voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>,
             Self,
+            SingleTasked,
         >,
     }
 
@@ -387,7 +494,7 @@ mod blocking {
         }
 
         fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
-            slf.synthesizer.get()?;
+            slf.synthesizer.read()?;
             Ok(slf)
         }
 
@@ -407,19 +514,20 @@ mod blocking {
 
         #[getter]
         fn is_gpu_mode(&self) -> PyResult<bool> {
-            let synthesizer = self.synthesizer.get()?;
+            let synthesizer = self.synthesizer.read()?;
             Ok(synthesizer.is_gpu_mode())
         }
 
         #[getter]
         fn metas<'py>(&self, py: Python<'py>) -> PyResult<&'py PyList> {
-            let synthesizer = self.synthesizer.get()?;
+            let synthesizer = self.synthesizer.read()?;
             crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
         }
 
         fn load_voice_model(&mut self, model: &PyAny, py: Python<'_>) -> PyResult<()> {
-            let this = self.synthesizer.get()?;
-            let model = &model.extract::<VoiceModelFile>()?.lock().get()?.clone();
+            let this = self.synthesizer.read()?;
+            let model = model.extract::<VoiceModelFile>()?;
+            let model = &model.model.read()?;
             this.load_voice_model(model).into_py_result(py)
         }
 
@@ -429,7 +537,7 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<()> {
             self.synthesizer
-                .get()?
+                .read()?
                 .unload_voice_model(voice_model_id.into())
                 .into_py_result(py)
         }
@@ -440,7 +548,7 @@ mod blocking {
         ) -> PyResult<bool> {
             Ok(self
                 .synthesizer
-                .get()?
+                .read()?
                 .is_loaded_voice_model(voice_model_id.into()))
         }
 
@@ -450,7 +558,7 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let synthesizer = self.synthesizer.get()?;
+            let synthesizer = self.synthesizer.read()?;
 
             let audio_query = synthesizer
                 .audio_query_from_kana(kana, StyleId::new(style_id))
@@ -466,7 +574,7 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let synthesizesr = self.synthesizer.get()?;
+            let synthesizesr = self.synthesizer.read()?;
 
             let audio_query = synthesizesr
                 .audio_query(text, StyleId::new(style_id))
@@ -482,7 +590,7 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<Vec<&'py PyAny>> {
-            let synthesizer = self.synthesizer.get()?;
+            let synthesizer = self.synthesizer.read()?;
 
             let accent_phrases = synthesizer
                 .create_accent_phrases_from_kana(kana, StyleId::new(style_id))
@@ -501,7 +609,7 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<Vec<&'py PyAny>> {
-            let synthesizer = self.synthesizer.get()?;
+            let synthesizer = self.synthesizer.read()?;
 
             let accent_phrases = synthesizer
                 .create_accent_phrases(text, StyleId::new(style_id))
@@ -520,7 +628,7 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<Vec<&'py PyAny>> {
-            let synthesizer = self.synthesizer.get()?;
+            let synthesizer = self.synthesizer.read()?;
             crate::convert::blocking_modify_accent_phrases(
                 accent_phrases,
                 StyleId::new(style_id),
@@ -535,7 +643,7 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<Vec<&'py PyAny>> {
-            let synthesizer = self.synthesizer.get()?;
+            let synthesizer = self.synthesizer.read()?;
             crate::convert::blocking_modify_accent_phrases(
                 accent_phrases,
                 StyleId::new(style_id),
@@ -550,7 +658,7 @@ mod blocking {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<Vec<&'py PyAny>> {
-            let synthesizer = self.synthesizer.get()?;
+            let synthesizer = self.synthesizer.read()?;
             crate::convert::blocking_modify_accent_phrases(
                 accent_phrases,
                 StyleId::new(style_id),
@@ -573,7 +681,7 @@ mod blocking {
         ) -> PyResult<&'py PyBytes> {
             let wav = &self
                 .synthesizer
-                .get()?
+                .read()?
                 .synthesis(
                     &audio_query,
                     StyleId::new(style_id),
@@ -603,7 +711,7 @@ mod blocking {
             };
             let wav = &self
                 .synthesizer
-                .get()?
+                .read()?
                 .tts_from_kana(kana, style_id, options)
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
@@ -627,7 +735,7 @@ mod blocking {
             };
             let wav = &self
                 .synthesizer
-                .get()?
+                .read()?
                 .tts(text, style_id, options)
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
@@ -713,7 +821,6 @@ mod asyncio {
     use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     use camino::Utf8PathBuf;
-    use futures_util::FutureExt as _;
     use pyo3::{
         pyclass, pymethods,
         types::{IntoPyDict as _, PyBytes, PyDict, PyList},
@@ -725,14 +832,13 @@ mod asyncio {
         UserDictWord,
     };
 
-    use crate::{convert::VoicevoxCoreResultExt as _, Closable, VoiceModelFilePyFields};
+    use crate::{convert::VoicevoxCoreResultExt as _, Closable, Tokio, VoiceModelFilePyFields};
 
     #[pyclass]
     #[derive(Clone)]
     pub(crate) struct VoiceModelFile {
-        model:
-            Arc<std::sync::Mutex<Closable<Arc<voicevox_core::nonblocking::VoiceModelFile>, Self>>>,
-        immut_fields: VoiceModelFilePyFields,
+        model: Arc<Closable<voicevox_core::nonblocking::VoiceModelFile, Self, Tokio>>,
+        fields: VoiceModelFilePyFields,
     }
 
     #[pymethods]
@@ -749,42 +855,40 @@ mod asyncio {
                     Ok::<_, PyErr>((model, id, metas))
                 })?;
 
-                let model = std::sync::Mutex::new(Closable::new(model.into())).into();
+                let model = Closable::new(model).into();
 
                 Ok(Self {
                     model,
-                    immut_fields: VoiceModelFilePyFields { id, metas },
+                    fields: VoiceModelFilePyFields { id, metas },
                 })
             })
         }
 
         fn close<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
-            let this = self.lock().close_arc(|this| this.id())?;
-            match this {
-                Some(this) => pyo3_asyncio::tokio::future_into_py(py, this.close().map(Ok)),
-                None => pyo3_asyncio::tokio::future_into_py(py, async { Ok(()) }),
-            }
+            let this = self.model.clone();
+            pyo3_asyncio::tokio::future_into_py(py, async move {
+                if let Some(this) = this.close().await {
+                    this.close().await;
+                }
+                Ok(())
+            })
         }
 
         #[getter]
         fn id(&self) -> PyObject {
-            self.immut_fields.id.clone()
+            self.fields.id.clone()
         }
 
         #[getter]
         fn metas(&self) -> Py<PyList> {
-            self.immut_fields.metas.clone()
+            self.fields.metas.clone()
         }
 
         fn __aenter__(slf: PyRef<'_, Self>) -> PyResult<&PyAny> {
-            slf.lock().get()?;
+            slf.model.read()?;
 
             let py = slf.py();
-            let asyncio_future = py.import("asyncio")?.getattr("Future")?;
-            let running_loop = pyo3_asyncio::get_running_loop(py)?;
-            let fut = asyncio_future.call((), Some([("loop", running_loop)].into_py_dict(py)))?;
-            fut.call_method1("set_result", (slf,))?;
-            Ok(fut)
+            crate::convert::ready(slf, py)
         }
 
         fn __aexit__<'py>(
@@ -795,20 +899,6 @@ mod asyncio {
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
             self.close(py)
-        }
-    }
-
-    impl VoiceModelFile {
-        /// # Panics
-        ///
-        /// `Mutex`が"poisoned"な状態なときパニックする。
-        fn lock(
-            &self,
-        ) -> std::sync::MutexGuard<
-            '_,
-            Closable<Arc<voicevox_core::nonblocking::VoiceModelFile>, Self>,
-        > {
-            self.model.lock().unwrap_or_else(|e| panic!("{e}"))
         }
     }
 
@@ -915,9 +1005,12 @@ mod asyncio {
 
     #[pyclass]
     pub(crate) struct Synthesizer {
-        synthesizer: Closable<
-            voicevox_core::nonblocking::Synthesizer<voicevox_core::nonblocking::OpenJtalk>,
-            Self,
+        synthesizer: Arc<
+            Closable<
+                voicevox_core::nonblocking::Synthesizer<voicevox_core::nonblocking::OpenJtalk>,
+                Self,
+                Tokio,
+            >,
         >,
     }
 
@@ -946,7 +1039,7 @@ mod asyncio {
                 },
             );
             let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?;
-            let synthesizer = Closable::new(synthesizer);
+            let synthesizer = Closable::new(synthesizer).into();
             Ok(Self { synthesizer })
         }
 
@@ -954,18 +1047,21 @@ mod asyncio {
             "Synthesizer { .. }"
         }
 
-        fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
-            slf.synthesizer.get()?;
-            Ok(slf)
+        fn __aenter__(slf: PyRef<'_, Self>) -> PyResult<&PyAny> {
+            slf.synthesizer.read()?;
+
+            let py = slf.py();
+            crate::convert::ready(slf, py)
         }
 
-        fn __exit__(
+        fn __aexit__<'py>(
             &mut self,
-            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_type: &PyAny,
-            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_value: &PyAny,
-            #[expect(unused_variables, reason = "`__exit__`としては必要")] traceback: &PyAny,
-        ) {
-            self.close();
+            #[expect(unused_variables, reason = "`__aexit__`としては必要")] exc_type: &'py PyAny,
+            #[expect(unused_variables, reason = "`__aexit__`としては必要")] exc_value: &'py PyAny,
+            #[expect(unused_variables, reason = "`__aexit__`としては必要")] traceback: &'py PyAny,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyAny> {
+            self.close(py)
         }
 
         #[getter]
@@ -975,13 +1071,13 @@ mod asyncio {
 
         #[getter]
         fn is_gpu_mode(&self) -> PyResult<bool> {
-            let synthesizer = self.synthesizer.get()?;
+            let synthesizer = self.synthesizer.read()?;
             Ok(synthesizer.is_gpu_mode())
         }
 
         #[getter]
         fn metas<'py>(&self, py: Python<'py>) -> PyResult<&'py PyList> {
-            let synthesizer = self.synthesizer.get()?;
+            let synthesizer = self.synthesizer.read()?;
             crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
         }
 
@@ -991,10 +1087,9 @@ mod asyncio {
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
             let model: VoiceModelFile = model.extract()?;
-            let synthesizer = self.synthesizer.get()?.clone();
+            let synthesizer = self.synthesizer.read()?.clone();
             pyo3_asyncio::tokio::future_into_py(py, async move {
-                let model = &model.lock().get()?.clone();
-                let result = synthesizer.load_voice_model(model).await;
+                let result = synthesizer.load_voice_model(&*model.model.read()?).await;
                 Python::with_gil(|py| result.into_py_result(py))
             })
         }
@@ -1005,7 +1100,7 @@ mod asyncio {
             py: Python<'_>,
         ) -> PyResult<()> {
             self.synthesizer
-                .get()?
+                .read()?
                 .unload_voice_model(voice_model_id.into())
                 .into_py_result(py)
         }
@@ -1016,7 +1111,7 @@ mod asyncio {
         ) -> PyResult<bool> {
             Ok(self
                 .synthesizer
-                .get()?
+                .read()?
                 .is_loaded_voice_model(voice_model_id.into()))
         }
 
@@ -1026,7 +1121,7 @@ mod asyncio {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let synthesizer = self.synthesizer.get()?.clone();
+            let synthesizer = self.synthesizer.read()?.clone();
             let kana = kana.to_owned();
             pyo3_asyncio::tokio::future_into_py_with_locals(
                 py,
@@ -1054,7 +1149,7 @@ mod asyncio {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let synthesizer = self.synthesizer.get()?.clone();
+            let synthesizer = self.synthesizer.read()?.clone();
             let text = text.to_owned();
             pyo3_asyncio::tokio::future_into_py_with_locals(
                 py,
@@ -1078,7 +1173,7 @@ mod asyncio {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let synthesizer = self.synthesizer.get()?.clone();
+            let synthesizer = self.synthesizer.read()?.clone();
             let kana = kana.to_owned();
             pyo3_asyncio::tokio::future_into_py_with_locals(
                 py,
@@ -1107,7 +1202,7 @@ mod asyncio {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let synthesizer = self.synthesizer.get()?.clone();
+            let synthesizer = self.synthesizer.read()?.clone();
             let text = text.to_owned();
             pyo3_asyncio::tokio::future_into_py_with_locals(
                 py,
@@ -1136,7 +1231,7 @@ mod asyncio {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let synthesizer = self.synthesizer.get()?.clone();
+            let synthesizer = self.synthesizer.read()?.clone();
             crate::convert::async_modify_accent_phrases(
                 accent_phrases,
                 StyleId::new(style_id),
@@ -1151,7 +1246,7 @@ mod asyncio {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let synthesizer = self.synthesizer.get()?.clone();
+            let synthesizer = self.synthesizer.read()?.clone();
             crate::convert::async_modify_accent_phrases(
                 accent_phrases,
                 StyleId::new(style_id),
@@ -1166,7 +1261,7 @@ mod asyncio {
             style_id: u32,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let synthesizer = self.synthesizer.get()?.clone();
+            let synthesizer = self.synthesizer.read()?.clone();
             crate::convert::async_modify_accent_phrases(
                 accent_phrases,
                 StyleId::new(style_id),
@@ -1183,7 +1278,7 @@ mod asyncio {
             enable_interrogative_upspeak: bool,
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
-            let synthesizer = self.synthesizer.get()?.clone();
+            let synthesizer = self.synthesizer.read()?.clone();
             pyo3_asyncio::tokio::future_into_py_with_locals(
                 py,
                 pyo3_asyncio::tokio::get_current_locals(py)?,
@@ -1221,7 +1316,7 @@ mod asyncio {
             let options = TtsOptions {
                 enable_interrogative_upspeak,
             };
-            let synthesizer = self.synthesizer.get()?.clone();
+            let synthesizer = self.synthesizer.read()?.clone();
             let kana = kana.to_owned();
             pyo3_asyncio::tokio::future_into_py_with_locals(
                 py,
@@ -1253,7 +1348,7 @@ mod asyncio {
             let options = TtsOptions {
                 enable_interrogative_upspeak,
             };
-            let synthesizer = self.synthesizer.get()?.clone();
+            let synthesizer = self.synthesizer.read()?.clone();
             let text = text.to_owned();
             pyo3_asyncio::tokio::future_into_py_with_locals(
                 py,
@@ -1269,8 +1364,14 @@ mod asyncio {
             )
         }
 
-        fn close(&mut self) {
-            drop(self.synthesizer.close());
+        fn close<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
+            let this = self.synthesizer.clone();
+            pyo3_asyncio::tokio::future_into_py(py, async move {
+                if let Some(this) = this.close().await {
+                    crate::convert::run_in_executor(|| drop(this)).await?;
+                }
+                Ok(())
+            })
         }
     }
 
