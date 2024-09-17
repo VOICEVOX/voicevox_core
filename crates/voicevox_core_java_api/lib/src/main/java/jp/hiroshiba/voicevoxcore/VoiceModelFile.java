@@ -30,6 +30,11 @@ public class VoiceModelFile extends Dll implements Closeable {
     metas = rawMetas;
   }
 
+  /**
+   * VVMファイルを閉じる。
+   *
+   * <p>このメソッドが呼ばれた段階で{@link Synthesizer#loadVoiceModel}からのアクセスが継続中の場合、アクセスが終わるまで待つ。
+   */
   @Override
   public void close() {
     rsClose();
