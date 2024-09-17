@@ -227,7 +227,7 @@ impl<T: HasJavaClassIdent + 'static> Closable<T> {
 impl<T: HasJavaClassIdent> Drop for Closable<T> {
     fn drop(&mut self) {
         let content = mem::replace(
-            &mut *self.0.write().unwrap_or_else(|e| panic!("{e}")),
+            self.0.get_mut().unwrap_or_else(|e| panic!("{e}")),
             MaybeClosed::Closed,
         );
         if let MaybeClosed::Open(content) = content {

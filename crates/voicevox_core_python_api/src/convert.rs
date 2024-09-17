@@ -179,8 +179,8 @@ pub(crate) fn to_rust_word_type(word_type: &PyAny) -> PyResult<UserDictWordType>
 /// おおよそ以下のコードにおける`f(x)`のようなものを得る。
 ///
 /// ```py
-/// async def f(x):
-///     return x
+/// async def f(x_):
+///     return x_
 ///
 /// return f(x)
 /// ```

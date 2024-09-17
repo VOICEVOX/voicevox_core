@@ -8,7 +8,6 @@ publish.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-blocking.workspace = true
 camino.workspace = true
 easy-ext.workspace = true
 futures-lite.workspace = true

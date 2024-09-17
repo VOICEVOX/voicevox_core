@@ -4485,7 +4485,6 @@ dependencies = [
 name = "voicevox_core_python_api"
 version = "0.0.0"
 dependencies = [
- "blocking",
  "camino",
  "easy-ext",
  "futures-lite",

@@ -156,7 +156,7 @@ impl<T: 'static, C: PyTypeInfo> Closable<T, C, Tokio> {
 
 impl<T: 'static, C: PyTypeInfo, A: Async> Drop for Closable<T, C, A> {
     fn drop(&mut self) {
-        let content = mem::replace(&mut *self.content.blocking_write_(), MaybeClosed::Closed);
+        let content = mem::replace(self.content.get_mut_(), MaybeClosed::Closed);
         if matches!(content, MaybeClosed::Open(_)) {
             warn!(
                 "デストラクタにより`{}`のクローズが行います。通常は、可能な限り`{}`でクローズする\
@@ -187,23 +187,20 @@ impl Async for Tokio {
     type RwLock<T: 'static> = tokio::sync::RwLock<T>;
 }
 
-// `'static`制約はouroborosのため
 trait RwLock: From<Self::Item> + 'static {
     type Item: 'static;
-    type RwLockReadGuard<'a>: Deref<Target = Self::Item>;
     type RwLockWriteGuard<'a>: DerefMut<Target = Self::Item>;
-    fn try_read_(&self) -> Result<Self::RwLockReadGuard<'_>, ()>;
+    fn try_read_(&self) -> Result<impl Deref<Target = Self::Item>, ()>;
     async fn write_(&self) -> Self::RwLockWriteGuard<'_>;
-    fn blocking_write_(&self) -> Self::RwLockWriteGuard<'_>;
     fn try_write_(&self) -> Result<Self::RwLockWriteGuard<'_>, ()>;
+    fn get_mut_(&mut self) -> &mut Self::Item;
 }
 
 impl<T: 'static> RwLock for std::sync::RwLock<T> {
     type Item = T;
-    type RwLockReadGuard<'a> = std::sync::RwLockReadGuard<'a, Self::Item>;
     type RwLockWriteGuard<'a> = std::sync::RwLockWriteGuard<'a, Self::Item>;
 
-    fn try_read_(&self) -> Result<Self::RwLockReadGuard<'_>, ()> {
+    fn try_read_(&self) -> Result<impl Deref<Target = Self::Item>, ()> {
         self.try_read().map_err(|e| match e {
             std::sync::TryLockError::Poisoned(e) => panic!("{e}"),
             std::sync::TryLockError::WouldBlock => (),
@@ -211,10 +208,6 @@ impl<T: 'static> RwLock for std::sync::RwLock<T> {
     }
 
     async fn write_(&self) -> Self::RwLockWriteGuard<'_> {
-        self.blocking_write_()
-    }
-
-    fn blocking_write_(&self) -> Self::RwLockWriteGuard<'_> {
         self.write().unwrap_or_else(|e| panic!("{e}"))
     }
 
@@ -224,14 +217,17 @@ impl<T: 'static> RwLock for std::sync::RwLock<T> {
             std::sync::TryLockError::WouldBlock => (),
         })
     }
+
+    fn get_mut_(&mut self) -> &mut Self::Item {
+        self.get_mut().unwrap_or_else(|e| panic!("{e}"))
+    }
 }
 
 impl<T: 'static> RwLock for tokio::sync::RwLock<T> {
     type Item = T;
-    type RwLockReadGuard<'a> = tokio::sync::RwLockReadGuard<'a, Self::Item>;
     type RwLockWriteGuard<'a> = tokio::sync::RwLockWriteGuard<'a, Self::Item>;
 
-    fn try_read_(&self) -> Result<Self::RwLockReadGuard<'_>, ()> {
+    fn try_read_(&self) -> Result<impl Deref<Target = Self::Item>, ()> {
         self.try_read().map_err(|_| ())
     }
 
@@ -239,12 +235,12 @@ impl<T: 'static> RwLock for tokio::sync::RwLock<T> {
         self.write().await
     }
 
-    fn blocking_write_(&self) -> Self::RwLockWriteGuard<'_> {
-        self.blocking_write()
-    }
-
     fn try_write_(&self) -> Result<Self::RwLockWriteGuard<'_>, ()> {
         self.try_write().map_err(|_| ())
+    }
+
+    fn get_mut_(&mut self) -> &mut Self::Item {
+        self.get_mut()
     }
 }
 
