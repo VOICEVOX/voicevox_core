@@ -33,14 +33,8 @@ class VoiceModelFile:
         """
         VVMファイルを閉じる。
 
-        Caveats
-        -------
         このメソッドが呼ばれた段階で :attr:`Synthesizer.load_voice_model`
-        からのアクセスが継続中の場合、例外が発生する。
-
-        他の言語バインディング、例えばJava
-        APIではアクセスが全部終わるのを待ってから処理に移るようになっており、将来的にはPython
-        APIも同様になるかもしれない。
+        からのアクセスが継続中の場合、アクセスが終わるまで待つ。
         """
         ...
     @property
