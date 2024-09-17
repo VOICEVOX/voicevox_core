@@ -8,7 +8,6 @@ mod convert;
 use self::convert::{from_utf8_path, VoicevoxCoreResultExt as _};
 use easy_ext::ext;
 use log::{debug, warn};
-use ouroboros::self_referencing;
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
@@ -16,6 +15,7 @@ use pyo3::{
     types::{PyList, PyModule},
     wrap_pyfunction, Py, PyObject, PyResult, PyTypeInfo, Python,
 };
+use voicevox_core::__internal::interop::raii::MaybeClosed;
 
 #[pymodule]
 #[pyo3(name = "_rust")]
@@ -98,11 +98,6 @@ struct Closable<T: 'static, C: PyTypeInfo, A: Async> {
     marker: PhantomData<(C, A)>,
 }
 
-enum MaybeClosed<T> {
-    Open(T),
-    Closed,
-}
-
 impl<T: 'static, C: PyTypeInfo, A: Async> Closable<T, C, A> {
     fn new(content: T) -> Self {
         Self {
@@ -115,36 +110,15 @@ impl<T: 'static, C: PyTypeInfo, A: Async> Closable<T, C, A> {
         let lock = self
             .content
             .try_read_()
-            .map_err(|_| PyValueError::new_err(format!("The `{}` is closed", C::NAME)))?;
+            .map_err(|_| PyValueError::new_err(format!("The `{}` is being closed", C::NAME)))?;
 
-        return MappedLockTryBuilder::<'_, A::RwLock<MaybeClosed<T>>, _, _, _> {
-            lock,
-            content_builder: |lock| match &**lock {
-                MaybeClosed::Open(content) => Ok(content),
-                MaybeClosed::Closed => Err(PyValueError::new_err(format!(
-                    "The `{}` is closed",
-                    C::NAME,
-                ))),
-            },
-        }
-        .try_build();
-
-        // https://github.com/rust-lang/rust/issues/117108
-        #[self_referencing]
-        struct MappedLock<'a, L: RwLock, T: 'static> {
-            lock: L::RwLockReadGuard<'a>,
-
-            #[borrows(lock)]
-            content: &'this T,
-        }
-
-        impl<'a, L: RwLock, T: 'static> Deref for MappedLock<'a, L, T> {
-            type Target = T;
-
-            fn deref(&self) -> &Self::Target {
-                self.borrow_content()
-            }
-        }
+        voicevox_core::__internal::interop::raii::try_map_guard(lock, |lock| match &**lock {
+            MaybeClosed::Open(content) => Ok(content),
+            MaybeClosed::Closed => Err(PyValueError::new_err(format!(
+                "The `{}` is closed",
+                C::NAME,
+            ))),
+        })
     }
 
     async fn close_(&self) -> Option<T> {
@@ -185,11 +159,12 @@ impl<T: 'static, C: PyTypeInfo, A: Async> Drop for Closable<T, C, A> {
         let content = mem::replace(&mut *self.content.blocking_write_(), MaybeClosed::Closed);
         if matches!(content, MaybeClosed::Open(_)) {
             warn!(
-                "デストラクタにより`{}`のクローズが行われました。通常は、可能な限り`{}`でクローズ\
-                 するようにして下さい",
+                "デストラクタにより`{}`のクローズが行います。通常は、可能な限り`{}`でクローズする\
+                 ようにして下さい",
                 C::NAME,
                 A::EXIT_METHOD,
             );
+            drop(content);
         }
     }
 }

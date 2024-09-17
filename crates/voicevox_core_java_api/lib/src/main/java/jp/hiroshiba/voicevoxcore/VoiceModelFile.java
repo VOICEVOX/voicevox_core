@@ -6,23 +6,22 @@ import com.google.gson.annotations.SerializedName;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.io.Closeable;
-import java.util.Optional;
 import java.util.UUID;
 
 /** 音声モデルファイル。 */
 public class VoiceModelFile extends Dll implements Closeable {
+  private long handle;
+
   /** ID。 */
   @Nonnull public final UUID id;
 
   /** メタ情報。 */
   @Nonnull public final SpeakerMeta[] metas;
 
-  @Nullable private Opened inner;
-
   public VoiceModelFile(String modelPath) {
-    inner = new Opened(modelPath);
-    id = inner.rsGetId();
-    String metasJson = inner.rsGetMetasJson();
+    rsOpen(modelPath);
+    id = rsGetId();
+    String metasJson = rsGetMetasJson();
     Gson gson = new Gson();
     SpeakerMeta[] rawMetas = gson.fromJson(metasJson, SpeakerMeta[].class);
     if (rawMetas == null) {
@@ -31,48 +30,28 @@ public class VoiceModelFile extends Dll implements Closeable {
     metas = rawMetas;
   }
 
-  // `synchronized`は`Synthesizer`側でやる
-  Opened opened() {
-    if (inner == null) {
-      throw new IllegalStateException("this `VoiceModelFile` is closed");
-    }
-    return inner;
+  @Override
+  public void close() {
+    rsClose();
   }
 
   @Override
-  public synchronized void close() {
-    Optional<Opened> inner = Optional.ofNullable(this.inner);
-    this.inner = null;
-    if (inner.isPresent()) {
-      inner.get().rsDrop();
-    }
+  protected void finalize() throws Throwable {
+    rsDrop();
+    super.finalize();
   }
 
-  static class Opened {
-    private long handle;
+  private native void rsOpen(String modelPath);
 
-    private Opened(String modelPath) {
-      rsOpen(modelPath);
-    }
+  @Nonnull
+  private native UUID rsGetId();
 
-    @Override
-    protected void finalize() throws Throwable {
-      if (handle != 0) {
-        rsDrop();
-      }
-      super.finalize();
-    }
+  @Nonnull
+  private native String rsGetMetasJson();
 
-    private native void rsOpen(String modelPath);
+  private native void rsClose();
 
-    @Nonnull
-    private native UUID rsGetId();
-
-    @Nonnull
-    private native String rsGetMetasJson();
-
-    private native void rsDrop();
-  }
+  private native void rsDrop();
 
   /** 話者（speaker）のメタ情報。 */
   public static class SpeakerMeta {

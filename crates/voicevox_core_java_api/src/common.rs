@@ -1,4 +1,4 @@
-use std::{error::Error as _, iter};
+use std::{error::Error as _, iter, mem, ops::Deref};
 
 use derive_more::From;
 use easy_ext::ext;
@@ -6,7 +6,9 @@ use jni::{
     objects::{JObject, JThrowable},
     JNIEnv,
 };
+use tracing::{debug, warn};
 use uuid::Uuid;
+use voicevox_core::__internal::interop::raii::MaybeClosed;
 
 #[macro_export]
 macro_rules! object {
@@ -154,12 +156,17 @@ where
                             env.throw_new("java/lang/IllegalArgumentException", error.to_string())
                         )
                     }
+                    JavaApiError::IllegalState(msg) => {
+                        or_panic!(env.throw_new("java/lang/IllegalStateException", msg))
+                    }
                 };
             }
             fallback
         }
     }
 }
+
+type JavaApiResult<T> = Result<T, JavaApiError>;
 
 #[derive(From, Debug)]
 pub(crate) enum JavaApiError {
@@ -173,6 +180,69 @@ pub(crate) enum JavaApiError {
     Uuid(uuid::Error),
 
     DeJson(serde_json::Error),
+
+    IllegalState(String),
+}
+
+pub(crate) struct Closable<T: HasJavaClassIdent>(std::sync::RwLock<MaybeClosed<T>>);
+
+impl<T: HasJavaClassIdent + 'static> Closable<T> {
+    pub(crate) fn new(content: T) -> Self {
+        Self(MaybeClosed::Open(content).into())
+    }
+
+    pub(crate) fn read(&self) -> JavaApiResult<impl Deref<Target = T> + '_> {
+        let lock = self.0.try_read().map_err(|e| match e {
+            std::sync::TryLockError::Poisoned(e) => panic!("{e}"),
+            std::sync::TryLockError::WouldBlock => {
+                JavaApiError::IllegalState(format!("The `{}` is being closed", T::JAVA_CLASS_IDENT))
+            }
+        })?;
+
+        voicevox_core::__internal::interop::raii::try_map_guard(lock, |lock| match &**lock {
+            MaybeClosed::Open(content) => Ok(content),
+            MaybeClosed::Closed => Err(JavaApiError::IllegalState(format!(
+                "The `{}` is closed",
+                T::JAVA_CLASS_IDENT,
+            ))),
+        })
+    }
+
+    pub(crate) fn close(&self) {
+        let lock = &mut *match self.0.try_write() {
+            Ok(lock) => lock,
+            Err(std::sync::TryLockError::Poisoned(e)) => panic!("{e}"),
+            Err(std::sync::TryLockError::WouldBlock) => {
+                self.0.write().unwrap_or_else(|e| panic!("{e}"))
+            }
+        };
+
+        if matches!(*lock, MaybeClosed::Open(_)) {
+            debug!("Closing a `{}`", T::JAVA_CLASS_IDENT);
+        }
+        drop(mem::replace(lock, MaybeClosed::Closed));
+    }
+}
+
+impl<T: HasJavaClassIdent> Drop for Closable<T> {
+    fn drop(&mut self) {
+        let content = mem::replace(
+            &mut *self.0.write().unwrap_or_else(|e| panic!("{e}")),
+            MaybeClosed::Closed,
+        );
+        if let MaybeClosed::Open(content) = content {
+            warn!(
+                "デストラクタにより`{}`のクローズを行います。通常は、可能な限り`close`でクローズす\
+                 るようにして下さい",
+                T::JAVA_CLASS_IDENT,
+            );
+            drop(content);
+        }
+    }
+}
+
+pub(crate) trait HasJavaClassIdent {
+    const JAVA_CLASS_IDENT: &str;
 }
 
 #[ext(JNIEnvExt)]

@@ -1,16 +1,20 @@
 use std::{borrow::Cow, sync::Arc};
 
-use crate::common::{throw_if_err, JNIEnvExt as _};
+use crate::common::{throw_if_err, Closable, HasJavaClassIdent, JNIEnvExt as _};
 use jni::{
     objects::{JObject, JString},
     sys::jobject,
     JNIEnv,
 };
 
+pub(crate) type VoiceModelFile = Closable<voicevox_core::blocking::VoiceModelFile>;
+
+impl HasJavaClassIdent for voicevox_core::blocking::VoiceModelFile {
+    const JAVA_CLASS_IDENT: &str = "VoiceModelFile";
+}
+
 #[no_mangle]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_00024Opened_rsOpen<
-    'local,
->(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_rsOpen<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     model_path: JString<'local>,
@@ -20,24 +24,23 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_00024Ope
         let model_path = &*Cow::from(&model_path);
 
         let internal = voicevox_core::blocking::VoiceModelFile::open(model_path)?;
-
-        env.set_rust_field(&this, "handle", Arc::new(internal))?;
+        let internal = Arc::new(Closable::new(internal));
+        env.set_rust_field(&this, "handle", internal)?;
 
         Ok(())
     })
 }
 
 #[no_mangle]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_00024Opened_rsGetId<
-    'local,
->(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_rsGetId<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::VoiceModelFile>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<VoiceModelFile>>(&this, "handle")?
             .clone();
+        let internal = internal.read()?;
 
         let id = env.new_uuid(internal.id().raw_voice_model_id())?;
 
@@ -46,16 +49,15 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_00024Ope
 }
 
 #[no_mangle]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_00024Opened_rsGetMetasJson<
-    'local,
->(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_rsGetMetasJson<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::VoiceModelFile>>(&this, "handle")?
+            .get_rust_field::<_, _, Arc<VoiceModelFile>>(&this, "handle")?
             .clone();
+        let internal = internal.read()?;
 
         let metas = internal.metas();
         let metas_json = serde_json::to_string(&metas).expect("should not fail");
@@ -64,9 +66,19 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_00024Ope
 }
 
 #[no_mangle]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_00024Opened_rsDrop<
-    'local,
->(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_rsClose<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+) {
+    throw_if_err(env, (), |env| {
+        env.take_rust_field::<_, _, Arc<VoiceModelFile>>(&this, "handle")?
+            .close();
+        Ok(())
+    })
+}
+
+#[no_mangle]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {

@@ -72,9 +72,7 @@ public class Synthesizer extends Dll {
    * @throws InvalidModelDataException 無効なモデルデータの場合。
    */
   public void loadVoiceModel(VoiceModelFile voiceModel) throws InvalidModelDataException {
-    synchronized (voiceModel) {
-      rsLoadVoiceModel(voiceModel.opened());
-    }
+    rsLoadVoiceModel(voiceModel);
   }
 
   /**
@@ -287,8 +285,7 @@ public class Synthesizer extends Dll {
   @Nonnull
   private native String rsGetMetasJson();
 
-  private native void rsLoadVoiceModel(VoiceModelFile.Opened voiceModel)
-      throws InvalidModelDataException;
+  private native void rsLoadVoiceModel(VoiceModelFile voiceModel) throws InvalidModelDataException;
 
   private native void rsUnloadVoiceModel(UUID voiceModelId);
 
