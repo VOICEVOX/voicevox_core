@@ -182,13 +182,15 @@ impl<T: 'static, C: PyTypeInfo> Closable<T, C, Tokio> {
 
 impl<T: 'static, C: PyTypeInfo, A: Async> Drop for Closable<T, C, A> {
     fn drop(&mut self) {
-        warn!(
-            "デストラクタにより`{}`のクローズが行われます。可能な限り`{}`でクローズするようにして\
-             下さい",
-            C::NAME,
-            A::EXIT_METHOD
-        );
-        *self.content.blocking_write_() = MaybeClosed::Closed;
+        let content = mem::replace(&mut *self.content.blocking_write_(), MaybeClosed::Closed);
+        if matches!(content, MaybeClosed::Open(_)) {
+            warn!(
+                "デストラクタにより`{}`のクローズが行われました。通常は、可能な限り`{}`でクローズ\
+                 するようにして下さい",
+                C::NAME,
+                A::EXIT_METHOD,
+            );
+        }
     }
 }
 
