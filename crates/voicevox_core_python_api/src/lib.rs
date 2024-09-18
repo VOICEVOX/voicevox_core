@@ -93,12 +93,12 @@ exceptions! {
     InvalidWordError: PyValueError;
 }
 
-struct Closable<T: 'static, C: PyTypeInfo, A: Async> {
+struct Closable<T, C: PyTypeInfo, A: Async> {
     content: A::RwLock<MaybeClosed<T>>,
     marker: PhantomData<(C, A)>,
 }
 
-impl<T: 'static, C: PyTypeInfo, A: Async> Closable<T, C, A> {
+impl<T, C: PyTypeInfo, A: Async> Closable<T, C, A> {
     fn new(content: T) -> Self {
         Self {
             content: MaybeClosed::Open(content).into(),
@@ -140,21 +140,21 @@ impl<T: 'static, C: PyTypeInfo, A: Async> Closable<T, C, A> {
     }
 }
 
-impl<T: 'static, C: PyTypeInfo> Closable<T, C, SingleTasked> {
+impl<T, C: PyTypeInfo> Closable<T, C, SingleTasked> {
     #[must_use = "中身は明示的に`drop`でdropすること"]
     fn close(&self) -> Option<T> {
         futures_lite::future::block_on(self.close_())
     }
 }
 
-impl<T: 'static, C: PyTypeInfo> Closable<T, C, Tokio> {
+impl<T, C: PyTypeInfo> Closable<T, C, Tokio> {
     #[must_use = "中身は明示的に`drop`でdropすること"]
     async fn close(&self) -> Option<T> {
         self.close_().await
     }
 }
 
-impl<T: 'static, C: PyTypeInfo, A: Async> Drop for Closable<T, C, A> {
+impl<T, C: PyTypeInfo, A: Async> Drop for Closable<T, C, A> {
     fn drop(&mut self) {
         let content = mem::replace(self.content.get_mut_(), MaybeClosed::Closed);
         if matches!(content, MaybeClosed::Open(_)) {
@@ -171,7 +171,7 @@ impl<T: 'static, C: PyTypeInfo, A: Async> Drop for Closable<T, C, A> {
 
 trait Async {
     const EXIT_METHOD: &str;
-    type RwLock<T: 'static>: RwLock<Item = T>;
+    type RwLock<T>: RwLock<Item = T>;
 }
 
 enum SingleTasked {}
@@ -179,26 +179,28 @@ enum Tokio {}
 
 impl Async for SingleTasked {
     const EXIT_METHOD: &str = "__exit__";
-    type RwLock<T: 'static> = std::sync::RwLock<T>;
+    type RwLock<T> = std::sync::RwLock<T>;
 }
 
 impl Async for Tokio {
     const EXIT_METHOD: &str = "__aexit__";
-    type RwLock<T: 'static> = tokio::sync::RwLock<T>;
+    type RwLock<T> = tokio::sync::RwLock<T>;
 }
 
-trait RwLock: From<Self::Item> + 'static {
-    type Item: 'static;
-    type RwLockWriteGuard<'a>: DerefMut<Target = Self::Item>;
+trait RwLock: From<Self::Item> {
+    type Item;
+    type RwLockWriteGuard<'a>: DerefMut<Target = Self::Item>
+    where
+        Self: 'a;
     fn try_read_(&self) -> Result<impl Deref<Target = Self::Item>, ()>;
     async fn write_(&self) -> Self::RwLockWriteGuard<'_>;
     fn try_write_(&self) -> Result<Self::RwLockWriteGuard<'_>, ()>;
     fn get_mut_(&mut self) -> &mut Self::Item;
 }
 
-impl<T: 'static> RwLock for std::sync::RwLock<T> {
+impl<T> RwLock for std::sync::RwLock<T> {
     type Item = T;
-    type RwLockWriteGuard<'a> = std::sync::RwLockWriteGuard<'a, Self::Item>;
+    type RwLockWriteGuard<'a> = std::sync::RwLockWriteGuard<'a, Self::Item> where Self: 'a;
 
     fn try_read_(&self) -> Result<impl Deref<Target = Self::Item>, ()> {
         self.try_read().map_err(|e| match e {
@@ -223,9 +225,9 @@ impl<T: 'static> RwLock for std::sync::RwLock<T> {
     }
 }
 
-impl<T: 'static> RwLock for tokio::sync::RwLock<T> {
+impl<T> RwLock for tokio::sync::RwLock<T> {
     type Item = T;
-    type RwLockWriteGuard<'a> = tokio::sync::RwLockWriteGuard<'a, Self::Item>;
+    type RwLockWriteGuard<'a> = tokio::sync::RwLockWriteGuard<'a, Self::Item> where Self: 'a;
 
     fn try_read_(&self) -> Result<impl Deref<Target = Self::Item>, ()> {
         self.try_read().map_err(|_| ())

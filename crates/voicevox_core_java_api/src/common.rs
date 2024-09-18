@@ -186,7 +186,7 @@ pub(crate) enum JavaApiError {
 
 pub(crate) struct Closable<T: HasJavaClassIdent>(std::sync::RwLock<MaybeClosed<T>>);
 
-impl<T: HasJavaClassIdent + 'static> Closable<T> {
+impl<T: HasJavaClassIdent> Closable<T> {
     pub(crate) fn new(content: T) -> Self {
         Self(MaybeClosed::Open(content).into())
     }

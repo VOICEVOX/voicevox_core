@@ -9,15 +9,16 @@ pub enum MaybeClosed<T> {
 
 // [`mapped_lock_guards`]のようなことをやるためのユーティリティ。
 //
-// `T: 'static`が入っているのは、`T` outlives `G`の関係にすることによりouroborosに突っ込んでSafe
-// Rustで記述しきるため。
-//
 // [`mapped_lock_guards`]: https://github.com/rust-lang/rust/issues/117108
-pub fn try_map_guard<'a, G, F, T, E>(guard: G, f: F) -> Result<impl Deref<Target = T> + 'a, E>
+pub fn try_map_guard<'lock, 'target, G, F, T, E>(
+    guard: G,
+    f: F,
+) -> Result<impl Deref<Target = T> + 'lock, E>
 where
-    G: 'a,
+    G: 'lock,
+    'target: 'lock,
     F: FnOnce(&G) -> Result<&T, E>,
-    T: 'static,
+    T: 'target,
 {
     return MappedLockTryBuilder {
         guard,
@@ -27,16 +28,16 @@ where
     .try_build();
 
     #[self_referencing]
-    struct MappedLock<'a, G: 'a, T: 'static> {
+    struct MappedLock<'lock, 'target, G: 'lock, T: 'target> {
         guard: G,
 
         #[borrows(guard)]
         content: &'this T,
 
-        marker: PhantomData<&'a ()>,
+        marker: PhantomData<&'lock &'target ()>,
     }
 
-    impl<'a, G: 'a, T: 'static> Deref for MappedLock<'a, G, T> {
+    impl<'lock, 'target: 'lock, G: 'lock, T: 'target> Deref for MappedLock<'lock, 'target, G, T> {
         type Target = T;
 
         fn deref(&self) -> &Self::Target {
