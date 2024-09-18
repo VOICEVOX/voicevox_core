@@ -7,7 +7,7 @@ use jni::{
     JNIEnv,
 };
 
-pub(crate) type VoiceModelFile = Closable<voicevox_core::blocking::VoiceModelFile>;
+pub(crate) type VoiceModelFile = Arc<Closable<voicevox_core::blocking::VoiceModelFile>>;
 
 impl HasJavaClassIdent for voicevox_core::blocking::VoiceModelFile {
     const JAVA_CLASS_IDENT: &str = "VoiceModelFile";
@@ -38,7 +38,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_rsGetId<
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = env
-            .get_rust_field::<_, _, Arc<VoiceModelFile>>(&this, "handle")?
+            .get_rust_field::<_, _, VoiceModelFile>(&this, "handle")?
             .clone();
         let internal = internal.read()?;
 
@@ -55,7 +55,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_rsGetMet
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = env
-            .get_rust_field::<_, _, Arc<VoiceModelFile>>(&this, "handle")?
+            .get_rust_field::<_, _, VoiceModelFile>(&this, "handle")?
             .clone();
         let internal = internal.read()?;
 
@@ -71,7 +71,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_VoiceModelFile_rsClose<
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        env.take_rust_field::<_, _, Arc<VoiceModelFile>>(&this, "handle")?
+        env.take_rust_field::<_, _, VoiceModelFile>(&this, "handle")?
             .close();
         Ok(())
     })

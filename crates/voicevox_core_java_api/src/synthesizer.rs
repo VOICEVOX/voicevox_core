@@ -107,7 +107,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsLoadVoice
 ) {
     throw_if_err(env, (), |env| {
         let model = env
-            .get_rust_field::<_, _, Arc<crate::voice_model::VoiceModelFile>>(&model, "handle")?
+            .get_rust_field::<_, _, crate::voice_model::VoiceModelFile>(&model, "handle")?
             .clone();
         let model = model.read()?;
         let internal = env
