@@ -9,7 +9,7 @@ pub enum MaybeClosed<T> {
 
 // [`mapped_lock_guards`]のようなことをやるためのユーティリティ。
 //
-// `T: 'static`が入っているのは、`T` outlive `G`の関係にすることによりouroborosに突っ込んでSafe
+// `T: 'static`が入っているのは、`T` outlives `G`の関係にすることによりouroborosに突っ込んでSafe
 // Rustで記述しきるため。
 //
 // [`mapped_lock_guards`]: https://github.com/rust-lang/rust/issues/117108
