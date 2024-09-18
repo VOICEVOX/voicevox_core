@@ -37,7 +37,7 @@ where
         marker: PhantomData<&'lock &'target ()>,
     }
 
-    impl<'lock, 'target: 'lock, G: 'lock, T: 'target> Deref for MappedLock<'lock, 'target, G, T> {
+    impl<'lock, 'target, G: 'lock, T: 'target> Deref for MappedLock<'lock, 'target, G, T> {
         type Target = T;
 
         fn deref(&self) -> &Self::Target {
