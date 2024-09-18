@@ -15,8 +15,8 @@ pub fn try_map_guard<'lock, 'target, G, F, T, E>(
     f: F,
 ) -> Result<impl Deref<Target = T> + 'lock, E>
 where
-    G: 'lock,
     'target: 'lock,
+    G: 'lock,
     F: FnOnce(&G) -> Result<&T, E>,
     T: 'target,
 {
