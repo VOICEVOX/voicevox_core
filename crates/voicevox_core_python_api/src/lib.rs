@@ -159,7 +159,7 @@ impl<T: 'static, C: PyTypeInfo, A: Async> Drop for Closable<T, C, A> {
         let content = mem::replace(self.content.get_mut_(), MaybeClosed::Closed);
         if matches!(content, MaybeClosed::Open(_)) {
             warn!(
-                "デストラクタにより`{}`のクローズが行います。通常は、可能な限り`{}`でクローズする\
+                "デストラクタにより`{}`のクローズを行います。通常は、可能な限り`{}`でクローズする\
                  ようにして下さい",
                 C::NAME,
                 A::EXIT_METHOD,
