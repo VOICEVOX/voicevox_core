@@ -51,6 +51,10 @@ impl Async for SingleTasked {
     type Mutex<T: Send + Sync + Unpin> = StdMutex<T>;
     type RoFile = StdFile;
 
+    /// ファイルを読み取り専用(RO)で開く。
+    ///
+    /// `io::Error`は素（`i32`相当）のままにしておき、この関数を呼び出す側でfs-err風のメッセージを付
+    /// ける。
     async fn open_file_ro(path: impl AsRef<Path>) -> io::Result<Self::RoFile> {
         std::fs::File::open(path).map(StdFile)
     }
