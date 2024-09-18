@@ -10,38 +10,34 @@ pub enum MaybeClosed<T> {
 // [`mapped_lock_guards`]のようなことをやるためのユーティリティ。
 //
 // [`mapped_lock_guards`]: https://github.com/rust-lang/rust/issues/117108
-pub fn try_map_guard<'lock, 'target, G, F, T, E>(
-    guard: G,
-    f: F,
-) -> Result<impl Deref<Target = T> + 'lock, E>
+pub fn try_map_guard<'lock, G, F, T, E>(guard: G, f: F) -> Result<impl Deref<Target = T> + 'lock, E>
 where
-    'target: 'lock,
     G: 'lock,
     F: FnOnce(&G) -> Result<&T, E>,
-    T: 'target,
+    T: 'lock,
 {
     return MappedLockTryBuilder {
         guard,
-        content_builder: f,
+        target_builder: f,
         marker: PhantomData,
     }
     .try_build();
 
     #[self_referencing]
-    struct MappedLock<'lock, 'target, G: 'lock, T: 'target> {
+    struct MappedLock<'lock, G: 'lock, T> {
         guard: G,
 
         #[borrows(guard)]
-        content: &'this T,
+        target: &'this T,
 
-        marker: PhantomData<&'lock &'target ()>,
+        marker: PhantomData<&'lock T>,
     }
 
-    impl<'lock, 'target, G: 'lock, T: 'target> Deref for MappedLock<'lock, 'target, G, T> {
+    impl<'lock, G: 'lock, T: 'lock> Deref for MappedLock<'lock, G, T> {
         type Target = T;
 
         fn deref(&self) -> &Self::Target {
-            self.borrow_content()
+            self.borrow_target()
         }
     }
 }
