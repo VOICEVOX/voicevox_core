@@ -63,9 +63,6 @@ static PHONEME_MAP: LazyLock<HashMap<&str, i64>> = LazyLock::new(|| {
 #[derive(Debug, Clone, PartialEq, new, Default, Getters)]
 pub(crate) struct OjtPhoneme {
     phoneme: String,
-    // FIXME: derive-getters(多分)が警告を覆い隠しているが、以下の二つは使っていないはず
-    start: f32,
-    end: f32,
 }
 
 impl OjtPhoneme {
@@ -113,8 +110,8 @@ mod tests {
     fn base_hello_hiho() -> Vec<OjtPhoneme> {
         STR_HELLO_HIHO
             .split_whitespace()
-            .enumerate()
-            .map(|(i, s)| OjtPhoneme::new(s.into(), i as f32, (i + 1) as f32))
+            .map(ToOwned::to_owned)
+            .map(OjtPhoneme::new)
             .collect()
     }
 
@@ -154,9 +151,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a".into(), 9., 10.), true)]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("k".into(), 9., 10.), false)]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a".into(), 10., 11.), false)]
+    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a".into()), true)]
+    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("k".into()), false)]
     fn test_ojt_phoneme_equality(
         #[case] ojt_phonemes: Vec<OjtPhoneme>,
         #[case] index: usize,

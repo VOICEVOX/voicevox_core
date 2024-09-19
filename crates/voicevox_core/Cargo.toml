@@ -67,8 +67,5 @@ humansize.workspace = true
 windows = { workspace = true, features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
 
 [lints.rust]
-# FIXME: `unsafe impl Send`のもあるが、以下2つのマージにより消える予定
-# * https://github.com/VOICEVOX/voicevox_core/pull/725
-# * https://github.com/VOICEVOX/voicevox_core/pull/772
 unsafe_code = "allow" # WindowsのGPU情報表示に、Win32を利用
 rust_2018_idioms = "warn"

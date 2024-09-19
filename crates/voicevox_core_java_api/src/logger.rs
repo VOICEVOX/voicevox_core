@@ -25,8 +25,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_Dll_00024LoggerInitializer_ini
         };
         use tracing_subscriber::{fmt::format::Writer, EnvFilter};
 
-        // FIXME: `try_init` → `init` （subscriberは他に存在しないはずなので）
-        let _ = tracing_subscriber::fmt()
+        tracing_subscriber::fmt()
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
             } else {
@@ -36,7 +35,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_Dll_00024LoggerInitializer_ini
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(out().is_terminal() && env_allows_ansi())
             .with_writer(out)
-            .try_init();
+            .init();
 
         fn local_time(wtr: &mut Writer<'_>) -> fmt::Result {
             // ローカル時刻で表示はするが、そのフォーマットはtracing-subscriber本来のものに近いようにする。
