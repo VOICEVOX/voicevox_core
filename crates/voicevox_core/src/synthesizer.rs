@@ -1,4 +1,4 @@
-// TODO: `VoiceModel`のように、次のような設計にする。
+// TODO: `VoiceModelFile`のように、次のような設計にする。
 //
 // ```
 // pub(crate) mod blocking {
@@ -235,7 +235,7 @@ pub(crate) mod blocking {
         }
 
         /// 音声モデルを読み込む。
-        pub fn load_voice_model(&self, model: &crate::blocking::VoiceModel) -> Result<()> {
+        pub fn load_voice_model(&self, model: &crate::blocking::VoiceModelFile) -> Result<()> {
             let model_bytes = &model.read_inference_models()?;
             self.status.insert_model(model.header(), model_bytes)
         }
@@ -1181,7 +1181,10 @@ pub(crate) mod nonblocking {
             self.0.is_gpu_mode()
         }
 
-        pub async fn load_voice_model(&self, model: &crate::nonblocking::VoiceModel) -> Result<()> {
+        pub async fn load_voice_model(
+            &self,
+            model: &crate::nonblocking::VoiceModelFile,
+        ) -> Result<()> {
             let model_bytes = &model.read_inference_models().await?;
             self.0.status.insert_model(model.header(), model_bytes)
         }
@@ -1351,7 +1354,7 @@ mod tests {
         .unwrap();
 
         let result = syntesizer
-            .load_voice_model(&crate::nonblocking::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
             .await;
 
         assert_debug_fmt_eq!(
@@ -1399,7 +1402,7 @@ mod tests {
             "expected is_model_loaded to return false, but got true",
         );
         syntesizer
-            .load_voice_model(&crate::nonblocking::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1427,7 +1430,7 @@ mod tests {
         .unwrap();
 
         syntesizer
-            .load_voice_model(&crate::nonblocking::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1460,7 +1463,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&crate::nonblocking::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1502,7 +1505,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&crate::nonblocking::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1599,7 +1602,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let query = match input {
@@ -1670,7 +1673,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = match input {
@@ -1738,7 +1741,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1801,7 +1804,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1842,7 +1845,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1883,7 +1886,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer

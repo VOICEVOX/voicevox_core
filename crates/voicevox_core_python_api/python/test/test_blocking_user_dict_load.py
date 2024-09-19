@@ -17,7 +17,7 @@ def test_user_dict_load() -> None:
         filename=conftest.onnxruntime_filename
     )
     open_jtalk = voicevox_core.blocking.OpenJtalk(conftest.open_jtalk_dic_dir)
-    model = voicevox_core.blocking.VoiceModel.from_path(conftest.model_dir)
+    model = voicevox_core.blocking.VoiceModelFile.open(conftest.model_dir)
     synthesizer = voicevox_core.blocking.Synthesizer(onnxruntime, open_jtalk)
 
     synthesizer.load_voice_model(model)

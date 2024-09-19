@@ -295,12 +295,12 @@ typedef struct VoicevoxSynthesizer VoicevoxSynthesizer;
 typedef struct VoicevoxUserDict VoicevoxUserDict;
 
 /**
- * 音声モデル。
+ * 音声モデルファイル。
  *
  * VVMファイルと対応する。
- * <b>構築</b>(_construction_)は ::voicevox_voice_model_new_from_path で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_delete で行う。
+ * <b>構築</b>(_construction_)は ::voicevox_voice_model_file_open で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_file_close で行う。
  */
-typedef struct VoicevoxVoiceModel VoicevoxVoiceModel;
+typedef struct VoicevoxVoiceModelFile VoicevoxVoiceModelFile;
 
 #if defined(VOICEVOX_LOAD_ONNXRUNTIME)
 /**
@@ -593,7 +593,7 @@ __declspec(dllimport)
 const char *voicevox_get_version(void);
 
 /**
- * VVMファイルから ::VoicevoxVoiceModel を<b>構築</b>(_construct_)する。
+ * VVMファイルを開く。
  *
  * @param [in] path vvmファイルへのUTF-8のファイルパス
  * @param [out] out_model 構築先
@@ -608,56 +608,56 @@ const char *voicevox_get_version(void);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_voice_model_new_from_path(const char *path,
-                                                      struct VoicevoxVoiceModel **out_model);
+VoicevoxResultCode voicevox_voice_model_file_open(const char *path,
+                                                  struct VoicevoxVoiceModelFile **out_model);
 
 /**
- * ::VoicevoxVoiceModel からIDを取得する。
+ * ::VoicevoxVoiceModelFile からIDを取得する。
  *
  * @param [in] model 音声モデル
  *
  * @returns 音声モデルID
  *
  * \safety{
- * - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
+ * - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
  * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxVoiceModelId voicevox_voice_model_id(const struct VoicevoxVoiceModel *model);
+VoicevoxVoiceModelId voicevox_voice_model_file_id(const struct VoicevoxVoiceModelFile *model);
 
 /**
- * ::VoicevoxVoiceModel からメタ情報を取得する。
+ * ::VoicevoxVoiceModelFile からメタ情報を取得する。
  *
  * @param [in] model 音声モデル
  *
  * @returns メタ情報のJSON文字列
  *
  * \safety{
- * - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
+ * - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
  * - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`model`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
  * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-const char *voicevox_voice_model_get_metas_json(const struct VoicevoxVoiceModel *model);
+const char *voicevox_voice_model_file_get_metas_json(const struct VoicevoxVoiceModelFile *model);
 
 /**
- * ::VoicevoxVoiceModel を<b>破棄</b>(_destruct_)する。
+ * ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
  *
  * @param [in] model 破棄対象
  *
  * \safety{
- * - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また既にこの関数で解放されていてはいけない。
+ * - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また既にこの関数で解放されていてはいけない。
  * - `model`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
  * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-void voicevox_voice_model_delete(struct VoicevoxVoiceModel *model);
+void voicevox_voice_model_file_close(struct VoicevoxVoiceModelFile *model);
 
 /**
  * ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。
@@ -671,7 +671,7 @@ void voicevox_voice_model_delete(struct VoicevoxVoiceModel *model);
  *
  * \safety{
  * - `onnxruntime`は ::voicevox_onnxruntime_load_once または ::voicevox_onnxruntime_init_once で得たものでなければならない。
- * - `open_jtalk`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
+ * - `open_jtalk`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
  * - `out_synthesizer`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
  */
@@ -708,14 +708,14 @@ void voicevox_synthesizer_delete(struct VoicevoxSynthesizer *synthesizer);
  *
  * \safety{
  * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
- * - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
+ * - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
  * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_synthesizer_load_voice_model(const struct VoicevoxSynthesizer *synthesizer,
-                                                         const struct VoicevoxVoiceModel *model);
+                                                         const struct VoicevoxVoiceModelFile *model);
 
 /**
  * 音声モデルの読み込みを解除する。

@@ -3,7 +3,7 @@
 pub use crate::{
     engine::open_jtalk::blocking::OpenJtalk, infer::runtimes::onnxruntime::blocking::Onnxruntime,
     synthesizer::blocking::Synthesizer, user_dict::dict::blocking::UserDict,
-    voice_model::blocking::VoiceModel,
+    voice_model::blocking::VoiceModelFile,
 };
 
 pub mod onnxruntime {

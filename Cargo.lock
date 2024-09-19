@@ -4364,6 +4364,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-fs",
+ "async-lock",
  "async_zip",
  "blocking",
  "camino",
@@ -4486,6 +4487,7 @@ version = "0.0.0"
 dependencies = [
  "camino",
  "easy-ext",
+ "futures-lite",
  "log",
  "once_cell",
  "pyo3",
@@ -4493,6 +4495,7 @@ dependencies = [
  "pyo3-log",
  "serde",
  "serde_json",
+ "tokio",
  "tracing",
  "uuid",
  "voicevox_core",

@@ -49,58 +49,62 @@ class SynthesizerTest extends TestUtils {
   @Test
   void checkModel() throws InvalidModelDataException {
     Onnxruntime onnxruntime = loadOnnxruntime();
-    VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
 
     assertTrue(synthesizer.metas().length == 0);
 
-    synthesizer.loadVoiceModel(model);
+    try (VoiceModelFile model = openModel()) {
+      synthesizer.loadVoiceModel(model);
 
-    assertTrue(synthesizer.metas().length >= 1);
-    assertTrue(synthesizer.isLoadedVoiceModel(model.id));
+      assertTrue(synthesizer.metas().length >= 1);
+      assertTrue(synthesizer.isLoadedVoiceModel(model.id));
 
-    synthesizer.unloadVoiceModel(model.id);
+      synthesizer.unloadVoiceModel(model.id);
 
-    assertTrue(synthesizer.metas().length == 0);
-    assertFalse(synthesizer.isLoadedVoiceModel(model.id));
+      assertTrue(synthesizer.metas().length == 0);
+      assertFalse(synthesizer.isLoadedVoiceModel(model.id));
+    }
   }
 
   @Test
   void checkAudioQuery() throws RunModelException, InvalidModelDataException {
-    VoiceModel model = loadModel();
     Onnxruntime onnxruntime = loadOnnxruntime();
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
-    synthesizer.loadVoiceModel(model);
-    AudioQuery query = synthesizer.createAudioQuery("こんにちは", model.metas[0].styles[0].id);
 
-    synthesizer.synthesis(query, model.metas[0].styles[0].id).execute();
+    try (VoiceModelFile model = openModel()) {
+      synthesizer.loadVoiceModel(model);
+    }
+
+    AudioQuery query = synthesizer.createAudioQuery("こんにちは", synthesizer.metas()[0].styles[0].id);
+    synthesizer.synthesis(query, synthesizer.metas()[0].styles[0].id).execute();
   }
 
   @Test
   void checkAccentPhrases() throws RunModelException, InvalidModelDataException {
-    VoiceModel model = loadModel();
     OpenJtalk openJtalk = loadOpenJtalk();
     Onnxruntime onnxruntime = loadOnnxruntime();
     Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
-    synthesizer.loadVoiceModel(model);
+    try (VoiceModelFile model = openModel()) {
+      synthesizer.loadVoiceModel(model);
+    }
     List<AccentPhrase> accentPhrases =
-        synthesizer.createAccentPhrases("こんにちは", model.metas[0].styles[0].id);
+        synthesizer.createAccentPhrases("こんにちは", synthesizer.metas()[0].styles[0].id);
     List<AccentPhrase> accentPhrases2 =
-        synthesizer.replaceMoraPitch(accentPhrases, model.metas[1].styles[0].id);
+        synthesizer.replaceMoraPitch(accentPhrases, synthesizer.metas()[1].styles[0].id);
     assertTrue(
         checkAllMoras(
             accentPhrases, accentPhrases2, (mora, otherMora) -> mora.pitch != otherMora.pitch));
     List<AccentPhrase> accentPhrases3 =
-        synthesizer.replacePhonemeLength(accentPhrases, model.metas[1].styles[0].id);
+        synthesizer.replacePhonemeLength(accentPhrases, synthesizer.metas()[1].styles[0].id);
     assertTrue(
         checkAllMoras(
             accentPhrases,
             accentPhrases3,
             (mora, otherMora) -> mora.vowelLength != otherMora.vowelLength));
     List<AccentPhrase> accentPhrases4 =
-        synthesizer.replaceMoraData(accentPhrases, model.metas[1].styles[0].id);
+        synthesizer.replaceMoraData(accentPhrases, synthesizer.metas()[1].styles[0].id);
     assertTrue(
         checkAllMoras(
             accentPhrases,
@@ -111,11 +115,12 @@ class SynthesizerTest extends TestUtils {
 
   @Test
   void checkTts() throws RunModelException, InvalidModelDataException {
-    VoiceModel model = loadModel();
     Onnxruntime onnxruntime = loadOnnxruntime();
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
-    synthesizer.loadVoiceModel(model);
-    synthesizer.tts("こんにちは", model.metas[0].styles[0].id);
+    try (VoiceModelFile model = openModel()) {
+      synthesizer.loadVoiceModel(model);
+    }
+    synthesizer.tts("こんにちは", synthesizer.metas()[0].styles[0].id);
   }
 }

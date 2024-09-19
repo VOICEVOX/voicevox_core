@@ -26,7 +26,7 @@ pub async fn synthesizer_with_sample_voice_model(
         },
     )?;
 
-    let model = &crate::nonblocking::VoiceModel::from_path(voice_model_path).await?;
+    let model = &crate::nonblocking::VoiceModelFile::open(voice_model_path).await?;
     syntesizer.load_voice_model(model).await?;
 
     Ok(syntesizer)
