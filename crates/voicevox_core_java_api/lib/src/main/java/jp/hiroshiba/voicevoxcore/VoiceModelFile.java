@@ -5,10 +5,11 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import java.io.Closeable;
 import java.util.UUID;
 
-/** 音声モデル。 */
-public class VoiceModel extends Dll {
+/** 音声モデルファイル。 */
+public class VoiceModelFile extends Dll implements Closeable {
   private long handle;
 
   /** ID。 */
@@ -17,8 +18,8 @@ public class VoiceModel extends Dll {
   /** メタ情報。 */
   @Nonnull public final SpeakerMeta[] metas;
 
-  public VoiceModel(String modelPath) {
-    rsFromPath(modelPath);
+  public VoiceModelFile(String modelPath) {
+    rsOpen(modelPath);
     id = rsGetId();
     String metasJson = rsGetMetasJson();
     Gson gson = new Gson();
@@ -29,18 +30,31 @@ public class VoiceModel extends Dll {
     metas = rawMetas;
   }
 
+  /**
+   * VVMファイルを閉じる。
+   *
+   * <p>このメソッドが呼ばれた段階で{@link Synthesizer#loadVoiceModel}からのアクセスが継続中の場合、アクセスが終わるまで待つ。
+   */
+  @Override
+  public void close() {
+    rsClose();
+  }
+
+  @Override
   protected void finalize() throws Throwable {
     rsDrop();
     super.finalize();
   }
 
-  private native void rsFromPath(String modelPath);
+  private native void rsOpen(String modelPath);
 
   @Nonnull
   private native UUID rsGetId();
 
   @Nonnull
   private native String rsGetMetasJson();
+
+  private native void rsClose();
 
   private native void rsDrop();
 

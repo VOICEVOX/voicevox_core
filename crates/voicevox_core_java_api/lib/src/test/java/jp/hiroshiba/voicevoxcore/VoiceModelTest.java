@@ -17,7 +17,10 @@ class VoiceModelTest extends TestUtils {
   @Test
   void idShouldBePreservedAsIs() throws IOException {
     UUID expected = UUID.fromString(Manifest.readJson().id);
-    UUID actual = loadModel().id;
+    UUID actual;
+    try (VoiceModelFile model = openModel()) {
+      actual = model.id;
+    }
     assertEquals(expected, actual);
   }
 

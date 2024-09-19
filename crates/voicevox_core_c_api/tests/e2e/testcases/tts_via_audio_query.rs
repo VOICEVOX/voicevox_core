@@ -38,7 +38,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         let model = {
             let mut model = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_voice_model_new_from_path(
+            assert_ok(lib.voicevox_voice_model_file_open(
                 c_api::SAMPLE_VOICE_MODEL_FILE_PATH.as_ptr(),
                 model.as_mut_ptr(),
             ));
@@ -122,7 +122,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         std::assert_eq!(SNAPSHOTS.output[&self.text].wav_length, wav_length);
 
-        lib.voicevox_voice_model_delete(model);
+        lib.voicevox_voice_model_file_close(model);
         lib.voicevox_open_jtalk_rc_delete(openjtalk);
         lib.voicevox_synthesizer_delete(synthesizer);
         lib.voicevox_json_free(audio_query);

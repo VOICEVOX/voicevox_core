@@ -1,11 +1,11 @@
-use std::{error::Error as _, future::Future, iter, path::PathBuf};
+use std::{error::Error as _, future::Future, iter, panic, path::PathBuf};
 
 use camino::Utf8PathBuf;
 use easy_ext::ext;
 use pyo3::{
-    exceptions::{PyException, PyValueError},
-    types::PyList,
-    FromPyObject as _, PyAny, PyObject, PyResult, Python, ToPyObject,
+    exceptions::{PyException, PyRuntimeError, PyValueError},
+    types::{IntoPyDict as _, PyList},
+    FromPyObject as _, IntoPy, PyAny, PyObject, PyResult, Python, ToPyObject,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
@@ -60,16 +60,17 @@ pub(crate) fn from_dataclass<T: DeserializeOwned>(ob: &PyAny) -> PyResult<T> {
 pub(crate) fn to_pydantic_voice_model_meta<'py>(
     metas: &VoiceModelMeta,
     py: Python<'py>,
-) -> PyResult<Vec<&'py PyAny>> {
+) -> PyResult<&'py PyList> {
     let class = py
         .import("voicevox_core")?
         .getattr("SpeakerMeta")?
         .downcast()?;
 
-    metas
+    let metas = metas
         .iter()
         .map(|m| to_pydantic_dataclass(m, class))
-        .collect::<PyResult<Vec<_>>>()
+        .collect::<PyResult<Vec<_>>>()?;
+    Ok(PyList::new(py, metas))
 }
 
 pub(crate) fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {
@@ -144,7 +145,6 @@ pub(crate) fn to_rust_uuid(ob: &PyAny) -> PyResult<Uuid> {
     let uuid = ob.getattr("hex")?.extract::<String>()?;
     uuid.parse::<Uuid>().into_py_value_result()
 }
-// FIXME: `to_object`は必要無いのでは?
 pub(crate) fn to_py_uuid(py: Python<'_>, uuid: Uuid) -> PyResult<PyObject> {
     let uuid = uuid.hyphenated().to_string();
     let uuid = py.import("uuid")?.call_method1("UUID", (uuid,))?;
@@ -174,6 +174,45 @@ pub(crate) fn to_rust_word_type(word_type: &PyAny) -> PyResult<UserDictWordType>
     let name = word_type.getattr("name")?.extract::<String>()?;
 
     serde_json::from_value::<UserDictWordType>(json!(name)).into_py_value_result()
+}
+
+/// おおよそ以下のコードにおける`f(x)`のようなものを得る。
+///
+/// ```py
+/// async def f(x_):
+///     return x_
+///
+/// return f(x)
+/// ```
+pub(crate) fn ready(x: impl IntoPy<PyObject>, py: Python<'_>) -> PyResult<&PyAny> {
+    // ```py
+    // from asyncio import Future
+    //
+    // running_loop = asyncio.get_running_loop()
+    // fut = Future(loop=running_loop)
+    // fut.set_result(x)
+    // return fut
+    // ```
+
+    let asyncio_future = py.import("asyncio")?.getattr("Future")?;
+
+    let running_loop = pyo3_asyncio::get_running_loop(py)?;
+    let fut = asyncio_future.call((), Some([("loop", running_loop)].into_py_dict(py)))?;
+    fut.call_method1("set_result", (x,))?;
+    Ok(fut)
+}
+
+pub(crate) async fn run_in_executor<F, R>(f: F) -> PyResult<R>
+where
+    F: FnOnce() -> R + Send + 'static,
+    R: Send + 'static,
+{
+    tokio::task::spawn_blocking(f)
+        .await
+        .map_err(|e| match e.try_into_panic() {
+            Ok(p) => panic::resume_unwind(p),
+            Err(e) => PyRuntimeError::new_err(e.to_string()),
+        })
 }
 
 #[ext(VoicevoxCoreResultExt)]

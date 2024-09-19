@@ -5,7 +5,8 @@ use ref_cast::ref_cast_custom;
 use voicevox_core::{InitializeOptions, Result, VoiceModelId};
 
 use crate::{
-    helpers::CApiResult, OpenJtalkRc, VoicevoxOnnxruntime, VoicevoxSynthesizer, VoicevoxVoiceModel,
+    helpers::CApiResult, OpenJtalkRc, VoicevoxOnnxruntime, VoicevoxSynthesizer,
+    VoicevoxVoiceModelFile,
 };
 
 // FIXME: 中身(Rust API)を直接操作するかラッパーメソッド越しにするのかが混在していて、一貫性を
@@ -87,7 +88,7 @@ impl VoicevoxSynthesizer {
 
     pub(crate) fn load_voice_model(
         &self,
-        model: &voicevox_core::blocking::VoiceModel,
+        model: &voicevox_core::blocking::VoiceModelFile,
     ) -> CApiResult<()> {
         self.synthesizer.load_voice_model(model)?;
         Ok(())
@@ -104,9 +105,9 @@ impl VoicevoxSynthesizer {
     }
 }
 
-impl VoicevoxVoiceModel {
-    pub(crate) fn from_path(path: impl AsRef<Path>) -> Result<Self> {
-        let model = voicevox_core::blocking::VoiceModel::from_path(path)?;
+impl VoicevoxVoiceModelFile {
+    pub(crate) fn open(path: impl AsRef<Path>) -> Result<Self> {
+        let model = voicevox_core::blocking::VoiceModelFile::open(path)?;
         let metas = CString::new(serde_json::to_string(model.metas()).unwrap()).unwrap();
         Ok(Self { model, metas })
     }

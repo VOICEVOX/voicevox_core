@@ -54,10 +54,11 @@ public class Synthesizer extends Dll {
    * @return メタ情報。
    */
   @Nonnull
-  public VoiceModel.SpeakerMeta[] metas() {
+  public VoiceModelFile.SpeakerMeta[] metas() {
     Gson gson = new Gson();
     String metasJson = rsGetMetasJson();
-    VoiceModel.SpeakerMeta[] rawMetas = gson.fromJson(metasJson, VoiceModel.SpeakerMeta[].class);
+    VoiceModelFile.SpeakerMeta[] rawMetas =
+        gson.fromJson(metasJson, VoiceModelFile.SpeakerMeta[].class);
     if (rawMetas == null) {
       throw new NullPointerException("metas");
     }
@@ -70,7 +71,7 @@ public class Synthesizer extends Dll {
    * @param voiceModel 読み込むモデル。
    * @throws InvalidModelDataException 無効なモデルデータの場合。
    */
-  public void loadVoiceModel(VoiceModel voiceModel) throws InvalidModelDataException {
+  public void loadVoiceModel(VoiceModelFile voiceModel) throws InvalidModelDataException {
     rsLoadVoiceModel(voiceModel);
   }
 
@@ -284,7 +285,7 @@ public class Synthesizer extends Dll {
   @Nonnull
   private native String rsGetMetasJson();
 
-  private native void rsLoadVoiceModel(VoiceModel voiceModel) throws InvalidModelDataException;
+  private native void rsLoadVoiceModel(VoiceModelFile voiceModel) throws InvalidModelDataException;
 
   private native void rsUnloadVoiceModel(UUID voiceModelId);
 

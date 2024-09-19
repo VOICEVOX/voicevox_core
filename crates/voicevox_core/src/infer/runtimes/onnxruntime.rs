@@ -1,4 +1,4 @@
-// TODO: `VoiceModel`のように、次のような設計にする。
+// TODO: `VoiceModelFile`のように、次のような設計にする。
 //
 // ```
 // pub(crate) mod blocking {

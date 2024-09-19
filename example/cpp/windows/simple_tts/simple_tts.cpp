@@ -59,9 +59,8 @@ int main() {
     if (path.extension() != ".vvm") {
       continue;
     }
-    VoicevoxVoiceModel* model;
-    result = voicevox_voice_model_new_from_path(path.generic_u8string().c_str(),
-                                                &model);
+    VoicevoxVoiceModelFile* model;
+    result = voicevox_voice_model_file_open(path.generic_u8string().c_str(), &model);
     if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
       OutErrorMessage(result);
       return 0;
@@ -71,7 +70,7 @@ int main() {
       OutErrorMessage(result);
       return 0;
     }
-    voicevox_voice_model_delete(model);
+    voicevox_voice_model_file_close(model);
   }
 
   std::wcout << L"音声生成中" << std::endl;
