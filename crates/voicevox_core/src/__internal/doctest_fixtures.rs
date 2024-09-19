@@ -10,23 +10,23 @@ pub async fn synthesizer_with_sample_voice_model(
         OsString,
     >,
     open_jtalk_dic_dir: impl AsRef<Utf8Path>,
-) -> anyhow::Result<crate::tokio::Synthesizer<crate::tokio::OpenJtalk>> {
-    let syntesizer = crate::tokio::Synthesizer::new(
+) -> anyhow::Result<crate::nonblocking::Synthesizer<crate::nonblocking::OpenJtalk>> {
+    let syntesizer = crate::nonblocking::Synthesizer::new(
         #[cfg(feature = "load-onnxruntime")]
-        crate::tokio::Onnxruntime::load_once()
+        crate::nonblocking::Onnxruntime::load_once()
             .filename(onnxruntime_dylib_path)
             .exec()
             .await?,
         #[cfg(feature = "link-onnxruntime")]
-        crate::tokio::Onnxruntime::init_once().await?,
-        crate::tokio::OpenJtalk::new(open_jtalk_dic_dir).await?,
+        crate::nonblocking::Onnxruntime::init_once().await?,
+        crate::nonblocking::OpenJtalk::new(open_jtalk_dic_dir).await?,
         &InitializeOptions {
             acceleration_mode: AccelerationMode::Cpu,
             ..Default::default()
         },
     )?;
 
-    let model = &crate::tokio::VoiceModel::from_path(voice_model_path).await?;
+    let model = &crate::nonblocking::VoiceModel::from_path(voice_model_path).await?;
     syntesizer.load_voice_model(model).await?;
 
     Ok(syntesizer)

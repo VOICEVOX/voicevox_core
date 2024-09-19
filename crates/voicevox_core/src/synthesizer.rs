@@ -1,7 +1,20 @@
-/// [`blocking::Synthesizer::synthesis`]および[`tokio::Synthesizer::synthesis`]のオプション。
+// TODO: `VoiceModel`のように、次のような設計にする。
+//
+// ```
+// pub(crate) mod blocking {
+//     pub struct Synthesizer(Inner<SingleTasked>);
+//     // …
+// }
+// pub(crate) mod nonblocking {
+//     pub struct Synthesizer(Inner<BlockingThreadPool>);
+//     // …
+// }
+// ```
+
+/// [`blocking::Synthesizer::synthesis`]および[`nonblocking::Synthesizer::synthesis`]のオプション。
 ///
 /// [`blocking::Synthesizer::synthesis`]: blocking::Synthesizer::synthesis
-/// [`tokio::Synthesizer::synthesis`]: tokio::Synthesizer::synthesis
+/// [`nonblocking::Synthesizer::synthesis`]: nonblocking::Synthesizer::synthesis
 #[derive(Clone)]
 pub struct SynthesisOptions {
     pub enable_interrogative_upspeak: bool,
@@ -21,10 +34,10 @@ impl From<&TtsOptions> for SynthesisOptions {
     }
 }
 
-/// [`blocking::Synthesizer::tts`]および[`tokio::Synthesizer::tts`]のオプション。
+/// [`blocking::Synthesizer::tts`]および[`nonblocking::Synthesizer::tts`]のオプション。
 ///
 /// [`blocking::Synthesizer::tts`]: blocking::Synthesizer::tts
-/// [`tokio::Synthesizer::tts`]: tokio::Synthesizer::tts
+/// [`nonblocking::Synthesizer::tts`]: nonblocking::Synthesizer::tts
 #[derive(Clone)]
 pub struct TtsOptions {
     pub enable_interrogative_upspeak: bool,
@@ -56,10 +69,10 @@ pub enum AccelerationMode {
     Gpu,
 }
 
-/// [`blocking::Synthesizer::new`]および[`tokio::Synthesizer::new`]のオプション。
+/// [`blocking::Synthesizer::new`]および[`nonblocking::Synthesizer::new`]のオプション。
 ///
 /// [`blocking::Synthesizer::new`]: blocking::Synthesizer::new
-/// [`tokio::Synthesizer::new`]: tokio::Synthesizer::new
+/// [`nonblocking::Synthesizer::new`]: nonblocking::Synthesizer::new
 #[derive(Default)]
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
@@ -67,7 +80,7 @@ pub struct InitializeOptions {
 }
 
 pub(crate) mod blocking {
-    // FIXME: ここのdocのコードブロックはasync版のものなので、`tokio`モジュールの方に移した上で、
+    // FIXME: ここのdocのコードブロックはasync版のものなので、`nonblocking`モジュールの方に移した上で、
     // (ブロッキング版をpublic APIにするならの話ではあるが)ブロッキング版はブロッキング版でコード例
     // を用意する
 
@@ -113,7 +126,7 @@ pub(crate) mod blocking {
         ///
         #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
         #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
-        /// # #[tokio::main]
+        /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};
         /// #
@@ -122,7 +135,7 @@ pub(crate) mod blocking {
         /// use std::sync::Arc;
         ///
         /// use voicevox_core::{
-        ///     tokio::{Onnxruntime, OpenJtalk, Synthesizer},
+        ///     nonblocking::{Onnxruntime, OpenJtalk, Synthesizer},
         ///     AccelerationMode, InitializeOptions,
         /// };
         ///
@@ -464,7 +477,7 @@ pub(crate) mod blocking {
         /// # Example
         ///
         /// ```
-        /// # #[tokio::main]
+        /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
@@ -683,7 +696,7 @@ pub(crate) mod blocking {
         /// # Example
         ///
         /// ```
-        /// # #[tokio::main]
+        /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
@@ -727,7 +740,7 @@ pub(crate) mod blocking {
         /// # Example
         ///
         /// ```
-        /// # #[tokio::main]
+        /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
@@ -760,7 +773,7 @@ pub(crate) mod blocking {
         /// # Examples
         ///
         /// ```
-        /// # #[tokio::main]
+        /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
@@ -1125,7 +1138,7 @@ pub(crate) mod blocking {
     }
 }
 
-pub(crate) mod tokio {
+pub(crate) mod nonblocking {
     use std::sync::Arc;
 
     use crate::{
@@ -1136,13 +1149,20 @@ pub(crate) mod tokio {
     use super::{InitializeOptions, TtsOptions};
 
     /// 音声シンセサイザ。
+    ///
+    /// # Performance
+    ///
+    /// [blocking]クレートにより動いている。詳しくは[`nonblocking`モジュールのドキュメント]を参照。
+    ///
+    /// [blocking]: https://docs.rs/crate/blocking
+    /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
     #[derive(Clone)]
     pub struct Synthesizer<O>(pub(super) Arc<super::blocking::Synthesizer<O>>);
 
     // FIXME: docを書く
     impl<O: Send + Sync + 'static> self::Synthesizer<O> {
         pub fn new(
-            onnxruntime: &'static crate::tokio::Onnxruntime,
+            onnxruntime: &'static crate::nonblocking::Onnxruntime,
             open_jtalk: O,
             options: &InitializeOptions,
         ) -> Result<Self> {
@@ -1151,15 +1171,15 @@ pub(crate) mod tokio {
                 .map(Self)
         }
 
-        pub fn onnxruntime(&self) -> &'static crate::tokio::Onnxruntime {
-            crate::tokio::Onnxruntime::from_blocking(self.0.onnxruntime())
+        pub fn onnxruntime(&self) -> &'static crate::nonblocking::Onnxruntime {
+            crate::nonblocking::Onnxruntime::from_blocking(self.0.onnxruntime())
         }
 
         pub fn is_gpu_mode(&self) -> bool {
             self.0.is_gpu_mode()
         }
 
-        pub async fn load_voice_model(&self, model: &crate::tokio::VoiceModel) -> Result<()> {
+        pub async fn load_voice_model(&self, model: &crate::nonblocking::VoiceModel) -> Result<()> {
             let model_bytes = &model.read_inference_models().await?;
             self.0.status.insert_model(model.header(), model_bytes)
         }
@@ -1316,8 +1336,8 @@ mod tests {
     #[case(Ok(()))]
     #[tokio::test]
     async fn load_model_works(#[case] expected_result_at_initialized: Result<()>) {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
             (),
@@ -1329,7 +1349,7 @@ mod tests {
         .unwrap();
 
         let result = syntesizer
-            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModel::sample().await.unwrap())
             .await;
 
         assert_debug_fmt_eq!(
@@ -1342,8 +1362,8 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn is_use_gpu_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
             (),
@@ -1361,8 +1381,8 @@ mod tests {
     #[tokio::test]
     async fn is_loaded_model_by_style_id_works(#[case] style_id: u32, #[case] expected: bool) {
         let style_id = StyleId::new(style_id);
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
             (),
@@ -1377,7 +1397,7 @@ mod tests {
             "expected is_model_loaded to return false, but got true",
         );
         syntesizer
-            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1392,8 +1412,8 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_duration_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
             (),
@@ -1405,7 +1425,7 @@ mod tests {
         .unwrap();
 
         syntesizer
-            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1426,8 +1446,8 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_intonation_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
             (),
@@ -1438,7 +1458,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1468,8 +1488,8 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn decode_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
             (),
@@ -1480,7 +1500,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModel::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1563,11 +1583,11 @@ mod tests {
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
         #[case] expected_kana_text: &str,
     ) {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1577,7 +1597,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let query = match input {
@@ -1634,11 +1654,11 @@ mod tests {
         #[case] input: Input,
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
     ) {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1648,7 +1668,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = match input {
@@ -1702,11 +1722,11 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn create_accent_phrases_works_for_japanese_commas_and_periods() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1716,7 +1736,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1765,11 +1785,11 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_length_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1779,7 +1799,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1806,11 +1826,11 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_pitch_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1820,7 +1840,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1847,11 +1867,11 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_data_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::Onnxruntime::from_test_util_data()
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1861,7 +1881,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModel::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer

@@ -1,3 +1,16 @@
+// TODO: `VoiceModel`のように、次のような設計にする。
+//
+// ```
+// pub(crate) mod blocking {
+//     pub struct Onnxruntime(Inner<SingleTasked>);
+//     // …
+// }
+// pub(crate) mod nonblocking {
+//     pub struct Onnxruntime(Inner<BlockingThreadPool>);
+//     // …
+// }
+// ```
+
 use std::{fmt::Debug, vec};
 
 use anyhow::{anyhow, bail, ensure};
@@ -19,9 +32,6 @@ use super::super::{
     ParamInfo, PushInputTensor,
 };
 
-// TODO: `trait AsyncRuntime`みたいなものを作って抽象化しながら同期版と非同期版に別個の役割を
-// 持たせる
-// （なぜそうしたいかの理由の一つとしては<https://github.com/VOICEVOX/voicevox_core/issues/687>）
 impl InferenceRuntime for self::blocking::Onnxruntime {
     type Session = ort::Session;
     type RunContext<'a> = OnnxruntimeRunContext<'a>;
@@ -257,7 +267,7 @@ pub(crate) mod blocking {
     /// # Rust APIにおけるインスタンスの共有
     ///
     /// インスタンスは[voicevox-ort]側に作られる。Rustのクレートとしてこのライブラリを利用する場合、
-    /// Tokio版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
+    /// 非同期版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
     ///
     #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
     #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
@@ -269,7 +279,7 @@ pub(crate) mod blocking {
     /// #     .exec()?;
     /// #
     /// let ort1 = voicevox_core::blocking::Onnxruntime::load_once().exec()?;
-    /// let ort2 = another_lib::tokio::Onnxruntime::get().expect("`ort1`と同一のはず");
+    /// let ort2 = another_lib::nonblocking::Onnxruntime::get().expect("`ort1`と同一のはず");
     /// assert_eq!(ptr_addr(ort1), ptr_addr(ort2));
     ///
     /// fn ptr_addr(obj: &impl Sized) -> usize {
@@ -431,7 +441,7 @@ pub(crate) mod blocking {
     }
 }
 
-pub(crate) mod tokio {
+pub(crate) mod nonblocking {
     use ref_cast::{ref_cast_custom, RefCastCustom};
 
     use crate::SupportedDevices;
@@ -449,13 +459,15 @@ pub(crate) mod tokio {
     #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
     /// # use voicevox_core as another_lib;
     /// #
-    /// # #[tokio::main]
+    /// # #[pollster::main]
     /// # async fn main() -> anyhow::Result<()> {
     /// # voicevox_core::blocking::Onnxruntime::load_once()
     /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
     /// #     .exec()?;
     /// #
-    /// let ort1 = voicevox_core::tokio::Onnxruntime::load_once().exec().await?;
+    /// let ort1 = voicevox_core::nonblocking::Onnxruntime::load_once()
+    ///     .exec()
+    ///     .await?;
     /// let ort2 = another_lib::blocking::Onnxruntime::get().expect("`ort1`と同一のはず");
     /// assert_eq!(ptr_addr(ort1), ptr_addr(ort2));
     ///
@@ -466,7 +478,13 @@ pub(crate) mod tokio {
     /// # }
     /// ```
     ///
+    /// # Performance
+    ///
+    /// [blocking]クレートにより動いている。詳しくは[`nonblocking`モジュールのドキュメント]を参照。
+    ///
     /// [voicevox-ort]: https://github.com/VOICEVOX/ort
+    /// [blocking]: https://docs.rs/crate/blocking
+    /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
     #[derive(Debug, RefCastCustom)]
     #[repr(transparent)]
     pub struct Onnxruntime(pub(crate) super::blocking::Onnxruntime);
@@ -583,11 +601,11 @@ mod tests {
 
         assert_eq!(
             super::blocking::Onnxruntime::LIB_NAME,
-            super::tokio::Onnxruntime::LIB_NAME,
+            super::nonblocking::Onnxruntime::LIB_NAME,
         );
         assert_eq!(
             super::blocking::Onnxruntime::LIB_VERSION,
-            super::tokio::Onnxruntime::LIB_VERSION,
+            super::nonblocking::Onnxruntime::LIB_VERSION,
         );
     }
 

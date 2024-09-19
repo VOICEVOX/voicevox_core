@@ -18,6 +18,7 @@ link-onnxruntime = []
 anyhow.workspace = true
 async-fs.workspace = true
 async_zip = { workspace = true, features = ["deflate"] }
+blocking.workspace = true
 camino.workspace = true
 const_format.workspace = true
 derive-getters.workspace = true
@@ -27,7 +28,7 @@ duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
 enum-map.workspace = true
-fs-err = { workspace = true, features = ["tokio"] }
+fs-err.workspace = true
 futures-io.workspace = true
 futures-lite.workspace = true
 futures-util = { workspace = true, features = ["io"] }
@@ -46,7 +47,6 @@ smallvec.workspace = true
 strum = { workspace = true, features = ["derive"] }
 tempfile.workspace = true
 thiserror.workspace = true
-tokio = { workspace = true, features = ["rt"] } # FIXME: feature-gateする
 tracing.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-voicevox"] }
@@ -54,6 +54,7 @@ voicevox_core_macros = { path = "../voicevox_core_macros" }
 
 [dev-dependencies]
 heck.workspace = true
+pollster = { workspace = true, features = ["macro"] }
 pretty_assertions.workspace = true
 rstest.workspace = true
 rstest_reuse.workspace = true

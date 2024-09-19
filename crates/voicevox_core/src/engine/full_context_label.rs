@@ -425,7 +425,7 @@ mod tests {
     #[apply(label_cases)]
     #[tokio::test]
     async fn open_jtalk(text: &str, labels: &[&str], _accent_phrase: &[AccentPhrase]) {
-        let open_jtalk = crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+        let open_jtalk = crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
             .await
             .unwrap();
         assert_eq!(&open_jtalk.extract_fullcontext(text).unwrap(), labels);
@@ -447,7 +447,7 @@ mod tests {
     #[apply(label_cases)]
     #[tokio::test]
     async fn extract_fullcontext(text: &str, _labels: &[&str], accent_phrase: &[AccentPhrase]) {
-        let open_jtalk = crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+        let open_jtalk = crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
             .await
             .unwrap();
         assert_eq!(

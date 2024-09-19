@@ -1,3 +1,16 @@
+// TODO: `VoiceModel`のように、次のような設計にする。
+//
+// ```
+// pub(crate) mod blocking {
+//     pub struct UserDict(Inner<SingleTasked>);
+//     // …
+// }
+// pub(crate) mod nonblocking {
+//     pub struct UserDict(Inner<BlockingThreadPool>);
+//     // …
+// }
+// ```
+
 pub(crate) mod blocking {
     use indexmap::IndexMap;
     use itertools::join;
@@ -102,7 +115,7 @@ pub(crate) mod blocking {
     }
 }
 
-pub(crate) mod tokio {
+pub(crate) mod nonblocking {
     use std::sync::Arc;
 
     use indexmap::IndexMap;
@@ -115,6 +128,13 @@ pub(crate) mod tokio {
     /// ユーザー辞書。
     ///
     /// 単語はJSONとの相互変換のために挿入された順序を保つ。
+    ///
+    /// # Performance
+    ///
+    /// [blocking]クレートにより動いている。詳しくは[`nonblocking`モジュールのドキュメント]を参照。
+    ///
+    /// [blocking]: https://docs.rs/crate/blocking
+    /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
     #[derive(Debug, Default)]
     pub struct UserDict(Arc<super::blocking::UserDict>);
 

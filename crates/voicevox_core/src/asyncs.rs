@@ -11,8 +11,7 @@
 //! に[`SingleTasked`]を用意している。
 //!
 //! [ブロッキング版API]: crate::blocking
-//! [非同期版API]: crate::tokio
-//! [blocking]: https://docs.rs/crate/blocking
+//! [非同期版API]: crate::nonblocking
 
 use std::{
     io::{self, Read as _, Seek as _, SeekFrom},
@@ -71,8 +70,7 @@ impl Async for SingleTasked {
 ///
 /// [非同期版API]用。
 ///
-/// [blocking]: https://docs.rs/crate/blocking
-/// [非同期版API]: crate::tokio
+/// [非同期版API]: crate::nonblocking
 pub(crate) enum BlockingThreadPool {}
 
 impl Async for BlockingThreadPool {

@@ -52,9 +52,9 @@ fn test_gpu(
 /// しても`cuda`や`dml`は`true`を示しうる。
 ///
 /// ```
-/// # #[tokio::main]
+/// # #[pollster::main]
 /// # async fn main() -> anyhow::Result<()> {
-/// use voicevox_core::{tokio::Onnxruntime, SupportedDevices};
+/// use voicevox_core::{nonblocking::Onnxruntime, SupportedDevices};
 ///
 /// # voicevox_core::blocking::Onnxruntime::load_once()
 /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)

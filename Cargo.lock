@@ -2768,6 +2768,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pollster"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22686f4785f02a4fcc856d3b3bb19bf6c8160d103f7a99cc258bddd0251dc7f2"
+dependencies = [
+ "pollster-macro",
+]
+
+[[package]]
+name = "pollster-macro"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea78f0ef4193055a4b09814ce6bcb572ad1174d6023e2f00a9ea1a798d18d301"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.102",
+]
+
+[[package]]
 name = "portable-atomic"
 version = "0.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4345,6 +4365,7 @@ dependencies = [
  "anyhow",
  "async-fs",
  "async_zip",
+ "blocking",
  "camino",
  "const_format",
  "derive-getters",
@@ -4366,6 +4387,7 @@ dependencies = [
  "ndarray",
  "open_jtalk",
  "ouroboros",
+ "pollster",
  "pretty_assertions",
  "ref-cast",
  "regex",
