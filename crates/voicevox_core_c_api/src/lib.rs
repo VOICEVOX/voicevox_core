@@ -59,8 +59,7 @@ fn init_logger_once() {
                 && anstyle_query::windows::enable_ansi_colors().unwrap_or(true)
         };
 
-        // FIXME: `try_init` → `init` （subscriberは他に存在しないはずなので）
-        let _ = tracing_subscriber::fmt()
+        tracing_subscriber::fmt()
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
             } else {
@@ -69,7 +68,7 @@ fn init_logger_once() {
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(ansi)
             .with_writer(out)
-            .try_init();
+            .init();
     });
 
     fn local_time(wtr: &mut Writer<'_>) -> fmt::Result {
@@ -82,13 +81,6 @@ fn init_logger_once() {
         io::stderr()
     }
 }
-
-/*
- * Cの関数として公開するための型や関数を定義するこれらの実装はvoicevox_core/publish.rsに定義してある対応する関数にある
- * この関数ではvoicevox_core/publish.rsにある対応する関数の呼び出しと、その戻り値をCの形式に変換する処理のみとする
- * これはC文脈の処理と実装をわけるためと、内部実装の変更がAPIに影響を与えにくくするためである
- * voicevox_core/publish.rsにある対応する関数とはこのファイルに定義してある公開関数からvoicevoxプレフィックスを取り除いた名前の関数である
- */
 
 // TODO: https://github.com/mozilla/cbindgen/issues/927
 //#[cfg(feature = "load-onnxruntime")]
@@ -392,10 +384,12 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
     init_logger_once();
     return C_STRING_DROP_CHECKER.blacklist(VERSION).as_ptr();
 
-    // FIXME: 実行時チェックにすることでこの`unsafe`は削れるはず
-    const VERSION: &CStr = unsafe {
-        // SAFETY: The package version is a SemVer, so it should not contain '\0'
-        CStr::from_bytes_with_nul_unchecked(concat!(env!("CARGO_PKG_VERSION"), '\0').as_bytes())
+    const VERSION: &CStr = if let Ok(version) =
+        CStr::from_bytes_with_nul(concat!(env!("CARGO_PKG_VERSION"), '\0').as_bytes())
+    {
+        version
+    } else {
+        panic!("`$CARGO_PKG_VERSION` should be a SemVer, so it should not contain `\\0`");
     };
 }
 

@@ -48,26 +48,23 @@ pub(crate) mod blocking {
         pub fn new(open_jtalk_dict_dir: impl AsRef<Utf8Path>) -> crate::result::Result<Self> {
             let dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
 
-            // FIXME: この`{}`はGitのdiffを抑えるためだけに存在
-            {
-                let mut resources = Resources {
-                    mecab: ManagedResource::initialize(),
-                    njd: ManagedResource::initialize(),
-                    jpcommon: ManagedResource::initialize(),
-                };
+            let mut resources = Resources {
+                mecab: ManagedResource::initialize(),
+                njd: ManagedResource::initialize(),
+                jpcommon: ManagedResource::initialize(),
+            };
 
-                // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
-                resources
-                    .mecab
-                    .load(&*dict_dir)
-                    .inspect_err(|e| tracing::error!("{e:?}"))
-                    .map_err(|_| ErrorRepr::NotLoadedOpenjtalkDict)?;
+            // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
+            resources
+                .mecab
+                .load(&*dict_dir)
+                .inspect_err(|e| tracing::error!("{e:?}"))
+                .map_err(|_| ErrorRepr::NotLoadedOpenjtalkDict)?;
 
-                Ok(Self(Arc::new(Inner {
-                    resources: Mutex::new(resources),
-                    dict_dir,
-                })))
-            }
+            Ok(Self(Arc::new(Inner {
+                resources: Mutex::new(resources),
+                dict_dir,
+            })))
         }
 
         /// ユーザー辞書を設定する。

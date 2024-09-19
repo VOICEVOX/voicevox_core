@@ -63,7 +63,3 @@ pub(crate) trait InferenceDomainMapValues {
 impl<T> InferenceDomainMapValues for (T,) {
     type Talk = T;
 }
-
-impl<A> InferenceDomainMapValues for [A] {
-    type Talk = A;
-}
