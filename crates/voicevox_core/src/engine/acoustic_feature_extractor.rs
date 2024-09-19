@@ -153,7 +153,6 @@ mod tests {
     #[rstest]
     #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a".into()), true)]
     #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("k".into()), false)]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a".into()), false)]
     fn test_ojt_phoneme_equality(
         #[case] ojt_phonemes: Vec<OjtPhoneme>,
         #[case] index: usize,
