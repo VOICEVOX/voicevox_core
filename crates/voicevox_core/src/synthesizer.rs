@@ -1077,8 +1077,9 @@ pub(crate) mod blocking {
             OjtPhoneme::convert(
                 phoneme_str_list
                     .iter()
-                    .enumerate()
-                    .map(|(i, s)| OjtPhoneme::new(s.as_ref().to_string(), i as f32, i as f32 + 1.))
+                    .map(AsRef::as_ref)
+                    .map(ToOwned::to_owned)
+                    .map(OjtPhoneme::new)
                     .collect::<Vec<OjtPhoneme>>()
                     .as_slice(),
             )

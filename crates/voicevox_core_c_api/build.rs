@@ -1,4 +1,5 @@
-// TODO: voicevox_onnxruntimeになったらやめる
+// TODO: #802 の時点でiOS以外不要になっているはずなので、このbuild.rsは丸ごと消す
+// (iOSのためにbuild_util/make_ios_xcframework.bashの修正は必要)
 fn main() {
     #[cfg(target_os = "linux")]
     println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");

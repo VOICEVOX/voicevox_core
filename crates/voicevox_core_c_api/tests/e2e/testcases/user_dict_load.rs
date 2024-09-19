@@ -162,7 +162,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(user_dict);
+static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(user_dict_load);
 
 #[derive(Deserialize)]
 struct Snapshots {

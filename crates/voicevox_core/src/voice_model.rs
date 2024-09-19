@@ -526,7 +526,7 @@ pub(crate) mod nonblocking {
 
 #[cfg(test)]
 mod tests {
-    use rstest::{fixture, rstest};
+    use rstest::rstest;
     use serde_json::json;
 
     use crate::{
@@ -571,26 +571,6 @@ mod tests {
     ) {
         let actual = manifest.check_acceptable(metas).map_err(|_| ());
         assert_eq!(expected, actual);
-    }
-
-    // FIXME: これ使ってないのでは？
-    #[fixture]
-    fn talk_speaker() -> SpeakerMeta {
-        serde_json::from_value(json!({
-            "name": "dummy",
-            "styles": [
-                {
-                    "id": 0,
-                    "name": "style1",
-                    "type": "talk",
-                    "order": 0
-                }
-            ],
-            "version": "0.0.1",
-            "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
-            "order": 0
-        }))
-        .unwrap()
     }
 
     fn speaker(style_types: &'static [StyleType]) -> SpeakerMeta {
