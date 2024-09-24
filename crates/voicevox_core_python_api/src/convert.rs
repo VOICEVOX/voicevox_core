@@ -37,7 +37,6 @@ pub(crate) fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
     }
 }
 
-// FIXME: `UserDict`についてはこれではなく、`PathBuf::extract`を直接使うようにする
 pub(crate) fn from_utf8_path(ob: &PyAny) -> PyResult<Utf8PathBuf> {
     PathBuf::extract(ob)?
         .into_os_string()

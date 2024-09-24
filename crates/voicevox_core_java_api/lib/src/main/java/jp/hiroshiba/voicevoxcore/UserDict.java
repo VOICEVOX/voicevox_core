@@ -7,6 +7,8 @@ import com.google.gson.internal.LinkedTreeMap;
 import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import jp.hiroshiba.voicevoxcore.exceptions.LoadUserDictException;
 import jp.hiroshiba.voicevoxcore.exceptions.SaveUserDictException;
@@ -68,6 +70,26 @@ public class UserDict extends Dll {
    */
   public void importDict(UserDict dict) {
     rsImportDict(dict);
+  }
+
+  /**
+   * ユーザー辞書を読み込む。
+   *
+   * @param path ユーザー辞書のパス。
+   * @throws LoadUserDictException ユーザー辞書を読み込めなかった場合。
+   */
+  public void load(Path path) throws LoadUserDictException {
+    load(path.toString());
+  }
+
+  /**
+   * ユーザー辞書を読み込む。
+   *
+   * @param path ユーザー辞書のパス。
+   * @throws LoadUserDictException ユーザー辞書を読み込めなかった場合。
+   */
+  public void load(File path) throws LoadUserDictException {
+    load(path.toString());
   }
 
   /**

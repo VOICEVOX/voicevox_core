@@ -734,11 +734,11 @@ mod blocking {
             Self::default()
         }
 
-        fn load(&self, path: &str, py: Python<'_>) -> PyResult<()> {
+        fn load(&self, path: PathBuf, py: Python<'_>) -> PyResult<()> {
             self.dict.load(path).into_py_result(py)
         }
 
-        fn save(&self, path: &str, py: Python<'_>) -> PyResult<()> {
+        fn save(&self, path: PathBuf, py: Python<'_>) -> PyResult<()> {
             self.dict.save(path).into_py_result(py)
         }
 
@@ -1363,9 +1363,8 @@ mod asyncio {
             Self::default()
         }
 
-        fn load<'py>(&self, path: &str, py: Python<'py>) -> PyResult<&'py PyAny> {
+        fn load<'py>(&self, path: PathBuf, py: Python<'py>) -> PyResult<&'py PyAny> {
             let this = self.dict.clone();
-            let path = path.to_owned();
 
             pyo3_asyncio::tokio::future_into_py(py, async move {
                 let result = this.load(&path).await;
@@ -1373,9 +1372,8 @@ mod asyncio {
             })
         }
 
-        fn save<'py>(&self, path: &str, py: Python<'py>) -> PyResult<&'py PyAny> {
+        fn save<'py>(&self, path: PathBuf, py: Python<'py>) -> PyResult<&'py PyAny> {
             let this = self.dict.clone();
-            let path = path.to_owned();
 
             pyo3_asyncio::tokio::future_into_py(py, async move {
                 let result = this.save(&path).await;

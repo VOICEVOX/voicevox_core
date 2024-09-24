@@ -31,7 +31,7 @@ impl<A: Async> Inner<A> {
         f(&mut self.words.lock().unwrap_or_else(|e| panic!("{e}")))
     }
 
-    async fn load(&self, store_path: &str) -> crate::Result<()> {
+    async fn load(&self, store_path: impl AsRef<Path>) -> crate::Result<()> {
         let words = async {
             let words = &A::fs_err_read(store_path).await?;
             let words = serde_json::from_slice::<IndexMap<_, _>>(words)?;
@@ -78,7 +78,7 @@ impl<A: Async> Inner<A> {
         })
     }
 
-    async fn save(&self, store_path: &str) -> crate::Result<()> {
+    async fn save(&self, store_path: impl AsRef<Path>) -> crate::Result<()> {
         A::fs_err_write(
             store_path,
             serde_json::to_vec(&self.words).expect("should not fail"),
@@ -109,6 +109,8 @@ impl<A: Async> A {
 }
 
 pub(crate) mod blocking {
+    use std::path::Path;
+
     use indexmap::IndexMap;
     use uuid::Uuid;
 
@@ -122,7 +124,6 @@ pub(crate) mod blocking {
     #[derive(Debug, Default)]
     pub struct UserDict(Inner<SingleTasked>);
 
-    // TODO: 引数の`path`は全部`AsRef<Path>`にする
     impl self::UserDict {
         /// ユーザー辞書を作成する。
         pub fn new() -> Self {
@@ -133,9 +134,8 @@ pub(crate) mod blocking {
             self.0.to_json()
         }
 
-        // TODO: `&mut IndexMap<_>`を取れるようにする
-        pub fn with_words<R>(&self, f: impl FnOnce(&IndexMap<Uuid, UserDictWord>) -> R) -> R {
-            self.0.with_words(|words| f(words))
+        pub fn with_words<R>(&self, f: impl FnOnce(&mut IndexMap<Uuid, UserDictWord>) -> R) -> R {
+            self.0.with_words(f)
         }
 
         /// ユーザー辞書をファイルから読み込む。
@@ -143,7 +143,7 @@ pub(crate) mod blocking {
         /// # Errors
         ///
         /// ファイルが読めなかった、または内容が不正だった場合はエラーを返す。
-        pub fn load(&self, store_path: &str) -> Result<()> {
+        pub fn load(&self, store_path: impl AsRef<Path>) -> Result<()> {
             self.0.load(store_path).block_on()
         }
 
@@ -168,7 +168,7 @@ pub(crate) mod blocking {
         }
 
         /// ユーザー辞書を保存する。
-        pub fn save(&self, store_path: &str) -> Result<()> {
+        pub fn save(&self, store_path: impl AsRef<Path>) -> Result<()> {
             self.0.save(store_path).block_on()
         }
 
@@ -180,6 +180,8 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod nonblocking {
+    use std::path::Path;
+
     use indexmap::IndexMap;
     use uuid::Uuid;
 
@@ -200,7 +202,6 @@ pub(crate) mod nonblocking {
     #[derive(Debug, Default)]
     pub struct UserDict(Inner<BlockingThreadPool>);
 
-    // TODO: 引数の`path`は全部`AsRef<Path>`にする
     impl self::UserDict {
         /// ユーザー辞書を作成する。
         pub fn new() -> Self {
@@ -211,9 +212,8 @@ pub(crate) mod nonblocking {
             self.0.to_json()
         }
 
-        // TODO: `&mut IndexMap<_>`を取れるようにする
-        pub fn with_words<R>(&self, f: impl FnOnce(&IndexMap<Uuid, UserDictWord>) -> R) -> R {
-            self.0.with_words(|words| f(words))
+        pub fn with_words<R>(&self, f: impl FnOnce(&mut IndexMap<Uuid, UserDictWord>) -> R) -> R {
+            self.0.with_words(f)
         }
 
         /// ユーザー辞書をファイルから読み込む。
@@ -221,7 +221,7 @@ pub(crate) mod nonblocking {
         /// # Errors
         ///
         /// ファイルが読めなかった、または内容が不正だった場合はエラーを返す。
-        pub async fn load(&self, store_path: &str) -> Result<()> {
+        pub async fn load(&self, store_path: impl AsRef<Path>) -> Result<()> {
             self.0.load(store_path).await
         }
 
@@ -246,7 +246,7 @@ pub(crate) mod nonblocking {
         }
 
         /// ユーザー辞書を保存する。
-        pub async fn save(&self, store_path: &str) -> Result<()> {
+        pub async fn save(&self, store_path: impl AsRef<Path>) -> Result<()> {
             self.0.save(store_path).await
         }
 
