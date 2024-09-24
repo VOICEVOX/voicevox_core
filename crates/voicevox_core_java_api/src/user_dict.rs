@@ -124,7 +124,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsLoad<'local>
             .clone();
 
         let path = env.get_string(&path)?;
-        let path = &Cow::from(&path);
+        let path = &*Cow::from(&path);
 
         internal.load(path)?;
 
@@ -144,7 +144,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsSave<'local>
             .clone();
 
         let path = env.get_string(&path)?;
-        let path = &Cow::from(&path);
+        let path = &*Cow::from(&path);
 
         internal.save(path)?;
 
