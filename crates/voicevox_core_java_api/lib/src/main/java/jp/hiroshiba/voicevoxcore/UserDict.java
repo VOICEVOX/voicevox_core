@@ -108,6 +108,26 @@ public class UserDict extends Dll {
    * @param path ユーザー辞書のパス。
    * @throws SaveUserDictException ユーザー辞書を保存できなかった場合。
    */
+  public void save(Path path) throws SaveUserDictException {
+    rsSave(path.toString());
+  }
+
+  /**
+   * ユーザー辞書を保存する。
+   *
+   * @param path ユーザー辞書のパス。
+   * @throws SaveUserDictException ユーザー辞書を保存できなかった場合。
+   */
+  public void save(File path) throws SaveUserDictException {
+    rsSave(path.toString());
+  }
+
+  /**
+   * ユーザー辞書を保存する。
+   *
+   * @param path ユーザー辞書のパス。
+   * @throws SaveUserDictException ユーザー辞書を保存できなかった場合。
+   */
   public void save(String path) throws SaveUserDictException {
     rsSave(path);
   }
