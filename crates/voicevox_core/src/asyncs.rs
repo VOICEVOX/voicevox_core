@@ -34,6 +34,10 @@ pub(crate) trait Async: 'static {
     /// `io::Error`は素（`i32`相当）のままにしておき、この関数を呼び出す側でfs-err風のメッセージを付
     /// ける。
     async fn open_file_ro(path: impl AsRef<Path>) -> io::Result<Self::RoFile>;
+
+    async fn read(path: impl AsRef<Path>) -> io::Result<Vec<u8>>;
+
+    async fn write(path: impl AsRef<Path>, content: impl AsRef<[u8]>) -> io::Result<()>;
 }
 
 pub(crate) trait Mutex<T>: From<T> + Send + Sync + Unpin {
@@ -58,6 +62,14 @@ impl Async for SingleTasked {
 
     async fn open_file_ro(path: impl AsRef<Path>) -> io::Result<Self::RoFile> {
         std::fs::File::open(path).map(StdFile)
+    }
+
+    async fn read(path: impl AsRef<Path>) -> io::Result<Vec<u8>> {
+        std::fs::read(path)
+    }
+
+    async fn write(path: impl AsRef<Path>, content: impl AsRef<[u8]>) -> io::Result<()> {
+        std::fs::write(path, content)
     }
 }
 
@@ -110,6 +122,14 @@ impl Async for BlockingThreadPool {
 
     async fn open_file_ro(path: impl AsRef<Path>) -> io::Result<Self::RoFile> {
         AsyncRoFile::open(path).await
+    }
+
+    async fn read(path: impl AsRef<Path>) -> io::Result<Vec<u8>> {
+        async_fs::read(path).await
+    }
+
+    async fn write(path: impl AsRef<Path>, content: impl AsRef<[u8]>) -> io::Result<()> {
+        async_fs::write(path, content).await
     }
 }
 
