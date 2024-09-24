@@ -16,7 +16,7 @@ link-onnxruntime = []
 
 [dependencies]
 anyhow.workspace = true
-async-fs.workspace = true # 今これを使っている箇所はどこにも無いが、`UserDict`にはこれを使った方がよいはず
+async-fs.workspace = true
 async-lock.workspace = true
 async_zip = { workspace = true, features = ["deflate"] }
 blocking.workspace = true
