@@ -16,7 +16,7 @@
 
 ## API
 
-[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/c_api/globals_func.html)をご覧ください。
+[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/)をご覧ください。
 
 ## ユーザーガイド
 
