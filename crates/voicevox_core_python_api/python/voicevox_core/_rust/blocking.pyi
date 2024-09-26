@@ -426,7 +426,7 @@ class UserDict:
         """このオプジェクトの :class:`dict` としての表現。"""
         ...
     def __init__(self) -> None: ...
-    def load(self, path: str) -> None:
+    def load(self, path: Union[str, PathLike[str]]) -> None:
         """ファイルに保存されたユーザー辞書を読み込む。
 
         Parameters
@@ -435,7 +435,7 @@ class UserDict:
             ユーザー辞書のパス。
         """
         ...
-    def save(self, path: str) -> None:
+    def save(self, path: Union[str, PathLike[str]]) -> None:
         """
         ユーザー辞書をファイルに保存する。
 
