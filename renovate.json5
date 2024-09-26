@@ -1,0 +1,78 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "timezone": "Asia/Tokyo",
+  "separateMajorMinor": false,
+  "dependencyDashboardApproval": true, // 万が一`packageRules`の網羅性に穴ができた場合に備え
+  "packageRules": [
+    {
+      "groupName": "major dependencies",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": false
+    },
+    {
+      "groupName": "major dependencies",
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "matchCurrentVersion": "/^v?0\\./",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "groupName": "major dependencies",
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "matchCurrentVersion": "/^v?0\\.0\\./",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "groupName": "non-major dependencies",
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "matchCurrentVersion": "!/^v?0\\./",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "groupName": "non-major dependencies",
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "matchCurrentVersion": "!/^v?0\\.0\\./",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "matchDatasources": [
+        "github-runners"
+      ],
+      "matchPackageNames": [
+        "windows",
+        "macos",
+        "ubuntu"
+      ],
+      "enabled": false
+    }
+  ],
+  "cargo": {
+    "rangeStrategy": "bump"
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "^rust-toolchain$"
+      ],
+      "matchStrings": [
+        "(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "Rust",
+      "packageNameTemplate": "rust-lang/rust",
+      "datasourceTemplate": "github-tags"
+    }
+  ]
+}
