@@ -1,6 +1,5 @@
 // どうやら**GitHub App版の**Renovateのみ、「arrayの最後の要素のobject」の後ろに末尾カンマを付けることが許容されないらしい。
 // https://github.com/VOICEVOX/voicevox_core/pull/839#discussion_r1779435761
-
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: [
@@ -71,7 +70,7 @@
         "ubuntu",
       ],
       enabled: false,
-    }
+    },
   ],
   cargo: {
     rangeStrategy: "bump",
@@ -88,6 +87,6 @@
       depNameTemplate: "Rust",
       packageNameTemplate: "rust-lang/rust",
       datasourceTemplate: "github-tags",
-    }
+    },
   ],
 }
