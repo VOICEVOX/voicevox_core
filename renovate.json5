@@ -48,6 +48,7 @@
       "matchCurrentVersion": "!/^v?0\\.0\\./",
       "dependencyDashboardApproval": false
     },
+    // GHAのrunnerに対しては無効化する
     {
       "matchDatasources": [
         "github-runners"
