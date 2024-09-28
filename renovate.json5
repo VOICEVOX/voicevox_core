@@ -31,6 +31,7 @@
       "matchCurrentVersion": "/^v?0\\.0\\./",
       "dependencyDashboardApproval": false
     },
+    // メジャーバージョン以外の更新
     {
       "groupName": "non-major dependencies",
       "matchUpdateTypes": [
