@@ -1,12 +1,12 @@
 {
-  $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  extends: [
-    "config:recommended",
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
   ],
-  timezone: "Asia/Tokyo",
-  separateMajorMinor: false,
-  dependencyDashboardApproval: true, // 万が一`packageRules`の網羅性に穴ができた場合に備え
-  packageRules: [
+  "timezone": "Asia/Tokyo",
+  "separateMajorMinor": false,
+  "dependencyDashboardApproval": true, // 万が一`packageRules`の網羅性に穴ができた場合に備え
+  "packageRules": [
     // `separateMajorMinor`を無効化した上で次の二つのgroupにすべてをまとめる。
     //
     // * "major dependencies" (`renovate/major-dependencies`)
@@ -16,75 +16,75 @@
 
     // メジャーバージョンの更新
     {
-      groupName: "major dependencies",
-      matchUpdateTypes: [
-        "major",
+      "groupName": "major dependencies",
+      "matchUpdateTypes": [
+        "major"
       ],
-      dependencyDashboardApproval: false,
+      "dependencyDashboardApproval": false
     },
     {
-      groupName: "major dependencies",
-      matchUpdateTypes: [
-        "minor",
+      "groupName": "major dependencies",
+      "matchUpdateTypes": [
+        "minor"
       ],
-      matchCurrentVersion: "/^v?0\\./",
-      dependencyDashboardApproval: false,
+      "matchCurrentVersion": "/^v?0\\./",
+      "dependencyDashboardApproval": false
     },
     {
-      groupName: "major dependencies",
-      matchUpdateTypes: [
-        "patch",
+      "groupName": "major dependencies",
+      "matchUpdateTypes": [
+        "patch"
       ],
-      matchCurrentVersion: "/^v?0\\.0\\./",
-      dependencyDashboardApproval: false,
+      "matchCurrentVersion": "/^v?0\\.0\\./",
+      "dependencyDashboardApproval": false
     },
 
     // メジャーバージョン以外の更新
     {
-      groupName: "non-major dependencies",
-      matchUpdateTypes: [
-        "minor",
+      "groupName": "non-major dependencies",
+      "matchUpdateTypes": [
+        "minor"
       ],
-      matchCurrentVersion: "!/^v?0\\./",
-      dependencyDashboardApproval: false,
+      "matchCurrentVersion": "!/^v?0\\./",
+      "dependencyDashboardApproval": false
     },
     {
-      groupName: "non-major dependencies",
-      matchUpdateTypes: [
-        "patch",
+      "groupName": "non-major dependencies",
+      "matchUpdateTypes": [
+        "patch"
       ],
-      matchCurrentVersion: "!/^v?0\\.0\\./",
-      dependencyDashboardApproval: false,
+      "matchCurrentVersion": "!/^v?0\\.0\\./",
+      "dependencyDashboardApproval": false
     },
 
     // GHAのrunnerに対しては無効化する
     {
-      matchDatasources: [
-        "github-runners",
+      "matchDatasources": [
+        "github-runners"
       ],
-      matchPackageNames: [
+      "matchPackageNames": [
         "windows",
         "macos",
-        "ubuntu",
+        "ubuntu"
       ],
-      enabled: false,
-    },
+      "enabled": false
+    }
   ],
-  cargo: {
-    rangeStrategy: "bump",
+  "cargo": {
+    "rangeStrategy": "bump"
   },
-  customManagers: [
+  "customManagers": [
     {
-      customType: "regex",
-      fileMatch: [
-        "^rust-toolchain$",
+      "customType": "regex",
+      "fileMatch": [
+        "^rust-toolchain$"
       ],
-      matchStrings: [
-        "(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+      "matchStrings": [
+        "(?<currentValue>\\d+\\.\\d+\\.\\d+)"
       ],
-      depNameTemplate: "Rust",
-      packageNameTemplate: "rust-lang/rust",
-      datasourceTemplate: "github-tags",
-    },
-  ],
+      "depNameTemplate": "Rust",
+      "packageNameTemplate": "rust-lang/rust",
+      "datasourceTemplate": "github-tags"
+    }
+  ]
 }
