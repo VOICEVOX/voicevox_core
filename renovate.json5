@@ -18,73 +18,73 @@
     {
       "groupName": "major dependencies",
       "matchUpdateTypes": [
-        "major",
+        "major"
       ],
-      "dependencyDashboardApproval": false,
+      "dependencyDashboardApproval": false
     },
     {
       "groupName": "major dependencies",
       "matchUpdateTypes": [
-        "minor",
+        "minor"
       ],
       "matchCurrentVersion": "/^v?0\\./",
-      "dependencyDashboardApproval": false,
+      "dependencyDashboardApproval": false
     },
     {
       "groupName": "major dependencies",
       "matchUpdateTypes": [
-        "patch",
+        "patch"
       ],
       "matchCurrentVersion": "/^v?0\\.0\\./",
-      "dependencyDashboardApproval": false,
+      "dependencyDashboardApproval": false
     },
 
     // メジャーバージョン以外の更新
     {
       "groupName": "non-major dependencies",
       "matchUpdateTypes": [
-        "minor",
+        "minor"
       ],
       "matchCurrentVersion": "!/^v?0\\./",
-      "dependencyDashboardApproval": false,
+      "dependencyDashboardApproval": false
     },
     {
       "groupName": "non-major dependencies",
       "matchUpdateTypes": [
-        "patch",
+        "patch"
       ],
       "matchCurrentVersion": "!/^v?0\\.0\\./",
-      "dependencyDashboardApproval": false,
+      "dependencyDashboardApproval": false
     },
 
     // GHAのrunnerに対しては無効化する
     {
       "matchDatasources": [
-        "github-runners",
+        "github-runners"
       ],
       "matchPackageNames": [
         "windows",
         "macos",
-        "ubuntu",
+        "ubuntu"
       ],
-      "enabled": false,
-    },
+      "enabled": false
+    }
   ],
   "cargo": {
-    "rangeStrategy": "bump",
+    "rangeStrategy": "bump"
   },
   "customManagers": [
     {
       "customType": "regex",
       "fileMatch": [
-        "^rust-toolchain$",
+        "^rust-toolchain$"
       ],
       "matchStrings": [
-        "(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+        "(?<currentValue>\\d+\\.\\d+\\.\\d+)"
       ],
       "depNameTemplate": "Rust",
       "packageNameTemplate": "rust-lang/rust",
-      "datasourceTemplate": "github-tags",
-    },
-  ],
+      "datasourceTemplate": "github-tags"
+    }
+  ]
 }
