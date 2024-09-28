@@ -7,6 +7,7 @@
   "separateMajorMinor": false,
   "dependencyDashboardApproval": true, // 万が一`packageRules`の網羅性に穴ができた場合に備え
   "packageRules": [
+    // メジャーバージョンの更新
     {
       "groupName": "major dependencies",
       "matchUpdateTypes": [
