@@ -68,7 +68,7 @@
         "ubuntu"
       ],
       "enabled": false
-    }
+    },
   ],
   "cargo": {
     "rangeStrategy": "bump"
