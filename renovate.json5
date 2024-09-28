@@ -20,7 +20,7 @@
       "matchUpdateTypes": [
         "major"
       ],
-      "dependencyDashboardApproval": false
+      "dependencyDashboardApproval": false,
     },
     {
       "groupName": "major dependencies",
