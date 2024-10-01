@@ -18,7 +18,7 @@ jobs:
   shellcheck:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Update ShellCheck
         run: |
           sudo apt-get update
@@ -29,7 +29,7 @@ jobs:
   actionlint:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # ShellCheckとPyflakesをインストールしておくと、shell: bashとshell: pythonのコードを検査してくれるようになる
       #
       # 参考:
@@ -40,7 +40,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y shellcheck
       - name: Set up Python 3.8
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.8"
       - name: Install Pyflakes
@@ -53,7 +53,7 @@ jobs:
   validate-cargo-lock:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Validate Cargo.lock
@@ -62,31 +62,33 @@ jobs:
   rust-lint:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
         with:
           components: clippy,rustfmt
       - name: Set up Python 3.8
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.8"
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script --tests -- -D clippy::all -D warnings --no-deps
-      - run: cargo clippy -vv --all-features --features onnxruntime/disable-sys-build-script -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -vv -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
       - run: cargo fmt -- --check
 
   rust-unit-test:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - uses: Swatinem/rust-cache@v2
         with:
           key: "cargo-unit-test-cache"
       - name: Run cargo unit test
-        run: RUST_BACKTRACE=full cargo test --lib --bins -vv --features , -- --include-ignored
+        run: RUST_BACKTRACE=full cargo test --lib --bins -vv -- --include-ignored
       - name: Run cargo documentation test
         run: RUST_BACKTRACE=full cargo test --doc -vv
 
@@ -99,14 +101,12 @@ jobs:
         id: strategy-matrix
         run: |
           includes='[
-            { "os": "windows-2019", "features": "", "can_skip_in_simple_test": true },
-            { "os": "windows-2022", "features": "", "can_skip_in_simple_test": true },
-            { "os": "windows-2019", "features": "directml", "can_skip_in_simple_test": false },
-            { "os": "windows-2022", "features": "directml", "can_skip_in_simple_test": true },
-            { "os": "macos-11", "features": "", "can_skip_in_simple_test": false },
-            { "os": "macos-12", "features": "", "can_skip_in_simple_test": true },
-            { "os": "ubuntu-20.04", "features": "", "can_skip_in_simple_test": false },
-            { "os": "ubuntu-22.04", "features": "", "can_skip_in_simple_test": true }
+            { "os": "windows-2019", "can_skip_in_simple_test": true },
+            { "os": "windows-2022", "can_skip_in_simple_test": true },
+            { "os": "macos-12", "can_skip_in_simple_test": false },
+            { "os": "macos-13", "can_skip_in_simple_test": true },
+            { "os": "ubuntu-20.04", "can_skip_in_simple_test": false },
+            { "os": "ubuntu-22.04", "can_skip_in_simple_test": true }
           ]'
 
           # FIXME: composite action に切り出す
@@ -124,23 +124,23 @@ jobs:
         include: ${{ fromJson(needs.rust-integration-test-strategy-matrix.outputs.includes) }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.8
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.8"
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - uses: Swatinem/rust-cache@v2
         with:
-          key: "cargo-integration-test-cache-${{ matrix.features }}-${{ matrix.os }}"
-      - name: Run cargo integration test
-        run: RUST_BACKTRACE=full cargo test --test "*" -vv --features ,${{ matrix.features }} -- --include-ignored
+          key: "cargo-integration-test-cache-${{ matrix.os }}"
+      - name: Run cargo integration test (load-onnxruntime)
+        run: RUST_BACKTRACE=full cargo test --test "*" -vv -- --include-ignored
 
   c-header:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
@@ -187,23 +187,25 @@ jobs:
             artifact_name: linux-x64-cpu-cpp-shared
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api -vv
+        run: cargo build -p voicevox_core_c_api --features load-onnxruntime -vv
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
           mkdir -p example/cpp/unix/voicevox_core/
-          cp -v crates/voicevox_core_c_api/include/voicevox_core.h example/cpp/unix/voicevox_core/
+          sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
+            crates/voicevox_core_c_api/include/voicevox_core.h \
+            > example/cpp/unix/voicevox_core/voicevox_core.h
           cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/ || true
-          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* example/cpp/unix/voicevox_core/ || true
-          cp -v target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/ || true
+          cp -v target/debug/libonnxruntime.so.* example/cpp/unix/voicevox_core/ || true
+          cp -v target/debug/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/ || true
 
       - if: startsWith(matrix.os, 'mac')
-        uses: jwlawson/actions-setup-cmake@v1.13
+        uses: jwlawson/actions-setup-cmake@v2
       - name: Install build dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: |
@@ -229,21 +231,24 @@ jobs:
         shell: pwsh
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api -vv
+        run: cargo build -p voicevox_core_c_api --features load-onnxruntime -vv
       - name: 必要なfileをexampleのディレクトリに移動させる
+        shell: bash
         run: |
           mkdir -p example/cpp/windows/simple_tts/lib/x64
-          cp -v crates/voicevox_core_c_api/include/voicevox_core.h example/cpp/windows/simple_tts/
+          sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
+            crates/voicevox_core_c_api/include/voicevox_core.h \
+            > example/cpp/windows/simple_tts/voicevox_core.h
           cp target/debug/voicevox_core.dll.lib example/cpp/windows/simple_tts/lib/x64/voicevox_core.lib
 
       - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v1.0.2
+        uses: microsoft/setup-msbuild@v2
       - name: Restore NuGet packages
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: nuget restore ${{env.SOLUTION_FILE_PATH}}
@@ -266,9 +271,9 @@ jobs:
         shell: bash
         working-directory: ./crates/voicevox_core_python_api
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.8
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.8"
       - name: Set up Rust
@@ -281,9 +286,9 @@ jobs:
       - run: poetry run maturin develop --locked
       - name: 必要なDLLをコピーしてpytestを実行
         run: |
-          cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/onnxruntime.dll . || true
-          cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.so.* . || true
-          cp -v ../../target/debug/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/libonnxruntime.*.dylib . || true
+          cp -v ../../target/debug/onnxruntime.dll . || true
+          cp -v ../../target/debug/libonnxruntime.so.* . || true
+          cp -v ../../target/debug/libonnxruntime.*.dylib . || true
 
           poetry run pytest
       - name: Exampleを実行
@@ -301,7 +306,7 @@ jobs:
           - os: ubuntu-latest
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Java

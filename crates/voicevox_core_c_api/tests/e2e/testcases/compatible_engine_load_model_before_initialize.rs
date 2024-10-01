@@ -1,10 +1,9 @@
 // initialize前にモデルを読み込むとエラーになるテスト
 
-use std::ffi::CStr;
+use std::{ffi::CStr, sync::LazyLock};
 
 use assert_cmd::assert::AssertResult;
 use libloading::Library;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use test_util::c_api::CApi;
 
@@ -34,6 +33,7 @@ impl assert_cdylib::TestCase for TestCase {
     fn assert_output(&self, output: Utf8Output) -> AssertResult {
         output
             .mask_timestamps()
+            .mask_onnxruntime_version()
             .mask_windows_video_cards()
             .assert()
             .try_success()?
@@ -42,7 +42,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> =
+static SNAPSHOTS: LazyLock<Snapshots> =
     snapshots::section!(compatible_engine_load_model_before_initialize);
 
 #[derive(Deserialize)]

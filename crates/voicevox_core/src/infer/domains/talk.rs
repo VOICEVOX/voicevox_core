@@ -1,9 +1,8 @@
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, sync::LazyLock};
 
 use enum_map::Enum;
 use macros::{InferenceInputSignature, InferenceOperation, InferenceOutputSignature};
 use ndarray::{Array0, Array1, Array2};
-use once_cell::sync::Lazy;
 
 use crate::StyleType;
 
@@ -17,7 +16,8 @@ impl InferenceDomain for TalkDomain {
     type Operation = TalkOperation;
 
     fn style_types() -> &'static BTreeSet<StyleType> {
-        static STYLE_TYPES: Lazy<BTreeSet<StyleType>> = Lazy::new(|| [StyleType::Talk].into());
+        static STYLE_TYPES: LazyLock<BTreeSet<StyleType>> =
+            LazyLock::new(|| [StyleType::Talk].into());
         &STYLE_TYPES
     }
 }

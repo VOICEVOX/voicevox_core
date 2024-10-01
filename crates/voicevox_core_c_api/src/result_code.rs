@@ -5,10 +5,11 @@ use cstr::cstr;
 /// 処理結果を示す結果コード。
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-#[allow(non_camel_case_types)]
+#[allow(
+    non_camel_case_types,
+    reason = "実際に公開するC APIとの差異をできるだけ少なくするため"
+)]
 pub enum VoicevoxResultCode {
-    // C でのenum定義に合わせて大文字で定義している
-    // 出力フォーマットを変更すればRustでよく使われているUpperCamelにできるが、実際に出力されるコードとの差異をできるだけ少なくするため
     /// 成功
     VOICEVOX_RESULT_OK = 0,
     /// open_jtalk辞書ファイルが読み込まれていない
@@ -17,12 +18,14 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR = 3,
     /// GPUモードがサポートされていない
     VOICEVOX_RESULT_GPU_SUPPORT_ERROR = 4,
+    /// 推論ライブラリのロードまたは初期化ができなかった
+    VOICEVOX_RESULT_INIT_INFERENCE_RUNTIME_ERROR = 29,
     /// スタイルIDに対するスタイルが見つからなかった
     VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR = 6,
     /// 音声モデルIDに対する音声モデルが見つからなかった
     VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR = 7,
     /// 推論に失敗した
-    VOICEVOX_RESULT_INFERENCE_ERROR = 8,
+    VOICEVOX_RESULT_RUN_MODEL_ERROR = 8,
     /// コンテキストラベル出力に失敗した
     VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR = 11,
     /// 無効なutf8文字列が入力された
@@ -69,6 +72,9 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR => {
             cstr!("サポートされているデバイス情報取得中にエラーが発生しました")
         }
+        VOICEVOX_RESULT_INIT_INFERENCE_RUNTIME_ERROR => {
+            cstr!("推論ライブラリのロードまたは初期化ができませんでした")
+        }
         VOICEVOX_RESULT_OK => cstr!("エラーが発生しませんでした"),
         VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR => cstr!(
             "指定されたIDに対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか\
@@ -78,7 +84,7 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
             "指定されたIDに対する音声モデルが見つかりませんでした。読み込まれていないか、読み込み\
              が既に解除されています"
         ),
-        VOICEVOX_RESULT_INFERENCE_ERROR => cstr!("推論に失敗しました"),
+        VOICEVOX_RESULT_RUN_MODEL_ERROR => cstr!("推論に失敗しました"),
         VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR => {
             cstr!("入力テキストからのフルコンテキストラベル抽出に失敗しました")
         }

@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.LoadUserDictException;
+import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
 import org.junit.jupiter.api.Test;
 
 class UserDictTest extends TestUtils {
@@ -14,22 +14,25 @@ class UserDictTest extends TestUtils {
   // 辞書ロードのテスト。
   // 辞書ロード前後でkanaが異なることを確認する
   @Test
-  void checkLoad()
-      throws InferenceFailedException, InvalidModelDataException, LoadUserDictException {
-    VoiceModel model = loadModel();
+  void checkLoad() throws RunModelException, InvalidModelDataException, LoadUserDictException {
+    Onnxruntime onnxruntime = loadOnnxruntime();
     OpenJtalk openJtalk = loadOpenJtalk();
-    Synthesizer synthesizer = Synthesizer.builder(openJtalk).build();
+    Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
     UserDict userDict = new UserDict();
-    synthesizer.loadVoiceModel(model);
+    try (VoiceModelFile model = openModel()) {
+      synthesizer.loadVoiceModel(model);
+    }
     AudioQuery query1 =
         synthesizer.createAudioQuery(
-            "this_word_should_not_exist_in_default_dictionary", model.metas[0].styles[0].id);
+            "this_word_should_not_exist_in_default_dictionary",
+            synthesizer.metas()[0].styles[0].id);
 
     userDict.addWord(new UserDict.Word("this_word_should_not_exist_in_default_dictionary", "テスト"));
     openJtalk.useUserDict(userDict);
     AudioQuery query2 =
         synthesizer.createAudioQuery(
-            "this_word_should_not_exist_in_default_dictionary", model.metas[0].styles[0].id);
+            "this_word_should_not_exist_in_default_dictionary",
+            synthesizer.metas()[0].styles[0].id);
     assertTrue(query1.kana != query2.kana);
   }
 

@@ -15,9 +15,12 @@ import voicevox_core  # noqa: F401
 
 @pytest.mark.asyncio
 async def test_user_dict_load() -> None:
+    onnxruntime = await voicevox_core.asyncio.Onnxruntime.load_once(
+        filename=conftest.onnxruntime_filename
+    )
     open_jtalk = await voicevox_core.asyncio.OpenJtalk.new(conftest.open_jtalk_dic_dir)
-    model = await voicevox_core.asyncio.VoiceModel.from_path(conftest.model_dir)
-    synthesizer = voicevox_core.asyncio.Synthesizer(open_jtalk)
+    model = await voicevox_core.asyncio.VoiceModelFile.open(conftest.model_dir)
+    synthesizer = voicevox_core.asyncio.Synthesizer(onnxruntime, open_jtalk)
 
     await synthesizer.load_voice_model(model)
 

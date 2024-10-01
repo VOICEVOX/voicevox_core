@@ -1,9 +1,20 @@
-use crate::infer::runtimes::Onnxruntime;
+// TODO: `VoiceModelFile`のように、次のような設計にする。
+//
+// ```
+// pub(crate) mod blocking {
+//     pub struct Synthesizer(Inner<SingleTasked>);
+//     // …
+// }
+// pub(crate) mod nonblocking {
+//     pub struct Synthesizer(Inner<BlockingThreadPool>);
+//     // …
+// }
+// ```
 
-/// [`blocking::Synthesizer::synthesis`]および[`tokio::Synthesizer::synthesis`]のオプション。
+/// [`blocking::Synthesizer::synthesis`]および[`nonblocking::Synthesizer::synthesis`]のオプション。
 ///
 /// [`blocking::Synthesizer::synthesis`]: blocking::Synthesizer::synthesis
-/// [`tokio::Synthesizer::synthesis`]: tokio::Synthesizer::synthesis
+/// [`nonblocking::Synthesizer::synthesis`]: nonblocking::Synthesizer::synthesis
 #[derive(Clone)]
 pub struct SynthesisOptions {
     pub enable_interrogative_upspeak: bool,
@@ -23,10 +34,10 @@ impl From<&TtsOptions> for SynthesisOptions {
     }
 }
 
-/// [`blocking::Synthesizer::tts`]および[`tokio::Synthesizer::tts`]のオプション。
+/// [`blocking::Synthesizer::tts`]および[`nonblocking::Synthesizer::tts`]のオプション。
 ///
 /// [`blocking::Synthesizer::tts`]: blocking::Synthesizer::tts
-/// [`tokio::Synthesizer::tts`]: tokio::Synthesizer::tts
+/// [`nonblocking::Synthesizer::tts`]: nonblocking::Synthesizer::tts
 #[derive(Clone)]
 pub struct TtsOptions {
     pub enable_interrogative_upspeak: bool,
@@ -47,7 +58,7 @@ impl Default for TtsOptions {
 }
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AccelerationMode {
     /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
     #[default]
@@ -58,29 +69,29 @@ pub enum AccelerationMode {
     Gpu,
 }
 
-/// [`blocking::Synthesizer::new`]および[`tokio::Synthesizer::new`]のオプション。
+/// [`blocking::Synthesizer::new`]および[`nonblocking::Synthesizer::new`]のオプション。
 ///
 /// [`blocking::Synthesizer::new`]: blocking::Synthesizer::new
-/// [`tokio::Synthesizer::new`]: tokio::Synthesizer::new
+/// [`nonblocking::Synthesizer::new`]: nonblocking::Synthesizer::new
 #[derive(Default)]
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
     pub cpu_num_threads: u16,
 }
 
-pub(crate) type InferenceRuntimeImpl = Onnxruntime;
-
 pub(crate) mod blocking {
-    // FIXME: ここのdocのコードブロックはasync版のものなので、`tokio`モジュールの方に移した上で、
+    // FIXME: ここのdocのコードブロックはasync版のものなので、`nonblocking`モジュールの方に移した上で、
     // (ブロッキング版をpublic APIにするならの話ではあるが)ブロッキング版はブロッキング版でコード例
     // を用意する
 
     use std::io::{Cursor, Write as _};
 
     use enum_map::enum_map;
+    use tracing::info;
 
     use crate::{
-        engine::{create_kana, mora_to_text, MoraModel, OjtPhoneme},
+        devices::{DeviceSpec, GpuSpec},
+        engine::{create_kana, mora_to_text, Mora, OjtPhoneme},
         error::ErrorRepr,
         infer::{
             domains::{
@@ -88,21 +99,21 @@ pub(crate) mod blocking {
                 PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput, TalkDomain,
                 TalkOperation,
             },
-            InferenceSessionOptions,
+            InferenceRuntime as _, InferenceSessionOptions,
         },
         status::Status,
         text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
-        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
-        SupportedDevices, SynthesisOptions, VoiceModelId, VoiceModelMeta,
+        AccentPhrase, AudioQuery, FullcontextExtractor, Result, StyleId, SynthesisOptions,
+        VoiceModelId, VoiceModelMeta,
     };
 
-    use super::{AccelerationMode, InferenceRuntimeImpl, InitializeOptions, TtsOptions};
+    use super::{AccelerationMode, InitializeOptions, TtsOptions};
 
     const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
-        pub(super) status: Status<InferenceRuntimeImpl>,
+        pub(super) status: Status<crate::blocking::Onnxruntime>,
         open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
         kana_analyzer: KanaAnalyzer,
         use_gpu: bool,
@@ -113,22 +124,29 @@ pub(crate) mod blocking {
         ///
         /// # Example
         ///
-        #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
-        #[cfg_attr(not(windows), doc = "```")]
-        /// # #[tokio::main]
+        #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
+        #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
+        /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
-        /// # use test_util::OPEN_JTALK_DIC_DIR;
+        /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};
         /// #
         /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
         /// #
         /// use std::sync::Arc;
         ///
         /// use voicevox_core::{
-        ///     tokio::{OpenJtalk, Synthesizer},
+        ///     nonblocking::{Onnxruntime, OpenJtalk, Synthesizer},
         ///     AccelerationMode, InitializeOptions,
         /// };
         ///
+        /// # if cfg!(windows) {
+        /// #     // Windows\System32\onnxruntime.dllを回避
+        /// #     voicevox_core::blocking::Onnxruntime::load_once()
+        /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
+        /// #         .exec()?;
+        /// # }
         /// let mut syntesizer = Synthesizer::new(
+        ///     Onnxruntime::load_once().exec().await?,
         ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
         ///     &InitializeOptions {
         ///         acceleration_mode: ACCELERATION_MODE,
@@ -139,60 +157,76 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
-        pub fn new(open_jtalk: O, options: &InitializeOptions) -> Result<Self> {
+        pub fn new(
+            onnxruntime: &'static crate::blocking::Onnxruntime,
+            open_jtalk: O,
+            options: &InitializeOptions,
+        ) -> Result<Self> {
             #[cfg(windows)]
             list_windows_video_cards();
 
-            let use_gpu = match options.acceleration_mode {
-                AccelerationMode::Auto => {
-                    let supported_devices = SupportedDevices::create()?;
-
-                    if cfg!(feature = "directml") {
-                        *supported_devices.dml()
-                    } else {
-                        *supported_devices.cuda()
-                    }
+            let test_gpus = || {
+                info!("GPUをテストします:");
+                let availabilities = crate::devices::test_gpus(
+                    GpuSpec::defaults(),
+                    crate::blocking::Onnxruntime::DISPLAY_NAME,
+                    onnxruntime.supported_devices()?,
+                    |gpu| onnxruntime.test_gpu(gpu),
+                );
+                for line in availabilities.to_string().lines() {
+                    info!("  {line}");
                 }
-                AccelerationMode::Cpu => false,
-                AccelerationMode::Gpu => true,
+                crate::Result::Ok(availabilities)
             };
 
-            if use_gpu && !can_support_gpu_feature()? {
-                return Err(ErrorRepr::GpuSupport.into());
-            }
+            let device_for_heavy = match options.acceleration_mode {
+                AccelerationMode::Auto => match *test_gpus()?.oks() {
+                    [] => DeviceSpec::Cpu,
+                    [gpu, ..] => DeviceSpec::Gpu(gpu),
+                },
+                AccelerationMode::Cpu => DeviceSpec::Cpu,
+                AccelerationMode::Gpu => {
+                    let availabilities = test_gpus()?;
+                    match *availabilities.oks() {
+                        [] => return Err(ErrorRepr::GpuSupport(availabilities).into()),
+                        [gpu, ..] => DeviceSpec::Gpu(gpu),
+                    }
+                }
+            };
+
+            info!("{device_for_heavy}を利用します");
 
             // 軽いモデルはこちらを使う
             let light_session_options =
-                InferenceSessionOptions::new(options.cpu_num_threads, false);
+                InferenceSessionOptions::new(options.cpu_num_threads, DeviceSpec::Cpu);
 
             // 重いモデルはこちらを使う
             let heavy_session_options =
-                InferenceSessionOptions::new(options.cpu_num_threads, use_gpu);
+                InferenceSessionOptions::new(options.cpu_num_threads, device_for_heavy);
 
-            let status = Status::new(InferenceDomainMap {
-                talk: enum_map! {
-                    TalkOperation::PredictDuration
-                    | TalkOperation::PredictIntonation => light_session_options,
-                    TalkOperation::Decode => heavy_session_options,
+            let status = Status::new(
+                onnxruntime,
+                InferenceDomainMap {
+                    talk: enum_map! {
+                        TalkOperation::PredictDuration
+                        | TalkOperation::PredictIntonation => light_session_options,
+                        TalkOperation::Decode => heavy_session_options,
+                    },
                 },
-            });
+            );
 
-            return Ok(Self {
+            let use_gpu = matches!(device_for_heavy, DeviceSpec::Gpu(_));
+
+            Ok(Self {
                 status,
                 open_jtalk_analyzer: OpenJTalkAnalyzer::new(open_jtalk),
                 kana_analyzer: KanaAnalyzer,
                 use_gpu,
-            });
+            })
+        }
 
-            fn can_support_gpu_feature() -> Result<bool> {
-                let supported_devices = SupportedDevices::create()?;
-
-                if cfg!(feature = "directml") {
-                    Ok(*supported_devices.dml())
-                } else {
-                    Ok(*supported_devices.cuda())
-                }
-            }
+        pub fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
+            self.status.rt
         }
 
         /// ハードウェアアクセラレーションがGPUモードか判定する。
@@ -201,18 +235,18 @@ pub(crate) mod blocking {
         }
 
         /// 音声モデルを読み込む。
-        pub fn load_voice_model(&self, model: &crate::blocking::VoiceModel) -> Result<()> {
+        pub fn load_voice_model(&self, model: &crate::blocking::VoiceModelFile) -> Result<()> {
             let model_bytes = &model.read_inference_models()?;
             self.status.insert_model(model.header(), model_bytes)
         }
 
         /// 音声モデルの読み込みを解除する。
-        pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
+        pub fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> Result<()> {
             self.status.unload_model(voice_model_id)
         }
 
         /// 指定したIDの音声モデルが読み込まれているか判定する。
-        pub fn is_loaded_voice_model(&self, voice_model_id: &VoiceModelId) -> bool {
+        pub fn is_loaded_voice_model(&self, voice_model_id: VoiceModelId) -> bool {
             self.status.is_loaded_model(voice_model_id)
         }
 
@@ -229,42 +263,48 @@ pub(crate) mod blocking {
         /// AudioQueryから音声合成を行う。
         pub fn synthesis(
             &self,
-            audio_query: &AudioQueryModel,
+            audio_query: &AudioQuery,
             style_id: StyleId,
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
-            let speed_scale = *audio_query.speed_scale();
-            let pitch_scale = *audio_query.pitch_scale();
-            let intonation_scale = *audio_query.intonation_scale();
-            let pre_phoneme_length = *audio_query.pre_phoneme_length();
-            let post_phoneme_length = *audio_query.post_phoneme_length();
+            let AudioQuery {
+                accent_phrases,
+                speed_scale,
+                pitch_scale,
+                intonation_scale,
+                pre_phoneme_length,
+                post_phoneme_length,
+                ..
+            } = audio_query;
 
             let accent_phrases = if options.enable_interrogative_upspeak {
-                adjust_interrogative_accent_phrases(audio_query.accent_phrases().as_slice())
+                &adjust_interrogative_accent_phrases(accent_phrases)
             } else {
-                audio_query.accent_phrases().clone()
+                accent_phrases
             };
 
-            let (flatten_moras, phoneme_data_list) = initial_process(&accent_phrases);
+            let (flatten_moras, phoneme_data_list) = initial_process(accent_phrases);
 
-            let mut phoneme_length_list = vec![pre_phoneme_length];
+            let mut phoneme_length_list = vec![*pre_phoneme_length];
             let mut f0_list = vec![0.];
             let mut voiced_list = vec![false];
             {
                 let mut sum_of_f0_bigger_than_zero = 0.;
                 let mut count_of_f0_bigger_than_zero = 0;
 
-                for mora in flatten_moras {
-                    let consonant_length = *mora.consonant_length();
-                    let vowel_length = *mora.vowel_length();
-                    let pitch = *mora.pitch();
-
+                for Mora {
+                    consonant_length,
+                    vowel_length,
+                    pitch,
+                    ..
+                } in flatten_moras
+                {
                     if let Some(consonant_length) = consonant_length {
                         phoneme_length_list.push(consonant_length);
                     }
                     phoneme_length_list.push(vowel_length);
 
-                    let f0_single = pitch * 2.0_f32.powf(pitch_scale);
+                    let f0_single = pitch * 2.0_f32.powf(*pitch_scale);
                     f0_list.push(f0_single);
 
                     let bigger_than_zero = f0_single > 0.;
@@ -275,7 +315,7 @@ pub(crate) mod blocking {
                         count_of_f0_bigger_than_zero += 1;
                     }
                 }
-                phoneme_length_list.push(post_phoneme_length);
+                phoneme_length_list.push(*post_phoneme_length);
                 f0_list.push(0.);
                 voiced_list.push(false);
                 let mean_f0 = sum_of_f0_bigger_than_zero / (count_of_f0_bigger_than_zero as f32);
@@ -291,7 +331,7 @@ pub(crate) mod blocking {
 
             let (_, _, vowel_indexes) = split_mora(&phoneme_data_list);
 
-            let mut phoneme: Vec<Vec<f32>> = Vec::new();
+            let mut phoneme = Vec::new();
             let mut f0: Vec<f32> = Vec::new();
             {
                 const RATE: f32 = 24000. / 256.;
@@ -308,7 +348,7 @@ pub(crate) mod blocking {
                     let phoneme_id = phoneme_data_list[i].phoneme_id();
 
                     for _ in 0..phoneme_length {
-                        let mut phonemes_vec = vec![0.; OjtPhoneme::num_phoneme()];
+                        let mut phonemes_vec = [0.; OjtPhoneme::num_phoneme()];
                         phonemes_vec[phoneme_id as usize] = 1.;
                         phoneme.push(phonemes_vec)
                     }
@@ -325,41 +365,38 @@ pub(crate) mod blocking {
                 }
             }
 
-            // 2次元のvectorを1次元に変換し、アドレスを連続させる
-            let flatten_phoneme = phoneme.into_iter().flatten().collect::<Vec<_>>();
-
             let wave = &self.decode(
                 f0.len(),
                 OjtPhoneme::num_phoneme(),
                 &f0,
-                &flatten_phoneme,
+                phoneme.as_flattened(),
                 style_id,
             )?;
             return Ok(to_wav(wave, audio_query));
 
             fn adjust_interrogative_accent_phrases(
-                accent_phrases: &[AccentPhraseModel],
-            ) -> Vec<AccentPhraseModel> {
+                accent_phrases: &[AccentPhrase],
+            ) -> Vec<AccentPhrase> {
                 accent_phrases
                     .iter()
-                    .map(|accent_phrase| {
-                        AccentPhraseModel::new(
-                            adjust_interrogative_moras(accent_phrase),
-                            *accent_phrase.accent(),
-                            accent_phrase.pause_mora().clone(),
-                            *accent_phrase.is_interrogative(),
-                        )
+                    .map(|accent_phrase| AccentPhrase {
+                        moras: adjust_interrogative_moras(accent_phrase),
+                        ..accent_phrase.clone()
                     })
                     .collect()
             }
 
-            fn adjust_interrogative_moras(accent_phrase: &AccentPhraseModel) -> Vec<MoraModel> {
-                let moras = accent_phrase.moras();
-                if *accent_phrase.is_interrogative() && !moras.is_empty() {
+            fn adjust_interrogative_moras(
+                AccentPhrase {
+                    moras,
+                    is_interrogative,
+                    ..
+                }: &AccentPhrase,
+            ) -> Vec<Mora> {
+                if *is_interrogative && !moras.is_empty() {
                     let last_mora = moras.last().unwrap();
-                    let last_mora_pitch = *last_mora.pitch();
-                    if last_mora_pitch != 0.0 {
-                        let mut new_moras: Vec<MoraModel> = Vec::with_capacity(moras.len() + 1);
+                    if last_mora.pitch != 0.0 {
+                        let mut new_moras: Vec<Mora> = Vec::with_capacity(moras.len() + 1);
                         new_moras.extend_from_slice(moras.as_slice());
                         let interrogative_mora = make_interrogative_mora(last_mora);
                         new_moras.push(interrogative_mora);
@@ -369,28 +406,32 @@ pub(crate) mod blocking {
                 moras.clone()
             }
 
-            fn make_interrogative_mora(last_mora: &MoraModel) -> MoraModel {
+            fn make_interrogative_mora(last_mora: &Mora) -> Mora {
                 const FIX_VOWEL_LENGTH: f32 = 0.15;
                 const ADJUST_PITCH: f32 = 0.3;
                 const MAX_PITCH: f32 = 6.5;
 
-                let pitch = (*last_mora.pitch() + ADJUST_PITCH).min(MAX_PITCH);
+                let pitch = (last_mora.pitch + ADJUST_PITCH).min(MAX_PITCH);
 
-                MoraModel::new(
-                    mora_to_text(None, last_mora.vowel()),
-                    None,
-                    None,
-                    last_mora.vowel().clone(),
-                    FIX_VOWEL_LENGTH,
+                Mora {
+                    text: mora_to_text(None, &last_mora.vowel),
+                    consonant: None,
+                    consonant_length: None,
+                    vowel: last_mora.vowel.clone(),
+                    vowel_length: FIX_VOWEL_LENGTH,
                     pitch,
-                )
+                }
             }
 
-            fn to_wav(wave: &[f32], audio_query: &AudioQueryModel) -> Vec<u8> {
-                let volume_scale = *audio_query.volume_scale();
-                let output_stereo = *audio_query.output_stereo();
-                let output_sampling_rate = *audio_query.output_sampling_rate();
-
+            fn to_wav(
+                wave: &[f32],
+                &AudioQuery {
+                    volume_scale,
+                    output_sampling_rate,
+                    output_stereo,
+                    ..
+                }: &AudioQuery,
+            ) -> Vec<u8> {
                 // TODO: 44.1kHzなどの対応
 
                 let num_channels: u16 = if output_stereo { 2 } else { 1 };
@@ -437,13 +478,13 @@ pub(crate) mod blocking {
         ///
         /// # Example
         ///
-        #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
-        #[cfg_attr(not(windows), doc = "```")]
-        /// # #[tokio::main]
+        /// ```
+        /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -461,7 +502,7 @@ pub(crate) mod blocking {
             &self,
             kana: &str,
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let accent_phrases = self.kana_analyzer.analyze(kana)?;
             self.replace_mora_data(&accent_phrases, style_id)
         }
@@ -469,9 +510,9 @@ pub(crate) mod blocking {
         /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
         pub fn replace_mora_data(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let accent_phrases = self.replace_phoneme_length(accent_phrases, style_id)?;
             self.replace_mora_pitch(&accent_phrases, style_id)
         }
@@ -479,9 +520,9 @@ pub(crate) mod blocking {
         /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
         pub fn replace_phoneme_length(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let (_, phoneme_data_list) = initial_process(accent_phrases);
 
             let (_, _, vowel_indexes_data) = split_mora(&phoneme_data_list);
@@ -495,41 +536,32 @@ pub(crate) mod blocking {
             let mut index = 0;
             let new_accent_phrases = accent_phrases
                 .iter()
-                .map(|accent_phrase| {
-                    AccentPhraseModel::new(
-                        accent_phrase
-                            .moras()
-                            .iter()
-                            .map(|mora| {
-                                let new_mora = MoraModel::new(
-                                    mora.text().clone(),
-                                    mora.consonant().clone(),
-                                    mora.consonant().as_ref().map(|_| {
-                                        phoneme_length[vowel_indexes_data[index + 1] as usize - 1]
-                                    }),
-                                    mora.vowel().clone(),
-                                    phoneme_length[vowel_indexes_data[index + 1] as usize],
-                                    *mora.pitch(),
-                                );
-                                index += 1;
-                                new_mora
-                            })
-                            .collect(),
-                        *accent_phrase.accent(),
-                        accent_phrase.pause_mora().as_ref().map(|pause_mora| {
-                            let new_pause_mora = MoraModel::new(
-                                pause_mora.text().clone(),
-                                pause_mora.consonant().clone(),
-                                *pause_mora.consonant_length(),
-                                pause_mora.vowel().clone(),
-                                phoneme_length[vowel_indexes_data[index + 1] as usize],
-                                *pause_mora.pitch(),
-                            );
+                .map(|accent_phrase| AccentPhrase {
+                    moras: accent_phrase
+                        .moras
+                        .iter()
+                        .map(|mora| {
+                            let new_mora = Mora {
+                                consonant_length: mora.consonant.as_ref().map(|_| {
+                                    phoneme_length[vowel_indexes_data[index + 1] as usize - 1]
+                                }),
+                                vowel_length: phoneme_length
+                                    [vowel_indexes_data[index + 1] as usize],
+                                ..mora.clone()
+                            };
                             index += 1;
-                            new_pause_mora
-                        }),
-                        *accent_phrase.is_interrogative(),
-                    )
+                            new_mora
+                        })
+                        .collect(),
+                    pause_mora: accent_phrase.pause_mora.as_ref().map(|pause_mora| {
+                        let new_pause_mora = Mora {
+                            vowel_length: phoneme_length[vowel_indexes_data[index + 1] as usize],
+                            ..pause_mora.clone()
+                        };
+                        index += 1;
+                        new_pause_mora
+                    }),
+                    ..accent_phrase.clone()
                 })
                 .collect();
 
@@ -539,9 +571,9 @@ pub(crate) mod blocking {
         /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
         pub fn replace_mora_pitch(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let (_, phoneme_data_list) = initial_process(accent_phrases);
 
             let mut base_start_accent_list = vec![0];
@@ -549,10 +581,10 @@ pub(crate) mod blocking {
             let mut base_start_accent_phrase_list = vec![0];
             let mut base_end_accent_phrase_list = vec![0];
             for accent_phrase in accent_phrases {
-                let mut accent = usize::from(*accent_phrase.accent() != 1);
+                let mut accent = usize::from(accent_phrase.accent != 1);
                 create_one_accent_list(&mut base_start_accent_list, accent_phrase, accent as i32);
 
-                accent = *accent_phrase.accent() - 1;
+                accent = accent_phrase.accent - 1;
                 create_one_accent_list(&mut base_end_accent_list, accent_phrase, accent as i32);
                 create_one_accent_list(&mut base_start_accent_phrase_list, accent_phrase, 0);
                 create_one_accent_list(&mut base_end_accent_phrase_list, accent_phrase, -1);
@@ -611,39 +643,28 @@ pub(crate) mod blocking {
             let mut index = 0;
             let new_accent_phrases = accent_phrases
                 .iter()
-                .map(|accent_phrase| {
-                    AccentPhraseModel::new(
-                        accent_phrase
-                            .moras()
-                            .iter()
-                            .map(|mora| {
-                                let new_mora = MoraModel::new(
-                                    mora.text().clone(),
-                                    mora.consonant().clone(),
-                                    *mora.consonant_length(),
-                                    mora.vowel().clone(),
-                                    *mora.vowel_length(),
-                                    f0_list[index + 1],
-                                );
-                                index += 1;
-                                new_mora
-                            })
-                            .collect(),
-                        *accent_phrase.accent(),
-                        accent_phrase.pause_mora().as_ref().map(|pause_mora| {
-                            let new_pause_mora = MoraModel::new(
-                                pause_mora.text().clone(),
-                                pause_mora.consonant().clone(),
-                                *pause_mora.consonant_length(),
-                                pause_mora.vowel().clone(),
-                                *pause_mora.vowel_length(),
-                                f0_list[index + 1],
-                            );
+                .map(|accent_phrase| AccentPhrase {
+                    moras: accent_phrase
+                        .moras
+                        .iter()
+                        .map(|mora| {
+                            let new_mora = Mora {
+                                pitch: f0_list[index + 1],
+                                ..mora.clone()
+                            };
                             index += 1;
-                            new_pause_mora
-                        }),
-                        *accent_phrase.is_interrogative(),
-                    )
+                            new_mora
+                        })
+                        .collect(),
+                    pause_mora: accent_phrase.pause_mora.as_ref().map(|pause_mora| {
+                        let new_pause_mora = Mora {
+                            pitch: f0_list[index + 1],
+                            ..pause_mora.clone()
+                        };
+                        index += 1;
+                        new_pause_mora
+                    }),
+                    ..accent_phrase.clone()
                 })
                 .collect();
 
@@ -651,22 +672,21 @@ pub(crate) mod blocking {
 
             fn create_one_accent_list(
                 accent_list: &mut Vec<i64>,
-                accent_phrase: &AccentPhraseModel,
+                accent_phrase: &AccentPhrase,
                 point: i32,
             ) {
                 let mut one_accent_list: Vec<i64> = Vec::new();
 
-                for (i, mora) in accent_phrase.moras().iter().enumerate() {
+                for (i, mora) in accent_phrase.moras.iter().enumerate() {
                     let value = (i as i32 == point
-                        || (point < 0
-                            && i == (accent_phrase.moras().len() as i32 + point) as usize))
+                        || (point < 0 && i == (accent_phrase.moras.len() as i32 + point) as usize))
                         .into();
                     one_accent_list.push(value);
-                    if mora.consonant().is_some() {
+                    if mora.consonant.is_some() {
                         one_accent_list.push(value);
                     }
                 }
-                if accent_phrase.pause_mora().is_some() {
+                if accent_phrase.pause_mora.is_some() {
                     one_accent_list.push(0);
                 }
                 accent_list.extend(one_accent_list)
@@ -677,13 +697,13 @@ pub(crate) mod blocking {
         ///
         /// # Example
         ///
-        #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
-        #[cfg_attr(not(windows), doc = "```")]
-        /// # #[tokio::main]
+        /// ```
+        /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -698,15 +718,10 @@ pub(crate) mod blocking {
         /// # }
         /// ```
         ///
-        /// [AudioQuery]: crate::AudioQueryModel
-        pub fn audio_query_from_kana(
-            &self,
-            kana: &str,
-            style_id: StyleId,
-        ) -> Result<AudioQueryModel> {
+        /// [AudioQuery]: crate::AudioQuery
+        pub fn audio_query_from_kana(&self, kana: &str, style_id: StyleId) -> Result<AudioQuery> {
             let accent_phrases = self.create_accent_phrases_from_kana(kana, style_id)?;
-            Ok(AudioQueryModel::from_accent_phrases(accent_phrases)
-                .with_kana(Some(kana.to_owned())))
+            Ok(AudioQuery::from_accent_phrases(accent_phrases).with_kana(Some(kana.to_owned())))
         }
 
         /// AquesTalk風記法から音声合成を行う。
@@ -726,13 +741,13 @@ pub(crate) mod blocking {
         ///
         /// # Example
         ///
-        #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
-        #[cfg_attr(not(windows), doc = "```")]
-        /// # #[tokio::main]
+        /// ```
+        /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -750,7 +765,7 @@ pub(crate) mod blocking {
             &self,
             text: &str,
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let accent_phrases = self.open_jtalk_analyzer.analyze(text)?;
             self.replace_mora_data(&accent_phrases, style_id)
         }
@@ -759,13 +774,13 @@ pub(crate) mod blocking {
         ///
         /// # Examples
         ///
-        #[cfg_attr(windows, doc = "```no_run")] // https://github.com/VOICEVOX/voicevox_core/issues/537
-        #[cfg_attr(not(windows), doc = "```")]
-        /// # #[tokio::main]
+        /// ```
+        /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
         /// #     .await?;
@@ -780,10 +795,10 @@ pub(crate) mod blocking {
         /// # }
         /// ```
         ///
-        /// [AudioQuery]: crate::AudioQueryModel
-        pub fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQueryModel> {
+        /// [AudioQuery]: crate::AudioQuery
+        pub fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery> {
             let accent_phrases = self.create_accent_phrases(text, style_id)?;
-            Ok(AudioQueryModel::from_accent_phrases(accent_phrases))
+            Ok(AudioQuery::from_accent_phrases(accent_phrases))
         }
 
         /// 日本語のテキストから音声合成を行う。
@@ -806,7 +821,11 @@ pub(crate) mod blocking {
         /// # Performance
         ///
         /// CPU-boundな操作であるため、非同期ランタイム上では直接実行されるべきではない。
-        #[allow(clippy::too_many_arguments)]
+        #[expect(
+            clippy::too_many_arguments,
+            reason = "compatible_engineでの`predict_intonation`の形を考えると、ここの引数を構造体に\
+                      まとめたりしても可読性に寄与しない"
+        )]
         fn predict_intonation(
             &self,
             length: usize,
@@ -836,15 +855,15 @@ pub(crate) mod blocking {
 
     impl<O> PerformInference for self::Synthesizer<O> {
         fn predict_duration(&self, phoneme_vector: &[i64], style_id: StyleId) -> Result<Vec<f32>> {
-            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
+            let (model_id, inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictDurationOutput {
                 phoneme_length: output,
             } = self.status.run_session(
-                &model_id,
+                model_id,
                 PredictDurationInput {
                     phoneme_list: ndarray::arr1(phoneme_vector),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                    speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )?;
             let mut output = output.into_raw_vec();
@@ -871,10 +890,10 @@ pub(crate) mod blocking {
             end_accent_phrase_vector: &[i64],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
+            let (model_id, inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             let PredictIntonationOutput { f0_list: output } = self.status.run_session(
-                &model_id,
+                model_id,
                 PredictIntonationInput {
                     length: ndarray::arr0(length as i64),
                     vowel_phoneme_list: ndarray::arr1(vowel_phoneme_vector),
@@ -883,7 +902,7 @@ pub(crate) mod blocking {
                     end_accent_list: ndarray::arr1(end_accent_vector),
                     start_accent_phrase_list: ndarray::arr1(start_accent_phrase_vector),
                     end_accent_phrase_list: ndarray::arr1(end_accent_phrase_vector),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                    speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )?;
 
@@ -898,7 +917,7 @@ pub(crate) mod blocking {
             phoneme_vector: &[f32],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            let (model_id, model_inner_id) = self.status.ids_for::<TalkDomain>(style_id)?;
+            let (model_id, inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
 
             // 音が途切れてしまうのを避けるworkaround処理が入っている
             // TODO: 改善したらここのpadding処理を取り除く
@@ -917,7 +936,7 @@ pub(crate) mod blocking {
             );
 
             let DecodeOutput { wave: output } = self.status.run_session(
-                &model_id,
+                model_id,
                 DecodeInput {
                     f0: ndarray::arr1(&f0_with_padding)
                         .into_shape([length_with_padding, 1])
@@ -925,7 +944,7 @@ pub(crate) mod blocking {
                     phoneme: ndarray::arr1(&phoneme_with_padding)
                         .into_shape([length_with_padding, phoneme_size])
                         .unwrap(),
-                    speaker_id: ndarray::arr1(&[model_inner_id.raw_id().into()]),
+                    speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )?;
 
@@ -995,13 +1014,13 @@ pub(crate) mod blocking {
             CreateDXGIFactory, IDXGIFactory, DXGI_ADAPTER_DESC, DXGI_ERROR_NOT_FOUND,
         };
 
-        info!("検出されたGPU (DirectMLには1番目のGPUが使われます):");
+        info!("検出されたGPU (DirectMLにはGPU 0が使われます):");
         match list_windows_video_cards() {
             Ok(descs) => {
-                for desc in descs {
+                for (device_id, desc) in descs.into_iter().enumerate() {
                     let description = OsString::from_wide(trim_nul(&desc.Description));
                     let vram = humansize::format_size(desc.DedicatedVideoMemory, BINARY);
-                    info!("  - {description:?} ({vram})");
+                    info!("  GPU {device_id}: {description:?} ({vram})");
                 }
             }
             Err(err) => error!("{err}"),
@@ -1022,15 +1041,15 @@ pub(crate) mod blocking {
         }
     }
 
-    fn initial_process(accent_phrases: &[AccentPhraseModel]) -> (Vec<MoraModel>, Vec<OjtPhoneme>) {
+    fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<OjtPhoneme>) {
         let flatten_moras = to_flatten_moras(accent_phrases);
 
         let mut phoneme_strings = vec!["pau".to_string()];
         for mora in flatten_moras.iter() {
-            if let Some(consonant) = mora.consonant() {
+            if let Some(consonant) = &mora.consonant {
                 phoneme_strings.push(consonant.clone())
             }
-            phoneme_strings.push(mora.vowel().clone());
+            phoneme_strings.push(mora.vowel.clone());
         }
         phoneme_strings.push("pau".to_string());
 
@@ -1038,15 +1057,17 @@ pub(crate) mod blocking {
 
         return (flatten_moras, phoneme_data_list);
 
-        fn to_flatten_moras(accent_phrases: &[AccentPhraseModel]) -> Vec<MoraModel> {
+        fn to_flatten_moras(accent_phrases: &[AccentPhrase]) -> Vec<Mora> {
             let mut flatten_moras = Vec::new();
 
-            for accent_phrase in accent_phrases {
-                let moras = accent_phrase.moras();
+            for AccentPhrase {
+                moras, pause_mora, ..
+            } in accent_phrases
+            {
                 for mora in moras {
                     flatten_moras.push(mora.clone());
                 }
-                if let Some(pause_mora) = accent_phrase.pause_mora() {
+                if let Some(pause_mora) = pause_mora {
                     flatten_moras.push(pause_mora.clone());
                 }
             }
@@ -1058,8 +1079,9 @@ pub(crate) mod blocking {
             OjtPhoneme::convert(
                 phoneme_str_list
                     .iter()
-                    .enumerate()
-                    .map(|(i, s)| OjtPhoneme::new(s.as_ref().to_string(), i as f32, i as f32 + 1.))
+                    .map(AsRef::as_ref)
+                    .map(ToOwned::to_owned)
+                    .map(OjtPhoneme::new)
                     .collect::<Vec<OjtPhoneme>>()
                     .as_slice(),
             )
@@ -1100,61 +1122,79 @@ pub(crate) mod blocking {
         (consonant_phoneme_list, vowel_phoneme_list, vowel_indexes)
     }
 
-    impl AudioQueryModel {
-        fn from_accent_phrases(accent_phrases: Vec<AccentPhraseModel>) -> Self {
+    impl AudioQuery {
+        fn from_accent_phrases(accent_phrases: Vec<AccentPhrase>) -> Self {
             let kana = create_kana(&accent_phrases);
-            Self::new(
+            Self {
                 accent_phrases,
-                1.,
-                0.,
-                1.,
-                1.,
-                0.1,
-                0.1,
-                DEFAULT_SAMPLING_RATE,
-                false,
-                Some(kana),
-            )
+                speed_scale: 1.,
+                pitch_scale: 0.,
+                intonation_scale: 1.,
+                volume_scale: 1.,
+                pre_phoneme_length: 0.1,
+                post_phoneme_length: 0.1,
+                output_sampling_rate: DEFAULT_SAMPLING_RATE,
+                output_stereo: false,
+                kana: Some(kana),
+            }
         }
     }
 }
 
-pub(crate) mod tokio {
+pub(crate) mod nonblocking {
     use std::sync::Arc;
 
     use crate::{
-        AccentPhraseModel, AudioQueryModel, FullcontextExtractor, Result, StyleId,
-        SynthesisOptions, VoiceModelId, VoiceModelMeta,
+        AccentPhrase, AudioQuery, FullcontextExtractor, Result, StyleId, SynthesisOptions,
+        VoiceModelId, VoiceModelMeta,
     };
 
     use super::{InitializeOptions, TtsOptions};
 
     /// 音声シンセサイザ。
+    ///
+    /// # Performance
+    ///
+    /// [blocking]クレートにより動いている。詳しくは[`nonblocking`モジュールのドキュメント]を参照。
+    ///
+    /// [blocking]: https://docs.rs/crate/blocking
+    /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
     #[derive(Clone)]
     pub struct Synthesizer<O>(pub(super) Arc<super::blocking::Synthesizer<O>>);
 
     // FIXME: docを書く
     impl<O: Send + Sync + 'static> self::Synthesizer<O> {
-        pub fn new(open_jtalk: O, options: &InitializeOptions) -> Result<Self> {
-            super::blocking::Synthesizer::new(open_jtalk, options)
+        pub fn new(
+            onnxruntime: &'static crate::nonblocking::Onnxruntime,
+            open_jtalk: O,
+            options: &InitializeOptions,
+        ) -> Result<Self> {
+            super::blocking::Synthesizer::new(&onnxruntime.0, open_jtalk, options)
                 .map(Into::into)
                 .map(Self)
+        }
+
+        pub fn onnxruntime(&self) -> &'static crate::nonblocking::Onnxruntime {
+            crate::nonblocking::Onnxruntime::from_blocking(self.0.onnxruntime())
         }
 
         pub fn is_gpu_mode(&self) -> bool {
             self.0.is_gpu_mode()
         }
 
-        pub async fn load_voice_model(&self, model: &crate::tokio::VoiceModel) -> Result<()> {
+        pub async fn load_voice_model(
+            &self,
+            model: &crate::nonblocking::VoiceModelFile,
+        ) -> Result<()> {
             let model_bytes = &model.read_inference_models().await?;
             self.0.status.insert_model(model.header(), model_bytes)
         }
 
-        pub fn unload_voice_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
+        pub fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> Result<()> {
             self.0.unload_voice_model(voice_model_id)
         }
 
-        pub fn is_loaded_voice_model(&self, voice_model_id: &VoiceModelId) -> bool {
+        pub fn is_loaded_voice_model(&self, voice_model_id: VoiceModelId) -> bool {
             self.0.is_loaded_voice_model(voice_model_id)
         }
 
@@ -1169,7 +1209,7 @@ pub(crate) mod tokio {
 
         pub async fn synthesis(
             &self,
-            audio_query: &AudioQueryModel,
+            audio_query: &AudioQuery,
             style_id: StyleId,
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
@@ -1185,7 +1225,7 @@ pub(crate) mod tokio {
             &self,
             kana: &str,
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let blocking = self.0.clone();
             let kana = kana.to_owned();
 
@@ -1195,9 +1235,9 @@ pub(crate) mod tokio {
 
         pub async fn replace_mora_data(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let blocking = self.0.clone();
             let accent_phrases = accent_phrases.to_owned();
 
@@ -1207,9 +1247,9 @@ pub(crate) mod tokio {
 
         pub async fn replace_phoneme_length(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let blocking = self.0.clone();
             let accent_phrases = accent_phrases.to_owned();
 
@@ -1221,9 +1261,9 @@ pub(crate) mod tokio {
 
         pub async fn replace_mora_pitch(
             &self,
-            accent_phrases: &[AccentPhraseModel],
+            accent_phrases: &[AccentPhrase],
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let blocking = self.0.clone();
             let accent_phrases = accent_phrases.to_owned();
 
@@ -1235,7 +1275,7 @@ pub(crate) mod tokio {
             &self,
             kana: &str,
             style_id: StyleId,
-        ) -> Result<AudioQueryModel> {
+        ) -> Result<AudioQuery> {
             let blocking = self.0.clone();
             let kana = kana.to_owned();
 
@@ -1261,14 +1301,14 @@ pub(crate) mod tokio {
             &self,
             text: &str,
             style_id: StyleId,
-        ) -> Result<Vec<AccentPhraseModel>> {
+        ) -> Result<Vec<AccentPhrase>> {
             let blocking = self.0.clone();
             let text = text.to_owned();
 
             crate::task::asyncify(move || blocking.create_accent_phrases(&text, style_id)).await
         }
 
-        pub async fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQueryModel> {
+        pub async fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery> {
             let blocking = self.0.clone();
             let text = text.to_owned();
 
@@ -1294,9 +1334,7 @@ pub(crate) mod tokio {
 mod tests {
 
     use super::{blocking::PerformInference as _, AccelerationMode, InitializeOptions};
-    use crate::{
-        engine::MoraModel, macros::tests::assert_debug_fmt_eq, AccentPhraseModel, Result, StyleId,
-    };
+    use crate::{engine::Mora, macros::tests::assert_debug_fmt_eq, AccentPhrase, Result, StyleId};
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use rstest::rstest;
 
@@ -1304,7 +1342,10 @@ mod tests {
     #[case(Ok(()))]
     #[tokio::test]
     async fn load_model_works(#[case] expected_result_at_initialized: Result<()>) {
-        let syntesizer = super::tokio::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1314,7 +1355,7 @@ mod tests {
         .unwrap();
 
         let result = syntesizer
-            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
             .await;
 
         assert_debug_fmt_eq!(
@@ -1327,7 +1368,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn is_use_gpu_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1343,7 +1387,10 @@ mod tests {
     #[tokio::test]
     async fn is_loaded_model_by_style_id_works(#[case] style_id: u32, #[case] expected: bool) {
         let style_id = StyleId::new(style_id);
-        let syntesizer = super::tokio::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1356,7 +1403,7 @@ mod tests {
             "expected is_model_loaded to return false, but got true",
         );
         syntesizer
-            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1371,7 +1418,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_duration_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1381,7 +1431,7 @@ mod tests {
         .unwrap();
 
         syntesizer
-            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1402,7 +1452,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_intonation_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1411,7 +1464,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1441,7 +1494,10 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn decode_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
             (),
             &InitializeOptions {
                 acceleration_mode: AccelerationMode::Cpu,
@@ -1450,7 +1506,7 @@ mod tests {
         )
         .unwrap();
         syntesizer
-            .load_voice_model(&crate::tokio::VoiceModel::sample().await.unwrap())
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
             .await
             .unwrap();
 
@@ -1533,8 +1589,11 @@ mod tests {
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
         #[case] expected_kana_text: &str,
     ) {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1544,7 +1603,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let query = match input {
@@ -1558,41 +1617,39 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            query.accent_phrases().len(),
+            query.accent_phrases.len(),
             expected_text_consonant_vowel_data.len()
         );
 
-        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in
-            std::iter::zip(query.accent_phrases(), expected_text_consonant_vowel_data)
-        {
-            assert_eq!(
-                accent_phrase.moras().len(),
-                text_consonant_vowel_slice.len()
-            );
-            assert_eq!(accent_phrase.accent(), accent_pos);
+        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in std::iter::zip(
+            query.accent_phrases,
+            expected_text_consonant_vowel_data.iter().copied(),
+        ) {
+            assert_eq!(accent_phrase.moras.len(), text_consonant_vowel_slice.len());
+            assert_eq!(accent_phrase.accent, accent_pos);
 
-            for (mora, (text, consonant, vowel)) in
-                std::iter::zip(accent_phrase.moras(), *text_consonant_vowel_slice)
-            {
-                assert_eq!(mora.text(), text);
+            for (mora, (text, consonant, vowel)) in std::iter::zip(
+                accent_phrase.moras,
+                text_consonant_vowel_slice.iter().copied(),
+            ) {
+                assert_eq!(mora.text, text);
                 // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
-                    mora.consonant_length(),
-                    &Some(0.),
+                    mora.consonant_length,
+                    Some(0.),
                     "expected mora.consonant_length is not Some(0.0), but got Some(0.0)."
                 );
-                assert_eq!(mora.consonant(), &Some(consonant.to_string()));
-                assert_eq!(mora.vowel(), vowel);
+                assert_eq!(mora.consonant, Some(consonant.to_string()));
+                assert_eq!(mora.vowel, vowel);
                 // NOTE: 母音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
-                    mora.vowel_length(),
-                    &0.,
+                    mora.vowel_length, 0.,
                     "expected mora.vowel_length is not 0.0, but got 0.0."
                 );
             }
         }
 
-        assert_eq!(query.kana().as_deref(), Some(expected_kana_text));
+        assert_eq!(query.kana.as_deref(), Some(expected_kana_text));
     }
 
     #[rstest]
@@ -1603,8 +1660,11 @@ mod tests {
         #[case] input: Input,
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
     ) {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1614,7 +1674,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = match input {
@@ -1636,31 +1696,29 @@ mod tests {
             expected_text_consonant_vowel_data.len()
         );
 
-        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in
-            std::iter::zip(accent_phrases, expected_text_consonant_vowel_data)
-        {
-            assert_eq!(
-                accent_phrase.moras().len(),
-                text_consonant_vowel_slice.len()
-            );
-            assert_eq!(accent_phrase.accent(), accent_pos);
+        for (accent_phrase, (text_consonant_vowel_slice, accent_pos)) in std::iter::zip(
+            accent_phrases,
+            expected_text_consonant_vowel_data.iter().copied(),
+        ) {
+            assert_eq!(accent_phrase.moras.len(), text_consonant_vowel_slice.len());
+            assert_eq!(accent_phrase.accent, accent_pos);
 
-            for (mora, (text, consonant, vowel)) in
-                std::iter::zip(accent_phrase.moras(), *text_consonant_vowel_slice)
-            {
-                assert_eq!(mora.text(), text);
+            for (mora, (text, consonant, vowel)) in std::iter::zip(
+                accent_phrase.moras,
+                text_consonant_vowel_slice.iter().copied(),
+            ) {
+                assert_eq!(mora.text, text);
                 // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
-                    mora.consonant_length(),
-                    &Some(0.),
+                    mora.consonant_length,
+                    Some(0.),
                     "expected mora.consonant_length is not Some(0.0), but got Some(0.0)."
                 );
-                assert_eq!(mora.consonant(), &Some(consonant.to_string()));
-                assert_eq!(mora.vowel(), vowel);
+                assert_eq!(mora.consonant, Some(consonant.to_string()));
+                assert_eq!(mora.vowel, vowel);
                 // NOTE: 母音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
-                    mora.vowel_length(),
-                    &0.,
+                    mora.vowel_length, 0.,
                     "expected mora.vowel_length is not 0.0, but got 0.0."
                 );
             }
@@ -1670,8 +1728,11 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn create_accent_phrases_works_for_japanese_commas_and_periods() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1681,7 +1742,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1691,39 +1752,38 @@ mod tests {
         assert_eq!(accent_phrases.len(), 5);
 
         // 入力テキストに「、」や「。」などの句読点が含まれていたときに
-        // AccentPhraseModel の pause_mora に期待する値をテスト
+        // AccentPhraseの pause_mora に期待する値をテスト
 
         assert!(
-            accent_phrases[0].pause_mora().is_some(),
-            "accent_phrases[0].pause_mora() is None"
+            accent_phrases[0].pause_mora.is_some(),
+            "accent_phrases[0].pause_mora is None"
         );
         assert!(
-            accent_phrases[1].pause_mora().is_some(),
-            "accent_phrases[1].pause_mora() is None"
+            accent_phrases[1].pause_mora.is_some(),
+            "accent_phrases[1].pause_mora is None"
         );
         assert!(
-            accent_phrases[2].pause_mora().is_some(),
-            "accent_phrases[2].pause_mora() is None"
+            accent_phrases[2].pause_mora.is_some(),
+            "accent_phrases[2].pause_mora is None"
         );
         assert!(
-            accent_phrases[3].pause_mora().is_some(),
-            "accent_phrases[3].pause_mora() is None"
+            accent_phrases[3].pause_mora.is_some(),
+            "accent_phrases[3].pause_mora is None"
         );
         assert!(
-            accent_phrases[4].pause_mora().is_none(), // 文末の句読点は削除される
-            "accent_phrases[4].pause_mora() is not None"
+            accent_phrases[4].pause_mora.is_none(), // 文末の句読点は削除される
+            "accent_phrases[4].pause_mora is not None"
         );
 
         for accent_phrase in accent_phrases.iter().take(4) {
-            let pause_mora = accent_phrase.pause_mora().clone().unwrap();
-            assert_eq!(pause_mora.text(), "、");
-            assert_eq!(pause_mora.consonant(), &None);
-            assert_eq!(pause_mora.consonant_length(), &None);
-            assert_eq!(pause_mora.vowel(), "pau");
+            let pause_mora = accent_phrase.pause_mora.clone().unwrap();
+            assert_eq!(pause_mora.text, "、");
+            assert_eq!(pause_mora.consonant, None);
+            assert_eq!(pause_mora.consonant_length, None);
+            assert_eq!(pause_mora.vowel, "pau");
             assert_ne!(
-                pause_mora.vowel_length(),
-                &0.0,
-                "pause_mora.vowel_length() should not be 0.0"
+                pause_mora.vowel_length, 0.0,
+                "pause_mora.vowel_length should not be 0.0",
             );
         }
     }
@@ -1731,8 +1791,11 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_length_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1742,7 +1805,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1760,17 +1823,20 @@ mod tests {
             any_mora_param_changed(
                 &accent_phrases,
                 &modified_accent_phrases,
-                MoraModel::vowel_length
+                |Mora { vowel_length, .. }| vowel_length,
             ),
-            "mora_length() does not work: mora.vowel_length() is not changed."
+            "mora_length() does not work: mora.vowel_length is not changed.",
         );
     }
 
     #[rstest]
     #[tokio::test]
     async fn mora_pitch_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1780,7 +1846,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1795,16 +1861,23 @@ mod tests {
 
         // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
         assert!(
-            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::pitch),
-            "mora_pitch() does not work: mora.pitch() is not changed."
+            any_mora_param_changed(
+                &accent_phrases,
+                &modified_accent_phrases,
+                |Mora { pitch, .. }| pitch
+            ),
+            "mora_pitch() does not work: mora.pitch is not changed.",
         );
     }
 
     #[rstest]
     #[tokio::test]
     async fn mora_data_works() {
-        let syntesizer = super::tokio::Synthesizer::new(
-            crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
             &InitializeOptions {
@@ -1814,7 +1887,7 @@ mod tests {
         )
         .unwrap();
 
-        let model = &crate::tokio::VoiceModel::sample().await.unwrap();
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         syntesizer.load_voice_model(model).await.unwrap();
 
         let accent_phrases = syntesizer
@@ -1829,27 +1902,31 @@ mod tests {
 
         // NOTE: 一つでも音高が変わっていれば、動作しているとみなす
         assert!(
-            any_mora_param_changed(&accent_phrases, &modified_accent_phrases, MoraModel::pitch),
-            "mora_data() does not work: mora.pitch() is not changed."
+            any_mora_param_changed(
+                &accent_phrases,
+                &modified_accent_phrases,
+                |Mora { pitch, .. }| pitch,
+            ),
+            "mora_data() does not work: mora.pitch is not changed.",
         );
         // NOTE: 一つでも母音の長さが変わっていれば、動作しているとみなす
         assert!(
             any_mora_param_changed(
                 &accent_phrases,
                 &modified_accent_phrases,
-                MoraModel::vowel_length
+                |Mora { vowel_length, .. }| vowel_length,
             ),
-            "mora_data() does not work: mora.vowel_length() is not changed."
+            "mora_data() does not work: mora.vowel_length is not changed.",
         );
     }
 
     fn any_mora_param_changed<T: PartialEq>(
-        before: &[AccentPhraseModel],
-        after: &[AccentPhraseModel],
-        param: fn(&MoraModel) -> &T,
+        before: &[AccentPhrase],
+        after: &[AccentPhrase],
+        param: fn(&Mora) -> &T,
     ) -> bool {
         std::iter::zip(before, after)
-            .flat_map(move |(before, after)| std::iter::zip(before.moras(), after.moras()))
+            .flat_map(|(before, after)| std::iter::zip(&before.moras, &after.moras))
             .any(|(before, after)| param(before) != param(after))
     }
 

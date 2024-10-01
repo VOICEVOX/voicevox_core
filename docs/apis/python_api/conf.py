@@ -32,7 +32,7 @@ autoapi_options = [
 ]
 
 # templates_path = ['_templates']
-exclude_patterns = []
+exclude_patterns = ["autoapi/*/_rust/*"] # パブリックAPIを意図した部分ではなく、またorphan扱いとなって警告が出るため
 
 
 # -- Options for HTML output -------------------------------------------------

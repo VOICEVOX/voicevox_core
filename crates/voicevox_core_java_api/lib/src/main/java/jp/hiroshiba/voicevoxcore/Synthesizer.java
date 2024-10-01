@@ -5,8 +5,10 @@ import jakarta.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import jp.hiroshiba.voicevoxcore.exceptions.InferenceFailedException;
+import java.util.Optional;
+import java.util.UUID;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
+import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
 
 /**
  * 音声シンセサイザ。
@@ -16,13 +18,25 @@ import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 public class Synthesizer extends Dll {
   private long handle;
 
-  private Synthesizer(OpenJtalk openJtalk, Builder builder) {
-    rsNew(openJtalk, builder);
+  private Synthesizer(Onnxruntime onnxruntime, OpenJtalk openJtalk, Builder builder) {
+    rsNew(onnxruntime, openJtalk, builder);
   }
 
   protected void finalize() throws Throwable {
     rsDrop();
     super.finalize();
+  }
+
+  /**
+   * ONNX Runtime。
+   *
+   * @return {@link Onnxruntime}。
+   */
+  @Nonnull
+  public Onnxruntime getOnnxruntime() {
+    Optional<Onnxruntime> onnxruntime = Onnxruntime.get();
+    assert onnxruntime.isPresent() : "`Synthesizer`のコンストラクタで要求しているはず";
+    return onnxruntime.get();
   }
 
   /**
@@ -40,10 +54,11 @@ public class Synthesizer extends Dll {
    * @return メタ情報。
    */
   @Nonnull
-  public VoiceModel.SpeakerMeta[] metas() {
+  public VoiceModelFile.SpeakerMeta[] metas() {
     Gson gson = new Gson();
     String metasJson = rsGetMetasJson();
-    VoiceModel.SpeakerMeta[] rawMetas = gson.fromJson(metasJson, VoiceModel.SpeakerMeta[].class);
+    VoiceModelFile.SpeakerMeta[] rawMetas =
+        gson.fromJson(metasJson, VoiceModelFile.SpeakerMeta[].class);
     if (rawMetas == null) {
       throw new NullPointerException("metas");
     }
@@ -56,7 +71,7 @@ public class Synthesizer extends Dll {
    * @param voiceModel 読み込むモデル。
    * @throws InvalidModelDataException 無効なモデルデータの場合。
    */
-  public void loadVoiceModel(VoiceModel voiceModel) throws InvalidModelDataException {
+  public void loadVoiceModel(VoiceModelFile voiceModel) throws InvalidModelDataException {
     rsLoadVoiceModel(voiceModel);
   }
 
@@ -65,7 +80,7 @@ public class Synthesizer extends Dll {
    *
    * @param voiceModelId 読み込みを解除する音声モデルのID。
    */
-  public void unloadVoiceModel(String voiceModelId) {
+  public void unloadVoiceModel(UUID voiceModelId) {
     rsUnloadVoiceModel(voiceModelId);
   }
 
@@ -75,7 +90,7 @@ public class Synthesizer extends Dll {
    * @param voiceModelId 音声モデルのID。
    * @return 指定した音声モデルのIDが読み込まれているかどうか。
    */
-  public boolean isLoadedVoiceModel(String voiceModelId) {
+  public boolean isLoadedVoiceModel(UUID voiceModelId) {
     return rsIsLoadedVoiceModel(voiceModelId);
   }
 
@@ -85,11 +100,10 @@ public class Synthesizer extends Dll {
    * @param kana AquesTalk風記法。
    * @param styleId スタイルID。
    * @return {@link AudioQuery}。
-   * @throws InferenceFailedException 推論に失敗した場合。
+   * @throws RunModelException 推論に失敗した場合。
    */
   @Nonnull
-  public AudioQuery createAudioQueryFromKana(String kana, int styleId)
-      throws InferenceFailedException {
+  public AudioQuery createAudioQueryFromKana(String kana, int styleId) throws RunModelException {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
@@ -109,10 +123,10 @@ public class Synthesizer extends Dll {
    * @param text 日本語のテキスト。
    * @param styleId スタイルID。
    * @return {@link AudioQuery}。
-   * @throws InferenceFailedException 推論に失敗した場合。
+   * @throws RunModelException 推論に失敗した場合。
    */
   @Nonnull
-  public AudioQuery createAudioQuery(String text, int styleId) throws InferenceFailedException {
+  public AudioQuery createAudioQuery(String text, int styleId) throws RunModelException {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
@@ -132,11 +146,11 @@ public class Synthesizer extends Dll {
    * @param kana AquesTalk風記法。
    * @param styleId スタイルID。
    * @return {@link AccentPhrase} のリスト。
-   * @throws InferenceFailedException 推論に失敗した場合。
+   * @throws RunModelException 推論に失敗した場合。
    */
   @Nonnull
   public List<AccentPhrase> createAccentPhrasesFromKana(String kana, int styleId)
-      throws InferenceFailedException {
+      throws RunModelException {
     String accentPhrasesJson = rsAccentPhrasesFromKana(kana, styleId);
     Gson gson = new Gson();
     AccentPhrase[] rawAccentPhrases = gson.fromJson(accentPhrasesJson, AccentPhrase[].class);
@@ -152,11 +166,10 @@ public class Synthesizer extends Dll {
    * @param text 日本語のテキスト。
    * @param styleId スタイルID。
    * @return {@link AccentPhrase} のリスト。
-   * @throws InferenceFailedException 推論に失敗した場合。
+   * @throws RunModelException 推論に失敗した場合。
    */
   @Nonnull
-  public List<AccentPhrase> createAccentPhrases(String text, int styleId)
-      throws InferenceFailedException {
+  public List<AccentPhrase> createAccentPhrases(String text, int styleId) throws RunModelException {
     String accentPhrasesJson = rsAccentPhrases(text, styleId);
     Gson gson = new Gson();
     AccentPhrase[] rawAccentPhrases = gson.fromJson(accentPhrasesJson, AccentPhrase[].class);
@@ -172,11 +185,11 @@ public class Synthesizer extends Dll {
    * @param accentPhrases 変更元のアクセント句の配列。
    * @param styleId スタイルID。
    * @return 変更後のアクセント句の配列。
-   * @throws InferenceFailedException 推論に失敗した場合。
+   * @throws RunModelException 推論に失敗した場合。
    */
   @Nonnull
   public List<AccentPhrase> replaceMoraData(List<AccentPhrase> accentPhrases, int styleId)
-      throws InferenceFailedException {
+      throws RunModelException {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
@@ -192,11 +205,11 @@ public class Synthesizer extends Dll {
    * @param accentPhrases 変更元のアクセント句の配列。
    * @param styleId スタイルID。
    * @return 変更後のアクセント句の配列。
-   * @throws InferenceFailedException 推論に失敗した場合。
+   * @throws RunModelException 推論に失敗した場合。
    */
   @Nonnull
   public List<AccentPhrase> replacePhonemeLength(List<AccentPhrase> accentPhrases, int styleId)
-      throws InferenceFailedException {
+      throws RunModelException {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
@@ -212,11 +225,11 @@ public class Synthesizer extends Dll {
    * @param accentPhrases 変更元のアクセント句の配列。
    * @param styleId スタイルID。
    * @return 変更後のアクセント句の配列。
-   * @throws InferenceFailedException 推論に失敗した場合。
+   * @throws RunModelException 推論に失敗した場合。
    */
   @Nonnull
   public List<AccentPhrase> replaceMoraPitch(List<AccentPhrase> accentPhrases, int styleId)
-      throws InferenceFailedException {
+      throws RunModelException {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
@@ -265,62 +278,59 @@ public class Synthesizer extends Dll {
     return new TtsConfigurator(this, text, styleId);
   }
 
-  private native void rsNew(OpenJtalk openJtalk, Builder builder);
+  private native void rsNew(Onnxruntime onnxruntime, OpenJtalk openJtalk, Builder builder);
 
   private native boolean rsIsGpuMode();
 
   @Nonnull
   private native String rsGetMetasJson();
 
-  private native void rsLoadVoiceModel(VoiceModel voiceModel) throws InvalidModelDataException;
+  private native void rsLoadVoiceModel(VoiceModelFile voiceModel) throws InvalidModelDataException;
 
-  private native void rsUnloadVoiceModel(String voiceModelId);
+  private native void rsUnloadVoiceModel(UUID voiceModelId);
 
-  private native boolean rsIsLoadedVoiceModel(String voiceModelId);
-
-  @Nonnull
-  private native String rsAudioQueryFromKana(String kana, int styleId)
-      throws InferenceFailedException;
+  private native boolean rsIsLoadedVoiceModel(UUID voiceModelId);
 
   @Nonnull
-  private native String rsAudioQuery(String text, int styleId) throws InferenceFailedException;
+  private native String rsAudioQueryFromKana(String kana, int styleId) throws RunModelException;
 
   @Nonnull
-  private native String rsAccentPhrasesFromKana(String kana, int styleId)
-      throws InferenceFailedException;
+  private native String rsAudioQuery(String text, int styleId) throws RunModelException;
 
   @Nonnull
-  private native String rsAccentPhrases(String text, int styleId) throws InferenceFailedException;
+  private native String rsAccentPhrasesFromKana(String kana, int styleId) throws RunModelException;
+
+  @Nonnull
+  private native String rsAccentPhrases(String text, int styleId) throws RunModelException;
 
   @Nonnull
   private native String rsReplaceMoraData(String accentPhrasesJson, int styleId, boolean kana)
-      throws InferenceFailedException;
+      throws RunModelException;
 
   @Nonnull
   private native String rsReplacePhonemeLength(String accentPhrasesJson, int styleId, boolean kana)
-      throws InferenceFailedException;
+      throws RunModelException;
 
   @Nonnull
   private native String rsReplaceMoraPitch(String accentPhrasesJson, int styleId, boolean kana)
-      throws InferenceFailedException;
+      throws RunModelException;
 
   @Nonnull
   private native byte[] rsSynthesis(
-      String queryJson, int styleId, boolean enableInterrogativeUpspeak)
-      throws InferenceFailedException;
+      String queryJson, int styleId, boolean enableInterrogativeUpspeak) throws RunModelException;
 
   @Nonnull
   private native byte[] rsTtsFromKana(String kana, int styleId, boolean enableInterrogativeUpspeak)
-      throws InferenceFailedException;
+      throws RunModelException;
 
   @Nonnull
   private native byte[] rsTts(String text, int styleId, boolean enableInterrogativeUpspeak)
-      throws InferenceFailedException;
+      throws RunModelException;
 
   private native void rsDrop();
 
-  public static Builder builder(OpenJtalk openJtalk) {
-    return new Builder(openJtalk);
+  public static Builder builder(Onnxruntime onnxruntime, OpenJtalk openJtalk) {
+    return new Builder(onnxruntime, openJtalk);
   }
 
   /**
@@ -329,6 +339,7 @@ public class Synthesizer extends Dll {
    * @see Synthesizer#builder
    */
   public static class Builder {
+    private Onnxruntime onnxruntime;
     private OpenJtalk openJtalk;
 
     @SuppressWarnings("unused")
@@ -337,7 +348,8 @@ public class Synthesizer extends Dll {
     @SuppressWarnings("unused")
     private int cpuNumThreads;
 
-    public Builder(OpenJtalk openJtalk) {
+    public Builder(Onnxruntime onnxruntime, OpenJtalk openJtalk) {
+      this.onnxruntime = onnxruntime;
       this.openJtalk = openJtalk;
     }
 
@@ -372,7 +384,7 @@ public class Synthesizer extends Dll {
      * @return {@link Synthesizer}。
      */
     public Synthesizer build() {
-      Synthesizer synthesizer = new Synthesizer(openJtalk, this);
+      Synthesizer synthesizer = new Synthesizer(onnxruntime, openJtalk, this);
       return synthesizer;
     }
   }
@@ -420,10 +432,10 @@ public class Synthesizer extends Dll {
      * {@link AudioQuery} から音声合成する。
      *
      * @return 音声データ。
-     * @throws InferenceFailedException 推論に失敗した場合。
+     * @throws RunModelException 推論に失敗した場合。
      */
     @Nonnull
-    public byte[] execute() throws InferenceFailedException {
+    public byte[] execute() throws RunModelException {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }
@@ -465,10 +477,10 @@ public class Synthesizer extends Dll {
      * {@link AudioQuery} から音声合成する。
      *
      * @return 音声データ。
-     * @throws InferenceFailedException 推論に失敗した場合。
+     * @throws RunModelException 推論に失敗した場合。
      */
     @Nonnull
-    public byte[] execute() throws InferenceFailedException {
+    public byte[] execute() throws RunModelException {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }
@@ -508,10 +520,10 @@ public class Synthesizer extends Dll {
      * {@link AudioQuery} から音声合成する。
      *
      * @return 音声データ。
-     * @throws InferenceFailedException 推論に失敗した場合。
+     * @throws RunModelException 推論に失敗した場合。
      */
     @Nonnull
-    public byte[] execute() throws InferenceFailedException {
+    public byte[] execute() throws RunModelException {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }

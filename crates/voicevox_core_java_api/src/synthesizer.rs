@@ -1,5 +1,5 @@
 use crate::{
-    common::{throw_if_err, JavaApiError},
+    common::{throw_if_err, JNIEnvExt as _, JavaApiError},
     enum_object, object, object_type,
 };
 
@@ -14,6 +14,7 @@ use std::sync::Arc;
 unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
+    onnxruntime: JObject<'local>,
     open_jtalk: JObject<'local>,
     builder: JObject<'local>,
 ) {
@@ -45,11 +46,18 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'loca
         let cpu_num_threads = env.get_field(&builder, "cpuNumThreads", "I")?;
         options.cpu_num_threads = cpu_num_threads.i().expect("cpuNumThreads is not integer") as u16;
 
+        let onnxruntime = *env
+            .get_rust_field::<_, _, &'static voicevox_core::blocking::Onnxruntime>(
+                &onnxruntime,
+                "handle",
+            )?;
         let open_jtalk = env
             .get_rust_field::<_, _, voicevox_core::blocking::OpenJtalk>(&open_jtalk, "handle")?
             .clone();
         let internal = Arc::new(voicevox_core::blocking::Synthesizer::new(
-            open_jtalk, &options,
+            onnxruntime,
+            open_jtalk,
+            &options,
         )?);
         env.set_rust_field(&this, "handle", internal)?;
         Ok(())
@@ -99,8 +107,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsLoadVoice
 ) {
     throw_if_err(env, (), |env| {
         let model = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::VoiceModel>>(&model, "handle")?
+            .get_rust_field::<_, _, crate::voice_model::VoiceModelFile>(&model, "handle")?
             .clone();
+        let model = model.read()?;
         let internal = env
             .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
@@ -115,10 +124,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsLoadVoice
 unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsUnloadVoiceModel<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
-    model_id: JString<'local>,
+    model_id: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let model_id: String = env.get_string(&model_id)?.into();
+        let model_id = env.get_uuid(&model_id)?.into();
 
         let internal = env
             .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
@@ -126,7 +135,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsUnloadVoi
             )?
             .clone();
 
-        internal.unload_voice_model(&voicevox_core::VoiceModelId::new(model_id))?;
+        internal.unload_voice_model(model_id)?;
 
         Ok(())
     })
@@ -138,10 +147,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsLoadedV
 >(
     env: JNIEnv<'local>,
     this: JObject<'local>,
-    model_id: JString<'local>,
+    model_id: JObject<'local>,
 ) -> jboolean {
     throw_if_err(env, false, |env| {
-        let model_id: String = env.get_string(&model_id)?.into();
+        let model_id = env.get_uuid(&model_id)?.into();
 
         let internal = env
             .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
@@ -149,7 +158,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsLoadedV
             )?
             .clone();
 
-        let is_loaded = internal.is_loaded_voice_model(&voicevox_core::VoiceModelId::new(model_id));
+        let is_loaded = internal.is_loaded_voice_model(model_id);
 
         Ok(is_loaded)
     })
@@ -280,7 +289,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
-        let accent_phrases: Vec<voicevox_core::AccentPhraseModel> =
+        let accent_phrases: Vec<voicevox_core::AccentPhrase> =
             serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 
@@ -311,7 +320,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplacePh
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
-        let accent_phrases: Vec<voicevox_core::AccentPhraseModel> =
+        let accent_phrases: Vec<voicevox_core::AccentPhrase> =
             serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 
@@ -340,7 +349,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
-        let accent_phrases: Vec<voicevox_core::AccentPhraseModel> =
+        let accent_phrases: Vec<voicevox_core::AccentPhrase> =
             serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 
@@ -370,7 +379,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsSynthesis
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let audio_query: String = env.get_string(&query_json)?.into();
-        let audio_query: voicevox_core::AudioQueryModel =
+        let audio_query: voicevox_core::AudioQuery =
             serde_json::from_str(&audio_query).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 

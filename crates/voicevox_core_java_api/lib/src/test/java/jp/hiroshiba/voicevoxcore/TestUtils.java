@@ -3,13 +3,23 @@ package jp.hiroshiba.voicevoxcore;
 import java.io.File;
 
 class TestUtils {
-  VoiceModel loadModel() {
+  VoiceModelFile openModel() {
     // cwdはvoicevox_core/crates/voicevox_core_java_api/lib
     String cwd = System.getProperty("user.dir");
     File path = new File(cwd + "/../../test_util/data/model/sample.vvm");
 
     try {
-      return new VoiceModel(path.getCanonicalPath());
+      return new VoiceModelFile(path.getCanonicalPath());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  Onnxruntime loadOnnxruntime() {
+    final String FILENAME = "../../test_util/data/lib/" + Onnxruntime.LIB_VERSIONED_FILENAME;
+
+    try {
+      return Onnxruntime.loadOnce().filename(FILENAME).exec();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

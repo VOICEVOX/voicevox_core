@@ -1,6 +1,6 @@
 # VOICEVOX CORE
 
-## **現在の main ブランチは工事中なので正しく動かないことがあります。[バージョン 0.14.4](https://github.com/VOICEVOX/voicevox_core/tree/0.14.4)をご利用ください。**
+## **現在の main ブランチは工事中なので正しく動かないことがあります。[バージョン 0.15.4](https://github.com/VOICEVOX/voicevox_core/tree/0.15.4)をご利用ください。**
 
 [![releases](https://img.shields.io/github/v/release/VOICEVOX/voicevox_core?label=release)](https://github.com/VOICEVOX/voicevox_core/releases)
 [![test](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml/badge.svg)](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml)
@@ -16,7 +16,7 @@
 
 ## API
 
-[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/c_api/globals_func.html)をご覧ください。
+[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/)をご覧ください。
 
 ## ユーザーガイド
 
@@ -144,16 +144,24 @@ VOICEVOX CORE の主要機能は Rust で実装されることを前提として
 
 ## コアライブラリのビルド
 
-[Releases](https://github.com/VOICEVOX/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドする場合こちらを参照してください。ビルドには [Rust](https://www.rust-lang.org/ja) ([Windows での Rust 開発環境構築手順はこちら](https://docs.microsoft.com/ja-jp/windows/dev-environment/rust/setup)) と [cmake](https://cmake.org/download/) が必要です。
-
-model フォルダにある onnx モデルはダミーのため、ノイズの混じった音声が出力されます
+ビルドには [Rust](https://www.rust-lang.org/ja) ([Windows での Rust 開発環境構築手順はこちら](https://docs.microsoft.com/ja-jp/windows/dev-environment/rust/setup)) と [cmake](https://cmake.org/download/) が必要です。
+[Releases](https://github.com/VOICEVOX/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドした場合は、model フォルダにある onnx モデルのみが利用できます。
+このモデルはダミーのため、ノイズの混じった音声が出力されます。
 
 ```bash
 # DLLをビルド
-cargo build --release -p voicevox_core_c_api
+cargo build --release -p voicevox_core_c_api --features load-onnxruntime
 ```
 
-DLL 用のヘッダファイルは [crates/voicevox_core_c_api/include/voicevox_core.h](https://github.com/VOICEVOX/voicevox_core/tree/main/crates/voicevox_core_c_api/include/voicevox_core.h) にあります。
+DLL 用のヘッダファイルの雛形は [crates/voicevox_core_c_api/include/voicevox_core.h](https://github.com/VOICEVOX/voicevox_core/tree/main/crates/voicevox_core_c_api/include/voicevox_core.h) にあります。
+詳しくは[feature-options.md](./docs/feature-options.md)を参照してください。
+
+```bash
+# ヘッダファイルを加工し、マクロ`VOICEVOX_LOAD_ONNXRUNTIME`を宣言
+sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
+  crates/voicevox_core_c_api/include/voicevox_core.h \
+  > ./voicevox_core.h
+```
 
 ## コアライブラリのテスト
 

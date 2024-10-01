@@ -9,23 +9,32 @@ if TYPE_CHECKING:
         AudioQuery,
         SpeakerMeta,
         StyleId,
+        SupportedDevices,
         UserDictWord,
         VoiceModelId,
     )
 
-class VoiceModel:
+class VoiceModelFile:
     """
-    音声モデル。"""
+    音声モデルファイル。"""
 
     @staticmethod
-    def from_path(path: Union[str, PathLike[str]]) -> VoiceModel:
+    def open(path: Union[str, PathLike[str]]) -> VoiceModelFile:
         """
-        VVMファイルから ``VoiceModel`` を生成する。
+        VVMファイルを開く。
 
         Parameters
         ----------
         path
             VVMファイルへのパス。
+        """
+        ...
+    def close(self) -> None:
+        """
+        VVMファイルを閉じる。
+
+        このメソッドが呼ばれた段階で :attr:`Synthesizer.load_voice_model`
+        からのアクセスが継続中の場合、アクセスが終わるまで待つ。
         """
         ...
     @property
@@ -35,6 +44,75 @@ class VoiceModel:
     @property
     def metas(self) -> List[SpeakerMeta]:
         """メタ情報。"""
+        ...
+    def __enter__(self) -> "VoiceModelFile": ...
+    def __exit__(self, exc_type, exc_value, traceback) -> None: ...
+
+class Onnxruntime:
+    """
+    ONNX Runtime。
+
+    シングルトンであり、インスタンスは高々一つ。
+
+    .. code-block::
+
+        ort1 = Onnxruntime.load_once()
+        ort2 = Onnxruntime.get()
+        assert ort2
+        assert ort2 is ort1
+
+    .. code-block::
+
+        ort = voicevox_core.blocking.Onnxruntime.load_once()
+        assert voicevox_core.asyncio.Onnxruntime.get()
+    """
+
+    # ここの定数値が本物と合致するかどうかは、test_type_stub_consts.pyで担保する。
+
+    LIB_NAME: str = "onnxruntime"
+    """ONNX Runtimeのライブラリ名。"""
+
+    LIB_VERSION: str = "1.17.3"
+    """推奨されるONNX Runtimeのバージョン。"""
+
+    LIB_VERSIONED_FILENAME: str
+    """
+    :attr:`LIB_NAME` と :attr:`LIB_VERSION` からなる動的ライブラリのファイル名。
+
+    WindowsとAndroidでは :attr:`LIB_UNVERSIONED_FILENAME` と同じ。
+    """
+
+    LIB_UNVERSIONED_FILENAME: str
+    """:attr:`LIB_NAME` からなる動的ライブラリのファイル名。"""
+
+    @staticmethod
+    def get() -> Union["Onnxruntime", None]:
+        """
+        インスタンスが既に作られているならそれを得る。
+
+        作られていなければ ``None`` を返す。
+        """
+        ...
+    @staticmethod
+    def load_once(*, filename: str = LIB_VERSIONED_FILENAME) -> "Onnxruntime":
+        """
+        ONNX Runtimeをロードして初期化する。
+
+        一度成功したら、以後は引数を無視して同じインスタンスを返す。
+
+        Parameters
+        ----------
+        filename
+            ONNX Runtimeのファイル名（モジュール名）もしくはファイルパス。
+            ``dlopen``/`LoadLibraryExW
+            <https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw>`_
+            の引数に使われる。
+        """
+        ...
+    def supported_devices(self) -> SupportedDevices:
+        """
+        このライブラリで利用可能なデバイスの情報を取得する。
+        """
         ...
 
 class OpenJtalk:
@@ -67,6 +145,8 @@ class Synthesizer:
 
     Parameters
     ----------
+    onnxruntime
+        ONNX Runtime。
     open_jtalk
         Open JTalk。
     acceleration_mode
@@ -77,6 +157,7 @@ class Synthesizer:
 
     def __init__(
         self,
+        onnxruntime: Onnxruntime,
         open_jtalk: OpenJtalk,
         acceleration_mode: Union[
             AccelerationMode, Literal["AUTO", "CPU", "GPU"]
@@ -87,6 +168,10 @@ class Synthesizer:
     def __enter__(self) -> "Synthesizer": ...
     def __exit__(self, exc_type, exc_value, traceback) -> None: ...
     @property
+    def onnxruntime(self) -> Onnxruntime:
+        """ONNX Runtime。"""
+        ...
+    @property
     def is_gpu_mode(self) -> bool:
         """ハードウェアアクセラレーションがGPUモードかどうか。"""
         ...
@@ -94,7 +179,7 @@ class Synthesizer:
     def metas(self) -> List[SpeakerMeta]:
         """メタ情報。"""
         ...
-    def load_voice_model(self, model: VoiceModel) -> None:
+    def load_voice_model(self, model: VoiceModelFile) -> None:
         """
         モデルを読み込む。
 
@@ -104,7 +189,7 @@ class Synthesizer:
             読み込むモデルのスタイルID。
         """
         ...
-    def unload_voice_model(self, voice_model_id: Union[VoiceModelId, str]) -> None:
+    def unload_voice_model(self, voice_model_id: Union[VoiceModelId, UUID]) -> None:
         """
         音声モデルの読み込みを解除する。
 
@@ -114,7 +199,7 @@ class Synthesizer:
             音声モデルID。
         """
         ...
-    def is_loaded_voice_model(self, voice_model_id: Union[VoiceModelId, str]) -> bool:
+    def is_loaded_voice_model(self, voice_model_id: Union[VoiceModelId, UUID]) -> bool:
         """
         指定したvoice_model_idのモデルが読み込まれているか判定する。
 
@@ -341,7 +426,7 @@ class UserDict:
         """このオプジェクトの :class:`dict` としての表現。"""
         ...
     def __init__(self) -> None: ...
-    def load(self, path: str) -> None:
+    def load(self, path: Union[str, PathLike[str]]) -> None:
         """ファイルに保存されたユーザー辞書を読み込む。
 
         Parameters
@@ -350,7 +435,7 @@ class UserDict:
             ユーザー辞書のパス。
         """
         ...
-    def save(self, path: str) -> None:
+    def save(self, path: Union[str, PathLike[str]]) -> None:
         """
         ユーザー辞書をファイルに保存する。
 

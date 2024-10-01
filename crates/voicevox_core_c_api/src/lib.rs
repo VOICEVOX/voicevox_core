@@ -1,9 +1,12 @@
-// ここにあるRustdocはcbindgen向けのものである。safety documentation自体は書くが、Doxygenの慣習に従
-// い`<dt>`で書く。
-#![allow(clippy::missing_safety_doc)]
+// ここにある`#[doc]`はすべてrustdocではなくDoxygen向けのものである。
+#![allow(
+    clippy::doc_lazy_continuation,
+    clippy::missing_safety_doc // safety documentation自体は書くが、Doxygenの慣習に従い`<dt>`で書く
+)]
 
 mod c_impls;
 /// cbindgen:ignore
+#[cfg(feature = "load-onnxruntime")]
 mod compatible_engine;
 mod drop_check;
 mod helpers;
@@ -12,7 +15,7 @@ mod slice_owner;
 use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::{
     accent_phrases_to_json, audio_query_model_to_json, ensure_utf8, into_result_code_with_error,
-    CApiError,
+    CApiError, UuidBytesExt as _,
 };
 use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
@@ -20,6 +23,7 @@ use anstream::{AutoStream, RawStream};
 use chrono::SecondsFormat;
 use colorchoice::ColorChoice;
 use derive_getters::Getters;
+use ref_cast::RefCastCustom;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
@@ -30,8 +34,9 @@ use std::sync::{Arc, Once};
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
-use voicevox_core::{AccentPhraseModel, AudioQueryModel, TtsOptions, UserDictWord, VoiceModelId};
-use voicevox_core::{StyleId, SupportedDevices, SynthesisOptions};
+use voicevox_core::__internal::interop::IdRef as _;
+use voicevox_core::{AccentPhrase, AudioQuery, TtsOptions, UserDictWord};
+use voicevox_core::{StyleId, SynthesisOptions};
 
 fn init_logger_once() {
     static ONCE: Once = Once::new();
@@ -54,17 +59,16 @@ fn init_logger_once() {
                 && anstyle_query::windows::enable_ansi_colors().unwrap_or(true)
         };
 
-        // FIXME: `try_init` → `init` （subscriberは他に存在しないはずなので）
-        let _ = tracing_subscriber::fmt()
+        tracing_subscriber::fmt()
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
             } else {
-                "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=info".into()
+                "error,voicevox_core=info,voicevox_core_c_api=info,ort=info".into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(ansi)
             .with_writer(out)
-            .try_init();
+            .init();
     });
 
     fn local_time(wtr: &mut Writer<'_>) -> fmt::Result {
@@ -78,12 +82,170 @@ fn init_logger_once() {
     }
 }
 
-/*
- * Cの関数として公開するための型や関数を定義するこれらの実装はvoicevox_core/publish.rsに定義してある対応する関数にある
- * この関数ではvoicevox_core/publish.rsにある対応する関数の呼び出しと、その戻り値をCの形式に変換する処理のみとする
- * これはC文脈の処理と実装をわけるためと、内部実装の変更がAPIに影響を与えにくくするためである
- * voicevox_core/publish.rsにある対応する関数とはこのファイルに定義してある公開関数からvoicevoxプレフィックスを取り除いた名前の関数である
- */
+// TODO: https://github.com/mozilla/cbindgen/issues/927
+//#[cfg(feature = "load-onnxruntime")]
+//pub const VOICEVOX_ONNXRUNTIME_LIB_NAME: &CStr = ..;
+//#[cfg(feature = "load-onnxruntime")]
+//pub const VOICEVOX_ONNXRUNTIME_LIB_VERSION: &CStr = ..;
+
+/// ONNX Runtimeの動的ライブラリの、バージョン付きのファイル名。
+///
+/// WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_unversioned_filename と同じ。
+///
+/// \availability{
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
+/// }
+#[cfg(feature = "load-onnxruntime")]
+#[no_mangle]
+pub extern "C" fn voicevox_get_onnxruntime_lib_versioned_filename() -> *const c_char {
+    init_logger_once();
+    let filename = VoicevoxOnnxruntime::lib_versioned_filename();
+    C_STRING_DROP_CHECKER.blacklist(filename).as_ptr()
+}
+
+/// ONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
+///
+/// \availability{
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
+/// }
+#[cfg(feature = "load-onnxruntime")]
+#[no_mangle]
+pub extern "C" fn voicevox_get_onnxruntime_lib_unversioned_filename() -> *const c_char {
+    init_logger_once();
+    let filename = VoicevoxOnnxruntime::lib_unversioned_filename();
+    C_STRING_DROP_CHECKER.blacklist(filename).as_ptr()
+}
+
+/// ::voicevox_onnxruntime_load_once のオプション。
+///
+/// \availability{
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
+/// }
+#[cfg(feature = "load-onnxruntime")]
+#[repr(C)]
+pub struct VoicevoxLoadOnnxruntimeOptions {
+    /// ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
+    ///
+    /// `dlopen`/[`LoadLibraryExW`](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw)の引数に使われる。デフォルトは ::voicevox_get_onnxruntime_lib_versioned_filename と同じ。
+    filename: *const c_char,
+}
+
+/// デフォルトの ::voicevox_onnxruntime_load_once のオプションを生成する。
+///
+/// @return デフォルトの ::voicevox_onnxruntime_load_once のオプション
+///
+/// \availability{
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
+/// }
+#[cfg(feature = "load-onnxruntime")]
+#[no_mangle]
+pub extern "C" fn voicevox_make_default_load_onnxruntime_options() -> VoicevoxLoadOnnxruntimeOptions
+{
+    init_logger_once();
+    let filename = VoicevoxOnnxruntime::lib_versioned_filename();
+    let filename = C_STRING_DROP_CHECKER.blacklist(filename).as_ptr();
+    VoicevoxLoadOnnxruntimeOptions { filename }
+}
+
+// https://github.com/mozilla/cbindgen/issues/967
+// FIXME: このコードブロックのコードが動くかどうか未確認
+/// ONNX Runtime。
+///
+/// シングルトンであり、インスタンスは高々一つ。
+///
+/// ```c
+/// const VoicevoxOnnxruntime *ort1;
+/// voicevox_onnxruntime_load_once(voicevox_make_default_load_onnxruntime_options,
+///                                &ort1);
+/// const VoicevoxOnnxruntime *ort2 = voicevox_onnxruntime_get();
+/// assert(ort1 == ort2);
+/// ```
+#[cfg(any())]
+pub struct VoicevoxOnnxruntime(!);
+
+/// cbindgen:ignore
+#[derive(RefCastCustom)]
+#[repr(transparent)]
+pub struct VoicevoxOnnxruntime(voicevox_core::blocking::Onnxruntime);
+
+/// ::VoicevoxOnnxruntime のインスタンスが既に作られているならそれを得る。
+///
+/// 作られていなければ`NULL`を返す。
+///
+/// @returns ::VoicevoxOnnxruntime のインスタンス
+#[no_mangle]
+pub extern "C" fn voicevox_onnxruntime_get() -> Option<&'static VoicevoxOnnxruntime> {
+    VoicevoxOnnxruntime::get()
+}
+
+/// ONNX Runtimeをロードして初期化する。
+///
+/// 一度成功したら、以後は引数を無視して同じ参照を返す。
+///
+/// @param [in] options オプション
+/// @param [out] out_onnxruntime ::VoicevoxOnnxruntime のインスタンス
+///
+/// @returns 結果コード
+///
+/// \availability{
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
+/// }
+///
+/// \safety{
+/// - `options.filename`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `out_onnxruntime`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+#[cfg(feature = "load-onnxruntime")]
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_onnxruntime_load_once(
+    options: VoicevoxLoadOnnxruntimeOptions,
+    out_onnxruntime: NonNull<&'static VoicevoxOnnxruntime>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    let filename = unsafe {
+        // SAFETY: ユーザーに要求している条件で十分
+        CStr::from_ptr(options.filename)
+    };
+    into_result_code_with_error((|| {
+        let instance = VoicevoxOnnxruntime::load_once(filename)?;
+        unsafe {
+            // SAFETY: ユーザーに要求している条件で十分
+            out_onnxruntime.write_unaligned(instance);
+        }
+        Ok(())
+    })())
+}
+
+/// ONNX Runtimeを初期化する。
+///
+/// 一度成功したら以後は同じ参照を返す。
+///
+/// @param [out] out_onnxruntime ::VoicevoxOnnxruntime のインスタンス
+///
+/// @returns 結果コード
+///
+/// \availability{
+///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSでのみ利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
+/// }
+///
+/// \safety{
+/// - `out_onnxruntime`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+#[cfg(feature = "link-onnxruntime")]
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_onnxruntime_init_once(
+    out_onnxruntime: NonNull<&'static VoicevoxOnnxruntime>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let instance = VoicevoxOnnxruntime::init_once()?;
+        unsafe {
+            // SAFETY: ユーザーに要求している条件で十分
+            out_onnxruntime.write_unaligned(instance);
+        }
+        Ok(())
+    })())
+}
 
 /// テキスト解析器としてのOpen JTalk。
 ///
@@ -133,7 +295,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     into_result_code_with_error((|| {
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
         let open_jtalk = OpenJtalkRc::new(open_jtalk_dic_dir)?.into();
-        out_open_jtalk.as_ptr().write_unaligned(open_jtalk);
+        out_open_jtalk.write_unaligned(open_jtalk);
         Ok(())
     })())
 }
@@ -184,7 +346,10 @@ pub extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: Box<OpenJtalkRc>) {
 /// ハードウェアアクセラレーションモードを設定する設定値。
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq)]
-#[allow(non_camel_case_types)]
+#[allow(
+    non_camel_case_types,
+    reason = "実際に公開するC APIとの差異をできるだけ少なくするため"
+)]
 pub enum VoicevoxAccelerationMode {
     /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する
     VOICEVOX_ACCELERATION_MODE_AUTO = 0,
@@ -219,32 +384,34 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
     init_logger_once();
     return C_STRING_DROP_CHECKER.blacklist(VERSION).as_ptr();
 
-    const VERSION: &CStr = unsafe {
-        // SAFETY: The package version is a SemVer, so it should not contain '\0'
-        CStr::from_bytes_with_nul_unchecked(concat!(env!("CARGO_PKG_VERSION"), '\0').as_bytes())
+    const VERSION: &CStr = if let Ok(version) =
+        CStr::from_bytes_with_nul(concat!(env!("CARGO_PKG_VERSION"), '\0').as_bytes())
+    {
+        version
+    } else {
+        panic!("`$CARGO_PKG_VERSION` should be a SemVer, so it should not contain `\\0`");
     };
 }
 
-/// 音声モデル。
+/// 音声モデルファイル。
 ///
 /// VVMファイルと対応する。
-/// <b>構築</b>(_construction_)は ::voicevox_voice_model_new_from_path で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_delete で行う。
+/// <b>構築</b>(_construction_)は ::voicevox_voice_model_file_open で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_file_close で行う。
 #[derive(Getters)]
-pub struct VoicevoxVoiceModel {
-    model: voicevox_core::blocking::VoiceModel,
-    id: CString,
+pub struct VoicevoxVoiceModelFile {
+    model: voicevox_core::blocking::VoiceModelFile,
     metas: CString,
 }
 
 /// 音声モデルID。
-pub type VoicevoxVoiceModelId = *const c_char;
+pub type VoicevoxVoiceModelId<'a> = &'a [u8; 16];
 
 /// スタイルID。
 ///
 /// VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
 pub type VoicevoxStyleId = u32;
 
-/// VVMファイルから ::VoicevoxVoiceModel を<b>構築</b>(_construct_)する。
+/// VVMファイルを開く。
 ///
 /// @param [in] path vvmファイルへのUTF-8のファイルパス
 /// @param [out] out_model 構築先
@@ -256,60 +423,64 @@ pub type VoicevoxStyleId = u32;
 /// - `out_model`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_voice_model_new_from_path(
+pub unsafe extern "C" fn voicevox_voice_model_file_open(
     path: *const c_char,
-    out_model: NonNull<Box<VoicevoxVoiceModel>>,
+    out_model: NonNull<Box<VoicevoxVoiceModelFile>>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
         let path = ensure_utf8(CStr::from_ptr(path))?;
-        let model = VoicevoxVoiceModel::from_path(path)?.into();
-        out_model.as_ptr().write_unaligned(model);
+        let model = VoicevoxVoiceModelFile::open(path)?.into();
+        out_model.write_unaligned(model);
         Ok(())
     })())
 }
 
-/// ::VoicevoxVoiceModel からIDを取得する。
+/// ::VoicevoxVoiceModelFile からIDを取得する。
 ///
 /// @param [in] model 音声モデル
 ///
 /// @returns 音声モデルID
 ///
 /// \safety{
-/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
 /// }
 #[no_mangle]
-pub extern "C" fn voicevox_voice_model_id(model: &VoicevoxVoiceModel) -> VoicevoxVoiceModelId {
+pub extern "C" fn voicevox_voice_model_file_id(
+    model: &VoicevoxVoiceModelFile,
+) -> VoicevoxVoiceModelId<'_> {
     init_logger_once();
-    model.id().as_ptr()
+    model.model.id_ref().as_bytes()
 }
 
-/// ::VoicevoxVoiceModel からメタ情報を取得する。
+/// ::VoicevoxVoiceModelFile からメタ情報を取得する。
 ///
 /// @param [in] model 音声モデル
 ///
 /// @returns メタ情報のJSON文字列
 ///
 /// \safety{
-/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
 /// - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`model`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
 /// }
 #[no_mangle]
-pub extern "C" fn voicevox_voice_model_get_metas_json(model: &VoicevoxVoiceModel) -> *const c_char {
+pub extern "C" fn voicevox_voice_model_file_get_metas_json(
+    model: &VoicevoxVoiceModelFile,
+) -> *const c_char {
     init_logger_once();
     model.metas().as_ptr()
 }
 
-/// ::VoicevoxVoiceModel を<b>破棄</b>(_destruct_)する。
+/// ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
 ///
 /// @param [in] model 破棄対象
 ///
 /// \safety{
-/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また既にこの関数で解放されていてはいけない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また既にこの関数で解放されていてはいけない。
 /// - `model`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
 /// }
 #[no_mangle]
-pub extern "C" fn voicevox_voice_model_delete(model: Box<VoicevoxVoiceModel>) {
+pub extern "C" fn voicevox_voice_model_file_close(model: Box<VoicevoxVoiceModelFile>) {
     init_logger_once();
     drop(model);
 }
@@ -324,6 +495,7 @@ pub struct VoicevoxSynthesizer {
 
 /// ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。
 ///
+/// @param [in] onnxruntime
 /// @param [in] open_jtalk Open JTalkのオブジェクト
 /// @param [in] options オプション
 /// @param [out] out_synthesizer 構築先
@@ -331,11 +503,13 @@ pub struct VoicevoxSynthesizer {
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `open_jtalk`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
+/// - `onnxruntime`は ::voicevox_onnxruntime_load_once または ::voicevox_onnxruntime_init_once で得たものでなければならない。
+/// - `open_jtalk`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
 /// - `out_synthesizer`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_new(
+    onnxruntime: &'static VoicevoxOnnxruntime,
     open_jtalk: &OpenJtalkRc,
     options: VoicevoxInitializeOptions,
     out_synthesizer: NonNull<Box<VoicevoxSynthesizer>>,
@@ -344,8 +518,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
     into_result_code_with_error((|| {
         let options = options.into();
 
-        let synthesizer = VoicevoxSynthesizer::new(open_jtalk, &options)?.into();
-        out_synthesizer.as_ptr().write_unaligned(synthesizer);
+        let synthesizer = VoicevoxSynthesizer::new(onnxruntime, open_jtalk, &options)?.into();
+        out_synthesizer.write_unaligned(synthesizer);
         Ok(())
     })())
 }
@@ -373,12 +547,12 @@ pub extern "C" fn voicevox_synthesizer_delete(synthesizer: Box<VoicevoxSynthesiz
 ///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
-/// - `model`は ::voicevox_voice_model_new_from_path で得たものでなければならず、また ::voicevox_voice_model_delete で解放されていてはいけない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_load_voice_model(
     synthesizer: &VoicevoxSynthesizer,
-    model: &VoicevoxVoiceModel,
+    model: &VoicevoxVoiceModelFile,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error(synthesizer.load_voice_model(model.model()))
@@ -393,20 +567,32 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
 ///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
-/// - `model_id`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `model_id`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_synthesizer_unload_voice_model(
+pub extern "C" fn voicevox_synthesizer_unload_voice_model(
     synthesizer: &VoicevoxSynthesizer,
-    model_id: VoicevoxVoiceModelId,
+    model_id: VoicevoxVoiceModelId<'_>,
 ) -> VoicevoxResultCode {
     init_logger_once();
-    into_result_code_with_error((|| {
-        let raw_model_id = ensure_utf8(unsafe { CStr::from_ptr(model_id) })?;
-        synthesizer
-            .unload_voice_model(&VoiceModelId::new(raw_model_id.to_string()))
-            .map_err(Into::into)
-    })())
+    let model_id = model_id.to_model_id();
+    into_result_code_with_error(synthesizer.unload_voice_model(model_id).map_err(Into::into))
+}
+
+/// ::VoicevoxOnnxruntime のインスタンスを得る。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+///
+/// @returns ::VoicevoxOnnxruntime のインスタンス
+///
+/// \safety{
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// }
+#[no_mangle]
+pub extern "C" fn voicevox_synthesizer_get_onnxruntime(
+    synthesizer: &VoicevoxSynthesizer,
+) -> &'static VoicevoxOnnxruntime {
+    synthesizer.onnxruntime()
 }
 
 /// ハードウェアアクセラレーションがGPUモードか判定する。
@@ -433,21 +619,16 @@ pub extern "C" fn voicevox_synthesizer_is_gpu_mode(synthesizer: &VoicevoxSynthes
 ///
 /// \safety{
 /// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
-/// - `model_id`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `model_id`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
+pub extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
     synthesizer: &VoicevoxSynthesizer,
-    model_id: VoicevoxVoiceModelId,
+    model_id: VoicevoxVoiceModelId<'_>,
 ) -> bool {
     init_logger_once();
-    let Ok(raw_model_id) = ensure_utf8(unsafe { CStr::from_ptr(model_id) }) else {
-        // 与えられたIDがUTF-8ではない場合、それに対応する`VoicdModel`は確実に存在しない
-        return false;
-    };
-    synthesizer
-        .synthesizer()
-        .is_loaded_voice_model(&VoiceModelId::new(raw_model_id.into()))
+    let model_id = model_id.to_model_id();
+    synthesizer.synthesizer().is_loaded_voice_model(model_id)
 }
 
 /// 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
@@ -470,12 +651,13 @@ pub extern "C" fn voicevox_synthesizer_create_metas_json(
     C_STRING_DROP_CHECKER.whitelist(metas).into_raw()
 }
 
-/// このライブラリで利用可能なデバイスの情報を、JSONで取得する。
+/// ONNX Runtimeとして利用可能なデバイスの情報を、JSONで取得する。
 ///
 /// JSONの解放は ::voicevox_json_free で行う。
 ///
-/// あくまで本ライブラリが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示しうる。
+/// あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示しうる。
 ///
+/// @param [in] onnxruntime
 /// @param [out] output_supported_devices_json サポートデバイス情報のJSON文字列
 ///
 /// @returns 結果コード
@@ -483,22 +665,24 @@ pub extern "C" fn voicevox_synthesizer_create_metas_json(
 /// \example{
 /// ```c
 /// char *supported_devices;
-/// VoicevoxResultCode result = voicevox_create_supported_devices_json(&supported_devices);
+/// VoicevoxResultCode result = voicevox_onnxruntime_create_supported_devices_json(onnxruntime, &supported_devices);
 /// ```
 /// }
 ///
 /// \safety{
+/// - `onnxruntime`は ::voicevox_onnxruntime_load_once または ::voicevox_onnxruntime_init_once で得たものでなければならない。
 /// - `output_supported_devices_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_create_supported_devices_json(
+pub unsafe extern "C" fn voicevox_onnxruntime_create_supported_devices_json(
+    onnxruntime: &'static VoicevoxOnnxruntime,
     output_supported_devices_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
         let supported_devices =
-            CString::new(SupportedDevices::create()?.to_json().to_string()).unwrap();
-        output_supported_devices_json.as_ptr().write_unaligned(
+            CString::new(onnxruntime.0.supported_devices()?.to_json().to_string()).unwrap();
+        output_supported_devices_json.write_unaligned(
             C_STRING_DROP_CHECKER
                 .whitelist(supported_devices)
                 .into_raw(),
@@ -550,7 +734,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
         output_audio_query_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
         Ok(())
     })())
@@ -599,7 +782,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
         output_audio_query_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
         Ok(())
     })())
@@ -647,7 +829,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
@@ -694,7 +875,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
@@ -725,7 +905,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let accent_phrases: Vec<AccentPhraseModel> =
+        let accent_phrases: Vec<AccentPhrase> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
         let accent_phrases = synthesizer
@@ -734,7 +914,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
@@ -765,7 +944,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let accent_phrases: Vec<AccentPhraseModel> =
+        let accent_phrases: Vec<AccentPhrase> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
         let accent_phrases = synthesizer
@@ -774,7 +953,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
@@ -805,7 +983,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let accent_phrases: Vec<AccentPhraseModel> =
+        let accent_phrases: Vec<AccentPhrase> =
             serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
         let accent_phrases = synthesizer
@@ -814,7 +992,6 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         output_accent_phrases_json
-            .as_ptr()
             .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
         Ok(())
     })())
@@ -868,7 +1045,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
         let audio_query_json = CStr::from_ptr(audio_query_json)
             .to_str()
             .map_err(|_| CApiError::InvalidUtf8Input)?;
-        let audio_query: AudioQueryModel =
+        let audio_query: AudioQuery =
             serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
         let wav = synthesizer.synthesizer().synthesis(
             &audio_query,
@@ -983,7 +1160,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 ///
 /// \safety{
 /// - `json`は以下のAPIで得られたポインタでなくてはいけない。
-///     - ::voicevox_create_supported_devices_json
+///     - ::voicevox_onnxruntime_create_supported_devices_json
 ///     - ::voicevox_synthesizer_create_metas_json
 ///     - ::voicevox_synthesizer_create_audio_query
 ///     - ::voicevox_synthesizer_create_accent_phrases
@@ -1071,7 +1248,10 @@ pub struct VoicevoxUserDictWord {
 
 /// ユーザー辞書の単語の種類。
 #[repr(i32)]
-#[allow(non_camel_case_types)]
+#[allow(
+    non_camel_case_types,
+    reason = "実際に公開するC APIとの差異をできるだけ少なくするため"
+)]
 #[derive(Copy, Clone)]
 pub enum VoicevoxUserDictWordType {
     /// 固有名詞。
@@ -1100,9 +1280,9 @@ pub extern "C" fn voicevox_user_dict_word_make(
     VoicevoxUserDictWord {
         surface,
         pronunciation,
-        accent_type: UserDictWord::default().accent_type,
-        word_type: UserDictWord::default().word_type.into(),
-        priority: UserDictWord::default().priority,
+        accent_type: UserDictWord::default().accent_type(),
+        word_type: UserDictWord::default().word_type().into(),
+        priority: UserDictWord::default().priority(),
     }
 }
 
@@ -1164,7 +1344,7 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
     into_result_code_with_error((|| {
         let word = word.read_unaligned().try_into_word()?;
         let uuid = user_dict.dict.add_word(word)?;
-        output_word_uuid.as_ptr().copy_from(uuid.as_bytes(), 16);
+        output_word_uuid.write_unaligned(uuid.into_bytes());
 
         Ok(())
     })())
@@ -1242,9 +1422,7 @@ pub unsafe extern "C" fn voicevox_user_dict_to_json(
     init_logger_once();
     let json = user_dict.dict.to_json();
     let json = CString::new(json).expect("\\0を含まない文字列であることが保証されている");
-    output_json
-        .as_ptr()
-        .write_unaligned(C_STRING_DROP_CHECKER.whitelist(json).into_raw());
+    output_json.write_unaligned(C_STRING_DROP_CHECKER.whitelist(json).into_raw());
     VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 

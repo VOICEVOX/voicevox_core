@@ -1,3 +1,5 @@
+# TODO: ここは #803 の時点でさほど必要性が無くなっているはずなので、(ドキュメントでの案内
+# はした上で)やめる
 import glob
 import platform
 from ctypes import CDLL
