@@ -86,5 +86,17 @@
       packageNameTemplate: "rust-lang/rust",
       datasourceTemplate: "github-tags",
     },
+    {
+      customType: "regex",
+      fileMatch: [
+        "^Cargo.toml$",
+      ],
+      matchStrings: [
+        "rust-version = \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\"",
+      ],
+      depNameTemplate: "Rust",
+      packageNameTemplate: "rust-lang/rust",
+      datasourceTemplate: "github-tags",
+    },
   ],
 }

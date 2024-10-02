@@ -1,6 +1,7 @@
 [package]
 name = "downloader"
 edition.workspace = true
+rust-version.workspace = true
 
 [[bin]]
 name = "download"

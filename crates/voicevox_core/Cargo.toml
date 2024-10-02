@@ -3,6 +3,7 @@ name = "voicevox_core"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+rust-version.workspace = true
 
 [package.metadata.docs.rs]
 features = ["load-onnxruntime", "link-onnxruntime"]
