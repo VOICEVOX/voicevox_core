@@ -61,7 +61,7 @@ impl<A: Async> Inner<A> {
     }
 
     fn remove_word(&self, word_uuid: Uuid) -> crate::Result<UserDictWord> {
-        let Some(word) = self.with_words(|words| words.remove(&word_uuid)) else {
+        let Some(word) = self.with_words(|words| words.shift_remove(&word_uuid)) else {
             return Err(ErrorRepr::WordNotFound(word_uuid).into());
         };
         Ok(word)
