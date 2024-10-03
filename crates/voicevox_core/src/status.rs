@@ -271,7 +271,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     }
 
     fn remove(&mut self, model_id: VoiceModelId) -> Result<()> {
-        if self.0.remove(&model_id).is_none() {
+        if self.0.shift_remove(&model_id).is_none() {
             return Err(ErrorRepr::ModelNotFound { model_id }.into());
         }
         Ok(())

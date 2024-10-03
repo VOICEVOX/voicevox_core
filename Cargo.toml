@@ -111,6 +111,7 @@ rev = "de226a26e8e18edbdb1d6f986afe37bbbf35fbf4"
 version = "0.0.0"
 edition = "2021"
 publish = false
+rust-version = "1.81.0"
 
 # min-sized-rustを元にrelease buildのサイズが小さくなるようにした
 # https://github.com/johnthagen/min-sized-rust

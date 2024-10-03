@@ -1,6 +1,7 @@
 [package]
 name = "xtask"
 edition.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 cbindgen.workspace = true
