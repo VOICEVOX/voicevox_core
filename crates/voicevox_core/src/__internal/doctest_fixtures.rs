@@ -4,6 +4,8 @@ use camino::Utf8Path;
 
 use crate::{AccelerationMode, InitializeOptions};
 
+pub use crate::synthesizer::nonblocking::IntoBlocking;
+
 pub async fn synthesizer_with_sample_voice_model(
     voice_model_path: impl AsRef<Path>,
     #[cfg_attr(feature = "link-onnxruntime", allow(unused_variables))] onnxruntime_dylib_path: impl Into<
