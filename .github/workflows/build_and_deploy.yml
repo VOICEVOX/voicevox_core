@@ -65,6 +65,7 @@ jobs:
               "artifact_name": "windows-x64",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": false
             },
             {
@@ -73,6 +74,7 @@ jobs:
               "artifact_name": "windows-x86",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": true
             },
             {
@@ -81,6 +83,7 @@ jobs:
               "artifact_name": "linux-x64",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": false
             },
             {
@@ -89,6 +92,7 @@ jobs:
               "artifact_name": "linux-arm64",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": true
             },
             {
@@ -97,6 +101,7 @@ jobs:
               "artifact_name": "android-arm64",
               "c_release_format": "plain-cdylib",
               "python_whl": false,
+              "java": true,
               "can_skip_in_simple_test": true
             },
             {
@@ -105,6 +110,7 @@ jobs:
               "artifact_name": "android-x86_64",
               "c_release_format": "plain-cdylib",
               "python_whl": false,
+              "java": true,
               "can_skip_in_simple_test": true
             },
             {
@@ -113,6 +119,7 @@ jobs:
               "artifact_name": "osx-arm64",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": false
             },
             {
@@ -121,6 +128,7 @@ jobs:
               "artifact_name": "osx-x64",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": true
             },
             {
@@ -129,6 +137,7 @@ jobs:
               "artifact_name": "ios-arm64-cpu",
               "c_release_format": "ios-xcframework",
               "python_whl": false,
+              "java": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -137,6 +146,7 @@ jobs:
               "artifact_name": "ios-arm64-cpu-sim",
               "c_release_format": "ios-xcframework",
               "python_whl": false,
+              "java": false,
               "can_skip_in_simple_test": true
             },
             {
@@ -145,6 +155,7 @@ jobs:
               "artifact_name": "ios-x64-cpu",
               "c_release_format": "ios-xcframework",
               "python_whl": false,
+              "java": false,
               "can_skip_in_simple_test": true
             }
           ]'
@@ -263,7 +274,7 @@ jobs:
           fi
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
       - name: build voicevox_core_java_api
-        if: ${{ !contains(matrix.target, 'ios') }}
+        if: ${{ matrix.java }}
         run: |
           function build() {
             cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
@@ -325,7 +336,7 @@ jobs:
             ${{ steps.build-voicevox-core-python-api.outputs.whl }}
           target_commitish: ${{ github.sha }}
       - name: Upload voicevox_core_java_api artifact
-        if: fromJson(needs.config.outputs.deploy) && !contains(matrix.target, 'ios')
+        if: fromJson(needs.config.outputs.deploy) && matrix.java
         uses: actions/upload-artifact@v4
         with:
           name: voicevox_core_java_api-${{ matrix.artifact_name }}
@@ -451,7 +462,7 @@ jobs:
             artifact_name=$1
             target=$2
             root=$(echo "$1" | grep -q android && echo jniLibs || echo dll)
-            dest="lib/src/main/resources/$root/$target"
+            dest=lib/src/main/resources/$root/$target
             case "$artifact_name" in
               windows-*) ext=dll ;;
               osx-*)     ext=dylib ;;
