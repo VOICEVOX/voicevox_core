@@ -80,10 +80,6 @@ pub struct InitializeOptions {
 }
 
 pub(crate) mod blocking {
-    // FIXME: ここのdocのコードブロックはasync版のものなので、`nonblocking`モジュールの方に移した上で、
-    // (ブロッキング版をpublic APIにするならの話ではあるが)ブロッキング版はブロッキング版でコード例
-    // を用意する
-
     use std::io::{Cursor, Write as _};
 
     use enum_map::enum_map;
@@ -126,8 +122,7 @@ pub(crate) mod blocking {
         ///
         #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
         #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
-        /// # #[pollster::main]
-        /// # async fn main() -> anyhow::Result<()> {
+        /// # fn main() -> anyhow::Result<()> {
         /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};
         /// #
         /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
@@ -135,7 +130,7 @@ pub(crate) mod blocking {
         /// use std::sync::Arc;
         ///
         /// use voicevox_core::{
-        ///     nonblocking::{Onnxruntime, OpenJtalk, Synthesizer},
+        ///     blocking::{Onnxruntime, OpenJtalk, Synthesizer},
         ///     AccelerationMode, InitializeOptions,
         /// };
         ///
@@ -144,8 +139,8 @@ pub(crate) mod blocking {
         /// #     .exec()?;
         /// #
         /// let mut syntesizer = Synthesizer::new(
-        ///     Onnxruntime::load_once().exec().await?,
-        ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
+        ///     Onnxruntime::load_once().exec()?,
+        ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
         ///     &InitializeOptions {
         ///         acceleration_mode: ACCELERATION_MODE,
         ///         ..Default::default()
@@ -477,21 +472,23 @@ pub(crate) mod blocking {
         /// # Example
         ///
         /// ```
-        /// # #[pollster::main]
-        /// # async fn main() -> anyhow::Result<()> {
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::__internal::doctest_fixtures::IntoBlocking as _;
+        /// #
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
-        /// #     .await?;
+        /// #     .block_on()?
+        /// #     .into_blocking();
         /// #
         /// use voicevox_core::StyleId;
         ///
         /// let accent_phrases = synthesizer
-        ///     .create_accent_phrases_from_kana("コンニチワ'", StyleId::new(302))
-        ///     .await?;
+        ///     .create_accent_phrases_from_kana("コンニチワ'", StyleId::new(302))?;
         /// #
         /// # Ok(())
         /// # }
@@ -696,21 +693,22 @@ pub(crate) mod blocking {
         /// # Example
         ///
         /// ```
-        /// # #[pollster::main]
-        /// # async fn main() -> anyhow::Result<()> {
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::__internal::doctest_fixtures::IntoBlocking as _;
+        /// #
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
-        /// #     .await?;
+        /// #     .block_on()?
+        /// #     .into_blocking();
         /// #
         /// use voicevox_core::StyleId;
         ///
-        /// let audio_query = synthesizer
-        ///     .audio_query_from_kana("コンニチワ'", StyleId::new(302))
-        ///     .await?;
+        /// let audio_query = synthesizer.audio_query_from_kana("コンニチワ'", StyleId::new(302))?;
         /// #
         /// # Ok(())
         /// # }
@@ -740,21 +738,22 @@ pub(crate) mod blocking {
         /// # Example
         ///
         /// ```
-        /// # #[pollster::main]
-        /// # async fn main() -> anyhow::Result<()> {
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::__internal::doctest_fixtures::IntoBlocking as _;
+        /// #
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
-        /// #     .await?;
+        /// #     .block_on()?
+        /// #     .into_blocking();
         /// #
         /// use voicevox_core::StyleId;
         ///
-        /// let accent_phrases = synthesizer
-        ///     .create_accent_phrases("こんにちは", StyleId::new(302))
-        ///     .await?;
+        /// let accent_phrases = synthesizer.create_accent_phrases("こんにちは", StyleId::new(302))?;
         /// #
         /// # Ok(())
         /// # }
@@ -773,21 +772,22 @@ pub(crate) mod blocking {
         /// # Examples
         ///
         /// ```
-        /// # #[pollster::main]
-        /// # async fn main() -> anyhow::Result<()> {
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::__internal::doctest_fixtures::IntoBlocking as _;
+        /// #
         /// # let synthesizer =
         /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
         /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
         /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
         /// #         test_util::OPEN_JTALK_DIC_DIR,
         /// #     )
-        /// #     .await?;
+        /// #     .block_on()?
+        /// #     .into_blocking();
         /// #
         /// use voicevox_core::StyleId;
         ///
-        /// let audio_query = synthesizer
-        ///     .audio_query("こんにちは", StyleId::new(302))
-        ///     .await?;
+        /// let audio_query = synthesizer.audio_query("こんにちは", StyleId::new(302))?;
         /// #
         /// # Ok(())
         /// # }
@@ -1142,6 +1142,8 @@ pub(crate) mod blocking {
 pub(crate) mod nonblocking {
     use std::sync::Arc;
 
+    use easy_ext::ext;
+
     use crate::{
         AccentPhrase, AudioQuery, FullcontextExtractor, Result, StyleId, SynthesisOptions,
         VoiceModelId, VoiceModelMeta,
@@ -1160,8 +1162,44 @@ pub(crate) mod nonblocking {
     #[derive(Clone)]
     pub struct Synthesizer<O>(pub(super) Arc<super::blocking::Synthesizer<O>>);
 
-    // FIXME: docを書く
     impl<O: Send + Sync + 'static> self::Synthesizer<O> {
+        /// `Synthesizer`をコンストラクトする。
+        ///
+        /// # Example
+        ///
+        #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
+        #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};
+        /// #
+        /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
+        /// #
+        /// use std::sync::Arc;
+        ///
+        /// use voicevox_core::{
+        ///     nonblocking::{Onnxruntime, OpenJtalk, Synthesizer},
+        ///     AccelerationMode, InitializeOptions,
+        /// };
+        ///
+        /// # if cfg!(windows) {
+        /// #     // Windows\System32\onnxruntime.dllを回避
+        /// #     voicevox_core::blocking::Onnxruntime::load_once()
+        /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
+        /// #         .exec()?;
+        /// # }
+        /// let mut syntesizer = Synthesizer::new(
+        ///     Onnxruntime::load_once().exec().await?,
+        ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
+        ///     &InitializeOptions {
+        ///         acceleration_mode: ACCELERATION_MODE,
+        ///         ..Default::default()
+        ///     },
+        /// )?;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
         pub fn new(
             onnxruntime: &'static crate::nonblocking::Onnxruntime,
             open_jtalk: O,
@@ -1176,10 +1214,12 @@ pub(crate) mod nonblocking {
             crate::nonblocking::Onnxruntime::from_blocking(self.0.onnxruntime())
         }
 
+        /// ハードウェアアクセラレーションがGPUモードか判定する。
         pub fn is_gpu_mode(&self) -> bool {
             self.0.is_gpu_mode()
         }
 
+        /// 音声モデルを読み込む。
         pub async fn load_voice_model(
             &self,
             model: &crate::nonblocking::VoiceModelFile,
@@ -1188,10 +1228,12 @@ pub(crate) mod nonblocking {
             self.0.status.insert_model(model.header(), model_bytes)
         }
 
+        /// 音声モデルの読み込みを解除する。
         pub fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> Result<()> {
             self.0.unload_voice_model(voice_model_id)
         }
 
+        /// 指定したIDの音声モデルが読み込まれているか判定する。
         pub fn is_loaded_voice_model(&self, voice_model_id: VoiceModelId) -> bool {
             self.0.is_loaded_voice_model(voice_model_id)
         }
@@ -1201,10 +1243,12 @@ pub(crate) mod nonblocking {
             self.0.is_loaded_model_by_style_id(style_id)
         }
 
+        /// 今読み込んでいる音声モデルのメタ情報を返す。
         pub fn metas(&self) -> VoiceModelMeta {
             self.0.metas()
         }
 
+        /// AudioQueryから音声合成を行う。
         pub async fn synthesis(
             &self,
             audio_query: &AudioQuery,
@@ -1219,6 +1263,30 @@ pub(crate) mod nonblocking {
                 .await
         }
 
+        /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// use voicevox_core::StyleId;
+        ///
+        /// let accent_phrases = synthesizer
+        ///     .create_accent_phrases_from_kana("コンニチワ'", StyleId::new(302))
+        ///     .await?;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
         pub async fn create_accent_phrases_from_kana(
             &self,
             kana: &str,
@@ -1231,6 +1299,7 @@ pub(crate) mod nonblocking {
                 .await
         }
 
+        /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
         pub async fn replace_mora_data(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1243,6 +1312,7 @@ pub(crate) mod nonblocking {
                 .await
         }
 
+        /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
         pub async fn replace_phoneme_length(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1257,6 +1327,7 @@ pub(crate) mod nonblocking {
             .await
         }
 
+        /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
         pub async fn replace_mora_pitch(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1269,6 +1340,32 @@ pub(crate) mod nonblocking {
                 .await
         }
 
+        /// AquesTalk風記法から[AudioQuery]を生成する。
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// use voicevox_core::StyleId;
+        ///
+        /// let audio_query = synthesizer
+        ///     .audio_query_from_kana("コンニチワ'", StyleId::new(302))
+        ///     .await?;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// [AudioQuery]: crate::AudioQuery
         pub async fn audio_query_from_kana(
             &self,
             kana: &str,
@@ -1280,6 +1377,7 @@ pub(crate) mod nonblocking {
             crate::task::asyncify(move || blocking.audio_query_from_kana(&kana, style_id)).await
         }
 
+        /// AquesTalk風記法から音声合成を行う。
         pub async fn tts_from_kana(
             &self,
             kana: &str,
@@ -1295,6 +1393,30 @@ pub(crate) mod nonblocking {
     }
 
     impl<T: FullcontextExtractor> self::Synthesizer<T> {
+        /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// use voicevox_core::StyleId;
+        ///
+        /// let accent_phrases = synthesizer
+        ///     .create_accent_phrases("こんにちは", StyleId::new(302))
+        ///     .await?;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
         pub async fn create_accent_phrases(
             &self,
             text: &str,
@@ -1306,6 +1428,32 @@ pub(crate) mod nonblocking {
             crate::task::asyncify(move || blocking.create_accent_phrases(&text, style_id)).await
         }
 
+        /// 日本語のテキストから[AudioQuery]を生成する。
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// use voicevox_core::StyleId;
+        ///
+        /// let audio_query = synthesizer
+        ///     .audio_query("こんにちは", StyleId::new(302))
+        ///     .await?;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// [AudioQuery]: crate::AudioQuery
         pub async fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery> {
             let blocking = self.0.clone();
             let text = text.to_owned();
@@ -1313,6 +1461,7 @@ pub(crate) mod nonblocking {
             crate::task::asyncify(move || blocking.audio_query(&text, style_id)).await
         }
 
+        /// 日本語のテキストから音声合成を行う。
         pub async fn tts(
             &self,
             text: &str,
@@ -1324,6 +1473,13 @@ pub(crate) mod nonblocking {
             let options = options.clone();
 
             crate::task::asyncify(move || blocking.tts(&text, style_id, &options)).await
+        }
+    }
+
+    #[ext(IntoBlocking)]
+    impl<O> self::Synthesizer<O> {
+        pub fn into_blocking(self) -> Arc<super::blocking::Synthesizer<O>> {
+            self.0
         }
     }
 }
