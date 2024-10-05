@@ -1,5 +1,9 @@
 mod compatible_engine;
 mod compatible_engine_load_model_before_initialize;
+mod double_delete_openjtalk;
+mod double_delete_synthesizer;
+mod double_delete_user_dict;
+mod double_delete_voice_model_file;
 mod global_info;
 mod simple_tts;
 mod synthesizer_new_output_json;

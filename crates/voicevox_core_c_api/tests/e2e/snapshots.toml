@@ -64,6 +64,30 @@ stderr.unix = '''
 last_error_message = "Statusが初期化されていません"
 stderr = ""
 
+[double_delete_openjtalk]
+stderr_contains_all = [
+    "\n`OpenJtalkRc { id: 0 }`は既に破棄されています\n",
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
+
+[double_delete_synthesizer]
+stderr_contains_all = [
+    "\n`VoicevoxSynthesizer { id: 0 }`は既に破棄されています\n",
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
+
+[double_delete_user_dict]
+stderr_contains_all = [
+    "\n`VoicevoxUserDict { id: 0 }`は既に破棄されています\n",
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
+
+[double_delete_voice_model_file]
+stderr_contains_all = [
+    "\n`VoicevoxVoiceModelFile { id: 0 }`は既に破棄されています\n",
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
+
 [global_info]
 result_messages.0 = "エラーが発生しませんでした"
 result_messages.1 = "OpenJTalkの辞書が読み込まれていません"

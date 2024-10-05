@@ -1,11 +1,20 @@
-use std::{ffi::CString, path::Path};
+use std::{
+    collections::HashMap,
+    ffi::CString,
+    fmt::Debug,
+    ops::DerefMut,
+    path::Path,
+    sync::{Arc, LazyLock},
+};
 
 use camino::Utf8Path;
+use duplicate::duplicate_item;
+use easy_ext::ext;
 use ref_cast::ref_cast_custom;
 use voicevox_core::{InitializeOptions, Result, VoiceModelId};
 
 use crate::{
-    helpers::CApiResult, OpenJtalkRc, VoicevoxOnnxruntime, VoicevoxSynthesizer,
+    helpers::CApiResult, OpenJtalkRc, VoicevoxOnnxruntime, VoicevoxSynthesizer, VoicevoxUserDict,
     VoicevoxVoiceModelFile,
 };
 
@@ -61,10 +70,9 @@ macro_rules! to_cstr {
 use to_cstr;
 
 impl OpenJtalkRc {
-    pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Utf8Path>) -> Result<Self> {
-        Ok(Self {
-            open_jtalk: voicevox_core::blocking::OpenJtalk::new(open_jtalk_dic_dir)?,
-        })
+    pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Utf8Path>) -> Result<&'static Self> {
+        let body = voicevox_core::blocking::OpenJtalk::new(open_jtalk_dic_dir)?;
+        Ok(<Self as CApiObject>::new(body))
     }
 }
 
@@ -73,42 +81,124 @@ impl VoicevoxSynthesizer {
         onnxruntime: &'static VoicevoxOnnxruntime,
         open_jtalk: &OpenJtalkRc,
         options: &InitializeOptions,
-    ) -> Result<Self> {
-        let synthesizer = voicevox_core::blocking::Synthesizer::new(
+    ) -> Result<&'static Self> {
+        let body = voicevox_core::blocking::Synthesizer::new(
             &onnxruntime.0,
-            open_jtalk.open_jtalk.clone(),
+            (*open_jtalk.body()).clone(),
             options,
         )?;
-        Ok(Self { synthesizer })
+        Ok(<Self as CApiObject>::new(body))
     }
 
     pub(crate) fn onnxruntime(&self) -> &'static VoicevoxOnnxruntime {
-        VoicevoxOnnxruntime::new(self.synthesizer.onnxruntime())
+        VoicevoxOnnxruntime::new(self.body().onnxruntime())
     }
 
     pub(crate) fn load_voice_model(
         &self,
         model: &voicevox_core::blocking::VoiceModelFile,
     ) -> CApiResult<()> {
-        self.synthesizer.load_voice_model(model)?;
+        self.body().load_voice_model(model)?;
         Ok(())
     }
 
     pub(crate) fn unload_voice_model(&self, model_id: VoiceModelId) -> Result<()> {
-        self.synthesizer.unload_voice_model(model_id)?;
+        self.body().unload_voice_model(model_id)?;
         Ok(())
     }
 
     pub(crate) fn metas(&self) -> CString {
-        let metas = &self.synthesizer.metas();
+        let metas = &self.body().metas();
         CString::new(serde_json::to_string(metas).unwrap()).unwrap()
     }
 }
 
 impl VoicevoxVoiceModelFile {
-    pub(crate) fn open(path: impl AsRef<Path>) -> Result<Self> {
+    pub(crate) fn open(path: impl AsRef<Path>) -> Result<&'static Self> {
         let model = voicevox_core::blocking::VoiceModelFile::open(path)?;
         let metas = CString::new(serde_json::to_string(model.metas()).unwrap()).unwrap();
-        Ok(Self { model, metas })
+        Ok(Self::new(VoiceModelFileWithMetas { model, metas }))
+    }
+}
+
+pub(crate) struct VoiceModelFileWithMetas {
+    pub(crate) model: voicevox_core::blocking::VoiceModelFile,
+    pub(crate) metas: CString,
+}
+
+pub(crate) trait CApiObject: From<u32> + Into<u32> + Copy + Debug {
+    type Body: 'static;
+
+    fn heads() -> &'static boxcar::Vec<Self>;
+    fn bodies() -> &'static std::sync::Mutex<HashMap<u32, Arc<Self::Body>>>;
+
+    fn new(body: Self::Body) -> &'static Self {
+        let i = Self::heads().push_with(|i| to_id(i).into());
+        Self::lock_bodies().insert(to_id(i), body.into());
+        return &Self::heads()[i];
+
+        fn to_id(i: usize) -> u32 {
+            i.try_into().expect("too large")
+        }
+    }
+
+    /// # Panics
+    ///
+    /// 次の場合にパニックする。
+    ///
+    /// * `self`に対して以前にこの関数を呼んでいた場合
+    /// * `self`がまだ他で利用中である場合
+    fn drop_body(self) {
+        let body = Self::lock_bodies()
+            .remove(&self.into())
+            .unwrap_or_else(|| self.panic_for_deleted());
+        drop(Arc::into_inner(body).unwrap_or_else(|| self.panic_for_in_use()));
+    }
+
+    /// # Panics
+    ///
+    /// `drop_body`を呼んでいるとパニックする。
+    fn body(self) -> Arc<Self::Body> {
+        Self::lock_bodies()
+            .get(&self.into())
+            .unwrap_or_else(|| self.panic_for_deleted())
+            .clone()
+    }
+}
+
+#[ext]
+impl<T: CApiObject> T {
+    fn lock_bodies() -> impl DerefMut<Target = HashMap<u32, Arc<Self::Body>>> {
+        Self::bodies().lock().unwrap_or_else(|e| panic!("{e}"))
+    }
+
+    fn panic_for_deleted(self) -> ! {
+        panic!("`{self:?}`は既に破棄されています");
+    }
+
+    fn panic_for_in_use(self) -> ! {
+        panic!("`{self:?}`が破棄されようとしましたが、これはまだ利用中です");
+    }
+}
+
+#[duplicate_item(
+    H                          B;
+    [ OpenJtalkRc ]            [ voicevox_core::blocking::OpenJtalk ];
+    [ VoicevoxUserDict ]       [ voicevox_core::blocking::UserDict ];
+    [ VoicevoxSynthesizer ]    [ voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk> ];
+    [ VoicevoxVoiceModelFile ] [ VoiceModelFileWithMetas ];
+)]
+impl CApiObject for H {
+    type Body = B;
+
+    fn heads() -> &'static boxcar::Vec<Self> {
+        static HEADS: boxcar::Vec<H> = boxcar::Vec::new();
+        &HEADS
+    }
+
+    fn bodies() -> &'static std::sync::Mutex<HashMap<u32, Arc<Self::Body>>> {
+        static BODIES: LazyLock<std::sync::Mutex<HashMap<u32, Arc<B>>>> =
+            LazyLock::new(Default::default);
+        &BODIES
     }
 }
