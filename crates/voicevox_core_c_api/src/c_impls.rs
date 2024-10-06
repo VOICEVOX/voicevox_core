@@ -126,6 +126,28 @@ pub(crate) struct VoiceModelFileWithMetas {
     pub(crate) metas: CString,
 }
 
+/// プロセスの終わりまでデストラクトされない、ユーザーにオブジェクトとして貸し出す`u32`相当の値。
+///
+/// インスタンスは次のような形。
+///
+/// ```
+/// #[derive(Clone, Copy, Debug, From, Into)]
+/// #[repr(Rust)]
+/// pub struct VoicevoxSynthesizer {
+///     id: u32,
+/// }
+/// ```
+///
+/// `Body`そのものではなくこのトレイトのインスタンスをユーザーに渡すようにし、次のユーザー操作に対するセーフティネットを実現する。
+///
+/// 1. オブジェクトが他スレッドでアクセスされている最中に"delete"を試みる
+/// 2. "delete"後に他の通常のメソッド関数の利用を試みる
+/// 3. "delete"後に"delete"を試みる
+///
+/// ただし次のゲッター関数に関しては機能しない。
+///
+/// - `voicevox_voice_model_file_id`
+/// - `voicevox_voice_model_file_get_metas_json`
 pub(crate) trait CApiObject: From<u32> + Into<u32> + Copy + Debug {
     type Body: 'static;
 
