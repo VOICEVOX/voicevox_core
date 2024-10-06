@@ -140,7 +140,7 @@ fn metas_to_json(metas: &[SpeakerMeta]) -> CString {
 /// }
 /// ```
 ///
-/// `Body`そのものではなくこのトレイトのインスタンスをユーザーに渡すようにし、次のユーザー操作に対するセーフティネットを実現する。
+/// `RustApi`そのものではなくこのトレイトのインスタンスをユーザーに渡すようにし、次のユーザー操作に対するセーフティネットを実現する。
 ///
 /// 1. オブジェクトが他スレッドでアクセスされている最中に"delete"を試みる
 /// 2. "delete"後に他の通常のメソッド関数の利用を試みる
@@ -151,12 +151,12 @@ fn metas_to_json(metas: &[SpeakerMeta]) -> CString {
 /// - `voicevox_voice_model_file_id`
 /// - `voicevox_voice_model_file_get_metas_json`
 pub(crate) trait CApiObject: From<u32> + Into<u32> + Copy + Debug {
-    type Body: 'static;
+    type RustApiObject: 'static;
 
     fn heads() -> &'static boxcar::Vec<Self>;
-    fn bodies() -> &'static std::sync::Mutex<HashMap<u32, Arc<Self::Body>>>;
+    fn bodies() -> &'static std::sync::Mutex<HashMap<u32, Arc<Self::RustApiObject>>>;
 
-    fn new(body: Self::Body) -> &'static Self {
+    fn new(body: Self::RustApiObject) -> &'static Self {
         let i = Self::heads().push_with(|i| to_id(i).into());
         Self::lock_bodies().insert(to_id(i), body.into());
         return &Self::heads()[i];
@@ -182,7 +182,7 @@ pub(crate) trait CApiObject: From<u32> + Into<u32> + Copy + Debug {
     /// # Panics
     ///
     /// `drop_body`を呼んでいるとパニックする。
-    fn body(self) -> Arc<Self::Body> {
+    fn body(self) -> Arc<Self::RustApiObject> {
         Self::lock_bodies()
             .get(&self.into())
             .unwrap_or_else(|| self.panic_for_deleted())
@@ -192,7 +192,7 @@ pub(crate) trait CApiObject: From<u32> + Into<u32> + Copy + Debug {
 
 #[ext]
 impl<T: CApiObject> T {
-    fn lock_bodies() -> impl DerefMut<Target = HashMap<u32, Arc<Self::Body>>> {
+    fn lock_bodies() -> impl DerefMut<Target = HashMap<u32, Arc<Self::RustApiObject>>> {
         Self::bodies().lock().unwrap_or_else(|e| panic!("{e}"))
     }
 
@@ -213,14 +213,14 @@ impl<T: CApiObject> T {
     [ VoicevoxVoiceModelFile ] [ voicevox_core::blocking::VoiceModelFile ];
 )]
 impl CApiObject for H {
-    type Body = B;
+    type RustApiObject = B;
 
     fn heads() -> &'static boxcar::Vec<Self> {
         static HEADS: boxcar::Vec<H> = boxcar::Vec::new();
         &HEADS
     }
 
-    fn bodies() -> &'static std::sync::Mutex<HashMap<u32, Arc<Self::Body>>> {
+    fn bodies() -> &'static std::sync::Mutex<HashMap<u32, Arc<Self::RustApiObject>>> {
         static BODIES: LazyLock<std::sync::Mutex<HashMap<u32, Arc<B>>>> =
             LazyLock::new(Default::default);
         &BODIES
