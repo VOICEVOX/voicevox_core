@@ -11,7 +11,7 @@ use camino::Utf8Path;
 use duplicate::duplicate_item;
 use easy_ext::ext;
 use ref_cast::ref_cast_custom;
-use voicevox_core::{InitializeOptions, Result, VoiceModelId};
+use voicevox_core::{InitializeOptions, Result, SpeakerMeta, VoiceModelId};
 
 use crate::{
     helpers::CApiResult, OpenJtalkRc, VoicevoxOnnxruntime, VoicevoxSynthesizer, VoicevoxUserDict,
@@ -108,22 +108,24 @@ impl VoicevoxSynthesizer {
     }
 
     pub(crate) fn metas(&self) -> CString {
-        let metas = &self.body().metas();
-        CString::new(serde_json::to_string(metas).unwrap()).unwrap()
+        metas_to_json(&self.body().metas())
     }
 }
 
 impl VoicevoxVoiceModelFile {
     pub(crate) fn open(path: impl AsRef<Path>) -> Result<&'static Self> {
         let model = voicevox_core::blocking::VoiceModelFile::open(path)?;
-        let metas = CString::new(serde_json::to_string(model.metas()).unwrap()).unwrap();
-        Ok(Self::new(VoiceModelFileWithMetas { model, metas }))
+        Ok(Self::new(model))
+    }
+
+    pub(crate) fn metas(&self) -> CString {
+        metas_to_json(self.body().metas())
     }
 }
 
-pub(crate) struct VoiceModelFileWithMetas {
-    pub(crate) model: voicevox_core::blocking::VoiceModelFile,
-    pub(crate) metas: CString,
+fn metas_to_json(metas: &[SpeakerMeta]) -> CString {
+    let metas = serde_json::to_string(metas).expect("should not fail");
+    CString::new(metas).expect("should not contain NUL")
 }
 
 /// プロセスの終わりまでデストラクトされない、ユーザーにオブジェクトとして貸し出す`u32`相当の値。
@@ -208,7 +210,7 @@ impl<T: CApiObject> T {
     [ OpenJtalkRc ]            [ voicevox_core::blocking::OpenJtalk ];
     [ VoicevoxUserDict ]       [ voicevox_core::blocking::UserDict ];
     [ VoicevoxSynthesizer ]    [ voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk> ];
-    [ VoicevoxVoiceModelFile ] [ VoiceModelFileWithMetas ];
+    [ VoicevoxVoiceModelFile ] [ voicevox_core::blocking::VoiceModelFile ];
 )]
 impl CApiObject for H {
     type Body = B;
