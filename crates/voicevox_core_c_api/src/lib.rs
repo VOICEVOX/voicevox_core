@@ -34,7 +34,6 @@ use std::sync::{Arc, Once};
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
-use voicevox_core::__internal::interop::IdRef as _;
 use voicevox_core::{AccentPhrase, AudioQuery, TtsOptions, UserDictWord};
 use voicevox_core::{StyleId, SynthesisOptions};
 
@@ -400,7 +399,6 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
 #[derive(Getters)]
 pub struct VoicevoxVoiceModelFile {
     model: voicevox_core::blocking::VoiceModelFile,
-    metas: CString,
 }
 
 /// 音声モデルID。
@@ -439,21 +437,25 @@ pub unsafe extern "C" fn voicevox_voice_model_file_open(
 /// ::VoicevoxVoiceModelFile からIDを取得する。
 ///
 /// @param [in] model 音声モデル
-///
-/// @returns 音声モデルID
+/// @param [out] output_voice_model_id 音声モデルID
 ///
 /// \safety{
 /// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
+/// - `output_voice_model_id`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
-pub extern "C" fn voicevox_voice_model_file_id(
+pub unsafe extern "C" fn voicevox_voice_model_file_id(
     model: &VoicevoxVoiceModelFile,
-) -> VoicevoxVoiceModelId<'_> {
+    output_voice_model_id: NonNull<[u8; 16]>,
+) {
     init_logger_once();
-    model.model.id_ref().as_bytes()
+    let id = model.model.id().raw_voice_model_id().into_bytes();
+    unsafe { output_voice_model_id.write_unaligned(id) };
 }
 
 /// ::VoicevoxVoiceModelFile からメタ情報を取得する。
+///
+/// JSONの解放は ::voicevox_json_free で行う。
 ///
 /// @param [in] model 音声モデル
 ///
@@ -461,14 +463,13 @@ pub extern "C" fn voicevox_voice_model_file_id(
 ///
 /// \safety{
 /// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
-/// - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`model`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
 /// }
 #[no_mangle]
-pub extern "C" fn voicevox_voice_model_file_get_metas_json(
+pub extern "C" fn voicevox_voice_model_file_create_metas_json(
     model: &VoicevoxVoiceModelFile,
-) -> *const c_char {
+) -> *mut c_char {
     init_logger_once();
-    model.metas().as_ptr()
+    C_STRING_DROP_CHECKER.whitelist(model.metas()).into_raw()
 }
 
 /// ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
@@ -1161,6 +1162,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 /// \safety{
 /// - `json`は以下のAPIで得られたポインタでなくてはいけない。
 ///     - ::voicevox_onnxruntime_create_supported_devices_json
+///     - ::voicevox_voice_model_file_create_metas_json
 ///     - ::voicevox_synthesizer_create_metas_json
 ///     - ::voicevox_synthesizer_create_audio_query
 ///     - ::voicevox_synthesizer_create_accent_phrases

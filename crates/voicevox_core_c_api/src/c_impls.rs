@@ -2,7 +2,7 @@ use std::{ffi::CString, path::Path};
 
 use camino::Utf8Path;
 use ref_cast::ref_cast_custom;
-use voicevox_core::{InitializeOptions, Result, VoiceModelId};
+use voicevox_core::{InitializeOptions, Result, SpeakerMeta, VoiceModelId};
 
 use crate::{
     helpers::CApiResult, OpenJtalkRc, VoicevoxOnnxruntime, VoicevoxSynthesizer,
@@ -100,15 +100,22 @@ impl VoicevoxSynthesizer {
     }
 
     pub(crate) fn metas(&self) -> CString {
-        let metas = &self.synthesizer.metas();
-        CString::new(serde_json::to_string(metas).unwrap()).unwrap()
+        metas_to_json(&self.synthesizer.metas())
     }
 }
 
 impl VoicevoxVoiceModelFile {
     pub(crate) fn open(path: impl AsRef<Path>) -> Result<Self> {
         let model = voicevox_core::blocking::VoiceModelFile::open(path)?;
-        let metas = CString::new(serde_json::to_string(model.metas()).unwrap()).unwrap();
-        Ok(Self { model, metas })
+        Ok(Self { model })
     }
+
+    pub(crate) fn metas(&self) -> CString {
+        metas_to_json(self.model.metas())
+    }
+}
+
+fn metas_to_json(metas: &[SpeakerMeta]) -> CString {
+    let metas = serde_json::to_string(metas).expect("should not fail");
+    CString::new(metas).expect("should not contain NUL")
 }

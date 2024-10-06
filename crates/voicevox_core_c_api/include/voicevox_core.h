@@ -615,20 +615,23 @@ VoicevoxResultCode voicevox_voice_model_file_open(const char *path,
  * ::VoicevoxVoiceModelFile からIDを取得する。
  *
  * @param [in] model 音声モデル
- *
- * @returns 音声モデルID
+ * @param [out] output_voice_model_id 音声モデルID
  *
  * \safety{
  * - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
+ * - `output_voice_model_id`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxVoiceModelId voicevox_voice_model_file_id(const struct VoicevoxVoiceModelFile *model);
+void voicevox_voice_model_file_id(const struct VoicevoxVoiceModelFile *model,
+                                  uint8_t (*output_voice_model_id)[16]);
 
 /**
  * ::VoicevoxVoiceModelFile からメタ情報を取得する。
+ *
+ * JSONの解放は ::voicevox_json_free で行う。
  *
  * @param [in] model 音声モデル
  *
@@ -636,13 +639,12 @@ VoicevoxVoiceModelId voicevox_voice_model_file_id(const struct VoicevoxVoiceMode
  *
  * \safety{
  * - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
- * - 戻り値の文字列の<b>生存期間</b>(_lifetime_)は次にこの関数が呼ばれるか、`model`が破棄されるまでである。この生存期間を越えて文字列にアクセスしてはならない。
  * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-const char *voicevox_voice_model_file_get_metas_json(const struct VoicevoxVoiceModelFile *model);
+char *voicevox_voice_model_file_create_metas_json(const struct VoicevoxVoiceModelFile *model);
 
 /**
  * ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
@@ -1173,6 +1175,7 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  * \safety{
  * - `json`は以下のAPIで得られたポインタでなくてはいけない。
  *     - ::voicevox_onnxruntime_create_supported_devices_json
+ *     - ::voicevox_voice_model_file_create_metas_json
  *     - ::voicevox_synthesizer_create_metas_json
  *     - ::voicevox_synthesizer_create_audio_query
  *     - ::voicevox_synthesizer_create_accent_phrases
