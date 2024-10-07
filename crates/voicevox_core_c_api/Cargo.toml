@@ -20,7 +20,6 @@ link-onnxruntime = ["voicevox_core/link-onnxruntime"]
 [dependencies]
 anstream = { workspace = true, default-features = false, features = ["auto"] }
 anstyle-query.workspace = true
-boxcar.workspace = true
 camino.workspace = true
 chrono = { workspace = true, default-features = false, features = ["clock"] }
 colorchoice.workspace = true

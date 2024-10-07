@@ -541,11 +541,6 @@ VoicevoxResultCode voicevox_open_jtalk_rc_new(const char *open_jtalk_dic_dir,
  *
  * @param [in] open_jtalk Open JTalkのオブジェクト
  * @param [in] user_dict ユーザー辞書
- *
- * \safety{
- * - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならない。
- * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
- * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -566,10 +561,6 @@ VoicevoxResultCode voicevox_open_jtalk_rc_use_user_dict(const struct OpenJtalkRc
  * ```c
  * voicevox_open_jtalk_rc_delete(open_jtalk);
  * ```
- * }
- *
- * \safety{
- * - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならない。
  * }
  */
 #ifdef _WIN32
@@ -621,7 +612,6 @@ VoicevoxResultCode voicevox_voice_model_file_open(const char *path,
  * @param [out] output_voice_model_id 音声モデルID
  *
  * \safety{
- * - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
  * - `output_voice_model_id`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
  */
@@ -639,10 +629,6 @@ void voicevox_voice_model_file_id(const struct VoicevoxVoiceModelFile *model,
  * @param [in] model 音声モデル
  *
  * @returns メタ情報のJSON文字列
- *
- * \safety{
- * - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
- * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -657,10 +643,6 @@ char *voicevox_voice_model_file_create_metas_json(const struct VoicevoxVoiceMode
  * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
  *
  * @param [in] model 破棄対象
- *
- * \safety{
- * - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
- * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -679,7 +661,6 @@ void voicevox_voice_model_file_close(struct VoicevoxVoiceModelFile *model);
  *
  * \safety{
  * - `onnxruntime`は ::voicevox_onnxruntime_load_once または ::voicevox_onnxruntime_init_once で得たものでなければならない。
- * - `open_jtalk`は ::voicevox_voice_model_file_open で得たものでなければならない。
  * - `out_synthesizer`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
  */
@@ -699,10 +680,6 @@ VoicevoxResultCode voicevox_synthesizer_new(const struct VoicevoxOnnxruntime *on
  * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
  *
  * @param [in] synthesizer 破棄対象
- *
- * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
- * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -716,11 +693,6 @@ void voicevox_synthesizer_delete(struct VoicevoxSynthesizer *synthesizer);
  * @param [in] model 音声モデル
  *
  * @returns 結果コード
- *
- * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
- * - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
- * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -737,7 +709,6 @@ VoicevoxResultCode voicevox_synthesizer_load_voice_model(const struct VoicevoxSy
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `model_id`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * }
  */
@@ -753,10 +724,6 @@ VoicevoxResultCode voicevox_synthesizer_unload_voice_model(const struct Voicevox
  * @param [in] synthesizer 音声シンセサイザ
  *
  * @returns ::VoicevoxOnnxruntime のインスタンス
- *
- * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
- * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -769,10 +736,6 @@ const struct VoicevoxOnnxruntime *voicevox_synthesizer_get_onnxruntime(const str
  * @param [in] synthesizer 音声シンセサイザ
  *
  * @returns GPUモードかどうか
- *
- * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
- * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -788,7 +751,6 @@ bool voicevox_synthesizer_is_gpu_mode(const struct VoicevoxSynthesizer *synthesi
  * @returns モデルが読み込まれているかどうか
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `model_id`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * }
  */
@@ -806,10 +768,6 @@ bool voicevox_synthesizer_is_loaded_voice_model(const struct VoicevoxSynthesizer
  * @param [in] synthesizer 音声シンセサイザ
  *
  * @return メタ情報のJSON文字列
- *
- * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
- * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -868,7 +826,6 @@ VoicevoxResultCode voicevox_onnxruntime_create_supported_devices_json(const stru
  * }
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -903,7 +860,6 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query_from_kana(const struc
  * }
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -939,7 +895,6 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query(const struct Voicevox
  * }
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -974,7 +929,6 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases_from_kana(const st
  * }
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -1000,7 +954,6 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct Voice
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -1026,7 +979,6 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_data(const struct VoicevoxS
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -1052,7 +1004,6 @@ VoicevoxResultCode voicevox_synthesizer_replace_phoneme_length(const struct Voic
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -1089,7 +1040,6 @@ struct VoicevoxSynthesisOptions voicevox_make_default_synthesis_options(void);
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -1129,7 +1079,6 @@ struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -1160,7 +1109,6 @@ VoicevoxResultCode voicevox_synthesizer_tts_from_kana(const struct VoicevoxSynth
  * @returns 結果コード
  *
  * \safety{
- * - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
  * - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -1278,7 +1226,6 @@ struct VoicevoxUserDict *voicevox_user_dict_new(void);
  * @returns 結果コード
  *
  * \safety{
- * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
  * - `dict_path`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * }
  */
@@ -1300,7 +1247,6 @@ VoicevoxResultCode voicevox_user_dict_load(const struct VoicevoxUserDict *user_d
  * @param user_dict は有効な :VoicevoxUserDict のポインタであること
  *
  * \safety{
- * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
  * - `word->surface`と`word->pronunciation`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_word_uuid`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -1321,7 +1267,6 @@ VoicevoxResultCode voicevox_user_dict_add_word(const struct VoicevoxUserDict *us
  * @returns 結果コード
  *
  * \safety{
- * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
  * - `word_uuid`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `word->surface`と`word->pronunciation`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * }
@@ -1341,7 +1286,6 @@ VoicevoxResultCode voicevox_user_dict_update_word(const struct VoicevoxUserDict 
  * @returns 結果コード
  *
  * \safety{
- * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
  * - `word_uuid`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * }
  */
@@ -1361,7 +1305,6 @@ VoicevoxResultCode voicevox_user_dict_remove_word(const struct VoicevoxUserDict 
  * @returns 結果コード
  *
  * \safety{
- * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
  * - `output_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
  */
@@ -1377,10 +1320,6 @@ VoicevoxResultCode voicevox_user_dict_to_json(const struct VoicevoxUserDict *use
  * @param [in] user_dict ユーザー辞書
  * @param [in] other_dict インポートするユーザー辞書
  * @returns 結果コード
- *
- * \safety{
- * - `user_dict`と`other_dict`は ::voicevox_user_dict_new で得たものでなければならない。
- * }
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -1395,7 +1334,6 @@ VoicevoxResultCode voicevox_user_dict_import(const struct VoicevoxUserDict *user
  * @param [in] path 保存先のファイルパス
  *
  * \safety{
- * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
  * - `path`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * }
  */
@@ -1413,10 +1351,6 @@ VoicevoxResultCode voicevox_user_dict_save(const struct VoicevoxUserDict *user_d
  * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
  *
  * @param [in] user_dict 破棄対象
- *
- * \safety{
- * - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
- * }
  */
 #ifdef _WIN32
 __declspec(dllimport)

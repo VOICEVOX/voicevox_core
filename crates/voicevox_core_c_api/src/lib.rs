@@ -10,17 +10,19 @@ mod c_impls;
 mod compatible_engine;
 mod drop_check;
 mod helpers;
+mod object;
 mod result_code;
 mod slice_owner;
-use self::c_impls::CApiObject;
 use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::{
     accent_phrases_to_json, audio_query_model_to_json, ensure_utf8, into_result_code_with_error,
     CApiError, UuidBytesExt as _,
 };
+use self::object::{CApiObject as _, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
 use anstream::{AutoStream, RawStream};
+use c_impls::{VoicevoxSynthesizerPtrExt as _, VoicevoxVoiceModelFilePtrExt as _};
 use chrono::SecondsFormat;
 use colorchoice::ColorChoice;
 use educe::Educe;
@@ -297,7 +299,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     init_logger_once();
     into_result_code_with_error((|| {
         let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
-        let open_jtalk = OpenJtalkRc::new(open_jtalk_dic_dir)?.into();
+        let open_jtalk = OpenJtalkRc::new(open_jtalk_dic_dir)?;
         out_open_jtalk.write_unaligned(open_jtalk);
         Ok(())
     })())
@@ -309,15 +311,10 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 ///
 /// @param [in] open_jtalk Open JTalkのオブジェクト
 /// @param [in] user_dict ユーザー辞書
-///
-/// \safety{
-/// - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならない。
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
-/// }
 #[no_mangle]
 pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
-    open_jtalk: &OpenJtalkRc,
-    user_dict: &VoicevoxUserDict,
+    open_jtalk: *const OpenJtalkRc,
+    user_dict: *const VoicevoxUserDict,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
@@ -339,14 +336,10 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
 /// voicevox_open_jtalk_rc_delete(open_jtalk);
 /// ```
 /// }
-///
-/// \safety{
-/// - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならない。
-/// }
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: NonNull<OpenJtalkRc>) {
+pub extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: *mut OpenJtalkRc) {
     init_logger_once();
-    unsafe { open_jtalk.as_ref() }.drop_body(); // SAFETY: ユーザーに要求しているもので十分
+    open_jtalk.drop_body();
 }
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
@@ -436,7 +429,7 @@ pub unsafe extern "C" fn voicevox_voice_model_file_open(
     init_logger_once();
     into_result_code_with_error((|| {
         let path = ensure_utf8(CStr::from_ptr(path))?;
-        let model = VoicevoxVoiceModelFile::open(path)?.into();
+        let model = VoicevoxVoiceModelFile::open(path)?;
         out_model.write_unaligned(model);
         Ok(())
     })())
@@ -448,12 +441,11 @@ pub unsafe extern "C" fn voicevox_voice_model_file_open(
 /// @param [out] output_voice_model_id 音声モデルID
 ///
 /// \safety{
-/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
 /// - `output_voice_model_id`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_file_id(
-    model: &VoicevoxVoiceModelFile,
+    model: *const VoicevoxVoiceModelFile,
     output_voice_model_id: NonNull<[u8; 16]>,
 ) {
     init_logger_once();
@@ -468,13 +460,9 @@ pub unsafe extern "C" fn voicevox_voice_model_file_id(
 /// @param [in] model 音声モデル
 ///
 /// @returns メタ情報のJSON文字列
-///
-/// \safety{
-/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
-/// }
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_file_create_metas_json(
-    model: &VoicevoxVoiceModelFile,
+    model: *const VoicevoxVoiceModelFile,
 ) -> *mut c_char {
     init_logger_once();
     C_STRING_DROP_CHECKER.whitelist(model.metas()).into_raw()
@@ -487,14 +475,10 @@ pub extern "C" fn voicevox_voice_model_file_create_metas_json(
 /// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
 ///
 /// @param [in] model 破棄対象
-///
-/// \safety{
-/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
-/// }
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_voice_model_file_close(model: NonNull<VoicevoxVoiceModelFile>) {
+pub extern "C" fn voicevox_voice_model_file_close(model: *mut VoicevoxVoiceModelFile) {
     init_logger_once();
-    unsafe { model.as_ref() }.drop_body(); // SAFETY: ユーザーに要求しているもので十分
+    model.drop_body();
 }
 
 /// 音声シンセサイザ。
@@ -517,13 +501,12 @@ pub struct VoicevoxSynthesizer {
 ///
 /// \safety{
 /// - `onnxruntime`は ::voicevox_onnxruntime_load_once または ::voicevox_onnxruntime_init_once で得たものでなければならない。
-/// - `open_jtalk`は ::voicevox_voice_model_file_open で得たものでなければならない。
 /// - `out_synthesizer`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_new(
     onnxruntime: &'static VoicevoxOnnxruntime,
-    open_jtalk: &OpenJtalkRc,
+    open_jtalk: *const OpenJtalkRc,
     options: VoicevoxInitializeOptions,
     out_synthesizer: NonNull<NonNull<VoicevoxSynthesizer>>,
 ) -> VoicevoxResultCode {
@@ -531,7 +514,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
     into_result_code_with_error((|| {
         let options = options.into();
 
-        let synthesizer = VoicevoxSynthesizer::new(onnxruntime, open_jtalk, &options)?.into();
+        let synthesizer = VoicevoxSynthesizer::new(onnxruntime, open_jtalk, &options)?;
         out_synthesizer.write_unaligned(synthesizer);
         Ok(())
     })())
@@ -544,14 +527,10 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
 /// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
 ///
 /// @param [in] synthesizer 破棄対象
-///
-/// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
-/// }
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: NonNull<VoicevoxSynthesizer>) {
+pub extern "C" fn voicevox_synthesizer_delete(synthesizer: *mut VoicevoxSynthesizer) {
     init_logger_once();
-    unsafe { synthesizer.as_ref() }.drop_body(); // SAFETY: ユーザーに要求しているもので十分
+    synthesizer.drop_body();
 }
 
 /// 音声モデルを読み込む。
@@ -560,15 +539,10 @@ pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: NonNull<Voicev
 /// @param [in] model 音声モデル
 ///
 /// @returns 結果コード
-///
-/// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
-/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
-/// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_load_voice_model(
-    synthesizer: &VoicevoxSynthesizer,
-    model: &VoicevoxVoiceModelFile,
+    synthesizer: *const VoicevoxSynthesizer,
+    model: *const VoicevoxVoiceModelFile,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error(synthesizer.load_voice_model(&model.body()))
@@ -582,12 +556,11 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `model_id`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_unload_voice_model(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId<'_>,
 ) -> VoicevoxResultCode {
     init_logger_once();
@@ -600,13 +573,9 @@ pub extern "C" fn voicevox_synthesizer_unload_voice_model(
 /// @param [in] synthesizer 音声シンセサイザ
 ///
 /// @returns ::VoicevoxOnnxruntime のインスタンス
-///
-/// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
-/// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_get_onnxruntime(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
 ) -> &'static VoicevoxOnnxruntime {
     synthesizer.onnxruntime()
 }
@@ -616,12 +585,10 @@ pub extern "C" fn voicevox_synthesizer_get_onnxruntime(
 /// @param [in] synthesizer 音声シンセサイザ
 ///
 /// @returns GPUモードかどうか
-///
-/// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
-/// }
 #[no_mangle]
-pub extern "C" fn voicevox_synthesizer_is_gpu_mode(synthesizer: &VoicevoxSynthesizer) -> bool {
+pub extern "C" fn voicevox_synthesizer_is_gpu_mode(
+    synthesizer: *const VoicevoxSynthesizer,
+) -> bool {
     init_logger_once();
     synthesizer.body().is_gpu_mode()
 }
@@ -634,12 +601,11 @@ pub extern "C" fn voicevox_synthesizer_is_gpu_mode(synthesizer: &VoicevoxSynthes
 /// @returns モデルが読み込まれているかどうか
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `model_id`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     model_id: VoicevoxVoiceModelId<'_>,
 ) -> bool {
     init_logger_once();
@@ -654,13 +620,9 @@ pub extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
 /// @param [in] synthesizer 音声シンセサイザ
 ///
 /// @return メタ情報のJSON文字列
-///
-/// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
-/// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_create_metas_json(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
 ) -> *mut c_char {
     init_logger_once();
     let metas = synthesizer.metas();
@@ -728,13 +690,12 @@ pub unsafe extern "C" fn voicevox_onnxruntime_create_supported_devices_json(
 /// }
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     kana: *const c_char,
     style_id: VoicevoxStyleId,
     output_audio_query_json: NonNull<*mut c_char>,
@@ -776,13 +737,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
 /// }
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
     output_audio_query_json: NonNull<*mut c_char>,
@@ -825,13 +785,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
 /// }
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     kana: *const c_char,
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
@@ -871,13 +830,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
 /// }
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
@@ -908,13 +866,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     accent_phrases_json: *const c_char,
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
@@ -947,13 +904,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     accent_phrases_json: *const c_char,
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
@@ -986,13 +942,12 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     accent_phrases_json: *const c_char,
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
@@ -1042,14 +997,13 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     audio_query_json: *const c_char,
     style_id: VoicevoxStyleId,
     options: VoicevoxSynthesisOptions,
@@ -1102,14 +1056,13 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     kana: *const c_char,
     style_id: VoicevoxStyleId,
     options: VoicevoxTtsOptions,
@@ -1143,14 +1096,13 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_tts(
-    synthesizer: &VoicevoxSynthesizer,
+    synthesizer: *const VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
     options: VoicevoxTtsOptions,
@@ -1309,7 +1261,7 @@ pub extern "C" fn voicevox_user_dict_word_make(
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_new() -> NonNull<VoicevoxUserDict> {
     init_logger_once();
-    VoicevoxUserDict::new(Default::default()).into()
+    VoicevoxUserDict::new(Default::default())
 }
 
 /// ユーザー辞書にファイルを読み込ませる。
@@ -1319,12 +1271,11 @@ pub extern "C" fn voicevox_user_dict_new() -> NonNull<VoicevoxUserDict> {
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `dict_path`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_load(
-    user_dict: &VoicevoxUserDict,
+    user_dict: *const VoicevoxUserDict,
     dict_path: *const c_char,
 ) -> VoicevoxResultCode {
     init_logger_once();
@@ -1347,13 +1298,12 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `word->surface`と`word->pronunciation`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_word_uuid`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_add_word(
-    user_dict: &VoicevoxUserDict,
+    user_dict: *const VoicevoxUserDict,
     word: *const VoicevoxUserDictWord,
     output_word_uuid: NonNull<[u8; 16]>,
 ) -> VoicevoxResultCode {
@@ -1375,13 +1325,12 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `word_uuid`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `word->surface`と`word->pronunciation`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_update_word(
-    user_dict: &VoicevoxUserDict,
+    user_dict: *const VoicevoxUserDict,
     word_uuid: &[u8; 16],
     word: *const VoicevoxUserDictWord,
 ) -> VoicevoxResultCode {
@@ -1402,12 +1351,11 @@ pub unsafe extern "C" fn voicevox_user_dict_update_word(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `word_uuid`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_remove_word(
-    user_dict: &VoicevoxUserDict,
+    user_dict: *const VoicevoxUserDict,
     word_uuid: &[u8; 16],
 ) -> VoicevoxResultCode {
     init_logger_once();
@@ -1428,12 +1376,11 @@ pub extern "C" fn voicevox_user_dict_remove_word(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `output_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_to_json(
-    user_dict: &VoicevoxUserDict,
+    user_dict: *const VoicevoxUserDict,
     output_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     init_logger_once();
@@ -1448,14 +1395,10 @@ pub unsafe extern "C" fn voicevox_user_dict_to_json(
 /// @param [in] user_dict ユーザー辞書
 /// @param [in] other_dict インポートするユーザー辞書
 /// @returns 結果コード
-///
-/// \safety{
-/// - `user_dict`と`other_dict`は ::voicevox_user_dict_new で得たものでなければならない。
-/// }
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_import(
-    user_dict: &VoicevoxUserDict,
-    other_dict: &VoicevoxUserDict,
+    user_dict: *const VoicevoxUserDict,
+    other_dict: *const VoicevoxUserDict,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
@@ -1470,12 +1413,11 @@ pub extern "C" fn voicevox_user_dict_import(
 /// @param [in] path 保存先のファイルパス
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `path`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_save(
-    user_dict: &VoicevoxUserDict,
+    user_dict: *const VoicevoxUserDict,
     path: *const c_char,
 ) -> VoicevoxResultCode {
     init_logger_once();
@@ -1493,12 +1435,8 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 /// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
 ///
 /// @param [in] user_dict 破棄対象
-///
-/// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
-/// }
 #[no_mangle]
-pub unsafe extern "C" fn voicevox_user_dict_delete(user_dict: NonNull<VoicevoxUserDict>) {
+pub extern "C" fn voicevox_user_dict_delete(user_dict: *mut VoicevoxUserDict) {
     init_logger_once();
-    unsafe { user_dict.as_ref() }.drop_body(); // SAFETY: ユーザーに要求しているもので十分
+    user_dict.drop_body();
 }

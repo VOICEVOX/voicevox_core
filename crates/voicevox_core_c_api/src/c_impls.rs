@@ -1,11 +1,8 @@
 use std::{
-    any,
     collections::HashMap,
     ffi::CString,
-    fmt::{Debug, Display},
-    mem,
-    ops::{Deref, DerefMut},
     path::Path,
+    ptr::NonNull,
     sync::{Arc, LazyLock},
 };
 
@@ -13,11 +10,12 @@ use camino::Utf8Path;
 use duplicate::duplicate_item;
 use easy_ext::ext;
 use ref_cast::ref_cast_custom;
-use tracing::warn;
 use voicevox_core::{InitializeOptions, Result, SpeakerMeta, VoiceModelId};
 
 use crate::{
-    helpers::CApiResult, OpenJtalkRc, VoicevoxOnnxruntime, VoicevoxSynthesizer, VoicevoxUserDict,
+    helpers::CApiResult,
+    object::{CApiObject, CApiObjectPtrExt as _},
+    OpenJtalkRc, VoicevoxOnnxruntime, VoicevoxSynthesizer, VoicevoxUserDict,
     VoicevoxVoiceModelFile,
 };
 
@@ -73,7 +71,7 @@ macro_rules! to_cstr {
 use to_cstr;
 
 impl OpenJtalkRc {
-    pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Utf8Path>) -> Result<&'static Self> {
+    pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Utf8Path>) -> Result<NonNull<Self>> {
         let body = voicevox_core::blocking::OpenJtalk::new(open_jtalk_dic_dir)?;
         Ok(<Self as CApiObject>::new(body))
     }
@@ -82,46 +80,52 @@ impl OpenJtalkRc {
 impl VoicevoxSynthesizer {
     pub(crate) fn new(
         onnxruntime: &'static VoicevoxOnnxruntime,
-        open_jtalk: &OpenJtalkRc,
+        open_jtalk: *const OpenJtalkRc,
         options: &InitializeOptions,
-    ) -> Result<&'static Self> {
+    ) -> Result<NonNull<Self>> {
         let body = voicevox_core::blocking::Synthesizer::new(
             &onnxruntime.0,
-            (*open_jtalk.body()).clone(),
+            open_jtalk.body().clone(),
             options,
         )?;
         Ok(<Self as CApiObject>::new(body))
     }
+}
 
-    pub(crate) fn onnxruntime(&self) -> &'static VoicevoxOnnxruntime {
+#[ext(VoicevoxSynthesizerPtrExt)]
+impl *const VoicevoxSynthesizer {
+    pub(crate) fn onnxruntime(self) -> &'static VoicevoxOnnxruntime {
         VoicevoxOnnxruntime::new(self.body().onnxruntime())
     }
 
     pub(crate) fn load_voice_model(
-        &self,
+        self,
         model: &voicevox_core::blocking::VoiceModelFile,
     ) -> CApiResult<()> {
         self.body().load_voice_model(model)?;
         Ok(())
     }
 
-    pub(crate) fn unload_voice_model(&self, model_id: VoiceModelId) -> Result<()> {
+    pub(crate) fn unload_voice_model(self, model_id: VoiceModelId) -> Result<()> {
         self.body().unload_voice_model(model_id)?;
         Ok(())
     }
 
-    pub(crate) fn metas(&self) -> CString {
+    pub(crate) fn metas(self) -> CString {
         metas_to_json(&self.body().metas())
     }
 }
 
 impl VoicevoxVoiceModelFile {
-    pub(crate) fn open(path: impl AsRef<Path>) -> Result<&'static Self> {
+    pub(crate) fn open(path: impl AsRef<Path>) -> Result<NonNull<Self>> {
         let model = voicevox_core::blocking::VoiceModelFile::open(path)?;
         Ok(Self::new(model))
     }
+}
 
-    pub(crate) fn metas(&self) -> CString {
+#[ext(VoicevoxVoiceModelFilePtrExt)]
+impl *const VoicevoxVoiceModelFile {
+    pub(crate) fn metas(self) -> CString {
         metas_to_json(self.body().metas())
     }
 }
@@ -129,105 +133,6 @@ impl VoicevoxVoiceModelFile {
 fn metas_to_json(metas: &[SpeakerMeta]) -> CString {
     let metas = serde_json::to_string(metas).expect("should not fail");
     CString::new(metas).expect("should not contain NUL")
-}
-
-/// プロセスの終わりまでデストラクトされない、ユーザーにオブジェクトとして貸し出す1-bit長の構造体。
-///
-/// インスタンスは次のような形。
-///
-/// ```
-/// pub struct VoicevoxSynthesizer {
-///    _padding: MaybeUninit<[u8; 1]>,
-/// }
-/// ```
-///
-/// `RustApiObject`そのものではなくこのトレイトのインスタンスをユーザーに渡すようにすることで、次のことを実現する。
-///
-/// 1. "delete"時に対象オブジェクトに対するアクセスがあった場合、アクセスが終わるまで待つ
-/// 2. 次のユーザー操作に対するセーフティネットを張り、パニックするようにする
-///     1. "delete"後に他の通常のメソッド関数の利用を試みる
-///     2. "delete"後に"delete"を試みる
-pub(crate) trait CApiObject: Default + Debug {
-    type RustApiObject: 'static;
-
-    fn heads() -> &'static boxcar::Vec<Self>;
-
-    #[expect(clippy::type_complexity, reason = "コメント書いてる")]
-    fn bodies() -> &'static std::sync::Mutex<
-        HashMap<
-            usize, // `heads`の要素へのポインタのアドレス
-            Arc<
-                parking_lot::RwLock<
-                    Option<Self::RustApiObject>, // `RwLock`をdropする直前まで`Some`
-                >,
-            >,
-        >,
-    >;
-
-    fn new(body: Self::RustApiObject) -> &'static Self {
-        assert!(mem::size_of::<Self>() > 0);
-
-        let i = Self::heads().push(Default::default());
-        let this = &Self::heads()[i];
-        let body = parking_lot::RwLock::new(body.into()).into();
-        Self::lock_bodies().insert(this as *const _ as _, body);
-        this
-    }
-
-    /// # Panics
-    ///
-    /// `self`に対してこの関数を二度呼ぶとパニックする。
-    fn drop_body(&self) {
-        let body = Self::lock_bodies()
-            .remove(&(self as *const _ as _))
-            .unwrap_or_else(|| self.panic_for_deleted());
-
-        drop(
-            body.try_write_arc()
-                .unwrap_or_else(|| {
-                    warn!("{} is still in use. Waiting before closing", self.display());
-                    body.write_arc()
-                })
-                .take()
-                .unwrap_or_else(|| self.panic_for_deleted()),
-        );
-    }
-
-    /// # Panics
-    ///
-    /// `self`に対して`drop_body`を呼んでいるとパニックする。
-    fn body(&self) -> impl Deref<Target = Self::RustApiObject> {
-        let body = Self::lock_bodies()
-            .get(&(self as *const _ as _))
-            .unwrap_or_else(|| self.panic_for_deleted())
-            .read_arc();
-        voicevox_core::__internal::interop::raii::try_map_guard(body, |body| {
-            body.as_ref().ok_or(())
-        })
-        .unwrap_or_else(|()| self.panic_for_deleted())
-    }
-}
-
-#[ext]
-impl<T: CApiObject> T {
-    fn lock_bodies(
-    ) -> impl DerefMut<Target = HashMap<usize, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>>
-    {
-        Self::bodies().lock().unwrap_or_else(|e| panic!("{e}"))
-    }
-
-    fn panic_for_deleted(&self) -> ! {
-        let display = self.display();
-        panic!("{display}は既に破棄されています");
-    }
-
-    fn display(&self) -> impl Display + '_ {
-        let type_name = any::type_name::<Self>()
-            .split("::")
-            .last()
-            .expect("should not empty");
-        format!("`{type_name}` ({self:018p})")
-    }
 }
 
 #[duplicate_item(
@@ -240,21 +145,19 @@ impl<T: CApiObject> T {
 impl CApiObject for H {
     type RustApiObject = B;
 
-    fn heads() -> &'static boxcar::Vec<Self> {
-        static HEADS: boxcar::Vec<H> = boxcar::Vec::new();
+    fn heads() -> &'static std::sync::Mutex<Vec<Self>> {
+        static HEADS: std::sync::Mutex<Vec<H>> = std::sync::Mutex::new(vec![]);
         &HEADS
     }
 
     fn bodies() -> &'static std::sync::Mutex<
         HashMap<usize, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>,
     > {
-        #[expect(
-            clippy::type_complexity,
-            reason = "`CApiObject::bodies`の方でコメント書いてる"
-        )]
+        #[expect(clippy::type_complexity, reason = "`CApiObject::bodies`と同様")]
         static BODIES: LazyLock<
             std::sync::Mutex<HashMap<usize, Arc<parking_lot::RwLock<Option<B>>>>>,
         > = LazyLock::new(Default::default);
+
         &BODIES
     }
 }
