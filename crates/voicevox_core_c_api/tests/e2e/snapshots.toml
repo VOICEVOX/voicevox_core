@@ -65,26 +65,26 @@ last_error_message = "Statusが初期化されていません"
 stderr = ""
 
 [double_delete_openjtalk]
-stderr_contains_all = [
-    "\n`OpenJtalkRc { id: 0 }`は既に破棄されています\n",
+stderr_matches_all = [
+    '\n`OpenJtalkRc` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
     "\nthread caused non-unwinding panic. aborting.\n",
 ]
 
 [double_delete_synthesizer]
-stderr_contains_all = [
-    "\n`VoicevoxSynthesizer { id: 0 }`は既に破棄されています\n",
+stderr_matches_all = [
+    '\n`VoicevoxSynthesizer` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
     "\nthread caused non-unwinding panic. aborting.\n",
 ]
 
 [double_delete_user_dict]
-stderr_contains_all = [
-    "\n`VoicevoxUserDict { id: 0 }`は既に破棄されています\n",
+stderr_matches_all = [
+    '\n`VoicevoxUserDict` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
     "\nthread caused non-unwinding panic. aborting.\n",
 ]
 
 [double_delete_voice_model_file]
-stderr_contains_all = [
-    "\n`VoicevoxVoiceModelFile { id: 0 }`は既に破棄されています\n",
+stderr_matches_all = [
+    '\n`VoicevoxVoiceModelFile` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
     "\nthread caused non-unwinding panic. aborting.\n",
 ]
 

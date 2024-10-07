@@ -23,12 +23,13 @@ use self::slice_owner::U8_SLICE_OWNER;
 use anstream::{AutoStream, RawStream};
 use chrono::SecondsFormat;
 use colorchoice::ColorChoice;
-use derive_more::{From, Into};
+use educe::Educe;
 use ref_cast::RefCastCustom;
 use std::env;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io;
+use std::mem::MaybeUninit;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 use std::sync::Once;
@@ -262,9 +263,10 @@ pub unsafe extern "C" fn voicevox_onnxruntime_init_once(
 /// voicevox_open_jtalk_rc_delete(open_jtalk);
 /// ```
 /// }
-#[derive(Clone, Copy, Debug, From, Into)]
+#[derive(Debug, Educe)]
+#[educe(Default(expression = "Self { _padding: MaybeUninit::uninit() }"))]
 pub struct OpenJtalkRc {
-    id: u32,
+    _padding: MaybeUninit<[u8; 1]>,
 }
 
 /// ::OpenJtalkRc を<b>構築</b>(_construct_)する。
@@ -398,9 +400,10 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
 ///
 /// VVMファイルと対応する。
 /// <b>構築</b>(_construction_)は ::voicevox_voice_model_file_open で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_file_close で行う。
-#[derive(Clone, Copy, Debug, From, Into)]
+#[derive(Debug, Educe)]
+#[educe(Default(expression = "Self { _padding: MaybeUninit::uninit() }"))]
 pub struct VoicevoxVoiceModelFile {
-    id: u32,
+    _padding: MaybeUninit<[u8; 1]>,
 }
 
 /// 音声モデルID。
@@ -491,9 +494,10 @@ pub unsafe extern "C" fn voicevox_voice_model_file_close(model: NonNull<Voicevox
 /// 音声シンセサイザ。
 ///
 /// <b>構築</b>(_construction_)は ::voicevox_synthesizer_new で行い、<b>破棄</b>(_destruction_)は ::voicevox_synthesizer_delete で行う。
-#[derive(Clone, Copy, Debug, From, Into)]
+#[derive(Debug, Educe)]
+#[educe(Default(expression = "Self { _padding: MaybeUninit::uninit() }"))]
 pub struct VoicevoxSynthesizer {
-    id: u32,
+    _padding: MaybeUninit<[u8; 1]>,
 }
 
 /// ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。
@@ -1228,9 +1232,10 @@ pub extern "C" fn voicevox_error_result_to_message(
 }
 
 /// ユーザー辞書。
-#[derive(Clone, Copy, Debug, From, Into)]
+#[derive(Debug, Educe)]
+#[educe(Default(expression = "Self { _padding: MaybeUninit::uninit() }"))]
 pub struct VoicevoxUserDict {
-    id: u32,
+    _padding: MaybeUninit<[u8; 1]>,
 }
 
 /// ユーザー辞書の単語。

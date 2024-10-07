@@ -31,8 +31,9 @@ impl assert_cdylib::TestCase for TestCase {
 
     fn assert_output(&self, output: Utf8Output) -> AssertResult {
         let mut assert = output.assert().try_failure()?.try_stdout("")?;
-        for s in &SNAPSHOTS.stderr_contains_all {
-            assert = assert.try_stderr(predicates::str::contains(s))?;
+        for s in &SNAPSHOTS.stderr_matches_all {
+            let p = predicates::str::is_match(s).unwrap_or_else(|e| panic!("{e}"));
+            assert = assert.try_stderr(p)?;
         }
         Ok(assert)
     }
@@ -42,5 +43,5 @@ static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(double_delete_user_d
 
 #[derive(Deserialize)]
 struct Snapshots {
-    stderr_contains_all: IndexSet<String>,
+    stderr_matches_all: IndexSet<String>,
 }

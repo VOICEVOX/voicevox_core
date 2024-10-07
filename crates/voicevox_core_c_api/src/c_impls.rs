@@ -1,7 +1,9 @@
 use std::{
+    any,
     collections::HashMap,
     ffi::CString,
-    fmt::Debug,
+    fmt::{Debug, Display},
+    mem,
     ops::DerefMut,
     path::Path,
     sync::{Arc, LazyLock},
@@ -128,15 +130,13 @@ fn metas_to_json(metas: &[SpeakerMeta]) -> CString {
     CString::new(metas).expect("should not contain NUL")
 }
 
-/// プロセスの終わりまでデストラクトされない、ユーザーにオブジェクトとして貸し出す`u32`相当の値。
+/// プロセスの終わりまでデストラクトされない、ユーザーにオブジェクトとして貸し出す1-bit長の構造体。
 ///
 /// インスタンスは次のような形。
 ///
 /// ```
-/// #[derive(Clone, Copy, Debug, From, Into)]
-/// #[repr(Rust)]
 /// pub struct VoicevoxSynthesizer {
-///     id: u32,
+///    _padding: MaybeUninit<[u8; 1]>,
 /// }
 /// ```
 ///
@@ -150,20 +150,25 @@ fn metas_to_json(metas: &[SpeakerMeta]) -> CString {
 ///
 /// - `voicevox_voice_model_file_id`
 /// - `voicevox_voice_model_file_get_metas_json`
-pub(crate) trait CApiObject: From<u32> + Into<u32> + Copy + Debug {
+pub(crate) trait CApiObject: Default + Debug {
     type RustApiObject: 'static;
 
     fn heads() -> &'static boxcar::Vec<Self>;
-    fn bodies() -> &'static std::sync::Mutex<HashMap<u32, Arc<Self::RustApiObject>>>;
+
+    fn bodies() -> &'static std::sync::Mutex<
+        HashMap<
+            usize, // `heads`の要素へのポインタのアドレス
+            Arc<Self::RustApiObject>,
+        >,
+    >;
 
     fn new(body: Self::RustApiObject) -> &'static Self {
-        let i = Self::heads().push_with(|i| to_id(i).into());
-        Self::lock_bodies().insert(to_id(i), body.into());
-        return &Self::heads()[i];
+        assert!(mem::size_of::<Self>() > 0);
 
-        fn to_id(i: usize) -> u32 {
-            i.try_into().expect("too large")
-        }
+        let i = Self::heads().push(Default::default());
+        let this = &Self::heads()[i];
+        Self::lock_bodies().insert(this as *const _ as _, body.into());
+        this
     }
 
     /// # Panics
@@ -172,9 +177,9 @@ pub(crate) trait CApiObject: From<u32> + Into<u32> + Copy + Debug {
     ///
     /// * `self`に対して以前にこの関数を呼んでいた場合
     /// * `self`がまだ他で利用中である場合
-    fn drop_body(self) {
+    fn drop_body(&self) {
         let body = Self::lock_bodies()
-            .remove(&self.into())
+            .remove(&(self as *const _ as _))
             .unwrap_or_else(|| self.panic_for_deleted());
         drop(Arc::into_inner(body).unwrap_or_else(|| self.panic_for_in_use()));
     }
@@ -182,9 +187,9 @@ pub(crate) trait CApiObject: From<u32> + Into<u32> + Copy + Debug {
     /// # Panics
     ///
     /// `drop_body`を呼んでいるとパニックする。
-    fn body(self) -> Arc<Self::RustApiObject> {
+    fn body(&self) -> Arc<Self::RustApiObject> {
         Self::lock_bodies()
-            .get(&self.into())
+            .get(&(self as *const _ as _))
             .unwrap_or_else(|| self.panic_for_deleted())
             .clone()
     }
@@ -192,16 +197,26 @@ pub(crate) trait CApiObject: From<u32> + Into<u32> + Copy + Debug {
 
 #[ext]
 impl<T: CApiObject> T {
-    fn lock_bodies() -> impl DerefMut<Target = HashMap<u32, Arc<Self::RustApiObject>>> {
+    fn lock_bodies() -> impl DerefMut<Target = HashMap<usize, Arc<Self::RustApiObject>>> {
         Self::bodies().lock().unwrap_or_else(|e| panic!("{e}"))
     }
 
-    fn panic_for_deleted(self) -> ! {
-        panic!("`{self:?}`は既に破棄されています");
+    fn panic_for_deleted(&self) -> ! {
+        let display = self.display();
+        panic!("{display}は既に破棄されています");
     }
 
-    fn panic_for_in_use(self) -> ! {
-        panic!("`{self:?}`が破棄されようとしましたが、これはまだ利用中です");
+    fn panic_for_in_use(&self) -> ! {
+        let display = self.display();
+        panic!("{display}が破棄されようとしましたが、これはまだ利用中です");
+    }
+
+    fn display(&self) -> impl Display + '_ {
+        let type_name = any::type_name::<Self>()
+            .split("::")
+            .last()
+            .expect("should not empty");
+        format!("`{type_name}` ({self:018p})")
     }
 }
 
@@ -220,8 +235,8 @@ impl CApiObject for H {
         &HEADS
     }
 
-    fn bodies() -> &'static std::sync::Mutex<HashMap<u32, Arc<Self::RustApiObject>>> {
-        static BODIES: LazyLock<std::sync::Mutex<HashMap<u32, Arc<B>>>> =
+    fn bodies() -> &'static std::sync::Mutex<HashMap<usize, Arc<Self::RustApiObject>>> {
+        static BODIES: LazyLock<std::sync::Mutex<HashMap<usize, Arc<B>>>> =
             LazyLock::new(Default::default);
         &BODIES
     }
