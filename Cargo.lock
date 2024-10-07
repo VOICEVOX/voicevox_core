@@ -4390,6 +4390,7 @@ dependencies = [
  "libtest-mimic",
  "ndarray",
  "ndarray-stats",
+ "parking_lot",
  "predicates",
  "process_path",
  "ref-cast",

@@ -31,6 +31,7 @@ easy-ext.workspace = true
 educe.workspace = true
 itertools.workspace = true
 libc.workspace = true
+parking_lot = { workspace = true, features = ["arc_lock"] }
 process_path.workspace = true
 ref-cast.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }

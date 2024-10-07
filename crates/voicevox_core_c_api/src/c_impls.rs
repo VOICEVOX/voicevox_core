@@ -4,7 +4,7 @@ use std::{
     ffi::CString,
     fmt::{Debug, Display},
     mem,
-    ops::DerefMut,
+    ops::{Deref, DerefMut},
     path::Path,
     sync::{Arc, LazyLock},
 };
@@ -13,6 +13,7 @@ use camino::Utf8Path;
 use duplicate::duplicate_item;
 use easy_ext::ext;
 use ref_cast::ref_cast_custom;
+use tracing::warn;
 use voicevox_core::{InitializeOptions, Result, SpeakerMeta, VoiceModelId};
 
 use crate::{
@@ -155,10 +156,15 @@ pub(crate) trait CApiObject: Default + Debug {
 
     fn heads() -> &'static boxcar::Vec<Self>;
 
+    #[expect(clippy::type_complexity, reason = "コメント書いてる")]
     fn bodies() -> &'static std::sync::Mutex<
         HashMap<
             usize, // `heads`の要素へのポインタのアドレス
-            Arc<Self::RustApiObject>,
+            Arc<
+                parking_lot::RwLock<
+                    Option<Self::RustApiObject>, // `RwLock`をdropする直前まで`Some`
+                >,
+            >,
         >,
     >;
 
@@ -167,7 +173,8 @@ pub(crate) trait CApiObject: Default + Debug {
 
         let i = Self::heads().push(Default::default());
         let this = &Self::heads()[i];
-        Self::lock_bodies().insert(this as *const _ as _, body.into());
+        let body = parking_lot::RwLock::new(body.into()).into();
+        Self::lock_bodies().insert(this as *const _ as _, body);
         this
     }
 
@@ -181,34 +188,44 @@ pub(crate) trait CApiObject: Default + Debug {
         let body = Self::lock_bodies()
             .remove(&(self as *const _ as _))
             .unwrap_or_else(|| self.panic_for_deleted());
-        drop(Arc::into_inner(body).unwrap_or_else(|| self.panic_for_in_use()));
+
+        drop(
+            body.try_write_arc()
+                .unwrap_or_else(|| {
+                    warn!("{} is still in use. Waiting before closing", self.display());
+                    body.write_arc()
+                })
+                .take()
+                .unwrap_or_else(|| self.panic_for_deleted()),
+        );
     }
 
     /// # Panics
     ///
     /// `drop_body`を呼んでいるとパニックする。
-    fn body(&self) -> Arc<Self::RustApiObject> {
-        Self::lock_bodies()
+    fn body(&self) -> impl Deref<Target = Self::RustApiObject> {
+        let body = Self::lock_bodies()
             .get(&(self as *const _ as _))
             .unwrap_or_else(|| self.panic_for_deleted())
-            .clone()
+            .read_arc();
+        voicevox_core::__internal::interop::raii::try_map_guard(body, |body| {
+            body.as_ref().ok_or(())
+        })
+        .unwrap_or_else(|()| self.panic_for_deleted())
     }
 }
 
 #[ext]
 impl<T: CApiObject> T {
-    fn lock_bodies() -> impl DerefMut<Target = HashMap<usize, Arc<Self::RustApiObject>>> {
+    fn lock_bodies(
+    ) -> impl DerefMut<Target = HashMap<usize, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>>
+    {
         Self::bodies().lock().unwrap_or_else(|e| panic!("{e}"))
     }
 
     fn panic_for_deleted(&self) -> ! {
         let display = self.display();
         panic!("{display}は既に破棄されています");
-    }
-
-    fn panic_for_in_use(&self) -> ! {
-        let display = self.display();
-        panic!("{display}が破棄されようとしましたが、これはまだ利用中です");
     }
 
     fn display(&self) -> impl Display + '_ {
@@ -235,9 +252,16 @@ impl CApiObject for H {
         &HEADS
     }
 
-    fn bodies() -> &'static std::sync::Mutex<HashMap<usize, Arc<Self::RustApiObject>>> {
-        static BODIES: LazyLock<std::sync::Mutex<HashMap<usize, Arc<B>>>> =
-            LazyLock::new(Default::default);
+    fn bodies() -> &'static std::sync::Mutex<
+        HashMap<usize, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>,
+    > {
+        #[expect(
+            clippy::type_complexity,
+            reason = "`CApiObject::bodies`の方でコメント書いてる"
+        )]
+        static BODIES: LazyLock<
+            std::sync::Mutex<HashMap<usize, Arc<parking_lot::RwLock<Option<B>>>>>,
+        > = LazyLock::new(Default::default);
         &BODIES
     }
 }
