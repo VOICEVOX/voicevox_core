@@ -141,16 +141,12 @@ fn metas_to_json(metas: &[SpeakerMeta]) -> CString {
 /// }
 /// ```
 ///
-/// `RustApi`そのものではなくこのトレイトのインスタンスをユーザーに渡すようにし、次のユーザー操作に対するセーフティネットを実現する。
+/// `RustApiObject`そのものではなくこのトレイトのインスタンスをユーザーに渡すようにすることで、次のことを実現する。
 ///
-/// 1. オブジェクトが他スレッドでアクセスされている最中に"delete"を試みる
-/// 2. "delete"後に他の通常のメソッド関数の利用を試みる
-/// 3. "delete"後に"delete"を試みる
-///
-/// ただし次のゲッター関数に関しては機能しない。
-///
-/// - `voicevox_voice_model_file_id`
-/// - `voicevox_voice_model_file_get_metas_json`
+/// 1. "delete"時に対象オブジェクトに対するアクセスがあった場合、アクセスが終わるまで待つ
+/// 2. 次のユーザー操作に対するセーフティネットを張り、パニックするようにする
+///     1. "delete"後に他の通常のメソッド関数の利用を試みる
+///     2. "delete"後に"delete"を試みる
 pub(crate) trait CApiObject: Default + Debug {
     type RustApiObject: 'static;
 
@@ -180,10 +176,7 @@ pub(crate) trait CApiObject: Default + Debug {
 
     /// # Panics
     ///
-    /// 次の場合にパニックする。
-    ///
-    /// * `self`に対して以前にこの関数を呼んでいた場合
-    /// * `self`がまだ他で利用中である場合
+    /// `self`に対してこの関数を二度呼ぶとパニックする。
     fn drop_body(&self) {
         let body = Self::lock_bodies()
             .remove(&(self as *const _ as _))
@@ -202,7 +195,7 @@ pub(crate) trait CApiObject: Default + Debug {
 
     /// # Panics
     ///
-    /// `drop_body`を呼んでいるとパニックする。
+    /// `self`に対して`drop_body`を呼んでいるとパニックする。
     fn body(&self) -> impl Deref<Target = Self::RustApiObject> {
         let body = Self::lock_bodies()
             .get(&(self as *const _ as _))

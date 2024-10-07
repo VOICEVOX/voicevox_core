@@ -311,8 +311,8 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 /// @param [in] user_dict ユーザー辞書
 ///
 /// \safety{
-/// - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならず、また ::voicevox_open_jtalk_rc_delete で解放されていてはいけない。
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならない。
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
@@ -328,6 +328,10 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
 
 /// ::OpenJtalkRc を<b>破棄</b>(_destruct_)する。
 ///
+/// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
+///
+/// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
+///
 /// @param [in] open_jtalk 破棄対象
 ///
 /// \example{
@@ -337,8 +341,7 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
 /// }
 ///
 /// \safety{
-/// - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならず、また既にこの関数で解放されていてはいけない。
-/// - `open_jtalk`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+/// - `open_jtalk`は ::voicevox_open_jtalk_rc_new で得たものでなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: NonNull<OpenJtalkRc>) {
@@ -445,7 +448,7 @@ pub unsafe extern "C" fn voicevox_voice_model_file_open(
 /// @param [out] output_voice_model_id 音声モデルID
 ///
 /// \safety{
-/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
 /// - `output_voice_model_id`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
@@ -467,7 +470,7 @@ pub unsafe extern "C" fn voicevox_voice_model_file_id(
 /// @returns メタ情報のJSON文字列
 ///
 /// \safety{
-/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_voice_model_file_create_metas_json(
@@ -479,11 +482,14 @@ pub extern "C" fn voicevox_voice_model_file_create_metas_json(
 
 /// ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
 ///
+/// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
+///
+/// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
+///
 /// @param [in] model 破棄対象
 ///
 /// \safety{
-/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また既にこの関数で解放されていてはいけない。
-/// - `model`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_voice_model_file_close(model: NonNull<VoicevoxVoiceModelFile>) {
@@ -511,7 +517,7 @@ pub struct VoicevoxSynthesizer {
 ///
 /// \safety{
 /// - `onnxruntime`は ::voicevox_onnxruntime_load_once または ::voicevox_onnxruntime_init_once で得たものでなければならない。
-/// - `open_jtalk`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_open_jtalk_rc_new で解放されていてはいけない。
+/// - `open_jtalk`は ::voicevox_voice_model_file_open で得たものでなければならない。
 /// - `out_synthesizer`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
@@ -533,11 +539,14 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
 
 /// ::VoicevoxSynthesizer を<b>破棄</b>(_destruct_)する。
 ///
+/// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
+///
+/// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
+///
 /// @param [in] synthesizer 破棄対象
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また既にこの関数で解放されていてはいけない。
-/// - `synthesizer`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: NonNull<VoicevoxSynthesizer>) {
@@ -553,8 +562,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_delete(synthesizer: NonNull<Voicev
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
-/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならず、また ::voicevox_voice_model_file_close で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
+/// - `model`は ::voicevox_voice_model_file_open で得たものでなければならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_load_voice_model(
@@ -573,7 +582,7 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `model_id`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
@@ -593,7 +602,7 @@ pub extern "C" fn voicevox_synthesizer_unload_voice_model(
 /// @returns ::VoicevoxOnnxruntime のインスタンス
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_get_onnxruntime(
@@ -609,7 +618,7 @@ pub extern "C" fn voicevox_synthesizer_get_onnxruntime(
 /// @returns GPUモードかどうか
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_is_gpu_mode(synthesizer: &VoicevoxSynthesizer) -> bool {
@@ -625,7 +634,7 @@ pub extern "C" fn voicevox_synthesizer_is_gpu_mode(synthesizer: &VoicevoxSynthes
 /// @returns モデルが読み込まれているかどうか
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `model_id`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
@@ -647,7 +656,7 @@ pub extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
 /// @return メタ情報のJSON文字列
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_synthesizer_create_metas_json(
@@ -719,7 +728,7 @@ pub unsafe extern "C" fn voicevox_onnxruntime_create_supported_devices_json(
 /// }
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
@@ -767,7 +776,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
 /// }
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
@@ -816,7 +825,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
 /// }
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
@@ -862,7 +871,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
 /// }
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
@@ -899,7 +908,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
@@ -938,7 +947,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
@@ -977,7 +986,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
@@ -1033,7 +1042,7 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -1093,7 +1102,7 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `kana`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -1134,7 +1143,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならず、また ::voicevox_synthesizer_delete で解放されていてはいけない。
+/// - `synthesizer`は ::voicevox_synthesizer_new で得たものでなければならない。
 /// - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -1310,7 +1319,7 @@ pub extern "C" fn voicevox_user_dict_new() -> NonNull<VoicevoxUserDict> {
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `dict_path`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
@@ -1338,7 +1347,7 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
 /// @param user_dict は有効な :VoicevoxUserDict のポインタであること
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `word->surface`と`word->pronunciation`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_word_uuid`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
@@ -1366,7 +1375,7 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `word_uuid`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `word->surface`と`word->pronunciation`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
@@ -1393,7 +1402,7 @@ pub unsafe extern "C" fn voicevox_user_dict_update_word(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `word_uuid`は<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
@@ -1419,7 +1428,7 @@ pub extern "C" fn voicevox_user_dict_remove_word(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `output_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
@@ -1441,7 +1450,7 @@ pub unsafe extern "C" fn voicevox_user_dict_to_json(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `user_dict`と`other_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `user_dict`と`other_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// }
 #[no_mangle]
 pub extern "C" fn voicevox_user_dict_import(
@@ -1461,7 +1470,7 @@ pub extern "C" fn voicevox_user_dict_import(
 /// @param [in] path 保存先のファイルパス
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また ::voicevox_user_dict_delete で解放されていてはいけない。
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// - `path`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 #[no_mangle]
@@ -1479,10 +1488,14 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 
 /// ユーザー辞書を<b>破棄</b>(_destruct_)する。
 ///
+/// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
+///
+/// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
+///
 /// @param [in] user_dict 破棄対象
 ///
 /// \safety{
-/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならず、また既にこの関数で解放されていてはいけない。
+/// - `user_dict`は ::voicevox_user_dict_new で得たものでなければならない。
 /// }
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_user_dict_delete(user_dict: NonNull<VoicevoxUserDict>) {
