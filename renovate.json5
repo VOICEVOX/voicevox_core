@@ -5,7 +5,7 @@
   ],
   timezone: "Asia/Tokyo",
   separateMajorMinor: false,
-  dependencyDashboardApproval: true, // 万が一`packageRules`の網羅性に穴ができた場合に備え
+  dependencyDashboardApproval: true,
   packageRules: [
     // `separateMajorMinor`を無効化した上で次の二つのgroupにすべてをまとめる。
     //
@@ -46,7 +46,6 @@
         "minor",
       ],
       matchCurrentVersion: "!/^v?0\\./",
-      dependencyDashboardApproval: false,
     },
     {
       groupName: "non-major dependencies",
@@ -54,7 +53,6 @@
         "patch",
       ],
       matchCurrentVersion: "!/^v?0\\.0\\./",
-      dependencyDashboardApproval: false,
     },
 
     // GHAのrunnerに対しては無効化する

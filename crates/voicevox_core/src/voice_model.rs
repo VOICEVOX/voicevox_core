@@ -419,9 +419,6 @@ impl InferenceDomainMap<ManifestDomains> {
 pub(crate) mod blocking {
     use std::path::Path;
 
-    use easy_ext::ext;
-    use uuid::Uuid;
-
     use crate::{
         asyncs::SingleTasked, error::LoadModelResult, future::FutureExt as _,
         infer::domains::InferenceDomainMap, VoiceModelMeta,
@@ -458,13 +455,6 @@ pub(crate) mod blocking {
 
         pub(crate) fn header(&self) -> &VoiceModelHeader {
             self.0.header()
-        }
-    }
-
-    #[ext(IdRef)]
-    pub impl VoiceModelFile {
-        fn id_ref(&self) -> &Uuid {
-            &self.header().manifest.id.0
         }
     }
 }

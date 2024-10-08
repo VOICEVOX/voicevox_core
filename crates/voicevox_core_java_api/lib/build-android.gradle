@@ -1,5 +1,5 @@
 plugins {
-    id 'com.android.library' version '8.1.1'
+    id 'com.android.library' version '8.7.0'
     id 'maven-publish'
     id 'org.jetbrains.kotlin.android' version '1.9.10'
 }
@@ -13,7 +13,7 @@ repositories {
 
 dependencies {
     // Use JUnit Jupiter for testing.
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.2'
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
