@@ -553,7 +553,7 @@ VoicevoxResultCode voicevox_open_jtalk_rc_use_user_dict(const struct OpenJtalkRc
  *
  * 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
  *
- * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
+ * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
  *
  * @param [in] open_jtalk 破棄対象
  *
@@ -640,7 +640,7 @@ char *voicevox_voice_model_file_create_metas_json(const struct VoicevoxVoiceMode
  *
  * 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
  *
- * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
+ * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
  *
  * @param [in] model 破棄対象
  */
@@ -677,7 +677,7 @@ VoicevoxResultCode voicevox_synthesizer_new(const struct VoicevoxOnnxruntime *on
  *
  * 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
  *
- * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
+ * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
  *
  * @param [in] synthesizer 破棄対象
  */
@@ -1348,7 +1348,7 @@ VoicevoxResultCode voicevox_user_dict_save(const struct VoicevoxUserDict *user_d
  *
  * 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
  *
- * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスをアボートする。
+ * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
  *
  * @param [in] user_dict 破棄対象
  */
