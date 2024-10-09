@@ -9,7 +9,7 @@ use itertools::iproduct;
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
-        domains::{InferenceDomainMap, TalkDomain, TalkOperation},
+        domains::{inference_domain_map_values, InferenceDomainMap, TalkDomain},
         session_set::{InferenceSessionCell, InferenceSessionSet},
         InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
         InferenceSignature,
@@ -338,10 +338,11 @@ impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
     }
 }
 
-type SessionOptionsByDomain = (EnumMap<TalkOperation, InferenceSessionOptions>,);
+type SessionOptionsByDomain =
+    inference_domain_map_values!(for<D> EnumMap<D::Operation, InferenceSessionOptions>);
 
 type SessionSetsWithInnerVoiceIdsByDomain<R> =
-    (Option<(StyleIdToInnerVoiceId, InferenceSessionSet<R, TalkDomain>)>,);
+    inference_domain_map_values!(for<D> Option<(StyleIdToInnerVoiceId, InferenceSessionSet<R, D>)>);
 
 #[cfg(test)]
 mod tests {

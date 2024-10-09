@@ -3,7 +3,7 @@ mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod session_set;
 
-use std::{borrow::Cow, collections::BTreeSet, fmt::Debug};
+use std::{borrow::Cow, collections::BTreeSet, fmt::Debug, ops::Index, sync::Arc};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -51,6 +51,7 @@ pub(crate) trait InferenceRuntime: 'static {
 /// 共に扱われるべき推論操作の集合を示す。
 pub(crate) trait InferenceDomain: Sized {
     type Operation: InferenceOperation;
+    type Manifest: Index<Self::Operation, Output = Arc<str>>;
 
     /// 対応する`StyleType`。
     ///
