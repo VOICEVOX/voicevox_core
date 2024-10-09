@@ -4,7 +4,7 @@ use educe::Educe;
 use serde::{Deserialize, Deserializer};
 
 pub(crate) use self::talk::{
-    DecodeInput, DecodeOutput, PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
+    PredictSpectrogramInput, PredictSpectrogramOutput, RunVocoderInput, RunVocoderOutput, PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
     PredictIntonationOutput, TalkDomain, TalkOperation,
 };
 

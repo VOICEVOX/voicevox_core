@@ -40,10 +40,16 @@ pub(crate) enum TalkOperation {
     PredictIntonation,
 
     #[inference_operation(
-        type Input = DecodeInput;
-        type Output = DecodeOutput;
+        type Input = PredictSpectrogramInput;
+        type Output = PredictSpectrogramOutput;
     )]
-    Decode,
+    PredictSpectrogram,
+
+    #[inference_operation(
+        type Input = RunVocoderInput;
+        type Output = RunVocoderOutput;
+    )]
+    RunVocoder,
 }
 
 #[derive(InferenceInputSignature)]
@@ -82,15 +88,28 @@ pub(crate) struct PredictIntonationOutput {
 
 #[derive(InferenceInputSignature)]
 #[inference_input_signature(
-    type Signature = Decode;
+    type Signature = PredictSpectrogram;
 )]
-pub(crate) struct DecodeInput {
+pub(crate) struct PredictSpectrogramInput {
     pub(crate) f0: Array2<f32>,
     pub(crate) phoneme: Array2<f32>,
     pub(crate) speaker_id: Array1<i64>,
 }
 
 #[derive(InferenceOutputSignature)]
-pub(crate) struct DecodeOutput {
+pub(crate) struct PredictSpectrogramOutput {
+    pub(crate) spec: Array2<f32>,
+}
+
+#[derive(InferenceInputSignature)]
+#[inference_input_signature(
+    type Signature = RunVocoder;
+)]
+pub(crate) struct RunVocoderInput {
+    pub(crate) spec: Array2<f32>,
+}
+
+#[derive(InferenceOutputSignature)]
+pub(crate) struct RunVocoderOutput {
     pub(crate) wave: Array1<f32>,
 }

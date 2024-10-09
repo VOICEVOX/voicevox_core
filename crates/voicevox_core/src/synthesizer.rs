@@ -91,9 +91,10 @@ pub(crate) mod blocking {
         error::ErrorRepr,
         infer::{
             domains::{
-                DecodeInput, DecodeOutput, InferenceDomainMap, PredictDurationInput,
-                PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput, TalkDomain,
-                TalkOperation,
+                PredictSpectrogramInput, PredictSpectrogramOutput, RunVocoderInput, RunVocoderOutput,
+                InferenceDomainMap, PredictDurationInput, PredictDurationOutput,
+                PredictIntonationInput, PredictIntonationOutput,
+                TalkDomain, TalkOperation,
             },
             InferenceRuntime as _, InferenceSessionOptions,
         },
@@ -204,8 +205,9 @@ pub(crate) mod blocking {
                 InferenceDomainMap {
                     talk: enum_map! {
                         TalkOperation::PredictDuration
-                        | TalkOperation::PredictIntonation => light_session_options,
-                        TalkOperation::Decode => heavy_session_options,
+                        | TalkOperation::PredictIntonation
+                        | TalkOperation::PredictSpectrogram => light_session_options,
+                        TalkOperation::RunVocoder => heavy_session_options,
                     },
                 },
             );
@@ -935,9 +937,9 @@ pub(crate) mod blocking {
                 padding_size,
             );
 
-            let DecodeOutput { wave: output } = self.status.run_session(
+            let PredictSpectrogramOutput { spec: interm } = self.status.run_session(
                 model_id,
-                DecodeInput {
+                PredictSpectrogramInput {
                     f0: ndarray::arr1(&f0_with_padding)
                         .into_shape([length_with_padding, 1])
                         .unwrap(),
@@ -945,6 +947,13 @@ pub(crate) mod blocking {
                         .into_shape([length_with_padding, phoneme_size])
                         .unwrap(),
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
+                },
+            )?;
+
+            let RunVocoderOutput { wave: output } = self.status.run_session(
+                model_id,
+                RunVocoderInput {
+                    spec: interm,
                 },
             )?;
 
