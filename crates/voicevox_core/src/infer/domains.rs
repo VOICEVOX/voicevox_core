@@ -4,8 +4,9 @@ use educe::Educe;
 use serde::{Deserialize, Deserializer};
 
 pub(crate) use self::talk::{
-    PredictSpectrogramInput, PredictSpectrogramOutput, RunVocoderInput, RunVocoderOutput, PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
-    PredictIntonationOutput, TalkDomain, TalkOperation,
+    PredictDurationInput, PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput,
+    PredictSpectrogramInput, PredictSpectrogramOutput, RunVocoderInput, RunVocoderOutput,
+    TalkDomain, TalkOperation,
 };
 
 #[derive(Educe)]

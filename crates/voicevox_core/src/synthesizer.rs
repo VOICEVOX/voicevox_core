@@ -91,10 +91,10 @@ pub(crate) mod blocking {
         error::ErrorRepr,
         infer::{
             domains::{
-                PredictSpectrogramInput, PredictSpectrogramOutput, RunVocoderInput, RunVocoderOutput,
                 InferenceDomainMap, PredictDurationInput, PredictDurationOutput,
-                PredictIntonationInput, PredictIntonationOutput,
-                TalkDomain, TalkOperation,
+                PredictIntonationInput, PredictIntonationOutput, PredictSpectrogramInput,
+                PredictSpectrogramOutput, RunVocoderInput, RunVocoderOutput, TalkDomain,
+                TalkOperation,
             },
             InferenceRuntime as _, InferenceSessionOptions,
         },
@@ -950,12 +950,9 @@ pub(crate) mod blocking {
                 },
             )?;
 
-            let RunVocoderOutput { wave: output } = self.status.run_session(
-                model_id,
-                RunVocoderInput {
-                    spec: interm,
-                },
-            )?;
+            let RunVocoderOutput { wave: output } = self
+                .status
+                .run_session(model_id, RunVocoderInput { spec: interm })?;
 
             return Ok(trim_padding_from_output(
                 output.into_raw_vec(),
