@@ -27,6 +27,7 @@ const_format = "0.2.33"
 cstr = "0.2.12" # https://github.com/dtolnay/syn/issues/1502
 derive-getters = "0.2.0"
 derive-new = "0.5.9"
+derive-syn-parse = "0.2.0"
 derive_more = "0.99.17"
 duct = "0.13.7"
 duplicate = "1.0.0"

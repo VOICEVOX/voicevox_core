@@ -4,7 +4,7 @@ use enum_map::Enum;
 use macros::{InferenceInputSignature, InferenceOperation, InferenceOutputSignature};
 use ndarray::{Array0, Array1, Array2};
 
-use crate::StyleType;
+use crate::{manifest::TalkManifest, StyleType};
 
 use super::super::{
     InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
@@ -14,6 +14,7 @@ pub(crate) enum TalkDomain {}
 
 impl InferenceDomain for TalkDomain {
     type Operation = TalkOperation;
+    type Manifest = TalkManifest;
 
     fn style_types() -> &'static BTreeSet<StyleType> {
         static STYLE_TYPES: LazyLock<BTreeSet<StyleType>> =
