@@ -118,11 +118,11 @@ pub fn derive_inference_output_signature(
 ///     #[index_for_fields(TalkOperation::PredictIntonation)]
 ///     pub(crate) predict_intonation_filename: Arc<str>,
 ///
-///     #[index_for_fields(TalkOperation::PredictSpectrogram)]
-///     pub(crate) predict_spectrogram_filename: Arc<str>,
+///     #[index_for_fields(TalkOperation::GenerateFullIntermediate)]
+///     pub(crate) generate_full_intermediate_filename: Arc<str>,
 ///
-///     #[index_for_fields(TalkOperation::RunVocoder)]
-///     pub(crate) vocoder_filename: Arc<str>,
+///     #[index_for_fields(TalkOperation::RenderAudioSegment)]
+///     pub(crate) render_audio_segment_filename: Arc<str>,
 ///
 ///     // …
 /// }

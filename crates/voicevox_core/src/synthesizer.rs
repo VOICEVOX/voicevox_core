@@ -91,10 +91,10 @@ pub(crate) mod blocking {
         error::ErrorRepr,
         infer::{
             domains::{
-                InferenceDomainMap, PredictDurationInput, PredictDurationOutput,
-                PredictIntonationInput, PredictIntonationOutput, PredictSpectrogramInput,
-                PredictSpectrogramOutput, RunVocoderInput, RunVocoderOutput, TalkDomain,
-                TalkOperation,
+                GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
+                PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
+                PredictIntonationOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
+                TalkDomain, TalkOperation,
             },
             InferenceRuntime as _, InferenceSessionOptions,
         },
@@ -206,8 +206,8 @@ pub(crate) mod blocking {
                     talk: enum_map! {
                         TalkOperation::PredictDuration
                         | TalkOperation::PredictIntonation
-                        | TalkOperation::PredictSpectrogram => light_session_options,
-                        TalkOperation::RunVocoder => heavy_session_options,
+                        | TalkOperation::GenerateFullIntermediate => light_session_options,
+                        TalkOperation::RenderAudioSegment => heavy_session_options,
                     },
                 },
             );
@@ -937,9 +937,9 @@ pub(crate) mod blocking {
                 padding_size,
             );
 
-            let PredictSpectrogramOutput { spec: interm } = self.status.run_session(
+            let GenerateFullIntermediateOutput { spec } = self.status.run_session(
                 model_id,
-                PredictSpectrogramInput {
+                GenerateFullIntermediateInput {
                     f0: ndarray::arr1(&f0_with_padding)
                         .into_shape([length_with_padding, 1])
                         .unwrap(),
@@ -950,9 +950,9 @@ pub(crate) mod blocking {
                 },
             )?;
 
-            let RunVocoderOutput { wave: output } = self
+            let RenderAudioSegmentOutput { wave: output } = self
                 .status
-                .run_session(model_id, RunVocoderInput { spec: interm })?;
+                .run_session(model_id, RenderAudioSegmentInput { spec })?;
 
             return Ok(trim_padding_from_output(
                 output.into_raw_vec(),

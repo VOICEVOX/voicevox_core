@@ -375,8 +375,8 @@ mod tests {
             talk: enum_map! {
                 TalkOperation::PredictDuration
                 | TalkOperation::PredictIntonation
-                | TalkOperation::PredictSpectrogram => light_session_options,
-                TalkOperation::RunVocoder => heavy_session_options,
+                | TalkOperation::GenerateFullIntermediate => light_session_options,
+                TalkOperation::RenderAudioSegment => heavy_session_options,
             },
         };
         let status = Status::new(
@@ -394,11 +394,11 @@ mod tests {
         );
         assert_eq!(
             light_session_options,
-            status.session_options.talk[TalkOperation::PredictSpectrogram],
+            status.session_options.talk[TalkOperation::GenerateFullIntermediate],
         );
         assert_eq!(
             heavy_session_options,
-            status.session_options.talk[TalkOperation::RunVocoder],
+            status.session_options.talk[TalkOperation::RenderAudioSegment],
         );
 
         assert!(status.loaded_models.lock().unwrap().0.is_empty());

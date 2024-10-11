@@ -144,11 +144,11 @@ impl<A: Async> Inner<A> {
                                         TalkOperation::PredictIntonation => {
                                             find_entry_index(&manifest.predict_intonation_filename)?
                                         }
-                                        TalkOperation::PredictSpectrogram => {
-                                            find_entry_index(&manifest.predict_spectrogram_filename)?
+                                        TalkOperation::GenerateFullIntermediate => {
+                                            find_entry_index(&manifest.generate_full_intermediate_filename)?
                                         }
-                                        TalkOperation::RunVocoder => {
-                                            find_entry_index(&manifest.vocoder_filename)?
+                                        TalkOperation::RenderAudioSegment => {
+                                            find_entry_index(&manifest.render_audio_segment_filename)?
                                         }
                                     };
 

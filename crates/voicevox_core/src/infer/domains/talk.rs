@@ -40,16 +40,16 @@ pub(crate) enum TalkOperation {
     PredictIntonation,
 
     #[inference_operation(
-        type Input = PredictSpectrogramInput;
-        type Output = PredictSpectrogramOutput;
+        type Input = GenerateFullIntermediateInput;
+        type Output = GenerateFullIntermediateOutput;
     )]
-    PredictSpectrogram,
+    GenerateFullIntermediate,
 
     #[inference_operation(
-        type Input = RunVocoderInput;
-        type Output = RunVocoderOutput;
+        type Input = RenderAudioSegmentInput;
+        type Output = RenderAudioSegmentOutput;
     )]
-    RunVocoder,
+    RenderAudioSegment,
 }
 
 #[derive(InferenceInputSignature)]
@@ -88,28 +88,28 @@ pub(crate) struct PredictIntonationOutput {
 
 #[derive(InferenceInputSignature)]
 #[inference_input_signature(
-    type Signature = PredictSpectrogram;
+    type Signature = GenerateFullIntermediate;
 )]
-pub(crate) struct PredictSpectrogramInput {
+pub(crate) struct GenerateFullIntermediateInput {
     pub(crate) f0: Array2<f32>,
     pub(crate) phoneme: Array2<f32>,
     pub(crate) speaker_id: Array1<i64>,
 }
 
 #[derive(InferenceOutputSignature)]
-pub(crate) struct PredictSpectrogramOutput {
+pub(crate) struct GenerateFullIntermediateOutput {
     pub(crate) spec: Array2<f32>,
 }
 
 #[derive(InferenceInputSignature)]
 #[inference_input_signature(
-    type Signature = RunVocoder;
+    type Signature = RenderAudioSegment;
 )]
-pub(crate) struct RunVocoderInput {
+pub(crate) struct RenderAudioSegmentInput {
     pub(crate) spec: Array2<f32>,
 }
 
 #[derive(InferenceOutputSignature)]
-pub(crate) struct RunVocoderOutput {
+pub(crate) struct RenderAudioSegmentOutput {
     pub(crate) wave: Array1<f32>,
 }

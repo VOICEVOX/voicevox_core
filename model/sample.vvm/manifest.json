@@ -5,8 +5,8 @@
   "talk": {
     "predict_duration_filename": "predict_duration.onnx",
     "predict_intonation_filename": "predict_intonation.onnx",
-    "predict_spectrogram_filename": "predict_spectrogram.onnx",
-    "vocoder_filename": "vocoder.onnx",
+    "generate_full_intermediate_filename": "predict_spectrogram.onnx",
+    "render_audio_segment_filename": "vocoder.onnx",
     "style_id_to_inner_voice_id": {
       "302": 2,
       "303": 3
