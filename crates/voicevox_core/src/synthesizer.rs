@@ -109,7 +109,7 @@ pub(crate) mod blocking {
     const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
     /// ユーザに渡す中間生成物。
-    pub struct Audio<'a, O> {
+    pub struct Audio {
         pub internal_state: ndarray::Array2<f32>,
         pub style_id: crate::StyleId,
         /// 全体のフレーム数。
@@ -118,82 +118,8 @@ pub(crate) mod blocking {
         pub sampling_rate: f32,
         /// workaroundとして付け足されているパディング長。
         pub padding_length: usize,
-        /// 音声合成に使われるインスタンス。
-        pub synthesizer: &'a Synthesizer<O>,
+        /// 生成時に利用したクエリ。
         pub audio_query: AudioQuery,
-    }
-
-    impl<O> Audio<'_, O> {
-        /// 音声波形を生成する
-        pub fn render(&self, segment: ndarray::Slice) -> Result<Vec<u8>> {
-            let window = self.internal_state.slice(ndarray::s![segment, ..]);
-            let wave = self
-                .synthesizer
-                .render_audio_segment(window.into_owned(), self.style_id)?;
-            return Ok(to_wav(
-                &trim_padding_from_output(wave, self.padding_length),
-                &&self.audio_query,
-            ));
-
-            fn trim_padding_from_output(mut output: Vec<f32>, padding_f0_size: usize) -> Vec<f32> {
-                // 音が途切れてしまうのを避けるworkaround処理
-                // 改善したらこの関数を削除する
-                let padding_sampling_size = padding_f0_size * 256;
-                output
-                    .drain(padding_sampling_size..output.len() - padding_sampling_size)
-                    .collect()
-            }
-
-            fn to_wav(
-                wave: &[f32],
-                &AudioQuery {
-                    volume_scale,
-                    output_sampling_rate,
-                    output_stereo,
-                    ..
-                }: &AudioQuery,
-            ) -> Vec<u8> {
-                // TODO: 44.1kHzなどの対応
-
-                let num_channels: u16 = if output_stereo { 2 } else { 1 };
-                let bit_depth: u16 = 16;
-                let repeat_count: u32 =
-                    (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
-                let block_size: u16 = bit_depth * num_channels / 8;
-
-                let bytes_size = wave.len() as u32 * repeat_count * 2;
-                let wave_size = bytes_size + 44;
-
-                let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
-                let mut cur = Cursor::new(buf);
-
-                cur.write_all("RIFF".as_bytes()).unwrap();
-                cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
-                cur.write_all("WAVEfmt ".as_bytes()).unwrap();
-                cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
-                cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
-                cur.write_all(&num_channels.to_le_bytes()).unwrap();
-                cur.write_all(&output_sampling_rate.to_le_bytes()).unwrap();
-
-                let block_rate = output_sampling_rate * block_size as u32;
-
-                cur.write_all(&block_rate.to_le_bytes()).unwrap();
-                cur.write_all(&block_size.to_le_bytes()).unwrap();
-                cur.write_all(&bit_depth.to_le_bytes()).unwrap();
-                cur.write_all("data".as_bytes()).unwrap();
-                cur.write_all(&bytes_size.to_le_bytes()).unwrap();
-
-                for value in wave {
-                    let v = (value * volume_scale).clamp(-1., 1.);
-                    let data = (v * 0x7fff as f32) as i16;
-                    for _ in 0..repeat_count {
-                        cur.write_all(&data.to_le_bytes()).unwrap();
-                    }
-                }
-
-                cur.into_inner()
-            }
-        }
     }
 
     /// 音声シンセサイザ。
@@ -346,12 +272,12 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから音声合成を行う。
-        pub fn seekable_synthesis<'a>(
-            &'a self,
+        pub fn seekable_synthesis(
+            &self,
             audio_query: &AudioQuery,
             style_id: StyleId,
             options: &SynthesisOptions,
-        ) -> Result<Audio<'a, O>> {
+        ) -> Result<Audio> {
             let AudioQuery {
                 accent_phrases,
                 speed_scale,
@@ -479,7 +405,6 @@ pub(crate) mod blocking {
                 length,
                 sampling_rate: (DEFAULT_SAMPLING_RATE as f32) / 256.0,
                 padding_length: padding_size,
-                synthesizer: &self,
                 audio_query: audio_query.clone(),
             });
 
@@ -573,6 +498,76 @@ pub(crate) mod blocking {
             }
         }
 
+        /// 音声波形を生成する
+        pub fn render(&self, audio: &Audio, begin: usize, end: usize) -> Result<Vec<u8>> {
+            // FIXME: workaroundのpaddingとchunkのマージン(hifiganのreceptive field)の処理が必要
+            let window = audio.internal_state.slice(ndarray::s![begin..end, ..]);
+            let wave = self.render_audio_segment(window.into_owned(), audio.style_id)?;
+            return Ok(to_wav(
+                &trim_padding_from_output(wave, audio.padding_length),
+                &audio.audio_query,
+            ));
+
+            fn trim_padding_from_output(mut output: Vec<f32>, padding_f0_size: usize) -> Vec<f32> {
+                // 音が途切れてしまうのを避けるworkaround処理
+                // 改善したらこの関数を削除する
+                let padding_sampling_size = padding_f0_size * 256;
+                output
+                    .drain(padding_sampling_size..output.len() - padding_sampling_size)
+                    .collect()
+            }
+
+            fn to_wav(
+                wave: &[f32],
+                &AudioQuery {
+                    volume_scale,
+                    output_sampling_rate,
+                    output_stereo,
+                    ..
+                }: &AudioQuery,
+            ) -> Vec<u8> {
+                // TODO: 44.1kHzなどの対応
+
+                let num_channels: u16 = if output_stereo { 2 } else { 1 };
+                let bit_depth: u16 = 16;
+                let repeat_count: u32 =
+                    (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
+                let block_size: u16 = bit_depth * num_channels / 8;
+
+                let bytes_size = wave.len() as u32 * repeat_count * 2;
+                let wave_size = bytes_size + 44;
+
+                let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
+                let mut cur = Cursor::new(buf);
+
+                cur.write_all("RIFF".as_bytes()).unwrap();
+                cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
+                cur.write_all("WAVEfmt ".as_bytes()).unwrap();
+                cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
+                cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
+                cur.write_all(&num_channels.to_le_bytes()).unwrap();
+                cur.write_all(&output_sampling_rate.to_le_bytes()).unwrap();
+
+                let block_rate = output_sampling_rate * block_size as u32;
+
+                cur.write_all(&block_rate.to_le_bytes()).unwrap();
+                cur.write_all(&block_size.to_le_bytes()).unwrap();
+                cur.write_all(&bit_depth.to_le_bytes()).unwrap();
+                cur.write_all("data".as_bytes()).unwrap();
+                cur.write_all(&bytes_size.to_le_bytes()).unwrap();
+
+                for value in wave {
+                    let v = (value * volume_scale).clamp(-1., 1.);
+                    let data = (v * 0x7fff as f32) as i16;
+                    for _ in 0..repeat_count {
+                        cur.write_all(&data.to_le_bytes()).unwrap();
+                    }
+                }
+
+                cur.into_inner()
+            }
+        }
+
         pub fn synthesis(
             &self,
             audio_query: &AudioQuery,
@@ -580,7 +575,7 @@ pub(crate) mod blocking {
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
             let audio = self.seekable_synthesis(audio_query, style_id, options)?;
-            audio.render(ndarray::Slice::new(0, None, 1))
+            self.render(&audio, 0, audio.length)
         }
 
         /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。

@@ -49,7 +49,9 @@ def main() -> None:
     audio_query = synthesizer.audio_query(text, style_id)
 
     logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
-    wav = synthesizer.synthesis(audio_query, style_id)
+    # wav = synthesizer.synthesis(audio_query, style_id)
+    interm = synthesizer.seekable_synthesis(audio_query, style_id)
+    wav = synthesizer.render(interm, 0, 2*24000//256)
 
     out.write_bytes(wav)
     logger.info("%s", f"Wrote `{out}`")
