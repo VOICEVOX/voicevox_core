@@ -429,7 +429,19 @@ mod blocking {
     pub(crate) struct Audio {
         audio: voicevox_core::blocking::Audio,
     }
-    // TODO: 一部のメンバ変数を露出
+    
+    #[pymethods]
+    impl Audio {
+        #[getter]
+        fn length(&self) -> usize {
+            self.audio.length
+        }
+
+        #[getter]
+        fn sampling_rate(&self) -> f32 {
+            self.audio.sampling_rate
+        }
+    }
 
     #[pyclass]
     pub(crate) struct Synthesizer {

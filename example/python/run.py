@@ -3,6 +3,7 @@ import json
 import logging
 from argparse import ArgumentParser
 from pathlib import Path
+import struct
 from typing import Tuple
 
 from voicevox_core import AccelerationMode, AudioQuery
@@ -24,6 +25,7 @@ def main() -> None:
         text,
         out,
         style_id,
+        streaming,
     ) = parse_args()
 
     logger.info("%s", f"Loading ONNX Runtime ({onnxruntime_filename=})")
@@ -48,10 +50,37 @@ def main() -> None:
     logger.info("%s", f"Creating an AudioQuery from {text!r}")
     audio_query = synthesizer.audio_query(text, style_id)
 
-    logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
-    # wav = synthesizer.synthesis(audio_query, style_id)
-    interm = synthesizer.seekable_synthesis(audio_query, style_id)
-    wav = synthesizer.render(interm, 0, 2*24000//256)
+    mode_name = "streaming" if streaming else "normal"
+    logger.info("%s", f"Synthesizing with {display_as_json(audio_query)} in {mode_name} mode")
+    if streaming:
+        chunk_sec = 1.0
+        interm = synthesizer.seekable_synthesis(audio_query, style_id)
+        chunk_frames = int(interm.sampling_rate * chunk_sec)
+        pcm = b""
+        for i in range(0, interm.length, chunk_frames):
+            logger.info("%s", f"synthesis {i/interm.length:.2%}")
+            pcm += synthesizer.render(interm, i, i+chunk_frames)
+        logger.info("%s", f"synthesis 100%")
+        num_channels = 2 if audio_query.output_stereo else 1
+        block_size = 16 * num_channels // 8
+        sr = audio_query.output_sampling_rate
+        wav = (
+            b"RIFF" +
+            struct.pack("<I", len(pcm) + 44 - 8) +
+            b"WAVEfmt " +
+            struct.pack("<I", 16) +
+            struct.pack("<H", 1) +
+            struct.pack("<H", num_channels) +
+            struct.pack("<I", sr) +
+            struct.pack("<I", sr * block_size) + 
+            struct.pack("<H", block_size) + 
+            struct.pack("<H", 16) + 
+            b"data" +
+            struct.pack("<I", len(pcm)) +
+            pcm)
+            
+    else:
+        wav = synthesizer.synthesis(audio_query, style_id)
 
     out.write_bytes(wav)
     logger.info("%s", f"Wrote `{out}`")
@@ -98,6 +127,11 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path, str, Path, int]:
         type=int,
         help="話者IDを指定",
     )
+    argparser.add_argument(
+        "--streaming",
+        action="store_true",
+        help="ストリーミング生成",
+    )
     args = argparser.parse_args()
     # FIXME: 流石に多くなってきたので、`dataclass`化する
     return (
@@ -108,6 +142,7 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path, str, Path, int]:
         args.text,
         args.out,
         args.style_id,
+        args.streaming,
     )
 
 

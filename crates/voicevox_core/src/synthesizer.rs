@@ -112,7 +112,7 @@ pub(crate) mod blocking {
     pub struct Audio {
         pub internal_state: ndarray::Array2<f32>,
         pub style_id: crate::StyleId,
-        /// 全体のフレーム数。
+        /// workaround paddingを除いた全体のフレーム数。
         pub length: usize,
         /// サンプリングレート。全体の秒数は`length / sampling_rate`で表せる。
         pub sampling_rate: f32,
@@ -398,11 +398,10 @@ pub(crate) mod blocking {
                 &phoneme_with_padding,
                 style_id,
             )?;
-            let length = spec.nrows();
             return Ok(Audio {
                 internal_state: spec,
                 style_id,
-                length,
+                length: f0.len(),
                 sampling_rate: (DEFAULT_SAMPLING_RATE as f32) / 256.0,
                 padding_length: padding_size,
                 audio_query: audio_query.clone(),
@@ -500,24 +499,26 @@ pub(crate) mod blocking {
 
         /// 音声波形を生成する
         pub fn render(&self, audio: &Audio, begin: usize, end: usize) -> Result<Vec<u8>> {
-            // FIXME: workaroundのpaddingとchunkのマージン(hifiganのreceptive field)の処理が必要
-            let window = audio.internal_state.slice(ndarray::s![begin..end, ..]);
-            let wave = self.render_audio_segment(window.into_owned(), audio.style_id)?;
-            return Ok(to_wav(
-                &trim_padding_from_output(wave, audio.padding_length),
+            const MARGIN: usize = 14;  // 使われているHifiGANのreceptive fieldから計算される安全マージン
+            use std::cmp::min;
+            // 実態(workaround paddingを含まない)上での区間
+            let clipped_begin = min(begin, audio.length);
+            let clipped_end = min(end, audio.length);
+            // データからはみ出さない安全マージン
+            let left_margin = min(MARGIN, audio.padding_length + clipped_begin);
+            let right_margin = min(MARGIN, audio.padding_length + (audio.length - clipped_end));
+            // 安全マージンを追加したデータ上での区間
+            let slice_begin = audio.padding_length + clipped_begin - left_margin;
+            let slice_end = audio.padding_length + clipped_end + right_margin;
+            let window = audio.internal_state.slice(ndarray::s![slice_begin..slice_end, ..]);
+            let wave_with_margin = self.render_audio_segment(window.into_owned(), audio.style_id)?;
+            let wave = wave_with_margin.slice(ndarray::s![left_margin*256..wave_with_margin.len()-right_margin*256]).into_owned().into_raw_vec();
+            return Ok(to_s16le_pcm(
+                &wave,
                 &audio.audio_query,
             ));
 
-            fn trim_padding_from_output(mut output: Vec<f32>, padding_f0_size: usize) -> Vec<f32> {
-                // 音が途切れてしまうのを避けるworkaround処理
-                // 改善したらこの関数を削除する
-                let padding_sampling_size = padding_f0_size * 256;
-                output
-                    .drain(padding_sampling_size..output.len() - padding_sampling_size)
-                    .collect()
-            }
-
-            fn to_wav(
+            fn to_s16le_pcm(
                 wave: &[f32],
                 &AudioQuery {
                     volume_scale,
@@ -526,35 +527,12 @@ pub(crate) mod blocking {
                     ..
                 }: &AudioQuery,
             ) -> Vec<u8> {
-                // TODO: 44.1kHzなどの対応
-
                 let num_channels: u16 = if output_stereo { 2 } else { 1 };
-                let bit_depth: u16 = 16;
                 let repeat_count: u32 =
                     (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
-                let block_size: u16 = bit_depth * num_channels / 8;
-
                 let bytes_size = wave.len() as u32 * repeat_count * 2;
-                let wave_size = bytes_size + 44;
-
-                let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
+                let buf: Vec<u8> = Vec::with_capacity(bytes_size as usize);
                 let mut cur = Cursor::new(buf);
-
-                cur.write_all("RIFF".as_bytes()).unwrap();
-                cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
-                cur.write_all("WAVEfmt ".as_bytes()).unwrap();
-                cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
-                cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
-                cur.write_all(&num_channels.to_le_bytes()).unwrap();
-                cur.write_all(&output_sampling_rate.to_le_bytes()).unwrap();
-
-                let block_rate = output_sampling_rate * block_size as u32;
-
-                cur.write_all(&block_rate.to_le_bytes()).unwrap();
-                cur.write_all(&block_size.to_le_bytes()).unwrap();
-                cur.write_all(&bit_depth.to_le_bytes()).unwrap();
-                cur.write_all("data".as_bytes()).unwrap();
-                cur.write_all(&bytes_size.to_le_bytes()).unwrap();
 
                 for value in wave {
                     let v = (value * volume_scale).clamp(-1., 1.);
@@ -575,7 +553,47 @@ pub(crate) mod blocking {
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
             let audio = self.seekable_synthesis(audio_query, style_id, options)?;
-            self.render(&audio, 0, audio.length)
+            let pcm = self.render(&audio, 0, audio.length)?;
+            return Ok(to_wav(&pcm, &audio_query));
+
+            fn to_wav(
+                pcm: &[u8],
+                &AudioQuery {
+                    output_sampling_rate,
+                    output_stereo,
+                    ..
+                }: &AudioQuery,
+            ) -> Vec<u8> {
+                // TODO: 44.1kHzなどの対応
+
+                let num_channels: u16 = if output_stereo { 2 } else { 1 };
+                let bit_depth: u16 = 16;
+                let block_size: u16 = bit_depth * num_channels / 8;
+
+                let bytes_size = pcm.len() as u32;
+                let wave_size = bytes_size + 44;
+
+                let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
+                let mut cur = Cursor::new(buf);
+
+                cur.write_all("RIFF".as_bytes()).unwrap();
+                cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
+                cur.write_all("WAVEfmt ".as_bytes()).unwrap();
+                cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
+                cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
+                cur.write_all(&num_channels.to_le_bytes()).unwrap();
+                cur.write_all(&output_sampling_rate.to_le_bytes()).unwrap();
+
+                let block_rate = output_sampling_rate * block_size as u32;
+
+                cur.write_all(&block_rate.to_le_bytes()).unwrap();
+                cur.write_all(&block_size.to_le_bytes()).unwrap();
+                cur.write_all(&bit_depth.to_le_bytes()).unwrap();
+                cur.write_all("data".as_bytes()).unwrap();
+                cur.write_all(&bytes_size.to_le_bytes()).unwrap();
+                cur.write_all(&pcm).unwrap();
+                cur.into_inner()
+            }
         }
 
         /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
@@ -960,7 +978,7 @@ pub(crate) mod blocking {
             &self,
             spec: ndarray::Array2<f32>,
             style_id: StyleId,
-        ) -> Result<Vec<f32>>;
+        ) -> Result<ndarray::Array1<f32>>;
 
         /// `decode`を実行する。
         ///
@@ -1060,12 +1078,12 @@ pub(crate) mod blocking {
             &self,
             spec: ndarray::Array2<f32>,
             style_id: StyleId,
-        ) -> Result<Vec<f32>> {
+        ) -> Result<ndarray::Array1<f32>> {
             let (model_id, _inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
             let RenderAudioSegmentOutput { wave } = self
                 .status
                 .run_session(model_id, RenderAudioSegmentInput { spec })?;
-            Ok(wave.into_raw_vec())
+            Ok(wave)
         }
 
         fn decode(
@@ -1084,7 +1102,7 @@ pub(crate) mod blocking {
                 style_id,
             )?;
             let output = self.render_audio_segment(intermediate, style_id)?;
-            return Ok(output);
+            return Ok(output.into_raw_vec());
         }
     }
 
