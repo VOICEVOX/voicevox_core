@@ -108,6 +108,94 @@ pub(crate) mod blocking {
 
     const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
+    /// ユーザに渡す中間生成物。
+    pub struct Audio<'a, O> {
+        pub internal_state: ndarray::Array2<f32>,
+        pub style_id: crate::StyleId,
+        /// 全体のフレーム数。
+        pub length: usize,
+        /// サンプリングレート。全体の秒数は`length / sampling_rate`で表せる。
+        pub sampling_rate: f32,
+        /// workaroundとして付け足されているパディング長。
+        pub padding_length: usize,
+        /// 音声合成に使われるインスタンス。
+        pub synthesizer: &'a Synthesizer<O>,
+        pub audio_query: AudioQuery,
+    }
+
+    impl<O> Audio<'_, O> {
+        /// 音声波形を生成する
+        pub fn render(&self, segment: ndarray::Slice) -> Result<Vec<u8>> {
+            let window = self.internal_state.slice(ndarray::s![segment, ..]);
+            let wave = self
+                .synthesizer
+                .render_audio_segment(window.into_owned(), self.style_id)?;
+            return Ok(to_wav(
+                &trim_padding_from_output(wave, self.padding_length),
+                &&self.audio_query,
+            ));
+
+            fn trim_padding_from_output(mut output: Vec<f32>, padding_f0_size: usize) -> Vec<f32> {
+                // 音が途切れてしまうのを避けるworkaround処理
+                // 改善したらこの関数を削除する
+                let padding_sampling_size = padding_f0_size * 256;
+                output
+                    .drain(padding_sampling_size..output.len() - padding_sampling_size)
+                    .collect()
+            }
+
+            fn to_wav(
+                wave: &[f32],
+                &AudioQuery {
+                    volume_scale,
+                    output_sampling_rate,
+                    output_stereo,
+                    ..
+                }: &AudioQuery,
+            ) -> Vec<u8> {
+                // TODO: 44.1kHzなどの対応
+
+                let num_channels: u16 = if output_stereo { 2 } else { 1 };
+                let bit_depth: u16 = 16;
+                let repeat_count: u32 =
+                    (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
+                let block_size: u16 = bit_depth * num_channels / 8;
+
+                let bytes_size = wave.len() as u32 * repeat_count * 2;
+                let wave_size = bytes_size + 44;
+
+                let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
+                let mut cur = Cursor::new(buf);
+
+                cur.write_all("RIFF".as_bytes()).unwrap();
+                cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
+                cur.write_all("WAVEfmt ".as_bytes()).unwrap();
+                cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
+                cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
+                cur.write_all(&num_channels.to_le_bytes()).unwrap();
+                cur.write_all(&output_sampling_rate.to_le_bytes()).unwrap();
+
+                let block_rate = output_sampling_rate * block_size as u32;
+
+                cur.write_all(&block_rate.to_le_bytes()).unwrap();
+                cur.write_all(&block_size.to_le_bytes()).unwrap();
+                cur.write_all(&bit_depth.to_le_bytes()).unwrap();
+                cur.write_all("data".as_bytes()).unwrap();
+                cur.write_all(&bytes_size.to_le_bytes()).unwrap();
+
+                for value in wave {
+                    let v = (value * volume_scale).clamp(-1., 1.);
+                    let data = (v * 0x7fff as f32) as i16;
+                    for _ in 0..repeat_count {
+                        cur.write_all(&data.to_le_bytes()).unwrap();
+                    }
+                }
+
+                cur.into_inner()
+            }
+        }
+    }
+
     /// 音声シンセサイザ。
     pub struct Synthesizer<O> {
         pub(super) status: Status<crate::blocking::Onnxruntime>,
@@ -258,12 +346,12 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから音声合成を行う。
-        pub fn synthesis(
-            &self,
+        pub fn seekable_synthesis<'a>(
+            &'a self,
             audio_query: &AudioQuery,
             style_id: StyleId,
             options: &SynthesisOptions,
-        ) -> Result<Vec<u8>> {
+        ) -> Result<Audio<'a, O>> {
             let AudioQuery {
                 accent_phrases,
                 speed_scale,
@@ -362,14 +450,38 @@ pub(crate) mod blocking {
                 }
             }
 
-            let wave = &self.decode(
-                f0.len(),
-                OjtPhoneme::num_phoneme(),
-                &f0,
+            // 音が途切れてしまうのを避けるworkaround処理が入っている
+            // TODO: 改善したらここのpadding処理を取り除く
+            const PADDING_SIZE: f64 = 0.4;
+            let padding_size =
+                ((PADDING_SIZE * DEFAULT_SAMPLING_RATE as f64) / 256.0).round() as usize;
+            let start_and_end_padding_size = 2 * padding_size;
+            let length_with_padding = f0.len() + start_and_end_padding_size;
+            let f0_with_padding = make_f0_with_padding(&f0, length_with_padding, padding_size);
+            let phoneme_with_padding = make_phoneme_with_padding(
                 phoneme.as_flattened(),
+                OjtPhoneme::num_phoneme(),
+                length_with_padding,
+                padding_size,
+            );
+
+            let spec = self.generate_full_intermediate(
+                f0_with_padding.len(),
+                OjtPhoneme::num_phoneme(),
+                &f0_with_padding,
+                &phoneme_with_padding,
                 style_id,
             )?;
-            return Ok(to_wav(wave, audio_query));
+            let length = spec.nrows();
+            return Ok(Audio {
+                internal_state: spec,
+                style_id,
+                length,
+                sampling_rate: (DEFAULT_SAMPLING_RATE as f32) / 256.0,
+                padding_length: padding_size,
+                synthesizer: &self,
+                audio_query: audio_query.clone(),
+            });
 
             fn adjust_interrogative_accent_phrases(
                 accent_phrases: &[AccentPhrase],
@@ -420,55 +532,55 @@ pub(crate) mod blocking {
                 }
             }
 
-            fn to_wav(
-                wave: &[f32],
-                &AudioQuery {
-                    volume_scale,
-                    output_sampling_rate,
-                    output_stereo,
-                    ..
-                }: &AudioQuery,
-            ) -> Vec<u8> {
-                // TODO: 44.1kHzなどの対応
-
-                let num_channels: u16 = if output_stereo { 2 } else { 1 };
-                let bit_depth: u16 = 16;
-                let repeat_count: u32 =
-                    (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
-                let block_size: u16 = bit_depth * num_channels / 8;
-
-                let bytes_size = wave.len() as u32 * repeat_count * 2;
-                let wave_size = bytes_size + 44;
-
-                let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
-                let mut cur = Cursor::new(buf);
-
-                cur.write_all("RIFF".as_bytes()).unwrap();
-                cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
-                cur.write_all("WAVEfmt ".as_bytes()).unwrap();
-                cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
-                cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
-                cur.write_all(&num_channels.to_le_bytes()).unwrap();
-                cur.write_all(&output_sampling_rate.to_le_bytes()).unwrap();
-
-                let block_rate = output_sampling_rate * block_size as u32;
-
-                cur.write_all(&block_rate.to_le_bytes()).unwrap();
-                cur.write_all(&block_size.to_le_bytes()).unwrap();
-                cur.write_all(&bit_depth.to_le_bytes()).unwrap();
-                cur.write_all("data".as_bytes()).unwrap();
-                cur.write_all(&bytes_size.to_le_bytes()).unwrap();
-
-                for value in wave {
-                    let v = (value * volume_scale).clamp(-1., 1.);
-                    let data = (v * 0x7fff as f32) as i16;
-                    for _ in 0..repeat_count {
-                        cur.write_all(&data.to_le_bytes()).unwrap();
-                    }
-                }
-
-                cur.into_inner()
+            fn make_f0_with_padding(
+                f0_slice: &[f32],
+                length_with_padding: usize,
+                padding_size: usize,
+            ) -> Vec<f32> {
+                // 音が途切れてしまうのを避けるworkaround処理
+                // 改善したらこの関数を削除する
+                let mut f0_with_padding = Vec::with_capacity(length_with_padding);
+                let padding = vec![0.0; padding_size];
+                f0_with_padding.extend_from_slice(&padding);
+                f0_with_padding.extend_from_slice(f0_slice);
+                f0_with_padding.extend_from_slice(&padding);
+                f0_with_padding
             }
+
+            fn make_phoneme_with_padding(
+                phoneme_slice: &[f32],
+                phoneme_size: usize,
+                length_with_padding: usize,
+                padding_size: usize,
+            ) -> Vec<f32> {
+                // 音が途切れてしまうのを避けるworkaround処理
+                // 改善したらこの関数を削除する
+                let mut padding_phoneme = vec![0.0; phoneme_size];
+                padding_phoneme[0] = 1.0;
+                let padding_phoneme_len = padding_phoneme.len();
+                let padding_phonemes: Vec<f32> = padding_phoneme
+                    .into_iter()
+                    .cycle()
+                    .take(padding_phoneme_len * padding_size)
+                    .collect();
+                let mut phoneme_with_padding =
+                    Vec::with_capacity(phoneme_size * length_with_padding);
+                phoneme_with_padding.extend_from_slice(&padding_phonemes);
+                phoneme_with_padding.extend_from_slice(phoneme_slice);
+                phoneme_with_padding.extend_from_slice(&padding_phonemes);
+
+                phoneme_with_padding
+            }
+        }
+
+        pub fn synthesis(
+            &self,
+            audio_query: &AudioQuery,
+            style_id: StyleId,
+            options: &SynthesisOptions,
+        ) -> Result<Vec<u8>> {
+            let audio = self.seekable_synthesis(audio_query, style_id, options)?;
+            audio.render(ndarray::Slice::new(0, None, 1))
         }
 
         /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
@@ -840,6 +952,21 @@ pub(crate) mod blocking {
             style_id: StyleId,
         ) -> Result<Vec<f32>>;
 
+        fn generate_full_intermediate(
+            &self,
+            length: usize,
+            phoneme_size: usize,
+            f0: &[f32],
+            phoneme_vector: &[f32],
+            style_id: StyleId,
+        ) -> Result<ndarray::Array2<f32>>;
+
+        fn render_audio_segment(
+            &self,
+            spec: ndarray::Array2<f32>,
+            style_id: StyleId,
+        ) -> Result<Vec<f32>>;
+
         /// `decode`を実行する。
         ///
         /// # Performance
@@ -911,6 +1038,41 @@ pub(crate) mod blocking {
             Ok(output.into_raw_vec())
         }
 
+        fn generate_full_intermediate(
+            &self,
+            length: usize,
+            phoneme_size: usize,
+            f0: &[f32],
+            phoneme_vector: &[f32],
+            style_id: StyleId,
+        ) -> Result<ndarray::Array2<f32>> {
+            let (model_id, inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
+
+            let GenerateFullIntermediateOutput { spec } = self.status.run_session(
+                model_id,
+                GenerateFullIntermediateInput {
+                    f0: ndarray::arr1(&f0).into_shape([length, 1]).unwrap(),
+                    phoneme: ndarray::arr1(&phoneme_vector)
+                        .into_shape([length, phoneme_size])
+                        .unwrap(),
+                    speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
+                },
+            )?;
+            Ok(spec)
+        }
+
+        fn render_audio_segment(
+            &self,
+            spec: ndarray::Array2<f32>,
+            style_id: StyleId,
+        ) -> Result<Vec<f32>> {
+            let (model_id, _inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
+            let RenderAudioSegmentOutput { wave } = self
+                .status
+                .run_session(model_id, RenderAudioSegmentInput { spec })?;
+            Ok(wave.into_raw_vec())
+        }
+
         fn decode(
             &self,
             length: usize,
@@ -919,94 +1081,15 @@ pub(crate) mod blocking {
             phoneme_vector: &[f32],
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            let (model_id, inner_voice_id) = self.status.ids_for::<TalkDomain>(style_id)?;
-
-            // 音が途切れてしまうのを避けるworkaround処理が入っている
-            // TODO: 改善したらここのpadding処理を取り除く
-            const PADDING_SIZE: f64 = 0.4;
-            let padding_size =
-                ((PADDING_SIZE * DEFAULT_SAMPLING_RATE as f64) / 256.0).round() as usize;
-            let start_and_end_padding_size = 2 * padding_size;
-            let length_with_padding = length + start_and_end_padding_size;
-            let f0_with_padding = make_f0_with_padding(f0, length_with_padding, padding_size);
-
-            let phoneme_with_padding = make_phoneme_with_padding(
-                phoneme_vector,
+            let intermediate = self.generate_full_intermediate(
+                length,
                 phoneme_size,
-                length_with_padding,
-                padding_size,
-            );
-
-            let GenerateFullIntermediateOutput { spec } = self.status.run_session(
-                model_id,
-                GenerateFullIntermediateInput {
-                    f0: ndarray::arr1(&f0_with_padding)
-                        .into_shape([length_with_padding, 1])
-                        .unwrap(),
-                    phoneme: ndarray::arr1(&phoneme_with_padding)
-                        .into_shape([length_with_padding, phoneme_size])
-                        .unwrap(),
-                    speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
-                },
+                &f0,
+                &phoneme_vector,
+                style_id,
             )?;
-
-            let RenderAudioSegmentOutput { wave: output } = self
-                .status
-                .run_session(model_id, RenderAudioSegmentInput { spec })?;
-
-            return Ok(trim_padding_from_output(
-                output.into_raw_vec(),
-                padding_size,
-            ));
-
-            fn make_f0_with_padding(
-                f0_slice: &[f32],
-                length_with_padding: usize,
-                padding_size: usize,
-            ) -> Vec<f32> {
-                // 音が途切れてしまうのを避けるworkaround処理
-                // 改善したらこの関数を削除する
-                let mut f0_with_padding = Vec::with_capacity(length_with_padding);
-                let padding = vec![0.0; padding_size];
-                f0_with_padding.extend_from_slice(&padding);
-                f0_with_padding.extend_from_slice(f0_slice);
-                f0_with_padding.extend_from_slice(&padding);
-                f0_with_padding
-            }
-
-            fn make_phoneme_with_padding(
-                phoneme_slice: &[f32],
-                phoneme_size: usize,
-                length_with_padding: usize,
-                padding_size: usize,
-            ) -> Vec<f32> {
-                // 音が途切れてしまうのを避けるworkaround処理
-                // 改善したらこの関数を削除する
-                let mut padding_phoneme = vec![0.0; phoneme_size];
-                padding_phoneme[0] = 1.0;
-                let padding_phoneme_len = padding_phoneme.len();
-                let padding_phonemes: Vec<f32> = padding_phoneme
-                    .into_iter()
-                    .cycle()
-                    .take(padding_phoneme_len * padding_size)
-                    .collect();
-                let mut phoneme_with_padding =
-                    Vec::with_capacity(phoneme_size * length_with_padding);
-                phoneme_with_padding.extend_from_slice(&padding_phonemes);
-                phoneme_with_padding.extend_from_slice(phoneme_slice);
-                phoneme_with_padding.extend_from_slice(&padding_phonemes);
-
-                phoneme_with_padding
-            }
-
-            fn trim_padding_from_output(mut output: Vec<f32>, padding_f0_size: usize) -> Vec<f32> {
-                // 音が途切れてしまうのを避けるworkaround処理
-                // 改善したらこの関数を削除する
-                let padding_sampling_size = padding_f0_size * 256;
-                output
-                    .drain(padding_sampling_size..output.len() - padding_sampling_size)
-                    .collect()
-            }
+            let output = self.render_audio_segment(intermediate, style_id)?;
+            return Ok(output);
         }
     }
 
