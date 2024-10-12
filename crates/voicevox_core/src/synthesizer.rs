@@ -91,9 +91,10 @@ pub(crate) mod blocking {
         error::ErrorRepr,
         infer::{
             domains::{
-                DecodeInput, DecodeOutput, InferenceDomainMap, PredictDurationInput,
-                PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput, TalkDomain,
-                TalkOperation,
+                GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
+                PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
+                PredictIntonationOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
+                TalkDomain, TalkOperation,
             },
             InferenceRuntime as _, InferenceSessionOptions,
         },
@@ -204,8 +205,9 @@ pub(crate) mod blocking {
                 InferenceDomainMap {
                     talk: enum_map! {
                         TalkOperation::PredictDuration
-                        | TalkOperation::PredictIntonation => light_session_options,
-                        TalkOperation::Decode => heavy_session_options,
+                        | TalkOperation::PredictIntonation
+                        | TalkOperation::GenerateFullIntermediate => light_session_options,
+                        TalkOperation::RenderAudioSegment => heavy_session_options,
                     },
                 },
             );
@@ -935,9 +937,9 @@ pub(crate) mod blocking {
                 padding_size,
             );
 
-            let DecodeOutput { wave: output } = self.status.run_session(
+            let GenerateFullIntermediateOutput { spec } = self.status.run_session(
                 model_id,
-                DecodeInput {
+                GenerateFullIntermediateInput {
                     f0: ndarray::arr1(&f0_with_padding)
                         .into_shape([length_with_padding, 1])
                         .unwrap(),
@@ -947,6 +949,10 @@ pub(crate) mod blocking {
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )?;
+
+            let RenderAudioSegmentOutput { wave: output } = self
+                .status
+                .run_session(model_id, RenderAudioSegmentInput { spec })?;
 
             return Ok(trim_padding_from_output(
                 output.into_raw_vec(),
