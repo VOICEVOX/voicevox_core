@@ -5,9 +5,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Tuple
 
-import voicevox_core
 from voicevox_core import AccelerationMode, AudioQuery
-from voicevox_core.blocking import OpenJtalk, Synthesizer, VoiceModel
+from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
 def main() -> None:
@@ -20,25 +19,31 @@ def main() -> None:
     (
         acceleration_mode,
         vvm_path,
+        onnxruntime_filename,
         open_jtalk_dict_dir,
         text,
         out,
         style_id,
     ) = parse_args()
 
-    logger.debug("%s", f"{voicevox_core.supported_devices()=}")
+    logger.info("%s", f"Loading ONNX Runtime ({onnxruntime_filename=})")
+    onnxruntime = Onnxruntime.load_once(filename=onnxruntime_filename)
+
+    logger.debug("%s", f"{onnxruntime.supported_devices()=}")
 
     logger.info("%s", f"Initializing ({acceleration_mode=}, {open_jtalk_dict_dir=})")
     synthesizer = Synthesizer(
-        OpenJtalk(open_jtalk_dict_dir), acceleration_mode=acceleration_mode
+        onnxruntime,
+        OpenJtalk(open_jtalk_dict_dir),
+        acceleration_mode=acceleration_mode,
     )
 
     logger.debug("%s", f"{synthesizer.metas=}")
     logger.debug("%s", f"{synthesizer.is_gpu_mode=}")
 
     logger.info("%s", f"Loading `{vvm_path}`")
-    model = VoiceModel.from_path(vvm_path)
-    synthesizer.load_voice_model(model)
+    with VoiceModelFile.open(vvm_path) as model:
+        synthesizer.load_voice_model(model)
 
     logger.info("%s", f"Creating an AudioQuery from {text!r}")
     audio_query = synthesizer.audio_query(text, style_id)
@@ -50,7 +55,7 @@ def main() -> None:
     logger.info("%s", f"Wrote `{out}`")
 
 
-def parse_args() -> Tuple[AccelerationMode, Path, Path, str, Path, int]:
+def parse_args() -> Tuple[AccelerationMode, Path, str, Path, str, Path, int]:
     argparser = ArgumentParser()
     argparser.add_argument(
         "--mode",
@@ -62,6 +67,11 @@ def parse_args() -> Tuple[AccelerationMode, Path, Path, str, Path, int]:
         "vvm",
         type=Path,
         help="vvmファイルへのパス",
+    )
+    argparser.add_argument(
+        "--onnxruntime",
+        default=Onnxruntime.LIB_VERSIONED_FILENAME,
+        help="ONNX Runtimeのライブラリのfilename",
     )
     argparser.add_argument(
         "--dict-dir",
@@ -87,7 +97,16 @@ def parse_args() -> Tuple[AccelerationMode, Path, Path, str, Path, int]:
         help="話者IDを指定",
     )
     args = argparser.parse_args()
-    return (args.mode, args.vvm, args.dict_dir, args.text, args.out, args.style_id)
+    # FIXME: 流石に多くなってきたので、`dataclass`化する
+    return (
+        args.mode,
+        args.vvm,
+        args.onnxruntime,
+        args.dict_dir,
+        args.text,
+        args.out,
+        args.style_id,
+    )
 
 
 def display_as_json(audio_query: AudioQuery) -> str:

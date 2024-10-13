@@ -3,24 +3,25 @@ name = "voicevox_core_java_api"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+rust-version.workspace = true
 
 [lib]
 crate-type = ["cdylib"]
-
-[features]
-directml = ["voicevox_core/directml"]
 
 [dependencies]
 android_logger.workspace = true
 chrono = { workspace = true, default-features = false, features = ["clock"] }
 derive_more.workspace = true
+duplicate.workspace = true
+easy-ext.workspace = true
 jni.workspace = true
-once_cell.workspace = true
+pretty_assertions = "1.4.1"
+rstest.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
 tracing = { workspace = true, features = ["log"] }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 uuid.workspace = true
-voicevox_core.workspace = true
+voicevox_core = { workspace = true, features = ["load-onnxruntime"] }
 
 [lints.rust]
 unsafe_code = "allow" # jni-rsが要求

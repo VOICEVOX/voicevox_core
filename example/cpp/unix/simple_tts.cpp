@@ -20,14 +20,21 @@ int main(int argc, char *argv[]) {
   std::cout << "coreの初期化中..." << std::endl;
 
   auto initialize_options = voicevox_make_default_initialize_options();
+  const VoicevoxOnnxruntime* onnxruntime;
+  auto load_ort_options = voicevox_make_default_load_onnxruntime_options();
+  auto result = voicevox_onnxruntime_load_once(load_ort_options, &onnxruntime);
+  if (result != VOICEVOX_RESULT_OK){
+    std::cerr << voicevox_error_result_to_message(result) << std::endl;
+    return 1;
+  }
   OpenJtalkRc* open_jtalk;
-  auto result = voicevox_open_jtalk_rc_new(open_jtalk_dict_path.c_str(),&open_jtalk);
+  result = voicevox_open_jtalk_rc_new(open_jtalk_dict_path.c_str(),&open_jtalk);
   if (result != VOICEVOX_RESULT_OK){
     std::cerr << voicevox_error_result_to_message(result) << std::endl;
     return 1;
   }
   VoicevoxSynthesizer* synthesizer;
-  result = voicevox_synthesizer_new(open_jtalk,initialize_options,&synthesizer);
+  result = voicevox_synthesizer_new(onnxruntime,open_jtalk,initialize_options,&synthesizer);
   if (result != VOICEVOX_RESULT_OK) {
     std::cerr << voicevox_error_result_to_message(result) << std::endl;
     return 1;
@@ -40,8 +47,8 @@ int main(int argc, char *argv[]) {
     if (path.extension() != ".vvm") {
       continue;
     }
-    VoicevoxVoiceModel* model;
-    result = voicevox_voice_model_new_from_path(path.c_str(), &model);
+    VoicevoxVoiceModelFile* model;
+    result = voicevox_voice_model_file_open(path.c_str(), &model);
     if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
       std::cerr << voicevox_error_result_to_message(result) << std::endl;
       return 0;
@@ -51,7 +58,7 @@ int main(int argc, char *argv[]) {
       std::cerr << voicevox_error_result_to_message(result) << std::endl;
       return 0;
     }
-    voicevox_voice_model_delete(model);
+    voicevox_voice_model_file_close(model);
   }
 
   std::cout << "音声生成中..." << std::endl;

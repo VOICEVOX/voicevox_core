@@ -1,11 +1,12 @@
 // ユーザー辞書の操作をテストする。
 
-use assert_cmd::assert::AssertResult;
-use once_cell::sync::Lazy;
 use std::{
     ffi::{CStr, CString},
     mem::MaybeUninit,
+    sync::LazyLock,
 };
+
+use assert_cmd::assert::AssertResult;
 use tempfile::NamedTempFile;
 use uuid::Uuid;
 
@@ -138,6 +139,7 @@ impl assert_cdylib::TestCase for TestCase {
     fn assert_output(&self, output: Utf8Output) -> AssertResult {
         output
             .mask_timestamps()
+            .mask_onnxruntime_version()
             .mask_windows_video_cards()
             .assert()
             .try_success()?
@@ -146,7 +148,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(user_dict_manipulate);
+static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(user_dict_manipulate);
 
 #[derive(Deserialize)]
 struct Snapshots {

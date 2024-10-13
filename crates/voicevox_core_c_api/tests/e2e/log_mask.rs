@@ -1,11 +1,12 @@
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
+
 use regex::{Regex, Replacer};
 
 use crate::assert_cdylib::Utf8Output;
 
 macro_rules! static_regex {
     ($regex:expr $(,)?) => {{
-        static REGEX: Lazy<Regex> = Lazy::new(|| $regex.parse().unwrap());
+        static REGEX: LazyLock<Regex> = LazyLock::new(|| $regex.parse().unwrap());
         &REGEX
     }};
 }
@@ -20,10 +21,17 @@ impl Utf8Output {
         )
     }
 
+    pub(crate) fn mask_onnxruntime_version(self) -> Self {
+        self.mask_stderr(
+            static_regex!(regex::escape(ort::downloaded_version!())),
+            "{onnxruntime_version}",
+        )
+    }
+
     pub(crate) fn mask_windows_video_cards(self) -> Self {
         self.mask_stderr(
             static_regex!(
-                r#"(?m)^\{timestamp\}  INFO voicevox_core::synthesizer::blocking: 検出されたGPU \(DirectMLには1番目のGPUが使われます\):(\n\{timestamp\}  INFO voicevox_core::synthesizer::blocking:   - "[^"]+" \([0-9.]+ [a-zA-Z]+\))+"#,
+                r#"(?m)^\{timestamp\}  INFO voicevox_core::synthesizer::blocking: 検出されたGPU \(DirectMLにはGPU 0が使われます\):(\n\{timestamp\}  INFO voicevox_core::synthesizer::blocking:   GPU [0-9]+: "[^"]+" \([0-9.]+ [a-zA-Z]+\))+"#,
             ),
             "{windows-video-cards}",
         )

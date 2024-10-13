@@ -1,0 +1,100 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "config:recommended",
+  ],
+  timezone: "Asia/Tokyo",
+  separateMajorMinor: false,
+  dependencyDashboardApproval: true,
+  packageRules: [
+    // `separateMajorMinor`を無効化した上で次の二つのgroupにすべてをまとめる。
+    //
+    // * "major dependencies" (`renovate/major-dependencies`)
+    // * "non-major dependencies" (`renovate/non-major-dependencies`)
+    //
+    // バージョン0.y.z (y≧1)のyとバージョン0.0.zのzの変更は"major dependencies"の方に含むようにする。
+
+    // メジャーバージョンの更新
+    {
+      groupName: "major dependencies",
+      matchUpdateTypes: [
+        "major",
+      ],
+      dependencyDashboardApproval: false,
+    },
+    {
+      groupName: "major dependencies",
+      matchUpdateTypes: [
+        "minor",
+      ],
+      matchCurrentVersion: "/^v?0\\./",
+      dependencyDashboardApproval: false,
+    },
+    {
+      groupName: "major dependencies",
+      matchUpdateTypes: [
+        "patch",
+      ],
+      matchCurrentVersion: "/^v?0\\.0\\./",
+      dependencyDashboardApproval: false,
+    },
+
+    // メジャーバージョン以外の更新
+    {
+      groupName: "non-major dependencies",
+      matchUpdateTypes: [
+        "minor",
+      ],
+      matchCurrentVersion: "!/^v?0\\./",
+    },
+    {
+      groupName: "non-major dependencies",
+      matchUpdateTypes: [
+        "patch",
+      ],
+      matchCurrentVersion: "!/^v?0\\.0\\./",
+    },
+
+    // GHAのrunnerに対しては無効化する
+    {
+      matchDatasources: [
+        "github-runners",
+      ],
+      matchPackageNames: [
+        "windows",
+        "macos",
+        "ubuntu",
+      ],
+      enabled: false,
+    },
+  ],
+  cargo: {
+    rangeStrategy: "bump",
+  },
+  customManagers: [
+    {
+      customType: "regex",
+      fileMatch: [
+        "^rust-toolchain$",
+      ],
+      matchStrings: [
+        "(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+      ],
+      depNameTemplate: "Rust",
+      packageNameTemplate: "rust-lang/rust",
+      datasourceTemplate: "github-tags",
+    },
+    {
+      customType: "regex",
+      fileMatch: [
+        "^Cargo.toml$",
+      ],
+      matchStrings: [
+        "rust-version = \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\"",
+      ],
+      depNameTemplate: "Rust",
+      packageNameTemplate: "rust-lang/rust",
+      datasourceTemplate: "github-tags",
+    },
+  ],
+}

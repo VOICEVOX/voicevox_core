@@ -3,7 +3,7 @@ mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod session_set;
 
-use std::{borrow::Cow, collections::BTreeSet, fmt::Debug};
+use std::{borrow::Cow, collections::BTreeSet, fmt::Debug, ops::Index, sync::Arc};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -11,17 +11,32 @@ use enum_map::{Enum, EnumMap};
 use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
 
-use crate::{StyleType, SupportedDevices};
+use crate::{
+    devices::{DeviceSpec, GpuSpec},
+    StyleType, SupportedDevices,
+};
 
 pub(crate) trait InferenceRuntime: 'static {
     // TODO: "session"とは何なのかを定め、ドキュメントを書く。`InferenceSessionSet`も同様。
     type Session: Sized + Send + 'static;
     type RunContext<'a>: From<&'a mut Self::Session> + PushInputTensor;
 
-    fn supported_devices() -> crate::Result<SupportedDevices>;
+    /// 名前。
+    const DISPLAY_NAME: &'static str;
 
-    #[allow(clippy::type_complexity)]
+    /// このランタイムで利用可能なデバイスの情報を取得する。
+    fn supported_devices(&self) -> crate::Result<SupportedDevices>;
+
+    /// GPUが実際に利用できそうかどうか判定する。
+    fn test_gpu(&self, gpu: GpuSpec) -> anyhow::Result<()>;
+
+    #[expect(
+        clippy::type_complexity,
+        reason = "ここを呼び出すのは現状一箇所なので、可読性が著しく落ちてはいないことを考えると\
+                  別にこのままでいいはず"
+    )]
     fn new_session(
+        &self,
         model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
         options: InferenceSessionOptions,
     ) -> anyhow::Result<(
@@ -36,6 +51,7 @@ pub(crate) trait InferenceRuntime: 'static {
 /// 共に扱われるべき推論操作の集合を示す。
 pub(crate) trait InferenceDomain: Sized {
     type Operation: InferenceOperation;
+    type Manifest: Index<Self::Operation, Output = Arc<str>>;
 
     /// 対応する`StyleType`。
     ///
@@ -53,7 +69,11 @@ pub(crate) trait InferenceDomain: Sized {
 /// `::macros::InferenceOperation`により導出される。
 pub(crate) trait InferenceOperation: Copy + Enum {
     /// `{InferenceInputSignature,InferenceOutputSignature}::PARAM_INFOS`を集めたもの。
-    #[allow(clippy::type_complexity)]
+    #[expect(
+        clippy::type_complexity,
+        reason = "ここを参照するのは現状一箇所なので、可読性が著しく落ちてはいないことを考えると\
+                  別にこのままでいいはず"
+    )]
     const PARAM_INFOS: EnumMap<
         Self,
         (
@@ -79,16 +99,20 @@ pub(crate) trait InferenceSignature: Sized + Send + 'static {
 pub(crate) trait InferenceInputSignature: Send + 'static {
     type Signature: InferenceSignature<Input = Self>;
     const PARAM_INFOS: &'static [ParamInfo<InputScalarKind>];
-    fn make_run_context<R: InferenceRuntime>(self, sess: &mut R::Session) -> R::RunContext<'_>;
+    fn make_run_context<R: InferenceRuntime>(
+        self,
+        sess: &mut R::Session,
+    ) -> anyhow::Result<R::RunContext<'_>>;
 }
 
 pub(crate) trait InputScalar: Sized {
     const KIND: InputScalarKind;
 
+    // TODO: `Array`ではなく`ArrayView`を取ることができるかもしれない
     fn push_tensor_to_ctx(
         tensor: Array<Self, impl Dimension + 'static>,
         visitor: &mut impl PushInputTensor,
-    );
+    ) -> anyhow::Result<()>;
 }
 
 #[duplicate_item(
@@ -102,8 +126,8 @@ impl InputScalar for T {
     fn push_tensor_to_ctx(
         tensor: Array<Self, impl Dimension + 'static>,
         ctx: &mut impl PushInputTensor,
-    ) {
-        ctx.push(tensor);
+    ) -> anyhow::Result<()> {
+        ctx.push(tensor)
     }
 }
 
@@ -117,8 +141,8 @@ pub(crate) enum InputScalarKind {
 }
 
 pub(crate) trait PushInputTensor {
-    fn push_int64(&mut self, tensor: Array<i64, impl Dimension + 'static>);
-    fn push_float32(&mut self, tensor: Array<f32, impl Dimension + 'static>);
+    fn push_int64(&mut self, tensor: Array<i64, impl Dimension + 'static>) -> anyhow::Result<()>;
+    fn push_float32(&mut self, tensor: Array<f32, impl Dimension + 'static>) -> anyhow::Result<()>;
 }
 
 /// 推論操作の出力シグネチャ。
@@ -181,7 +205,7 @@ impl<D: PartialEq> ParamInfo<D> {
 #[derive(new, Clone, Copy, PartialEq, Debug)]
 pub(crate) struct InferenceSessionOptions {
     pub(crate) cpu_num_threads: u16,
-    pub(crate) use_gpu: bool,
+    pub(crate) device: DeviceSpec,
 }
 
 #[derive(Error, Debug)]

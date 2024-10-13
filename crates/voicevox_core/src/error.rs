@@ -1,4 +1,5 @@
 use crate::{
+    devices::DeviceAvailabilities,
     engine::{FullContextLabelError, KanaParseError},
     user_dict::InvalidWordError,
     StyleId, StyleType, VoiceModelId,
@@ -33,7 +34,8 @@ impl Error {
     pub fn kind(&self) -> ErrorKind {
         match &self.0 {
             ErrorRepr::NotLoadedOpenjtalkDict => ErrorKind::NotLoadedOpenjtalkDict,
-            ErrorRepr::GpuSupport => ErrorKind::GpuSupport,
+            ErrorRepr::GpuSupport(_) => ErrorKind::GpuSupport,
+            ErrorRepr::InitInferenceRuntime { .. } => ErrorKind::InitInferenceRuntime,
             ErrorRepr::LoadModel(LoadModelError { context, .. }) => match context {
                 LoadModelErrorKind::OpenZipFile => ErrorKind::OpenZipFile,
                 LoadModelErrorKind::ReadZipEntry { .. } => ErrorKind::ReadZipEntry,
@@ -45,7 +47,7 @@ impl Error {
             ErrorRepr::GetSupportedDevices(_) => ErrorKind::GetSupportedDevices,
             ErrorRepr::StyleNotFound { .. } => ErrorKind::StyleNotFound,
             ErrorRepr::ModelNotFound { .. } => ErrorKind::ModelNotFound,
-            ErrorRepr::InferenceFailed { .. } => ErrorKind::InferenceFailed,
+            ErrorRepr::RunModel { .. } => ErrorKind::RunModel,
             ErrorRepr::ExtractFullContextLabel(_) => ErrorKind::ExtractFullContextLabel,
             ErrorRepr::ParseKana(_) => ErrorKind::ParseKana,
             ErrorRepr::LoadUserDict(_) => ErrorKind::LoadUserDict,
@@ -62,8 +64,15 @@ pub(crate) enum ErrorRepr {
     #[error("OpenJTalkの辞書が読み込まれていません")]
     NotLoadedOpenjtalkDict,
 
-    #[error("GPU機能をサポートすることができません")]
-    GpuSupport,
+    #[error("GPU機能をサポートすることができません:\n{_0}")]
+    GpuSupport(DeviceAvailabilities),
+
+    #[error("{runtime_display_name}のロードまたは初期化ができませんでした")]
+    InitInferenceRuntime {
+        runtime_display_name: &'static str,
+        #[source]
+        source: anyhow::Error,
+    },
 
     #[error(transparent)]
     LoadModel(#[from] LoadModelError),
@@ -88,7 +97,7 @@ pub(crate) enum ErrorRepr {
     ModelNotFound { model_id: VoiceModelId },
 
     #[error("推論に失敗しました")]
-    InferenceFailed(#[source] anyhow::Error),
+    RunModel(#[source] anyhow::Error),
 
     #[error(transparent)]
     ExtractFullContextLabel(#[from] FullContextLabelError),
@@ -119,6 +128,8 @@ pub enum ErrorKind {
     NotLoadedOpenjtalkDict,
     /// GPUモードがサポートされていない。
     GpuSupport,
+    /// 推論ライブラリのロードまたは初期化ができなかった。
+    InitInferenceRuntime,
     /// ZIPファイルを開くことに失敗した。
     OpenZipFile,
     /// ZIP内のファイルが読めなかった。
@@ -138,7 +149,7 @@ pub enum ErrorKind {
     /// 音声モデルIDに対する音声モデルが見つからなかった。
     ModelNotFound,
     /// 推論に失敗した。
-    InferenceFailed,
+    RunModel,
     /// コンテキストラベル出力に失敗した。
     ExtractFullContextLabel,
     /// AquesTalk風記法のテキストの解析に失敗した。

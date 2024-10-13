@@ -1,15 +1,15 @@
 // ユーザー辞書の登録によって読みが変化することを確認するテスト。
 // 辞書ロード前後でAudioQueryのkanaが変化するかどうかで確認する。
 
-use assert_cmd::assert::AssertResult;
-use once_cell::sync::Lazy;
 use std::ffi::{CStr, CString};
 use std::mem::MaybeUninit;
-use test_util::OPEN_JTALK_DIC_DIR;
+use std::sync::LazyLock;
 
+use assert_cmd::assert::AssertResult;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 use test_util::c_api::{self, CApi, VoicevoxInitializeOptions, VoicevoxResultCode};
+use test_util::OPEN_JTALK_DIC_DIR;
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
@@ -46,11 +46,20 @@ impl assert_cdylib::TestCase for TestCase {
 
         let model = {
             let mut model = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_voice_model_new_from_path(
-                c"../../model/sample.vvm".as_ptr(),
+            assert_ok(lib.voicevox_voice_model_file_open(
+                c_api::SAMPLE_VOICE_MODEL_FILE_PATH.as_ptr(),
                 model.as_mut_ptr(),
             ));
             model.assume_init()
+        };
+
+        let onnxruntime = {
+            let mut onnxruntime = MaybeUninit::uninit();
+            assert_ok(lib.voicevox_onnxruntime_load_once(
+                lib.voicevox_make_default_load_onnxruntime_options(),
+                onnxruntime.as_mut_ptr(),
+            ));
+            onnxruntime.assume_init()
         };
 
         let openjtalk = {
@@ -65,6 +74,7 @@ impl assert_cdylib::TestCase for TestCase {
         let synthesizer = {
             let mut synthesizer = MaybeUninit::uninit();
             assert_ok(lib.voicevox_synthesizer_new(
+                onnxruntime,
                 openjtalk,
                 VoicevoxInitializeOptions {
                     acceleration_mode:
@@ -108,7 +118,7 @@ impl assert_cdylib::TestCase for TestCase {
             audio_query_with_dict.get("kana")
         );
 
-        lib.voicevox_voice_model_delete(model);
+        lib.voicevox_voice_model_file_close(model);
         lib.voicevox_open_jtalk_rc_delete(openjtalk);
         lib.voicevox_synthesizer_delete(synthesizer);
         lib.voicevox_user_dict_delete(dict);
@@ -124,6 +134,7 @@ impl assert_cdylib::TestCase for TestCase {
     fn assert_output(&self, output: Utf8Output) -> AssertResult {
         output
             .mask_timestamps()
+            .mask_onnxruntime_version()
             .mask_windows_video_cards()
             .assert()
             .try_success()?
@@ -132,7 +143,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(user_dict);
+static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(user_dict_load);
 
 #[derive(Deserialize)]
 struct Snapshots {

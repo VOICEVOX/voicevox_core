@@ -1,10 +1,10 @@
 use crate::{
     engine::{extract_full_context_label, parse_kana},
-    AccentPhraseModel, FullcontextExtractor, Result,
+    AccentPhrase, FullcontextExtractor, Result,
 };
 
 pub(crate) trait TextAnalyzer {
-    fn analyze(&self, text: &str) -> Result<Vec<AccentPhraseModel>>;
+    fn analyze(&self, text: &str) -> Result<Vec<AccentPhrase>>;
 }
 
 /// AquesTalk風記法からAccentPhraseの配列を生成するTextAnalyzer
@@ -12,7 +12,7 @@ pub(crate) trait TextAnalyzer {
 pub(crate) struct KanaAnalyzer;
 
 impl TextAnalyzer for KanaAnalyzer {
-    fn analyze(&self, text: &str) -> Result<Vec<AccentPhraseModel>> {
+    fn analyze(&self, text: &str) -> Result<Vec<AccentPhrase>> {
         if text.is_empty() {
             return Ok(Vec::new());
         }
@@ -31,7 +31,7 @@ impl<O> OpenJTalkAnalyzer<O> {
 }
 
 impl<O: FullcontextExtractor> TextAnalyzer for OpenJTalkAnalyzer<O> {
-    fn analyze(&self, text: &str) -> Result<Vec<AccentPhraseModel>> {
+    fn analyze(&self, text: &str) -> Result<Vec<AccentPhrase>> {
         if text.is_empty() {
             return Ok(Vec::new());
         }

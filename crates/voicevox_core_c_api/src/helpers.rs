@@ -1,10 +1,12 @@
-use std::{error::Error as _, ffi::CStr, fmt::Debug, iter};
-use voicevox_core::{AudioQueryModel, UserDictWord};
+use easy_ext::ext;
+use std::{ffi::CStr, fmt::Debug, iter};
+use uuid::Uuid;
+use voicevox_core::{AudioQuery, UserDictWord, VoiceModelId};
 
 use thiserror::Error;
 use tracing::error;
 
-use voicevox_core::AccentPhraseModel;
+use voicevox_core::AccentPhrase;
 
 use crate::{
     result_code::VoicevoxResultCode, VoicevoxAccelerationMode, VoicevoxInitializeOptions,
@@ -17,14 +19,6 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
     }
     return into_result_code(result);
 
-    fn display_error(err: &CApiError) {
-        itertools::chain(
-            [err.to_string()],
-            iter::successors(err.source(), |&e| e.source()).map(|e| format!("Caused by: {e}")),
-        )
-        .for_each(|msg| error!("{msg}"));
-    }
-
     fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
         use voicevox_core::ErrorKind::*;
         use CApiError::*;
@@ -35,6 +29,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(err)) => match err.kind() {
                 NotLoadedOpenjtalkDict => VOICEVOX_RESULT_NOT_LOADED_OPENJTALK_DICT_ERROR,
                 GpuSupport => VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
+                InitInferenceRuntime => VOICEVOX_RESULT_INIT_INFERENCE_RUNTIME_ERROR,
                 OpenZipFile => VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR,
                 ReadZipEntry => VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR,
                 InvalidModelFormat => VOICEVOX_RESULT_INVALID_MODEL_HEADER_ERROR,
@@ -44,7 +39,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 GetSupportedDevices => VOICEVOX_RESULT_GET_SUPPORTED_DEVICES_ERROR,
                 StyleNotFound => VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
                 ModelNotFound => VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
-                InferenceFailed => VOICEVOX_RESULT_INFERENCE_ERROR,
+                RunModel => VOICEVOX_RESULT_RUN_MODEL_ERROR,
                 ExtractFullContextLabel => VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
                 ParseKana => VOICEVOX_RESULT_PARSE_KANA_ERROR,
                 LoadUserDict => VOICEVOX_RESULT_LOAD_USER_DICT_ERROR,
@@ -59,6 +54,14 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(InvalidUuid(_)) => VOICEVOX_RESULT_INVALID_UUID_ERROR,
         }
     }
+}
+
+pub(crate) fn display_error(err: &impl std::error::Error) {
+    itertools::chain(
+        [err.to_string()],
+        iter::successors(err.source(), |&e| e.source()).map(|e| format!("Caused by: {e}")),
+    )
+    .for_each(|msg| error!("{msg}"));
 }
 
 pub(crate) type CApiResult<T> = std::result::Result<T, CApiError>;
@@ -77,11 +80,11 @@ pub(crate) enum CApiError {
     InvalidUuid(uuid::Error),
 }
 
-pub(crate) fn audio_query_model_to_json(audio_query_model: &AudioQueryModel) -> String {
+pub(crate) fn audio_query_model_to_json(audio_query_model: &AudioQuery) -> String {
     serde_json::to_string(audio_query_model).expect("should be always valid")
 }
 
-pub(crate) fn accent_phrases_to_json(audio_query_model: &[AccentPhraseModel]) -> String {
+pub(crate) fn accent_phrases_to_json(audio_query_model: &[AccentPhrase]) -> String {
     serde_json::to_string(audio_query_model).expect("should be always valid")
 }
 
@@ -160,6 +163,13 @@ impl Default for VoicevoxSynthesisOptions {
         Self {
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
         }
+    }
+}
+
+#[ext(UuidBytesExt)]
+pub(crate) impl uuid::Bytes {
+    fn to_model_id(self) -> VoiceModelId {
+        Uuid::from_bytes(self).into()
     }
 }
 

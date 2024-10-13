@@ -102,7 +102,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: DirectML option確認
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- --device directml
+            download_command: cargo run -vv -p downloader -- --devices directml
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
@@ -121,7 +121,7 @@ jobs:
               *curand*
           - name: DirectMLかつMin option確認
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- --device directml --min
+            download_command: cargo run -vv -p downloader -- --devices directml --min
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
@@ -139,7 +139,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: cuda option確認
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- --device cuda
+            download_command: cargo run -vv -p downloader -- --devices cuda
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
@@ -161,7 +161,7 @@ jobs:
               *directml*
           - name: cudaかつmin option確認
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- --device cuda --min
+            download_command: cargo run -vv -p downloader -- --devices cuda --min
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
@@ -184,7 +184,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}-${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Get prerelease latest version

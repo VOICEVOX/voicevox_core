@@ -31,10 +31,10 @@ chmod +x download
 ./download
 
 # DirectML版を利用する場合
-./download --device directml
+./download --devices directml
 
 # CUDA版を利用する場合
-./download --device cuda
+./download --devices cuda
 ```
 
 `voicevox_core`ディレクトリにファイル一式がダウンロードされています。以降の説明ではこのディレクトリで作業を行います。
@@ -62,15 +62,15 @@ VOICEVOX コアでは`Synthesizer`に音声モデルを読み込むことでテ�
 
 ```python
 from pprint import pprint
-from voicevox_core.blocking import OpenJtalk, Synthesizer, VoiceModel
+from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 # 1. Synthesizerの初期化
 open_jtalk_dict_dir = "open_jtalk_dic_utf_8-1.11"
-synthesizer = Synthesizer(OpenJtalk(open_jtalk_dict_dir))
+synthesizer = Synthesizer(Onnxruntime.load_once(), OpenJtalk(open_jtalk_dict_dir))
 
 # 2. 音声モデルの読み込み
-model = VoiceModel.from_path("model/0.vvm")
-synthesizer.load_voice_model(model)
+with VoiceModelFile.open("model/0.vvm") as model:
+    synthesizer.load_voice_model(model)
 
 # 3. テキスト音声合成
 text = "サンプル音声です"
@@ -82,15 +82,15 @@ with open("output.wav", "wb") as f:
 
 ### 1. Synthesizer の初期化
 
-辞書などを取り扱う`OpenJtalk`のインスタンスを引数に渡して`Synthesizer`を初期化します。`Synthesizer`は音声合成だけでなく、音声モデルを複数読み込んだり、イントネーションのみを生成することもできます。
+AIエンジンの`Onnxruntime`のインスタンスと、辞書などを取り扱う`OpenJtalk`のインスタンスを引数に渡して`Synthesizer`を初期化します。`Synthesizer`は音声合成だけでなく、音声モデルを複数読み込んだり、イントネーションのみを生成することもできます。
 
 ### 2. 音声モデルの読み込み
 
-VVM ファイルから`VoiceModel`インスタンスを作成し、`Synthesizer`に読み込ませます。その VVM ファイルにどの声が含まれているかは`VoiceModel`の`.metas`や[音声モデルと声の対応表](https://github.com/VOICEVOX/voicevox_fat_resource/blob/main/core/model/README.md#%E9%9F%B3%E5%A3%B0%E3%83%A2%E3%83%87%E3%83%ABvvm%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%A8%E5%A3%B0%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB%E5%90%8D%E3%81%A8%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB-id-%E3%81%AE%E5%AF%BE%E5%BF%9C%E8%A1%A8)で確認できます。
+VVM ファイルから`VoiceModelFile`インスタンスを作成し、`Synthesizer`に読み込ませます。その VVM ファイルにどの声が含まれているかは`VoiceModelFile`の`.metas`や[音声モデルと声の対応表](https://github.com/VOICEVOX/voicevox_fat_resource/blob/main/core/model/README.md#%E9%9F%B3%E5%A3%B0%E3%83%A2%E3%83%87%E3%83%ABvvm%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%A8%E5%A3%B0%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB%E5%90%8D%E3%81%A8%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB-id-%E3%81%AE%E5%AF%BE%E5%BF%9C%E8%A1%A8)で確認できます。
 
 ```python
-model = VoiceModel.from_path("model/0.vvm")
-pprint(model.metas)
+with VoiceModelFile.open("model/0.vvm") as model:
+    pprint(model.metas)
 ```
 
 ```txt

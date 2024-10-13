@@ -17,6 +17,7 @@ pub(crate) struct InferenceSessionSet<R: InferenceRuntime, D: InferenceDomain>(
 
 impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
     pub(crate) fn new(
+        rt: &R,
         model_bytes: &EnumMap<D::Operation, Vec<u8>>,
         options: &EnumMap<D::Operation, InferenceSessionOptions>,
     ) -> anyhow::Result<Self> {
@@ -27,7 +28,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
                     <D::Operation as InferenceOperation>::PARAM_INFOS[op];
 
                 let (sess, actual_input_param_infos, actual_output_param_infos) =
-                    R::new_session(|| model_file::decrypt(model_bytes), options[op])?;
+                    rt.new_session(|| model_file::decrypt(model_bytes), options[op])?;
 
                 check_param_infos(expected_input_param_infos, &actual_input_param_infos)?;
                 check_param_infos(expected_output_param_infos, &actual_output_param_infos)?;
@@ -60,8 +61,8 @@ impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
                 .iter()
                 .map(|ParamInfo { name, dt, ndim }| {
                     let brackets = match *ndim {
-                        Some(ndim) => "[]".repeat(ndim),
-                        None => "[]...".to_owned(),
+                        Some(ndim) => &"[]".repeat(ndim),
+                        None => "[]...",
                     };
                     format!("{name}: {dt}{brackets}")
                 })
@@ -73,8 +74,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
 impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
     pub(crate) fn get<I>(&self) -> InferenceSessionCell<R, I>
     where
-        I: InferenceInputSignature,
-        I::Signature: InferenceSignature<Domain = D>,
+        I: InferenceInputSignature<Signature: InferenceSignature<Domain = D>>,
     {
         InferenceSessionCell {
             inner: self.0[I::Signature::OPERATION].clone(),
@@ -94,9 +94,8 @@ impl<R: InferenceRuntime, I: InferenceInputSignature> InferenceSessionCell<R, I>
         input: I,
     ) -> crate::Result<<I::Signature as InferenceSignature>::Output> {
         let inner = &mut self.inner.lock().unwrap();
-        let ctx = input.make_run_context::<R>(inner);
-        R::run(ctx)
-            .and_then(TryInto::try_into)
-            .map_err(|e| ErrorRepr::InferenceFailed(e).into())
+        (|| R::run(input.make_run_context::<R>(inner)?)?.try_into())()
+            .map_err(ErrorRepr::RunModel)
+            .map_err(Into::into)
     }
 }

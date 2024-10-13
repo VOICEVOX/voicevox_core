@@ -49,7 +49,7 @@ download
 または
 
 ```
-download --device cpu
+download --devices cpu
 ```
 
 <a id="directml"></a>
@@ -57,7 +57,7 @@ download --device cpu
 ## DirectML 版をダウンロードする場合
 
 ```
-download --device directml
+download --devices directml
 ```
 
 <a id="cuda"></a>
@@ -65,7 +65,7 @@ download --device directml
 ## CUDA 版をダウンロードする場合
 
 ```
-download --device cuda
+download --devices cuda
 ```
 
 <a id="help"></a>

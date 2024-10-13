@@ -33,14 +33,21 @@ int main() {
   VoicevoxInitializeOptions  initializeOptions = voicevox_make_default_initialize_options();
   std::string dict = GetOpenJTalkDict();
 
+  const VoicevoxOnnxruntime* onnxruntime;
+  auto load_ort_options = voicevox_make_default_load_onnxruntime_options();
+  auto result = voicevox_onnxruntime_load_once(load_ort_options, &onnxruntime);
+  if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
+    OutErrorMessage(result);
+    return 0;
+  }
   OpenJtalkRc* open_jtalk;
-  auto result = voicevox_open_jtalk_rc_new(dict.c_str(),&open_jtalk);
+  result = voicevox_open_jtalk_rc_new(dict.c_str(),&open_jtalk);
   if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
     OutErrorMessage(result);
     return 0;
   }
   VoicevoxSynthesizer* synthesizer;
-  result = voicevox_synthesizer_new(open_jtalk,initializeOptions,&synthesizer);
+  result = voicevox_synthesizer_new(onnxruntime,open_jtalk,initializeOptions,&synthesizer);
   if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
     OutErrorMessage(result);
     return 0;
@@ -52,9 +59,8 @@ int main() {
     if (path.extension() != ".vvm") {
       continue;
     }
-    VoicevoxVoiceModel* model;
-    result = voicevox_voice_model_new_from_path(path.generic_u8string().c_str(),
-                                                &model);
+    VoicevoxVoiceModelFile* model;
+    result = voicevox_voice_model_file_open(path.generic_u8string().c_str(), &model);
     if (result != VoicevoxResultCode::VOICEVOX_RESULT_OK) {
       OutErrorMessage(result);
       return 0;
@@ -64,7 +70,7 @@ int main() {
       OutErrorMessage(result);
       return 0;
     }
-    voicevox_voice_model_delete(model);
+    voicevox_voice_model_file_close(model);
   }
 
   std::wcout << L"音声生成中" << std::endl;

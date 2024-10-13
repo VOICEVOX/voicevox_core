@@ -1,3 +1,8 @@
+use std::{ops::RangeToInclusive, sync::LazyLock};
+
+use regex::Regex;
+use serde::{de::Error as _, Deserialize, Serialize};
+
 use crate::{
     error::ErrorRepr,
     result::Result,
@@ -5,25 +10,20 @@ use crate::{
         priority2cost, MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL,
     },
 };
-use derive_getters::Getters;
-use once_cell::sync::Lazy;
-use regex::Regex;
-use serde::{de::Error as _, Deserialize, Serialize};
-use std::ops::RangeToInclusive;
 
 /// ユーザー辞書の単語。
-#[derive(Clone, Debug, Getters, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct UserDictWord {
     /// 単語の表記。
-    pub surface: String,
+    surface: String,
     /// 単語の読み。
-    pub pronunciation: String,
+    pronunciation: String,
     /// アクセント型。
-    pub accent_type: usize,
+    accent_type: usize,
     /// 単語の種類。
-    pub word_type: UserDictWordType,
+    word_type: UserDictWordType,
     /// 単語の優先度。
-    pub priority: u32,
+    priority: u32,
 
     /// モーラ数。
     mora_count: usize,
@@ -55,7 +55,7 @@ impl<'de> Deserialize<'de> for UserDictWord {
     }
 }
 
-#[allow(clippy::enum_variant_names)] // FIXME
+#[expect(clippy::enum_variant_names, reason = "特に理由はないので正されるべき")] // FIXME
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub(crate) enum InvalidWordError {
     #[error("{}: 無効な発音です({_1}): {_0:?}", Self::BASE_MSG)]
@@ -78,8 +78,9 @@ impl InvalidWordError {
 
 type InvalidWordResult<T> = std::result::Result<T, InvalidWordError>;
 
-static PRONUNCIATION_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
-static MORA_REGEX: Lazy<Regex> = Lazy::new(|| {
+static PRONUNCIATION_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
+static MORA_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
         "(?:",
         "[イ][ェ]|[ヴ][ャュョ]|[トド][ゥ]|[テデ][ィャュョ]|[デ][ェ]|[クグ][ヮ]|", // rule_others
@@ -90,7 +91,7 @@ static MORA_REGEX: Lazy<Regex> = Lazy::new(|| {
     ))
     .unwrap()
 });
-static SPACE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"\p{Z}").unwrap());
+static SPACE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\p{Z}").unwrap());
 
 impl Default for UserDictWord {
     fn default() -> Self {
@@ -126,6 +127,31 @@ impl UserDictWord {
             priority,
             mora_count,
         })
+    }
+
+    /// 単語の表記。
+    pub fn surface(&self) -> &str {
+        &self.surface
+    }
+
+    /// 単語の読み。
+    pub fn pronunciation(&self) -> &str {
+        &self.pronunciation
+    }
+
+    /// アクセント型。
+    pub fn accent_type(&self) -> usize {
+        self.accent_type
+    }
+
+    /// 単語の種類。
+    pub fn word_type(&self) -> UserDictWordType {
+        self.word_type
+    }
+
+    /// 単語の優先度。
+    pub fn priority(&self) -> u32 {
+        self.priority
     }
 }
 
@@ -188,8 +214,10 @@ fn calculate_mora_count(pronunciation: &str, accent_type: usize) -> InvalidWordR
 /// 一部の種類の文字を、全角文字に置き換える。
 ///
 /// 具体的には
+///
 /// - "!"から"~"までの範囲の文字(数字やアルファベット)は、対応する全角文字に
 /// - " "などの目に見えない文字は、まとめて全角スペース(0x3000)に
+///
 /// 変換する。
 pub(crate) fn to_zenkaku(surface: &str) -> String {
     // 元実装：https://github.com/VOICEVOX/voicevox/blob/69898f5dd001d28d4de355a25766acb0e0833ec2/src/components/DictionaryManageDialog.vue#L379-L387
@@ -203,7 +231,7 @@ pub(crate) fn to_zenkaku(surface: &str) -> String {
         .collect()
 }
 /// ユーザー辞書の単語の種類。
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UserDictWordType {
     /// 固有名詞。

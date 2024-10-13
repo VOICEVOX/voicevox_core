@@ -1,8 +1,7 @@
-use std::{collections::HashMap, ffi::CStr, mem::MaybeUninit, str};
+use std::{collections::HashMap, ffi::CStr, mem::MaybeUninit, str, sync::LazyLock};
 
 use assert_cmd::assert::AssertResult;
 use libloading::Library;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use test_util::c_api::{self, CApi, VoicevoxResultCode};
@@ -28,16 +27,23 @@ impl assert_cdylib::TestCase for TestCase {
             CStr::from_ptr(lib.voicevox_get_version()).to_str()?,
         );
 
+        let onnxruntime = {
+            let mut onnxruntime = MaybeUninit::uninit();
+            assert_ok(lib.voicevox_onnxruntime_load_once(
+                lib.voicevox_make_default_load_onnxruntime_options(),
+                onnxruntime.as_mut_ptr(),
+            ));
+            onnxruntime.assume_init()
+        };
+
         {
             let mut supported_devices = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_create_supported_devices_json(supported_devices.as_mut_ptr()));
+            assert_ok(lib.voicevox_onnxruntime_create_supported_devices_json(
+                onnxruntime,
+                supported_devices.as_mut_ptr(),
+            ));
             let supported_devices = supported_devices.assume_init();
-            std::assert_eq!(
-                SupportedDevices::create()?.to_json(),
-                CStr::from_ptr(supported_devices)
-                    .to_str()?
-                    .parse::<serde_json::Value>()?,
-            );
+            serde_json::from_str::<SupportedDevices>(CStr::from_ptr(supported_devices).to_str()?)?;
             lib.voicevox_json_free(supported_devices);
         }
 
@@ -48,7 +54,7 @@ impl assert_cdylib::TestCase for TestCase {
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_GPU_SUPPORT_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
-            c_api::VoicevoxResultCode_VOICEVOX_RESULT_INFERENCE_ERROR,
+            c_api::VoicevoxResultCode_VOICEVOX_RESULT_RUN_MODEL_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_PARSE_KANA_ERROR,
@@ -83,6 +89,7 @@ impl assert_cdylib::TestCase for TestCase {
     fn assert_output(&self, output: Utf8Output) -> AssertResult {
         output
             .mask_timestamps()
+            .mask_onnxruntime_version()
             .mask_windows_video_cards()
             .assert()
             .try_success()?
@@ -91,7 +98,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(global_info);
+static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(global_info);
 
 #[serde_as]
 #[derive(Deserialize)]

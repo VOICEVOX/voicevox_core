@@ -3,15 +3,26 @@ name = "voicevox_core"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+rust-version.workspace = true
 
+[package.metadata.docs.rs]
+features = ["load-onnxruntime", "link-onnxruntime"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+# rustdocを参照
 [features]
 default = []
-directml = ["onnxruntime/directml"]
+load-onnxruntime = ["voicevox-ort/load-dynamic"]
+link-onnxruntime = []
 
 [dependencies]
 anyhow.workspace = true
+async-fs.workspace = true
+async-lock.workspace = true
 async_zip = { workspace = true, features = ["deflate"] }
+blocking.workspace = true
 camino.workspace = true
+const_format.workspace = true
 derive-getters.workspace = true
 derive-new.workspace = true
 derive_more.workspace = true
@@ -19,18 +30,17 @@ duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
 enum-map.workspace = true
-fs-err = { workspace = true, features = ["tokio"] }
-futures.workspace = true
+fs-err.workspace = true
+futures-io.workspace = true
+futures-lite.workspace = true
+futures-util = { workspace = true, features = ["io"] }
 indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
 jlabel.workspace = true
-nanoid.workspace = true
 ndarray.workspace = true
-once_cell.workspace = true
-onnxruntime.workspace = true
 open_jtalk.workspace = true
 ouroboros.workspace = true
-rayon.workspace = true
+ref-cast.workspace = true
 regex.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
@@ -39,27 +49,24 @@ smallvec.workspace = true
 strum = { workspace = true, features = ["derive"] }
 tempfile.workspace = true
 thiserror.workspace = true
-tokio = { workspace = true, features = ["rt"] } # FIXME: feature-gateする
 tracing.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
+voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-voicevox"] }
 voicevox_core_macros = { path = "../voicevox_core_macros" }
-zip.workspace = true
 
 [dev-dependencies]
 heck.workspace = true
+pollster = { workspace = true, features = ["macro"] }
 pretty_assertions.workspace = true
 rstest.workspace = true
 rstest_reuse.workspace = true
 test_util.workspace = true
-tokio = { workspace = true, features = ["rt", "macros"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 
 [target."cfg(windows)".dependencies]
 humansize.workspace = true
 windows = { workspace = true, features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
 
 [lints.rust]
-# FIXME: `unsafe impl Send`のもあるが、以下2つのマージにより消える予定
-# * https://github.com/VOICEVOX/voicevox_core/pull/725
-# * https://github.com/VOICEVOX/voicevox_core/pull/772
 unsafe_code = "allow" # WindowsのGPU情報表示に、Win32を利用
 rust_2018_idioms = "warn"

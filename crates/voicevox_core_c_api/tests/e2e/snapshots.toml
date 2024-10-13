@@ -51,13 +51,42 @@ metas = '''
   }
 ]'''
 stderr.windows = '''
+{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
-stderr.unix = ""
+stderr.unix = '''
+{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+'''
 
 [compatible_engine_load_model_before_initialize]
 last_error_message = "Statusが初期化されていません"
 stderr = ""
+
+[double_delete_openjtalk]
+stderr_matches_all = [
+    '\n`OpenJtalkRc` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
+
+[double_delete_synthesizer]
+stderr_matches_all = [
+    '\n`VoicevoxSynthesizer` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
+
+[double_delete_user_dict]
+stderr_matches_all = [
+    '\n`VoicevoxUserDict` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
+
+[double_delete_voice_model_file]
+stderr_matches_all = [
+    '\n`VoicevoxVoiceModelFile` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
 
 [global_info]
 result_messages.0 = "エラーが発生しませんでした"
@@ -83,14 +112,23 @@ result_messages.22 = "ユーザー辞書に単語が見つかりませんでし�
 result_messages.23 = "OpenJTalkのユーザー辞書の設定に失敗しました"
 result_messages.24 = "ユーザー辞書の単語のバリデーションに失敗しました"
 result_messages.25 = "UUIDの変換に失敗しました"
-stderr = ""
+result_messages.28 = "モデルの形式が不正です"
+result_messages.29 = "推論ライブラリのロードまたは初期化ができませんでした"
+stderr = '''
+{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+'''
 
 [simple_tts]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
 stderr.windows = '''
+{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
-stderr.unix = ""
+stderr.unix = '''
+{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+'''
 
 [synthesizer_new_output_json]
 metas = '''
@@ -145,22 +183,37 @@ metas = '''
   }
 ]'''
 stderr.windows = '''
+{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
-stderr.unix = ""
+stderr.unix = '''
+{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+'''
 
 [tts_via_audio_query]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
 stderr.windows = '''
+{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
-stderr.unix = ""
+stderr.unix = '''
+{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+'''
 
-[user_dict]
+[user_dict_load]
 stderr.windows = '''
+{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
 '''
-stderr.unix = ""
+stderr.unix = '''
+{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+'''
 
 [user_dict_manipulate]
 stderr = ""

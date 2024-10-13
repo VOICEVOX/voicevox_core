@@ -1,36 +1,127 @@
 use std::{
     env,
-    path::{Path, PathBuf},
+    io::{self, Cursor, Write as _},
+    path::Path,
 };
 
-use anyhow::ensure;
-use async_std::io::ReadExt as _;
-use camino::Utf8PathBuf;
+use anyhow::{anyhow, ensure};
+use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata::MetadataCommand;
 use flate2::read::GzDecoder;
+use indoc::formatdoc;
 use tar::Archive;
+use zip::{write::FileOptions, ZipWriter};
 
 #[path = "src/typing.rs"]
 mod typing;
 
 const DIC_DIR_NAME: &str = "open_jtalk_dic_utf_8-1.11";
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let mut dist = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
-    dist.push("data");
+    let out_dir = &Utf8PathBuf::from(env::var("OUT_DIR").unwrap());
+    let dist = &Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("data");
 
     let dic_dir = dist.join(DIC_DIR_NAME);
     if !dic_dir.try_exists()? {
-        download_open_jtalk_dict(&dist).await?;
-        ensure!(dic_dir.exists(), "`{}` does not exist", dic_dir.display());
+        download_open_jtalk_dict(dist.as_ref()).await?;
+        ensure!(dic_dir.exists(), "`{dic_dir}` does not exist");
     }
 
-    generate_example_data_json(&dist)?;
+    copy_onnxruntime(out_dir.as_ref(), dist)?;
+
+    create_sample_voice_model_file(out_dir, dist)?;
+
+    generate_example_data_json(dist.as_ref())?;
 
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/typing.rs");
 
-    generate_c_api_rs_bindings()
+    generate_c_api_rs_bindings(out_dir)
+}
+
+fn create_sample_voice_model_file(out_dir: &Utf8Path, dist: &Utf8Path) -> anyhow::Result<()> {
+    const SRC: &str = "../../model/sample.vvm";
+
+    let files = fs_err::read_dir(SRC)?
+        .map(|entry| {
+            let entry = entry?;
+            let md = entry.metadata()?;
+            ensure!(!md.is_dir(), "directory in {SRC}");
+            let mtime = md.modified()?;
+            let name = entry
+                .file_name()
+                .into_string()
+                .map_err(|name| anyhow!("{name:?}"))?;
+            Ok((name, entry.path(), mtime))
+        })
+        .collect::<anyhow::Result<Vec<_>>>()?;
+
+    let output_dir = &dist.join("model");
+    let output_file = &output_dir.join("sample.vvm");
+
+    let up_to_date = fs_err::metadata(output_file)
+        .and_then(|md| md.modified())
+        .map(|t1| files.iter().all(|&(_, _, t2)| t1 >= t2));
+    let up_to_date = match up_to_date {
+        Ok(p) => p,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => false,
+        Err(e) => return Err(e.into()),
+    };
+
+    if !up_to_date {
+        let mut zip = ZipWriter::new(Cursor::new(vec![]));
+        for (name, path, _) in files {
+            let content = &fs_err::read(path)?;
+            zip.start_file(name, FileOptions::default().compression_level(Some(0)))?;
+            zip.write_all(content)?;
+        }
+        let zip = zip.finish()?;
+        fs_err::create_dir_all(output_dir)?;
+        fs_err::write(output_file, zip.get_ref())?;
+    }
+
+    fs_err::write(
+        out_dir.join("sample_voice_model_file.rs"),
+        formatdoc! {"
+            pub const SAMPLE_VOICE_MODEL_FILE_PATH: &::std::primitive::str = {output_file:?};
+
+            const SAMPLE_VOICE_MODEL_FILE_C_PATH: &::std::ffi::CStr = c{output_file:?};
+            const VV_MODELS_ROOT_DIR: &::std::primitive::str = {output_dir:?};
+            ",
+        },
+    )?;
+    println!("cargo:rerun-if-changed={SRC}");
+    Ok(())
+}
+
+fn copy_onnxruntime(out_dir: &Path, dist: &Utf8Path) -> anyhow::Result<()> {
+    use std::env::consts::{DLL_PREFIX, DLL_SUFFIX};
+
+    let cargo_metadata::Metadata {
+        target_directory, ..
+    } = MetadataCommand::new()
+        .manifest_path(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"))
+        .exec()?;
+
+    const VERSION: &str = ort::downloaded_version!();
+    let filename = &if cfg!(target_os = "linux") {
+        format!("libonnxruntime.so.{VERSION}")
+    } else if cfg!(any(target_os = "macos", target_os = "ios")) {
+        format!("libonnxruntime.{VERSION}.dylib")
+    } else {
+        format!("{DLL_PREFIX}onnxruntime{DLL_SUFFIX}")
+    };
+    let src = &target_directory.join("debug").join(filename);
+    let dst_dir = &dist.join("lib");
+    let dst = &dst_dir.join(filename);
+    fs_err::create_dir_all(dst_dir)?;
+    fs_err::copy(src, dst)?;
+    println!("cargo:rerun-if-changed={src}");
+
+    fs_err::write(out_dir.join("onnxruntime-dylib-path.txt"), dst.as_str())?;
+
+    Ok(())
 }
 
 /// OpenJTalkの辞書をダウンロードして展開する。
@@ -39,13 +130,11 @@ async fn download_open_jtalk_dict(dist: &Path) -> anyhow::Result<()> {
         "https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/{DIC_DIR_NAME}.tar.gz"
     );
 
-    let req = surf::get(download_url);
-    let client = surf::client().with(surf::middleware::Redirect::default());
-    let mut res = client.send(req).await.map_err(surf::Error::into_inner)?;
+    let res = reqwest::get(&download_url).await?;
     ensure!(res.status() == 200, "{}", res.status());
-    let mut body_bytes = Vec::with_capacity(100 * 1024 * 1024);
-    res.read_to_end(&mut body_bytes).await?;
-    let dict_tar = GzDecoder::new(&body_bytes[..]);
+
+    let bytes = res.bytes().await?;
+    let dict_tar = GzDecoder::new(&*bytes);
 
     let mut dict_archive = Archive::new(dict_tar);
     dict_archive.unpack(dist)?;
@@ -123,14 +212,15 @@ fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn generate_c_api_rs_bindings() -> anyhow::Result<()> {
+fn generate_c_api_rs_bindings(out_dir: &Utf8Path) -> anyhow::Result<()> {
     static C_BINDINGS_PATH: &str = "../voicevox_core_c_api/include/voicevox_core.h";
     static ADDITIONAL_C_BINDINGS_PATH: &str = "./compatible_engine.h";
 
-    let out_dir = Utf8PathBuf::from(env::var("OUT_DIR").unwrap());
     bindgen::Builder::default()
         .header(C_BINDINGS_PATH)
         .header(ADDITIONAL_C_BINDINGS_PATH)
+        // we test for `--feature load-onnxruntime`
+        .clang_arg("-DVOICEVOX_LOAD_ONNXRUNTIME=")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .dynamic_library_name("CApi")
         .generate()?

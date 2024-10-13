@@ -4,13 +4,23 @@ from pathlib import Path
 from typing import List, TypedDict
 
 import pytest
+import voicevox_core
 
 root_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
+onnxruntime_filename = str(
+    root_dir.parent.parent.parent
+    / "test_util"
+    / "data"
+    / "lib"
+    / voicevox_core.blocking.Onnxruntime.LIB_VERSIONED_FILENAME
+)
 open_jtalk_dic_dir = (
     root_dir.parent.parent.parent / "test_util" / "data" / "open_jtalk_dic_utf_8-1.11"
 )
-model_dir = root_dir.parent.parent.parent.parent / "model" / "sample.vvm"
+model_dir = (
+    root_dir.parent.parent.parent / "test_util" / "data" / "model" / "sample.vvm"
+)
 
 
 class DurationExampleData(TypedDict):

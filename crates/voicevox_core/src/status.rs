@@ -9,25 +9,30 @@ use itertools::iproduct;
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
-        domains::{InferenceDomainMap, TalkDomain, TalkOperation},
+        domains::{inference_domain_map_values, InferenceDomainMap, TalkDomain},
         session_set::{InferenceSessionCell, InferenceSessionSet},
         InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
         InferenceSignature,
     },
-    manifest::{ModelInnerId, StyleIdToModelInnerId},
+    manifest::{InnerVoiceId, StyleIdToInnerVoiceId},
     metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
-    voice_model::{ModelBytesWithInnerIdsByDomain, VoiceModelHeader, VoiceModelId},
+    voice_model::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId},
     Result,
 };
 
 pub(crate) struct Status<R: InferenceRuntime> {
+    pub(crate) rt: &'static R,
     loaded_models: std::sync::Mutex<LoadedModels<R>>,
     session_options: InferenceDomainMap<SessionOptionsByDomain>,
 }
 
 impl<R: InferenceRuntime> Status<R> {
-    pub(crate) fn new(session_options: InferenceDomainMap<SessionOptionsByDomain>) -> Self {
+    pub(crate) fn new(
+        rt: &'static R,
+        session_options: InferenceDomainMap<SessionOptionsByDomain>,
+    ) -> Self {
         Self {
+            rt,
             loaded_models: Default::default(),
             session_options,
         }
@@ -36,7 +41,7 @@ impl<R: InferenceRuntime> Status<R> {
     pub(crate) fn insert_model(
         &self,
         model_header: &VoiceModelHeader,
-        model_contents: &InferenceDomainMap<ModelBytesWithInnerIdsByDomain>,
+        model_contents: &InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>,
     ) -> Result<()> {
         self.loaded_models
             .lock()
@@ -44,7 +49,7 @@ impl<R: InferenceRuntime> Status<R> {
             .ensure_acceptable(model_header)?;
 
         let session_sets_with_inner_ids = model_contents
-            .create_session_sets(&self.session_options)
+            .create_session_sets(self.rt, &self.session_options)
             .map_err(|source| LoadModelError {
                 path: model_header.path.clone(),
                 context: LoadModelErrorKind::InvalidModelData,
@@ -58,7 +63,7 @@ impl<R: InferenceRuntime> Status<R> {
         Ok(())
     }
 
-    pub(crate) fn unload_model(&self, voice_model_id: &VoiceModelId) -> Result<()> {
+    pub(crate) fn unload_model(&self, voice_model_id: VoiceModelId) -> Result<()> {
         self.loaded_models.lock().unwrap().remove(voice_model_id)
     }
 
@@ -66,18 +71,18 @@ impl<R: InferenceRuntime> Status<R> {
         self.loaded_models.lock().unwrap().metas()
     }
 
-    /// あるスタイルに対応する`VoiceModelId`と`ModelInnerId`の組を返す。
+    /// あるスタイルに対応する`VoiceModelId`と`InnerVoiceId`の組を返す。
     ///
-    /// `StyleId` → `ModelInnerId`のマッピングが存在しない場合は、`ModelInnerId`としては
+    /// `StyleId` → `InnerVoiceId`のマッピングが存在しない場合は、`InnerVoiceId`としては
     /// `style_id`と同じ値を返す。
     pub(crate) fn ids_for<D: InferenceDomainExt>(
         &self,
         style_id: StyleId,
-    ) -> Result<(VoiceModelId, ModelInnerId)> {
+    ) -> Result<(VoiceModelId, InnerVoiceId)> {
         self.loaded_models.lock().unwrap().ids_for::<D>(style_id)
     }
 
-    pub(crate) fn is_loaded_model(&self, voice_model_id: &VoiceModelId) -> bool {
+    pub(crate) fn is_loaded_model(&self, voice_model_id: VoiceModelId) -> bool {
         self.loaded_models
             .lock()
             .unwrap()
@@ -101,7 +106,7 @@ impl<R: InferenceRuntime> Status<R> {
     /// `self`が`model_id`を含んでいないとき、パニックする。
     pub(crate) fn run_session<I>(
         &self,
-        model_id: &VoiceModelId,
+        model_id: VoiceModelId,
         input: I,
     ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
@@ -122,7 +127,7 @@ struct LoadedModels<R: InferenceRuntime>(IndexMap<VoiceModelId, LoadedModel<R>>)
 
 struct LoadedModel<R: InferenceRuntime> {
     metas: VoiceModelMeta,
-    session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
+    session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>,
 }
 
 impl<R: InferenceRuntime> LoadedModels<R> {
@@ -133,7 +138,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     fn ids_for<D: InferenceDomainExt>(
         &self,
         style_id: StyleId,
-    ) -> Result<(VoiceModelId, ModelInnerId)> {
+    ) -> Result<(VoiceModelId, InnerVoiceId)> {
         let (
             model_id,
             LoadedModel {
@@ -144,22 +149,23 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             .0
             .iter()
             .find(|(_, LoadedModel { metas, .. })| {
-                metas.iter().flat_map(SpeakerMeta::styles).any(|style| {
-                    *style.id() == style_id && D::style_types().contains(style.r#type())
-                })
+                metas
+                    .iter()
+                    .flat_map(|SpeakerMeta { styles, .. }| styles)
+                    .any(|style| style.id == style_id && D::style_types().contains(&style.r#type))
             })
             .ok_or(ErrorRepr::StyleNotFound {
                 style_id,
                 style_types: D::style_types(),
             })?;
 
-        let model_inner_id = session_sets_with_inner_ids
+        let inner_voice_id = session_sets_with_inner_ids
             .get::<D>()
             .as_ref()
-            .and_then(|(model_inner_ids, _)| model_inner_ids.get(&style_id).copied())
-            .unwrap_or_else(|| ModelInnerId::new(style_id.raw_id()));
+            .and_then(|(inner_voice_ids, _)| inner_voice_ids.get(&style_id).copied())
+            .unwrap_or_else(|| InnerVoiceId::new(style_id.raw_id()));
 
-        Ok((model_id.clone(), model_inner_id))
+        Ok((*model_id, inner_voice_id))
     }
 
     /// # Panics
@@ -168,12 +174,12 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     ///
     /// - `self`が`model_id`を含んでいないとき
     /// - 対応する`InferenceDomain`が欠けているとき
-    fn get<I>(&self, model_id: &VoiceModelId) -> InferenceSessionCell<R, I>
+    fn get<I>(&self, model_id: VoiceModelId) -> InferenceSessionCell<R, I>
     where
         I: InferenceInputSignature,
         <I::Signature as InferenceSignature>::Domain: InferenceDomainExt,
     {
-        let (_, session_set) = self.0[model_id]
+        let (_, session_set) = self.0[&model_id]
             .session_sets_with_inner_ids
             .get::<<I::Signature as InferenceSignature>::Domain>()
             .as_ref()
@@ -190,12 +196,12 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         session_set.get()
     }
 
-    fn contains_voice_model(&self, model_id: &VoiceModelId) -> bool {
-        self.0.contains_key(model_id)
+    fn contains_voice_model(&self, model_id: VoiceModelId) -> bool {
+        self.0.contains_key(&model_id)
     }
 
     fn contains_style(&self, style_id: StyleId) -> bool {
-        self.styles().any(|style| *style.id() == style_id)
+        self.styles().any(|style| style.id == style_id)
     }
 
     /// 音声モデルを受け入れ可能かをチェックする。
@@ -216,9 +222,9 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             source: None,
         };
 
-        if self.0.contains_key(&model_header.id) {
+        if self.0.contains_key(&model_header.manifest.id) {
             return Err(error(LoadModelErrorKind::ModelAlreadyLoaded {
-                id: model_header.id.clone(),
+                id: model_header.manifest.id,
             }));
         }
 
@@ -227,22 +233,21 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         let loaded = self.speakers();
         let external = model_header.metas.iter();
         for (loaded, external) in iproduct!(loaded, external) {
-            if loaded.speaker_uuid() == external.speaker_uuid() {
+            if loaded.speaker_uuid == external.speaker_uuid {
                 loaded.warn_diff_except_styles(external);
             }
         }
 
-        let loaded = self.styles();
+        let loaded = self.styles().map(|&StyleMeta { id, .. }| id);
         let external = model_header
             .metas
             .iter()
-            .flat_map(|speaker| speaker.styles());
-        if let Some((style, _)) =
-            iproduct!(loaded, external).find(|(loaded, external)| loaded.id() == external.id())
+            .flat_map(|speaker| &speaker.styles)
+            .map(|&StyleMeta { id, .. }| id);
+        if let Some((id, _)) =
+            iproduct!(loaded, external).find(|(loaded, external)| loaded == external)
         {
-            return Err(error(LoadModelErrorKind::StyleAlreadyLoaded {
-                id: *style.id(),
-            }));
+            return Err(error(LoadModelErrorKind::StyleAlreadyLoaded { id }));
         }
         Ok(())
     }
@@ -250,12 +255,12 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     fn insert(
         &mut self,
         model_header: &VoiceModelHeader,
-        session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
+        session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>,
     ) -> Result<()> {
         self.ensure_acceptable(model_header)?;
 
         let prev = self.0.insert(
-            model_header.id.clone(),
+            model_header.manifest.id,
             LoadedModel {
                 metas: model_header.metas.clone(),
                 session_sets_with_inner_ids,
@@ -265,12 +270,9 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         Ok(())
     }
 
-    fn remove(&mut self, model_id: &VoiceModelId) -> Result<()> {
-        if self.0.remove(model_id).is_none() {
-            return Err(ErrorRepr::ModelNotFound {
-                model_id: model_id.clone(),
-            }
-            .into());
+    fn remove(&mut self, model_id: VoiceModelId) -> Result<()> {
+        if self.0.shift_remove(&model_id).is_none() {
+            return Err(ErrorRepr::ModelNotFound { model_id }.into());
         }
         Ok(())
     }
@@ -280,14 +282,15 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     }
 
     fn styles(&self) -> impl Iterator<Item = &StyleMeta> {
-        self.speakers().flat_map(|speaker| speaker.styles())
+        self.speakers()
+            .flat_map(|SpeakerMeta { styles, .. }| styles)
     }
 }
 
 pub(crate) trait InferenceDomainExt: InferenceDomain {
     fn visit<R: InferenceRuntime>(
-        map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
-    ) -> Option<&(StyleIdToModelInnerId, InferenceSessionSet<R, Self>)>;
+        map: &InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>,
+    ) -> Option<&(StyleIdToInnerVoiceId, InferenceSessionSet<R, Self>)>;
 }
 
 #[duplicate_item(
@@ -296,25 +299,26 @@ pub(crate) trait InferenceDomainExt: InferenceDomain {
 )]
 impl InferenceDomainExt for T {
     fn visit<R: InferenceRuntime>(
-        map: &InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>,
-    ) -> Option<&(StyleIdToModelInnerId, InferenceSessionSet<R, Self>)> {
+        map: &InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>,
+    ) -> Option<&(StyleIdToInnerVoiceId, InferenceSessionSet<R, Self>)> {
         map.field.as_ref()
     }
 }
 
-impl<R: InferenceRuntime> InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>> {
+impl<R: InferenceRuntime> InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>> {
     fn get<D: InferenceDomainExt>(
         &self,
-    ) -> Option<&(StyleIdToModelInnerId, InferenceSessionSet<R, D>)> {
+    ) -> Option<&(StyleIdToInnerVoiceId, InferenceSessionSet<R, D>)> {
         D::visit(self)
     }
 }
 
-impl InferenceDomainMap<ModelBytesWithInnerIdsByDomain> {
+impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
     fn create_session_sets<R: InferenceRuntime>(
         &self,
+        rt: &R,
         session_options: &InferenceDomainMap<SessionOptionsByDomain>,
-    ) -> anyhow::Result<InferenceDomainMap<SessionSetsWithInnerIdsByDomain<R>>> {
+    ) -> anyhow::Result<InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>> {
         duplicate! {
             [
                 field;
@@ -323,9 +327,9 @@ impl InferenceDomainMap<ModelBytesWithInnerIdsByDomain> {
             let field = self
                 .field
                 .as_ref()
-                .map(|(model_inner_ids, model_bytes)| {
-                    let session_set = InferenceSessionSet::new(model_bytes, &session_options.field)?;
-                    Ok::<_, anyhow::Error>((model_inner_ids.clone(), session_set))
+                .map(|(inner_voice_ids, model_bytes)| {
+                    let session_set = InferenceSessionSet::new(rt, model_bytes, &session_options.field)?;
+                    Ok::<_, anyhow::Error>((inner_voice_ids.clone(), session_set))
                 })
                 .transpose()?;
         }
@@ -334,10 +338,11 @@ impl InferenceDomainMap<ModelBytesWithInnerIdsByDomain> {
     }
 }
 
-type SessionOptionsByDomain = (EnumMap<TalkOperation, InferenceSessionOptions>,);
+type SessionOptionsByDomain =
+    inference_domain_map_values!(for<D> EnumMap<D::Operation, InferenceSessionOptions>);
 
-type SessionSetsWithInnerIdsByDomain<R> =
-    (Option<(StyleIdToModelInnerId, InferenceSessionSet<R, TalkDomain>)>,);
+type SessionSetsWithInnerVoiceIdsByDomain<R> =
+    inference_domain_map_values!(for<D> Option<(StyleIdToInnerVoiceId, InferenceSessionSet<R, D>)>);
 
 #[cfg(test)]
 mod tests {
@@ -346,36 +351,39 @@ mod tests {
     use rstest::rstest;
 
     use crate::{
+        devices::{DeviceSpec, GpuSpec},
         infer::{
             domains::{InferenceDomainMap, TalkOperation},
             InferenceSessionOptions,
         },
         macros::tests::assert_debug_fmt_eq,
-        synthesizer::InferenceRuntimeImpl,
-        test_util::open_default_vvm_file,
     };
 
     use super::Status;
 
     #[rstest]
-    #[case(true, 0)]
-    #[case(true, 1)]
-    #[case(true, 8)]
-    #[case(false, 2)]
-    #[case(false, 4)]
-    #[case(false, 8)]
-    #[case(false, 0)]
-    fn status_new_works(#[case] use_gpu: bool, #[case] cpu_num_threads: u16) {
-        let light_session_options = InferenceSessionOptions::new(cpu_num_threads, false);
-        let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, use_gpu);
+    #[case(DeviceSpec::Gpu(GpuSpec::Cuda), 0)]
+    #[case(DeviceSpec::Gpu(GpuSpec::Cuda), 1)]
+    #[case(DeviceSpec::Gpu(GpuSpec::Cuda), 8)]
+    #[case(DeviceSpec::Cpu, 2)]
+    #[case(DeviceSpec::Cpu, 4)]
+    #[case(DeviceSpec::Cpu, 8)]
+    #[case(DeviceSpec::Cpu, 0)]
+    fn status_new_works(#[case] device_for_heavy: DeviceSpec, #[case] cpu_num_threads: u16) {
+        let light_session_options = InferenceSessionOptions::new(cpu_num_threads, DeviceSpec::Cpu);
+        let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, device_for_heavy);
         let session_options = InferenceDomainMap {
             talk: enum_map! {
                 TalkOperation::PredictDuration
-                | TalkOperation::PredictIntonation => light_session_options,
-                TalkOperation::Decode => heavy_session_options,
+                | TalkOperation::PredictIntonation
+                | TalkOperation::GenerateFullIntermediate => light_session_options,
+                TalkOperation::RenderAudioSegment => heavy_session_options,
             },
         };
-        let status = Status::<InferenceRuntimeImpl>::new(session_options);
+        let status = Status::new(
+            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
+            session_options,
+        );
 
         assert_eq!(
             light_session_options,
@@ -386,8 +394,12 @@ mod tests {
             status.session_options.talk[TalkOperation::PredictIntonation],
         );
         assert_eq!(
+            light_session_options,
+            status.session_options.talk[TalkOperation::GenerateFullIntermediate],
+        );
+        assert_eq!(
             heavy_session_options,
-            status.session_options.talk[TalkOperation::Decode],
+            status.session_options.talk[TalkOperation::RenderAudioSegment],
         );
 
         assert!(status.loaded_models.lock().unwrap().0.is_empty());
@@ -396,10 +408,13 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_load_model_works() {
-        let status = Status::<InferenceRuntimeImpl>::new(InferenceDomainMap {
-            talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
-        });
-        let model = &open_default_vvm_file().await;
+        let status = Status::new(
+            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
+            InferenceDomainMap {
+                talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
+            },
+        );
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         let model_contents = &model.read_inference_models().await.unwrap();
         let result = status.insert_model(model.header(), model_contents);
         assert_debug_fmt_eq!(Ok(()), result);
@@ -409,20 +424,23 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn status_is_model_loaded_works() {
-        let status = Status::<InferenceRuntimeImpl>::new(InferenceDomainMap {
-            talk: enum_map!(_ => InferenceSessionOptions::new(0, false)),
-        });
-        let vvm = open_default_vvm_file().await;
+        let status = Status::new(
+            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
+            InferenceDomainMap {
+                talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
+            },
+        );
+        let vvm = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         let model_header = vvm.header();
         let model_contents = &vvm.read_inference_models().await.unwrap();
         assert!(
-            !status.is_loaded_model(&model_header.id),
+            !status.is_loaded_model(model_header.manifest.id),
             "model should  not be loaded"
         );
         let result = status.insert_model(model_header, model_contents);
         assert_debug_fmt_eq!(Ok(()), result);
         assert!(
-            status.is_loaded_model(&model_header.id),
+            status.is_loaded_model(model_header.manifest.id),
             "model should be loaded",
         );
     }

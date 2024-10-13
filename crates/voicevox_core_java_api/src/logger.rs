@@ -10,10 +10,11 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_Dll_00024LoggerInitializer_ini
             android_logger::Config::default()
                 .with_tag("VoicevoxCore")
                 .with_filter(
-                android_logger::FilterBuilder::new()
-                    .parse("error,voicevox_core=info,voicevox_core_java_api=info,onnxruntime=error")
-                    .build(),
-            ),
+                    android_logger::FilterBuilder::new()
+                        // FIXME: ortも`warn`は出すべき
+                        .parse("error,voicevox_core=info,voicevox_core_java_api=info,ort=error")
+                        .build(),
+                ),
         );
     } else {
         // TODO: Android以外でのログ出力を良い感じにする。（System.Loggerを使う？）
@@ -24,17 +25,17 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_Dll_00024LoggerInitializer_ini
         };
         use tracing_subscriber::{fmt::format::Writer, EnvFilter};
 
-        // FIXME: `try_init` → `init` （subscriberは他に存在しないはずなので）
-        let _ = tracing_subscriber::fmt()
+        tracing_subscriber::fmt()
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
             } else {
-                "error,voicevox_core=info,voicevox_core_c_api=info,onnxruntime=error".into()
+                // FIXME: `c_api`じゃないし、ortも`warn`は出すべき
+                "error,voicevox_core=info,voicevox_core_c_api=info,ort=error".into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(out().is_terminal() && env_allows_ansi())
             .with_writer(out)
-            .try_init();
+            .init();
 
         fn local_time(wtr: &mut Writer<'_>) -> fmt::Result {
             // ローカル時刻で表示はするが、そのフォーマットはtracing-subscriber本来のものに近いようにする。

@@ -1,3 +1,16 @@
+// TODO: `VoiceModelFile`のように、次のような設計にする。
+//
+// ```
+// pub(crate) mod blocking {
+//     pub struct OpenJtalk(Inner<SingleTasked>);
+//     // …
+// }
+// pub(crate) mod nonblocking {
+//     pub struct OpenJtalk(Inner<BlockingThreadPool>);
+//     // …
+// }
+// ```
+
 use ::open_jtalk::Text2MecabError;
 
 #[derive(thiserror::Error, Debug)]
@@ -35,26 +48,23 @@ pub(crate) mod blocking {
         pub fn new(open_jtalk_dict_dir: impl AsRef<Utf8Path>) -> crate::result::Result<Self> {
             let dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
 
-            // FIXME: この`{}`はGitのdiffを抑えるためだけに存在
-            {
-                let mut resources = Resources {
-                    mecab: ManagedResource::initialize(),
-                    njd: ManagedResource::initialize(),
-                    jpcommon: ManagedResource::initialize(),
-                };
+            let mut resources = Resources {
+                mecab: ManagedResource::initialize(),
+                njd: ManagedResource::initialize(),
+                jpcommon: ManagedResource::initialize(),
+            };
 
-                // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
-                resources
-                    .mecab
-                    .load(&*dict_dir)
-                    .inspect_err(|e| tracing::error!("{e:?}"))
-                    .map_err(|_| ErrorRepr::NotLoadedOpenjtalkDict)?;
+            // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
+            resources
+                .mecab
+                .load(&*dict_dir)
+                .inspect_err(|e| tracing::error!("{e:?}"))
+                .map_err(|_| ErrorRepr::NotLoadedOpenjtalkDict)?;
 
-                Ok(Self(Arc::new(Inner {
-                    resources: Mutex::new(resources),
-                    dict_dir,
-                })))
-            }
+            Ok(Self(Arc::new(Inner {
+                resources: Mutex::new(resources),
+                dict_dir,
+            })))
         }
 
         /// ユーザー辞書を設定する。
@@ -183,12 +193,19 @@ pub(crate) mod blocking {
     }
 }
 
-pub(crate) mod tokio {
+pub(crate) mod nonblocking {
     use camino::Utf8Path;
 
     use super::FullcontextExtractor;
 
     /// テキスト解析器としてのOpen JTalk。
+    ///
+    /// # Performance
+    ///
+    /// [blocking]クレートにより動いている。詳しくは[`nonblocking`モジュールのドキュメント]を参照。
+    ///
+    /// [blocking]: https://docs.rs/crate/blocking
+    /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
     #[derive(Clone)]
     pub struct OpenJtalk(super::blocking::OpenJtalk);
 
@@ -206,7 +223,7 @@ pub(crate) mod tokio {
         /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
         pub async fn use_user_dict(
             &self,
-            user_dict: &crate::tokio::UserDict,
+            user_dict: &crate::nonblocking::UserDict,
         ) -> crate::result::Result<()> {
             let inner = self.0 .0.clone();
             let words = user_dict.to_mecab_format();
@@ -325,7 +342,7 @@ mod tests {
         #[case] text: &str,
         #[case] expected: anyhow::Result<Vec<String>>,
     ) {
-        let open_jtalk = super::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+        let open_jtalk = super::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
             .await
             .unwrap();
         let result = open_jtalk.extract_fullcontext(text);
@@ -339,7 +356,7 @@ mod tests {
         #[case] text: &str,
         #[case] expected: anyhow::Result<Vec<String>>,
     ) {
-        let open_jtalk = super::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+        let open_jtalk = super::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
             .await
             .unwrap();
         for _ in 0..10 {

@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
 use crate::{
-    engine::{self, open_jtalk::FullcontextExtractor, MoraModel},
-    AccentPhraseModel,
+    engine::{self, open_jtalk::FullcontextExtractor},
+    AccentPhrase,
 };
-use jlabel::{Label, Mora};
+use jlabel::Label;
 use smallvec::SmallVec;
 
 // FIXME: 入力テキストをここで持って、メッセージに含む
@@ -33,7 +33,7 @@ type Result<T> = std::result::Result<T, FullContextLabelError>;
 pub(crate) fn extract_full_context_label(
     open_jtalk: &impl FullcontextExtractor,
     text: impl AsRef<str>,
-) -> Result<Vec<AccentPhraseModel>> {
+) -> Result<Vec<AccentPhrase>> {
     let labels = open_jtalk
         .extract_fullcontext(text.as_ref())
         .map_err(|source| FullContextLabelError {
@@ -58,7 +58,7 @@ pub(crate) fn extract_full_context_label(
 
 fn generate_accent_phrases(
     utterance: &[Label],
-) -> std::result::Result<Vec<AccentPhraseModel>, ErrorKind> {
+) -> std::result::Result<Vec<AccentPhrase>, ErrorKind> {
     let mut accent_phrases = Vec::with_capacity(
         utterance
             .first()
@@ -88,14 +88,14 @@ fn generate_accent_phrases(
         let pause_mora = if ap_curr.accent_phrase_position_backward == 1
             && bg_curr.breath_group_position_backward != 1
         {
-            Some(MoraModel::new(
-                "、".into(),
-                None,
-                None,
-                "pau".into(),
-                0.,
-                0.,
-            ))
+            Some(crate::Mora {
+                text: "、".into(),
+                consonant: None,
+                consonant_length: None,
+                vowel: "pau".into(),
+                vowel_length: 0.,
+                pitch: 0.,
+            })
         } else {
             None
         };
@@ -103,17 +103,17 @@ fn generate_accent_phrases(
         // workaround for VOICEVOX/voicevox_engine#55
         let accent = usize::from(ap_curr.accent_position).min(moras.len());
 
-        accent_phrases.push(AccentPhraseModel::new(
+        accent_phrases.push(AccentPhrase {
             moras,
             accent,
             pause_mora,
-            ap_curr.is_interrogative,
-        ))
+            is_interrogative: ap_curr.is_interrogative,
+        })
     }
     Ok(accent_phrases)
 }
 
-fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<MoraModel>, ErrorKind> {
+fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<crate::Mora>, ErrorKind> {
     let mut moras = Vec::with_capacity(accent_phrase.len());
 
     let split = accent_phrase.chunk_by(|a, b| a.mora == b.mora);
@@ -136,7 +136,7 @@ fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<MoraModel>
             // position_forwardとposition_backwardが飽和している場合は無視する
             [Label {
                 mora:
-                    Some(Mora {
+                    Some(jlabel::Mora {
                         position_forward: 49,
                         position_backward: 49,
                         ..
@@ -151,17 +151,17 @@ fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<MoraModel>
     Ok(moras)
 }
 
-fn generate_mora(consonant: Option<&Label>, vowel: &Label) -> MoraModel {
+fn generate_mora(consonant: Option<&Label>, vowel: &Label) -> crate::Mora {
     let consonant_phoneme = consonant.and_then(|c| c.phoneme.c.to_owned());
-    let vowel_phoneme = vowel.phoneme.c.as_deref().unwrap();
-    MoraModel::new(
-        mora_to_text(consonant_phoneme.as_deref(), vowel_phoneme),
-        consonant_phoneme,
-        consonant.and(Some(0.0)),
-        vowel_phoneme.to_string(),
-        0.0,
-        0.0,
-    )
+    let vowel = vowel.phoneme.c.clone().unwrap();
+    crate::Mora {
+        text: mora_to_text(consonant_phoneme.as_deref(), &vowel),
+        consonant: consonant_phoneme,
+        consonant_length: consonant.and(Some(0.0)),
+        vowel,
+        vowel_length: 0.0,
+        pitch: 0.0,
+    }
 }
 
 pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
@@ -190,21 +190,21 @@ mod tests {
         engine::{
             full_context_label::{extract_full_context_label, generate_accent_phrases},
             open_jtalk::FullcontextExtractor,
-            MoraModel,
+            Mora,
         },
-        AccentPhraseModel,
+        AccentPhrase,
     };
     use jlabel::Label;
 
-    fn mora(text: &str, consonant: Option<&str>, vowel: &str) -> MoraModel {
-        MoraModel::new(
-            text.into(),
-            consonant.map(|c| c.into()),
-            consonant.and(Some(0.0)),
-            vowel.into(),
-            0.0,
-            0.0,
-        )
+    fn mora(text: &str, consonant: Option<&str>, vowel: &str) -> Mora {
+        Mora {
+            text: text.into(),
+            consonant: consonant.map(|c| c.into()),
+            consonant_length: consonant.and(Some(0.0)),
+            vowel: vowel.into(),
+            vowel_length: 0.0,
+            pitch: 0.0,
+        }
     }
 
     #[template]
@@ -218,12 +218,12 @@ mod tests {
             "y^e-sil+xx=xx/A:xx+xx+xx/B:xx-xx_xx/C:xx_xx+xx/D:xx+xx_xx/E:1_1!0_xx-xx/F:xx_xx#xx_xx@xx_xx|xx_xx/G:xx_xx%xx_xx_xx/H:1_1/I:xx-xx@xx+xx&xx-xx|xx+xx/J:xx_xx/K:1+1-1",
         ],
         &[
-            AccentPhraseModel::new(
-                vec![mora("イェ", Some("y"), "e")],
-                1,
-                None,
-                false,
-            )
+            AccentPhrase {
+                moras: vec![mora("イェ", Some("y"), "e")],
+                accent: 1,
+                pause_mora: None,
+                is_interrogative: false,
+            }
         ]
     )]
     #[case(
@@ -236,16 +236,16 @@ mod tests {
             "N^cl-sil+xx=xx/A:xx+xx+xx/B:09-xx_xx/C:xx_xx+xx/D:xx+xx_xx/E:3_3!0_xx-xx/F:xx_xx#xx_xx@xx_xx|xx_xx/G:xx_xx%xx_xx_xx/H:1_3/I:xx-xx@xx+xx&xx-xx|xx+xx/J:xx_xx/K:1+1-3",
         ],
         &[
-            AccentPhraseModel::new(
-                vec![
+            AccentPhrase {
+                moras: vec![
                     mora("ン", None, "N"),
                     mora("ン", None, "N"),
                     mora("ッ", None, "cl"),
                 ],
-                3,
-                None,
-                false,
-            ),
+                accent: 3,
+                pause_mora: None,
+                is_interrogative: false,
+            },
         ]
     )]
     #[case(
@@ -271,28 +271,28 @@ mod tests {
             "s^U-sil+xx=xx/A:xx+xx+xx/B:10-7_2/C:xx_xx+xx/D:xx+xx_xx/E:5_1!0_xx-xx/F:xx_xx#xx_xx@xx_xx|xx_xx/G:xx_xx%xx_xx_xx/H:2_8/I:xx-xx@xx+xx&xx-xx|xx+xx/J:xx_xx/K:1+2-8",
         ],
         &[
-            AccentPhraseModel::new(
-                vec![
+            AccentPhrase {
+                moras: vec![
                     mora("コ", Some("k"), "o"),
                     mora("レ", Some("r"), "e"),
                     mora("ワ", Some("w"), "a"),
                 ],
-                3,
-                None,
-                false,
-            ),
-            AccentPhraseModel::new(
-                vec![
+                accent: 3,
+                pause_mora: None,
+                is_interrogative: false,
+            },
+            AccentPhrase {
+                moras: vec![
                     mora("テ", Some("t"), "e"),
                     mora("ス", Some("s"), "U"),
                     mora("ト", Some("t"), "o"),
                     mora("デ", Some("d"), "e"),
                     mora("ス", Some("s"), "U"),
                 ],
-                1,
-                None,
-                false,
-            ),
+                accent: 1,
+                pause_mora: None,
+                is_interrogative: false,
+            },
         ]
     )]
     #[case(
@@ -324,46 +324,46 @@ mod tests {
             "k^u-sil+xx=xx/A:xx+xx+xx/B:05-xx_xx/C:xx_xx+xx/D:xx+xx_xx/E:4_2!1_xx-xx/F:xx_xx#xx_xx@xx_xx|xx_xx/G:xx_xx%xx_xx_xx/H:1_4/I:xx-xx@xx+xx&xx-xx|xx+xx/J:xx_xx/K:4+4-12",
         ],
         &[
-            AccentPhraseModel::new(
-                vec![
+            AccentPhrase {
+                moras: vec![
                     mora("イ", None, "i"),
                     mora("チ", Some("ch"), "i"),
                 ],
-                2,
-                Some(mora("、", None, "pau")),
-                false,
-            ),
-            AccentPhraseModel::new(
-                vec![
+                accent: 2,
+                pause_mora: Some(mora("、", None, "pau")),
+                is_interrogative: false,
+            },
+            AccentPhrase {
+                moras: vec![
                     mora("セ", Some("s"), "e"),
                     mora("ン", None, "N"),
                 ],
-                1,
-                Some(mora("、", None, "pau")),
-                false,
-            ),
-            AccentPhraseModel::new(
-                vec![
+                accent: 1,
+                pause_mora: Some(mora("、", None, "pau")),
+                is_interrogative: false,
+            },
+            AccentPhrase {
+                moras: vec![
                     mora("ヒャ", Some("hy"), "a"),
                     mora("ク", Some("k"), "u"),
                     mora("マ", Some("m"), "a"),
                     mora("ン", None, "N"),
                 ],
-                3,
-                Some(mora("、", None, "pau")),
-                false,
-            ),
-            AccentPhraseModel::new(
-                vec![
+                accent: 3,
+                pause_mora: Some(mora("、", None, "pau")),
+                is_interrogative: false,
+            },
+            AccentPhrase {
+                moras: vec![
                     mora("イ", None, "i"),
                     mora("チ", Some("ch"), "i"),
                     mora("オ", None, "o"),
                     mora("ク", Some("k"), "u"),
                 ],
-                2,
-                None,
-                true,
-            ),
+                accent: 2,
+                pause_mora: None,
+                is_interrogative: true,
+            },
         ]
     )]
     #[case(
@@ -386,53 +386,53 @@ mod tests {
             "a^a-sil+xx=xx/A:xx+xx+xx/B:09-xx_xx/C:xx_xx+xx/D:xx+xx_xx/E:1_1!0_xx-xx/F:xx_xx#xx_xx@xx_xx|xx_xx/G:xx_xx%xx_xx_xx/H:2_3/I:xx-xx@xx+xx&xx-xx|xx+xx/J:xx_xx/K:2+3-8",
         ],
         &[
-            AccentPhraseModel::new(
-                vec![
+            AccentPhrase {
+                moras: vec![
                     mora("クヮ", Some("kw"), "a"),
                     mora("ル", Some("r"), "u"),
                     mora("テ", Some("t"), "e"),
                     mora("ッ", None, "cl"),
                     mora("ト", Some("t"), "o"),
                 ],
-                3,
-                Some(mora("、", None, "pau")),
-                false,
-            ),
-            AccentPhraseModel::new(
-                vec![
+                accent: 3,
+                pause_mora: Some(mora("、", None, "pau")),
+                is_interrogative: false,
+            },
+            AccentPhrase {
+                moras: vec![
                     mora("ア", None, "a"),
                     mora("ア", None, "a"),
                 ],
-                1,
-                None,
-                false,
-            ),
-            AccentPhraseModel::new(
-                vec![mora("ア", None, "a")],
-                1,
-                None,
-                false,
-            ),
+                accent: 1,
+                pause_mora: None,
+                is_interrogative: false,
+            },
+            AccentPhrase {
+                moras: vec![mora("ア", None, "a")],
+                accent: 1,
+                pause_mora: None,
+                is_interrogative: false,
+            },
         ]
     )]
     fn label_cases(
         #[case] text: &str,
         #[case] labels: &[&str],
-        #[case] accent_phrase: &[AccentPhraseModel],
+        #[case] accent_phrase: &[AccentPhrase],
     ) {
     }
 
     #[apply(label_cases)]
     #[tokio::test]
-    async fn open_jtalk(text: &str, labels: &[&str], _accent_phrase: &[AccentPhraseModel]) {
-        let open_jtalk = crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+    async fn open_jtalk(text: &str, labels: &[&str], _accent_phrase: &[AccentPhrase]) {
+        let open_jtalk = crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
             .await
             .unwrap();
         assert_eq!(&open_jtalk.extract_fullcontext(text).unwrap(), labels);
     }
 
     #[apply(label_cases)]
-    fn parse_labels(_text: &str, labels: &[&str], accent_phrase: &[AccentPhraseModel]) {
+    fn parse_labels(_text: &str, labels: &[&str], accent_phrase: &[AccentPhrase]) {
         let parsed_labels = labels
             .iter()
             .map(|s| Label::from_str(s).unwrap())
@@ -446,12 +446,8 @@ mod tests {
 
     #[apply(label_cases)]
     #[tokio::test]
-    async fn extract_fullcontext(
-        text: &str,
-        _labels: &[&str],
-        accent_phrase: &[AccentPhraseModel],
-    ) {
-        let open_jtalk = crate::tokio::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+    async fn extract_fullcontext(text: &str, _labels: &[&str], accent_phrase: &[AccentPhrase]) {
+        let open_jtalk = crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
             .await
             .unwrap();
         assert_eq!(

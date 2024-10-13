@@ -1,11 +1,10 @@
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, sync::LazyLock};
 
 use enum_map::Enum;
 use macros::{InferenceInputSignature, InferenceOperation, InferenceOutputSignature};
 use ndarray::{Array0, Array1, Array2};
-use once_cell::sync::Lazy;
 
-use crate::StyleType;
+use crate::{manifest::TalkManifest, StyleType};
 
 use super::super::{
     InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
@@ -15,9 +14,11 @@ pub(crate) enum TalkDomain {}
 
 impl InferenceDomain for TalkDomain {
     type Operation = TalkOperation;
+    type Manifest = TalkManifest;
 
     fn style_types() -> &'static BTreeSet<StyleType> {
-        static STYLE_TYPES: Lazy<BTreeSet<StyleType>> = Lazy::new(|| [StyleType::Talk].into());
+        static STYLE_TYPES: LazyLock<BTreeSet<StyleType>> =
+            LazyLock::new(|| [StyleType::Talk].into());
         &STYLE_TYPES
     }
 }
@@ -40,10 +41,16 @@ pub(crate) enum TalkOperation {
     PredictIntonation,
 
     #[inference_operation(
-        type Input = DecodeInput;
-        type Output = DecodeOutput;
+        type Input = GenerateFullIntermediateInput;
+        type Output = GenerateFullIntermediateOutput;
     )]
-    Decode,
+    GenerateFullIntermediate,
+
+    #[inference_operation(
+        type Input = RenderAudioSegmentInput;
+        type Output = RenderAudioSegmentOutput;
+    )]
+    RenderAudioSegment,
 }
 
 #[derive(InferenceInputSignature)]
@@ -82,15 +89,28 @@ pub(crate) struct PredictIntonationOutput {
 
 #[derive(InferenceInputSignature)]
 #[inference_input_signature(
-    type Signature = Decode;
+    type Signature = GenerateFullIntermediate;
 )]
-pub(crate) struct DecodeInput {
+pub(crate) struct GenerateFullIntermediateInput {
     pub(crate) f0: Array2<f32>,
     pub(crate) phoneme: Array2<f32>,
     pub(crate) speaker_id: Array1<i64>,
 }
 
 #[derive(InferenceOutputSignature)]
-pub(crate) struct DecodeOutput {
+pub(crate) struct GenerateFullIntermediateOutput {
+    pub(crate) spec: Array2<f32>,
+}
+
+#[derive(InferenceInputSignature)]
+#[inference_input_signature(
+    type Signature = RenderAudioSegment;
+)]
+pub(crate) struct RenderAudioSegmentInput {
+    pub(crate) spec: Array2<f32>,
+}
+
+#[derive(InferenceOutputSignature)]
+pub(crate) struct RenderAudioSegmentOutput {
     pub(crate) wave: Array1<f32>,
 }

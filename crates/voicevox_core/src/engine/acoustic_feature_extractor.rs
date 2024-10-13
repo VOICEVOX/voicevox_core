@@ -1,7 +1,7 @@
+use std::{collections::HashMap, sync::LazyLock};
+
 use derive_getters::Getters;
 use derive_new::new;
-use once_cell::sync::Lazy;
-use std::collections::HashMap;
 
 #[rustfmt::skip]
 const PHONEME_LIST: &[&str] = &[
@@ -52,7 +52,7 @@ const PHONEME_LIST: &[&str] = &[
     "z",
 ];
 
-static PHONEME_MAP: Lazy<HashMap<&str, i64>> = Lazy::new(|| {
+static PHONEME_MAP: LazyLock<HashMap<&str, i64>> = LazyLock::new(|| {
     let mut m = HashMap::new();
     for (i, s) in PHONEME_LIST.iter().enumerate() {
         m.insert(*s, i as i64);
@@ -63,15 +63,11 @@ static PHONEME_MAP: Lazy<HashMap<&str, i64>> = Lazy::new(|| {
 #[derive(Debug, Clone, PartialEq, new, Default, Getters)]
 pub(crate) struct OjtPhoneme {
     phoneme: String,
-    #[allow(dead_code)]
-    start: f32,
-    #[allow(dead_code)]
-    end: f32,
 }
 
 impl OjtPhoneme {
-    pub(crate) fn num_phoneme() -> usize {
-        PHONEME_MAP.len()
+    pub(crate) const fn num_phoneme() -> usize {
+        PHONEME_LIST.len() // == PHONEME_MAP.len()
     }
 
     fn space_phoneme() -> String {
@@ -114,8 +110,8 @@ mod tests {
     fn base_hello_hiho() -> Vec<OjtPhoneme> {
         STR_HELLO_HIHO
             .split_whitespace()
-            .enumerate()
-            .map(|(i, s)| OjtPhoneme::new(s.into(), i as f32, (i + 1) as f32))
+            .map(ToOwned::to_owned)
+            .map(OjtPhoneme::new)
             .collect()
     }
 
@@ -155,9 +151,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a".into(), 9., 10.), true)]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("k".into(), 9., 10.), false)]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a".into(), 10., 11.), false)]
+    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a".into()), true)]
+    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("k".into()), false)]
     fn test_ojt_phoneme_equality(
         #[case] ojt_phonemes: Vec<OjtPhoneme>,
         #[case] index: usize,

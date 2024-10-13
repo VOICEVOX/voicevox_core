@@ -1,8 +1,7 @@
-use std::{collections::HashMap, ffi::CString, mem::MaybeUninit};
+use std::{collections::HashMap, ffi::CString, mem::MaybeUninit, sync::LazyLock};
 
 use assert_cmd::assert::AssertResult;
 use libloading::Library;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use test_util::{
     c_api::{self, CApi, VoicevoxInitializeOptions, VoicevoxResultCode},
@@ -30,11 +29,20 @@ impl assert_cdylib::TestCase for TestCase {
 
         let model = {
             let mut model = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_voice_model_new_from_path(
-                c"../../model/sample.vvm".as_ptr(),
+            assert_ok(lib.voicevox_voice_model_file_open(
+                c_api::SAMPLE_VOICE_MODEL_FILE_PATH.as_ptr(),
                 model.as_mut_ptr(),
             ));
             model.assume_init()
+        };
+
+        let onnxruntime = {
+            let mut onnxruntime = MaybeUninit::uninit();
+            assert_ok(lib.voicevox_onnxruntime_load_once(
+                lib.voicevox_make_default_load_onnxruntime_options(),
+                onnxruntime.as_mut_ptr(),
+            ));
+            onnxruntime.assume_init()
         };
 
         let openjtalk = {
@@ -49,6 +57,7 @@ impl assert_cdylib::TestCase for TestCase {
         let synthesizer = {
             let mut synthesizer = MaybeUninit::uninit();
             assert_ok(lib.voicevox_synthesizer_new(
+                onnxruntime,
                 openjtalk,
                 VoicevoxInitializeOptions {
                     acceleration_mode:
@@ -90,7 +99,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         std::assert_eq!(SNAPSHOTS.output[&self.text].wav_length, wav_length);
 
-        lib.voicevox_voice_model_delete(model);
+        lib.voicevox_voice_model_file_close(model);
         lib.voicevox_open_jtalk_rc_delete(openjtalk);
         lib.voicevox_synthesizer_delete(synthesizer);
         lib.voicevox_json_free(audio_query);
@@ -108,6 +117,7 @@ impl assert_cdylib::TestCase for TestCase {
     fn assert_output(&self, output: Utf8Output) -> AssertResult {
         output
             .mask_timestamps()
+            .mask_onnxruntime_version()
             .mask_windows_video_cards()
             .assert()
             .try_success()?
@@ -116,7 +126,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: Lazy<Snapshots> = snapshots::section!(tts_via_audio_query);
+static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(tts_via_audio_query);
 
 #[derive(Deserialize)]
 struct Snapshots {

@@ -9,6 +9,19 @@ header = """
  * 無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。
  *
  * <dl>
+ *   <dt id="voicevox-core-availability">
+ *     <a href="#voicevox-core-availability">Availability</a>
+ *   </dt>
+ *
+ *   <dd>
+ *     ヘッダによって次の二つのマクロのうちどちらかが存在する。[リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSでのみ`VOICEVOX_LINK_ONNXRUNTIME`が、他のプラットフォームでは`VOICEVOX_LOAD_ONNXRUNTIME`が存在する。
+ *
+ *     - `VOICEVOX_LOAD_ONNXRUNTIME`: ::voicevox_onnxruntime_load_once と、それに付属するアイテムが利用可能になる。
+ *     - `VOICEVOX_LINK_ONNXRUNTIME`: ::voicevox_onnxruntime_init_once が利用可能になる。またこのマクロが存在するなら、このライブラリはONNX Runtimeをロード時動的リンクする。
+ *   </dd>
+ * </dl>
+ *
+ * <dl>
  *   <dt id="voicevox-core-safety">
  *     <a href="#voicevox-core-safety">⚠️ Safety</a>
  *   </dt>
@@ -55,7 +68,18 @@ after_includes = """
 #else // __cplusplus
 #include <stdbool.h>
 #include <stdint.h>
-#endif // __cplusplus"""
+#endif // __cplusplus
+
+//#define VOICEVOX_LINK_ONNXRUNTIME
+//#define VOICEVOX_LOAD_ONNXRUNTIME
+
+#if !(defined(VOICEVOX_LINK_ONNXRUNTIME) || defined(VOICEVOX_LOAD_ONNXRUNTIME))
+#error "either `VOICEVOX_LINK_ONNXRUNTIME` or `VOICEVOX_LOAD_ONNXRUNTIME` must be enabled"
+#endif
+
+#if defined(VOICEVOX_LINK_ONNXRUNTIME) && defined(VOICEVOX_LOAD_ONNXRUNTIME)
+#error "`VOICEVOX_LINK_ONNXRUNTIME` or `VOICEVOX_LOAD_ONNXRUNTIME` cannot be enabled at the same time"
+#endif"""
 
 # Code Style Options
 
@@ -78,3 +102,7 @@ rename_variants = "ScreamingSnakeCase"
 [parse]
 parse_deps = true
 include = ["voicevox_core"]
+
+[defines]
+"feature = load-onnxruntime" = "VOICEVOX_LOAD_ONNXRUNTIME"
+"feature = link-onnxruntime" = "VOICEVOX_LINK_ONNXRUNTIME"

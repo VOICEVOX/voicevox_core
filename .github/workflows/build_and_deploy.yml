@@ -41,7 +41,14 @@ defaults:
     shell: bash
 
 jobs:
-  config: # 全 jobs で利用する定数の定義。実行対象の条件をフィルタリングする。
+  # 全 jobs で利用する定数の定義。実行対象の条件をフィルタリングする。
+  #
+  # c_release_format = plain-cdylib | ios-xcframework
+  #
+  #     `plain-cdylib`の場合、動的ライブラリとその付属物をZIPに固めたものをC APIとしてリリースする。
+  #     `ios-xcframework`の場合はiOS用のXCFrameworkをC APIとしてリリースする。また、ONNX Runtimeの
+  #     リンク方法に関わるCargoフィーチャも`c_release_format`によって選択される。
+  config:
     runs-on: ubuntu-latest
     outputs:
       includes: ${{ steps.strategy_matrix.outputs.includes }}
@@ -54,123 +61,90 @@ jobs:
           includes='[
             {
               "os": "windows-2019",
-              "features": "",
               "target": "x86_64-pc-windows-msvc",
-              "artifact_name": "windows-x64-cpu",
-              "whl_local_version": "cpu",
-              "use_cuda": false,
-              "can_skip_in_simple_test": true
-            },
-            {
-              "os": "windows-2019",
-              "features": "directml",
-              "target": "x86_64-pc-windows-msvc",
-              "artifact_name": "windows-x64-directml",
-              "whl_local_version": "directml",
-              "use_cuda": false,
+              "artifact_name": "windows-x64",
+              "c_release_format": "plain-cdylib",
+              "python_whl": true,
               "can_skip_in_simple_test": false
             },
             {
               "os": "windows-2019",
-              "features": "",
-              "target": "x86_64-pc-windows-msvc",
-              "artifact_name": "windows-x64-cuda",
-              "whl_local_version": "cuda",
-              "use_cuda": true,
-              "can_skip_in_simple_test": true
-            },
-            {
-              "os": "windows-2019",
-              "features": "",
               "target": "i686-pc-windows-msvc",
-              "artifact_name": "windows-x86-cpu",
-              "whl_local_version": "cpu",
-              "use_cuda": false,
+              "artifact_name": "windows-x86",
+              "c_release_format": "plain-cdylib",
+              "python_whl": true,
               "can_skip_in_simple_test": true
             },
             {
               "os": "ubuntu-20.04",
-              "features": "",
               "target": "x86_64-unknown-linux-gnu",
-              "artifact_name": "linux-x64-cpu",
-              "whl_local_version": "cpu",
-              "use_cuda": false,
-              "can_skip_in_simple_test": true
-            },
-            {
-              "os": "ubuntu-20.04",
-              "features": "",
-              "target": "x86_64-unknown-linux-gnu",
-              "artifact_name": "linux-x64-gpu",
-              "whl_local_version": "cuda",
-              "use_cuda": true,
+              "artifact_name": "linux-x64",
+              "c_release_format": "plain-cdylib",
+              "python_whl": true,
               "can_skip_in_simple_test": false
             },
             {
               "os": "ubuntu-20.04",
-              "features": "",
               "target": "aarch64-unknown-linux-gnu",
-              "artifact_name": "linux-arm64-cpu",
-              "whl_local_version": "cpu",
-              "use_cuda": false,
+              "artifact_name": "linux-arm64",
+              "c_release_format": "plain-cdylib",
+              "python_whl": true,
               "can_skip_in_simple_test": true
             },
             {
               "os": "ubuntu-20.04",
-              "features": "",
               "target": "aarch64-linux-android",
-              "artifact_name": "android-arm64-cpu",
-              "use_cuda": false,
+              "artifact_name": "android-arm64",
+              "c_release_format": "plain-cdylib",
+              "python_whl": false,
               "can_skip_in_simple_test": true
             },
             {
               "os": "ubuntu-20.04",
-              "features": "",
               "target": "x86_64-linux-android",
-              "artifact_name": "android-x86_64-cpu",
-              "use_cuda": false,
-              "can_skip_in_simple_test": true
-            },
-            {
-              "os": "macos-11",
-              "features": "",
-              "target": "aarch64-apple-darwin",
-              "artifact_name": "osx-arm64-cpu",
-              "whl_local_version": "cpu",
-              "use_cuda": false,
-              "can_skip_in_simple_test": false
-            },
-            {
-              "os": "macos-11",
-              "features": "",
-              "target": "x86_64-apple-darwin",
-              "artifact_name": "osx-x64-cpu",
-              "whl_local_version": "cpu",
-              "use_cuda": false,
+              "artifact_name": "android-x86_64",
+              "c_release_format": "plain-cdylib",
+              "python_whl": false,
               "can_skip_in_simple_test": true
             },
             {
               "os": "macos-12",
-              "features": "",
+              "target": "aarch64-apple-darwin",
+              "artifact_name": "osx-arm64",
+              "c_release_format": "plain-cdylib",
+              "python_whl": true,
+              "can_skip_in_simple_test": false
+            },
+            {
+              "os": "macos-12",
+              "target": "x86_64-apple-darwin",
+              "artifact_name": "osx-x64",
+              "c_release_format": "plain-cdylib",
+              "python_whl": true,
+              "can_skip_in_simple_test": true
+            },
+            {
+              "os": "macos-12",
               "target": "aarch64-apple-ios",
               "artifact_name": "ios-arm64-cpu",
-              "use_cuda": false,
+              "c_release_format": "ios-xcframework",
+              "python_whl": false,
               "can_skip_in_simple_test": true
             },
             {
               "os": "macos-12",
-              "features": "",
               "target": "aarch64-apple-ios-sim",
               "artifact_name": "ios-arm64-cpu-sim",
-              "use_cuda": false,
+              "c_release_format": "ios-xcframework",
+              "python_whl": false,
               "can_skip_in_simple_test": true
             },
             {
               "os": "macos-12",
-              "features": "",
               "target": "x86_64-apple-ios",
               "artifact_name": "ios-x64-cpu",
-              "use_cuda": false,
+              "c_release_format": "ios-xcframework",
+              "python_whl": false,
               "can_skip_in_simple_test": true
             }
           ]'
@@ -192,9 +166,9 @@ jobs:
     env:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v3 # 製品版ではない場合
+      - uses: actions/checkout@v4 # 製品版ではない場合
         if: ${{ !inputs.is_production }}
-      - uses: actions/checkout@v3 # 製品版の場合
+      - uses: actions/checkout@v4 # 製品版の場合
         if: inputs.is_production
         with:
           fetch-depth: 0 # 全履歴取得
@@ -209,8 +183,8 @@ jobs:
             git -c user.name=dummy -c user.email=dummy@dummy.dummy merge FETCH_HEAD
           ) > /dev/null 2>&1
       - name: Set up Python 3.8
-        if: matrix.whl_local_version
-        uses: actions/setup-python@v4
+        if: matrix.python_whl
+        uses: actions/setup-python@v5
         with:
           python-version: "3.8"
           architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
@@ -234,7 +208,7 @@ jobs:
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
       - name: Checkout VOICEVOX RESOURCE
         if: inputs.is_production
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: VOICEVOX/voicevox_resource
           ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
@@ -251,15 +225,19 @@ jobs:
       - name: set cargo version
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude downloader --exclude xtask
-          if ${{ !!matrix.whl_local_version }}; then cargo set-version "$VERSION+"${{ matrix.whl_local_version }} -p voicevox_core_python_api; fi
+          if ${{ matrix.python_whl }}; then cargo set-version "$VERSION" -p voicevox_core_python_api; fi
       - name: cache target
         uses: Swatinem/rust-cache@v2
         if: ${{ !inputs.is_production }}
       - name: build voicevox_core_c_api
         shell: bash
         run: |
+          case ${{ matrix.c_release_format }} in
+            plain-cdylib) linking=load-onnxruntime ;;
+            ios-xcframework) linking=link-onnxruntime ;;
+          esac
           function build() {
-            cargo build -p voicevox_core_c_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+            cargo build -p voicevox_core_c_api -vv --features "$linking" --target ${{ matrix.target }} --release
           }
           if ${{ !inputs.is_production }}; then
             build
@@ -268,9 +246,8 @@ jobs:
           fi
         env:
           RUSTFLAGS: -C panic=abort
-          ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_python_api
-        if: matrix.whl_local_version
+        if: matrix.python_whl
         id: build-voicevox-core-python-api
         run: |
           rm -rf ./target/wheels
@@ -278,7 +255,7 @@ jobs:
           poetry config virtualenvs.create false
           (cd crates/voicevox_core_python_api && poetry install --with dev)
           function build() {
-            maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+            maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --target ${{ matrix.target }} --release
           }
           if ${{ !inputs.is_production }}; then
             build
@@ -286,13 +263,11 @@ jobs:
             build > /dev/null 2>&1
           fi
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
-        env:
-          ORT_USE_CUDA: ${{ matrix.use_cuda }}
       - name: build voicevox_core_java_api
         if: contains(matrix.target, 'android')
         run: |
           function build() {
-            cargo build -p voicevox_core_java_api -vv --features ${{ matrix.features }}, --target ${{ matrix.target }} --release
+            cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
           }
           if ${{ !inputs.is_production }}; then
             build
@@ -302,12 +277,14 @@ jobs:
       - name: Organize artifact
         run: |
           mkdir -p "artifact/${{ env.ASSET_NAME }}"
-          cp -v crates/voicevox_core_c_api/include/voicevox_core.h "artifact/${{ env.ASSET_NAME }}"
+          case ${{ matrix.c_release_format }} in
+            plain-cdylib) feature=VOICEVOX_LOAD_ONNXRUNTIME ;;
+            ios-xcframework) feature=VOICEVOX_LINK_ONNXRUNTIME ;;
+          esac
+          sed 's:^//\(#define '"$feature"'\)$:\1:' crates/voicevox_core_c_api/include/voicevox_core.h \
+            > "artifact/${{ env.ASSET_NAME }}/voicevox_core.h"
           cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
-          cp -v -n target/${{ matrix.target }}/release/build/onnxruntime-sys-*/out/onnxruntime_*/onnxruntime-*/lib/*.{dll,so.*,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
-          # libonnxruntimeについてはバージョン付のshared libraryを使用するためバージョンがついてないものを削除する
-          rm -f artifact/${{ env.ASSET_NAME }}/libonnxruntime.{so,dylib}
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
@@ -322,8 +299,8 @@ jobs:
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
       - name: Upload artifact to build XCFramework
-        if: contains(matrix.target, 'ios')
-        uses: actions/upload-artifact@v3
+        if: matrix.c_release_format == 'ios-xcframework'
+        uses: actions/upload-artifact@v4
         with:
           name: voicevox_core-${{ matrix.target }}
           path: artifact/${{ env.ASSET_NAME }}
@@ -332,8 +309,8 @@ jobs:
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: fromJson(needs.config.outputs.deploy) && !contains(matrix.target, 'ios')
-        uses: softprops/action-gh-release@v1
+        if: fromJson(needs.config.outputs.deploy) && matrix.c_release_format == 'plain-cdylib'
+        uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
@@ -341,8 +318,8 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
       - name: Upload Python whl to Release
-        if: fromJson(needs.config.outputs.deploy) && matrix.whl_local_version
-        uses: softprops/action-gh-release@v1
+        if: fromJson(needs.config.outputs.deploy) && matrix.python_whl
+        uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
@@ -351,7 +328,7 @@ jobs:
           target_commitish: ${{ github.sha }}
       - name: Upload voicevox_core_java_api artifact
         if: fromJson(needs.config.outputs.deploy) && contains(matrix.target, 'android')
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: voicevox_core_java_api-${{ matrix.artifact_name }}
           path: java_artifact
@@ -366,24 +343,24 @@ jobs:
       IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
       ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v2
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: voicevox_core-x86_64-apple-ios
           path: ${{ env.IOS_X86_64_PATH }}
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: voicevox_core-aarch64-apple-ios-sim
           path: ${{ env.IOS_AARCH64_SIM_PATH }}
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
       - name: Create xcframework
-        id: create-xcframework 
+        id: create-xcframework
         run: |
           build_util/make_ios_xcframework.bash
-          echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT" 
+          echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT"
         env:
           OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
       - name: Archive artifact
@@ -392,7 +369,7 @@ jobs:
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
@@ -406,10 +383,10 @@ jobs:
     env:
       ASSET_NAME: model-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Checkout VOICEVOX FAT RESOURCE
         if: inputs.is_production
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: VOICEVOX/voicevox_fat_resource
           ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
@@ -429,7 +406,7 @@ jobs:
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}
@@ -442,11 +419,11 @@ jobs:
     if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
     needs: [config, build_and_deploy]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "adopt"
@@ -462,17 +439,17 @@ jobs:
         run:
           cargo set-version "$VERSION" -p voicevox_core_java_api
 
-      - name: "Download artifact (android-arm64-cpu)"
-        uses: actions/download-artifact@v3
+      - name: "Download artifact (android-arm64)"
+        uses: actions/download-artifact@v4
         with:
-          name: voicevox_core_java_api-android-arm64-cpu
-          path: artifact/android-arm64-cpu
+          name: voicevox_core_java_api-android-arm64
+          path: artifact/android-arm64
 
-      - name: "Download artifact (android-x86_64-cpu)"
-        uses: actions/download-artifact@v3
+      - name: "Download artifact (android-x86_64)"
+        uses: actions/download-artifact@v4
         with:
-          name: voicevox_core_java_api-android-x86_64-cpu
-          path: artifact/android-x86_64-cpu
+          name: voicevox_core_java_api-android-x86_64
+          path: artifact/android-x86_64
 
       - name: Print tree
         run: tree artifact
@@ -481,8 +458,8 @@ jobs:
         run: |
           rm -rf crates/voicevox_core_java_api/lib/src/main/resources/dll
           cat <<EOF | while read -r line; do
-          android-arm64-cpu|arm64-v8a
-          android-x86_64-cpu|x86_64
+          android-arm64|arm64-v8a
+          android-x86_64|x86_64
           EOF
             IFS='|' read -r artifact_name target <<< "$line"
             mkdir "crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/${target}/"
@@ -503,7 +480,7 @@ jobs:
 
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           prerelease: true
           tag_name: ${{ env.VERSION }}

@@ -28,7 +28,6 @@ executionEnvironments = [{ root = "python/test" }, { root = "python" }]
 [tool.maturin]
 module-name = "voicevox_core._rust"
 bindings = "pyo3"
-skip-auditwheel = true # Linuxでlibonnxruntime.so.*の不在を許してもらう
 python-source = "python"
 
 [tool.poetry]
@@ -45,13 +44,13 @@ pydantic = ">=2.5.2,<3"
 [tool.poetry.group.docs.dependencies]
 sphinx = "6.2.1"
 pydata-sphinx-theme = "0.14.1"
-sphinx-autoapi = "3.0.0"
+sphinx-autoapi = "3.3.2"
 
 [tool.poetry.group.dev.dependencies]
-maturin = "1.3.1"
+maturin = "1.7.4"
 
 [tool.poetry.group.test.dependencies]
 pytest = "7.3.1"
 pytest-asyncio = "0.21.0"
 black = "23.3.0"
-isort = "5.12.0"
+isort = "5.13.2"
