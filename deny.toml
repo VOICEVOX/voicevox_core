@@ -17,7 +17,7 @@ targets = [
 multiple-versions = "allow"
 
 [bans.build]
- # deny build scripts that are not listed in `bypass`
+ # deny build scripts that are not listed in `bypass` (except `typenum`. see the fixme)
 allow-build-scripts = [
     # FIXME: build/main.rsのような場所に置かれていると駄目なのか、`bypass`からは認識してくれない
     # SHA256: b4dd86261a70df757efa53f06ce7543a4dc9c51178b9b023c92069fddee97a29
