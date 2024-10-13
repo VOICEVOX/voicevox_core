@@ -91,8 +91,11 @@ pub(crate) struct TalkManifest {
     #[index_for_fields(TalkOperation::PredictIntonation)]
     pub(crate) predict_intonation: ModelFile,
 
-    #[index_for_fields(TalkOperation::Decode)]
-    pub(crate) decode: ModelFile,
+    #[index_for_fields(TalkOperation::GenerateFullIntermediate)]
+    pub(crate) generate_full_intermediate: ModelFile,
+
+    #[index_for_fields(TalkOperation::RenderAudioSegment)]
+    pub(crate) render_audio_segment: ModelFile,
 
     #[serde(default)]
     pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,

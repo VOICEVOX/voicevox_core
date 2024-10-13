@@ -11,9 +11,13 @@
       "type": "onnx",
       "filename": "predict_intonation.onnx"
     },
-    "decode": {
+    "generate_full_intermediate": {
       "type": "onnx",
-      "filename": "decode.onnx"
+      "filename": "predict_spectrogram.onnx"
+    },
+    "render_audio_segment": {
+      "type": "onnx",
+      "filename": "vocoder.onnx"
     },
     "style_id_to_inner_voice_id": {
       "302": 2,
