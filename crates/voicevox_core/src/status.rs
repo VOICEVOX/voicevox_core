@@ -375,8 +375,9 @@ mod tests {
         let session_options = InferenceDomainMap {
             talk: enum_map! {
                 TalkOperation::PredictDuration
-                | TalkOperation::PredictIntonation => light_session_options,
-                TalkOperation::Decode => heavy_session_options,
+                | TalkOperation::PredictIntonation
+                | TalkOperation::GenerateFullIntermediate => light_session_options,
+                TalkOperation::RenderAudioSegment => heavy_session_options,
             },
         };
         let status = Status::new(
@@ -393,8 +394,12 @@ mod tests {
             status.session_options.talk[TalkOperation::PredictIntonation],
         );
         assert_eq!(
+            light_session_options,
+            status.session_options.talk[TalkOperation::GenerateFullIntermediate],
+        );
+        assert_eq!(
             heavy_session_options,
-            status.session_options.talk[TalkOperation::Decode],
+            status.session_options.talk[TalkOperation::RenderAudioSegment],
         );
 
         assert!(status.loaded_models.lock().unwrap().0.is_empty());

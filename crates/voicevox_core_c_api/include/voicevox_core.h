@@ -57,7 +57,7 @@
 #ifndef VOICEVOX_CORE_INCLUDE_GUARD
 #define VOICEVOX_CORE_INCLUDE_GUARD
 
-/* Generated with cbindgen:0.24.3 */
+/* Generated with cbindgen:0.27.0 */
 
 #ifdef __cplusplus
 #include <cstdint>
@@ -1358,7 +1358,7 @@ __declspec(dllimport)
 void voicevox_user_dict_delete(struct VoicevoxUserDict *user_dict);
 
 #ifdef __cplusplus
-} // extern "C"
-#endif // __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
 
-#endif /* VOICEVOX_CORE_INCLUDE_GUARD */
+#endif  /* VOICEVOX_CORE_INCLUDE_GUARD */

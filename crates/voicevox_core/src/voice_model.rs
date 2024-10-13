@@ -145,8 +145,11 @@ impl<A: Async> Inner<A> {
                                         TalkOperation::PredictIntonation => {
                                             find_entry_index(&manifest.predict_intonation_filename)?
                                         }
-                                        TalkOperation::Decode => {
-                                            find_entry_index(&manifest.decode_filename)?
+                                        TalkOperation::GenerateFullIntermediate => {
+                                            find_entry_index(&manifest.generate_full_intermediate_filename)?
+                                        }
+                                        TalkOperation::RenderAudioSegment => {
+                                            find_entry_index(&manifest.render_audio_segment_filename)?
                                         }
                                     };
 
@@ -232,14 +235,20 @@ impl<A: Async> Inner<A> {
 
         let talk = OptionFuture::from(talk.map(
             |(entries, style_id_to_inner_voice_id)| async move {
-                let [predict_duration, predict_intonation, decode] = entries.into_array();
+                let [predict_duration, predict_intonation, predict_spectrogram, run_vocoder] =
+                    entries.into_array();
 
                 let predict_duration = read_file!(predict_duration);
                 let predict_intonation = read_file!(predict_intonation);
-                let decode = read_file!(decode);
+                let predict_spectrogram = read_file!(predict_spectrogram);
+                let run_vocoder = read_file!(run_vocoder);
 
-                let model_bytes =
-                    EnumMap::from_array([predict_duration, predict_intonation, decode]);
+                let model_bytes = EnumMap::from_array([
+                    predict_duration,
+                    predict_intonation,
+                    predict_spectrogram,
+                    run_vocoder,
+                ]);
 
                 Ok((style_id_to_inner_voice_id, model_bytes))
             },
