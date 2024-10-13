@@ -2,6 +2,7 @@
 
 mod extract;
 mod inference_domain;
+mod inference_domains;
 mod manifest;
 
 use syn::parse_macro_input;
@@ -129,6 +130,27 @@ pub fn derive_inference_output_signature(
 pub fn derive_index_for_fields(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = &parse_macro_input!(input);
     from_syn(manifest::derive_index_for_fields(input))
+}
+
+/// # Example
+///
+/// ```
+/// type ManifestDomains =
+///     (substitute_type!(Option<D::Manifest> where D = TalkDomain as InferenceDomain),);
+/// ```
+///
+/// ↓
+///
+/// ```
+/// type ManifestDomains = (Option<<TalkManifest as InferenceDomain>::Manifest>,);
+/// //                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/// //                             T ← <TalkManifest as InferenceDomain>
+/// ```
+#[cfg(not(doctest))]
+#[proc_macro]
+pub fn substitute_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input);
+    from_syn(inference_domains::substitute_type(input))
 }
 
 fn from_syn(result: syn::Result<proc_macro2::TokenStream>) -> proc_macro::TokenStream {

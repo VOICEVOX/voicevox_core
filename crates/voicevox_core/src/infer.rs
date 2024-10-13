@@ -51,6 +51,7 @@ pub(crate) trait InferenceRuntime: 'static {
 /// 共に扱われるべき推論操作の集合を示す。
 pub(crate) trait InferenceDomain: Sized {
     type Operation: InferenceOperation;
+    type Manifest;
 
     /// 対応する`StyleType`。
     ///

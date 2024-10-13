@@ -63,3 +63,12 @@ pub(crate) trait InferenceDomainMapValues {
 impl<T> InferenceDomainMapValues for (T,) {
     type Talk = T;
 }
+
+macro_rules! inference_domain_map_values {
+    (for<$arg:ident> $body:ty) => {
+        (::macros::substitute_type!(
+            $body where $arg = crate::infer::domains::TalkDomain as crate::infer::InferenceDomain
+        ),)
+    };
+}
+pub(crate) use inference_domain_map_values;

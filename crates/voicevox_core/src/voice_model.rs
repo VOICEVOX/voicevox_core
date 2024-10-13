@@ -22,12 +22,10 @@ use crate::{
     asyncs::{Async, Mutex as _},
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
-        domains::{InferenceDomainMap, TalkDomain, TalkOperation},
+        domains::{inference_domain_map_values, InferenceDomainMap, TalkDomain, TalkOperation},
         InferenceDomain,
     },
-    manifest::{
-        Manifest, ManifestDomains, ModelFile, ModelFileType, StyleIdToInnerVoiceId, TalkManifest,
-    },
+    manifest::{Manifest, ManifestDomains, ModelFile, ModelFileType, StyleIdToInnerVoiceId},
     SpeakerMeta, StyleMeta, StyleType, VoiceModelMeta,
 };
 
@@ -36,8 +34,9 @@ use crate::{
 /// [`VoiceModelId`]: VoiceModelId
 pub type RawVoiceModelId = Uuid;
 
-pub(crate) type ModelBytesWithInnerVoiceIdsByDomain =
-    (Option<(StyleIdToInnerVoiceId, EnumMap<TalkOperation, ModelBytes>)>,);
+pub(crate) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_values!(
+    for<D> Option<(StyleIdToInnerVoiceId, EnumMap<D::Operation, ModelBytes>)>
+);
 
 /// 音声モデルID。
 #[derive(
@@ -254,7 +253,7 @@ impl<A: Async> Inner<A> {
 }
 
 type InferenceModelEntries<'manifest> =
-    (Option<InferenceModelEntry<TalkDomain, &'manifest TalkManifest>>,);
+    inference_domain_map_values!(for<D> Option<InferenceModelEntry<D, &'manifest D::Manifest>>);
 
 struct InferenceModelEntry<D: InferenceDomain, M> {
     indices: EnumMap<D::Operation, usize>,

@@ -10,10 +10,11 @@ name = "macros"
 proc-macro = true
 
 [dependencies]
+derive-syn-parse.workspace = true
 indexmap.workspace = true
 proc-macro2.workspace = true
 quote.workspace = true
-syn = { workspace = true, features = ["extra-traits", "full"] }
+syn = { workspace = true, features = ["extra-traits", "full", "visit-mut"] }
 
 [lints.rust]
 unsafe_code = "forbid"
