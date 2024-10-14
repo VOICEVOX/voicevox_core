@@ -24,7 +24,6 @@ camino.workspace = true
 chrono = { workspace = true, default-features = false, features = ["clock"] }
 colorchoice.workspace = true
 const_format.workspace = true
-cstr.workspace = true
 duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
