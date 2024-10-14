@@ -1,10 +1,8 @@
 name: cargo-deny
 on:
   push:
-  pull_request:
-defaults:
-  run:
-    shell: bash
+    branches:
+      - main
 jobs:
   cargo-deny:
     runs-on: ubuntu-20.04
@@ -13,11 +11,6 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-deny
-        run: cargo binstall cargo-deny@^0.14 --no-confirm --log-level debug
+        run: cargo binstall cargo-deny@^0.16 --no-confirm --log-level debug
       - name: cargo-deny
-        run: |
-          if ${{ !!github.event.release }}; then
-            cargo deny --all-features check
-          else
-            cargo deny --all-features check -W denied
-          fi
+        run: cargo deny --all-features check

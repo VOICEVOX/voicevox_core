@@ -8,7 +8,6 @@ use std::sync::LazyLock;
 
 use assert_cmd::assert::AssertResult;
 use const_format::concatcp;
-use cstr::cstr;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 use test_util::c_api::{
@@ -37,8 +36,8 @@ impl assert_cdylib::TestCase for TestCase {
 
         let word = {
             let mut word = lib.voicevox_user_dict_word_make(
-                cstr!("this_word_should_not_exist_in_default_dictionary").as_ptr(),
-                cstr!("アイウエオ").as_ptr(),
+                c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
+                c"アイウエオ".as_ptr(),
             );
             word.word_type =
                 c_api::VoicevoxUserDictWordType_VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;
@@ -110,7 +109,7 @@ impl assert_cdylib::TestCase for TestCase {
         let mut audio_query_without_dict = std::ptr::null_mut();
         assert_ok(lib.voicevox_synthesizer_create_audio_query(
             synthesizer,
-            cstr!("this_word_should_not_exist_in_default_dictionary").as_ptr(),
+            c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
             STYLE_ID,
             &mut audio_query_without_dict,
         ));
@@ -123,7 +122,7 @@ impl assert_cdylib::TestCase for TestCase {
         let mut audio_query_with_dict = std::ptr::null_mut();
         assert_ok(lib.voicevox_synthesizer_create_audio_query(
             synthesizer,
-            cstr!("this_word_should_not_exist_in_default_dictionary").as_ptr(),
+            c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
             STYLE_ID,
             &mut audio_query_with_dict,
         ));

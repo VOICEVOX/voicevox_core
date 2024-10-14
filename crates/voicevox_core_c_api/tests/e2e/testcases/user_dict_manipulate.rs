@@ -10,7 +10,6 @@ use assert_cmd::assert::AssertResult;
 use tempfile::NamedTempFile;
 use uuid::Uuid;
 
-use cstr::cstr;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 use test_util::c_api::{self, CApi, VoicevoxResultCode, VoicevoxUserDict, VoicevoxUserDictWord};
@@ -58,7 +57,7 @@ impl assert_cdylib::TestCase for TestCase {
         let dict = lib.voicevox_user_dict_new();
 
         // 単語の追加のテスト
-        let word = lib.voicevox_user_dict_word_make(cstr!("hoge").as_ptr(), cstr!("ホゲ").as_ptr());
+        let word = lib.voicevox_user_dict_word_make(c"hoge".as_ptr(), c"ホゲ".as_ptr());
 
         let word_uuid = add_word(dict, &word);
 
@@ -69,7 +68,7 @@ impl assert_cdylib::TestCase for TestCase {
         assert_contains_uuid(&json, &word_uuid);
 
         // 単語の変更のテスト
-        let word = lib.voicevox_user_dict_word_make(cstr!("fuga").as_ptr(), cstr!("フガ").as_ptr());
+        let word = lib.voicevox_user_dict_word_make(c"fuga".as_ptr(), c"フガ".as_ptr());
 
         assert_ok(lib.voicevox_user_dict_update_word(dict, &word_uuid.into_bytes(), &word));
 
@@ -84,8 +83,7 @@ impl assert_cdylib::TestCase for TestCase {
         // 辞書のインポートのテスト。
         let other_dict = lib.voicevox_user_dict_new();
 
-        let other_word =
-            lib.voicevox_user_dict_word_make(cstr!("piyo").as_ptr(), cstr!("ピヨ").as_ptr());
+        let other_word = lib.voicevox_user_dict_word_make(c"piyo".as_ptr(), c"ピヨ".as_ptr());
 
         let other_word_uuid = add_word(other_dict, &other_word);
 
@@ -110,7 +108,7 @@ impl assert_cdylib::TestCase for TestCase {
         // 辞書のセーブ・ロードのテスト
         let temp_path = NamedTempFile::new().unwrap().into_temp_path();
         let temp_path = CString::new(temp_path.to_str().unwrap()).unwrap();
-        let word = lib.voicevox_user_dict_word_make(cstr!("hoge").as_ptr(), cstr!("ホゲ").as_ptr());
+        let word = lib.voicevox_user_dict_word_make(c"hoge".as_ptr(), c"ホゲ".as_ptr());
         let word_uuid = add_word(dict, &word);
 
         assert_ok(lib.voicevox_user_dict_save(dict, temp_path.as_ptr()));
