@@ -7,6 +7,7 @@ use std::{
 
 use libc::c_int;
 
+use tracing::warn;
 use voicevox_core::{StyleId, VoiceModelId, __internal::interop::PerformInference as _};
 
 use crate::{helpers::display_error, init_logger_once};
@@ -26,8 +27,20 @@ macro_rules! ensure_initialized {
 static ERROR_MESSAGE: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::new()));
 
 static ONNXRUNTIME: LazyLock<&'static voicevox_core::blocking::Onnxruntime> = LazyLock::new(|| {
+    let alt_onnxruntime_filename = voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME
+        .replace(
+            voicevox_core::blocking::Onnxruntime::LIB_NAME,
+            "onnxruntime",
+        );
     voicevox_core::blocking::Onnxruntime::load_once()
         .exec()
+        .or_else(|err| {
+            warn!("{err}");
+            warn!("falling back to `{alt_onnxruntime_filename}`");
+            voicevox_core::blocking::Onnxruntime::load_once()
+                .filename(alt_onnxruntime_filename)
+                .exec()
+        })
         .unwrap_or_else(|err| {
             display_error(&err);
             panic!("ONNX Runtimeをロードもしくは初期化ができなかったため、クラッシュします");

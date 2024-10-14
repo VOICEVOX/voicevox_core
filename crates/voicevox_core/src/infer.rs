@@ -1,9 +1,8 @@
 pub(crate) mod domains;
-mod model_file;
 pub(crate) mod runtimes;
 pub(crate) mod session_set;
 
-use std::{borrow::Cow, collections::BTreeSet, fmt::Debug, ops::Index, sync::Arc};
+use std::{borrow::Cow, collections::BTreeSet, fmt::Debug};
 
 use derive_new::new;
 use duplicate::duplicate_item;
@@ -13,6 +12,7 @@ use thiserror::Error;
 
 use crate::{
     devices::{DeviceSpec, GpuSpec},
+    voice_model::ModelBytes,
     StyleType, SupportedDevices,
 };
 
@@ -37,7 +37,7 @@ pub(crate) trait InferenceRuntime: 'static {
     )]
     fn new_session(
         &self,
-        model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
+        model: &ModelBytes,
         options: InferenceSessionOptions,
     ) -> anyhow::Result<(
         Self::Session,
@@ -51,7 +51,7 @@ pub(crate) trait InferenceRuntime: 'static {
 /// 共に扱われるべき推論操作の集合を示す。
 pub(crate) trait InferenceDomain: Sized {
     type Operation: InferenceOperation;
-    type Manifest: Index<Self::Operation, Output = Arc<str>>;
+    type Manifest;
 
     /// 対応する`StyleType`。
     ///
@@ -213,7 +213,3 @@ pub(crate) enum ExtractError {
     #[error(transparent)]
     Shape(#[from] ShapeError),
 }
-
-#[derive(Error, Debug)]
-#[error("不正なモデルファイルです")]
-pub(crate) struct DecryptModelError;

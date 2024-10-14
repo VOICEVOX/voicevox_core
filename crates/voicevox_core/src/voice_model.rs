@@ -5,7 +5,6 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    sync::Arc,
 };
 
 use anyhow::{anyhow, Context as _};
@@ -26,7 +25,7 @@ use crate::{
         domains::{inference_domain_map_values, InferenceDomainMap, TalkDomain, TalkOperation},
         InferenceDomain,
     },
-    manifest::{Manifest, ManifestDomains, StyleIdToInnerVoiceId},
+    manifest::{Manifest, ManifestDomains, ModelFile, ModelFileType, StyleIdToInnerVoiceId},
     SpeakerMeta, StyleMeta, StyleType, VoiceModelMeta,
 };
 
@@ -36,7 +35,7 @@ use crate::{
 pub type RawVoiceModelId = Uuid;
 
 pub(crate) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_values!(
-    for<D> Option<(StyleIdToInnerVoiceId, EnumMap<D::Operation, Vec<u8>>)>
+    for<D> Option<(StyleIdToInnerVoiceId, EnumMap<D::Operation, ModelBytes>)>
 );
 
 /// 音声モデルID。
@@ -140,17 +139,19 @@ impl<A: Async> Inner<A> {
                                 .map(|manifest| {
                                     let indices = enum_map! {
                                         TalkOperation::PredictDuration => {
-                                            find_entry_index(&manifest.predict_duration_filename)?
+                                            find_entry_index(&manifest.predict_duration.filename)?
                                         }
                                         TalkOperation::PredictIntonation => {
-                                            find_entry_index(&manifest.predict_intonation_filename)?
+                                            find_entry_index(&manifest.predict_intonation.filename)?
                                         }
                                         TalkOperation::GenerateFullIntermediate => {
-                                            find_entry_index(&manifest.generate_full_intermediate_filename)?
+                                            find_entry_index(
+                                                &manifest.generate_full_intermediate.filename,
+                                            )?
                                         }
-                                        TalkOperation::RenderAudioSegment => {
-                                            find_entry_index(&manifest.render_audio_segment_filename)?
-                                        }
+                                        TalkOperation::RenderAudioSegment => find_entry_index(
+                                            &manifest.render_audio_segment.filename,
+                                        )?,
                                     };
 
                                     Ok(InferenceModelEntry { indices, manifest })
@@ -204,8 +205,9 @@ impl<A: Async> Inner<A> {
 
         macro_rules! read_file {
             ($entry:expr $(,)?) => {{
-                let (index, filename): (usize, Arc<str>) = $entry;
-                zip.read_file(index)
+                let (index, ModelFile { r#type, filename }): (usize, ModelFile) = $entry;
+                let bytes = zip
+                    .read_file(index)
                     .map_err(move |source| {
                         error(
                             LoadModelErrorKind::ReadZipEntry {
@@ -214,7 +216,8 @@ impl<A: Async> Inner<A> {
                             source,
                         )
                     })
-                    .await?
+                    .await?;
+                ModelBytes::new(r#type, bytes)
             }};
         }
 
@@ -364,6 +367,20 @@ impl VoiceModelHeader {
             metas,
             path: path.to_owned(),
         })
+    }
+}
+
+pub(crate) enum ModelBytes {
+    Onnx(Vec<u8>),
+    VvBin(Vec<u8>),
+}
+
+impl ModelBytes {
+    fn new(kind: ModelFileType, bytes: Vec<u8>) -> Self {
+        (match kind {
+            ModelFileType::Onnx => Self::Onnx,
+            ModelFileType::VvBin => Self::VvBin,
+        })(bytes)
     }
 }
 
