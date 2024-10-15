@@ -110,9 +110,11 @@ pub(crate) mod blocking {
 
     /// ユーザに渡す中間生成物。
     pub struct Audio {
+        /// (フレーム数, 特徴数)の形を持つ音声特徴量。
         pub internal_state: ndarray::Array2<f32>,
+        /// 生成時に指定したスタイル番号。
         pub style_id: crate::StyleId,
-        /// workaround paddingを除いた全体のフレーム数。
+        /// workaround paddingを除いた音声特徴量のフレーム数。
         pub length: usize,
         /// サンプリングレート。全体の秒数は`length / sampling_rate`で表せる。
         pub sampling_rate: f32,
@@ -271,7 +273,7 @@ pub(crate) mod blocking {
             self.status.metas()
         }
 
-        /// AudioQueryから音声合成を行う。
+        /// AudioQueryから音声合成用の中間表現を生成する。
         pub fn seekable_synthesis(
             &self,
             audio_query: &AudioQuery,
@@ -497,7 +499,7 @@ pub(crate) mod blocking {
             }
         }
 
-        /// 音声波形を生成する
+        /// 中間表現から16bit PCMで音声波形を生成する。
         pub fn render(&self, audio: &Audio, begin: usize, end: usize) -> Result<Vec<u8>> {
             const MARGIN: usize = 14; // 使われているHifiGANのreceptive fieldから計算される安全マージン
             use std::cmp::min;
@@ -551,6 +553,7 @@ pub(crate) mod blocking {
             }
         }
 
+        /// AudioQueryから直接WAVフォーマットで音声波形を生成する。
         pub fn synthesis(
             &self,
             audio_query: &AudioQuery,
