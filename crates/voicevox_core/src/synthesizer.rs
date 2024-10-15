@@ -499,7 +499,7 @@ pub(crate) mod blocking {
 
         /// 音声波形を生成する
         pub fn render(&self, audio: &Audio, begin: usize, end: usize) -> Result<Vec<u8>> {
-            const MARGIN: usize = 14;  // 使われているHifiGANのreceptive fieldから計算される安全マージン
+            const MARGIN: usize = 14; // 使われているHifiGANのreceptive fieldから計算される安全マージン
             use std::cmp::min;
             // 実態(workaround paddingを含まない)上での区間
             let clipped_begin = min(begin, audio.length);
@@ -510,13 +510,18 @@ pub(crate) mod blocking {
             // 安全マージンを追加したデータ上での区間
             let slice_begin = audio.padding_length + clipped_begin - left_margin;
             let slice_end = audio.padding_length + clipped_end + right_margin;
-            let window = audio.internal_state.slice(ndarray::s![slice_begin..slice_end, ..]);
-            let wave_with_margin = self.render_audio_segment(window.into_owned(), audio.style_id)?;
-            let wave = wave_with_margin.slice(ndarray::s![left_margin*256..wave_with_margin.len()-right_margin*256]).into_owned().into_raw_vec();
-            return Ok(to_s16le_pcm(
-                &wave,
-                &audio.audio_query,
-            ));
+            let window = audio
+                .internal_state
+                .slice(ndarray::s![slice_begin..slice_end, ..]);
+            let wave_with_margin =
+                self.render_audio_segment(window.into_owned(), audio.style_id)?;
+            let wave = wave_with_margin
+                .slice(ndarray::s![
+                    left_margin * 256..wave_with_margin.len() - right_margin * 256
+                ])
+                .into_owned()
+                .into_raw_vec();
+            return Ok(to_s16le_pcm(&wave, &audio.audio_query));
 
             fn to_s16le_pcm(
                 wave: &[f32],

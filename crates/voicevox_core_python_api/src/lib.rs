@@ -429,7 +429,7 @@ mod blocking {
     pub(crate) struct Audio {
         audio: voicevox_core::blocking::Audio,
     }
-    
+
     #[pymethods]
     impl Audio {
         #[getter]
@@ -684,7 +684,7 @@ mod blocking {
                     },
                 )
                 .into_py_result(py)?;
-            Ok(Audio {audio})
+            Ok(Audio { audio })
         }
 
         #[pyo3(signature=(
@@ -702,11 +702,7 @@ mod blocking {
             let wav = &self
                 .synthesizer
                 .read()?
-                .render(
-                    &audio.audio,
-                    begin,
-                    end,
-                )
+                .render(&audio.audio, begin, end)
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
         }
