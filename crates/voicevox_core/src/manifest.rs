@@ -12,7 +12,7 @@ use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
-    infer::domains::{InferenceDomainMap, TalkOperation},
+    infer::domains::{inference_domain_map_values, InferenceDomainMap, TalkOperation},
     StyleId, VoiceModelId,
 };
 
@@ -79,7 +79,7 @@ pub struct Manifest {
     domains: InferenceDomainMap<ManifestDomains>,
 }
 
-pub(crate) type ManifestDomains = (Option<TalkManifest>,);
+pub(crate) type ManifestDomains = inference_domain_map_values!(for<D> Option<D::Manifest>);
 
 #[derive(Deserialize, IndexForFields)]
 #[cfg_attr(test, derive(Default))]
