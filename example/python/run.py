@@ -54,12 +54,12 @@ def main() -> None:
     logger.info("%s", f"Synthesizing with {display_as_json(audio_query)} in {mode_name} mode")
     if streaming:
         chunk_sec = 1.0
-        interm = synthesizer.seekable_synthesis(audio_query, style_id)
-        chunk_frames = int(interm.sampling_rate * chunk_sec)
+        intermediate = synthesizer.seekable_synthesis(audio_query, style_id)
+        chunk_frames = int(intermediate.sampling_rate * chunk_sec)
         pcm = b""
-        for i in range(0, interm.length, chunk_frames):
-            logger.info("%s", f"synthesis {i/interm.length:.2%}")
-            pcm += synthesizer.render(interm, i, i+chunk_frames)
+        for i in range(0, intermediate.length, chunk_frames):
+            logger.info("%s", f"synthesis {i/intermediate.length:.2%}")
+            pcm += synthesizer.render(intermediate, i, i+chunk_frames)
         logger.info("%s", f"synthesis 100%")
         num_channels = 2 if audio_query.output_stereo else 1
         block_size = 16 * num_channels // 8
