@@ -8,6 +8,7 @@ from typing import Tuple
 
 from voicevox_core import AccelerationMode, AudioQuery
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+from voicevox_core._rust import wav_from_s16le
 
 
 def main() -> None:
@@ -51,7 +52,9 @@ def main() -> None:
     audio_query = synthesizer.audio_query(text, style_id)
 
     mode_name = "streaming" if streaming else "normal"
-    logger.info("%s", f"Synthesizing with {display_as_json(audio_query)} in {mode_name} mode")
+    logger.info(
+        "%s", f"Synthesizing with {display_as_json(audio_query)} in {mode_name} mode"
+    )
     if streaming:
         chunk_sec = 1.0
         intermediate = synthesizer.seekable_synthesis(audio_query, style_id)
@@ -59,26 +62,12 @@ def main() -> None:
         pcm = b""
         for i in range(0, intermediate.length, chunk_frames):
             logger.info("%s", f"synthesis {i/intermediate.length:.2%}")
-            pcm += synthesizer.render(intermediate, i, i+chunk_frames)
+            pcm += synthesizer.render(intermediate, i, i + chunk_frames)
         logger.info("%s", f"synthesis 100%")
-        num_channels = 2 if audio_query.output_stereo else 1
-        block_size = 16 * num_channels // 8
-        sr = audio_query.output_sampling_rate
-        wav = (
-            b"RIFF" +
-            struct.pack("<I", len(pcm) + 44 - 8) +
-            b"WAVEfmt " +
-            struct.pack("<I", 16) +
-            struct.pack("<H", 1) +
-            struct.pack("<H", num_channels) +
-            struct.pack("<I", sr) +
-            struct.pack("<I", sr * block_size) + 
-            struct.pack("<H", block_size) + 
-            struct.pack("<H", 16) + 
-            b"data" +
-            struct.pack("<I", len(pcm)) +
-            pcm)
-            
+        wav = wav_from_s16le(
+            pcm, audio_query.output_sampling_rate, audio_query.output_stereo
+        )
+
     else:
         wav = synthesizer.synthesis(audio_query, style_id)
 

@@ -82,6 +82,39 @@ pub struct InitializeOptions {
 pub(crate) mod blocking {
     use std::io::{Cursor, Write as _};
 
+    /// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
+    pub fn wav_from_s16le(pcm: &[u8], output_sampling_rate: u32, output_stereo: bool) -> Vec<u8> {
+        // TODO: 44.1kHzなどの対応
+
+        let num_channels: u16 = if output_stereo { 2 } else { 1 };
+        let bit_depth: u16 = 16;
+        let block_size: u16 = bit_depth * num_channels / 8;
+
+        let bytes_size = pcm.len() as u32;
+        let wave_size = bytes_size + 44;
+
+        let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
+        let mut cur = Cursor::new(buf);
+
+        cur.write_all("RIFF".as_bytes()).unwrap();
+        cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
+        cur.write_all("WAVEfmt ".as_bytes()).unwrap();
+        cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
+        cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
+        cur.write_all(&num_channels.to_le_bytes()).unwrap();
+        cur.write_all(&output_sampling_rate.to_le_bytes()).unwrap();
+
+        let block_rate = output_sampling_rate * block_size as u32;
+
+        cur.write_all(&block_rate.to_le_bytes()).unwrap();
+        cur.write_all(&block_size.to_le_bytes()).unwrap();
+        cur.write_all(&bit_depth.to_le_bytes()).unwrap();
+        cur.write_all("data".as_bytes()).unwrap();
+        cur.write_all(&bytes_size.to_le_bytes()).unwrap();
+        cur.write_all(&pcm).unwrap();
+        cur.into_inner()
+    }
+
     use enum_map::enum_map;
     use tracing::info;
 
@@ -111,17 +144,17 @@ pub(crate) mod blocking {
     /// ユーザに渡す中間生成物。
     pub struct Audio {
         /// (フレーム数, 特徴数)の形を持つ音声特徴量。
-        pub internal_state: ndarray::Array2<f32>,
+        internal_state: ndarray::Array2<f32>,
         /// 生成時に指定したスタイル番号。
-        pub style_id: crate::StyleId,
+        style_id: crate::StyleId,
         /// workaround paddingを除いた音声特徴量のフレーム数。
         pub length: usize,
         /// サンプリングレート。全体の秒数は`length / sampling_rate`で表せる。
         pub sampling_rate: f32,
         /// workaroundとして付け足されているパディング長。
-        pub padding_length: usize,
+        padding_length: usize,
         /// 生成時に利用したクエリ。
-        pub audio_query: AudioQuery,
+        audio_query: AudioQuery,
     }
 
     /// 音声シンセサイザ。
@@ -500,21 +533,21 @@ pub(crate) mod blocking {
         }
 
         /// 中間表現から16bit PCMで音声波形を生成する。
-        pub fn render(&self, audio: &Audio, begin: usize, end: usize) -> Result<Vec<u8>> {
+        pub fn render(&self, audio: &Audio, start: usize, end: usize) -> Result<Vec<u8>> {
             const MARGIN: usize = 14; // 使われているHifiGANのreceptive fieldから計算される安全マージン
             use std::cmp::min;
             // 実態(workaround paddingを含まない)上での区間
-            let clipped_begin = min(begin, audio.length);
+            let clipped_start = min(start, audio.length);
             let clipped_end = min(end, audio.length);
             // データからはみ出さない安全マージン
-            let left_margin = min(MARGIN, audio.padding_length + clipped_begin);
+            let left_margin = min(MARGIN, audio.padding_length + clipped_start);
             let right_margin = min(MARGIN, audio.padding_length + (audio.length - clipped_end));
             // 安全マージンを追加したデータ上での区間
-            let slice_begin = audio.padding_length + clipped_begin - left_margin;
+            let slice_start = audio.padding_length + clipped_start - left_margin;
             let slice_end = audio.padding_length + clipped_end + right_margin;
             let window = audio
                 .internal_state
-                .slice(ndarray::s![slice_begin..slice_end, ..]);
+                .slice(ndarray::s![slice_start..slice_end, ..]);
             let wave_with_margin =
                 self.render_audio_segment(window.into_owned(), audio.style_id)?;
             let wave = wave_with_margin
@@ -562,46 +595,11 @@ pub(crate) mod blocking {
         ) -> Result<Vec<u8>> {
             let audio = self.seekable_synthesis(audio_query, style_id, options)?;
             let pcm = self.render(&audio, 0, audio.length)?;
-            return Ok(to_wav(&pcm, &audio_query));
-
-            fn to_wav(
-                pcm: &[u8],
-                &AudioQuery {
-                    output_sampling_rate,
-                    output_stereo,
-                    ..
-                }: &AudioQuery,
-            ) -> Vec<u8> {
-                // TODO: 44.1kHzなどの対応
-
-                let num_channels: u16 = if output_stereo { 2 } else { 1 };
-                let bit_depth: u16 = 16;
-                let block_size: u16 = bit_depth * num_channels / 8;
-
-                let bytes_size = pcm.len() as u32;
-                let wave_size = bytes_size + 44;
-
-                let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
-                let mut cur = Cursor::new(buf);
-
-                cur.write_all("RIFF".as_bytes()).unwrap();
-                cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
-                cur.write_all("WAVEfmt ".as_bytes()).unwrap();
-                cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
-                cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
-                cur.write_all(&num_channels.to_le_bytes()).unwrap();
-                cur.write_all(&output_sampling_rate.to_le_bytes()).unwrap();
-
-                let block_rate = output_sampling_rate * block_size as u32;
-
-                cur.write_all(&block_rate.to_le_bytes()).unwrap();
-                cur.write_all(&block_size.to_le_bytes()).unwrap();
-                cur.write_all(&bit_depth.to_le_bytes()).unwrap();
-                cur.write_all("data".as_bytes()).unwrap();
-                cur.write_all(&bytes_size.to_le_bytes()).unwrap();
-                cur.write_all(&pcm).unwrap();
-                cur.into_inner()
-            }
+            return Ok(wav_from_s16le(
+                &pcm,
+                audio_query.output_sampling_rate,
+                audio_query.output_stereo,
+            ));
         }
 
         /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。

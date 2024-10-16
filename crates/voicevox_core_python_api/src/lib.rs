@@ -12,7 +12,7 @@ use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
     pyfunction, pymodule,
-    types::{PyList, PyModule},
+    types::{PyBytes, PyList, PyModule},
     wrap_pyfunction, Py, PyObject, PyResult, PyTypeInfo, Python,
 };
 use voicevox_core::__internal::interop::raii::MaybeClosed;
@@ -25,6 +25,7 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
     module.add_wrapped(wrap_pyfunction!(_validate_pronunciation))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
+    module.add_wrapped(wrap_pyfunction!(wav_from_s16le))?;
 
     add_exceptions(module)?;
 
@@ -261,6 +262,35 @@ fn _validate_pronunciation(pronunciation: &str, py: Python<'_>) -> PyResult<()> 
 #[pyfunction]
 fn _to_zenkaku(text: &str) -> PyResult<String> {
     Ok(voicevox_core::__internal::to_zenkaku(text))
+}
+
+/// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
+///
+/// Parameters
+/// ----------
+/// pcm : bytes
+///     16bit PCMで表現された音声データ
+/// output_sampling_rate: int
+///     pcmのサンプリングレート
+/// output_stereo: bool
+///     pcmがステレオかどうか
+///
+/// Returns
+/// -------
+/// bytes
+///     WAVフォーマットで表現された音声データ
+#[pyfunction]
+fn wav_from_s16le(
+    pcm: &[u8],
+    output_sampling_rate: u32,
+    output_stereo: bool,
+    py: Python<'_>,
+) -> PyObject {
+    PyBytes::new(
+        py,
+        &voicevox_core::blocking::wav_from_s16le(pcm, output_sampling_rate, output_stereo),
+    )
+    .into()
 }
 
 mod blocking {
