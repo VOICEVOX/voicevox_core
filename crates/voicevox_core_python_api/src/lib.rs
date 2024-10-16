@@ -12,7 +12,7 @@ use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
     pyfunction, pymodule,
-    types::{PyList, PyModule},
+    types::{PyBytes, PyList, PyModule},
     wrap_pyfunction, Py, PyObject, PyResult, PyTypeInfo, Python,
 };
 use voicevox_core::__internal::interop::raii::MaybeClosed;
@@ -25,6 +25,7 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
     module.add_wrapped(wrap_pyfunction!(_validate_pronunciation))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
+    module.add_wrapped(wrap_pyfunction!(wav_from_s16le))?;
 
     add_exceptions(module)?;
 
@@ -34,6 +35,7 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     blocking_module.add_class::<self::blocking::OpenJtalk>()?;
     blocking_module.add_class::<self::blocking::VoiceModelFile>()?;
     blocking_module.add_class::<self::blocking::UserDict>()?;
+    blocking_module.add_class::<self::blocking::Audio>()?;
     module.add_and_register_submodule(blocking_module)?;
 
     let asyncio_module = PyModule::new(py, "voicevox_core._rust.asyncio")?;
@@ -262,6 +264,35 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
     Ok(voicevox_core::__internal::to_zenkaku(text))
 }
 
+/// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
+///
+/// Parameters
+/// ----------
+/// pcm : bytes
+///     16bit PCMで表現された音声データ
+/// output_sampling_rate: int
+///     pcmのサンプリングレート
+/// output_stereo: bool
+///     pcmがステレオかどうか
+///
+/// Returns
+/// -------
+/// bytes
+///     WAVフォーマットで表現された音声データ
+#[pyfunction]
+fn wav_from_s16le(
+    pcm: &[u8],
+    output_sampling_rate: u32,
+    output_stereo: bool,
+    py: Python<'_>,
+) -> PyObject {
+    PyBytes::new(
+        py,
+        &voicevox_core::blocking::wav_from_s16le(pcm, output_sampling_rate, output_stereo),
+    )
+    .into()
+}
+
 mod blocking {
     use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
@@ -421,6 +452,24 @@ mod blocking {
             self.open_jtalk
                 .use_user_dict(&user_dict.dict)
                 .into_py_result(py)
+        }
+    }
+
+    #[pyclass]
+    pub(crate) struct Audio {
+        audio: voicevox_core::blocking::Audio,
+    }
+
+    #[pymethods]
+    impl Audio {
+        #[getter]
+        fn length(&self) -> usize {
+            self.audio.length
+        }
+
+        #[getter]
+        fn sampling_rate(&self) -> f32 {
+            self.audio.sampling_rate
         }
     }
 
@@ -640,6 +689,52 @@ mod blocking {
                 py,
                 |a, s| synthesizer.replace_mora_pitch(&a, s),
             )
+        }
+
+        #[pyo3(signature=(
+            audio_query,
+            style_id,
+            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+        ))]
+        fn seekable_synthesis<'py>(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'py>,
+        ) -> PyResult<Audio> {
+            let audio = self
+                .synthesizer
+                .read()?
+                .seekable_synthesis(
+                    &audio_query,
+                    StyleId::new(style_id),
+                    &SynthesisOptions {
+                        enable_interrogative_upspeak,
+                    },
+                )
+                .into_py_result(py)?;
+            Ok(Audio { audio })
+        }
+
+        #[pyo3(signature=(
+            audio,
+            begin,
+            end,
+        ))]
+        fn render<'py>(
+            &self,
+            audio: &Audio,
+            begin: usize,
+            end: usize,
+            py: Python<'py>,
+        ) -> PyResult<&'py PyBytes> {
+            let wav = &self
+                .synthesizer
+                .read()?
+                .render(&audio.audio, begin, end)
+                .into_py_result(py)?;
+            Ok(PyBytes::new(py, wav))
         }
 
         #[pyo3(signature=(

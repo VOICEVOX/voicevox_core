@@ -2,6 +2,7 @@
 
 pub use crate::{
     engine::open_jtalk::blocking::OpenJtalk, infer::runtimes::onnxruntime::blocking::Onnxruntime,
+    synthesizer::blocking::wav_from_s16le, synthesizer::blocking::Audio,
     synthesizer::blocking::Synthesizer, user_dict::dict::blocking::UserDict,
     voice_model::blocking::VoiceModelFile,
 };

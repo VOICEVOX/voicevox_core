@@ -3,10 +3,12 @@ import json
 import logging
 from argparse import ArgumentParser
 from pathlib import Path
+import struct
 from typing import Tuple
 
 from voicevox_core import AccelerationMode, AudioQuery
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+from voicevox_core._rust import wav_from_s16le
 
 
 def main() -> None:
@@ -24,6 +26,7 @@ def main() -> None:
         text,
         out,
         style_id,
+        streaming,
     ) = parse_args()
 
     logger.info("%s", f"Loading ONNX Runtime ({onnxruntime_filename=})")
@@ -48,8 +51,25 @@ def main() -> None:
     logger.info("%s", f"Creating an AudioQuery from {text!r}")
     audio_query = synthesizer.audio_query(text, style_id)
 
-    logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
-    wav = synthesizer.synthesis(audio_query, style_id)
+    mode_name = "streaming" if streaming else "normal"
+    logger.info(
+        "%s", f"Synthesizing with {display_as_json(audio_query)} in {mode_name} mode"
+    )
+    if streaming:
+        chunk_sec = 1.0
+        intermediate = synthesizer.seekable_synthesis(audio_query, style_id)
+        chunk_frames = int(intermediate.sampling_rate * chunk_sec)
+        pcm = b""
+        for i in range(0, intermediate.length, chunk_frames):
+            logger.info("%s", f"synthesis {i/intermediate.length:.2%}")
+            pcm += synthesizer.render(intermediate, i, i + chunk_frames)
+        logger.info("%s", f"synthesis 100%")
+        wav = wav_from_s16le(
+            pcm, audio_query.output_sampling_rate, audio_query.output_stereo
+        )
+
+    else:
+        wav = synthesizer.synthesis(audio_query, style_id)
 
     out.write_bytes(wav)
     logger.info("%s", f"Wrote `{out}`")
@@ -96,6 +116,11 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path, str, Path, int]:
         type=int,
         help="話者IDを指定",
     )
+    argparser.add_argument(
+        "--streaming",
+        action="store_true",
+        help="ストリーミング生成",
+    )
     args = argparser.parse_args()
     # FIXME: 流石に多くなってきたので、`dataclass`化する
     return (
@@ -106,6 +131,7 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path, str, Path, int]:
         args.text,
         args.out,
         args.style_id,
+        args.streaming,
     )
 
 
