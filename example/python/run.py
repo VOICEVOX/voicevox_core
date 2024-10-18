@@ -5,8 +5,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Tuple
 
-from voicevox_core import AccelerationMode, AudioQuery
-from voicevox_core._rust import wav_from_s16le
+from voicevox_core import AccelerationMode, AudioQuery, wav_from_s16le
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 

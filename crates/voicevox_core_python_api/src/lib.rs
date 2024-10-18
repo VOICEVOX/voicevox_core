@@ -264,21 +264,6 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
     Ok(voicevox_core::__internal::to_zenkaku(text))
 }
 
-/// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
-///
-/// Parameters
-/// ----------
-/// pcm : bytes
-///     16bit PCMで表現された音声データ
-/// output_sampling_rate: int
-///     pcmのサンプリングレート
-/// output_stereo: bool
-///     pcmがステレオかどうか
-///
-/// Returns
-/// -------
-/// bytes
-///     WAVフォーマットで表現された音声データ
 #[pyfunction]
 fn wav_from_s16le<'py>(
     pcm: &[u8],
@@ -288,7 +273,7 @@ fn wav_from_s16le<'py>(
 ) -> &'py PyBytes {
     PyBytes::new(
         py,
-        &voicevox_core::blocking::wav_from_s16le(pcm, output_sampling_rate, output_stereo),
+        &voicevox_core::wav_from_s16le(pcm, output_sampling_rate, output_stereo),
     )
 }
 
