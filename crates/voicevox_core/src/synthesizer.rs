@@ -570,11 +570,11 @@ pub(crate) mod blocking {
         ) -> Result<Vec<u8>> {
             let audio = self.seekable_synthesis(audio_query, style_id, options)?;
             let pcm = self.render(&audio, 0, audio.frame_length)?;
-            return Ok(wav_from_s16le(
+            Ok(wav_from_s16le(
                 &pcm,
                 audio_query.output_sampling_rate,
                 audio_query.output_stereo,
-            ));
+            ))
         }
 
         /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
@@ -1045,8 +1045,8 @@ pub(crate) mod blocking {
             let GenerateFullIntermediateOutput { spec } = self.status.run_session(
                 model_id,
                 GenerateFullIntermediateInput {
-                    f0: ndarray::arr1(&f0).into_shape([length, 1]).unwrap(),
-                    phoneme: ndarray::arr1(&phoneme_vector)
+                    f0: ndarray::arr1(f0).into_shape([length, 1]).unwrap(),
+                    phoneme: ndarray::arr1(phoneme_vector)
                         .into_shape([length, phoneme_size])
                         .unwrap(),
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
@@ -1078,12 +1078,12 @@ pub(crate) mod blocking {
             let intermediate = self.generate_full_intermediate(
                 length,
                 phoneme_size,
-                &f0,
-                &phoneme_vector,
+                f0,
+                phoneme_vector,
                 style_id,
             )?;
             let output = self.render_audio_segment(intermediate, style_id)?;
-            return Ok(output.into_raw_vec());
+            Ok(output.into_raw_vec())
         }
     }
 

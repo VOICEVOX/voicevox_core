@@ -29,6 +29,6 @@ pub fn wav_from_s16le(pcm: &[u8], output_sampling_rate: u32, output_stereo: bool
     cur.write_all(&bit_depth.to_le_bytes()).unwrap();
     cur.write_all("data".as_bytes()).unwrap();
     cur.write_all(&bytes_size.to_le_bytes()).unwrap();
-    cur.write_all(&pcm).unwrap();
+    cur.write_all(pcm).unwrap();
     cur.into_inner()
 }
