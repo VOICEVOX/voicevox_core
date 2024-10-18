@@ -35,12 +35,14 @@ from ._rust import (  # noqa: F401
     UseUserDictError,
     WordNotFoundError,
     __version__,
+    wav_from_s16le,
 )
 
 from . import asyncio, blocking  # noqa: F401 isort: skip
 
 __all__ = [
     "__version__",
+    "wav_from_s16le",
     "AccelerationMode",
     "AccentPhrase",
     "AudioQuery",
