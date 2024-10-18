@@ -463,13 +463,13 @@ mod blocking {
     #[pymethods]
     impl Audio {
         #[getter]
-        fn length(&self) -> usize {
-            self.audio.length
+        fn frame_length(&self) -> usize {
+            self.audio.frame_length
         }
 
         #[getter]
-        fn sampling_rate(&self) -> f32 {
-            self.audio.sampling_rate
+        fn frame_rate(&self) -> f32 {
+            self.audio.frame_rate
         }
     }
 

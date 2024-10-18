@@ -141,18 +141,18 @@ pub(crate) mod blocking {
 
     const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
-    /// ユーザに渡す中間生成物。
+    /// 音声の中間物。
     pub struct Audio {
         /// (フレーム数, 特徴数)の形を持つ音声特徴量。
         internal_state: ndarray::Array2<f32>,
         /// 生成時に指定したスタイル番号。
         style_id: crate::StyleId,
         /// workaround paddingを除いた音声特徴量のフレーム数。
-        pub length: usize,
-        /// サンプリングレート。全体の秒数は`length / sampling_rate`で表せる。
-        pub sampling_rate: f32,
+        pub frame_length: usize,
+        /// サンプリングレート。全体の秒数は`frame_length / frame_rate`で表せる。
+        pub frame_rate: f32,
         /// workaroundとして付け足されているパディング長。
-        padding_length: usize,
+        padding_frame_length: usize,
         /// 生成時に利用したクエリ。
         audio_query: AudioQuery,
     }
@@ -412,6 +412,7 @@ pub(crate) mod blocking {
             }
 
             // 音が途切れてしまうのを避けるworkaround処理が入っている
+            // NOTE: `render()`内でこのpaddingを取り除くために、padding_frame_lengthにpadding長を保持している。
             // TODO: 改善したらここのpadding処理を取り除く
             const PADDING_SIZE: f64 = 0.4;
             let padding_size =
@@ -436,9 +437,9 @@ pub(crate) mod blocking {
             return Ok(Audio {
                 internal_state: spec,
                 style_id,
-                length: f0.len(),
-                sampling_rate: (DEFAULT_SAMPLING_RATE as f32) / 256.0,
-                padding_length: padding_size,
+                frame_length: f0.len(),
+                frame_rate: (DEFAULT_SAMPLING_RATE as f32) / 256.0,
+                padding_frame_length: padding_size,
                 audio_query: audio_query.clone(),
             });
 
@@ -537,19 +538,27 @@ pub(crate) mod blocking {
             const MARGIN: usize = 14; // 使われているHifiGANのreceptive fieldから計算される安全マージン
             use std::cmp::min;
             // 実態(workaround paddingを含まない)上での区間
-            let clipped_start = min(start, audio.length);
-            let clipped_end = min(end, audio.length);
+            let clipped_start = min(start, audio.frame_length);
+            let clipped_end = min(end, audio.frame_length);
+            // 指定領域が空の区間だった場合、ONNXRuntimeに渡す前に早期リターン
+            if (clipped_start..clipped_end).is_empty() {
+                return Ok(vec![]);
+            }
             // データからはみ出さない安全マージン
-            let left_margin = min(MARGIN, audio.padding_length + clipped_start);
-            let right_margin = min(MARGIN, audio.padding_length + (audio.length - clipped_end));
+            let left_margin = min(MARGIN, audio.padding_frame_length + clipped_start);
+            let right_margin = min(
+                MARGIN,
+                audio.padding_frame_length + (audio.frame_length - clipped_end),
+            );
             // 安全マージンを追加したデータ上での区間
-            let slice_start = audio.padding_length + clipped_start - left_margin;
-            let slice_end = audio.padding_length + clipped_end + right_margin;
-            let window = audio
+            let slice_start = audio.padding_frame_length + clipped_start - left_margin;
+            let slice_end = audio.padding_frame_length + clipped_end + right_margin;
+            let segment = audio
                 .internal_state
                 .slice(ndarray::s![slice_start..slice_end, ..]);
             let wave_with_margin =
-                self.render_audio_segment(window.into_owned(), audio.style_id)?;
+                self.render_audio_segment(segment.into_owned(), audio.style_id)?;
+            // 変換前に追加した安全マージンを生成音声から取り除く
             let wave = wave_with_margin
                 .slice(ndarray::s![
                     left_margin * 256..wave_with_margin.len() - right_margin * 256
@@ -594,7 +603,7 @@ pub(crate) mod blocking {
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
             let audio = self.seekable_synthesis(audio_query, style_id, options)?;
-            let pcm = self.render(&audio, 0, audio.length)?;
+            let pcm = self.render(&audio, 0, audio.frame_length)?;
             return Ok(wav_from_s16le(
                 &pcm,
                 audio_query.output_sampling_rate,

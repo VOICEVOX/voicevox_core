@@ -3,12 +3,11 @@ import json
 import logging
 from argparse import ArgumentParser
 from pathlib import Path
-import struct
 from typing import Tuple
 
 from voicevox_core import AccelerationMode, AudioQuery
-from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 from voicevox_core._rust import wav_from_s16le
+from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
 def main() -> None:
@@ -51,17 +50,15 @@ def main() -> None:
     logger.info("%s", f"Creating an AudioQuery from {text!r}")
     audio_query = synthesizer.audio_query(text, style_id)
 
-    mode_name = "streaming" if streaming else "normal"
-    logger.info(
-        "%s", f"Synthesizing with {display_as_json(audio_query)} in {mode_name} mode"
-    )
+    logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
     if streaming:
+        logger.info("%s", "In streaming mode")
         chunk_sec = 1.0
         intermediate = synthesizer.seekable_synthesis(audio_query, style_id)
-        chunk_frames = int(intermediate.sampling_rate * chunk_sec)
+        chunk_frames = int(intermediate.frame_rate * chunk_sec)
         pcm = b""
-        for i in range(0, intermediate.length, chunk_frames):
-            logger.info("%s", f"synthesis {i/intermediate.length:.2%}")
+        for i in range(0, intermediate.frame_length, chunk_frames):
+            logger.info("%s", f"synthesis {i/intermediate.frame_length:.2%}")
             pcm += synthesizer.render(intermediate, i, i + chunk_frames)
         logger.info("%s", f"synthesis 100%")
         wav = wav_from_s16le(
