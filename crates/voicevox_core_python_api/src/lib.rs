@@ -280,17 +280,16 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
 /// bytes
 ///     WAVフォーマットで表現された音声データ
 #[pyfunction]
-fn wav_from_s16le(
+fn wav_from_s16le<'py>(
     pcm: &[u8],
     output_sampling_rate: u32,
     output_stereo: bool,
-    py: Python<'_>,
-) -> PyObject {
+    py: Python<'py>,
+) -> &'py PyBytes {
     PyBytes::new(
         py,
         &voicevox_core::blocking::wav_from_s16le(pcm, output_sampling_rate, output_stereo),
     )
-    .into()
 }
 
 mod blocking {
@@ -717,22 +716,18 @@ mod blocking {
             Ok(Audio { audio })
         }
 
-        #[pyo3(signature=(
-            audio,
-            begin,
-            end,
-        ))]
+        #[pyo3(signature=(audio, start, end))]
         fn render<'py>(
             &self,
             audio: &Audio,
-            begin: usize,
+            start: usize,
             end: usize,
             py: Python<'py>,
         ) -> PyResult<&'py PyBytes> {
             let wav = &self
                 .synthesizer
                 .read()?
-                .render(&audio.audio, begin, end)
+                .render(&audio.audio, start, end)
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
         }
