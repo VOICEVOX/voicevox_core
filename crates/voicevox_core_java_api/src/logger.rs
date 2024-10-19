@@ -1,6 +1,7 @@
 use jni::{objects::JObject, JNIEnv};
 
-#[no_mangle]
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 extern "system" fn Java_jp_hiroshiba_voicevoxcore_Dll_00024LoggerInitializer_initLogger(
     _: JNIEnv<'_>,
     _: JObject<'_>,
@@ -30,6 +31,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_Dll_00024LoggerInitializer_ini
                 EnvFilter::from_default_env()
             } else {
                 // FIXME: `c_api`じゃないし、ortも`warn`は出すべき
+                // FIXME: c_apiじゃなくてjava_api
                 "error,voicevox_core=info,voicevox_core_c_api=info,ort=error".into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
