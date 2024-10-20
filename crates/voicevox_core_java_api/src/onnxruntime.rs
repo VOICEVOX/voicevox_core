@@ -12,10 +12,10 @@ use crate::common::throw_if_err;
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[duplicate_item(
     f CONST;
-    [ Java_jp_hiroshiba_voicevoxcore_Onnxruntime_rsLibName ] [ LIB_NAME ];
-    [ Java_jp_hiroshiba_voicevoxcore_Onnxruntime_rsLibVersion ] [ LIB_VERSION ];
-    [ Java_jp_hiroshiba_voicevoxcore_Onnxruntime_rsLibVersionedFilename ] [ LIB_VERSIONED_FILENAME ];
-    [ Java_jp_hiroshiba_voicevoxcore_Onnxruntime_rsLibUnversionedFilename ] [ LIB_UNVERSIONED_FILENAME ];
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibName ] [ LIB_NAME ];
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibVersion ] [ LIB_VERSION ];
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibVersionedFilename ] [ LIB_VERSIONED_FILENAME ];
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibUnversionedFilename ] [ LIB_UNVERSIONED_FILENAME ];
 )]
 #[unsafe(no_mangle)]
 extern "system" fn f(env: JNIEnv<'_>) -> jobject {
@@ -27,7 +27,7 @@ extern "system" fn f(env: JNIEnv<'_>) -> jobject {
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Onnxruntime_rsNew<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsNew<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     filename: JString<'local>,
@@ -44,7 +44,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Onnxruntime_rsNew<'loca
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Onnxruntime_rsSupportedDevices<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsSupportedDevices<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {

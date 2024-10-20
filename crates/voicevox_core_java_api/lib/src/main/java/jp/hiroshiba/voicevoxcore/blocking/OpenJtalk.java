@@ -1,7 +1,13 @@
-package jp.hiroshiba.voicevoxcore;
+package jp.hiroshiba.voicevoxcore.blocking;
+
+import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /** テキスト解析機としてのOpen JTalk。 */
-public class OpenJtalk extends Dll {
+public class OpenJtalk {
+  static {
+    Dll.loadLibrary();
+  }
+
   private long handle;
 
   /**

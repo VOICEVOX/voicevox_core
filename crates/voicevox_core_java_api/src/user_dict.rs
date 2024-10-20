@@ -10,7 +10,7 @@ use jni::{
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsNew<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsNew<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {
@@ -25,7 +25,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsNew<'local>(
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsAddWord<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsAddWord<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     word_json: JString<'local>,
@@ -50,7 +50,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsAddWord<'loc
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsUpdateWord<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsUpdateWord<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     uuid: JString<'local>,
@@ -77,7 +77,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsUpdateWord<'
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsRemoveWord<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsRemoveWord<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     uuid: JString<'local>,
@@ -98,7 +98,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsRemoveWord<'
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsImportDict<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsImportDict<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     other_dict: JObject<'local>,
@@ -119,7 +119,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsImportDict<'
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsLoad<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsLoad<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     path: JString<'local>,
@@ -140,7 +140,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsLoad<'local>
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsSave<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsSave<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     path: JString<'local>,
@@ -161,7 +161,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsSave<'local>
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsGetWords<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsGetWords<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {
@@ -179,7 +179,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsGetWords<'lo
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsDrop<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {
@@ -191,7 +191,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsDrop<'local>
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsToZenkaku<'local>(
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDictWord_rsToZenkaku<'local>(
     env: JNIEnv<'local>,
     _cls: JClass<'local>,
     text: JString<'local>,
@@ -209,7 +209,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsToZenkaku<'local>(
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDict_rsValidatePronunciation<'local>(
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_UserDictWord_rsValidatePronunciation<'local>(
     env: JNIEnv<'local>,
     _cls: JClass<'local>,
     text: JString<'local>,
