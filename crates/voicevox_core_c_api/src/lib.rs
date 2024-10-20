@@ -91,6 +91,8 @@ fn init_logger_once() {
 //#[cfg(feature = "load-onnxruntime")]
 //pub const VOICEVOX_ONNXRUNTIME_LIB_VERSION: &CStr = ..;
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ONNX Runtimeの動的ライブラリの、バージョン付きのファイル名。
 ///
 /// WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_unversioned_filename と同じ。
@@ -106,6 +108,8 @@ pub extern "C" fn voicevox_get_onnxruntime_lib_versioned_filename() -> *const c_
     C_STRING_DROP_CHECKER.blacklist(filename).as_ptr()
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
 ///
 /// \availability{
@@ -133,6 +137,8 @@ pub struct VoicevoxLoadOnnxruntimeOptions {
     filename: *const c_char,
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// デフォルトの ::voicevox_onnxruntime_load_once のオプションを生成する。
 ///
 /// @return デフォルトの ::voicevox_onnxruntime_load_once のオプション
@@ -171,6 +177,8 @@ pub struct VoicevoxOnnxruntime(!);
 #[repr(transparent)]
 pub struct VoicevoxOnnxruntime(voicevox_core::blocking::Onnxruntime);
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxOnnxruntime のインスタンスが既に作られているならそれを得る。
 ///
 /// 作られていなければ`NULL`を返す。
@@ -181,6 +189,8 @@ pub extern "C" fn voicevox_onnxruntime_get() -> Option<&'static VoicevoxOnnxrunt
     VoicevoxOnnxruntime::get()
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ONNX Runtimeをロードして初期化する。
 ///
 /// 一度成功したら、以後は引数を無視して同じ参照を返す。
@@ -219,6 +229,8 @@ pub unsafe extern "C" fn voicevox_onnxruntime_load_once(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ONNX Runtimeを初期化する。
 ///
 /// 一度成功したら以後は同じ参照を返す。
@@ -271,6 +283,8 @@ pub struct OpenJtalkRc {
     _padding: MaybeUninit<[u8; 1]>,
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::OpenJtalkRc を<b>構築</b>(_construct_)する。
 ///
 /// 解放は ::voicevox_open_jtalk_rc_delete で行う。
@@ -305,6 +319,8 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// OpenJtalkの使うユーザー辞書を設定する。
 ///
 /// この関数を呼び出した後にユーザー辞書を変更した場合、再度この関数を呼び出す必要がある。
@@ -323,6 +339,8 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::OpenJtalkRc を<b>破棄</b>(_destruct_)する。
 ///
 /// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
@@ -368,6 +386,8 @@ pub struct VoicevoxInitializeOptions {
     cpu_num_threads: u16,
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// デフォルトの初期化オプションを生成する
 /// @return デフォルト値が設定された初期化オプション
 #[no_mangle]
@@ -376,6 +396,8 @@ pub extern "C" fn voicevox_make_default_initialize_options() -> VoicevoxInitiali
     VoicevoxInitializeOptions::default()
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// voicevoxのバージョンを取得する。
 /// @return SemVerでフォーマットされたバージョン。
 #[no_mangle]
@@ -410,6 +432,8 @@ pub type VoicevoxVoiceModelId<'a> = &'a [u8; 16];
 /// VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
 pub type VoicevoxStyleId = u32;
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// VVMファイルを開く。
 ///
 /// @param [in] path vvmファイルへのUTF-8のファイルパス
@@ -435,6 +459,8 @@ pub unsafe extern "C" fn voicevox_voice_model_file_open(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxVoiceModelFile からIDを取得する。
 ///
 /// @param [in] model 音声モデル
@@ -453,6 +479,8 @@ pub unsafe extern "C" fn voicevox_voice_model_file_id(
     unsafe { output_voice_model_id.write_unaligned(id) };
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxVoiceModelFile からメタ情報を取得する。
 ///
 /// JSONの解放は ::voicevox_json_free で行う。
@@ -468,6 +496,8 @@ pub extern "C" fn voicevox_voice_model_file_create_metas_json(
     C_STRING_DROP_CHECKER.whitelist(model.metas()).into_raw()
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
 ///
 /// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
@@ -490,6 +520,8 @@ pub struct VoicevoxSynthesizer {
     _padding: MaybeUninit<[u8; 1]>,
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。
 ///
 /// @param [in] onnxruntime
@@ -520,6 +552,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxSynthesizer を<b>破棄</b>(_destruct_)する。
 ///
 /// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
@@ -533,6 +567,8 @@ pub extern "C" fn voicevox_synthesizer_delete(synthesizer: *mut VoicevoxSynthesi
     synthesizer.drop_body();
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 音声モデルを読み込む。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
@@ -548,6 +584,8 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
     into_result_code_with_error(synthesizer.load_voice_model(&model.body()))
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 音声モデルの読み込みを解除する。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
@@ -568,6 +606,8 @@ pub extern "C" fn voicevox_synthesizer_unload_voice_model(
     into_result_code_with_error(synthesizer.unload_voice_model(model_id).map_err(Into::into))
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxOnnxruntime のインスタンスを得る。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
@@ -580,6 +620,8 @@ pub extern "C" fn voicevox_synthesizer_get_onnxruntime(
     synthesizer.onnxruntime()
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ハードウェアアクセラレーションがGPUモードか判定する。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
@@ -593,6 +635,8 @@ pub extern "C" fn voicevox_synthesizer_is_gpu_mode(
     synthesizer.body().is_gpu_mode()
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 指定したIDの音声モデルが読み込まれているか判定する。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
@@ -613,6 +657,8 @@ pub extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
     synthesizer.body().is_loaded_voice_model(model_id)
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
 ///
 /// JSONの解放は ::voicevox_json_free で行う。
@@ -629,6 +675,8 @@ pub extern "C" fn voicevox_synthesizer_create_metas_json(
     C_STRING_DROP_CHECKER.whitelist(metas).into_raw()
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ONNX Runtimeとして利用可能なデバイスの情報を、JSONで取得する。
 ///
 /// JSONの解放は ::voicevox_json_free で行う。
@@ -669,6 +717,8 @@ pub unsafe extern "C" fn voicevox_onnxruntime_create_supported_devices_json(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AquesTalk風記法から、AudioQueryをJSONとして生成する。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -716,6 +766,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 日本語テキストから、AudioQueryをJSONとして生成する。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -763,6 +815,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AquesTalk風記法から、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -809,6 +863,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 日本語テキストから、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -854,6 +910,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -892,6 +950,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -930,6 +990,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -975,6 +1037,8 @@ pub struct VoicevoxSynthesisOptions {
     enable_interrogative_upspeak: bool,
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// デフォルトの `voicevox_synthesizer_synthesis` のオプションを生成する
 /// @return デフォルト値が設定された `voicevox_synthesizer_synthesis` のオプション
 #[no_mangle]
@@ -983,6 +1047,8 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
     VoicevoxSynthesisOptions::default()
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AudioQueryから音声合成を行う。
 ///
 /// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
@@ -1034,6 +1100,8 @@ pub struct VoicevoxTtsOptions {
     enable_interrogative_upspeak: bool,
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// デフォルトのテキスト音声合成オプションを生成する
 /// @return テキスト音声合成オプション
 #[no_mangle]
@@ -1042,6 +1110,8 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
     voicevox_core::TtsOptions::default().into()
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AquesTalk風記法から音声合成を行う。
 ///
 /// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
@@ -1082,6 +1152,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 日本語テキストから音声合成を行う。
 ///
 /// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
@@ -1121,6 +1193,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// JSON文字列を解放する。
 ///
 /// @param [in] json 解放するJSON文字列
@@ -1146,6 +1220,8 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
     drop(CString::from_raw(C_STRING_DROP_CHECKER.check(json)));
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// WAVデータを解放する。
 ///
 /// @param [in] wav 解放するWAVデータ
@@ -1163,6 +1239,8 @@ pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
     U8_SLICE_OWNER.drop_for(wav);
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 結果コードに対応したメッセージ文字列を取得する。
 ///
 /// @param [in] result_code 結果コード
@@ -1235,6 +1313,8 @@ pub enum VoicevoxUserDictWordType {
     VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX = 4,
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxUserDictWord を最低限のパラメータで作成する。
 ///
 /// @param [in] surface 表記
@@ -1255,6 +1335,8 @@ pub extern "C" fn voicevox_user_dict_word_make(
     }
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ユーザー辞書をb>構築</b>(_construct_)する。
 ///
 /// @returns ::VoicevoxUserDict
@@ -1264,6 +1346,8 @@ pub extern "C" fn voicevox_user_dict_new() -> NonNull<VoicevoxUserDict> {
     VoicevoxUserDict::new(Default::default())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ユーザー辞書にファイルを読み込ませる。
 ///
 /// @param [in] user_dict ユーザー辞書
@@ -1287,6 +1371,8 @@ pub unsafe extern "C" fn voicevox_user_dict_load(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ユーザー辞書に単語を追加する。
 ///
 /// @param [in] ユーザー辞書
@@ -1317,6 +1403,8 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ユーザー辞書の単語を更新する。
 ///
 /// @param [in] user_dict ユーザー辞書
@@ -1344,6 +1432,8 @@ pub unsafe extern "C" fn voicevox_user_dict_update_word(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ユーザー辞書から単語を削除する。
 ///
 /// @param [in] user_dict ユーザー辞書
@@ -1366,6 +1456,8 @@ pub extern "C" fn voicevox_user_dict_remove_word(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 // FIXME: infallibleなので、`char*`を戻り値にしてもよいはず
 /// ユーザー辞書の単語をJSON形式で出力する。
 ///
@@ -1390,6 +1482,8 @@ pub unsafe extern "C" fn voicevox_user_dict_to_json(
     VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 他のユーザー辞書をインポートする。
 ///
 /// @param [in] user_dict ユーザー辞書
@@ -1407,6 +1501,8 @@ pub extern "C" fn voicevox_user_dict_import(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ユーザー辞書をファイルに保存する。
 ///
 /// @param [in] user_dict ユーザー辞書
@@ -1428,6 +1524,8 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
     })())
 }
 
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ユーザー辞書を<b>破棄</b>(_destruct_)する。
 ///
 /// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。

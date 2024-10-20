@@ -282,7 +282,7 @@ pub(crate) mod blocking {
     /// assert_eq!(ptr_addr(ort1), ptr_addr(ort2));
     ///
     /// fn ptr_addr(obj: &impl Sized) -> usize {
-    ///     obj as *const _ as _
+    ///     &raw const *obj as _
     /// }
     /// # Ok(())
     /// # }
