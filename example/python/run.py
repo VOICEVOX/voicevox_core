@@ -53,7 +53,7 @@ def main() -> None:
     if streaming:
         logger.info("%s", "In streaming mode")
         chunk_sec = 1.0
-        intermediate = synthesizer.seekable_synthesis(audio_query, style_id)
+        intermediate = synthesizer.precompute_render(audio_query, style_id)
         chunk_frames = int(intermediate.frame_rate * chunk_sec)
         pcm = b""
         for i in range(0, intermediate.frame_length, chunk_frames):

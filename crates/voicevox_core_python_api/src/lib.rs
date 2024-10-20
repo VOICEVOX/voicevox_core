@@ -35,7 +35,7 @@ fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     blocking_module.add_class::<self::blocking::OpenJtalk>()?;
     blocking_module.add_class::<self::blocking::VoiceModelFile>()?;
     blocking_module.add_class::<self::blocking::UserDict>()?;
-    blocking_module.add_class::<self::blocking::Audio>()?;
+    blocking_module.add_class::<self::blocking::AudioFeature>()?;
     module.add_and_register_submodule(blocking_module)?;
 
     let asyncio_module = PyModule::new(py, "voicevox_core._rust.asyncio")?;
@@ -440,19 +440,19 @@ mod blocking {
     }
 
     #[pyclass]
-    pub(crate) struct Audio {
-        audio: voicevox_core::blocking::Audio,
+    pub(crate) struct AudioFeature {
+        audio: voicevox_core::blocking::AudioFeature,
     }
 
     #[pymethods]
-    impl Audio {
+    impl AudioFeature {
         #[getter]
         fn frame_length(&self) -> usize {
             self.audio.frame_length
         }
 
         #[getter]
-        fn frame_rate(&self) -> f32 {
+        fn frame_rate(&self) -> f64 {
             self.audio.frame_rate
         }
     }
@@ -680,17 +680,17 @@ mod blocking {
             style_id,
             enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
         ))]
-        fn seekable_synthesis<'py>(
+        fn precompute_render<'py>(
             &self,
             #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
             style_id: u32,
             enable_interrogative_upspeak: bool,
             py: Python<'py>,
-        ) -> PyResult<Audio> {
+        ) -> PyResult<AudioFeature> {
             let audio = self
                 .synthesizer
                 .read()?
-                .seekable_synthesis(
+                .precompute_render(
                     &audio_query,
                     StyleId::new(style_id),
                     &SynthesisOptions {
@@ -698,13 +698,13 @@ mod blocking {
                     },
                 )
                 .into_py_result(py)?;
-            Ok(Audio { audio })
+            Ok(AudioFeature { audio })
         }
 
         #[pyo3(signature=(audio, start, end))]
         fn render<'py>(
             &self,
-            audio: &Audio,
+            audio: &AudioFeature,
             start: usize,
             end: usize,
             py: Python<'py>,

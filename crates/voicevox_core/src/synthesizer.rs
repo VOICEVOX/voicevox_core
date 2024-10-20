@@ -108,7 +108,7 @@ pub(crate) mod blocking {
     const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
     /// 音声の中間物。
-    pub struct Audio {
+    pub struct AudioFeature {
         /// (フレーム数, 特徴数)の形を持つ音声特徴量。
         internal_state: ndarray::Array2<f32>,
         /// 生成時に指定したスタイル番号。
@@ -116,7 +116,7 @@ pub(crate) mod blocking {
         /// workaround paddingを除いた音声特徴量のフレーム数。
         pub frame_length: usize,
         /// サンプリングレート。全体の秒数は`frame_length / frame_rate`で表せる。
-        pub frame_rate: f32,
+        pub frame_rate: f64,
         /// workaroundとして付け足されているパディング長。
         padding_frame_length: usize,
         /// 生成時に利用したクエリ。
@@ -273,12 +273,12 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから音声合成用の中間表現を生成する。
-        pub fn seekable_synthesis(
+        pub fn precompute_render(
             &self,
             audio_query: &AudioQuery,
             style_id: StyleId,
             options: &SynthesisOptions,
-        ) -> Result<Audio> {
+        ) -> Result<AudioFeature> {
             let AudioQuery {
                 accent_phrases,
                 speed_scale,
@@ -400,11 +400,11 @@ pub(crate) mod blocking {
                 &phoneme_with_padding,
                 style_id,
             )?;
-            return Ok(Audio {
+            return Ok(AudioFeature {
                 internal_state: spec,
                 style_id,
                 frame_length: f0.len(),
-                frame_rate: (DEFAULT_SAMPLING_RATE as f32) / 256.0,
+                frame_rate: (DEFAULT_SAMPLING_RATE as f64) / 256.0,
                 padding_frame_length: padding_size,
                 audio_query: audio_query.clone(),
             });
@@ -500,7 +500,8 @@ pub(crate) mod blocking {
         }
 
         /// 中間表現から16bit PCMで音声波形を生成する。
-        pub fn render(&self, audio: &Audio, start: usize, end: usize) -> Result<Vec<u8>> {
+        pub fn render(&self, audio: &AudioFeature, start: usize, end: usize) -> Result<Vec<u8>> {
+            // TODO: 44.1kHzなどの対応
             const MARGIN: usize = 14; // 使われているHifiGANのreceptive fieldから計算される安全マージン
             use std::cmp::min;
             // 実態(workaround paddingを含まない)上での区間
@@ -568,7 +569,7 @@ pub(crate) mod blocking {
             style_id: StyleId,
             options: &SynthesisOptions,
         ) -> Result<Vec<u8>> {
-            let audio = self.seekable_synthesis(audio_query, style_id, options)?;
+            let audio = self.precompute_render(audio_query, style_id, options)?;
             let pcm = self.render(&audio, 0, audio.frame_length)?;
             Ok(wav_from_s16le(
                 &pcm,
