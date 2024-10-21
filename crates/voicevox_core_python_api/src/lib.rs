@@ -680,12 +680,12 @@ mod blocking {
             style_id,
             enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
         ))]
-        fn precompute_render<'py>(
+        fn precompute_render(
             &self,
             #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
             style_id: u32,
             enable_interrogative_upspeak: bool,
-            py: Python<'py>,
+            py: Python<'_>,
         ) -> PyResult<AudioFeature> {
             let audio = self
                 .synthesizer
