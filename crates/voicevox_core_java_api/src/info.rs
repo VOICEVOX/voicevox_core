@@ -1,6 +1,8 @@
 use crate::common::throw_if_err;
 use jni::{sys::jobject, JNIEnv};
-#[no_mangle]
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 extern "system" fn Java_jp_hiroshiba_voicevoxcore_GlobalInfo_rsGetVersion(
     env: JNIEnv<'_>,
 ) -> jobject {

@@ -121,6 +121,7 @@ pub(crate) trait TestCase: Send {
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()>;
 
     /// 別プロセスで実行された`exec`の結果をチェックする。
+    #[expect(clippy::result_large_err, reason = "多分assert_cmdの責務")]
     fn assert_output(&self, output: Utf8Output) -> AssertResult;
 }
 

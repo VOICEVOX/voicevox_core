@@ -124,7 +124,7 @@ mod tests {
     )]
     fn it_denies_unknown_ptr() {
         let owner = SliceOwner::<i32>::new();
-        let x = 42;
-        owner.drop_for(&x as *const i32 as *mut i32);
+        let mut x = 42;
+        owner.drop_for(&raw mut x);
     }
 }

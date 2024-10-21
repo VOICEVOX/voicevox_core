@@ -125,7 +125,8 @@ fn set_message(message: &str) {
         .replace_range(.., &format!("{message}\0"));
 }
 
-#[no_mangle]
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
     init_logger_once();
     let result = (|| {
@@ -163,7 +164,8 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
     }
 }
 
-#[no_mangle]
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 pub extern "C" fn load_model(style_id: i64) -> bool {
     init_logger_once();
     let style_id = StyleId::new(style_id as u32);
@@ -184,33 +186,38 @@ pub extern "C" fn load_model(style_id: i64) -> bool {
     }
 }
 
-#[no_mangle]
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 pub extern "C" fn is_model_loaded(speaker_id: i64) -> bool {
     init_logger_once();
     ensure_initialized!(&*lock_synthesizer())
         .is_loaded_model_by_style_id(StyleId::new(speaker_id as u32))
 }
 
-#[no_mangle]
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 pub extern "C" fn finalize() {
     init_logger_once();
     *lock_synthesizer() = None;
 }
 
-#[no_mangle]
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 pub extern "C" fn metas() -> *const c_char {
     init_logger_once();
     let model_set = voice_model_set();
     model_set.all_metas_json.as_ptr()
 }
 
-#[no_mangle]
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 pub extern "C" fn last_error_message() -> *const c_char {
     init_logger_once();
     ERROR_MESSAGE.lock().unwrap().as_ptr() as *const c_char
 }
 
-#[no_mangle]
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 pub extern "C" fn supported_devices() -> *const c_char {
     init_logger_once();
     return SUPPORTED_DEVICES.as_ptr();
@@ -227,7 +234,8 @@ pub extern "C" fn supported_devices() -> *const c_char {
     });
 }
 
-#[no_mangle]
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 pub extern "C" fn yukarin_s_forward(
     length: i64,
     phoneme_list: *mut i64,
@@ -253,7 +261,8 @@ pub extern "C" fn yukarin_s_forward(
     }
 }
 
-#[no_mangle]
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 pub extern "C" fn yukarin_sa_forward(
     length: i64,
     vowel_phoneme_list: *mut i64,
@@ -290,7 +299,8 @@ pub extern "C" fn yukarin_sa_forward(
     }
 }
 
-#[no_mangle]
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
 pub extern "C" fn decode_forward(
     length: i64,
     phoneme_size: i64,
