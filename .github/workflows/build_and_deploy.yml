@@ -470,7 +470,7 @@ jobs:
           cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/x86_64/
 
           cd crates/voicevox_core_java_api
-          OS=android DEVICE=cpu gradle publishToMavenLocal
+          OS=android gradle publishToMavenLocal
 
       - name: Package
         run: |

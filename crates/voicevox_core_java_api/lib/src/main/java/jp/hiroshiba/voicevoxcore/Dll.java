@@ -1,6 +1,5 @@
 package jp.hiroshiba.voicevoxcore;
 
-import ai.onnxruntime.OrtEnvironment;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,8 +41,6 @@ abstract class Dll {
       }
 
       String target = osName + "-" + osArch;
-      // ONNX Runtime の DLL を読み込む。
-      OrtEnvironment.getEnvironment();
       try (InputStream in = Dll.class.getResourceAsStream("/dll/" + target + "/" + dllName)) {
         if (in == null) {
           try {
