@@ -12,8 +12,6 @@ plugins {
     id "com.diffplug.spotless" version "6.25.0"
 }
 
-def boolean isGpu = ['cuda', 'directml'].contains(gradle.ext.targetDevice)
-
 version = gradle.ext.version
 
 repositories {
@@ -35,12 +33,6 @@ dependencies {
 
     // https://mvnrepository.com/artifact/jakarta.annotation/jakarta.annotation-api
     implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: gradle.ext.jakartaAnnotationVersion
-
-    if (isGpu) {
-        implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime_gpu', version: gradle.ext.onnxruntimeVersion
-    } else {
-        implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime', version: gradle.ext.onnxruntimeVersion
-    }
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -70,7 +62,7 @@ publishing {
     publications {
         maven(MavenPublication) {
             groupId = 'jp.hiroshiba.voicevoxcore'
-            artifactId = gradle.ext.targetDevice == 'cpu' ? 'voicevoxcore' : "voicevoxcore-${gradle.ext.targetDevice}"
+            artifactId = 'voicevoxcore'
             version = gradle.ext.version
             from components.java
         }
