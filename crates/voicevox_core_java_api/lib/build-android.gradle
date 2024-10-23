@@ -25,8 +25,6 @@ dependencies {
 
     // https://mvnrepository.com/artifact/jakarta.annotation/jakarta.annotation-api
     implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: gradle.ext.jakartaAnnotationVersion
-
-    implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime-android', version: gradle.ext.onnxruntimeVersion
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -65,7 +63,7 @@ publishing {
     publications {
         maven(MavenPublication) {
             groupId = 'jp.hiroshiba.voicevoxcore'
-            artifactId = gradle.ext.targetDevice == 'cpu' ? 'voicevoxcore-android' : "voicevoxcore-android-${gradle.ext.targetDevice}"
+            artifactId = 'voicevoxcore-android'
             version = gradle.ext.version
 
             afterEvaluate {
