@@ -1,9 +1,12 @@
-package jp.hiroshiba.voicevoxcore;
+package jp.hiroshiba.voicevoxcore.blocking;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import jp.hiroshiba.voicevoxcore.AudioQuery;
+import jp.hiroshiba.voicevoxcore.TestUtils;
+import jp.hiroshiba.voicevoxcore.UserDictWord;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.LoadUserDictException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
@@ -27,7 +30,7 @@ class UserDictTest extends TestUtils {
             "this_word_should_not_exist_in_default_dictionary",
             synthesizer.metas()[0].styles[0].id);
 
-    userDict.addWord(new UserDict.Word("this_word_should_not_exist_in_default_dictionary", "テスト"));
+    userDict.addWord(new UserDictWord("this_word_should_not_exist_in_default_dictionary", "テスト"));
     openJtalk.useUserDict(userDict);
     AudioQuery query2 =
         synthesizer.createAudioQuery(
@@ -41,11 +44,11 @@ class UserDictTest extends TestUtils {
   void checkManipulation() throws Exception {
     UserDict userDict = new UserDict();
     // 単語追加
-    String uuid = userDict.addWord(new UserDict.Word("hoge", "ホゲ"));
+    String uuid = userDict.addWord(new UserDictWord("hoge", "ホゲ"));
     assertTrue(userDict.toHashMap().get(uuid) != null);
 
     // 単語更新
-    userDict.updateWord(uuid, new UserDict.Word("hoge", "ホゲホゲ"));
+    userDict.updateWord(uuid, new UserDictWord("hoge", "ホゲホゲ"));
     assertTrue(userDict.toHashMap().get(uuid).pronunciation.equals("ホゲホゲ"));
 
     // 単語削除
@@ -53,9 +56,9 @@ class UserDictTest extends TestUtils {
     assertTrue(userDict.toHashMap().get(uuid) == null);
 
     // 辞書のインポート
-    userDict.addWord(new UserDict.Word("hoge", "ホゲ"));
+    userDict.addWord(new UserDictWord("hoge", "ホゲ"));
     UserDict userDict2 = new UserDict();
-    userDict2.addWord(new UserDict.Word("fuga", "フガ"));
+    userDict2.addWord(new UserDictWord("fuga", "フガ"));
     userDict.importDict(userDict2);
     assertTrue(userDict.toHashMap().size() == 2);
 

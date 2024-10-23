@@ -2,12 +2,17 @@
  * 音声合成のテスト。
  * ttsaudioQuery -> synthesisの順に実行する。
  */
-package jp.hiroshiba.voicevoxcore;
+package jp.hiroshiba.voicevoxcore.blocking;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import jp.hiroshiba.voicevoxcore.AccelerationMode;
+import jp.hiroshiba.voicevoxcore.AccentPhrase;
+import jp.hiroshiba.voicevoxcore.AudioQuery;
+import jp.hiroshiba.voicevoxcore.Mora;
+import jp.hiroshiba.voicevoxcore.TestUtils;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
 import org.junit.jupiter.api.Test;
@@ -23,9 +28,7 @@ class SynthesizerTest extends TestUtils {
     Onnxruntime onnxruntime = loadOnnxruntime();
     OpenJtalk openJtalk = loadOpenJtalk();
     Synthesizer synthesizer =
-        Synthesizer.builder(onnxruntime, openJtalk)
-            .accelerationMode(Synthesizer.AccelerationMode.CPU)
-            .build();
+        Synthesizer.builder(onnxruntime, openJtalk).accelerationMode(AccelerationMode.CPU).build();
     assertFalse(synthesizer.isGpuMode());
   }
 

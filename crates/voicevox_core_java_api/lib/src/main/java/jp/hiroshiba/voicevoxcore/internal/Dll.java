@@ -1,13 +1,21 @@
-package jp.hiroshiba.voicevoxcore;
+package jp.hiroshiba.voicevoxcore.internal;
 
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/** ライブラリを読み込むためだけのクラス。 */
-abstract class Dll {
-  static {
+/** ライブラリを読み込むためだけ。 */
+public class Dll {
+  private static boolean loaded = false;
+
+  private Dll() {
+    throw new UnsupportedOperationException();
+  }
+
+  public static synchronized void loadLibrary() {
+    if (loaded) return;
+
     String runtimeName = System.getProperty("java.runtime.name");
     if (runtimeName.equals("Android Runtime")) {
       // Android ではjniLibsから読み込む。
@@ -58,11 +66,14 @@ abstract class Dll {
           System.load(dllPath.toAbsolutePath().toString());
         }
       } catch (Exception e) {
+        // FIXME: `tempDir`の削除
         throw new RuntimeException("Failed to load Voicevox Core DLL for " + target, e);
       }
     }
 
     new LoggerInitializer().initLogger();
+
+    loaded = true;
   }
 
   static class LoggerInitializer {

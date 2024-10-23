@@ -3,9 +3,14 @@ package jp.hiroshiba.voicevoxcore;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import jakarta.annotation.Nonnull;
+import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /** VOICEVOX CORE自体の情報。 */
-public class GlobalInfo extends Dll {
+public class GlobalInfo {
+  static {
+    Dll.loadLibrary();
+  }
+
   /**
    * ライブラリのバージョン。
    *
@@ -19,6 +24,7 @@ public class GlobalInfo extends Dll {
   @Nonnull
   private static native String rsGetVersion();
 
+  // FIXME: dead code
   @Nonnull
   private static native String rsGetSupportedDevicesJson();
 

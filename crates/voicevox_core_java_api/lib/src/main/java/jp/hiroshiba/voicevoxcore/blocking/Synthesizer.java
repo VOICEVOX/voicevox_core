@@ -1,4 +1,4 @@
-package jp.hiroshiba.voicevoxcore;
+package jp.hiroshiba.voicevoxcore.blocking;
 
 import com.google.gson.Gson;
 import jakarta.annotation.Nonnull;
@@ -7,15 +7,24 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import jp.hiroshiba.voicevoxcore.AccelerationMode;
+import jp.hiroshiba.voicevoxcore.AccentPhrase;
+import jp.hiroshiba.voicevoxcore.AudioQuery;
+import jp.hiroshiba.voicevoxcore.SpeakerMeta;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
+import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /**
  * 音声シンセサイザ。
  *
  * @see Synthesizer#builder
  */
-public class Synthesizer extends Dll {
+public class Synthesizer {
+  static {
+    Dll.loadLibrary();
+  }
+
   private long handle;
 
   private Synthesizer(Onnxruntime onnxruntime, OpenJtalk openJtalk, Builder builder) {
@@ -54,11 +63,10 @@ public class Synthesizer extends Dll {
    * @return メタ情報。
    */
   @Nonnull
-  public VoiceModelFile.SpeakerMeta[] metas() {
+  public SpeakerMeta[] metas() {
     Gson gson = new Gson();
     String metasJson = rsGetMetasJson();
-    VoiceModelFile.SpeakerMeta[] rawMetas =
-        gson.fromJson(metasJson, VoiceModelFile.SpeakerMeta[].class);
+    SpeakerMeta[] rawMetas = gson.fromJson(metasJson, SpeakerMeta[].class);
     if (rawMetas == null) {
       throw new NullPointerException("metas");
     }
@@ -387,16 +395,6 @@ public class Synthesizer extends Dll {
       Synthesizer synthesizer = new Synthesizer(onnxruntime, openJtalk, this);
       return synthesizer;
     }
-  }
-
-  /** ハードウェアアクセラレーションモード。 */
-  public static enum AccelerationMode {
-    /** 実行環境に合わせて自動的に選択する。 */
-    AUTO,
-    /** CPUに設定する。 */
-    CPU,
-    /** GPUに設定する。 */
-    GPU,
   }
 
   /** {@link Synthesizer#synthesis} のオプション。 */
