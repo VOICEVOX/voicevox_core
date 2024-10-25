@@ -86,19 +86,42 @@ pub(crate) type ManifestDomains = inference_domain_map_values!(for<D> Option<D::
 #[index_for_fields(TalkOperation)]
 pub(crate) struct TalkManifest {
     #[index_for_fields(TalkOperation::PredictDuration)]
-    pub(crate) predict_duration_filename: Arc<str>,
+    pub(crate) predict_duration: ModelFile,
 
     #[index_for_fields(TalkOperation::PredictIntonation)]
-    pub(crate) predict_intonation_filename: Arc<str>,
+    pub(crate) predict_intonation: ModelFile,
 
     #[index_for_fields(TalkOperation::GenerateFullIntermediate)]
-    pub(crate) generate_full_intermediate_filename: Arc<str>,
+    pub(crate) generate_full_intermediate: ModelFile,
 
     #[index_for_fields(TalkOperation::RenderAudioSegment)]
-    pub(crate) render_audio_segment_filename: Arc<str>,
+    pub(crate) render_audio_segment: ModelFile,
 
     #[serde(default)]
     pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
+}
+
+#[derive(Deserialize, Clone)]
+pub(crate) struct ModelFile {
+    pub(crate) r#type: ModelFileType,
+    pub(crate) filename: Arc<str>,
+}
+
+#[cfg(test)]
+impl Default for ModelFile {
+    fn default() -> Self {
+        Self {
+            r#type: ModelFileType::Onnx,
+            filename: "".into(),
+        }
+    }
+}
+
+#[derive(Deserialize, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum ModelFileType {
+    Onnx,
+    VvBin,
 }
 
 #[serde_as]

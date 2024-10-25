@@ -11,11 +11,6 @@ on:
         type: boolean
         required: false
         default: false
-      is_production:
-        description: "製品版をビルドする"
-        type: boolean
-        required: false
-        default: false
   release:
     types:
       - published
@@ -42,7 +37,7 @@ defaults:
 
 jobs:
   deploy_and_deploy_downloader:
-    environment: ${{ inputs.is_production && 'production' || '' }} # コード署名用のenvironment
+    environment: ${{ inputs.code_signing && 'production' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include:

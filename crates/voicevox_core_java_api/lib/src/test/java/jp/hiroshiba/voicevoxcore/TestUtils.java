@@ -16,7 +16,9 @@ class TestUtils {
   }
 
   Onnxruntime loadOnnxruntime() {
-    final String FILENAME = "../../test_util/data/lib/" + Onnxruntime.LIB_VERSIONED_FILENAME;
+    final String FILENAME =
+        "../../test_util/data/lib/"
+            + Onnxruntime.LIB_VERSIONED_FILENAME.replace("voicevox_onnxruntime", "onnxruntime");
 
     try {
       return Onnxruntime.loadOnce().filename(FILENAME).exec();
