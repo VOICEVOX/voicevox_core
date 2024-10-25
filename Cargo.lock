@@ -430,6 +430,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "boxcar"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fba19c552ee63cb6646b75e1166d1bdb8a6d34a6d19e319dec88c8adadff2db3"
+
+[[package]]
 name = "bstr"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1963,7 +1969,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -4352,6 +4358,7 @@ dependencies = [
  "anstyle-query",
  "anyhow",
  "assert_cmd",
+ "boxcar",
  "camino",
  "chrono",
  "clap",

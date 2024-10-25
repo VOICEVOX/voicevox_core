@@ -1,8 +1,9 @@
 use std::{
     any,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fmt::{Debug, Display},
     mem,
+    num::NonZero,
     ops::{Deref, DerefMut},
     ptr::NonNull,
     sync::Arc,
@@ -10,6 +11,9 @@ use std::{
 
 use easy_ext::ext;
 use tracing::warn;
+
+// FIXME: 次のような状況に備え、`new`をいっぱい行うテストを書く
+// https://github.com/VOICEVOX/voicevox_core/pull/849#discussion_r1814221605
 
 /// プロセスの終わりまでデストラクトされない、ユーザーにオブジェクトとして貸し出す1-bit長の構造体。
 ///
@@ -31,8 +35,10 @@ use tracing::warn;
 pub(crate) trait CApiObject: Default + Debug + 'static {
     type RustApiObject: 'static;
 
-    // 書き込み操作としては`push`のみ
-    fn heads() -> &'static std::sync::Mutex<Vec<Self>>;
+    // 行う可変操作は`insert`のみ
+    fn known_addrs() -> &'static std::sync::Mutex<HashSet<NonZero<usize>>>;
+
+    fn heads() -> &'static boxcar::Vec<Self>;
 
     #[expect(
         clippy::type_complexity,
@@ -40,7 +46,7 @@ pub(crate) trait CApiObject: Default + Debug + 'static {
     )]
     fn bodies() -> &'static std::sync::Mutex<
         HashMap<
-            usize, // `heads`の要素へのポインタのアドレス
+            NonZero<usize>, // `heads`の要素へのポインタのアドレス
             Arc<
                 parking_lot::RwLock<
                     Option<Self::RustApiObject>, // `RwLock`をdropする直前まで`Some`
@@ -53,71 +59,79 @@ pub(crate) trait CApiObject: Default + Debug + 'static {
         assert!(mem::size_of::<Self>() > 0);
 
         let this = {
-            let mut heads = Self::lock_heads();
-            heads.push(Default::default());
-            NonNull::from(heads.last().expect("just pushed"))
+            let i = Self::heads().push(Default::default());
+            NonNull::from(&Self::heads()[i])
         };
+        Self::lock_known_addrs().insert(this.addr_without_provenance());
         let body = parking_lot::RwLock::new(body.into()).into();
-        Self::lock_bodies().insert(this.as_ptr() as _, body);
+        Self::lock_bodies().insert(this.addr_without_provenance(), body);
         this
     }
 }
 
 #[ext(CApiObjectPtrExt)]
 impl<T: CApiObject> *const T {
+    // ユーザーから渡されたポインタである`self`は、次のうちどれかに分類される。
+    //
+    // 1. `known_addrs`に含まれない ⇨ 知らないどこかのダングリングポインタか何か。あるいはnull
+    // 2. `known_addrs`に含まれるが、`bodies`に含まれない → "delete"済み
+    // 3. `known_addrs`も`bodies`にも含まれる → 1.でも2.でもなく、有効
+
     /// # Panics
     ///
     /// 同じ対象に対して`drop_body`を呼んでいるとパニックする。
     pub(crate) fn body(self) -> impl Deref<Target = T::RustApiObject> {
-        self.validate();
+        let this = self.validate();
 
         let body = T::lock_bodies()
-            .get(&(self as _))
-            .unwrap_or_else(|| self.panic_for_deleted())
+            .get(&this.addr_without_provenance())
+            .unwrap_or_else(|| this.panic_for_deleted())
             .read_arc();
 
         voicevox_core::__internal::interop::raii::try_map_guard(body, |body| {
             body.as_ref().ok_or(())
         })
-        .unwrap_or_else(|()| self.panic_for_deleted())
+        .unwrap_or_else(|()| this.panic_for_deleted())
     }
 
     /// # Panics
     ///
     /// 同じ対象に対してこの関数を二度呼ぶとパニックする。
     pub(crate) fn drop_body(self) {
-        self.validate();
+        let this = self.validate();
 
         let body = T::lock_bodies()
-            .remove(&(self as _))
-            .unwrap_or_else(|| self.panic_for_deleted());
+            .remove(&this.addr_without_provenance())
+            .unwrap_or_else(|| this.panic_for_deleted());
 
         drop(
             body.try_write_arc()
                 .unwrap_or_else(|| {
                     warn!(
                         "{this} is still in use. Waiting before closing",
-                        this = self.display(),
+                        this = this.display(),
                     );
                     body.write_arc()
                 })
                 .take()
-                .unwrap_or_else(|| self.panic_for_deleted()),
+                .unwrap_or_else(|| this.panic_for_deleted()),
         );
     }
 }
 
 #[ext]
 impl<T: CApiObject> *const T {
-    fn validate(self) {
-        if self.is_null() {
-            panic!("the argument must not be null");
-        }
-        if !T::lock_heads().as_ptr_range().contains(&self) {
+    fn validate(self) -> NonNull<T> {
+        let this = NonNull::new(self as *mut T).expect("the argument must not be null");
+        if !T::lock_known_addrs().contains(&this.addr_without_provenance()) {
             panic!("{self:018p} does not seem to be valid object");
         }
+        this
     }
+}
 
+#[ext]
+impl<T: CApiObject> NonNull<T> {
     fn display(self) -> impl Display {
         let type_name = any::type_name::<T>()
             .split("::")
@@ -132,14 +146,21 @@ impl<T: CApiObject> *const T {
 }
 
 #[ext]
+impl<T> NonNull<T> {
+    fn addr_without_provenance(self) -> NonZero<usize> {
+        NonZero::new(self.as_ptr() as _).expect("this is from `NonNull`")
+    }
+}
+
+#[ext]
 impl<T: CApiObject> T {
-    fn lock_heads() -> impl DerefMut<Target = Vec<Self>> {
-        Self::heads().lock().unwrap_or_else(|e| panic!("{e}"))
+    fn lock_known_addrs() -> impl DerefMut<Target = HashSet<NonZero<usize>>> {
+        Self::known_addrs().lock().unwrap_or_else(|e| panic!("{e}"))
     }
 
-    fn lock_bodies(
-    ) -> impl DerefMut<Target = HashMap<usize, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>>
-    {
+    fn lock_bodies() -> impl DerefMut<
+        Target = HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>,
+    > {
         Self::bodies().lock().unwrap_or_else(|e| panic!("{e}"))
     }
 }
