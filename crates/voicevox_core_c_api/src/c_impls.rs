@@ -1,6 +1,7 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     ffi::CString,
+    num::NonZero,
     path::Path,
     ptr::NonNull,
     sync::{Arc, LazyLock},
@@ -145,17 +146,23 @@ fn metas_to_json(metas: &[SpeakerMeta]) -> CString {
 impl CApiObject for H {
     type RustApiObject = B;
 
-    fn heads() -> &'static std::sync::Mutex<Vec<Self>> {
-        static HEADS: std::sync::Mutex<Vec<H>> = std::sync::Mutex::new(vec![]);
+    fn known_addrs() -> &'static std::sync::Mutex<HashSet<NonZero<usize>>> {
+        static KNOWN_ADDRS: LazyLock<std::sync::Mutex<HashSet<NonZero<usize>>>> =
+            LazyLock::new(Default::default);
+        &KNOWN_ADDRS
+    }
+
+    fn heads() -> &'static boxcar::Vec<Self> {
+        static HEADS: boxcar::Vec<H> = boxcar::Vec::new();
         &HEADS
     }
 
     fn bodies() -> &'static std::sync::Mutex<
-        HashMap<usize, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>,
+        HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>,
     > {
         #[expect(clippy::type_complexity, reason = "`CApiObject::bodies`と同様")]
         static BODIES: LazyLock<
-            std::sync::Mutex<HashMap<usize, Arc<parking_lot::RwLock<Option<B>>>>>,
+            std::sync::Mutex<HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<B>>>>>,
         > = LazyLock::new(Default::default);
 
         &BODIES
