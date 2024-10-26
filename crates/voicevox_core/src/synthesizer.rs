@@ -511,12 +511,18 @@ pub(crate) mod blocking {
             if (clipped_start..clipped_end).is_empty() {
                 return Ok(vec![]);
             }
-            // データからはみ出さない安全マージン
-            let left_margin = min(MARGIN, audio.padding_frame_length + clipped_start);
-            let right_margin = min(
-                MARGIN,
-                audio.padding_frame_length + (audio.frame_length - clipped_end),
-            );
+            // マージンがデータからはみ出さないことを保証
+            // cf. https://github.com/VOICEVOX/voicevox_core/pull/854#discussion_r1803691291
+            if (MARGIN > audio.padding_frame_length + clipped_start
+                || MARGIN > audio.padding_frame_length + (audio.frame_length - clipped_end))
+            {
+                return Err(ErrorRepr::RunModel(anyhow::anyhow!(
+                    "Validation error: Too short padding for input"
+                ))
+                .into());
+            }
+            let left_margin = MARGIN;
+            let right_margin = MARGIN;
             // 安全マージンを追加したデータ上での区間
             let slice_start = audio.padding_frame_length + clipped_start - left_margin;
             let slice_end = audio.padding_frame_length + clipped_end + right_margin;
