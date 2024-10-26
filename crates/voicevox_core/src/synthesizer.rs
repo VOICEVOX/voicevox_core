@@ -513,8 +513,8 @@ pub(crate) mod blocking {
             }
             // マージンがデータからはみ出さないことを保証
             // cf. https://github.com/VOICEVOX/voicevox_core/pull/854#discussion_r1803691291
-            if (MARGIN > audio.padding_frame_length + clipped_start
-                || MARGIN > audio.padding_frame_length + (audio.frame_length - clipped_end))
+            if MARGIN > audio.padding_frame_length + clipped_start
+                || MARGIN > audio.padding_frame_length + (audio.frame_length - clipped_end)
             {
                 return Err(ErrorRepr::RunModel(anyhow::anyhow!(
                     "Validation error: Too short padding for input"
