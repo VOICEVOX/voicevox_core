@@ -267,13 +267,13 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
 #[pyfunction]
 fn wav_from_s16le<'py>(
     pcm: &[u8],
-    output_sampling_rate: u32,
-    output_stereo: bool,
+    sampling_rate: u32,
+    is_stereo: bool,
     py: Python<'py>,
 ) -> &'py PyBytes {
     PyBytes::new(
         py,
-        &voicevox_core::wav_from_s16le(pcm, output_sampling_rate, output_stereo),
+        &voicevox_core::wav_from_s16le(pcm, sampling_rate, is_stereo),
     )
 }
 

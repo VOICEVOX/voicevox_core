@@ -102,7 +102,7 @@ class InvalidWordError(ValueError):
 
 def _validate_pronunciation(pronunciation: str) -> None: ...
 def _to_zenkaku(text: str) -> str: ...
-def wav_from_s16le(pcm: bytes, output_sampling_rate: int, output_stereo: bool) -> bytes:
+def wav_from_s16le(pcm: bytes, sampling_rate: int, is_stereo: bool) -> bytes:
     """
     16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
 
@@ -110,10 +110,10 @@ def wav_from_s16le(pcm: bytes, output_sampling_rate: int, output_stereo: bool) -
     ----------
     pcm : bytes
         16bit PCMで表現された音声データ
-    output_sampling_rate: int
-        pcmのサンプリングレート
-    output_stereo: bool
-        pcmがステレオかどうか
+    sampling_rate: int
+        入力pcmのサンプリングレート
+    is_stereo: bool
+        入力pcmがステレオかどうか
 
     Returns
     -------
