@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Tuple
 
-from voicevox_core import AccelerationMode, AudioQuery
+from voicevox_core import AccelerationMode, AudioQuery, wav_from_s16le
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
@@ -24,6 +24,7 @@ def main() -> None:
         text,
         out,
         style_id,
+        streaming,
     ) = parse_args()
 
     logger.info("%s", f"Loading ONNX Runtime ({onnxruntime_filename=})")
@@ -49,7 +50,22 @@ def main() -> None:
     audio_query = synthesizer.audio_query(text, style_id)
 
     logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
-    wav = synthesizer.synthesis(audio_query, style_id)
+    if streaming:
+        logger.info("%s", "In streaming mode")
+        chunk_sec = 1.0
+        intermediate = synthesizer.precompute_render(audio_query, style_id)
+        chunk_frames = int(intermediate.frame_rate * chunk_sec)
+        pcm = b""
+        for i in range(0, intermediate.frame_length, chunk_frames):
+            logger.info("%s", f"{i/intermediate.frame_length:.2%}")
+            pcm += synthesizer.render(intermediate, i, i + chunk_frames)
+        logger.info("%s", f"100%")
+        wav = wav_from_s16le(
+            pcm, audio_query.output_sampling_rate, audio_query.output_stereo
+        )
+
+    else:
+        wav = synthesizer.synthesis(audio_query, style_id)
 
     out.write_bytes(wav)
     logger.info("%s", f"Wrote `{out}`")
@@ -96,6 +112,11 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path, str, Path, int]:
         type=int,
         help="話者IDを指定",
     )
+    argparser.add_argument(
+        "--streaming",
+        action="store_true",
+        help="ストリーミング生成",
+    )
     args = argparser.parse_args()
     # FIXME: 流石に多くなってきたので、`dataclass`化する
     return (
@@ -106,6 +127,7 @@ def parse_args() -> Tuple[AccelerationMode, Path, str, Path, str, Path, int]:
         args.text,
         args.out,
         args.style_id,
+        args.streaming,
     )
 
 
