@@ -4,7 +4,7 @@ voicevox_core ライブラリを C++ から使用するサンプルコード (`s
 
 ## 必要なファイルの準備
 
-まず、この README があるディレクトリで、[Downloader を使用して voicevox_core をダウンロードします](../../../docs/downloader.md#default)。
+まず、この README があるディレクトリで、[Downloader を使用して voicevox_core をダウンロードします](../../../docs/guide/user/downloader.md#default)。
 
 ## ビルド
 

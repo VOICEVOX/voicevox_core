@@ -51,22 +51,22 @@ jobs:
           poetry install --with test
       - name: mkdir public
         run: mkdir -p public/apis/c_api
-      - name: cp docs/apis/index.html
-        run: cp docs/apis/index.html public/apis/
+      - name: cp docs/ghpages/apis/index.html
+        run: cp docs/ghpages/apis/index.html public/apis/
       - name: Generate rustdoc
         run: |
           cargo +${{ steps.docsrs-rust-version.outputs.rust-toolchain }} docs-rs -p voicevox_core
           mv target/x86_64-unknown-linux-gnu/doc public/apis/rust_api
       - name: cp crates/voicevox_core_c_api/include/voicevox_core.h
-        run: cp crates/voicevox_core_c_api/include/voicevox_core.h docs/apis/c_api/doxygen/
+        run: cp crates/voicevox_core_c_api/include/voicevox_core.h docs/ghpages/apis/c_api/doxygen/
       - name: Generate doxygen document
         uses: mattnotmitt/doxygen-action@v1.9.8
         with:
-          working-directory: "docs/apis/c_api/doxygen"
+          working-directory: "docs/ghpages/apis/c_api/doxygen"
       - name: Build voicevox_core_python_api
         run: maturin develop --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --locked
       - name: Generate Sphinx document
-        run: sphinx-build docs/apis/python_api public/apis/python_api
+        run: sphinx-build docs/ghpages/apis/python_api public/apis/python_api
       - name: Generate Javadoc
         run: |
           (cd crates/voicevox_core_java_api && ./gradlew javadoc)

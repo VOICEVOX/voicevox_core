@@ -1,6 +1,6 @@
 //! 音声モデル（ VVM ファイル）。
 //!
-//! VVM ファイルの定義と形式は[ドキュメント](../../../docs/vvm.md)を参照。
+//! VVM ファイルの定義と形式は[ドキュメント](../../../docs/guide/dev/vvm.md)を参照。
 
 use std::{
     collections::HashMap,
