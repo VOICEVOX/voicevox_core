@@ -107,7 +107,7 @@ pub(crate) mod blocking {
 
     const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
-    /// 音声の中間物。
+    /// 音声の中間表現。
     pub struct AudioFeature {
         /// (フレーム数, 特徴数)の形を持つ音声特徴量。
         internal_state: ndarray::Array2<f32>,
@@ -115,7 +115,7 @@ pub(crate) mod blocking {
         style_id: crate::StyleId,
         /// workaround paddingを除いた音声特徴量のフレーム数。
         pub frame_length: usize,
-        /// サンプリングレート。全体の秒数は`frame_length / frame_rate`で表せる。
+        /// フレームレート。全体の秒数は`frame_length / frame_rate`で表せる。
         pub frame_rate: f64,
         /// workaroundとして付け足されているパディング長。
         padding_frame_length: usize,
@@ -516,7 +516,7 @@ pub(crate) mod blocking {
             if MARGIN > audio.padding_frame_length + clipped_start
                 || MARGIN > audio.padding_frame_length + (audio.frame_length - clipped_end)
             {
-                unimplemented!("Validation error: Too short padding for input, please report this issue on GitHub.");
+                unreachable!("Validation error: Too short padding for input, please report this issue on GitHub.");
             }
             let left_margin = MARGIN;
             let right_margin = MARGIN;

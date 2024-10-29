@@ -57,9 +57,9 @@ def main() -> None:
         chunk_frames = int(intermediate.frame_rate * chunk_sec)
         pcm = b""
         for i in range(0, intermediate.frame_length, chunk_frames):
-            logger.info("%s", f"synthesis {i/intermediate.frame_length:.2%}")
+            logger.info("%s", f"{i/intermediate.frame_length:.2%}")
             pcm += synthesizer.render(intermediate, i, i + chunk_frames)
-        logger.info("%s", f"synthesis 100%")
+        logger.info("%s", f"100%")
         wav = wav_from_s16le(
             pcm, audio_query.output_sampling_rate, audio_query.output_stereo
         )

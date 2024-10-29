@@ -16,7 +16,7 @@ pub fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8
     cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
     cur.write_all("WAVEfmt ".as_bytes()).unwrap();
     cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
-    cur.write_all(&1_u16.to_le_bytes()).unwrap(); //linear PCM
+    cur.write_all(&1_u16.to_le_bytes()).unwrap(); // linear PCM
     cur.write_all(&num_channels.to_le_bytes()).unwrap();
     cur.write_all(&sampling_rate.to_le_bytes()).unwrap();
 
