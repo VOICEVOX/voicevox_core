@@ -19,7 +19,7 @@ autodoc_docstring_signature = True
 extensions = ["autoapi.extension", "sphinx.ext.napoleon"]
 
 autoapi_type = "python"
-autoapi_dirs = ["../../../crates/voicevox_core_python_api/python"]
+autoapi_dirs = ["../../../../crates/voicevox_core_python_api/python"]
 autoapi_file_patterns = ["*.pyi", "*.py"]
 autoapi_ignore = ["*test*"]
 autoapi_options = [
