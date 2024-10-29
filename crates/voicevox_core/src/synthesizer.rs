@@ -516,10 +516,7 @@ pub(crate) mod blocking {
             if MARGIN > audio.padding_frame_length + clipped_start
                 || MARGIN > audio.padding_frame_length + (audio.frame_length - clipped_end)
             {
-                return Err(ErrorRepr::RunModel(anyhow::anyhow!(
-                    "Validation error: Too short padding for input"
-                ))
-                .into());
+                unimplemented!("Validation error: Too short padding for input, please report this issue on GitHub.");
             }
             let left_margin = MARGIN;
             let right_margin = MARGIN;
