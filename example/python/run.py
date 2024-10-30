@@ -71,7 +71,7 @@ def main() -> None:
     logger.info("%s", f"Wrote `{out}`")
 
 
-def parse_args() -> Tuple[AccelerationMode, Path, str, Path, str, Path, int]:
+def parse_args() -> Tuple[AccelerationMode, Path, str, Path, str, Path, int, bool]:
     argparser = ArgumentParser()
     argparser.add_argument(
         "--mode",
