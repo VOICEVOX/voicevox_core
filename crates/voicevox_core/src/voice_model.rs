@@ -62,7 +62,7 @@ impl VoiceModelId {
 }
 
 #[self_referencing]
-struct Inner<A: Async> {
+pub(crate) struct Inner<A: Async> {
     header: VoiceModelHeader,
 
     #[borrows(header)]
@@ -182,11 +182,11 @@ impl<A: Async> Inner<A> {
         &self.borrow_header().metas
     }
 
-    fn header(&self) -> &VoiceModelHeader {
+    pub(crate) fn header(&self) -> &VoiceModelHeader {
         self.borrow_header()
     }
 
-    async fn read_inference_models(
+    pub(crate) async fn read_inference_models(
         &self,
     ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
         let path = &self.borrow_header().path;
@@ -412,12 +412,9 @@ impl InferenceDomainMap<ManifestDomains> {
 pub(crate) mod blocking {
     use std::path::Path;
 
-    use crate::{
-        asyncs::SingleTasked, error::LoadModelResult, future::FutureExt as _,
-        infer::domains::InferenceDomainMap, VoiceModelMeta,
-    };
+    use crate::{asyncs::SingleTasked, future::FutureExt as _, VoiceModelMeta};
 
-    use super::{Inner, ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
+    use super::{Inner, VoiceModelId};
 
     /// 音声モデルファイル。
     ///
@@ -425,15 +422,13 @@ pub(crate) mod blocking {
     pub struct VoiceModelFile(Inner<SingleTasked>);
 
     impl self::VoiceModelFile {
-        pub(crate) fn read_inference_models(
-            &self,
-        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
-            self.0.read_inference_models().block_on()
-        }
-
         /// VVMファイルを開く。
         pub fn open(path: impl AsRef<Path>) -> crate::Result<Self> {
             Inner::open(path).block_on().map(Self)
+        }
+
+        pub(crate) fn inner(&self) -> &Inner<SingleTasked> {
+            &self.0
         }
 
         /// ID。
@@ -445,22 +440,15 @@ pub(crate) mod blocking {
         pub fn metas(&self) -> &VoiceModelMeta {
             self.0.metas()
         }
-
-        pub(crate) fn header(&self) -> &VoiceModelHeader {
-            self.0.header()
-        }
     }
 }
 
 pub(crate) mod nonblocking {
     use std::path::Path;
 
-    use crate::{
-        asyncs::BlockingThreadPool, error::LoadModelResult, infer::domains::InferenceDomainMap,
-        Result, VoiceModelMeta,
-    };
+    use crate::{asyncs::BlockingThreadPool, Result, VoiceModelMeta};
 
-    use super::{Inner, ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId};
+    use super::{Inner, VoiceModelId};
 
     /// 音声モデルファイル。
     ///
@@ -475,12 +463,6 @@ pub(crate) mod nonblocking {
     pub struct VoiceModelFile(Inner<BlockingThreadPool>);
 
     impl self::VoiceModelFile {
-        pub(crate) async fn read_inference_models(
-            &self,
-        ) -> LoadModelResult<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> {
-            self.0.read_inference_models().await
-        }
-
         /// VVMファイルを開く。
         pub async fn open(path: impl AsRef<Path>) -> Result<Self> {
             Inner::open(path).await.map(Self)
@@ -491,6 +473,10 @@ pub(crate) mod nonblocking {
             self.0.into_heads().zip.into_inner().close().await;
         }
 
+        pub(crate) fn inner(&self) -> &Inner<BlockingThreadPool> {
+            &self.0
+        }
+
         /// ID。
         pub fn id(&self) -> VoiceModelId {
             self.0.id()
@@ -499,10 +485,6 @@ pub(crate) mod nonblocking {
         /// メタ情報。
         pub fn metas(&self) -> &VoiceModelMeta {
             self.0.metas()
-        }
-
-        pub(crate) fn header(&self) -> &VoiceModelHeader {
-            self.0.header()
         }
     }
 }

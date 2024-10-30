@@ -1057,7 +1057,7 @@ mod asyncio {
     pub(crate) struct Synthesizer {
         synthesizer: Arc<
             Closable<
-                voicevox_core::nonblocking::Synthesizer<voicevox_core::nonblocking::OpenJtalk>,
+                Arc<voicevox_core::nonblocking::Synthesizer<voicevox_core::nonblocking::OpenJtalk>>,
                 Self,
                 Tokio,
             >,
@@ -1088,7 +1088,7 @@ mod asyncio {
                     cpu_num_threads,
                 },
             );
-            let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?;
+            let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?.into();
             let synthesizer = Closable::new(synthesizer).into();
             Ok(Self { synthesizer })
         }
