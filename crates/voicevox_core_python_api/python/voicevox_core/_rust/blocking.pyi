@@ -139,6 +139,12 @@ class OpenJtalk:
         """
         ...
 
+class AudioFeature:
+    @property
+    def frame_length(self) -> int: ...
+    @property
+    def frame_rate(self) -> float: ...
+
 class Synthesizer:
     """
     音声シンセサイザ。
@@ -351,6 +357,18 @@ class Synthesizer:
             スタイルID。
         """
         ...
+    def precompute_render(
+        self,
+        audio_query: AudioQuery,
+        style_id: Union[StyleId, int],
+        enable_interrogative_upspeak: bool = True,
+    ) -> AudioFeature: ...
+    def render(
+        self,
+        audio: AudioFeature,
+        start: int,
+        end: int,
+    ) -> bytes: ...
     def synthesis(
         self,
         audio_query: AudioQuery,
