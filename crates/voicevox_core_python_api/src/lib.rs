@@ -1055,6 +1055,8 @@ mod asyncio {
 
     #[pyclass]
     pub(crate) struct Synthesizer {
+        // FIXME: `Arc<voicevox_core::nonblocking::Synthesizer>`ではなく、`Arc<Closable<_>>`を
+        // `clone`する
         synthesizer: Arc<
             Closable<
                 Arc<voicevox_core::nonblocking::Synthesizer<voicevox_core::nonblocking::OpenJtalk>>,
