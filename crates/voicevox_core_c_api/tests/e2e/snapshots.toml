@@ -54,12 +54,12 @@ stderr.windows = '''
 {timestamp}  WARN voicevox_core::compatible_engine: ONNX Runtimeのロードまたは初期化ができませんでした
 {timestamp}  WARN voicevox_core::compatible_engine: falling back to `{onnxruntime_filename}`
 {windows-video-cards}
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer::inner: CPUを利用します
 '''
 stderr.unix = '''
 {timestamp}  WARN voicevox_core::compatible_engine: ONNX Runtimeのロードまたは初期化ができませんでした
 {timestamp}  WARN voicevox_core::compatible_engine: falling back to `{onnxruntime_filename}`
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer::inner: CPUを利用します
 '''
 
 [compatible_engine_load_model_before_initialize]
@@ -122,10 +122,10 @@ stderr = ''
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
 stderr.windows = '''
 {windows-video-cards}
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer::inner: CPUを利用します
 '''
 stderr.unix = '''
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer::inner: CPUを利用します
 '''
 
 [synthesizer_new_output_json]
@@ -182,29 +182,29 @@ metas = '''
 ]'''
 stderr.windows = '''
 {windows-video-cards}
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer::inner: CPUを利用します
 '''
 stderr.unix = '''
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer::inner: CPUを利用します
 '''
 
 [tts_via_audio_query]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
 stderr.windows = '''
 {windows-video-cards}
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer::inner: CPUを利用します
 '''
 stderr.unix = '''
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer::inner: CPUを利用します
 '''
 
 [user_dict_load]
 stderr.windows = '''
 {windows-video-cards}
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer::inner: CPUを利用します
 '''
 stderr.unix = '''
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer::inner: CPUを利用します
 '''
 
 [user_dict_manipulate]
