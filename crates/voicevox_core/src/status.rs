@@ -415,8 +415,8 @@ mod tests {
             },
         );
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
-        let model_contents = &model.read_inference_models().await.unwrap();
-        let result = status.insert_model(model.header(), model_contents);
+        let model_contents = &model.inner().read_inference_models().await.unwrap();
+        let result = status.insert_model(model.inner().header(), model_contents);
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
     }
@@ -431,8 +431,8 @@ mod tests {
             },
         );
         let vvm = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
-        let model_header = vvm.header();
-        let model_contents = &vvm.read_inference_models().await.unwrap();
+        let model_header = vvm.inner().header();
+        let model_contents = &vvm.inner().read_inference_models().await.unwrap();
         assert!(
             !status.is_loaded_model(model_header.manifest.id),
             "model should  not be loaded"
