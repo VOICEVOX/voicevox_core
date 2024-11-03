@@ -385,7 +385,7 @@ mod inner {
                     f0.len(),
                     OjtPhoneme::num_phoneme(),
                     &f0,
-                    &phoneme.as_flattened(),
+                    phoneme.as_flattened(),
                     style_id,
                 )
                 .await?;
@@ -1019,7 +1019,7 @@ mod inner {
             let clipped_end = min(end, frame_length);
             // 指定領域が空の区間だった場合、ONNXRuntimeに渡す前に早期リターン
             if (clipped_start..clipped_end).is_empty() {
-                return Ok(ndarray::arr1(&vec![]));
+                return Ok(ndarray::arr1(&[]));
             }
             // マージンがデータからはみ出さないことを保証
             // cf. https://github.com/VOICEVOX/voicevox_core/pull/854#discussion_r1803691291
