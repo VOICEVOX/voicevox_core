@@ -144,54 +144,6 @@ mod inner {
         audio_query: AudioQuery,
     }
 
-    // 音が途切れてしまうのを避けるworkaround処理
-    // 改善したらこの関数を削除する
-    fn make_f0_with_padding(
-        f0_slice: &[f32],
-        length_with_padding: usize,
-        padding_size: usize,
-    ) -> Vec<f32> {
-        let mut f0_with_padding = Vec::with_capacity(length_with_padding);
-        let padding = vec![0.0; padding_size];
-        f0_with_padding.extend_from_slice(&padding);
-        f0_with_padding.extend_from_slice(f0_slice);
-        f0_with_padding.extend_from_slice(&padding);
-        f0_with_padding
-    }
-
-    // 音が途切れてしまうのを避けるworkaround処理
-    // 改善したらこの関数を削除する
-    fn make_phoneme_with_padding(
-        phoneme_slice: &[f32],
-        phoneme_size: usize,
-        length_with_padding: usize,
-        padding_size: usize,
-    ) -> Vec<f32> {
-        let mut padding_phoneme = vec![0.0; phoneme_size];
-        padding_phoneme[0] = 1.0;
-        let padding_phoneme_len = padding_phoneme.len();
-        let padding_phonemes: Vec<f32> = padding_phoneme
-            .into_iter()
-            .cycle()
-            .take(padding_phoneme_len * padding_size)
-            .collect();
-        let mut phoneme_with_padding = Vec::with_capacity(phoneme_size * length_with_padding);
-        phoneme_with_padding.extend_from_slice(&padding_phonemes);
-        phoneme_with_padding.extend_from_slice(phoneme_slice);
-        phoneme_with_padding.extend_from_slice(&padding_phonemes);
-
-        phoneme_with_padding
-    }
-
-    // 音が途切れてしまうのを避けるworkaround処理
-    // 改善したらこの関数を削除する
-    fn trim_padding_from_output(mut output: Vec<f32>, padding_f0_size: usize) -> Vec<f32> {
-        let padding_sampling_size = padding_f0_size * 256;
-        output
-            .drain(padding_sampling_size..output.len() - padding_sampling_size)
-            .collect()
-    }
-
     pub struct Inner<O, A> {
         status: Arc<Status<crate::blocking::Onnxruntime>>,
         open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
@@ -502,6 +454,46 @@ mod inner {
                     vowel_length: FIX_VOWEL_LENGTH,
                     pitch,
                 }
+            }
+
+            fn make_f0_with_padding(
+                f0_slice: &[f32],
+                length_with_padding: usize,
+                padding_size: usize,
+            ) -> Vec<f32> {
+                // 音が途切れてしまうのを避けるworkaround処理
+                // 改善したらこの関数を削除する
+                let mut f0_with_padding = Vec::with_capacity(length_with_padding);
+                let padding = vec![0.0; padding_size];
+                f0_with_padding.extend_from_slice(&padding);
+                f0_with_padding.extend_from_slice(f0_slice);
+                f0_with_padding.extend_from_slice(&padding);
+                f0_with_padding
+            }
+
+            fn make_phoneme_with_padding(
+                phoneme_slice: &[f32],
+                phoneme_size: usize,
+                length_with_padding: usize,
+                padding_size: usize,
+            ) -> Vec<f32> {
+                // 音が途切れてしまうのを避けるworkaround処理
+                // 改善したらこの関数を削除する
+                let mut padding_phoneme = vec![0.0; phoneme_size];
+                padding_phoneme[0] = 1.0;
+                let padding_phoneme_len = padding_phoneme.len();
+                let padding_phonemes: Vec<f32> = padding_phoneme
+                    .into_iter()
+                    .cycle()
+                    .take(padding_phoneme_len * padding_size)
+                    .collect();
+                let mut phoneme_with_padding =
+                    Vec::with_capacity(phoneme_size * length_with_padding);
+                phoneme_with_padding.extend_from_slice(&padding_phonemes);
+                phoneme_with_padding.extend_from_slice(phoneme_slice);
+                phoneme_with_padding.extend_from_slice(&padding_phonemes);
+
+                phoneme_with_padding
             }
         }
 
@@ -1048,35 +1040,15 @@ mod inner {
             phoneme_vector: ndarray::Array1<f32>,
             style_id: StyleId,
         ) -> Result<Vec<f32>> {
-            // 音が途切れてしまうのを避けるworkaround処理が入っている
-            // 変換前に無音区間をpadding_sizeの長さだけ追加し、最後にその部分を生成音声から取り除く
-            // TODO: 改善したらここのpadding処理を取り除く
-            const PADDING_SIZE: f64 = 0.4;
-            let padding_size =
-                ((PADDING_SIZE * DEFAULT_SAMPLING_RATE as f64) / 256.0).round() as usize;
-            let start_and_end_padding_size = 2 * padding_size;
-            let length_with_padding = f0.len() + start_and_end_padding_size;
-            let f0_with_padding =
-                make_f0_with_padding(&f0.into_raw_vec(), length_with_padding, padding_size);
-            let phoneme_with_padding = make_phoneme_with_padding(
-                &phoneme_vector.into_raw_vec(),
-                phoneme_size,
-                length_with_padding,
-                padding_size,
-            );
-
             let intermediate = self.generate_full_intermediate(
-                length_with_padding,
+                length,
                 phoneme_size,
-                ndarray::arr1(&f0_with_padding),
-                ndarray::arr1(&phoneme_with_padding),
+                f0,
+                phoneme_vector,
                 style_id,
             )?;
             let output = self.render_audio_segment(intermediate, style_id)?;
-            Ok(trim_padding_from_output(
-                output.into_raw_vec(),
-                padding_size,
-            ))
+            Ok(output.into_raw_vec())
         }
     }
 
