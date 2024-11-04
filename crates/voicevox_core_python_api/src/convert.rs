@@ -111,7 +111,7 @@ pub(crate) fn async_modify_accent_phrases<'py, Fun, Fut>(
 ) -> PyResult<&'py PyAny>
 where
     Fun: FnOnce(Vec<AccentPhrase>, StyleId) -> Fut + Send + 'static,
-    Fut: Future<Output = voicevox_core::Result<Vec<AccentPhrase>>> + Send + 'static,
+    Fut: Future<Output = PyResult<Vec<AccentPhrase>>> + Send + 'static,
 {
     let rust_accent_phrases = accent_phrases
         .iter()
@@ -121,10 +121,9 @@ where
         py,
         pyo3_asyncio::tokio::get_current_locals(py)?,
         async move {
-            let replaced_accent_phrases = method(rust_accent_phrases, speaker_id).await;
+            let replaced_accent_phrases = method(rust_accent_phrases, speaker_id).await?;
             Python::with_gil(|py| {
                 let replaced_accent_phrases = replaced_accent_phrases
-                    .into_py_result(py)?
                     .iter()
                     .map(move |accent_phrase| {
                         to_pydantic_dataclass(

@@ -248,9 +248,11 @@ mod inner {
             &self,
             model: &voice_model::Inner<A>,
         ) -> crate::Result<()> {
-            let model_bytes = &model.read_inference_models().await?;
-            // TODO: 重い操作なので、asyncにする
-            self.status.insert_model(model.header(), model_bytes)
+            let model_bytes = model.read_inference_models().await?;
+
+            let status = self.status.clone();
+            let header = model.header().clone();
+            A::unblock(move || status.insert_model(&header, &model_bytes)).await
         }
 
         pub(super) fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> Result<()> {
