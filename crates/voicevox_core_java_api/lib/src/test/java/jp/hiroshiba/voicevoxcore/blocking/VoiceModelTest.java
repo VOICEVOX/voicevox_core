@@ -1,4 +1,4 @@
-package jp.hiroshiba.voicevoxcore;
+package jp.hiroshiba.voicevoxcore.blocking;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import jp.hiroshiba.voicevoxcore.TestUtils;
 import org.junit.jupiter.api.Test;
 
 class VoiceModelTest extends TestUtils {

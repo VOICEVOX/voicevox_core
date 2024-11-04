@@ -8,7 +8,7 @@ use jni::{
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsNew<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_OpenJtalk_rsNew<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     open_jtalk_dict_dir: JString<'local>,
@@ -26,7 +26,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsNew<'local>
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsUseUserDict<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_OpenJtalk_rsUseUserDict<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     user_dict: JObject<'local>,
@@ -48,7 +50,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsUseUserDict
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_OpenJtalk_rsDrop<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_OpenJtalk_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {

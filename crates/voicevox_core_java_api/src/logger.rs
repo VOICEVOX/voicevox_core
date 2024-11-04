@@ -2,7 +2,7 @@ use jni::{objects::JObject, JNIEnv};
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-extern "system" fn Java_jp_hiroshiba_voicevoxcore_Dll_00024LoggerInitializer_initLogger(
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_internal_Dll_00024LoggerInitializer_initLogger(
     _: JNIEnv<'_>,
     _: JObject<'_>,
 ) {
