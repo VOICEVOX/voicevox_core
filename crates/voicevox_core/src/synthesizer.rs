@@ -127,15 +127,46 @@ mod inner {
     use super::{AccelerationMode, AsyncForOnnxruntime, InitializeOptions, TtsOptions};
 
     const DEFAULT_SAMPLING_RATE: u32 = 24000;
-    // 音が途切れてしまうのを避けるworkaround処理のためのパディング幅
-    const PADDING_DURATION: f64 = 0.4; // パディング秒
+    /// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（秒）
+    const PADDING_DURATION: f64 = 0.4;
+    /// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（f0フレーム数）
     const PADDING_FRAME_LENGTH: usize = {
-        // パディングフレーム数
         const fn div_round(num: f64, den: f64) -> u32 {
             ((num + den / 2.0) / den) as u32
         }
         div_round(PADDING_DURATION * DEFAULT_SAMPLING_RATE as f64, 256.0) as _
     };
+    /// 音声特徴量の一部分を変換する際に左右それぞれに確保すべきマージン幅（f0フレーム数）
+    /// 使われているHifiGANのreceptive fieldから計算される
+    const MARGIN: usize = 14;
+    /// [start, end) の音声区間に対応する特徴量を両端にマージンを追加した上で切り出す
+    fn crop_feat_with_margin(
+        spec_with_margin: &ndarray::Array2<f32>,
+        start: usize,
+        end: usize,
+    ) -> Result<ndarray::ArrayView2<f32>> {
+        use std::cmp::min;
+        let frame_length_with_margin = spec_with_margin.nrows();
+        // 音が途切れてしまうのを避けるworkaround処理が入っている
+        let frame_length = frame_length_with_margin - MARGIN * 2;
+        // 実態(workaround paddingを含まない)上での区間
+        let clipped_start = min(start, frame_length);
+        let clipped_end = min(end, frame_length);
+        // 左右に付加されたマージン幅は常に`MARGIN`である
+        // 安全マージンを追加したデータ上での区間
+        let slice_start = MARGIN + clipped_start - MARGIN;
+        let slice_end = MARGIN + clipped_end + MARGIN;
+        Ok(spec_with_margin.slice(ndarray::s![slice_start..slice_end, ..]))
+    }
+    /// 変換前に追加した安全マージンを生成音声から取り除く
+    fn trim_margin_from_wave(
+        wave_with_margin: &ndarray::Array1<f32>,
+    ) -> Result<ndarray::ArrayView1<f32>> {
+        let wave = wave_with_margin.slice(ndarray::s![
+            MARGIN * 256..wave_with_margin.len() - MARGIN * 256
+        ]);
+        Ok(wave)
+    }
 
     /// 音声の中間表現。
     pub struct AudioFeature {
@@ -454,10 +485,12 @@ mod inner {
             end: usize,
         ) -> Result<Vec<u8>> {
             // TODO: 44.1kHzなどの対応
-            let wave = self
-                .render_audio_segment(audio.internal_state.clone(), start, end, audio.style_id)
+            let spec_segment = crop_feat_with_margin(&audio.internal_state, start, end)?;
+            let wave_with_margin = self
+                .render_audio_segment(spec_segment.to_owned(), audio.style_id)
                 .await?;
-            return Ok(to_s16le_pcm(&wave.into_raw_vec(), &audio.audio_query));
+            let wave = trim_margin_from_wave(&wave_with_margin)?;
+            return Ok(to_s16le_pcm(&wave.to_vec(), &audio.audio_query));
 
             fn to_s16le_pcm(
                 wave: &[f32],
@@ -826,13 +859,11 @@ mod inner {
 
         pub(super) async fn render_audio_segment(
             &self,
-            spec: ndarray::Array2<f32>,
-            start: usize,
-            end: usize,
+            spec_segment: ndarray::Array2<f32>,
             style_id: StyleId,
         ) -> Result<ndarray::Array1<f32>> {
             let status = self.status.clone();
-            A::unblock(move || status.render_audio_segment(spec, start, end, style_id)).await
+            A::unblock(move || status.render_audio_segment(spec_segment, style_id)).await
         }
 
         pub(super) async fn decode(
@@ -918,6 +949,7 @@ mod inner {
             Ok(output.into_raw_vec())
         }
 
+        /// 無音パディングを付加して音声特徴量を計算し、マージン込みの音声特徴量を返す。
         /// CPU-boundな操作なので、非同期ランタイム上では直接実行されるべきではない。
         fn generate_full_intermediate(
             &self,
@@ -943,7 +975,9 @@ mod inner {
                 PADDING_FRAME_LENGTH,
             );
 
-            let GenerateFullIntermediateOutput { spec } = self.run_session(
+            let GenerateFullIntermediateOutput {
+                spec: spec_with_padding,
+            } = self.run_session(
                 model_id,
                 GenerateFullIntermediateInput {
                     f0: ndarray::arr1(&f0_with_padding)
@@ -955,7 +989,20 @@ mod inner {
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )?;
-            return Ok(spec);
+
+            // マージン分を両端に残して音声特徴量を返す
+            // マージンがデータからはみ出さないことを保証
+            // cf. https://github.com/VOICEVOX/voicevox_core/pull/854#discussion_r1803691291
+            if MARGIN > PADDING_FRAME_LENGTH {
+                unreachable!("Validation error: Too short padding for input, please report this issue on GitHub.");
+            }
+            return Ok(spec_with_padding
+                .slice(ndarray::s![
+                    PADDING_FRAME_LENGTH - MARGIN
+                        ..spec_with_padding.nrows() - PADDING_FRAME_LENGTH + MARGIN,
+                    ..
+                ])
+                .to_owned());
 
             fn make_f0_with_padding(
                 f0_slice: &[f32],
@@ -998,56 +1045,16 @@ mod inner {
             }
         }
 
+        /// 与えられた音声特徴量で音声生成。
         /// CPU/GPU-boundな操作なので、非同期ランタイム上では直接実行されるべきではない。
         fn render_audio_segment(
             &self,
-            spec: ndarray::Array2<f32>,
-            start: usize,
-            end: usize,
+            spec_segment: ndarray::Array2<f32>,
             style_id: StyleId,
         ) -> Result<ndarray::Array1<f32>> {
             let (model_id, _inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
-            let frame_length_with_padding = spec.nrows();
-            // 音が途切れてしまうのを避けるworkaround処理が入っている
-            let frame_length = frame_length_with_padding - PADDING_FRAME_LENGTH * 2;
-
-            // [start, end) の区間を両端にマージンを追加した上で音声変換する
-            const MARGIN: usize = 14; // 使われているHifiGANのreceptive fieldから計算される安全マージン
-            use std::cmp::min;
-            // 実態(workaround paddingを含まない)上での区間
-            let clipped_start = min(start, frame_length);
-            let clipped_end = min(end, frame_length);
-            // 指定領域が空の区間だった場合、ONNXRuntimeに渡す前に早期リターン
-            if (clipped_start..clipped_end).is_empty() {
-                return Ok(ndarray::arr1(&[]));
-            }
-            // マージンがデータからはみ出さないことを保証
-            // cf. https://github.com/VOICEVOX/voicevox_core/pull/854#discussion_r1803691291
-            if MARGIN > PADDING_FRAME_LENGTH + clipped_start
-                || MARGIN > PADDING_FRAME_LENGTH + (frame_length - clipped_end)
-            {
-                unreachable!("Validation error: Too short padding for input, please report this issue on GitHub.");
-            }
-            let left_margin = MARGIN;
-            let right_margin = MARGIN;
-            // 安全マージンを追加したデータ上での区間
-            let slice_start = PADDING_FRAME_LENGTH + clipped_start - left_margin;
-            let slice_end = PADDING_FRAME_LENGTH + clipped_end + right_margin;
-            let spec_segment = spec.slice(ndarray::s![slice_start..slice_end, ..]);
-            let RenderAudioSegmentOutput {
-                wave: wave_with_margin,
-            } = self.run_session(
-                model_id,
-                RenderAudioSegmentInput {
-                    spec: spec_segment.into_owned(),
-                },
-            )?;
-            // 変換前に追加した安全マージンを生成音声から取り除く
-            let wave = wave_with_margin
-                .slice(ndarray::s![
-                    left_margin * 256..wave_with_margin.len() - right_margin * 256
-                ])
-                .into_owned();
+            let RenderAudioSegmentOutput { wave } =
+                self.run_session(model_id, RenderAudioSegmentInput { spec: spec_segment })?;
             Ok(wave)
         }
 
@@ -1067,7 +1074,8 @@ mod inner {
                 phoneme_vector,
                 style_id,
             )?;
-            let output = self.render_audio_segment(intermediate, 0, length, style_id)?;
+            let output_with_margin = self.render_audio_segment(intermediate, style_id)?;
+            let output = trim_margin_from_wave(&output_with_margin)?.to_owned();
             Ok(output.into_raw_vec())
         }
     }
@@ -1584,13 +1592,11 @@ pub(crate) mod blocking {
 
         pub fn render_audio_segment(
             &self,
-            spec: ndarray::Array2<f32>,
-            start: usize,
-            end: usize,
+            spec_segment: ndarray::Array2<f32>,
             style_id: StyleId,
         ) -> crate::Result<ndarray::Array1<f32>> {
             self.0
-                .render_audio_segment(spec, start, end, style_id)
+                .render_audio_segment(spec_segment, style_id)
                 .block_on()
         }
 
