@@ -133,7 +133,7 @@ mod inner {
     /// 音声特徴量の一部分を変換する際に左右それぞれに確保すべきマージン幅（f0フレーム数）
     /// 使われているHifiGANのreceptive fieldから計算される
     const MARGIN: usize = 14;
-    /// [start, end) の音声区間に対応する特徴量を両端にマージンを追加した上で切り出す
+    /// 与えられた音声区間に対応する特徴量を両端にマージンを追加した上で切り出す
     fn crop_with_margin(
         audio: &AudioFeature,
         range: Range<usize>,
@@ -479,7 +479,11 @@ mod inner {
                 .render_audio_segment(spec_segment.to_owned(), audio.style_id)
                 .await?;
             let wave = trim_margin_from_wave(&wave_with_margin)?;
-            return Ok(to_s16le_pcm(&wave.to_vec(), &audio.audio_query));
+            return Ok(to_s16le_pcm(
+                wave.to_slice()
+                    .expect("`trim_margin_from_wave` should just trim an array"),
+                &audio.audio_query,
+            ));
 
             fn to_s16le_pcm(
                 wave: &[f32],
