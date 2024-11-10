@@ -11,5 +11,5 @@ VOICEVOX CORE の主要機能は Rust で実装されることを前提として
 * [`StyleId`](https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/struct.StyleId.html)といった[newtype](https://rust-unofficial.github.io/patterns/patterns/behavioural/newtype.html)は、そのままnewtypeとして表現するべきです。
     * 例えばPythonなら[`typing.NewType`](https://docs.python.org/ja/3/library/typing.html#newtype)で表現します。
 * オプショナルな引数は、キーワード引数がある言語であればキーワード引数で、ビルダースタイルが一般的な言語であればビルダースタイルで表現すべきです。
-* 「範囲」を表すデータ型が言語レベルである場合は、可能な限りそのデータ型を用いてAPIを構成するべきです。
-    * 例えばSwiftやRubyでは`Range`という名のデータ型を使って表現します。
+
+<!-- TODO: `render`の引数について: https://github.com/VOICEVOX/voicevox_core/pull/870#discussion_r1835601477 -->
