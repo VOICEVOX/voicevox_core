@@ -1044,7 +1044,7 @@ mod inner {
             )?;
             let output_with_margin = self.render_audio_segment(intermediate, style_id)?;
             let output = trim_margin_from_wave(output_with_margin);
-            Ok(output.into_raw_vec())
+            Ok(output.to_vec())
         }
     }
 
