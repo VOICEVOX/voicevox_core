@@ -134,10 +134,7 @@ mod inner {
     /// 使われているHifiGANのreceptive fieldから計算される
     const MARGIN: usize = 14;
     /// 与えられた音声区間に対応する特徴量を両端にマージンを追加した上で切り出す
-    fn crop_with_margin(
-        audio: &AudioFeature,
-        range: Range<usize>,
-    ) -> Result<ndarray::ArrayView2<'_, f32>> {
+    fn crop_with_margin(audio: &AudioFeature, range: Range<usize>) -> ndarray::ArrayView2<'_, f32> {
         if range.start > audio.frame_length || range.end > audio.frame_length {
             panic!(
                 "{range:?} is out of range for audio feature of length {frame_length}",
@@ -145,16 +142,12 @@ mod inner {
             );
         }
         let range = range.start..range.end + 2 * MARGIN;
-        Ok(audio.internal_state.slice(ndarray::s![range, ..]))
+        audio.internal_state.slice(ndarray::s![range, ..])
     }
     /// 変換前に追加した安全マージンを生成音声から取り除く
-    fn trim_margin_from_wave(
-        wave_with_margin: &ndarray::Array1<f32>,
-    ) -> Result<ndarray::ArrayView1<'_, f32>> {
-        let wave = wave_with_margin.slice(ndarray::s![
-            MARGIN * 256..wave_with_margin.len() - MARGIN * 256
-        ]);
-        Ok(wave)
+    fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Array1<f32> {
+        let len = wave_with_margin.len();
+        wave_with_margin.slice_move(ndarray::s![MARGIN * 256..len - MARGIN * 256])
     }
 
     /// 音声の中間表現。
@@ -474,13 +467,13 @@ mod inner {
             end: usize,
         ) -> Result<Vec<u8>> {
             // TODO: 44.1kHzなどの対応
-            let spec_segment = crop_with_margin(audio, start..end)?;
+            let spec_segment = crop_with_margin(audio, start..end);
             let wave_with_margin = self
                 .render_audio_segment(spec_segment.to_owned(), audio.style_id)
                 .await?;
-            let wave = trim_margin_from_wave(&wave_with_margin)?;
+            let wave = trim_margin_from_wave(wave_with_margin);
             return Ok(to_s16le_pcm(
-                wave.to_slice()
+                wave.as_slice()
                     .expect("`trim_margin_from_wave` should just trim an array"),
                 &audio.audio_query,
             ));
@@ -942,6 +935,8 @@ mod inner {
             Ok(output.into_raw_vec())
         }
 
+        /// モデル`generate_full_intermediate`の実行と、その前後の処理を行う。
+        ///
         /// 無音パディングを付加して音声特徴量を計算し、マージン込みの音声特徴量を返す。
         ///
         /// CPU-boundな操作なので、非同期ランタイム上では直接実行されるべきではない。
@@ -1048,7 +1043,7 @@ mod inner {
                 style_id,
             )?;
             let output_with_margin = self.render_audio_segment(intermediate, style_id)?;
-            let output = trim_margin_from_wave(&output_with_margin)?.to_owned();
+            let output = trim_margin_from_wave(output_with_margin);
             Ok(output.into_raw_vec())
         }
     }
