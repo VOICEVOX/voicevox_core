@@ -237,7 +237,7 @@ jobs:
             ios-xcframework) linking=link-onnxruntime ;;
           esac
           function build() {
-            cargo build -p voicevox_core_c_api -vv --features "$linking" --target ${{ matrix.target }} --release
+            cargo build -p voicevox_core_c_api -v --features "$linking" --target ${{ matrix.target }} --release
           }
           if ${{ !inputs.is_production }}; then
             build
@@ -267,7 +267,7 @@ jobs:
         if: contains(matrix.target, 'android')
         run: |
           function build() {
-            cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
+            cargo build -p voicevox_core_java_api -v --target ${{ matrix.target }} --release
           }
           if ${{ !inputs.is_production }}; then
             build

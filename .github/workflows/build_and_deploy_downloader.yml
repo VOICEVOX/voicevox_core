@@ -83,7 +83,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build downloader
-        run: cargo build -vv --release -p downloader --target ${{ matrix.target }}
+        run: cargo build -v --release -p downloader --target ${{ matrix.target }}
 
       - name: Rename the binary
         run: |
