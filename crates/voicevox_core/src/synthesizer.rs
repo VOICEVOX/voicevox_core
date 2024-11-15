@@ -130,10 +130,10 @@ mod inner {
     const DEFAULT_SAMPLING_RATE: u32 = 24000;
     /// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（フレーム数）
     const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * 24000Hz / 256.0).round()
-    /// 音声特徴量の一部分を変換する際に左右それぞれに確保すべきマージン幅（f0フレーム数）
-    /// 使われているHifiGANのreceptive fieldから計算される
+    /// 音声生成の際、音声特徴量の前後に確保すべきマージン幅（フレーム数）
+    /// モデルの受容野から計算される
     const MARGIN: usize = 14;
-    /// 与えられた音声区間に対応する特徴量を両端にマージンを追加した上で切り出す
+    /// 指定した音声区間に対応する特徴量を両端にマージンを追加した上で切り出す
     fn crop_with_margin(audio: &AudioFeature, range: Range<usize>) -> ndarray::ArrayView2<'_, f32> {
         if range.start > audio.frame_length || range.end > audio.frame_length {
             panic!(
@@ -144,7 +144,7 @@ mod inner {
         let range = range.start..range.end + 2 * MARGIN;
         audio.internal_state.slice(ndarray::s![range, ..])
     }
-    /// 変換前に追加した安全マージンを生成音声から取り除く
+    /// 追加した安全マージンを生成音声から取り除く
     fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Array1<f32> {
         let len = wave_with_margin.len();
         wave_with_margin.slice_move(ndarray::s![MARGIN * 256..len - MARGIN * 256])
@@ -951,7 +951,6 @@ mod inner {
             let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
 
             // 音が途切れてしまうのを避けるworkaround処理が入っている
-            // NOTE: `render()`内でこのpaddingを取り除くために、padding_frame_lengthにpadding長を保持している。
             // TODO: 改善したらここのpadding処理を取り除く
             let start_and_end_padding_size = 2 * PADDING_FRAME_LENGTH;
             let length_with_padding = f0.len() + start_and_end_padding_size;
