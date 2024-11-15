@@ -718,6 +718,12 @@ mod blocking {
                     audio.frame_length(),
                 )));
             }
+            if start > end {
+                return Err(PyIndexError::new_err(format!(
+                    "({}, {}) is invalid range because start > end",
+                    start, end,
+                )));
+            }
             let wav = &self
                 .synthesizer
                 .read()?

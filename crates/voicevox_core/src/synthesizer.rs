@@ -141,6 +141,9 @@ mod inner {
                 frame_length = audio.frame_length,
             );
         }
+        if range.start > range.end {
+            panic!("{range:?} is invalid because start > end",);
+        }
         let range = range.start..range.end + 2 * MARGIN;
         audio.internal_state.slice(ndarray::s![range, ..])
     }
