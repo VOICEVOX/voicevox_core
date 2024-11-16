@@ -1,4 +1,7 @@
-use serde::{Deserialize, Serialize};
+use std::fmt;
+
+use duplicate::duplicate_item;
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 /* 各フィールドのjsonフィールド名はsnake_caseとする*/
 
@@ -64,6 +67,20 @@ pub struct AudioQuery {
     pub output_sampling_rate: u32,
     /// 音声データをステレオ出力するか否か。
     pub output_stereo: bool,
+    /// 句読点などの無音時間。`null`のときは無視される。デフォルト値は`null`。
+    #[serde(
+        default,
+        deserialize_with = "deserialize_pause_length",
+        serialize_with = "serialize_pause_length"
+    )]
+    pub pause_length: (),
+    /// 読点などの無音時間（倍率）。デフォルト値は`1`。
+    #[serde(
+        default,
+        deserialize_with = "deserialize_pause_length_scale",
+        serialize_with = "serialize_pause_length_scale"
+    )]
+    pub pause_length_scale: (),
     /// \[読み取り専用\] AquesTalk風記法。
     ///
     /// [`Synthesizer::audio_query`]が返すもののみ`Some`となる。入力としてのAudioQueryでは無視され
@@ -71,6 +88,87 @@ pub struct AudioQuery {
     ///
     /// [`Synthesizer::audio_query`]: crate::blocking::Synthesizer::audio_query
     pub kana: Option<String>,
+}
+
+fn deserialize_pause_length<'de, D>(deserializer: D) -> Result<(), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    return deserializer.deserialize_any(Visitor);
+
+    struct Visitor;
+
+    impl<'de> de::Visitor<'de> for Visitor {
+        type Value = ();
+
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            formatter.write_str("`null`")
+        }
+
+        #[duplicate_item(
+            method        T;
+            [ visit_i64 ] [ i64 ];
+            [ visit_u64 ] [ u64 ];
+            [ visit_f64 ] [ f64 ];
+        )]
+        fn method<E>(self, _: T) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Err(E::custom("currently `pause_length` must be `null`"))
+        }
+
+        fn visit_unit<E>(self) -> Result<Self::Value, E> {
+            Ok(())
+        }
+    }
+}
+
+fn serialize_pause_length<S>(_: &(), serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_unit()
+}
+
+fn deserialize_pause_length_scale<'de, D>(deserializer: D) -> Result<(), D::Error>
+where
+    D: Deserializer<'de>,
+{
+    return deserializer.deserialize_any(Visitor);
+
+    struct Visitor;
+
+    impl<'de> de::Visitor<'de> for Visitor {
+        type Value = ();
+
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            formatter.write_str("`1.`")
+        }
+
+        #[duplicate_item(
+            method        T       ONE;
+            [ visit_i64 ] [ i64 ] [ 1 ];
+            [ visit_u64 ] [ u64 ] [ 1 ];
+            [ visit_f64 ] [ f64 ] [ 1. ];
+        )]
+        fn method<E>(self, v: T) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            if v != ONE {
+                return Err(E::custom("currently `pause_length_scale` must be `1.`"));
+            }
+            Ok(())
+        }
+    }
+}
+
+fn serialize_pause_length_scale<S>(_: &(), serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    (1.).serialize(serializer)
 }
 
 impl AudioQuery {
@@ -99,6 +197,8 @@ mod tests {
             post_phoneme_length: 0.0,
             output_sampling_rate: 0,
             output_stereo: false,
+            pause_length: (),
+            pause_length_scale: (),
             kana: None,
         };
         let val = serde_json::to_value(audio_query_model).unwrap();
@@ -151,5 +251,43 @@ mod tests {
             "output_stereo": false
         }))?;
         Ok(())
+    }
+
+    // TODO: 型的に自明になったらこのテストは削除する
+    #[rstest]
+    fn it_denies_non_null_for_pause_length() {
+        serde_json::from_value::<AudioQuery>(json!({
+            "accent_phrases": [],
+            "speed_scale": 1.0,
+            "pitch_scale": 0.0,
+            "intonation_scale": 1.0,
+            "volume_scale": 1.0,
+            "pre_phoneme_length": 0.1,
+            "post_phoneme_length": 0.1,
+            "output_sampling_rate": 24000,
+            "output_stereo": false,
+            "pause_length": "aaaaa"
+        }))
+        .map(|_| ())
+        .unwrap_err();
+    }
+
+    // TODO: 型的に自明になったらこのテストは削除する
+    #[rstest]
+    fn it_denies_non_float_for_pause_length_scale() {
+        serde_json::from_value::<AudioQuery>(json!({
+            "accent_phrases": [],
+            "speed_scale": 1.0,
+            "pitch_scale": 0.0,
+            "intonation_scale": 1.0,
+            "volume_scale": 1.0,
+            "pre_phoneme_length": 0.1,
+            "post_phoneme_length": 0.1,
+            "output_sampling_rate": 24000,
+            "output_stereo": false,
+            "pause_length_scale": "aaaaa",
+        }))
+        .map(|_| ())
+        .unwrap_err();
     }
 }

@@ -55,6 +55,17 @@ public class AudioQuery {
   @Expose
   public boolean outputStereo;
 
+  /** 句読点などの無音時間。{@code null}のときは無視される。デフォルト値は{@code null}。 */
+  @SerializedName("pause_length")
+  @Expose
+  @Nullable
+  public Double pauseLength;
+
+  /** 読点などの無音時間（倍率）。デフォルト値は{@code 1.}。 */
+  @SerializedName("pause_length_scale")
+  @Expose
+  public double pauseLengthScale;
+
   /**
    * [読み取り専用] AquesTalk風記法。
    *
@@ -75,6 +86,8 @@ public class AudioQuery {
     this.prePhonemeLength = 0.1;
     this.postPhonemeLength = 0.1;
     this.outputSamplingRate = 24000;
+    this.pauseLength = null;
+    this.pauseLengthScale = 1.0;
     this.kana = null;
   }
 }

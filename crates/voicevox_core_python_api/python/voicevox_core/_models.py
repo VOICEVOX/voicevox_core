@@ -208,6 +208,12 @@ class AudioQuery:
     output_stereo: bool
     """音声データをステレオ出力するか否か。"""
 
+    pause_length: None = None
+    """句読点などの無音時間。 ``None`` のときは無視される。デフォルト値は ``None`` 。"""
+
+    pause_length_scale: float = 1.0
+    """読点などの無音時間（倍率）。デフォルト値は ``1.0`` 。"""
+
     kana: Optional[str] = None
     """
     [読み取り専用] AquesTalk風記法。
