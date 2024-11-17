@@ -282,7 +282,7 @@ mod blocking {
 
     use camino::Utf8PathBuf;
     use pyo3::{
-        exceptions::PyIndexError,
+        exceptions::{PyIndexError, PyValueError},
         pyclass, pymethods,
         types::{IntoPyDict as _, PyBytes, PyDict, PyList},
         Py, PyAny, PyObject, PyRef, PyResult, Python,
@@ -719,7 +719,7 @@ mod blocking {
                 )));
             }
             if start > end {
-                return Err(PyIndexError::new_err(format!(
+                return Err(PyValueError::new_err(format!(
                     "({}, {}) is invalid range because start > end",
                     start, end,
                 )));
