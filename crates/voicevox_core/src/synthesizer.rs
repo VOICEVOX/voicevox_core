@@ -470,6 +470,10 @@ mod inner {
             end: usize,
         ) -> Result<Vec<u8>> {
             // TODO: 44.1kHzなどの対応
+            if (start..end).is_empty() {
+                // 指定区間が空のときは早期リターン
+                return Ok(vec![]);
+            }
             let spec_segment = crop_with_margin(audio, start..end);
             let wave_with_margin = self
                 .render_audio_segment(spec_segment.to_owned(), audio.style_id)
