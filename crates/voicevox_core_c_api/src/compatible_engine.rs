@@ -364,16 +364,16 @@ pub unsafe extern "C" fn decode_forward(
 /// - `f0`はRustの`&[f32; length as usize]`として解釈できなければならない。
 /// - `phoneme`はRustの`&[f32; phoneme_size * length as usize]`として解釈できなければならない。
 /// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
-/// - `output`はRustの`&mut [f32; (length + 2 * margin_width) * feature_dim as usize]`として解釈できなければならない。
+/// - `output`はRustの`&mut [f32; ((length + 2 * margin_width) * feature_dim) as usize]`として解釈できなければならない。
 #[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 pub unsafe extern "C" fn generate_full_intermediate(
     length: i64,
     phoneme_size: i64,
+    margin_width: i64,
+    feature_dim: i64,
     f0: *mut f32,
     phoneme: *mut f32,
     speaker_id: *mut i64,
-    margin_width: i64,
-    feature_dim: i64,
     output: *mut f32,
 ) -> bool {
     init_logger_once();
@@ -397,8 +397,10 @@ pub unsafe extern "C" fn generate_full_intermediate(
     match result {
         Ok(output_arr) => {
             // SAFETY: The safety contract must be upheld by the caller.
-            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, (length + margin_width * 2) * feature_dim) };
-            output_slice.clone_from_slice(&output_arr.to_vec());
+            let output_slice = unsafe {
+                std::slice::from_raw_parts_mut(output, (length + 2 * margin_width) * feature_dim)
+            };
+            output_slice.clone_from_slice(&output_arr.into_raw_vec());
             true
         }
         Err(err) => {
@@ -410,28 +412,30 @@ pub unsafe extern "C" fn generate_full_intermediate(
 
 /// # Safety
 ///
-/// - `audio_feature`はRustの`&[f32; (length + 2 * margin_width) * feature_dim as usize]`として解釈できなければならない。
+/// - `audio_feature`はRustの`&[f32; (length * feature_dim) as usize]`として解釈できなければならない。
 /// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
 /// - `output`はRustの`&mut [f32; length as usize * 256]`として解釈できなければならない。
 #[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 pub unsafe extern "C" fn render_audio_segment(
     length: i64,
+    feature_dim: i64,
     audio_feature: *mut f32,
     speaker_id: *mut i64,
-    margin_width: i64,
-    feature_dim: i64,
     output: *mut f32,
 ) -> bool {
     init_logger_once();
     assert_aligned(audio_feature);
     assert_aligned(speaker_id);
     let length = length as usize;
-    let margin_width = margin_width as usize;
     let feature_dim = feature_dim as usize;
     let synthesizer = &*lock_synthesizer();
+    // SAFETY: The safety contract must be upheld by the caller.
+    let audio_feature_vec =
+        unsafe { std::slice::from_raw_parts(audio_feature, length * feature_dim) };
     let result = ensure_initialized!(synthesizer).render_audio_segment(
-        // SAFETY: The safety contract must be upheld by the caller.
-        unsafe { std::slice::from_raw_parts(audio_feature, (length + 2 * margin_width) * feature_dim) },
+        ndarray::arr1(audio_feature_vec)
+            .into_shape([length, feature_dim])
+            .unwrap(),
         StyleId::new(unsafe { *speaker_id as u32 }),
     );
     match result {

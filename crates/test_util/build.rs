@@ -202,6 +202,35 @@ fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
                 phoneme.to_vec()
             },
         },
+        intermediate: typing::IntermediateExampleData {
+            f0_length: 69,
+            phoneme_size: 45,
+            feature_dim: 80,
+            margin_width: 14,
+            f0_vector: {
+                let mut f0 = [0.; 69];
+                f0[9..24].fill(5.905218);
+                f0[37..60].fill(5.565851);
+                f0.to_vec()
+            },
+            phoneme_vector: {
+                let mut phoneme = [0.; 45 * 69];
+                let mut set_one = |index, range| {
+                    for i in range {
+                        phoneme[(i * 45 + index) as usize] = 1.;
+                    }
+                };
+                set_one(0, 0..9);
+                set_one(37, 9..13);
+                set_one(14, 13..24);
+                set_one(35, 24..30);
+                set_one(6, 30..37);
+                set_one(37, 37..45);
+                set_one(30, 45..60);
+                set_one(0, 60..69);
+                phoneme.to_vec()
+            },
+        },
     };
 
     fs_err::write(
