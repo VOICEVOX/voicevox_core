@@ -282,6 +282,7 @@ mod blocking {
 
     use camino::Utf8PathBuf;
     use pyo3::{
+        exceptions::{PyIndexError, PyValueError},
         pyclass, pymethods,
         types::{IntoPyDict as _, PyBytes, PyDict, PyList},
         Py, PyAny, PyObject, PyRef, PyResult, Python,
@@ -709,6 +710,20 @@ mod blocking {
             end: usize,
             py: Python<'py>,
         ) -> PyResult<&'py PyBytes> {
+            if start > audio.frame_length() || end > audio.frame_length() {
+                return Err(PyIndexError::new_err(format!(
+                    "({}, {}) is out of range for audio feature of length {}",
+                    start,
+                    end,
+                    audio.frame_length(),
+                )));
+            }
+            if start > end {
+                return Err(PyValueError::new_err(format!(
+                    "({}, {}) is invalid range because start > end",
+                    start, end,
+                )));
+            }
             let wav = &self
                 .synthesizer
                 .read()?
