@@ -39,7 +39,7 @@ pub struct IntermediateExampleData {
     pub margin_width: i64,
     pub f0_vector: Vec<f32>,
     pub phoneme_vector: Vec<f32>,
-} 
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExampleData {

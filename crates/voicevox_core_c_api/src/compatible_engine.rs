@@ -429,20 +429,26 @@ pub unsafe extern "C" fn render_audio_segment(
     let length = length as usize;
     let feature_dim = feature_dim as usize;
     let synthesizer = &*lock_synthesizer();
-    // SAFETY: The safety contract must be upheld by the caller.
-    let audio_feature_vec =
-        unsafe { std::slice::from_raw_parts(audio_feature, length * feature_dim) };
     let result = ensure_initialized!(synthesizer).render_audio_segment(
-        ndarray::arr1(audio_feature_vec)
-            .into_shape([length, feature_dim])
-            .unwrap(),
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe {
+            ndarray::ArrayView2::from_shape_ptr([length, feature_dim], audio_feature).to_owned()
+        },
         StyleId::new(unsafe { *speaker_id as u32 }),
     );
     match result {
         Ok(output_arr) => {
+            let output_len = length * 256;
+            if output_arr.len() != output_len {
+                panic!("expected {}, got {}", output_len, output_arr.len());
+            }
+            let output_arr = output_arr.as_standard_layout();
             // SAFETY: The safety contract must be upheld by the caller.
-            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };
-            output_slice.clone_from_slice(&output_arr.to_vec());
+            unsafe {
+                output_arr
+                    .as_ptr()
+                    .copy_to_nonoverlapping(output, output_len);
+            }
             true
         }
         Err(err) => {
