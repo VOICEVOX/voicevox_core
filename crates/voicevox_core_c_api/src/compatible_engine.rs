@@ -364,7 +364,7 @@ pub unsafe extern "C" fn decode_forward(
 /// - `f0`はRustの`&[f32; length as usize]`として解釈できなければならない。
 /// - `phoneme`はRustの`&[f32; phoneme_size * length as usize]`として解釈できなければならない。
 /// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
-/// - `output`はRustの`&mut [f32; ((length + 2 * margin_width) * feature_dim) as usize]`として解釈できなければならない。
+/// - `output`はRustの`&mut [MaybeUninit<f32>; ((length + 2 * margin_width) * feature_dim) as usize]`として解釈できなければならない。
 #[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 pub unsafe extern "C" fn generate_full_intermediate(
     length: i64,
