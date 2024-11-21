@@ -396,11 +396,17 @@ pub unsafe extern "C" fn generate_full_intermediate(
     );
     match result {
         Ok(output_arr) => {
+            let output_len = (length + 2 * margin_width) * feature_dim;
+            if output_arr.len() != output_len {
+                panic!("expected {}, got {}", output_len, output_arr.len());
+            }
+            let output_arr = output_arr.as_standard_layout();
             // SAFETY: The safety contract must be upheld by the caller.
-            let output_slice = unsafe {
-                std::slice::from_raw_parts_mut(output, (length + 2 * margin_width) * feature_dim)
-            };
-            output_slice.clone_from_slice(&output_arr.into_raw_vec());
+            unsafe {
+                output_arr
+                    .as_ptr()
+                    .copy_to_nonoverlapping(output, output_len);
+            }
             true
         }
         Err(err) => {
@@ -414,7 +420,7 @@ pub unsafe extern "C" fn generate_full_intermediate(
 ///
 /// - `audio_feature`はRustの`&[f32; (length * feature_dim) as usize]`として解釈できなければならない。
 /// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
-/// - `output`はRustの`&mut [f32; length as usize * 256]`として解釈できなければならない。
+/// - `output`はRustの`&mut [MaybeUninit<f32>; length as usize * 256]`として解釈できなければならない。
 #[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 pub unsafe extern "C" fn render_audio_segment(
     length: i64,
@@ -426,6 +432,7 @@ pub unsafe extern "C" fn render_audio_segment(
     init_logger_once();
     assert_aligned(audio_feature);
     assert_aligned(speaker_id);
+    assert_aligned(output);
     let length = length as usize;
     let feature_dim = feature_dim as usize;
     let synthesizer = &*lock_synthesizer();
