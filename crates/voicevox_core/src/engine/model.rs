@@ -67,6 +67,7 @@ pub struct AudioQuery {
     pub output_sampling_rate: u32,
     /// 音声データをステレオ出力するか否か。
     pub output_stereo: bool,
+    // TODO: VOICEVOX/voicevox_engine#1308 を実装する
     /// 句読点などの無音時間。`null`のときは無視される。デフォルト値は`null`。
     #[serde(
         default,
