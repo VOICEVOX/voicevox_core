@@ -1187,6 +1187,8 @@ mod inner {
                 post_phoneme_length: 0.1,
                 output_sampling_rate: DEFAULT_SAMPLING_RATE,
                 output_stereo: false,
+                pause_length: (),
+                pause_length_scale: (),
                 kana: Some(kana),
             }
         }
