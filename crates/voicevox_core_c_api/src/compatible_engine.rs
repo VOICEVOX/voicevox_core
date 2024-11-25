@@ -364,13 +364,11 @@ pub unsafe extern "C" fn decode_forward(
 /// - `f0`はRustの`&[f32; length as usize]`として解釈できなければならない。
 /// - `phoneme`はRustの`&[f32; phoneme_size * length as usize]`として解釈できなければならない。
 /// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
-/// - `output`はRustの`&mut [MaybeUninit<f32>; ((length + 2 * margin_width) * feature_dim) as usize]`として解釈できなければならない。
+/// - `output`はRustの`&mut [MaybeUninit<f32>; ((length + 2 * 14) * 80) as usize]`として解釈できなければならない。
 #[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 pub unsafe extern "C" fn generate_full_intermediate(
     length: i64,
     phoneme_size: i64,
-    margin_width: i64,
-    feature_dim: i64,
     f0: *mut f32,
     phoneme: *mut f32,
     speaker_id: *mut i64,
@@ -383,8 +381,8 @@ pub unsafe extern "C" fn generate_full_intermediate(
     assert_aligned(output);
     let length = length as usize;
     let phoneme_size = phoneme_size as usize;
-    let margin_width = margin_width as usize;
-    let feature_dim = feature_dim as usize;
+    const MARGIN_WIDTH: usize = 14;
+    const FEATURE_SIZE: usize = 80;
     let synthesizer = &*lock_synthesizer();
     let result = ensure_initialized!(synthesizer).generate_full_intermediate(
         length,
@@ -396,7 +394,7 @@ pub unsafe extern "C" fn generate_full_intermediate(
     );
     match result {
         Ok(output_arr) => {
-            let output_len = (length + 2 * margin_width) * feature_dim;
+            let output_len = (length + 2 * MARGIN_WIDTH) * FEATURE_SIZE;
             if output_arr.len() != output_len {
                 panic!("expected {}, got {}", output_len, output_arr.len());
             }
@@ -418,13 +416,14 @@ pub unsafe extern "C" fn generate_full_intermediate(
 
 /// # Safety
 ///
-/// - `audio_feature`はRustの`&[f32; (length * feature_dim) as usize]`として解釈できなければならない。
+/// - `audio_feature`はRustの`&[f32; (length * feature_size) as usize]`として解釈できなければならない。
 /// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
 /// - `output`はRustの`&mut [MaybeUninit<f32>; length as usize * 256]`として解釈できなければならない。
 #[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 pub unsafe extern "C" fn render_audio_segment(
     length: i64,
-    feature_dim: i64,
+    _margin_width: i64,
+    feature_size: i64,
     audio_feature: *mut f32,
     speaker_id: *mut i64,
     output: *mut f32,
@@ -434,12 +433,12 @@ pub unsafe extern "C" fn render_audio_segment(
     assert_aligned(speaker_id);
     assert_aligned(output);
     let length = length as usize;
-    let feature_dim = feature_dim as usize;
+    let feature_size = feature_size as usize;
     let synthesizer = &*lock_synthesizer();
     let result = ensure_initialized!(synthesizer).render_audio_segment(
         // SAFETY: The safety contract must be upheld by the caller.
         unsafe {
-            ndarray::ArrayView2::from_shape_ptr([length, feature_dim], audio_feature).to_owned()
+            ndarray::ArrayView2::from_shape_ptr([length, feature_size], audio_feature).to_owned()
         },
         StyleId::new(unsafe { *speaker_id as u32 }),
     );

@@ -93,8 +93,6 @@ impl assert_cdylib::TestCase for TestCase {
             assert!(lib.generate_full_intermediate(
                 EXAMPLE_DATA.intermediate.f0_length,
                 EXAMPLE_DATA.intermediate.phoneme_size,
-                EXAMPLE_DATA.intermediate.margin_width,
-                EXAMPLE_DATA.intermediate.feature_dim,
                 EXAMPLE_DATA.intermediate.f0_vector.as_ptr() as *mut f32,
                 EXAMPLE_DATA.intermediate.phoneme_vector.as_ptr() as *mut f32,
                 &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
@@ -102,6 +100,7 @@ impl assert_cdylib::TestCase for TestCase {
             ));
             assert!(lib.render_audio_segment(
                 length_with_margin,
+                EXAMPLE_DATA.intermediate.margin_width,
                 EXAMPLE_DATA.intermediate.feature_dim,
                 audio_feature.as_ptr() as *mut f32,
                 &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
@@ -122,8 +121,6 @@ impl assert_cdylib::TestCase for TestCase {
             assert!(lib.generate_full_intermediate(
                 EXAMPLE_DATA.intermediate.f0_length,
                 EXAMPLE_DATA.intermediate.phoneme_size,
-                EXAMPLE_DATA.intermediate.margin_width,
-                EXAMPLE_DATA.intermediate.feature_dim,
                 EXAMPLE_DATA.intermediate.f0_vector.as_ptr() as *mut f32,
                 EXAMPLE_DATA.intermediate.phoneme_vector.as_ptr() as *mut f32,
                 &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
@@ -141,6 +138,7 @@ impl assert_cdylib::TestCase for TestCase {
                 let mut wave_segment_with_margin = vec![0.; 256 * slice_length];
                 assert!(lib.render_audio_segment(
                     slice_length as i64,
+                    EXAMPLE_DATA.intermediate.margin_width,
                     pitch as i64,
                     feature_segment.as_ptr() as *mut f32,
                     &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
@@ -163,8 +161,8 @@ impl assert_cdylib::TestCase for TestCase {
         assert!(wave.iter().copied().all(f32::is_normal));
         assert!(wave2.iter().copied().all(f32::is_normal));
         assert!(wave3.iter().copied().all(f32::is_normal));
-        float_assert::close_l1(&wave2, &wave, 0.01);
-        float_assert::close_l1(&wave3, &wave, 0.01);
+        float_assert::close_l1(&wave2, &wave, 0.001);
+        float_assert::close_l1(&wave3, &wave, 0.001);
 
         lib.finalize();
         Ok(())
