@@ -66,7 +66,7 @@ fn init_logger_once() {
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
             } else {
-                "error,voicevox_core=info,voicevox_core_c_api=info,ort=info".into()
+                "error,voicevox_core=info,voicevox_core_c_api=info,ort=warn".into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)
             .with_ansi(ansi)
