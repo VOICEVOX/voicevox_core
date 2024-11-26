@@ -359,6 +359,111 @@ pub unsafe extern "C" fn decode_forward(
     }
 }
 
+/// # Safety
+///
+/// - `f0`はRustの`&[f32; length as usize]`として解釈できなければならない。
+/// - `phoneme`はRustの`&[f32; phoneme_size * length as usize]`として解釈できなければならない。
+/// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
+/// - `output`はRustの`&mut [MaybeUninit<f32>; ((length + 2 * 14) * 80) as usize]`として解釈できなければならない。
+#[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+pub unsafe extern "C" fn generate_full_intermediate(
+    length: i64,
+    phoneme_size: i64,
+    f0: *mut f32,
+    phoneme: *mut f32,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    init_logger_once();
+    assert_aligned(f0);
+    assert_aligned(phoneme);
+    assert_aligned(speaker_id);
+    assert_aligned(output);
+    let length = length as usize;
+    let phoneme_size = phoneme_size as usize;
+    const MARGIN_WIDTH: usize = 14;
+    const FEATURE_SIZE: usize = 80;
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).generate_full_intermediate(
+        length,
+        phoneme_size,
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { std::slice::from_raw_parts(f0, length) },
+        unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) },
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_arr) => {
+            let output_len = (length + 2 * MARGIN_WIDTH) * FEATURE_SIZE;
+            if output_arr.len() != output_len {
+                panic!("expected {}, got {}", output_len, output_arr.len());
+            }
+            let output_arr = output_arr.as_standard_layout();
+            // SAFETY: The safety contract must be upheld by the caller.
+            unsafe {
+                output_arr
+                    .as_ptr()
+                    .copy_to_nonoverlapping(output, output_len);
+            }
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
+/// # Safety
+///
+/// - `audio_feature`はRustの`&[f32; (length * feature_size) as usize]`として解釈できなければならない。
+/// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
+/// - `output`はRustの`&mut [MaybeUninit<f32>; length as usize * 256]`として解釈できなければならない。
+#[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+pub unsafe extern "C" fn render_audio_segment(
+    length: i64,
+    _margin_width: i64,
+    feature_size: i64,
+    audio_feature: *mut f32,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    init_logger_once();
+    assert_aligned(audio_feature);
+    assert_aligned(speaker_id);
+    assert_aligned(output);
+    let length = length as usize;
+    let feature_size = feature_size as usize;
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).render_audio_segment(
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe {
+            ndarray::ArrayView2::from_shape_ptr([length, feature_size], audio_feature).to_owned()
+        },
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_arr) => {
+            let output_len = length * 256;
+            if output_arr.len() != output_len {
+                panic!("expected {}, got {}", output_len, output_arr.len());
+            }
+            let output_arr = output_arr.as_standard_layout();
+            // SAFETY: The safety contract must be upheld by the caller.
+            unsafe {
+                output_arr
+                    .as_ptr()
+                    .copy_to_nonoverlapping(output, output_len);
+            }
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
 #[track_caller]
 fn assert_aligned(ptr: *mut impl Sized) {
     assert!(

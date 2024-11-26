@@ -32,10 +32,21 @@ pub struct DecodeExampleData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct IntermediateExampleData {
+    pub f0_length: i64,
+    pub phoneme_size: i64,
+    pub feature_dim: i64,
+    pub margin_width: i64,
+    pub f0_vector: Vec<f32>,
+    pub phoneme_vector: Vec<f32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ExampleData {
     pub speaker_id: i64,
 
     pub duration: DurationExampleData,
     pub intonation: IntonationExampleData,
     pub decode: DecodeExampleData,
+    pub intermediate: IntermediateExampleData,
 }

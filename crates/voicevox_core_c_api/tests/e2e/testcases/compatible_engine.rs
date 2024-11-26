@@ -1,7 +1,7 @@
 // エンジンを起動してyukarin_s・yukarin_sa・decodeの推論を行う
 
-use std::ffi::CStr;
 use std::sync::LazyLock;
+use std::{cmp::min, ffi::CStr};
 
 use assert_cmd::assert::AssertResult;
 use libloading::Library;
@@ -83,12 +83,86 @@ impl assert_cdylib::TestCase for TestCase {
             wave
         };
 
+        // 中間生成物を経由した場合の生成音声
+        let wave2 = {
+            let length_with_margin =
+                EXAMPLE_DATA.intermediate.f0_length + 2 * EXAMPLE_DATA.intermediate.margin_width;
+            let mut audio_feature =
+                vec![0.; (length_with_margin * EXAMPLE_DATA.intermediate.feature_dim) as usize];
+            let mut wave = vec![0.; 256 * length_with_margin as usize];
+            assert!(lib.generate_full_intermediate(
+                EXAMPLE_DATA.intermediate.f0_length,
+                EXAMPLE_DATA.intermediate.phoneme_size,
+                EXAMPLE_DATA.intermediate.f0_vector.as_ptr() as *mut f32,
+                EXAMPLE_DATA.intermediate.phoneme_vector.as_ptr() as *mut f32,
+                &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
+                audio_feature.as_mut_ptr(),
+            ));
+            assert!(lib.render_audio_segment(
+                length_with_margin,
+                EXAMPLE_DATA.intermediate.margin_width,
+                EXAMPLE_DATA.intermediate.feature_dim,
+                audio_feature.as_ptr() as *mut f32,
+                &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
+                wave.as_mut_ptr(),
+            ));
+            wave[256 * EXAMPLE_DATA.intermediate.margin_width as usize
+                ..wave.len() - 256 * EXAMPLE_DATA.intermediate.margin_width as usize]
+                .to_vec()
+        };
+
+        // 中間生成物を経由し、さらにチャンクごとに変換した場合の生成音声
+        let wave3 = {
+            let length_with_margin =
+                EXAMPLE_DATA.intermediate.f0_length + 2 * EXAMPLE_DATA.intermediate.margin_width;
+            let mut audio_feature =
+                vec![0.; (length_with_margin * EXAMPLE_DATA.intermediate.feature_dim) as usize];
+            let mut wave = vec![0.; 256 * EXAMPLE_DATA.intermediate.f0_length as usize];
+            assert!(lib.generate_full_intermediate(
+                EXAMPLE_DATA.intermediate.f0_length,
+                EXAMPLE_DATA.intermediate.phoneme_size,
+                EXAMPLE_DATA.intermediate.f0_vector.as_ptr() as *mut f32,
+                EXAMPLE_DATA.intermediate.phoneme_vector.as_ptr() as *mut f32,
+                &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
+                audio_feature.as_mut_ptr(),
+            ));
+            let full_length = EXAMPLE_DATA.intermediate.f0_length as usize;
+            let pitch = EXAMPLE_DATA.intermediate.feature_dim as usize;
+            for render_start in (0..full_length).step_by(10) {
+                // render_start .. render_end の音声を取得する
+                let render_end = min(render_start + 10, full_length);
+                let slice_start = render_start;
+                let slice_end = render_end + 2 * EXAMPLE_DATA.intermediate.margin_width as usize;
+                let feature_segment = &audio_feature[slice_start * pitch..slice_end * pitch];
+                let slice_length = slice_end - slice_start;
+                let mut wave_segment_with_margin = vec![0.; 256 * slice_length];
+                assert!(lib.render_audio_segment(
+                    slice_length as i64,
+                    EXAMPLE_DATA.intermediate.margin_width,
+                    pitch as i64,
+                    feature_segment.as_ptr() as *mut f32,
+                    &mut { EXAMPLE_DATA.speaker_id } as *mut i64,
+                    wave_segment_with_margin.as_mut_ptr(),
+                ));
+                let wave_segment = &wave_segment_with_margin[256
+                    * EXAMPLE_DATA.intermediate.margin_width as usize
+                    ..wave_segment_with_margin.len()
+                        - 256 * EXAMPLE_DATA.intermediate.margin_width as usize];
+                wave[render_start * 256..render_end * 256].clone_from_slice(wave_segment);
+            }
+            wave
+        };
+
         std::assert_eq!(SNAPSHOTS.metas, metas_json);
 
         float_assert::close_l1(&phoneme_length, &EXAMPLE_DATA.duration.result, 0.01);
         float_assert::close_l1(&intonation_list, &EXAMPLE_DATA.intonation.result, 0.01);
 
         assert!(wave.iter().copied().all(f32::is_normal));
+        assert!(wave2.iter().copied().all(f32::is_normal));
+        assert!(wave3.iter().copied().all(f32::is_normal));
+        float_assert::close_l1(&wave2, &wave, 0.001);
+        float_assert::close_l1(&wave3, &wave, 0.001);
 
         lib.finalize();
         Ok(())

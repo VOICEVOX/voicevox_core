@@ -25,4 +25,11 @@ bool yukarin_sa_forward(int64_t length, int64_t *vowel_phoneme_list,
 bool decode_forward(int64_t length, int64_t phoneme_size, float *f0,
                     float *phoneme, int64_t *speaker_id, float *output);
 
+bool generate_full_intermediate(int64_t length, int64_t phoneme_size,
+                                float *f0, float *phoneme, int64_t *speaker_id,
+                                float *output);
+
+bool render_audio_segment(int64_t length, int64_t margin_width, int64_t feature_size,
+                          float *audio_feature, int64_t *speaker_id, float *output);
+
 const char *last_error_message();
