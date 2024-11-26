@@ -33,7 +33,7 @@ jobs:
         include:
           - name: 通常ダウンロード
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- # バージョン指定のために -- が必要
+            download_command: cargo run -v -p downloader -- # バージョン指定のために -- が必要
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
@@ -51,7 +51,7 @@ jobs:
               *curand*
           - name: CpuArch指定
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- --cpu-arch x86
+            download_command: cargo run -v -p downloader -- --cpu-arch x86
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
@@ -68,7 +68,7 @@ jobs:
               *curand*
           - name: output先指定ダウンロード
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- -o other_output
+            download_command: cargo run -v -p downloader -- -o other_output
             download_dir: other_output
             check_items: |
               voicevox_core.dll
@@ -85,7 +85,7 @@ jobs:
               *curand*
           - name: Min option確認
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- --min
+            download_command: cargo run -v -p downloader -- --min
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
@@ -102,7 +102,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: DirectML option確認
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- --devices directml
+            download_command: cargo run -v -p downloader -- --devices directml
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
@@ -121,7 +121,7 @@ jobs:
               *curand*
           - name: DirectMLかつMin option確認
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- --devices directml --min
+            download_command: cargo run -v -p downloader -- --devices directml --min
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
@@ -139,7 +139,7 @@ jobs:
               open_jtalk_dic_utf_8-1.11
           - name: cuda option確認
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- --devices cuda
+            download_command: cargo run -v -p downloader -- --devices cuda
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
@@ -161,7 +161,7 @@ jobs:
               *directml*
           - name: cudaかつmin option確認
             os: windows-latest
-            download_command: cargo run -vv -p downloader -- --devices cuda --min
+            download_command: cargo run -v -p downloader -- --devices cuda --min
             download_dir: voicevox_core
             check_items: |
               voicevox_core.dll
