@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsNew<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     onnxruntime: JObject<'local>,
@@ -26,14 +26,14 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'loca
             .get_field(
                 &builder,
                 "accelerationMode",
-                object_type!("Synthesizer$AccelerationMode"),
+                object_type!("AccelerationMode"),
             )?
             .l()?;
 
         if !acceleration_mode.is_null() {
-            let auto = enum_object!(env, "Synthesizer$AccelerationMode", "AUTO")?;
-            let cpu = enum_object!(env, "Synthesizer$AccelerationMode", "CPU")?;
-            let gpu = enum_object!(env, "Synthesizer$AccelerationMode", "GPU")?;
+            let auto = enum_object!(env, "AccelerationMode", "AUTO")?;
+            let cpu = enum_object!(env, "AccelerationMode", "CPU")?;
+            let gpu = enum_object!(env, "AccelerationMode", "GPU")?;
             options.acceleration_mode = if env.is_same_object(&acceleration_mode, auto)? {
                 voicevox_core::AccelerationMode::Auto
             } else if env.is_same_object(&acceleration_mode, cpu)? {
@@ -67,7 +67,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsNew<'loca
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsGpuMode<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsIsGpuMode<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jboolean {
@@ -85,7 +87,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsGpuMode
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsGetMetasJson<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsGetMetasJson<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {
@@ -106,7 +110,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsGetMetasJ
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsLoadVoiceModel<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsLoadVoiceModel<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     model: JObject<'local>,
@@ -128,7 +134,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsLoadVoice
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsUnloadVoiceModel<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsUnloadVoiceModel<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     model_id: JObject<'local>,
@@ -150,7 +158,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsUnloadVoi
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsLoadedVoiceModel<
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsIsLoadedVoiceModel<
     'local,
 >(
     env: JNIEnv<'local>,
@@ -175,7 +183,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsIsLoadedV
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQueryFromKana<
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsAudioQueryFromKana<
     'local,
 >(
     env: JNIEnv<'local>,
@@ -206,7 +214,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuery<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsAudioQuery<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     text: JString<'local>,
@@ -234,7 +244,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAudioQuer
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhrasesFromKana<
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsAccentPhrasesFromKana<
     'local,
 >(
     env: JNIEnv<'local>,
@@ -265,7 +275,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhr
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhrases<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsAccentPhrases<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     text: JString<'local>,
@@ -294,7 +306,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsAccentPhr
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMoraData<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsReplaceMoraData<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     accent_phrases_json: JString<'local>,
@@ -324,7 +338,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplacePhonemeLength<
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsReplacePhonemeLength<
     'local,
 >(
     env: JNIEnv<'local>,
@@ -356,7 +370,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplacePh
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMoraPitch<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsReplaceMoraPitch<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     accent_phrases_json: JString<'local>,
@@ -386,7 +402,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsReplaceMo
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsSynthesis<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsSynthesis<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     query_json: JString<'local>,
@@ -425,7 +443,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsSynthesis
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTtsFromKana<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsTtsFromKana<
+    'local,
+>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     kana: JString<'local>,
@@ -458,7 +478,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTtsFromKa
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTts<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsTts<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
     query_json: JString<'local>,
@@ -491,7 +511,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsTts<'loca
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Synthesizer_rsDrop<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsDrop<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) {

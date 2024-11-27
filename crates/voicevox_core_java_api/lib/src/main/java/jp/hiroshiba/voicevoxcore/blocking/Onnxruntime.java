@@ -1,4 +1,4 @@
-package jp.hiroshiba.voicevoxcore;
+package jp.hiroshiba.voicevoxcore.blocking;
 
 import static jp.hiroshiba.voicevoxcore.GlobalInfo.SupportedDevices;
 
@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.Optional;
+import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /**
  * ONNX Runtime。
@@ -18,7 +19,11 @@ import java.util.Optional;
  * assert ort1 == ort2;
  * </pre>
  */
-public class Onnxruntime extends Dll {
+public class Onnxruntime {
+  static {
+    Dll.loadLibrary();
+  }
+
   /** ONNX Runtimeのライブラリ名。 */
   public static final String LIB_NAME = "voicevox_onnxruntime";
 

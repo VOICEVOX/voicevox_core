@@ -1,6 +1,9 @@
-package jp.hiroshiba.voicevoxcore;
+package jp.hiroshiba.voicevoxcore.blocking;
+
+// TODO: `IllegalArgumentException`はRustコード内で`throw`する
 
 class Utils {
+  // FIXME: dead code
   static boolean isU8(int value) {
     return value >= 0 && value <= 255;
   }

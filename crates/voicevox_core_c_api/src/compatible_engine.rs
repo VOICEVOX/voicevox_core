@@ -234,22 +234,31 @@ pub extern "C" fn supported_devices() -> *const c_char {
     });
 }
 
-// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-#[unsafe(no_mangle)]
-pub extern "C" fn yukarin_s_forward(
+/// # Safety
+///
+/// - `phoneme_list`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
+/// - `output`はRustの`&mut [f32; length as usize]`として解釈できなければならない。
+#[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+pub unsafe extern "C" fn yukarin_s_forward(
     length: i64,
     phoneme_list: *mut i64,
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
     init_logger_once();
+    assert_aligned(phoneme_list);
+    assert_aligned(speaker_id);
+    assert_aligned(output);
     let synthesizer = &*lock_synthesizer();
     let result = ensure_initialized!(synthesizer).predict_duration(
+        // SAFETY: The safety contract must be upheld by the caller.
         unsafe { std::slice::from_raw_parts_mut(phoneme_list, length as usize) },
         StyleId::new(unsafe { *speaker_id as u32 }),
     );
     match result {
         Ok(output_vec) => {
+            // SAFETY: The safety contract must be upheld by the caller.
             let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
             output_slice.clone_from_slice(&output_vec);
             true
@@ -261,9 +270,18 @@ pub extern "C" fn yukarin_s_forward(
     }
 }
 
-// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-#[unsafe(no_mangle)]
-pub extern "C" fn yukarin_sa_forward(
+/// # Safety
+///
+/// - `vowel_phoneme_list`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `consonant_phoneme_list`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `start_accent_list`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `end_accent_list`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `start_accent_phrase_list`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `end_accent_phrase_list`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
+/// - `output`はRustの`&mut [f32; length as usize]`として解釈できなければならない。
+#[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+pub unsafe extern "C" fn yukarin_sa_forward(
     length: i64,
     vowel_phoneme_list: *mut i64,
     consonant_phoneme_list: *mut i64,
@@ -275,9 +293,18 @@ pub extern "C" fn yukarin_sa_forward(
     output: *mut f32,
 ) -> bool {
     init_logger_once();
+    assert_aligned(vowel_phoneme_list);
+    assert_aligned(consonant_phoneme_list);
+    assert_aligned(start_accent_list);
+    assert_aligned(end_accent_list);
+    assert_aligned(start_accent_phrase_list);
+    assert_aligned(end_accent_phrase_list);
+    assert_aligned(speaker_id);
+    assert_aligned(output);
     let synthesizer = &*lock_synthesizer();
     let result = ensure_initialized!(synthesizer).predict_intonation(
         length as usize,
+        // SAFETY: The safety contract must be upheld by the caller.
         unsafe { std::slice::from_raw_parts(vowel_phoneme_list, length as usize) },
         unsafe { std::slice::from_raw_parts(consonant_phoneme_list, length as usize) },
         unsafe { std::slice::from_raw_parts(start_accent_list, length as usize) },
@@ -288,6 +315,7 @@ pub extern "C" fn yukarin_sa_forward(
     );
     match result {
         Ok(output_vec) => {
+            // SAFETY: The safety contract must be upheld by the caller.
             let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length as usize) };
             output_slice.clone_from_slice(&output_vec);
             true
@@ -299,9 +327,14 @@ pub extern "C" fn yukarin_sa_forward(
     }
 }
 
-// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-#[unsafe(no_mangle)]
-pub extern "C" fn decode_forward(
+/// # Safety
+///
+/// - `f0`はRustの`&[f32; length as usize]`として解釈できなければならない。
+/// - `phoneme`はRustの`&[f32; phoneme_size * length as usize]`として解釈できなければならない。
+/// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
+/// - `output`はRustの`&mut [f32; length as usize * 256]`として解釈できなければならない。
+#[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+pub unsafe extern "C" fn decode_forward(
     length: i64,
     phoneme_size: i64,
     f0: *mut f32,
@@ -310,18 +343,24 @@ pub extern "C" fn decode_forward(
     output: *mut f32,
 ) -> bool {
     init_logger_once();
+    assert_aligned(f0);
+    assert_aligned(phoneme);
+    assert_aligned(speaker_id);
+    assert_aligned(output);
     let length = length as usize;
     let phoneme_size = phoneme_size as usize;
     let synthesizer = &*lock_synthesizer();
     let result = ensure_initialized!(synthesizer).decode(
         length,
         phoneme_size,
+        // SAFETY: The safety contract must be upheld by the caller.
         unsafe { std::slice::from_raw_parts(f0, length) },
         unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) },
         StyleId::new(unsafe { *speaker_id as u32 }),
     );
     match result {
         Ok(output_vec) => {
+            // SAFETY: The safety contract must be upheld by the caller.
             let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };
             output_slice.clone_from_slice(&output_vec);
             true
@@ -331,4 +370,117 @@ pub extern "C" fn decode_forward(
             false
         }
     }
+}
+
+/// # Safety
+///
+/// - `f0`はRustの`&[f32; length as usize]`として解釈できなければならない。
+/// - `phoneme`はRustの`&[f32; phoneme_size * length as usize]`として解釈できなければならない。
+/// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
+/// - `output`はRustの`&mut [MaybeUninit<f32>; ((length + 2 * 14) * 80) as usize]`として解釈できなければならない。
+#[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+pub unsafe extern "C" fn generate_full_intermediate(
+    length: i64,
+    phoneme_size: i64,
+    f0: *mut f32,
+    phoneme: *mut f32,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    init_logger_once();
+    assert_aligned(f0);
+    assert_aligned(phoneme);
+    assert_aligned(speaker_id);
+    assert_aligned(output);
+    let length = length as usize;
+    let phoneme_size = phoneme_size as usize;
+    const MARGIN_WIDTH: usize = 14;
+    const FEATURE_SIZE: usize = 80;
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).generate_full_intermediate(
+        length,
+        phoneme_size,
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { std::slice::from_raw_parts(f0, length) },
+        unsafe { std::slice::from_raw_parts(phoneme, phoneme_size * length) },
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_arr) => {
+            let output_len = (length + 2 * MARGIN_WIDTH) * FEATURE_SIZE;
+            if output_arr.len() != output_len {
+                panic!("expected {}, got {}", output_len, output_arr.len());
+            }
+            let output_arr = output_arr.as_standard_layout();
+            // SAFETY: The safety contract must be upheld by the caller.
+            unsafe {
+                output_arr
+                    .as_ptr()
+                    .copy_to_nonoverlapping(output, output_len);
+            }
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
+/// # Safety
+///
+/// - `audio_feature`はRustの`&[f32; (length * feature_size) as usize]`として解釈できなければならない。
+/// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
+/// - `output`はRustの`&mut [MaybeUninit<f32>; length as usize * 256]`として解釈できなければならない。
+#[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+pub unsafe extern "C" fn render_audio_segment(
+    length: i64,
+    _margin_width: i64,
+    feature_size: i64,
+    audio_feature: *mut f32,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    init_logger_once();
+    assert_aligned(audio_feature);
+    assert_aligned(speaker_id);
+    assert_aligned(output);
+    let length = length as usize;
+    let feature_size = feature_size as usize;
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).render_audio_segment(
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe {
+            ndarray::ArrayView2::from_shape_ptr([length, feature_size], audio_feature).to_owned()
+        },
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_arr) => {
+            let output_len = length * 256;
+            if output_arr.len() != output_len {
+                panic!("expected {}, got {}", output_len, output_arr.len());
+            }
+            let output_arr = output_arr.as_standard_layout();
+            // SAFETY: The safety contract must be upheld by the caller.
+            unsafe {
+                output_arr
+                    .as_ptr()
+                    .copy_to_nonoverlapping(output, output_len);
+            }
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
+#[track_caller]
+fn assert_aligned(ptr: *mut impl Sized) {
+    assert!(
+        ptr.is_aligned(),
+        "all of the pointers passed to this library **must** be aligned",
+    );
 }

@@ -53,12 +53,14 @@ def main() -> None:
     if streaming:
         logger.info("%s", "In streaming mode")
         chunk_sec = 1.0
-        intermediate = synthesizer.precompute_render(audio_query, style_id)
-        chunk_frames = int(intermediate.frame_rate * chunk_sec)
+        audio_feature = synthesizer.precompute_render(audio_query, style_id)
+        chunk_frames = int(audio_feature.frame_rate * chunk_sec)
         pcm = b""
-        for i in range(0, intermediate.frame_length, chunk_frames):
-            logger.info("%s", f"{i/intermediate.frame_length:.2%}")
-            pcm += synthesizer.render(intermediate, i, i + chunk_frames)
+        for i in range(0, audio_feature.frame_length, chunk_frames):
+            logger.info("%s", f"{i/audio_feature.frame_length:.2%}")
+            pcm += synthesizer.render(
+                audio_feature, i, min(i + chunk_frames, audio_feature.frame_length)
+            )
         logger.info("%s", f"100%")
         wav = wav_from_s16le(
             pcm, audio_query.output_sampling_rate, audio_query.output_stereo

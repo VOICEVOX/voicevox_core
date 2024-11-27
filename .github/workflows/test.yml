@@ -72,10 +72,10 @@ jobs:
         with:
           python-version: "3.8"
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy -vv --tests -- -D clippy::all -D warnings --no-deps
-      - run: cargo clippy -vv -- -D clippy::all -D warnings --no-deps
-      - run: cargo clippy -vv -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
-      - run: cargo clippy -vv -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -v --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -v -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
       - run: cargo fmt -- --check
 
   rust-unit-test:
@@ -88,9 +88,9 @@ jobs:
         with:
           key: "cargo-unit-test-cache"
       - name: Run cargo unit test
-        run: RUST_BACKTRACE=full cargo test --lib --bins -vv -- --include-ignored
+        run: RUST_BACKTRACE=full cargo test --lib --bins -v -- --include-ignored
       - name: Run cargo documentation test
-        run: RUST_BACKTRACE=full cargo test --doc -vv
+        run: RUST_BACKTRACE=full cargo test --doc -v
 
   rust-integration-test-strategy-matrix: # 実行対象の条件をフィルタリングする
     runs-on: ubuntu-latest
@@ -135,7 +135,7 @@ jobs:
         with:
           key: "cargo-integration-test-cache-${{ matrix.os }}"
       - name: Run cargo integration test (load-onnxruntime)
-        run: RUST_BACKTRACE=full cargo test --test "*" -vv -- --include-ignored
+        run: RUST_BACKTRACE=full cargo test --test "*" -v -- --include-ignored
 
   c-header:
     runs-on: ubuntu-latest
@@ -193,7 +193,7 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api --features load-onnxruntime -vv
+        run: cargo build -p voicevox_core_c_api --features load-onnxruntime -v
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
           mkdir -p example/cpp/unix/voicevox_core/
@@ -237,7 +237,7 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: build voicevox_core_c_api
-        run: cargo build -p voicevox_core_c_api --features load-onnxruntime -vv
+        run: cargo build -p voicevox_core_c_api --features load-onnxruntime -v
       - name: 必要なfileをexampleのディレクトリに移動させる
         shell: bash
         run: |
@@ -281,7 +281,7 @@ jobs:
       - run: |
           pip install --upgrade poetry
           poetry install --with dev --with test
-      - run: cargo build -p test_util -vv # build scriptにより/crates/test_util/data/の生成
+      - run: cargo build -p test_util -v # build scriptにより/crates/test_util/data/の生成
       - run: poetry run maturin build --locked
       - run: poetry run maturin develop --locked
       - name: pytestを実行
@@ -311,8 +311,8 @@ jobs:
           distribution: "adopt"
       - name: Build
         run: |
-          cargo build -p voicevox_core_java_api -vv
-          cargo build -p test_util -vv # build scriptにより/crates/test_util/data/の生成
+          cargo build -p voicevox_core_java_api -v
+          cargo build -p test_util -v # build scriptにより/crates/test_util/data/の生成
       - name: 必要なDLLをコピーしてテストを実行
         working-directory: crates/voicevox_core_java_api
         run: |

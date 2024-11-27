@@ -5,6 +5,7 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use anyhow::{anyhow, Context as _};
@@ -62,7 +63,7 @@ impl VoiceModelId {
 
 #[self_referencing]
 pub(crate) struct Inner<A: Async> {
-    header: VoiceModelHeader,
+    header: Arc<VoiceModelHeader>,
 
     #[borrows(header)]
     #[not_covariant]
@@ -125,11 +126,12 @@ impl<A: Async> Inner<A> {
             )
         })?;
 
-        let header = VoiceModelHeader::new(manifest, metas, path)?;
+        let header = VoiceModelHeader::new(manifest, metas, path)?.into();
 
         InnerTryBuilder {
             header,
-            inference_model_entries_builder: |VoiceModelHeader { manifest, .. }| {
+            inference_model_entries_builder: |header| {
+                let VoiceModelHeader { manifest, .. } = &**header;
                 manifest
                     .domains()
                     .each_ref()
@@ -183,7 +185,7 @@ impl<A: Async> Inner<A> {
         &self.borrow_header().metas
     }
 
-    pub(crate) fn header(&self) -> &VoiceModelHeader {
+    pub(crate) fn header(&self) -> &Arc<VoiceModelHeader> {
         self.borrow_header()
     }
 
