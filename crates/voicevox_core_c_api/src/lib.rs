@@ -104,8 +104,8 @@ fn init_logger_once() {
 #[no_mangle]
 pub extern "C" fn voicevox_get_onnxruntime_lib_versioned_filename() -> *const c_char {
     init_logger_once();
-    let filename = VoicevoxOnnxruntime::lib_versioned_filename();
-    C_STRING_DROP_CHECKER.blacklist(filename).as_ptr()
+    const FILENAME: &CStr = VoicevoxOnnxruntime::LIB_VERSIONED_FILENAME;
+    C_STRING_DROP_CHECKER.blacklist(FILENAME).as_ptr()
 }
 
 // TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
@@ -119,8 +119,8 @@ pub extern "C" fn voicevox_get_onnxruntime_lib_versioned_filename() -> *const c_
 #[no_mangle]
 pub extern "C" fn voicevox_get_onnxruntime_lib_unversioned_filename() -> *const c_char {
     init_logger_once();
-    let filename = VoicevoxOnnxruntime::lib_unversioned_filename();
-    C_STRING_DROP_CHECKER.blacklist(filename).as_ptr()
+    const FILENAME: &CStr = VoicevoxOnnxruntime::LIB_UNVERSIONED_FILENAME;
+    C_STRING_DROP_CHECKER.blacklist(FILENAME).as_ptr()
 }
 
 /// ::voicevox_onnxruntime_load_once のオプション。
@@ -151,7 +151,7 @@ pub struct VoicevoxLoadOnnxruntimeOptions {
 pub extern "C" fn voicevox_make_default_load_onnxruntime_options() -> VoicevoxLoadOnnxruntimeOptions
 {
     init_logger_once();
-    let filename = VoicevoxOnnxruntime::lib_versioned_filename();
+    let filename = VoicevoxOnnxruntime::LIB_VERSIONED_FILENAME;
     let filename = C_STRING_DROP_CHECKER.blacklist(filename).as_ptr();
     VoicevoxLoadOnnxruntimeOptions { filename }
 }

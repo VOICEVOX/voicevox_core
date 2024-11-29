@@ -1,3 +1,8 @@
+#![expect(
+    non_local_definitions,
+    reason = "PyO3を≧0.21.0にすることで解決する予定"
+)]
+
 use std::{
     marker::PhantomData,
     mem,
@@ -202,7 +207,10 @@ trait RwLock: From<Self::Item> {
 
 impl<T> RwLock for std::sync::RwLock<T> {
     type Item = T;
-    type RwLockWriteGuard<'a> = std::sync::RwLockWriteGuard<'a, Self::Item> where Self: 'a;
+    type RwLockWriteGuard<'a>
+        = std::sync::RwLockWriteGuard<'a, Self::Item>
+    where
+        Self: 'a;
 
     fn try_read_(&self) -> Result<impl Deref<Target = Self::Item>, ()> {
         self.try_read().map_err(|e| match e {
@@ -229,7 +237,10 @@ impl<T> RwLock for std::sync::RwLock<T> {
 
 impl<T> RwLock for tokio::sync::RwLock<T> {
     type Item = T;
-    type RwLockWriteGuard<'a> = tokio::sync::RwLockWriteGuard<'a, Self::Item> where Self: 'a;
+    type RwLockWriteGuard<'a>
+        = tokio::sync::RwLockWriteGuard<'a, Self::Item>
+    where
+        Self: 'a;
 
     fn try_read_(&self) -> Result<impl Deref<Target = Self::Item>, ()> {
         self.try_read().map_err(|_| ())

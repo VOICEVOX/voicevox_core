@@ -99,7 +99,7 @@ where
 
     struct Visitor;
 
-    impl<'de> de::Visitor<'de> for Visitor {
+    impl de::Visitor<'_> for Visitor {
         type Value = ();
 
         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -140,7 +140,7 @@ where
 
     struct Visitor;
 
-    impl<'de> de::Visitor<'de> for Visitor {
+    impl de::Visitor<'_> for Visitor {
         type Value = ();
 
         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

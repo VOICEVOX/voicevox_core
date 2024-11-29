@@ -1,3 +1,9 @@
+#![expect(
+    clippy::type_complexity,
+    reason = "`CApiObject::bodies`に対するもの。型を分離するとかえって可読性を失う。その代わりコメ\
+              ントを入れている。`#[…]`じゃなくて`#![…]`でやってるのは、Clippy 0.1.83でeasy-extに反\
+              応するようになってしまったため"
+)]
 use std::{
     any,
     collections::{HashMap, HashSet},
@@ -40,10 +46,6 @@ pub(crate) trait CApiObject: Default + Debug + 'static {
 
     fn heads() -> &'static boxcar::Vec<Self>;
 
-    #[expect(
-        clippy::type_complexity,
-        reason = "型を分離するとかえって可読性を失う。その代わりコメントを入れている"
-    )]
     fn bodies() -> &'static std::sync::Mutex<
         HashMap<
             NonZero<usize>, // `heads`の要素へのポインタのアドレス
