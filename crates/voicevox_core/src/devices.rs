@@ -230,10 +230,6 @@ mod tests {
                     reason = "比較対象としてここは網羅されてなければなりません"
                 )]
                 let SupportedDevices { cpu: _, cuda, dml } = &SUPPORTED_DEVICES;
-                #[expect(
-                    clippy::borrow_deref_ref,
-                    reason = "多分raw記法自体にまだ対応していない"
-                )]
                 [&raw const *cuda, &raw const *dml]
             },
             *GpuSpec::defaults()
