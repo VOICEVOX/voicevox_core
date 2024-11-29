@@ -47,13 +47,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         let add_word = |dict: *const VoicevoxUserDict, word: &VoicevoxUserDictWord| -> Uuid {
             let mut word_uuid = [0u8; 16];
-
-            #[expect(
-                clippy::borrow_deref_ref,
-                reason = "多分raw記法自体にまだ対応していない"
-            )]
             assert_ok(lib.voicevox_user_dict_add_word(dict, &raw const *word, &mut word_uuid));
-
             Uuid::from_slice(&word_uuid).expect("invalid uuid")
         };
 

@@ -25,14 +25,12 @@ use crate::{
 
 impl VoicevoxOnnxruntime {
     #[cfg(feature = "load-onnxruntime")]
-    pub(crate) fn lib_versioned_filename() -> &'static std::ffi::CStr {
-        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME)
-    }
+    pub(crate) const LIB_VERSIONED_FILENAME: &'static std::ffi::CStr =
+        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME);
 
     #[cfg(feature = "load-onnxruntime")]
-    pub(crate) fn lib_unversioned_filename() -> &'static std::ffi::CStr {
-        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME)
-    }
+    pub(crate) const LIB_UNVERSIONED_FILENAME: &'static std::ffi::CStr =
+        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME);
 
     #[ref_cast_custom]
     fn new(rust: &voicevox_core::blocking::Onnxruntime) -> &Self;
@@ -61,11 +59,11 @@ impl VoicevoxOnnxruntime {
 #[cfg(feature = "load-onnxruntime")]
 macro_rules! to_cstr {
     ($s:expr) => {{
-        const __RUST_STR: &str = $s;
-        static __C_STR: &[u8] = const_format::concatcp!(__RUST_STR, '\0').as_bytes();
-
-        std::ffi::CStr::from_bytes_with_nul(__C_STR)
-            .unwrap_or_else(|e| panic!("{__RUST_STR:?} should not contain `\\0`: {e}"))
+        static CSTR: &[u8] = const_format::concatcp!($s, '\0').as_bytes();
+        unsafe {
+            // SAFETY: added a nul with `concatcp!`
+            std::ffi::CStr::from_bytes_with_nul_unchecked(CSTR)
+        }
     }};
 }
 #[cfg(feature = "load-onnxruntime")]
