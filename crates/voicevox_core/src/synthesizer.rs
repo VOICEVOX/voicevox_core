@@ -1,5 +1,7 @@
 use crate::asyncs::{Async, BlockingThreadPool, SingleTasked};
 
+pub use self::inner::MARGIN;
+
 /// [`blocking::Synthesizer::synthesis`]および[`nonblocking::Synthesizer::synthesis`]のオプション。
 ///
 /// [`blocking::Synthesizer::synthesis`]: blocking::Synthesizer::synthesis
@@ -132,7 +134,7 @@ mod inner {
     const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * 24000Hz / 256.0).round()
     /// 音声生成の際、音声特徴量の前後に確保すべきマージン幅（フレーム数）
     /// モデルの受容野から計算される
-    const MARGIN: usize = 14;
+    pub const MARGIN: usize = 14;
     /// 指定した音声区間に対応する特徴量を両端にマージンを追加した上で切り出す
     fn crop_with_margin(audio: &AudioFeature, range: Range<usize>) -> ndarray::ArrayView2<'_, f32> {
         if range.start > audio.frame_length || range.end > audio.frame_length {

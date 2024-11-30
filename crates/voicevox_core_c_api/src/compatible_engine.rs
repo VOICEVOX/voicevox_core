@@ -374,6 +374,8 @@ pub unsafe extern "C" fn generate_full_intermediate(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
+    use voicevox_core::__internal::interop::MARGIN as MARGIN_WIDTH;
+    const FEATURE_SIZE: usize = 80;
     init_logger_once();
     assert_aligned(f0);
     assert_aligned(phoneme);
@@ -381,8 +383,6 @@ pub unsafe extern "C" fn generate_full_intermediate(
     assert_aligned(output);
     let length = length as usize;
     let phoneme_size = phoneme_size as usize;
-    const MARGIN_WIDTH: usize = 14;
-    const FEATURE_SIZE: usize = 80;
     let synthesizer = &*lock_synthesizer();
     let result = ensure_initialized!(synthesizer).generate_full_intermediate(
         length,
@@ -396,7 +396,11 @@ pub unsafe extern "C" fn generate_full_intermediate(
         Ok(output_arr) => {
             let output_len = (length + 2 * MARGIN_WIDTH) * FEATURE_SIZE;
             if output_arr.len() != output_len {
-                panic!("expected {}, got {}", output_len, output_arr.len());
+                if output_arr.ncols() != FEATURE_SIZE {
+                    panic!("the feature size is expected to be {FEATURE_SIZE}");
+                } else {
+                    panic!("expected {}, got {}", output_len, output_arr.len());
+                }
             }
             let output_arr = output_arr.as_standard_layout();
             // SAFETY: The safety contract must be upheld by the caller.
