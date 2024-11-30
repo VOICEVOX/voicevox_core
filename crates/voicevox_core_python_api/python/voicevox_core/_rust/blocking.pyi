@@ -367,7 +367,7 @@ class Synthesizer:
         self,
         audio: AudioFeature,
         start: int,
-        end: int,
+        stop: int,
     ) -> bytes: ...
     def synthesis(
         self,
