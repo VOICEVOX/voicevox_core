@@ -218,8 +218,8 @@ class AudioQuery:
     """
     [読み取り専用] AquesTalk風記法。
 
-    :func:`Synthesizer.audio_query` が返すもののみ ``str`` となる。入力としてのAudioQueryでは無視さ
-    れる。
+    :func:`Synthesizer.create_audio_query` が返すもののみ ``str`` となる。入力として
+    のAudioQueryでは無視される。
     """
 
 
