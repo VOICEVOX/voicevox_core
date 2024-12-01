@@ -757,7 +757,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
 
         let audio_query = synthesizer
             .body()
-            .audio_query_from_kana(kana, StyleId::new(style_id))?;
+            .create_audio_query_from_kana(kana, StyleId::new(style_id))?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
         output_audio_query_json
@@ -806,7 +806,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
 
         let audio_query = synthesizer
             .body()
-            .audio_query(text, StyleId::new(style_id))?;
+            .create_audio_query(text, StyleId::new(style_id))?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
         output_audio_query_json

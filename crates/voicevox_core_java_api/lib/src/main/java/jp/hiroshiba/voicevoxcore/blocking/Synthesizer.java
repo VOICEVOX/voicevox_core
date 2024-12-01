@@ -115,7 +115,7 @@ public class Synthesizer {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
-    String queryJson = rsAudioQueryFromKana(kana, styleId);
+    String queryJson = rsCreateAudioQueryFromKana(kana, styleId);
     Gson gson = new Gson();
 
     AudioQuery audioQuery = gson.fromJson(queryJson, AudioQuery.class);
@@ -138,7 +138,7 @@ public class Synthesizer {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
-    String queryJson = rsAudioQuery(text, styleId);
+    String queryJson = rsCreateAudioQuery(text, styleId);
     Gson gson = new Gson();
 
     AudioQuery audioQuery = gson.fromJson(queryJson, AudioQuery.class);
@@ -300,10 +300,11 @@ public class Synthesizer {
   private native boolean rsIsLoadedVoiceModel(UUID voiceModelId);
 
   @Nonnull
-  private native String rsAudioQueryFromKana(String kana, int styleId) throws RunModelException;
+  private native String rsCreateAudioQueryFromKana(String kana, int styleId)
+      throws RunModelException;
 
   @Nonnull
-  private native String rsAudioQuery(String text, int styleId) throws RunModelException;
+  private native String rsCreateAudioQuery(String text, int styleId) throws RunModelException;
 
   @Nonnull
   private native String rsAccentPhrasesFromKana(String kana, int styleId) throws RunModelException;
