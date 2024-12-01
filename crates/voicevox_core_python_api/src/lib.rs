@@ -713,32 +713,28 @@ mod blocking {
             Ok(AudioFeature { audio })
         }
 
-        #[pyo3(signature=(audio, start, end))]
         fn render<'py>(
             &self,
             audio: &AudioFeature,
             start: usize,
-            end: usize,
+            stop: usize,
             py: Python<'py>,
         ) -> PyResult<&'py PyBytes> {
-            if start > audio.frame_length() || end > audio.frame_length() {
+            if start > audio.frame_length() || stop > audio.frame_length() {
                 return Err(PyIndexError::new_err(format!(
-                    "({}, {}) is out of range for audio feature of length {}",
-                    start,
-                    end,
-                    audio.frame_length(),
+                    "({start}, {stop}) is out of range for audio feature of length {len}",
+                    len = audio.frame_length(),
                 )));
             }
-            if start > end {
+            if start > stop {
                 return Err(PyValueError::new_err(format!(
-                    "({}, {}) is invalid range because start > end",
-                    start, end,
+                    "({start}, {stop}) is invalid range because start > end",
                 )));
             }
             let wav = &self
                 .synthesizer
                 .read()?
-                .render(&audio.audio, start, end)
+                .render(&audio.audio, start..stop)
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
         }

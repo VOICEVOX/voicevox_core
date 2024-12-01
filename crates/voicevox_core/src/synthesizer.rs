@@ -468,15 +468,15 @@ mod inner {
         pub(super) async fn render(
             &self,
             audio: &AudioFeature,
-            start: usize,
-            end: usize,
+            range: Range<usize>,
         ) -> Result<Vec<u8>> {
             // TODO: 44.1kHzなどの対応
-            if (start..end).is_empty() {
+            if range.is_empty() {
+                // FIXME: `start>end`に対してパニックせずに正常に空を返してしまうのでは？
                 // 指定区間が空のときは早期リターン
                 return Ok(vec![]);
             }
-            let spec_segment = crop_with_margin(audio, start..end);
+            let spec_segment = crop_with_margin(audio, range);
             let wave_with_margin = self
                 .render_audio_segment(spec_segment.to_owned(), audio.style_id)
                 .await?;
@@ -524,7 +524,7 @@ mod inner {
             let audio = self
                 .precompute_render(audio_query, style_id, options)
                 .await?;
-            let pcm = self.render(&audio, 0, audio.frame_length).await?;
+            let pcm = self.render(&audio, 0..audio.frame_length).await?;
             Ok(wav_from_s16le(
                 &pcm,
                 audio_query.output_sampling_rate,
@@ -1201,6 +1201,8 @@ mod inner {
               形を考えると、ここの引数を構造体にまとめたりしても可読性に寄与しない"
 )]
 pub(crate) mod blocking {
+    use std::ops::Range;
+
     use easy_ext::ext;
 
     use crate::{
@@ -1310,13 +1312,8 @@ pub(crate) mod blocking {
         }
 
         /// 中間表現から16bit PCMで音声波形を生成する。
-        pub fn render(
-            &self,
-            audio: &AudioFeature,
-            start: usize,
-            end: usize,
-        ) -> crate::Result<Vec<u8>> {
-            self.0.render(audio, start, end).block_on()
+        pub fn render(&self, audio: &AudioFeature, range: Range<usize>) -> crate::Result<Vec<u8>> {
+            self.0.render(audio, range).block_on()
         }
 
         /// AudioQueryから直接WAVフォーマットで音声波形を生成する。
