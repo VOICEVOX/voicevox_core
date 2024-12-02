@@ -218,7 +218,7 @@ class Synthesizer:
         モデルが読み込まれているかどうか。
         """
         ...
-    async def audio_query_from_kana(
+    async def create_audio_query_from_kana(
         self,
         kana: str,
         style_id: Union[StyleId, int],
@@ -238,7 +238,7 @@ class Synthesizer:
         話者とテキストから生成された :class:`AudioQuery` 。
         """
         ...
-    async def audio_query(
+    async def create_audio_query(
         self,
         text: str,
         style_id: Union[StyleId, int],

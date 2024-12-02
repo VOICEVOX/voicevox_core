@@ -106,7 +106,7 @@ def main() -> None:
         synthesizer.load_voice_model(model)
 
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
-    audio_query = synthesizer.audio_query(args.text, args.style_id)
+    audio_query = synthesizer.create_audio_query(args.text, args.style_id)
 
     logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
     if args.streaming:

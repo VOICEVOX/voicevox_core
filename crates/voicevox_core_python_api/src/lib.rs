@@ -572,7 +572,7 @@ mod blocking {
                 .is_loaded_voice_model(voice_model_id.into()))
         }
 
-        fn audio_query_from_kana<'py>(
+        fn create_audio_query_from_kana<'py>(
             &self,
             kana: &str,
             style_id: u32,
@@ -581,14 +581,14 @@ mod blocking {
             let synthesizer = self.synthesizer.read()?;
 
             let audio_query = synthesizer
-                .audio_query_from_kana(kana, StyleId::new(style_id))
+                .create_audio_query_from_kana(kana, StyleId::new(style_id))
                 .into_py_result(py)?;
 
             let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
             crate::convert::to_pydantic_dataclass(audio_query, class)
         }
 
-        fn audio_query<'py>(
+        fn create_audio_query<'py>(
             &self,
             text: &str,
             style_id: u32,
@@ -597,7 +597,7 @@ mod blocking {
             let synthesizesr = self.synthesizer.read()?;
 
             let audio_query = synthesizesr
-                .audio_query(text, StyleId::new(style_id))
+                .create_audio_query(text, StyleId::new(style_id))
                 .into_py_result(py)?;
 
             let class = py.import("voicevox_core")?.getattr("AudioQuery")?;
@@ -1190,7 +1190,7 @@ mod asyncio {
                 .is_loaded_voice_model(voice_model_id.into()))
         }
 
-        fn audio_query_from_kana<'py>(
+        fn create_audio_query_from_kana<'py>(
             &self,
             kana: &str,
             style_id: u32,
@@ -1204,7 +1204,7 @@ mod asyncio {
                 async move {
                     let audio_query = synthesizer
                         .read()?
-                        .audio_query_from_kana(&kana, StyleId::new(style_id))
+                        .create_audio_query_from_kana(&kana, StyleId::new(style_id))
                         .await;
 
                     Python::with_gil(|py| {
@@ -1219,7 +1219,7 @@ mod asyncio {
             )
         }
 
-        fn audio_query<'py>(
+        fn create_audio_query<'py>(
             &self,
             text: &str,
             style_id: u32,
@@ -1233,7 +1233,7 @@ mod asyncio {
                 async move {
                     let audio_query = synthesizer
                         .read()?
-                        .audio_query(&text, StyleId::new(style_id))
+                        .create_audio_query(&text, StyleId::new(style_id))
                         .await;
 
                     Python::with_gil(|py| {

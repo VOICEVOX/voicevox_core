@@ -183,7 +183,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsAudioQueryFromKana<
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsCreateAudioQueryFromKana<
     'local,
 >(
     env: JNIEnv<'local>,
@@ -202,7 +202,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             .clone();
 
         let audio_query =
-            internal.audio_query_from_kana(&kana, voicevox_core::StyleId::new(style_id))?;
+            internal.create_audio_query_from_kana(&kana, voicevox_core::StyleId::new(style_id))?;
 
         let query_json = serde_json::to_string(&audio_query).expect("should not fail");
 
@@ -214,7 +214,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsAudioQuery<
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsCreateAudioQuery<
     'local,
 >(
     env: JNIEnv<'local>,
@@ -232,7 +232,8 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             )?
             .clone();
 
-        let audio_query = internal.audio_query(&text, voicevox_core::StyleId::new(style_id))?;
+        let audio_query =
+            internal.create_audio_query(&text, voicevox_core::StyleId::new(style_id))?;
 
         let query_json = serde_json::to_string(&audio_query).expect("should not fail");
 

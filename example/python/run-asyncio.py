@@ -102,7 +102,7 @@ async def main() -> None:
         await synthesizer.load_voice_model(model)
 
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
-    audio_query = await synthesizer.audio_query(args.text, args.style_id)
+    audio_query = await synthesizer.create_audio_query(args.text, args.style_id)
 
     logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
     wav = await synthesizer.synthesis(audio_query, args.style_id)

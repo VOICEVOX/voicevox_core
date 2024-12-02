@@ -730,7 +730,7 @@ mod inner {
             }
         }
 
-        pub(super) async fn audio_query_from_kana(
+        pub(super) async fn create_audio_query_from_kana(
             &self,
             kana: &str,
             style_id: StyleId,
@@ -745,7 +745,7 @@ mod inner {
             style_id: StyleId,
             options: &TtsOptions,
         ) -> Result<Vec<u8>> {
-            let audio_query = &self.audio_query_from_kana(kana, style_id).await?;
+            let audio_query = &self.create_audio_query_from_kana(kana, style_id).await?;
             self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
                 .await
         }
@@ -761,7 +761,7 @@ mod inner {
             self.replace_mora_data(&accent_phrases, style_id).await
         }
 
-        pub(super) async fn audio_query(
+        pub(super) async fn create_audio_query(
             &self,
             text: &str,
             style_id: StyleId,
@@ -776,7 +776,7 @@ mod inner {
             style_id: StyleId,
             options: &TtsOptions,
         ) -> Result<Vec<u8>> {
-            let audio_query = &self.audio_query(text, style_id).await?;
+            let audio_query = &self.create_audio_query(text, style_id).await?;
             self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
                 .await
         }
@@ -1417,19 +1417,21 @@ pub(crate) mod blocking {
         /// #
         /// use voicevox_core::StyleId;
         ///
-        /// let audio_query = synthesizer.audio_query_from_kana("コンニチワ'", StyleId::new(302))?;
+        /// let audio_query = synthesizer.create_audio_query_from_kana("コンニチワ'", StyleId::new(302))?;
         /// #
         /// # Ok(())
         /// # }
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
-        pub fn audio_query_from_kana(
+        pub fn create_audio_query_from_kana(
             &self,
             kana: &str,
             style_id: StyleId,
         ) -> crate::Result<AudioQuery> {
-            self.0.audio_query_from_kana(kana, style_id).block_on()
+            self.0
+                .create_audio_query_from_kana(kana, style_id)
+                .block_on()
         }
 
         /// AquesTalk風記法から音声合成を行う。
@@ -1497,15 +1499,19 @@ pub(crate) mod blocking {
         /// #
         /// use voicevox_core::StyleId;
         ///
-        /// let audio_query = synthesizer.audio_query("こんにちは", StyleId::new(302))?;
+        /// let audio_query = synthesizer.create_audio_query("こんにちは", StyleId::new(302))?;
         /// #
         /// # Ok(())
         /// # }
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
-        pub fn audio_query(&self, text: &str, style_id: StyleId) -> crate::Result<AudioQuery> {
-            self.0.audio_query(text, style_id).block_on()
+        pub fn create_audio_query(
+            &self,
+            text: &str,
+            style_id: StyleId,
+        ) -> crate::Result<AudioQuery> {
+            self.0.create_audio_query(text, style_id).block_on()
         }
 
         /// 日本語のテキストから音声合成を行う。
@@ -1784,7 +1790,7 @@ pub(crate) mod nonblocking {
         /// use voicevox_core::StyleId;
         ///
         /// let audio_query = synthesizer
-        ///     .audio_query_from_kana("コンニチワ'", StyleId::new(302))
+        ///     .create_audio_query_from_kana("コンニチワ'", StyleId::new(302))
         ///     .await?;
         /// #
         /// # Ok(())
@@ -1792,12 +1798,12 @@ pub(crate) mod nonblocking {
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
-        pub async fn audio_query_from_kana(
+        pub async fn create_audio_query_from_kana(
             &self,
             kana: &str,
             style_id: StyleId,
         ) -> Result<AudioQuery> {
-            self.0.audio_query_from_kana(kana, style_id).await
+            self.0.create_audio_query_from_kana(kana, style_id).await
         }
 
         /// AquesTalk風記法から音声合成を行う。
@@ -1862,7 +1868,7 @@ pub(crate) mod nonblocking {
         /// use voicevox_core::StyleId;
         ///
         /// let audio_query = synthesizer
-        ///     .audio_query("こんにちは", StyleId::new(302))
+        ///     .create_audio_query("こんにちは", StyleId::new(302))
         ///     .await?;
         /// #
         /// # Ok(())
@@ -1870,8 +1876,12 @@ pub(crate) mod nonblocking {
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
-        pub async fn audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery> {
-            self.0.audio_query(text, style_id).await
+        pub async fn create_audio_query(
+            &self,
+            text: &str,
+            style_id: StyleId,
+        ) -> Result<AudioQuery> {
+            self.0.create_audio_query(text, style_id).await
         }
 
         /// 日本語のテキストから音声合成を行う。
@@ -2151,7 +2161,7 @@ mod tests {
         "コ'レワ/テ_スト'デ_ス"
     )]
     #[tokio::test]
-    async fn audio_query_works(
+    async fn create_audio_query_works(
         #[case] input: Input,
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
         #[case] expected_kana_text: &str,
@@ -2176,10 +2186,10 @@ mod tests {
         let query = match input {
             Input::Kana(input) => {
                 syntesizer
-                    .audio_query_from_kana(input, StyleId::new(0))
+                    .create_audio_query_from_kana(input, StyleId::new(0))
                     .await
             }
-            Input::Japanese(input) => syntesizer.audio_query(input, StyleId::new(0)).await,
+            Input::Japanese(input) => syntesizer.create_audio_query(input, StyleId::new(0)).await,
         }
         .unwrap();
 
