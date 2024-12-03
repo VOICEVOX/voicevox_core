@@ -108,7 +108,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-12",
+              "os": "macos-13",
               "target": "aarch64-apple-darwin",
               "artifact_name": "osx-arm64",
               "c_release_format": "plain-cdylib",
@@ -116,7 +116,7 @@ jobs:
               "can_skip_in_simple_test": false
             },
             {
-              "os": "macos-12",
+              "os": "macos-13",
               "target": "x86_64-apple-darwin",
               "artifact_name": "osx-x64",
               "c_release_format": "plain-cdylib",
@@ -124,7 +124,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-12",
+              "os": "macos-13",
               "target": "aarch64-apple-ios",
               "artifact_name": "ios-arm64-cpu",
               "c_release_format": "ios-xcframework",
@@ -132,7 +132,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-12",
+              "os": "macos-13",
               "target": "aarch64-apple-ios-sim",
               "artifact_name": "ios-arm64-cpu-sim",
               "c_release_format": "ios-xcframework",
@@ -140,7 +140,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-12",
+              "os": "macos-13",
               "target": "x86_64-apple-ios",
               "artifact_name": "ios-x64-cpu",
               "c_release_format": "ios-xcframework",
@@ -336,7 +336,7 @@ jobs:
   build_xcframework:
     if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
     needs: [config, build_and_deploy]
-    runs-on: macos-12
+    runs-on: macos-13
     env:
       IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
       IOS_AARCH64_SIM_PATH: artifact/voicevox_core-aarch64-apple-ios-sim
