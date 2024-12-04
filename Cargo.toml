@@ -103,7 +103,7 @@ rev = "17f741301db0bb08da0eafe8a338e5efd8a4b5df"
 
 [workspace.dependencies.open_jtalk]
 git = "https://github.com/VOICEVOX/open_jtalk-rs.git"
-rev = "e1940f3fd61a48bed5bbec8cd2645e13923b1f80"
+rev = "7c87b4227bb005b439a3ad473b48ce8975829576"
 
 # FIXME: iOS対応のpull request(https://github.com/wesleywiser/process_path/pull/16)がマージされる見込みが無いため
 [workspace.dependencies.process_path]
