@@ -21,7 +21,7 @@ use self::helpers::{
 use self::object::{CApiObject as _, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
-use anstream::{AutoStream, RawStream};
+use anstream::{stream::RawStream, AutoStream};
 use c_impls::{VoicevoxSynthesizerPtrExt as _, VoicevoxVoiceModelFilePtrExt as _};
 use chrono::SecondsFormat;
 use colorchoice::ColorChoice;
