@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import logging
+import multiprocessing
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -95,7 +96,12 @@ def main() -> None:
 
     logger.info("%s", f"Initializing ({args.mode=}, {args.dict_dir=})")
     synthesizer = Synthesizer(
-        onnxruntime, OpenJtalk(args.dict_dir), acceleration_mode=args.mode
+        onnxruntime,
+        OpenJtalk(args.dict_dir),
+        acceleration_mode=args.mode,
+        cpu_num_threads=max(
+            multiprocessing.cpu_count(), 2
+        ),  # https://github.com/VOICEVOX/voicevox_core/issues/888
     )
 
     logger.debug("%s", f"{synthesizer.metas=}")
