@@ -12,7 +12,7 @@ use super::{
 };
 
 pub(crate) struct InferenceSessionSet<R: InferenceRuntime, D: InferenceDomain>(
-    EnumMap<D::Operation, Arc<std::sync::Mutex<R::Session>>>,
+    EnumMap<D::Operation, Arc<R::Session>>,
 );
 
 impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
@@ -33,7 +33,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
                 check_param_infos(expected_input_param_infos, &actual_input_param_infos)?;
                 check_param_infos(expected_output_param_infos, &actual_output_param_infos)?;
 
-                Ok((op.into_usize(), std::sync::Mutex::new(sess).into()))
+                Ok((op.into_usize(), sess.into()))
             })
             .collect::<anyhow::Result<HashMap<_, _>>>()?;
 
@@ -84,18 +84,21 @@ impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
 }
 
 pub(crate) struct InferenceSessionCell<R: InferenceRuntime, I> {
-    inner: Arc<std::sync::Mutex<R::Session>>,
+    inner: Arc<R::Session>,
     marker: PhantomData<fn(I)>,
 }
 
 impl<R: InferenceRuntime, I: InferenceInputSignature> InferenceSessionCell<R, I> {
-    pub(crate) fn run(
+    pub(crate) async fn run<A: super::AsyncExt>(
         self,
         input: I,
     ) -> crate::Result<<I::Signature as InferenceSignature>::Output> {
-        let inner = &mut self.inner.lock().unwrap();
-        (|| R::run(input.make_run_context::<R>(inner)?)?.try_into())()
-            .map_err(ErrorRepr::RunModel)
-            .map_err(Into::into)
+        async {
+            let ctx = input.make_run_context::<R>(self.inner.clone())?;
+            A::run_session::<R>(ctx).await?.try_into()
+        }
+        .await
+        .map_err(ErrorRepr::RunModel)
+        .map_err(Into::into)
     }
 }

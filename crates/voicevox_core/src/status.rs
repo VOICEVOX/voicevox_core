@@ -9,6 +9,7 @@ use itertools::iproduct;
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
+        self,
         domains::{inference_domain_map_values, InferenceDomainMap, TalkDomain},
         session_set::{InferenceSessionCell, InferenceSessionSet},
         InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
@@ -104,17 +105,18 @@ impl<R: InferenceRuntime> Status<R> {
     /// # Panics
     ///
     /// `self`が`model_id`を含んでいないとき、パニックする。
-    pub(crate) fn run_session<I>(
+    pub(crate) async fn run_session<A, I>(
         &self,
         model_id: VoiceModelId,
         input: I,
     ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
+        A: infer::AsyncExt,
         I: InferenceInputSignature,
         <I::Signature as InferenceSignature>::Domain: InferenceDomainExt,
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
-        sess.run(input)
+        sess.run::<A>(input).await
     }
 }
 

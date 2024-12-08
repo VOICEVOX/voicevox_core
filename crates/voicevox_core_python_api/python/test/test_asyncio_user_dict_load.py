@@ -6,6 +6,7 @@
 
 # AudioQueryのkanaを比較して変化するかどうかで判断する。
 
+import multiprocessing
 from uuid import UUID
 
 import conftest  # noqa: F401
@@ -20,7 +21,13 @@ async def test_user_dict_load() -> None:
     )
     open_jtalk = await voicevox_core.asyncio.OpenJtalk.new(conftest.open_jtalk_dic_dir)
     model = await voicevox_core.asyncio.VoiceModelFile.open(conftest.model_dir)
-    synthesizer = voicevox_core.asyncio.Synthesizer(onnxruntime, open_jtalk)
+    synthesizer = voicevox_core.asyncio.Synthesizer(
+        onnxruntime,
+        open_jtalk,
+        cpu_num_threads=max(
+            multiprocessing.cpu_count(), 2
+        ),  # https://github.com/VOICEVOX/voicevox_core/issues/888
+    )
 
     await synthesizer.load_voice_model(model)
 
