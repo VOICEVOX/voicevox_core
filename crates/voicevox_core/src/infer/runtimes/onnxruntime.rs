@@ -182,7 +182,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         Ok((sess.into(), input_param_infos, output_param_infos))
     }
 
-    fn run(
+    fn run_blocking(
         OnnxruntimeRunContext { sess, inputs }: Self::RunContext,
     ) -> anyhow::Result<Vec<OutputTensor>> {
         extract_outputs(&sess.lock_blocking().run(inputs)?)
