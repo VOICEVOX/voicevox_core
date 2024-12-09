@@ -91,7 +91,7 @@ toml = "0.7.2"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 typetag = "0.2.18"
-url = "2.5.2"
+url = "2.5.4"
 uuid = "1.10.0"
 voicevox_core = { path = "crates/voicevox_core" }
 windows = "0.43.0"
