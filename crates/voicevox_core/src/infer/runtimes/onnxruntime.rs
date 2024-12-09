@@ -11,7 +11,7 @@
 // }
 // ```
 
-use std::{fmt::Debug, vec};
+use std::{fmt::Debug, sync::Arc, vec};
 
 use anyhow::{anyhow, bail, ensure};
 use duplicate::duplicate_item;
@@ -32,8 +32,8 @@ use super::super::{
 };
 
 impl InferenceRuntime for self::blocking::Onnxruntime {
-    type Session = ort::Session;
-    type RunContext<'a> = OnnxruntimeRunContext<'a>;
+    type Session = async_lock::Mutex<ort::Session>; // WASMでは`ort`を利用しないので、ここはasync-lockを用いてよいはず
+    type RunContext = OnnxruntimeRunContext;
 
     const DISPLAY_NAME: &'static str = if cfg!(feature = "load-onnxruntime") {
         "現在ロードされているONNX Runtime"
@@ -179,58 +179,44 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             })
             .collect::<anyhow::Result<_>>()?;
 
-        Ok((sess, input_param_infos, output_param_infos))
+        Ok((sess.into(), input_param_infos, output_param_infos))
     }
 
-    fn run(
-        OnnxruntimeRunContext { sess, inputs }: OnnxruntimeRunContext<'_>,
+    fn run_blocking(
+        OnnxruntimeRunContext { sess, inputs }: Self::RunContext,
     ) -> anyhow::Result<Vec<OutputTensor>> {
-        let outputs = sess.run(&*inputs)?;
+        extract_outputs(&sess.lock_blocking().run(inputs)?)
+    }
 
-        (0..outputs.len())
-            .map(|i| {
-                let output = &outputs[i];
-
-                let ValueType::Tensor { ty, .. } = output.dtype()? else {
-                    bail!(
-                        "unexpected output. currently `ONNX_TYPE_TENSOR` and \
-                         `ONNX_TYPE_SPARSETENSOR` is supported",
-                    );
-                };
-
-                match ty {
-                    TensorElementType::Float32 => {
-                        let output = output.try_extract_tensor::<f32>()?;
-                        Ok(OutputTensor::Float32(output.into_owned()))
-                    }
-                    _ => bail!("unexpected output tensor element data type"),
-                }
-            })
-            .collect()
+    async fn run_async(
+        OnnxruntimeRunContext { sess, inputs }: Self::RunContext,
+    ) -> anyhow::Result<Vec<OutputTensor>> {
+        extract_outputs(&sess.lock().await.run_async(inputs)?.await?)
     }
 }
 
-pub(crate) struct OnnxruntimeRunContext<'sess> {
-    sess: &'sess ort::Session,
-    inputs: Vec<ort::SessionInputValue<'static>>,
+pub(crate) struct OnnxruntimeRunContext {
+    sess: Arc<async_lock::Mutex<ort::Session>>,
+    inputs: Vec<(&'static str, ort::SessionInputValue<'static>)>,
 }
 
-impl OnnxruntimeRunContext<'_> {
+impl OnnxruntimeRunContext {
     fn push_input(
         &mut self,
+        name: &'static str,
         input: Array<
             impl PrimitiveTensorElementType + Debug + Clone + 'static,
             impl Dimension + 'static,
         >,
     ) -> anyhow::Result<()> {
         let input = ort::Value::from_array(input)?.into();
-        self.inputs.push(input);
+        self.inputs.push((name, input));
         Ok(())
     }
 }
 
-impl<'sess> From<&'sess mut ort::Session> for OnnxruntimeRunContext<'sess> {
-    fn from(sess: &'sess mut ort::Session) -> Self {
+impl From<Arc<async_lock::Mutex<ort::Session>>> for OnnxruntimeRunContext {
+    fn from(sess: Arc<async_lock::Mutex<ort::Session>>) -> Self {
         Self {
             sess,
             inputs: vec![],
@@ -238,15 +224,43 @@ impl<'sess> From<&'sess mut ort::Session> for OnnxruntimeRunContext<'sess> {
     }
 }
 
-impl PushInputTensor for OnnxruntimeRunContext<'_> {
+impl PushInputTensor for OnnxruntimeRunContext {
     #[duplicate_item(
         method           T;
         [ push_int64 ]   [ i64 ];
         [ push_float32 ] [ f32 ];
     )]
-    fn method(&mut self, tensor: Array<T, impl Dimension + 'static>) -> anyhow::Result<()> {
-        self.push_input(tensor)
+    fn method(
+        &mut self,
+        name: &'static str,
+        tensor: Array<T, impl Dimension + 'static>,
+    ) -> anyhow::Result<()> {
+        self.push_input(name, tensor)
     }
+}
+
+// FIXME: use ouroboros to reduce copies
+fn extract_outputs(outputs: &ort::SessionOutputs<'_, '_>) -> anyhow::Result<Vec<OutputTensor>> {
+    (0..outputs.len())
+        .map(|i| {
+            let output = &outputs[i];
+
+            let ValueType::Tensor { ty, .. } = output.dtype()? else {
+                bail!(
+                    "unexpected output. currently `ONNX_TYPE_TENSOR` and `ONNX_TYPE_SPARSETENSOR`
+                     is supported",
+                );
+            };
+
+            match ty {
+                TensorElementType::Float32 => {
+                    let output = output.try_extract_tensor::<f32>()?;
+                    Ok(OutputTensor::Float32(output.into_owned()))
+                }
+                _ => bail!("unexpected output tensor element data type"),
+            }
+        })
+        .collect()
 }
 
 pub(crate) mod blocking {
