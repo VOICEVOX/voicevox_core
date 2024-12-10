@@ -65,9 +65,9 @@ for arch in "${arches[@]}"; do
     install_name_tool -id "@rpath/voicevox_core.framework/voicevox_core" \
         "Framework-${arch}/voicevox_core.framework/voicevox_core"
 
-    # 依存ライブラリonnxruntimeへの@rpathを変更
+    # onnxruntimeへの@rpathを、voicevox_onnxruntimeのXCFrameworkに変更
     install_name_tool -change "@rpath/$dylib_string" \
-        "@rpath/onnxruntime.framework/onnxruntime" \
+        "@rpath/voicevox_onnxruntime.framework/voicevox_onnxruntime" \
         "Framework-${arch}/voicevox_core.framework/voicevox_core"
 done
 
