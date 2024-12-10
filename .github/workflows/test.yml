@@ -103,8 +103,8 @@ jobs:
           includes='[
             { "os": "windows-2019", "can_skip_in_simple_test": true },
             { "os": "windows-2022", "can_skip_in_simple_test": true },
-            { "os": "macos-12", "can_skip_in_simple_test": false },
-            { "os": "macos-13", "can_skip_in_simple_test": true },
+            { "os": "macos-13", "can_skip_in_simple_test": false },
+            { "os": "macos-14", "can_skip_in_simple_test": true },
             { "os": "ubuntu-20.04", "can_skip_in_simple_test": false },
             { "os": "ubuntu-22.04", "can_skip_in_simple_test": true }
           ]'

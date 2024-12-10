@@ -44,7 +44,7 @@ impl Utf8Output {
     pub(crate) fn mask_windows_video_cards(self) -> Self {
         self.mask_stderr(
             static_regex!(
-                r#"(?m)^\{timestamp\}  INFO voicevox_core::synthesizer::blocking: 検出されたGPU \(DirectMLにはGPU 0が使われます\):(\n\{timestamp\}  INFO voicevox_core::synthesizer::blocking:   GPU [0-9]+: "[^"]+" \([0-9.]+ [a-zA-Z]+\))+"#,
+                r#"(?m)^\{timestamp\}  INFO voicevox_core::synthesizer::inner: 検出されたGPU \(DirectMLにはGPU 0が使われます\):(\n\{timestamp\}  INFO voicevox_core::synthesizer::inner:   GPU [0-9]+: "[^"]+" \([0-9.]+ [a-zA-Z]+\))+"#,
             ),
             "{windows-video-cards}",
         )

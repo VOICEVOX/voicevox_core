@@ -120,7 +120,7 @@ with VoiceModelFile.open("model/0.vvm") as model:
 ```python
 text = "サンプル音声です"
 style_id = 0
-audio_query = synthesizer.audio_query(text, style_id)
+audio_query = synthesizer.create_audio_query(text, style_id)
 pprint(audio_query)
 ```
 

@@ -84,10 +84,10 @@ pub struct AudioQuery {
     pub pause_length_scale: (),
     /// \[読み取り専用\] AquesTalk風記法。
     ///
-    /// [`Synthesizer::audio_query`]が返すもののみ`Some`となる。入力としてのAudioQueryでは無視され
+    /// [`Synthesizer::create_audio_query`]が返すもののみ`Some`となる。入力としてのAudioQueryでは無視され
     /// る。
     ///
-    /// [`Synthesizer::audio_query`]: crate::blocking::Synthesizer::audio_query
+    /// [`Synthesizer::create_audio_query`]: crate::blocking::Synthesizer::create_audio_query
     pub kana: Option<String>,
 }
 
