@@ -29,7 +29,7 @@ derive_more.workspace = true
 duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
-enum-map.workspace = true
+enum-map = { workspace = true, features = ["serde"] }
 fs-err.workspace = true
 futures-io.workspace = true
 futures-lite.workspace = true
