@@ -1,0 +1,14 @@
+name: audit
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 15 * * *'
+jobs:
+  audit:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cargo-deny
+        uses: ./.github/actions/install-cargo-deny
+      - name: cargo-deny
+        run: cargo deny --all-features check -s advisories
