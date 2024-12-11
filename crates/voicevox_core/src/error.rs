@@ -180,16 +180,16 @@ pub(crate) struct LoadModelError {
 
 #[derive(derive_more::Display, Debug)]
 pub(crate) enum LoadModelErrorKind {
-    #[display(fmt = "ZIPファイルとして開くことができませんでした")]
+    #[display("ZIPファイルとして開くことができませんでした")]
     OpenZipFile,
-    #[display(fmt = "`{filename}`を読み取れませんでした")]
+    #[display("`{filename}`を読み取れませんでした")]
     ReadZipEntry { filename: String },
-    #[display(fmt = "モデルの形式が不正です")]
+    #[display("モデルの形式が不正です")]
     InvalidModelFormat,
-    #[display(fmt = "モデル`{id}`は既に読み込まれています")]
+    #[display("モデル`{id}`は既に読み込まれています")]
     ModelAlreadyLoaded { id: VoiceModelId },
-    #[display(fmt = "スタイル`{id}`は既に読み込まれています")]
+    #[display("スタイル`{id}`は既に読み込まれています")]
     StyleAlreadyLoaded { id: StyleId },
-    #[display(fmt = "モデルデータを読むことができませんでした")]
+    #[display("モデルデータを読むことができませんでした")]
     InvalidModelData,
 }
