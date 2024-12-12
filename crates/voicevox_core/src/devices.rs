@@ -175,19 +175,19 @@ enum DeviceAvailability {
 
 #[derive(Clone, Copy, PartialEq, Debug, derive_more::Display)]
 pub(crate) enum DeviceSpec {
-    #[display(fmt = "CPU")]
+    #[display("CPU")]
     Cpu,
 
-    #[display(fmt = "{_0}")]
+    #[display("{_0}")]
     Gpu(GpuSpec),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, derive_more::Display)]
 pub(crate) enum GpuSpec {
-    #[display(fmt = "CUDA (device_id=0)")]
+    #[display("CUDA (device_id=0)")]
     Cuda,
 
-    #[display(fmt = "DirectML (device_id=0)")]
+    #[display("DirectML (device_id=0)")]
     Dml,
 }
 

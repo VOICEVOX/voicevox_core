@@ -162,10 +162,10 @@ impl InputScalar for T {
 
 #[derive(Clone, Copy, PartialEq, derive_more::Display)]
 pub(crate) enum InputScalarKind {
-    #[display(fmt = "int64_t")]
+    #[display("int64_t")]
     Int64,
 
-    #[display(fmt = "float")]
+    #[display("float")]
     Float32,
 }
 
@@ -209,7 +209,7 @@ impl OutputScalar for f32 {
 
 #[derive(Clone, Copy, PartialEq, derive_more::Display)]
 pub(crate) enum OutputScalarKind {
-    #[display(fmt = "float")]
+    #[display("float")]
     Float32,
 }
 
