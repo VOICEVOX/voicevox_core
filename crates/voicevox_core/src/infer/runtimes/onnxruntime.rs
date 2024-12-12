@@ -24,11 +24,12 @@ use ort::{
 use crate::{
     devices::{DeviceSpec, GpuSpec, SupportedDevices},
     error::ErrorRepr,
+    voice_model::ModelBytes,
 };
 
 use super::super::{
-    DecryptModelError, InferenceRuntime, InferenceSessionOptions, InputScalarKind,
-    OutputScalarKind, OutputTensor, ParamInfo, PushInputTensor,
+    InferenceRuntime, InferenceSessionOptions, InputScalarKind, OutputScalarKind, OutputTensor,
+    ParamInfo, PushInputTensor,
 };
 
 impl InferenceRuntime for self::blocking::Onnxruntime {
@@ -72,7 +73,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
 
     fn new_session(
         &self,
-        model: impl FnOnce() -> std::result::Result<Vec<u8>, DecryptModelError>,
+        model: &ModelBytes,
         options: InferenceSessionOptions,
     ) -> anyhow::Result<(
         Self::Session,
@@ -96,8 +97,10 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             }
         };
 
-        let model = model()?;
-        let sess = builder.commit_from_memory(&{ model })?;
+        let sess = match model {
+            ModelBytes::Onnx(onnx) => builder.commit_from_memory(onnx),
+            ModelBytes::VvBin(bin) => builder.commit_from_vv_bin(bin),
+        }?;
 
         let input_param_infos = sess
             .inputs
@@ -285,12 +288,10 @@ pub(crate) mod blocking {
     /// # use voicevox_core as another_lib;
     /// #
     /// # fn main() -> anyhow::Result<()> {
-    /// # if cfg!(windows) {
-    /// #     // Windows\System32\onnxruntime.dllを回避
-    /// #     voicevox_core::blocking::Onnxruntime::load_once()
-    /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
-    /// #         .exec()?;
-    /// # }
+    /// # voicevox_core::blocking::Onnxruntime::load_once()
+    /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
+    /// #     .exec()?;
+    /// #
     /// let ort1 = voicevox_core::blocking::Onnxruntime::load_once().exec()?;
     /// let ort2 = another_lib::nonblocking::Onnxruntime::get().expect("`ort1`と同一のはず");
     /// assert_eq!(ptr_addr(ort1), ptr_addr(ort2));
@@ -313,7 +314,7 @@ pub(crate) mod blocking {
         /// ONNX Runtimeのライブラリ名。
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
-        pub const LIB_NAME: &'static str = "onnxruntime";
+        pub const LIB_NAME: &'static str = "voicevox_onnxruntime";
 
         /// 推奨されるONNX Runtimeのバージョン。
         #[cfg(feature = "load-onnxruntime")]
@@ -474,12 +475,10 @@ pub(crate) mod nonblocking {
     /// #
     /// # #[pollster::main]
     /// # async fn main() -> anyhow::Result<()> {
-    /// # if cfg!(windows) {
-    /// #     // Windows\System32\onnxruntime.dllを回避
-    /// #     voicevox_core::blocking::Onnxruntime::load_once()
-    /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
-    /// #         .exec()?;
-    /// # }
+    /// # voicevox_core::blocking::Onnxruntime::load_once()
+    /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
+    /// #     .exec()?;
+    /// #
     /// let ort1 = voicevox_core::nonblocking::Onnxruntime::load_once()
     ///     .exec()
     ///     .await?;
@@ -509,7 +508,7 @@ pub(crate) mod nonblocking {
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         // ブロッキング版と等しいことはテストで担保
-        pub const LIB_NAME: &'static str = "onnxruntime";
+        pub const LIB_NAME: &'static str = "voicevox_onnxruntime";
 
         /// 推奨されるONNX Runtimeのバージョン。
         #[cfg(feature = "load-onnxruntime")]

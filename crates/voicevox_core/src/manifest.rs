@@ -1,14 +1,13 @@
 use std::{
     collections::BTreeMap,
     fmt::{self, Display},
-    ops::Index,
     sync::Arc,
 };
 
 use derive_getters::Getters;
-use derive_more::Deref;
+use derive_more::{Deref, Index};
 use derive_new::new;
-use enum_map::{Enum, EnumMap};
+use enum_map::EnumMap;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -82,43 +81,38 @@ pub struct Manifest {
 
 pub(crate) type ManifestDomains = inference_domain_map_values!(for<D> Option<D::Manifest>);
 
-#[derive(Deserialize)]
+#[derive(Index, Deserialize)]
 #[cfg_attr(test, derive(Default))]
 pub(crate) struct TalkManifest {
+    #[index]
     #[serde(flatten)]
-    filenames: EnumMap<TalkOperationFilenameKey, Arc<str>>,
+    filenames: EnumMap<TalkOperation, ModelFile>,
 
     #[serde(default)]
     pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
-// TODO: #825 では`TalkOperation`と統合する。`Index`の実装もderive_moreで委譲する
-#[derive(Enum, Deserialize)]
-pub(crate) enum TalkOperationFilenameKey {
-    #[serde(rename = "predict_duration_filename")]
-    PredictDuration,
-    #[serde(rename = "predict_intonation_filename")]
-    PredictIntonation,
-    #[serde(rename = "generate_full_intermediate_filename")]
-    GenerateFullIntermediate,
-    #[serde(rename = "render_audio_segment_filename")]
-    RenderAudioSegment,
+#[derive(Deserialize, Clone)]
+pub(crate) struct ModelFile {
+    pub(crate) r#type: ModelFileType,
+    pub(crate) filename: Arc<str>,
 }
 
-impl Index<TalkOperation> for TalkManifest {
-    type Output = Arc<str>;
-
-    fn index(&self, index: TalkOperation) -> &Self::Output {
-        let key = match index {
-            TalkOperation::PredictDuration => TalkOperationFilenameKey::PredictDuration,
-            TalkOperation::PredictIntonation => TalkOperationFilenameKey::PredictIntonation,
-            TalkOperation::GenerateFullIntermediate => {
-                TalkOperationFilenameKey::GenerateFullIntermediate
-            }
-            TalkOperation::RenderAudioSegment => TalkOperationFilenameKey::RenderAudioSegment,
-        };
-        &self.filenames[key]
+#[cfg(test)]
+impl Default for ModelFile {
+    fn default() -> Self {
+        Self {
+            r#type: ModelFileType::Onnx,
+            filename: "".into(),
+        }
     }
+}
+
+#[derive(Deserialize, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum ModelFileType {
+    Onnx,
+    VvBin,
 }
 
 #[serde_as]

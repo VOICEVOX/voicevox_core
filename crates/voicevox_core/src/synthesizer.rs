@@ -1235,12 +1235,10 @@ pub(crate) mod blocking {
         ///     AccelerationMode, InitializeOptions,
         /// };
         ///
-        /// # if cfg!(windows) {
-        /// #     // Windows\System32\onnxruntime.dllを回避
-        /// #     voicevox_core::blocking::Onnxruntime::load_once()
-        /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
-        /// #         .exec()?;
-        /// # }
+        /// # voicevox_core::blocking::Onnxruntime::load_once()
+        /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
+        /// #     .exec()?;
+        /// #
         /// let mut syntesizer = Synthesizer::new(
         ///     Onnxruntime::load_once().exec()?,
         ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
@@ -1633,12 +1631,10 @@ pub(crate) mod nonblocking {
         ///     AccelerationMode, InitializeOptions,
         /// };
         ///
-        /// # if cfg!(windows) {
-        /// #     // Windows\System32\onnxruntime.dllを回避
-        /// #     voicevox_core::blocking::Onnxruntime::load_once()
-        /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
-        /// #         .exec()?;
-        /// # }
+        /// # voicevox_core::blocking::Onnxruntime::load_once()
+        /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
+        /// #     .exec()?;
+        /// #
         /// let mut syntesizer = Synthesizer::new(
         ///     Onnxruntime::load_once().exec().await?,
         ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
