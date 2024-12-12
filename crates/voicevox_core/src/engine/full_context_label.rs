@@ -18,13 +18,13 @@ pub(crate) struct FullContextLabelError {
 
 #[derive(derive_more::Display, Debug)]
 enum ErrorKind {
-    #[display(fmt = "Open JTalkで解釈することができませんでした")]
+    #[display("Open JTalkで解釈することができませんでした")]
     OpenJtalk,
 
-    #[display(fmt = "jlabelでラベルを解釈することができませんでした")]
+    #[display("jlabelでラベルを解釈することができませんでした")]
     Jlabel,
 
-    #[display(fmt = "too long mora")]
+    #[display("too long mora")]
     TooLongMora,
 }
 
