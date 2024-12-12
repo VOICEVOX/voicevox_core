@@ -11,7 +11,7 @@ use std::{
 use anyhow::{anyhow, Context as _};
 use derive_more::From;
 use easy_ext::ext;
-use enum_map::{enum_map, EnumMap};
+use enum_map::{Enum, EnumMap};
 use futures_io::{AsyncBufRead, AsyncRead, AsyncSeek};
 use futures_util::future::{OptionFuture, TryFutureExt as _};
 use itertools::Itertools as _;
@@ -23,7 +23,7 @@ use crate::{
     asyncs::{Async, Mutex as _},
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
-        domains::{inference_domain_map_values, InferenceDomainMap, TalkDomain, TalkOperation},
+        domains::{inference_domain_map_values, InferenceDomainMap, TalkDomain},
         InferenceDomain,
     },
     manifest::{Manifest, ManifestDomains, ModelFile, ModelFileType, StyleIdToInnerVoiceId},
@@ -128,7 +128,7 @@ impl<A: Async> Inner<A> {
 
         let header = VoiceModelHeader::new(manifest, metas, path)?.into();
 
-        InnerTryBuilder {
+        return InnerTryBuilder {
             header,
             inference_model_entries_builder: |header| {
                 let VoiceModelHeader { manifest, .. } = &**header;
@@ -139,23 +139,9 @@ impl<A: Async> Inner<A> {
                         talk: |talk| {
                             talk.as_ref()
                                 .map(|manifest| {
-                                    let indices = enum_map! {
-                                        TalkOperation::PredictDuration => {
-                                            find_entry_index(&manifest.predict_duration.filename)?
-                                        }
-                                        TalkOperation::PredictIntonation => {
-                                            find_entry_index(&manifest.predict_intonation.filename)?
-                                        }
-                                        TalkOperation::GenerateFullIntermediate => {
-                                            find_entry_index(
-                                                &manifest.generate_full_intermediate.filename,
-                                            )?
-                                        }
-                                        TalkOperation::RenderAudioSegment => find_entry_index(
-                                            &manifest.render_audio_segment.filename,
-                                        )?,
-                                    };
-
+                                    let indices = EnumMap::from_fn(|k| &manifest[k]).try_map(
+                                        |_, ModelFile { filename, .. }| find_entry_index(filename),
+                                    )?;
                                     Ok(InferenceModelEntry { indices, manifest })
                                 })
                                 .transpose()
@@ -174,7 +160,26 @@ impl<A: Async> Inner<A> {
             },
             zip: zip.into_inner().into_inner().into(),
         }
-        .try_build()
+        .try_build();
+
+        #[ext]
+        impl<K: Enum, V> EnumMap<K, V> {
+            fn try_map<V2, E>(
+                self,
+                f: impl FnMut(K, V) -> Result<V2, E>,
+            ) -> Result<EnumMap<K, V2>, E> {
+                let mut elems = self
+                    .map(f)
+                    .into_iter()
+                    .map(|(_, r)| r.map(Some))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                Ok(EnumMap::<K, _>::from_fn(|key| {
+                    let key = key.into_usize();
+                    elems[key].take().expect("each `key` should be distinct")
+                }))
+            }
+        }
     }
 
     fn id(&self) -> VoiceModelId {

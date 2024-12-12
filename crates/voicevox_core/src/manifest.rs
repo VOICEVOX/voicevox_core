@@ -5,9 +5,9 @@ use std::{
 };
 
 use derive_getters::Getters;
-use derive_more::Deref;
+use derive_more::{Deref, Index};
 use derive_new::new;
-use macros::IndexForFields;
+use enum_map::EnumMap;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -81,21 +81,12 @@ pub struct Manifest {
 
 pub(crate) type ManifestDomains = inference_domain_map_values!(for<D> Option<D::Manifest>);
 
-#[derive(Deserialize, IndexForFields)]
+#[derive(Index, Deserialize)]
 #[cfg_attr(test, derive(Default))]
-#[index_for_fields(TalkOperation)]
 pub(crate) struct TalkManifest {
-    #[index_for_fields(TalkOperation::PredictDuration)]
-    pub(crate) predict_duration: ModelFile,
-
-    #[index_for_fields(TalkOperation::PredictIntonation)]
-    pub(crate) predict_intonation: ModelFile,
-
-    #[index_for_fields(TalkOperation::GenerateFullIntermediate)]
-    pub(crate) generate_full_intermediate: ModelFile,
-
-    #[index_for_fields(TalkOperation::RenderAudioSegment)]
-    pub(crate) render_audio_segment: ModelFile,
+    #[index]
+    #[serde(flatten)]
+    filenames: EnumMap<TalkOperation, ModelFile>,
 
     #[serde(default)]
     pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,

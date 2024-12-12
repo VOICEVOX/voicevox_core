@@ -25,11 +25,11 @@ camino.workspace = true
 const_format.workspace = true
 derive-getters.workspace = true
 derive-new.workspace = true
-derive_more = { workspace = true, features = ["add", "deref", "display", "from", "from_str"] }
+derive_more = { workspace = true, features = ["add", "deref", "display", "from", "from_str", "index"] }
 duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
-enum-map.workspace = true
+enum-map = { workspace = true, features = ["serde"] }
 fs-err.workspace = true
 futures-io.workspace = true
 futures-lite.workspace = true
