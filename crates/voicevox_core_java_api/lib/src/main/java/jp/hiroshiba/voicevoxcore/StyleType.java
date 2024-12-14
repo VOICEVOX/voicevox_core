@@ -9,4 +9,19 @@ public enum StyleType {
   @SerializedName("talk")
   @Expose
   TALK,
+
+  /** 歌唱音声合成用のクエリの作成が可能。 */
+  @SerializedName("singing_teacher")
+  @Expose
+  SINGING_TEACHER,
+
+  /** 歌唱音声合成が可能。 */
+  @SerializedName("frame_decode")
+  @Expose
+  FRAME_DECODE,
+
+  /** 歌唱音声合成用のクエリの作成と歌唱音声合成が可能。 */
+  @SerializedName("sing")
+  @Expose
+  SING,
 }
