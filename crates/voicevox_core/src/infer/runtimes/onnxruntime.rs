@@ -158,7 +158,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     TensorElementType::Uint16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16"),
                     TensorElementType::Int16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16"),
                     TensorElementType::Int32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32"),
-                    TensorElementType::Int64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64"),
+                    TensorElementType::Int64 => Ok(OutputScalarKind::Int64),
                     TensorElementType::String => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING"),
                     TensorElementType::Bfloat16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16"),
                     TensorElementType::Float16 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16"),
@@ -253,6 +253,10 @@ fn extract_outputs(outputs: &ort::SessionOutputs<'_, '_>) -> anyhow::Result<Vec<
             };
 
             match ty {
+                TensorElementType::Int64 => {
+                    let output = output.try_extract_tensor::<i64>()?;
+                    Ok(OutputTensor::Int64(output.into_owned()))
+                }
                 TensorElementType::Float32 => {
                     let output = output.try_extract_tensor::<f32>()?;
                     Ok(OutputTensor::Float32(output.into_owned()))

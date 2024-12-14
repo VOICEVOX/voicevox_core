@@ -468,6 +468,214 @@ pub unsafe extern "C" fn render_audio_segment(
     }
 }
 
+/// # Safety
+///
+/// - `consonant`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `vowel`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `note_duration`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
+/// - `output`はRustの`&mut [MaybeUninit<i64>; length as usize]`として解釈できなければならない。
+#[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+pub unsafe extern "C" fn predict_sing_consonant_length_forward(
+    length: i64,
+    consonant: *mut i64,
+    vowel: *mut i64,
+    note_duration: *mut i64,
+    speaker_id: *mut i64,
+    output: *mut i64,
+) -> bool {
+    init_logger_once();
+    assert_aligned(consonant);
+    assert_aligned(vowel);
+    assert_aligned(note_duration);
+    assert_aligned(speaker_id);
+    assert_aligned(output);
+    let length = length as usize;
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).predict_sing_consonant_length(
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], consonant) }.to_owned(),
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], vowel) }.to_owned(),
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], note_duration) }.to_owned(),
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_arr) => {
+            let output_len = length;
+            if output_arr.len() != output_len {
+                panic!("expected {}, got {}", output_len, output_arr.len());
+            }
+            let output_arr = output_arr.as_standard_layout();
+            // SAFETY: The safety contract must be upheld by the caller.
+            unsafe {
+                output_arr
+                    .as_ptr()
+                    .copy_to_nonoverlapping(output, output_len);
+            }
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
+/// # Safety
+///
+/// - `phoneme`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `note`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
+/// - `output`はRustの`&mut [MaybeUninit<f32>; length as usize]`として解釈できなければならない。
+#[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+pub unsafe extern "C" fn predict_sing_f0_forward(
+    length: i64,
+    phoneme: *mut i64,
+    note: *mut i64,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    init_logger_once();
+    assert_aligned(phoneme);
+    assert_aligned(note);
+    assert_aligned(speaker_id);
+    assert_aligned(output);
+    let length = length as usize;
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).predict_sing_f0(
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], phoneme) }.to_owned(),
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], note) }.to_owned(),
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_arr) => {
+            let output_len = length;
+            if output_arr.len() != output_len {
+                panic!("expected {}, got {}", output_len, output_arr.len());
+            }
+            let output_arr = output_arr.as_standard_layout();
+            // SAFETY: The safety contract must be upheld by the caller.
+            unsafe {
+                output_arr
+                    .as_ptr()
+                    .copy_to_nonoverlapping(output, output_len);
+            }
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
+/// # Safety
+///
+/// - `phoneme`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `note`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `f0`はRustの`&[f32; length as usize]`として解釈できなければならない。
+/// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
+/// - `output`はRustの`&mut [MaybeUninit<f32>; length as usize]`として解釈できなければならない。
+#[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+pub unsafe extern "C" fn predict_sing_volume_forward(
+    length: i64,
+    phoneme: *mut i64,
+    note: *mut i64,
+    f0: *mut f32,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    init_logger_once();
+    assert_aligned(phoneme);
+    assert_aligned(note);
+    assert_aligned(f0);
+    assert_aligned(speaker_id);
+    assert_aligned(output);
+    let length = length as usize;
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).predict_sing_volume(
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], phoneme) }.to_owned(),
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], note) }.to_owned(),
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], f0) }.to_owned(),
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_arr) => {
+            let output_len = length;
+            if output_arr.len() != output_len {
+                panic!("expected {}, got {}", output_len, output_arr.len());
+            }
+            let output_arr = output_arr.as_standard_layout();
+            // SAFETY: The safety contract must be upheld by the caller.
+            unsafe {
+                output_arr
+                    .as_ptr()
+                    .copy_to_nonoverlapping(output, output_len);
+            }
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
+/// # Safety
+///
+/// - `phoneme`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `f0`はRustの`&[f32; length as usize]`として解釈できなければならない。
+/// - `volume`はRustの`&[f32; length as usize]`として解釈できなければならない。
+/// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
+/// - `output`はRustの`&mut [MaybeUninit<f32>; length as usize]`として解釈できなければならない。
+#[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+pub unsafe extern "C" fn sf_decode_forward(
+    length: i64,
+    phoneme: *mut i64,
+    f0: *mut f32,
+    volume: *mut f32,
+    speaker_id: *mut i64,
+    output: *mut f32,
+) -> bool {
+    init_logger_once();
+    assert_aligned(phoneme);
+    assert_aligned(f0);
+    assert_aligned(volume);
+    assert_aligned(speaker_id);
+    assert_aligned(output);
+    let length = length as usize;
+    let synthesizer = &*lock_synthesizer();
+    let result = ensure_initialized!(synthesizer).sf_decode(
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], phoneme) }.to_owned(),
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], f0) }.to_owned(),
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], volume) }.to_owned(),
+        StyleId::new(unsafe { *speaker_id as u32 }),
+    );
+    match result {
+        Ok(output_arr) => {
+            let output_len = length * 256;
+            if output_arr.len() != output_len {
+                panic!("expected {}, got {}", output_len, output_arr.len());
+            }
+            let output_arr = output_arr.as_standard_layout();
+            // SAFETY: The safety contract must be upheld by the caller.
+            unsafe {
+                output_arr
+                    .as_ptr()
+                    .copy_to_nonoverlapping(output, output_len);
+            }
+            true
+        }
+        Err(err) => {
+            set_message(&format!("{err}"));
+            false
+        }
+    }
+}
+
 #[track_caller]
 fn assert_aligned(ptr: *mut impl Sized) {
     assert!(
