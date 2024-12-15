@@ -909,7 +909,6 @@ pub const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'stati
         VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR => "Statusが初期化されていません\0",
         VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR => "無効なspeaker_idです\0",
         VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR => "無効なmodel_indexです\0",
-        VOICEVOX_RESULT_UNSUPPORTED_MODEL_ERROR => "未対応なモデルです\0",
         VOICEVOX_RESULT_INFERENCE_ERROR => "推論に失敗しました\0",
         VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR => {
             "入力テキストからのフルコンテキストラベル抽出に失敗しました\0"
@@ -1163,8 +1162,6 @@ mod tests {
         assert!(result.is_ok(), "{result:?}");
         assert_eq!(result.unwrap().len(), vowel_phoneme_vector.len());
     }
-
-    // TODO: sing系のテストを足す
 
     #[rstest]
     fn decode_works() {
