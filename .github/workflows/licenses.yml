@@ -1,0 +1,14 @@
+name: licenses
+on:
+  push:
+    branches:
+      - main
+jobs:
+  licenses:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cargo-deny
+        uses: ./.github/actions/install-cargo-deny
+      - name: cargo-deny
+        run: cargo deny --all-features check -s bans licenses sources
