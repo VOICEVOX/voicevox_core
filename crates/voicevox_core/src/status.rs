@@ -10,7 +10,10 @@ use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
         self,
-        domains::{inference_domain_map_values, InferenceDomainMap, TalkDomain},
+        domains::{
+            inference_domain_map_values, FrameDecodeDomain, InferenceDomainMap,
+            SingingTeacherDomain, TalkDomain,
+        },
         session_set::{InferenceSessionCell, InferenceSessionSet},
         InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
         InferenceSignature,
@@ -296,8 +299,10 @@ pub(crate) trait InferenceDomainExt: InferenceDomain {
 }
 
 #[duplicate_item(
-    T              field;
-    [ TalkDomain ] [ talk ];
+    T                        field;
+    [ TalkDomain ]           [ talk ];
+    [ SingingTeacherDomain ] [ singing_teacher ];
+    [ FrameDecodeDomain ]    [ frame_decode ];
 )]
 impl InferenceDomainExt for T {
     fn visit<R: InferenceRuntime>(
@@ -325,6 +330,8 @@ impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
             [
                 field;
                 [ talk ];
+                [ singing_teacher ];
+                [ frame_decode ];
             ]
             let field = self
                 .field
@@ -336,7 +343,11 @@ impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
                 .transpose()?;
         }
 
-        Ok(InferenceDomainMap { talk })
+        Ok(InferenceDomainMap {
+            talk,
+            singing_teacher,
+            frame_decode,
+        })
     }
 }
 
@@ -355,7 +366,9 @@ mod tests {
     use crate::{
         devices::{DeviceSpec, GpuSpec},
         infer::{
-            domains::{InferenceDomainMap, TalkOperation},
+            domains::{
+                FrameDecodeOperation, InferenceDomainMap, SingingTeacherOperation, TalkOperation,
+            },
             InferenceSessionOptions,
         },
         macros::tests::assert_debug_fmt_eq,
@@ -380,6 +393,14 @@ mod tests {
                 | TalkOperation::PredictIntonation
                 | TalkOperation::GenerateFullIntermediate => light_session_options,
                 TalkOperation::RenderAudioSegment => heavy_session_options,
+            },
+            singing_teacher: enum_map! {
+                SingingTeacherOperation::PredictSingConsonantLength
+                | SingingTeacherOperation::PredictSingF0
+                | SingingTeacherOperation::PredictSingVolume => light_session_options,
+            },
+            frame_decode: enum_map! {
+                FrameDecodeOperation::SfDecode => heavy_session_options,
             },
         };
         let status = Status::new(
@@ -414,6 +435,8 @@ mod tests {
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
             InferenceDomainMap {
                 talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
+                singing_teacher: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
+                frame_decode: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
             },
         );
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
@@ -430,6 +453,8 @@ mod tests {
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
             InferenceDomainMap {
                 talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
+                singing_teacher: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
+                frame_decode: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
             },
         );
         let vvm = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();

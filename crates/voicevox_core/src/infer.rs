@@ -197,23 +197,33 @@ pub(crate) trait OutputScalar: Sized {
     fn extract(tensor: OutputTensor) -> std::result::Result<ArrayD<Self>, ExtractError>;
 }
 
-impl OutputScalar for f32 {
-    const KIND: OutputScalarKind = OutputScalarKind::Float32;
+#[duplicate_item(
+    T        Kind;
+    [ i64 ] [ Int64 ];
+    [ f32 ] [ Float32 ];
+)]
+impl OutputScalar for T {
+    const KIND: OutputScalarKind = OutputScalarKind::Kind;
 
     fn extract(tensor: OutputTensor) -> std::result::Result<ArrayD<Self>, ExtractError> {
         match tensor {
-            OutputTensor::Float32(tensor) => Ok(tensor),
+            OutputTensor::Kind(tensor) => Ok(tensor),
+            _ => Err(ExtractError::Datatype),
         }
     }
 }
 
 #[derive(Clone, Copy, PartialEq, derive_more::Display)]
 pub(crate) enum OutputScalarKind {
+    #[display("int64_t")]
+    Int64,
+
     #[display("float")]
     Float32,
 }
 
 pub(crate) enum OutputTensor {
+    Int64(ArrayD<i64>),
     Float32(ArrayD<f32>),
 }
 
@@ -246,8 +256,12 @@ pub(crate) struct InferenceSessionOptions {
     pub(crate) device: DeviceSpec,
 }
 
+// TODO: `ShapeError`を直接扱い、データ型違いはパニックにすべきでは？
 #[derive(Error, Debug)]
 pub(crate) enum ExtractError {
+    #[error("wrong datatype")]
+    Datatype,
+
     #[error(transparent)]
     Shape(#[from] ShapeError),
 }

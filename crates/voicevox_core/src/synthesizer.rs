@@ -101,6 +101,7 @@ impl AsyncExt for BlockingThreadPool {
 }
 
 mod inner {
+    use easy_ext::ext;
     use enum_map::enum_map;
     use std::{
         io::{Cursor, Write as _},
@@ -118,9 +119,13 @@ mod inner {
         infer::{
             self,
             domains::{
-                GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
-                PredictDurationInput, PredictDurationOutput, PredictIntonationInput,
-                PredictIntonationOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
+                FrameDecodeDomain, FrameDecodeOperation, GenerateFullIntermediateInput,
+                GenerateFullIntermediateOutput, InferenceDomainMap, PredictDurationInput,
+                PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput,
+                PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput,
+                PredictSingF0Input, PredictSingF0Output, PredictSingVolumeInput,
+                PredictSingVolumeOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
+                SfDecodeInput, SfDecodeOutput, SingingTeacherDomain, SingingTeacherOperation,
                 TalkDomain, TalkOperation,
             },
             InferenceRuntime, InferenceSessionOptions,
@@ -174,7 +179,7 @@ mod inner {
     }
 
     pub struct Inner<O, A: Async> {
-        status: Arc<Status<crate::blocking::Onnxruntime>>,
+        pub(super) status: Arc<Status<crate::blocking::Onnxruntime>>,
         open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
         kana_analyzer: KanaAnalyzer,
         use_gpu: bool,
@@ -249,6 +254,14 @@ mod inner {
                         | TalkOperation::PredictIntonation
                         | TalkOperation::GenerateFullIntermediate => light_session_options,
                         TalkOperation::RenderAudioSegment => heavy_session_options,
+                    },
+                    singing_teacher: enum_map! {
+                        SingingTeacherOperation::PredictSingConsonantLength
+                        | SingingTeacherOperation::PredictSingF0
+                        | SingingTeacherOperation::PredictSingVolume => light_session_options,
+                    },
+                    frame_decode: enum_map! {
+                        FrameDecodeOperation::SfDecode => heavy_session_options,
                     },
                 },
             )
@@ -1053,6 +1066,108 @@ mod inner {
             let output = trim_margin_from_wave(output_with_margin);
             Ok(output.to_vec())
         }
+
+        pub(super) async fn predict_sing_consonant_length<A: infer::AsyncExt>(
+            &self,
+            consonant: ndarray::Array1<i64>,
+            vowel: ndarray::Array1<i64>,
+            note_duration: ndarray::Array1<i64>,
+            style_id: StyleId,
+        ) -> Result<ndarray::Array2<i64>> {
+            let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherDomain>(style_id)?;
+
+            let PredictSingConsonantLengthOutput { consonant_lengths } = self
+                .run_session::<A, _>(
+                    model_id,
+                    PredictSingConsonantLengthInput {
+                        consonants: consonant.into_one_row(),
+                        vowels: vowel.into_one_row(),
+                        note_durations: note_duration.into_one_row(),
+                        speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
+                    },
+                )
+                .await?;
+
+            Ok(consonant_lengths)
+        }
+
+        pub(super) async fn predict_sing_f0<A: infer::AsyncExt>(
+            &self,
+            phoneme: ndarray::Array1<i64>,
+            note: ndarray::Array1<i64>,
+            style_id: StyleId,
+        ) -> Result<ndarray::Array2<f32>> {
+            let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherDomain>(style_id)?;
+
+            let PredictSingF0Output { f0s } = self
+                .run_session::<A, _>(
+                    model_id,
+                    PredictSingF0Input {
+                        phonemes: phoneme.into_one_row(),
+                        notes: note.into_one_row(),
+                        speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
+                    },
+                )
+                .await?;
+
+            Ok(f0s)
+        }
+
+        pub(super) async fn predict_sing_volume<A: infer::AsyncExt>(
+            &self,
+            phoneme: ndarray::Array1<i64>,
+            note: ndarray::Array1<i64>,
+            f0: ndarray::Array1<f32>,
+            style_id: StyleId,
+        ) -> Result<ndarray::Array2<f32>> {
+            let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherDomain>(style_id)?;
+
+            let PredictSingVolumeOutput { volumes } = self
+                .run_session::<A, _>(
+                    model_id,
+                    PredictSingVolumeInput {
+                        phonemes: phoneme.into_one_row(),
+                        notes: note.into_one_row(),
+                        frame_f0s: f0.into_one_row(),
+                        speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
+                    },
+                )
+                .await?;
+
+            Ok(volumes)
+        }
+
+        pub(super) async fn sf_decode<A: infer::AsyncExt>(
+            &self,
+            phoneme: ndarray::Array1<i64>,
+            f0: ndarray::Array1<f32>,
+            volume: ndarray::Array1<f32>,
+            style_id: StyleId,
+        ) -> Result<ndarray::Array2<f32>> {
+            let (model_id, inner_voice_id) = self.ids_for::<FrameDecodeDomain>(style_id)?;
+
+            let SfDecodeOutput { wav } = self
+                .run_session::<A, _>(
+                    model_id,
+                    SfDecodeInput {
+                        frame_phonemes: phoneme.into_one_row(),
+                        frame_f0s: f0.into_one_row(),
+                        frame_volumes: volume.into_one_row(),
+                        speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
+                    },
+                )
+                .await?;
+
+            Ok(wav)
+        }
+    }
+
+    #[ext]
+    impl<T> ndarray::Array1<T> {
+        fn into_one_row(self) -> ndarray::Array2<T> {
+            let n = self.len();
+            self.into_shape([1, n]).expect("should be ok")
+        }
     }
 
     #[cfg(windows)]
@@ -1590,6 +1705,62 @@ pub(crate) mod blocking {
                 .decode(length, phoneme_size, f0, phoneme_vector, style_id)
                 .block_on()
         }
+
+        pub fn predict_sing_consonant_length(
+            &self,
+            consonant: ndarray::Array1<i64>,
+            vowel: ndarray::Array1<i64>,
+            note_duration: ndarray::Array1<i64>,
+            style_id: StyleId,
+        ) -> crate::Result<ndarray::Array2<i64>> {
+            self.0
+                .status
+                .predict_sing_consonant_length::<SingleTasked>(
+                    consonant,
+                    vowel,
+                    note_duration,
+                    style_id,
+                )
+                .block_on()
+        }
+
+        pub fn predict_sing_f0(
+            &self,
+            phoneme: ndarray::Array1<i64>,
+            note: ndarray::Array1<i64>,
+            style_id: StyleId,
+        ) -> crate::Result<ndarray::Array2<f32>> {
+            self.0
+                .status
+                .predict_sing_f0::<SingleTasked>(phoneme, note, style_id)
+                .block_on()
+        }
+
+        pub fn predict_sing_volume(
+            &self,
+            phoneme: ndarray::Array1<i64>,
+            note: ndarray::Array1<i64>,
+            f0: ndarray::Array1<f32>,
+            style_id: StyleId,
+        ) -> crate::Result<ndarray::Array2<f32>> {
+            self.0
+                .status
+                .predict_sing_volume::<SingleTasked>(phoneme, note, f0, style_id)
+                .block_on()
+        }
+
+        pub fn sf_decode(
+            &self,
+            phoneme: ndarray::Array1<i64>,
+            f0: ndarray::Array1<f32>,
+            volume: ndarray::Array1<f32>,
+            style_id: StyleId,
+        ) -> crate::Result<ndarray::Array2<f32>> {
+            self.0
+                .status
+                .sf_decode::<SingleTasked>(phoneme, f0, volume, style_id)
+                .block_on()
+        }
     }
 }
 
@@ -1903,7 +2074,10 @@ pub(crate) mod nonblocking {
 #[cfg(test)]
 mod tests {
     use super::{AccelerationMode, InitializeOptions};
-    use crate::{engine::Mora, macros::tests::assert_debug_fmt_eq, AccentPhrase, Result, StyleId};
+    use crate::{
+        asyncs::BlockingThreadPool, engine::Mora, macros::tests::assert_debug_fmt_eq, AccentPhrase,
+        Result, StyleId,
+    };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use rstest::rstest;
 
@@ -2108,6 +2282,145 @@ mod tests {
         let result = syntesizer
             .0
             .decode(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, StyleId::new(1))
+            .await;
+
+        assert!(result.is_ok(), "{result:?}");
+        assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn predict_sing_f0_works() {
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+            (),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        syntesizer
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
+            .await
+            .unwrap();
+
+        // 「テスト」という文章に対応する入力
+        let phoneme_vector = ndarray::array![0, 37, 14, 35, 6, 37, 30, 0];
+        let note_vector = ndarray::array![0, 30, 30, 40, 40, 50, 50, 0];
+
+        let sing_teacher_style_id = StyleId::new(6000);
+        let result = syntesizer
+            .0
+            .status
+            .predict_sing_f0::<BlockingThreadPool>(
+                phoneme_vector.clone(),
+                note_vector,
+                sing_teacher_style_id,
+            )
+            .await;
+
+        assert!(result.is_ok(), "{result:?}");
+        assert_eq!(result.unwrap().len(), phoneme_vector.len());
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn predict_sing_volume_works() {
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+            (),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        syntesizer
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
+            .await
+            .unwrap();
+
+        // 「テスト」という文章に対応する入力
+        let phoneme_vector = ndarray::array![0, 37, 14, 35, 6, 37, 30, 0];
+        let note_vector = ndarray::array![0, 30, 30, 40, 40, 50, 50, 0];
+        let f0_vector = ndarray::array![0., 5.905218, 5.905218, 0., 0., 5.565851, 5.565851, 0.];
+
+        let sing_teacher_style_id = StyleId::new(6000);
+        let result = syntesizer
+            .0
+            .status
+            .predict_sing_volume::<BlockingThreadPool>(
+                phoneme_vector.clone(),
+                note_vector,
+                f0_vector,
+                sing_teacher_style_id,
+            )
+            .await;
+
+        assert!(result.is_ok(), "{result:?}");
+        assert_eq!(result.unwrap().len(), phoneme_vector.len());
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn sf_decode_works() {
+        let syntesizer = super::nonblocking::Synthesizer::new(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+            (),
+            &InitializeOptions {
+                acceleration_mode: AccelerationMode::Cpu,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        syntesizer
+            .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
+            .await
+            .unwrap();
+
+        // 「テスト」という文章に対応する入力
+        const F0_LENGTH: usize = 69;
+        let mut f0 = [0.; F0_LENGTH];
+        f0[9..24].fill(5.905218);
+        f0[37..60].fill(5.565851);
+
+        let mut volume = [0.; F0_LENGTH];
+        volume[9..24].fill(0.5);
+        volume[24..37].fill(0.2);
+        volume[37..60].fill(1.0);
+
+        let mut phoneme = [0; F0_LENGTH];
+        let mut set_one = |index, range| {
+            for i in range {
+                phoneme[i] = index;
+            }
+        };
+        set_one(0, 0..9);
+        set_one(37, 9..13);
+        set_one(14, 13..24);
+        set_one(35, 24..30);
+        set_one(6, 30..37);
+        set_one(37, 37..45);
+        set_one(30, 45..60);
+        set_one(0, 60..69);
+
+        let sf_decode_style_id = StyleId::new(3000);
+        let result = syntesizer
+            .0
+            .status
+            .sf_decode::<BlockingThreadPool>(
+                ndarray::arr1(&phoneme),
+                ndarray::arr1(&f0),
+                ndarray::arr1(&volume),
+                sf_decode_style_id,
+            )
             .await;
 
         assert!(result.is_ok(), "{result:?}");
