@@ -109,7 +109,7 @@ jobs:
       - name: Install cargo-edit
         if: ${{ env.VERSION != 'DEBUG' }}
         shell: bash
-        run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug --locked # NOTE: release-0.15で追加
+        run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
       - name: set cargo version
         if: ${{ env.VERSION != 'DEBUG' }}
         shell: bash

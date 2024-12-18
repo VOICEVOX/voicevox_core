@@ -29,7 +29,6 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(RustApi(UninitializedStatus)) => VOICEVOX_RESULT_UNINITIALIZED_STATUS_ERROR,
             Err(RustApi(InvalidSpeakerId { .. })) => VOICEVOX_RESULT_INVALID_SPEAKER_ID_ERROR,
             Err(RustApi(InvalidModelIndex { .. })) => VOICEVOX_RESULT_INVALID_MODEL_INDEX_ERROR,
-            Err(RustApi(UnsupportedModel { .. })) => VOICEVOX_RESULT_UNSUPPORTED_MODEL_ERROR,
             Err(RustApi(InferenceFailed)) => VOICEVOX_RESULT_INFERENCE_ERROR,
             Err(RustApi(ExtractFullContextLabel(_))) => {
                 VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR
