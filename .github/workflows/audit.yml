@@ -1,0 +1,20 @@
+# RustSec Advisory Databaseに登録された、あるいは単にヤンクされたクレートを検出する。
+
+name: audit
+
+# データベースへの登録とクレートのヤンクはこちらの依存ライブラリの編集と関係なく起きるため、`push`
+# と`pull_request`はトリガーにしない。
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 15 * * *'
+
+jobs:
+  audit:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cargo-deny
+        uses: ./.github/actions/install-cargo-deny
+      - name: cargo-deny
+        run: cargo deny --all-features check -s advisories
