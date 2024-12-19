@@ -1,8 +1,14 @@
+# RustSec Advisory Databaseに登録された、あるいは単にヤンクされたクレートを検出する。
+
 name: audit
+
+# データベースへの登録とクレートのヤンクはこちらの依存ライブラリの編集と関係なく起きるため、`push`
+# と`pull_request`はトリガーにしない。
 on:
   workflow_dispatch:
   schedule:
     - cron: '0 15 * * *'
+
 jobs:
   audit:
     runs-on: ubuntu-20.04
