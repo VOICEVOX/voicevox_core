@@ -29,7 +29,7 @@ use crate::{
         },
         InferenceDomain,
     },
-    manifest::{Manifest, ManifestDomains, StyleIdToInnerVoiceId},
+    manifest::{Manifest, ManifestDomains, ModelFile, ModelFileType, StyleIdToInnerVoiceId},
     SpeakerMeta, StyleMeta, StyleType, VoiceModelMeta,
 };
 
@@ -39,7 +39,7 @@ use crate::{
 pub type RawVoiceModelId = Uuid;
 
 pub(crate) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_values!(
-    for<D> Option<(StyleIdToInnerVoiceId, EnumMap<D::Operation, Vec<u8>>)>
+    for<D> Option<(StyleIdToInnerVoiceId, EnumMap<D::Operation, ModelBytes>)>
 );
 
 /// 音声モデルID。
@@ -142,8 +142,9 @@ impl<A: Async> Inner<A> {
                         talk: |talk| {
                             talk.as_ref()
                                 .map(|manifest| {
-                                    let indices = EnumMap::from_fn(|k| &manifest[k])
-                                        .try_map(|_, s| find_entry_index(s))?;
+                                    let indices = EnumMap::from_fn(|k| &manifest[k]).try_map(
+                                        |_, ModelFile { filename, .. }| find_entry_index(filename),
+                                    )?;
                                     Ok(InferenceModelEntry { indices, manifest })
                                 })
                                 .transpose()
@@ -160,8 +161,9 @@ impl<A: Async> Inner<A> {
                             singing_teacher
                                 .as_ref()
                                 .map(|manifest| {
-                                    let indices = EnumMap::from_fn(|k| &manifest[k])
-                                        .try_map(|_, s| find_entry_index(s))?;
+                                    let indices = EnumMap::from_fn(|k| &manifest[k]).try_map(
+                                        |_, ModelFile { filename, .. }| find_entry_index(filename),
+                                    )?;
                                     Ok(InferenceModelEntry { indices, manifest })
                                 })
                                 .transpose()
@@ -178,8 +180,9 @@ impl<A: Async> Inner<A> {
                             frame_decode
                                 .as_ref()
                                 .map(|manifest| {
-                                    let indices = EnumMap::from_fn(|k| &manifest[k])
-                                        .try_map(|_, s| find_entry_index(s))?;
+                                    let indices = EnumMap::from_fn(|k| &manifest[k]).try_map(
+                                        |_, ModelFile { filename, .. }| find_entry_index(filename),
+                                    )?;
                                     Ok(InferenceModelEntry { indices, manifest })
                                 })
                                 .transpose()
@@ -250,8 +253,9 @@ impl<A: Async> Inner<A> {
 
         macro_rules! read_file {
             ($entry:expr $(,)?) => {{
-                let (index, filename): (usize, Arc<str>) = $entry;
-                zip.read_file(index)
+                let (index, ModelFile { r#type, filename }): (usize, ModelFile) = $entry;
+                let bytes = zip
+                    .read_file(index)
                     .map_err(move |source| {
                         error(
                             LoadModelErrorKind::ReadZipEntry {
@@ -260,7 +264,8 @@ impl<A: Async> Inner<A> {
                             source,
                         )
                     })
-                    .await?
+                    .await?;
+                ModelBytes::new(r#type, bytes)
             }};
         }
 
@@ -470,6 +475,20 @@ impl VoiceModelHeader {
             metas,
             path: path.to_owned(),
         })
+    }
+}
+
+pub(crate) enum ModelBytes {
+    Onnx(Vec<u8>),
+    VvBin(Vec<u8>),
+}
+
+impl ModelBytes {
+    fn new(kind: ModelFileType, bytes: Vec<u8>) -> Self {
+        (match kind {
+            ModelFileType::Onnx => Self::Onnx,
+            ModelFileType::VvBin => Self::VvBin,
+        })(bytes)
     }
 }
 
