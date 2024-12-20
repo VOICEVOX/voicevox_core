@@ -41,6 +41,15 @@ class StyleType(str, Enum):
     TALK = "talk"
     """音声合成クエリの作成と音声合成が可能。"""
 
+    SINGING_TEACHER = "singing_teacher"
+    """歌唱音声合成用のクエリの作成が可能。"""
+
+    FRAME_DECODE = "frame_decode"
+    """歌唱音声合成が可能。"""
+
+    SING = "sing"
+    """歌唱音声合成用のクエリの作成と歌唱音声合成が可能。"""
+
 
 @pydantic.dataclasses.dataclass
 class StyleMeta:

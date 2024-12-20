@@ -23,7 +23,10 @@ use crate::{
     asyncs::{Async, Mutex as _},
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
     infer::{
-        domains::{inference_domain_map_values, InferenceDomainMap, TalkDomain},
+        domains::{
+            inference_domain_map_values, FrameDecodeDomain, InferenceDomainMap,
+            SingingTeacherDomain, TalkDomain,
+        },
         InferenceDomain,
     },
     manifest::{Manifest, ManifestDomains, ModelFile, ModelFileType, StyleIdToInnerVoiceId},
@@ -154,6 +157,44 @@ impl<A: Async> Inner<A> {
                                     )
                                 })
                         },
+                        singing_teacher: |singing_teacher| {
+                            singing_teacher
+                                .as_ref()
+                                .map(|manifest| {
+                                    let indices = EnumMap::from_fn(|k| &manifest[k]).try_map(
+                                        |_, ModelFile { filename, .. }| find_entry_index(filename),
+                                    )?;
+                                    Ok(InferenceModelEntry { indices, manifest })
+                                })
+                                .transpose()
+                                .map_err(move |source| {
+                                    error(
+                                        LoadModelErrorKind::ReadZipEntry {
+                                            filename: MANIFEST_FILENAME.to_owned(),
+                                        },
+                                        source,
+                                    )
+                                })
+                        },
+                        frame_decode: |frame_decode| {
+                            frame_decode
+                                .as_ref()
+                                .map(|manifest| {
+                                    let indices = EnumMap::from_fn(|k| &manifest[k]).try_map(
+                                        |_, ModelFile { filename, .. }| find_entry_index(filename),
+                                    )?;
+                                    Ok(InferenceModelEntry { indices, manifest })
+                                })
+                                .transpose()
+                                .map_err(move |source| {
+                                    error(
+                                        LoadModelErrorKind::ReadZipEntry {
+                                            filename: MANIFEST_FILENAME.to_owned(),
+                                        },
+                                        source,
+                                    )
+                                })
+                        },
                     })
                     .collect()
                     .map_err(crate::Error::from)
@@ -228,36 +269,78 @@ impl<A: Async> Inner<A> {
             }};
         }
 
-        let InferenceDomainMap { talk } =
-            self.with_inference_model_entries(|inference_model_entries| {
-                inference_model_entries.each_ref().map(InferenceDomainMap {
-                    talk: |talk| {
-                        talk.as_ref()
-                            .map(|InferenceModelEntry { indices, manifest }| {
-                                (
-                                    indices.map(|op, i| (i, manifest[op].clone())),
-                                    manifest.style_id_to_inner_voice_id.clone(),
-                                )
-                            })
-                    },
-                })
-            });
+        let InferenceDomainMap {
+            talk,
+            singing_teacher,
+            frame_decode,
+        } = self.with_inference_model_entries(|inference_model_entries| {
+            inference_model_entries.each_ref().map(InferenceDomainMap {
+                talk: |talk| {
+                    talk.as_ref()
+                        .map(|InferenceModelEntry { indices, manifest }| {
+                            (
+                                indices.map(|op, i| (i, manifest[op].clone())),
+                                manifest.style_id_to_inner_voice_id.clone(),
+                            )
+                        })
+                },
+                singing_teacher: |singing_teacher| {
+                    singing_teacher
+                        .as_ref()
+                        .map(|InferenceModelEntry { indices, manifest }| {
+                            (
+                                indices.map(|op, i| (i, manifest[op].clone())),
+                                manifest.style_id_to_inner_voice_id.clone(),
+                            )
+                        })
+                },
+                frame_decode: |frame_decode| {
+                    frame_decode
+                        .as_ref()
+                        .map(|InferenceModelEntry { indices, manifest }| {
+                            (
+                                indices.map(|op, i| (i, manifest[op].clone())),
+                                manifest.style_id_to_inner_voice_id.clone(),
+                            )
+                        })
+                },
+            })
+        });
 
-        let talk = OptionFuture::from(talk.map(
-            |(entries, style_id_to_inner_voice_id)| async move {
-                let [predict_duration, predict_intonation, predict_spectrogram, run_vocoder] =
+        let talk = OptionFuture::from(talk.map(|(entries, style_id_to_inner_voice_id)| async {
+            let [predict_duration, predict_intonation, predict_spectrogram, run_vocoder] =
+                entries.into_array();
+
+            let predict_duration = read_file!(predict_duration);
+            let predict_intonation = read_file!(predict_intonation);
+            let predict_spectrogram = read_file!(predict_spectrogram);
+            let run_vocoder = read_file!(run_vocoder);
+
+            let model_bytes = EnumMap::from_array([
+                predict_duration,
+                predict_intonation,
+                predict_spectrogram,
+                run_vocoder,
+            ]);
+
+            Ok((style_id_to_inner_voice_id, model_bytes))
+        }))
+        .await
+        .transpose()?;
+
+        let singing_teacher = OptionFuture::from(singing_teacher.map(
+            |(entries, style_id_to_inner_voice_id)| async {
+                let [predict_sing_consonant_length, predict_sing_f0, predict_sing_volume] =
                     entries.into_array();
 
-                let predict_duration = read_file!(predict_duration);
-                let predict_intonation = read_file!(predict_intonation);
-                let predict_spectrogram = read_file!(predict_spectrogram);
-                let run_vocoder = read_file!(run_vocoder);
+                let predict_sing_consonant_length = read_file!(predict_sing_consonant_length);
+                let predict_sing_f0 = read_file!(predict_sing_f0);
+                let predict_sing_volume = read_file!(predict_sing_volume);
 
                 let model_bytes = EnumMap::from_array([
-                    predict_duration,
-                    predict_intonation,
-                    predict_spectrogram,
-                    run_vocoder,
+                    predict_sing_consonant_length,
+                    predict_sing_f0,
+                    predict_sing_volume,
                 ]);
 
                 Ok((style_id_to_inner_voice_id, model_bytes))
@@ -266,7 +349,25 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
-        Ok(InferenceDomainMap { talk })
+        let frame_decode = OptionFuture::from(frame_decode.map(
+            |(entries, style_id_to_inner_voice_id)| async {
+                let [sf_decode] = entries.into_array();
+
+                let sf_decode = read_file!(sf_decode);
+
+                let model_bytes = EnumMap::from_array([sf_decode]);
+
+                Ok((style_id_to_inner_voice_id, model_bytes))
+            },
+        ))
+        .await
+        .transpose()?;
+
+        Ok(InferenceDomainMap {
+            talk,
+            singing_teacher,
+            frame_decode,
+        })
     }
 }
 
@@ -413,9 +514,15 @@ impl InferenceDomainMap<ManifestDomains> {
     ///
     /// 例えば`self.talk`が`None`のとき、`StyleType::Talk`に対して`false`を返す。
     fn accepts(&self, style_type: StyleType) -> bool {
-        let Self { talk } = self;
+        let Self {
+            talk,
+            singing_teacher,
+            frame_decode,
+        } = self;
 
-        return TalkDomain::contains(style_type).implies(|| talk.is_some());
+        return TalkDomain::contains(style_type).implies(|| talk.is_some())
+            && SingingTeacherDomain::contains(style_type).implies(|| singing_teacher.is_some())
+            && FrameDecodeDomain::contains(style_type).implies(|| frame_decode.is_some());
 
         #[ext]
         impl<D: InferenceDomain> D {
@@ -520,7 +627,7 @@ mod tests {
 
     use crate::{
         infer::domains::InferenceDomainMap,
-        manifest::{ManifestDomains, TalkManifest},
+        manifest::{FrameDecodeManifest, ManifestDomains, SingingTeacherManifest, TalkManifest},
         SpeakerMeta, StyleType,
     };
 
@@ -528,6 +635,8 @@ mod tests {
     #[case(
         &InferenceDomainMap {
             talk: None,
+            singing_teacher: None,
+            frame_decode: None,
         },
         &[],
         Ok(())
@@ -535,6 +644,8 @@ mod tests {
     #[case(
         &InferenceDomainMap {
             talk: Some(TalkManifest::default()),
+            singing_teacher: Some(SingingTeacherManifest::default()),
+            frame_decode: Some(FrameDecodeManifest::default()),
         },
         &[speaker(&[StyleType::Talk])],
         Ok(())
@@ -542,6 +653,8 @@ mod tests {
     #[case(
         &InferenceDomainMap {
             talk: Some(TalkManifest::default()),
+            singing_teacher: Some(SingingTeacherManifest::default()),
+            frame_decode: Some(FrameDecodeManifest::default()),
         },
         &[speaker(&[StyleType::Talk, StyleType::Sing])],
         Ok(())
@@ -549,6 +662,8 @@ mod tests {
     #[case(
         &InferenceDomainMap {
             talk: None,
+            singing_teacher: None,
+            frame_decode: None,
         },
         &[speaker(&[StyleType::Talk])],
         Err(())

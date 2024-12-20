@@ -12,7 +12,10 @@ use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
-    infer::domains::{inference_domain_map_values, InferenceDomainMap, TalkOperation},
+    infer::domains::{
+        inference_domain_map_values, FrameDecodeOperation, InferenceDomainMap,
+        SingingTeacherOperation, TalkOperation,
+    },
     StyleId, VoiceModelId,
 };
 
@@ -81,12 +84,37 @@ pub struct Manifest {
 
 pub(crate) type ManifestDomains = inference_domain_map_values!(for<D> Option<D::Manifest>);
 
+// TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
 #[derive(Index, Deserialize)]
 #[cfg_attr(test, derive(Default))]
 pub(crate) struct TalkManifest {
     #[index]
     #[serde(flatten)]
     filenames: EnumMap<TalkOperation, ModelFile>,
+
+    #[serde(default)]
+    pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
+}
+
+// TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
+#[derive(Index, Deserialize)]
+#[cfg_attr(test, derive(Default))]
+pub(crate) struct SingingTeacherManifest {
+    #[index]
+    #[serde(flatten)]
+    filenames: EnumMap<SingingTeacherOperation, ModelFile>,
+
+    #[serde(default)]
+    pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
+}
+
+// TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
+#[derive(Index, Deserialize)]
+#[cfg_attr(test, derive(Default))]
+pub(crate) struct FrameDecodeManifest {
+    #[index]
+    #[serde(flatten)]
+    filenames: EnumMap<FrameDecodeOperation, ModelFile>,
 
     #[serde(default)]
     pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
