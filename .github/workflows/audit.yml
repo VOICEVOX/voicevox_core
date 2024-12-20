@@ -1,4 +1,8 @@
-# RustSec Advisory Databaseに登録された、あるいは単にヤンクされたクレートを検出する。
+# 依存ライブラリを監査する。
+#
+# RustSec Advisory Databaseに登録された、あるいは単にヤンクされたクレートを検出する。検出されるもの
+# は脆弱性（`vulnerability`）のみとは限らない。依存ライブラリが単に"unmaintained"とされたりヤンクさ
+# れたりしても反応する。
 
 name: audit
 
