@@ -80,9 +80,9 @@ jobs:
             features: directml
           - os: windows-2022
             features: directml
-          - os: macos-12
-            features: ""
           - os: macos-13
+            features: ""
+          - os: macos-14
             features: ""
           - os: ubuntu-20.04
             features: ""
