@@ -1,0 +1,10 @@
+name: Install cargo-deny
+description: cargo-denyをインストールする。
+
+runs:
+  using: composite
+  steps:
+    - name: Install cargo-binstall
+      uses: taiki-e/install-action@cargo-binstall
+    - name: Install cargo-deny
+      run: cargo binstall cargo-deny@^0.16 --no-confirm --log-level debug
