@@ -13,6 +13,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    },
     "order": null
   },
   {
@@ -27,6 +30,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
+    "supported_features": {
+      "permitted_synthesis_morphing": "ALL"
+    },
     "order": null
   },
   {
@@ -47,6 +53,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
+    "supported_features": {
+      "permitted_synthesis_morphing": "SELF_ONLY"
+    },
     "order": null
   },
   {
@@ -67,6 +76,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "32478dc2-4c8b-44f7-b041-c836e0df6d56",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    },
     "order": null
   }
 ]'''
@@ -159,6 +171,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "574bc678-8370-44be-b941-08e46e7b47d7",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    },
     "order": null
   },
   {
@@ -173,6 +188,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
+    "supported_features": {
+      "permitted_synthesis_morphing": "ALL"
+    },
     "order": null
   },
   {
@@ -193,6 +211,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
+    "supported_features": {
+      "permitted_synthesis_morphing": "SELF_ONLY"
+    },
     "order": null
   },
   {
@@ -213,6 +234,9 @@ metas = '''
     ],
     "version": "0.0.1",
     "speaker_uuid": "32478dc2-4c8b-44f7-b041-c836e0df6d56",
+    "supported_features": {
+      "permitted_synthesis_morphing": "NOTHING"
+    },
     "order": null
   }
 ]'''
