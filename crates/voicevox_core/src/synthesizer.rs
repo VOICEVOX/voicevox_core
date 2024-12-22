@@ -97,6 +97,15 @@ pub enum AccelerationMode {
 #[derive(Default)]
 pub struct InitializeOptions {
     pub acceleration_mode: AccelerationMode,
+
+    /// CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
+    ///
+    /// # Performance
+    ///
+    /// 未調査ではあるが、[非同期版API]においては`0`にするのは適切ではない可能性がある ([VOICEVOX/voicevox_core#902])。
+    ///
+    /// [非同期版API]: crate::nonblocking
+    /// [VOICEVOX/voicevox_core#902]: https://github.com/VOICEVOX/voicevox_core/issues/902
     pub cpu_num_threads: u16,
 }
 

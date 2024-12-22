@@ -157,7 +157,8 @@ class Synthesizer:
     acceleration_mode
         ハードウェアアクセラレーションモード。
     cpu_num_threads
-        CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
+        CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。未調査ではあるが、 ``0`` にするのは適切ではない可能性がある
+        (`VOICEVOX/voicevox_core#902 <https://github.com/VOICEVOX/voicevox_core/issues/902>`_)。
     """
 
     def __init__(

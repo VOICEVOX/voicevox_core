@@ -9,8 +9,12 @@
 //! スレッドプールのサイズは、blockingクレートの説明にある通り`$BLOCKING_MAX_THREADS`で調整すること
 //! ができる。
 //!
+//! また未調査ではあるが、[`cpu_num_threads`]を`0`にするのは適切ではない可能性がある ([VOICEVOX/voicevox_core#902])。
+//!
 //! [blocking]: https://docs.rs/crate/blocking
 //! [pollster]: https://docs.rs/crate/pollster
+//! [VOICEVOX/voicevox_core#902]: https://github.com/VOICEVOX/voicevox_core/issues/902
+//! [`cpu_num_threads`]: crate::InitializeOptions::cpu_num_threads
 
 pub use crate::{
     engine::open_jtalk::nonblocking::OpenJtalk,
