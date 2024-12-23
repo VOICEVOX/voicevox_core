@@ -5,7 +5,7 @@
 Performance
 -----------
 
-未調査ではあるが、 ``cpu_num_threads`` に ``0`` にするのは適切ではない可能性がある
+未調査ではあるが、 ``cpu_num_threads`` 物理コアの数+1を指定するのが適切な可能性がある
 (`VOICEVOX/voicevox_core#902 <https://github.com/VOICEVOX/voicevox_core/issues/902>`_)。
 """
 

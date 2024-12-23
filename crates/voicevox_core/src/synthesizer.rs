@@ -102,7 +102,8 @@ pub struct InitializeOptions {
     ///
     /// # Performance
     ///
-    /// 未調査ではあるが、[非同期版API]においては`0`にするのは適切ではない可能性がある ([VOICEVOX/voicevox_core#902])。
+    /// 未調査ではあるが、[非同期版API]においては物理コアの数+1とするのが適切な可能性がある
+    /// ([VOICEVOX/voicevox_core#902])。
     ///
     /// [非同期版API]: crate::nonblocking
     /// [VOICEVOX/voicevox_core#902]: https://github.com/VOICEVOX/voicevox_core/issues/902

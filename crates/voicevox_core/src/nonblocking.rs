@@ -9,7 +9,8 @@
 //! スレッドプールのサイズは、blockingクレートの説明にある通り`$BLOCKING_MAX_THREADS`で調整すること
 //! ができる。
 //!
-//! また未調査ではあるが、[`cpu_num_threads`]を`0`にするのは適切ではない可能性がある ([VOICEVOX/voicevox_core#902])。
+//! また未調査ではあるが、このモジュールについては[`cpu_num_threads`]は物理コアの数+1を指定するのが適切な可能性がある
+//! ([VOICEVOX/voicevox_core#902])。
 //!
 //! [blocking]: https://docs.rs/crate/blocking
 //! [pollster]: https://docs.rs/crate/pollster
