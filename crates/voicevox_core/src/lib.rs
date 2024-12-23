@@ -86,8 +86,8 @@ pub use self::{
     engine::{wav_from_s16le, AccentPhrase, AudioQuery, FullcontextExtractor, Mora},
     error::{Error, ErrorKind},
     metas::{
-        RawStyleId, RawStyleVersion, SpeakerMeta, StyleId, StyleMeta, StyleType, StyleVersion,
-        VoiceModelMeta,
+        RawStyleId, RawStyleVersion, SpeakerMeta, SpeakerSupportPermittedSynthesisMorphing,
+        SpeakerSupportedFeatures, StyleId, StyleMeta, StyleType, StyleVersion, VoiceModelMeta,
     },
     result::Result,
     synthesizer::{AccelerationMode, InitializeOptions, SynthesisOptions, TtsOptions},
