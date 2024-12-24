@@ -1,3 +1,5 @@
+# TODO: Rust API同様のmodule levelのdocstringを書く
+
 # pyright: reportMissingModuleSource=false
 from ._rust.blocking import (
     AudioFeature,
