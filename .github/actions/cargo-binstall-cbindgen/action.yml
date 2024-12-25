@@ -9,7 +9,7 @@ runs:
     - name: Install cbindgen
       shell: bash
       run: |
-        case "$OS" in
+        case "$RUNNER_OS" in
           Windows)
             cargo install cbindgen --version ${{ inputs.version }};;
           macOS | Linux )
