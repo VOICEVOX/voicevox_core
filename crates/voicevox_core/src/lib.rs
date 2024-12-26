@@ -90,7 +90,7 @@ pub use self::{
         VoiceModelMeta,
     },
     result::Result,
-    synthesizer::{AccelerationMode, InitializeOptions, SynthesisOptions, TtsOptions},
+    synthesizer::AccelerationMode,
     user_dict::{UserDictWord, UserDictWordType},
     version::VERSION,
     voice_model::{RawVoiceModelId, VoiceModelId},

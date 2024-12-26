@@ -1,7 +1,7 @@
 use easy_ext::ext;
 use std::{ffi::CStr, fmt::Debug, iter};
 use uuid::Uuid;
-use voicevox_core::{AudioQuery, UserDictWord, VoiceModelId};
+use voicevox_core::{AccelerationMode, AudioQuery, UserDictWord, VoiceModelId};
 
 use thiserror::Error;
 use tracing::error;
@@ -92,14 +92,6 @@ pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
     s.to_str().map_err(|_| CApiError::InvalidUtf8Input)
 }
 
-impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
-    fn from(options: VoicevoxSynthesisOptions) -> Self {
-        Self {
-            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
-        }
-    }
-}
-
 impl From<voicevox_core::AccelerationMode> for VoicevoxAccelerationMode {
     fn from(mode: voicevox_core::AccelerationMode) -> Self {
         use voicevox_core::AccelerationMode::*;
@@ -124,44 +116,27 @@ impl From<VoicevoxAccelerationMode> for voicevox_core::AccelerationMode {
 
 impl Default for VoicevoxInitializeOptions {
     fn default() -> Self {
-        let options = voicevox_core::InitializeOptions::default();
         Self {
-            acceleration_mode: options.acceleration_mode.into(),
-            cpu_num_threads: options.cpu_num_threads,
-        }
-    }
-}
-
-impl From<VoicevoxInitializeOptions> for voicevox_core::InitializeOptions {
-    fn from(value: VoicevoxInitializeOptions) -> Self {
-        voicevox_core::InitializeOptions {
-            acceleration_mode: value.acceleration_mode.into(),
-            cpu_num_threads: value.cpu_num_threads,
-        }
-    }
-}
-
-impl From<voicevox_core::TtsOptions> for VoicevoxTtsOptions {
-    fn from(options: voicevox_core::TtsOptions) -> Self {
-        Self {
-            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
-        }
-    }
-}
-
-impl From<VoicevoxTtsOptions> for voicevox_core::TtsOptions {
-    fn from(options: VoicevoxTtsOptions) -> Self {
-        Self {
-            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+            acceleration_mode: AccelerationMode::default().into(),
+            cpu_num_threads: voicevox_core::__internal::interop::DEFAULT_CPU_NUM_THREADS,
         }
     }
 }
 
 impl Default for VoicevoxSynthesisOptions {
     fn default() -> Self {
-        let options = voicevox_core::TtsOptions::default();
         Self {
-            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+            enable_interrogative_upspeak:
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        }
+    }
+}
+
+impl Default for VoicevoxTtsOptions {
+    fn default() -> Self {
+        Self {
+            enable_interrogative_upspeak:
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         }
     }
 }

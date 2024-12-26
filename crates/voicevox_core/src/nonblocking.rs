@@ -15,7 +15,7 @@
 //! [blocking]: https://docs.rs/crate/blocking
 //! [pollster]: https://docs.rs/crate/pollster
 //! [VOICEVOX/voicevox_core#902]: https://github.com/VOICEVOX/voicevox_core/issues/902
-//! [`cpu_num_threads`]: crate::InitializeOptions::cpu_num_threads
+//! [`cpu_num_threads`]: crate::nonblocking::synthesizer::Builder::cpu_num_threads
 
 pub use crate::{
     engine::open_jtalk::nonblocking::OpenJtalk,
@@ -27,4 +27,8 @@ pub mod onnxruntime {
     #[cfg(feature = "load-onnxruntime")]
     #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
     pub use crate::infer::runtimes::onnxruntime::nonblocking::LoadOnce;
+}
+
+pub mod synthesizer {
+    pub use crate::synthesizer::nonblocking::{Builder, Synthesis, Tts, TtsFromKana};
 }
