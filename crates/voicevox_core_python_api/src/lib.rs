@@ -299,10 +299,7 @@ mod blocking {
         Py, PyAny, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
-    use voicevox_core::{
-        AccelerationMode, AudioQuery, InitializeOptions, StyleId, SynthesisOptions, TtsOptions,
-        UserDictWord,
-    };
+    use voicevox_core::{AccelerationMode, AudioQuery, StyleId, UserDictWord};
 
     use crate::{
         convert::VoicevoxCoreResultExt as _, Closable, SingleTasked, VoiceModelFilePyFields,
@@ -484,8 +481,8 @@ mod blocking {
         #[pyo3(signature =(
             onnxruntime,
             open_jtalk,
-            acceleration_mode = InitializeOptions::default().acceleration_mode,
-            cpu_num_threads = InitializeOptions::default().cpu_num_threads,
+            acceleration_mode = Default::default(),
+            cpu_num_threads = voicevox_core::__internal::interop::DEFAULT_CPU_NUM_THREADS,
         ))]
         fn new(
             onnxruntime: Onnxruntime,
@@ -495,15 +492,12 @@ mod blocking {
             cpu_num_threads: u16,
             py: Python<'_>,
         ) -> PyResult<Self> {
-            let inner = voicevox_core::blocking::Synthesizer::new(
-                onnxruntime.0,
-                open_jtalk.open_jtalk.clone(),
-                &InitializeOptions {
-                    acceleration_mode,
-                    cpu_num_threads,
-                },
-            )
-            .into_py_result(py)?;
+            let inner = voicevox_core::blocking::Synthesizer::builder(onnxruntime.0)
+                .open_jtalk(open_jtalk.open_jtalk.clone())
+                .acceleration_mode(acceleration_mode)
+                .cpu_num_threads(cpu_num_threads)
+                .build()
+                .into_py_result(py)?;
             Ok(Self {
                 synthesizer: Closable::new(inner),
             })
@@ -690,7 +684,8 @@ mod blocking {
         #[pyo3(signature=(
             audio_query,
             style_id,
-            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
         fn precompute_render(
             &self,
@@ -702,13 +697,9 @@ mod blocking {
             let audio = self
                 .synthesizer
                 .read()?
-                .precompute_render(
-                    &audio_query,
-                    StyleId::new(style_id),
-                    &SynthesisOptions {
-                        enable_interrogative_upspeak,
-                    },
-                )
+                .precompute_render(&audio_query, StyleId::new(style_id))
+                .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .exec()
                 .into_py_result(py)?;
             Ok(AudioFeature { audio })
         }
@@ -742,7 +733,8 @@ mod blocking {
         #[pyo3(signature=(
             audio_query,
             style_id,
-            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
         fn synthesis<'py>(
             &self,
@@ -754,13 +746,9 @@ mod blocking {
             let wav = &self
                 .synthesizer
                 .read()?
-                .synthesis(
-                    &audio_query,
-                    StyleId::new(style_id),
-                    &SynthesisOptions {
-                        enable_interrogative_upspeak,
-                    },
-                )
+                .synthesis(&audio_query, StyleId::new(style_id))
+                .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .exec()
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
         }
@@ -768,7 +756,8 @@ mod blocking {
         #[pyo3(signature=(
             kana,
             style_id,
-            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
         fn tts_from_kana<'py>(
             &self,
@@ -778,13 +767,12 @@ mod blocking {
             py: Python<'py>,
         ) -> PyResult<&'py PyBytes> {
             let style_id = StyleId::new(style_id);
-            let options = &TtsOptions {
-                enable_interrogative_upspeak,
-            };
             let wav = &self
                 .synthesizer
                 .read()?
-                .tts_from_kana(kana, style_id, options)
+                .tts_from_kana(kana, style_id)
+                .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .exec()
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
         }
@@ -792,7 +780,8 @@ mod blocking {
         #[pyo3(signature=(
             text,
             style_id,
-            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
         fn tts<'py>(
             &self,
@@ -802,13 +791,12 @@ mod blocking {
             py: Python<'py>,
         ) -> PyResult<&'py PyBytes> {
             let style_id = StyleId::new(style_id);
-            let options = &TtsOptions {
-                enable_interrogative_upspeak,
-            };
             let wav = &self
                 .synthesizer
                 .read()?
-                .tts(text, style_id, options)
+                .tts(text, style_id)
+                .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .exec()
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
         }
@@ -899,10 +887,7 @@ mod asyncio {
         Py, PyAny, PyErr, PyObject, PyRef, PyResult, Python, ToPyObject as _,
     };
     use uuid::Uuid;
-    use voicevox_core::{
-        AccelerationMode, AudioQuery, InitializeOptions, StyleId, SynthesisOptions, TtsOptions,
-        UserDictWord,
-    };
+    use voicevox_core::{AccelerationMode, AudioQuery, StyleId, UserDictWord};
 
     use crate::{convert::VoicevoxCoreResultExt as _, Closable, Tokio, VoiceModelFilePyFields};
 
@@ -1092,8 +1077,8 @@ mod asyncio {
         #[pyo3(signature =(
             onnxruntime,
             open_jtalk,
-            acceleration_mode = InitializeOptions::default().acceleration_mode,
-            cpu_num_threads = InitializeOptions::default().cpu_num_threads,
+            acceleration_mode = Default::default(),
+            cpu_num_threads = voicevox_core::__internal::interop::DEFAULT_CPU_NUM_THREADS,
         ))]
         fn new(
             onnxruntime: Onnxruntime,
@@ -1102,14 +1087,11 @@ mod asyncio {
             acceleration_mode: AccelerationMode,
             cpu_num_threads: u16,
         ) -> PyResult<Self> {
-            let synthesizer = voicevox_core::nonblocking::Synthesizer::new(
-                onnxruntime.0,
-                open_jtalk.open_jtalk.clone(),
-                &InitializeOptions {
-                    acceleration_mode,
-                    cpu_num_threads,
-                },
-            );
+            let synthesizer = voicevox_core::nonblocking::Synthesizer::builder(onnxruntime.0)
+                .open_jtalk(open_jtalk.open_jtalk.clone())
+                .acceleration_mode(acceleration_mode)
+                .cpu_num_threads(cpu_num_threads)
+                .build();
             let synthesizer = Python::with_gil(|py| synthesizer.into_py_result(py))?;
             let synthesizer = Closable::new(synthesizer).into();
             Ok(Self { synthesizer })
@@ -1360,7 +1342,12 @@ mod asyncio {
             )
         }
 
-        #[pyo3(signature=(audio_query,style_id,enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak))]
+        #[pyo3(signature=(
+            audio_query,
+            style_id,
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        ))]
         fn synthesis<'py>(
             &self,
             #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
@@ -1375,13 +1362,9 @@ mod asyncio {
                 async move {
                     let wav = synthesizer
                         .read()?
-                        .synthesis(
-                            &audio_query,
-                            StyleId::new(style_id),
-                            &SynthesisOptions {
-                                enable_interrogative_upspeak,
-                            },
-                        )
+                        .synthesis(&audio_query, StyleId::new(style_id))
+                        .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                        .exec()
                         .await;
                     Python::with_gil(|py| {
                         let wav = wav.into_py_result(py)?;
@@ -1394,7 +1377,8 @@ mod asyncio {
         #[pyo3(signature=(
             kana,
             style_id,
-            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
         fn tts_from_kana<'py>(
             &self,
@@ -1404,9 +1388,6 @@ mod asyncio {
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
             let style_id = StyleId::new(style_id);
-            let options = TtsOptions {
-                enable_interrogative_upspeak,
-            };
             let synthesizer = self.synthesizer.clone();
             let kana = kana.to_owned();
             pyo3_asyncio::tokio::future_into_py_with_locals(
@@ -1415,7 +1396,9 @@ mod asyncio {
                 async move {
                     let wav = synthesizer
                         .read()?
-                        .tts_from_kana(&kana, style_id, &options)
+                        .tts_from_kana(&kana, style_id)
+                        .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                        .exec()
                         .await;
 
                     Python::with_gil(|py| {
@@ -1429,7 +1412,8 @@ mod asyncio {
         #[pyo3(signature=(
             text,
             style_id,
-            enable_interrogative_upspeak = TtsOptions::default().enable_interrogative_upspeak
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
         fn tts<'py>(
             &self,
@@ -1439,16 +1423,18 @@ mod asyncio {
             py: Python<'py>,
         ) -> PyResult<&'py PyAny> {
             let style_id = StyleId::new(style_id);
-            let options = TtsOptions {
-                enable_interrogative_upspeak,
-            };
             let synthesizer = self.synthesizer.clone();
             let text = text.to_owned();
             pyo3_asyncio::tokio::future_into_py_with_locals(
                 py,
                 pyo3_asyncio::tokio::get_current_locals(py)?,
                 async move {
-                    let wav = synthesizer.read()?.tts(&text, style_id, &options).await;
+                    let wav = synthesizer
+                        .read()?
+                        .tts(&text, style_id)
+                        .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                        .exec()
+                        .await;
 
                     Python::with_gil(|py| {
                         let wav = wav.into_py_result(py)?;

@@ -11,3 +11,10 @@ pub mod onnxruntime {
     #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
     pub use crate::infer::runtimes::onnxruntime::blocking::LoadOnce;
 }
+
+pub mod synthesizer {
+    pub use crate::synthesizer::blocking::{Builder, Synthesis, Tts, TtsFromKana};
+
+    // TODO: 後で封印する
+    pub use crate::synthesizer::blocking::PrecomputeRender;
+}
