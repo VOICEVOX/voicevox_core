@@ -1746,6 +1746,7 @@ pub(crate) mod blocking {
         }
     }
 
+    #[must_use]
     pub struct Builder<O> {
         onnxruntime: &'static crate::blocking::Onnxruntime,
         open_jtalk: O,
@@ -1779,6 +1780,7 @@ pub(crate) mod blocking {
     }
 
     // TODO: この`O`は削れるはず
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct PrecomputeRender<'a, O> {
         synthesizer: &'a Inner<O, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -1801,6 +1803,7 @@ pub(crate) mod blocking {
     }
 
     // TODO: この`O`は削れるはず
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct Synthesis<'a, O> {
         synthesizer: &'a Inner<O, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -1823,6 +1826,7 @@ pub(crate) mod blocking {
     }
 
     // TODO: この`O`は削れるはず
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct TtsFromKana<'a, O> {
         synthesizer: &'a Inner<O, SingleTasked>,
         kana: &'a str,
@@ -1844,6 +1848,7 @@ pub(crate) mod blocking {
         }
     }
 
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct Tts<'a, O> {
         synthesizer: &'a Inner<O, SingleTasked>,
         text: &'a str,
@@ -2174,6 +2179,7 @@ pub(crate) mod nonblocking {
         }
     }
 
+    #[must_use]
     pub struct Builder<O> {
         onnxruntime: &'static crate::nonblocking::Onnxruntime,
         open_jtalk: O,
@@ -2214,6 +2220,7 @@ pub(crate) mod nonblocking {
     }
 
     // TODO: この`O`は削れるはず
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct Synthesis<'a, O> {
         synthesizer: &'a Inner<O, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
@@ -2236,6 +2243,7 @@ pub(crate) mod nonblocking {
     }
 
     // TODO: この`O`は削れるはず
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct TtsFromKana<'a, O> {
         synthesizer: &'a Inner<O, BlockingThreadPool>,
         kana: &'a str,
@@ -2257,6 +2265,7 @@ pub(crate) mod nonblocking {
         }
     }
 
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct Tts<'a, O> {
         synthesizer: &'a Inner<O, BlockingThreadPool>,
         text: &'a str,
