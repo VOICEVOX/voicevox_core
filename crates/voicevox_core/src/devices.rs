@@ -63,7 +63,7 @@ fn test_gpu(
 /// #     } else {
 /// #         voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME
 /// #     })
-/// #     .exec()?;
+/// #     .perform()?;
 /// #
 /// let onnxruntime = Onnxruntime::get().unwrap();
 /// dbg!(SupportedDevices::THIS & onnxruntime.supported_devices()?);

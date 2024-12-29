@@ -27,7 +27,7 @@ static ERROR_MESSAGE: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(Stri
 
 static ONNXRUNTIME: LazyLock<&'static voicevox_core::blocking::Onnxruntime> = LazyLock::new(|| {
     voicevox_core::blocking::Onnxruntime::load_once()
-        .exec()
+        .perform()
         .unwrap_or_else(|err| {
             display_error(&err);
             panic!("ONNX Runtimeをロードもしくは初期化ができなかったため、クラッシュします");

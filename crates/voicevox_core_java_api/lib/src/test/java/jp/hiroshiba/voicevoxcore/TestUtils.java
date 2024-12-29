@@ -22,7 +22,7 @@ public class TestUtils {
     final String FILENAME = "../../test_util/data/lib/" + Onnxruntime.LIB_VERSIONED_FILENAME;
 
     try {
-      return Onnxruntime.loadOnce().filename(FILENAME).exec();
+      return Onnxruntime.loadOnce().filename(FILENAME).perform();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

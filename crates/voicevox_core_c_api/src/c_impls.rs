@@ -45,7 +45,7 @@ impl VoicevoxOnnxruntime {
 
         let inner = voicevox_core::blocking::Onnxruntime::load_once()
             .filename(ensure_utf8(filename)?)
-            .exec()?;
+            .perform()?;
         Ok(Self::new(inner))
     }
 
