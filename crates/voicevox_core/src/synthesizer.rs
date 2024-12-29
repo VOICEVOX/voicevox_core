@@ -177,7 +177,12 @@ pub struct AudioFeature {
 struct Inner<O, A: Async> {
     status: Arc<Status<crate::blocking::Onnxruntime>>,
     open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
-    kana_analyzer: KanaAnalyzer,
+    use_gpu: bool,
+    _marker: PhantomData<fn(A) -> A>,
+}
+
+struct InnerRefWithoutOpenJtalk<'a, A: Async> {
+    status: &'a Arc<Status<crate::blocking::Onnxruntime>>,
     use_gpu: bool,
     _marker: PhantomData<fn(A) -> A>,
 }
@@ -187,7 +192,6 @@ impl<O> From<Inner<O, BlockingThreadPool>> for Inner<O, SingleTasked> {
         Self {
             status: from.status,
             open_jtalk_analyzer: from.open_jtalk_analyzer,
-            kana_analyzer: KanaAnalyzer,
             use_gpu: from.use_gpu,
             _marker: PhantomData,
         }
@@ -268,42 +272,57 @@ impl<O, A: AsyncExt> Inner<O, A> {
         Ok(Self {
             status,
             open_jtalk_analyzer: OpenJTalkAnalyzer::new(open_jtalk),
-            kana_analyzer: KanaAnalyzer,
             use_gpu,
             _marker: PhantomData,
         })
     }
 
+    fn without_open_jtalk(&self) -> InnerRefWithoutOpenJtalk<'_, A> {
+        InnerRefWithoutOpenJtalk {
+            status: &self.status,
+            use_gpu: self.use_gpu,
+            _marker: PhantomData,
+        }
+    }
+}
+
+trait AsInner {
+    type OpenJtalk;
+    type Async: AsyncExt;
+    fn status(&self) -> &Arc<Status<crate::blocking::Onnxruntime>>;
+    fn open_jtalk_analyzer(&self) -> &OpenJTalkAnalyzer<Self::OpenJtalk>;
+    fn use_gpu(&self) -> bool;
+
     fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
-        self.status.rt
+        self.status().rt
     }
 
     fn is_gpu_mode(&self) -> bool {
-        self.use_gpu
+        self.use_gpu()
     }
 
-    async fn load_voice_model(&self, model: &voice_model::Inner<A>) -> crate::Result<()> {
+    async fn load_voice_model(&self, model: &voice_model::Inner<Self::Async>) -> crate::Result<()> {
         let model_bytes = model.read_inference_models().await?;
 
-        let status = self.status.clone();
+        let status = self.status().clone();
         let header = model.header().clone();
-        A::unblock(move || status.insert_model(&header, &model_bytes)).await
+        Self::Async::unblock(move || status.insert_model(&header, &model_bytes)).await
     }
 
     fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> Result<()> {
-        self.status.unload_model(voice_model_id)
+        self.status().unload_model(voice_model_id)
     }
 
     fn is_loaded_voice_model(&self, voice_model_id: VoiceModelId) -> bool {
-        self.status.is_loaded_model(voice_model_id)
+        self.status().is_loaded_model(voice_model_id)
     }
 
     fn is_loaded_model_by_style_id(&self, style_id: StyleId) -> bool {
-        self.status.is_loaded_model_by_style_id(style_id)
+        self.status().is_loaded_model_by_style_id(style_id)
     }
 
     fn metas(&self) -> VoiceModelMeta {
-        self.status.metas()
+        self.status().metas()
     }
 
     async fn precompute_render(
@@ -545,7 +564,7 @@ impl<O, A: AsyncExt> Inner<O, A> {
         kana: &str,
         style_id: StyleId,
     ) -> Result<Vec<AccentPhrase>> {
-        let accent_phrases = self.kana_analyzer.analyze(kana)?;
+        let accent_phrases = KanaAnalyzer.analyze(kana)?;
         self.replace_mora_data(&accent_phrases, style_id).await
     }
 
@@ -754,40 +773,47 @@ impl<O, A: AsyncExt> Inner<O, A> {
         self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
             .await
     }
-}
 
-impl<O: FullcontextExtractor, A: AsyncExt> Inner<O, A> {
     async fn create_accent_phrases(
         &self,
         text: &str,
         style_id: StyleId,
-    ) -> Result<Vec<AccentPhrase>> {
-        let accent_phrases = self.open_jtalk_analyzer.analyze(text)?;
+    ) -> Result<Vec<AccentPhrase>>
+    where
+        Self::OpenJtalk: FullcontextExtractor,
+    {
+        let accent_phrases = self.open_jtalk_analyzer().analyze(text)?;
         self.replace_mora_data(&accent_phrases, style_id).await
     }
 
-    async fn create_audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery> {
+    async fn create_audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery>
+    where
+        Self::OpenJtalk: FullcontextExtractor,
+    {
         let accent_phrases = self.create_accent_phrases(text, style_id).await?;
         Ok(AudioQuery::from_accent_phrases(accent_phrases))
     }
 
-    async fn tts(&self, text: &str, style_id: StyleId, options: &TtsOptions) -> Result<Vec<u8>> {
+    async fn tts(&self, text: &str, style_id: StyleId, options: &TtsOptions) -> Result<Vec<u8>>
+    where
+        Self::OpenJtalk: FullcontextExtractor,
+    {
         let audio_query = &self.create_audio_query(text, style_id).await?;
         self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
             .await
     }
-}
 
-// TODO: この層を破壊する
-impl<O, A: infer::AsyncExt> Inner<O, A> {
+    // TODO: この層を破壊する
     async fn predict_duration(
         &self,
         phoneme_vector: &[i64],
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        let status = self.status.clone();
+        let status = self.status().clone();
         let phoneme_vector = ndarray::arr1(phoneme_vector);
-        status.predict_duration::<A>(phoneme_vector, style_id).await
+        status
+            .predict_duration::<Self::Async>(phoneme_vector, style_id)
+            .await
     }
 
     #[expect(
@@ -806,7 +832,7 @@ impl<O, A: infer::AsyncExt> Inner<O, A> {
         end_accent_phrase_vector: &[i64],
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        let status = self.status.clone();
+        let status = self.status().clone();
         let vowel_phoneme_vector = ndarray::arr1(vowel_phoneme_vector);
         let consonant_phoneme_vector = ndarray::arr1(consonant_phoneme_vector);
         let start_accent_vector = ndarray::arr1(start_accent_vector);
@@ -814,7 +840,7 @@ impl<O, A: infer::AsyncExt> Inner<O, A> {
         let start_accent_phrase_vector = ndarray::arr1(start_accent_phrase_vector);
         let end_accent_phrase_vector = ndarray::arr1(end_accent_phrase_vector);
         status
-            .predict_intonation::<A>(
+            .predict_intonation::<Self::Async>(
                 length,
                 vowel_phoneme_vector,
                 consonant_phoneme_vector,
@@ -835,11 +861,17 @@ impl<O, A: infer::AsyncExt> Inner<O, A> {
         phoneme_vector: &[f32],
         style_id: StyleId,
     ) -> Result<ndarray::Array2<f32>> {
-        let status = self.status.clone();
+        let status = self.status().clone();
         let f0 = ndarray::arr1(f0);
         let phoneme_vector = ndarray::arr1(phoneme_vector);
         status
-            .generate_full_intermediate::<A>(length, phoneme_size, f0, phoneme_vector, style_id)
+            .generate_full_intermediate::<Self::Async>(
+                length,
+                phoneme_size,
+                f0,
+                phoneme_vector,
+                style_id,
+            )
             .await
     }
 
@@ -848,8 +880,10 @@ impl<O, A: infer::AsyncExt> Inner<O, A> {
         spec: ndarray::Array2<f32>,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        let status = self.status.clone();
-        status.render_audio_segment::<A>(spec, style_id).await
+        let status = self.status().clone();
+        status
+            .render_audio_segment::<Self::Async>(spec, style_id)
+            .await
     }
 
     async fn decode(
@@ -860,12 +894,47 @@ impl<O, A: infer::AsyncExt> Inner<O, A> {
         phoneme_vector: &[f32],
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        let status = self.status.clone();
+        let status = self.status().clone();
         let f0 = ndarray::arr1(f0);
         let phoneme_vector = ndarray::arr1(phoneme_vector);
         status
-            .decode::<A>(length, phoneme_size, f0, phoneme_vector, style_id)
+            .decode::<Self::Async>(length, phoneme_size, f0, phoneme_vector, style_id)
             .await
+    }
+}
+
+impl<O, A: AsyncExt> AsInner for Inner<O, A> {
+    type OpenJtalk = O;
+    type Async = A;
+
+    fn status(&self) -> &Arc<Status<crate::blocking::Onnxruntime>> {
+        &self.status
+    }
+
+    fn open_jtalk_analyzer(&self) -> &OpenJTalkAnalyzer<Self::OpenJtalk> {
+        &self.open_jtalk_analyzer
+    }
+
+    fn use_gpu(&self) -> bool {
+        self.use_gpu
+    }
+}
+
+impl<A: AsyncExt> AsInner for InnerRefWithoutOpenJtalk<'_, A> {
+    type OpenJtalk = ();
+    type Async = A;
+
+    fn status(&self) -> &Arc<Status<crate::blocking::Onnxruntime>> {
+        self.status
+    }
+
+    fn open_jtalk_analyzer(&self) -> &OpenJTalkAnalyzer<Self::OpenJtalk> {
+        static OPEN_JTALK_ANALYZER: OpenJTalkAnalyzer<()> = OpenJTalkAnalyzer::new(());
+        &OPEN_JTALK_ANALYZER
+    }
+
+    fn use_gpu(&self) -> bool {
+        self.use_gpu
     }
 }
 
@@ -1301,7 +1370,10 @@ pub(crate) mod blocking {
         FullcontextExtractor, StyleId, VoiceModelId, VoiceModelMeta,
     };
 
-    use super::{AccelerationMode, InitializeOptions, Inner, SynthesisOptions, TtsOptions};
+    use super::{
+        AccelerationMode, AsInner as _, InitializeOptions, Inner, InnerRefWithoutOpenJtalk,
+        SynthesisOptions, TtsOptions,
+    };
 
     pub use super::AudioFeature;
 
@@ -1395,9 +1467,9 @@ pub(crate) mod blocking {
             &'a self,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
-        ) -> PrecomputeRender<'a, O> {
+        ) -> PrecomputeRender<'a> {
             PrecomputeRender {
-                synthesizer: &self.0,
+                synthesizer: self.0.without_open_jtalk(),
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -1414,9 +1486,9 @@ pub(crate) mod blocking {
             &'a self,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
-        ) -> Synthesis<'a, O> {
+        ) -> Synthesis<'a> {
             Synthesis {
-                synthesizer: &self.0,
+                synthesizer: self.0.without_open_jtalk(),
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -1530,9 +1602,9 @@ pub(crate) mod blocking {
         }
 
         /// AquesTalk風記法から音声合成を行う。
-        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a, O> {
+        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
             TtsFromKana {
-                synthesizer: &self.0,
+                synthesizer: self.0.without_open_jtalk(),
                 kana,
                 style_id,
                 options: TtsOptions::default(),
@@ -1779,16 +1851,15 @@ pub(crate) mod blocking {
         }
     }
 
-    // TODO: この`O`は削れるはず
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct PrecomputeRender<'a, O> {
-        synthesizer: &'a Inner<O, SingleTasked>,
+    pub struct PrecomputeRender<'a> {
+        synthesizer: InnerRefWithoutOpenJtalk<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: SynthesisOptions,
     }
 
-    impl<O> PrecomputeRender<'_, O> {
+    impl PrecomputeRender<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1802,16 +1873,15 @@ pub(crate) mod blocking {
         }
     }
 
-    // TODO: この`O`は削れるはず
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct Synthesis<'a, O> {
-        synthesizer: &'a Inner<O, SingleTasked>,
+    pub struct Synthesis<'a> {
+        synthesizer: InnerRefWithoutOpenJtalk<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: SynthesisOptions,
     }
 
-    impl<O> Synthesis<'_, O> {
+    impl Synthesis<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1825,16 +1895,15 @@ pub(crate) mod blocking {
         }
     }
 
-    // TODO: この`O`は削れるはず
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct TtsFromKana<'a, O> {
-        synthesizer: &'a Inner<O, SingleTasked>,
+    pub struct TtsFromKana<'a> {
+        synthesizer: InnerRefWithoutOpenJtalk<'a, SingleTasked>,
         kana: &'a str,
         style_id: StyleId,
         options: TtsOptions,
     }
 
-    impl<O> TtsFromKana<'_, O> {
+    impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1879,7 +1948,10 @@ pub(crate) mod nonblocking {
         StyleId, VoiceModelId, VoiceModelMeta,
     };
 
-    use super::{AccelerationMode, InitializeOptions, Inner, SynthesisOptions, TtsOptions};
+    use super::{
+        AccelerationMode, AsInner as _, InitializeOptions, Inner, InnerRefWithoutOpenJtalk,
+        SynthesisOptions, TtsOptions,
+    };
 
     /// 音声シンセサイザ。
     ///
@@ -1979,9 +2051,9 @@ pub(crate) mod nonblocking {
             &'a self,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
-        ) -> Synthesis<'a, O> {
+        ) -> Synthesis<'a> {
             Synthesis {
-                synthesizer: &self.0,
+                synthesizer: self.0.without_open_jtalk(),
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -2084,9 +2156,9 @@ pub(crate) mod nonblocking {
         }
 
         /// AquesTalk風記法から音声合成を行う。
-        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a, O> {
+        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
             TtsFromKana {
-                synthesizer: &self.0,
+                synthesizer: self.0.without_open_jtalk(),
                 kana,
                 style_id,
                 options: Default::default(),
@@ -2219,16 +2291,15 @@ pub(crate) mod nonblocking {
         }
     }
 
-    // TODO: この`O`は削れるはず
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct Synthesis<'a, O> {
-        synthesizer: &'a Inner<O, BlockingThreadPool>,
+    pub struct Synthesis<'a> {
+        synthesizer: InnerRefWithoutOpenJtalk<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: SynthesisOptions,
     }
 
-    impl<O> Synthesis<'_, O> {
+    impl Synthesis<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2242,16 +2313,15 @@ pub(crate) mod nonblocking {
         }
     }
 
-    // TODO: この`O`は削れるはず
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct TtsFromKana<'a, O> {
-        synthesizer: &'a Inner<O, BlockingThreadPool>,
+    pub struct TtsFromKana<'a> {
+        synthesizer: InnerRefWithoutOpenJtalk<'a, BlockingThreadPool>,
         kana: &'a str,
         style_id: StyleId,
         options: TtsOptions,
     }
 
-    impl<O> TtsFromKana<'_, O> {
+    impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2290,7 +2360,7 @@ pub(crate) mod nonblocking {
 
 #[cfg(test)]
 mod tests {
-    use super::AccelerationMode;
+    use super::{AccelerationMode, AsInner as _};
     use crate::{
         asyncs::BlockingThreadPool, engine::Mora, macros::tests::assert_debug_fmt_eq, AccentPhrase,
         Result, StyleId,
