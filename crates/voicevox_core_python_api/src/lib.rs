@@ -406,7 +406,7 @@ mod blocking {
                 .get_or_try_init(|| {
                     let inner = voicevox_core::blocking::Onnxruntime::load_once()
                         .filename(filename)
-                        .exec()
+                        .perform()
                         .into_py_result(py)?;
                     Py::new(py, Self(inner))
                 })
@@ -699,7 +699,7 @@ mod blocking {
                 .read()?
                 .precompute_render(&audio_query, StyleId::new(style_id))
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                .exec()
+                .perform()
                 .into_py_result(py)?;
             Ok(AudioFeature { audio })
         }
@@ -748,7 +748,7 @@ mod blocking {
                 .read()?
                 .synthesis(&audio_query, StyleId::new(style_id))
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                .exec()
+                .perform()
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
         }
@@ -772,7 +772,7 @@ mod blocking {
                 .read()?
                 .tts_from_kana(kana, style_id)
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                .exec()
+                .perform()
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
         }
@@ -796,7 +796,7 @@ mod blocking {
                 .read()?
                 .tts(text, style_id)
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                .exec()
+                .perform()
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
         }
@@ -1008,7 +1008,7 @@ mod asyncio {
             pyo3_asyncio::tokio::future_into_py(py, async move {
                 let inner = voicevox_core::nonblocking::Onnxruntime::load_once()
                     .filename(filename)
-                    .exec()
+                    .perform()
                     .await;
 
                 ONNXRUNTIME.get_or_try_init(|| {
@@ -1364,7 +1364,7 @@ mod asyncio {
                         .read()?
                         .synthesis(&audio_query, StyleId::new(style_id))
                         .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                        .exec()
+                        .perform()
                         .await;
                     Python::with_gil(|py| {
                         let wav = wav.into_py_result(py)?;
@@ -1398,7 +1398,7 @@ mod asyncio {
                         .read()?
                         .tts_from_kana(&kana, style_id)
                         .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                        .exec()
+                        .perform()
                         .await;
 
                     Python::with_gil(|py| {
@@ -1433,7 +1433,7 @@ mod asyncio {
                         .read()?
                         .tts(&text, style_id)
                         .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                        .exec()
+                        .perform()
                         .await;
 
                     Python::with_gil(|py| {

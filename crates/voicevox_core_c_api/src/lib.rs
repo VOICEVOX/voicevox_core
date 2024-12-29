@@ -1087,7 +1087,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
             .body()
             .synthesis(&audio_query, StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak)
-            .exec()?;
+            .perform()?;
         U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length);
         Ok(())
     })())
@@ -1149,7 +1149,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
             .body()
             .tts_from_kana(kana, StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak)
-            .exec()?;
+            .perform()?;
         U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length);
         Ok(())
     })())
@@ -1194,7 +1194,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
             .body()
             .tts(text, StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak)
-            .exec()?;
+            .perform()?;
         U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length);
         Ok(())
     })())
