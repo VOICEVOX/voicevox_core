@@ -1,14 +1,13 @@
 use std::{
     collections::BTreeMap,
     fmt::{self, Display},
-    ops::Index,
     sync::Arc,
 };
 
 use derive_getters::Getters;
-use derive_more::Deref;
+use derive_more::{Deref, Index};
 use derive_new::new;
-use enum_map::{Enum, EnumMap};
+use enum_map::EnumMap;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -86,109 +85,62 @@ pub struct Manifest {
 pub(crate) type ManifestDomains = inference_domain_map_values!(for<D> Option<D::Manifest>);
 
 // TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
-#[derive(Deserialize)]
+#[derive(Index, Deserialize)]
 #[cfg_attr(test, derive(Default))]
 pub(crate) struct TalkManifest {
+    #[index]
     #[serde(flatten)]
-    filenames: EnumMap<TalkOperationFilenameKey, Arc<str>>,
+    filenames: EnumMap<TalkOperation, ModelFile>,
 
     #[serde(default)]
     pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
-#[derive(Deserialize)]
+// TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
+#[derive(Index, Deserialize)]
 #[cfg_attr(test, derive(Default))]
 pub(crate) struct SingingTeacherManifest {
+    #[index]
     #[serde(flatten)]
-    filenames: EnumMap<SingingTeacherOperationFilenameKey, Arc<str>>,
+    filenames: EnumMap<SingingTeacherOperation, ModelFile>,
 
     #[serde(default)]
     pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
-#[derive(Deserialize)]
+// TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
+#[derive(Index, Deserialize)]
 #[cfg_attr(test, derive(Default))]
 pub(crate) struct FrameDecodeManifest {
+    #[index]
     #[serde(flatten)]
-    filenames: EnumMap<FrameDecodeOperationFilenameKey, Arc<str>>,
+    filenames: EnumMap<FrameDecodeOperation, ModelFile>,
 
     #[serde(default)]
     pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
-// TODO: #825 では`TalkOperation`と統合する。`Index`の実装もderive_moreで委譲する
-#[derive(Enum, Deserialize)]
-pub(crate) enum TalkOperationFilenameKey {
-    #[serde(rename = "predict_duration_filename")]
-    PredictDuration,
-    #[serde(rename = "predict_intonation_filename")]
-    PredictIntonation,
-    #[serde(rename = "generate_full_intermediate_filename")]
-    GenerateFullIntermediate,
-    #[serde(rename = "render_audio_segment_filename")]
-    RenderAudioSegment,
+#[derive(Deserialize, Clone)]
+pub(crate) struct ModelFile {
+    pub(crate) r#type: ModelFileType,
+    pub(crate) filename: Arc<str>,
 }
 
-impl Index<TalkOperation> for TalkManifest {
-    type Output = Arc<str>;
-
-    fn index(&self, index: TalkOperation) -> &Self::Output {
-        let key = match index {
-            TalkOperation::PredictDuration => TalkOperationFilenameKey::PredictDuration,
-            TalkOperation::PredictIntonation => TalkOperationFilenameKey::PredictIntonation,
-            TalkOperation::GenerateFullIntermediate => {
-                TalkOperationFilenameKey::GenerateFullIntermediate
-            }
-            TalkOperation::RenderAudioSegment => TalkOperationFilenameKey::RenderAudioSegment,
-        };
-        &self.filenames[key]
+#[cfg(test)]
+impl Default for ModelFile {
+    fn default() -> Self {
+        Self {
+            r#type: ModelFileType::Onnx,
+            filename: "".into(),
+        }
     }
 }
 
-#[derive(Enum, Deserialize)]
-pub(crate) enum SingingTeacherOperationFilenameKey {
-    #[serde(rename = "predict_sing_consonant_length_filename")]
-    PredictSingConsonantLength,
-    #[serde(rename = "predict_sing_f0_filename")]
-    PredictSingF0,
-    #[serde(rename = "predict_sing_volume_filename")]
-    PredictSingVolume,
-}
-
-impl Index<SingingTeacherOperation> for SingingTeacherManifest {
-    type Output = Arc<str>;
-
-    fn index(&self, index: SingingTeacherOperation) -> &Self::Output {
-        let key = match index {
-            SingingTeacherOperation::PredictSingConsonantLength => {
-                SingingTeacherOperationFilenameKey::PredictSingConsonantLength
-            }
-            SingingTeacherOperation::PredictSingF0 => {
-                SingingTeacherOperationFilenameKey::PredictSingF0
-            }
-            SingingTeacherOperation::PredictSingVolume => {
-                SingingTeacherOperationFilenameKey::PredictSingVolume
-            }
-        };
-        &self.filenames[key]
-    }
-}
-
-#[derive(Enum, Deserialize)]
-pub(crate) enum FrameDecodeOperationFilenameKey {
-    #[serde(rename = "sf_decode_filename")]
-    SfDecode,
-}
-
-impl Index<FrameDecodeOperation> for FrameDecodeManifest {
-    type Output = Arc<str>;
-
-    fn index(&self, index: FrameDecodeOperation) -> &Self::Output {
-        let key = match index {
-            FrameDecodeOperation::SfDecode => FrameDecodeOperationFilenameKey::SfDecode,
-        };
-        &self.filenames[key]
-    }
+#[derive(Deserialize, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum ModelFileType {
+    Onnx,
+    VvBin,
 }
 
 #[serde_as]

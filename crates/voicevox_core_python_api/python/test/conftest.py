@@ -13,7 +13,9 @@ onnxruntime_filename = str(
     / "test_util"
     / "data"
     / "lib"
-    / voicevox_core.blocking.Onnxruntime.LIB_VERSIONED_FILENAME
+    / voicevox_core.blocking.Onnxruntime.LIB_VERSIONED_FILENAME.replace(
+        "voicevox_onnxruntime", "onnxruntime"
+    )
 )
 open_jtalk_dic_dir = (
     root_dir.parent.parent.parent / "test_util" / "data" / "open_jtalk_dic_utf_8-1.11"
