@@ -11,13 +11,13 @@ use camino::Utf8Path;
 use duplicate::duplicate_item;
 use easy_ext::ext;
 use ref_cast::ref_cast_custom;
-use voicevox_core::{InitializeOptions, Result, SpeakerMeta, VoiceModelId};
+use voicevox_core::{Result, SpeakerMeta, VoiceModelId};
 
 use crate::{
     helpers::CApiResult,
     object::{CApiObject, CApiObjectPtrExt as _},
-    OpenJtalkRc, VoicevoxOnnxruntime, VoicevoxSynthesizer, VoicevoxUserDict,
-    VoicevoxVoiceModelFile,
+    OpenJtalkRc, VoicevoxInitializeOptions, VoicevoxOnnxruntime, VoicevoxSynthesizer,
+    VoicevoxUserDict, VoicevoxVoiceModelFile,
 };
 
 // FIXME: 中身(Rust API)を直接操作するかラッパーメソッド越しにするのかが混在していて、一貫性を
@@ -80,13 +80,16 @@ impl VoicevoxSynthesizer {
     pub(crate) fn new(
         onnxruntime: &'static VoicevoxOnnxruntime,
         open_jtalk: *const OpenJtalkRc,
-        options: &InitializeOptions,
+        VoicevoxInitializeOptions {
+            acceleration_mode,
+            cpu_num_threads,
+        }: VoicevoxInitializeOptions,
     ) -> Result<NonNull<Self>> {
-        let body = voicevox_core::blocking::Synthesizer::new(
-            &onnxruntime.0,
-            open_jtalk.body().clone(),
-            options,
-        )?;
+        let body = voicevox_core::blocking::Synthesizer::builder(&onnxruntime.0)
+            .open_jtalk(open_jtalk.body().clone())
+            .acceleration_mode(acceleration_mode.into())
+            .cpu_num_threads(cpu_num_threads)
+            .build()?;
         Ok(<Self as CApiObject>::new(body))
     }
 }

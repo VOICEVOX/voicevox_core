@@ -20,8 +20,6 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     builder: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let mut options = voicevox_core::InitializeOptions::default();
-
         let acceleration_mode = env
             .get_field(
                 &builder,
@@ -30,11 +28,13 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             )?
             .l()?;
 
-        if !acceleration_mode.is_null() {
+        let acceleration_mode = if acceleration_mode.is_null() {
+            Default::default()
+        } else {
             let auto = enum_object!(env, "AccelerationMode", "AUTO")?;
             let cpu = enum_object!(env, "AccelerationMode", "CPU")?;
             let gpu = enum_object!(env, "AccelerationMode", "GPU")?;
-            options.acceleration_mode = if env.is_same_object(&acceleration_mode, auto)? {
+            if env.is_same_object(&acceleration_mode, auto)? {
                 voicevox_core::AccelerationMode::Auto
             } else if env.is_same_object(&acceleration_mode, cpu)? {
                 voicevox_core::AccelerationMode::Cpu
@@ -42,10 +42,12 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
                 voicevox_core::AccelerationMode::Gpu
             } else {
                 panic!("予期しない`AccelerationMode`です: {acceleration_mode:?}");
-            };
-        }
-        let cpu_num_threads = env.get_field(&builder, "cpuNumThreads", "I")?;
-        options.cpu_num_threads = cpu_num_threads.i().expect("cpuNumThreads is not integer") as u16;
+            }
+        };
+        let cpu_num_threads = env
+            .get_field(&builder, "cpuNumThreads", "I")?
+            .i()
+            .expect("cpuNumThreads is not integer") as u16;
 
         let onnxruntime = *env
             .get_rust_field::<_, _, &'static voicevox_core::blocking::Onnxruntime>(
@@ -55,11 +57,13 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let open_jtalk = env
             .get_rust_field::<_, _, voicevox_core::blocking::OpenJtalk>(&open_jtalk, "handle")?
             .clone();
-        let internal = Arc::new(voicevox_core::blocking::Synthesizer::new(
-            onnxruntime,
-            open_jtalk,
-            &options,
-        )?);
+        let internal = Arc::new(
+            voicevox_core::blocking::Synthesizer::builder(onnxruntime)
+                .open_jtalk(open_jtalk)
+                .acceleration_mode(acceleration_mode)
+                .cpu_num_threads(cpu_num_threads)
+                .build()?,
+        );
         env.set_rust_field(&this, "handle", internal)?;
         Ok(())
     })
@@ -424,17 +428,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             )?
             .clone();
 
-        let wave = {
-            let options = voicevox_core::SynthesisOptions {
-                enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
-                // ..Default::default()
-            };
-            internal.synthesis(
-                &audio_query,
-                voicevox_core::StyleId::new(style_id),
-                &options,
-            )?
-        };
+        let wave = internal
+            .synthesis(&audio_query, voicevox_core::StyleId::new(style_id))
+            .enable_interrogative_upspeak(enable_interrogative_upspeak != 0)
+            .exec()?;
 
         let j_bytes = env.byte_array_from_slice(&wave)?;
 
@@ -463,13 +460,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             )?
             .clone();
 
-        let wave = {
-            let options = voicevox_core::TtsOptions {
-                enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
-                // ..Default::default()
-            };
-            internal.tts_from_kana(&kana, voicevox_core::StyleId::new(style_id), &options)?
-        };
+        let wave = internal
+            .tts_from_kana(&kana, voicevox_core::StyleId::new(style_id))
+            .enable_interrogative_upspeak(enable_interrogative_upspeak != 0)
+            .exec()?;
 
         let j_bytes = env.byte_array_from_slice(&wave)?;
 
@@ -496,13 +490,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             )?
             .clone();
 
-        let wave = {
-            let options = voicevox_core::TtsOptions {
-                enable_interrogative_upspeak: enable_interrogative_upspeak != 0,
-                // ..Default::default()
-            };
-            internal.tts(&text, voicevox_core::StyleId::new(style_id), &options)?
-        };
+        let wave = internal
+            .tts(&text, voicevox_core::StyleId::new(style_id))
+            .enable_interrogative_upspeak(enable_interrogative_upspeak != 0)
+            .exec()?;
 
         let j_bytes = env.byte_array_from_slice(&wave)?;
 

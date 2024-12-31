@@ -426,6 +426,7 @@ pub(crate) mod blocking {
 
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct LoadOnce {
         filename: std::ffi::OsString,
     }
@@ -585,6 +586,7 @@ pub(crate) mod nonblocking {
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
     #[derive(Default)]
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct LoadOnce(super::blocking::LoadOnce);
 
     #[cfg(feature = "load-onnxruntime")]

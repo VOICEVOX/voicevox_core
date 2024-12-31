@@ -130,18 +130,14 @@ fn set_message(message: &str) {
 pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_models: bool) -> bool {
     init_logger_once();
     let result = (|| {
-        let synthesizer = voicevox_core::blocking::Synthesizer::new(
-            *ONNXRUNTIME,
-            (),
-            &voicevox_core::InitializeOptions {
-                acceleration_mode: if use_gpu {
-                    voicevox_core::AccelerationMode::Gpu
-                } else {
-                    voicevox_core::AccelerationMode::Cpu
-                },
-                cpu_num_threads: cpu_num_threads as u16,
-            },
-        )?;
+        let synthesizer = voicevox_core::blocking::Synthesizer::builder(*ONNXRUNTIME)
+            .acceleration_mode(if use_gpu {
+                voicevox_core::AccelerationMode::Gpu
+            } else {
+                voicevox_core::AccelerationMode::Cpu
+            })
+            .cpu_num_threads(cpu_num_threads as u16)
+            .build()?;
 
         if load_all_models {
             for model in &voice_model_set().all_vvms {

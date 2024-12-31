@@ -124,6 +124,6 @@ class SynthesizerTest extends TestUtils {
     try (VoiceModelFile model = openModel()) {
       synthesizer.loadVoiceModel(model);
     }
-    synthesizer.tts("こんにちは", synthesizer.metas()[0].styles[0].id);
+    synthesizer.tts("こんにちは", synthesizer.metas()[0].styles[0].id).execute();
   }
 }

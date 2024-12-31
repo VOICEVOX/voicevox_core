@@ -32,15 +32,22 @@ use crate::{
     VoiceModelMeta,
 };
 
-/// [`blocking::Synthesizer::synthesis`]および[`nonblocking::Synthesizer::synthesis`]のオプション。
-///
-/// [`blocking::Synthesizer::synthesis`]: blocking::Synthesizer::synthesis
-/// [`nonblocking::Synthesizer::synthesis`]: nonblocking::Synthesizer::synthesis
-#[derive(Clone)]
-pub struct SynthesisOptions {
-    pub enable_interrogative_upspeak: bool,
+pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
+pub const DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK: bool = true;
+
+struct SynthesisOptions {
+    enable_interrogative_upspeak: bool,
 }
 
+impl Default for SynthesisOptions {
+    fn default() -> Self {
+        Self {
+            enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        }
+    }
+}
+
+// FIXME: this is dead code
 impl AsRef<SynthesisOptions> for SynthesisOptions {
     fn as_ref(&self) -> &SynthesisOptions {
         self
@@ -55,15 +62,11 @@ impl From<&TtsOptions> for SynthesisOptions {
     }
 }
 
-/// [`blocking::Synthesizer::tts`]および[`nonblocking::Synthesizer::tts`]のオプション。
-///
-/// [`blocking::Synthesizer::tts`]: blocking::Synthesizer::tts
-/// [`nonblocking::Synthesizer::tts`]: nonblocking::Synthesizer::tts
-#[derive(Clone)]
-pub struct TtsOptions {
-    pub enable_interrogative_upspeak: bool,
+struct TtsOptions {
+    enable_interrogative_upspeak: bool,
 }
 
+// FIXME: this is dead code
 impl AsRef<TtsOptions> for TtsOptions {
     fn as_ref(&self) -> &Self {
         self
@@ -73,7 +76,7 @@ impl AsRef<TtsOptions> for TtsOptions {
 impl Default for TtsOptions {
     fn default() -> Self {
         Self {
-            enable_interrogative_upspeak: true,
+            enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         }
     }
 }
@@ -90,24 +93,18 @@ pub enum AccelerationMode {
     Gpu,
 }
 
-/// [`blocking::Synthesizer::new`]および[`nonblocking::Synthesizer::new`]のオプション。
-///
-/// [`blocking::Synthesizer::new`]: blocking::Synthesizer::new
-/// [`nonblocking::Synthesizer::new`]: nonblocking::Synthesizer::new
-#[derive(Default)]
-pub struct InitializeOptions {
-    pub acceleration_mode: AccelerationMode,
+struct InitializeOptions {
+    acceleration_mode: AccelerationMode,
+    cpu_num_threads: u16,
+}
 
-    /// CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
-    ///
-    /// # Performance
-    ///
-    /// 未調査ではあるが、[非同期版API]においては物理コアの数+1とするのが適切な可能性がある
-    /// ([VOICEVOX/voicevox_core#902])。
-    ///
-    /// [非同期版API]: crate::nonblocking
-    /// [VOICEVOX/voicevox_core#902]: https://github.com/VOICEVOX/voicevox_core/issues/902
-    pub cpu_num_threads: u16,
+impl Default for InitializeOptions {
+    fn default() -> Self {
+        Self {
+            acceleration_mode: Default::default(),
+            cpu_num_threads: DEFAULT_CPU_NUM_THREADS,
+        }
+    }
 }
 
 trait AsyncExt: infer::AsyncExt {
@@ -1304,21 +1301,22 @@ pub(crate) mod blocking {
         FullcontextExtractor, StyleId, VoiceModelId, VoiceModelMeta,
     };
 
-    use super::{InitializeOptions, Inner, SynthesisOptions, TtsOptions};
+    use super::{AccelerationMode, InitializeOptions, Inner, SynthesisOptions, TtsOptions};
 
     pub use super::AudioFeature;
 
     /// 音声シンセサイザ。
     pub struct Synthesizer<O>(pub(super) Inner<O, SingleTasked>);
 
-    impl<O> self::Synthesizer<O> {
-        /// `Synthesizer`をコンストラクトする。
+    impl self::Synthesizer<()> {
+        /// `Synthesizer`のビルダーをコンストラクトする。
         ///
         /// # Example
         ///
         #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
         #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
         /// # fn main() -> anyhow::Result<()> {
+        /// # // FIXME: この`ONNXRUNTIME_DYLIB_PATH`はunused import
         /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};
         /// #
         /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
@@ -1327,33 +1325,32 @@ pub(crate) mod blocking {
         ///
         /// use voicevox_core::{
         ///     blocking::{Onnxruntime, OpenJtalk, Synthesizer},
-        ///     AccelerationMode, InitializeOptions,
+        ///     AccelerationMode,
         /// };
         ///
         /// # voicevox_core::blocking::Onnxruntime::load_once()
         /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
         /// #     .exec()?;
         /// #
-        /// let mut syntesizer = Synthesizer::new(
-        ///     Onnxruntime::load_once().exec()?,
-        ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap()),
-        ///     &InitializeOptions {
-        ///         acceleration_mode: ACCELERATION_MODE,
-        ///         ..Default::default()
-        ///     },
-        /// )?;
+        /// // FIXME: `Synthesizer`には`&mut self`なメソッドはもう無いはず
+        /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().exec()?)
+        ///     .open_jtalk(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap())) // FIXME: `Arc`は要らないはず
+        ///     .acceleration_mode(ACCELERATION_MODE)
+        ///     .build()?;
         /// #
         /// # Ok(())
         /// # }
         /// ```
-        pub fn new(
-            onnxruntime: &'static crate::blocking::Onnxruntime,
-            open_jtalk: O,
-            options: &InitializeOptions,
-        ) -> crate::Result<Self> {
-            Inner::new(onnxruntime, open_jtalk, options).map(Self)
+        pub fn builder(onnxruntime: &'static crate::blocking::Onnxruntime) -> Builder<()> {
+            Builder {
+                onnxruntime,
+                open_jtalk: (),
+                options: Default::default(),
+            }
         }
+    }
 
+    impl<O> self::Synthesizer<O> {
         pub fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
             self.0.onnxruntime()
         }
@@ -1392,15 +1389,17 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから音声合成用の中間表現を生成する。
-        pub fn precompute_render(
-            &self,
-            audio_query: &AudioQuery,
+        pub fn precompute_render<'a>(
+            &'a self,
+            audio_query: &'a AudioQuery,
             style_id: StyleId,
-            options: &SynthesisOptions,
-        ) -> crate::Result<AudioFeature> {
-            self.0
-                .precompute_render(audio_query, style_id, options)
-                .block_on()
+        ) -> PrecomputeRender<'a, O> {
+            PrecomputeRender {
+                synthesizer: &self.0,
+                audio_query,
+                style_id,
+                options: Default::default(),
+            }
         }
 
         /// 中間表現から16bit PCMで音声波形を生成する。
@@ -1409,13 +1408,17 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから直接WAVフォーマットで音声波形を生成する。
-        pub fn synthesis(
-            &self,
-            audio_query: &AudioQuery,
+        pub fn synthesis<'a>(
+            &'a self,
+            audio_query: &'a AudioQuery,
             style_id: StyleId,
-            options: &SynthesisOptions,
-        ) -> crate::Result<Vec<u8>> {
-            self.0.synthesis(audio_query, style_id, options).block_on()
+        ) -> Synthesis<'a, O> {
+            Synthesis {
+                synthesizer: &self.0,
+                audio_query,
+                style_id,
+                options: Default::default(),
+            }
         }
 
         /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
@@ -1525,13 +1528,13 @@ pub(crate) mod blocking {
         }
 
         /// AquesTalk風記法から音声合成を行う。
-        pub fn tts_from_kana(
-            &self,
-            kana: &str,
-            style_id: StyleId,
-            options: &TtsOptions,
-        ) -> crate::Result<Vec<u8>> {
-            self.0.tts_from_kana(kana, style_id, options).block_on()
+        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a, O> {
+            TtsFromKana {
+                synthesizer: &self.0,
+                kana,
+                style_id,
+                options: TtsOptions::default(),
+            }
         }
     }
 
@@ -1605,13 +1608,13 @@ pub(crate) mod blocking {
         }
 
         /// 日本語のテキストから音声合成を行う。
-        pub fn tts(
-            &self,
-            text: &str,
-            style_id: StyleId,
-            options: &TtsOptions,
-        ) -> crate::Result<Vec<u8>> {
-            self.0.tts(text, style_id, options).block_on()
+        pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, O> {
+            Tts {
+                synthesizer: &self.0,
+                text,
+                style_id,
+                options: TtsOptions::default(),
+            }
         }
     }
 
@@ -1740,6 +1743,130 @@ pub(crate) mod blocking {
                 .block_on()
         }
     }
+
+    #[must_use]
+    pub struct Builder<O> {
+        onnxruntime: &'static crate::blocking::Onnxruntime,
+        open_jtalk: O,
+        options: InitializeOptions,
+    }
+
+    impl<O> Builder<O> {
+        pub fn open_jtalk<O2>(self, open_jtalk: O2) -> Builder<O2> {
+            Builder {
+                open_jtalk,
+                onnxruntime: self.onnxruntime,
+                options: self.options,
+            }
+        }
+
+        pub fn acceleration_mode(mut self, acceleration_mode: AccelerationMode) -> Self {
+            self.options.acceleration_mode = acceleration_mode;
+            self
+        }
+
+        /// CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
+        pub fn cpu_num_threads(mut self, cpu_num_threads: u16) -> Self {
+            self.options.cpu_num_threads = cpu_num_threads;
+            self
+        }
+
+        /// [`Synthesizer`]をコンストラクトする。
+        pub fn build(self) -> crate::Result<Synthesizer<O>> {
+            Inner::new(self.onnxruntime, self.open_jtalk, &self.options).map(Synthesizer)
+        }
+    }
+
+    // TODO: この`O`は削れるはず
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    pub struct PrecomputeRender<'a, O> {
+        synthesizer: &'a Inner<O, SingleTasked>,
+        audio_query: &'a AudioQuery,
+        style_id: StyleId,
+        options: SynthesisOptions,
+    }
+
+    impl<O> PrecomputeRender<'_, O> {
+        pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
+            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 実行する。
+        pub fn exec(self) -> crate::Result<AudioFeature> {
+            self.synthesizer
+                .precompute_render(self.audio_query, self.style_id, &self.options)
+                .block_on()
+        }
+    }
+
+    // TODO: この`O`は削れるはず
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    pub struct Synthesis<'a, O> {
+        synthesizer: &'a Inner<O, SingleTasked>,
+        audio_query: &'a AudioQuery,
+        style_id: StyleId,
+        options: SynthesisOptions,
+    }
+
+    impl<O> Synthesis<'_, O> {
+        pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
+            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 実行する。
+        pub fn exec(self) -> crate::Result<Vec<u8>> {
+            self.synthesizer
+                .synthesis(self.audio_query, self.style_id, &self.options)
+                .block_on()
+        }
+    }
+
+    // TODO: この`O`は削れるはず
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    pub struct TtsFromKana<'a, O> {
+        synthesizer: &'a Inner<O, SingleTasked>,
+        kana: &'a str,
+        style_id: StyleId,
+        options: TtsOptions,
+    }
+
+    impl<O> TtsFromKana<'_, O> {
+        pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
+            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 実行する。
+        pub fn exec(self) -> crate::Result<Vec<u8>> {
+            self.synthesizer
+                .tts_from_kana(self.kana, self.style_id, &self.options)
+                .block_on()
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    pub struct Tts<'a, O> {
+        synthesizer: &'a Inner<O, SingleTasked>,
+        text: &'a str,
+        style_id: StyleId,
+        options: TtsOptions,
+    }
+
+    impl<O: FullcontextExtractor> Tts<'_, O> {
+        pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
+            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 実行する。
+        pub fn exec(self) -> crate::Result<Vec<u8>> {
+            self.synthesizer
+                .tts(self.text, self.style_id, &self.options)
+                .block_on()
+        }
+    }
 }
 
 pub(crate) mod nonblocking {
@@ -1747,10 +1874,10 @@ pub(crate) mod nonblocking {
 
     use crate::{
         asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, FullcontextExtractor, Result,
-        StyleId, SynthesisOptions, VoiceModelId, VoiceModelMeta,
+        StyleId, VoiceModelId, VoiceModelMeta,
     };
 
-    use super::{InitializeOptions, Inner, TtsOptions};
+    use super::{AccelerationMode, InitializeOptions, Inner, SynthesisOptions, TtsOptions};
 
     /// 音声シンセサイザ。
     ///
@@ -1762,8 +1889,8 @@ pub(crate) mod nonblocking {
     /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
     pub struct Synthesizer<O>(pub(super) Inner<O, BlockingThreadPool>);
 
-    impl<O: Send + Sync + 'static> self::Synthesizer<O> {
-        /// `Synthesizer`をコンストラクトする。
+    impl self::Synthesizer<()> {
+        /// `Synthesizer`のビルダーをコンストラクトする。
         ///
         /// # Example
         ///
@@ -1771,6 +1898,7 @@ pub(crate) mod nonblocking {
         #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
         /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
+        /// # // FIXME: この`ONNXRUNTIME_DYLIB_PATH`はunused import
         /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};
         /// #
         /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
@@ -1779,35 +1907,32 @@ pub(crate) mod nonblocking {
         ///
         /// use voicevox_core::{
         ///     nonblocking::{Onnxruntime, OpenJtalk, Synthesizer},
-        ///     AccelerationMode, InitializeOptions,
+        ///     AccelerationMode,
         /// };
         ///
         /// # voicevox_core::blocking::Onnxruntime::load_once()
         /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
         /// #     .exec()?;
         /// #
-        /// let mut syntesizer = Synthesizer::new(
-        ///     Onnxruntime::load_once().exec().await?,
-        ///     Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap()),
-        ///     &InitializeOptions {
-        ///         acceleration_mode: ACCELERATION_MODE,
-        ///         ..Default::default()
-        ///     },
-        /// )?;
+        /// // FIXME: `Synthesizer`には`&mut self`なメソッドはもう無いはず
+        /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().exec().await?)
+        ///     .open_jtalk(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap())) // FIXME: `Arc`は要らないはず
+        ///     .acceleration_mode(ACCELERATION_MODE)
+        ///     .build()?;
         /// #
         /// # Ok(())
         /// # }
         /// ```
-        pub fn new(
-            onnxruntime: &'static crate::nonblocking::Onnxruntime,
-            open_jtalk: O,
-            options: &InitializeOptions,
-        ) -> Result<Self> {
-            Inner::new(&onnxruntime.0, open_jtalk, options)
-                .map(Into::into)
-                .map(Self)
+        pub fn builder(onnxruntime: &'static crate::nonblocking::Onnxruntime) -> Builder<()> {
+            Builder {
+                onnxruntime,
+                open_jtalk: (),
+                options: Default::default(),
+            }
         }
+    }
 
+    impl<O: Send + Sync + 'static> self::Synthesizer<O> {
         pub fn onnxruntime(&self) -> &'static crate::nonblocking::Onnxruntime {
             crate::nonblocking::Onnxruntime::from_blocking(self.0.onnxruntime())
         }
@@ -1846,13 +1971,17 @@ pub(crate) mod nonblocking {
         }
 
         /// AudioQueryから音声合成を行う。
-        pub async fn synthesis(
-            &self,
-            audio_query: &AudioQuery,
+        pub fn synthesis<'a>(
+            &'a self,
+            audio_query: &'a AudioQuery,
             style_id: StyleId,
-            options: &SynthesisOptions,
-        ) -> Result<Vec<u8>> {
-            self.0.synthesis(audio_query, style_id, options).await
+        ) -> Synthesis<'a, O> {
+            Synthesis {
+                synthesizer: &self.0,
+                audio_query,
+                style_id,
+                options: Default::default(),
+            }
         }
 
         /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
@@ -1951,13 +2080,13 @@ pub(crate) mod nonblocking {
         }
 
         /// AquesTalk風記法から音声合成を行う。
-        pub async fn tts_from_kana(
-            &self,
-            kana: &str,
-            style_id: StyleId,
-            options: &TtsOptions,
-        ) -> Result<Vec<u8>> {
-            self.0.tts_from_kana(kana, style_id, options).await
+        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a, O> {
+            TtsFromKana {
+                synthesizer: &self.0,
+                kana,
+                style_id,
+                options: Default::default(),
+            }
         }
     }
 
@@ -2029,13 +2158,13 @@ pub(crate) mod nonblocking {
         }
 
         /// 日本語のテキストから音声合成を行う。
-        pub async fn tts(
-            &self,
-            text: &str,
-            style_id: StyleId,
-            options: &TtsOptions,
-        ) -> Result<Vec<u8>> {
-            self.0.tts(text, style_id, options).await
+        pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
+            Tts {
+                synthesizer: &self.0,
+                text,
+                style_id,
+                options: Default::default(),
+            }
         }
     }
 
@@ -2045,11 +2174,119 @@ pub(crate) mod nonblocking {
             super::blocking::Synthesizer(self.0.into())
         }
     }
+
+    #[must_use]
+    pub struct Builder<O> {
+        onnxruntime: &'static crate::nonblocking::Onnxruntime,
+        open_jtalk: O,
+        options: InitializeOptions,
+    }
+
+    impl<O> Builder<O> {
+        pub fn open_jtalk<O2>(self, open_jtalk: O2) -> Builder<O2> {
+            Builder {
+                open_jtalk,
+                onnxruntime: self.onnxruntime,
+                options: self.options,
+            }
+        }
+
+        pub fn acceleration_mode(mut self, acceleration_mode: AccelerationMode) -> Self {
+            self.options.acceleration_mode = acceleration_mode;
+            self
+        }
+
+        /// CPU利用数を指定。0を指定すると環境に合わせたCPUが利用される。
+        ///
+        /// # Performance
+        ///
+        /// 未調査ではあるが、物理コアの数+1とするのが適切な可能性がある
+        /// ([VOICEVOX/voicevox_core#902])。
+        ///
+        /// [VOICEVOX/voicevox_core#902]: https://github.com/VOICEVOX/voicevox_core/issues/902
+        pub fn cpu_num_threads(mut self, cpu_num_threads: u16) -> Self {
+            self.options.cpu_num_threads = cpu_num_threads;
+            self
+        }
+
+        /// [`Synthesizer`]をコンストラクトする。
+        pub fn build(self) -> crate::Result<Synthesizer<O>> {
+            Inner::new(&self.onnxruntime.0, self.open_jtalk, &self.options).map(Synthesizer)
+        }
+    }
+
+    // TODO: この`O`は削れるはず
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    pub struct Synthesis<'a, O> {
+        synthesizer: &'a Inner<O, BlockingThreadPool>,
+        audio_query: &'a AudioQuery,
+        style_id: StyleId,
+        options: SynthesisOptions,
+    }
+
+    impl<O> Synthesis<'_, O> {
+        pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
+            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 実行する。
+        pub async fn exec(self) -> crate::Result<Vec<u8>> {
+            self.synthesizer
+                .synthesis(self.audio_query, self.style_id, &self.options)
+                .await
+        }
+    }
+
+    // TODO: この`O`は削れるはず
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    pub struct TtsFromKana<'a, O> {
+        synthesizer: &'a Inner<O, BlockingThreadPool>,
+        kana: &'a str,
+        style_id: StyleId,
+        options: TtsOptions,
+    }
+
+    impl<O> TtsFromKana<'_, O> {
+        pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
+            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 実行する。
+        pub async fn exec(self) -> crate::Result<Vec<u8>> {
+            self.synthesizer
+                .tts_from_kana(self.kana, self.style_id, &self.options)
+                .await
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    pub struct Tts<'a, O> {
+        synthesizer: &'a Inner<O, BlockingThreadPool>,
+        text: &'a str,
+        style_id: StyleId,
+        options: TtsOptions,
+    }
+
+    impl<O: FullcontextExtractor> Tts<'_, O> {
+        pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
+            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 実行する。
+        pub async fn exec(self) -> crate::Result<Vec<u8>> {
+            self.synthesizer
+                .tts(self.text, self.style_id, &self.options)
+                .await
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{AccelerationMode, InitializeOptions};
+    use super::AccelerationMode;
     use crate::{
         asyncs::BlockingThreadPool, engine::Mora, macros::tests::assert_debug_fmt_eq, AccentPhrase,
         Result, StyleId,
@@ -2061,16 +2298,13 @@ mod tests {
     #[case(Ok(()))]
     #[tokio::test]
     async fn load_model_works(#[case] expected_result_at_initialized: Result<()>) {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            (),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
 
         let result = syntesizer
@@ -2087,16 +2321,13 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn is_use_gpu_works() {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            (),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
         assert!(!syntesizer.is_gpu_mode());
     }
@@ -2106,16 +2337,13 @@ mod tests {
     #[tokio::test]
     async fn is_loaded_model_by_style_id_works(#[case] style_id: u32, #[case] expected: bool) {
         let style_id = StyleId::new(style_id);
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            (),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
         assert!(
             !syntesizer.is_loaded_model_by_style_id(style_id),
@@ -2137,16 +2365,13 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_duration_works() {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            (),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
 
         syntesizer
@@ -2172,16 +2397,13 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_intonation_works() {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            (),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
@@ -2217,16 +2439,13 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn decode_works() {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            (),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
@@ -2267,16 +2486,13 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_sing_f0_works() {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            (),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
@@ -2305,16 +2521,13 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn predict_sing_volume_works() {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            (),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
@@ -2345,16 +2558,13 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn sf_decode_works() {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
-            (),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
@@ -2452,18 +2662,18 @@ mod tests {
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
         #[case] expected_kana_text: &str,
     ) {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
+        )
+        .open_jtalk(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
@@ -2523,18 +2733,18 @@ mod tests {
         #[case] input: Input,
         #[case] expected_text_consonant_vowel_data: &TextConsonantVowelData,
     ) {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
+        )
+        .open_jtalk(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
@@ -2591,18 +2801,18 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn create_accent_phrases_works_for_japanese_commas_and_periods() {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
+        )
+        .open_jtalk(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
@@ -2654,18 +2864,18 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_length_works() {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
+        )
+        .open_jtalk(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
@@ -2695,18 +2905,18 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_pitch_works() {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
+        )
+        .open_jtalk(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
@@ -2736,18 +2946,18 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn mora_data_works() {
-        let syntesizer = super::nonblocking::Synthesizer::new(
+        let syntesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
                 .unwrap(),
+        )
+        .open_jtalk(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
-            &InitializeOptions {
-                acceleration_mode: AccelerationMode::Cpu,
-                ..Default::default()
-            },
         )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
