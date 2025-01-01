@@ -115,6 +115,7 @@ version = "0.0.0"
 edition = "2021"
 publish = false
 rust-version = "1.81.0"
+license = "MIT"
 
 # min-sized-rustを元にrelease buildのサイズが小さくなるようにした
 # https://github.com/johnthagen/min-sized-rust
