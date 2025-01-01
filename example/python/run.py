@@ -104,7 +104,7 @@ def main() -> None:
         ),  # https://github.com/VOICEVOX/voicevox_core/issues/888
     )
 
-    logger.debug("%s", f"{synthesizer.metas=}")
+    logger.debug("%s", f"{synthesizer.metas()=}")
     logger.debug("%s", f"{synthesizer.is_gpu_mode=}")
 
     logger.info("%s", f"Loading `{args.vvm}`")

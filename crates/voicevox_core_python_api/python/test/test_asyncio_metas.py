@@ -21,7 +21,7 @@ async def test_synthesizer_metas_works(voice_model: VoiceModelFile) -> None:
         await OpenJtalk.new(conftest.open_jtalk_dic_dir),
     )
     await synthesizer.load_voice_model(voice_model)
-    _ = synthesizer.metas
+    _ = synthesizer.metas()
 
 
 @pytest_asyncio.fixture
