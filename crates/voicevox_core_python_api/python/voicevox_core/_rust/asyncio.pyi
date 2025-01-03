@@ -43,7 +43,11 @@ class VoiceModelFile:
         ...
     @property
     def metas(self) -> List[SpeakerMeta]:
-        """メタ情報。"""
+        """
+        メタ情報。
+
+        この中身を書き換えても、 ``VoiceModelFile`` としての動作には影響しない。
+        """
         ...
     async def __aenter__(self) -> "VoiceModelFile": ...
     async def __aexit__(self, exc_type, exc_value, traceback) -> None: ...
@@ -181,7 +185,6 @@ class Synthesizer:
     def is_gpu_mode(self) -> bool:
         """ハードウェアアクセラレーションがGPUモードかどうか。"""
         ...
-    @property
     def metas(self) -> List[SpeakerMeta]:
         """メタ情報。"""
         ...
@@ -427,7 +430,6 @@ class Synthesizer:
 class UserDict:
     """ユーザー辞書。"""
 
-    @property
     def words(self) -> Dict[UUID, UserDictWord]:
         """このオプジェクトの :class:`dict` としての表現。"""
         ...
