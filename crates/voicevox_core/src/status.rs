@@ -11,8 +11,8 @@ use crate::{
     infer::{
         self,
         domains::{
-            inference_domain_map_values, FrameDecodeDomain, InferenceDomainMap,
-            SingingTeacherDomain, TalkDomain,
+            inference_domain_map_values, ExperimentalTalkDomain, FrameDecodeDomain,
+            InferenceDomainMap, SingingTeacherDomain, TalkDomain,
         },
         session_set::{InferenceSessionCell, InferenceSessionSet},
         InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
@@ -84,6 +84,13 @@ impl<R: InferenceRuntime> Status<R> {
         style_id: StyleId,
     ) -> Result<(VoiceModelId, InnerVoiceId)> {
         self.loaded_models.lock().unwrap().ids_for::<D>(style_id)
+    }
+
+    pub(crate) fn contains_domain<D: InferenceDomainExt>(&self, style_id: StyleId) -> bool {
+        self.loaded_models
+            .lock()
+            .unwrap_or_else(|e| panic!("{e}"))
+            .contains_domain::<D>(style_id)
     }
 
     pub(crate) fn is_loaded_model(&self, voice_model_id: VoiceModelId) -> bool {
@@ -201,6 +208,27 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         session_set.get()
     }
 
+    fn contains_domain<D: InferenceDomainExt>(&self, style_id: StyleId) -> bool {
+        self.0
+            .iter()
+            .find(|(_, LoadedModel { metas, .. })| {
+                metas
+                    .iter()
+                    .flat_map(|SpeakerMeta { styles, .. }| styles)
+                    .any(|style| style.id == style_id && D::style_types().contains(&style.r#type))
+            })
+            .and_then(
+                |(
+                    _,
+                    LoadedModel {
+                        session_sets_with_inner_ids,
+                        ..
+                    },
+                )| session_sets_with_inner_ids.get::<D>(),
+            )
+            .is_some()
+    }
+
     fn contains_voice_model(&self, model_id: VoiceModelId) -> bool {
         self.0.contains_key(&model_id)
     }
@@ -300,7 +328,8 @@ pub(crate) trait InferenceDomainExt: InferenceDomain {
 
 #[duplicate_item(
     T                        field;
-    [ TalkDomain ]           [ talk ];
+    [ TalkDomain ]         [ talk ];
+    [ ExperimentalTalkDomain ] [ experimental_talk ];
     [ SingingTeacherDomain ] [ singing_teacher ];
     [ FrameDecodeDomain ]    [ frame_decode ];
 )]
@@ -330,6 +359,7 @@ impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
             [
                 field;
                 [ talk ];
+                [ experimental_talk ];
                 [ singing_teacher ];
                 [ frame_decode ];
             ]
@@ -345,6 +375,7 @@ impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
 
         Ok(InferenceDomainMap {
             talk,
+            experimental_talk,
             singing_teacher,
             frame_decode,
         })
@@ -367,7 +398,8 @@ mod tests {
         devices::{DeviceSpec, GpuSpec},
         infer::{
             domains::{
-                FrameDecodeOperation, InferenceDomainMap, SingingTeacherOperation, TalkOperation,
+                ExperimentalTalkOperation, FrameDecodeOperation, InferenceDomainMap,
+                SingingTeacherOperation, TalkOperation,
             },
             InferenceSessionOptions,
         },
@@ -389,10 +421,16 @@ mod tests {
         let heavy_session_options = InferenceSessionOptions::new(cpu_num_threads, device_for_heavy);
         let session_options = InferenceDomainMap {
             talk: enum_map! {
-                TalkOperation::PredictDuration
-                | TalkOperation::PredictIntonation
-                | TalkOperation::GenerateFullIntermediate => light_session_options,
-                TalkOperation::RenderAudioSegment => heavy_session_options,
+                TalkOperation::PredictDuration | TalkOperation::PredictIntonation => {
+                    light_session_options
+                }
+                TalkOperation::Decode => heavy_session_options,
+            },
+            experimental_talk: enum_map! {
+                ExperimentalTalkOperation::PredictDuration
+                | ExperimentalTalkOperation::PredictIntonation
+                | ExperimentalTalkOperation::GenerateFullIntermediate => light_session_options,
+                ExperimentalTalkOperation::RenderAudioSegment => heavy_session_options,
             },
             singing_teacher: enum_map! {
                 SingingTeacherOperation::PredictSingConsonantLength
@@ -410,19 +448,20 @@ mod tests {
 
         assert_eq!(
             light_session_options,
-            status.session_options.talk[TalkOperation::PredictDuration],
+            status.session_options.experimental_talk[ExperimentalTalkOperation::PredictDuration],
         );
         assert_eq!(
             light_session_options,
-            status.session_options.talk[TalkOperation::PredictIntonation],
+            status.session_options.experimental_talk[ExperimentalTalkOperation::PredictIntonation],
         );
         assert_eq!(
             light_session_options,
-            status.session_options.talk[TalkOperation::GenerateFullIntermediate],
+            status.session_options.experimental_talk
+                [ExperimentalTalkOperation::GenerateFullIntermediate],
         );
         assert_eq!(
             heavy_session_options,
-            status.session_options.talk[TalkOperation::RenderAudioSegment],
+            status.session_options.experimental_talk[ExperimentalTalkOperation::RenderAudioSegment],
         );
 
         assert!(status.loaded_models.lock().unwrap().0.is_empty());
@@ -435,6 +474,7 @@ mod tests {
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
             InferenceDomainMap {
                 talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
+                experimental_talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
                 singing_teacher: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
                 frame_decode: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
             },
@@ -453,6 +493,7 @@ mod tests {
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
             InferenceDomainMap {
                 talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
+                experimental_talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
                 singing_teacher: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
                 frame_decode: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
             },
