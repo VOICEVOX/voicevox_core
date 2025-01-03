@@ -1,6 +1,6 @@
 [project]
 name = "voicevox_core"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = ["pydantic>=2.5.2,<3"]
 description = "VOICEVOX CORE の Python バインディングです。"
 authors = [{ name = "Hiroshiba", email = "hihokaruta@gmail.com" }]
@@ -38,7 +38,7 @@ description = "VOICEVOX CORE の Python バインディングです。"
 authors = []
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.13"
+python = ">=3.10,<3.13"
 pydantic = ">=2.5.2,<3"
 
 [tool.poetry.group.docs.dependencies]
