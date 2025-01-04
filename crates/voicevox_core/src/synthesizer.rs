@@ -838,10 +838,11 @@ impl<R: InferenceRuntime> Status<R> {
     ) -> Result<ndarray::Array2<f32>> {
         let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
 
-        let (length_with_padding, f0_with_padding, phoneme_with_padding) = pad_decoder_feature(
-            f0,
-            phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
-        );
+        let (length_with_padding, f0_with_padding, phoneme_with_padding) =
+            pad_decoder_feature::<PADDING_FRAME_LENGTH>(
+                f0,
+                phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
+            );
 
         let GenerateFullIntermediateOutput {
             spec: spec_with_padding,

@@ -2,13 +2,10 @@
 
 /// 音が途切れてしまうのを避けるworkaround処理。
 // TODO: 改善したらここのpadding処理を取り除く
-pub(crate) fn pad_decoder_feature(
+pub(crate) fn pad_decoder_feature<const PADDING_FRAME_LENGTH: usize>(
     f0: ndarray::Array1<f32>,
     phoneme: ndarray::Array2<f32>,
 ) -> (usize, ndarray::Array1<f32>, ndarray::Array2<f32>) {
-    /// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（フレーム数）
-    const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * 24000Hz / 256.0).round()
-
     let start_and_end_padding_size = 2 * PADDING_FRAME_LENGTH;
     let length_with_padding = f0.len() + start_and_end_padding_size;
     let f0_with_padding = make_f0_with_padding(f0, PADDING_FRAME_LENGTH);
