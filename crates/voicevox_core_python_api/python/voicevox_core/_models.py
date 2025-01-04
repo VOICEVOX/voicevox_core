@@ -72,6 +72,29 @@ class StyleMeta:
     """
 
 
+class SpeakerSupportPermittedSynthesisMorphing(str, Enum):
+    """モーフィング機能への対応。"""
+
+    ALL = "ALL"
+    """全て許可。"""
+
+    SELF_ONLY = "SELF_ONLY"
+    """同じ話者内でのみ許可。"""
+
+    NOTHING = "NOTHING"
+    """全て禁止。"""
+
+
+@pydantic.dataclasses.dataclass
+class SpeakerSupportedFeatures:
+    """話者の対応機能。"""
+
+    permitted_synthesis_morphing: SpeakerSupportPermittedSynthesisMorphing = (
+        SpeakerSupportPermittedSynthesisMorphing.NOTHING
+    )
+    """モーフィング機能への対応。"""
+
+
 @pydantic.dataclasses.dataclass
 class SpeakerMeta:
     """**話者** (*speaker*)のメタ情報。"""
@@ -87,6 +110,11 @@ class SpeakerMeta:
 
     version: StyleVersion
     """話者のUUID。"""
+
+    supported_features: SpeakerSupportedFeatures = dataclasses.field(
+        default_factory=SpeakerSupportedFeatures,
+    )
+    """話者の対応機能。"""
 
     order: Optional[int] = None
     """
