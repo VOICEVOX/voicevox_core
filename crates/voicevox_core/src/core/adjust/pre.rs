@@ -1,4 +1,6 @@
-/// 音が途切れてしまうのを避けるworkaround処理
+//! 推論の入力の前処理。
+
+/// 音が途切れてしまうのを避けるworkaround処理。
 // TODO: 改善したらここのpadding処理を取り除く
 pub(crate) fn pad_decoder_feature(
     f0: ndarray::Array1<f32>,

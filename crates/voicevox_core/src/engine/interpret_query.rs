@@ -1,3 +1,5 @@
+//! [`AudioQuery`]から特徴量を取り出す処理を集めたもの。
+
 use super::{full_context_label::mora_to_text, AccentPhrase, AudioQuery, Mora, OjtPhoneme};
 
 pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<OjtPhoneme>) {
