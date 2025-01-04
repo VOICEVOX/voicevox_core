@@ -171,12 +171,5 @@ clarify = [
     { name = "ring", version = "0.17", expression = "MIT AND ISC AND OpenSSL", license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }] },
 
     # TODO: `package.license`を書く
-    { name = "downloader", expression = "MIT", license-files = [] },
-    { name = "test_util", expression = "MIT", license-files = [] },
     { name = "voicevox_core", expression = "MIT", license-files = [] },
-    { name = "voicevox_core_c_api", expression = "MIT", license-files = [] },
-    { name = "voicevox_core_java_api", expression = "MIT", license-files = [] },
-    { name = "voicevox_core_macros", expression = "MIT", license-files = [] },
-    { name = "voicevox_core_python_api", expression = "MIT", license-files = [] },
-    { name = "xtask", expression = "MIT", license-files = [] },
 ]

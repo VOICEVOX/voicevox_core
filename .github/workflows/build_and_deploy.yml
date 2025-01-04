@@ -169,11 +169,11 @@ jobs:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.8
+      - name: Set up Python 3.10
         if: matrix.python_whl
         uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: "3.10"
           architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
       - name: set up ${{ matrix.target }}
         uses: ./.github/actions/rust-toolchain-from-file
