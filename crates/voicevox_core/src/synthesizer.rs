@@ -1,17 +1,16 @@
 use easy_ext::ext;
 use enum_map::enum_map;
-use std::{
-    io::{Cursor, Write as _},
-    marker::PhantomData,
-    ops::Range,
-    sync::Arc,
-};
+use std::{marker::PhantomData, ops::Range, sync::Arc};
 use tracing::info;
 
 use crate::{
     asyncs::{Async, BlockingThreadPool, SingleTasked},
+    core::{ensure_minimum_phoneme_length, pad_decoder_feature},
     devices::{DeviceSpec, GpuSpec},
-    engine::{create_kana, mora_to_text, wav_from_s16le, Mora, OjtPhoneme},
+    engine::{
+        create_kana, initial_process, split_mora, to_s16le_pcm, wav_from_s16le, DecoderFeature,
+        Mora, OjtPhoneme,
+    },
     error::ErrorRepr,
     infer::{
         self,
@@ -331,103 +330,8 @@ trait AsInner {
         style_id: StyleId,
         options: &SynthesisOptions,
     ) -> Result<AudioFeature> {
-        let AudioQuery {
-            accent_phrases,
-            speed_scale,
-            pitch_scale,
-            intonation_scale,
-            pre_phoneme_length,
-            post_phoneme_length,
-            ..
-        } = audio_query;
-
-        let accent_phrases = if options.enable_interrogative_upspeak {
-            &adjust_interrogative_accent_phrases(accent_phrases)
-        } else {
-            accent_phrases
-        };
-
-        let (flatten_moras, phoneme_data_list) = initial_process(accent_phrases);
-
-        let mut phoneme_length_list = vec![*pre_phoneme_length];
-        let mut f0_list = vec![0.];
-        let mut voiced_list = vec![false];
-        {
-            let mut sum_of_f0_bigger_than_zero = 0.;
-            let mut count_of_f0_bigger_than_zero = 0;
-
-            for Mora {
-                consonant_length,
-                vowel_length,
-                pitch,
-                ..
-            } in flatten_moras
-            {
-                if let Some(consonant_length) = consonant_length {
-                    phoneme_length_list.push(consonant_length);
-                }
-                phoneme_length_list.push(vowel_length);
-
-                let f0_single = pitch * 2.0_f32.powf(*pitch_scale);
-                f0_list.push(f0_single);
-
-                let bigger_than_zero = f0_single > 0.;
-                voiced_list.push(bigger_than_zero);
-
-                if bigger_than_zero {
-                    sum_of_f0_bigger_than_zero += f0_single;
-                    count_of_f0_bigger_than_zero += 1;
-                }
-            }
-            phoneme_length_list.push(*post_phoneme_length);
-            f0_list.push(0.);
-            voiced_list.push(false);
-            let mean_f0 = sum_of_f0_bigger_than_zero / (count_of_f0_bigger_than_zero as f32);
-
-            if !mean_f0.is_nan() {
-                for i in 0..f0_list.len() {
-                    if voiced_list[i] {
-                        f0_list[i] = (f0_list[i] - mean_f0) * intonation_scale + mean_f0;
-                    }
-                }
-            }
-        }
-
-        let (_, _, vowel_indexes) = split_mora(&phoneme_data_list);
-
-        let mut phoneme = Vec::new();
-        let mut f0: Vec<f32> = Vec::new();
-        {
-            const RATE: f32 = 24000. / 256.;
-            let mut sum_of_phoneme_length = 0;
-            let mut count_of_f0 = 0;
-            let mut vowel_indexes_index = 0;
-
-            for (i, phoneme_length) in phoneme_length_list.iter().enumerate() {
-                // VOICEVOX ENGINEと挙動を合わせるため、四捨五入ではなく偶数丸めをする
-                //
-                // https://github.com/VOICEVOX/voicevox_engine/issues/552
-                let phoneme_length = ((*phoneme_length * RATE).round_ties_even() / speed_scale)
-                    .round_ties_even() as usize;
-                let phoneme_id = phoneme_data_list[i].phoneme_id();
-
-                for _ in 0..phoneme_length {
-                    let mut phonemes_vec = [0.; OjtPhoneme::num_phoneme()];
-                    phonemes_vec[phoneme_id as usize] = 1.;
-                    phoneme.push(phonemes_vec)
-                }
-                sum_of_phoneme_length += phoneme_length;
-
-                if i as i64 == vowel_indexes[vowel_indexes_index] {
-                    for _ in 0..sum_of_phoneme_length {
-                        f0.push(f0_list[count_of_f0]);
-                    }
-                    count_of_f0 += 1;
-                    sum_of_phoneme_length = 0;
-                    vowel_indexes_index += 1;
-                }
-            }
-        }
+        let DecoderFeature { f0, phoneme } =
+            audio_query.decoder_feature(options.enable_interrogative_upspeak);
 
         let spec = self
             .generate_full_intermediate(
@@ -438,62 +342,13 @@ trait AsInner {
                 style_id,
             )
             .await?;
-        return Ok(AudioFeature {
+        Ok(AudioFeature {
             internal_state: spec,
             style_id,
             frame_length: f0.len(),
             frame_rate: (DEFAULT_SAMPLING_RATE as f64) / 256.0,
             audio_query: audio_query.clone(),
-        });
-
-        fn adjust_interrogative_accent_phrases(
-            accent_phrases: &[AccentPhrase],
-        ) -> Vec<AccentPhrase> {
-            accent_phrases
-                .iter()
-                .map(|accent_phrase| AccentPhrase {
-                    moras: adjust_interrogative_moras(accent_phrase),
-                    ..accent_phrase.clone()
-                })
-                .collect()
-        }
-
-        fn adjust_interrogative_moras(
-            AccentPhrase {
-                moras,
-                is_interrogative,
-                ..
-            }: &AccentPhrase,
-        ) -> Vec<Mora> {
-            if *is_interrogative && !moras.is_empty() {
-                let last_mora = moras.last().unwrap();
-                if last_mora.pitch != 0.0 {
-                    let mut new_moras: Vec<Mora> = Vec::with_capacity(moras.len() + 1);
-                    new_moras.extend_from_slice(moras.as_slice());
-                    let interrogative_mora = make_interrogative_mora(last_mora);
-                    new_moras.push(interrogative_mora);
-                    return new_moras;
-                }
-            }
-            moras.clone()
-        }
-
-        fn make_interrogative_mora(last_mora: &Mora) -> Mora {
-            const FIX_VOWEL_LENGTH: f32 = 0.15;
-            const ADJUST_PITCH: f32 = 0.3;
-            const MAX_PITCH: f32 = 6.5;
-
-            let pitch = (last_mora.pitch + ADJUST_PITCH).min(MAX_PITCH);
-
-            Mora {
-                text: mora_to_text(None, &last_mora.vowel),
-                consonant: None,
-                consonant_length: None,
-                vowel: last_mora.vowel.clone(),
-                vowel_length: FIX_VOWEL_LENGTH,
-                pitch,
-            }
-        }
+        })
     }
 
     async fn render(&self, audio: &AudioFeature, range: Range<usize>) -> Result<Vec<u8>> {
@@ -508,38 +363,11 @@ trait AsInner {
             .render_audio_segment(spec_segment.to_owned(), audio.style_id)
             .await?;
         let wave = trim_margin_from_wave(wave_with_margin);
-        return Ok(to_s16le_pcm(
+        Ok(to_s16le_pcm::<DEFAULT_SAMPLING_RATE>(
             wave.as_slice()
                 .expect("`trim_margin_from_wave` should just trim an array"),
             &audio.audio_query,
-        ));
-
-        fn to_s16le_pcm(
-            wave: &[f32],
-            &AudioQuery {
-                volume_scale,
-                output_sampling_rate,
-                output_stereo,
-                ..
-            }: &AudioQuery,
-        ) -> Vec<u8> {
-            let num_channels: u16 = if output_stereo { 2 } else { 1 };
-            let repeat_count: u32 =
-                (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
-            let bytes_size = wave.len() as u32 * repeat_count * 2;
-            let buf: Vec<u8> = Vec::with_capacity(bytes_size as usize);
-            let mut cur = Cursor::new(buf);
-
-            for value in wave {
-                let v = (value * volume_scale).clamp(-1., 1.);
-                let data = (v * 0x7fff as f32) as i16;
-                for _ in 0..repeat_count {
-                    cur.write_all(&data.to_le_bytes()).unwrap();
-                }
-            }
-
-            cur.into_inner()
-        }
+        ))
     }
 
     async fn synthesis(
@@ -957,17 +785,7 @@ impl<R: InferenceRuntime> Status<R> {
                 },
             )
             .await?;
-        let mut output = output.into_raw_vec();
-
-        for output_item in output.iter_mut() {
-            if *output_item < PHONEME_LENGTH_MINIMAL {
-                *output_item = PHONEME_LENGTH_MINIMAL;
-            }
-        }
-
-        return Ok(output);
-
-        const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
+        Ok(ensure_minimum_phoneme_length(output.into_raw_vec()))
     }
 
     #[expect(
@@ -1020,14 +838,9 @@ impl<R: InferenceRuntime> Status<R> {
     ) -> Result<ndarray::Array2<f32>> {
         let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
 
-        // 音が途切れてしまうのを避けるworkaround処理が入っている
-        // TODO: 改善したらここのpadding処理を取り除く
-        let start_and_end_padding_size = 2 * PADDING_FRAME_LENGTH;
-        let length_with_padding = f0.len() + start_and_end_padding_size;
-        let f0_with_padding = make_f0_with_padding(f0, PADDING_FRAME_LENGTH);
-        let phoneme_with_padding = make_phoneme_with_padding(
+        let (length_with_padding, f0_with_padding, phoneme_with_padding) = pad_decoder_feature(
+            f0,
             phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
-            PADDING_FRAME_LENGTH,
         );
 
         let GenerateFullIntermediateOutput {
@@ -1051,36 +864,13 @@ impl<R: InferenceRuntime> Status<R> {
             unreachable!("Validation error: Too short padding for input, please report this issue on GitHub.");
         }
         // マージン分を両端に残して音声特徴量を返す
-        return Ok(spec_with_padding
+        Ok(spec_with_padding
             .slice(ndarray::s![
                 PADDING_FRAME_LENGTH - MARGIN
                     ..spec_with_padding.nrows() - PADDING_FRAME_LENGTH + MARGIN,
                 ..
             ])
-            .to_owned());
-
-        fn make_f0_with_padding(
-            f0_slice: ndarray::Array1<f32>,
-            padding_size: usize,
-        ) -> ndarray::Array1<f32> {
-            // 音が途切れてしまうのを避けるworkaround処理
-            // 改善したらこの関数を削除する
-            let padding = ndarray::Array1::<f32>::zeros(padding_size);
-            ndarray::concatenate![ndarray::Axis(0), padding, f0_slice, padding]
-        }
-
-        fn make_phoneme_with_padding(
-            phoneme_slice: ndarray::Array2<f32>,
-            padding_size: usize,
-        ) -> ndarray::Array2<f32> {
-            // 音が途切れてしまうのを避けるworkaround処理
-            // 改善したらこの関数を削除する
-            let mut padding = ndarray::Array2::<f32>::zeros((padding_size, phoneme_slice.ncols()));
-            padding
-                .slice_mut(ndarray::s![.., 0])
-                .assign(&ndarray::arr0(1.0));
-            ndarray::concatenate![ndarray::Axis(0), padding, phoneme_slice, padding]
-        }
+            .to_owned())
     }
 
     /// 与えられた音声特徴量で音声生成。
@@ -1252,87 +1042,6 @@ fn list_windows_video_cards() {
     fn trim_nul(s: &[u16]) -> &[u16] {
         &s[..s.iter().position(|&c| c == 0x0000).unwrap_or(s.len())]
     }
-}
-
-fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<OjtPhoneme>) {
-    let flatten_moras = to_flatten_moras(accent_phrases);
-
-    let mut phoneme_strings = vec!["pau".to_string()];
-    for mora in flatten_moras.iter() {
-        if let Some(consonant) = &mora.consonant {
-            phoneme_strings.push(consonant.clone())
-        }
-        phoneme_strings.push(mora.vowel.clone());
-    }
-    phoneme_strings.push("pau".to_string());
-
-    let phoneme_data_list = to_phoneme_data_list(&phoneme_strings);
-
-    return (flatten_moras, phoneme_data_list);
-
-    fn to_flatten_moras(accent_phrases: &[AccentPhrase]) -> Vec<Mora> {
-        let mut flatten_moras = Vec::new();
-
-        for AccentPhrase {
-            moras, pause_mora, ..
-        } in accent_phrases
-        {
-            for mora in moras {
-                flatten_moras.push(mora.clone());
-            }
-            if let Some(pause_mora) = pause_mora {
-                flatten_moras.push(pause_mora.clone());
-            }
-        }
-
-        flatten_moras
-    }
-
-    fn to_phoneme_data_list<T: AsRef<str>>(phoneme_str_list: &[T]) -> Vec<OjtPhoneme> {
-        OjtPhoneme::convert(
-            phoneme_str_list
-                .iter()
-                .map(AsRef::as_ref)
-                .map(ToOwned::to_owned)
-                .map(OjtPhoneme::new)
-                .collect::<Vec<OjtPhoneme>>()
-                .as_slice(),
-        )
-    }
-}
-
-fn split_mora(phoneme_list: &[OjtPhoneme]) -> (Vec<OjtPhoneme>, Vec<OjtPhoneme>, Vec<i64>) {
-    let mut vowel_indexes = Vec::new();
-    for (i, phoneme) in phoneme_list.iter().enumerate() {
-        const MORA_PHONEME_LIST: &[&str] = &[
-            "a", "i", "u", "e", "o", "N", "A", "I", "U", "E", "O", "cl", "pau",
-        ];
-
-        if MORA_PHONEME_LIST
-            .iter()
-            .any(|mora_phoneme| *mora_phoneme == phoneme.phoneme())
-        {
-            vowel_indexes.push(i as i64);
-        }
-    }
-
-    let vowel_phoneme_list = vowel_indexes
-        .iter()
-        .map(|vowel_index| phoneme_list[*vowel_index as usize].clone())
-        .collect();
-
-    let mut consonant_phoneme_list = vec![OjtPhoneme::default()];
-    for i in 0..(vowel_indexes.len() - 1) {
-        let prev = vowel_indexes[i];
-        let next = vowel_indexes[i + 1];
-        if next - prev == 1 {
-            consonant_phoneme_list.push(OjtPhoneme::default());
-        } else {
-            consonant_phoneme_list.push(phoneme_list[next as usize - 1].clone());
-        }
-    }
-
-    (consonant_phoneme_list, vowel_phoneme_list, vowel_indexes)
 }
 
 impl AudioQuery {
