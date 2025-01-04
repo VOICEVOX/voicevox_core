@@ -328,7 +328,7 @@ pub(crate) trait InferenceDomainExt: InferenceDomain {
 
 #[duplicate_item(
     T                        field;
-    [ TalkDomain ]         [ talk ];
+    [ TalkDomain ]           [ talk ];
     [ ExperimentalTalkDomain ] [ experimental_talk ];
     [ SingingTeacherDomain ] [ singing_teacher ];
     [ FrameDecodeDomain ]    [ frame_decode ];
