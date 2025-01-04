@@ -1,5 +1,33 @@
 use std::io::{Cursor, Write as _};
 
+use super::AudioQuery;
+
+pub(crate) fn to_s16le_pcm<const BASE_SAMPLING_RATE: u32>(
+    wave: &[f32],
+    &AudioQuery {
+        volume_scale,
+        output_sampling_rate,
+        output_stereo,
+        ..
+    }: &AudioQuery,
+) -> Vec<u8> {
+    let num_channels: u16 = if output_stereo { 2 } else { 1 };
+    let repeat_count: u32 = (output_sampling_rate / BASE_SAMPLING_RATE) * num_channels as u32;
+    let bytes_size = wave.len() as u32 * repeat_count * 2;
+    let buf: Vec<u8> = Vec::with_capacity(bytes_size as usize);
+    let mut cur = Cursor::new(buf);
+
+    for value in wave {
+        let v = (value * volume_scale).clamp(-1., 1.);
+        let data = (v * 0x7fff as f32) as i16;
+        for _ in 0..repeat_count {
+            cur.write_all(&data.to_le_bytes()).unwrap();
+        }
+    }
+
+    cur.into_inner()
+}
+
 /// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
 pub fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
     let num_channels: u16 = if is_stereo { 2 } else { 1 };

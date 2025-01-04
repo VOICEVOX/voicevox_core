@@ -49,6 +49,7 @@ const _: () = {
 };
 
 mod asyncs;
+mod core;
 mod devices;
 /// cbindgen:ignore
 mod engine;

@@ -41,16 +41,10 @@ pub(crate) enum TalkOperation {
     PredictIntonation,
 
     #[inference_operation(
-        type Input = GenerateFullIntermediateInput;
-        type Output = GenerateFullIntermediateOutput;
+        type Input = DecodeInput;
+        type Output = DecodeOutput;
     )]
-    GenerateFullIntermediate,
-
-    #[inference_operation(
-        type Input = RenderAudioSegmentInput;
-        type Output = RenderAudioSegmentOutput;
-    )]
-    RenderAudioSegment,
+    Decode,
 }
 
 #[derive(InferenceInputSignature)]
@@ -89,28 +83,15 @@ pub(crate) struct PredictIntonationOutput {
 
 #[derive(InferenceInputSignature)]
 #[inference_input_signature(
-    type Signature = GenerateFullIntermediate;
+    type Signature = Decode;
 )]
-pub(crate) struct GenerateFullIntermediateInput {
+pub(crate) struct DecodeInput {
     pub(crate) f0: Array2<f32>,
     pub(crate) phoneme: Array2<f32>,
     pub(crate) speaker_id: Array1<i64>,
 }
 
 #[derive(InferenceOutputSignature)]
-pub(crate) struct GenerateFullIntermediateOutput {
-    pub(crate) spec: Array2<f32>,
-}
-
-#[derive(InferenceInputSignature)]
-#[inference_input_signature(
-    type Signature = RenderAudioSegment;
-)]
-pub(crate) struct RenderAudioSegmentInput {
-    pub(crate) spec: Array2<f32>,
-}
-
-#[derive(InferenceOutputSignature)]
-pub(crate) struct RenderAudioSegmentOutput {
+pub(crate) struct DecodeOutput {
     pub(crate) wave: Array1<f32>,
 }

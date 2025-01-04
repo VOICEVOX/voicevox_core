@@ -1,70 +1,87 @@
+pub(crate) mod experimental_talk;
 mod frame_decode;
 mod singing_teacher;
-mod talk;
+pub(crate) mod talk;
 
 use educe::Educe;
 use serde::{Deserialize, Deserializer};
 
 pub(crate) use self::{
+    experimental_talk::{
+        ExperimentalTalkDomain, ExperimentalTalkOperation, GenerateFullIntermediateInput,
+        GenerateFullIntermediateOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
+    },
     frame_decode::{FrameDecodeDomain, FrameDecodeOperation, SfDecodeInput, SfDecodeOutput},
     singing_teacher::{
         PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput, PredictSingF0Input,
         PredictSingF0Output, PredictSingVolumeInput, PredictSingVolumeOutput, SingingTeacherDomain,
         SingingTeacherOperation,
     },
-    talk::{
-        GenerateFullIntermediateInput, GenerateFullIntermediateOutput, PredictDurationInput,
-        PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput,
-        RenderAudioSegmentInput, RenderAudioSegmentOutput, TalkDomain, TalkOperation,
-    },
+    talk::{DecodeInput, DecodeOutput, TalkDomain, TalkOperation},
 };
 
 #[derive(Educe)]
 // TODO: `bounds`に`V: ?Sized`も入れようとすると、よくわからない理由で弾かれる。最新版のeduce
 // でもそうなのか？また最新版でも駄目だとしたら、弾いている理由は何なのか？
 #[educe(Clone(
-    bound = "V: InferenceDomainMapValues, V::Talk: Clone, V::SingingTeacher: Clone, V::FrameDecode: Clone"
+    bound = "V: InferenceDomainMapValues, V::Talk: Clone, V::ExperimentalTalk: Clone, V::SingingTeacher: Clone, V::FrameDecode: Clone"
 ))]
 pub(crate) struct InferenceDomainMap<V: InferenceDomainMapValues + ?Sized> {
     pub(crate) talk: V::Talk,
+    pub(crate) experimental_talk: V::ExperimentalTalk,
     pub(crate) singing_teacher: V::SingingTeacher,
     pub(crate) frame_decode: V::FrameDecode,
 }
 
-impl<T, S, F> InferenceDomainMap<(T, S, F)> {
-    pub(crate) fn each_ref(&self) -> InferenceDomainMap<(&T, &S, &F)> {
+impl<T, X, S, F> InferenceDomainMap<(T, X, S, F)> {
+    pub(crate) fn each_ref(&self) -> InferenceDomainMap<(&T, &X, &S, &F)> {
         let talk = &self.talk;
+        let experimental_talk = &self.experimental_talk;
         let singing_teacher = &self.singing_teacher;
         let frame_decode = &self.frame_decode;
         InferenceDomainMap {
             talk,
+            experimental_talk,
             singing_teacher,
             frame_decode,
         }
     }
 
-    pub(crate) fn map<T2, S2, F2, Ft: FnOnce(T) -> T2, Fs: FnOnce(S) -> S2, Ff: FnOnce(F) -> F2>(
+    pub(crate) fn map<
+        T2,
+        X2,
+        S2,
+        F2,
+        Ft: FnOnce(T) -> T2,
+        Fx: FnOnce(X) -> X2,
+        Fs: FnOnce(S) -> S2,
+        Ff: FnOnce(F) -> F2,
+    >(
         self,
-        fs: InferenceDomainMap<(Ft, Fs, Ff)>,
-    ) -> InferenceDomainMap<(T2, S2, F2)> {
+        fs: InferenceDomainMap<(Ft, Fx, Fs, Ff)>,
+    ) -> InferenceDomainMap<(T2, X2, S2, F2)> {
         let talk = (fs.talk)(self.talk);
+        let experimental_talk = (fs.experimental_talk)(self.experimental_talk);
         let singing_teacher = (fs.singing_teacher)(self.singing_teacher);
         let frame_decode = (fs.frame_decode)(self.frame_decode);
         InferenceDomainMap {
             talk,
+            experimental_talk,
             singing_teacher,
             frame_decode,
         }
     }
 }
 
-impl<T, S, F, E> InferenceDomainMap<(Result<T, E>, Result<S, E>, Result<F, E>)> {
-    pub(crate) fn collect(self) -> Result<InferenceDomainMap<(T, S, F)>, E> {
+impl<T, X, S, F, E> InferenceDomainMap<(Result<T, E>, Result<X, E>, Result<S, E>, Result<F, E>)> {
+    pub(crate) fn collect(self) -> Result<InferenceDomainMap<(T, X, S, F)>, E> {
         let talk = self.talk?;
+        let experimental_talk = self.experimental_talk?;
         let singing_teacher = self.singing_teacher?;
         let frame_decode = self.frame_decode?;
         Ok(InferenceDomainMap {
             talk,
+            experimental_talk,
             singing_teacher,
             frame_decode,
         })
@@ -74,6 +91,7 @@ impl<T, S, F, E> InferenceDomainMap<(Result<T, E>, Result<S, E>, Result<F, E>)> 
 impl<'de, V: InferenceDomainMapValues + ?Sized> Deserialize<'de> for InferenceDomainMap<V>
 where
     V::Talk: Deserialize<'de>,
+    V::ExperimentalTalk: Deserialize<'de>,
     V::SingingTeacher: Deserialize<'de>,
     V::FrameDecode: Deserialize<'de>,
 {
@@ -83,18 +101,21 @@ where
     {
         let Repr {
             talk,
+            experimental_talk,
             singing_teacher,
             frame_decode,
         } = Repr::deserialize(deserializer)?;
         return Ok(Self {
             talk,
+            experimental_talk,
             singing_teacher,
             frame_decode,
         });
 
         #[derive(Deserialize)]
-        struct Repr<T, S, F> {
+        struct Repr<T, E, S, F> {
             talk: T,
+            experimental_talk: E,
             singing_teacher: S,
             frame_decode: F,
         }
@@ -103,12 +124,14 @@ where
 
 pub(crate) trait InferenceDomainMapValues {
     type Talk;
+    type ExperimentalTalk;
     type SingingTeacher;
     type FrameDecode;
 }
 
-impl<T, S, F> InferenceDomainMapValues for (T, S, F) {
+impl<T, X, S, F> InferenceDomainMapValues for (T, X, S, F) {
     type Talk = T;
+    type ExperimentalTalk = X;
     type SingingTeacher = S;
     type FrameDecode = F;
 }
@@ -119,6 +142,10 @@ macro_rules! inference_domain_map_values {
             ::macros::substitute_type!(
                 $body
                 where $arg = crate::infer::domains::TalkDomain as crate::infer::InferenceDomain
+            ),
+            ::macros::substitute_type!(
+                $body
+                where $arg = crate::infer::domains::ExperimentalTalkDomain as crate::infer::InferenceDomain
             ),
             ::macros::substitute_type!(
                 $body

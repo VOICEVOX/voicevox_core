@@ -14,8 +14,8 @@ use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
     infer::domains::{
-        inference_domain_map_values, FrameDecodeOperation, InferenceDomainMap,
-        SingingTeacherOperation, TalkOperation,
+        inference_domain_map_values, ExperimentalTalkOperation, FrameDecodeOperation,
+        InferenceDomainMap, SingingTeacherOperation, TalkOperation,
     },
     StyleId, VoiceModelId,
 };
@@ -98,6 +98,16 @@ pub(crate) struct TalkManifest {
 
 #[derive(Deserialize)]
 #[cfg_attr(test, derive(Default))]
+pub(crate) struct ExperimentalTalkManifest {
+    #[serde(flatten)]
+    filenames: EnumMap<ExperimentalTalkOperationFilenameKey, Arc<str>>,
+
+    #[serde(default)]
+    pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
+}
+
+#[derive(Deserialize)]
+#[cfg_attr(test, derive(Default))]
 pub(crate) struct SingingTeacherManifest {
     #[serde(flatten)]
     filenames: EnumMap<SingingTeacherOperationFilenameKey, Arc<str>>,
@@ -123,10 +133,8 @@ pub(crate) enum TalkOperationFilenameKey {
     PredictDuration,
     #[serde(rename = "predict_intonation_filename")]
     PredictIntonation,
-    #[serde(rename = "generate_full_intermediate_filename")]
-    GenerateFullIntermediate,
-    #[serde(rename = "render_audio_segment_filename")]
-    RenderAudioSegment,
+    #[serde(rename = "decode_filename")]
+    Decode,
 }
 
 impl Index<TalkOperation> for TalkManifest {
@@ -136,10 +144,41 @@ impl Index<TalkOperation> for TalkManifest {
         let key = match index {
             TalkOperation::PredictDuration => TalkOperationFilenameKey::PredictDuration,
             TalkOperation::PredictIntonation => TalkOperationFilenameKey::PredictIntonation,
-            TalkOperation::GenerateFullIntermediate => {
-                TalkOperationFilenameKey::GenerateFullIntermediate
+            TalkOperation::Decode => TalkOperationFilenameKey::Decode,
+        };
+        &self.filenames[key]
+    }
+}
+
+#[derive(Enum, Deserialize)]
+pub(crate) enum ExperimentalTalkOperationFilenameKey {
+    #[serde(rename = "predict_duration_filename")]
+    PredictDuration,
+    #[serde(rename = "predict_intonation_filename")]
+    PredictIntonation,
+    #[serde(rename = "generate_full_intermediate_filename")]
+    GenerateFullIntermediate,
+    #[serde(rename = "render_audio_segment_filename")]
+    RenderAudioSegment,
+}
+
+impl Index<ExperimentalTalkOperation> for ExperimentalTalkManifest {
+    type Output = Arc<str>;
+
+    fn index(&self, index: ExperimentalTalkOperation) -> &Self::Output {
+        let key = match index {
+            ExperimentalTalkOperation::PredictDuration => {
+                ExperimentalTalkOperationFilenameKey::PredictDuration
             }
-            TalkOperation::RenderAudioSegment => TalkOperationFilenameKey::RenderAudioSegment,
+            ExperimentalTalkOperation::PredictIntonation => {
+                ExperimentalTalkOperationFilenameKey::PredictIntonation
+            }
+            ExperimentalTalkOperation::GenerateFullIntermediate => {
+                ExperimentalTalkOperationFilenameKey::GenerateFullIntermediate
+            }
+            ExperimentalTalkOperation::RenderAudioSegment => {
+                ExperimentalTalkOperationFilenameKey::RenderAudioSegment
+            }
         };
         &self.filenames[key]
     }
