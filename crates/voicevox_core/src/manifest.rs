@@ -13,8 +13,8 @@ use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{
     infer::domains::{
-        inference_domain_map_values, FrameDecodeOperation, InferenceDomainMap,
-        SingingTeacherOperation, TalkOperation,
+        inference_domain_map_values, ExperimentalTalkOperation, FrameDecodeOperation,
+        InferenceDomainMap, SingingTeacherOperation, TalkOperation,
     },
     StyleId, VoiceModelId,
 };
@@ -97,6 +97,17 @@ pub(crate) struct TalkManifest {
 }
 
 // TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
+#[derive(Index, Deserialize)]
+#[cfg_attr(test, derive(Default))]
+pub(crate) struct ExperimentalTalkManifest {
+    #[index]
+    #[serde(flatten)]
+    filenames: EnumMap<ExperimentalTalkOperation, ModelFile>,
+
+    #[serde(default)]
+    pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
+}
+
 #[derive(Index, Deserialize)]
 #[cfg_attr(test, derive(Default))]
 pub(crate) struct SingingTeacherManifest {

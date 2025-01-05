@@ -11,6 +11,24 @@
       "type": "onnx",
       "filename": "predict_intonation.onnx"
     },
+    "decode": {
+      "type": "onnx",
+      "filename": "decode.onnx"
+    },
+    "style_id_to_inner_voice_id": {
+      "302": 2,
+      "303": 3
+    }
+  },
+  "experimental_talk": {
+    "predict_duration": {
+      "type": "onnx",
+      "filename": "predict_duration.onnx"
+    },
+    "predict_intonation": {
+      "type": "onnx",
+      "filename": "predict_intonation.onnx"
+    },
     "generate_full_intermediate": {
       "type": "onnx",
       "filename": "predict_spectrogram.onnx"
