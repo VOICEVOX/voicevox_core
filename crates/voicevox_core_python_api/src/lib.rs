@@ -91,7 +91,7 @@ exceptions! {
     StyleNotFoundError: PyKeyError;
     ModelNotFoundError: PyKeyError;
     RunModelError: PyException;
-    ExtractFullContextLabelError: PyException;
+    AnalyzeTextError: PyException;
     ParseKanaError: PyValueError;
     LoadUserDictError: PyException;
     SaveUserDictError: PyException;
@@ -493,7 +493,7 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<Self> {
             let inner = voicevox_core::blocking::Synthesizer::builder(onnxruntime.0)
-                .open_jtalk(open_jtalk.open_jtalk.clone())
+                .text_analyzer(open_jtalk.open_jtalk.clone())
                 .acceleration_mode(acceleration_mode)
                 .cpu_num_threads(cpu_num_threads)
                 .build()
@@ -1088,7 +1088,7 @@ mod asyncio {
             cpu_num_threads: u16,
         ) -> PyResult<Self> {
             let synthesizer = voicevox_core::nonblocking::Synthesizer::builder(onnxruntime.0)
-                .open_jtalk(open_jtalk.open_jtalk.clone())
+                .text_analyzer(open_jtalk.open_jtalk.clone())
                 .acceleration_mode(acceleration_mode)
                 .cpu_num_threads(cpu_num_threads)
                 .build();

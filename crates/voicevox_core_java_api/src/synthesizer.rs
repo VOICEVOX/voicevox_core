@@ -59,7 +59,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             .clone();
         let internal = Arc::new(
             voicevox_core::blocking::Synthesizer::builder(onnxruntime)
-                .open_jtalk(open_jtalk)
+                .text_analyzer(open_jtalk)
                 .acceleration_mode(acceleration_mode)
                 .cpu_num_threads(cpu_num_threads)
                 .build()?,

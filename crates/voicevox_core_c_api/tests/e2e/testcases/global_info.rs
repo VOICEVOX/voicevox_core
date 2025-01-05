@@ -55,7 +55,7 @@ impl assert_cdylib::TestCase for TestCase {
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_RUN_MODEL_ERROR,
-            c_api::VoicevoxResultCode_VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
+            c_api::VoicevoxResultCode_VOICEVOX_RESULT_ANALYZE_TEXT_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_PARSE_KANA_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,

@@ -8,10 +8,11 @@ use crate::{
     core::{ensure_minimum_phoneme_length, pad_decoder_feature},
     devices::{DeviceSpec, GpuSpec},
     engine::{
-        create_kana, initial_process, split_mora, to_s16le_pcm, wav_from_s16le, DecoderFeature,
-        Mora, OjtPhoneme,
+        create_kana, initial_process, parse_kana, split_mora, to_s16le_pcm, wav_from_s16le,
+        DecoderFeature, Mora, OjtPhoneme,
     },
     error::ErrorRepr,
+    future::FutureExt as _,
     infer::{
         self,
         domains::{
@@ -25,10 +26,9 @@ use crate::{
         },
         InferenceRuntime, InferenceSessionOptions,
     },
+    nonblocking::TextAnalyzer as _,
     status::Status,
-    text_analyzer::{KanaAnalyzer, OpenJTalkAnalyzer, TextAnalyzer},
-    voice_model, AccentPhrase, AudioQuery, FullcontextExtractor, Result, StyleId, VoiceModelId,
-    VoiceModelMeta,
+    voice_model, AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
 };
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
@@ -173,34 +173,52 @@ pub struct AudioFeature {
     audio_query: AudioQuery,
 }
 
-struct Inner<O, A: Async> {
+struct Inner<T, A: Async> {
     status: Arc<Status<crate::blocking::Onnxruntime>>,
-    open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
+    text_analyzer: T,
     use_gpu: bool,
     _marker: PhantomData<fn(A) -> A>,
 }
 
-struct InnerRefWithoutOpenJtalk<'a, A: Async> {
+struct InnerRefWithoutTextAnalyzer<'a, A: Async> {
     status: &'a Arc<Status<crate::blocking::Onnxruntime>>,
     use_gpu: bool,
     _marker: PhantomData<fn(A) -> A>,
 }
 
-impl<O> From<Inner<O, BlockingThreadPool>> for Inner<O, SingleTasked> {
-    fn from(from: Inner<O, BlockingThreadPool>) -> Self {
+impl<T> From<Inner<T, BlockingThreadPool>>
+    for Inner<AssumeSingleTasked<AssumeBlockable<T>>, SingleTasked>
+{
+    fn from(from: Inner<T, BlockingThreadPool>) -> Self {
         Self {
             status: from.status,
-            open_jtalk_analyzer: from.open_jtalk_analyzer,
+            text_analyzer: AssumeSingleTasked(AssumeBlockable(from.text_analyzer)),
             use_gpu: from.use_gpu,
             _marker: PhantomData,
         }
     }
 }
 
-impl<O, A: AsyncExt> Inner<O, A> {
+struct AssumeSingleTasked<T>(T);
+
+impl<T: crate::blocking::TextAnalyzer> crate::nonblocking::TextAnalyzer for AssumeSingleTasked<T> {
+    async fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
+        self.0.analyze(text)
+    }
+}
+
+pub struct AssumeBlockable<T>(T);
+
+impl<T: crate::nonblocking::TextAnalyzer> crate::blocking::TextAnalyzer for AssumeBlockable<T> {
+    fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
+        self.0.analyze(text).block_on()
+    }
+}
+
+impl<T, A: AsyncExt> Inner<T, A> {
     fn new(
         onnxruntime: &'static crate::blocking::Onnxruntime,
-        open_jtalk: O,
+        text_analyzer: T,
         options: &InitializeOptions,
     ) -> Result<Self> {
         #[cfg(windows)]
@@ -270,14 +288,14 @@ impl<O, A: AsyncExt> Inner<O, A> {
 
         Ok(Self {
             status,
-            open_jtalk_analyzer: OpenJTalkAnalyzer::new(open_jtalk),
+            text_analyzer,
             use_gpu,
             _marker: PhantomData,
         })
     }
 
-    fn without_open_jtalk(&self) -> InnerRefWithoutOpenJtalk<'_, A> {
-        InnerRefWithoutOpenJtalk {
+    fn without_text_analyzer(&self) -> InnerRefWithoutTextAnalyzer<'_, A> {
+        InnerRefWithoutTextAnalyzer {
             status: &self.status,
             use_gpu: self.use_gpu,
             _marker: PhantomData,
@@ -286,10 +304,10 @@ impl<O, A: AsyncExt> Inner<O, A> {
 }
 
 trait AsInner {
-    type OpenJtalk;
+    type TextAnalyzer;
     type Async: AsyncExt;
     fn status(&self) -> &Arc<Status<crate::blocking::Onnxruntime>>;
-    fn open_jtalk_analyzer(&self) -> &OpenJTalkAnalyzer<Self::OpenJtalk>;
+    fn text_analyzer(&self) -> &Self::TextAnalyzer;
     fn use_gpu(&self) -> bool;
 
     fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
@@ -392,7 +410,7 @@ trait AsInner {
         kana: &str,
         style_id: StyleId,
     ) -> Result<Vec<AccentPhrase>> {
-        let accent_phrases = KanaAnalyzer.analyze(kana)?;
+        let accent_phrases = parse_kana(kana)?;
         self.replace_mora_data(&accent_phrases, style_id).await
     }
 
@@ -608,15 +626,22 @@ trait AsInner {
         style_id: StyleId,
     ) -> Result<Vec<AccentPhrase>>
     where
-        Self::OpenJtalk: FullcontextExtractor,
+        Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
-        let accent_phrases = self.open_jtalk_analyzer().analyze(text)?;
+        let accent_phrases =
+            self.text_analyzer()
+                .analyze(text)
+                .await
+                .map_err(|source| ErrorRepr::AnalyzeText {
+                    text: text.to_owned(),
+                    source,
+                })?;
         self.replace_mora_data(&accent_phrases, style_id).await
     }
 
     async fn create_audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery>
     where
-        Self::OpenJtalk: FullcontextExtractor,
+        Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
         let accent_phrases = self.create_accent_phrases(text, style_id).await?;
         Ok(AudioQuery::from_accent_phrases(accent_phrases))
@@ -624,7 +649,7 @@ trait AsInner {
 
     async fn tts(&self, text: &str, style_id: StyleId, options: &TtsOptions) -> Result<Vec<u8>>
     where
-        Self::OpenJtalk: FullcontextExtractor,
+        Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
         let audio_query = &self.create_audio_query(text, style_id).await?;
         self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
@@ -731,16 +756,16 @@ trait AsInner {
     }
 }
 
-impl<O, A: AsyncExt> AsInner for Inner<O, A> {
-    type OpenJtalk = O;
+impl<T, A: AsyncExt> AsInner for Inner<T, A> {
+    type TextAnalyzer = T;
     type Async = A;
 
     fn status(&self) -> &Arc<Status<crate::blocking::Onnxruntime>> {
         &self.status
     }
 
-    fn open_jtalk_analyzer(&self) -> &OpenJTalkAnalyzer<Self::OpenJtalk> {
-        &self.open_jtalk_analyzer
+    fn text_analyzer(&self) -> &Self::TextAnalyzer {
+        &self.text_analyzer
     }
 
     fn use_gpu(&self) -> bool {
@@ -748,17 +773,16 @@ impl<O, A: AsyncExt> AsInner for Inner<O, A> {
     }
 }
 
-impl<A: AsyncExt> AsInner for InnerRefWithoutOpenJtalk<'_, A> {
-    type OpenJtalk = ();
+impl<A: AsyncExt> AsInner for InnerRefWithoutTextAnalyzer<'_, A> {
+    type TextAnalyzer = ();
     type Async = A;
 
     fn status(&self) -> &Arc<Status<crate::blocking::Onnxruntime>> {
         self.status
     }
 
-    fn open_jtalk_analyzer(&self) -> &OpenJTalkAnalyzer<Self::OpenJtalk> {
-        static OPEN_JTALK_ANALYZER: OpenJTalkAnalyzer<()> = OpenJTalkAnalyzer::new(());
-        &OPEN_JTALK_ANALYZER
+    fn text_analyzer(&self) -> &Self::TextAnalyzer {
+        &()
     }
 
     fn use_gpu(&self) -> bool {
@@ -1076,19 +1100,19 @@ pub(crate) mod blocking {
     use easy_ext::ext;
 
     use crate::{
-        asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery,
-        FullcontextExtractor, StyleId, VoiceModelId, VoiceModelMeta,
+        asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, StyleId,
+        VoiceModelId, VoiceModelMeta,
     };
 
     use super::{
-        AccelerationMode, AsInner as _, InitializeOptions, Inner, InnerRefWithoutOpenJtalk,
-        SynthesisOptions, TtsOptions,
+        AccelerationMode, AsInner as _, AssumeSingleTasked, InitializeOptions, Inner,
+        InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
     };
 
     pub use super::AudioFeature;
 
     /// 音声シンセサイザ。
-    pub struct Synthesizer<O>(pub(super) Inner<O, SingleTasked>);
+    pub struct Synthesizer<T>(pub(super) Inner<AssumeSingleTasked<T>, SingleTasked>);
 
     impl self::Synthesizer<()> {
         /// `Synthesizer`のビルダーをコンストラクトする。
@@ -1118,7 +1142,7 @@ pub(crate) mod blocking {
         /// # }
         /// // FIXME: `Synthesizer`には`&mut self`なメソッドはもう無いはず
         /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().exec()?)
-        ///     .open_jtalk(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap())) // FIXME: `Arc`は要らないはず
+        ///     .text_analyzer(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap())) // FIXME: `Arc`は要らないはず
         ///     .acceleration_mode(ACCELERATION_MODE)
         ///     .build()?;
         /// #
@@ -1128,13 +1152,13 @@ pub(crate) mod blocking {
         pub fn builder(onnxruntime: &'static crate::blocking::Onnxruntime) -> Builder<()> {
             Builder {
                 onnxruntime,
-                open_jtalk: (),
+                text_analyzer: (),
                 options: Default::default(),
             }
         }
     }
 
-    impl<O> self::Synthesizer<O> {
+    impl<T> self::Synthesizer<T> {
         pub fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
             self.0.onnxruntime()
         }
@@ -1179,7 +1203,7 @@ pub(crate) mod blocking {
             style_id: StyleId,
         ) -> PrecomputeRender<'a> {
             PrecomputeRender {
-                synthesizer: self.0.without_open_jtalk(),
+                synthesizer: self.0.without_text_analyzer(),
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -1198,7 +1222,7 @@ pub(crate) mod blocking {
             style_id: StyleId,
         ) -> Synthesis<'a> {
             Synthesis {
-                synthesizer: self.0.without_open_jtalk(),
+                synthesizer: self.0.without_text_analyzer(),
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -1314,7 +1338,7 @@ pub(crate) mod blocking {
         /// AquesTalk風記法から音声合成を行う。
         pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
             TtsFromKana {
-                synthesizer: self.0.without_open_jtalk(),
+                synthesizer: self.0.without_text_analyzer(),
                 kana,
                 style_id,
                 options: TtsOptions::default(),
@@ -1322,7 +1346,7 @@ pub(crate) mod blocking {
         }
     }
 
-    impl<O: FullcontextExtractor> self::Synthesizer<O> {
+    impl<T: crate::blocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
         ///
         /// # Example
@@ -1392,7 +1416,7 @@ pub(crate) mod blocking {
         }
 
         /// 日本語のテキストから音声合成を行う。
-        pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, O> {
+        pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
             Tts {
                 synthesizer: &self.0,
                 text,
@@ -1529,16 +1553,16 @@ pub(crate) mod blocking {
     }
 
     #[must_use]
-    pub struct Builder<O> {
+    pub struct Builder<T> {
         onnxruntime: &'static crate::blocking::Onnxruntime,
-        open_jtalk: O,
+        text_analyzer: T,
         options: InitializeOptions,
     }
 
-    impl<O> Builder<O> {
-        pub fn open_jtalk<O2>(self, open_jtalk: O2) -> Builder<O2> {
+    impl<T> Builder<T> {
+        pub fn text_analyzer<T2>(self, text_analyzer: T2) -> Builder<T2> {
             Builder {
-                open_jtalk,
+                text_analyzer,
                 onnxruntime: self.onnxruntime,
                 options: self.options,
             }
@@ -1556,14 +1580,19 @@ pub(crate) mod blocking {
         }
 
         /// [`Synthesizer`]をコンストラクトする。
-        pub fn build(self) -> crate::Result<Synthesizer<O>> {
-            Inner::new(self.onnxruntime, self.open_jtalk, &self.options).map(Synthesizer)
+        pub fn build(self) -> crate::Result<Synthesizer<T>> {
+            Inner::new(
+                self.onnxruntime,
+                AssumeSingleTasked(self.text_analyzer),
+                &self.options,
+            )
+            .map(Synthesizer)
         }
     }
 
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct PrecomputeRender<'a> {
-        synthesizer: InnerRefWithoutOpenJtalk<'a, SingleTasked>,
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: SynthesisOptions,
@@ -1585,7 +1614,7 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct Synthesis<'a> {
-        synthesizer: InnerRefWithoutOpenJtalk<'a, SingleTasked>,
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: SynthesisOptions,
@@ -1607,7 +1636,7 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct TtsFromKana<'a> {
-        synthesizer: InnerRefWithoutOpenJtalk<'a, SingleTasked>,
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         kana: &'a str,
         style_id: StyleId,
         options: TtsOptions,
@@ -1628,14 +1657,14 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct Tts<'a, O> {
-        synthesizer: &'a Inner<O, SingleTasked>,
+    pub struct Tts<'a, T> {
+        synthesizer: &'a Inner<AssumeSingleTasked<T>, SingleTasked>,
         text: &'a str,
         style_id: StyleId,
         options: TtsOptions,
     }
 
-    impl<O: FullcontextExtractor> Tts<'_, O> {
+    impl<T: crate::blocking::TextAnalyzer> Tts<'_, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1654,13 +1683,13 @@ pub(crate) mod nonblocking {
     use easy_ext::ext;
 
     use crate::{
-        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, FullcontextExtractor, Result,
-        StyleId, VoiceModelId, VoiceModelMeta,
+        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId,
+        VoiceModelMeta,
     };
 
     use super::{
-        AccelerationMode, AsInner as _, InitializeOptions, Inner, InnerRefWithoutOpenJtalk,
-        SynthesisOptions, TtsOptions,
+        AccelerationMode, AsInner as _, AssumeBlockable, InitializeOptions, Inner,
+        InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -1671,7 +1700,7 @@ pub(crate) mod nonblocking {
     ///
     /// [blocking]: https://docs.rs/crate/blocking
     /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
-    pub struct Synthesizer<O>(pub(super) Inner<O, BlockingThreadPool>);
+    pub struct Synthesizer<T>(pub(super) Inner<T, BlockingThreadPool>);
 
     impl self::Synthesizer<()> {
         /// `Synthesizer`のビルダーをコンストラクトする。
@@ -1702,7 +1731,7 @@ pub(crate) mod nonblocking {
         /// # }
         /// // FIXME: `Synthesizer`には`&mut self`なメソッドはもう無いはず
         /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().exec().await?)
-        ///     .open_jtalk(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap())) // FIXME: `Arc`は要らないはず
+        ///     .text_analyzer(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap())) // FIXME: `Arc`は要らないはず
         ///     .acceleration_mode(ACCELERATION_MODE)
         ///     .build()?;
         /// #
@@ -1712,13 +1741,13 @@ pub(crate) mod nonblocking {
         pub fn builder(onnxruntime: &'static crate::nonblocking::Onnxruntime) -> Builder<()> {
             Builder {
                 onnxruntime,
-                open_jtalk: (),
+                text_analyzer: (),
                 options: Default::default(),
             }
         }
     }
 
-    impl<O: Send + Sync + 'static> self::Synthesizer<O> {
+    impl<T: Send + Sync + 'static> self::Synthesizer<T> {
         pub fn onnxruntime(&self) -> &'static crate::nonblocking::Onnxruntime {
             crate::nonblocking::Onnxruntime::from_blocking(self.0.onnxruntime())
         }
@@ -1763,7 +1792,7 @@ pub(crate) mod nonblocking {
             style_id: StyleId,
         ) -> Synthesis<'a> {
             Synthesis {
-                synthesizer: self.0.without_open_jtalk(),
+                synthesizer: self.0.without_text_analyzer(),
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -1868,7 +1897,7 @@ pub(crate) mod nonblocking {
         /// AquesTalk風記法から音声合成を行う。
         pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
             TtsFromKana {
-                synthesizer: self.0.without_open_jtalk(),
+                synthesizer: self.0.without_text_analyzer(),
                 kana,
                 style_id,
                 options: Default::default(),
@@ -1876,7 +1905,7 @@ pub(crate) mod nonblocking {
         }
     }
 
-    impl<T: FullcontextExtractor> self::Synthesizer<T> {
+    impl<T: crate::nonblocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
         ///
         /// # Example
@@ -1955,23 +1984,24 @@ pub(crate) mod nonblocking {
     }
 
     #[ext(IntoBlocking)]
-    impl<O> self::Synthesizer<O> {
-        pub fn into_blocking(self) -> super::blocking::Synthesizer<O> {
-            super::blocking::Synthesizer(self.0.into())
+    impl<T> self::Synthesizer<T> {
+        pub fn into_blocking(self) -> super::blocking::Synthesizer<AssumeBlockable<T>> {
+            let x = self.0;
+            super::blocking::Synthesizer(x.into())
         }
     }
 
     #[must_use]
-    pub struct Builder<O> {
+    pub struct Builder<T> {
         onnxruntime: &'static crate::nonblocking::Onnxruntime,
-        open_jtalk: O,
+        text_analyzer: T,
         options: InitializeOptions,
     }
 
-    impl<O> Builder<O> {
-        pub fn open_jtalk<O2>(self, open_jtalk: O2) -> Builder<O2> {
+    impl<T> Builder<T> {
+        pub fn text_analyzer<T2>(self, text_analyzer: T2) -> Builder<T2> {
             Builder {
-                open_jtalk,
+                text_analyzer,
                 onnxruntime: self.onnxruntime,
                 options: self.options,
             }
@@ -1996,14 +2026,14 @@ pub(crate) mod nonblocking {
         }
 
         /// [`Synthesizer`]をコンストラクトする。
-        pub fn build(self) -> crate::Result<Synthesizer<O>> {
-            Inner::new(&self.onnxruntime.0, self.open_jtalk, &self.options).map(Synthesizer)
+        pub fn build(self) -> crate::Result<Synthesizer<T>> {
+            Inner::new(&self.onnxruntime.0, self.text_analyzer, &self.options).map(Synthesizer)
         }
     }
 
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct Synthesis<'a> {
-        synthesizer: InnerRefWithoutOpenJtalk<'a, BlockingThreadPool>,
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: SynthesisOptions,
@@ -2025,7 +2055,7 @@ pub(crate) mod nonblocking {
 
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct TtsFromKana<'a> {
-        synthesizer: InnerRefWithoutOpenJtalk<'a, BlockingThreadPool>,
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         kana: &'a str,
         style_id: StyleId,
         options: TtsOptions,
@@ -2046,14 +2076,14 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct Tts<'a, O> {
-        synthesizer: &'a Inner<O, BlockingThreadPool>,
+    pub struct Tts<'a, T> {
+        synthesizer: &'a Inner<T, BlockingThreadPool>,
         text: &'a str,
         style_id: StyleId,
         options: TtsOptions,
     }
 
-    impl<O: FullcontextExtractor> Tts<'_, O> {
+    impl<T: crate::nonblocking::TextAnalyzer> Tts<'_, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2451,7 +2481,7 @@ mod tests {
                 .await
                 .unwrap(),
         )
-        .open_jtalk(
+        .text_analyzer(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
@@ -2522,7 +2552,7 @@ mod tests {
                 .await
                 .unwrap(),
         )
-        .open_jtalk(
+        .text_analyzer(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
@@ -2590,7 +2620,7 @@ mod tests {
                 .await
                 .unwrap(),
         )
-        .open_jtalk(
+        .text_analyzer(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
@@ -2653,7 +2683,7 @@ mod tests {
                 .await
                 .unwrap(),
         )
-        .open_jtalk(
+        .text_analyzer(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
@@ -2694,7 +2724,7 @@ mod tests {
                 .await
                 .unwrap(),
         )
-        .open_jtalk(
+        .text_analyzer(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),
@@ -2735,7 +2765,7 @@ mod tests {
                 .await
                 .unwrap(),
         )
-        .open_jtalk(
+        .text_analyzer(
             crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
                 .await
                 .unwrap(),

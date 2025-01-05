@@ -15,7 +15,6 @@ from ._models import (  # noqa: F401
     VoiceModelId,
 )
 from ._rust import (  # noqa: F401
-    ExtractFullContextLabelError,
     GetSupportedDevicesError,
     GpuSupportError,
     InitInferenceRuntimeError,
@@ -32,6 +31,7 @@ from ._rust import (  # noqa: F401
     SaveUserDictError,
     StyleAlreadyLoadedError,
     StyleNotFoundError,
+    TextAnalyzeError,
     UseUserDictError,
     WordNotFoundError,
     __version__,
@@ -48,7 +48,6 @@ __all__ = [
     "AudioQuery",
     "asyncio",
     "blocking",
-    "ExtractFullContextLabelError",
     "GetSupportedDevicesError",
     "GpuSupportError",
     "InitInferenceRuntimeError",
@@ -70,6 +69,7 @@ __all__ = [
     "StyleNotFoundError",
     "StyleVersion",
     "SupportedDevices",
+    "TextAnalyzeError",
     "UseUserDictError",
     "UserDictWord",
     "UserDictWordType",
