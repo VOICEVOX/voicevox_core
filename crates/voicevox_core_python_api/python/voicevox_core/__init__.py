@@ -15,6 +15,7 @@ from ._models import (  # noqa: F401
     VoiceModelId,
 )
 from ._rust import (  # noqa: F401
+    AnalyzeTextError,
     GetSupportedDevicesError,
     GpuSupportError,
     InitInferenceRuntimeError,
@@ -31,7 +32,6 @@ from ._rust import (  # noqa: F401
     SaveUserDictError,
     StyleAlreadyLoadedError,
     StyleNotFoundError,
-    TextAnalyzeError,
     UseUserDictError,
     WordNotFoundError,
     __version__,
@@ -45,6 +45,7 @@ __all__ = [
     "wav_from_s16le",
     "AccelerationMode",
     "AccentPhrase",
+    "AnalyzeTextError",
     "AudioQuery",
     "asyncio",
     "blocking",
@@ -69,7 +70,6 @@ __all__ = [
     "StyleNotFoundError",
     "StyleVersion",
     "SupportedDevices",
-    "TextAnalyzeError",
     "UseUserDictError",
     "UserDictWord",
     "UserDictWordType",

@@ -65,7 +65,7 @@ class RunModelError(Exception):
 
     ...
 
-class TextAnalyzeError(Exception):
+class AnalyzeTextError(Exception):
     """入力テキストの解析に失敗した。"""
 
     ...
