@@ -94,6 +94,7 @@ typetag = "0.2.18"
 url = "2.5.4"
 uuid = "1.10.0"
 voicevox_core = { path = "crates/voicevox_core" }
+voicevox_core_macros = { path = "crates/voicevox_core_macros" }
 windows = "0.43.0"
 zip = "0.6.3"
 
