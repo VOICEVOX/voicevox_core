@@ -4586,10 +4586,13 @@ name = "voicevox_core_macros"
 version = "0.0.0"
 dependencies = [
  "derive-syn-parse",
+ "fs-err",
  "indexmap 2.6.0",
  "proc-macro2",
  "quote",
+ "serde",
  "syn 2.0.79",
+ "toml 0.7.2",
 ]
 
 [[package]]
@@ -4610,6 +4613,7 @@ dependencies = [
  "tracing",
  "uuid",
  "voicevox_core",
+ "voicevox_core_macros",
 ]
 
 [[package]]

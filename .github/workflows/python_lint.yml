@@ -31,7 +31,7 @@ jobs:
           poetry config virtualenvs.create false
       - name: Validate poetry.lock
         run: |
-          poetry lock --no-update
+          poetry lock
           git diff --exit-code
       - name: Install dependencies
         run: poetry install --with test
