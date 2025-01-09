@@ -13,6 +13,7 @@ mod convert;
 use self::convert::{from_utf8_path, VoicevoxCoreResultExt as _};
 use easy_ext::ext;
 use log::{debug, warn};
+use macros::pyproject_project_version;
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
@@ -27,7 +28,7 @@ use voicevox_core::__internal::interop::raii::MaybeClosed;
 fn rust(py: Python<'_>, module: &PyModule) -> PyResult<()> {
     pyo3_log::init();
 
-    module.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    module.add("__version__", pyproject_project_version!())?;
     module.add_wrapped(wrap_pyfunction!(_validate_pronunciation))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
     module.add_wrapped(wrap_pyfunction!(wav_from_s16le))?;

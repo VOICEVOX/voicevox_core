@@ -212,7 +212,9 @@ jobs:
       - name: set cargo version
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude downloader --exclude xtask
-          if ${{ matrix.python_whl }}; then cargo set-version "$VERSION" -p voicevox_core_python_api; fi
+          if ${{ matrix.python_whl }}; then
+            sed -i_ 's/version = "\(0\.0\.0\)"/version = "'"$VERSION"'"/' ./crates/voicevox_core_python_api/pyproject.toml
+          fi
       - name: cache target
         uses: Swatinem/rust-cache@v2
       - name: build voicevox_core_c_api
