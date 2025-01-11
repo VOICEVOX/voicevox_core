@@ -4438,7 +4438,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "voicevox-ort"
 version = "2.0.0-rc.4"
-source = "git+https://github.com/VOICEVOX/ort.git?rev=09a9fe1619c1561efafc02f68f0bda4aad879771#09a9fe1619c1561efafc02f68f0bda4aad879771"
+source = "git+https://github.com/VOICEVOX/ort.git?rev=cecd844162a1c6188de03b4566c81d9d38a28600#cecd844162a1c6188de03b4566c81d9d38a28600"
 dependencies = [
  "anyhow",
  "half",
@@ -4455,7 +4455,7 @@ dependencies = [
 [[package]]
 name = "voicevox-ort-sys"
 version = "2.0.0-rc.4"
-source = "git+https://github.com/VOICEVOX/ort.git?rev=09a9fe1619c1561efafc02f68f0bda4aad879771#09a9fe1619c1561efafc02f68f0bda4aad879771"
+source = "git+https://github.com/VOICEVOX/ort.git?rev=cecd844162a1c6188de03b4566c81d9d38a28600#cecd844162a1c6188de03b4566c81d9d38a28600"
 dependencies = [
  "flate2",
  "pkg-config",
@@ -4586,10 +4586,13 @@ name = "voicevox_core_macros"
 version = "0.0.0"
 dependencies = [
  "derive-syn-parse",
+ "fs-err",
  "indexmap 2.6.0",
  "proc-macro2",
  "quote",
+ "serde",
  "syn 2.0.79",
+ "toml 0.7.2",
 ]
 
 [[package]]
@@ -4610,6 +4613,7 @@ dependencies = [
  "tracing",
  "uuid",
  "voicevox_core",
+ "voicevox_core_macros",
 ]
 
 [[package]]

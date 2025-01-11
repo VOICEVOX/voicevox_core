@@ -87,7 +87,7 @@ jobs:
 
       - name: Rename the binary
         run: |
-          case "$OS" in
+          case "$RUNNER_OS" in
             Windows) exe_suffix=.exe;;
             Linux | macOS) exe_suffix=;;
           esac

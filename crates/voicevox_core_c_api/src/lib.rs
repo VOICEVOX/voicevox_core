@@ -38,8 +38,7 @@ use std::sync::Once;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
-use voicevox_core::{AccentPhrase, AudioQuery, TtsOptions, UserDictWord};
-use voicevox_core::{StyleId, SynthesisOptions};
+use voicevox_core::{AccentPhrase, AudioQuery, StyleId, UserDictWord};
 
 fn init_logger_once() {
     static ONCE: Once = Once::new();
@@ -362,7 +361,7 @@ pub extern "C" fn voicevox_open_jtalk_rc_delete(open_jtalk: *mut OpenJtalkRc) {
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
 #[repr(i32)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[allow(
     non_camel_case_types,
     reason = "実際に公開するC APIとの差異をできるだけ少なくするため"
@@ -544,9 +543,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let options = options.into();
-
-        let synthesizer = VoicevoxSynthesizer::new(onnxruntime, open_jtalk, &options)?;
+        let synthesizer = VoicevoxSynthesizer::new(onnxruntime, open_jtalk, options)?;
         out_synthesizer.write_unaligned(synthesizer);
         Ok(())
     })())
@@ -1074,7 +1071,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     style_id: VoicevoxStyleId,
     options: VoicevoxSynthesisOptions,
     output_wav_length: NonNull<usize>,
-    output_wav: NonNull<*mut u8>,
+    output_wav: NonNull<NonNull<u8>>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
@@ -1083,11 +1080,14 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
             .map_err(|_| CApiError::InvalidUtf8Input)?;
         let audio_query: AudioQuery =
             serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
-        let wav = synthesizer.body().synthesis(
-            &audio_query,
-            StyleId::new(style_id),
-            &SynthesisOptions::from(options),
-        )?;
+        let VoicevoxSynthesisOptions {
+            enable_interrogative_upspeak,
+        } = options;
+        let wav = synthesizer
+            .body()
+            .synthesis(&audio_query, StyleId::new(style_id))
+            .enable_interrogative_upspeak(enable_interrogative_upspeak)
+            .exec()?;
         U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length);
         Ok(())
     })())
@@ -1107,7 +1107,7 @@ pub struct VoicevoxTtsOptions {
 #[no_mangle]
 pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
     init_logger_once();
-    voicevox_core::TtsOptions::default().into()
+    VoicevoxTtsOptions::default()
 }
 
 // TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
@@ -1137,16 +1137,19 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
     style_id: VoicevoxStyleId,
     options: VoicevoxTtsOptions,
     output_wav_length: NonNull<usize>,
-    output_wav: NonNull<*mut u8>,
+    output_wav: NonNull<NonNull<u8>>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
         let kana = ensure_utf8(CStr::from_ptr(kana))?;
-        let output = synthesizer.body().tts_from_kana(
-            kana,
-            StyleId::new(style_id),
-            &TtsOptions::from(options),
-        )?;
+        let VoicevoxTtsOptions {
+            enable_interrogative_upspeak,
+        } = options;
+        let output = synthesizer
+            .body()
+            .tts_from_kana(kana, StyleId::new(style_id))
+            .enable_interrogative_upspeak(enable_interrogative_upspeak)
+            .exec()?;
         U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length);
         Ok(())
     })())
@@ -1179,15 +1182,19 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
     style_id: VoicevoxStyleId,
     options: VoicevoxTtsOptions,
     output_wav_length: NonNull<usize>,
-    output_wav: NonNull<*mut u8>,
+    output_wav: NonNull<NonNull<u8>>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
         let text = ensure_utf8(CStr::from_ptr(text))?;
-        let output =
-            synthesizer
-                .body()
-                .tts(text, StyleId::new(style_id), &TtsOptions::from(options))?;
+        let VoicevoxTtsOptions {
+            enable_interrogative_upspeak,
+        } = options;
+        let output = synthesizer
+            .body()
+            .tts(text, StyleId::new(style_id))
+            .enable_interrogative_upspeak(enable_interrogative_upspeak)
+            .exec()?;
         U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length);
         Ok(())
     })())

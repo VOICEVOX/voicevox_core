@@ -182,11 +182,11 @@ jobs:
             git fetch private refs/tags/${{ env.PRODUCTION_REPOSITORY_TAG }}
             git -c user.name=dummy -c user.email=dummy@dummy.dummy merge FETCH_HEAD
           ) > /dev/null 2>&1
-      - name: Set up Python 3.8
+      - name: Set up Python 3.10
         if: matrix.python_whl
         uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: "3.10"
           architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
       - name: set up ${{ matrix.target }}
         uses: ./.github/actions/rust-toolchain-from-file
@@ -225,7 +225,9 @@ jobs:
       - name: set cargo version
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude downloader --exclude xtask
-          if ${{ matrix.python_whl }}; then cargo set-version "$VERSION" -p voicevox_core_python_api; fi
+          if ${{ matrix.python_whl }}; then
+            sed -i_ 's/version = "\(0\.0\.0\)"/version = "'"$VERSION"'"/' ./crates/voicevox_core_python_api/pyproject.toml
+          fi
       - name: cache target
         uses: Swatinem/rust-cache@v2
         if: ${{ !inputs.is_production }}

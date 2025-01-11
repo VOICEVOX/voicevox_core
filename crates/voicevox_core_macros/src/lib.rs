@@ -3,6 +3,7 @@
 mod extract;
 mod inference_domain;
 mod inference_domains;
+mod python_api;
 
 use syn::parse_macro_input;
 
@@ -121,6 +122,12 @@ pub fn derive_inference_output_signature(
 pub fn substitute_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input);
     from_syn(inference_domains::substitute_type(input))
+}
+
+#[proc_macro]
+pub fn pyproject_project_version(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input);
+    from_syn(python_api::pyproject_project_version(input))
 }
 
 fn from_syn(result: syn::Result<proc_macro2::TokenStream>) -> proc_macro::TokenStream {

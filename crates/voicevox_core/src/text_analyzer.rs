@@ -25,7 +25,7 @@ impl TextAnalyzer for KanaAnalyzer {
 pub(crate) struct OpenJTalkAnalyzer<O>(O);
 
 impl<O> OpenJTalkAnalyzer<O> {
-    pub(crate) fn new(open_jtalk: O) -> Self {
+    pub(crate) const fn new(open_jtalk: O) -> Self {
         Self(open_jtalk)
     }
 }

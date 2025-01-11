@@ -9,8 +9,13 @@
 //! スレッドプールのサイズは、blockingクレートの説明にある通り`$BLOCKING_MAX_THREADS`で調整すること
 //! ができる。
 //!
+//! また未調査ではあるが、このモジュールについては[`cpu_num_threads`]は物理コアの数+1を指定するのが適切な可能性がある
+//! ([VOICEVOX/voicevox_core#902])。
+//!
 //! [blocking]: https://docs.rs/crate/blocking
 //! [pollster]: https://docs.rs/crate/pollster
+//! [VOICEVOX/voicevox_core#902]: https://github.com/VOICEVOX/voicevox_core/issues/902
+//! [`cpu_num_threads`]: crate::nonblocking::synthesizer::Builder::cpu_num_threads
 
 pub use crate::{
     engine::open_jtalk::nonblocking::OpenJtalk,
@@ -22,4 +27,8 @@ pub mod onnxruntime {
     #[cfg(feature = "load-onnxruntime")]
     #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
     pub use crate::infer::runtimes::onnxruntime::nonblocking::LoadOnce;
+}
+
+pub mod synthesizer {
+    pub use crate::synthesizer::nonblocking::{Builder, Synthesis, Tts, TtsFromKana};
 }

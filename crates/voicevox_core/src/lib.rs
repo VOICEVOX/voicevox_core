@@ -49,6 +49,7 @@ const _: () = {
 };
 
 mod asyncs;
+mod core;
 mod devices;
 /// cbindgen:ignore
 mod engine;
@@ -90,7 +91,7 @@ pub use self::{
         SpeakerSupportedFeatures, StyleId, StyleMeta, StyleType, StyleVersion, VoiceModelMeta,
     },
     result::Result,
-    synthesizer::{AccelerationMode, InitializeOptions, SynthesisOptions, TtsOptions},
+    synthesizer::AccelerationMode,
     user_dict::{UserDictWord, UserDictWordType},
     version::VERSION,
     voice_model::{RawVoiceModelId, VoiceModelId},

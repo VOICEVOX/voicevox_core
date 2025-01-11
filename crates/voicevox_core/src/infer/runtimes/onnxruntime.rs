@@ -295,13 +295,11 @@ pub(crate) mod blocking {
     /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
     /// #         .exec()?;
     /// # }
+    /// use std::ptr;
+    ///
     /// let ort1 = voicevox_core::blocking::Onnxruntime::load_once().exec()?;
     /// let ort2 = another_lib::nonblocking::Onnxruntime::get().expect("`ort1`と同一のはず");
-    /// assert_eq!(ptr_addr(ort1), ptr_addr(ort2));
-    ///
-    /// fn ptr_addr(obj: &impl Sized) -> usize {
-    ///     &raw const *obj as _
-    /// }
+    /// assert!(ptr::addr_eq(ort1, ort2));
     /// # Ok(())
     /// # }
     /// ```
@@ -425,6 +423,7 @@ pub(crate) mod blocking {
 
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct LoadOnce {
         filename: std::ffi::OsString,
     }
@@ -586,6 +585,7 @@ pub(crate) mod nonblocking {
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
     #[derive(Default)]
+    #[must_use = "this is a builder. it does nothing until `exec`uted"]
     pub struct LoadOnce(super::blocking::LoadOnce);
 
     #[cfg(feature = "load-onnxruntime")]

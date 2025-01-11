@@ -45,7 +45,7 @@ windows の場合
 
 TODO:
 
-- Python インタプリタ ≧3.8 + venv
+- Python インタプリタ ≧3.10 + venv
 
 ## 実行
 
