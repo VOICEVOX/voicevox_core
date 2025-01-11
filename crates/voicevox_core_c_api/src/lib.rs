@@ -1071,7 +1071,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     style_id: VoicevoxStyleId,
     options: VoicevoxSynthesisOptions,
     output_wav_length: NonNull<usize>,
-    output_wav: NonNull<*mut u8>,
+    output_wav: NonNull<NonNull<u8>>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
@@ -1137,7 +1137,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
     style_id: VoicevoxStyleId,
     options: VoicevoxTtsOptions,
     output_wav_length: NonNull<usize>,
-    output_wav: NonNull<*mut u8>,
+    output_wav: NonNull<NonNull<u8>>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
@@ -1182,7 +1182,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
     style_id: VoicevoxStyleId,
     options: VoicevoxTtsOptions,
     output_wav_length: NonNull<usize>,
-    output_wav: NonNull<*mut u8>,
+    output_wav: NonNull<NonNull<u8>>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {

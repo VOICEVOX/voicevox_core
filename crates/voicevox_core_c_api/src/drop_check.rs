@@ -1,8 +1,12 @@
 use std::{
     collections::BTreeSet,
     ffi::{c_char, CStr, CString},
+    num::NonZero,
+    ptr::NonNull,
     sync::Mutex,
 };
+
+use easy_ext::ext;
 
 /// dropして良い`*mut c_char`を把握し、チェックする。
 ///
@@ -26,8 +30,8 @@ pub(crate) static C_STRING_DROP_CHECKER: CStringDropChecker = CStringDropChecker
 pub(crate) struct CStringDropChecker(Mutex<Inner>);
 
 struct Inner {
-    owned_str_addrs: BTreeSet<usize>,
-    static_str_addrs: BTreeSet<usize>,
+    owned_str_addrs: BTreeSet<NonZero<usize>>,
+    static_str_addrs: BTreeSet<NonZero<usize>>,
 }
 
 impl CStringDropChecker {
@@ -46,8 +50,8 @@ impl CStringDropChecker {
             owned_str_addrs, ..
         } = &mut *self.0.lock().unwrap();
 
-        let ptr = s.as_ptr();
-        let duplicated = !owned_str_addrs.insert(ptr as usize);
+        let ptr = s.as_non_null_ptr();
+        let duplicated = !owned_str_addrs.insert(ptr.addr());
         if duplicated {
             panic!(
                 "別の{ptr:p}が管理下にあります。原因としては以前に別の文字列が{ptr:p}として存在\
@@ -69,7 +73,7 @@ impl CStringDropChecker {
             static_str_addrs, ..
         } = &mut *self.0.lock().unwrap();
 
-        static_str_addrs.insert(s.as_ptr() as usize);
+        static_str_addrs.insert(s.as_non_null_ptr().addr());
         s
     }
 
@@ -85,7 +89,7 @@ impl CStringDropChecker {
             ..
         } = &mut *self.0.lock().unwrap();
 
-        let addr = ptr as usize;
+        let addr = NonZero::new(ptr.addr()).expect("ヌルポインタは解放できません");
         if !owned_str_addrs.remove(&addr) {
             if static_str_addrs.contains(&addr) {
                 panic!(
@@ -100,6 +104,13 @@ impl CStringDropChecker {
             );
         }
         ptr
+    }
+}
+
+#[ext]
+impl CStr {
+    fn as_non_null_ptr(&self) -> NonNull<c_char> {
+        NonNull::new(self.as_ptr() as *mut c_char).expect("comes from a `CStr`")
     }
 }
 
