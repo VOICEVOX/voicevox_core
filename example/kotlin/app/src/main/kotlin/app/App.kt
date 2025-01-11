@@ -33,7 +33,7 @@ fun main(args: Array<String>) {
   parser.parse(args)
 
   println("Inititalizing: ${mode}, ${onnxruntime}, ${dictDir}")
-  val ort = Onnxruntime.loadOnce().filename(onnxruntime).exec()
+  val ort = Onnxruntime.loadOnce().filename(onnxruntime).perform()
   val openJtalk = OpenJtalk(dictDir)
   val synthesizer =
       Synthesizer.builder(ort, openJtalk)
@@ -54,7 +54,7 @@ fun main(args: Array<String>) {
   val audioQuery = synthesizer.createAudioQuery(text, styleId)
 
   println("Synthesizing...")
-  val audio = synthesizer.synthesis(audioQuery, styleId).execute()
+  val audio = synthesizer.synthesis(audioQuery, styleId).perform()
 
   println("Saving the audio to ${out}")
   File(out).writeBytes(audio)

@@ -81,7 +81,7 @@ class SynthesizerTest extends TestUtils {
     }
 
     AudioQuery query = synthesizer.createAudioQuery("こんにちは", synthesizer.metas()[0].styles[0].id);
-    synthesizer.synthesis(query, synthesizer.metas()[0].styles[0].id).execute();
+    synthesizer.synthesis(query, synthesizer.metas()[0].styles[0].id).perform();
   }
 
   @Test
@@ -124,6 +124,6 @@ class SynthesizerTest extends TestUtils {
     try (VoiceModelFile model = openModel()) {
       synthesizer.loadVoiceModel(model);
     }
-    synthesizer.tts("こんにちは", synthesizer.metas()[0].styles[0].id).execute();
+    synthesizer.tts("こんにちは", synthesizer.metas()[0].styles[0].id).perform();
   }
 }

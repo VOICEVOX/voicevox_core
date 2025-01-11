@@ -293,11 +293,11 @@ pub(crate) mod blocking {
     /// #     // Windows\System32\onnxruntime.dllを回避
     /// #     voicevox_core::blocking::Onnxruntime::load_once()
     /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
-    /// #         .exec()?;
+    /// #         .perform()?;
     /// # }
     /// use std::ptr;
     ///
-    /// let ort1 = voicevox_core::blocking::Onnxruntime::load_once().exec()?;
+    /// let ort1 = voicevox_core::blocking::Onnxruntime::load_once().perform()?;
     /// let ort2 = another_lib::nonblocking::Onnxruntime::get().expect("`ort1`と同一のはず");
     /// assert!(ptr::addr_eq(ort1, ort2));
     /// # Ok(())
@@ -405,7 +405,7 @@ pub(crate) mod blocking {
             {
                 Self::load_once()
                     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
-                    .exec()
+                    .perform()
                     .map_err(Into::into)
             }
 
@@ -423,7 +423,7 @@ pub(crate) mod blocking {
 
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
-    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
     pub struct LoadOnce {
         filename: std::ffi::OsString,
     }
@@ -451,7 +451,7 @@ pub(crate) mod blocking {
         }
 
         /// 実行する。
-        pub fn exec(self) -> crate::Result<&'static Onnxruntime> {
+        pub fn perform(self) -> crate::Result<&'static Onnxruntime> {
             Onnxruntime::once(|| ort::try_init_from(&self.filename, None))
         }
     }
@@ -481,10 +481,10 @@ pub(crate) mod nonblocking {
     /// #     // Windows\System32\onnxruntime.dllを回避
     /// #     voicevox_core::blocking::Onnxruntime::load_once()
     /// #         .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
-    /// #         .exec()?;
+    /// #         .perform()?;
     /// # }
     /// let ort1 = voicevox_core::nonblocking::Onnxruntime::load_once()
-    ///     .exec()
+    ///     .perform()
     ///     .await?;
     /// let ort2 = another_lib::blocking::Onnxruntime::get().expect("`ort1`と同一のはず");
     /// assert_eq!(ptr_addr(ort1), ptr_addr(ort2));
@@ -585,7 +585,7 @@ pub(crate) mod nonblocking {
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
     #[derive(Default)]
-    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
     pub struct LoadOnce(super::blocking::LoadOnce);
 
     #[cfg(feature = "load-onnxruntime")]
@@ -602,8 +602,8 @@ pub(crate) mod nonblocking {
         }
 
         /// 実行する。
-        pub async fn exec(self) -> crate::Result<&'static Onnxruntime> {
-            let inner = crate::task::asyncify(|| self.0.exec()).await?;
+        pub async fn perform(self) -> crate::Result<&'static Onnxruntime> {
+            let inner = crate::task::asyncify(|| self.0.perform()).await?;
             Ok(Onnxruntime::from_blocking(inner))
         }
     }
