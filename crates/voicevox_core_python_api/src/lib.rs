@@ -533,7 +533,6 @@ mod blocking {
             Ok(synthesizer.is_gpu_mode())
         }
 
-        #[getter]
         fn metas<'py>(&self, py: Python<'py>) -> PyResult<&'py PyList> {
             let synthesizer = self.synthesizer.read()?;
             crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
@@ -861,7 +860,6 @@ mod blocking {
             Ok(())
         }
 
-        #[getter]
         fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
             let words = self.dict.with_words(|words| {
                 words
@@ -1130,7 +1128,6 @@ mod asyncio {
             Ok(synthesizer.is_gpu_mode())
         }
 
-        #[getter]
         fn metas<'py>(&self, py: Python<'py>) -> PyResult<&'py PyList> {
             let synthesizer = self.synthesizer.read()?;
             crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
@@ -1521,7 +1518,6 @@ mod asyncio {
             Ok(())
         }
 
-        #[getter]
         fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
             let words = self.dict.with_words(|words| {
                 words

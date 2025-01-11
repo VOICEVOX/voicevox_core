@@ -19,7 +19,7 @@ def test_synthesizer_metas_works(voice_model: VoiceModelFile) -> None:
         OpenJtalk(conftest.open_jtalk_dic_dir),
     )
     synthesizer.load_voice_model(voice_model)
-    _ = synthesizer.metas
+    _ = synthesizer.metas()
 
 
 @pytest.fixture
