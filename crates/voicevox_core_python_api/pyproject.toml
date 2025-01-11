@@ -1,5 +1,6 @@
 [project]
 name = "voicevox_core"
+version = "0.0.0"
 requires-python = ">=3.10"
 dependencies = ["pydantic>=2.5.2,<3"]
 description = "VOICEVOX CORE の Python バインディングです。"
@@ -31,11 +32,8 @@ bindings = "pyo3"
 python-source = "python"
 
 [tool.poetry]
-# Poetryはこれがないと動かない
-name = "voicevox_core"
-version = "0.0.0"
-description = "VOICEVOX CORE の Python バインディングです。"
-authors = []
+requires-poetry = ">=2"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"

@@ -1,6 +1,5 @@
 [package]
 name = "voicevox_core_python_api"
-version = "0.0.0"
 edition.workspace = true
 publish.workspace = true
 rust-version.workspace = true
@@ -24,6 +23,7 @@ tokio = { workspace = true, features = ["rt", "sync"] }
 tracing = { workspace = true, features = ["log"] }
 uuid.workspace = true
 voicevox_core = { workspace = true, features = ["load-onnxruntime"] }
+voicevox_core_macros.workspace = true
 
 [lints.rust]
 unsafe_code = "forbid"

@@ -16,9 +16,9 @@ use crate::{
     infer::{
         self,
         domains::{
-            FrameDecodeDomain, FrameDecodeOperation, GenerateFullIntermediateInput,
-            GenerateFullIntermediateOutput, InferenceDomainMap, PredictDurationInput,
-            PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput,
+            experimental_talk, talk, DecodeInput, DecodeOutput, ExperimentalTalkDomain,
+            ExperimentalTalkOperation, FrameDecodeDomain, FrameDecodeOperation,
+            GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
             PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput, PredictSingF0Input,
             PredictSingF0Output, PredictSingVolumeInput, PredictSingVolumeOutput,
             RenderAudioSegmentInput, RenderAudioSegmentOutput, SfDecodeInput, SfDecodeOutput,
@@ -267,10 +267,16 @@ impl<T, A: AsyncExt> Inner<T, A> {
             onnxruntime,
             InferenceDomainMap {
                 talk: enum_map! {
-                    TalkOperation::PredictDuration
-                    | TalkOperation::PredictIntonation
-                    | TalkOperation::GenerateFullIntermediate => light_session_options,
-                    TalkOperation::RenderAudioSegment => heavy_session_options,
+                    TalkOperation::PredictDuration | TalkOperation::PredictIntonation => {
+                        light_session_options
+                    }
+                    TalkOperation::Decode => heavy_session_options,
+                },
+                experimental_talk: enum_map! {
+                    ExperimentalTalkOperation::PredictDuration
+                    | ExperimentalTalkOperation::PredictIntonation
+                    | ExperimentalTalkOperation::GenerateFullIntermediate => light_session_options,
+                    ExperimentalTalkOperation::RenderAudioSegment => heavy_session_options,
                 },
                 singing_teacher: enum_map! {
                     SingingTeacherOperation::PredictSingConsonantLength
@@ -394,6 +400,24 @@ trait AsInner {
         style_id: StyleId,
         options: &SynthesisOptions,
     ) -> Result<Vec<u8>> {
+        if self.status().contains_domain::<TalkDomain>(style_id) {
+            let DecoderFeature { f0, phoneme } =
+                audio_query.decoder_feature(options.enable_interrogative_upspeak);
+            let wave = &self
+                .decode(
+                    f0.len(),
+                    OjtPhoneme::num_phoneme(),
+                    &f0,
+                    phoneme.as_flattened(),
+                    style_id,
+                )
+                .await?;
+            return Ok(wav_from_s16le(
+                &to_s16le_pcm::<DEFAULT_SAMPLING_RATE>(wave, audio_query),
+                audio_query.output_sampling_rate,
+                audio_query.output_stereo,
+            ));
+        }
         let audio = self
             .precompute_render(audio_query, style_id, options)
             .await?;
@@ -796,14 +820,30 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme_vector: ndarray::Array1<i64>,
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        if self.contains_domain::<TalkDomain>(style_id) {
+            let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+            let talk::PredictDurationOutput {
+                phoneme_length: output,
+            } = self
+                .run_session::<A, _>(
+                    model_id,
+                    talk::PredictDurationInput {
+                        phoneme_list: phoneme_vector,
+                        speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
+                    },
+                )
+                .await?;
+            return Ok(ensure_minimum_phoneme_length(output.into_raw_vec()));
+        }
+        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
-        let PredictDurationOutput {
+        let experimental_talk::PredictDurationOutput {
             phoneme_length: output,
         } = self
             .run_session::<A, _>(
                 model_id,
-                PredictDurationInput {
+                experimental_talk::PredictDurationInput {
                     phoneme_list: phoneme_vector,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
@@ -828,12 +868,32 @@ impl<R: InferenceRuntime> Status<R> {
         end_accent_phrase_vector: ndarray::Array1<i64>,
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        if self.contains_domain::<TalkDomain>(style_id) {
+            let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+            let talk::PredictIntonationOutput { f0_list: output } = self
+                .run_session::<A, _>(
+                    model_id,
+                    talk::PredictIntonationInput {
+                        length: ndarray::arr0(length as i64),
+                        vowel_phoneme_list: vowel_phoneme_vector,
+                        consonant_phoneme_list: consonant_phoneme_vector,
+                        start_accent_list: start_accent_vector,
+                        end_accent_list: end_accent_vector,
+                        start_accent_phrase_list: start_accent_phrase_vector,
+                        end_accent_phrase_list: end_accent_phrase_vector,
+                        speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
+                    },
+                )
+                .await?;
+            return Ok(output.into_raw_vec());
+        }
+        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
-        let PredictIntonationOutput { f0_list: output } = self
+        let experimental_talk::PredictIntonationOutput { f0_list: output } = self
             .run_session::<A, _>(
                 model_id,
-                PredictIntonationInput {
+                experimental_talk::PredictIntonationInput {
                     length: ndarray::arr0(length as i64),
                     vowel_phoneme_list: vowel_phoneme_vector,
                     consonant_phoneme_list: consonant_phoneme_vector,
@@ -860,7 +920,7 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme_vector: ndarray::Array1<f32>,
         style_id: StyleId,
     ) -> Result<ndarray::Array2<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
         let (length_with_padding, f0_with_padding, phoneme_with_padding) =
             pad_decoder_feature::<PADDING_FRAME_LENGTH>(
@@ -904,7 +964,7 @@ impl<R: InferenceRuntime> Status<R> {
         spec: ndarray::Array2<f32>,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        let (model_id, _inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+        let (model_id, _inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
         let RenderAudioSegmentOutput { wave } = self
             .run_session::<A, _>(model_id, RenderAudioSegmentInput { spec })
             .await?;
@@ -919,6 +979,35 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme_vector: ndarray::Array1<f32>,
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
+        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        if self.contains_domain::<TalkDomain>(style_id) {
+            let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+            let (length_with_padding, f0_with_padding, phoneme_with_padding) =
+                pad_decoder_feature::<PADDING_FRAME_LENGTH>(
+                    f0,
+                    phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
+                );
+            let DecodeOutput { wave: output } = self
+                .run_session::<A, _>(
+                    model_id,
+                    DecodeInput {
+                        f0: f0_with_padding
+                            .into_shape([length_with_padding, 1])
+                            .unwrap(),
+                        phoneme: phoneme_with_padding,
+                        speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
+                    },
+                )
+                .await?;
+            let len = output.len();
+            return Ok(output
+                .slice_move(ndarray::s![
+                    PADDING_FRAME_LENGTH * 256..len - PADDING_FRAME_LENGTH * 256,
+                ])
+                .as_standard_layout()
+                .into_owned()
+                .into_raw_vec());
+        }
         let intermediate = self
             .generate_full_intermediate::<A>(length, phoneme_size, f0, phoneme_vector, style_id)
             .await?;
