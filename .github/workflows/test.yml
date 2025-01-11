@@ -284,17 +284,12 @@ jobs:
       - run: cargo build -p test_util -v # build scriptにより/crates/test_util/data/の生成
       - run: poetry run maturin build --locked
       - run: poetry run maturin develop --locked
-      - name: 必要なDLLをコピーしてpytestを実行
-        run: |
-          cp -v ../../target/debug/onnxruntime.dll . || true
-          cp -v ../../target/debug/libonnxruntime.so.* . || true
-          cp -v ../../target/debug/libonnxruntime.*.dylib . || true
-
-          poetry run pytest
+      - name: pytestを実行
+        run: poetry run pytest
       - name: Exampleを実行
         run: |
           for file in ../../example/python/run{,-asyncio}.py; do
-            poetry run python "$file" ../test_util/data/model/sample.vvm --dict-dir ../test_util/data/open_jtalk_dic_utf_8-1.11
+            poetry run python "$file" ../test_util/data/model/sample.vvm --dict-dir ../test_util/data/open_jtalk_dic_utf_8-1.11 --onnxruntime ../test_util/data/lib/*onnxruntime*
           done
           # https://github.com/VOICEVOX/voicevox_core/issues/873 が再発しないかの確認。
           #
@@ -303,7 +298,7 @@ jobs:
           #
           # TODO: 10回の実行におよそ60秒ほどかかるため、状況の経過を見てやめる。
           for _ in {1..10}; do
-            poetry run python ../../example/python/run-asyncio.py ../test_util/data/model/sample.vvm --dict-dir ../test_util/data/open_jtalk_dic_utf_8-1.11 \
+            poetry run python ../../example/python/run-asyncio.py ../test_util/data/model/sample.vvm --dict-dir ../test_util/data/open_jtalk_dic_utf_8-1.11 --onnxruntime ../test_util/data/lib/*onnxruntime* \
               2> >(tee ./stderr.txt >&2)
             # shellcheck disable=SC2059
             ! grep -q StopIteration ./stderr.txt

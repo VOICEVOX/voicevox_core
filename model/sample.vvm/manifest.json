@@ -3,34 +3,67 @@
   "id": "018fa5b1-146c-71e9-b523-6f6dabcf05fe",
   "metas_filename": "metas.json",
   "talk": {
-    "predict_duration_filename": "predict_duration.onnx",
-    "predict_intonation_filename": "predict_intonation.onnx",
-    "decode_filename": "decode.onnx",
+    "predict_duration": {
+      "type": "onnx",
+      "filename": "predict_duration.onnx"
+    },
+    "predict_intonation": {
+      "type": "onnx",
+      "filename": "predict_intonation.onnx"
+    },
+    "decode": {
+      "type": "onnx",
+      "filename": "decode.onnx"
+    },
     "style_id_to_inner_voice_id": {
       "302": 2,
       "303": 3
     }
   },
   "experimental_talk": {
-    "predict_duration_filename": "predict_duration.onnx",
-    "predict_intonation_filename": "predict_intonation.onnx",
-    "generate_full_intermediate_filename": "predict_spectrogram.onnx",
-    "render_audio_segment_filename": "vocoder.onnx",
+    "predict_duration": {
+      "type": "onnx",
+      "filename": "predict_duration.onnx"
+    },
+    "predict_intonation": {
+      "type": "onnx",
+      "filename": "predict_intonation.onnx"
+    },
+    "generate_full_intermediate": {
+      "type": "onnx",
+      "filename": "predict_spectrogram.onnx"
+    },
+    "render_audio_segment": {
+      "type": "onnx",
+      "filename": "vocoder.onnx"
+    },
     "style_id_to_inner_voice_id": {
       "302": 2,
       "303": 3
     }
   },
   "singing_teacher": {
-    "predict_sing_consonant_length_filename": "predict_sing_consonant_length.onnx",
-    "predict_sing_f0_filename": "predict_sing_f0.onnx",
-    "predict_sing_volume_filename": "predict_sing_volume.onnx",
+    "predict_sing_consonant_length": {
+      "type": "onnx",
+      "filename": "predict_sing_consonant_length.onnx"
+    },
+    "predict_sing_f0": {
+      "type": "onnx",
+      "filename": "predict_sing_f0.onnx"
+    },
+    "predict_sing_volume": {
+      "type": "onnx",
+      "filename": "predict_sing_volume.onnx"
+    },
     "style_id_to_inner_voice_id": {
       "6000": 0
     }
   },
   "frame_decode": {
-    "sf_decode_filename": "sf_decode.onnx",
+    "sf_decode": {
+      "type": "onnx",
+      "filename": "sf_decode.onnx"
+    },
     "style_id_to_inner_voice_id": {
       "3000": 0
     }

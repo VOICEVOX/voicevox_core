@@ -3,6 +3,7 @@ use std::{collections::BTreeSet, sync::LazyLock};
 use enum_map::Enum;
 use macros::{InferenceInputSignature, InferenceOperation, InferenceOutputSignature};
 use ndarray::{Array0, Array1, Array2};
+use serde::Deserialize;
 
 use crate::{manifest::ExperimentalTalkManifest, StyleType};
 
@@ -23,7 +24,8 @@ impl InferenceDomain for ExperimentalTalkDomain {
     }
 }
 
-#[derive(Clone, Copy, Enum, InferenceOperation)]
+#[derive(Clone, Copy, Deserialize, Enum, InferenceOperation)]
+#[serde(rename_all = "snake_case")]
 #[inference_operation(
     type Domain = ExperimentalTalkDomain;
 )]
