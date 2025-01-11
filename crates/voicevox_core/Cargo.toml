@@ -52,7 +52,7 @@ thiserror.workspace = true
 tracing.workspace = true
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-voicevox"] }
-voicevox_core_macros = { path = "../voicevox_core_macros" }
+voicevox_core_macros.workspace = true
 
 [dev-dependencies]
 heck.workspace = true

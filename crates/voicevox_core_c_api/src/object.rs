@@ -64,9 +64,9 @@ pub(crate) trait CApiObject: Default + Debug + 'static {
             let i = Self::heads().push(Default::default());
             NonNull::from(&Self::heads()[i])
         };
-        Self::lock_known_addrs().insert(this.addr_without_provenance());
+        Self::lock_known_addrs().insert(this.addr());
         let body = parking_lot::RwLock::new(body.into()).into();
-        Self::lock_bodies().insert(this.addr_without_provenance(), body);
+        Self::lock_bodies().insert(this.addr(), body);
         this
     }
 }
@@ -86,7 +86,7 @@ impl<T: CApiObject> *const T {
         let this = self.validate();
 
         let body = T::lock_bodies()
-            .get(&this.addr_without_provenance())
+            .get(&this.addr())
             .unwrap_or_else(|| this.panic_for_deleted())
             .read_arc();
 
@@ -103,7 +103,7 @@ impl<T: CApiObject> *const T {
         let this = self.validate();
 
         let body = T::lock_bodies()
-            .remove(&this.addr_without_provenance())
+            .remove(&this.addr())
             .unwrap_or_else(|| this.panic_for_deleted());
 
         drop(
@@ -125,7 +125,7 @@ impl<T: CApiObject> *const T {
 impl<T: CApiObject> *const T {
     fn validate(self) -> NonNull<T> {
         let this = NonNull::new(self as *mut T).expect("the argument must not be null");
-        if !T::lock_known_addrs().contains(&this.addr_without_provenance()) {
+        if !T::lock_known_addrs().contains(&this.addr()) {
             panic!("{self:018p} does not seem to be valid object");
         }
         this
@@ -144,13 +144,6 @@ impl<T: CApiObject> NonNull<T> {
 
     fn panic_for_deleted(self) -> ! {
         panic!("{}は既に破棄されています", self.display());
-    }
-}
-
-#[ext]
-impl<T> NonNull<T> {
-    fn addr_without_provenance(self) -> NonZero<usize> {
-        NonZero::new(self.as_ptr() as _).expect("this is from `NonNull`")
     }
 }
 

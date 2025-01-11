@@ -7,7 +7,7 @@ VOICEVOX CORE の Python バインディングです。
 以下の環境が必要です。
 
 - Rustup
-- Python ≧ 3.8
+- Python ≧ 3.10
 - Poetry ≧ 1.6
 
 ```console
