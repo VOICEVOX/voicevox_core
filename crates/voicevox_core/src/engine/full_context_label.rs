@@ -7,7 +7,6 @@ use crate::{
 use jlabel::Label;
 use smallvec::SmallVec;
 
-// FIXME: 入力テキストをここで持って、メッセージに含む
 #[derive(thiserror::Error, Debug)]
 #[error("入力テキストからのフルコンテキストラベル抽出に失敗しました: {context}")]
 pub(crate) struct FullContextLabelError {
@@ -428,7 +427,7 @@ mod tests {
         let open_jtalk = crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
             .await
             .unwrap();
-        assert_eq!(&open_jtalk.extract_fullcontext(text).unwrap(), labels);
+        assert_eq!(&open_jtalk.0.extract_fullcontext(text).unwrap(), labels);
     }
 
     #[apply(label_cases)]
@@ -451,7 +450,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(
-            &extract_full_context_label(&open_jtalk, text).unwrap(),
+            &extract_full_context_label(&open_jtalk.0, text).unwrap(),
             accent_phrase
         );
     }

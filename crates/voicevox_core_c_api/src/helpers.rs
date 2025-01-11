@@ -40,7 +40,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 StyleNotFound => VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
                 ModelNotFound => VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
                 RunModel => VOICEVOX_RESULT_RUN_MODEL_ERROR,
-                ExtractFullContextLabel => VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
+                AnalyzeText => VOICEVOX_RESULT_ANALYZE_TEXT_ERROR,
                 ParseKana => VOICEVOX_RESULT_PARSE_KANA_ERROR,
                 LoadUserDict => VOICEVOX_RESULT_LOAD_USER_DICT_ERROR,
                 SaveUserDict => VOICEVOX_RESULT_SAVE_USER_DICT_ERROR,

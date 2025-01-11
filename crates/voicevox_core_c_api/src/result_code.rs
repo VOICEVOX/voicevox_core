@@ -24,8 +24,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR = 7,
     /// 推論に失敗した
     VOICEVOX_RESULT_RUN_MODEL_ERROR = 8,
-    /// コンテキストラベル出力に失敗した
-    VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR = 11,
+    /// 入力テキストの解析に失敗した
+    VOICEVOX_RESULT_ANALYZE_TEXT_ERROR = 11,
     /// 無効なutf8文字列が入力された
     VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR = 12,
     /// AquesTalk風記法のテキストの解析に失敗した
@@ -81,9 +81,7 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
               が既に解除されています"
         }
         VOICEVOX_RESULT_RUN_MODEL_ERROR => c"推論に失敗しました",
-        VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR => {
-            c"入力テキストからのフルコンテキストラベル抽出に失敗しました"
-        }
+        VOICEVOX_RESULT_ANALYZE_TEXT_ERROR => c"入力テキストの解析に失敗しました",
         VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR => c"入力テキストが無効なUTF-8データでした",
         VOICEVOX_RESULT_PARSE_KANA_ERROR => {
             c"入力テキストをAquesTalk風記法としてパースすることに失敗しました"

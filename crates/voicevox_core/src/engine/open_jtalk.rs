@@ -21,7 +21,7 @@ pub(crate) struct OpenjtalkFunctionError {
     source: Option<Text2MecabError>,
 }
 
-pub trait FullcontextExtractor: Clone + Send + Sync + 'static {
+pub(crate) trait FullcontextExtractor {
     fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>>;
 }
 
@@ -38,7 +38,10 @@ pub(crate) mod blocking {
 
     use crate::error::ErrorRepr;
 
-    use super::{FullcontextExtractor, OpenjtalkFunctionError};
+    use super::{
+        super::{extract_full_context_label, AccentPhrase},
+        FullcontextExtractor, OpenjtalkFunctionError,
+    };
 
     /// テキスト解析器としてのOpen JTalk。
     #[derive(Clone)]
@@ -81,11 +84,18 @@ pub(crate) mod blocking {
 
     impl FullcontextExtractor for self::OpenJtalk {
         fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>> {
+            self.0.extract_fullcontext(text)
+        }
+    }
+
+    // TODO: このコードの移動
+    impl FullcontextExtractor for Inner {
+        fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>> {
             let Resources {
                 mecab,
                 njd,
                 jpcommon,
-            } = &mut *self.0.resources.lock().unwrap();
+            } = &mut *self.resources.lock().unwrap();
 
             jpcommon.refresh();
             njd.refresh();
@@ -126,6 +136,15 @@ pub(crate) mod blocking {
                 }
                 .into())
             }
+        }
+    }
+
+    impl crate::blocking::TextAnalyzer for self::OpenJtalk {
+        fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
+            if text.is_empty() {
+                return Ok(Vec::new());
+            }
+            Ok(extract_full_context_label(&*self.0, text)?)
         }
     }
 
@@ -196,7 +215,7 @@ pub(crate) mod blocking {
 pub(crate) mod nonblocking {
     use camino::Utf8Path;
 
-    use super::FullcontextExtractor;
+    use super::super::{extract_full_context_label, AccentPhrase};
 
     /// テキスト解析器としてのOpen JTalk。
     ///
@@ -207,7 +226,7 @@ pub(crate) mod nonblocking {
     /// [blocking]: https://docs.rs/crate/blocking
     /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
     #[derive(Clone)]
-    pub struct OpenJtalk(super::blocking::OpenJtalk);
+    pub struct OpenJtalk(pub(in super::super) super::blocking::OpenJtalk);
 
     impl self::OpenJtalk {
         pub async fn new(open_jtalk_dict_dir: impl AsRef<Utf8Path>) -> crate::result::Result<Self> {
@@ -231,9 +250,16 @@ pub(crate) mod nonblocking {
         }
     }
 
-    impl FullcontextExtractor for self::OpenJtalk {
-        fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>> {
-            self.0.extract_fullcontext(text)
+    impl crate::nonblocking::TextAnalyzer for self::OpenJtalk {
+        async fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
+            if text.is_empty() {
+                return Ok(Vec::new());
+            }
+            let inner = self.0 .0.clone();
+            let text = text.to_owned();
+            crate::task::asyncify(move || extract_full_context_label(&*inner, &text))
+                .await
+                .map_err(Into::into)
         }
     }
 }
@@ -345,7 +371,7 @@ mod tests {
         let open_jtalk = super::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
             .await
             .unwrap();
-        let result = open_jtalk.extract_fullcontext(text);
+        let result = open_jtalk.0.extract_fullcontext(text);
         assert_debug_fmt_eq!(expected, result);
     }
 
@@ -360,7 +386,7 @@ mod tests {
             .await
             .unwrap();
         for _ in 0..10 {
-            let result = open_jtalk.extract_fullcontext(text);
+            let result = open_jtalk.0.extract_fullcontext(text);
             assert_debug_fmt_eq!(expected, result);
         }
     }

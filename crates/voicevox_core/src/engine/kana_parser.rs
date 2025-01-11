@@ -121,6 +121,9 @@ fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhrase> {
 
 pub(crate) fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhrase>> {
     const TERMINATOR: char = '\0';
+    if text.is_empty() {
+        return Ok(vec![]);
+    }
     let mut parsed_result = Vec::new();
     let chars_of_text = text.chars().chain([TERMINATOR]);
     let mut phrase = String::new();

@@ -22,7 +22,7 @@ pub async fn synthesizer_with_sample_voice_model(
         #[cfg(feature = "link-onnxruntime")]
         crate::nonblocking::Onnxruntime::init_once().await?,
     )
-    .open_jtalk(crate::nonblocking::OpenJtalk::new(open_jtalk_dic_dir).await?)
+    .text_analyzer(crate::nonblocking::OpenJtalk::new(open_jtalk_dic_dir).await?)
     .acceleration_mode(AccelerationMode::Cpu)
     .build()?;
 

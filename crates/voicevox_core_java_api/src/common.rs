@@ -85,7 +85,7 @@ where
                             StyleNotFound,
                             ModelNotFound,
                             RunModel,
-                            ExtractFullContextLabel,
+                            AnalyzeText,
                             ParseKana,
                             LoadUserDict,
                             SaveUserDict,

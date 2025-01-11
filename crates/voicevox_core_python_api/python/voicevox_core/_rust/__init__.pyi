@@ -65,8 +65,8 @@ class RunModelError(Exception):
 
     ...
 
-class ExtractFullContextLabelError(Exception):
-    """コンテキストラベル出力に失敗した。"""
+class AnalyzeTextError(Exception):
+    """入力テキストの解析に失敗した。"""
 
     ...
 

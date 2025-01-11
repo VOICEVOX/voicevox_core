@@ -143,9 +143,9 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_RUN_MODEL_ERROR = 8,
   /**
-   * コンテキストラベル出力に失敗した
+   * 入力テキストの解析に失敗した
    */
-  VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR = 11,
+  VOICEVOX_RESULT_ANALYZE_TEXT_ERROR = 11,
   /**
    * 無効なutf8文字列が入力された
    */

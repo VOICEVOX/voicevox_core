@@ -1,40 +1,24 @@
-use crate::{
-    engine::{extract_full_context_label, parse_kana},
-    AccentPhrase, FullcontextExtractor, Result,
-};
+///// AquesTalk風記法からAccentPhraseの配列を生成するTextAnalyzer
+//#[derive(Clone)]
+//pub(crate) struct KanaAnalyzer;
 
-pub(crate) trait TextAnalyzer {
-    fn analyze(&self, text: &str) -> Result<Vec<AccentPhrase>>;
-}
+pub(crate) mod blocking {
+    use crate::AccentPhrase;
 
-/// AquesTalk風記法からAccentPhraseの配列を生成するTextAnalyzer
-#[derive(Clone)]
-pub(crate) struct KanaAnalyzer;
-
-impl TextAnalyzer for KanaAnalyzer {
-    fn analyze(&self, text: &str) -> Result<Vec<AccentPhrase>> {
-        if text.is_empty() {
-            return Ok(Vec::new());
-        }
-        Ok(parse_kana(text)?)
+    pub trait TextAnalyzer: Sync {
+        fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>>;
     }
 }
 
-/// OpenJtalkからAccentPhraseの配列を生成するTextAnalyzer
-#[derive(Clone)]
-pub(crate) struct OpenJTalkAnalyzer<O>(O);
+pub(crate) mod nonblocking {
+    use std::future::Future;
 
-impl<O> OpenJTalkAnalyzer<O> {
-    pub(crate) const fn new(open_jtalk: O) -> Self {
-        Self(open_jtalk)
-    }
-}
+    use crate::AccentPhrase;
 
-impl<O: FullcontextExtractor> TextAnalyzer for OpenJTalkAnalyzer<O> {
-    fn analyze(&self, text: &str) -> Result<Vec<AccentPhrase>> {
-        if text.is_empty() {
-            return Ok(Vec::new());
-        }
-        Ok(extract_full_context_label(&self.0, text)?)
+    pub trait TextAnalyzer: Sync {
+        fn analyze(
+            &self,
+            text: &str,
+        ) -> impl Future<Output = anyhow::Result<Vec<AccentPhrase>>> + Send;
     }
 }
