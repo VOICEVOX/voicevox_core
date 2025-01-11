@@ -1,24 +1,23 @@
 use easy_ext::ext;
 use enum_map::enum_map;
-use std::{
-    io::{Cursor, Write as _},
-    marker::PhantomData,
-    ops::Range,
-    sync::Arc,
-};
+use std::{marker::PhantomData, ops::Range, sync::Arc};
 use tracing::info;
 
 use crate::{
     asyncs::{Async, BlockingThreadPool, SingleTasked},
+    core::{ensure_minimum_phoneme_length, pad_decoder_feature},
     devices::{DeviceSpec, GpuSpec},
-    engine::{create_kana, mora_to_text, wav_from_s16le, Mora, OjtPhoneme},
+    engine::{
+        create_kana, initial_process, split_mora, to_s16le_pcm, wav_from_s16le, DecoderFeature,
+        Mora, OjtPhoneme,
+    },
     error::ErrorRepr,
     infer::{
         self,
         domains::{
-            FrameDecodeDomain, FrameDecodeOperation, GenerateFullIntermediateInput,
-            GenerateFullIntermediateOutput, InferenceDomainMap, PredictDurationInput,
-            PredictDurationOutput, PredictIntonationInput, PredictIntonationOutput,
+            experimental_talk, talk, DecodeInput, DecodeOutput, ExperimentalTalkDomain,
+            ExperimentalTalkOperation, FrameDecodeDomain, FrameDecodeOperation,
+            GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
             PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput, PredictSingF0Input,
             PredictSingF0Output, PredictSingVolumeInput, PredictSingVolumeOutput,
             RenderAudioSegmentInput, RenderAudioSegmentOutput, SfDecodeInput, SfDecodeOutput,
@@ -177,7 +176,12 @@ pub struct AudioFeature {
 struct Inner<O, A: Async> {
     status: Arc<Status<crate::blocking::Onnxruntime>>,
     open_jtalk_analyzer: OpenJTalkAnalyzer<O>,
-    kana_analyzer: KanaAnalyzer,
+    use_gpu: bool,
+    _marker: PhantomData<fn(A) -> A>,
+}
+
+struct InnerRefWithoutOpenJtalk<'a, A: Async> {
+    status: &'a Arc<Status<crate::blocking::Onnxruntime>>,
     use_gpu: bool,
     _marker: PhantomData<fn(A) -> A>,
 }
@@ -187,7 +191,6 @@ impl<O> From<Inner<O, BlockingThreadPool>> for Inner<O, SingleTasked> {
         Self {
             status: from.status,
             open_jtalk_analyzer: from.open_jtalk_analyzer,
-            kana_analyzer: KanaAnalyzer,
             use_gpu: from.use_gpu,
             _marker: PhantomData,
         }
@@ -246,10 +249,16 @@ impl<O, A: AsyncExt> Inner<O, A> {
             onnxruntime,
             InferenceDomainMap {
                 talk: enum_map! {
-                    TalkOperation::PredictDuration
-                    | TalkOperation::PredictIntonation
-                    | TalkOperation::GenerateFullIntermediate => light_session_options,
-                    TalkOperation::RenderAudioSegment => heavy_session_options,
+                    TalkOperation::PredictDuration | TalkOperation::PredictIntonation => {
+                        light_session_options
+                    }
+                    TalkOperation::Decode => heavy_session_options,
+                },
+                experimental_talk: enum_map! {
+                    ExperimentalTalkOperation::PredictDuration
+                    | ExperimentalTalkOperation::PredictIntonation
+                    | ExperimentalTalkOperation::GenerateFullIntermediate => light_session_options,
+                    ExperimentalTalkOperation::RenderAudioSegment => heavy_session_options,
                 },
                 singing_teacher: enum_map! {
                     SingingTeacherOperation::PredictSingConsonantLength
@@ -268,42 +277,57 @@ impl<O, A: AsyncExt> Inner<O, A> {
         Ok(Self {
             status,
             open_jtalk_analyzer: OpenJTalkAnalyzer::new(open_jtalk),
-            kana_analyzer: KanaAnalyzer,
             use_gpu,
             _marker: PhantomData,
         })
     }
 
+    fn without_open_jtalk(&self) -> InnerRefWithoutOpenJtalk<'_, A> {
+        InnerRefWithoutOpenJtalk {
+            status: &self.status,
+            use_gpu: self.use_gpu,
+            _marker: PhantomData,
+        }
+    }
+}
+
+trait AsInner {
+    type OpenJtalk;
+    type Async: AsyncExt;
+    fn status(&self) -> &Arc<Status<crate::blocking::Onnxruntime>>;
+    fn open_jtalk_analyzer(&self) -> &OpenJTalkAnalyzer<Self::OpenJtalk>;
+    fn use_gpu(&self) -> bool;
+
     fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
-        self.status.rt
+        self.status().rt
     }
 
     fn is_gpu_mode(&self) -> bool {
-        self.use_gpu
+        self.use_gpu()
     }
 
-    async fn load_voice_model(&self, model: &voice_model::Inner<A>) -> crate::Result<()> {
+    async fn load_voice_model(&self, model: &voice_model::Inner<Self::Async>) -> crate::Result<()> {
         let model_bytes = model.read_inference_models().await?;
 
-        let status = self.status.clone();
+        let status = self.status().clone();
         let header = model.header().clone();
-        A::unblock(move || status.insert_model(&header, &model_bytes)).await
+        Self::Async::unblock(move || status.insert_model(&header, &model_bytes)).await
     }
 
     fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> Result<()> {
-        self.status.unload_model(voice_model_id)
+        self.status().unload_model(voice_model_id)
     }
 
     fn is_loaded_voice_model(&self, voice_model_id: VoiceModelId) -> bool {
-        self.status.is_loaded_model(voice_model_id)
+        self.status().is_loaded_model(voice_model_id)
     }
 
     fn is_loaded_model_by_style_id(&self, style_id: StyleId) -> bool {
-        self.status.is_loaded_model_by_style_id(style_id)
+        self.status().is_loaded_model_by_style_id(style_id)
     }
 
     fn metas(&self) -> VoiceModelMeta {
-        self.status.metas()
+        self.status().metas()
     }
 
     async fn precompute_render(
@@ -312,103 +336,8 @@ impl<O, A: AsyncExt> Inner<O, A> {
         style_id: StyleId,
         options: &SynthesisOptions,
     ) -> Result<AudioFeature> {
-        let AudioQuery {
-            accent_phrases,
-            speed_scale,
-            pitch_scale,
-            intonation_scale,
-            pre_phoneme_length,
-            post_phoneme_length,
-            ..
-        } = audio_query;
-
-        let accent_phrases = if options.enable_interrogative_upspeak {
-            &adjust_interrogative_accent_phrases(accent_phrases)
-        } else {
-            accent_phrases
-        };
-
-        let (flatten_moras, phoneme_data_list) = initial_process(accent_phrases);
-
-        let mut phoneme_length_list = vec![*pre_phoneme_length];
-        let mut f0_list = vec![0.];
-        let mut voiced_list = vec![false];
-        {
-            let mut sum_of_f0_bigger_than_zero = 0.;
-            let mut count_of_f0_bigger_than_zero = 0;
-
-            for Mora {
-                consonant_length,
-                vowel_length,
-                pitch,
-                ..
-            } in flatten_moras
-            {
-                if let Some(consonant_length) = consonant_length {
-                    phoneme_length_list.push(consonant_length);
-                }
-                phoneme_length_list.push(vowel_length);
-
-                let f0_single = pitch * 2.0_f32.powf(*pitch_scale);
-                f0_list.push(f0_single);
-
-                let bigger_than_zero = f0_single > 0.;
-                voiced_list.push(bigger_than_zero);
-
-                if bigger_than_zero {
-                    sum_of_f0_bigger_than_zero += f0_single;
-                    count_of_f0_bigger_than_zero += 1;
-                }
-            }
-            phoneme_length_list.push(*post_phoneme_length);
-            f0_list.push(0.);
-            voiced_list.push(false);
-            let mean_f0 = sum_of_f0_bigger_than_zero / (count_of_f0_bigger_than_zero as f32);
-
-            if !mean_f0.is_nan() {
-                for i in 0..f0_list.len() {
-                    if voiced_list[i] {
-                        f0_list[i] = (f0_list[i] - mean_f0) * intonation_scale + mean_f0;
-                    }
-                }
-            }
-        }
-
-        let (_, _, vowel_indexes) = split_mora(&phoneme_data_list);
-
-        let mut phoneme = Vec::new();
-        let mut f0: Vec<f32> = Vec::new();
-        {
-            const RATE: f32 = 24000. / 256.;
-            let mut sum_of_phoneme_length = 0;
-            let mut count_of_f0 = 0;
-            let mut vowel_indexes_index = 0;
-
-            for (i, phoneme_length) in phoneme_length_list.iter().enumerate() {
-                // VOICEVOX ENGINEと挙動を合わせるため、四捨五入ではなく偶数丸めをする
-                //
-                // https://github.com/VOICEVOX/voicevox_engine/issues/552
-                let phoneme_length = ((*phoneme_length * RATE).round_ties_even() / speed_scale)
-                    .round_ties_even() as usize;
-                let phoneme_id = phoneme_data_list[i].phoneme_id();
-
-                for _ in 0..phoneme_length {
-                    let mut phonemes_vec = [0.; OjtPhoneme::num_phoneme()];
-                    phonemes_vec[phoneme_id as usize] = 1.;
-                    phoneme.push(phonemes_vec)
-                }
-                sum_of_phoneme_length += phoneme_length;
-
-                if i as i64 == vowel_indexes[vowel_indexes_index] {
-                    for _ in 0..sum_of_phoneme_length {
-                        f0.push(f0_list[count_of_f0]);
-                    }
-                    count_of_f0 += 1;
-                    sum_of_phoneme_length = 0;
-                    vowel_indexes_index += 1;
-                }
-            }
-        }
+        let DecoderFeature { f0, phoneme } =
+            audio_query.decoder_feature(options.enable_interrogative_upspeak);
 
         let spec = self
             .generate_full_intermediate(
@@ -419,62 +348,13 @@ impl<O, A: AsyncExt> Inner<O, A> {
                 style_id,
             )
             .await?;
-        return Ok(AudioFeature {
+        Ok(AudioFeature {
             internal_state: spec,
             style_id,
             frame_length: f0.len(),
             frame_rate: (DEFAULT_SAMPLING_RATE as f64) / 256.0,
             audio_query: audio_query.clone(),
-        });
-
-        fn adjust_interrogative_accent_phrases(
-            accent_phrases: &[AccentPhrase],
-        ) -> Vec<AccentPhrase> {
-            accent_phrases
-                .iter()
-                .map(|accent_phrase| AccentPhrase {
-                    moras: adjust_interrogative_moras(accent_phrase),
-                    ..accent_phrase.clone()
-                })
-                .collect()
-        }
-
-        fn adjust_interrogative_moras(
-            AccentPhrase {
-                moras,
-                is_interrogative,
-                ..
-            }: &AccentPhrase,
-        ) -> Vec<Mora> {
-            if *is_interrogative && !moras.is_empty() {
-                let last_mora = moras.last().unwrap();
-                if last_mora.pitch != 0.0 {
-                    let mut new_moras: Vec<Mora> = Vec::with_capacity(moras.len() + 1);
-                    new_moras.extend_from_slice(moras.as_slice());
-                    let interrogative_mora = make_interrogative_mora(last_mora);
-                    new_moras.push(interrogative_mora);
-                    return new_moras;
-                }
-            }
-            moras.clone()
-        }
-
-        fn make_interrogative_mora(last_mora: &Mora) -> Mora {
-            const FIX_VOWEL_LENGTH: f32 = 0.15;
-            const ADJUST_PITCH: f32 = 0.3;
-            const MAX_PITCH: f32 = 6.5;
-
-            let pitch = (last_mora.pitch + ADJUST_PITCH).min(MAX_PITCH);
-
-            Mora {
-                text: mora_to_text(None, &last_mora.vowel),
-                consonant: None,
-                consonant_length: None,
-                vowel: last_mora.vowel.clone(),
-                vowel_length: FIX_VOWEL_LENGTH,
-                pitch,
-            }
-        }
+        })
     }
 
     async fn render(&self, audio: &AudioFeature, range: Range<usize>) -> Result<Vec<u8>> {
@@ -489,38 +369,11 @@ impl<O, A: AsyncExt> Inner<O, A> {
             .render_audio_segment(spec_segment.to_owned(), audio.style_id)
             .await?;
         let wave = trim_margin_from_wave(wave_with_margin);
-        return Ok(to_s16le_pcm(
+        Ok(to_s16le_pcm::<DEFAULT_SAMPLING_RATE>(
             wave.as_slice()
                 .expect("`trim_margin_from_wave` should just trim an array"),
             &audio.audio_query,
-        ));
-
-        fn to_s16le_pcm(
-            wave: &[f32],
-            &AudioQuery {
-                volume_scale,
-                output_sampling_rate,
-                output_stereo,
-                ..
-            }: &AudioQuery,
-        ) -> Vec<u8> {
-            let num_channels: u16 = if output_stereo { 2 } else { 1 };
-            let repeat_count: u32 =
-                (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
-            let bytes_size = wave.len() as u32 * repeat_count * 2;
-            let buf: Vec<u8> = Vec::with_capacity(bytes_size as usize);
-            let mut cur = Cursor::new(buf);
-
-            for value in wave {
-                let v = (value * volume_scale).clamp(-1., 1.);
-                let data = (v * 0x7fff as f32) as i16;
-                for _ in 0..repeat_count {
-                    cur.write_all(&data.to_le_bytes()).unwrap();
-                }
-            }
-
-            cur.into_inner()
-        }
+        ))
     }
 
     async fn synthesis(
@@ -529,6 +382,24 @@ impl<O, A: AsyncExt> Inner<O, A> {
         style_id: StyleId,
         options: &SynthesisOptions,
     ) -> Result<Vec<u8>> {
+        if self.status().contains_domain::<TalkDomain>(style_id) {
+            let DecoderFeature { f0, phoneme } =
+                audio_query.decoder_feature(options.enable_interrogative_upspeak);
+            let wave = &self
+                .decode(
+                    f0.len(),
+                    OjtPhoneme::num_phoneme(),
+                    &f0,
+                    phoneme.as_flattened(),
+                    style_id,
+                )
+                .await?;
+            return Ok(wav_from_s16le(
+                &to_s16le_pcm::<DEFAULT_SAMPLING_RATE>(wave, audio_query),
+                audio_query.output_sampling_rate,
+                audio_query.output_stereo,
+            ));
+        }
         let audio = self
             .precompute_render(audio_query, style_id, options)
             .await?;
@@ -545,7 +416,7 @@ impl<O, A: AsyncExt> Inner<O, A> {
         kana: &str,
         style_id: StyleId,
     ) -> Result<Vec<AccentPhrase>> {
-        let accent_phrases = self.kana_analyzer.analyze(kana)?;
+        let accent_phrases = KanaAnalyzer.analyze(kana)?;
         self.replace_mora_data(&accent_phrases, style_id).await
     }
 
@@ -754,40 +625,47 @@ impl<O, A: AsyncExt> Inner<O, A> {
         self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
             .await
     }
-}
 
-impl<O: FullcontextExtractor, A: AsyncExt> Inner<O, A> {
     async fn create_accent_phrases(
         &self,
         text: &str,
         style_id: StyleId,
-    ) -> Result<Vec<AccentPhrase>> {
-        let accent_phrases = self.open_jtalk_analyzer.analyze(text)?;
+    ) -> Result<Vec<AccentPhrase>>
+    where
+        Self::OpenJtalk: FullcontextExtractor,
+    {
+        let accent_phrases = self.open_jtalk_analyzer().analyze(text)?;
         self.replace_mora_data(&accent_phrases, style_id).await
     }
 
-    async fn create_audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery> {
+    async fn create_audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery>
+    where
+        Self::OpenJtalk: FullcontextExtractor,
+    {
         let accent_phrases = self.create_accent_phrases(text, style_id).await?;
         Ok(AudioQuery::from_accent_phrases(accent_phrases))
     }
 
-    async fn tts(&self, text: &str, style_id: StyleId, options: &TtsOptions) -> Result<Vec<u8>> {
+    async fn tts(&self, text: &str, style_id: StyleId, options: &TtsOptions) -> Result<Vec<u8>>
+    where
+        Self::OpenJtalk: FullcontextExtractor,
+    {
         let audio_query = &self.create_audio_query(text, style_id).await?;
         self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
             .await
     }
-}
 
-// TODO: この層を破壊する
-impl<O, A: infer::AsyncExt> Inner<O, A> {
+    // TODO: この層を破壊する
     async fn predict_duration(
         &self,
         phoneme_vector: &[i64],
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        let status = self.status.clone();
+        let status = self.status().clone();
         let phoneme_vector = ndarray::arr1(phoneme_vector);
-        status.predict_duration::<A>(phoneme_vector, style_id).await
+        status
+            .predict_duration::<Self::Async>(phoneme_vector, style_id)
+            .await
     }
 
     #[expect(
@@ -806,7 +684,7 @@ impl<O, A: infer::AsyncExt> Inner<O, A> {
         end_accent_phrase_vector: &[i64],
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        let status = self.status.clone();
+        let status = self.status().clone();
         let vowel_phoneme_vector = ndarray::arr1(vowel_phoneme_vector);
         let consonant_phoneme_vector = ndarray::arr1(consonant_phoneme_vector);
         let start_accent_vector = ndarray::arr1(start_accent_vector);
@@ -814,7 +692,7 @@ impl<O, A: infer::AsyncExt> Inner<O, A> {
         let start_accent_phrase_vector = ndarray::arr1(start_accent_phrase_vector);
         let end_accent_phrase_vector = ndarray::arr1(end_accent_phrase_vector);
         status
-            .predict_intonation::<A>(
+            .predict_intonation::<Self::Async>(
                 length,
                 vowel_phoneme_vector,
                 consonant_phoneme_vector,
@@ -835,11 +713,17 @@ impl<O, A: infer::AsyncExt> Inner<O, A> {
         phoneme_vector: &[f32],
         style_id: StyleId,
     ) -> Result<ndarray::Array2<f32>> {
-        let status = self.status.clone();
+        let status = self.status().clone();
         let f0 = ndarray::arr1(f0);
         let phoneme_vector = ndarray::arr1(phoneme_vector);
         status
-            .generate_full_intermediate::<A>(length, phoneme_size, f0, phoneme_vector, style_id)
+            .generate_full_intermediate::<Self::Async>(
+                length,
+                phoneme_size,
+                f0,
+                phoneme_vector,
+                style_id,
+            )
             .await
     }
 
@@ -848,8 +732,10 @@ impl<O, A: infer::AsyncExt> Inner<O, A> {
         spec: ndarray::Array2<f32>,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        let status = self.status.clone();
-        status.render_audio_segment::<A>(spec, style_id).await
+        let status = self.status().clone();
+        status
+            .render_audio_segment::<Self::Async>(spec, style_id)
+            .await
     }
 
     async fn decode(
@@ -860,12 +746,47 @@ impl<O, A: infer::AsyncExt> Inner<O, A> {
         phoneme_vector: &[f32],
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        let status = self.status.clone();
+        let status = self.status().clone();
         let f0 = ndarray::arr1(f0);
         let phoneme_vector = ndarray::arr1(phoneme_vector);
         status
-            .decode::<A>(length, phoneme_size, f0, phoneme_vector, style_id)
+            .decode::<Self::Async>(length, phoneme_size, f0, phoneme_vector, style_id)
             .await
+    }
+}
+
+impl<O, A: AsyncExt> AsInner for Inner<O, A> {
+    type OpenJtalk = O;
+    type Async = A;
+
+    fn status(&self) -> &Arc<Status<crate::blocking::Onnxruntime>> {
+        &self.status
+    }
+
+    fn open_jtalk_analyzer(&self) -> &OpenJTalkAnalyzer<Self::OpenJtalk> {
+        &self.open_jtalk_analyzer
+    }
+
+    fn use_gpu(&self) -> bool {
+        self.use_gpu
+    }
+}
+
+impl<A: AsyncExt> AsInner for InnerRefWithoutOpenJtalk<'_, A> {
+    type OpenJtalk = ();
+    type Async = A;
+
+    fn status(&self) -> &Arc<Status<crate::blocking::Onnxruntime>> {
+        self.status
+    }
+
+    fn open_jtalk_analyzer(&self) -> &OpenJTalkAnalyzer<Self::OpenJtalk> {
+        static OPEN_JTALK_ANALYZER: OpenJTalkAnalyzer<()> = OpenJTalkAnalyzer::new(());
+        &OPEN_JTALK_ANALYZER
+    }
+
+    fn use_gpu(&self) -> bool {
+        self.use_gpu
     }
 }
 
@@ -875,30 +796,36 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme_vector: ndarray::Array1<i64>,
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        if self.contains_domain::<TalkDomain>(style_id) {
+            let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+            let talk::PredictDurationOutput {
+                phoneme_length: output,
+            } = self
+                .run_session::<A, _>(
+                    model_id,
+                    talk::PredictDurationInput {
+                        phoneme_list: phoneme_vector,
+                        speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
+                    },
+                )
+                .await?;
+            return Ok(ensure_minimum_phoneme_length(output.into_raw_vec()));
+        }
+        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
-        let PredictDurationOutput {
+        let experimental_talk::PredictDurationOutput {
             phoneme_length: output,
         } = self
             .run_session::<A, _>(
                 model_id,
-                PredictDurationInput {
+                experimental_talk::PredictDurationInput {
                     phoneme_list: phoneme_vector,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
             )
             .await?;
-        let mut output = output.into_raw_vec();
-
-        for output_item in output.iter_mut() {
-            if *output_item < PHONEME_LENGTH_MINIMAL {
-                *output_item = PHONEME_LENGTH_MINIMAL;
-            }
-        }
-
-        return Ok(output);
-
-        const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
+        Ok(ensure_minimum_phoneme_length(output.into_raw_vec()))
     }
 
     #[expect(
@@ -917,12 +844,32 @@ impl<R: InferenceRuntime> Status<R> {
         end_accent_phrase_vector: ndarray::Array1<i64>,
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        if self.contains_domain::<TalkDomain>(style_id) {
+            let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+            let talk::PredictIntonationOutput { f0_list: output } = self
+                .run_session::<A, _>(
+                    model_id,
+                    talk::PredictIntonationInput {
+                        length: ndarray::arr0(length as i64),
+                        vowel_phoneme_list: vowel_phoneme_vector,
+                        consonant_phoneme_list: consonant_phoneme_vector,
+                        start_accent_list: start_accent_vector,
+                        end_accent_list: end_accent_vector,
+                        start_accent_phrase_list: start_accent_phrase_vector,
+                        end_accent_phrase_list: end_accent_phrase_vector,
+                        speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
+                    },
+                )
+                .await?;
+            return Ok(output.into_raw_vec());
+        }
+        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
-        let PredictIntonationOutput { f0_list: output } = self
+        let experimental_talk::PredictIntonationOutput { f0_list: output } = self
             .run_session::<A, _>(
                 model_id,
-                PredictIntonationInput {
+                experimental_talk::PredictIntonationInput {
                     length: ndarray::arr0(length as i64),
                     vowel_phoneme_list: vowel_phoneme_vector,
                     consonant_phoneme_list: consonant_phoneme_vector,
@@ -949,17 +896,13 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme_vector: ndarray::Array1<f32>,
         style_id: StyleId,
     ) -> Result<ndarray::Array2<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
-        // 音が途切れてしまうのを避けるworkaround処理が入っている
-        // TODO: 改善したらここのpadding処理を取り除く
-        let start_and_end_padding_size = 2 * PADDING_FRAME_LENGTH;
-        let length_with_padding = f0.len() + start_and_end_padding_size;
-        let f0_with_padding = make_f0_with_padding(f0, PADDING_FRAME_LENGTH);
-        let phoneme_with_padding = make_phoneme_with_padding(
-            phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
-            PADDING_FRAME_LENGTH,
-        );
+        let (length_with_padding, f0_with_padding, phoneme_with_padding) =
+            pad_decoder_feature::<PADDING_FRAME_LENGTH>(
+                f0,
+                phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
+            );
 
         let GenerateFullIntermediateOutput {
             spec: spec_with_padding,
@@ -982,36 +925,13 @@ impl<R: InferenceRuntime> Status<R> {
             unreachable!("Validation error: Too short padding for input, please report this issue on GitHub.");
         }
         // マージン分を両端に残して音声特徴量を返す
-        return Ok(spec_with_padding
+        Ok(spec_with_padding
             .slice(ndarray::s![
                 PADDING_FRAME_LENGTH - MARGIN
                     ..spec_with_padding.nrows() - PADDING_FRAME_LENGTH + MARGIN,
                 ..
             ])
-            .to_owned());
-
-        fn make_f0_with_padding(
-            f0_slice: ndarray::Array1<f32>,
-            padding_size: usize,
-        ) -> ndarray::Array1<f32> {
-            // 音が途切れてしまうのを避けるworkaround処理
-            // 改善したらこの関数を削除する
-            let padding = ndarray::Array1::<f32>::zeros(padding_size);
-            ndarray::concatenate![ndarray::Axis(0), padding, f0_slice, padding]
-        }
-
-        fn make_phoneme_with_padding(
-            phoneme_slice: ndarray::Array2<f32>,
-            padding_size: usize,
-        ) -> ndarray::Array2<f32> {
-            // 音が途切れてしまうのを避けるworkaround処理
-            // 改善したらこの関数を削除する
-            let mut padding = ndarray::Array2::<f32>::zeros((padding_size, phoneme_slice.ncols()));
-            padding
-                .slice_mut(ndarray::s![.., 0])
-                .assign(&ndarray::arr0(1.0));
-            ndarray::concatenate![ndarray::Axis(0), padding, phoneme_slice, padding]
-        }
+            .to_owned())
     }
 
     /// 与えられた音声特徴量で音声生成。
@@ -1020,7 +940,7 @@ impl<R: InferenceRuntime> Status<R> {
         spec: ndarray::Array2<f32>,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        let (model_id, _inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+        let (model_id, _inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
         let RenderAudioSegmentOutput { wave } = self
             .run_session::<A, _>(model_id, RenderAudioSegmentInput { spec })
             .await?;
@@ -1035,6 +955,35 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme_vector: ndarray::Array1<f32>,
         style_id: StyleId,
     ) -> Result<Vec<f32>> {
+        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        if self.contains_domain::<TalkDomain>(style_id) {
+            let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+            let (length_with_padding, f0_with_padding, phoneme_with_padding) =
+                pad_decoder_feature::<PADDING_FRAME_LENGTH>(
+                    f0,
+                    phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
+                );
+            let DecodeOutput { wave: output } = self
+                .run_session::<A, _>(
+                    model_id,
+                    DecodeInput {
+                        f0: f0_with_padding
+                            .into_shape([length_with_padding, 1])
+                            .unwrap(),
+                        phoneme: phoneme_with_padding,
+                        speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
+                    },
+                )
+                .await?;
+            let len = output.len();
+            return Ok(output
+                .slice_move(ndarray::s![
+                    PADDING_FRAME_LENGTH * 256..len - PADDING_FRAME_LENGTH * 256,
+                ])
+                .as_standard_layout()
+                .into_owned()
+                .into_raw_vec());
+        }
         let intermediate = self
             .generate_full_intermediate::<A>(length, phoneme_size, f0, phoneme_vector, style_id)
             .await?;
@@ -1185,87 +1134,6 @@ fn list_windows_video_cards() {
     }
 }
 
-fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<OjtPhoneme>) {
-    let flatten_moras = to_flatten_moras(accent_phrases);
-
-    let mut phoneme_strings = vec!["pau".to_string()];
-    for mora in flatten_moras.iter() {
-        if let Some(consonant) = &mora.consonant {
-            phoneme_strings.push(consonant.clone())
-        }
-        phoneme_strings.push(mora.vowel.clone());
-    }
-    phoneme_strings.push("pau".to_string());
-
-    let phoneme_data_list = to_phoneme_data_list(&phoneme_strings);
-
-    return (flatten_moras, phoneme_data_list);
-
-    fn to_flatten_moras(accent_phrases: &[AccentPhrase]) -> Vec<Mora> {
-        let mut flatten_moras = Vec::new();
-
-        for AccentPhrase {
-            moras, pause_mora, ..
-        } in accent_phrases
-        {
-            for mora in moras {
-                flatten_moras.push(mora.clone());
-            }
-            if let Some(pause_mora) = pause_mora {
-                flatten_moras.push(pause_mora.clone());
-            }
-        }
-
-        flatten_moras
-    }
-
-    fn to_phoneme_data_list<T: AsRef<str>>(phoneme_str_list: &[T]) -> Vec<OjtPhoneme> {
-        OjtPhoneme::convert(
-            phoneme_str_list
-                .iter()
-                .map(AsRef::as_ref)
-                .map(ToOwned::to_owned)
-                .map(OjtPhoneme::new)
-                .collect::<Vec<OjtPhoneme>>()
-                .as_slice(),
-        )
-    }
-}
-
-fn split_mora(phoneme_list: &[OjtPhoneme]) -> (Vec<OjtPhoneme>, Vec<OjtPhoneme>, Vec<i64>) {
-    let mut vowel_indexes = Vec::new();
-    for (i, phoneme) in phoneme_list.iter().enumerate() {
-        const MORA_PHONEME_LIST: &[&str] = &[
-            "a", "i", "u", "e", "o", "N", "A", "I", "U", "E", "O", "cl", "pau",
-        ];
-
-        if MORA_PHONEME_LIST
-            .iter()
-            .any(|mora_phoneme| *mora_phoneme == phoneme.phoneme())
-        {
-            vowel_indexes.push(i as i64);
-        }
-    }
-
-    let vowel_phoneme_list = vowel_indexes
-        .iter()
-        .map(|vowel_index| phoneme_list[*vowel_index as usize].clone())
-        .collect();
-
-    let mut consonant_phoneme_list = vec![OjtPhoneme::default()];
-    for i in 0..(vowel_indexes.len() - 1) {
-        let prev = vowel_indexes[i];
-        let next = vowel_indexes[i + 1];
-        if next - prev == 1 {
-            consonant_phoneme_list.push(OjtPhoneme::default());
-        } else {
-            consonant_phoneme_list.push(phoneme_list[next as usize - 1].clone());
-        }
-    }
-
-    (consonant_phoneme_list, vowel_phoneme_list, vowel_indexes)
-}
-
 impl AudioQuery {
     fn from_accent_phrases(accent_phrases: Vec<AccentPhrase>) -> Self {
         let kana = create_kana(&accent_phrases);
@@ -1301,7 +1169,10 @@ pub(crate) mod blocking {
         FullcontextExtractor, StyleId, VoiceModelId, VoiceModelMeta,
     };
 
-    use super::{AccelerationMode, InitializeOptions, Inner, SynthesisOptions, TtsOptions};
+    use super::{
+        AccelerationMode, AsInner as _, InitializeOptions, Inner, InnerRefWithoutOpenJtalk,
+        SynthesisOptions, TtsOptions,
+    };
 
     pub use super::AudioFeature;
 
@@ -1395,9 +1266,9 @@ pub(crate) mod blocking {
             &'a self,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
-        ) -> PrecomputeRender<'a, O> {
+        ) -> PrecomputeRender<'a> {
             PrecomputeRender {
-                synthesizer: &self.0,
+                synthesizer: self.0.without_open_jtalk(),
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -1414,9 +1285,9 @@ pub(crate) mod blocking {
             &'a self,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
-        ) -> Synthesis<'a, O> {
+        ) -> Synthesis<'a> {
             Synthesis {
-                synthesizer: &self.0,
+                synthesizer: self.0.without_open_jtalk(),
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -1530,9 +1401,9 @@ pub(crate) mod blocking {
         }
 
         /// AquesTalk風記法から音声合成を行う。
-        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a, O> {
+        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
             TtsFromKana {
-                synthesizer: &self.0,
+                synthesizer: self.0.without_open_jtalk(),
                 kana,
                 style_id,
                 options: TtsOptions::default(),
@@ -1779,16 +1650,15 @@ pub(crate) mod blocking {
         }
     }
 
-    // TODO: この`O`は削れるはず
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct PrecomputeRender<'a, O> {
-        synthesizer: &'a Inner<O, SingleTasked>,
+    pub struct PrecomputeRender<'a> {
+        synthesizer: InnerRefWithoutOpenJtalk<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: SynthesisOptions,
     }
 
-    impl<O> PrecomputeRender<'_, O> {
+    impl PrecomputeRender<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1802,16 +1672,15 @@ pub(crate) mod blocking {
         }
     }
 
-    // TODO: この`O`は削れるはず
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct Synthesis<'a, O> {
-        synthesizer: &'a Inner<O, SingleTasked>,
+    pub struct Synthesis<'a> {
+        synthesizer: InnerRefWithoutOpenJtalk<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: SynthesisOptions,
     }
 
-    impl<O> Synthesis<'_, O> {
+    impl Synthesis<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1825,16 +1694,15 @@ pub(crate) mod blocking {
         }
     }
 
-    // TODO: この`O`は削れるはず
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct TtsFromKana<'a, O> {
-        synthesizer: &'a Inner<O, SingleTasked>,
+    pub struct TtsFromKana<'a> {
+        synthesizer: InnerRefWithoutOpenJtalk<'a, SingleTasked>,
         kana: &'a str,
         style_id: StyleId,
         options: TtsOptions,
     }
 
-    impl<O> TtsFromKana<'_, O> {
+    impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1879,7 +1747,10 @@ pub(crate) mod nonblocking {
         StyleId, VoiceModelId, VoiceModelMeta,
     };
 
-    use super::{AccelerationMode, InitializeOptions, Inner, SynthesisOptions, TtsOptions};
+    use super::{
+        AccelerationMode, AsInner as _, InitializeOptions, Inner, InnerRefWithoutOpenJtalk,
+        SynthesisOptions, TtsOptions,
+    };
 
     /// 音声シンセサイザ。
     ///
@@ -1979,9 +1850,9 @@ pub(crate) mod nonblocking {
             &'a self,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
-        ) -> Synthesis<'a, O> {
+        ) -> Synthesis<'a> {
             Synthesis {
-                synthesizer: &self.0,
+                synthesizer: self.0.without_open_jtalk(),
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -2084,9 +1955,9 @@ pub(crate) mod nonblocking {
         }
 
         /// AquesTalk風記法から音声合成を行う。
-        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a, O> {
+        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
             TtsFromKana {
-                synthesizer: &self.0,
+                synthesizer: self.0.without_open_jtalk(),
                 kana,
                 style_id,
                 options: Default::default(),
@@ -2219,16 +2090,15 @@ pub(crate) mod nonblocking {
         }
     }
 
-    // TODO: この`O`は削れるはず
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct Synthesis<'a, O> {
-        synthesizer: &'a Inner<O, BlockingThreadPool>,
+    pub struct Synthesis<'a> {
+        synthesizer: InnerRefWithoutOpenJtalk<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: SynthesisOptions,
     }
 
-    impl<O> Synthesis<'_, O> {
+    impl Synthesis<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2242,16 +2112,15 @@ pub(crate) mod nonblocking {
         }
     }
 
-    // TODO: この`O`は削れるはず
     #[must_use = "this is a builder. it does nothing until `exec`uted"]
-    pub struct TtsFromKana<'a, O> {
-        synthesizer: &'a Inner<O, BlockingThreadPool>,
+    pub struct TtsFromKana<'a> {
+        synthesizer: InnerRefWithoutOpenJtalk<'a, BlockingThreadPool>,
         kana: &'a str,
         style_id: StyleId,
         options: TtsOptions,
     }
 
-    impl<O> TtsFromKana<'_, O> {
+    impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2290,7 +2159,7 @@ pub(crate) mod nonblocking {
 
 #[cfg(test)]
 mod tests {
-    use super::AccelerationMode;
+    use super::{AccelerationMode, AsInner as _};
     use crate::{
         asyncs::BlockingThreadPool, engine::Mora, macros::tests::assert_debug_fmt_eq, AccentPhrase,
         Result, StyleId,
