@@ -69,7 +69,7 @@ class Onnxruntime:
 
     # ここの定数値が本物と合致するかどうかは、test_type_stub_consts.pyで担保する。
 
-    LIB_NAME: str = "onnxruntime"
+    LIB_NAME: str = "voicevox_onnxruntime"
     """ONNX Runtimeのライブラリ名。"""
 
     LIB_VERSION: str = "1.17.3"
