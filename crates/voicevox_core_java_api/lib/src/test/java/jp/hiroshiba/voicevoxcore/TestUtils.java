@@ -24,7 +24,7 @@ public class TestUtils {
             + Onnxruntime.LIB_VERSIONED_FILENAME.replace("voicevox_onnxruntime", "onnxruntime");
 
     try {
-      return Onnxruntime.loadOnce().filename(FILENAME).exec();
+      return Onnxruntime.loadOnce().filename(FILENAME).perform();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

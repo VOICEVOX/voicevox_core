@@ -17,7 +17,7 @@ pub async fn synthesizer_with_sample_voice_model(
         #[cfg(feature = "load-onnxruntime")]
         crate::nonblocking::Onnxruntime::load_once()
             .filename(onnxruntime_dylib_path)
-            .exec()
+            .perform()
             .await?,
         #[cfg(feature = "link-onnxruntime")]
         crate::nonblocking::Onnxruntime::init_once().await?,

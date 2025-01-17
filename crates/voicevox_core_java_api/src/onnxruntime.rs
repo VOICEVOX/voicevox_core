@@ -36,7 +36,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rs
         let filename = String::from(env.get_string(&filename)?);
         let internal = voicevox_core::blocking::Onnxruntime::load_once()
             .filename(filename)
-            .exec()?;
+            .perform()?;
         env.set_rust_field(&this, "handle", internal)?;
         Ok(())
     })

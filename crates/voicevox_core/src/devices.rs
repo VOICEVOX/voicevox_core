@@ -58,7 +58,7 @@ fn test_gpu(
 ///
 /// # voicevox_core::blocking::Onnxruntime::load_once()
 /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
-/// #     .exec()?;
+/// #     .perform()?;
 /// #
 /// let onnxruntime = Onnxruntime::get().unwrap();
 /// dbg!(SupportedDevices::THIS & onnxruntime.supported_devices()?);

@@ -14,7 +14,7 @@ import jp.hiroshiba.voicevoxcore.internal.Dll;
  * <p>シングルトンであり、インスタンスは高々一つ。
  *
  * <pre>
- * Onnxruntime ort1 = Onnxruntime.loadOnce().exec();
+ * Onnxruntime ort1 = Onnxruntime.loadOnce().perform();
  * Onnxruntime ort2 = Onnxruntime.get().get();
  * assert ort1 == ort2;
  * </pre>
@@ -96,7 +96,7 @@ public class Onnxruntime {
      *
      * @return {@link Onnxruntime}。
      */
-    public Onnxruntime exec() {
+    public Onnxruntime perform() {
       synchronized (Onnxruntime.class) {
         if (instance == null) {
           instance = new Onnxruntime(filename);

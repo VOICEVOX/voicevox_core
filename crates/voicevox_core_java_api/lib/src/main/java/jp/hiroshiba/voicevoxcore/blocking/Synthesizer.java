@@ -253,7 +253,7 @@ public class Synthesizer {
    * @param audioQuery {@link AudioQuery}。
    * @param styleId スタイルID。
    * @return {@link SynthesisConfigurator}。
-   * @see SynthesisConfigurator#execute
+   * @see SynthesisConfigurator#perform
    */
   @Nonnull
   public SynthesisConfigurator synthesis(AudioQuery audioQuery, int styleId) {
@@ -266,7 +266,7 @@ public class Synthesizer {
    * @param kana AquesTalk風記法。
    * @param styleId スタイルID。
    * @return {@link TtsFromKanaConfigurator}。
-   * @see TtsFromKanaConfigurator#execute
+   * @see TtsFromKanaConfigurator#perform
    */
   @Nonnull
   public TtsFromKanaConfigurator ttsFromKana(String kana, int styleId) {
@@ -279,7 +279,7 @@ public class Synthesizer {
    * @param text 日本語のテキスト。
    * @param styleId スタイルID。
    * @return {@link TtsConfigurator}。
-   * @see TtsConfigurator#execute
+   * @see TtsConfigurator#perform
    */
   @Nonnull
   public TtsConfigurator tts(String text, int styleId) {
@@ -434,7 +434,7 @@ public class Synthesizer {
      * @throws RunModelException 推論に失敗した場合。
      */
     @Nonnull
-    public byte[] execute() throws RunModelException {
+    public byte[] perform() throws RunModelException {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }
@@ -479,7 +479,7 @@ public class Synthesizer {
      * @throws RunModelException 推論に失敗した場合。
      */
     @Nonnull
-    public byte[] execute() throws RunModelException {
+    public byte[] perform() throws RunModelException {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }
@@ -522,7 +522,7 @@ public class Synthesizer {
      * @throws RunModelException 推論に失敗した場合。
      */
     @Nonnull
-    public byte[] execute() throws RunModelException {
+    public byte[] perform() throws RunModelException {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }
