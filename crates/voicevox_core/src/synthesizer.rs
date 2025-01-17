@@ -1225,10 +1225,10 @@ pub(crate) mod blocking {
         ///
         /// # voicevox_core::blocking::Onnxruntime::load_once()
         /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
-        /// #     .exec()?;
+        /// #     .perform()?;
         /// #
         /// // FIXME: `Synthesizer`には`&mut self`なメソッドはもう無いはず
-        /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().exec()?)
+        /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().perform()?)
         ///     .text_analyzer(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap())) // FIXME: `Arc`は要らないはず
         ///     .acceleration_mode(ACCELERATION_MODE)
         ///     .build()?;
@@ -1677,7 +1677,7 @@ pub(crate) mod blocking {
         }
     }
 
-    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
     pub struct PrecomputeRender<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -1692,14 +1692,14 @@ pub(crate) mod blocking {
         }
 
         /// 実行する。
-        pub fn exec(self) -> crate::Result<AudioFeature> {
+        pub fn perform(self) -> crate::Result<AudioFeature> {
             self.synthesizer
                 .precompute_render(self.audio_query, self.style_id, &self.options)
                 .block_on()
         }
     }
 
-    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
     pub struct Synthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -1714,14 +1714,14 @@ pub(crate) mod blocking {
         }
 
         /// 実行する。
-        pub fn exec(self) -> crate::Result<Vec<u8>> {
+        pub fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
                 .synthesis(self.audio_query, self.style_id, &self.options)
                 .block_on()
         }
     }
 
-    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
     pub struct TtsFromKana<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         kana: &'a str,
@@ -1736,14 +1736,14 @@ pub(crate) mod blocking {
         }
 
         /// 実行する。
-        pub fn exec(self) -> crate::Result<Vec<u8>> {
+        pub fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
                 .tts_from_kana(self.kana, self.style_id, &self.options)
                 .block_on()
         }
     }
 
-    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
     pub struct Tts<'a, T> {
         synthesizer: &'a Inner<AssumeSingleTasked<T>, SingleTasked>,
         text: &'a str,
@@ -1758,7 +1758,7 @@ pub(crate) mod blocking {
         }
 
         /// 実行する。
-        pub fn exec(self) -> crate::Result<Vec<u8>> {
+        pub fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
                 .tts(self.text, self.style_id, &self.options)
                 .block_on()
@@ -1812,10 +1812,10 @@ pub(crate) mod nonblocking {
         ///
         /// # voicevox_core::blocking::Onnxruntime::load_once()
         /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
-        /// #     .exec()?;
+        /// #     .perform()?;
         /// #
         /// // FIXME: `Synthesizer`には`&mut self`なメソッドはもう無いはず
-        /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().exec().await?)
+        /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().perform().await?)
         ///     .text_analyzer(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap())) // FIXME: `Arc`は要らないはず
         ///     .acceleration_mode(ACCELERATION_MODE)
         ///     .build()?;
@@ -2116,7 +2116,7 @@ pub(crate) mod nonblocking {
         }
     }
 
-    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
     pub struct Synthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
@@ -2131,14 +2131,14 @@ pub(crate) mod nonblocking {
         }
 
         /// 実行する。
-        pub async fn exec(self) -> crate::Result<Vec<u8>> {
+        pub async fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
                 .synthesis(self.audio_query, self.style_id, &self.options)
                 .await
         }
     }
 
-    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
     pub struct TtsFromKana<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         kana: &'a str,
@@ -2153,14 +2153,14 @@ pub(crate) mod nonblocking {
         }
 
         /// 実行する。
-        pub async fn exec(self) -> crate::Result<Vec<u8>> {
+        pub async fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
                 .tts_from_kana(self.kana, self.style_id, &self.options)
                 .await
         }
     }
 
-    #[must_use = "this is a builder. it does nothing until `exec`uted"]
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
     pub struct Tts<'a, T> {
         synthesizer: &'a Inner<T, BlockingThreadPool>,
         text: &'a str,
@@ -2175,7 +2175,7 @@ pub(crate) mod nonblocking {
         }
 
         /// 実行する。
-        pub async fn exec(self) -> crate::Result<Vec<u8>> {
+        pub async fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
                 .tts(self.text, self.style_id, &self.options)
                 .await

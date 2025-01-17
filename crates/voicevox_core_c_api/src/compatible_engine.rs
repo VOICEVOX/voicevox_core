@@ -33,13 +33,13 @@ static ONNXRUNTIME: LazyLock<&'static voicevox_core::blocking::Onnxruntime> = La
             "onnxruntime",
         );
     voicevox_core::blocking::Onnxruntime::load_once()
-        .exec()
+        .perform()
         .or_else(|err| {
             warn!("{err}");
             warn!("falling back to `{alt_onnxruntime_filename}`");
             voicevox_core::blocking::Onnxruntime::load_once()
                 .filename(alt_onnxruntime_filename)
-                .exec()
+                .perform()
         })
         .unwrap_or_else(|err| {
             display_error(&err);

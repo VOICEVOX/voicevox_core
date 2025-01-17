@@ -431,7 +431,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let wave = internal
             .synthesis(&audio_query, voicevox_core::StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak != 0)
-            .exec()?;
+            .perform()?;
 
         let j_bytes = env.byte_array_from_slice(&wave)?;
 
@@ -463,7 +463,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let wave = internal
             .tts_from_kana(&kana, voicevox_core::StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak != 0)
-            .exec()?;
+            .perform()?;
 
         let j_bytes = env.byte_array_from_slice(&wave)?;
 
@@ -493,7 +493,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let wave = internal
             .tts(&text, voicevox_core::StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak != 0)
-            .exec()?;
+            .perform()?;
 
         let j_bytes = env.byte_array_from_slice(&wave)?;
 
