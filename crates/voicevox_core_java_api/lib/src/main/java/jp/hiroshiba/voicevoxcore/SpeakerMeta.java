@@ -31,6 +31,12 @@ public class SpeakerMeta {
   @Nonnull
   public final String version;
 
+  /** 話者の対応機能。 */
+  @SerializedName("supported_features")
+  @Expose
+  @Nonnull
+  public final SpeakerSupportedFeatures supportedFeatures;
+
   /**
    * 話者の順番。
    *
@@ -48,6 +54,7 @@ public class SpeakerMeta {
     this.styles = new StyleMeta[0];
     this.speakerUuid = "";
     this.version = "";
+    this.supportedFeatures = new SpeakerSupportedFeatures();
     this.order = null;
   }
 }

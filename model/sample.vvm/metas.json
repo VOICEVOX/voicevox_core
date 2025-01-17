@@ -19,7 +19,10 @@
       }
     ],
     "speaker_uuid": "dd9ccd75-75f6-40ce-a3db-960cbed2e905",
-    "version": "0.0.1"
+    "version": "0.0.1",
+    "supported_features": {
+      "permitted_synthesis_morphing": "ALL"
+    }
   },
   {
     "name": "dummy3",
@@ -34,7 +37,10 @@
       }
     ],
     "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
-    "version": "0.0.1"
+    "version": "0.0.1",
+    "supported_features": {
+      "permitted_synthesis_morphing": "SELF_ONLY"
+    }
   },
   {
     "name": "dummy4",
