@@ -96,7 +96,7 @@ static VOICE_MODEL_SET: LazyLock<VoiceModelSet> = LazyLock::new(|| {
             .and_then(|entries| entries.collect::<std::result::Result<Vec<_>, _>>())
             .unwrap_or_else(|e| panic!("{}が読めませんでした: {e}", root_dir.display()))
             .into_iter()
-            .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "vvm"))
+            .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "vvm"))
             .map(|entry| voicevox_core::blocking::VoiceModelFile::open(entry.path()).map(Arc::new))
             .collect::<std::result::Result<_, _>>()
             .unwrap()
