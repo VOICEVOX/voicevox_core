@@ -1,7 +1,3 @@
-///// AquesTalk風記法からAccentPhraseの配列を生成するTextAnalyzer
-//#[derive(Clone)]
-//pub(crate) struct KanaAnalyzer;
-
 pub(crate) mod blocking {
     use crate::AccentPhrase;
 
