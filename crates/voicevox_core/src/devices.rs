@@ -57,12 +57,7 @@ fn test_gpu(
 /// use voicevox_core::{nonblocking::Onnxruntime, SupportedDevices};
 ///
 /// # voicevox_core::blocking::Onnxruntime::load_once()
-/// #     .filename(if cfg!(windows) {
-/// #         // Windows\System32\onnxruntime.dllを回避
-/// #         test_util::ONNXRUNTIME_DYLIB_PATH
-/// #     } else {
-/// #         voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME
-/// #     })
+/// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
 /// #     .perform()?;
 /// #
 /// let onnxruntime = Onnxruntime::get().unwrap();

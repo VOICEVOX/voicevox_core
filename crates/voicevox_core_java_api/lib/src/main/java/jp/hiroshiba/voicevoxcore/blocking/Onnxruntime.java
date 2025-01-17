@@ -25,7 +25,7 @@ public class Onnxruntime {
   }
 
   /** ONNX Runtimeのライブラリ名。 */
-  public static final String LIB_NAME = "onnxruntime";
+  public static final String LIB_NAME = "voicevox_onnxruntime";
 
   /** 推奨されるONNX Runtimeのバージョン。 */
   public static final String LIB_VERSION = "1.17.3";

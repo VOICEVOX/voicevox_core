@@ -4,10 +4,10 @@ use anyhow::bail;
 use enum_map::{Enum as _, EnumMap};
 use itertools::Itertools as _;
 
-use crate::error::ErrorRepr;
+use crate::{error::ErrorRepr, voice_model::ModelBytes};
 
 use super::{
-    model_file, InferenceDomain, InferenceInputSignature, InferenceOperation, InferenceRuntime,
+    InferenceDomain, InferenceInputSignature, InferenceOperation, InferenceRuntime,
     InferenceSessionOptions, InferenceSignature, ParamInfo,
 };
 
@@ -18,7 +18,7 @@ pub(crate) struct InferenceSessionSet<R: InferenceRuntime, D: InferenceDomain>(
 impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
     pub(crate) fn new(
         rt: &R,
-        model_bytes: &EnumMap<D::Operation, Vec<u8>>,
+        model_bytes: &EnumMap<D::Operation, ModelBytes>,
         options: &EnumMap<D::Operation, InferenceSessionOptions>,
     ) -> anyhow::Result<Self> {
         let mut sessions = model_bytes
@@ -28,7 +28,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
                     <D::Operation as InferenceOperation>::PARAM_INFOS[op];
 
                 let (sess, actual_input_param_infos, actual_output_param_infos) =
-                    rt.new_session(|| model_file::decrypt(model_bytes), options[op])?;
+                    rt.new_session(model_bytes, options[op])?;
 
                 check_param_infos(expected_input_param_infos, &actual_input_param_infos)?;
                 check_param_infos(expected_output_param_infos, &actual_output_param_infos)?;
