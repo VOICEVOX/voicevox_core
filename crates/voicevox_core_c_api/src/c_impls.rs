@@ -86,7 +86,7 @@ impl VoicevoxSynthesizer {
         }: VoicevoxInitializeOptions,
     ) -> Result<NonNull<Self>> {
         let body = voicevox_core::blocking::Synthesizer::builder(&onnxruntime.0)
-            .open_jtalk(open_jtalk.body().clone())
+            .text_analyzer(open_jtalk.body().clone())
             .acceleration_mode(acceleration_mode.into())
             .cpu_num_threads(cpu_num_threads)
             .build()?;

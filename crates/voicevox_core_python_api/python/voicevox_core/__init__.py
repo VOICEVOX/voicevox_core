@@ -15,7 +15,7 @@ from ._models import (  # noqa: F401
     VoiceModelId,
 )
 from ._rust import (  # noqa: F401
-    ExtractFullContextLabelError,
+    AnalyzeTextError,
     GetSupportedDevicesError,
     GpuSupportError,
     InitInferenceRuntimeError,
@@ -45,10 +45,10 @@ __all__ = [
     "wav_from_s16le",
     "AccelerationMode",
     "AccentPhrase",
+    "AnalyzeTextError",
     "AudioQuery",
     "asyncio",
     "blocking",
-    "ExtractFullContextLabelError",
     "GetSupportedDevicesError",
     "GpuSupportError",
     "InitInferenceRuntimeError",
