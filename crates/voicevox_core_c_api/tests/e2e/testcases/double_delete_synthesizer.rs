@@ -1,13 +1,21 @@
 //! `voicevox_synthesizer_delete`を二度呼ぶとクラッシュすることを確認する。
 
-use std::{ffi::CString, mem::MaybeUninit, sync::LazyLock};
+use std::{
+    env,
+    ffi::{CStr, CString},
+    mem::MaybeUninit,
+    sync::LazyLock,
+};
 
 use assert_cmd::assert::AssertResult;
+use const_format::concatcp;
 use indexmap::IndexSet;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 use test_util::{
-    c_api::{self, CApi, VoicevoxInitializeOptions, VoicevoxResultCode},
+    c_api::{
+        self, CApi, VoicevoxInitializeOptions, VoicevoxLoadOnnxruntimeOptions, VoicevoxResultCode,
+    },
     OPEN_JTALK_DIC_DIR,
 };
 
@@ -28,10 +36,24 @@ impl assert_cdylib::TestCase for TestCase {
 
         let onnxruntime = {
             let mut onnxruntime = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_onnxruntime_load_once(
-                lib.voicevox_make_default_load_onnxruntime_options(),
-                onnxruntime.as_mut_ptr(),
-            ));
+            assert_ok(
+                lib.voicevox_onnxruntime_load_once(
+                    VoicevoxLoadOnnxruntimeOptions {
+                        filename: CStr::from_bytes_with_nul(
+                            concatcp!(
+                                env::consts::DLL_PREFIX,
+                                "onnxruntime",
+                                env::consts::DLL_SUFFIX,
+                                '\0'
+                            )
+                            .as_ref(),
+                        )
+                        .expect("this ends with nul")
+                        .as_ptr(),
+                    },
+                    onnxruntime.as_mut_ptr(),
+                ),
+            );
             onnxruntime.assume_init()
         };
 
