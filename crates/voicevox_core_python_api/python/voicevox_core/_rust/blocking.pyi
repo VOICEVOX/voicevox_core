@@ -1,5 +1,5 @@
 from os import PathLike
-from typing import TYPE_CHECKING, Dict, List, Literal, Union
+from typing import TYPE_CHECKING, Literal, Union
 from uuid import UUID
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ class VoiceModelFile:
     音声モデルファイル。"""
 
     @staticmethod
-    def open(path: Union[str, PathLike[str]]) -> VoiceModelFile:
+    def open(path: str | PathLike[str]) -> VoiceModelFile:
         """
         VVMファイルを開く。
 
@@ -42,7 +42,7 @@ class VoiceModelFile:
         """ID。"""
         ...
     @property
-    def metas(self) -> List[SpeakerMeta]:
+    def metas(self) -> list[SpeakerMeta]:
         """
         メタ情報。
 
@@ -129,7 +129,7 @@ class OpenJtalk:
         Open JTalkの辞書ディレクトリ。
     """
 
-    def __init__(self, open_jtalk_dict_dir: Union[str, PathLike[str]]) -> None: ...
+    def __init__(self, open_jtalk_dict_dir: str | PathLike[str]) -> None: ...
     def use_user_dict(self, user_dict: UserDict) -> None:
         """
         ユーザー辞書を設定する。
@@ -169,9 +169,8 @@ class Synthesizer:
         self,
         onnxruntime: Onnxruntime,
         open_jtalk: OpenJtalk,
-        acceleration_mode: Union[
-            AccelerationMode, Literal["AUTO", "CPU", "GPU"]
-        ] = AccelerationMode.AUTO,
+        acceleration_mode: AccelerationMode
+        | Literal["AUTO", "CPU", "GPU"] = AccelerationMode.AUTO,
         cpu_num_threads: int = 0,
     ) -> None: ...
     def __repr__(self) -> str: ...
@@ -185,7 +184,7 @@ class Synthesizer:
     def is_gpu_mode(self) -> bool:
         """ハードウェアアクセラレーションがGPUモードかどうか。"""
         ...
-    def metas(self) -> List[SpeakerMeta]:
+    def metas(self) -> list[SpeakerMeta]:
         """メタ情報。"""
         ...
     def load_voice_model(self, model: VoiceModelFile) -> None:
@@ -198,7 +197,7 @@ class Synthesizer:
             読み込むモデルのスタイルID。
         """
         ...
-    def unload_voice_model(self, voice_model_id: Union[VoiceModelId, UUID]) -> None:
+    def unload_voice_model(self, voice_model_id: VoiceModelId | UUID) -> None:
         """
         音声モデルの読み込みを解除する。
 
@@ -208,7 +207,7 @@ class Synthesizer:
             音声モデルID。
         """
         ...
-    def is_loaded_voice_model(self, voice_model_id: Union[VoiceModelId, UUID]) -> bool:
+    def is_loaded_voice_model(self, voice_model_id: VoiceModelId | UUID) -> bool:
         """
         指定したvoice_model_idのモデルが読み込まれているか判定する。
 
@@ -225,7 +224,7 @@ class Synthesizer:
     def create_audio_query_from_kana(
         self,
         kana: str,
-        style_id: Union[StyleId, int],
+        style_id: StyleId | int,
     ) -> AudioQuery:
         """
         AquesTalk風記法から :class:`AudioQuery` を生成する。
@@ -245,7 +244,7 @@ class Synthesizer:
     def create_audio_query(
         self,
         text: str,
-        style_id: Union[StyleId, int],
+        style_id: StyleId | int,
     ) -> AudioQuery:
         """
         日本語のテキストから :class:`AudioQuery` を生成する。
@@ -265,8 +264,8 @@ class Synthesizer:
     def create_accent_phrases_from_kana(
         self,
         kana: str,
-        style_id: Union[StyleId, int],
-    ) -> List[AccentPhrase]:
+        style_id: StyleId | int,
+    ) -> list[AccentPhrase]:
         """
         AquesTalk風記法からAccentPhrase（アクセント句）の配列を生成する。
 
@@ -285,8 +284,8 @@ class Synthesizer:
     def create_accent_phrases(
         self,
         text: str,
-        style_id: Union[StyleId, int],
-    ) -> List[AccentPhrase]:
+        style_id: StyleId | int,
+    ) -> list[AccentPhrase]:
         """
         日本語のテキストからAccentPhrase（アクセント句）の配列を生成する。
 
@@ -304,9 +303,9 @@ class Synthesizer:
         ...
     def replace_mora_data(
         self,
-        accent_phrases: List[AccentPhrase],
-        style_id: Union[StyleId, int],
-    ) -> List[AccentPhrase]:
+        accent_phrases: list[AccentPhrase],
+        style_id: StyleId | int,
+    ) -> list[AccentPhrase]:
         """
         アクセント句の音高・音素長を変更した新しいアクセント句の配列を生成する。
 
@@ -326,9 +325,9 @@ class Synthesizer:
         ...
     def replace_phoneme_length(
         self,
-        accent_phrases: List[AccentPhrase],
-        style_id: Union[StyleId, int],
-    ) -> List[AccentPhrase]:
+        accent_phrases: list[AccentPhrase],
+        style_id: StyleId | int,
+    ) -> list[AccentPhrase]:
         """
         アクセント句の音素長を変更した新しいアクセント句の配列を生成する。
 
@@ -344,9 +343,9 @@ class Synthesizer:
         ...
     def replace_mora_pitch(
         self,
-        accent_phrases: List[AccentPhrase],
-        style_id: Union[StyleId, int],
-    ) -> List[AccentPhrase]:
+        accent_phrases: list[AccentPhrase],
+        style_id: StyleId | int,
+    ) -> list[AccentPhrase]:
         """
         アクセント句の音高を変更した新しいアクセント句の配列を生成する。
 
@@ -363,7 +362,7 @@ class Synthesizer:
     def precompute_render(
         self,
         audio_query: AudioQuery,
-        style_id: Union[StyleId, int],
+        style_id: StyleId | int,
         enable_interrogative_upspeak: bool = True,
     ) -> AudioFeature: ...
     def render(
@@ -375,7 +374,7 @@ class Synthesizer:
     def synthesis(
         self,
         audio_query: AudioQuery,
-        style_id: Union[StyleId, int],
+        style_id: StyleId | int,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -398,7 +397,7 @@ class Synthesizer:
     def tts_from_kana(
         self,
         kana: str,
-        style_id: Union[StyleId, int],
+        style_id: StyleId | int,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -417,7 +416,7 @@ class Synthesizer:
     def tts(
         self,
         text: str,
-        style_id: Union[StyleId, int],
+        style_id: StyleId | int,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -442,11 +441,11 @@ class Synthesizer:
 class UserDict:
     """ユーザー辞書。"""
 
-    def words(self) -> Dict[UUID, UserDictWord]:
+    def words(self) -> dict[UUID, UserDictWord]:
         """このオプジェクトの :class:`dict` としての表現。"""
         ...
     def __init__(self) -> None: ...
-    def load(self, path: Union[str, PathLike[str]]) -> None:
+    def load(self, path: str | PathLike[str]) -> None:
         """ファイルに保存されたユーザー辞書を読み込む。
 
         Parameters
@@ -455,7 +454,7 @@ class UserDict:
             ユーザー辞書のパス。
         """
         ...
-    def save(self, path: Union[str, PathLike[str]]) -> None:
+    def save(self, path: str | PathLike[str]) -> None:
         """
         ユーザー辞書をファイルに保存する。
 
