@@ -1,6 +1,6 @@
 import dataclasses
 from enum import Enum
-from typing import List, NewType, Optional
+from typing import NewType
 from uuid import UUID
 
 import pydantic
@@ -64,7 +64,7 @@ class StyleMeta:
     type: StyleType = dataclasses.field(default=StyleType.TALK)
     """スタイルに対応するモデルの種類。"""
 
-    order: Optional[int] = None
+    order: int | None = None
     """
     話者の順番。
 
@@ -79,7 +79,7 @@ class SpeakerMeta:
     name: str
     """話者名。"""
 
-    styles: List[StyleMeta]
+    styles: list[StyleMeta]
     """話者に属するスタイル。"""
 
     speaker_uuid: str
@@ -88,7 +88,7 @@ class SpeakerMeta:
     version: StyleVersion
     """話者のUUID。"""
 
-    order: Optional[int] = None
+    order: int | None = None
     """
     話者の順番。
 
@@ -162,10 +162,10 @@ class Mora:
     pitch: float
     """音高。"""
 
-    consonant: Optional[str] = None
+    consonant: str | None = None
     """子音の音素。"""
 
-    consonant_length: Optional[float] = None
+    consonant_length: float | None = None
     """子音の音長。"""
 
 
@@ -173,13 +173,13 @@ class Mora:
 class AccentPhrase:
     """AccentPhrase (アクセント句ごとの情報)。"""
 
-    moras: List[Mora]
+    moras: list[Mora]
     """モーラの配列。"""
 
     accent: int
     """アクセント箇所。"""
 
-    pause_mora: Optional[Mora] = None
+    pause_mora: Mora | None = None
     """後ろに無音を付けるかどうか。"""
 
     is_interrogative: bool = False
@@ -190,7 +190,7 @@ class AccentPhrase:
 class AudioQuery:
     """AudioQuery (音声合成用のクエリ)。"""
 
-    accent_phrases: List[AccentPhrase]
+    accent_phrases: list[AccentPhrase]
     """アクセント句の配列。"""
 
     speed_scale: float
@@ -223,7 +223,7 @@ class AudioQuery:
     pause_length_scale: float = 1.0
     """読点などの無音時間（倍率）。デフォルト値は ``1.0`` 。"""
 
-    kana: Optional[str] = None
+    kana: str | None = None
     """
     [読み取り専用] AquesTalk風記法。
 
