@@ -48,6 +48,17 @@ static OPEN_JTALK_DIC_URL: LazyLock<Url> = LazyLock::new(|| {
         .unwrap()
 });
 
+static PROGRESS_STYLE0: LazyLock<ProgressStyle> =
+    LazyLock::new(|| ProgressStyle::with_template("{prefix}").unwrap());
+static PROGRESS_STYLE1: LazyLock<ProgressStyle> = LazyLock::new(|| {
+    ProgressStyle::with_template(
+        "{prefix:55} {bytes:>11} {bytes_per_sec:>13} {elapsed_precise} {bar} {percent:>3}%",
+    )
+    .unwrap()
+});
+static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
+    LazyLock::new(|| ProgressStyle::with_template("{prefix:55} {spinner} {msg}").unwrap());
+
 #[derive(clap::Parser)]
 struct Args {
     /// ダウンロード対象を限定する
@@ -587,15 +598,12 @@ fn add_progress_bar(
     prefix: impl Into<Cow<'static, str>>,
 ) -> ProgressBar {
     let pb = progresses.add(ProgressBar::new(len));
-    pb.set_style(PROGRESS_STYLE.clone());
+    pb.set_style(PROGRESS_STYLE0.clone());
     pb.enable_steady_tick(INTERVAL);
     pb.set_prefix(prefix);
     return pb;
 
     const INTERVAL: Duration = Duration::from_millis(100);
-
-    static PROGRESS_STYLE: LazyLock<ProgressStyle> =
-        LazyLock::new(|| ProgressStyle::with_template("{prefix}").unwrap());
 }
 
 async fn download_and_extract(
@@ -612,68 +620,6 @@ async fn download_and_extract(
     let pb = with_style(pb, &PROGRESS_STYLE2).await?;
     let files = &read_archive(archive, archive_kind, pb.clone()).await?;
     return extract(files, stripping, output, pb).await;
-
-    static PROGRESS_STYLE1: LazyLock<ProgressStyle> = LazyLock::new(|| {
-        ProgressStyle::with_template(
-            "{prefix:55} {bytes:>11} {bytes_per_sec:>13} {elapsed_precise} {bar} {percent:>3}%",
-        )
-        .unwrap()
-    });
-
-    static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
-        LazyLock::new(|| ProgressStyle::with_template("{prefix:55} {spinner} {msg}").unwrap());
-
-    async fn with_style(
-        pb: ProgressBar,
-        style: &'static ProgressStyle,
-    ) -> Result<ProgressBar, JoinError> {
-        tokio::task::spawn_blocking(move || {
-            pb.set_style(style.clone());
-            pb
-        })
-        .await
-    }
-
-    async fn download(
-        mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
-        content_length: Option<u64>,
-        pb: ProgressBar,
-    ) -> anyhow::Result<Vec<u8>> {
-        if let Some(content_length) = content_length {
-            pb.set_length(content_length);
-        }
-
-        with_progress(pb, |pos_tx| async move {
-            let mut downloaded = Vec::with_capacity(content_length.unwrap_or(0) as _);
-            while let Some(chunk) = bytes_stream.next().await.transpose()? {
-                downloaded.extend_from_slice(&chunk);
-                pos_tx.send(downloaded.len() as _)?;
-            }
-            Ok(downloaded)
-        })
-        .await
-    }
-
-    async fn with_progress<Fun, Fut, Out>(pb: ProgressBar, f: Fun) -> anyhow::Result<Out>
-    where
-        Fun: FnOnce(tokio::sync::mpsc::UnboundedSender<u64>) -> Fut,
-        Fut: Future<Output = anyhow::Result<Out>>,
-    {
-        let (pos_tx, mut pos_rx) = tokio::sync::mpsc::unbounded_channel();
-
-        let (result1, result2) = futures_util::future::join(
-            tokio::task::spawn_blocking(move || {
-                while let Some(pos) = pos_rx.blocking_recv() {
-                    pb.set_position(pos);
-                }
-            }),
-            f(pos_tx),
-        )
-        .await;
-
-        result1?;
-        result2
-    }
 
     async fn read_archive(
         archive: Vec<u8>,
@@ -761,6 +707,58 @@ async fn download_and_extract(
 
         tokio::task::spawn_blocking(move || pb.finish_with_message("Done!")).await?;
         Ok(())
+    }
+}
+
+async fn with_style(
+    pb: ProgressBar,
+    style: &'static ProgressStyle,
+) -> Result<ProgressBar, JoinError> {
+    tokio::task::spawn_blocking(move || {
+        pb.set_style(style.clone());
+        pb
+    })
+    .await
+}
+
+async fn download(
+    mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
+    content_length: Option<u64>,
+    pb: ProgressBar,
+) -> anyhow::Result<Vec<u8>> {
+    if let Some(content_length) = content_length {
+        pb.set_length(content_length);
+    }
+
+    return with_progress(pb, |pos_tx| async move {
+        let mut downloaded = Vec::with_capacity(content_length.unwrap_or(0) as _);
+        while let Some(chunk) = bytes_stream.next().await.transpose()? {
+            downloaded.extend_from_slice(&chunk);
+            pos_tx.send(downloaded.len() as _)?;
+        }
+        Ok(downloaded)
+    })
+    .await;
+
+    async fn with_progress<Fun, Fut, Out>(pb: ProgressBar, f: Fun) -> anyhow::Result<Out>
+    where
+        Fun: FnOnce(tokio::sync::mpsc::UnboundedSender<u64>) -> Fut,
+        Fut: Future<Output = anyhow::Result<Out>>,
+    {
+        let (pos_tx, mut pos_rx) = tokio::sync::mpsc::unbounded_channel();
+
+        let (result1, result2) = futures_util::future::join(
+            tokio::task::spawn_blocking(move || {
+                while let Some(pos) = pos_rx.blocking_recv() {
+                    pb.set_position(pos);
+                }
+            }),
+            f(pos_tx),
+        )
+        .await;
+
+        result1?;
+        result2
     }
 }
 
