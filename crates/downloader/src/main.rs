@@ -3,28 +3,33 @@ use std::{
     collections::{BTreeSet, HashSet},
     env,
     future::Future,
-    io::{self, Cursor, Read},
+    io::{self, Cursor, IsTerminal as _, Read},
     path::{Path, PathBuf},
     sync::{Arc, LazyLock},
     time::Duration,
 };
 
-use anyhow::{anyhow, bail, Context as _};
+use anyhow::{anyhow, bail, ensure, Context as _};
+use base64::{prelude::BASE64_STANDARD, Engine as _};
 use bytes::Bytes;
 use clap::{Parser as _, ValueEnum};
 use flate2::read::GzDecoder;
 use futures_core::Stream;
-use futures_util::{stream::FuturesOrdered, StreamExt as _, TryStreamExt as _};
+use futures_util::{
+    stream::{FuturesOrdered, FuturesUnordered},
+    StreamExt as _, TryStreamExt as _,
+};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use itertools::Itertools as _;
 use octocrab::{
     models::{
-        repos::{Asset, Release},
+        repos::{Asset, CommitObject, Content, Release, Tag},
         AssetId,
     },
     Octocrab,
 };
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
+use semver::VersionReq;
 use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
 use tracing::{info, warn};
@@ -41,12 +46,30 @@ const LIB_NAME: &str = "voicevox_core";
 const DEFAULT_CORE_REPO: &str = "VOICEVOX/voicevox_core";
 const DEFAULT_ONNXRUNTIME_BUILDER_REPO: &str = "VOICEVOX/onnxruntime-builder";
 const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
+const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
+
+static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
+    LazyLock::new(|| "=0.0.1-preview.0".parse().unwrap());
+const MODELS_DIR_NAME: &str = "vvms";
+const MODELS_TERMS_NAME: &str = "VOICEVOX VVM TERMS OF USE";
+const MODELS_TERMS_FILE: &str = "terms.md";
 
 static OPEN_JTALK_DIC_URL: LazyLock<Url> = LazyLock::new(|| {
     "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
         .parse()
         .unwrap()
 });
+
+static PROGRESS_STYLE0: LazyLock<ProgressStyle> =
+    LazyLock::new(|| ProgressStyle::with_template("{prefix}").unwrap());
+static PROGRESS_STYLE1: LazyLock<ProgressStyle> = LazyLock::new(|| {
+    ProgressStyle::with_template(
+        "{prefix:55} {bytes:>11} {bytes_per_sec:>13} {elapsed_precise} {bar} {percent:>3}%",
+    )
+    .unwrap()
+});
+static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
+    LazyLock::new(|| ProgressStyle::with_template("{prefix:55} {spinner} {msg}").unwrap());
 
 #[derive(clap::Parser)]
 struct Args {
@@ -111,14 +134,17 @@ struct Args {
         default_value(DEFAULT_ADDITIONAL_LIBRARIES_REPO)
     )]
     additional_libraries_repo: RepoName,
+
+    #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_MODELS_REPO))]
+    models_repo: RepoName,
 }
 
 #[derive(ValueEnum, Clone, Copy, PartialEq, Eq, Hash)]
 enum DownloadTarget {
     Core,
-    Models,
     Onnxruntime,
     AdditionalLibraries,
+    Models,
     Dict,
 }
 
@@ -195,6 +221,7 @@ async fn main() -> anyhow::Result<()> {
         os,
         core_repo,
         onnxruntime_builder_repo,
+        models_repo,
         additional_libraries_repo,
     } = Args::parse();
     let devices = devices.into_iter().collect::<BTreeSet<_>>();
@@ -215,16 +242,16 @@ async fn main() -> anyhow::Result<()> {
         DownloadTarget::value_variants().iter().copied().collect()
     };
 
-    if !(targets.contains(&DownloadTarget::Core) || targets.contains(&DownloadTarget::Models)) {
+    if !targets.contains(&DownloadTarget::Core) {
         if version != "latest" {
             warn!(
-                "`--version={version}`が指定されていますが、`core`も`models`もダウンロード対象から\
+                "`--version={version}`が指定されていますが、`core`はダウンロード対象から\
                  除外されています",
             );
         }
         if core_repo.to_string() != DEFAULT_CORE_REPO {
             warn!(
-                "`--core-repo={core_repo}`が指定されていますが、`core`も`models`もダウンロード対象\
+                "`--core-repo={core_repo}`が指定されていますが、`core`はダウンロード対象\
                  から除外されています",
             );
         }
@@ -257,11 +284,6 @@ async fn main() -> anyhow::Result<()> {
     })
     .await?;
 
-    let model = find_gh_asset(octocrab, &core_repo, &version, |tag, _| {
-        Ok(format!("model-{tag}.zip"))
-    })
-    .await?;
-
     let onnxruntime = find_gh_asset(
         octocrab,
         &onnxruntime_builder_repo,
@@ -272,6 +294,8 @@ async fn main() -> anyhow::Result<()> {
         },
     )
     .await?;
+
+    let models = find_models(octocrab, &models_repo).await?;
 
     let additional_libraries = devices
         .iter()
@@ -314,6 +338,7 @@ async fn main() -> anyhow::Result<()> {
                 .format(", "),
         );
     }
+    info!("ダウンロードモデルバージョン: {}", models.tag);
 
     let progresses = MultiProgress::new();
 
@@ -324,14 +349,6 @@ async fn main() -> anyhow::Result<()> {
             core,
             Stripping::FirstDir,
             &output,
-            &progresses,
-        )?);
-    }
-    if targets.contains(&DownloadTarget::Models) {
-        tasks.spawn(download_and_extract_from_gh(
-            model,
-            Stripping::FirstDir,
-            &output.join("model"),
             &progresses,
         )?);
     }
@@ -352,6 +369,13 @@ async fn main() -> anyhow::Result<()> {
                 &progresses,
             )?);
         }
+    }
+    if targets.contains(&DownloadTarget::Models) {
+        tasks.spawn(download_models(
+            models,
+            &output.join("models"),
+            &progresses,
+        )?);
     }
     if targets.contains(&DownloadTarget::Dict) {
         tasks.spawn(download_and_extract_from_url(
@@ -513,6 +537,114 @@ fn find_onnxruntime(
         .with_context(|| "指定されたOS, アーキテクチャ, デバイスを含むものが見つかりませんでした")
 }
 
+/// ダウンロードすべきモデル、利用規約を見つける。その際ユーザーに利用規約の同意を求める。
+async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<ModelsWithTerms> {
+    let repos = octocrab.repos(&repo.owner, &repo.repo);
+
+    let (tag, sha) = repos
+        .list_tags()
+        .send()
+        .await?
+        .into_iter()
+        .map(
+            |Tag {
+                 name,
+                 commit: CommitObject { sha, .. },
+                 ..
+             }| {
+                let tag = name
+                    .parse()
+                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))?;
+                Ok((tag, sha))
+            },
+        )
+        .collect::<anyhow::Result<Vec<_>>>()?
+        .into_iter()
+        .filter(|(version, _)| ALLOWED_MODELS_VERSIONS.matches(version))
+        .sorted()
+        .last()
+        .with_context(|| format!("`{repo}`"))?;
+    let tag = tag.to_string();
+
+    let terms = repos
+        .get_content()
+        .r#ref(&sha)
+        .path(format!("{MODELS_DIR_NAME}/{MODELS_TERMS_FILE}"))
+        .send()
+        .await?
+        .items
+        .into_iter()
+        .exactly_one()
+        .map_err(|_| anyhow!("could not find `{MODELS_TERMS_FILE}`"))?;
+    ensure!(
+        terms.encoding.as_deref() == Some("base64"),
+        r#"expected `encoding="base64"`"#,
+    );
+    let terms = terms.content.expect("should present").replace('\n', "");
+    let terms = BASE64_STANDARD.decode(terms)?;
+    let terms = String::from_utf8(terms)
+        .with_context(|| format!("`{MODELS_TERMS_FILE}` is not valid UTF-8"))?;
+    ensure_confirmation(&terms, MODELS_TERMS_NAME)?;
+
+    let models = repos
+        .get_content()
+        .r#ref(&sha)
+        .path(MODELS_DIR_NAME)
+        .send()
+        .await?
+        .items
+        .into_iter()
+        .filter(|Content { name, r#type, .. }| name != MODELS_TERMS_FILE && r#type == "file")
+        .map(
+            |Content {
+                 name,
+                 size,
+                 download_url,
+                 ..
+             }| GhContent {
+                name,
+                download_url: download_url.expect("should present"),
+                size: size as _,
+            },
+        )
+        .collect();
+
+    Ok(ModelsWithTerms { tag, terms, models })
+}
+
+fn ensure_confirmation(terms: &str, terms_name: &'static str) -> anyhow::Result<()> {
+    eprintln!(
+        "----------BEGIN {terms_name}----------\n\
+         {terms}----------END {terms_name}----------",
+    );
+    if !ask_yn()? {
+        bail!("you must agree with the term of use");
+    }
+    return Ok(());
+
+    const PROMPT: &str =
+        "上記の利用規約に同意しますか？ (Do you agree with the above terms of use?) (y/N): ";
+
+    fn ask_yn() -> anyhow::Result<bool> {
+        loop {
+            let input = rprompt::prompt_reply_from_bufread(
+                &mut io::stdin().lock(),
+                &mut io::stderr(),
+                PROMPT,
+            )?;
+            if ["y", "yes"].contains(&&*input.to_lowercase()) {
+                break Ok(true);
+            }
+            if ["n", "no", ""].contains(&&*input.to_lowercase()) {
+                break Ok(false);
+            }
+            if !io::stdin().is_terminal() {
+                bail!("the stdin is not a TTY but received invalid input: {input:?}");
+            }
+        }
+    }
+}
+
 fn download_and_extract_from_gh(
     GhAsset {
         octocrab,
@@ -581,21 +713,72 @@ fn download_and_extract_from_url(
     })
 }
 
+fn download_models(
+    ModelsWithTerms { terms, models, .. }: ModelsWithTerms,
+    output: &Path,
+    progresses: &MultiProgress,
+) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
+    let output = output.join(MODELS_DIR_NAME);
+
+    let reqwest = reqwest::Client::builder().build()?;
+
+    let models = models
+        .into_iter()
+        .map(|model| {
+            let pb = add_progress_bar(progresses, model.size as _, model.name.clone());
+            (model, pb)
+        })
+        .collect::<Vec<_>>();
+
+    Ok(async move {
+        fs_err::tokio::create_dir_all(&output).await?;
+        fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
+        let reqwest = &reqwest;
+        let output = &output;
+        models
+            .into_iter()
+            .map(
+                |(
+                    GhContent {
+                        name,
+                        download_url,
+                        size,
+                    },
+                    pb,
+                )| async move {
+                    let res = reqwest.get(download_url).send().await?.error_for_status()?;
+                    let bytes_stream = res.bytes_stream().map_err(Into::into);
+                    let pb = with_style(pb, &PROGRESS_STYLE1).await?;
+                    let model = download(bytes_stream, Some(size), pb.clone()).await?;
+                    let pb = tokio::task::spawn_blocking(move || {
+                        pb.set_style(PROGRESS_STYLE2.clone());
+                        pb.set_message("Writing...");
+                        pb
+                    })
+                    .await?;
+                    fs_err::tokio::write(output.join(name), model).await?;
+                    tokio::task::spawn_blocking(move || pb.finish_with_message("Done!")).await?;
+                    Ok(())
+                },
+            )
+            .collect::<FuturesUnordered<_>>()
+            .try_collect::<()>()
+            .await
+    })
+}
+
 fn add_progress_bar(
     progresses: &MultiProgress,
     len: u64,
     prefix: impl Into<Cow<'static, str>>,
 ) -> ProgressBar {
     let pb = progresses.add(ProgressBar::new(len));
-    pb.set_style(PROGRESS_STYLE.clone());
+    pb.set_style(PROGRESS_STYLE0.clone());
     pb.enable_steady_tick(INTERVAL);
     pb.set_prefix(prefix);
     return pb;
 
     const INTERVAL: Duration = Duration::from_millis(100);
-
-    static PROGRESS_STYLE: LazyLock<ProgressStyle> =
-        LazyLock::new(|| ProgressStyle::with_template("{prefix}").unwrap());
 }
 
 async fn download_and_extract(
@@ -612,68 +795,6 @@ async fn download_and_extract(
     let pb = with_style(pb, &PROGRESS_STYLE2).await?;
     let files = &read_archive(archive, archive_kind, pb.clone()).await?;
     return extract(files, stripping, output, pb).await;
-
-    static PROGRESS_STYLE1: LazyLock<ProgressStyle> = LazyLock::new(|| {
-        ProgressStyle::with_template(
-            "{prefix:55} {bytes:>11} {bytes_per_sec:>13} {elapsed_precise} {bar} {percent:>3}%",
-        )
-        .unwrap()
-    });
-
-    static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
-        LazyLock::new(|| ProgressStyle::with_template("{prefix:55} {spinner} {msg}").unwrap());
-
-    async fn with_style(
-        pb: ProgressBar,
-        style: &'static ProgressStyle,
-    ) -> Result<ProgressBar, JoinError> {
-        tokio::task::spawn_blocking(move || {
-            pb.set_style(style.clone());
-            pb
-        })
-        .await
-    }
-
-    async fn download(
-        mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
-        content_length: Option<u64>,
-        pb: ProgressBar,
-    ) -> anyhow::Result<Vec<u8>> {
-        if let Some(content_length) = content_length {
-            pb.set_length(content_length);
-        }
-
-        with_progress(pb, |pos_tx| async move {
-            let mut downloaded = Vec::with_capacity(content_length.unwrap_or(0) as _);
-            while let Some(chunk) = bytes_stream.next().await.transpose()? {
-                downloaded.extend_from_slice(&chunk);
-                pos_tx.send(downloaded.len() as _)?;
-            }
-            Ok(downloaded)
-        })
-        .await
-    }
-
-    async fn with_progress<Fun, Fut, Out>(pb: ProgressBar, f: Fun) -> anyhow::Result<Out>
-    where
-        Fun: FnOnce(tokio::sync::mpsc::UnboundedSender<u64>) -> Fut,
-        Fut: Future<Output = anyhow::Result<Out>>,
-    {
-        let (pos_tx, mut pos_rx) = tokio::sync::mpsc::unbounded_channel();
-
-        let (result1, result2) = futures_util::future::join(
-            tokio::task::spawn_blocking(move || {
-                while let Some(pos) = pos_rx.blocking_recv() {
-                    pb.set_position(pos);
-                }
-            }),
-            f(pos_tx),
-        )
-        .await;
-
-        result1?;
-        result2
-    }
 
     async fn read_archive(
         archive: Vec<u8>,
@@ -764,6 +885,58 @@ async fn download_and_extract(
     }
 }
 
+async fn with_style(
+    pb: ProgressBar,
+    style: &'static ProgressStyle,
+) -> Result<ProgressBar, JoinError> {
+    tokio::task::spawn_blocking(move || {
+        pb.set_style(style.clone());
+        pb
+    })
+    .await
+}
+
+async fn download(
+    mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
+    content_length: Option<u64>,
+    pb: ProgressBar,
+) -> anyhow::Result<Vec<u8>> {
+    if let Some(content_length) = content_length {
+        pb.set_length(content_length);
+    }
+
+    return with_progress(pb, |pos_tx| async move {
+        let mut downloaded = Vec::with_capacity(content_length.unwrap_or(0) as _);
+        while let Some(chunk) = bytes_stream.next().await.transpose()? {
+            downloaded.extend_from_slice(&chunk);
+            pos_tx.send(downloaded.len() as _)?;
+        }
+        Ok(downloaded)
+    })
+    .await;
+
+    async fn with_progress<Fun, Fut, Out>(pb: ProgressBar, f: Fun) -> anyhow::Result<Out>
+    where
+        Fun: FnOnce(tokio::sync::mpsc::UnboundedSender<u64>) -> Fut,
+        Fut: Future<Output = anyhow::Result<Out>>,
+    {
+        let (pos_tx, mut pos_rx) = tokio::sync::mpsc::unbounded_channel();
+
+        let (result1, result2) = futures_util::future::join(
+            tokio::task::spawn_blocking(move || {
+                while let Some(pos) = pos_rx.blocking_recv() {
+                    pb.set_position(pos);
+                }
+            }),
+            f(pos_tx),
+        )
+        .await;
+
+        result1?;
+        result2
+    }
+}
+
 struct GhAsset {
     octocrab: Arc<Octocrab>,
     repo: RepoName,
@@ -771,6 +944,18 @@ struct GhAsset {
     id: AssetId,
     name: String,
     size: usize,
+}
+
+struct ModelsWithTerms {
+    tag: String,
+    terms: String,
+    models: Vec<GhContent>,
+}
+
+struct GhContent {
+    name: String,
+    download_url: String,
+    size: u64,
 }
 
 #[derive(Clone, Copy)]
