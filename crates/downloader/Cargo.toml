@@ -10,6 +10,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow.workspace = true
+base64.workspace = true
 binstall-tar.workspace = true
 bytes.workspace = true
 clap = { workspace = true, features = ["derive"] }
@@ -24,7 +25,9 @@ octocrab = { workspace = true, default-features = false, features = ["rustls-tls
 parse-display.workspace = true
 rayon.workspace = true
 reqwest = { workspace = true, default-features = false, features = ["rustls-tls", "stream"] }
+rprompt.workspace = true
 scraper.workspace = true
+semver.workspace = true
 strum = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync"] }
 tracing.workspace = true
