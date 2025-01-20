@@ -615,7 +615,9 @@ async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<Mod
 fn ensure_confirmation(terms: &str, terms_name: &'static str) -> anyhow::Result<()> {
     eprintln!(
         "----------BEGIN {terms_name}----------\n\
-         {terms}----------END {terms_name}----------",
+         {terms}\n\
+         ----------END {terms_name}----------",
+        terms = terms.trim_end(),
     );
     if !ask_yn()? {
         bail!("you must agree with the term of use");
