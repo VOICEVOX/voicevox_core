@@ -3,7 +3,6 @@
 import ast
 from ast import AnnAssign, ClassDef, Constant, Name
 from pathlib import Path
-from typing import Tuple
 
 import voicevox_core
 
@@ -22,7 +21,7 @@ def test() -> None:
     assert len({REAL_BLOCKING, REAL_ASYNCIO, stub_blocking, stub_asyncio}) == 1
 
 
-def extract(pyi: Path) -> Tuple[str, str]:
+def extract(pyi: Path) -> tuple[str, str]:
     module = ast.parse(pyi.read_text(encoding="utf-8"))
     class_def = next(
         stmt
