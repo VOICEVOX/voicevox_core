@@ -1,6 +1,5 @@
 """無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。"""
 
-from . import _load_dlls  # noqa: F401
 from ._models import (  # noqa: F401
     AccelerationMode,
     AccentPhrase,
