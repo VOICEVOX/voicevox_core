@@ -15,6 +15,7 @@ binstall-tar.workspace = true
 bytes.workspace = true
 clap = { workspace = true, features = ["derive"] }
 comrak.workspace = true
+easy-ext.workspace = true
 flate2.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
 futures-core.workspace = true

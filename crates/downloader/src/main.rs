@@ -13,6 +13,7 @@ use anyhow::{anyhow, bail, ensure, Context as _};
 use base64::{prelude::BASE64_STANDARD, Engine as _};
 use bytes::Bytes;
 use clap::{Parser as _, ValueEnum};
+use easy_ext::ext;
 use flate2::read::GzDecoder;
 use futures_core::Stream;
 use futures_util::{
@@ -26,6 +27,7 @@ use octocrab::{
         repos::{Asset, CommitObject, Content, Release, Tag},
         AssetId,
     },
+    repos::RepoHandler,
     Octocrab,
 };
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
@@ -50,6 +52,7 @@ const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
     LazyLock::new(|| "=0.0.1-preview.0".parse().unwrap());
+const MODELS_README_FILENAME: &str = "README.md";
 const MODELS_DIR_NAME: &str = "vvms";
 const MODELS_TERMS_NAME: &str = "VOICEVOX VVM TERMS OF USE";
 const MODELS_TERMS_FILE: &str = "terms.md";
@@ -567,24 +570,13 @@ async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<Mod
     let tag = tag.to_string();
 
     let terms = repos
-        .get_content()
-        .r#ref(&sha)
-        .path(format!("{MODELS_DIR_NAME}/{MODELS_TERMS_FILE}"))
-        .send()
-        .await?
-        .items
-        .into_iter()
-        .exactly_one()
-        .map_err(|_| anyhow!("could not find `{MODELS_TERMS_FILE}`"))?;
-    ensure!(
-        terms.encoding.as_deref() == Some("base64"),
-        r#"expected `encoding="base64"`"#,
-    );
-    let terms = terms.content.expect("should present").replace('\n', "");
-    let terms = BASE64_STANDARD.decode(terms)?;
-    let terms = String::from_utf8(terms)
-        .with_context(|| format!("`{MODELS_TERMS_FILE}` is not valid UTF-8"))?;
+        .fetch_file_content(&sha, &format!("{MODELS_DIR_NAME}/{MODELS_TERMS_FILE}"))
+        .await?;
     ensure_confirmation(&terms, MODELS_TERMS_NAME)?;
+
+    let readme = repos
+        .fetch_file_content(&sha, MODELS_README_FILENAME)
+        .await?;
 
     let models = repos
         .get_content()
@@ -609,7 +601,41 @@ async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<Mod
         )
         .collect();
 
-    Ok(ModelsWithTerms { tag, terms, models })
+    return Ok(ModelsWithTerms {
+        tag,
+        readme,
+        terms,
+        models,
+    });
+
+    #[ext]
+    impl RepoHandler<'_> {
+        async fn fetch_file_content(&self, sha: &str, path: &str) -> anyhow::Result<String> {
+            let Content {
+                encoding, content, ..
+            } = self
+                .get_content()
+                .r#ref(sha)
+                .path(path)
+                .send()
+                .await?
+                .items
+                .into_iter()
+                .exactly_one()
+                .map_err(|_| anyhow!("could not find `{path}`"))?;
+
+            ensure!(
+                encoding.as_deref() == Some("base64"),
+                r#"expected `encoding="base64"`"#,
+            );
+
+            let content = content.expect("should present").replace('\n', "");
+            let content = BASE64_STANDARD.decode(content)?;
+            let content = String::from_utf8(content)
+                .with_context(|| format!("`{path}` is not valid UTF-8"))?;
+            Ok(content)
+        }
+    }
 }
 
 fn ensure_confirmation(terms: &str, terms_name: &'static str) -> anyhow::Result<()> {
@@ -716,12 +742,16 @@ fn download_and_extract_from_url(
 }
 
 fn download_models(
-    ModelsWithTerms { terms, models, .. }: ModelsWithTerms,
+    ModelsWithTerms {
+        readme,
+        terms,
+        models,
+        ..
+    }: ModelsWithTerms,
     output: &Path,
     progresses: &MultiProgress,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
-    let output = output.join(MODELS_DIR_NAME);
-
+    let output = output.to_owned();
     let reqwest = reqwest::Client::builder().build()?;
 
     let models = models
@@ -733,8 +763,9 @@ fn download_models(
         .collect::<Vec<_>>();
 
     Ok(async move {
-        fs_err::tokio::create_dir_all(&output).await?;
-        fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
+        fs_err::tokio::create_dir_all(&output.join(MODELS_DIR_NAME)).await?;
+        fs_err::tokio::write(output.join(MODELS_README_FILENAME), readme).await?;
+        fs_err::tokio::write(output.join(MODELS_DIR_NAME).join(MODELS_TERMS_FILE), terms).await?;
         let reqwest = &reqwest;
         let output = &output;
         models
@@ -758,7 +789,7 @@ fn download_models(
                         pb
                     })
                     .await?;
-                    fs_err::tokio::write(output.join(name), model).await?;
+                    fs_err::tokio::write(output.join(MODELS_DIR_NAME).join(name), model).await?;
                     tokio::task::spawn_blocking(move || pb.finish_with_message("Done!")).await?;
                     Ok(())
                 },
@@ -950,6 +981,7 @@ struct GhAsset {
 
 struct ModelsWithTerms {
     tag: String,
+    readme: String,
     terms: String,
     models: Vec<GhContent>,
 }

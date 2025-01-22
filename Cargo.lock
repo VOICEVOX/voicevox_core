@@ -1115,6 +1115,7 @@ dependencies = [
  "bytes",
  "clap",
  "comrak",
+ "easy-ext",
  "flate2",
  "fs-err",
  "futures-core",
