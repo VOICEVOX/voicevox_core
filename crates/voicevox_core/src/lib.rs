@@ -68,6 +68,7 @@ mod user_dict;
 mod version;
 mod voice_model;
 
+#[doc(hidden)]
 pub mod __internal;
 pub mod blocking;
 pub mod nonblocking;
