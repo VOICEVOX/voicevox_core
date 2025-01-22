@@ -18,7 +18,7 @@ x : int
 
 SpeakerVersion = NewType("SpeakerVersion", str)
 """
-スタイルのバージョン。
+**話者** (*speaker*)のバージョン。
 
 Parameters
 ----------

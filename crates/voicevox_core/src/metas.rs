@@ -79,7 +79,9 @@ impl Display for StyleId {
 /// [`SpeakerVersion`]の実体。
 pub type RawSpeakerVersion = String;
 
-/// スタイルのバージョン。
+/// [**話者**(_speaker_)]のバージョン。
+///
+/// [**話者**(_speaker_)]: SpeakerMeta
 #[derive(PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
 pub struct SpeakerVersion(RawSpeakerVersion);
 
