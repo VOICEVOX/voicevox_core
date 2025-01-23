@@ -3,28 +3,35 @@ use std::{
     collections::{BTreeSet, HashSet},
     env,
     future::Future,
-    io::{self, Cursor, Read},
+    io::{self, Cursor, IsTerminal as _, Read},
     path::{Path, PathBuf},
     sync::{Arc, LazyLock},
     time::Duration,
 };
 
-use anyhow::{anyhow, bail, Context as _};
+use anyhow::{anyhow, bail, ensure, Context as _};
+use base64::{prelude::BASE64_STANDARD, Engine as _};
 use bytes::Bytes;
 use clap::{Parser as _, ValueEnum};
+use easy_ext::ext;
 use flate2::read::GzDecoder;
 use futures_core::Stream;
-use futures_util::{stream::FuturesOrdered, StreamExt as _, TryStreamExt as _};
+use futures_util::{
+    stream::{FuturesOrdered, FuturesUnordered},
+    StreamExt as _, TryStreamExt as _,
+};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use itertools::Itertools as _;
 use octocrab::{
     models::{
-        repos::{Asset, Release},
+        repos::{Asset, CommitObject, Content, Release, Tag},
         AssetId,
     },
+    repos::RepoHandler,
     Octocrab,
 };
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
+use semver::VersionReq;
 use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
 use tracing::{info, warn};
@@ -41,6 +48,14 @@ const LIB_NAME: &str = "voicevox_core";
 const DEFAULT_CORE_REPO: &str = "VOICEVOX/voicevox_core";
 const DEFAULT_ONNXRUNTIME_BUILDER_REPO: &str = "VOICEVOX/onnxruntime-builder";
 const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
+const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
+
+static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
+    LazyLock::new(|| "=0.0.1-preview.2".parse().unwrap());
+const MODELS_README_FILENAME: &str = "README.md";
+const MODELS_DIR_NAME: &str = "vvms";
+const MODELS_TERMS_NAME: &str = "VOICEVOX VVM TERMS OF USE";
+const MODELS_TERMS_FILE: &str = "terms.md";
 
 static OPEN_JTALK_DIC_URL: LazyLock<Url> = LazyLock::new(|| {
     "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
@@ -122,14 +137,17 @@ struct Args {
         default_value(DEFAULT_ADDITIONAL_LIBRARIES_REPO)
     )]
     additional_libraries_repo: RepoName,
+
+    #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_MODELS_REPO))]
+    models_repo: RepoName,
 }
 
 #[derive(ValueEnum, Clone, Copy, PartialEq, Eq, Hash)]
 enum DownloadTarget {
     Core,
-    Models,
     Onnxruntime,
     AdditionalLibraries,
+    Models,
     Dict,
 }
 
@@ -206,6 +224,7 @@ async fn main() -> anyhow::Result<()> {
         os,
         core_repo,
         onnxruntime_builder_repo,
+        models_repo,
         additional_libraries_repo,
     } = Args::parse();
     let devices = devices.into_iter().collect::<BTreeSet<_>>();
@@ -226,16 +245,16 @@ async fn main() -> anyhow::Result<()> {
         DownloadTarget::value_variants().iter().copied().collect()
     };
 
-    if !(targets.contains(&DownloadTarget::Core) || targets.contains(&DownloadTarget::Models)) {
+    if !targets.contains(&DownloadTarget::Core) {
         if version != "latest" {
             warn!(
-                "`--version={version}`が指定されていますが、`core`も`models`もダウンロード対象から\
+                "`--version={version}`が指定されていますが、`core`はダウンロード対象から\
                  除外されています",
             );
         }
         if core_repo.to_string() != DEFAULT_CORE_REPO {
             warn!(
-                "`--core-repo={core_repo}`が指定されていますが、`core`も`models`もダウンロード対象\
+                "`--core-repo={core_repo}`が指定されていますが、`core`はダウンロード対象\
                  から除外されています",
             );
         }
@@ -268,11 +287,6 @@ async fn main() -> anyhow::Result<()> {
     })
     .await?;
 
-    let model = find_gh_asset(octocrab, &core_repo, &version, |tag, _| {
-        Ok(format!("model-{tag}.zip"))
-    })
-    .await?;
-
     let onnxruntime = find_gh_asset(
         octocrab,
         &onnxruntime_builder_repo,
@@ -283,6 +297,8 @@ async fn main() -> anyhow::Result<()> {
         },
     )
     .await?;
+
+    let models = find_models(octocrab, &models_repo).await?;
 
     let additional_libraries = devices
         .iter()
@@ -325,6 +341,7 @@ async fn main() -> anyhow::Result<()> {
                 .format(", "),
         );
     }
+    info!("ダウンロードモデルバージョン: {}", models.tag);
 
     let progresses = MultiProgress::new();
 
@@ -335,14 +352,6 @@ async fn main() -> anyhow::Result<()> {
             core,
             Stripping::FirstDir,
             &output,
-            &progresses,
-        )?);
-    }
-    if targets.contains(&DownloadTarget::Models) {
-        tasks.spawn(download_and_extract_from_gh(
-            model,
-            Stripping::FirstDir,
-            &output.join("model"),
             &progresses,
         )?);
     }
@@ -363,6 +372,13 @@ async fn main() -> anyhow::Result<()> {
                 &progresses,
             )?);
         }
+    }
+    if targets.contains(&DownloadTarget::Models) {
+        tasks.spawn(download_models(
+            models,
+            &output.join("models"),
+            &progresses,
+        )?);
     }
     if targets.contains(&DownloadTarget::Dict) {
         tasks.spawn(download_and_extract_from_url(
@@ -524,6 +540,140 @@ fn find_onnxruntime(
         .with_context(|| "指定されたOS, アーキテクチャ, デバイスを含むものが見つかりませんでした")
 }
 
+/// ダウンロードすべきモデル、利用規約を見つける。その際ユーザーに利用規約の同意を求める。
+async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<ModelsWithTerms> {
+    let repos = octocrab.repos(&repo.owner, &repo.repo);
+
+    let (tag, sha) = repos
+        .list_tags()
+        .send()
+        .await?
+        .into_iter()
+        .map(
+            |Tag {
+                 name,
+                 commit: CommitObject { sha, .. },
+                 ..
+             }| {
+                let tag = name
+                    .parse()
+                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))?;
+                Ok((tag, sha))
+            },
+        )
+        .collect::<anyhow::Result<Vec<_>>>()?
+        .into_iter()
+        .filter(|(version, _)| ALLOWED_MODELS_VERSIONS.matches(version))
+        .sorted()
+        .last()
+        .with_context(|| format!("`{repo}`"))?;
+    let tag = tag.to_string();
+
+    let terms = repos.fetch_file_content(&sha, MODELS_TERMS_FILE).await?;
+    ensure_confirmation(&terms, MODELS_TERMS_NAME)?;
+
+    let readme = repos
+        .fetch_file_content(&sha, MODELS_README_FILENAME)
+        .await?;
+
+    let models = repos
+        .get_content()
+        .r#ref(&sha)
+        .path(MODELS_DIR_NAME)
+        .send()
+        .await?
+        .items
+        .into_iter()
+        .map(
+            |Content {
+                 name,
+                 size,
+                 download_url,
+                 r#type,
+                 ..
+             }| {
+                ensure!(r#type == "file", "found directory");
+                Ok(GhContent {
+                    name,
+                    download_url: download_url.expect("should present"),
+                    size: size as _,
+                })
+            },
+        )
+        .collect::<anyhow::Result<_>>()?;
+
+    return Ok(ModelsWithTerms {
+        tag,
+        readme,
+        terms,
+        models,
+    });
+
+    #[ext]
+    impl RepoHandler<'_> {
+        async fn fetch_file_content(&self, sha: &str, path: &str) -> anyhow::Result<String> {
+            let Content {
+                encoding, content, ..
+            } = self
+                .get_content()
+                .r#ref(sha)
+                .path(path)
+                .send()
+                .await?
+                .items
+                .into_iter()
+                .exactly_one()
+                .map_err(|_| anyhow!("could not find `{path}`"))?;
+
+            ensure!(
+                encoding.as_deref() == Some("base64"),
+                r#"expected `encoding="base64"`"#,
+            );
+
+            let content = content.expect("should present").replace('\n', "");
+            let content = BASE64_STANDARD.decode(content)?;
+            let content = String::from_utf8(content)
+                .with_context(|| format!("`{path}` is not valid UTF-8"))?;
+            Ok(content)
+        }
+    }
+}
+
+fn ensure_confirmation(terms: &str, terms_name: &'static str) -> anyhow::Result<()> {
+    eprintln!(
+        "----------BEGIN {terms_name}----------\n\
+         {terms}\n\
+         ----------END {terms_name}----------",
+        terms = terms.trim_end(),
+    );
+    if !ask_yn()? {
+        bail!("you must agree with the term of use");
+    }
+    return Ok(());
+
+    const PROMPT: &str =
+        "上記の利用規約に同意しますか？ (Do you agree with the above terms of use?) (y/N): ";
+
+    fn ask_yn() -> anyhow::Result<bool> {
+        loop {
+            let input = rprompt::prompt_reply_from_bufread(
+                &mut io::stdin().lock(),
+                &mut io::stderr(),
+                PROMPT,
+            )?;
+            if ["y", "yes"].contains(&&*input.to_lowercase()) {
+                break Ok(true);
+            }
+            if ["n", "no", ""].contains(&&*input.to_lowercase()) {
+                break Ok(false);
+            }
+            if !io::stdin().is_terminal() {
+                bail!("the stdin is not a TTY but received invalid input: {input:?}");
+            }
+        }
+    }
+}
+
 fn download_and_extract_from_gh(
     GhAsset {
         octocrab,
@@ -589,6 +739,65 @@ fn download_and_extract_from_url(
             pb,
         )
         .await
+    })
+}
+
+fn download_models(
+    ModelsWithTerms {
+        readme,
+        terms,
+        models,
+        ..
+    }: ModelsWithTerms,
+    output: &Path,
+    progresses: &MultiProgress,
+) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
+    let output = output.to_owned();
+    let reqwest = reqwest::Client::builder().build()?;
+
+    let models = models
+        .into_iter()
+        .map(|model| {
+            let pb = add_progress_bar(progresses, model.size as _, model.name.clone());
+            (model, pb)
+        })
+        .collect::<Vec<_>>();
+
+    Ok(async move {
+        fs_err::tokio::create_dir_all(&output.join(MODELS_DIR_NAME)).await?;
+        fs_err::tokio::write(output.join(MODELS_README_FILENAME), readme).await?;
+        fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
+        let reqwest = &reqwest;
+        let output = &output;
+        models
+            .into_iter()
+            .map(
+                |(
+                    GhContent {
+                        name,
+                        download_url,
+                        size,
+                    },
+                    pb,
+                )| async move {
+                    let res = reqwest.get(download_url).send().await?.error_for_status()?;
+                    let bytes_stream = res.bytes_stream().map_err(Into::into);
+                    let pb = with_style(pb, &PROGRESS_STYLE1).await?;
+                    let model = download(bytes_stream, Some(size), pb.clone()).await?;
+                    let pb = tokio::task::spawn_blocking(move || {
+                        pb.set_style(PROGRESS_STYLE2.clone());
+                        pb.set_message("Writing...");
+                        pb
+                    })
+                    .await?;
+                    fs_err::tokio::write(output.join(MODELS_DIR_NAME).join(name), model).await?;
+                    tokio::task::spawn_blocking(move || pb.finish_with_message("Done!")).await?;
+                    Ok(())
+                },
+            )
+            .collect::<FuturesUnordered<_>>()
+            .try_collect::<()>()
+            .await
     })
 }
 
@@ -769,6 +978,19 @@ struct GhAsset {
     id: AssetId,
     name: String,
     size: usize,
+}
+
+struct ModelsWithTerms {
+    tag: String,
+    readme: String,
+    terms: String,
+    models: Vec<GhContent>,
+}
+
+struct GhContent {
+    name: String,
+    download_url: String,
+    size: u64,
 }
 
 #[derive(Clone, Copy)]
