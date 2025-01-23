@@ -39,7 +39,11 @@ class VoiceModelFile:
         ...
     @property
     def id(self) -> VoiceModelId:
-        """ID。"""
+        """
+        ID。
+
+        :attr:`close` および :attr:`__aexit__` の後でも利用可能。
+        """
         ...
     @property
     def metas(self) -> list[SpeakerMeta]:
@@ -47,6 +51,8 @@ class VoiceModelFile:
         メタ情報。
 
         この中身を書き換えても、 ``VoiceModelFile`` としての動作には影響しない。
+
+        :attr:`close` および :attr:`__aexit__` の後でも利用可能。
         """
         ...
     async def __aenter__(self) -> "VoiceModelFile": ...

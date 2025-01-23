@@ -210,6 +210,10 @@ enum VoicevoxResultCode
    * UUIDの変換に失敗した
    */
   VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
+  /**
+   * 音声モデルファイルが既に閉じられている
+   */
+  VOICEVOX_RESULT_VOICE_MODEL_FILE_ALREADY_CLOSED_ERROR = 30,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
@@ -298,7 +302,7 @@ typedef struct VoicevoxUserDict VoicevoxUserDict;
  * 音声モデルファイル。
  *
  * VVMファイルと対応する。
- * <b>構築</b>(_construction_)は ::voicevox_voice_model_file_open で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_file_close で行う。
+ * <b>構築</b>(_construction_)は ::voicevox_voice_model_file_open で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_file_delete で行う。
  */
 typedef struct VoicevoxVoiceModelFile VoicevoxVoiceModelFile;
 
@@ -608,6 +612,8 @@ VoicevoxResultCode voicevox_voice_model_file_open(const char *path,
 /**
  * ::VoicevoxVoiceModelFile からIDを取得する。
  *
+ * ::voicevox_voice_model_file_close の後でも利用可能。
+ *
  * @param [in] model 音声モデル
  * @param [out] output_voice_model_id 音声モデルID
  *
@@ -626,6 +632,8 @@ void voicevox_voice_model_file_id(const struct VoicevoxVoiceModelFile *model,
  *
  * JSONの解放は ::voicevox_json_free で行う。
  *
+ * ::voicevox_voice_model_file_close の後でも利用可能。
+ *
  * @param [in] model 音声モデル
  *
  * @returns メタ情報のJSON文字列
@@ -636,18 +644,32 @@ __declspec(dllimport)
 char *voicevox_voice_model_file_create_metas_json(const struct VoicevoxVoiceModelFile *model);
 
 /**
+ * ::VoicevoxVoiceModelFile が所有しているファイルディスクリプタを閉じる。
+ *
+ * 対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから閉じる。
+ *
+ * ::voicevox_voice_model_file_delete の違いとしては、本関数が対象にした ::VoicevoxVoiceModelFile
+ * に対しても ::voicevox_voice_model_file_id および
+ * ::voicevox_voice_model_file_create_metas_json は利用可能である。
+ *
+ * @param [in] model 音声モデル
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_voice_model_file_close(const struct VoicevoxVoiceModelFile *model);
+
+/**
  * ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
  *
  * 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
- *
- * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
  *
  * @param [in] model 破棄対象
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-void voicevox_voice_model_file_close(struct VoicevoxVoiceModelFile *model);
+void voicevox_voice_model_file_delete(struct VoicevoxVoiceModelFile *model);
 
 /**
  * ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。

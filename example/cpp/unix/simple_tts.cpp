@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
       std::cerr << voicevox_error_result_to_message(result) << std::endl;
       return 0;
     }
-    voicevox_voice_model_file_close(model);
+    voicevox_voice_model_file_delete(model);
   }
 
   std::cout << "音声生成中..." << std::endl;

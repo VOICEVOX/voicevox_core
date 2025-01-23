@@ -52,6 +52,9 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
             Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
             Err(InvalidUuid(_)) => VOICEVOX_RESULT_INVALID_UUID_ERROR,
+            Err(VoiceModelFileAlreadyClosed(_)) => {
+                VOICEVOX_RESULT_VOICE_MODEL_FILE_ALREADY_CLOSED_ERROR
+            }
         }
     }
 }
@@ -78,6 +81,8 @@ pub(crate) enum CApiError {
     InvalidAccentPhrase(serde_json::Error),
     #[error("無効なUUIDです: {0}")]
     InvalidUuid(uuid::Error),
+    #[error("音声モデルファイル`{0}`は既に閉じられています")]
+    VoiceModelFileAlreadyClosed(VoiceModelId),
 }
 
 pub(crate) fn audio_query_model_to_json(audio_query_model: &AudioQuery) -> String {

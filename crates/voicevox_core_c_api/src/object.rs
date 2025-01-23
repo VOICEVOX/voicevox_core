@@ -7,6 +7,7 @@
 use std::{
     any,
     collections::{HashMap, HashSet},
+    convert::Infallible,
     fmt::{Debug, Display},
     mem,
     num::NonZero,
@@ -40,6 +41,7 @@ use tracing::warn;
 ///     3. そもそもオブジェクトとして変なダングリングポインタが渡される
 pub(crate) trait CApiObject: Default + Debug + 'static {
     type RustApiObject: 'static;
+    type RustApiObjectClosed: 'static;
 
     // 行う可変操作は`insert`のみ
     fn known_addrs() -> &'static std::sync::Mutex<HashSet<NonZero<usize>>>;
@@ -49,11 +51,7 @@ pub(crate) trait CApiObject: Default + Debug + 'static {
     fn bodies() -> &'static std::sync::Mutex<
         HashMap<
             NonZero<usize>, // `heads`の要素へのポインタのアドレス
-            Arc<
-                parking_lot::RwLock<
-                    Option<Self::RustApiObject>, // `RwLock`をdropする直前まで`Some`
-                >,
-            >,
+            Arc<parking_lot::RwLock<Body<Self::RustApiObject, Self::RustApiObjectClosed>>>,
         >,
     >;
 
@@ -82,7 +80,10 @@ impl<T: CApiObject> *const T {
     /// # Panics
     ///
     /// 同じ対象に対して`drop_body`を呼んでいるとパニックする。
-    pub(crate) fn body(self) -> impl Deref<Target = T::RustApiObject> {
+    pub(crate) fn body(self) -> impl Deref<Target = T::RustApiObject>
+    where
+        T: CApiObject<RustApiObjectClosed = Infallible>,
+    {
         let this = self.validate();
 
         let body = T::lock_bodies()
@@ -94,6 +95,58 @@ impl<T: CApiObject> *const T {
             body.as_ref().ok_or(())
         })
         .unwrap_or_else(|()| this.panic_for_deleted())
+    }
+
+    /// # Panics
+    ///
+    /// 同じ対象に対して`drop_body`を呼んでいるとパニックする。
+    pub(crate) fn maybe_closed_body(
+        self,
+    ) -> impl Deref<Target = AliveBody<T::RustApiObject, T::RustApiObjectClosed>> {
+        let this = self.validate();
+
+        let body = T::lock_bodies()
+            .get(&this.addr())
+            .unwrap_or_else(|| this.panic_for_deleted())
+            .read_arc();
+
+        voicevox_core::__internal::interop::raii::try_map_guard(body, |body| match &**body {
+            Body::Alive(x) => Ok(x),
+            Body::Deleting => Err(()),
+        })
+        .unwrap_or_else(|()| this.panic_for_deleted())
+    }
+
+    /// # Panics
+    ///
+    /// 同じ対象に対して`drop_body`を呼んでいるとパニックする。
+    pub(crate) fn close_body(self, f: impl FnOnce(T::RustApiObject) -> T::RustApiObjectClosed) {
+        let this = self.validate();
+
+        let body = T::lock_bodies()
+            .get(&this.addr())
+            .unwrap_or_else(|| this.panic_for_deleted())
+            .clone();
+
+        let body = &mut *body.try_write_arc().unwrap_or_else(|| {
+            warn!(
+                "{this} is still in use. Waiting before closing",
+                this = this.display(),
+            );
+            body.write_arc()
+        });
+
+        match body {
+            Body::Alive(AliveBody::Open(_)) => {
+                let sentinel = Body::Deleting;
+                let Body::Alive(AliveBody::Open(x)) = mem::replace(body, sentinel) else {
+                    unreachable!();
+                };
+                *body = Body::Alive(AliveBody::Closed(f(x)));
+            }
+            Body::Alive(AliveBody::Closed(_)) => (),
+            Body::Deleting => this.panic_for_deleted(),
+        }
     }
 
     /// # Panics
@@ -110,7 +163,7 @@ impl<T: CApiObject> *const T {
             body.try_write_arc()
                 .unwrap_or_else(|| {
                     warn!(
-                        "{this} is still in use. Waiting before closing",
+                        "{this} is still in use. Waiting before deleting",
                         this = this.display(),
                     );
                     body.write_arc()
@@ -154,8 +207,46 @@ impl<T: CApiObject> T {
     }
 
     fn lock_bodies() -> impl DerefMut<
-        Target = HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>,
+        Target = HashMap<
+            NonZero<usize>,
+            Arc<parking_lot::RwLock<Body<Self::RustApiObject, Self::RustApiObjectClosed>>>,
+        >,
     > {
         Self::bodies().lock().unwrap_or_else(|e| panic!("{e}"))
     }
+}
+
+pub(crate) enum Body<O, C> {
+    Alive(AliveBody<O, C>),
+    Deleting,
+}
+
+impl<O, C> Body<O, C> {
+    fn take(&mut self) -> Option<impl Sized> {
+        match mem::replace(self, Self::Deleting) {
+            Body::Alive(x) => Some(x),
+            Body::Deleting => None,
+        }
+    }
+}
+
+impl<O> Body<O, Infallible> {
+    fn as_ref(&self) -> Option<&O> {
+        match self {
+            Body::Alive(AliveBody::Open(x)) => Some(x),
+            Body::Alive(AliveBody::Closed(_)) => unreachable!(),
+            Body::Deleting => None,
+        }
+    }
+}
+
+impl<O, C> From<O> for Body<O, C> {
+    fn from(x: O) -> Self {
+        Self::Alive(AliveBody::Open(x))
+    }
+}
+
+pub(crate) enum AliveBody<O, C> {
+    Open(O),
+    Closed(C),
 }

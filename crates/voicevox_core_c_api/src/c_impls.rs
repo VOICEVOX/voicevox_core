@@ -1,7 +1,9 @@
 use std::{
     collections::{HashMap, HashSet},
+    convert::Infallible,
     ffi::CString,
     num::NonZero,
+    ops::Deref,
     path::Path,
     ptr::NonNull,
     sync::{Arc, LazyLock},
@@ -11,11 +13,11 @@ use camino::Utf8Path;
 use duplicate::duplicate_item;
 use easy_ext::ext;
 use ref_cast::ref_cast_custom;
-use voicevox_core::{Result, SpeakerMeta, VoiceModelId};
+use voicevox_core::{Result, SpeakerMeta, VoiceModelId, VoiceModelMeta};
 
 use crate::{
-    helpers::CApiResult,
-    object::{CApiObject, CApiObjectPtrExt as _},
+    helpers::{CApiError, CApiResult},
+    object::{AliveBody, Body, CApiObject, CApiObjectPtrExt as _},
     OpenJtalkRc, VoicevoxInitializeOptions, VoicevoxOnnxruntime, VoicevoxSynthesizer,
     VoicevoxUserDict, VoicevoxVoiceModelFile,
 };
@@ -127,8 +129,28 @@ impl VoicevoxVoiceModelFile {
 
 #[ext(VoicevoxVoiceModelFilePtrExt)]
 impl *const VoicevoxVoiceModelFile {
+    pub(crate) fn ensure_opened(
+        self,
+    ) -> CApiResult<impl Deref<Target = voicevox_core::blocking::VoiceModelFile>> {
+        let body = self.maybe_closed_body();
+        voicevox_core::__internal::interop::raii::try_map_guard(body, |body| match &**body {
+            AliveBody::Open(model) => Ok(model),
+            AliveBody::Closed((id, _)) => Err(CApiError::VoiceModelFileAlreadyClosed(*id)),
+        })
+    }
+
+    pub(crate) fn id(self) -> VoiceModelId {
+        match &*self.maybe_closed_body() {
+            AliveBody::Open(model) => model.id(),
+            AliveBody::Closed((id, _)) => *id,
+        }
+    }
+
     pub(crate) fn metas(self) -> CString {
-        metas_to_json(self.body().metas())
+        metas_to_json(match &*self.maybe_closed_body() {
+            AliveBody::Open(model) => model.metas(),
+            AliveBody::Closed((_, metas)) => metas,
+        })
     }
 }
 
@@ -138,14 +160,15 @@ fn metas_to_json(metas: &[SpeakerMeta]) -> CString {
 }
 
 #[duplicate_item(
-    H                          B;
-    [ OpenJtalkRc ]            [ voicevox_core::blocking::OpenJtalk ];
-    [ VoicevoxUserDict ]       [ voicevox_core::blocking::UserDict ];
-    [ VoicevoxSynthesizer ]    [ voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk> ];
-    [ VoicevoxVoiceModelFile ] [ voicevox_core::blocking::VoiceModelFile ];
+    H                          O                                                                            C;
+    [ OpenJtalkRc ]            [ voicevox_core::blocking::OpenJtalk ]                                       [ Infallible ];
+    [ VoicevoxUserDict ]       [ voicevox_core::blocking::UserDict ]                                        [ Infallible ];
+    [ VoicevoxSynthesizer ]    [ voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk> ] [ Infallible ];
+    [ VoicevoxVoiceModelFile ] [ voicevox_core::blocking::VoiceModelFile ]                                  [ (VoiceModelId, VoiceModelMeta) ];
 )]
 impl CApiObject for H {
-    type RustApiObject = B;
+    type RustApiObject = O;
+    type RustApiObjectClosed = C;
 
     fn known_addrs() -> &'static std::sync::Mutex<HashSet<NonZero<usize>>> {
         static KNOWN_ADDRS: LazyLock<std::sync::Mutex<HashSet<NonZero<usize>>>> =
@@ -159,11 +182,14 @@ impl CApiObject for H {
     }
 
     fn bodies() -> &'static std::sync::Mutex<
-        HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>,
+        HashMap<
+            NonZero<usize>,
+            Arc<parking_lot::RwLock<Body<Self::RustApiObject, Self::RustApiObjectClosed>>>,
+        >,
     > {
         #[expect(clippy::type_complexity, reason = "`CApiObject::bodies`と同様")]
         static BODIES: LazyLock<
-            std::sync::Mutex<HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<B>>>>>,
+            std::sync::Mutex<HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Body<O, C>>>>>,
         > = LazyLock::new(Default::default);
 
         &BODIES
