@@ -76,22 +76,22 @@ impl Display for StyleId {
     }
 }
 
-/// [`StyleVersion`]の実体。
+/// [`SpeakerVersion`]の実体。
+pub type RawSpeakerVersion = String;
+
+/// [**話者**(_speaker_)]のバージョン。
 ///
-/// [`StyleVersion`]: StyleVersion
-pub type RawStyleVersion = String;
-
-/// スタイルのバージョン。
+/// [**話者**(_speaker_)]: SpeakerMeta
 #[derive(PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
-pub struct StyleVersion(RawStyleVersion);
+pub struct SpeakerVersion(RawSpeakerVersion);
 
-impl StyleVersion {
-    pub fn raw_version(&self) -> &RawStyleVersion {
+impl SpeakerVersion {
+    pub fn raw_version(&self) -> &RawSpeakerVersion {
         &self.0
     }
 }
 
-impl Display for StyleVersion {
+impl Display for SpeakerVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.raw_version())
     }
@@ -108,7 +108,7 @@ pub struct SpeakerMeta {
     /// 話者に属するスタイル。
     pub styles: Vec<StyleMeta>,
     /// 話者のバージョン。
-    pub version: StyleVersion,
+    pub version: SpeakerVersion,
     /// 話者のUUID。
     pub speaker_uuid: String,
     /// 話者の順番。

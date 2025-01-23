@@ -16,9 +16,9 @@ Parameters
 x : int
 """
 
-StyleVersion = NewType("StyleVersion", str)
+SpeakerVersion = NewType("SpeakerVersion", str)
 """
-スタイルのバージョン。
+**話者** (*speaker*)のバージョン。
 
 Parameters
 ----------
@@ -85,7 +85,7 @@ class SpeakerMeta:
     speaker_uuid: str
     """話者のバージョン。"""
 
-    version: StyleVersion
+    version: SpeakerVersion
     """話者のUUID。"""
 
     order: int | None = None

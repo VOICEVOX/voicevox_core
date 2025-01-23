@@ -88,7 +88,7 @@ pub use self::{
     engine::{wav_from_s16le, AccentPhrase, AudioQuery, Mora},
     error::{Error, ErrorKind},
     metas::{
-        RawStyleId, RawStyleVersion, SpeakerMeta, StyleId, StyleMeta, StyleType, StyleVersion,
+        RawSpeakerVersion, RawStyleId, SpeakerMeta, SpeakerVersion, StyleId, StyleMeta, StyleType,
         VoiceModelMeta,
     },
     result::Result,
