@@ -1,6 +1,5 @@
 """無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。"""
 
-from . import _load_dlls  # noqa: F401
 from ._models import (  # noqa: F401
     AccelerationMode,
     AccentPhrase,
@@ -9,6 +8,8 @@ from ._models import (  # noqa: F401
     SpeakerMeta,
     SpeakerVersion,
     StyleId,
+    StyleMeta,
+    StyleType,
     SupportedDevices,
     UserDictWord,
     UserDictWordType,
@@ -68,7 +69,9 @@ __all__ = [
     "SpeakerVersion",
     "StyleAlreadyLoadedError",
     "StyleId",
+    "StyleMeta",
     "StyleNotFoundError",
+    "StyleType",
     "SupportedDevices",
     "UseUserDictError",
     "UserDictWord",
