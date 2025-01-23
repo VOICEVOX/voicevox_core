@@ -51,7 +51,7 @@ const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_li
 const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
-    LazyLock::new(|| "=0.0.1-preview.1".parse().unwrap());
+    LazyLock::new(|| "=0.0.1-preview.2".parse().unwrap());
 const MODELS_README_FILENAME: &str = "README.md";
 const MODELS_DIR_NAME: &str = "vvms";
 const MODELS_TERMS_NAME: &str = "VOICEVOX VVM TERMS OF USE";
@@ -584,23 +584,23 @@ async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<Mod
         .await?
         .items
         .into_iter()
-        .filter(|Content { name, r#type, .. }| {
-            name != MODELS_TERMS_FILE // 0.0.1-preview.1だと混入している
-            && r#type == "file"
-        })
         .map(
             |Content {
                  name,
                  size,
                  download_url,
+                 r#type,
                  ..
-             }| GhContent {
-                name,
-                download_url: download_url.expect("should present"),
-                size: size as _,
+             }| {
+                ensure!(r#type == "file", "found directory");
+                Ok(GhContent {
+                    name,
+                    download_url: download_url.expect("should present"),
+                    size: size as _,
+                })
             },
         )
-        .collect();
+        .collect::<anyhow::Result<_>>()?;
 
     return Ok(ModelsWithTerms {
         tag,
