@@ -8,13 +8,15 @@ VOICEVOX CORE の Python バインディングです。
 
 - Rustup
 - Python ≧ 3.10
-- Poetry ≧ 1.6
+- Poetry ≧ 1.6 <!-- FIXME: 今はv2！ -->
 
 ```console
 ❯ poetry install --with dev
 ```
 
 ## ファイル構成
+
+<!-- FIXME: 今はasyncio.pyとblocking.pyに分かれており、_rust.pyiも分割されている -->
 
 ```console
 .
@@ -23,7 +25,6 @@ VOICEVOX CORE の Python バインディングです。
 ├── python                            : このディレクトリの内容がwhlに入ります。
 │   └── voicevox_core
 │       ├── __init__.py
-│       ├── _load_dlls.py
 │       ├── _models.py
 │       ├── __pycache__               : maturin developで生成されます。
 │       │   └── …
