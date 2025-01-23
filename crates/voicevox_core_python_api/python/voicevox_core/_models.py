@@ -83,10 +83,10 @@ class SpeakerMeta:
     """話者に属するスタイル。"""
 
     speaker_uuid: str
-    """話者のバージョン。"""
+    """話者のUUID。"""
 
     version: SpeakerVersion
-    """話者のUUID。"""
+    """話者のバージョン。"""
 
     order: int | None = None
     """
