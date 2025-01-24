@@ -244,6 +244,8 @@ pub enum UserDictWordType {
     Adjective,
     /// 接尾辞。
     Suffix,
+    #[doc(hidden)]
+    __NonExhaustive,
 }
 
 impl UserDictWord {

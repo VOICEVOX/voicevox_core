@@ -81,6 +81,10 @@ impl Default for TtsOptions {
 }
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
+#[expect(
+    clippy::manual_non_exhaustive,
+    reason = "バインディングを作るときはexhaustiveとして扱いたい"
+)]
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AccelerationMode {
     /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
@@ -90,6 +94,8 @@ pub enum AccelerationMode {
     Cpu,
     /// ハードウェアアクセラレーションモードを"GPU"に設定する。
     Gpu,
+    #[doc(hidden)]
+    __NonExhaustive,
 }
 
 struct InitializeOptions {
@@ -251,6 +257,7 @@ impl<T, A: AsyncExt> Inner<T, A> {
                     [gpu, ..] => DeviceSpec::Gpu(gpu),
                 }
             }
+            AccelerationMode::__NonExhaustive => unreachable!(),
         };
 
         info!("{device_for_heavy}を利用します");

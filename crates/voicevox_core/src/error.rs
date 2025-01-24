@@ -123,6 +123,10 @@ pub(crate) enum ErrorRepr {
 }
 
 /// エラーの種類。
+#[expect(
+    clippy::manual_non_exhaustive,
+    reason = "バインディングを作るときはexhaustiveとして扱いたい"
+)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ErrorKind {
     /// open_jtalk辞書ファイルが読み込まれていない。
@@ -165,6 +169,8 @@ pub enum ErrorKind {
     UseUserDict,
     /// ユーザー辞書の単語のバリデーションに失敗した。
     InvalidWord,
+    #[doc(hidden)]
+    __NonExhaustive,
 }
 
 pub(crate) type LoadModelResult<T> = std::result::Result<T, LoadModelError>;

@@ -66,6 +66,7 @@ fn test_gpu(
 /// # }
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Debug, BitAnd, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct SupportedDevices {
     /// CPUが利用可能。
     ///
