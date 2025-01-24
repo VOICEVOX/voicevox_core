@@ -319,7 +319,7 @@ mod blocking {
         fn open(py: Python<'_>, path: PathBuf) -> PyResult<Self> {
             let model = voicevox_core::blocking::VoiceModelFile::open(path).into_py_result(py)?;
 
-            let id = crate::convert::to_py_uuid(py, model.id().raw_voice_model_id())?;
+            let id = crate::convert::to_py_uuid(py, model.id().0)?;
             let metas = crate::convert::to_pydantic_voice_model_meta(model.metas(), py)?.into();
 
             let model = Closable::new(model).into();
@@ -905,7 +905,7 @@ mod asyncio {
                 let model = voicevox_core::nonblocking::VoiceModelFile::open(path).await;
                 let (model, id, metas) = Python::with_gil(|py| {
                     let model = Python::with_gil(|py| model.into_py_result(py))?;
-                    let id = crate::convert::to_py_uuid(py, model.id().raw_voice_model_id())?;
+                    let id = crate::convert::to_py_uuid(py, model.id().0)?;
                     let metas =
                         crate::convert::to_pydantic_voice_model_meta(model.metas(), py)?.into();
                     Ok::<_, PyErr>((model, id, metas))
