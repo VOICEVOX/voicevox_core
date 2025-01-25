@@ -44,7 +44,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_VoiceModelFile
             .clone();
         let internal = internal.read()?;
 
-        let id = env.new_uuid(internal.id().raw_voice_model_id())?;
+        let id = env.new_uuid(internal.id().0)?;
 
         Ok(id.into_raw())
     })

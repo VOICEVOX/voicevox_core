@@ -474,7 +474,7 @@ pub unsafe extern "C" fn voicevox_voice_model_file_id(
     output_voice_model_id: NonNull<[u8; 16]>,
 ) {
     init_logger_once();
-    let id = model.body().id().raw_voice_model_id().into_bytes();
+    let id = model.body().id().0.into_bytes();
     unsafe { output_voice_model_id.write_unaligned(id) };
 }
 

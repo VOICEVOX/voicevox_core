@@ -33,11 +33,6 @@ use crate::{
     SpeakerMeta, StyleMeta, StyleType, VoiceModelMeta,
 };
 
-/// [`VoiceModelId`]の実体。
-///
-/// [`VoiceModelId`]: VoiceModelId
-pub type RawVoiceModelId = Uuid;
-
 pub(crate) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_values!(
     for<D> Option<(StyleIdToInnerVoiceId, EnumMap<D::Operation, ModelBytes>)>
 );
@@ -56,13 +51,7 @@ pub(crate) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_value
     Debug,
     From,
 )]
-pub struct VoiceModelId(RawVoiceModelId);
-
-impl VoiceModelId {
-    pub fn raw_voice_model_id(self) -> RawVoiceModelId {
-        self.0
-    }
-}
+pub struct VoiceModelId(pub Uuid);
 
 #[self_referencing]
 pub(crate) struct Inner<A: Async> {

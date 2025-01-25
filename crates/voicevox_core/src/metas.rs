@@ -37,11 +37,6 @@ pub fn merge<'a>(metas: impl IntoIterator<Item = &'a SpeakerMeta>) -> Vec<Speake
     }
 }
 
-/// [`StyleId`]の実体。
-///
-/// [`StyleId`]: StyleId
-pub type RawStyleId = u32;
-
 /// スタイルID。
 ///
 /// VOICEVOXにおける、ある[**話者**(_speaker_)]のある[**スタイル**(_style_)]を指す。
@@ -62,38 +57,23 @@ pub type RawStyleId = u32;
     new,
     Debug,
 )]
-pub struct StyleId(RawStyleId);
-
-impl StyleId {
-    pub fn raw_id(self) -> RawStyleId {
-        self.0
-    }
-}
+pub struct StyleId(pub u32);
 
 impl Display for StyleId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.raw_id())
+        write!(f, "{}", self.0)
     }
 }
-
-/// [`SpeakerVersion`]の実体。
-pub type RawSpeakerVersion = String;
 
 /// [**話者**(_speaker_)]のバージョン。
 ///
 /// [**話者**(_speaker_)]: SpeakerMeta
 #[derive(PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
-pub struct SpeakerVersion(RawSpeakerVersion);
-
-impl SpeakerVersion {
-    pub fn raw_version(&self) -> &RawSpeakerVersion {
-        &self.0
-    }
-}
+pub struct SpeakerVersion(pub String);
 
 impl Display for SpeakerVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.raw_version())
+        write!(f, "{}", self.0)
     }
 }
 

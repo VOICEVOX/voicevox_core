@@ -175,7 +175,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             .get::<D>()
             .as_ref()
             .and_then(|(inner_voice_ids, _)| inner_voice_ids.get(&style_id).copied())
-            .unwrap_or_else(|| InnerVoiceId::new(style_id.raw_id()));
+            .unwrap_or_else(|| InnerVoiceId::new(style_id.0));
 
         Ok((*model_id, inner_voice_id))
     }
