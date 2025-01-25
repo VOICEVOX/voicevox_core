@@ -636,7 +636,7 @@ __declspec(dllimport)
 char *voicevox_voice_model_file_create_metas_json(const struct VoicevoxVoiceModelFile *model);
 
 /**
- * ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
+ * ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。ファイルの削除(_delete_)<b>ではない</b>。
  *
  * 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
  *
