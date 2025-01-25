@@ -47,6 +47,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 WordNotFound => VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR,
                 UseUserDict => VOICEVOX_RESULT_USE_USER_DICT_ERROR,
                 InvalidWord => VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR,
+                __NonExhaustive => unreachable!(),
             },
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
@@ -99,6 +100,7 @@ impl From<voicevox_core::AccelerationMode> for VoicevoxAccelerationMode {
             Auto => Self::VOICEVOX_ACCELERATION_MODE_AUTO,
             Cpu => Self::VOICEVOX_ACCELERATION_MODE_CPU,
             Gpu => Self::VOICEVOX_ACCELERATION_MODE_GPU,
+            __NonExhaustive => unreachable!(),
         }
     }
 }
@@ -186,6 +188,7 @@ impl From<voicevox_core::UserDictWordType> for VoicevoxUserDictWordType {
                 Self::VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE
             }
             voicevox_core::UserDictWordType::Suffix => Self::VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX,
+            voicevox_core::UserDictWordType::__NonExhaustive => unreachable!(),
         }
     }
 }

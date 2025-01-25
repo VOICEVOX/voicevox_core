@@ -82,6 +82,7 @@ pub type VoiceModelMeta = Vec<SpeakerMeta>;
 
 /// **話者**(_speaker_)のメタ情報。
 #[derive(Deserialize, Serialize, Clone)]
+#[non_exhaustive]
 pub struct SpeakerMeta {
     /// 話者名。
     pub name: String,
@@ -141,6 +142,7 @@ impl SpeakerMeta {
 
 /// **スタイル**(_style_)のメタ情報。
 #[derive(Deserialize, Serialize, Clone)]
+#[non_exhaustive]
 pub struct StyleMeta {
     /// スタイルID。
     pub id: StyleId,
@@ -172,6 +174,7 @@ pub struct StyleMeta {
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum StyleType {
     /// 音声合成クエリの作成と音声合成が可能。
     #[default]

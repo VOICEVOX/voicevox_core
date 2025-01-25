@@ -67,6 +67,7 @@ where
                                             "Exception",
                                         ),
                                     )*
+                                    voicevox_core::ErrorKind::__NonExhaustive => unreachable!(),
                                 }
                             };
                         }
