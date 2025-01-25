@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-#include "voicevox_core/voicevox_core.h"
+#include "voicevox_core/c_api/voicevox_core.h"
 
 #define STYLE_ID 0
 #define OUTPUT_WAV_NAME "audio.wav"
@@ -14,7 +14,8 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  std::string open_jtalk_dict_path("voicevox_core/open_jtalk_dic_utf_8-1.11");
+  std::string open_jtalk_dict_path(
+      "voicevox_core/dict/open_jtalk_dic_utf_8-1.11");
   std::string text(argv[1]);
 
   std::cout << "coreの初期化中..." << std::endl;
@@ -22,6 +23,9 @@ int main(int argc, char *argv[]) {
   auto initialize_options = voicevox_make_default_initialize_options();
   const VoicevoxOnnxruntime* onnxruntime;
   auto load_ort_options = voicevox_make_default_load_onnxruntime_options();
+  std::string ort_filename = "./voicevox_core/onnxruntime/lib/";
+  ort_filename += voicevox_get_onnxruntime_lib_versioned_filename();
+  load_ort_options.filename = ort_filename.c_str();
   auto result = voicevox_onnxruntime_load_once(load_ort_options, &onnxruntime);
   if (result != VOICEVOX_RESULT_OK){
     std::cerr << voicevox_error_result_to_message(result) << std::endl;
@@ -42,7 +46,7 @@ int main(int argc, char *argv[]) {
   voicevox_open_jtalk_rc_delete(open_jtalk);
 
   for (auto const& entry :
-       std::filesystem::directory_iterator{"./voicevox_core/model"}) {
+       std::filesystem::directory_iterator{"./voicevox_core/models/vvms"}) {
     const auto path = entry.path();
     if (path.extension() != ".vvm") {
       continue;

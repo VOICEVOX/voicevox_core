@@ -22,9 +22,9 @@ Visual Studio Installerを使用しインストールしてください。
 
 - simple_tts\bin\x64\Debug に配置
   - voicevox_core.dll
-  - onnxruntime.dll
-  - onnxruntime_providers_shared.dll
-  - modelフォルダ
+  - onnxruntime.dll (TODO: 要らないはず)
+  - onnxruntime_providers_shared.dll (TODO: 要らないはず)
+  - modelフォルダ (TODO: 要らないはず)
 
 - simple_tts\lib\x64 に配置
   - voicevox_core.lib

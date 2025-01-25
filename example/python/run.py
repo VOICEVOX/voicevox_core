@@ -36,12 +36,12 @@ class Args:
         )
         argparser.add_argument(
             "--onnxruntime",
-            default=Onnxruntime.LIB_VERSIONED_FILENAME,
+            default=f"./onnxruntime/lib/{Onnxruntime.LIB_VERSIONED_FILENAME}",
             help="ONNX Runtimeのライブラリのfilename",
         )
         argparser.add_argument(
             "--dict-dir",
-            default="./open_jtalk_dic_utf_8-1.11",
+            default="./dict/open_jtalk_dic_utf_8-1.11",
             type=Path,
             help="Open JTalkの辞書ディレクトリ",
         )
