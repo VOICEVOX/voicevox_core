@@ -3,7 +3,8 @@ from enum import Enum
 from typing import NewType
 from uuid import UUID
 
-import pydantic
+import pydantic.alias_generators
+from pydantic import ConfigDict
 
 from ._rust import _to_zenkaku, _validate_pronunciation
 
@@ -186,7 +187,17 @@ class AccentPhrase:
     """疑問系かどうか。"""
 
 
-@pydantic.dataclasses.dataclass
+def _rename_audio_query_field(name: str) -> str:
+    match name:
+        case "accent_phrases":
+            return "accent_phrases"
+        case _:
+            return pydantic.alias_generators.to_camel(name)
+
+
+@pydantic.dataclasses.dataclass(
+    config=ConfigDict(alias_generator=_rename_audio_query_field),
+)
 class AudioQuery:
     """AudioQuery (音声合成用のクエリ)。"""
 
@@ -230,6 +241,19 @@ class AudioQuery:
     :func:`Synthesizer.create_audio_query` が返すもののみ ``str`` となる。入力として
     のAudioQueryでは無視される。
     """
+
+    # `dataclasses.asdict`の内部実装に依存したハックだが、他に方法が思い付かなかった。
+    def __post_init__(self) -> None:
+        """
+        :func:`dataclasses.asdict` にてキーが正しい名前になるよう、 ``dataclass``
+        としてのフィールドをハックする。
+        """
+
+        for field in dataclasses.fields(self):
+            rename = _rename_audio_query_field(field.name)
+            if rename != field.name:
+                setattr(self, rename, getattr(self, field.name))
+                field.name = rename
 
 
 class UserDictWordType(str, Enum):

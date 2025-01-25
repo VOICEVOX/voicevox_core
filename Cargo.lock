@@ -4510,7 +4510,6 @@ dependencies = [
  "futures-io",
  "futures-lite",
  "futures-util",
- "heck 0.4.1",
  "humansize",
  "indexmap 2.6.0",
  "itertools 0.10.5",
