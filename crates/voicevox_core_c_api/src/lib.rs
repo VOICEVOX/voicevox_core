@@ -462,8 +462,6 @@ pub unsafe extern "C" fn voicevox_voice_model_file_open(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxVoiceModelFile からIDを取得する。
 ///
-/// ::voicevox_voice_model_file_close の後でも利用可能。
-///
 /// @param [in] model 音声モデル
 /// @param [out] output_voice_model_id 音声モデルID
 ///
@@ -476,7 +474,7 @@ pub unsafe extern "C" fn voicevox_voice_model_file_id(
     output_voice_model_id: NonNull<[u8; 16]>,
 ) {
     init_logger_once();
-    let id = model.id().raw_voice_model_id().into_bytes();
+    let id = model.body().id().raw_voice_model_id().into_bytes();
     unsafe { output_voice_model_id.write_unaligned(id) };
 }
 
@@ -485,8 +483,6 @@ pub unsafe extern "C" fn voicevox_voice_model_file_id(
 /// ::VoicevoxVoiceModelFile からメタ情報を取得する。
 ///
 /// JSONの解放は ::voicevox_json_free で行う。
-///
-/// ::voicevox_voice_model_file_close の後でも利用可能。
 ///
 /// @param [in] model 音声モデル
 ///
@@ -501,27 +497,11 @@ pub extern "C" fn voicevox_voice_model_file_create_metas_json(
 
 // TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// ::VoicevoxVoiceModelFile が所有しているファイルディスクリプタを閉じる。
-///
-/// 対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから閉じる。
-///
-/// ::voicevox_voice_model_file_delete の違いとしては、本関数が対象にした ::VoicevoxVoiceModelFile
-/// に対しても ::voicevox_voice_model_file_id および
-/// ::voicevox_voice_model_file_create_metas_json は利用可能である。
-///
-/// @param [in] model 音声モデル
-#[no_mangle]
-pub extern "C" fn voicevox_voice_model_file_close(model: *const VoicevoxVoiceModelFile) {
-    init_logger_once();
-    // FIXME: テストを書く
-    model.close_body(voicevox_core::blocking::VoiceModelFile::close);
-}
-
-// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
-// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
 ///
 /// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
+///
+/// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
 ///
 /// @param [in] model 破棄対象
 #[no_mangle]
@@ -598,7 +578,7 @@ pub extern "C" fn voicevox_synthesizer_load_voice_model(
     model: *const VoicevoxVoiceModelFile,
 ) -> VoicevoxResultCode {
     init_logger_once();
-    into_result_code_with_error((|| synthesizer.load_voice_model(&*model.ensure_opened()?))())
+    into_result_code_with_error(synthesizer.load_voice_model(&model.body()))
 }
 
 // TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
