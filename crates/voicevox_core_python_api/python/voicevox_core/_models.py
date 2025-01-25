@@ -249,11 +249,19 @@ class AudioQuery:
         としてのフィールドをハックする。
         """
 
+        self.__attr_names: dict[str, str] = {}
         for field in dataclasses.fields(self):
             rename = _rename_audio_query_field(field.name)
             if rename != field.name:
-                setattr(self, rename, getattr(self, field.name))
+                self.__attr_names[rename] = field.name
                 field.name = rename
+
+    def __getattr__(self, name: str) -> object:
+        """camelCaseの名前に対し、対応するsnake_caseの名前があるならそれについて返す。"""
+
+        if attr_name := self.__attr_names.get(name):
+            return getattr(self, attr_name)
+        raise AttributeError(f"{type(self).__name__!r} has no attribute {name!r}")
 
 
 class UserDictWordType(str, Enum):
