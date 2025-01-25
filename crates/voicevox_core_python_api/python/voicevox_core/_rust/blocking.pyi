@@ -7,7 +7,7 @@ if TYPE_CHECKING:
         AccelerationMode,
         AccentPhrase,
         AudioQuery,
-        SpeakerMeta,
+        CharacterMeta,
         StyleId,
         SupportedDevices,
         UserDictWord,
@@ -46,7 +46,7 @@ class VoiceModelFile:
         """
         ...
     @property
-    def metas(self) -> list[SpeakerMeta]:
+    def metas(self) -> list[CharacterMeta]:
         """
         メタ情報。
 
@@ -190,7 +190,7 @@ class Synthesizer:
     def is_gpu_mode(self) -> bool:
         """ハードウェアアクセラレーションがGPUモードかどうか。"""
         ...
-    def metas(self) -> list[SpeakerMeta]:
+    def metas(self) -> list[CharacterMeta]:
         """メタ情報。"""
         ...
     def load_voice_model(self, model: VoiceModelFile) -> None:
@@ -244,7 +244,7 @@ class Synthesizer:
 
         Returns
         -------
-        話者とテキストから生成された :class:`AudioQuery` 。
+        スタイルとテキストから生成された :class:`AudioQuery` 。
         """
         ...
     def create_audio_query(
@@ -264,7 +264,7 @@ class Synthesizer:
 
         Returns
         -------
-        話者とテキストから生成された :class:`AudioQuery` 。
+        スタイルとテキストから生成された :class:`AudioQuery` 。
         """
         ...
     def create_accent_phrases_from_kana(

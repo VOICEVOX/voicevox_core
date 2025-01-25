@@ -343,7 +343,7 @@ typedef const uint8_t (*VoicevoxVoiceModelId)[16];
 /**
  * スタイルID。
  *
- * VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
+ * VOICEVOXにおける、ある<b>キャラクター</b>のある<b>スタイル</b>(_style_)を指す。
  */
 typedef uint32_t VoicevoxStyleId;
 

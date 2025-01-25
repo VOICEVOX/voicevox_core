@@ -87,7 +87,7 @@ pub use self::{
     devices::SupportedDevices,
     engine::{wav_from_s16le, AccentPhrase, AudioQuery, Mora},
     error::{Error, ErrorKind},
-    metas::{SpeakerMeta, SpeakerVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
+    metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
     result::Result,
     synthesizer::AccelerationMode,
     user_dict::{UserDictWord, UserDictWordType},

@@ -11,7 +11,7 @@ use camino::Utf8Path;
 use duplicate::duplicate_item;
 use easy_ext::ext;
 use ref_cast::ref_cast_custom;
-use voicevox_core::{Result, SpeakerMeta, VoiceModelId};
+use voicevox_core::{CharacterMeta, Result, VoiceModelId};
 
 use crate::{
     helpers::CApiResult,
@@ -132,7 +132,7 @@ impl *const VoicevoxVoiceModelFile {
     }
 }
 
-fn metas_to_json(metas: &[SpeakerMeta]) -> CString {
+fn metas_to_json(metas: &[CharacterMeta]) -> CString {
     let metas = serde_json::to_string(metas).expect("should not fail");
     CString::new(metas).expect("should not contain NUL")
 }

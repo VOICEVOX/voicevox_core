@@ -25,9 +25,9 @@ public class StyleMeta {
   public final StyleType type;
 
   /**
-   * 話者の順番。
+   * スタイルの順番。
    *
-   * <p>{@link SpeakerMeta#styles}の列は、この値に対して昇順に並んでいるべきである。
+   * <p>{@link CharacterMeta#styles}の列は、この値に対して昇順に並んでいるべきである。
    */
   @SerializedName("order")
   @Expose

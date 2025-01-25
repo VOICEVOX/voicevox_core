@@ -19,7 +19,7 @@ use crate::{
         InferenceSignature,
     },
     manifest::{InnerVoiceId, StyleIdToInnerVoiceId},
-    metas::{self, SpeakerMeta, StyleId, StyleMeta, VoiceModelMeta},
+    metas::{self, CharacterMeta, StyleId, StyleMeta, VoiceModelMeta},
     voice_model::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId},
     Result,
 };
@@ -163,7 +163,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             .find(|(_, LoadedModel { metas, .. })| {
                 metas
                     .iter()
-                    .flat_map(|SpeakerMeta { styles, .. }| styles)
+                    .flat_map(|CharacterMeta { styles, .. }| styles)
                     .any(|style| style.id == style_id && D::style_types().contains(&style.r#type))
             })
             .ok_or(ErrorRepr::StyleNotFound {
@@ -214,7 +214,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
             .find(|(_, LoadedModel { metas, .. })| {
                 metas
                     .iter()
-                    .flat_map(|SpeakerMeta { styles, .. }| styles)
+                    .flat_map(|CharacterMeta { styles, .. }| styles)
                     .any(|style| style.id == style_id && D::style_types().contains(&style.r#type))
             })
             .and_then(
@@ -263,7 +263,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
 
         // FIXME: https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1590200343
 
-        let loaded = self.speakers();
+        let loaded = self.characters();
         let external = model_header.metas.iter();
         for (loaded, external) in iproduct!(loaded, external) {
             if loaded.speaker_uuid == external.speaker_uuid {
@@ -275,7 +275,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         let external = model_header
             .metas
             .iter()
-            .flat_map(|speaker| &speaker.styles)
+            .flat_map(|CharacterMeta { styles, .. }| styles)
             .map(|&StyleMeta { id, .. }| id);
         if let Some((id, _)) =
             iproduct!(loaded, external).find(|(loaded, external)| loaded == external)
@@ -310,13 +310,13 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         Ok(())
     }
 
-    fn speakers(&self) -> impl Iterator<Item = &SpeakerMeta> + Clone {
+    fn characters(&self) -> impl Iterator<Item = &CharacterMeta> + Clone {
         self.0.values().flat_map(|LoadedModel { metas, .. }| metas)
     }
 
     fn styles(&self) -> impl Iterator<Item = &StyleMeta> {
-        self.speakers()
-            .flat_map(|SpeakerMeta { styles, .. }| styles)
+        self.characters()
+            .flat_map(|CharacterMeta { styles, .. }| styles)
     }
 }
 

@@ -10,7 +10,7 @@ import java.util.UUID;
 import jp.hiroshiba.voicevoxcore.AccelerationMode;
 import jp.hiroshiba.voicevoxcore.AccentPhrase;
 import jp.hiroshiba.voicevoxcore.AudioQuery;
-import jp.hiroshiba.voicevoxcore.SpeakerMeta;
+import jp.hiroshiba.voicevoxcore.CharacterMeta;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
@@ -63,10 +63,10 @@ public class Synthesizer {
    * @return メタ情報。
    */
   @Nonnull
-  public SpeakerMeta[] metas() {
+  public CharacterMeta[] metas() {
     Gson gson = new Gson();
     String metasJson = rsGetMetasJson();
-    SpeakerMeta[] rawMetas = gson.fromJson(metasJson, SpeakerMeta[].class);
+    CharacterMeta[] rawMetas = gson.fromJson(metasJson, CharacterMeta[].class);
     if (rawMetas == null) {
       throw new NullPointerException("metas");
     }

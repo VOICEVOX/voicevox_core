@@ -428,7 +428,7 @@ pub type VoicevoxVoiceModelId<'a> = &'a [u8; 16];
 
 /// スタイルID。
 ///
-/// VOICEVOXにおける、ある<b>話者</b>(_speaker_)のある<b>スタイル</b>(_style_)を指す。
+/// VOICEVOXにおける、ある<b>キャラクター</b>のある<b>スタイル</b>(_style_)を指す。
 pub type VoicevoxStyleId = u32;
 
 // TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
