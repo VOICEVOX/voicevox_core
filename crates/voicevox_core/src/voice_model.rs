@@ -600,6 +600,12 @@ pub(crate) mod blocking {
             Inner::open(path).block_on().map(Self)
         }
 
+        /// VVMファイルを閉じる。
+        pub fn close(self) -> (VoiceModelId, VoiceModelMeta) {
+            let heads = self.0.into_heads();
+            (*heads.header.manifest.id(), heads.header.metas.clone())
+        }
+
         pub(crate) fn inner(&self) -> &Inner<SingleTasked> {
             &self.0
         }
@@ -642,8 +648,10 @@ pub(crate) mod nonblocking {
         }
 
         /// VVMファイルを閉じる。
-        pub async fn close(self) {
-            self.0.into_heads().zip.into_inner().close().await;
+        pub async fn close(self) -> (VoiceModelId, VoiceModelMeta) {
+            let heads = self.0.into_heads();
+            heads.zip.into_inner().close().await;
+            (*heads.header.manifest.id(), heads.header.metas.clone())
         }
 
         pub(crate) fn inner(&self) -> &Inner<BlockingThreadPool> {

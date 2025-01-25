@@ -122,7 +122,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         std::assert_eq!(SNAPSHOTS.output[&self.text].wav_length, wav_length);
 
-        lib.voicevox_voice_model_file_close(model);
+        lib.voicevox_voice_model_file_delete(model);
         lib.voicevox_open_jtalk_rc_delete(openjtalk);
         lib.voicevox_synthesizer_delete(synthesizer);
         lib.voicevox_json_free(audio_query);
