@@ -17,6 +17,7 @@ use easy_ext::ext;
 use flate2::read::GzDecoder;
 use futures_core::Stream;
 use futures_util::{
+    future::OptionFuture,
     stream::{FuturesOrdered, FuturesUnordered},
     StreamExt as _, TryStreamExt as _,
 };
@@ -282,23 +283,36 @@ async fn main() -> anyhow::Result<()> {
 
     let octocrab = &octocrab()?;
 
-    let core = find_gh_asset(octocrab, &core_repo, &version, |tag, _| {
-        Ok(format!("{LIB_NAME}-{os}-{cpu_arch}-{tag}.zip"))
-    })
-    .await?;
+    let core = OptionFuture::from(targets.contains(&DownloadTarget::Core).then(|| {
+        find_gh_asset(octocrab, &core_repo, &version, |tag, _| {
+            Ok(format!("{LIB_NAME}-{os}-{cpu_arch}-{tag}.zip"))
+        })
+    }))
+    .await
+    .transpose()?;
 
-    let onnxruntime = find_gh_asset(
-        octocrab,
-        &onnxruntime_builder_repo,
-        &onnxruntime_version,
-        |_, body| {
-            let body = body.with_context(|| "リリースノートがありません")?;
-            find_onnxruntime(body, os, cpu_arch, &devices)
-        },
+    let onnxruntime =
+        OptionFuture::from(targets.contains(&DownloadTarget::Onnxruntime).then(|| {
+            find_gh_asset(
+                octocrab,
+                &onnxruntime_builder_repo,
+                &onnxruntime_version,
+                |_, body| {
+                    let body = body.with_context(|| "リリースノートがありません")?;
+                    find_onnxruntime(body, os, cpu_arch, &devices)
+                },
+            )
+        }))
+        .await
+        .transpose()?;
+
+    let models = OptionFuture::from(
+        targets
+            .contains(&DownloadTarget::Models)
+            .then(|| find_models(octocrab, &models_repo)),
     )
-    .await?;
-
-    let models = find_models(octocrab, &models_repo).await?;
+    .await
+    .transpose()?;
 
     let additional_libraries = devices
         .iter()
@@ -330,8 +344,12 @@ async fn main() -> anyhow::Result<()> {
         "ダウンロードデバイスタイプ: {}",
         devices.iter().format(", "),
     );
-    info!("ダウンロード{LIB_NAME}バージョン: {}", core.tag);
-    info!("ダウンロードONNX Runtimeバージョン: {}", onnxruntime.tag);
+    if let Some(GhAsset { tag, .. }) = &core {
+        info!("ダウンロード{LIB_NAME}バージョン: {tag}");
+    }
+    if let Some(GhAsset { tag, .. }) = &onnxruntime {
+        info!("ダウンロードONNX Runtimeバージョン: {tag}");
+    }
     if !additional_libraries.is_empty() {
         info!(
             "ダウンロード追加ライブラリバージョン: {}",
@@ -341,13 +359,15 @@ async fn main() -> anyhow::Result<()> {
                 .format(", "),
         );
     }
-    info!("ダウンロードモデルバージョン: {}", models.tag);
+    if let Some(ModelsWithTerms { tag, .. }) = &models {
+        info!("ダウンロードモデルバージョン: {tag}");
+    }
 
     let progresses = MultiProgress::new();
 
     let mut tasks = JoinSet::new();
 
-    if targets.contains(&DownloadTarget::Core) {
+    if let Some(core) = core {
         tasks.spawn(download_and_extract_from_gh(
             core,
             Stripping::FirstDir,
@@ -355,7 +375,7 @@ async fn main() -> anyhow::Result<()> {
             &progresses,
         )?);
     }
-    if targets.contains(&DownloadTarget::Onnxruntime) {
+    if let Some(onnxruntime) = onnxruntime {
         tasks.spawn(download_and_extract_from_gh(
             onnxruntime,
             Stripping::FirstDir,
@@ -373,7 +393,7 @@ async fn main() -> anyhow::Result<()> {
             )?);
         }
     }
-    if targets.contains(&DownloadTarget::Models) {
+    if let Some(models) = models {
         tasks.spawn(download_models(
             models,
             &output.join("models"),
