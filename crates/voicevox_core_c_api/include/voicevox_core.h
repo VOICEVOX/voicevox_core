@@ -298,7 +298,7 @@ typedef struct VoicevoxUserDict VoicevoxUserDict;
  * 音声モデルファイル。
  *
  * VVMファイルと対応する。
- * <b>構築</b>(_construction_)は ::voicevox_voice_model_file_open で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_file_close で行う。
+ * <b>構築</b>(_construction_)は ::voicevox_voice_model_file_open で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_file_delete で行う。
  */
 typedef struct VoicevoxVoiceModelFile VoicevoxVoiceModelFile;
 
@@ -636,7 +636,7 @@ __declspec(dllimport)
 char *voicevox_voice_model_file_create_metas_json(const struct VoicevoxVoiceModelFile *model);
 
 /**
- * ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
+ * ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。ファイルの削除(_delete_)<b>ではない</b>。
  *
  * 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
  *
@@ -647,7 +647,7 @@ char *voicevox_voice_model_file_create_metas_json(const struct VoicevoxVoiceMode
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-void voicevox_voice_model_file_close(struct VoicevoxVoiceModelFile *model);
+void voicevox_voice_model_file_delete(struct VoicevoxVoiceModelFile *model);
 
 /**
  * ::VoicevoxSynthesizer を<b>構築</b>(_construct_)する。

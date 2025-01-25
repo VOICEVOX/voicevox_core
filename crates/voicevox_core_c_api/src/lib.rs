@@ -416,7 +416,7 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
 /// 音声モデルファイル。
 ///
 /// VVMファイルと対応する。
-/// <b>構築</b>(_construction_)は ::voicevox_voice_model_file_open で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_file_close で行う。
+/// <b>構築</b>(_construction_)は ::voicevox_voice_model_file_open で行い、<b>破棄</b>(_destruction_)は ::voicevox_voice_model_file_delete で行う。
 #[derive(Debug, Educe)]
 #[educe(Default(expression = "Self { _padding: MaybeUninit::uninit() }"))]
 pub struct VoicevoxVoiceModelFile {
@@ -497,7 +497,7 @@ pub extern "C" fn voicevox_voice_model_file_create_metas_json(
 
 // TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。
+/// ::VoicevoxVoiceModelFile を、所有しているファイルディスクリプタを閉じた上で<b>破棄</b>(_destruct_)する。ファイルの削除(_delete_)<b>ではない</b>。
 ///
 /// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
 ///
@@ -505,7 +505,7 @@ pub extern "C" fn voicevox_voice_model_file_create_metas_json(
 ///
 /// @param [in] model 破棄対象
 #[no_mangle]
-pub extern "C" fn voicevox_voice_model_file_close(model: *mut VoicevoxVoiceModelFile) {
+pub extern "C" fn voicevox_voice_model_file_delete(model: *mut VoicevoxVoiceModelFile) {
     init_logger_once();
     model.drop_body();
 }

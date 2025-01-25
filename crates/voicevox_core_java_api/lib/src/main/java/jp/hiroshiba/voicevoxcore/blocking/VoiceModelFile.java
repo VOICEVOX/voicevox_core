@@ -15,10 +15,18 @@ public class VoiceModelFile implements Closeable {
 
   private long handle;
 
-  /** ID。 */
+  /**
+   * ID。
+   *
+   * <p>{@link #close}の後でも利用可能。
+   */
   @Nonnull public final UUID id;
 
-  /** メタ情報。 */
+  /**
+   * メタ情報。
+   *
+   * <p>{@link #close}の後でも利用可能。
+   */
   @Nonnull public final CharacterMeta[] metas;
 
   public VoiceModelFile(String modelPath) {

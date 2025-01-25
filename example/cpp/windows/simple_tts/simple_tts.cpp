@@ -70,7 +70,7 @@ int main() {
       OutErrorMessage(result);
       return 0;
     }
-    voicevox_voice_model_file_close(model);
+    voicevox_voice_model_file_delete(model);
   }
 
   std::wcout << L"音声生成中" << std::endl;

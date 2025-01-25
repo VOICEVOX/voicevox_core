@@ -45,8 +45,8 @@ const DEFAULT_OUTPUT: &str = if cfg!(windows) {
     "./voicevox_core"
 };
 
-const LIB_NAME: &str = "voicevox_core";
-const DEFAULT_CORE_REPO: &str = "VOICEVOX/voicevox_core";
+const C_API_LIB_NAME: &str = "voicevox_core";
+const DEFAULT_C_API_REPO: &str = "VOICEVOX/voicevox_core";
 const DEFAULT_ONNXRUNTIME_BUILDER_REPO: &str = "VOICEVOX/onnxruntime-builder";
 const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
 const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
@@ -90,7 +90,7 @@ struct Args {
     #[arg(long, num_args(1..), value_name("TARGET"), conflicts_with("min"))]
     exclude: Vec<DownloadTarget>,
 
-    /// `--only core`のエイリアス
+    /// `--only c-api`のエイリアス
     #[arg(long, conflicts_with("additional_libraries_version"))]
     min: bool,
 
@@ -98,9 +98,9 @@ struct Args {
     #[arg(short, long, value_name("DIRECTORY"), default_value(DEFAULT_OUTPUT))]
     output: PathBuf,
 
-    /// ダウンロードするvoicevox_coreのバージョンの指定
-    #[arg(short, long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
-    version: String,
+    /// ダウンロードするVOICEVOX CORE C APIのバージョンの指定
+    #[arg(long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
+    c_api_version: String,
 
     /// ダウンロードするONNX Runtimeのバージョンの指定
     #[arg(long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
@@ -122,8 +122,8 @@ struct Args {
     #[arg(value_enum, long, default_value(Os::default_opt().map(<&str>::from)))]
     os: Os,
 
-    #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_CORE_REPO))]
-    core_repo: RepoName,
+    #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_C_API_REPO))]
+    c_api_repo: RepoName,
 
     #[arg(
         long,
@@ -145,7 +145,7 @@ struct Args {
 
 #[derive(ValueEnum, Clone, Copy, PartialEq, Eq, Hash)]
 enum DownloadTarget {
-    Core,
+    CApi,
     Onnxruntime,
     AdditionalLibraries,
     Models,
@@ -217,13 +217,13 @@ async fn main() -> anyhow::Result<()> {
         exclude,
         min,
         output,
-        version,
+        c_api_version,
         onnxruntime_version,
         additional_libraries_version,
         devices,
         cpu_arch,
         os,
-        core_repo,
+        c_api_repo,
         onnxruntime_builder_repo,
         models_repo,
         additional_libraries_repo,
@@ -241,21 +241,21 @@ async fn main() -> anyhow::Result<()> {
             .filter(|t| !exclude.contains(t))
             .collect()
     } else if min {
-        [DownloadTarget::Core].into()
+        [DownloadTarget::CApi].into()
     } else {
         DownloadTarget::value_variants().iter().copied().collect()
     };
 
-    if !targets.contains(&DownloadTarget::Core) {
-        if version != "latest" {
+    if !targets.contains(&DownloadTarget::CApi) {
+        if c_api_version != "latest" {
             warn!(
-                "`--version={version}`が指定されていますが、`core`はダウンロード対象から\
+                "`--c-api-version={c_api_version}`が指定されていますが、`c-api`はダウンロード対象から\
                  除外されています",
             );
         }
-        if core_repo.to_string() != DEFAULT_CORE_REPO {
+        if c_api_repo.to_string() != DEFAULT_C_API_REPO {
             warn!(
-                "`--core-repo={core_repo}`が指定されていますが、`core`はダウンロード対象\
+                "`--c-api-repo={c_api_repo}`が指定されていますが、`c-api`はダウンロード対象\
                  から除外されています",
             );
         }
@@ -283,9 +283,9 @@ async fn main() -> anyhow::Result<()> {
 
     let octocrab = &octocrab()?;
 
-    let core = OptionFuture::from(targets.contains(&DownloadTarget::Core).then(|| {
-        find_gh_asset(octocrab, &core_repo, &version, |tag, _| {
-            Ok(format!("{LIB_NAME}-{os}-{cpu_arch}-{tag}.zip"))
+    let c_api = OptionFuture::from(targets.contains(&DownloadTarget::CApi).then(|| {
+        find_gh_asset(octocrab, &c_api_repo, &c_api_version, |tag, _| {
+            Ok(format!("{C_API_LIB_NAME}-{os}-{cpu_arch}-{tag}.zip"))
         })
     }))
     .await
@@ -344,8 +344,8 @@ async fn main() -> anyhow::Result<()> {
         "ダウンロードデバイスタイプ: {}",
         devices.iter().format(", "),
     );
-    if let Some(GhAsset { tag, .. }) = &core {
-        info!("ダウンロード{LIB_NAME}バージョン: {tag}");
+    if let Some(GhAsset { tag, .. }) = &c_api {
+        info!("ダウンロード{C_API_LIB_NAME}バージョン: {tag}");
     }
     if let Some(GhAsset { tag, .. }) = &onnxruntime {
         info!("ダウンロードONNX Runtimeバージョン: {tag}");
@@ -367,9 +367,9 @@ async fn main() -> anyhow::Result<()> {
 
     let mut tasks = JoinSet::new();
 
-    if let Some(core) = core {
+    if let Some(c_api) = c_api {
         tasks.spawn(download_and_extract_from_gh(
-            core,
+            c_api,
             Stripping::FirstDir,
             &output,
             &progresses,
@@ -1045,9 +1045,9 @@ mod tests {
     use super::Args;
 
     #[rstest]
-    #[case(&["", "--only", "core", "--exclude", "models"])]
-    #[case(&["", "--min", "--only", "core"])]
-    #[case(&["", "--min", "--exclude", "core"])]
+    #[case(&["", "--only", "c-api", "--exclude", "models"])]
+    #[case(&["", "--min", "--only", "c-api"])]
+    #[case(&["", "--min", "--exclude", "c-api"])]
     fn it_denies_conflicting_options(#[case] args: &[&str]) {
         let result = Args::try_parse_from(args).map(|_| ()).map_err(|e| e.kind());
         assert_eq!(Err(clap::error::ErrorKind::ArgumentConflict), result);

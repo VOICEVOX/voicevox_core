@@ -1,4 +1,4 @@
-//! `voicevox_voice_model_file_close`を二度呼ぶとクラッシュすることを確認する。
+//! `voicevox_voice_model_file_delete`を二度呼ぶとクラッシュすることを確認する。
 
 use std::{mem::MaybeUninit, sync::LazyLock};
 
@@ -32,8 +32,8 @@ impl assert_cdylib::TestCase for TestCase {
             model.assume_init()
         };
 
-        lib.voicevox_voice_model_file_close(model);
-        lib.voicevox_voice_model_file_close(model);
+        lib.voicevox_voice_model_file_delete(model);
+        lib.voicevox_voice_model_file_delete(model);
         unreachable!();
 
         fn assert_ok(result_code: VoicevoxResultCode) {
