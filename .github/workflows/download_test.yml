@@ -198,7 +198,7 @@ jobs:
           )
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Execute download command
-        run: ${{ matrix.download_command }} --version ${{ env.VERSION }} --core-repo ${{ github.repository }}
+        run: ${{ matrix.download_command }} --c-api-version ${{ env.VERSION }} --c-api-repo ${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Check downloaded version
