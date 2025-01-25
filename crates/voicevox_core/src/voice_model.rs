@@ -30,7 +30,7 @@ use crate::{
         InferenceDomain,
     },
     manifest::{Manifest, ManifestDomains, ModelFile, ModelFileType, StyleIdToInnerVoiceId},
-    SpeakerMeta, StyleMeta, StyleType, VoiceModelMeta,
+    CharacterMeta, StyleMeta, StyleType, VoiceModelMeta,
 };
 
 pub(crate) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_values!(
@@ -530,10 +530,10 @@ impl InferenceDomainMap<ManifestDomains> {
     /// manifestとして対応していない`StyleType`に対してエラーを発する。
     ///
     /// `Status`はこのバリデーションを信頼し、`InferenceDomain`の不足時にパニックする。
-    fn check_acceptable(&self, metas: &[SpeakerMeta]) -> std::result::Result<(), StyleType> {
+    fn check_acceptable(&self, metas: &[CharacterMeta]) -> std::result::Result<(), StyleType> {
         let err = metas
             .iter()
-            .flat_map(|SpeakerMeta { styles, .. }| styles)
+            .flat_map(|CharacterMeta { styles, .. }| styles)
             .map(|StyleMeta { r#type, .. }| *r#type)
             .unique()
             .find(|&style_type| !self.accepts(style_type));
@@ -673,7 +673,7 @@ mod tests {
             ExperimentalTalkManifest, FrameDecodeManifest, ManifestDomains, SingingTeacherManifest,
             TalkManifest,
         },
-        SpeakerMeta, StyleType,
+        CharacterMeta, StyleType,
     };
 
     #[rstest]
@@ -694,7 +694,7 @@ mod tests {
             singing_teacher: Some(SingingTeacherManifest::default()),
             frame_decode: Some(FrameDecodeManifest::default()),
         },
-        &[speaker(&[StyleType::Talk])],
+        &[character(&[StyleType::Talk])],
         Ok(())
     )]
     #[case(
@@ -704,7 +704,7 @@ mod tests {
             singing_teacher: Some(SingingTeacherManifest::default()),
             frame_decode: Some(FrameDecodeManifest::default()),
         },
-        &[speaker(&[StyleType::Talk, StyleType::Sing])],
+        &[character(&[StyleType::Talk, StyleType::Sing])],
         Ok(())
     )]
     #[case(
@@ -714,19 +714,19 @@ mod tests {
             singing_teacher: None,
             frame_decode: None,
         },
-        &[speaker(&[StyleType::Talk])],
+        &[character(&[StyleType::Talk])],
         Err(())
     )]
     fn check_acceptable_works(
         #[case] manifest: &InferenceDomainMap<ManifestDomains>,
-        #[case] metas: &[SpeakerMeta],
+        #[case] metas: &[CharacterMeta],
         #[case] expected: std::result::Result<(), ()>,
     ) {
         let actual = manifest.check_acceptable(metas).map_err(|_| ());
         assert_eq!(expected, actual);
     }
 
-    fn speaker(style_types: &'static [StyleType]) -> SpeakerMeta {
+    fn character(style_types: &'static [StyleType]) -> CharacterMeta {
         let styles = style_types
             .iter()
             .map(|style_type| {

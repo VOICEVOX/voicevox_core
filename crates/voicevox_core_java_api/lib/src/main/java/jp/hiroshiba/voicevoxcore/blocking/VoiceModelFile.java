@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import jakarta.annotation.Nonnull;
 import java.io.Closeable;
 import java.util.UUID;
-import jp.hiroshiba.voicevoxcore.SpeakerMeta;
+import jp.hiroshiba.voicevoxcore.CharacterMeta;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /** 音声モデルファイル。 */
@@ -19,14 +19,14 @@ public class VoiceModelFile implements Closeable {
   @Nonnull public final UUID id;
 
   /** メタ情報。 */
-  @Nonnull public final SpeakerMeta[] metas;
+  @Nonnull public final CharacterMeta[] metas;
 
   public VoiceModelFile(String modelPath) {
     rsOpen(modelPath);
     id = rsGetId();
     String metasJson = rsGetMetasJson();
     Gson gson = new Gson();
-    SpeakerMeta[] rawMetas = gson.fromJson(metasJson, SpeakerMeta[].class);
+    CharacterMeta[] rawMetas = gson.fromJson(metasJson, CharacterMeta[].class);
     if (rawMetas == null) {
       throw new RuntimeException("Failed to parse metasJson");
     }

@@ -62,7 +62,7 @@ pub(crate) fn to_pydantic_voice_model_meta<'py>(
 ) -> PyResult<&'py PyList> {
     let class = py
         .import("voicevox_core")?
-        .getattr("SpeakerMeta")?
+        .getattr("CharacterMeta")?
         .downcast()?;
 
     let metas = metas

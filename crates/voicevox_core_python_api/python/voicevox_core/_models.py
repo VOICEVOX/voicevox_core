@@ -16,9 +16,9 @@ Parameters
 x : int
 """
 
-SpeakerVersion = NewType("SpeakerVersion", str)
+CharacterVersion = NewType("CharacterVersion", str)
 """
-**話者** (*speaker*)のバージョン。
+**キャラクター**のバージョン。
 
 Parameters
 ----------
@@ -66,33 +66,33 @@ class StyleMeta:
 
     order: int | None = None
     """
-    話者の順番。
+    スタイルの順番。
 
-    :attr:`SpeakerMeta.styles` は、この値に対して昇順に並んでいるべきである。
+    :attr:`CharacterMeta.styles` は、この値に対して昇順に並んでいるべきである。
     """
 
 
 @pydantic.dataclasses.dataclass
-class SpeakerMeta:
-    """**話者** (*speaker*)のメタ情報。"""
+class CharacterMeta:
+    """**キャラクター**のメタ情報。"""
 
     name: str
-    """話者名。"""
+    """キャラクター名。"""
 
     styles: list[StyleMeta]
-    """話者に属するスタイル。"""
+    """キャラクターに属するスタイル。"""
 
     speaker_uuid: str
-    """話者のUUID。"""
+    """キャラクターのUUID。"""
 
-    version: SpeakerVersion
-    """話者のバージョン。"""
+    version: CharacterVersion
+    """キャラクターのバージョン。"""
 
     order: int | None = None
     """
-    話者の順番。
+    キャラクターの順番。
 
-    ``SpeakerMeta`` の列は、この値に対して昇順に並んでいるべきである。
+    ``CharacterMeta`` の列は、この値に対して昇順に並んでいるべきである。
     """
 
 

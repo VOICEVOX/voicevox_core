@@ -263,7 +263,7 @@ impl<T> RwLock for tokio::sync::RwLock<T> {
 #[derive(Clone)]
 struct VoiceModelFilePyFields {
     id: PyObject,      // `NewType("VoiceModelId", UUID)`
-    metas: Py<PyList>, // `list[SpeakerMeta]`
+    metas: Py<PyList>, // `list[CharacterMeta]`
 }
 
 #[pyfunction]
