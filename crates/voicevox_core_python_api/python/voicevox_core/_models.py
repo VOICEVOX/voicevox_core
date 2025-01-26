@@ -249,18 +249,18 @@ class AudioQuery:
         としてのフィールドをハックする。
         """
 
-        self.__attr_names: dict[str, str] = {}
+        self.__attr_true_names: dict[str, str] = {}
         for field in dataclasses.fields(self):
-            rename = _rename_audio_query_field(field.name)
-            if rename != field.name:
-                self.__attr_names[rename] = field.name
+            if (rename := _rename_audio_query_field(field.name)) != field.name:
+                self.__attr_true_names[rename] = field.name
                 field.name = rename
 
     def __getattr__(self, name: str) -> object:
         """camelCaseの名前に対し、対応するsnake_caseの名前があるならそれについて返す。"""
 
-        if attr_name := self.__attr_names.get(name):
-            return getattr(self, attr_name)
+        if true_name := self.__attr_true_names.get(name):
+            return getattr(self, true_name)
+        # 普通の`AttributeError`と同じ文面
         raise AttributeError(f"{type(self).__name__!r} has no attribute {name!r}")
 
 
