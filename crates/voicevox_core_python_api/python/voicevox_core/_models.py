@@ -1,6 +1,5 @@
 import dataclasses
-from enum import Enum
-from typing import NewType
+from typing import Literal, NewType, TypeAlias
 from uuid import UUID
 
 import pydantic
@@ -34,21 +33,19 @@ Parameters
 x : UUID
 """
 
+StyleType: TypeAlias = Literal["talk", "singing_teacher", "frame_decode", "sing"]
+"""
 
-class StyleType(str, Enum):
-    """**スタイル** (_style_)に対応するモデルの種類。"""
+**スタイル** (_style_)に対応するモデルの種類。
 
-    TALK = "talk"
-    """音声合成クエリの作成と音声合成が可能。"""
-
-    SINGING_TEACHER = "singing_teacher"
-    """歌唱音声合成用のクエリの作成が可能。"""
-
-    FRAME_DECODE = "frame_decode"
-    """歌唱音声合成が可能。"""
-
-    SING = "sing"
-    """歌唱音声合成用のクエリの作成と歌唱音声合成が可能。"""
+===================== ==================================================
+値                    説明
+``"talk"``            音声合成クエリの作成と音声合成が可能。
+``"singing_teacher"`` 歌唱音声合成用のクエリの作成が可能。
+``"frame_decode"``    歌唱音声合成用のクエリの作成が可能。
+``"sing"``            歌唱音声合成用のクエリの作成と歌唱音声合成が可能。
+===================== ==================================================
+"""
 
 
 @pydantic.dataclasses.dataclass
@@ -61,7 +58,7 @@ class StyleMeta:
     id: StyleId
     """スタイルID。"""
 
-    type: StyleType = dataclasses.field(default=StyleType.TALK)
+    type: StyleType = dataclasses.field(default="talk")
     """スタイルに対応するモデルの種類。"""
 
     order: int | None = None
@@ -129,21 +126,17 @@ class SupportedDevices:
     """
 
 
-class AccelerationMode(str, Enum):
-    """
-    ハードウェアアクセラレーションモードを設定する設定値。
-    """
+AccelerationMode: TypeAlias = Literal["AUTO", "CPU", "GPU"]
+"""
+ハードウェアアクセラレーションモードを設定する設定値。
 
-    AUTO = "AUTO"
-    """
-    実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
-    """
-
-    CPU = "CPU"
-    """ハードウェアアクセラレーションモードを"CPU"に設定する。"""
-
-    GPU = "GPU"
-    """ハードウェアアクセラレーションモードを"GPU"に設定する。"""
+========== ======================================================================
+値         説明
+``"AUTO"`` 実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
+``"CPU"``  ハードウェアアクセラレーションモードを"CPU"に設定する。
+``"GPU"``  ハードウェアアクセラレーションモードを"GPU"に設定する。
+========== ======================================================================
+"""
 
 
 @pydantic.dataclasses.dataclass
@@ -232,23 +225,21 @@ class AudioQuery:
     """
 
 
-class UserDictWordType(str, Enum):
-    """ユーザー辞書の単語の品詞。"""
+UserDictWordType: TypeAlias = Literal[
+    "PROPER_NOUN", "COMMON_NOUN", "VERB", "ADJECTIVE", "SUFFIX"
+]
+"""
+ユーザー辞書の単語の品詞。
 
-    PROPER_NOUN = "PROPER_NOUN"
-    """固有名詞。"""
-
-    COMMON_NOUN = "COMMON_NOUN"
-    """一般名詞。"""
-
-    VERB = "VERB"
-    """動詞。"""
-
-    ADJECTIVE = "ADJECTIVE"
-    """形容詞。"""
-
-    SUFFIX = "SUFFIX"
-    """語尾。"""
+================= ==========
+値                説明
+``"PROPER_NOUN"`` 固有名詞。
+``"COMMON_NOUN"`` 一般名詞。
+``"VERB"``        動詞。
+``"ADJECTIVE"``   形容詞。
+``"SUFFIX"``      語尾。
+================= ==========
+"""
 
 
 @pydantic.dataclasses.dataclass
@@ -272,9 +263,7 @@ class UserDictWord:
     音が下がる場所を指す。
     """
 
-    word_type: UserDictWordType = dataclasses.field(
-        default=UserDictWordType.COMMON_NOUN
-    )
+    word_type: UserDictWordType = dataclasses.field(default="COMMON_NOUN")
     """品詞。"""
 
     priority: int = dataclasses.field(default=5)
