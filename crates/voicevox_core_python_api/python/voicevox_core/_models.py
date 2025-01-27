@@ -246,7 +246,7 @@ class AudioQuery:
     def __post_init__(self) -> None:
         """
         :func:`dataclasses.asdict` にてキーが正しい名前になるよう、 ``dataclass``
-        としてのフィールドをハックする。
+        としてのフィールドを書き換える。
         """
 
         self.__attr_true_names: dict[str, str] = {}
