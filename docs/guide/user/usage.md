@@ -65,7 +65,7 @@ from pprint import pprint
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 # 1. Synthesizerの初期化
-open_jtalk_dict_dir = "open_jtalk_dic_utf_8-1.11"
+open_jtalk_dict_dir = "dict/open_jtalk_dic_utf_8-1.11"
 synthesizer = Synthesizer(Onnxruntime.load_once(), OpenJtalk(open_jtalk_dict_dir))
 
 # 2. 音声モデルの読み込み

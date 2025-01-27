@@ -68,7 +68,7 @@ optional arguments:
 ❯ python ./run.py ./models/vvms/0.vvm
 [INFO] __main__: Loading ONNX Runtime (args.onnxruntime='./onnxruntime/lib/libvoicevox_onnxruntime.so.1.17.3')
 [DEBUG] __main__: onnxruntime.supported_devices()=SupportedDevices(cpu=True, cuda=True, dml=False)
-[INFO] __main__: Initializing (args.mode=<AccelerationMode.AUTO: 'AUTO'>, args.dict_dir=PosixPath('open_jtalk_dic_utf_8-1.11'))
+[INFO] __main__: Initializing (args.mode=<AccelerationMode.AUTO: 'AUTO'>, args.dict_dir=PosixPath('dict/open_jtalk_dic_utf_8-1.11'))
 [INFO] voicevox_core.synthesizer: GPUをテストします:
 [INFO] voicevox_core.synthesizer:   * CUDA (device_id=0): OK
 [INFO] voicevox_core.synthesizer:   * DirectML (device_id=0): 現在ロードされているONNX Runtimeでは利用できません
