@@ -38,7 +38,7 @@ class Args:
         )
         argparser.add_argument(
             "--onnxruntime",
-            default=Onnxruntime.LIB_VERSIONED_FILENAME,
+            default=f"./onnxruntime/lib/{Onnxruntime.LIB_VERSIONED_FILENAME}",
             help="ONNX Runtimeのライブラリのfilename",
         )
         argparser.add_argument(
