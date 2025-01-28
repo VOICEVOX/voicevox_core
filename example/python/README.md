@@ -18,8 +18,6 @@ https://github.com/VOICEVOX/voicevox_core/releases/latest
 
 2. ダウンローダーを使って環境構築します。
 
-FIXME: 今は`--exclude core`がある
-
 linux/mac の場合
 
 download-linux-x64 のところはアーキテクチャや OS によって適宜読み替えてください。
@@ -29,18 +27,14 @@ https://github.com/VOICEVOX/voicevox_core/releases/latest#%E3%83%80%E3%82%A6%E3%
 ❯ binary=download-linux-x64
 ❯ curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/${binary} -o download
 ❯ chmod +x download
-❯ ./download -o ./example/python
-❯ # いくつかのファイルは不要なので消すことができます
-❯ #rm -r ./example/python/{model,VERSION,*voicevox_core*}
+❯ ./download -o ./example/python --exclude c-api
 ```
 
 windows の場合
 
 ```console
 ❯ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download-windows-x64.exe -OutFile ./download.exe
-❯ ./download -o ./example/python
-❯ # いくつかのファイルは不要なので消すことができます
-❯ #Remove-Item -Recurse ./example/python/model,./example/python/VERSION,./example/python/*voicevox_core*
+❯ ./download -o ./example/python --exclude c-api
 ```
 
 TODO:
@@ -71,16 +65,23 @@ optional arguments:
 ## 実行例
 
 ```console
-❯ python ./run.py ../../crates/test_util/data/model/sample.vvm
-[DEBUG] __main__: voicevox_core.supported_devices()=SupportedDevices(cpu=True, cuda=False, dml=False)
-[INFO] __main__: Initializing (acceleration_mode=<AccelerationMode.AUTO: 'AUTO'>, open_jtalk_dict_dir=PosixPath('open_jtalk_dic_utf_8-1.11'))
-[DEBUG] __main__: synthesizer.metas=[]
-[DEBUG] __main__: synthesizer.is_gpu_mode=False
-[INFO] __main__: Loading `../../crates/test_util/data/model/sample.vvm`
+❯ python ./run.py ./models/vvms/0.vvm
+[INFO] __main__: Loading ONNX Runtime (args.onnxruntime='./onnxruntime/lib/libvoicevox_onnxruntime.so.1.17.3')
+[DEBUG] __main__: onnxruntime.supported_devices()=SupportedDevices(cpu=True, cuda=True, dml=False)
+[INFO] __main__: Initializing (args.mode=<AccelerationMode.AUTO: 'AUTO'>, args.dict_dir=PosixPath('dict/open_jtalk_dic_utf_8-1.11'))
+[INFO] voicevox_core.synthesizer: GPUをテストします:
+[INFO] voicevox_core.synthesizer:   * CUDA (device_id=0): OK
+[INFO] voicevox_core.synthesizer:   * DirectML (device_id=0): 現在ロードされているONNX Runtimeでは利用できません
+[INFO] voicevox_core.synthesizer: CUDA (device_id=0)を利用します
+[DEBUG] __main__: synthesizer.metas()=[]
+[DEBUG] __main__: synthesizer.is_gpu_mode=True
+[INFO] __main__: Loading `models/vvms/0.vvm`
+[WARNING] ort.environment: Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.
+[DEBUG] voicevox_core_python_api: Closing a VoiceModelFile
 [INFO] __main__: Creating an AudioQuery from 'この音声は、ボイスボックスを使用して、出力されています。'
-[INFO] __main__: Synthesizing with {"accent_phrases": [{"moras": [{"text": "コ", "consonant": "k", "consonant_length": 0.0556899, "vowel": "o", "vowel_length": 0.075180575, "pitch": 5.542309}, {"text": "ノ", "consonant": "n", "consonant_length": 0.06551014, "vowel": "o", "vowel_length": 0.09984577, "pitch": 5.6173983}], "accent": 2, "pause_mora": null, "is_interrogative": false}, {"moras": [{"text": "オ", "consonant": null, "consonant_length": null, "vowel": "o", "vowel_length": 0.116150305, "pitch": 5.7063766}, {"text": "ン", "consonant": null, "consonant_length": null, "vowel": "N", "vowel_length": 0.044380233, "pitch": 5.785717}, {"text": "セ", "consonant": "s", "consonant_length": 0.07719758, "vowel": "e", "vowel_length": 0.08653869, "pitch": 5.662092}, {"text": "エ", "consonant": null, "consonant_length": null, "vowel": "e", "vowel_length": 0.08311573, "pitch": 5.532917}, {"text": "ワ", "consonant": "w", "consonant_length": 0.06373148, "vowel": "a", "vowel_length": 0.16219379, "pitch": 5.293258}], "accent": 1, "pause_mora": {"text": "、", "consonant": null, "consonant_length": null, "vowel": "pau", "vowel_length": 0.35826492, "pitch": 0.0}, "is_interrogative": false}, {"moras": [{"text": "ボ", "consonant": "b", "consonant_length": 0.047082342, "vowel": "o", "vowel_length": 0.12611786, "pitch": 5.583892}, {"text": "イ", "consonant": null, "consonant_length": null, "vowel": "i", "vowel_length": 0.059451744, "pitch": 5.7947493}, {"text": "ス", "consonant": "s", "consonant_length": 0.089278996, "vowel": "u", "vowel_length": 0.11847979, "pitch": 5.818695}, {"text": "ボ", "consonant": "b", "consonant_length": 0.06535433, "vowel": "o", "vowel_length": 0.120458946, "pitch": 5.7965107}, {"text": "ッ", "consonant": null, "consonant_length": null, "vowel": "cl", "vowel_length": 0.06940381, "pitch": 0.0}, {"text": "ク", "consonant": "k", "consonant_length": 0.053739145, "vowel": "U", "vowel_length": 0.05395376, "pitch": 0.0}, {"text": "ス", "consonant": "s", "consonant_length": 0.10222931, "vowel": "u", "vowel_length": 0.071811065, "pitch": 5.8024883}, {"text": "オ", "consonant": null, "consonant_length": null, "vowel": "o", "vowel_length": 0.11092262, "pitch": 5.5036163}], "accent": 4, "pause_mora": null, "is_interrogative": false}, {"moras": [{"text": "シ", "consonant": "sh", "consonant_length": 0.09327768, "vowel": "i", "vowel_length": 0.09126951, "pitch": 5.369444}, {"text": "ヨ", "consonant": "y", "consonant_length": 0.06251812, "vowel": "o", "vowel_length": 0.07805054, "pitch": 5.5021667}, {"text": "オ", "consonant": null, "consonant_length": null, "vowel": "o", "vowel_length": 0.09904325, "pitch": 5.5219536}], "accent": 3, "pause_mora": null, "is_interrogative": false}, {"moras": [{"text": "シ", "consonant": "sh", "consonant_length": 0.04879771, "vowel": "I", "vowel_length": 0.06514315, "pitch": 0.0}, {"text": "テ", "consonant": "t", "consonant_length": 0.0840496, "vowel": "e", "vowel_length": 0.19438823, "pitch": 5.4875555}], "accent": 2, "pause_mora": {"text": "、", "consonant": null, "consonant_length": null, "vowel": "pau", "vowel_length": 0.35208154, "pitch": 0.0}, "is_interrogative": false}, {"moras": [{"text": "シュ", "consonant": "sh", "consonant_length": 0.05436731, "vowel": "U", "vowel_length": 0.06044446, "pitch": 0.0}, {"text": "ツ", "consonant": "ts", "consonant_length": 0.102865085, "vowel": "u", "vowel_length": 0.057028636, "pitch": 5.6402535}, {"text": "リョ", "consonant": "ry", "consonant_length": 0.058293864, "vowel": "o", "vowel_length": 0.080050275, "pitch": 5.6997967}, {"text": "ク", "consonant": "k", "consonant_length": 0.054767884, "vowel": "U", "vowel_length": 0.042932786, "pitch": 0.0}], "accent": 2, "pause_mora": null, "is_interrogative": false}, {"moras": [{"text": "サ", "consonant": "s", "consonant_length": 0.08067487, "vowel": "a", "vowel_length": 0.07377973, "pitch": 5.652378}, {"text": "レ", "consonant": "r", "consonant_length": 0.040600352, "vowel": "e", "vowel_length": 0.079322875, "pitch": 5.6290326}, {"text": "テ", "consonant": "t", "consonant_length": 0.06773268, "vowel": "e", "vowel_length": 0.08347456, "pitch": 5.6427326}], "accent": 3, "pause_mora": null, "is_interrogative": false}, {"moras": [{"text": "イ", "consonant": null, "consonant_length": null, "vowel": "i", "vowel_length": 0.07542324, "pitch": 5.641289}, {"text": "マ", "consonant": "m", "consonant_length": 0.066299975, "vowel": "a", "vowel_length": 0.107257664, "pitch": 5.6201453}, {"text": "ス", "consonant": "s", "consonant_length": 0.07186453, "vowel": "U", "vowel_length": 0.1163103, "pitch": 0.0}], "accent": 2, "pause_mora": null, "is_interrogative": false}], "speed_scale": 1.0, "pitch_scale": 0.0, "intonation_scale": 1.0, "volume_scale": 1.0, "pre_phoneme_length": 0.1, "post_phoneme_length": 0.1, "output_sampling_rate": 24000, "output_stereo": false, "kana": "コノ'/オ'ンセエワ、ボイスボ'ッ_クスオ/シヨオ'/_シテ'、_シュツ' リョ_ク/サレテ'/イマ'_ス"}
+[INFO] __main__: Synthesizing with {"accent_phrases": […], "speed_scale": 1.0, "pitch_scale": 0.0, "intonation_scale": 1.0, "volume_scale": 1.0, "pre_phoneme_length": 0.1, "post_phoneme_length": 0.1, "output_sampling_rate": 24000, "output_stereo": false, "pause_length": null, "pause_length_scale": 1.0, "kana": "コノ'/オ'ンセエワ、ボイスボ'ッ_クスオ/シヨオ'/_シテ'、_シュツ'リョ_ク/サレテ'/イマ'_ス"}
 [INFO] __main__: Wrote `output.wav`
-[DEBUG] voicevox_core_python_api: Destructing a VoicevoxCore
+[WARNING] voicevox_core_python_api: デストラクタにより`Synthesizer`のクローズを行います。通常は、可能な限り`__exit__`でクローズするようにして下さい
 ```
 
 正常に実行されれば音声合成の結果である wav ファイルが生成されます。

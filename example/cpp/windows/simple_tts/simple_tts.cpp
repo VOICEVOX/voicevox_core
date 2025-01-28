@@ -18,7 +18,7 @@
 #include "voicevox_core.h"
 
 #define OPENJTALK_DICT_NAME L"open_jtalk_dic_utf_8-1.11"
-#define MODEL_DIR_NAME L"model"
+#define MODEL_DIR_NAME L"models\\vvms"
 
 int main() {
   std::wcout.imbue(std::locale(""));

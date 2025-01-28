@@ -371,7 +371,7 @@ async fn main() -> anyhow::Result<()> {
         tasks.spawn(download_and_extract_from_gh(
             c_api,
             Stripping::FirstDir,
-            &output,
+            output.join("c_api"),
             &progresses,
         )?);
     }
@@ -379,7 +379,7 @@ async fn main() -> anyhow::Result<()> {
         tasks.spawn(download_and_extract_from_gh(
             onnxruntime,
             Stripping::FirstDir,
-            &output.join("onnxruntime"),
+            output.join("onnxruntime"),
             &progresses,
         )?);
     }
@@ -388,23 +388,19 @@ async fn main() -> anyhow::Result<()> {
             tasks.spawn(download_and_extract_from_gh(
                 additional_libraries,
                 Stripping::FirstDir,
-                &output,
+                output.join("additional_libraries"),
                 &progresses,
             )?);
         }
     }
     if let Some(models) = models {
-        tasks.spawn(download_models(
-            models,
-            &output.join("models"),
-            &progresses,
-        )?);
+        tasks.spawn(download_models(models, output.join("models"), &progresses)?);
     }
     if targets.contains(&DownloadTarget::Dict) {
         tasks.spawn(download_and_extract_from_url(
             &OPEN_JTALK_DIC_URL,
             Stripping::None,
-            &output,
+            output.join("dict"),
             &progresses,
         )?);
     }
@@ -704,10 +700,9 @@ fn download_and_extract_from_gh(
         ..
     }: GhAsset,
     stripping: Stripping,
-    output: &Path,
+    output: PathBuf,
     progresses: &MultiProgress,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
-    let output = output.to_owned();
     let archive_kind = ArchiveKind::from_filename(&name)?;
     let pb = add_progress_bar(progresses, size as _, name);
 
@@ -734,10 +729,9 @@ fn download_and_extract_from_gh(
 fn download_and_extract_from_url(
     url: &'static Url,
     stripping: Stripping,
-    output: &Path,
+    output: PathBuf,
     progresses: &MultiProgress,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
-    let output = output.to_owned();
     let name = url
         .path_segments()
         .and_then(|s| s.last())
@@ -769,10 +763,9 @@ fn download_models(
         models,
         ..
     }: ModelsWithTerms,
-    output: &Path,
+    output: PathBuf,
     progresses: &MultiProgress,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
-    let output = output.to_owned();
     let reqwest = reqwest::Client::builder().build()?;
 
     let models = models

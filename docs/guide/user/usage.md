@@ -65,11 +65,11 @@ from pprint import pprint
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 # 1. Synthesizerの初期化
-open_jtalk_dict_dir = "open_jtalk_dic_utf_8-1.11"
+open_jtalk_dict_dir = "dict/open_jtalk_dic_utf_8-1.11"
 synthesizer = Synthesizer(Onnxruntime.load_once(), OpenJtalk(open_jtalk_dict_dir))
 
 # 2. 音声モデルの読み込み
-with VoiceModelFile.open("model/0.vvm") as model:
+with VoiceModelFile.open("models/vvms/0.vvm") as model:
     synthesizer.load_voice_model(model)
 
 # 3. テキスト音声合成
@@ -89,7 +89,7 @@ AIエンジンの`Onnxruntime`のインスタンスと、辞書などを取り�
 VVM ファイルから`VoiceModelFile`インスタンスを作成し、`Synthesizer`に読み込ませます。その VVM ファイルにどの声が含まれているかは`VoiceModelFile`の`.metas`や[音声モデルと声の対応表](https://github.com/VOICEVOX/voicevox_fat_resource/blob/main/core/model/README.md#%E9%9F%B3%E5%A3%B0%E3%83%A2%E3%83%87%E3%83%ABvvm%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%A8%E5%A3%B0%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB%E5%90%8D%E3%81%A8%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB-id-%E3%81%AE%E5%AF%BE%E5%BF%9C%E8%A1%A8)で確認できます。
 
 ```python
-with VoiceModelFile.open("model/0.vvm") as model:
+with VoiceModelFile.open("models/vvms/0.vvm") as model:
     pprint(model.metas)
 ```
 
