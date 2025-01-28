@@ -242,15 +242,15 @@ jobs:
         run: cargo build -p voicevox_core_java_api vv --target ${{ matrix.target }} --release
       - name: Organize artifact
         run: |
-          mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          mkdir -p artifact/${{ env.ASSET_NAME }}/{include,lib}
           case ${{ matrix.c_release_format }} in
             plain-cdylib) feature=VOICEVOX_LOAD_ONNXRUNTIME ;;
             ios-xcframework) feature=VOICEVOX_LINK_ONNXRUNTIME ;;
           esac
           sed 's:^//\(#define '"$feature"'\)$:\1:' crates/voicevox_core_c_api/include/voicevox_core.h \
-            > "artifact/${{ env.ASSET_NAME }}/voicevox_core.h"
-          cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
-          cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
+            > "artifact/${{ env.ASSET_NAME }}/include/voicevox_core.h"
+          cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}/lib" || true
+          cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.lib" || true
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
