@@ -1,6 +1,7 @@
 package jp.hiroshiba.voicevoxcore.blocking;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import jakarta.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,6 +12,7 @@ import jp.hiroshiba.voicevoxcore.AccelerationMode;
 import jp.hiroshiba.voicevoxcore.AccentPhrase;
 import jp.hiroshiba.voicevoxcore.AudioQuery;
 import jp.hiroshiba.voicevoxcore.CharacterMeta;
+import jp.hiroshiba.voicevoxcore.StyleType;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
@@ -64,7 +66,9 @@ public class Synthesizer {
    */
   @Nonnull
   public CharacterMeta[] metas() {
-    Gson gson = new Gson();
+    GsonBuilder gsonBuilder = new GsonBuilder();
+    gsonBuilder.registerTypeAdapter(StyleType.class, new StyleType.Deserializer());
+    Gson gson = gsonBuilder.create();
     String metasJson = rsGetMetasJson();
     CharacterMeta[] rawMetas = gson.fromJson(metasJson, CharacterMeta[].class);
     if (rawMetas == null) {
