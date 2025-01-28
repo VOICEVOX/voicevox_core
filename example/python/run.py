@@ -22,17 +22,11 @@ class Args:
 
     @staticmethod
     def parse_args() -> "Args":
-        ACCELERATION_MODE_CHOICES = ("AUTO", "CPU", "GPU")
-
-        def _(s: str):
-            if s in ACCELERATION_MODE_CHOICES:
-                _: AccelerationMode = s
-
         argparser = ArgumentParser()
         argparser.add_argument(
             "--mode",
             default="AUTO",
-            choices=ACCELERATION_MODE_CHOICES,
+            choices=("AUTO", "CPU", "GPU"),
             help="モード",
         )
         argparser.add_argument(
