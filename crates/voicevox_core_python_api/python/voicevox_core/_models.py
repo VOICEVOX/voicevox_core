@@ -195,6 +195,9 @@ def _rename_audio_query_field(name: str) -> str:
             return pydantic.alias_generators.to_camel(name)
 
 
+_unrename_audio_query_field = pydantic.alias_generators.to_snake
+
+
 @pydantic.dataclasses.dataclass(
     config=ConfigDict(alias_generator=_rename_audio_query_field),
 )
@@ -249,16 +252,16 @@ class AudioQuery:
         としてのフィールドを書き換える。
         """
 
-        self.__attr_true_names: dict[str, str] = {}
         for field in dataclasses.fields(self):
-            if (rename := _rename_audio_query_field(field.name)) != field.name:
-                self.__attr_true_names[rename] = field.name
-                field.name = rename
+            field.name = _rename_audio_query_field(field.name)
 
     def __getattr__(self, name: str) -> object:
-        """camelCaseの名前に対し、対応するsnake_caseの名前があるならそれについて返す。"""
+        """
+        camelCaseの名前に対し、対応するsnake_caseの名前があるならそちらにリダイレクト
+        する。
+        """
 
-        if true_name := self.__attr_true_names.get(name):
+        if (true_name := _unrename_audio_query_field(name)) != name:
             return getattr(self, true_name)
         # 普通の`AttributeError`と同じ文面
         raise AttributeError(f"{type(self).__name__!r} has no attribute {name!r}")
