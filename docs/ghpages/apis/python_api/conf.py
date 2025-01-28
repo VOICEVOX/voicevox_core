@@ -63,8 +63,11 @@ def _on_missing_reference(
     """
     # 参考: https://github.com/sphinx-doc/sphinx/issues/10785#issue-1348601826
     TARGETS = {
+        "AccelerationMode",
         "CharacterVersion",
         "StyleId",
+        "StyleType",
+        "UserDictWordType",
         "VoiceModelId",
     }
     if (
