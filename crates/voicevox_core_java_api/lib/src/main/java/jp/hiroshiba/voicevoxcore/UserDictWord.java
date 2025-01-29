@@ -163,7 +163,11 @@ public class UserDictWord {
           case "SUFFIX":
             return SUFFIX;
           default:
-            throw new JsonParseException(String.format("Invalid value: `%s`", value));
+            throw new JsonParseException(
+                String.format(
+                    "Invalid variant `%s`, expected one of "
+                        + "`PROPER_NOUN`, `COMMON_NOUN`, `VERB`, `ADJECTIVE`, `SUFFIX`",
+                    value));
         }
       }
     }

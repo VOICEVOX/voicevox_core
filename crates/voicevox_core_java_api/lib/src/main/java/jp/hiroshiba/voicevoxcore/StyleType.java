@@ -45,7 +45,11 @@ public class StyleType {
         case "sing":
           return SING;
         default:
-          throw new JsonParseException(String.format("Invalid value: `%s`", value));
+          throw new JsonParseException(
+              String.format(
+                  "Invalid variant: `%s`, expected one of "
+                      + "`talk`, `singing_teacher`, `frame_decode`, `sing`",
+                  value));
       }
     }
   }
