@@ -4,13 +4,13 @@ use camino::Utf8PathBuf;
 use easy_ext::ext;
 use pyo3::{
     exceptions::{PyException, PyRuntimeError, PyValueError},
-    types::{IntoPyDict as _, PyList},
+    types::{IntoPyDict as _, PyList, PyString},
     FromPyObject as _, IntoPy, PyAny, PyObject, PyResult, Python, ToPyObject,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
 use uuid::Uuid;
-use voicevox_core::{AccelerationMode, AccentPhrase, StyleId, UserDictWordType, VoiceModelMeta};
+use voicevox_core::{AccelerationMode, AccentPhrase, StyleId, VoiceModelMeta};
 
 use crate::{
     AnalyzeTextError, GetSupportedDevicesError, GpuSupportError, InitInferenceRuntimeError,
@@ -21,19 +21,14 @@ use crate::{
 };
 
 pub(crate) fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
-    let py = ob.py();
-
-    let class = py.import("voicevox_core")?.getattr("AccelerationMode")?;
-    let mode = class.get_item(ob)?;
-
-    if mode.eq(class.getattr("AUTO")?)? {
-        Ok(AccelerationMode::Auto)
-    } else if mode.eq(class.getattr("CPU")?)? {
-        Ok(AccelerationMode::Cpu)
-    } else if mode.eq(class.getattr("GPU")?)? {
-        Ok(AccelerationMode::Gpu)
-    } else {
-        unreachable!("{} should be one of {{AUTO, CPU, GPU}}", mode.repr()?);
+    match ob.extract::<&str>()? {
+        "AUTO" => Ok(AccelerationMode::Auto),
+        "CPU" => Ok(AccelerationMode::Cpu),
+        "GPU" => Ok(AccelerationMode::Gpu),
+        mode => Err(PyValueError::new_err(format!(
+            "`AccelerationMode` should be one of {{AUTO, CPU, GPU}}: {mode}",
+            mode = PyString::new(ob.py(), mode).repr()?,
+        ))),
     }
 }
 
@@ -153,7 +148,7 @@ pub(crate) fn to_rust_user_dict_word(ob: &PyAny) -> PyResult<voicevox_core::User
         ob.getattr("surface")?.extract()?,
         ob.getattr("pronunciation")?.extract()?,
         ob.getattr("accent_type")?.extract()?,
-        to_rust_word_type(ob.getattr("word_type")?.extract()?)?,
+        from_literal_choice(ob.getattr("word_type")?.extract()?)?,
         ob.getattr("priority")?.extract()?,
     )
     .into_py_result(ob.py())
@@ -168,10 +163,8 @@ pub(crate) fn to_py_user_dict_word<'py>(
         .downcast()?;
     to_pydantic_dataclass(word, class)
 }
-pub(crate) fn to_rust_word_type(word_type: &PyAny) -> PyResult<UserDictWordType> {
-    let name = word_type.getattr("name")?.extract::<String>()?;
-
-    serde_json::from_value::<UserDictWordType>(json!(name)).into_py_value_result()
+fn from_literal_choice<T: DeserializeOwned>(s: &str) -> PyResult<T> {
+    serde_json::from_value::<T>(json!(s)).into_py_value_result()
 }
 
 /// おおよそ以下のコードにおける`f(x)`のようなものを得る。

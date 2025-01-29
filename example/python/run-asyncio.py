@@ -28,8 +28,8 @@ class Args:
         argparser.add_argument(
             "--mode",
             default="AUTO",
-            type=AccelerationMode,
-            help='モード ("AUTO", "CPU", "GPU")',
+            choices=("AUTO", "CPU", "GPU"),
+            help="モード",
         )
         argparser.add_argument(
             "vvm",
