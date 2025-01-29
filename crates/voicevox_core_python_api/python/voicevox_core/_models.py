@@ -73,7 +73,7 @@ StyleType: TypeAlias = (
                       扱うことは可能。
 ===================== ==================================================
 
-``_Reserved`` の存在により、次のコードはPyright/Pylanceの型検査に通らない。これは意図的なデザインである。
+``_Reserved`` の存在により、例えば次のコードはPyright/Pylanceの型検査に通らない。これは意図的なデザインである。
 
 .. code-block::
 
@@ -198,7 +198,7 @@ AccelerationMode: TypeAlias = Literal["AUTO", "CPU", "GPU"] | _Reserved
               扱うことは可能。
 ============= =======================================================================
 
-``_Reserved`` の存在により、次のコードはPyright/Pylanceの型検査に通らない。これは意図的なデザインである。
+``_Reserved`` の存在により、例えば次のコードはPyright/Pylanceの型検査に通らない。これは意図的なデザインである。
 
 .. code-block::
 
@@ -333,7 +333,7 @@ UserDictWordType: TypeAlias = (
                   扱うことは可能。
 ================= ==========
 
-``_Reserved`` の存在により、次のコードはPyright/Pylanceの型検査に通らない。これは意図的なデザインである。
+``_Reserved`` の存在により、例えば次のコードはPyright/Pylanceの型検査に通らない。これは意図的なデザインである。
 
 .. code-block::
 
