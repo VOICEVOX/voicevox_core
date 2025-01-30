@@ -1,10 +1,12 @@
 package jp.hiroshiba.voicevoxcore.blocking;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import jakarta.annotation.Nonnull;
 import java.io.Closeable;
 import java.util.UUID;
 import jp.hiroshiba.voicevoxcore.CharacterMeta;
+import jp.hiroshiba.voicevoxcore.StyleType;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /** 音声モデルファイル。 */
@@ -33,7 +35,9 @@ public class VoiceModelFile implements Closeable {
     rsOpen(modelPath);
     id = rsGetId();
     String metasJson = rsGetMetasJson();
-    Gson gson = new Gson();
+    GsonBuilder gsonBuilder = new GsonBuilder();
+    gsonBuilder.registerTypeAdapter(StyleType.class, new StyleType.Deserializer());
+    Gson gson = gsonBuilder.create();
     CharacterMeta[] rawMetas = gson.fromJson(metasJson, CharacterMeta[].class);
     if (rawMetas == null) {
       throw new RuntimeException("Failed to parse metasJson");

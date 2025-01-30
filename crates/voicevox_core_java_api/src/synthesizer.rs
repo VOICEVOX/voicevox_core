@@ -1,6 +1,6 @@
 use crate::{
     common::{throw_if_err, JNIEnvExt as _, JavaApiError},
-    enum_object, object, object_type,
+    object, object_type, static_field,
 };
 
 use jni::{
@@ -31,9 +31,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let acceleration_mode = if acceleration_mode.is_null() {
             Default::default()
         } else {
-            let auto = enum_object!(env, "AccelerationMode", "AUTO")?;
-            let cpu = enum_object!(env, "AccelerationMode", "CPU")?;
-            let gpu = enum_object!(env, "AccelerationMode", "GPU")?;
+            let auto = static_field!(env, "AccelerationMode", "AUTO")?;
+            let cpu = static_field!(env, "AccelerationMode", "CPU")?;
+            let gpu = static_field!(env, "AccelerationMode", "GPU")?;
             if env.is_same_object(&acceleration_mode, auto)? {
                 voicevox_core::AccelerationMode::Auto
             } else if env.is_same_object(&acceleration_mode, cpu)? {
