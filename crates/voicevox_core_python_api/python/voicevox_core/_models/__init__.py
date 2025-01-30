@@ -257,14 +257,31 @@ def _rename_audio_query_field(name: str) -> str:
             return pydantic.alias_generators.to_camel(name)
 
 
-_unrename_audio_query_field = pydantic.alias_generators.to_snake
-
-
 @pydantic.dataclasses.dataclass(
     config=ConfigDict(alias_generator=_rename_audio_query_field),
 )
 class AudioQuery:
-    """AudioQuery (音声合成用のクエリ)。"""
+    """
+    AudioQuery (音声合成用のクエリ)。
+
+    JSONへの変換は ``pydantic.TypeAdapter.dump_json`` を用いなければならない。また、
+    ``dump_json`` や ``json_schema`` を用いるときは ``by_alias=True``
+    を指定しなければならない。
+
+    .. code-block::
+
+        from pydantic import TypeAdapter
+        from voicevox_core import AudioQuery
+
+        JSON = '{"accent_phrases":[],"speedScale":1.0,"pitchScale":0.0,"intonationScale":1.0,"volumeScale":1.0,"prePhonemeLength":0.1,"postPhonemeLength":0.1,"outputSamplingRate":24000,"outputStereo":false,"pauseLength":null,"pauseLengthScale":1.0,"kana":null}'
+        query = TypeAdapter(AudioQuery).validate_json(JSON)
+
+        # `JSON`が必須フィールドを含んでいる場合のみ
+        assert TypeAdapter(AudioQuery).dump_json(query, by_alias=True).decode() == JSON
+
+        # `by_alias`が無いと、`accent_phrases`以外snake_caseのままJSONが出力されてしまう
+        assert TypeAdapter(AudioQuery).dump_json(query).decode() != JSON
+    """
 
     accent_phrases: list[AccentPhrase]
     """アクセント句の配列。"""
@@ -306,27 +323,6 @@ class AudioQuery:
     :func:`Synthesizer.create_audio_query` が返すもののみ ``str`` となる。入力として
     のAudioQueryでは無視される。
     """
-
-    # `dataclasses.asdict`の内部実装に依存したハックだが、他に方法が思い付かなかった。
-    def __post_init__(self) -> None:
-        """
-        :func:`dataclasses.asdict` にてキーが正しい名前になるよう、 ``dataclass``
-        としてのフィールドを書き換える。
-        """
-
-        for field in dataclasses.fields(self):
-            field.name = _rename_audio_query_field(field.name)
-
-    def __getattr__(self, name: str) -> object:
-        """
-        camelCaseの名前に対し、対応するsnake_caseの名前があるならそちらにリダイレクト
-        する。
-        """
-
-        if (true_name := _unrename_audio_query_field(name)) != name:
-            return getattr(self, true_name)
-        # 普通の`AttributeError`と同じ文面
-        raise AttributeError(f"{type(self).__name__!r} has no attribute {name!r}")
 
 
 UserDictWordType: TypeAlias = (

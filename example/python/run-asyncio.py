@@ -2,12 +2,12 @@
 
 import asyncio
 import dataclasses
-import json
 import logging
 import multiprocessing
 from argparse import ArgumentParser
 from pathlib import Path
 
+from pydantic import TypeAdapter
 from voicevox_core import AccelerationMode, AudioQuery
 from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
@@ -118,7 +118,7 @@ async def main() -> None:
 
 
 def display_as_json(audio_query: AudioQuery) -> str:
-    return json.dumps(dataclasses.asdict(audio_query), ensure_ascii=False)
+    return TypeAdapter(AudioQuery).dump_json(audio_query, by_alias=True).decode()
 
 
 if __name__ == "__main__":

@@ -1,16 +1,17 @@
 use std::{error::Error as _, future::Future, iter, panic, path::PathBuf};
 
 use camino::Utf8PathBuf;
+use duplicate::duplicate_item;
 use easy_ext::ext;
 use pyo3::{
     exceptions::{PyException, PyRuntimeError, PyValueError},
-    types::{IntoPyDict as _, PyList, PyString},
+    types::{IntoPyDict as _, PyBytes, PyList, PyString},
     FromPyObject as _, IntoPy, PyAny, PyObject, PyResult, Python, ToPyObject,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
 use uuid::Uuid;
-use voicevox_core::{AccelerationMode, AccentPhrase, StyleId, VoiceModelMeta};
+use voicevox_core::{AccelerationMode, AccentPhrase, AudioQuery, StyleId, VoiceModelMeta};
 
 use crate::{
     AnalyzeTextError, GetSupportedDevicesError, GpuSupportError, InitInferenceRuntimeError,
@@ -40,15 +41,34 @@ pub(crate) fn from_utf8_path(ob: &PyAny) -> PyResult<Utf8PathBuf> {
         .map_err(|s| PyValueError::new_err(format!("{s:?} cannot be encoded to UTF-8")))
 }
 
-pub(crate) fn from_dataclass<T: DeserializeOwned>(ob: &PyAny) -> PyResult<T> {
+pub(crate) trait HasClass: DeserializeOwned {
+    fn cls(py: Python<'_>) -> PyResult<&PyAny>;
+}
+
+#[duplicate_item(
+    T;
+    [ AudioQuery ];
+    [ AccentPhrase ];
+)]
+impl HasClass for T {
+    fn cls(py: Python<'_>) -> PyResult<&PyAny> {
+        py.import("voicevox_core")?.getattr(stringify!(T))
+    }
+}
+
+pub(crate) fn from_dataclass<T: HasClass>(ob: &PyAny) -> PyResult<T> {
     let py = ob.py();
 
-    let ob = py.import("dataclasses")?.call_method1("asdict", (ob,))?;
-    let json = &py
-        .import("json")?
-        .call_method1("dumps", (ob,))?
-        .extract::<String>()?;
-    serde_json::from_str(json).into_py_value_result()
+    let type_adapter = py.import("pydantic")?.getattr("TypeAdapter")?;
+    let json = type_adapter
+        .call1((T::cls(py)?,))?
+        .call_method(
+            "dump_json",
+            (ob,),
+            Some([("by_alias", true)].into_py_dict(py)),
+        )?
+        .extract::<&PyBytes>()?;
+    serde_json::from_slice(json.as_bytes()).into_py_value_result()
 }
 
 pub(crate) fn to_pydantic_voice_model_meta<'py>(

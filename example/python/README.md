@@ -79,7 +79,7 @@ optional arguments:
 [WARNING] ort.environment: Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.
 [DEBUG] voicevox_core_python_api: Closing a VoiceModelFile
 [INFO] __main__: Creating an AudioQuery from 'この音声は、ボイスボックスを使用して、出力されています。'
-[INFO] __main__: Synthesizing with {"accent_phrases": […], "speed_scale": 1.0, "pitch_scale": 0.0, "intonation_scale": 1.0, "volume_scale": 1.0, "pre_phoneme_length": 0.1, "post_phoneme_length": 0.1, "output_sampling_rate": 24000, "output_stereo": false, "pause_length": null, "pause_length_scale": 1.0, "kana": "コノ'/オ'ンセエワ、ボイスボ'ッ_クスオ/シヨオ'/_シテ'、_シュツ'リョ_ク/サレテ'/イマ'_ス"}
+[INFO] __main__: Synthesizing with {"accent_phrases":[],"speedScale":1.0,"pitchScale":0.0,"intonationScale":1.0,"volumeScale":1.0,"prePhonemeLength":0.1,"postPhonemeLength":0.1,"outputSamplingRate":24000,"outputStereo":false,"pauseLength":null,"pauseLengthScale":1.0,"kana":"コノ'/オ'ンセエワ、ボイスボ'ッ_クスオ/シヨオ'/_シテ'、_ シュツ'リョ_ク/サレテ'/イマ'_ス"}
 [INFO] __main__: Wrote `output.wav`
 [WARNING] voicevox_core_python_api: デストラクタにより`Synthesizer`のクローズを行います。通常は、可能な限り`__exit__`でクローズするようにして下さい
 ```
