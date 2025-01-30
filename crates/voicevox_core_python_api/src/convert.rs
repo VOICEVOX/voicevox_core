@@ -10,7 +10,7 @@ use pyo3::{
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
 use uuid::Uuid;
-use voicevox_core::{AccelerationMode, AccentPhrase, StyleId, VoiceModelMeta};
+use voicevox_core::{AccelerationMode, AccentPhrase, StyleId, SupportedDevices, VoiceModelMeta};
 
 use crate::{
     AnalyzeTextError, GetSupportedDevicesError, GpuSupportError, InitInferenceRuntimeError,
@@ -252,6 +252,25 @@ pub(crate) impl<T> voicevox_core::Result<T> {
                 })
                 .expect("should not be empty")
         })
+    }
+}
+
+#[ext(SupportedDevicesExt)]
+impl SupportedDevices {
+    pub(crate) fn to_py(self, py: Python<'_>) -> PyResult<&PyAny> {
+        let class = py
+            .import("voicevox_core")?
+            .getattr("SupportedDevices")?
+            .downcast()?;
+        assert!(match self.to_json() {
+            serde_json::Value::Object(o) => o.len() == 3, // `cpu`, `cuda`, `dml`
+            _ => false,
+        });
+        PyAny::call(
+            class,
+            ("I AM FROM PYO3",),
+            Some([("cpu", self.cpu), ("cuda", self.cuda), ("dml", self.dml)].into_py_dict(py)),
+        )
     }
 }
 
