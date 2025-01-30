@@ -4,7 +4,8 @@ from uuid import UUID
 
 import pydantic
 
-from ._rust import _to_zenkaku, _validate_pronunciation
+from .._rust import _to_zenkaku, _validate_pronunciation
+from ._please_do_not_use import _Reserved
 
 StyleId = NewType("StyleId", int)
 """
@@ -33,7 +34,9 @@ Parameters
 x : UUID
 """
 
-StyleType: TypeAlias = Literal["talk", "singing_teacher", "frame_decode", "sing"]
+StyleType: TypeAlias = (
+    Literal["talk", "singing_teacher", "frame_decode", "sing"] | _Reserved
+)
 """
 
 **スタイル** (_style_)に対応するモデルの種類。
@@ -44,8 +47,42 @@ StyleType: TypeAlias = Literal["talk", "singing_teacher", "frame_decode", "sing"
 ``"singing_teacher"`` 歌唱音声合成用のクエリの作成が可能。
 ``"frame_decode"``    歌唱音声合成が可能。
 ``"sing"``            歌唱音声合成用のクエリの作成と歌唱音声合成が可能。
+``_Reserved``         将来のために予約されている値。この値が存在することは決してない。
+                      ``str`` のサブタイプであるため、 ``StyleType`` を ``str`` として
+                      扱うことは可能。
 ===================== ==================================================
+
+``_Reserved`` の存在により、例えば次のコードはPyright/Pylanceの型検査に通らない。これは意図的なデザインである。
+
+.. code-block::
+
+    def _(style_type: StyleType) -> int:
+        match style_type:
+            case "talk":
+                return 0
+            case "singing_teacher":
+                return 1
+            case "frame_decode":
+                return 2
+            case "sing":
+                return 3
+
+.. code-block:: text
+
+    error: Function with declared return type "int" must return value on all code paths
+    "None" is not assignable to "int" (reportReturnType)
+
+``str`` として扱うことは可能。
+
+.. code-block::
+
+    def _(style_type: StyleType):
+        _: str = style_type  # OK
 """
+
+
+def _(style_type: StyleType):
+    _: str = style_type
 
 
 @pydantic.dataclasses.dataclass
@@ -126,17 +163,49 @@ class SupportedDevices:
     """
 
 
-AccelerationMode: TypeAlias = Literal["AUTO", "CPU", "GPU"]
+AccelerationMode: TypeAlias = Literal["AUTO", "CPU", "GPU"] | _Reserved
 """
 ハードウェアアクセラレーションモードを設定する設定値。
 
-========== ======================================================================
-値         説明
-``"AUTO"`` 実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
-``"CPU"``  ハードウェアアクセラレーションモードを"CPU"に設定する。
-``"GPU"``  ハードウェアアクセラレーションモードを"GPU"に設定する。
-========== ======================================================================
+============= =======================================================================
+値            説明
+``"AUTO"``    実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
+``"CPU"``     ハードウェアアクセラレーションモードを"CPU"に設定する。
+``"GPU"``     ハードウェアアクセラレーションモードを"GPU"に設定する。
+``_Reserved`` 将来のために予約されている値。この値が存在することは決してない。
+              ``str`` のサブタイプであるため、 ``AccelerationMode`` を ``str`` として
+              扱うことは可能。
+============= =======================================================================
+
+``_Reserved`` の存在により、例えば次のコードはPyright/Pylanceの型検査に通らない。これは意図的なデザインである。
+
+.. code-block::
+
+    def _(mode: AccelerationMode) -> int:
+        match mode:
+            case "AUTO":
+                return 0
+            case "CPU":
+                return 1
+            case "GPU":
+                return 2
+
+.. code-block:: text
+
+    error: Function with declared return type "int" must return value on all code paths
+    "None" is not assignable to "int" (reportReturnType)
+
+``str`` として扱うことは可能。
+
+.. code-block::
+
+    def _(mode: AccelerationMode):
+        _: str = mode  # OK
 """
+
+
+def _(mode: AccelerationMode):
+    _: str = mode
 
 
 @pydantic.dataclasses.dataclass
@@ -225,9 +294,9 @@ class AudioQuery:
     """
 
 
-UserDictWordType: TypeAlias = Literal[
-    "PROPER_NOUN", "COMMON_NOUN", "VERB", "ADJECTIVE", "SUFFIX"
-]
+UserDictWordType: TypeAlias = (
+    Literal["PROPER_NOUN", "COMMON_NOUN", "VERB", "ADJECTIVE", "SUFFIX"] | _Reserved
+)
 """
 ユーザー辞書の単語の品詞。
 
@@ -238,8 +307,44 @@ UserDictWordType: TypeAlias = Literal[
 ``"VERB"``        動詞。
 ``"ADJECTIVE"``   形容詞。
 ``"SUFFIX"``      語尾。
+``_Reserved``     将来のために予約されている値。この値が存在することは決してない。
+                  ``str`` のサブタイプであるため、 ``UserDictWordType`` を ``str`` として
+                  扱うことは可能。
 ================= ==========
+
+``_Reserved`` の存在により、例えば次のコードはPyright/Pylanceの型検査に通らない。これは意図的なデザインである。
+
+.. code-block::
+
+    def _(word_type: UserDictWordType) -> int:
+        match word_type:
+            case "PROPER_NOUN":
+                return 0
+            case "COMMON_NOUN":
+                return 1
+            case "VERB":
+                return 2
+            case "ADJECTIVE":
+                return 3
+            case "SUFFIX":
+                return 4
+
+.. code-block:: text
+
+    error: Function with declared return type "int" must return value on all code paths
+    "None" is not assignable to "int" (reportReturnType)
+
+``str`` として扱うことは可能。
+
+.. code-block::
+
+    def _(word_type: UserDictWordType):
+        _: str = word_type  # OK
 """
+
+
+def _(word_type: UserDictWordType):
+    _: str = word_type
 
 
 @pydantic.dataclasses.dataclass
