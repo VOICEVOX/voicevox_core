@@ -1,32 +1,11 @@
 import dataclasses
-from typing import Any, Literal, NewType, NoReturn, TypeAlias
+from typing import Literal, NewType, TypeAlias
 from uuid import UUID
 
 import pydantic
-from pydantic import GetCoreSchemaHandler
-from pydantic_core import CoreSchema, core_schema
 
-from ._rust import _to_zenkaku, _validate_pronunciation
-
-
-class _Reserved(str):
-    def __new__(cls) -> NoReturn:
-        raise TypeError()
-
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:
-        _ = source_type, handler
-        # TODO: pydantic/pydantic-core#1579 がリリースに入ったら`NeverSchema`にする
-        return core_schema.no_info_after_validator_function(
-            cls._no_input_allowed, core_schema.any_schema()
-        )
-
-    @classmethod
-    def _no_input_allowed(cls, _: object) -> NoReturn:
-        raise ValueError(f"No input is allowed for `{cls.__name__}`")
-
+from .._rust import _to_zenkaku, _validate_pronunciation
+from ._please_do_not_use import _Reserved
 
 StyleId = NewType("StyleId", int)
 """
