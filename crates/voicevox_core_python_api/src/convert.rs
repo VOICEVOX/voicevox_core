@@ -258,16 +258,13 @@ pub(crate) impl<T> voicevox_core::Result<T> {
 #[ext(SupportedDevicesExt)]
 impl SupportedDevices {
     pub(crate) fn to_py(self, py: Python<'_>) -> PyResult<&PyAny> {
-        let class = py
-            .import("voicevox_core")?
-            .getattr("SupportedDevices")?
-            .downcast()?;
         assert!(match self.to_json() {
             serde_json::Value::Object(o) => o.len() == 3, // `cpu`, `cuda`, `dml`
             _ => false,
         });
-        PyAny::call(
-            class,
+
+        let cls = py.import("voicevox_core")?.getattr("SupportedDevices")?;
+        cls.call(
             ("I AM FROM PYO3",),
             Some([("cpu", self.cpu), ("cuda", self.cuda), ("dml", self.dml)].into_py_dict(py)),
         )
