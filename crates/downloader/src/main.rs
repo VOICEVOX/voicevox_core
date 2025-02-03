@@ -52,11 +52,11 @@ const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_li
 const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
-    LazyLock::new(|| "=0.0.1-preview.2".parse().unwrap());
+    LazyLock::new(|| "=0.0.1-preview.3".parse().unwrap());
 const MODELS_README_FILENAME: &str = "README.md";
 const MODELS_DIR_NAME: &str = "vvms";
 const MODELS_TERMS_NAME: &str = "VOICEVOX VVM TERMS OF USE";
-const MODELS_TERMS_FILE: &str = "terms.md";
+const MODELS_TERMS_FILE: &str = "TERMS.md";
 
 static OPEN_JTALK_DIC_URL: LazyLock<Url> = LazyLock::new(|| {
     "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
