@@ -23,13 +23,13 @@ macro_rules! object_type {
     };
 }
 #[macro_export]
-macro_rules! enum_object {
-    ($env: ident, $name: literal, $variant: literal) => {
-        $env.get_static_field(object!($name), $variant, object_type!($name))
+macro_rules! static_field {
+    ($env: ident, $name: literal, $field: literal) => {
+        $env.get_static_field(object!($name), $field, object_type!($name))
             .unwrap_or_else(|_| {
                 panic!(
                     "Failed to get field {}",
-                    concat!($variant, "L", object!($name), ";")
+                    concat!($field, "L", object!($name), ";")
                 )
             })
             .l()

@@ -1,12 +1,12 @@
 // エンジンを起動してyukarin_s・yukarin_sa・decodeの推論を行う
 
+use std::collections::HashMap;
 use std::sync::LazyLock;
 use std::{cmp::min, ffi::CStr};
 
 use assert_cmd::assert::AssertResult;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
-use voicevox_core::SupportedDevices;
 
 use test_util::{c_api::CApi, EXAMPLE_DATA};
 
@@ -33,7 +33,9 @@ impl assert_cdylib::TestCase for TestCase {
 
         {
             let supported_devices = lib.supported_devices();
-            serde_json::from_str::<SupportedDevices>(CStr::from_ptr(supported_devices).to_str()?)?;
+            serde_json::from_str::<HashMap<String, bool>>(
+                CStr::from_ptr(supported_devices).to_str()?,
+            )?;
         }
 
         assert!(lib.initialize(false, 0, false));

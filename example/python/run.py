@@ -1,10 +1,10 @@
 import dataclasses
-import json
 import logging
 import multiprocessing
 from argparse import ArgumentParser
 from pathlib import Path
 
+from pydantic import TypeAdapter
 from voicevox_core import AccelerationMode, AudioQuery, wav_from_s16le
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
@@ -26,8 +26,8 @@ class Args:
         argparser.add_argument(
             "--mode",
             default="AUTO",
-            type=AccelerationMode,
-            help='モード ("AUTO", "CPU", "GPU")',
+            choices=("AUTO", "CPU", "GPU"),
+            help="モード",
         )
         argparser.add_argument(
             "vvm",
@@ -139,7 +139,7 @@ def main() -> None:
 
 
 def display_as_json(audio_query: AudioQuery) -> str:
-    return json.dumps(dataclasses.asdict(audio_query), ensure_ascii=False)
+    return TypeAdapter(AudioQuery).dump_json(audio_query, by_alias=True).decode()
 
 
 if __name__ == "__main__":

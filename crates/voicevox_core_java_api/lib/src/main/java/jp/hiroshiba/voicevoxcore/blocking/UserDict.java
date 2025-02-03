@@ -1,6 +1,7 @@
 package jp.hiroshiba.voicevoxcore.blocking;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 import jakarta.annotation.Nonnull;
 import java.io.File;
@@ -37,7 +38,9 @@ public class UserDict {
    */
   @Nonnull
   public String addWord(UserDictWord word) {
-    Gson gson = new Gson();
+    GsonBuilder gsonBuilder = new GsonBuilder();
+    gsonBuilder.registerTypeAdapter(UserDictWord.Type.class, new UserDictWord.Type.Serializer());
+    Gson gson = gsonBuilder.create();
     String wordJson = gson.toJson(word);
 
     return rsAddWord(wordJson);
@@ -50,7 +53,9 @@ public class UserDict {
    * @param word 新しい単語のデータ。
    */
   public void updateWord(String uuid, UserDictWord word) {
-    Gson gson = new Gson();
+    GsonBuilder gsonBuilder = new GsonBuilder();
+    gsonBuilder.registerTypeAdapter(UserDictWord.Type.class, new UserDictWord.Type.Serializer());
+    Gson gson = gsonBuilder.create();
     String wordJson = gson.toJson(word);
 
     rsUpdateWord(uuid, wordJson);
@@ -142,7 +147,9 @@ public class UserDict {
   @Nonnull
   public HashMap<String, UserDictWord> toHashMap() {
     String json = rsGetWords();
-    Gson gson = new Gson();
+    GsonBuilder gsonBuilder = new GsonBuilder();
+    gsonBuilder.registerTypeAdapter(UserDictWord.Type.class, new UserDictWord.Type.Deserializer());
+    Gson gson = gsonBuilder.create();
     @SuppressWarnings("unchecked")
     HashMap<String, LinkedTreeMap<String, ?>> rawWords = gson.fromJson(json, HashMap.class);
     if (rawWords == null) {

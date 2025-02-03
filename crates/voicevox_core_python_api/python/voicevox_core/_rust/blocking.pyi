@@ -1,5 +1,5 @@
 from os import PathLike
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Union
 from uuid import UUID
 
 if TYPE_CHECKING:
@@ -175,8 +175,7 @@ class Synthesizer:
         self,
         onnxruntime: Onnxruntime,
         open_jtalk: OpenJtalk,
-        acceleration_mode: AccelerationMode
-        | Literal["AUTO", "CPU", "GPU"] = AccelerationMode.AUTO,
+        acceleration_mode: AccelerationMode = "AUTO",
         cpu_num_threads: int = 0,
     ) -> None: ...
     def __repr__(self) -> str: ...

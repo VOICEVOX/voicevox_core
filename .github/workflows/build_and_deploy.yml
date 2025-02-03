@@ -239,7 +239,7 @@ jobs:
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
       - name: build voicevox_core_java_api
         if: contains(matrix.target, 'android')
-        run: cargo build -p voicevox_core_java_api vv --target ${{ matrix.target }} --release
+        run: cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
       - name: Organize artifact
         run: |
           mkdir -p artifact/${{ env.ASSET_NAME }}/{include,lib}
