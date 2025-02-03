@@ -5,7 +5,7 @@ use std::{
 };
 
 use derive_more::BitAnd;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 pub(crate) fn test_gpus(
     gpus: impl IntoIterator<Item = GpuSpec>,
@@ -65,7 +65,8 @@ fn test_gpu(
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, PartialEq, Eq, Debug, BitAnd, Serialize, Deserialize)]
+// 将来の互換性保証のため、`Deserialize`は実装するべきではない
+#[derive(Clone, Copy, PartialEq, Eq, Debug, BitAnd, Serialize)]
 #[non_exhaustive]
 pub struct SupportedDevices {
     /// CPUが利用可能。

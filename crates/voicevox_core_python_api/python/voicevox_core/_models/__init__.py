@@ -4,6 +4,7 @@ from uuid import UUID
 
 import pydantic.alias_generators
 from pydantic import ConfigDict
+from pydantic_core import ArgsKwargs
 
 from .._rust import _to_zenkaku, _validate_pronunciation
 from ._please_do_not_use import _Reserved
@@ -138,6 +139,9 @@ class SupportedDevices:
 
     あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても
     ``cuda`` や ``dml`` は ``True`` を示しうる。
+
+    JSONからの変換も含め、VOICEVOX CORE以外が作ることはできない。作ろうとした場合
+    ``TypeError`` となる。
     """
 
     cpu: bool
@@ -162,6 +166,13 @@ class SupportedDevices:
     ONNX Runtimeの `DirectML Execution Provider <https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html>`_
     (``DmlExecutionProvider``)に対応する。必要な環境についてはそちらを参照。
     """
+
+    @pydantic.model_validator(mode="before")
+    @staticmethod
+    def _deny_unless_from_pyo3(data: ArgsKwargs) -> ArgsKwargs:
+        if "I AM FROM PYO3" not in data.args:
+            raise TypeError("You cannot deserialize `SupportedDevices`")
+        return ArgsKwargs((), kwargs=data.kwargs)
 
 
 AccelerationMode: TypeAlias = Literal["AUTO", "CPU", "GPU"] | _Reserved
