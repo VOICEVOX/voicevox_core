@@ -1,6 +1,9 @@
+import dataclasses
 import json
 import textwrap
 
+import pytest
+from pydantic import TypeAdapter
 from voicevox_core import AudioQuery
 
 
@@ -23,16 +26,41 @@ def test_accept_json_without_optional_fields() -> None:
                       "accent": 1
                     }
                   ],
-                  "speed_scale": 1.0,
-                  "pitch_scale": 0.0,
-                  "intonation_scale": 1.0,
-                  "volume_scale": 1.0,
-                  "pre_phoneme_length": 0.1,
-                  "post_phoneme_length": 0.1,
-                  "output_sampling_rate": 24000,
-                  "output_stereo": false
+                  "speedScale": 1.0,
+                  "pitchScale": 0.0,
+                  "intonationScale": 1.0,
+                  "volumeScale": 1.0,
+                  "prePhonemeLength": 0.1,
+                  "postPhonemeLength": 0.1,
+                  "outputSamplingRate": 24000,
+                  "outputStereo": false
                 }
                 """,
             )
         )
     )
+
+
+def test_dumps() -> None:
+    BEFORE = textwrap.dedent(
+        """\
+        {
+          "accent_phrases": [],
+          "speedScale": 1.0,
+          "pitchScale": 0.0,
+          "intonationScale": 1.0,
+          "volumeScale": 1.0,
+          "prePhonemeLength": 0.1,
+          "postPhonemeLength": 0.1,
+          "outputSamplingRate": 24000,
+          "outputStereo": false,
+          "pauseLength": null,
+          "pauseLengthScale": 1.0,
+          "kana": ""
+        }""",
+    )
+
+    adapter = TypeAdapter(AudioQuery)
+    query = adapter.validate_json(BEFORE)
+    after = adapter.dump_json(query, indent=2, by_alias=True).decode()
+    assert BEFORE == after

@@ -1,8 +1,9 @@
 import dataclasses
-from typing import Literal, NewType, NoReturn, TypeAlias
+from typing import Literal, NewType, TypeAlias
 from uuid import UUID
 
-import pydantic
+import pydantic.alias_generators
+from pydantic import ConfigDict
 from pydantic_core import ArgsKwargs
 
 from .._rust import _to_zenkaku, _validate_pronunciation
@@ -259,9 +260,39 @@ class AccentPhrase:
     """疑問系かどうか。"""
 
 
-@pydantic.dataclasses.dataclass
+def _rename_audio_query_field(name: str) -> str:
+    match name:
+        case "accent_phrases":
+            return "accent_phrases"
+        case _:
+            return pydantic.alias_generators.to_camel(name)
+
+
+@pydantic.dataclasses.dataclass(
+    config=ConfigDict(alias_generator=_rename_audio_query_field),
+)
 class AudioQuery:
-    """AudioQuery (音声合成用のクエリ)。"""
+    """
+    AudioQuery (音声合成用のクエリ)。
+
+    JSONへの変換は ``pydantic.TypeAdapter.dump_json`` を用いなければならない。また、
+    ``dump_json`` や ``json_schema`` を用いるときは ``by_alias=True``
+    を指定しなければならない。
+
+    .. code-block::
+
+        from pydantic import TypeAdapter
+        from voicevox_core import AudioQuery
+
+        JSON = '{"accent_phrases":[],"speedScale":1.0,"pitchScale":0.0,"intonationScale":1.0,"volumeScale":1.0,"prePhonemeLength":0.1,"postPhonemeLength":0.1,"outputSamplingRate":24000,"outputStereo":false,"pauseLength":null,"pauseLengthScale":1.0,"kana":null}'
+        query = TypeAdapter(AudioQuery).validate_json(JSON)
+
+        # `JSON`が必須フィールドを含んでいる場合のみ
+        assert TypeAdapter(AudioQuery).dump_json(query, by_alias=True).decode() == JSON
+
+        # `by_alias`が無いと、`accent_phrases`以外snake_caseのままJSONが出力されてしまう
+        assert TypeAdapter(AudioQuery).dump_json(query).decode() != JSON
+    """
 
     accent_phrases: list[AccentPhrase]
     """アクセント句の配列。"""
