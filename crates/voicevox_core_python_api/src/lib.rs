@@ -303,7 +303,8 @@ mod blocking {
     use voicevox_core::{AccelerationMode, AudioQuery, StyleId, UserDictWord};
 
     use crate::{
-        convert::VoicevoxCoreResultExt as _, Closable, SingleTasked, VoiceModelFilePyFields,
+        convert::{SupportedDevicesExt as _, VoicevoxCoreResultExt as _},
+        Closable, SingleTasked, VoiceModelFilePyFields,
     };
 
     #[pyclass]
@@ -415,12 +416,7 @@ mod blocking {
         }
 
         fn supported_devices<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
-            let class = py
-                .import("voicevox_core")?
-                .getattr("SupportedDevices")?
-                .downcast()?;
-            let s = self.0.supported_devices().into_py_result(py)?;
-            crate::convert::to_pydantic_dataclass(s, class)
+            self.0.supported_devices().into_py_result(py)?.to_py(py)
         }
     }
 
@@ -888,7 +884,10 @@ mod asyncio {
     use uuid::Uuid;
     use voicevox_core::{AccelerationMode, AudioQuery, StyleId, UserDictWord};
 
-    use crate::{convert::VoicevoxCoreResultExt as _, Closable, Tokio, VoiceModelFilePyFields};
+    use crate::{
+        convert::{SupportedDevicesExt as _, VoicevoxCoreResultExt as _},
+        Closable, Tokio, VoiceModelFilePyFields,
+    };
 
     #[pyclass]
     #[derive(Clone)]
@@ -1017,12 +1016,7 @@ mod asyncio {
         }
 
         fn supported_devices<'py>(&self, py: Python<'py>) -> PyResult<&'py PyAny> {
-            let class = py
-                .import("voicevox_core")?
-                .getattr("SupportedDevices")?
-                .downcast()?;
-            let s = self.0.supported_devices().into_py_result(py)?;
-            crate::convert::to_pydantic_dataclass(s, class)
+            self.0.supported_devices().into_py_result(py)?.to_py(py)
         }
     }
 

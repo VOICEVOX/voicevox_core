@@ -2,7 +2,6 @@ package jp.hiroshiba.voicevoxcore.blocking;
 
 import static jp.hiroshiba.voicevoxcore.GlobalInfo.SupportedDevices;
 
-import com.google.gson.Gson;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.Optional;
@@ -122,16 +121,10 @@ public class Onnxruntime {
    * @return {@link SupportedDevices}。
    */
   public SupportedDevices supportedDevices() {
-    Gson gson = new Gson();
-    String supportedDevicesJson = rsSupportedDevices();
-    SupportedDevices supportedDevices = gson.fromJson(supportedDevicesJson, SupportedDevices.class);
-    if (supportedDevices == null) {
-      throw new NullPointerException("supported_devices");
-    }
-    return supportedDevices;
+    return rsSupportedDevices();
   }
 
   private native void rsNew(@Nullable String filename);
 
-  private native String rsSupportedDevices();
+  private native SupportedDevices rsSupportedDevices();
 }

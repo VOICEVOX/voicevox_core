@@ -6,7 +6,6 @@ use libloading::Library;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use test_util::c_api::{self, CApi, VoicevoxLoadOnnxruntimeOptions, VoicevoxResultCode};
-use voicevox_core::SupportedDevices;
 
 use crate::{
     assert_cdylib::{self, case, Utf8Output},
@@ -65,7 +64,9 @@ impl assert_cdylib::TestCase for TestCase {
                 supported_devices.as_mut_ptr(),
             ));
             let supported_devices = supported_devices.assume_init();
-            serde_json::from_str::<SupportedDevices>(CStr::from_ptr(supported_devices).to_str()?)?;
+            serde_json::from_str::<HashMap<String, bool>>(
+                CStr::from_ptr(supported_devices).to_str()?,
+            )?;
             lib.voicevox_json_free(supported_devices);
         }
 
