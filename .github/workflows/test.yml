@@ -201,11 +201,12 @@ jobs:
         run: cargo build -p voicevox_core_c_api --features load-onnxruntime -v
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
-          mkdir -p example/cpp/unix/voicevox_core/c_api
+          mkdir -p example/cpp/unix/voicevox_core/c_api/{include,lib}
           sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
             crates/voicevox_core_c_api/include/voicevox_core.h \
-            > example/cpp/unix/voicevox_core/c_api/voicevox_core.h
-          cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/c_api/ || true
+            > example/cpp/unix/voicevox_core/c_api/include/voicevox_core.h
+          cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/c_api/lib/ || true
+          # FIXME: ↓この二つ要らないのでは？
           cp -v target/debug/libonnxruntime.so.* example/cpp/unix/voicevox_core/ || true
           cp -v target/debug/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/ || true
 
