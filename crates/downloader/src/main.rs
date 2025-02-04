@@ -52,7 +52,7 @@ const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_li
 const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
-    LazyLock::new(|| "=0.0.1-preview.3".parse().unwrap());
+    LazyLock::new(|| "=0.0.1-preview.4".parse().unwrap());
 const MODELS_README_FILENAME: &str = "README.md";
 const MODELS_DIR_NAME: &str = "vvms";
 const MODELS_TERMS_NAME: &str = "VOICEVOX VVM TERMS OF USE";
