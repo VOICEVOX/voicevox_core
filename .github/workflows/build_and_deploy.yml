@@ -252,6 +252,7 @@ jobs:
           cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
           cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
+          cp -v LICENSE "artifact/${{ env.ASSET_NAME }}/"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
           mkdir java_artifact
