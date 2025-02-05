@@ -1,6 +1,7 @@
 pub mod raii;
 
 pub use crate::{
+    convert::ToJsonValue,
     metas::merge as merge_metas,
     synthesizer::{
         blocking::PerformInference, DEFAULT_CPU_NUM_THREADS, DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,

@@ -38,6 +38,7 @@ use std::sync::Once;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
+use voicevox_core::__internal::interop::ToJsonValue as _;
 use voicevox_core::{AccentPhrase, AudioQuery, StyleId, UserDictWord};
 
 fn init_logger_once() {
@@ -703,8 +704,7 @@ pub unsafe extern "C" fn voicevox_onnxruntime_create_supported_devices_json(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let supported_devices =
-            CString::new(onnxruntime.0.supported_devices()?.to_json().to_string()).unwrap();
+        let supported_devices = CString::new(onnxruntime.0.supported_devices()?.to_json()).unwrap();
         output_supported_devices_json.write_unaligned(
             C_STRING_DROP_CHECKER
                 .whitelist(supported_devices)

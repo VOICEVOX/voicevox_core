@@ -7,6 +7,8 @@ use std::{
 use derive_more::BitAnd;
 use serde::Serialize;
 
+use crate::convert::ToJsonValue;
+
 pub(crate) fn test_gpus(
     gpus: impl IntoIterator<Item = GpuSpec>,
     inference_rt_name: &'static str,
@@ -124,8 +126,10 @@ impl SupportedDevices {
     } else {
         panic!("either `load-onnxruntime` or `link-onnxruntime` must be enabled");
     };
+}
 
-    pub fn to_json(self) -> serde_json::Value {
+impl ToJsonValue for SupportedDevices {
+    fn to_json_value(&self) -> serde_json::Value {
         serde_json::to_value(self).expect("should not fail")
     }
 }

@@ -7,6 +7,7 @@ use jni::{
     sys::jobject,
     JNIEnv,
 };
+use voicevox_core::__internal::interop::ToJsonValue as _;
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]

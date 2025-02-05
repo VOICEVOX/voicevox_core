@@ -49,6 +49,7 @@ const _: () = {
 };
 
 mod asyncs;
+mod convert;
 mod core;
 mod devices;
 /// cbindgen:ignore
