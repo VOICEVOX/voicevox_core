@@ -206,6 +206,6 @@ typos
 
 ## ライセンス
 
-ソースコードのライセンスは [MIT LICENSE](./LICENSE) です。
+VOICEVOX CORE のソースコード及びビルド成果物のライセンスは [MIT LICENSE](./LICENSE) です。
 
-[Releases](https://github.com/VOICEVOX/voicevox_core/releases) にあるビルド済みのコアライブラリは別ライセンスなのでご注意ください。
+[Releases](https://github.com/VOICEVOX/voicevox_core/releases) にあるバージョン 0.16 未満のビルド済みのコアライブラリは別ライセンスなのでご注意ください。
