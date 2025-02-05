@@ -19,7 +19,7 @@ if [ ! -v OUTPUT_ASSET_PATH ]; then # 出力するASSETのディレクトリ
 fi
 
 echo "* Get original onnxruntime file name from rpath"
-output=$(otool -L "${IOS_AARCH64_PATH}/libvoicevox_core.dylib")
+output=$(otool -L "${IOS_AARCH64_PATH}/lib/libvoicevox_core.dylib")
 matched_line=$(echo "$output" | grep "@rpath" | grep "libonnxruntime")
 if [[ $matched_line ]]; then
     if [[ $matched_line =~ (@rpath/([^ ]+\.dylib)) ]]; then
@@ -45,18 +45,18 @@ for i in "${!arches[@]}"; do
     echo "* Copy Framework-${arch} template"
     mkdir -p "Framework-${arch}/voicevox_core.framework/Headers"
     cp -vr "crates/voicevox_core_c_api/xcframework/Frameworks/${arch}/" "Framework-${arch}/"
-    cp -v "${artifact}/voicevox_core.h" \
+    cp -v "${artifact}/include/voicevox_core.h" \
         "Framework-${arch}/voicevox_core.framework/Headers/voicevox_core.h"
 done
 
 echo "* Create dylib"
 # aarch64はdylibをコピー
-cp -v "${IOS_AARCH64_PATH}/libvoicevox_core.dylib" \
+cp -v "${IOS_AARCH64_PATH}/lib/libvoicevox_core.dylib" \
     "Framework-aarch64/voicevox_core.framework/voicevox_core"
 
 # simはx86_64とarrch64を合わせてdylib作成
-lipo -create "${IOS_X86_64_PATH}/libvoicevox_core.dylib" \
-    "${IOS_AARCH64_SIM_PATH}/libvoicevox_core.dylib" \
+lipo -create "${IOS_X86_64_PATH}/lib/libvoicevox_core.dylib" \
+    "${IOS_AARCH64_SIM_PATH}/lib/libvoicevox_core.dylib" \
     -output "Framework-sim/voicevox_core.framework/voicevox_core"
 
 for arch in "${arches[@]}"; do
