@@ -10,6 +10,7 @@ from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceMod
 
 # TODO: https://github.com/VOICEVOX/voicevox_core/pull/972 をリバートする
 
+
 @dataclasses.dataclass
 class Args:
     mode: AccelerationMode
