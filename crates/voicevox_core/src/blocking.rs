@@ -2,10 +2,14 @@
 
 pub use crate::{
     engine::open_jtalk::blocking::OpenJtalk, infer::runtimes::onnxruntime::blocking::Onnxruntime,
-    synthesizer::blocking::AudioFeature, synthesizer::blocking::Synthesizer,
-    text_analyzer::blocking::TextAnalyzer, user_dict::dict::blocking::UserDict,
-    voice_model::blocking::VoiceModelFile,
+    synthesizer::blocking::Synthesizer, text_analyzer::blocking::TextAnalyzer,
+    user_dict::dict::blocking::UserDict, voice_model::blocking::VoiceModelFile,
 };
+
+// TODO: 後で復活させる
+// https://github.com/VOICEVOX/voicevox_core/issues/970
+#[doc(hidden)]
+pub use crate::synthesizer::blocking::AudioFeature as __AudioFeature;
 
 pub mod onnxruntime {
     #[cfg(feature = "load-onnxruntime")]
@@ -16,6 +20,7 @@ pub mod onnxruntime {
 pub mod synthesizer {
     pub use crate::synthesizer::blocking::{Builder, Synthesis, Tts, TtsFromKana};
 
-    // TODO: 後で封印する
-    pub use crate::synthesizer::blocking::PrecomputeRender;
+    // TODO: 後で復活させる
+    // https://github.com/VOICEVOX/voicevox_core/issues/970
+    //pub use crate::synthesizer::blocking::PrecomputeRender;
 }

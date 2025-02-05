@@ -285,7 +285,7 @@ fn wav_from_s16le<'py>(
 ) -> &'py PyBytes {
     PyBytes::new(
         py,
-        &voicevox_core::wav_from_s16le(pcm, sampling_rate, is_stereo),
+        &voicevox_core::__wav_from_s16le(pcm, sampling_rate, is_stereo),
     )
 }
 
@@ -447,7 +447,7 @@ mod blocking {
 
     #[pyclass]
     pub(crate) struct AudioFeature {
-        audio: voicevox_core::blocking::AudioFeature,
+        audio: voicevox_core::blocking::__AudioFeature,
     }
 
     #[pymethods]
@@ -677,13 +677,16 @@ mod blocking {
             )
         }
 
+        // TODO: 後で復活させる
+        // https://github.com/VOICEVOX/voicevox_core/issues/970
+        #[allow(non_snake_case)]
         #[pyo3(signature=(
             audio_query,
             style_id,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
-        fn precompute_render(
+        fn _Synthesizer__precompute_render(
             &self,
             #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
             style_id: u32,
@@ -693,14 +696,17 @@ mod blocking {
             let audio = self
                 .synthesizer
                 .read()?
-                .precompute_render(&audio_query, StyleId::new(style_id))
+                .__precompute_render(&audio_query, StyleId::new(style_id))
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
                 .into_py_result(py)?;
             Ok(AudioFeature { audio })
         }
 
-        fn render<'py>(
+        // TODO: 後で復活させる
+        // https://github.com/VOICEVOX/voicevox_core/issues/970
+        #[allow(non_snake_case)]
+        fn _Synthesizer__render<'py>(
             &self,
             audio: &AudioFeature,
             start: usize,
@@ -721,7 +727,7 @@ mod blocking {
             let wav = &self
                 .synthesizer
                 .read()?
-                .render(&audio.audio, start..stop)
+                .__render(&audio.audio, start..stop)
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
         }

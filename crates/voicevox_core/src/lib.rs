@@ -85,7 +85,7 @@ use rstest_reuse;
 
 pub use self::{
     devices::SupportedDevices,
-    engine::{wav_from_s16le, AccentPhrase, AudioQuery, Mora},
+    engine::{AccentPhrase, AudioQuery, Mora},
     error::{Error, ErrorKind},
     metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
     result::Result,
@@ -94,3 +94,8 @@ pub use self::{
     version::VERSION,
     voice_model::VoiceModelId,
 };
+
+// TODO: 後で復活させる
+// https://github.com/VOICEVOX/voicevox_core/issues/970
+#[doc(hidden)]
+pub use self::engine::wav_from_s16le as __wav_from_s16le;

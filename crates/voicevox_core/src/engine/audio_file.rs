@@ -29,6 +29,9 @@ pub(crate) fn to_s16le_pcm<const BASE_SAMPLING_RATE: u32>(
 }
 
 /// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
+// TODO: 後で復活させる
+// https://github.com/VOICEVOX/voicevox_core/issues/970
+#[doc(hidden)]
 pub fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
     let num_channels: u16 = if is_stereo { 2 } else { 1 };
     let bit_depth: u16 = 16;

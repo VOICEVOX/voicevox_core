@@ -364,13 +364,13 @@ class Synthesizer:
             スタイルID。
         """
         ...
-    def precompute_render(
+    def __precompute_render(
         self,
         audio_query: AudioQuery,
         style_id: StyleId | int,
         enable_interrogative_upspeak: bool = True,
     ) -> AudioFeature: ...
-    def render(
+    def __render(
         self,
         audio: AudioFeature,
         start: int,
