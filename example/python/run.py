@@ -8,6 +8,7 @@ from pydantic import TypeAdapter
 from voicevox_core import AccelerationMode, AudioQuery
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
+# TODO: https://github.com/VOICEVOX/voicevox_core/pull/972 をリバートする
 
 @dataclasses.dataclass
 class Args:
@@ -18,8 +19,6 @@ class Args:
     text: str
     out: Path
     style_id: int
-    # https://github.com/VOICEVOX/voicevox_core/issues/970
-    # streaming: bool
 
     @staticmethod
     def parse_args() -> "Args":
@@ -63,11 +62,6 @@ class Args:
             type=int,
             help="話者IDを指定",
         )
-        # argparser.add_argument(
-        #     "--streaming",
-        #     action="store_true",
-        #     help="ストリーミング生成",
-        # )
         args = argparser.parse_args()
         return Args(
             args.mode,
@@ -77,7 +71,6 @@ class Args:
             args.text,
             args.out,
             args.style_id,
-            # args.streaming,
         )
 
 
@@ -117,25 +110,6 @@ def main() -> None:
 
     logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
 
-    # https://github.com/VOICEVOX/voicevox_core/issues/970
-    # if args.streaming:
-    #     logger.info("%s", "In streaming mode")
-    #     chunk_sec = 1.0
-    #     audio_feature = synthesizer._Synthesizer__precompute_render(audio_query, args.style_id)
-    #     chunk_frames = int(audio_feature.frame_rate * chunk_sec)
-    #     pcm = b""
-    #     for i in range(0, audio_feature.frame_length, chunk_frames):
-    #         logger.info("%s", f"{i/audio_feature.frame_length:.2%}")
-    #         pcm += synthesizer._Synthesizer__render(
-    #             audio_feature, i, min(i + chunk_frames, audio_feature.frame_length)
-    #         )
-    #     logger.info("%s", f"100%")
-    #     wav = wav_from_s16le(
-    #         pcm, audio_query.output_sampling_rate, audio_query.output_stereo
-    #     )
-    #
-    # else:
-    #     wav = synthesizer.synthesis(audio_query, args.style_id)
     wav = synthesizer.synthesis(audio_query, args.style_id)
 
     args.out.write_bytes(wav)
