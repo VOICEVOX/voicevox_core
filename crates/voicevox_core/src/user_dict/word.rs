@@ -12,6 +12,7 @@ use crate::{
 };
 
 /// ユーザー辞書の単語。
+#[doc(alias = "VoicevoxUserDictWord")]
 #[derive(Clone, Debug, Serialize)]
 pub struct UserDictWord {
     /// 単語の表記。
@@ -107,6 +108,8 @@ impl Default for UserDictWord {
 }
 
 impl UserDictWord {
+    // TODO: これビルダースタイルにすべきでは？
+    #[doc(alias = "voicevox_user_dict_word_make")]
     pub fn new(
         surface: &str,
         pronunciation: String,
@@ -231,6 +234,7 @@ pub(crate) fn to_zenkaku(surface: &str) -> String {
         .collect()
 }
 /// ユーザー辞書の単語の種類。
+#[doc(alias = "VoicevoxUserDictWordType")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UserDictWordType {

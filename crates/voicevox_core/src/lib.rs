@@ -48,6 +48,54 @@ const _: () = {
     );
 };
 
+/// ```compile_fail
+/// use voicevox_core::__doc;
+/// ```
+#[cfg(doc)]
+#[cfg_attr(docsrs, doc(cfg(doc)))]
+pub mod __doc {
+    /// [C API]にある以下のアイテムは、Rust API、つまりこのクレートには存在しない。
+    ///
+    /// | | 理由 |
+    /// | :- | :- |
+    /// | `VoicevoxLoadOnnxruntimeOptions` | ビルダースタイルであるため |
+    /// | `VoicevoxInitializeOptions` | 〃 |
+    /// | `VoicevoxSynthesisOptions` | 〃 |
+    /// | `VoicevoxTtsOptions` | 〃 |
+    /// | `voicevox_make_default_load_onnxruntime_options` | 〃 |
+    /// | `voicevox_make_default_initialize_options` | 〃 |
+    /// | `voicevox_make_default_synthesis_options` | 〃 |
+    /// | `voicevox_make_default_tts_options` | 〃 |
+    /// | `voicevox_json_free` | [Rustのデストラクタ機構]があるため |
+    /// | `voicevox_wav_free` | 〃 |
+    /// | `voicevox_open_jtalk_rc_delete` | 〃 |
+    /// | `voicevox_synthesizer_delete` | 〃 |
+    /// | `voicevox_voice_model_file_delete` | 〃 |
+    /// | `voicevox_user_dict_delete` | 〃 |
+    /// | `voicevox_error_result_to_message` | [`std::error::Error`]としてのエラー表示があるため |
+    ///
+    /// [C API]: https://voicevox.github.io/voicevox_core/apis/c_api/voicevox__core_8h.html
+    /// [Rustのデストラクタ機構]: https://doc.rust-lang.org/reference/destructors.html
+    #[doc(alias(
+        "VoicevoxLoadOnnxruntimeOptions",
+        "VoicevoxInitializeOptions",
+        "VoicevoxSynthesisOptions",
+        "VoicevoxTtsOptions",
+        "voicevox_make_default_load_onnxruntime_options",
+        "voicevox_make_default_initialize_options",
+        "voicevox_make_default_synthesis_options",
+        "voicevox_make_default_tts_options",
+        "voicevox_json_free",
+        "voicevox_wav_free",
+        "voicevox_open_jtalk_rc_delete",
+        "voicevox_synthesizer_delete",
+        "voicevox_voice_model_file_delete",
+        "voicevox_user_dict_delete",
+        "voicevox_error_result_to_message"
+    ))]
+    pub mod C_APIには存在するがRust_APIには存在しないアイテム {}
+}
+
 mod asyncs;
 mod core;
 mod devices;

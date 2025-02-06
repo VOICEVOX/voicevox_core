@@ -306,6 +306,7 @@ pub(crate) mod blocking {
     /// ```
     ///
     /// [voicevox-ort]: https://github.com/VOICEVOX/ort
+    #[doc(alias = "VoicevoxOnnxruntime")]
     #[derive(Debug, RefCastCustom)]
     #[repr(transparent)]
     pub struct Onnxruntime {
@@ -330,6 +331,7 @@ pub(crate) mod blocking {
         /// [`LIB_NAME`]: Self::LIB_NAME
         /// [`LIB_VERSION`]: Self::LIB_VERSION
         /// [`LIB_UNVERSIONED_FILENAME`]: Self::LIB_UNVERSIONED_FILENAME
+        #[doc(alias = "voicevox_get_onnxruntime_lib_versioned_filename")]
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub const LIB_VERSIONED_FILENAME: &'static str = if cfg!(target_os = "linux") {
@@ -354,6 +356,7 @@ pub(crate) mod blocking {
         /// [`LIB_NAME`]からなる動的ライブラリのファイル名。
         ///
         /// [`LIB_NAME`]: Self::LIB_NAME
+        #[doc(alias = "voicevox_get_onnxruntime_lib_unversioned_filename")]
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub const LIB_UNVERSIONED_FILENAME: &'static str = const_format::concatcp!(
@@ -368,6 +371,7 @@ pub(crate) mod blocking {
         /// インスタンスが既に作られているならそれを得る。
         ///
         /// 作られていなければ`None`を返す。
+        #[doc(alias = "voicevox_onnxruntime_get")]
         pub fn get() -> Option<&'static Self> {
             EnvHandle::get().map(Self::new)
         }
@@ -385,6 +389,7 @@ pub(crate) mod blocking {
         /// ONNX Runtimeをロードして初期化する。
         ///
         /// 一度成功したら、以後は引数を無視して同じ参照を返す。
+        #[doc(alias = "voicevox_onnxruntime_load_once")]
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub fn load_once() -> LoadOnce {
@@ -396,6 +401,7 @@ pub(crate) mod blocking {
         /// 一度成功したら以後は同じ参照を返す。
         #[cfg(feature = "link-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "link-onnxruntime")))]
+        #[doc(alias = "voicevox_onnxruntime_init_once")]
         pub fn init_once() -> crate::Result<&'static Self> {
             Self::once(|| ort::try_init(None))
         }
@@ -417,6 +423,7 @@ pub(crate) mod blocking {
         }
 
         /// ONNX Runtimeとして利用可能なデバイスの情報を取得する。
+        #[doc(alias = "voicevox_onnxruntime_create_supported_devices_json")]
         pub fn supported_devices(&self) -> crate::Result<SupportedDevices> {
             <Self as InferenceRuntime>::supported_devices(self)
         }
