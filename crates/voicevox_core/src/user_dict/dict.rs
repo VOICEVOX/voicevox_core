@@ -20,8 +20,8 @@ struct Inner<A> {
 }
 
 impl<A: Async> Inner<A> {
-    fn to_json_value(&self) -> serde_json::Value {
-        self.with_words(|words| serde_json::to_value(words).expect("should not fail"))
+    fn to_json(&self) -> String {
+        self.with_words(|words| serde_json::to_string(words).expect("should not fail"))
     }
 
     fn with_words<F, R>(&self, f: F) -> R
@@ -114,7 +114,7 @@ pub(crate) mod blocking {
     use indexmap::IndexMap;
     use uuid::Uuid;
 
-    use crate::{asyncs::SingleTasked, convert::ToJsonValue, future::FutureExt as _, Result};
+    use crate::{asyncs::SingleTasked, future::FutureExt as _, Result};
 
     use super::{super::word::UserDictWord, Inner};
 
@@ -128,6 +128,10 @@ pub(crate) mod blocking {
         /// ユーザー辞書を作成する。
         pub fn new() -> Self {
             Default::default()
+        }
+
+        pub fn to_json(&self) -> String {
+            self.0.to_json()
         }
 
         pub fn with_words<R>(&self, f: impl FnOnce(&mut IndexMap<Uuid, UserDictWord>) -> R) -> R {
@@ -173,12 +177,6 @@ pub(crate) mod blocking {
             self.0.to_mecab_format()
         }
     }
-
-    impl ToJsonValue for self::UserDict {
-        fn to_json_value(&self) -> serde_json::Value {
-            self.0.to_json_value()
-        }
-    }
 }
 
 pub(crate) mod nonblocking {
@@ -187,7 +185,7 @@ pub(crate) mod nonblocking {
     use indexmap::IndexMap;
     use uuid::Uuid;
 
-    use crate::{asyncs::BlockingThreadPool, convert::ToJsonValue, Result};
+    use crate::{asyncs::BlockingThreadPool, Result};
 
     use super::{super::word::UserDictWord, Inner};
 
@@ -208,6 +206,10 @@ pub(crate) mod nonblocking {
         /// ユーザー辞書を作成する。
         pub fn new() -> Self {
             Default::default()
+        }
+
+        pub fn to_json(&self) -> String {
+            self.0.to_json()
         }
 
         pub fn with_words<R>(&self, f: impl FnOnce(&mut IndexMap<Uuid, UserDictWord>) -> R) -> R {
@@ -251,12 +253,6 @@ pub(crate) mod nonblocking {
         /// MeCabで使用する形式に変換する。
         pub(crate) fn to_mecab_format(&self) -> String {
             self.0.to_mecab_format()
-        }
-    }
-
-    impl ToJsonValue for self::UserDict {
-        fn to_json_value(&self) -> serde_json::Value {
-            self.0.to_json_value()
         }
     }
 }
