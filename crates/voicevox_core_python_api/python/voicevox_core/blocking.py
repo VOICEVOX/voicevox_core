@@ -1,8 +1,10 @@
 # TODO: Rust API同様のmodule levelのdocstringを書く
 
+# TODO: `AudioFeature`を復活させる
+# https://github.com/VOICEVOX/voicevox_core/issues/970
+
 # pyright: reportMissingModuleSource=false
 from ._rust.blocking import (
-    AudioFeature,
     Onnxruntime,
     OpenJtalk,
     Synthesizer,
@@ -11,7 +13,6 @@ from ._rust.blocking import (
 )
 
 __all__ = [
-    "AudioFeature",
     "Onnxruntime",
     "OpenJtalk",
     "Synthesizer",

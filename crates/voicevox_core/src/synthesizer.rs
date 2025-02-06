@@ -166,6 +166,9 @@ fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Arr
 }
 
 /// 音声の中間表現。
+// TODO: 後で復活させる
+// https://github.com/VOICEVOX/voicevox_core/issues/970
+#[doc(hidden)]
 pub struct AudioFeature {
     /// (フレーム数, 特徴数)の形を持つ音声特徴量。
     internal_state: ndarray::Array2<f32>,
@@ -1291,7 +1294,10 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから音声合成用の中間表現を生成する。
-        pub fn precompute_render<'a>(
+        // TODO: 後で復活させる
+        // https://github.com/VOICEVOX/voicevox_core/issues/970
+        #[doc(hidden)]
+        pub fn __precompute_render<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
@@ -1305,7 +1311,14 @@ pub(crate) mod blocking {
         }
 
         /// 中間表現から16bit PCMで音声波形を生成する。
-        pub fn render(&self, audio: &AudioFeature, range: Range<usize>) -> crate::Result<Vec<u8>> {
+        // TODO: 後で復活させる
+        // https://github.com/VOICEVOX/voicevox_core/issues/970
+        #[doc(hidden)]
+        pub fn __render(
+            &self,
+            audio: &AudioFeature,
+            range: Range<usize>,
+        ) -> crate::Result<Vec<u8>> {
             self.0.render(audio, range).block_on()
         }
 
