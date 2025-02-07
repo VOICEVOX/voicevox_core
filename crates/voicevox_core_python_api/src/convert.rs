@@ -13,6 +13,7 @@ use serde_json::json;
 use uuid::Uuid;
 use voicevox_core::{
     AccelerationMode, AccentPhrase, AudioQuery, StyleId, SupportedDevices, VoiceModelMeta,
+    __internal::interop::ToJsonValue as _,
 };
 
 use crate::{
@@ -280,7 +281,7 @@ pub(crate) impl<T> voicevox_core::Result<T> {
 #[ext(SupportedDevicesExt)]
 impl SupportedDevices {
     pub(crate) fn to_py(self, py: Python<'_>) -> PyResult<&PyAny> {
-        assert!(match self.to_json() {
+        assert!(match self.to_json_value() {
             serde_json::Value::Object(o) => o.len() == 3, // `cpu`, `cuda`, `dml`
             _ => false,
         });

@@ -8,7 +8,10 @@ use std::{
 use libc::c_int;
 
 use tracing::warn;
-use voicevox_core::{StyleId, VoiceModelId, __internal::interop::PerformInference as _};
+use voicevox_core::{
+    StyleId, VoiceModelId,
+    __internal::interop::{PerformInference as _, ToJsonValue as _},
+};
 
 use crate::{helpers::display_error, init_logger_once};
 
@@ -218,16 +221,8 @@ pub extern "C" fn supported_devices() -> *const c_char {
     init_logger_once();
     return SUPPORTED_DEVICES.as_ptr();
 
-    static SUPPORTED_DEVICES: LazyLock<CString> = LazyLock::new(|| {
-        CString::new(
-            ONNXRUNTIME
-                .supported_devices()
-                .unwrap()
-                .to_json()
-                .to_string(),
-        )
-        .unwrap()
-    });
+    static SUPPORTED_DEVICES: LazyLock<CString> =
+        LazyLock::new(|| CString::new(ONNXRUNTIME.supported_devices().unwrap().to_json()).unwrap());
 }
 
 /// # Safety

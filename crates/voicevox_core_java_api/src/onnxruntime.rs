@@ -6,6 +6,7 @@ use jni::{
     sys::jobject,
     JNIEnv,
 };
+use voicevox_core::__internal::interop::ToJsonValue as _;
 
 use crate::{common::throw_if_err, object};
 
@@ -56,7 +57,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rs
         )?;
         let devices = this.supported_devices()?;
 
-        assert!(match devices.to_json() {
+        assert!(match devices.to_json_value() {
             serde_json::Value::Object(o) => o.len() == 3, // `cpu`, `cuda`, `dml`
             _ => false,
         });
