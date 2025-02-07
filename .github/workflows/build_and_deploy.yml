@@ -148,7 +148,7 @@ jobs:
 
   build_and_deploy:
     needs: config
-    environment: ${{ inputs.code_signing && 'production' || '' }} # コード署名用のenvironment
+    environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include: ${{ fromJson(needs.config.outputs.includes) }}
