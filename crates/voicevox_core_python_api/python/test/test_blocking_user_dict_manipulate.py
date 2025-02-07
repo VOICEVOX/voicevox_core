@@ -26,8 +26,8 @@ def test_user_dict_load() -> None:
         )
     )
     assert isinstance(uuid_a, UUID)
-    assert dict_a.words()[uuid_a].surface == "ｈｏｇｅ"
-    assert dict_a.words()[uuid_a].pronunciation == "ホゲ"
+    assert dict_a.to_dict()[uuid_a].surface == "ｈｏｇｅ"
+    assert dict_a.to_dict()[uuid_a].pronunciation == "ホゲ"
 
     # 単語の更新
     dict_a.update_word(
@@ -38,8 +38,8 @@ def test_user_dict_load() -> None:
         ),
     )
 
-    assert dict_a.words()[uuid_a].surface == "ｆｕｇａ"
-    assert dict_a.words()[uuid_a].pronunciation == "フガ"
+    assert dict_a.to_dict()[uuid_a].surface == "ｆｕｇａ"
+    assert dict_a.to_dict()[uuid_a].pronunciation == "フガ"
 
     # ユーザー辞書のインポート
     dict_b = voicevox_core.blocking.UserDict()
@@ -51,7 +51,7 @@ def test_user_dict_load() -> None:
     )
 
     dict_a.import_dict(dict_b)
-    assert uuid_b in dict_a.words()
+    assert uuid_b in dict_a.to_dict()
 
     # ユーザー辞書のエクスポート
     dict_c = voicevox_core.blocking.UserDict()
@@ -65,13 +65,13 @@ def test_user_dict_load() -> None:
     os.close(temp_path_fd)
     dict_c.save(temp_path)
     dict_a.load(temp_path)
-    assert uuid_a in dict_a.words()
-    assert uuid_c in dict_a.words()
+    assert uuid_a in dict_a.to_dict()
+    assert uuid_c in dict_a.to_dict()
 
     # 単語の削除
     dict_a.remove_word(uuid_a)
-    assert uuid_a not in dict_a.words()
-    assert uuid_c in dict_a.words()
+    assert uuid_a not in dict_a.to_dict()
+    assert uuid_c in dict_a.to_dict()
 
     # 単語のバリデーション
     with pytest.raises(pydantic.ValidationError):

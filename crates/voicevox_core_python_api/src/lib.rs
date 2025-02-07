@@ -862,7 +862,7 @@ mod blocking {
             Ok(())
         }
 
-        fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
+        fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
             let words = self.dict.with_words(|words| {
                 words
                     .iter()
@@ -1518,7 +1518,7 @@ mod asyncio {
             Ok(())
         }
 
-        fn words<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
+        fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDict> {
             let words = self.dict.with_words(|words| {
                 words
                     .iter()

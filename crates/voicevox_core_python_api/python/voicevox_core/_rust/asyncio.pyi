@@ -434,8 +434,8 @@ class Synthesizer:
 class UserDict:
     """ユーザー辞書。"""
 
-    def words(self) -> dict[UUID, UserDictWord]:
-        """このオプジェクトの :class:`dict` としての表現。"""
+    def to_dict(self) -> dict[UUID, UserDictWord]:
+        """このオプジェクトを :class:`dict` に変換する。"""
         ...
     def __init__(self) -> None: ...
     async def load(self, path: str | PathLike[str]) -> None:
