@@ -284,8 +284,7 @@ pub(crate) mod blocking {
     ///
     /// # Rust APIにおけるインスタンスの共有
     ///
-    /// インスタンスは[voicevox-ort]側に作られる。Rustのクレートとしてこのライブラリを利用する場合、
-    /// 非同期版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
+    /// インスタンスは[voicevox-ort]側に作られる。Rustのクレートとしてこのライブラリを利用する場合、非同期版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
     ///
     #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
     #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
@@ -448,8 +447,7 @@ pub(crate) mod blocking {
     impl LoadOnce {
         /// ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
         ///
-        /// `dlopen`/[`LoadLibraryExW`]の引数に使われる。デフォルト
-        /// は[`Onnxruntime::LIB_VERSIONED_FILENAME`]。
+        /// `dlopen`/[`LoadLibraryExW`]の引数に使われる。デフォルトは[`Onnxruntime::LIB_VERSIONED_FILENAME`]。
         ///
         /// [`LoadLibraryExW`]:
         /// https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw
@@ -476,9 +474,7 @@ pub(crate) mod nonblocking {
     ///
     /// # Rust APIにおけるインスタンスの共有
     ///
-    /// インスタンスは[voicevox-ort]側に作られる。Rustのクレートとしてこのライブラリを利用する場合、
-    /// ブロッキング版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
-    ///
+    /// インスタンスは[voicevox-ort]側に作られる。Rustのクレートとしてこのライブラリを利用する場合、ブロッキング版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
     #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
     #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
     /// # use voicevox_core as another_lib;
@@ -598,8 +594,7 @@ pub(crate) mod nonblocking {
     impl LoadOnce {
         /// ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
         ///
-        /// `dlopen`/[`LoadLibraryExW`]の引数に使われる。デフォルト
-        /// は[`Onnxruntime::LIB_VERSIONED_FILENAME`]。
+        /// `dlopen`/[`LoadLibraryExW`]の引数に使われる。デフォルトは[`Onnxruntime::LIB_VERSIONED_FILENAME`]。
         ///
         /// [`LoadLibraryExW`]:
         /// https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw

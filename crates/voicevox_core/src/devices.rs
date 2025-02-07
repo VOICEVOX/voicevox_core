@@ -50,8 +50,7 @@ fn test_gpu(
 
 /// 利用可能なデバイスの情報。
 ///
-/// あくまで本ライブラリもしくはONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったと
-/// しても`cuda`や`dml`は`true`を示しうる。
+/// あくまで本ライブラリもしくはONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示しうる。
 ///
 /// ```
 /// # #[pollster::main]
@@ -77,15 +76,13 @@ pub struct SupportedDevices {
     pub cpu: bool,
     /// CUDAが利用可能。
     ///
-    /// ONNX Runtimeの[CUDA Execution Provider] (`CUDAExecutionProvider`)に対応する。必要な環境につ
-    /// いてはそちらを参照。
+    /// ONNX Runtimeの[CUDA Execution Provider] (`CUDAExecutionProvider`)に対応する。必要な環境についてはそちらを参照。
     ///
     /// [CUDA Execution Provider]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
     pub cuda: bool,
     /// DirectMLが利用可能。
     ///
-    /// ONNX Runtimeの[DirectML Execution Provider] (`DmlExecutionProvider`)に対応する。必要な環境に
-    /// ついてはそちらを参照。
+    /// ONNX Runtimeの[DirectML Execution Provider] (`DmlExecutionProvider`)に対応する。必要な環境についてはそちらを参照。
     ///
     /// [DirectML Execution Provider]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
     pub dml: bool,
