@@ -93,6 +93,18 @@ impl<A: Async> Inner<A> {
     }
 }
 
+impl<A: Async> From<Inner<A>> for IndexMap<Uuid, UserDictWord> {
+    fn from(inner: Inner<A>) -> Self {
+        inner.words.into_inner().unwrap_or_else(|e| panic!("{e}"))
+    }
+}
+
+impl<A: Async> From<&'_ Inner<A>> for IndexMap<Uuid, UserDictWord> {
+    fn from(inner: &'_ Inner<A>) -> Self {
+        inner.with_words(|words| words.clone())
+    }
+}
+
 #[ext]
 impl<A: Async> A {
     async fn fs_err_read(path: impl AsRef<Path>) -> anyhow::Result<Vec<u8>> {
@@ -111,6 +123,7 @@ impl<A: Async> A {
 pub(crate) mod blocking {
     use std::path::Path;
 
+    use duplicate::duplicate_item;
     use indexmap::IndexMap;
     use uuid::Uuid;
 
@@ -186,11 +199,29 @@ pub(crate) mod blocking {
             self.0.to_mecab_format()
         }
     }
+
+    impl From<self::UserDict> for IndexMap<Uuid, UserDictWord> {
+        fn from(dict: self::UserDict) -> Self {
+            dict.0.into()
+        }
+    }
+
+    #[duplicate_item(
+        T;
+        [ &'_ self::UserDict ];
+        [ &'_ mut self::UserDict ];
+    )]
+    impl From<T> for IndexMap<Uuid, UserDictWord> {
+        fn from(dict: T) -> Self {
+            (&dict.0).into()
+        }
+    }
 }
 
 pub(crate) mod nonblocking {
     use std::path::Path;
 
+    use duplicate::duplicate_item;
     use indexmap::IndexMap;
     use uuid::Uuid;
 
@@ -262,6 +293,23 @@ pub(crate) mod nonblocking {
         /// MeCabで使用する形式に変換する。
         pub(crate) fn to_mecab_format(&self) -> String {
             self.0.to_mecab_format()
+        }
+    }
+
+    impl From<self::UserDict> for IndexMap<Uuid, UserDictWord> {
+        fn from(dict: self::UserDict) -> Self {
+            dict.0.into()
+        }
+    }
+
+    #[duplicate_item(
+        T;
+        [ &'_ self::UserDict ];
+        [ &'_ mut self::UserDict ];
+    )]
+    impl From<T> for IndexMap<Uuid, UserDictWord> {
+        fn from(dict: T) -> Self {
+            (&dict.0).into()
         }
     }
 }
