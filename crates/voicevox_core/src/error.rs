@@ -127,6 +127,7 @@ pub(crate) enum ErrorRepr {
     clippy::manual_non_exhaustive,
     reason = "バインディングを作るときはexhaustiveとして扱いたい"
 )]
+#[doc(alias = "VoicevoxResultCode")]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ErrorKind {
     /// open_jtalk辞書ファイルが読み込まれていない。

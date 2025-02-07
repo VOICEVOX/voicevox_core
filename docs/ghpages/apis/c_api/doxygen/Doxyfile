@@ -2666,3 +2666,7 @@ ALIASES += examples{1}="<dl><dt>Examples</dt><dd>\1</dd></dl>"
 
 # 中身は箇条書きで、素の文章からは始まらない想定
 ALIASES += safety{1}="<dl><dt> Safety</dt><dd><details><summary>⚠️安全性要件</summary><a href=\"#voicevox-core-safety\">安全性要件</a>は以下の通りである。\1</details></dd></dl>"
+
+ALIASES += orig-impl{1}="<dl><dt>Original Implementation</dt><dd>[\"\1\" Search - Rust](../rust_api/voicevox_core/index.html?search=\1)</dd></dl>"
+ALIASES += orig-impl{2}="<dl><dt>Original Implementation</dt><dd><p>\2</p>[\"\1\" Search - Rust](../rust_api/voicevox_core/index.html?search=\1)</dd></dl>"
+ALIASES += no-orig-impl{1}="\orig-impl{\1,Rust APIには存在しない。}"
