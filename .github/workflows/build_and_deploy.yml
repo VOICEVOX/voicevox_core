@@ -260,7 +260,7 @@ jobs:
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
         run:
-          bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
+          bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.dll"
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
