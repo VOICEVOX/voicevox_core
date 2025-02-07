@@ -51,6 +51,8 @@ const DEFAULT_ONNXRUNTIME_BUILDER_REPO: &str = "VOICEVOX/onnxruntime-builder";
 const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
 const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 
+const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX RUNTIME TERMS OF USE";
+
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
     LazyLock::new(|| "=0.0.1-preview.4".parse().unwrap());
 const MODELS_README_FILENAME: &str = "README.md";
@@ -480,7 +482,7 @@ async fn find_gh_asset(
     })
 }
 
-/// `find_gh_asset`に用いる。
+/// `find_gh_asset`に用いる。ついでにユーザーに利用規約の同意を求める。
 ///
 /// 候補が複数あった場合、「デバイス」の数が最も小さいもののうち最初のものを選ぶ。
 fn find_onnxruntime(
@@ -497,11 +499,12 @@ fn find_onnxruntime(
         }};
     }
 
-    const TARGET: &str = "table\
+    const TARGET_TERMS: &str = "pre[data-voicevox-onnxruntime-terms] > code";
+    const TARGET_TABLE: &str = "table\
         [data-voicevox-onnxruntime-specs-format-version=\"1\"]\
         [data-voicevox-onnxruntime-specs-type=\"dylibs\"]";
 
-    comrak::parse_document(&Default::default(), body, &Default::default())
+    let html_blocks = comrak::parse_document(&Default::default(), body, &Default::default())
         .descendants()
         .flat_map(|node| match &node.data.borrow().value {
             comrak::nodes::NodeValue::HtmlBlock(comrak::nodes::NodeHtmlBlock {
@@ -509,13 +512,31 @@ fn find_onnxruntime(
             }) => Some(scraper::Html::parse_fragment(literal)),
             _ => None,
         })
-        .collect::<Vec<_>>()
+        .collect::<Vec<_>>();
+
+    match &*html_blocks
         .iter()
-        .flat_map(|html_block| html_block.select(selector!(TARGET)))
+        .flat_map(|html_block| html_block.select(selector!(TARGET_TERMS)))
+        .collect::<Vec<_>>()
+    {
+        [] => {}
+        [terms] => {
+            let terms = terms
+                .text()
+                .exactly_one()
+                .map_err(|e| anyhow!("should be exactly_one, got {n} fragments", n = e.count()))?;
+            ensure_confirmation(terms, ONNXRUNTIME_TERMS_NAME)?;
+        }
+        [..] => bail!("リリースノートの中に`{TARGET_TERMS}`が複数ありました"),
+    }
+
+    html_blocks
+        .iter()
+        .flat_map(|html_block| html_block.select(selector!(TARGET_TABLE)))
         .exactly_one()
         .map_err(|err| match err.count() {
-            0 => anyhow!("リリースノートの中に`{TARGET}`が見つかりませんでした"),
-            _ => anyhow!("リリースノートの中に`{TARGET}`が複数ありました"),
+            0 => anyhow!("リリースノートの中に`{TARGET_TABLE}`が見つかりませんでした"),
+            _ => anyhow!("リリースノートの中に`{TARGET_TABLE}`が複数ありました"),
         })?
         .select(selector!("tbody > tr"))
         .map(|tr| {
@@ -523,7 +544,9 @@ fn find_onnxruntime(
                 .map(|td| td.text().exactly_one().ok())
                 .collect::<Option<Vec<_>>>()
                 .and_then(|text| text.try_into().ok())
-                .with_context(|| format!("リリースノート中の`{TARGET}`をパースできませんでした"))
+                .with_context(|| {
+                    format!("リリースノート中の`{TARGET_TABLE}`をパースできませんでした")
+                })
         })
         .collect::<Result<Vec<[_; 4]>, _>>()?
         .into_iter()
