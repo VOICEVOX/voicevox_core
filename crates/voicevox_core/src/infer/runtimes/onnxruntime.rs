@@ -399,9 +399,9 @@ pub(crate) mod blocking {
         /// ONNX Runtimeを初期化する。
         ///
         /// 一度成功したら以後は同じ参照を返す。
+        #[doc(alias = "voicevox_onnxruntime_init_once")]
         #[cfg(feature = "link-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "link-onnxruntime")))]
-        #[doc(alias = "voicevox_onnxruntime_init_once")]
         pub fn init_once() -> crate::Result<&'static Self> {
             Self::once(|| ort::try_init(None))
         }
