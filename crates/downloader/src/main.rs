@@ -56,9 +56,11 @@ const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX RUNTIME TERMS OF USE";
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
     LazyLock::new(|| "=0.0.1-preview.4".parse().unwrap());
 const MODELS_README_FILENAME: &str = "README.md";
+const MODELS_README_RENAME: &str = "README.txt";
 const MODELS_DIR_NAME: &str = "vvms";
 const MODELS_TERMS_NAME: &str = "VOICEVOX VVM TERMS OF USE";
 const MODELS_TERMS_FILE: &str = "TERMS.md";
+const MODELS_TERMS_RENAME: &str = "TERMS.txt";
 
 static OPEN_JTALK_DIC_URL: LazyLock<Url> = LazyLock::new(|| {
     "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
@@ -801,8 +803,8 @@ fn download_models(
 
     Ok(async move {
         fs_err::tokio::create_dir_all(&output.join(MODELS_DIR_NAME)).await?;
-        fs_err::tokio::write(output.join(MODELS_README_FILENAME), readme).await?;
-        fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
+        fs_err::tokio::write(output.join(MODELS_README_RENAME), readme).await?;
+        fs_err::tokio::write(output.join(MODELS_TERMS_RENAME), terms).await?;
         let reqwest = &reqwest;
         let output = &output;
         models
