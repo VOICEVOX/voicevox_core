@@ -86,7 +86,6 @@ def main() -> None:
 
     logger.info("%s", f"Loading ONNX Runtime ({args.onnxruntime=})")
     onnxruntime = Onnxruntime.load_once(filename=args.onnxruntime)
-
     logger.debug("%s", f"{onnxruntime.supported_devices()=}")
 
     logger.info("%s", f"Initializing ({args.mode=}, {args.dict_dir=})")
@@ -98,19 +97,17 @@ def main() -> None:
             multiprocessing.cpu_count(), 2
         ),  # https://github.com/VOICEVOX/voicevox_core/issues/888
     )
-
-    logger.debug("%s", f"{synthesizer.metas()=}")
     logger.debug("%s", f"{synthesizer.is_gpu_mode=}")
 
     logger.info("%s", f"Loading `{args.vvm}`")
     with VoiceModelFile.open(args.vvm) as model:
         synthesizer.load_voice_model(model)
+    logger.debug("%s", f"{synthesizer.metas()=}")
 
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
     audio_query = synthesizer.create_audio_query(args.text, args.style_id)
 
     logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
-
     wav = synthesizer.synthesis(audio_query, args.style_id)
 
     args.out.write_bytes(wav)
