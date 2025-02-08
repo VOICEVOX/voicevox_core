@@ -99,13 +99,13 @@ async def main() -> None:
             multiprocessing.cpu_count(), 2
         ),  # https://github.com/VOICEVOX/voicevox_core/issues/888
     )
-
-    logger.debug("%s", f"{synthesizer.metas()=}")
     logger.debug("%s", f"{synthesizer.is_gpu_mode=}")
+    logger.debug("%s", f"{synthesizer.metas()=}")
 
     logger.info("%s", f"Loading `{args.vvm}`")
     async with await VoiceModelFile.open(args.vvm) as model:
         await synthesizer.load_voice_model(model)
+    logger.debug("%s", f"{synthesizer.metas()=}")
 
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
     audio_query = await synthesizer.create_audio_query(args.text, args.style_id)

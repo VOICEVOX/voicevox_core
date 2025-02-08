@@ -73,13 +73,14 @@ optional arguments:
 [INFO] voicevox_core.synthesizer:   * CUDA (device_id=0): OK
 [INFO] voicevox_core.synthesizer:   * DirectML (device_id=0): 現在ロードされているONNX Runtimeでは利用できません
 [INFO] voicevox_core.synthesizer: CUDA (device_id=0)を利用します
-[DEBUG] __main__: synthesizer.metas()=[]
 [DEBUG] __main__: synthesizer.is_gpu_mode=True
+[DEBUG] __main__: synthesizer.metas()=[]
 [INFO] __main__: Loading `models/vvms/0.vvm`
 [WARNING] ort.environment: Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.
 [DEBUG] voicevox_core_python_api: Closing a VoiceModelFile
+[DEBUG] __main__: synthesizer.metas()=[CharacterMeta(name='四国めたん', styles=[StyleMeta(name='ノーマル', id=2, type='talk', order=None), StyleMeta(name=' あまあま', id=0, type='talk', order=None), StyleMeta(name='ツンツン', id=6, type='talk', order=None), StyleMeta(name='セクシー', id=4, type='talk', order=None)], speaker_uuid='7ffcb7ce-00ec-4bdc-82cd-45a8889e43ff', version='0.1.0', order=None), CharacterMeta(name='ずんだもん', styles=[StyleMeta(name='ノーマル', id=3, type='talk', order=None), StyleMeta(name='あまあま', id=1, type='talk', order=None), StyleMeta(name='ツンツン', id=7, type='talk', order=None), StyleMeta(name='セクシー', id=5, type='talk', order=None)], speaker_uuid='388f246b-8c41-4ac1-8e2d-5d79f3ff56d9', version='0.1.0', order=None), CharacterMeta(name='春日部つむぎ', styles=[StyleMeta(name='ノーマル', id=8, type='talk', order=None)], speaker_uuid='35b2c544-660e-401e-b503-0e14c635303a', version='0.1.0', order=None), CharacterMeta(name='雨晴はう', styles=[StyleMeta(name='ノーマル', id=10, type='talk', order=None)], speaker_uuid='3474ee95-c274-47f9-aa1a-8322163d96f1', version='0.1.0', order=None)]
 [INFO] __main__: Creating an AudioQuery from 'この音声は、ボイスボックスを使用して、出力されています。'
-[INFO] __main__: Synthesizing with {"accent_phrases":[],"speedScale":1.0,"pitchScale":0.0,"intonationScale":1.0,"volumeScale":1.0,"prePhonemeLength":0.1,"postPhonemeLength":0.1,"outputSamplingRate":24000,"outputStereo":false,"pauseLength":null,"pauseLengthScale":1.0,"kana":"コノ'/オ'ンセエワ、ボイスボ'ッ_クスオ/シヨオ'/_シテ'、_ シュツ'リョ_ク/サレテ'/イマ'_ス"}
+[INFO] __main__: Synthesizing with {"accent_phrases":[…],"speedScale":1.0,"pitchScale":0.0,"intonationScale":1.0,"volumeScale":1.0,"prePhonemeLength":0.1,"postPhonemeLength":0.1,"outputSamplingRate":24000,"outputStereo":false,"pauseLength":null,"pauseLengthScale":1.0,"kana":"コノ'/オ'ンセエワ、ボイスボ'ッ_クスオ/シヨオ'/_シテ'、_ シュツ'リョ_ク/サレテ'/イマ'_ス"}
 [INFO] __main__: Wrote `output.wav`
 [WARNING] voicevox_core_python_api: デストラクタにより`Synthesizer`のクローズを行います。通常は、可能な限り`__exit__`でクローズするようにして下さい
 ```
