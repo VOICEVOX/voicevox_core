@@ -294,9 +294,9 @@ mod blocking {
 
     use camino::Utf8PathBuf;
     use pyo3::{
-        exceptions::{PyIndexError, PyValueError},
+        exceptions::{PyIndexError, PyTypeError, PyValueError},
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyBytes, PyDict, PyList},
+        types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyTuple, PyType},
         Py, PyAny, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
@@ -316,6 +316,16 @@ mod blocking {
 
     #[pymethods]
     impl VoiceModelFile {
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(_cls: &PyType, _args: &PyTuple, _kwargs: Option<&PyDict>) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`VoiceModelFile` does not have a normal constructor. Use \
+                 `VoiceModelFile.load_once` to construct",
+            )))
+        }
+
         #[staticmethod]
         fn open(py: Python<'_>, path: PathBuf) -> PyResult<Self> {
             let model = voicevox_core::blocking::VoiceModelFile::open(path).into_py_result(py)?;
@@ -383,6 +393,16 @@ mod blocking {
         #[classattr]
         const LIB_UNVERSIONED_FILENAME: &'static str =
             voicevox_core::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
+
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(_cls: &PyType, _args: &PyTuple, _kwargs: Option<&PyDict>) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`Onnxruntime` does not have a normal constructor. Use `Onnxruntime.load_once` or \
+                 `Onnxruntime.get` to construct",
+            )))
+        }
 
         #[staticmethod]
         fn get(py: Python<'_>) -> PyResult<Option<Py<Self>>> {
@@ -883,8 +903,9 @@ mod asyncio {
 
     use camino::Utf8PathBuf;
     use pyo3::{
+        exceptions::PyTypeError,
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyBytes, PyDict, PyList},
+        types::{IntoPyDict as _, PyBytes, PyDict, PyList, PyTuple, PyType},
         Py, PyAny, PyErr, PyObject, PyRef, PyResult, Python, ToPyObject as _,
     };
     use uuid::Uuid;
@@ -904,6 +925,16 @@ mod asyncio {
 
     #[pymethods]
     impl VoiceModelFile {
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(_cls: &PyType, _args: &PyTuple, _kwargs: Option<&PyDict>) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`VoiceModelFile` does not have a normal constructor. Use \
+                 `VoiceModelFile.load_once` to construct",
+            )))
+        }
+
         #[staticmethod]
         fn open(py: Python<'_>, path: PathBuf) -> PyResult<&PyAny> {
             pyo3_asyncio::tokio::future_into_py(py, async move {
@@ -985,6 +1016,16 @@ mod asyncio {
         #[classattr]
         const LIB_UNVERSIONED_FILENAME: &'static str =
             voicevox_core::nonblocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
+
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(_cls: &PyType, _args: &PyTuple, _kwargs: Option<&PyDict>) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`Onnxruntime` does not have a normal constructor. Use `Onnxruntime.load_once` or \
+                 `Onnxruntime.get` to construct",
+            )))
+        }
 
         #[staticmethod]
         fn get(py: Python<'_>) -> PyResult<Option<Py<Self>>> {
