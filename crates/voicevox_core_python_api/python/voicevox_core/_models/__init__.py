@@ -89,7 +89,17 @@ def _(style_type: StyleType):
 
 @pydantic.dataclasses.dataclass
 class StyleMeta:
-    """**スタイル** (_style_)のメタ情報。"""
+    """
+    **スタイル** (_style_)のメタ情報。
+
+    現在は |pydantic-dataclasses-dataclass-stylemeta|_ ではあるが、将来的には
+    |de-pydantic-stylemeta|_ 。
+
+    .. |pydantic-dataclasses-dataclass-stylemeta| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-stylemeta: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-stylemeta| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-stylemeta: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+    """
 
     name: str
     """スタイル名。"""
@@ -110,7 +120,17 @@ class StyleMeta:
 
 @pydantic.dataclasses.dataclass
 class CharacterMeta:
-    """**キャラクター**のメタ情報。"""
+    """
+    **キャラクター**のメタ情報。
+
+    現在は |pydantic-dataclasses-dataclass-charactermeta|_ ではあるが、将来的には
+    |de-pydantic-charactermeta|_ 。
+
+    .. |pydantic-dataclasses-dataclass-charactermeta| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-charactermeta: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-charactermeta| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-charactermeta: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+    """
 
     name: str
     """キャラクター名。"""
@@ -142,6 +162,14 @@ class SupportedDevices:
 
     JSONからの変換も含め、VOICEVOX CORE以外が作ることはできない。作ろうとした場合
     ``TypeError`` となる。
+
+    現在は |pydantic-dataclasses-dataclass-supporteddevices|_ ではあるが、将来的には
+    |de-pydantic-supporteddevices|_ 。
+
+    .. |pydantic-dataclasses-dataclass-supporteddevices| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-supporteddevices: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-supporteddevices| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-supporteddevices: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
     """
 
     cpu: bool
@@ -222,7 +250,17 @@ def _(mode: AccelerationMode):
 
 @pydantic.dataclasses.dataclass
 class Mora:
-    """モーラ（子音＋母音）ごとの情報。"""
+    """
+    モーラ（子音＋母音）ごとの情報。
+
+    現在は |pydantic-dataclasses-dataclass-mora|_ ではあるが、将来的には
+    |de-pydantic-mora|_ 。
+
+    .. |pydantic-dataclasses-dataclass-mora| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-mora: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-mora| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-mora: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+    """
 
     text: str
     """文字。"""
@@ -245,7 +283,17 @@ class Mora:
 
 @pydantic.dataclasses.dataclass
 class AccentPhrase:
-    """AccentPhrase (アクセント句ごとの情報)。"""
+    """
+    AccentPhrase (アクセント句ごとの情報)。
+
+    現在は |pydantic-dataclasses-dataclass-accentphrase|_ ではあるが、将来的には
+    |de-pydantic-accentphrase|_ 。
+
+    .. |pydantic-dataclasses-dataclass-accentphrase| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-accentphrase: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-accentphrase| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-accentphrase: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+    """
 
     moras: list[Mora]
     """モーラの配列。"""
@@ -274,6 +322,14 @@ def _rename_audio_query_field(name: str) -> str:
 class AudioQuery:
     """
     AudioQuery (音声合成用のクエリ)。
+
+    現在は |pydantic-dataclasses-dataclass-audioquery|_ ではあるが、将来的には
+    |de-pydantic-audioquery|_ 。
+
+    .. |pydantic-dataclasses-dataclass-audioquery| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-audioquery: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-audioquery| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-audioquery: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
 
     JSONへの変換は ``pydantic.TypeAdapter.dump_json`` を用いなければならない。また、
     ``dump_json`` や ``json_schema`` を用いるときは ``by_alias=True``
@@ -391,7 +447,17 @@ def _(word_type: UserDictWordType):
 
 @pydantic.dataclasses.dataclass
 class UserDictWord:
-    """ユーザー辞書の単語。"""
+    """
+    ユーザー辞書の単語。
+
+    現在は |pydantic-dataclasses-dataclass-userdictword|_ ではあるが、将来的には
+    |de-pydantic-userdictword|_ 。
+
+    .. |pydantic-dataclasses-dataclass-userdictword| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-userdictword: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-userdictword| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-userdictword: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+    """
 
     surface: str
     """言葉の表層形。"""

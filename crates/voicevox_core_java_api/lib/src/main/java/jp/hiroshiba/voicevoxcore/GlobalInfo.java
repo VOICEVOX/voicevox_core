@@ -35,6 +35,9 @@ public class GlobalInfo {
    * <p>あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても {@link #cuda} や {@link #dml} は
    * {@code true} を示しうる。
    *
+   * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
+   * target="_blank">Jacksonに切り替わる予定</a> 。
+   *
    * <p>{@code Gson#fromJson} でJSONから変換することはできない。その試みは {@link UnsupportedOperationException} となる。
    */
   public static class SupportedDevices {
