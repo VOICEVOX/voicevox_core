@@ -74,7 +74,6 @@ optional arguments:
 [INFO] voicevox_core.synthesizer:   * DirectML (device_id=0): 現在ロードされているONNX Runtimeでは利用できません
 [INFO] voicevox_core.synthesizer: CUDA (device_id=0)を利用します
 [DEBUG] __main__: synthesizer.is_gpu_mode=True
-[DEBUG] __main__: synthesizer.metas()=[]
 [INFO] __main__: Loading `models/vvms/0.vvm`
 [WARNING] ort.environment: Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.
 [DEBUG] voicevox_core_python_api: Closing a VoiceModelFile
