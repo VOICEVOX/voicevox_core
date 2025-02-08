@@ -5,7 +5,12 @@ import com.google.gson.annotations.SerializedName;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-/** モーラ（子音＋母音）ごとの情報。 */
+/**
+ * モーラ（子音＋母音）ごとの情報。
+ *
+ * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
+ * target="_blank">Jacksonに切り替わる予定</a> 。
+ */
 public class Mora {
   /** 文字。 */
   @SerializedName("text")

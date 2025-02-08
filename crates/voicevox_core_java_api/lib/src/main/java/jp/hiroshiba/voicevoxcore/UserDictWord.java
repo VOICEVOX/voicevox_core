@@ -13,7 +13,12 @@ import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
-/** ユーザー辞書の単語。 */
+/**
+ * ユーザー辞書の単語。
+ *
+ * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
+ * target="_blank">Jacksonに切り替わる予定</a> 。
+ */
 public class UserDictWord {
   /** 単語の表層形。 */
   @SerializedName("surface")

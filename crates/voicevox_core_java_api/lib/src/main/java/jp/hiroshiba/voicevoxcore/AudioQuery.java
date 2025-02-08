@@ -7,7 +7,12 @@ import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-/** AudioQuery（音声合成用のクエリ）。 */
+/**
+ * AudioQuery（音声合成用のクエリ）。
+ *
+ * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
+ * target="_blank">Jacksonに切り替わる予定</a> 。
+ */
 public class AudioQuery {
   /** アクセント句の配列。 */
   @SerializedName("accent_phrases")

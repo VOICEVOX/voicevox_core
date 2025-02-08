@@ -7,7 +7,12 @@ import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-/** AccentPhrase (アクセント句ごとの情報)。 */
+/**
+ * AccentPhrase (アクセント句ごとの情報)。
+ *
+ * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
+ * target="_blank">Jacksonに切り替わる予定</a> 。
+ */
 public class AccentPhrase {
   /** モーラの配列。 */
   @SerializedName("moras")
