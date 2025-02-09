@@ -17,7 +17,7 @@ class InfoTest extends TestUtils {
   // TODO: 別の場所に移す
   @Test
   void checkSupportedDevices() {
-    GlobalInfo.SupportedDevices supportedDevices = loadOnnxruntime().supportedDevices();
+    SupportedDevices supportedDevices = loadOnnxruntime().supportedDevices();
 
     assertNotNull(supportedDevices);
     assertTrue(supportedDevices.cpu);
