@@ -2,11 +2,11 @@
 //!
 //! # Feature flags
 //!
-//! このクレートの利用にあたっては以下の二つの[Cargoフィーチャ]のうちどちらかを有効にしなければなりません。両方の有効化はコンパイルエラーとなります。[`Onnxruntime`]の初期化方法はこれらのフィーチャによって決まります。
+//! このクレートの利用にあたっては以下の二つの[Cargoフィーチャ]のうちどちらかを有効にしなければならない。両方の有効化はコンパイルエラーとなる。[`Onnxruntime`]の初期化方法はこれらのフィーチャによって決まる。
 //!
-//! - **`load-onnxruntime`**: ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開きます。[CUDA]と[DirectML]が利用できます。
-//! - **`link-onnxruntime`**: ONNX Runtimeをロード時動的リンクします。iOSのような`dlopen`の利用が困難な環境でのみこちらを利用するべきです。_Note_:
-//!     [動的リンク対象のライブラリ名]は`onnxruntime`で固定です。変更は`patchelf(1)`や`install_name_tool(1)`で行ってください。また、[ONNX RuntimeのGPU機能]を使うことはできません。
+//! - **`load-onnxruntime`**: ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開く。[CUDA]と[DirectML]が利用可能。
+//! - **`link-onnxruntime`**: ONNX Runtimeをロード時動的リンクする。iOSのような`dlopen`の利用が困難な環境でのみこちらを利用するべきである。_Note_:
+//!     [動的リンク対象のライブラリ名]は`onnxruntime`で固定。変更は`patchelf(1)`や`install_name_tool(1)`で行うこと。また、[ONNX RuntimeのGPU機能]を使うことは不可。
 //!
 //! [Cargoフィーチャ]: https://doc.rust-lang.org/stable/cargo/reference/features.html
 //! [CUDA]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
