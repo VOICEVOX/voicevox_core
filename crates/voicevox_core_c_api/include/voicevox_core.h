@@ -282,8 +282,8 @@ typedef struct OpenJtalkRc OpenJtalkRc;
  *
  * ```c
  * const VoicevoxOnnxruntime *ort1;
- * voicevox_onnxruntime_load_once(voicevox_make_default_load_onnxruntime_options,
- *                                &ort1);
+ * voicevox_onnxruntime_load_once(
+ *     voicevox_make_default_load_onnxruntime_options(), &ort1);
  * const VoicevoxOnnxruntime *ort2 = voicevox_onnxruntime_get();
  * assert(ort1 == ort2);
  * ```
