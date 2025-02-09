@@ -162,21 +162,6 @@ impl<T, C: PyTypeInfo> Closable<T, C, Tokio> {
     }
 }
 
-impl<T, C: PyTypeInfo, A: Async> Drop for Closable<T, C, A> {
-    fn drop(&mut self) {
-        let content = mem::replace(self.content.get_mut_(), MaybeClosed::Closed);
-        if matches!(content, MaybeClosed::Open(_)) {
-            warn!(
-                "デストラクタにより`{}`のクローズを行います。通常は、可能な限り`{}`でクローズする\
-                 ようにして下さい",
-                C::NAME,
-                A::EXIT_METHOD,
-            );
-            drop(content);
-        }
-    }
-}
-
 trait Async {
     const EXIT_METHOD: &str;
     type RwLock<T>: RwLock<Item = T>;
@@ -203,7 +188,6 @@ trait RwLock: From<Self::Item> {
     fn try_read_(&self) -> Result<impl Deref<Target = Self::Item>, ()>;
     async fn write_(&self) -> Self::RwLockWriteGuard<'_>;
     fn try_write_(&self) -> Result<Self::RwLockWriteGuard<'_>, ()>;
-    fn get_mut_(&mut self) -> &mut Self::Item;
 }
 
 impl<T> RwLock for std::sync::RwLock<T> {
@@ -230,10 +214,6 @@ impl<T> RwLock for std::sync::RwLock<T> {
             std::sync::TryLockError::WouldBlock => (),
         })
     }
-
-    fn get_mut_(&mut self) -> &mut Self::Item {
-        self.get_mut().unwrap_or_else(|e| panic!("{e}"))
-    }
 }
 
 impl<T> RwLock for tokio::sync::RwLock<T> {
@@ -253,10 +233,6 @@ impl<T> RwLock for tokio::sync::RwLock<T> {
 
     fn try_write_(&self) -> Result<Self::RwLockWriteGuard<'_>, ()> {
         self.try_write().map_err(|_| ())
-    }
-
-    fn get_mut_(&mut self) -> &mut Self::Item {
-        self.get_mut()
     }
 }
 

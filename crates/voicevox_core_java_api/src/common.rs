@@ -6,7 +6,7 @@ use jni::{
     objects::{JObject, JThrowable},
     JNIEnv,
 };
-use tracing::{debug, warn};
+use tracing::debug;
 use uuid::Uuid;
 use voicevox_core::__internal::interop::raii::MaybeClosed;
 
@@ -222,23 +222,6 @@ impl<T: HasJavaClassIdent> Closable<T> {
             debug!("Closing a `{}`", T::JAVA_CLASS_IDENT);
         }
         drop(mem::replace(lock, MaybeClosed::Closed));
-    }
-}
-
-impl<T: HasJavaClassIdent> Drop for Closable<T> {
-    fn drop(&mut self) {
-        let content = mem::replace(
-            self.0.get_mut().unwrap_or_else(|e| panic!("{e}")),
-            MaybeClosed::Closed,
-        );
-        if let MaybeClosed::Open(content) = content {
-            warn!(
-                "デストラクタにより`{}`のクローズを行います。通常は、可能な限り`close`でクローズす\
-                 るようにして下さい",
-                T::JAVA_CLASS_IDENT,
-            );
-            drop(content);
-        }
     }
 }
 

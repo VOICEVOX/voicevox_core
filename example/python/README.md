@@ -81,7 +81,6 @@ optional arguments:
 [INFO] __main__: Creating an AudioQuery from 'この音声は、ボイスボックスを使用して、出力されています。'
 [INFO] __main__: Synthesizing with {"accent_phrases":[…],"speedScale":1.0,"pitchScale":0.0,"intonationScale":1.0,"volumeScale":1.0,"prePhonemeLength":0.1,"postPhonemeLength":0.1,"outputSamplingRate":24000,"outputStereo":false,"pauseLength":null,"pauseLengthScale":1.0,"kana":"コノ'/オ'ンセエワ、ボイスボ'ッ_クスオ/シヨオ'/_シテ'、_ シュツ'リョ_ク/サレテ'/イマ'_ス"}
 [INFO] __main__: Wrote `output.wav`
-[WARNING] voicevox_core_python_api: デストラクタにより`Synthesizer`のクローズを行います。通常は、可能な限り`__exit__`でクローズするようにして下さい
 ```
 
 正常に実行されれば音声合成の結果である wav ファイルが生成されます。
