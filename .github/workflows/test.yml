@@ -351,6 +351,9 @@ jobs:
           esac
           TARGET_NAME="$OS-$ARCH"
 
+          # TODO: リポジトリとしてシンボリックリンクを張るか、コピーするべき
+          cp ./gradle/wrapper/gradle-wrapper.jar ../../example/kotlin/gradle/wrapper/
+
           cargo build -p voicevox_core_java_api -v
           cargo build -p test_util -v # build scriptにより/crates/test_util/data/の生成
           mkdir -p "./lib/src/main/resources/dll/$TARGET_NAME"
