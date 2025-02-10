@@ -474,6 +474,7 @@ mod blocking {
         #[pyo3(signature =(
             onnxruntime,
             open_jtalk,
+            *,
             acceleration_mode = Default::default(),
             cpu_num_threads = voicevox_core::__internal::interop::DEFAULT_CPU_NUM_THREADS,
         ))]
@@ -679,6 +680,7 @@ mod blocking {
         #[pyo3(signature=(
             audio_query,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -731,6 +733,7 @@ mod blocking {
         #[pyo3(signature=(
             audio_query,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -754,6 +757,7 @@ mod blocking {
         #[pyo3(signature=(
             kana,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -778,6 +782,7 @@ mod blocking {
         #[pyo3(signature=(
             text,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -1093,6 +1098,7 @@ mod asyncio {
         #[pyo3(signature =(
             onnxruntime,
             open_jtalk,
+            *,
             acceleration_mode = Default::default(),
             cpu_num_threads = voicevox_core::__internal::interop::DEFAULT_CPU_NUM_THREADS,
         ))]
@@ -1360,6 +1366,7 @@ mod asyncio {
         #[pyo3(signature=(
             audio_query,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -1392,6 +1399,7 @@ mod asyncio {
         #[pyo3(signature=(
             kana,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -1427,6 +1435,7 @@ mod asyncio {
         #[pyo3(signature=(
             text,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
