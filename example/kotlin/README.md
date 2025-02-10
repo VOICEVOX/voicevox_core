@@ -19,18 +19,14 @@ https://github.com/VOICEVOX/voicevox_core/releases/latest#%E3%83%80%E3%82%A6%E3%
 ❯ binary=download-linux-x64
 ❯ curl -sSfL https://github.com/VOICEVOX/voicevox_core/releases/latest/download/${binary} -o download
 ❯ chmod +x download
-❯ ./download -o ./example/kotlin
-❯ # いくつかのファイルは不要なので消すことができます
-❯ #rm -r ./example/kotlin/{model,VERSION,*voicevox_core*}
+❯ ./download -o ./example/kotlin --exclude c-api
 ```
 
 windows の場合
 
 ```console
 ❯ Invoke-WebRequest https://github.com/VOICEVOX/voicevox_core/releases/latest/download/download-windows-x64.exe -OutFile ./download.exe
-❯ ./download -o ./example/kotlin
-❯ # いくつかのファイルは不要なので消すことができます
-❯ #Remove-Item -Recurse ./example/kotlin/model,./example/kotlin/VERSION,./example/kotlin/*voicevox_core*
+❯ ./download -o ./example/kotlin --exclude c-api
 ```
 
 ## 実行
@@ -61,6 +57,7 @@ Options:
 <!-- FIXME: libvoicevox_onnxruntimeになったら`--onnxruntime`を指定するのではなく、`$LD_LIBRARY_PATH`とかに入れて実行するように案内する -->
 
 ```console
+❯ # TODO: ダウンロード物の構成が変わったため色々壊れているはず
 ❯ # Linuxの場合
 ❯ ./gradlew run --args="--vvm ../../crates/test_util/data/model/sample.vvm --onnxruntime ../../crates/test_util/data/lib/libonnxruntime.so.1.17.3"
 Inititalizing: AUTO, ../../crates/test_util/data/lib/libonnxruntime.so.1.17.3, ./open_jtalk_dic_utf_8-1.11

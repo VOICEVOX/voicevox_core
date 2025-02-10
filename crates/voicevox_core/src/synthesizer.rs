@@ -1223,8 +1223,7 @@ pub(crate) mod blocking {
         #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
         #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
         /// # fn main() -> anyhow::Result<()> {
-        /// # // FIXME: この`ONNXRUNTIME_DYLIB_PATH`はunused import
-        /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};
+        /// # use test_util::OPEN_JTALK_DIC_DIR;
         /// #
         /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
         /// #
@@ -1239,9 +1238,8 @@ pub(crate) mod blocking {
         /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
         /// #     .perform()?;
         /// #
-        /// // FIXME: `Synthesizer`には`&mut self`なメソッドはもう無いはず
-        /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().perform()?)
-        ///     .text_analyzer(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap())) // FIXME: `Arc`は要らないはず
+        /// let syntesizer = Synthesizer::builder(Onnxruntime::load_once().perform()?)
+        ///     .text_analyzer(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap())
         ///     .acceleration_mode(ACCELERATION_MODE)
         ///     .build()?;
         /// #
@@ -1837,8 +1835,7 @@ pub(crate) mod nonblocking {
         #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
         /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
-        /// # // FIXME: この`ONNXRUNTIME_DYLIB_PATH`はunused import
-        /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};
+        /// # use test_util::OPEN_JTALK_DIC_DIR;
         /// #
         /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
         /// #
@@ -1853,9 +1850,8 @@ pub(crate) mod nonblocking {
         /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
         /// #     .perform()?;
         /// #
-        /// // FIXME: `Synthesizer`には`&mut self`なメソッドはもう無いはず
-        /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().perform().await?)
-        ///     .text_analyzer(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap())) // FIXME: `Arc`は要らないはず
+        /// let syntesizer = Synthesizer::builder(Onnxruntime::load_once().perform().await?)
+        ///     .text_analyzer(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap())
         ///     .acceleration_mode(ACCELERATION_MODE)
         ///     .build()?;
         /// #

@@ -165,15 +165,14 @@ pub extern "C" fn voicevox_make_default_load_onnxruntime_options() -> VoicevoxLo
 }
 
 // https://github.com/mozilla/cbindgen/issues/967
-// FIXME: このコードブロックのコードが動くかどうか未確認
 /// ONNX Runtime。
 ///
 /// シングルトンであり、インスタンスは高々一つ。
 ///
 /// ```c
 /// const VoicevoxOnnxruntime *ort1;
-/// voicevox_onnxruntime_load_once(voicevox_make_default_load_onnxruntime_options,
-///                                &ort1);
+/// voicevox_onnxruntime_load_once(
+///     voicevox_make_default_load_onnxruntime_options(), &ort1);
 /// const VoicevoxOnnxruntime *ort2 = voicevox_onnxruntime_get();
 /// assert(ort1 == ort2);
 /// ```
