@@ -13,6 +13,13 @@ StyleId = NewType("StyleId", int)
 """
 スタイルID。
 
+VOICEVOXにおける、ある |styleid-character|_ のある |styleid-style|_ を指す。
+
+.. |styleid-character| replace:: *キャラクター*
+.. _styleid-character: #voicevox_core.CharacterMeta
+.. |styleid-style| replace:: *スタイル*
+.. _styleid-style: #voicevox_core.StyleMeta
+
 Parameters
 ----------
 x : int
@@ -20,7 +27,10 @@ x : int
 
 CharacterVersion = NewType("CharacterVersion", str)
 """
-**キャラクター**のバージョン。
+|characterversion-character|_ のバージョン。
+
+.. |characterversion-character| replace:: *キャラクター*
+.. _characterversion-character: #voicevox_core.CharacterMeta
 
 Parameters
 ----------
@@ -41,7 +51,10 @@ StyleType: TypeAlias = (
 )
 """
 
-**スタイル** (_style_)に対応するモデルの種類。
+|styletype-style|_ に対応するモデルの種類。
+
+.. |styletype-style| replace:: *スタイル*
+.. _styletype-style: #voicevox_core.StyleMeta
 
 ===================== ==================================================
 値                    説明
@@ -90,7 +103,7 @@ def _(style_type: StyleType):
 @pydantic.dataclasses.dataclass
 class StyleMeta:
     """
-    **スタイル** (_style_)のメタ情報。
+    *スタイル* のメタ情報。
 
     現在は |pydantic-dataclasses-dataclass-stylemeta|_ ではあるが、将来的には
     |de-pydantic-stylemeta|_ 。
@@ -121,7 +134,7 @@ class StyleMeta:
 @pydantic.dataclasses.dataclass
 class CharacterMeta:
     """
-    **キャラクター**のメタ情報。
+    *キャラクター* のメタ情報。
 
     現在は |pydantic-dataclasses-dataclass-charactermeta|_ ではあるが、将来的には
     |de-pydantic-charactermeta|_ 。

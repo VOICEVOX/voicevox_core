@@ -365,7 +365,7 @@ typedef const uint8_t (*VoicevoxVoiceModelId)[16];
 /**
  * スタイルID。
  *
- * VOICEVOXにおける、ある<b>キャラクター</b>のある<b>スタイル</b>(_style_)を指す。
+ * VOICEVOXにおける、ある<i>キャラクター</i>のある<i>スタイル</i>を指す。
  *
  * \orig-impl{VoicevoxStyleId}
  */

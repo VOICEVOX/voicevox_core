@@ -9,7 +9,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 
-/** スタイル（style）に対応するモデルの種類。 */
+/** {@link StyleMeta <i>スタイル</i>}に対応するモデルの種類。 */
 public class StyleType {
   /** 音声合成クエリの作成と音声合成が可能。 */
   public static final StyleType TALK = new StyleType("talk");
