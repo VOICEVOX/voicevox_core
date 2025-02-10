@@ -1051,6 +1051,15 @@ mod asyncio {
 
     #[pymethods]
     impl OpenJtalk {
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn __new__(_cls: &PyType, _args: &PyTuple, _kwargs: Option<&PyDict>) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`OpenJtalk` does not have a normal constructor. Use `OpenJtalk.new` to construct",
+            )))
+        }
+
         #[expect(clippy::new_ret_no_self, reason = "これはPython API")]
         #[staticmethod]
         fn new(
