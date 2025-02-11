@@ -136,6 +136,9 @@ class OpenJtalk:
     テキスト解析器としてのOpen JTalk。
     """
 
+    def __new__(
+        cls, *args: tuple[object], **kwargs: dict[object, object]
+    ) -> NoReturn: ...
     @staticmethod
     async def new(open_jtalk_dict_dir: str | PathLike[str]) -> "OpenJtalk":
         """
