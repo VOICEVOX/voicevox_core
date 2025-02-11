@@ -39,10 +39,10 @@ pub fn merge<'a>(metas: impl IntoIterator<Item = &'a CharacterMeta>) -> Vec<Char
 
 /// スタイルID。
 ///
-/// VOICEVOXにおける、ある[**キャラクター**]のある[**スタイル**(_style_)]を指す。
+/// VOICEVOXにおける、ある[<i>キャラクター</i>]のある[<i>スタイル</i>]を指す。
 ///
-/// [**キャラクター**]: CharacterMeta
-/// [**スタイル**(_style_)]: StyleMeta
+/// [<i>キャラクター</i>]: CharacterMeta
+/// [<i>スタイル</i>]: StyleMeta
 #[derive(
     PartialEq,
     Eq,
@@ -66,9 +66,9 @@ impl Display for StyleId {
     }
 }
 
-/// [**キャラクター**]のバージョン。
+/// [<i>キャラクター</i>]のバージョン。
 ///
-/// [**キャラクター**]: CharacterMeta
+/// [<i>キャラクター</i>]: CharacterMeta
 #[derive(PartialEq, Eq, Clone, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
 pub struct CharacterVersion(pub String);
 
@@ -81,7 +81,7 @@ impl Display for CharacterVersion {
 /// 音声モデルのメタ情報。
 pub type VoiceModelMeta = Vec<CharacterMeta>;
 
-/// キャラクターのメタ情報。
+/// <i>キャラクター</i>のメタ情報。
 #[derive(Deserialize, Serialize, Clone)]
 #[non_exhaustive]
 pub struct CharacterMeta {
@@ -141,7 +141,7 @@ impl CharacterMeta {
     }
 }
 
-/// **スタイル**(_style_)のメタ情報。
+/// <i>スタイル</i>のメタ情報。
 #[derive(Deserialize, Serialize, Clone)]
 #[non_exhaustive]
 pub struct StyleMeta {
@@ -158,7 +158,9 @@ pub struct StyleMeta {
     pub order: Option<u32>,
 }
 
-/// **スタイル**(_style_)に対応するモデルの種類。
+/// [<i>スタイル</i>]に対応するモデルの種類。
+///
+/// [<i>スタイル</i>]: StyleMeta
 #[derive(
     Default,
     Clone,
