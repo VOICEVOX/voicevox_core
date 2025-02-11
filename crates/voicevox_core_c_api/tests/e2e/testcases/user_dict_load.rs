@@ -38,6 +38,7 @@ impl assert_cdylib::TestCase for TestCase {
             let mut word = lib.voicevox_user_dict_word_make(
                 c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
                 c"アイウエオ".as_ptr(),
+                0,
             );
             word.word_type =
                 c_api::VoicevoxUserDictWordType_VOICEVOX_USER_DICT_WORD_TYPE_PROPER_NOUN;

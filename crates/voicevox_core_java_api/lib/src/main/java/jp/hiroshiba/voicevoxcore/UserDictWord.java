@@ -59,21 +59,25 @@ public class UserDictWord {
    *
    * @param surface 言葉の表層形。
    * @param pronunciation 言葉の発音。
+   * @param accentType アクセント型。
    * @throws IllegalArgumentException pronunciationが不正な場合。
    */
-  public UserDictWord(String surface, String pronunciation) {
+  public UserDictWord(String surface, String pronunciation, int accentType) {
     if (surface == null) {
       throw new NullPointerException("surface");
     }
     if (pronunciation == null) {
       throw new NullPointerException("pronunciation");
     }
+    if (accentType < 0) {
+      throw new IllegalArgumentException("accentType");
+    }
 
     this.surface = rsToZenkaku(surface);
     rsValidatePronunciation(pronunciation);
     this.pronunciation = pronunciation;
     this.wordType = Type.COMMON_NOUN;
-    this.accentType = 0;
+    this.accentType = accentType;
     this.priority = 5;
   }
 
@@ -88,20 +92,6 @@ public class UserDictWord {
       throw new NullPointerException("wordType");
     }
     this.wordType = wordType;
-    return this;
-  }
-
-  /**
-   * アクセント型を設定する。
-   *
-   * @param accentType アクセント型。
-   * @return このインスタンス。
-   */
-  public UserDictWord accentType(int accentType) {
-    if (accentType < 0) {
-      throw new IllegalArgumentException("accentType");
-    }
-    this.accentType = accentType;
     return this;
   }
 
