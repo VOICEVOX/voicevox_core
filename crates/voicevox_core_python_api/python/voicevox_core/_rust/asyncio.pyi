@@ -184,6 +184,7 @@ class Synthesizer:
         self,
         onnxruntime: Onnxruntime,
         open_jtalk: OpenJtalk,
+        *,
         acceleration_mode: AccelerationMode = "AUTO",
         cpu_num_threads: int = 0,
     ) -> None: ...
@@ -377,6 +378,7 @@ class Synthesizer:
         self,
         audio_query: AudioQuery,
         style_id: StyleId | int,
+        *,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -400,6 +402,7 @@ class Synthesizer:
         self,
         kana: str,
         style_id: StyleId | int,
+        *,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -419,6 +422,7 @@ class Synthesizer:
         self,
         text: str,
         style_id: StyleId | int,
+        *,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
