@@ -1440,12 +1440,19 @@ pub extern "C" fn voicevox_user_dict_word_make(
     pronunciation: *const c_char,
 ) -> VoicevoxUserDictWord {
     init_logger_once();
+    let default = UserDictWord::builder()
+        .build(
+            // dummy
+            "",
+            "ア".to_owned(),
+        )
+        .expect("should be valid");
     VoicevoxUserDictWord {
         surface,
         pronunciation,
-        accent_type: UserDictWord::default().accent_type(),
-        word_type: UserDictWord::default().word_type().into(),
-        priority: UserDictWord::default().priority(),
+        accent_type: default.accent_type(),
+        word_type: default.word_type().into(),
+        priority: default.priority(),
     }
 }
 

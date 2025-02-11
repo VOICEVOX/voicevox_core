@@ -133,7 +133,7 @@ pub use self::{
     metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
     result::Result,
     synthesizer::AccelerationMode,
-    user_dict::{UserDictWord, UserDictWordType},
+    user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
     version::VERSION,
     voice_model::VoiceModelId,
 };
