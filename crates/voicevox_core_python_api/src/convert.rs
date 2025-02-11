@@ -167,14 +167,15 @@ pub(crate) fn to_py_uuid(py: Python<'_>, uuid: Uuid) -> PyResult<PyObject> {
     Ok(uuid.to_object(py))
 }
 pub(crate) fn to_rust_user_dict_word(ob: &PyAny) -> PyResult<voicevox_core::UserDictWord> {
-    voicevox_core::UserDictWord::new(
-        ob.getattr("surface")?.extract()?,
-        ob.getattr("pronunciation")?.extract()?,
-        ob.getattr("accent_type")?.extract()?,
-        from_literal_choice(ob.getattr("word_type")?.extract()?)?,
-        ob.getattr("priority")?.extract()?,
-    )
-    .into_py_result(ob.py())
+    voicevox_core::UserDictWord::builder()
+        .accent_type(ob.getattr("accent_type")?.extract()?)
+        .word_type(from_literal_choice(ob.getattr("word_type")?.extract()?)?)
+        .priority(ob.getattr("priority")?.extract()?)
+        .build(
+            ob.getattr("surface")?.extract()?,
+            ob.getattr("pronunciation")?.extract()?,
+        )
+        .into_py_result(ob.py())
 }
 pub(crate) fn to_py_user_dict_word<'py>(
     py: Python<'py>,

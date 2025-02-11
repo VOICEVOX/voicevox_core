@@ -152,13 +152,15 @@ pub(crate) impl uuid::Bytes {
 
 impl VoicevoxUserDictWord {
     pub(crate) unsafe fn try_into_word(&self) -> CApiResult<voicevox_core::UserDictWord> {
-        Ok(UserDictWord::new(
-            ensure_utf8(CStr::from_ptr(self.surface))?,
-            ensure_utf8(CStr::from_ptr(self.pronunciation))?.to_string(),
-            self.accent_type,
-            self.word_type.into(),
-            self.priority,
-        )?)
+        UserDictWord::builder()
+            .accent_type(self.accent_type)
+            .word_type(self.word_type.into())
+            .priority(self.priority)
+            .build(
+                ensure_utf8(CStr::from_ptr(self.surface))?,
+                ensure_utf8(CStr::from_ptr(self.pronunciation))?.to_string(),
+            )
+            .map_err(Into::into)
     }
 }
 
