@@ -353,7 +353,7 @@ class AudioQuery:
         from pydantic import TypeAdapter
         from voicevox_core import AudioQuery
 
-        JSON = '{"accent_phrases":[],"speedScale":1.0,"pitchScale":0.0,"intonationScale":1.0,"volumeScale":1.0,"prePhonemeLength":0.1,"postPhonemeLength":0.1,"outputSamplingRate":24000,"outputStereo":false,"pauseLength":null,"pauseLengthScale":1.0,"kana":null}'
+        JSON = '{"accent_phrases":[],"speedScale":1.0,"pitchScale":0.0,"intonationScale":1.0,"volumeScale":1.0,"prePhonemeLength":0.1,"postPhonemeLength":0.1,"outputSamplingRate":24000,"outputStereo":false,"kana":null}'
         query = TypeAdapter(AudioQuery).validate_json(JSON)
 
         # `JSON`が必須フィールドを含んでいる場合のみ
@@ -389,12 +389,6 @@ class AudioQuery:
 
     output_stereo: bool
     """音声データをステレオ出力するか否か。"""
-
-    pause_length: None = None
-    """句読点などの無音時間。 ``None`` のときは無視される。デフォルト値は ``None`` 。"""
-
-    pause_length_scale: float = 1.0
-    """読点などの無音時間（倍率）。デフォルト値は ``1.0`` 。"""
 
     kana: str | None = None
     """
