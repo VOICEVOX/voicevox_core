@@ -1308,6 +1308,7 @@ const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
  *
  * @param [in] surface 表記
  * @param [in] pronunciation 読み
+ * @param [in] accent_type アクセント型
  * @returns ::VoicevoxUserDictWord
  *
  * \orig-impl{voicevox_user_dict_word_make}
@@ -1316,7 +1317,8 @@ const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
 __declspec(dllimport)
 #endif
 struct VoicevoxUserDictWord voicevox_user_dict_word_make(const char *surface,
-                                                         const char *pronunciation);
+                                                         const char *pronunciation,
+                                                         uintptr_t accent_type);
 
 /**
  * ユーザー辞書をb>構築</b>(_construct_)する。

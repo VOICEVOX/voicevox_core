@@ -482,7 +482,7 @@ class UserDictWord:
     カタカナで表記する。
     """
 
-    accent_type: int = dataclasses.field(default=0)
+    accent_type: int
     """
     アクセント型。
 

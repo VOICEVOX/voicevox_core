@@ -23,6 +23,7 @@ def test_user_dict_load() -> None:
         voicevox_core.UserDictWord(
             surface="hoge",
             pronunciation="ホゲ",
+            accent_type=0,
         )
     )
     assert isinstance(uuid_a, UUID)
@@ -35,6 +36,7 @@ def test_user_dict_load() -> None:
         voicevox_core.UserDictWord(
             surface="fuga",
             pronunciation="フガ",
+            accent_type=0,
         ),
     )
 
@@ -47,6 +49,7 @@ def test_user_dict_load() -> None:
         voicevox_core.UserDictWord(
             surface="foo",
             pronunciation="フー",
+            accent_type=0,
         )
     )
 
@@ -59,6 +62,7 @@ def test_user_dict_load() -> None:
         voicevox_core.UserDictWord(
             surface="bar",
             pronunciation="バー",
+            accent_type=0,
         )
     )
     temp_path_fd, temp_path = tempfile.mkstemp()
@@ -79,5 +83,6 @@ def test_user_dict_load() -> None:
             voicevox_core.UserDictWord(
                 surface="",
                 pronunciation="カタカナ以外の文字",
+                accent_type=0,
             )
         )

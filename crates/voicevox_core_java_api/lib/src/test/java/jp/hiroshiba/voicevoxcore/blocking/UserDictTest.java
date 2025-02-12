@@ -30,7 +30,8 @@ class UserDictTest extends TestUtils {
             "this_word_should_not_exist_in_default_dictionary",
             synthesizer.metas()[0].styles[0].id);
 
-    userDict.addWord(new UserDictWord("this_word_should_not_exist_in_default_dictionary", "テスト"));
+    userDict.addWord(
+        new UserDictWord("this_word_should_not_exist_in_default_dictionary", "テスト", 1));
     openJtalk.useUserDict(userDict);
     AudioQuery query2 =
         synthesizer.createAudioQuery(
@@ -44,11 +45,11 @@ class UserDictTest extends TestUtils {
   void checkManipulation() throws Exception {
     UserDict userDict = new UserDict();
     // 単語追加
-    String uuid = userDict.addWord(new UserDictWord("hoge", "ホゲ"));
+    String uuid = userDict.addWord(new UserDictWord("hoge", "ホゲ", 0));
     assertTrue(userDict.toHashMap().get(uuid) != null);
 
     // 単語更新
-    userDict.updateWord(uuid, new UserDictWord("hoge", "ホゲホゲ"));
+    userDict.updateWord(uuid, new UserDictWord("hoge", "ホゲホゲ", 0));
     assertTrue(userDict.toHashMap().get(uuid).pronunciation.equals("ホゲホゲ"));
 
     // 単語削除
@@ -56,9 +57,9 @@ class UserDictTest extends TestUtils {
     assertTrue(userDict.toHashMap().get(uuid) == null);
 
     // 辞書のインポート
-    userDict.addWord(new UserDictWord("hoge", "ホゲ"));
+    userDict.addWord(new UserDictWord("hoge", "ホゲ", 0));
     UserDict userDict2 = new UserDict();
-    userDict2.addWord(new UserDictWord("fuga", "フガ"));
+    userDict2.addWord(new UserDictWord("fuga", "フガ", 0));
     userDict.importDict(userDict2);
     assertTrue(userDict.toHashMap().size() == 2);
 

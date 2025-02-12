@@ -79,6 +79,9 @@ impl InvalidWordError {
 
 type InvalidWordResult<T> = std::result::Result<T, InvalidWordError>;
 
+pub const DEFAULT_WORD_TYPE: UserDictWordType = UserDictWordType::CommonNoun;
+pub const DEFAULT_PRIORITY: u32 = 5;
+
 static PRONUNCIATION_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
 static MORA_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -93,19 +96,6 @@ static MORA_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 static SPACE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\p{Z}").unwrap());
-
-impl Default for UserDictWord {
-    fn default() -> Self {
-        Self {
-            surface: "".to_string(),
-            pronunciation: "".to_string(),
-            accent_type: 0,
-            word_type: UserDictWordType::CommonNoun,
-            priority: 0,
-            mora_count: 0,
-        }
-    }
-}
 
 impl UserDictWord {
     // TODO: これビルダースタイルにすべきでは？

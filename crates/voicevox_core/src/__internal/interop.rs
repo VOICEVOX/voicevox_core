@@ -7,4 +7,5 @@ pub use crate::{
         blocking::PerformInference, DEFAULT_CPU_NUM_THREADS, DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         MARGIN,
     },
+    user_dict::{DEFAULT_PRIORITY, DEFAULT_WORD_TYPE},
 };

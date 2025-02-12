@@ -38,8 +38,8 @@ use std::sync::Once;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
-use voicevox_core::__internal::interop::ToJsonValue as _;
-use voicevox_core::{AccentPhrase, AudioQuery, StyleId, UserDictWord};
+use voicevox_core::__internal::interop::{ToJsonValue as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE};
+use voicevox_core::{AccentPhrase, AudioQuery, StyleId};
 
 fn init_logger_once() {
     static ONCE: Once = Once::new();
@@ -1431,6 +1431,7 @@ pub enum VoicevoxUserDictWordType {
 ///
 /// @param [in] surface 表記
 /// @param [in] pronunciation 読み
+/// @param [in] accent_type アクセント型
 /// @returns ::VoicevoxUserDictWord
 ///
 /// \orig-impl{voicevox_user_dict_word_make}
@@ -1438,14 +1439,15 @@ pub enum VoicevoxUserDictWordType {
 pub extern "C" fn voicevox_user_dict_word_make(
     surface: *const c_char,
     pronunciation: *const c_char,
+    accent_type: usize,
 ) -> VoicevoxUserDictWord {
     init_logger_once();
     VoicevoxUserDictWord {
         surface,
         pronunciation,
-        accent_type: UserDictWord::default().accent_type(),
-        word_type: UserDictWord::default().word_type().into(),
-        priority: UserDictWord::default().priority(),
+        accent_type,
+        word_type: DEFAULT_WORD_TYPE.into(),
+        priority: DEFAULT_PRIORITY,
     }
 }
 
