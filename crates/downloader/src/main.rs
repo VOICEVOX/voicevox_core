@@ -693,7 +693,8 @@ fn ensure_confirmation(terms: &str, terms_name: &'static str) -> anyhow::Result<
     return Ok(());
 
     const PROMPT: &str =
-        "上記の利用規約に同意しますか？ (Do you agree with the above terms of use?) (y/N): ";
+        "上記の利用規約に同意しますか？ (Do you agree with the above terms of use?) (y/N)\n\
+         同意するならyを、同意しないならnを入力し、エンターキーを押してください: ";
 
     fn ask_yn() -> anyhow::Result<bool> {
         loop {
