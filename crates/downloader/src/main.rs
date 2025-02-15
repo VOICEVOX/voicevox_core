@@ -715,7 +715,7 @@ fn ensure_confirmation(terms: &IndexMap<&'static str, &str>) -> anyhow::Result<(
     }
 
     return loop {
-        let terms = &{
+        let terms_pretty = &{
             let mut output = "".to_owned();
             bat::PrettyPrinter::new()
                 .inputs(
@@ -735,7 +735,7 @@ fn ensure_confirmation(terms: &IndexMap<&'static str, &str>) -> anyhow::Result<(
         let result = std::panic::catch_unwind(|| {
             minus::page_all({
                 let pager = minus::Pager::new();
-                pager.set_text(terms)?;
+                pager.set_text(terms_pretty)?;
                 pager.set_prompt(
                     "上下キーとスペースでスクロールし、読み終えたらqを押してください",
                 )?;
@@ -748,28 +748,32 @@ fn ensure_confirmation(terms: &IndexMap<&'static str, &str>) -> anyhow::Result<(
             result?;
         } else {
             error!("something went wrong with the pager");
-            print!("{terms}");
+            print!("{terms_pretty}");
             io::stdout().flush()?;
         }
 
-        match ask()? {
+        match ask(terms)? {
             UserInput::Yes => break Ok(()),
             UserInput::No => bail!("you must agree with the term of use"),
             UserInput::ReadAgain => {}
         }
     };
 
-    const PROMPT: &str =
-        "上記の利用規約に同意しますか？ (Do you agree with the above terms of use?) [y,n,r]\n\
-         同意するならyを、同意しないならnを、利用規約をもう一度読むならrを入力してから、\
-         エンターキーを押してください: ";
-
-    fn ask() -> anyhow::Result<UserInput> {
+    fn ask(terms: &IndexMap<&'static str, impl Sized>) -> anyhow::Result<UserInput> {
         loop {
             let input = rprompt::prompt_reply_from_bufread(
                 &mut io::stdin().lock(),
                 &mut io::stderr(),
-                PROMPT,
+                format!(
+                    "[Agreement Required]\n\
+                     {terms}に同意しますか？\n\
+                     同意する場合は y を、同意しない場合は n を、再確認する場合は r を入力し、\
+                     エンターキーを押してください。\n\
+                     [y,n,r] : ",
+                    terms = terms
+                        .keys()
+                        .format_with("と", |terms, f| f(&format_args!("「{terms}」"))),
+                ),
             )?;
             if ["y", "yes"].contains(&&*input.to_lowercase()) {
                 break Ok(UserInput::Yes);
