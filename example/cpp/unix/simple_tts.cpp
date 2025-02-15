@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-#include "voicevox_core/c_api/voicevox_core.h"
+#include "voicevox_core/c_api/include/voicevox_core.h"
 
 #define STYLE_ID 0
 #define OUTPUT_WAV_NAME "audio.wav"

@@ -6,8 +6,9 @@ use jni::{
     sys::jobject,
     JNIEnv,
 };
+use voicevox_core::__internal::interop::ToJsonValue as _;
 
-use crate::common::throw_if_err;
+use crate::{common::throw_if_err, object};
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[duplicate_item(
@@ -54,8 +55,18 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rs
         let this = *env.get_rust_field::<_, _, &'static voicevox_core::blocking::Onnxruntime>(
             &this, "handle",
         )?;
-        let json = this.supported_devices()?.to_json().to_string();
-        let json = env.new_string(json)?;
-        Ok(json.into_raw())
+        let devices = this.supported_devices()?;
+
+        assert!(match devices.to_json_value() {
+            serde_json::Value::Object(o) => o.len() == 3, // `cpu`, `cuda`, `dml`
+            _ => false,
+        });
+
+        let devices = env.new_object(
+            object!("GlobalInfo$SupportedDevices"),
+            "(ZZZ)V",
+            &[devices.cpu.into(), devices.cuda.into(), devices.dml.into()],
+        )?;
+        Ok(devices.into_raw())
     })
 }

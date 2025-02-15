@@ -1,5 +1,8 @@
 """無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。"""
 
+# TODO: `wav_from_s16le`を復活させる
+# https://github.com/VOICEVOX/voicevox_core/issues/970
+
 from ._models import (  # noqa: F401
     AccelerationMode,
     AccentPhrase,
@@ -36,14 +39,12 @@ from ._rust import (  # noqa: F401
     UseUserDictError,
     WordNotFoundError,
     __version__,
-    wav_from_s16le,
 )
 
 from . import asyncio, blocking  # noqa: F401 isort: skip
 
 __all__ = [
     "__version__",
-    "wav_from_s16le",
     "AccelerationMode",
     "AccentPhrase",
     "AnalyzeTextError",

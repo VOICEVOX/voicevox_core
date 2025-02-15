@@ -7,7 +7,12 @@ import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-/** AudioQuery（音声合成用のクエリ）。 */
+/**
+ * AudioQuery（音声合成用のクエリ）。
+ *
+ * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
+ * target="_blank">Jacksonに切り替わる予定</a> 。
+ */
 public class AudioQuery {
   /** アクセント句の配列。 */
   @SerializedName("accent_phrases")
@@ -16,55 +21,34 @@ public class AudioQuery {
   public List<AccentPhrase> accentPhrases;
 
   /** 全体の話速。 */
-  @SerializedName("speed_scale")
-  @Expose
-  public double speedScale;
+  @Expose public double speedScale;
 
   /** 全体の音高。 */
-  @SerializedName("pitch_scale")
-  @Expose
-  public double pitchScale;
+  @Expose public double pitchScale;
 
   /** 全体の抑揚。 */
-  @SerializedName("intonation_scale")
-  @Expose
-  public double intonationScale;
+  @Expose public double intonationScale;
 
   /** 全体の音量。 */
-  @SerializedName("volume_scale")
-  @Expose
-  public double volumeScale;
+  @Expose public double volumeScale;
 
   /** 音声の前の無音時間。 */
-  @SerializedName("pre_phoneme_length")
-  @Expose
-  public double prePhonemeLength;
+  @Expose public double prePhonemeLength;
 
   /** 音声の後の無音時間。 */
-  @SerializedName("post_phoneme_length")
-  @Expose
-  public double postPhonemeLength;
+  @Expose public double postPhonemeLength;
 
   /** 音声データの出力サンプリングレート。 */
-  @SerializedName("output_sampling_rate")
-  @Expose
-  public int outputSamplingRate;
+  @Expose public int outputSamplingRate;
 
   /** 音声データをステレオ出力するか否か。 */
-  @SerializedName("output_stereo")
-  @Expose
-  public boolean outputStereo;
+  @Expose public boolean outputStereo;
 
   /** 句読点などの無音時間。{@code null}のときは無視される。デフォルト値は{@code null}。 */
-  @SerializedName("pause_length")
-  @Expose
-  @Nullable
-  public Double pauseLength;
+  @Expose @Nullable public Double pauseLength;
 
   /** 読点などの無音時間（倍率）。デフォルト値は{@code 1.}。 */
-  @SerializedName("pause_length_scale")
-  @Expose
-  public double pauseLengthScale;
+  @Expose public double pauseLengthScale;
 
   /**
    * [読み取り専用] AquesTalk風記法。
@@ -72,10 +56,7 @@ public class AudioQuery {
    * <p>{@link jp.hiroshiba.voicevoxcore.blocking.Synthesizer#createAudioQuery} が返すもののみ String
    * となる。入力としてのAudioQueryでは無視される。
    */
-  @SerializedName("kana")
-  @Expose
-  @Nullable
-  public final String kana;
+  @Expose @Nullable public final String kana;
 
   public AudioQuery() {
     this.accentPhrases = new ArrayList<>();

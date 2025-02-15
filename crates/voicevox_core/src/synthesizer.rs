@@ -81,6 +81,7 @@ impl Default for TtsOptions {
 }
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
+#[doc(alias = "VoicevoxAccelerationMode")]
 #[expect(
     clippy::manual_non_exhaustive,
     reason = "バインディングを作るときはexhaustiveとして扱いたい"
@@ -166,6 +167,9 @@ fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Arr
 }
 
 /// 音声の中間表現。
+// TODO: 後で復活させる
+// https://github.com/VOICEVOX/voicevox_core/issues/970
+#[doc(hidden)]
 pub struct AudioFeature {
     /// (フレーム数, 特徴数)の形を持つ音声特徴量。
     internal_state: ndarray::Array2<f32>,
@@ -1208,6 +1212,7 @@ pub(crate) mod blocking {
     pub use super::AudioFeature;
 
     /// 音声シンセサイザ。
+    #[doc(alias = "VoicevoxSynthesizer")]
     pub struct Synthesizer<T>(pub(super) Inner<AssumeSingleTasked<T>, SingleTasked>);
 
     impl self::Synthesizer<()> {
@@ -1218,8 +1223,7 @@ pub(crate) mod blocking {
         #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
         #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
         /// # fn main() -> anyhow::Result<()> {
-        /// # // FIXME: この`ONNXRUNTIME_DYLIB_PATH`はunused import
-        /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};
+        /// # use test_util::OPEN_JTALK_DIC_DIR;
         /// #
         /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
         /// #
@@ -1234,15 +1238,15 @@ pub(crate) mod blocking {
         /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
         /// #     .perform()?;
         /// #
-        /// // FIXME: `Synthesizer`には`&mut self`なメソッドはもう無いはず
-        /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().perform()?)
-        ///     .text_analyzer(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap())) // FIXME: `Arc`は要らないはず
+        /// let syntesizer = Synthesizer::builder(Onnxruntime::load_once().perform()?)
+        ///     .text_analyzer(OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap())
         ///     .acceleration_mode(ACCELERATION_MODE)
         ///     .build()?;
         /// #
         /// # Ok(())
         /// # }
         /// ```
+        #[doc(alias = "voicevox_synthesizer_new")]
         pub fn builder(onnxruntime: &'static crate::blocking::Onnxruntime) -> Builder<()> {
             Builder {
                 onnxruntime,
@@ -1253,16 +1257,19 @@ pub(crate) mod blocking {
     }
 
     impl<T> self::Synthesizer<T> {
+        #[doc(alias = "voicevox_synthesizer_get_onnxruntime")]
         pub fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
             self.0.onnxruntime()
         }
 
         /// ハードウェアアクセラレーションがGPUモードか判定する。
+        #[doc(alias = "voicevox_synthesizer_is_gpu_mode")]
         pub fn is_gpu_mode(&self) -> bool {
             self.0.is_gpu_mode()
         }
 
         /// 音声モデルを読み込む。
+        #[doc(alias = "voicevox_synthesizer_load_voice_model")]
         pub fn load_voice_model(
             &self,
             model: &crate::blocking::VoiceModelFile,
@@ -1271,11 +1278,13 @@ pub(crate) mod blocking {
         }
 
         /// 音声モデルの読み込みを解除する。
+        #[doc(alias = "voicevox_synthesizer_unload_voice_model")]
         pub fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> crate::Result<()> {
             self.0.unload_voice_model(voice_model_id)
         }
 
         /// 指定したIDの音声モデルが読み込まれているか判定する。
+        #[doc(alias = "voicevox_synthesizer_is_loaded_voice_model")]
         pub fn is_loaded_voice_model(&self, voice_model_id: VoiceModelId) -> bool {
             self.0.is_loaded_voice_model(voice_model_id)
         }
@@ -1286,12 +1295,16 @@ pub(crate) mod blocking {
         }
 
         /// 今読み込んでいる音声モデルのメタ情報を返す。
+        #[doc(alias = "voicevox_synthesizer_create_metas_json")]
         pub fn metas(&self) -> VoiceModelMeta {
             self.0.metas()
         }
 
         /// AudioQueryから音声合成用の中間表現を生成する。
-        pub fn precompute_render<'a>(
+        // TODO: 後で復活させる
+        // https://github.com/VOICEVOX/voicevox_core/issues/970
+        #[doc(hidden)]
+        pub fn __precompute_render<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
@@ -1305,11 +1318,19 @@ pub(crate) mod blocking {
         }
 
         /// 中間表現から16bit PCMで音声波形を生成する。
-        pub fn render(&self, audio: &AudioFeature, range: Range<usize>) -> crate::Result<Vec<u8>> {
+        // TODO: 後で復活させる
+        // https://github.com/VOICEVOX/voicevox_core/issues/970
+        #[doc(hidden)]
+        pub fn __render(
+            &self,
+            audio: &AudioFeature,
+            range: Range<usize>,
+        ) -> crate::Result<Vec<u8>> {
             self.0.render(audio, range).block_on()
         }
 
         /// AudioQueryから直接WAVフォーマットで音声波形を生成する。
+        #[doc(alias = "voicevox_synthesizer_synthesis")]
         pub fn synthesis<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
@@ -1349,6 +1370,7 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
+        #[doc(alias = "voicevox_synthesizer_create_accent_phrases_from_kana")]
         pub fn create_accent_phrases_from_kana(
             &self,
             kana: &str,
@@ -1360,6 +1382,7 @@ pub(crate) mod blocking {
         }
 
         /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
+        #[doc(alias = "voicevox_synthesizer_replace_mora_data")]
         pub fn replace_mora_data(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1371,6 +1394,7 @@ pub(crate) mod blocking {
         }
 
         /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
+        #[doc(alias = "voicevox_synthesizer_replace_phoneme_length")]
         pub fn replace_phoneme_length(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1382,6 +1406,7 @@ pub(crate) mod blocking {
         }
 
         /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
+        #[doc(alias = "voicevox_synthesizer_replace_mora_pitch")]
         pub fn replace_mora_pitch(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1419,6 +1444,7 @@ pub(crate) mod blocking {
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
+        #[doc(alias = "voicevox_synthesizer_create_audio_query_from_kana")]
         pub fn create_audio_query_from_kana(
             &self,
             kana: &str,
@@ -1430,6 +1456,7 @@ pub(crate) mod blocking {
         }
 
         /// AquesTalk風記法から音声合成を行う。
+        #[doc(alias = "voicevox_synthesizer_tts_from_kana")]
         pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
             TtsFromKana {
                 synthesizer: self.0.without_text_analyzer(),
@@ -1466,6 +1493,7 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
+        #[doc(alias = "voicevox_synthesizer_create_accent_phrases")]
         pub fn create_accent_phrases(
             &self,
             text: &str,
@@ -1501,6 +1529,7 @@ pub(crate) mod blocking {
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
+        #[doc(alias = "voicevox_synthesizer_create_audio_query")]
         pub fn create_audio_query(
             &self,
             text: &str,
@@ -1510,6 +1539,7 @@ pub(crate) mod blocking {
         }
 
         /// 日本語のテキストから音声合成を行う。
+        #[doc(alias = "voicevox_synthesizer_tts")]
         pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
             Tts {
                 synthesizer: &self.0,
@@ -1805,8 +1835,7 @@ pub(crate) mod nonblocking {
         #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
         /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
-        /// # // FIXME: この`ONNXRUNTIME_DYLIB_PATH`はunused import
-        /// # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR};
+        /// # use test_util::OPEN_JTALK_DIC_DIR;
         /// #
         /// # const ACCELERATION_MODE: AccelerationMode = AccelerationMode::Cpu;
         /// #
@@ -1821,9 +1850,8 @@ pub(crate) mod nonblocking {
         /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
         /// #     .perform()?;
         /// #
-        /// // FIXME: `Synthesizer`には`&mut self`なメソッドはもう無いはず
-        /// let mut syntesizer = Synthesizer::builder(Onnxruntime::load_once().perform().await?)
-        ///     .text_analyzer(Arc::new(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap())) // FIXME: `Arc`は要らないはず
+        /// let syntesizer = Synthesizer::builder(Onnxruntime::load_once().perform().await?)
+        ///     .text_analyzer(OpenJtalk::new(OPEN_JTALK_DIC_DIR).await.unwrap())
         ///     .acceleration_mode(ACCELERATION_MODE)
         ///     .build()?;
         /// #

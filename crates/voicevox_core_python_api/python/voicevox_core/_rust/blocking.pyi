@@ -1,5 +1,5 @@
 from os import PathLike
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, NoReturn, Union
 from uuid import UUID
 
 if TYPE_CHECKING:
@@ -18,6 +18,9 @@ class VoiceModelFile:
     """
     音声モデルファイル。"""
 
+    def __new__(
+        cls, *args: tuple[object], **kwargs: dict[object, object]
+    ) -> NoReturn: ...
     @staticmethod
     def open(path: str | PathLike[str]) -> VoiceModelFile:
         """
@@ -95,6 +98,9 @@ class Onnxruntime:
     LIB_UNVERSIONED_FILENAME: str
     """:attr:`LIB_NAME` からなる動的ライブラリのファイル名。"""
 
+    def __new__(
+        cls, *args: tuple[object], **kwargs: dict[object, object]
+    ) -> NoReturn: ...
     @staticmethod
     def get() -> Union["Onnxruntime", None]:
         """
@@ -175,6 +181,7 @@ class Synthesizer:
         self,
         onnxruntime: Onnxruntime,
         open_jtalk: OpenJtalk,
+        *,
         acceleration_mode: AccelerationMode = "AUTO",
         cpu_num_threads: int = 0,
     ) -> None: ...
@@ -364,13 +371,14 @@ class Synthesizer:
             スタイルID。
         """
         ...
-    def precompute_render(
+    def __precompute_render(
         self,
         audio_query: AudioQuery,
         style_id: StyleId | int,
+        *,
         enable_interrogative_upspeak: bool = True,
     ) -> AudioFeature: ...
-    def render(
+    def __render(
         self,
         audio: AudioFeature,
         start: int,
@@ -380,6 +388,7 @@ class Synthesizer:
         self,
         audio_query: AudioQuery,
         style_id: StyleId | int,
+        *,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -403,6 +412,7 @@ class Synthesizer:
         self,
         kana: str,
         style_id: StyleId | int,
+        *,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -422,6 +432,7 @@ class Synthesizer:
         self,
         text: str,
         style_id: StyleId | int,
+        *,
         enable_interrogative_upspeak: bool = True,
     ) -> bytes:
         """
@@ -446,8 +457,8 @@ class Synthesizer:
 class UserDict:
     """ユーザー辞書。"""
 
-    def words(self) -> dict[UUID, UserDictWord]:
-        """このオプジェクトの :class:`dict` としての表現。"""
+    def to_dict(self) -> dict[UUID, UserDictWord]:
+        """このオプジェクトを :class:`dict` に変換する。"""
         ...
     def __init__(self) -> None: ...
     def load(self, path: str | PathLike[str]) -> None:

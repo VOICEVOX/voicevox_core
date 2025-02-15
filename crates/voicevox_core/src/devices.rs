@@ -5,7 +5,9 @@ use std::{
 };
 
 use derive_more::BitAnd;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+
+use crate::convert::ToJsonValue;
 
 pub(crate) fn test_gpus(
     gpus: impl IntoIterator<Item = GpuSpec>,
@@ -48,8 +50,7 @@ fn test_gpu(
 
 /// 利用可能なデバイスの情報。
 ///
-/// あくまで本ライブラリもしくはONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったと
-/// しても`cuda`や`dml`は`true`を示しうる。
+/// あくまで本ライブラリもしくはONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示しうる。
 ///
 /// ```
 /// # #[pollster::main]
@@ -65,7 +66,8 @@ fn test_gpu(
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Clone, Copy, PartialEq, Eq, Debug, BitAnd, Serialize, Deserialize)]
+// 将来の互換性保証のため、`Deserialize`は実装するべきではない
+#[derive(Clone, Copy, PartialEq, Eq, Debug, BitAnd, Serialize)]
 #[non_exhaustive]
 pub struct SupportedDevices {
     /// CPUが利用可能。
@@ -74,15 +76,13 @@ pub struct SupportedDevices {
     pub cpu: bool,
     /// CUDAが利用可能。
     ///
-    /// ONNX Runtimeの[CUDA Execution Provider] (`CUDAExecutionProvider`)に対応する。必要な環境につ
-    /// いてはそちらを参照。
+    /// ONNX Runtimeの[CUDA Execution Provider] (`CUDAExecutionProvider`)に対応する。必要な環境についてはそちらを参照。
     ///
     /// [CUDA Execution Provider]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
     pub cuda: bool,
     /// DirectMLが利用可能。
     ///
-    /// ONNX Runtimeの[DirectML Execution Provider] (`DmlExecutionProvider`)に対応する。必要な環境に
-    /// ついてはそちらを参照。
+    /// ONNX Runtimeの[DirectML Execution Provider] (`DmlExecutionProvider`)に対応する。必要な環境についてはそちらを参照。
     ///
     /// [DirectML Execution Provider]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
     pub dml: bool,
@@ -123,8 +123,10 @@ impl SupportedDevices {
     } else {
         panic!("either `load-onnxruntime` or `link-onnxruntime` must be enabled");
     };
+}
 
-    pub fn to_json(self) -> serde_json::Value {
+impl ToJsonValue for SupportedDevices {
+    fn to_json_value(&self) -> serde_json::Value {
         serde_json::to_value(self).expect("should not fail")
     }
 }

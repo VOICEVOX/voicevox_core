@@ -1,10 +1,5 @@
 name: build and deploy workflow
 
-# 製品版もビルドできる。製品版ビルド時の違いは以下の3点
-# 1. production環境を使う
-# 2. 製品版リポジトリのコードをmergeする
-# 3. RESOURCEリポジトリからモデルをダウンロードして置き換える
-
 on:
   workflow_dispatch:
     inputs:
@@ -13,13 +8,6 @@ on:
         required: true
       code_signing:
         description: "コード署名する"
-        type: boolean
-        required: false
-        default: false
-      # TODO: ライセンス表記およびモデル配布形体の方針が固まったら廃止
-      # <https://github.com/VOICEVOX/voicevox_core/pull/825#discussion_r1740115058>
-      is_production:
-        description: "製品版をビルドする"
         type: boolean
         required: false
         default: false
@@ -160,7 +148,7 @@ jobs:
 
   build_and_deploy:
     needs: config
-    environment: ${{ inputs.code_signing && 'production' || '' }} # コード署名用のenvironment
+    environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include: ${{ fromJson(needs.config.outputs.includes) }}
@@ -193,18 +181,6 @@ jobs:
         run: |
           echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
-      - name: Checkout VOICEVOX RESOURCE
-        if: inputs.is_production
-        uses: actions/checkout@v4
-        with:
-          repository: VOICEVOX/voicevox_resource
-          ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
-          path: download/resource
-      - name: Raplace resource
-        if: inputs.is_production
-        shell: bash
-        run:
-          mv -f download/resource/core/README.md ./README.md
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-edit
@@ -239,19 +215,20 @@ jobs:
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
       - name: build voicevox_core_java_api
         if: contains(matrix.target, 'android')
-        run: cargo build -p voicevox_core_java_api vv --target ${{ matrix.target }} --release
+        run: cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
       - name: Organize artifact
         run: |
-          mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          mkdir -p artifact/${{ env.ASSET_NAME }}/{include,lib}
           case ${{ matrix.c_release_format }} in
             plain-cdylib) feature=VOICEVOX_LOAD_ONNXRUNTIME ;;
             ios-xcframework) feature=VOICEVOX_LINK_ONNXRUNTIME ;;
           esac
           sed 's:^//\(#define '"$feature"'\)$:\1:' crates/voicevox_core_c_api/include/voicevox_core.h \
-            > "artifact/${{ env.ASSET_NAME }}/voicevox_core.h"
-          cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
-          cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
+            > "artifact/${{ env.ASSET_NAME }}/include/voicevox_core.h"
+          cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}/lib" || true
+          cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.lib" || true
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
+          cp -v LICENSE "artifact/${{ env.ASSET_NAME }}/"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
           mkdir java_artifact
@@ -259,7 +236,7 @@ jobs:
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
         run:
-          bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
+          bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.dll"
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
@@ -350,18 +327,6 @@ jobs:
       ASSET_NAME: model-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout VOICEVOX FAT RESOURCE
-        if: inputs.is_production
-        uses: actions/checkout@v4
-        with:
-          repository: VOICEVOX/voicevox_fat_resource
-          ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
-          path: download/fat_resource
-      - name: Raplace resource
-        if: inputs.is_production
-        shell: bash
-        run:
-          rm -r ./model; mv download/fat_resource/core/model ./model
       - name: Create artifact
         run: |
           mkdir "artifact"

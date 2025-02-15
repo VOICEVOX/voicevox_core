@@ -1,7 +1,5 @@
 /// 本クレートの`package.version`。
-///
-/// C APIやPython API側からこの値が使われるべきではない。
-/// 現在はまだRust APIを外部提供していないため、この定数はどこからも参照されていないはずである。
+#[doc(alias = "voicevox_get_version")]
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg(test)]

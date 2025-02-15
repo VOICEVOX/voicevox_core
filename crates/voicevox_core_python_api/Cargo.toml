@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 camino.workspace = true
+duplicate.workspace = true
 easy-ext.workspace = true
 futures-lite.workspace = true
 log.workspace = true

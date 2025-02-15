@@ -2,7 +2,9 @@ import dataclasses
 from typing import Literal, NewType, TypeAlias
 from uuid import UUID
 
-import pydantic
+import pydantic.alias_generators
+from pydantic import ConfigDict
+from pydantic_core import ArgsKwargs
 
 from .._rust import _to_zenkaku, _validate_pronunciation
 from ._please_do_not_use import _Reserved
@@ -11,6 +13,13 @@ StyleId = NewType("StyleId", int)
 """
 スタイルID。
 
+VOICEVOXにおける、ある |styleid-character|_ のある |styleid-style|_ を指す。
+
+.. |styleid-character| replace:: *キャラクター*
+.. _styleid-character: #voicevox_core.CharacterMeta
+.. |styleid-style| replace:: *スタイル*
+.. _styleid-style: #voicevox_core.StyleMeta
+
 Parameters
 ----------
 x : int
@@ -18,7 +27,10 @@ x : int
 
 CharacterVersion = NewType("CharacterVersion", str)
 """
-**キャラクター**のバージョン。
+|characterversion-character|_ のバージョン。
+
+.. |characterversion-character| replace:: *キャラクター*
+.. _characterversion-character: #voicevox_core.CharacterMeta
 
 Parameters
 ----------
@@ -39,7 +51,10 @@ StyleType: TypeAlias = (
 )
 """
 
-**スタイル** (_style_)に対応するモデルの種類。
+|styletype-style|_ に対応するモデルの種類。
+
+.. |styletype-style| replace:: *スタイル*
+.. _styletype-style: #voicevox_core.StyleMeta
 
 ===================== ==================================================
 値                    説明
@@ -87,7 +102,17 @@ def _(style_type: StyleType):
 
 @pydantic.dataclasses.dataclass
 class StyleMeta:
-    """**スタイル** (_style_)のメタ情報。"""
+    """
+    *スタイル* のメタ情報。
+
+    現在は |pydantic-dataclasses-dataclass-stylemeta|_ ではあるが、将来的には
+    |de-pydantic-stylemeta|_ 。
+
+    .. |pydantic-dataclasses-dataclass-stylemeta| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-stylemeta: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-stylemeta| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-stylemeta: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+    """
 
     name: str
     """スタイル名。"""
@@ -108,7 +133,17 @@ class StyleMeta:
 
 @pydantic.dataclasses.dataclass
 class CharacterMeta:
-    """**キャラクター**のメタ情報。"""
+    """
+    *キャラクター* のメタ情報。
+
+    現在は |pydantic-dataclasses-dataclass-charactermeta|_ ではあるが、将来的には
+    |de-pydantic-charactermeta|_ 。
+
+    .. |pydantic-dataclasses-dataclass-charactermeta| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-charactermeta: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-charactermeta| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-charactermeta: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+    """
 
     name: str
     """キャラクター名。"""
@@ -137,6 +172,17 @@ class SupportedDevices:
 
     あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても
     ``cuda`` や ``dml`` は ``True`` を示しうる。
+
+    JSONからの変換も含め、VOICEVOX CORE以外が作ることはできない。作ろうとした場合
+    ``TypeError`` となる。
+
+    現在は |pydantic-dataclasses-dataclass-supporteddevices|_ ではあるが、将来的には
+    |de-pydantic-supporteddevices|_ 。
+
+    .. |pydantic-dataclasses-dataclass-supporteddevices| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-supporteddevices: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-supporteddevices| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-supporteddevices: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
     """
 
     cpu: bool
@@ -161,6 +207,13 @@ class SupportedDevices:
     ONNX Runtimeの `DirectML Execution Provider <https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html>`_
     (``DmlExecutionProvider``)に対応する。必要な環境についてはそちらを参照。
     """
+
+    @pydantic.model_validator(mode="before")
+    @staticmethod
+    def _deny_unless_from_pyo3(data: ArgsKwargs) -> ArgsKwargs:
+        if "I AM FROM PYO3" not in data.args:
+            raise TypeError("You cannot deserialize `SupportedDevices`")
+        return ArgsKwargs((), kwargs=data.kwargs)
 
 
 AccelerationMode: TypeAlias = Literal["AUTO", "CPU", "GPU"] | _Reserved
@@ -210,7 +263,17 @@ def _(mode: AccelerationMode):
 
 @pydantic.dataclasses.dataclass
 class Mora:
-    """モーラ（子音＋母音）ごとの情報。"""
+    """
+    モーラ（子音＋母音）ごとの情報。
+
+    現在は |pydantic-dataclasses-dataclass-mora|_ ではあるが、将来的には
+    |de-pydantic-mora|_ 。
+
+    .. |pydantic-dataclasses-dataclass-mora| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-mora: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-mora| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-mora: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+    """
 
     text: str
     """文字。"""
@@ -233,7 +296,17 @@ class Mora:
 
 @pydantic.dataclasses.dataclass
 class AccentPhrase:
-    """AccentPhrase (アクセント句ごとの情報)。"""
+    """
+    AccentPhrase (アクセント句ごとの情報)。
+
+    現在は |pydantic-dataclasses-dataclass-accentphrase|_ ではあるが、将来的には
+    |de-pydantic-accentphrase|_ 。
+
+    .. |pydantic-dataclasses-dataclass-accentphrase| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-accentphrase: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-accentphrase| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-accentphrase: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+    """
 
     moras: list[Mora]
     """モーラの配列。"""
@@ -248,9 +321,47 @@ class AccentPhrase:
     """疑問系かどうか。"""
 
 
-@pydantic.dataclasses.dataclass
+def _rename_audio_query_field(name: str) -> str:
+    match name:
+        case "accent_phrases":
+            return "accent_phrases"
+        case _:
+            return pydantic.alias_generators.to_camel(name)
+
+
+@pydantic.dataclasses.dataclass(
+    config=ConfigDict(alias_generator=_rename_audio_query_field),
+)
 class AudioQuery:
-    """AudioQuery (音声合成用のクエリ)。"""
+    """
+    AudioQuery (音声合成用のクエリ)。
+
+    現在は |pydantic-dataclasses-dataclass-audioquery|_ ではあるが、将来的には
+    |de-pydantic-audioquery|_ 。
+
+    .. |pydantic-dataclasses-dataclass-audioquery| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-audioquery: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-audioquery| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-audioquery: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+
+    JSONへの変換は ``pydantic.TypeAdapter.dump_json`` を用いなければならない。また、
+    ``dump_json`` や ``json_schema`` を用いるときは ``by_alias=True``
+    を指定しなければならない。
+
+    .. code-block::
+
+        from pydantic import TypeAdapter
+        from voicevox_core import AudioQuery
+
+        JSON = '{"accent_phrases":[],"speedScale":1.0,"pitchScale":0.0,"intonationScale":1.0,"volumeScale":1.0,"prePhonemeLength":0.1,"postPhonemeLength":0.1,"outputSamplingRate":24000,"outputStereo":false,"pauseLength":null,"pauseLengthScale":1.0,"kana":null}'
+        query = TypeAdapter(AudioQuery).validate_json(JSON)
+
+        # `JSON`が必須フィールドを含んでいる場合のみ
+        assert TypeAdapter(AudioQuery).dump_json(query, by_alias=True).decode() == JSON
+
+        # `by_alias`が無いと、`accent_phrases`以外snake_caseのままJSONが出力されてしまう
+        assert TypeAdapter(AudioQuery).dump_json(query).decode() != JSON
+    """
 
     accent_phrases: list[AccentPhrase]
     """アクセント句の配列。"""
@@ -349,7 +460,17 @@ def _(word_type: UserDictWordType):
 
 @pydantic.dataclasses.dataclass
 class UserDictWord:
-    """ユーザー辞書の単語。"""
+    """
+    ユーザー辞書の単語。
+
+    現在は |pydantic-dataclasses-dataclass-userdictword|_ ではあるが、将来的には
+    |de-pydantic-userdictword|_ 。
+
+    .. |pydantic-dataclasses-dataclass-userdictword| replace:: ``@pydantic.dataclasses.dataclass``
+    .. _pydantic-dataclasses-dataclass-userdictword: https://docs.pydantic.dev/2.10/concepts/dataclasses/
+    .. |de-pydantic-userdictword| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
+    .. _de-pydantic-userdictword: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+    """
 
     surface: str
     """言葉の表層形。"""
@@ -361,7 +482,7 @@ class UserDictWord:
     カタカナで表記する。
     """
 
-    accent_type: int = dataclasses.field(default=0)
+    accent_type: int
     """
     アクセント型。
 

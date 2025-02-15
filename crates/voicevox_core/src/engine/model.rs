@@ -55,25 +55,34 @@ pub struct AudioQuery {
     /// アクセント句の配列。
     pub accent_phrases: Vec<AccentPhrase>,
     /// 全体の話速。
+    #[serde(rename = "speedScale")]
     pub speed_scale: f32,
     /// 全体の音高。
+    #[serde(rename = "pitchScale")]
     pub pitch_scale: f32,
     /// 全体の抑揚。
+    #[serde(rename = "intonationScale")]
     pub intonation_scale: f32,
     /// 全体の音量。
+    #[serde(rename = "volumeScale")]
     pub volume_scale: f32,
     /// 音声の前の無音時間。
+    #[serde(rename = "prePhonemeLength")]
     pub pre_phoneme_length: f32,
     /// 音声の後の無音時間。
+    #[serde(rename = "postPhonemeLength")]
     pub post_phoneme_length: f32,
     /// 音声データの出力サンプリングレート。
+    #[serde(rename = "outputSamplingRate")]
     pub output_sampling_rate: u32,
     /// 音声データをステレオ出力するか否か。
+    #[serde(rename = "outputStereo")]
     pub output_stereo: bool,
     // TODO: VOICEVOX/voicevox_engine#1308 を実装する
     /// 句読点などの無音時間。`null`のときは無視される。デフォルト値は`null`。
     #[serde(
         default,
+        rename = "pauseLength",
         deserialize_with = "deserialize_pause_length",
         serialize_with = "serialize_pause_length"
     )]
@@ -81,6 +90,7 @@ pub struct AudioQuery {
     /// 読点などの無音時間（倍率）。デフォルト値は`1`。
     #[serde(
         default,
+        rename = "pauseLengthScale",
         deserialize_with = "deserialize_pause_length_scale",
         serialize_with = "serialize_pause_length_scale"
     )]
@@ -183,51 +193,10 @@ impl AudioQuery {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
     use rstest::rstest;
     use serde_json::json;
 
     use super::AudioQuery;
-
-    #[rstest]
-    fn check_audio_query_model_json_field_snake_case() {
-        let audio_query_model = AudioQuery {
-            accent_phrases: vec![],
-            speed_scale: 0.0,
-            pitch_scale: 0.0,
-            intonation_scale: 0.0,
-            volume_scale: 0.0,
-            pre_phoneme_length: 0.0,
-            post_phoneme_length: 0.0,
-            output_sampling_rate: 0,
-            output_stereo: false,
-            pause_length: (),
-            pause_length_scale: (),
-            kana: None,
-        };
-        let val = serde_json::to_value(audio_query_model).unwrap();
-        check_json_field_snake_case(&val);
-    }
-
-    fn check_json_field_snake_case(val: &serde_json::Value) {
-        use serde_json::Value::*;
-
-        match val {
-            Object(obj) => {
-                for (k, v) in obj.iter() {
-                    use heck::ToSnakeCase as _;
-                    assert_eq!(k.to_snake_case(), *k, "should be snake case {k}");
-                    check_json_field_snake_case(v);
-                }
-            }
-            Array(array) => {
-                for val in array.iter() {
-                    check_json_field_snake_case(val);
-                }
-            }
-            _ => {}
-        }
-    }
 
     #[rstest]
     fn it_accepts_json_without_optional_fields() -> anyhow::Result<()> {
@@ -245,14 +214,14 @@ mod tests {
                     "accent": 1
                 }
             ],
-            "speed_scale": 1.0,
-            "pitch_scale": 0.0,
-            "intonation_scale": 1.0,
-            "volume_scale": 1.0,
-            "pre_phoneme_length": 0.1,
-            "post_phoneme_length": 0.1,
-            "output_sampling_rate": 24000,
-            "output_stereo": false
+            "speedScale": 1.0,
+            "pitchScale": 0.0,
+            "intonationScale": 1.0,
+            "volumeScale": 1.0,
+            "prePhonemeLength": 0.1,
+            "postPhonemeLength": 0.1,
+            "outputSamplingRate": 24000,
+            "outputStereo": false
         }))?;
         Ok(())
     }
@@ -262,15 +231,15 @@ mod tests {
     fn it_denies_non_null_for_pause_length() {
         serde_json::from_value::<AudioQuery>(json!({
             "accent_phrases": [],
-            "speed_scale": 1.0,
-            "pitch_scale": 0.0,
-            "intonation_scale": 1.0,
-            "volume_scale": 1.0,
-            "pre_phoneme_length": 0.1,
-            "post_phoneme_length": 0.1,
-            "output_sampling_rate": 24000,
-            "output_stereo": false,
-            "pause_length": "aaaaa"
+            "speedScale": 1.0,
+            "pitchScale": 0.0,
+            "intonationScale": 1.0,
+            "volumeScale": 1.0,
+            "prePhonemeLength": 0.1,
+            "postPhonemeLength": 0.1,
+            "outputSamplingRate": 24000,
+            "outputStereo": false,
+            "pauseLength": "aaaaa"
         }))
         .map(|_| ())
         .unwrap_err();
@@ -281,15 +250,15 @@ mod tests {
     fn it_denies_non_float_for_pause_length_scale() {
         serde_json::from_value::<AudioQuery>(json!({
             "accent_phrases": [],
-            "speed_scale": 1.0,
-            "pitch_scale": 0.0,
-            "intonation_scale": 1.0,
-            "volume_scale": 1.0,
-            "pre_phoneme_length": 0.1,
-            "post_phoneme_length": 0.1,
-            "output_sampling_rate": 24000,
-            "output_stereo": false,
-            "pause_length_scale": "aaaaa",
+            "speedScale": 1.0,
+            "pitchScale": 0.0,
+            "intonationScale": 1.0,
+            "volumeScale": 1.0,
+            "prePhonemeLength": 0.1,
+            "postPhonemeLength": 0.1,
+            "outputSamplingRate": 24000,
+            "outputStereo": false,
+            "pauseLengthScale": "aaaaa",
         }))
         .map(|_| ())
         .unwrap_err();

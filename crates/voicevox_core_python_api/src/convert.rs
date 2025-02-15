@@ -1,16 +1,20 @@
 use std::{error::Error as _, future::Future, iter, panic, path::PathBuf};
 
 use camino::Utf8PathBuf;
+use duplicate::duplicate_item;
 use easy_ext::ext;
 use pyo3::{
     exceptions::{PyException, PyRuntimeError, PyValueError},
-    types::{IntoPyDict as _, PyAnyMethods as _, PyList, PyString},
+    types::{IntoPyDict as _, PyAnyMethods as _, PyBytes, PyBytesMethods as _, PyList, PyString},
     Bound, FromPyObject as _, IntoPyObject, Py, PyAny, PyResult, Python,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
 use uuid::Uuid;
-use voicevox_core::{AccelerationMode, AccentPhrase, StyleId, VoiceModelMeta};
+use voicevox_core::{
+    AccelerationMode, AccentPhrase, AudioQuery, StyleId, SupportedDevices, VoiceModelMeta,
+    __internal::interop::ToJsonValue as _,
+};
 
 use crate::{
     AnalyzeTextError, GetSupportedDevicesError, GpuSupportError, InitInferenceRuntimeError,
@@ -40,15 +44,34 @@ pub(crate) fn from_utf8_path(ob: &Bound<'_, PyAny>) -> PyResult<Utf8PathBuf> {
         .map_err(|s| PyValueError::new_err(format!("{s:?} cannot be encoded to UTF-8")))
 }
 
-pub(crate) fn from_dataclass<T: DeserializeOwned>(ob: &Bound<'_, PyAny>) -> PyResult<T> {
+pub(crate) trait HasClass: DeserializeOwned {
+    fn cls(py: Python<'_>) -> PyResult<Bound<'_, PyAny>>;
+}
+
+#[duplicate_item(
+    T;
+    [ AudioQuery ];
+    [ AccentPhrase ];
+)]
+impl HasClass for T {
+    fn cls(py: Python<'_>) -> PyResult<Bound<'_, PyAny>> {
+        py.import("voicevox_core")?.getattr(stringify!(T))
+    }
+}
+
+pub(crate) fn from_dataclass<T: HasClass>(ob: &Bound<'_, PyAny>) -> PyResult<T> {
     let py = ob.py();
 
-    let ob = py.import("dataclasses")?.call_method1("asdict", (ob,))?;
-    let json = &py
-        .import("json")?
-        .call_method1("dumps", (ob,))?
-        .extract::<String>()?;
-    serde_json::from_str(json).into_py_value_result()
+    let type_adapter = py.import("pydantic")?.getattr("TypeAdapter")?;
+    let json = type_adapter
+        .call1((T::cls(py)?,))?
+        .call_method(
+            "dump_json",
+            (ob,),
+            Some(&[("by_alias", true)].into_py_dict(py)?),
+        )?
+        .extract::<Bound<'_, PyBytes>>()?;
+    serde_json::from_slice(json.as_bytes()).into_py_value_result()
 }
 
 pub(crate) fn to_pydantic_voice_model_meta<'py>(
@@ -251,6 +274,22 @@ pub(crate) impl<T> voicevox_core::Result<T> {
                 })
                 .expect("should not be empty")
         })
+    }
+}
+
+#[ext(SupportedDevicesExt)]
+impl SupportedDevices {
+    pub(crate) fn to_py(self, py: Python<'_>) -> PyResult<Bound<'_, PyAny>> {
+        assert!(match self.to_json_value() {
+            serde_json::Value::Object(o) => o.len() == 3, // `cpu`, `cuda`, `dml`
+            _ => false,
+        });
+
+        let cls = py.import("voicevox_core")?.getattr("SupportedDevices")?;
+        cls.call(
+            ("I AM FROM PYO3",),
+            Some(&[("cpu", self.cpu), ("cuda", self.cuda), ("dml", self.dml)].into_py_dict(py)?),
+        )
     }
 }
 

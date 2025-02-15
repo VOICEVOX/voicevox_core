@@ -2,12 +2,12 @@
 
 import asyncio
 import dataclasses
-import json
 import logging
 import multiprocessing
 from argparse import ArgumentParser
 from pathlib import Path
 
+from pydantic import TypeAdapter
 from voicevox_core import AccelerationMode, AudioQuery
 from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
@@ -43,7 +43,7 @@ class Args:
         )
         argparser.add_argument(
             "--dict-dir",
-            default="./open_jtalk_dic_utf_8-1.11",
+            default="./dict/open_jtalk_dic_utf_8-1.11",
             type=Path,
             help="Open JTalkの辞書ディレクトリ",
         )
@@ -99,13 +99,12 @@ async def main() -> None:
             multiprocessing.cpu_count(), 2
         ),  # https://github.com/VOICEVOX/voicevox_core/issues/888
     )
-
-    logger.debug("%s", f"{synthesizer.metas()=}")
     logger.debug("%s", f"{synthesizer.is_gpu_mode=}")
 
     logger.info("%s", f"Loading `{args.vvm}`")
     async with await VoiceModelFile.open(args.vvm) as model:
         await synthesizer.load_voice_model(model)
+    logger.debug("%s", f"{synthesizer.metas()=}")
 
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
     audio_query = await synthesizer.create_audio_query(args.text, args.style_id)
@@ -118,7 +117,7 @@ async def main() -> None:
 
 
 def display_as_json(audio_query: AudioQuery) -> str:
-    return json.dumps(dataclasses.asdict(audio_query), ensure_ascii=False)
+    return TypeAdapter(AudioQuery).dump_json(audio_query, by_alias=True).decode()
 
 
 if __name__ == "__main__":

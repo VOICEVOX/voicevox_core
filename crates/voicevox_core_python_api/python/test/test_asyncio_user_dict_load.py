@@ -40,6 +40,7 @@ async def test_user_dict_load() -> None:
         voicevox_core.UserDictWord(
             surface="this_word_should_not_exist_in_default_dictionary",
             pronunciation="アイウエオ",
+            accent_type=0,
         )
     )
     assert isinstance(uuid, UUID)

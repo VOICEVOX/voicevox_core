@@ -4497,7 +4497,6 @@ dependencies = [
  "futures-io",
  "futures-lite",
  "futures-util",
- "heck 0.4.1",
  "humansize",
  "indexmap 2.6.0",
  "itertools 0.10.5",
@@ -4611,6 +4610,7 @@ name = "voicevox_core_python_api"
 version = "0.0.0"
 dependencies = [
  "camino",
+ "duplicate",
  "easy-ext",
  "futures-lite",
  "log",

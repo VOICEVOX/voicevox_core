@@ -12,6 +12,7 @@ use crate::{
 };
 
 /// ユーザー辞書の単語。
+#[doc(alias = "VoicevoxUserDictWord")]
 #[derive(Clone, Debug, Serialize)]
 pub struct UserDictWord {
     /// 単語の表記。
@@ -78,6 +79,9 @@ impl InvalidWordError {
 
 type InvalidWordResult<T> = std::result::Result<T, InvalidWordError>;
 
+pub const DEFAULT_WORD_TYPE: UserDictWordType = UserDictWordType::CommonNoun;
+pub const DEFAULT_PRIORITY: u32 = 5;
+
 static PRONUNCIATION_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
 static MORA_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -93,20 +97,9 @@ static MORA_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 static SPACE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\p{Z}").unwrap());
 
-impl Default for UserDictWord {
-    fn default() -> Self {
-        Self {
-            surface: "".to_string(),
-            pronunciation: "".to_string(),
-            accent_type: 0,
-            word_type: UserDictWordType::CommonNoun,
-            priority: 0,
-            mora_count: 0,
-        }
-    }
-}
-
 impl UserDictWord {
+    // TODO: これビルダースタイルにすべきでは？
+    #[doc(alias = "voicevox_user_dict_word_make")]
     pub fn new(
         surface: &str,
         pronunciation: String,
@@ -231,6 +224,7 @@ pub(crate) fn to_zenkaku(surface: &str) -> String {
         .collect()
 }
 /// ユーザー辞書の単語の種類。
+#[doc(alias = "VoicevoxUserDictWordType")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UserDictWordType {

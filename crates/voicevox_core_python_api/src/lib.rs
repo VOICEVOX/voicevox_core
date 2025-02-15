@@ -159,21 +159,6 @@ impl<T, C: PyTypeInfo> Closable<T, C, Tokio> {
     }
 }
 
-impl<T, C: PyTypeInfo, A: Async> Drop for Closable<T, C, A> {
-    fn drop(&mut self) {
-        let content = mem::replace(self.content.get_mut_(), MaybeClosed::Closed);
-        if matches!(content, MaybeClosed::Open(_)) {
-            warn!(
-                "デストラクタにより`{}`のクローズを行います。通常は、可能な限り`{}`でクローズする\
-                 ようにして下さい",
-                C::NAME,
-                A::EXIT_METHOD,
-            );
-            drop(content);
-        }
-    }
-}
-
 trait Async {
     const EXIT_METHOD: &str;
     type RwLock<T>: RwLock<Item = T>;
@@ -200,7 +185,6 @@ trait RwLock: From<Self::Item> {
     fn try_read_(&self) -> Result<impl Deref<Target = Self::Item>, ()>;
     async fn write_(&self) -> Self::RwLockWriteGuard<'_>;
     fn try_write_(&self) -> Result<Self::RwLockWriteGuard<'_>, ()>;
-    fn get_mut_(&mut self) -> &mut Self::Item;
 }
 
 impl<T> RwLock for std::sync::RwLock<T> {
@@ -227,10 +211,6 @@ impl<T> RwLock for std::sync::RwLock<T> {
             std::sync::TryLockError::WouldBlock => (),
         })
     }
-
-    fn get_mut_(&mut self) -> &mut Self::Item {
-        self.get_mut().unwrap_or_else(|e| panic!("{e}"))
-    }
 }
 
 impl<T> RwLock for tokio::sync::RwLock<T> {
@@ -250,10 +230,6 @@ impl<T> RwLock for tokio::sync::RwLock<T> {
 
     fn try_write_(&self) -> Result<Self::RwLockWriteGuard<'_>, ()> {
         self.try_write().map_err(|_| ())
-    }
-
-    fn get_mut_(&mut self) -> &mut Self::Item {
-        self.get_mut()
     }
 }
 
@@ -282,7 +258,7 @@ fn wav_from_s16le<'py>(
 ) -> Bound<'py, PyBytes> {
     PyBytes::new(
         py,
-        &voicevox_core::wav_from_s16le(pcm, sampling_rate, is_stereo),
+        &voicevox_core::__wav_from_s16le(pcm, sampling_rate, is_stereo),
     )
 }
 
@@ -292,16 +268,17 @@ mod blocking {
     use camino::Utf8PathBuf;
     use easy_ext::ext;
     use pyo3::{
-        exceptions::{PyIndexError, PyValueError},
+        exceptions::{PyIndexError, PyTypeError, PyValueError},
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyAnyMethods as _, PyBytes, PyDict, PyList},
+        types::{IntoPyDict as _, PyAnyMethods as _, PyBytes, PyDict, PyList, PyTuple, PyType},
         Bound, Py, PyAny, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
     use voicevox_core::{AccelerationMode, AudioQuery, StyleId, UserDictWord};
 
     use crate::{
-        convert::VoicevoxCoreResultExt as _, Closable, SingleTasked, VoiceModelFilePyFields,
+        convert::{SupportedDevicesExt as _, VoicevoxCoreResultExt as _},
+        Closable, SingleTasked, VoiceModelFilePyFields,
     };
 
     #[pyclass]
@@ -313,6 +290,20 @@ mod blocking {
 
     #[pymethods]
     impl VoiceModelFile {
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(
+            _cls: Bound<'_, PyType>,
+            _args: Bound<'_, PyTuple>,
+            _kwargs: Option<Bound<'_, PyDict>>,
+        ) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`VoiceModelFile` does not have a normal constructor. Use \
+                 `VoiceModelFile.load_once` to construct",
+            )))
+        }
+
         #[staticmethod]
         fn open(py: Python<'_>, path: PathBuf) -> PyResult<Self> {
             let model = voicevox_core::blocking::VoiceModelFile::open(path).into_py_result(py)?;
@@ -397,6 +388,20 @@ mod blocking {
         const LIB_UNVERSIONED_FILENAME: &'static str =
             voicevox_core::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
 
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(
+            _cls: Bound<'_, PyType>,
+            _args: Bound<'_, PyTuple>,
+            _kwargs: Option<Bound<'_, PyDict>>,
+        ) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`Onnxruntime` does not have a normal constructor. Use `Onnxruntime.load_once` or \
+                 `Onnxruntime.get` to construct",
+            )))
+        }
+
         #[staticmethod]
         fn get(py: Python<'_>) -> PyResult<Option<Py<Self>>> {
             let result = ONNXRUNTIME.get_or_try_init(|| {
@@ -429,9 +434,7 @@ mod blocking {
         }
 
         fn supported_devices<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-            let class = &py.import("voicevox_core")?.getattr("SupportedDevices")?;
-            let s = self.0.supported_devices().into_py_result(py)?;
-            crate::convert::to_pydantic_dataclass(s, class)
+            self.0.supported_devices().into_py_result(py)?.to_py(py)
         }
     }
 
@@ -462,7 +465,7 @@ mod blocking {
 
     #[pyclass]
     pub(crate) struct AudioFeature {
-        audio: voicevox_core::blocking::AudioFeature,
+        audio: voicevox_core::blocking::__AudioFeature,
     }
 
     #[pymethods]
@@ -493,6 +496,7 @@ mod blocking {
         #[pyo3(signature =(
             onnxruntime,
             open_jtalk,
+            *,
             acceleration_mode = Default::default(),
             cpu_num_threads = voicevox_core::__internal::interop::DEFAULT_CPU_NUM_THREADS,
         ))]
@@ -701,13 +705,17 @@ mod blocking {
             )
         }
 
+        // TODO: 後で復活させる
+        // https://github.com/VOICEVOX/voicevox_core/issues/970
+        #[allow(non_snake_case)]
         #[pyo3(signature=(
             audio_query,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
-        fn precompute_render(
+        fn _Synthesizer__precompute_render(
             &self,
             #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
             style_id: u32,
@@ -717,14 +725,17 @@ mod blocking {
             let audio = self
                 .synthesizer
                 .read()?
-                .precompute_render(&audio_query, StyleId::new(style_id))
+                .__precompute_render(&audio_query, StyleId::new(style_id))
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
                 .into_py_result(py)?;
             Ok(AudioFeature { audio })
         }
 
-        fn render<'py>(
+        // TODO: 後で復活させる
+        // https://github.com/VOICEVOX/voicevox_core/issues/970
+        #[allow(non_snake_case)]
+        fn _Synthesizer__render<'py>(
             &self,
             audio: &AudioFeature,
             start: usize,
@@ -745,7 +756,7 @@ mod blocking {
             let wav = &self
                 .synthesizer
                 .read()?
-                .render(&audio.audio, start..stop)
+                .__render(&audio.audio, start..stop)
                 .into_py_result(py)?;
             Ok(PyBytes::new(py, wav))
         }
@@ -753,6 +764,7 @@ mod blocking {
         #[pyo3(signature=(
             audio_query,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -776,6 +788,7 @@ mod blocking {
         #[pyo3(signature=(
             kana,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -800,6 +813,7 @@ mod blocking {
         #[pyo3(signature=(
             text,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -880,7 +894,7 @@ mod blocking {
             Ok(())
         }
 
-        fn words<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
+        fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
             let words = self.dict.with_words(|words| {
                 words
                     .iter()
@@ -901,14 +915,18 @@ mod asyncio {
 
     use camino::Utf8PathBuf;
     use pyo3::{
+        exceptions::PyTypeError,
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyAnyMethods as _, PyBytes, PyDict, PyList},
+        types::{IntoPyDict as _, PyAnyMethods as _, PyBytes, PyDict, PyList, PyTuple, PyType},
         Bound, Py, PyAny, PyErr, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
     use voicevox_core::{AccelerationMode, AudioQuery, StyleId, UserDictWord};
 
-    use crate::{convert::VoicevoxCoreResultExt as _, Closable, Tokio, VoiceModelFilePyFields};
+    use crate::{
+        convert::{SupportedDevicesExt as _, VoicevoxCoreResultExt as _},
+        Closable, Tokio, VoiceModelFilePyFields,
+    };
 
     #[pyclass]
     #[derive(Clone)]
@@ -919,6 +937,20 @@ mod asyncio {
 
     #[pymethods]
     impl VoiceModelFile {
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(
+            _cls: Bound<'_, PyType>,
+            _args: Bound<'_, PyTuple>,
+            _kwargs: Option<Bound<'_, PyDict>>,
+        ) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`VoiceModelFile` does not have a normal constructor. Use \
+                 `VoiceModelFile.load_once` to construct",
+            )))
+        }
+
         #[staticmethod]
         async fn open(path: PathBuf) -> PyResult<Self> {
             let model = voicevox_core::nonblocking::VoiceModelFile::open(path).await;
@@ -995,6 +1027,20 @@ mod asyncio {
         const LIB_UNVERSIONED_FILENAME: &'static str =
             voicevox_core::nonblocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
 
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(
+            _cls: Bound<'_, PyType>,
+            _args: Bound<'_, PyTuple>,
+            _kwargs: Option<Bound<'_, PyDict>>,
+        ) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`Onnxruntime` does not have a normal constructor. Use `Onnxruntime.load_once` or \
+                 `Onnxruntime.get` to construct",
+            )))
+        }
+
         #[staticmethod]
         fn get(py: Python<'_>) -> PyResult<Option<Py<Self>>> {
             let result =
@@ -1029,9 +1075,7 @@ mod asyncio {
         }
 
         fn supported_devices<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-            let class = py.import("voicevox_core")?.getattr("SupportedDevices")?;
-            let s = self.0.supported_devices().into_py_result(py)?;
-            crate::convert::to_pydantic_dataclass(s, class.downcast()?)
+            self.0.supported_devices().into_py_result(py)?.to_py(py)
         }
     }
 
@@ -1043,6 +1087,19 @@ mod asyncio {
 
     #[pymethods]
     impl OpenJtalk {
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn __new__(
+            _cls: Bound<'_, PyType>,
+            _args: Bound<'_, PyTuple>,
+            _kwargs: Option<Bound<'_, PyDict>>,
+        ) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`OpenJtalk` does not have a normal constructor. Use `OpenJtalk.new` to construct",
+            )))
+        }
+
         #[staticmethod]
         async fn new(
             #[pyo3(from_py_with = "crate::convert::from_utf8_path")]
@@ -1077,6 +1134,7 @@ mod asyncio {
         #[pyo3(signature =(
             onnxruntime,
             open_jtalk,
+            *,
             acceleration_mode = Default::default(),
             cpu_num_threads = voicevox_core::__internal::interop::DEFAULT_CPU_NUM_THREADS,
         ))]
@@ -1291,6 +1349,7 @@ mod asyncio {
         #[pyo3(signature=(
             audio_query,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -1316,6 +1375,7 @@ mod asyncio {
         #[pyo3(signature=(
             kana,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -1342,6 +1402,7 @@ mod asyncio {
         #[pyo3(signature=(
             text,
             style_id,
+            *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -1433,7 +1494,7 @@ mod asyncio {
             Ok(())
         }
 
-        fn words<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
+        fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
             let words = self.dict.with_words(|words| {
                 words
                     .iter()

@@ -1,6 +1,8 @@
 use std::ffi::CStr;
 
 /// 処理結果を示す結果コード。
+///
+/// \orig-impl{VoicevoxResultCode,C APIにしか無いものがあることに注意。}
 #[repr(i32)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[allow(
