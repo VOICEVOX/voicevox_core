@@ -20,6 +20,8 @@ multiple-versions = "allow"
  # deny build scripts that are not listed in `bypass` (except `typenum`. see the fixme)
 allow-build-scripts = [
     # FIXME: build/main.rsのような場所に置かれていると駄目なのか、`bypass`からは認識してくれない
+    # SHA256: 050585225b92ce395bb32634fd8d3e7b6111ab66308f86940aea800b1ea86230
+    { name = "bat", version = "0.25" }, # https://docs.rs/crate/bat/0.25.0/source/build/main.rs
     # SHA256: b4dd86261a70df757efa53f06ce7543a4dc9c51178b9b023c92069fddee97a29
     { name = "typenum", version = "1" }, # https://docs.rs/crate/typenum/1.15.0/source/build/main.rs
 ]
@@ -36,9 +38,8 @@ bypass = [
     { name = "cbindgen", version = "0.27", build-script = "f0fa57ad2c0dca5855cc2636a2e95acbadb52fa887609216022bdf71ed996dec" }, # https://docs.rs/crate/cbindgen/0.27.0/source/build.rs
     { name = "crc32fast", version = "1", build-script = "4ccc50c3da67eb27f0b622440d2b7aee2f73fa9c71884571f3c041122231d105" }, # https://docs.rs/crate/crc32fast/1.3.2/source/build.rs
     { name = "crossbeam-epoch", version = "0.9", build-script = "901be3c21843440be5c456ff049f57f72ee5ec365918a772ad2a4751e52f69c5" }, # https://docs.rs/crate/crossbeam-epoch/0.9.13/source/build.rs
-    { name = "crossbeam-utils", version = "0.8", build-script = "4859f9c926c230023e861bf01c4b225b460035faf8cf6240108530efedbb747f" }, # https://docs.rs/crate/crossbeam-utils/0.8.2/source/build.rs
+    { name = "crossbeam-utils", version = "0.8", build-script = "7a7f9e56ea7fb4f78c4e532b84b9d27be719d600e85eaeb3a2f4b79a4f0b419c" }, # https://docs.rs/crate/crossbeam-utils/0.8.21/source/build.rs
     { name = "doc-comment", version = "0.3", build-script = "a342cd0a760b7e04b13406c5de82a9b6b39d9b8495a274c2f78d56d676aeca3a" }, # https://docs.rs/crate/doc-comment/0.3.3/source/build.rs
-    { name = "encoding_rs", version = "0.8", build-script = "9276ee24ef71433d46323c15296b3fbbb29c0b37c4b1ca45416587f14ba8e777" }, # https://docs.rs/crate/encoding_rs/0.8.31/source/build.rs
     { name = "eyre", version = "0.6", build-script = "fbd0d04cc64884da6b65ad460084ad49e56f8a14fba24a256e161cb18b15441c" }, # https://docs.rs/crate/eyre/0.6.12/source/build.rs
     { name = "fs-err", version = "2", build-script = "f1d5a299d68f91e26fbe9dd642dfcd00e122ec9cb999d4a4b38c6d7200fb9763" }, # https://docs.rs/crate/fs-err/2.11.0/source/build.rs
     { name = "generic-array", version = "0.14", build-script = "08fa30c4a2c1ad24fe5f987e721dfb20131f45ea5b5dc3e836dcf88a8e33248c" }, # https://docs.rs/crate/generic-array/0.14.6/source/build.rs
@@ -72,6 +73,7 @@ bypass = [
     { name = "semver", version = "1", build-script = "eedfc19afa205955347175916974cdad121b55cb940e40c61931e5e7629f0e65" }, # https://docs.rs/crate/semver/1.0.14/source/build.rs
     { name = "serde", version = "1", build-script = "a98eaa82c783fdb4169d1646c06028ec5cb82937d39ee127ec8ed33651d2f238" }, # https://docs.rs/crate/serde/1.0.210/source/build.rs
     { name = "serde_json", version = "1", build-script = "1630d0bbfc936b0975d840cec5cfb5910d861b6afeeeeabe11000a2c202d571d" }, # https://docs.rs/crate/serde_json/1.0.128/source/build.rs
+    { name = "signal-hook", version = "0.3", build-script = "3a95a69d2921f1c28922a141a671e23a061f358b6d831350043003e13ef96463" }, # https://docs.rs/crate/signal-hook/0.3.17/source/build.rs
     { name = "slab", version = "0.4", build-script = "2c008232a3ae7c83c166f61c2942314717976776a4dba38e9063cd8e57a1b9bd" }, # https://docs.rs/crate/slab/0.4.7/source/build.rs
     { name = "syn", version = "1", build-script = "b815649fd2929d3debd93a58f5da2fb8eba506047a6a5ba538347305828a87b0" }, # https://docs.rs/crate/syn/1.0.102/source/build.rs
     { name = "target-lexicon", version = "0.12", build-script = "4716b4f955c7a4cb39cb3b7521c1745d5110c1cbd1e054bca906e37f5e974675" }, # https://docs.rs/crate/target-lexicon/0.12.4/source/build.rs
@@ -159,6 +161,7 @@ allow = [
     "BSD-3-Clause",
     "CC0-1.0",
     "ISC",
+    "LGPL-3.0", # ライブラリ層に混入しないことをcargo-aboutで担保
     "MIT",
     "MPL-2.0",
     "OpenSSL",

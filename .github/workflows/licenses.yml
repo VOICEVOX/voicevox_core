@@ -1,6 +1,7 @@
 # 依存ライブラリのライセンスを確認する。
 #
-# `advisories`以外についてcargo-denyを実行する。
+# `advisories`以外についてのcargo-denyと、cargo-aboutを実行する。
+# cargo-aboutは`accepted`のチェックのため。
 
 name: licenses
 
@@ -20,3 +21,8 @@ jobs:
         uses: ./.github/actions/install-cargo-deny
       - name: cargo-deny
         run: cargo deny --all-features check -s bans licenses sources
+      - name: cargo-about
+        run: |
+          for about_toml in ./crates/*/about.toml; do
+            cargo about generate /dev/null --manifest-path "${about_toml/about.toml/Cargo.toml}" > /dev/null
+          done

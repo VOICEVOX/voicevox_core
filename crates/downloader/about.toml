@@ -1,0 +1,34 @@
+# `accepted`のチェックのためだけにcargo-aboutを使っている。
+
+accepted = [
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "CC0-1.0",
+    "ISC",
+    "LGPL-3.0", # https://github.com/sharkdp/bat/issues/792#issuecomment-570074671
+    "MIT",
+    "MPL-2.0",
+    "OpenSSL",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+]
+targets = [
+    "x86_64-pc-windows-msvc",
+    "i686-pc-windows-msvc",
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "aarch64-linux-android",
+    "x86_64-linux-android",
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "aarch64-apple-ios",
+    "aarch64-apple-ios-sim",
+    "x86_64-apple-ios",
+]
+ignore-build-dependencies = true
+ignore-dev-dependencies = true
+no-clearly-defined = true # https://github.com/EmbarkStudios/cargo-about/issues/218
+workarounds = [
+    "ring",
+]
