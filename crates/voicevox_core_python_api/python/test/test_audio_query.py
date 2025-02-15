@@ -54,8 +54,6 @@ def test_dumps() -> None:
           "postPhonemeLength": 0.1,
           "outputSamplingRate": 24000,
           "outputStereo": false,
-          "pauseLength": null,
-          "pauseLengthScale": 1.0,
           "kana": ""
         }""",
     )
