@@ -52,15 +52,14 @@ const DEFAULT_ONNXRUNTIME_BUILDER_REPO: &str = "VOICEVOX/onnxruntime-builder";
 const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
 const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 
-const ONNXRUNTIME_TERMS_NAME: &str =
-    "VOICEVOX ONNX Runtime 利用規約 (VOICEVOX ONNX Runtime Terms of Use)";
+const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
 
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
     LazyLock::new(|| "=0.0.1-preview.4".parse().unwrap());
 const MODELS_README_FILENAME: &str = "README.md";
 const MODELS_README_RENAME: &str = "README.txt";
 const MODELS_DIR_NAME: &str = "vvms";
-const MODELS_TERMS_NAME: &str = "VOICEVOX 音声モデル 利用規約 (VOICEVOX Voice Models Terms of Use)";
+const MODELS_TERMS_NAME: &str = "VOICEVOX 音声モデル 利用規約";
 const MODELS_TERMS_FILE: &str = "TERMS.md";
 const MODELS_TERMS_RENAME: &str = "TERMS.txt";
 
