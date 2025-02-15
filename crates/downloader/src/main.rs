@@ -726,7 +726,12 @@ fn ensure_confirmation(terms: &IndexMap<&'static str, &str>) -> anyhow::Result<(
                 .header(true)
                 .grid(true)
                 .print_with_writer(Some(&mut output))?;
-            format!("ダウンロードには以下の利用規約への同意が必要です。\n\n{output}")
+            format!(
+                "ダウンロードには以下の利用規約への同意が必要です。\n\
+                 （矢印キーで移動、q で終了）\n\
+                 \n\
+                 {output}",
+            )
         };
 
         // どうも非ASCII文字が全体的に駄目らしくパニックする場合があるので、
