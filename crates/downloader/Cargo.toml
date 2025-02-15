@@ -11,6 +11,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow.workspace = true
 base64.workspace = true
+bat = { workspace = true, default-features = false, features = ["paging"] }
 binstall-tar.workspace = true
 bytes.workspace = true
 clap = { workspace = true, features = ["derive"] }
@@ -20,8 +21,10 @@ flate2.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
 futures-core.workspace = true
 futures-util.workspace = true
+indexmap.workspace = true
 indicatif.workspace = true
 itertools.workspace = true
+minus = { workspace = true, features = ["static_output"] }
 octocrab = { workspace = true, default-features = false, features = ["rustls-tls", "stream"] }
 parse-display.workspace = true
 rayon.workspace = true
