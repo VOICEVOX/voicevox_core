@@ -1,10 +1,10 @@
-use std::{error::Error as _, future::Future, iter, panic, path::PathBuf};
+use std::{error::Error as _, future::Future, iter, path::PathBuf};
 
 use camino::Utf8PathBuf;
 use duplicate::duplicate_item;
 use easy_ext::ext;
 use pyo3::{
-    exceptions::{PyException, PyRuntimeError, PyValueError},
+    exceptions::{PyException, PyValueError},
     types::{IntoPyDict as _, PyAnyMethods as _, PyBytes, PyBytesMethods as _, PyList, PyString},
     Bound, FromPyObject as _, IntoPyObject, Py, PyAny, PyResult, Python,
 };
@@ -213,19 +213,6 @@ pub(crate) fn ready<'py>(
     let fut = asyncio_future.call((), Some(&[("loop", running_loop)].into_py_dict(py)?))?;
     fut.call_method1("set_result", (x,))?;
     Ok(fut)
-}
-
-pub(crate) async fn run_in_executor<F, R>(f: F) -> PyResult<R>
-where
-    F: FnOnce() -> R + Send + 'static,
-    R: Send + 'static,
-{
-    tokio::task::spawn_blocking(f)
-        .await
-        .map_err(|e| match e.try_into_panic() {
-            Ok(p) => panic::resume_unwind(p),
-            Err(e) => PyRuntimeError::new_err(e.to_string()),
-        })
 }
 
 #[ext(VoicevoxCoreResultExt)]

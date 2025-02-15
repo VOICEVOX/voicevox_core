@@ -4609,6 +4609,8 @@ dependencies = [
 name = "voicevox_core_python_api"
 version = "0.0.0"
 dependencies = [
+ "async-lock",
+ "blocking",
  "camino",
  "duplicate",
  "easy-ext",
@@ -4619,7 +4621,6 @@ dependencies = [
  "pyo3-log",
  "serde",
  "serde_json",
- "tokio",
  "tracing",
  "uuid",
  "voicevox_core",

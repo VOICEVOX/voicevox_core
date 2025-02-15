@@ -174,7 +174,7 @@ impl Async for SingleTasked {
 
 impl Async for Tokio {
     const EXIT_METHOD: &str = "__aexit__";
-    type RwLock<T> = tokio::sync::RwLock<T>;
+    type RwLock<T> = async_lock::RwLock<T>;
 }
 
 trait RwLock: From<Self::Item> {
@@ -213,15 +213,15 @@ impl<T> RwLock for std::sync::RwLock<T> {
     }
 }
 
-impl<T> RwLock for tokio::sync::RwLock<T> {
+impl<T> RwLock for async_lock::RwLock<T> {
     type Item = T;
     type RwLockWriteGuard<'a>
-        = tokio::sync::RwLockWriteGuard<'a, Self::Item>
+        = async_lock::RwLockWriteGuard<'a, Self::Item>
     where
         Self: 'a;
 
     fn try_read_(&self) -> Result<impl Deref<Target = Self::Item>, ()> {
-        self.try_read().map_err(|_| ())
+        self.try_read().ok_or(())
     }
 
     async fn write_(&self) -> Self::RwLockWriteGuard<'_> {
@@ -229,7 +229,7 @@ impl<T> RwLock for tokio::sync::RwLock<T> {
     }
 
     fn try_write_(&self) -> Result<Self::RwLockWriteGuard<'_>, ()> {
-        self.try_write().map_err(|_| ())
+        self.try_write().ok_or(())
     }
 }
 
@@ -1429,7 +1429,7 @@ mod asyncio {
         async fn close(&self) -> PyResult<()> {
             let this = self.synthesizer.clone();
             if let Some(this) = this.close().await {
-                crate::convert::run_in_executor(|| drop(this)).await?;
+                blocking::unblock(|| drop(this)).await;
             }
             Ok(())
         }
