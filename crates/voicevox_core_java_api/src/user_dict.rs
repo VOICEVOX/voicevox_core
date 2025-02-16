@@ -1,12 +1,13 @@
 use jni::objects::JClass;
 use std::{borrow::Cow, sync::Arc};
 
-use crate::common::{throw_if_err, JavaApiError};
+use crate::common::{throw_if_err, JavaApiResult};
 use jni::{
     objects::{JObject, JString},
     sys::jobject,
     JNIEnv,
 };
+use serde_json::json;
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
@@ -28,20 +29,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsNew
 unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsAddWord<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
-    word_json: JString<'local>,
+    word: JObject<'local>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = env
             .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
             .clone();
 
-        let word_json = env.get_string(&word_json)?;
-        let word_json = &Cow::from(&word_json);
+        let uuid = internal.add_word(word_from_java(env, word)?)?;
 
-        let word: voicevox_core::UserDictWord =
-            serde_json::from_str(word_json).map_err(JavaApiError::DeJson)?;
-
-        let uuid = internal.add_word(word)?.hyphenated().to_string();
+        let uuid = uuid.hyphenated().to_string();
         let uuid = env.new_string(uuid)?;
 
         Ok(uuid.into_raw())
@@ -54,7 +51,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsUpd
     env: JNIEnv<'local>,
     this: JObject<'local>,
     uuid: JString<'local>,
-    word_json: JString<'local>,
+    word: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
         let internal = env
@@ -63,16 +60,57 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsUpd
 
         let uuid = env.get_string(&uuid)?;
         let uuid = Cow::from(&uuid).parse()?;
-        let word_json = env.get_string(&word_json)?;
-        let word_json = &Cow::from(&word_json);
 
-        let word: voicevox_core::UserDictWord =
-            serde_json::from_str(word_json).map_err(JavaApiError::DeJson)?;
-
-        internal.update_word(uuid, word)?;
+        internal.update_word(uuid, word_from_java(env, word)?)?;
 
         Ok(())
     })
+}
+
+fn word_from_java<'local>(
+    env: &mut JNIEnv<'local>,
+    word: JObject<'local>,
+) -> JavaApiResult<voicevox_core::UserDictWord> {
+    let surface = &env
+        .get_field(&word, "surface", "Ljava/lang/String;")?
+        .l()?
+        .into();
+    let surface = &String::from(env.get_string(surface)?);
+
+    let pronunciation = &env
+        .get_field(&word, "pronunciation", "Ljava/lang/String;")?
+        .l()?
+        .into();
+    let pronunciation = String::from(env.get_string(pronunciation)?);
+
+    let accent_type = env
+        .get_field(&word, "accentType", "I")?
+        .i()?
+        .try_into()
+        .expect("should be validated");
+
+    let word_type = env
+        .get_field(
+            &word,
+            "wordType",
+            "Ljp/hiroshiba/voicevoxcore/UserDictWord$Type;",
+        )?
+        .l()?;
+    let word_type = &env
+        .get_field(word_type, "identifier", "Ljava/lang/String;")?
+        .l()?
+        .into();
+    let word_type = &String::from(env.get_string(word_type)?);
+    let word_type = serde_json::from_value(json!(word_type)).expect("unknown `UserDictWordType`");
+
+    let priority = env
+        .get_field(&word, "priority", "I")?
+        .i()?
+        .try_into()
+        .expect("should be validated");
+
+    voicevox_core::UserDictWord::new(surface, pronunciation, accent_type, word_type, priority)
+        .map_err(Into::into)
 }
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
@@ -161,7 +199,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsSav
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
-unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsGetWords<'local>(
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsToHashMap<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
 ) -> jobject {
@@ -170,10 +208,33 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsGet
             .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
             .clone();
 
-        let words = internal.to_json();
-        let words = env.new_string(words)?;
+        let map = env.new_object("java/util/HashMap", "()V", &[])?;
 
-        Ok(words.into_raw())
+        internal.with_words(|words| {
+            for (&uuid, word) in words {
+                let uuid = &env.new_string(uuid.hyphenated().to_string())?;
+                let word = &env.new_object(
+                    "jp/hiroshiba/voicevoxcore/UserDictWord",
+                    "(Ljava/lang/String;Ljava/lang/String;I)V",
+                    &[
+                        (&env.new_string(word.surface())?).into(),
+                        (&env.new_string(word.pronunciation())?).into(),
+                        i32::try_from(word.accent_type())
+                            .expect("should be validated")
+                            .into(),
+                    ],
+                )?;
+                env.call_method(
+                    &map,
+                    "put",
+                    "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+                    &[uuid.into(), word.into()],
+                )?;
+            }
+            Ok::<_, jni::errors::Error>(())
+        })?;
+
+        Ok(map.into_raw())
     })
 }
 
