@@ -37,6 +37,7 @@ use semver::VersionReq;
 use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
 use tracing::{error, info, warn};
+use unicode_width::UnicodeWidthStr as _;
 use url::Url;
 use zip::ZipArchive;
 
@@ -714,26 +715,33 @@ fn ensure_confirmation(terms: &IndexMap<&'static str, &str>) -> anyhow::Result<(
         return Ok(());
     }
 
-    return loop {
-        let terms_pretty = &{
-            let mut output = "".to_owned();
-            bat::PrettyPrinter::new()
-                .inputs(
-                    terms
-                        .iter()
-                        .map(|(&title, terms)| bat::Input::from_bytes(terms.as_ref()).title(title)),
-                )
-                .header(true)
-                .grid(true)
-                .print_with_writer(Some(&mut output))?;
-            format!(
-                "ダウンロードには以下の利用規約への同意が必要です。\n\
-                 （矢印キーで移動、q で終了）\n\
-                 \n\
-                 {output}",
-            )
+    let terms_pretty = &{
+        let Some(max_line_width) = terms
+            .values()
+            .flat_map(|terms| terms.lines())
+            .map(|line| line.width())
+            .max()
+        else {
+            return Ok(());
         };
 
+        let mut terms_pretty = "\
+            ダウンロードには以下の利用規約への同意が必要です。\n\
+            （矢印キーで移動、q で終了）\n"
+            .to_owned();
+        terms_pretty += &format!("─┬─{}\n", "─".repeat(max_line_width));
+        let mut it = terms.values().peekable();
+        while let Some(terms) = it.next() {
+            for line in terms.lines() {
+                terms_pretty += &format!(" │ {line}\n");
+            }
+            let joint = if it.peek().is_some() { '┼' } else { '┴' };
+            terms_pretty += &format!("─{joint}─{}\n", "─".repeat(max_line_width));
+        }
+        terms_pretty
+    };
+
+    return loop {
         // どうも非ASCII文字が全体的に駄目らしくパニックする場合があるので、
         // そのときはページングせずに表示する。
 

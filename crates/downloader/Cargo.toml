@@ -11,7 +11,6 @@ path = "src/main.rs"
 [dependencies]
 anyhow.workspace = true
 base64.workspace = true
-bat = { workspace = true, default-features = false, features = ["paging"] }
 binstall-tar.workspace = true
 bytes.workspace = true
 clap = { workspace = true, features = ["derive"] }
@@ -36,6 +35,7 @@ strum = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync"] }
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
+unicode-width.workspace = true
 url.workspace = true
 zip.workspace = true
 
