@@ -162,7 +162,8 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Execute download command
         # TODO: `voicevox_onnxruntime-1.17.3`のprerelease指定を外したら`--onnxruntime-version`はlatest指定にする
-        # `yes(1)`を流し込むと不明な原因により無言でコケる
+        # `"y"`を流し込むことで「利用規約への同意」を行う
+        # (この際`echo y`ではなく`yes`を使うと謎の要因により無言で異常終了する)
         run: echo y | ${{ matrix.download_command }} --c-api-version ${{ env.VERSION }} --c-api-repo ${{ github.repository }} --onnxruntime-version voicevox_onnxruntime-1.17.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
