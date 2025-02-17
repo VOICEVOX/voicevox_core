@@ -180,11 +180,28 @@ pub(crate) fn to_py_user_dict_word<'py>(
     py: Python<'py>,
     word: &voicevox_core::UserDictWord,
 ) -> PyResult<&'py PyAny> {
-    let class = py
-        .import("voicevox_core")?
-        .getattr("UserDictWord")?
-        .downcast()?;
-    to_pydantic_dataclass(word, class)
+    let class = py.import("voicevox_core")?.getattr("UserDictWord")?;
+
+    class.call(
+        (),
+        Some(
+            [
+                ("surface", word.surface().to_object(py)),
+                ("pronunciation", word.pronunciation().to_object(py)),
+                ("accent_type", word.accent_type().to_object(py)),
+                (
+                    "word_type",
+                    serde_json::to_value(word.word_type())
+                        .expect("should success")
+                        .as_str()
+                        .expect("should be a string")
+                        .to_object(py),
+                ),
+                ("priority", word.priority().to_object(py)),
+            ]
+            .into_py_dict(py),
+        ),
+    )
 }
 fn from_literal_choice<T: DeserializeOwned>(s: &str) -> PyResult<T> {
     serde_json::from_value::<T>(json!(s)).into_py_value_result()

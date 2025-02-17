@@ -1,3 +1,8 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from voicevox_core import UserDictWord
+
 __version__: str
 
 class NotLoadedOpenjtalkDictError(Exception):
@@ -100,7 +105,7 @@ class InvalidWordError(ValueError):
 
     ...
 
-def _validate_pronunciation(pronunciation: str) -> None: ...
+def _validate_user_dict_word(word: UserDictWord) -> None: ...
 def _to_zenkaku(text: str) -> str: ...
 def wav_from_s16le(pcm: bytes, sampling_rate: int, is_stereo: bool) -> bytes:
     """

@@ -1,14 +1,5 @@
 package jp.hiroshiba.voicevoxcore;
 
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
 import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -21,35 +12,22 @@ import jakarta.validation.constraints.Min;
  */
 public class UserDictWord {
   /** 単語の表層形。 */
-  @SerializedName("surface")
-  @Expose
-  @Nonnull
-  public String surface;
+  @Nonnull public String surface;
 
   /** 単語の発音。 発音として有効なカタカナである必要がある。 */
-  @SerializedName("pronunciation")
-  @Expose
-  @Nonnull
-  public String pronunciation;
+  @Nonnull public String pronunciation;
 
   /**
    * 単語の種類。
    *
    * @see Type
    */
-  @SerializedName("word_type")
-  @Expose
-  @Nonnull
-  public Type wordType;
+  @Nonnull public Type wordType;
 
   /** アクセント型。 音が下がる場所を指す。 */
-  @SerializedName("accent_type")
-  @Expose
   public int accentType;
 
   /** 単語の優先度。 0から10までの整数。 数字が大きいほど優先度が高くなる。 1から9までの値を指定することを推奨。 */
-  @SerializedName("priority")
-  @Expose
   @Min(0)
   @Max(10)
   public int priority;
@@ -131,41 +109,6 @@ public class UserDictWord {
 
     /** 語尾。 */
     public static final Type SUFFIX = new Type("SUFFIX");
-
-    public static final class Serializer implements JsonSerializer<Type> {
-      @Override
-      public JsonElement serialize(
-          Type src, java.lang.reflect.Type typeOfSrc, JsonSerializationContext context) {
-        return new JsonPrimitive(src.toString());
-      }
-    }
-
-    public static final class Deserializer implements JsonDeserializer<Type> {
-      @Override
-      public Type deserialize(
-          JsonElement json, java.lang.reflect.Type typeOfT, JsonDeserializationContext context)
-          throws JsonParseException {
-        String value = json.getAsString();
-        switch (value) {
-          case "PROPER_NOUN":
-            return PROPER_NOUN;
-          case "COMMON_NOUN":
-            return COMMON_NOUN;
-          case "VERB":
-            return VERB;
-          case "ADJECTIVE":
-            return ADJECTIVE;
-          case "SUFFIX":
-            return SUFFIX;
-          default:
-            throw new JsonParseException(
-                String.format(
-                    "Invalid variant `%s`, expected one of "
-                        + "`PROPER_NOUN`, `COMMON_NOUN`, `VERB`, `ADJECTIVE`, `SUFFIX`",
-                    value));
-        }
-      }
-    }
 
     private final String identifier;
 

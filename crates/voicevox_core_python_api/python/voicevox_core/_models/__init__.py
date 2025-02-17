@@ -6,7 +6,7 @@ import pydantic.alias_generators
 from pydantic import ConfigDict
 from pydantic_core import ArgsKwargs
 
-from .._rust import _to_zenkaku, _validate_pronunciation
+from .._rust import _to_zenkaku, _validate_user_dict_word
 from ._please_do_not_use import _Reserved
 
 StyleId = NewType("StyleId", int)
@@ -452,19 +452,9 @@ def _(word_type: UserDictWordType):
     _: str = word_type
 
 
-@pydantic.dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class UserDictWord:
-    """
-    ユーザー辞書の単語。
-
-    現在は |pydantic-dataclasses-dataclass-userdictword|_ ではあるが、将来的には
-    |de-pydantic-userdictword|_ 。
-
-    .. |pydantic-dataclasses-dataclass-userdictword| replace:: ``@pydantic.dataclasses.dataclass``
-    .. _pydantic-dataclasses-dataclass-userdictword: https://docs.pydantic.dev/2.10/concepts/dataclasses/
-    .. |de-pydantic-userdictword| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
-    .. _de-pydantic-userdictword: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
-    """
+    """ユーザー辞書の単語。"""
 
     surface: str
     """言葉の表層形。"""
@@ -495,13 +485,9 @@ class UserDictWord:
     1から9までの値を指定することを推奨する。
     """
 
-    @pydantic.field_validator("pronunciation")
-    @classmethod
-    def _validate_pronunciation(cls, v):
-        _validate_pronunciation(v)
-        return v
+    def __post_init__(self) -> None:
+        # Pydanticが（おそらく）やっているであろう方法。
+        # とりあえずPython 3.13では大丈夫らしい
+        object.__setattr__(self, "surface", _to_zenkaku(self.surface))
 
-    @pydantic.field_validator("surface")
-    @classmethod
-    def _validate_surface(cls, v):
-        return _to_zenkaku(v)
+        _validate_user_dict_word(self)
