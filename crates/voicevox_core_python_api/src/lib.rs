@@ -233,7 +233,6 @@ impl<T> RwLock for async_lock::RwLock<T> {
     }
 }
 
-#[derive(Clone)]
 struct VoiceModelFilePyFields {
     id: PyObject,      // `NewType("VoiceModelId", UUID)`
     metas: Py<PyList>, // `list[CharacterMeta]`
@@ -280,10 +279,9 @@ mod blocking {
         Closable, SingleTasked, VoiceModelFilePyFields,
     };
 
-    #[pyclass]
-    #[derive(Clone)]
+    #[pyclass(frozen)]
     pub(crate) struct VoiceModelFile {
-        model: Arc<Closable<voicevox_core::blocking::VoiceModelFile, Self, SingleTasked>>,
+        model: Closable<voicevox_core::blocking::VoiceModelFile, Self, SingleTasked>,
         fields: VoiceModelFilePyFields,
     }
 
@@ -310,7 +308,7 @@ mod blocking {
             let id = crate::convert::to_py_uuid(py, model.id().0)?.into();
             let metas = crate::convert::to_pydantic_voice_model_meta(model.metas(), py)?.into();
 
-            let model = Closable::new(model).into();
+            let model = Closable::new(model);
 
             Ok(Self {
                 model,
@@ -324,13 +322,13 @@ mod blocking {
         }
 
         #[getter]
-        fn id(&self) -> PyObject {
-            self.fields.id.clone()
+        fn id(&self, py: Python<'_>) -> PyObject {
+            self.fields.id.clone_ref(py)
         }
 
         #[getter]
-        fn metas(&self) -> Py<PyList> {
-            self.fields.metas.clone()
+        fn metas(&self, py: Python<'_>) -> Py<PyList> {
+            self.fields.metas.clone_ref(py)
         }
 
         fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
@@ -405,7 +403,7 @@ mod blocking {
             });
 
             match result {
-                Ok(this) => Ok(Some(this.clone())),
+                Ok(this) => Ok(Some(this.clone_ref(py))),
                 Err(Some(err)) => Err(err),
                 Err(None) => Ok(None),
             }
@@ -422,7 +420,7 @@ mod blocking {
                         .into_py_result(py)?;
                     Py::new(py, Self(inner))
                 })
-                .cloned()
+                .map(|onnxruntime| onnxruntime.clone_ref(py))
         }
 
         fn supported_devices<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -539,8 +537,11 @@ mod blocking {
         }
 
         #[getter]
-        fn onnxruntime(&self) -> Py<Onnxruntime> {
-            ONNXRUNTIME.get().expect("should be initialized").clone()
+        fn onnxruntime(&self, py: Python<'_>) -> Py<Onnxruntime> {
+            ONNXRUNTIME
+                .get()
+                .expect("should be initialized")
+                .clone_ref(py)
         }
 
         #[getter]
@@ -556,8 +557,8 @@ mod blocking {
 
         fn load_voice_model(&mut self, model: &Bound<'_, PyAny>, py: Python<'_>) -> PyResult<()> {
             let this = self.synthesizer.read()?;
-            let model = model.extract::<VoiceModelFile>()?;
-            let model = &model.model.read()?;
+            let model = model.extract::<Py<VoiceModelFile>>()?;
+            let model = &model.get().model.read()?;
             this.load_voice_model(model).into_py_result(py)
         }
 
@@ -920,10 +921,9 @@ mod asyncio {
         Closable, Tokio, VoiceModelFilePyFields,
     };
 
-    #[pyclass]
-    #[derive(Clone)]
+    #[pyclass(frozen)]
     pub(crate) struct VoiceModelFile {
-        model: Arc<Closable<voicevox_core::nonblocking::VoiceModelFile, Self, Tokio>>,
+        model: Closable<voicevox_core::nonblocking::VoiceModelFile, Self, Tokio>,
         fields: VoiceModelFilePyFields,
     }
 
@@ -953,7 +953,7 @@ mod asyncio {
                 Ok::<_, PyErr>((model, id, metas))
             })?;
 
-            let model = Closable::new(model).into();
+            let model = Closable::new(model);
 
             Ok(Self {
                 model,
@@ -962,21 +962,20 @@ mod asyncio {
         }
 
         async fn close(&self) -> PyResult<()> {
-            let this = self.model.clone();
-            if let Some(this) = this.close().await {
+            if let Some(this) = self.model.close().await {
                 this.close().await;
             }
             Ok(())
         }
 
         #[getter]
-        fn id(&self) -> PyObject {
-            self.fields.id.clone()
+        fn id(&self, py: Python<'_>) -> PyObject {
+            self.fields.id.clone_ref(py)
         }
 
         #[getter]
-        fn metas(&self) -> Py<PyList> {
-            self.fields.metas.clone()
+        fn metas(&self, py: Python<'_>) -> Py<PyList> {
+            self.fields.metas.clone_ref(py)
         }
 
         fn __aenter__(slf: PyRef<'_, Self>) -> PyResult<Bound<'_, PyAny>> {
@@ -1047,7 +1046,7 @@ mod asyncio {
                 );
 
             match result {
-                Ok(this) => Ok(Some(this.clone())),
+                Ok(this) => Ok(Some(this.clone_ref(py))),
                 Err(Some(err)) => Err(err),
                 Err(None) => Ok(None),
             }
@@ -1168,8 +1167,11 @@ mod asyncio {
         }
 
         #[getter]
-        fn onnxruntime(&self) -> Py<Onnxruntime> {
-            ONNXRUNTIME.get().expect("should be initialized").clone()
+        fn onnxruntime(&self, py: Python<'_>) -> Py<Onnxruntime> {
+            ONNXRUNTIME
+                .get()
+                .expect("should be initialized")
+                .clone_ref(py)
         }
 
         #[getter]
@@ -1187,8 +1189,8 @@ mod asyncio {
         }
 
         async fn load_voice_model(&mut self, model: PyObject) -> PyResult<()> {
-            let model: VoiceModelFile = Python::with_gil(|py| model.extract(py))?;
-            let model = &*model.model.read()?;
+            let model: Py<VoiceModelFile> = Python::with_gil(|py| model.extract(py))?;
+            let model = &*model.get().model.read()?;
             let result = self
                 .synthesizer
                 .clone()
