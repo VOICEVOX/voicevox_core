@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from voicevox_core import UserDictWord
+    from voicevox_core import AccentPhrase, AudioQuery, UserDictWord
 
 __version__: str
 
@@ -105,6 +105,9 @@ class InvalidWordError(ValueError):
 
     ...
 
+def _audio_query_from_accent_phrases(
+    accent_phrases: list[AccentPhrase],
+) -> AudioQuery: ...
 def _validate_user_dict_word(word: UserDictWord) -> None: ...
 def _to_zenkaku(text: str) -> str: ...
 def wav_from_s16le(pcm: bytes, sampling_rate: int, is_stereo: bool) -> bytes:

@@ -82,7 +82,7 @@ impl Display for CharacterVersion {
 pub type VoiceModelMeta = Vec<CharacterMeta>;
 
 /// <i>キャラクター</i>のメタ情報。
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[non_exhaustive]
 pub struct CharacterMeta {
     /// キャラクター名。
@@ -142,7 +142,7 @@ impl CharacterMeta {
 }
 
 /// <i>スタイル</i>のメタ情報。
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[non_exhaustive]
 pub struct StyleMeta {
     /// スタイルID。

@@ -1,5 +1,10 @@
 package jp.hiroshiba.voicevoxcore.blocking;
 
+import com.google.gson.Gson;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import jp.hiroshiba.voicevoxcore.AccentPhrase;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /** テキスト解析機としてのOpen JTalk。 */
@@ -42,9 +47,21 @@ public class OpenJtalk {
     rsUseUserDict(userDict);
   }
 
+  public List<AccentPhrase> analyze(String text) {
+    Gson gson = new Gson();
+    String accentPhrasesJson = rsAnalyze(text);
+    AccentPhrase[] rawAccentPhrases = gson.fromJson(accentPhrasesJson, AccentPhrase[].class);
+    if (rawAccentPhrases == null) {
+      throw new NullPointerException("accent_phrases");
+    }
+    return new ArrayList<AccentPhrase>(Arrays.asList(rawAccentPhrases));
+  }
+
   private native void rsNew(String openJtalkDictDir);
 
   private native void rsUseUserDict(UserDict userDict);
+
+  private native String rsAnalyze(String text);
 
   private native void rsDrop();
 }

@@ -133,6 +133,8 @@ with VoiceModelFile.open("models/vvms/0.vvm") as model:
 
 `Synthesizer`はイントネーションの生成と音声合成の処理を分けることもできます。
 
+詳しくは: [テキスト音声合成の流れ](./tts-process.md)
+
 ### AudioQuery の生成
 
 まずテキストから`AudioQuery`を生成します。`AudioQuery`には各音の高さや長さが含まれています。
