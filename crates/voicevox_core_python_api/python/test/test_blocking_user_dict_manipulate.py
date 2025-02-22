@@ -10,7 +10,6 @@ import os
 import tempfile
 from uuid import UUID
 
-import pydantic
 import pytest
 import voicevox_core
 
@@ -78,7 +77,7 @@ def test_user_dict_load() -> None:
     assert uuid_c in dict_a.to_dict()
 
     # 単語のバリデーション
-    with pytest.raises(pydantic.ValidationError):
+    with pytest.raises(voicevox_core.InvalidWordError):
         dict_a.add_word(
             voicevox_core.UserDictWord(
                 surface="",

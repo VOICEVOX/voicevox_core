@@ -5,7 +5,10 @@ use duplicate::duplicate_item;
 use easy_ext::ext;
 use pyo3::{
     exceptions::{PyException, PyValueError},
-    types::{IntoPyDict as _, PyAnyMethods as _, PyBytes, PyBytesMethods as _, PyList, PyString},
+    types::{
+        IntoPyDict as _, PyAnyMethods as _, PyBytes, PyBytesMethods as _, PyDict,
+        PyDictMethods as _, PyList, PyString,
+    },
     Bound, FromPyObject as _, IntoPyObject, Py, PyAny, PyResult, Python,
 };
 use serde::{de::DeserializeOwned, Serialize};
@@ -178,7 +181,25 @@ pub(crate) fn to_py_user_dict_word<'py>(
     word: &voicevox_core::UserDictWord,
 ) -> PyResult<Bound<'py, PyAny>> {
     let class = py.import("voicevox_core")?.getattr("UserDictWord")?;
-    to_pydantic_dataclass(word, class.downcast()?)
+
+    class.call(
+        (),
+        Some(&{
+            let kwargs = PyDict::new(py);
+            kwargs.set_item("surface", word.surface())?;
+            kwargs.set_item("pronunciation", word.pronunciation())?;
+            kwargs.set_item("accent_type", word.accent_type())?;
+            kwargs.set_item(
+                "word_type",
+                serde_json::to_value(word.word_type())
+                    .expect("should success")
+                    .as_str()
+                    .expect("should be a string"),
+            )?;
+            kwargs.set_item("priority", word.priority())?;
+            kwargs
+        }),
+    )
 }
 fn from_literal_choice<T: DeserializeOwned>(s: &str) -> PyResult<T> {
     serde_json::from_value::<T>(json!(s)).into_py_value_result()

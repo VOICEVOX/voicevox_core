@@ -5,7 +5,7 @@ use std::{
 };
 
 mod convert;
-use self::convert::{from_utf8_path, VoicevoxCoreResultExt as _};
+use self::convert::from_utf8_path;
 use easy_ext::ext;
 use log::{debug, warn};
 use macros::pyproject_project_version;
@@ -14,7 +14,7 @@ use pyo3::{
     exceptions::{PyException, PyKeyError, PyValueError},
     pyfunction, pymodule,
     types::{PyAnyMethods as _, PyBytes, PyList, PyModule, PyModuleMethods as _},
-    wrap_pyfunction, Bound, Py, PyObject, PyResult, PyTypeInfo, Python,
+    wrap_pyfunction, Bound, Py, PyAny, PyObject, PyResult, PyTypeInfo, Python,
 };
 use voicevox_core::__internal::interop::raii::MaybeClosed;
 
@@ -24,7 +24,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     pyo3_log::init();
 
     module.add("__version__", pyproject_project_version!())?;
-    module.add_wrapped(wrap_pyfunction!(_validate_pronunciation))?;
+    module.add_wrapped(wrap_pyfunction!(_validate_user_dict_word))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
     module.add_wrapped(wrap_pyfunction!(wav_from_s16le))?;
 
@@ -240,8 +240,8 @@ struct VoiceModelFilePyFields {
 }
 
 #[pyfunction]
-fn _validate_pronunciation(pronunciation: &str, py: Python<'_>) -> PyResult<()> {
-    voicevox_core::__internal::validate_pronunciation(pronunciation).into_py_result(py)
+fn _validate_user_dict_word(ob: &Bound<'_, PyAny>) -> PyResult<()> {
+    convert::to_rust_user_dict_word(ob).map(|_| ())
 }
 
 #[pyfunction]

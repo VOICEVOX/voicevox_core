@@ -54,6 +54,7 @@ libc = "0.2.159"
 libloading = "0.7.3"
 libtest-mimic = "0.6.0"
 log = "0.4.22"
+minus = "5.6.1"
 ndarray = "0.15.6"
 ndarray-stats = "0.5.1"
 octocrab = { version = "0.19.0", default-features = false }
@@ -79,7 +80,7 @@ scraper = "0.19.1"
 semver = "1.0.14"
 serde = "1.0.210"
 serde_json = "1.0.128"
-serde_with = "3.10.0"
+serde_with = "3.12.0"
 smallvec = "1.13.2"
 strum = "0.24.1"
 syn = "2.0.79"
@@ -92,6 +93,7 @@ toml = "0.7.2"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 typetag = "0.2.18"
+unicode-width = "0.2.0"
 url = "2.5.4"
 uuid = "1.10.0"
 voicevox_core = { path = "crates/voicevox_core" }
@@ -101,7 +103,7 @@ zip = "0.6.3"
 
 [workspace.dependencies.voicevox-ort]
 git = "https://github.com/VOICEVOX/ort.git"
-rev = "cecd844162a1c6188de03b4566c81d9d38a28600"
+rev = "1ebb5768a78313f9db70a35c497816ec2ffae18b"
 
 [workspace.dependencies.open_jtalk]
 git = "https://github.com/VOICEVOX/open_jtalk-rs.git"

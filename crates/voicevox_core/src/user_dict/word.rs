@@ -1,19 +1,19 @@
 use std::{ops::RangeToInclusive, sync::LazyLock};
 
 use regex::Regex;
-use serde::{de::Error as _, Deserialize, Serialize};
+use serde::{de::Error as _, Deserialize, Serialize, Serializer};
 
 use crate::{
     error::ErrorRepr,
     result::Result,
     user_dict::part_of_speech_data::{
-        priority2cost, MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL,
+        priority2cost, PartOfSpeechDetail, MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL,
     },
 };
 
 /// ユーザー辞書の単語。
 #[doc(alias = "VoicevoxUserDictWord")]
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub struct UserDictWord {
     /// 単語の表記。
     surface: String,
@@ -35,24 +35,108 @@ impl<'de> Deserialize<'de> for UserDictWord {
     where
         D: serde::Deserializer<'de>,
     {
-        let raw = UserDictWord::deserialize(deserializer)?;
-        return Self::new(
-            &raw.surface,
-            raw.pronunciation,
-            raw.accent_type,
-            raw.word_type,
-            raw.priority,
-        )
-        .map_err(D::Error::custom);
+        let SerdeRepr {
+            surface,
+            priority,
+            context_id,
+            part_of_speech,
+            part_of_speech_detail_1,
+            part_of_speech_detail_2,
+            part_of_speech_detail_3,
+            inflectional_type,
+            inflectional_form,
+            stem,
+            yomi,
+            pronunciation,
+            accent_type,
+            mora_count,
+            accent_associative_rule,
+        } = SerdeRepr::<String>::deserialize(deserializer)?;
 
-        #[derive(Deserialize)]
-        struct UserDictWord {
-            surface: String,
-            pronunciation: String,
-            accent_type: usize,
-            word_type: UserDictWordType,
-            priority: u32,
+        if inflectional_type != "*" {
+            return Err(D::Error::custom("`inflectional_type` must be \"*\""));
         }
+        if inflectional_form != "*" {
+            return Err(D::Error::custom("`inflectional_form` must be \"*\""));
+        }
+        if stem != "*" {
+            return Err(D::Error::custom("`stem` must be \"*\""));
+        }
+        if yomi != pronunciation {
+            return Err(D::Error::custom("`yomi` must equal to `pronunciation`"));
+        }
+        if accent_associative_rule != "*" {
+            return Err(D::Error::custom("`accent_associative_rule` must be \"*\""));
+        }
+
+        let (word_type, _) = PART_OF_SPEECH_DETAIL
+            .iter()
+            .find(|(_, pos)| {
+                part_of_speech == pos.part_of_speech
+                    && part_of_speech_detail_1 == pos.part_of_speech_detail_1
+                    && part_of_speech_detail_2 == pos.part_of_speech_detail_2
+                    && part_of_speech_detail_3 == pos.part_of_speech_detail_3
+                    && context_id == pos.context_id
+            })
+            .ok_or_else(|| D::Error::custom("could not determine `word_type`"))?;
+
+        let this = Self::new(&surface, pronunciation, accent_type, *word_type, priority)
+            .map_err(D::Error::custom)?;
+
+        if let Some(mora_count) = mora_count {
+            if this.mora_count != mora_count {
+                return Err(D::Error::custom("wrong value for `mora_count`"));
+            }
+        }
+
+        Ok(this)
+    }
+}
+
+impl Serialize for UserDictWord {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let Self {
+            surface,
+            pronunciation,
+            accent_type,
+            word_type,
+            priority,
+            mora_count,
+        } = self;
+        let priority = *priority;
+        let accent_type = *accent_type;
+        let mora_count = Some(*mora_count);
+
+        let PartOfSpeechDetail {
+            part_of_speech,
+            part_of_speech_detail_1,
+            part_of_speech_detail_2,
+            part_of_speech_detail_3,
+            context_id,
+            ..
+        } = PART_OF_SPEECH_DETAIL[word_type];
+
+        SerdeRepr::<&str> {
+            surface,
+            priority,
+            context_id,
+            part_of_speech,
+            part_of_speech_detail_1,
+            part_of_speech_detail_2,
+            part_of_speech_detail_3,
+            inflectional_type: "*",
+            inflectional_form: "*",
+            stem: "*",
+            yomi: pronunciation,
+            pronunciation,
+            accent_type,
+            mora_count,
+            accent_associative_rule: "*",
+        }
+        .serialize(serializer)
     }
 }
 
@@ -267,9 +351,34 @@ impl UserDictWord {
     }
 }
 
+#[derive(Deserialize, Serialize)]
+struct SerdeRepr<S> {
+    surface: S,
+    priority: u32,
+    #[serde(default = "default_context_id")]
+    context_id: i32,
+    part_of_speech: S,
+    part_of_speech_detail_1: S,
+    part_of_speech_detail_2: S,
+    part_of_speech_detail_3: S,
+    inflectional_type: S,
+    inflectional_form: S,
+    stem: S,
+    yomi: S,
+    pronunciation: S,
+    accent_type: usize,
+    mora_count: Option<usize>,
+    accent_associative_rule: S,
+}
+
+const fn default_context_id() -> i32 {
+    1348
+}
+
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
+    use rstest::{fixture, rstest};
+    use serde_json::json;
 
     use super::{InvalidWordError, UserDictWord, UserDictWordType};
 
@@ -324,5 +433,62 @@ mod tests {
         } else {
             assert!(result.is_ok());
         }
+    }
+
+    #[rstest]
+    fn none_mora_count(word: UserDictWord) {
+        let word1 = &word;
+
+        let mut word2 = serde_json::to_value(word1).unwrap();
+        word2["mora_count"] = json!(null);
+        let word2 = serde_json::from_value::<UserDictWord>(word2).unwrap();
+
+        assert_eq!(word2.mora_count, word1.mora_count);
+    }
+
+    #[rstest]
+    fn wrong_mora_count(word: UserDictWord) {
+        let mut word = serde_json::to_value(&word).unwrap();
+        word["mora_count"] = json!(0);
+        let err = serde_json::from_value::<UserDictWord>(word)
+            .unwrap_err()
+            .to_string();
+
+        assert_eq!("wrong value for `mora_count`", err);
+    }
+
+    #[rstest]
+    #[case("inflectional_type")]
+    #[case("inflectional_form")]
+    #[case("stem")]
+    #[case("yomi")]
+    #[case("accent_associative_rule")]
+    fn unmodifiable_fields(word: UserDictWord, #[case] field: &str) {
+        let mut word = serde_json::to_value(word).unwrap();
+        word[field] = json!("_");
+        serde_json::from_value::<UserDictWord>(word).unwrap_err();
+    }
+
+    #[rstest]
+    fn unknown_part_of_speech(word: UserDictWord) {
+        let mut word = serde_json::to_value(word).unwrap();
+        word["part_of_speech"] = json!("不正な値");
+        let err = serde_json::from_value::<UserDictWord>(word)
+            .unwrap_err()
+            .to_string();
+
+        assert_eq!("could not determine `word_type`", err);
+    }
+
+    #[fixture]
+    fn word() -> UserDictWord {
+        UserDictWord::new(
+            "単語",
+            "ヨミ".to_owned(),
+            0,
+            UserDictWordType::CommonNoun,
+            5,
+        )
+        .unwrap()
     }
 }
