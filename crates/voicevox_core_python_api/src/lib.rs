@@ -263,10 +263,9 @@ fn wav_from_s16le<'py>(
 }
 
 mod blocking {
-    use std::{convert::Infallible, ffi::OsString, path::PathBuf, sync::Arc};
+    use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     use camino::Utf8PathBuf;
-    use easy_ext::ext;
     use pyo3::{
         exceptions::{PyIndexError, PyTypeError, PyValueError},
         pyclass, pymethods,
@@ -313,17 +312,10 @@ mod blocking {
 
             let model = Closable::new(model).into();
 
-            return Ok(Self {
+            Ok(Self {
                 model,
                 fields: VoiceModelFilePyFields { id, metas },
-            });
-
-            #[ext]
-            impl<T> Result<T, Infallible> {
-                fn into_ok_(self) -> T {
-                    self.unwrap()
-                }
-            }
+            })
         }
 
         fn close(&self) {
