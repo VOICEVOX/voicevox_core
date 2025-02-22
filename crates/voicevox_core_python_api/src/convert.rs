@@ -7,7 +7,7 @@ use pyo3::{
     exceptions::{PyException, PyValueError},
     types::{
         IntoPyDict as _, PyAnyMethods as _, PyBytes, PyBytesMethods as _, PyDict,
-        PyDictMethods as _, PyList, PyString,
+        PyDictMethods as _, PyList, PyListMethods as _, PyString,
     },
     Bound, FromPyObject as _, IntoPyObject, Py, PyAny, PyResult, Python,
 };
@@ -66,15 +66,12 @@ pub(crate) fn from_dataclass<T: HasClass>(ob: &Bound<'_, PyAny>) -> PyResult<T> 
     let py = ob.py();
 
     let type_adapter = py.import("pydantic")?.getattr("TypeAdapter")?;
-    let json = type_adapter
-        .call1((T::cls(py)?,))?
-        .call_method(
-            "dump_json",
-            (ob,),
-            Some(&[("by_alias", true)].into_py_dict(py)?),
-        )?
-        .extract::<Bound<'_, PyBytes>>()?;
-    serde_json::from_slice(json.as_bytes()).into_py_value_result()
+    let json = type_adapter.call1((T::cls(py)?,))?.call_method(
+        "dump_json",
+        (ob,),
+        Some(&[("by_alias", true)].into_py_dict(py)?),
+    )?;
+    serde_json::from_slice(json.downcast::<PyBytes>()?.as_bytes()).into_py_value_result()
 }
 
 pub(crate) fn to_pydantic_voice_model_meta<'py>(
@@ -109,8 +106,8 @@ pub(crate) fn blocking_modify_accent_phrases<'py>(
     method: impl FnOnce(Vec<AccentPhrase>, StyleId) -> voicevox_core::Result<Vec<AccentPhrase>>,
 ) -> PyResult<Vec<Bound<'py, PyAny>>> {
     let rust_accent_phrases = accent_phrases
-        .try_iter()?
-        .map(|x| x.and_then(|x| from_dataclass(&x)))
+        .iter()
+        .map(|x| from_dataclass(&x))
         .collect::<PyResult<Vec<AccentPhrase>>>()?;
 
     method(rust_accent_phrases, speaker_id)
@@ -137,8 +134,8 @@ where
     let rust_accent_phrases = Python::with_gil(|py| {
         accent_phrases
             .into_bound(py)
-            .try_iter()?
-            .map(|x| x.and_then(|x| from_dataclass(&x)))
+            .iter()
+            .map(|x| from_dataclass(&x))
             .collect::<PyResult<Vec<AccentPhrase>>>()
     })?;
     let replaced_accent_phrases = method(rust_accent_phrases, speaker_id).await?;
@@ -157,8 +154,10 @@ where
 }
 
 pub(crate) fn to_rust_uuid(ob: &Bound<'_, PyAny>) -> PyResult<Uuid> {
-    let uuid = ob.getattr("hex")?.extract::<String>()?;
-    uuid.parse::<Uuid>().into_py_value_result()
+    ob.getattr("hex")?
+        .extract::<&str>()?
+        .parse::<Uuid>()
+        .into_py_value_result()
 }
 pub(crate) fn to_py_uuid(py: Python<'_>, uuid: Uuid) -> PyResult<Bound<'_, PyAny>> {
     let uuid = uuid.hyphenated().to_string();

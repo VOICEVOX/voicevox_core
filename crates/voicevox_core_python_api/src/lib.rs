@@ -13,7 +13,7 @@ use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
     pyfunction, pymodule,
-    types::{PyAnyMethods as _, PyBytes, PyList, PyModule, PyModuleMethods as _},
+    types::{PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _},
     wrap_pyfunction, Bound, Py, PyAny, PyObject, PyResult, PyTypeInfo, Python,
 };
 use voicevox_core::__internal::interop::raii::MaybeClosed;
@@ -249,16 +249,8 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
 }
 
 #[pyfunction]
-fn wav_from_s16le<'py>(
-    pcm: &[u8],
-    sampling_rate: u32,
-    is_stereo: bool,
-    py: Python<'py>,
-) -> Bound<'py, PyBytes> {
-    PyBytes::new(
-        py,
-        &voicevox_core::__wav_from_s16le(pcm, sampling_rate, is_stereo),
-    )
+fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
+    voicevox_core::__wav_from_s16le(pcm, sampling_rate, is_stereo)
 }
 
 mod blocking {
@@ -268,7 +260,7 @@ mod blocking {
     use pyo3::{
         exceptions::{PyIndexError, PyTypeError, PyValueError},
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyAnyMethods as _, PyBytes, PyDict, PyList, PyTuple, PyType},
+        types::{IntoPyDict as _, PyAnyMethods as _, PyDict, PyList, PyTuple, PyType},
         Bound, Py, PyAny, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
@@ -555,9 +547,12 @@ mod blocking {
             crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
         }
 
-        fn load_voice_model(&mut self, model: &Bound<'_, PyAny>, py: Python<'_>) -> PyResult<()> {
+        fn load_voice_model(
+            &mut self,
+            model: &Bound<'_, VoiceModelFile>,
+            py: Python<'_>,
+        ) -> PyResult<()> {
             let this = self.synthesizer.read()?;
-            let model = model.extract::<Py<VoiceModelFile>>()?;
             let model = &model.get().model.read()?;
             this.load_voice_model(model).into_py_result(py)
         }
@@ -728,13 +723,13 @@ mod blocking {
         // TODO: 後で復活させる
         // https://github.com/VOICEVOX/voicevox_core/issues/970
         #[allow(non_snake_case)]
-        fn _Synthesizer__render<'py>(
+        fn _Synthesizer__render(
             &self,
             audio: &AudioFeature,
             start: usize,
             stop: usize,
-            py: Python<'py>,
-        ) -> PyResult<Bound<'py, PyBytes>> {
+            py: Python<'_>,
+        ) -> PyResult<Vec<u8>> {
             if start > audio.frame_length() || stop > audio.frame_length() {
                 return Err(PyIndexError::new_err(format!(
                     "({start}, {stop}) is out of range for audio feature of length {len}",
@@ -746,12 +741,10 @@ mod blocking {
                     "({start}, {stop}) is invalid range because start > end",
                 )));
             }
-            let wav = &self
-                .synthesizer
+            self.synthesizer
                 .read()?
                 .__render(&audio.audio, start..stop)
-                .into_py_result(py)?;
-            Ok(PyBytes::new(py, wav))
+                .into_py_result(py)
         }
 
         #[pyo3(signature=(
@@ -761,21 +754,19 @@ mod blocking {
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
-        fn synthesis<'py>(
+        fn synthesis(
             &self,
             #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
             style_id: u32,
             enable_interrogative_upspeak: bool,
-            py: Python<'py>,
-        ) -> PyResult<Bound<'py, PyBytes>> {
-            let wav = &self
-                .synthesizer
+            py: Python<'_>,
+        ) -> PyResult<Vec<u8>> {
+            self.synthesizer
                 .read()?
                 .synthesis(&audio_query, StyleId::new(style_id))
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
-                .into_py_result(py)?;
-            Ok(PyBytes::new(py, wav))
+                .into_py_result(py)
         }
 
         #[pyo3(signature=(
@@ -785,22 +776,20 @@ mod blocking {
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
-        fn tts_from_kana<'py>(
+        fn tts_from_kana(
             &self,
             kana: &str,
             style_id: u32,
             enable_interrogative_upspeak: bool,
-            py: Python<'py>,
-        ) -> PyResult<Bound<'py, PyBytes>> {
+            py: Python<'_>,
+        ) -> PyResult<Vec<u8>> {
             let style_id = StyleId::new(style_id);
-            let wav = &self
-                .synthesizer
+            self.synthesizer
                 .read()?
                 .tts_from_kana(kana, style_id)
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
-                .into_py_result(py)?;
-            Ok(PyBytes::new(py, wav))
+                .into_py_result(py)
         }
 
         #[pyo3(signature=(
@@ -810,22 +799,20 @@ mod blocking {
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
-        fn tts<'py>(
+        fn tts(
             &self,
             text: &str,
             style_id: u32,
             enable_interrogative_upspeak: bool,
-            py: Python<'py>,
-        ) -> PyResult<Bound<'py, PyBytes>> {
+            py: Python<'_>,
+        ) -> PyResult<Vec<u8>> {
             let style_id = StyleId::new(style_id);
-            let wav = &self
-                .synthesizer
+            self.synthesizer
                 .read()?
                 .tts(text, style_id)
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
-                .into_py_result(py)?;
-            Ok(PyBytes::new(py, wav))
+                .into_py_result(py)
         }
 
         fn close(&mut self) {
@@ -910,7 +897,7 @@ mod asyncio {
     use pyo3::{
         exceptions::PyTypeError,
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyAnyMethods as _, PyBytes, PyDict, PyList, PyTuple, PyType},
+        types::{IntoPyDict as _, PyAnyMethods as _, PyDict, PyList, PyTuple, PyType},
         Bound, Py, PyAny, PyErr, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
@@ -1188,8 +1175,7 @@ mod asyncio {
             })
         }
 
-        async fn load_voice_model(&mut self, model: PyObject) -> PyResult<()> {
-            let model: Py<VoiceModelFile> = Python::with_gil(|py| model.extract(py))?;
+        async fn load_voice_model(&mut self, model: Py<VoiceModelFile>) -> PyResult<()> {
             let model = &*model.get().model.read()?;
             let result = self
                 .synthesizer
@@ -1352,7 +1338,7 @@ mod asyncio {
             #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
             style_id: u32,
             enable_interrogative_upspeak: bool,
-        ) -> PyResult<Py<PyBytes>> {
+        ) -> PyResult<Vec<u8>> {
             let synthesizer = self.synthesizer.clone();
             let wav = synthesizer
                 .read()?
@@ -1360,10 +1346,7 @@ mod asyncio {
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
                 .await;
-            Python::with_gil(|py| {
-                let wav = wav.into_py_result(py)?;
-                Ok(PyBytes::new(py, &wav).into())
-            })
+            Python::with_gil(|py| wav.into_py_result(py))
         }
 
         #[pyo3(signature=(
@@ -1378,7 +1361,7 @@ mod asyncio {
             kana: String,
             style_id: u32,
             enable_interrogative_upspeak: bool,
-        ) -> PyResult<Py<PyBytes>> {
+        ) -> PyResult<Vec<u8>> {
             let style_id = StyleId::new(style_id);
             let synthesizer = self.synthesizer.clone();
             let wav = synthesizer
@@ -1387,10 +1370,7 @@ mod asyncio {
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
                 .await;
-            Python::with_gil(|py| {
-                let wav = wav.into_py_result(py)?;
-                Ok(PyBytes::new(py, &wav).into())
-            })
+            Python::with_gil(|py| wav.into_py_result(py))
         }
 
         #[pyo3(signature=(
@@ -1405,7 +1385,7 @@ mod asyncio {
             text: String,
             style_id: u32,
             enable_interrogative_upspeak: bool,
-        ) -> PyResult<Py<PyBytes>> {
+        ) -> PyResult<Vec<u8>> {
             let style_id = StyleId::new(style_id);
             let synthesizer = self.synthesizer.clone();
             let wav = synthesizer
@@ -1414,10 +1394,7 @@ mod asyncio {
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
                 .await;
-            Python::with_gil(|py| {
-                let wav = wav.into_py_result(py)?;
-                Ok(PyBytes::new(py, &wav).into())
-            })
+            Python::with_gil(|py| wav.into_py_result(py))
         }
 
         async fn close(&self) -> PyResult<()> {
