@@ -13,11 +13,6 @@ targets = [
     { triple = "x86_64-apple-ios" },
 ]
 
-[advisories]
-ignore = [
-    { id = "RUSTSEC-2025-0007", reason = "ringは広く使われているライブラリであり、代替に置き換えるというのはすぐには難しい。加えてどうも雰囲気的には、ringの即座の終焉というわけではなさそう" },
-]
-
 [bans]
 multiple-versions = "allow"
 
