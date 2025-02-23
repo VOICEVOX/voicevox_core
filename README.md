@@ -8,7 +8,10 @@
 [![discord](https://img.shields.io/discord/879570910208733277?color=5865f2&label=&logo=discord&logoColor=ffffff)](https://discord.gg/WMwWetrzuh)
 
 [VOICEVOX](https://voicevox.hiroshiba.jp/) の音声合成コア。  
-[Releases](https://github.com/VOICEVOX/voicevox_core/releases) にビルド済みのコアライブラリ（.so/.dll/.dylib）があります。
+[Releases](https://github.com/VOICEVOX/voicevox_core/releases) に以下のビルド済みのライブラリがあります。
+
+- C APIの動的ライブラリ（.so/.dll/.dylib）
+- Python APIのwheel（.whl）
 
 （エディターは [VOICEVOX](https://github.com/VOICEVOX/voicevox/) 、
 エンジンは [VOICEVOX ENGINE](https://github.com/VOICEVOX/voicevox_engine/) 、
@@ -72,10 +75,10 @@ Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます�
 動作には、libgomp のインストールが必要です。
 -->
 
-1. まず [Releases](https://github.com/VOICEVOX/voicevox_core/releases/latest) からダウンロードしたコアライブラリの zip を、適当なディレクトリ名で展開します。CUDA 版、DirectML 版はかならずその zip ファイルをダウンロードしてください。
+1. まず [Releases](https://github.com/VOICEVOX/voicevox_core/releases/latest) からダウンロードしたC APIライブラリ（`c-api`）の zip を、適当なディレクトリ名で展開します。CUDA 版、DirectML 版はかならずその zip ファイルをダウンロードしてください。
 2. 同じく Releases から音声モデルの zip をダウンロードしてください。
-3. [Open JTalk から配布されている辞書ファイル](https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz) をダウンロードしてコアライブラリを展開したディレクトリに展開してください。
-4. CUDA や DirectML を利用する場合は、 [追加ライブラリ](https://github.com/VOICEVOX/voicevox_additional_libraries/releases/latest) をダウンロードして、コアライブラリを展開したディレクトリに展開してください。
+3. [Open JTalk から配布されている辞書ファイル](https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz) をダウンロードしてC APIライブラリを展開したディレクトリに展開してください。
+4. CUDA や DirectML を利用する場合は、 [追加ライブラリ](https://github.com/VOICEVOX/voicevox_additional_libraries/releases/latest) をダウンロードして、C APIライブラリを展開したディレクトリに展開してください。
 
 </details>
 
@@ -96,7 +99,7 @@ DirectX12 に対応した GPU を搭載した Windows PC では DirectML を用�
 DirectML 版を利用するには Downloader の実行が必要です。  
 詳細は [DirectML 版をダウンロードする場合](./docs/guide/user/downloader.md#directml) を参照してください
 
-macOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けコアライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
+macOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けビルド済みライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
 
 <!--
 #### Raspberry Piでの使用について
@@ -141,11 +144,9 @@ Issue 側で取り組み始めたことを伝えるか、最初に Draft プル�
 
 [APIデザイン ガイドライン](./docs/guide/dev/api-design.md)をご覧ください。
 
-## コアライブラリのビルド
+## C APIのビルド
 
 ビルドには [Rust](https://www.rust-lang.org/ja) ([Windows での Rust 開発環境構築手順はこちら](https://docs.microsoft.com/ja-jp/windows/dev-environment/rust/setup)) と [cmake](https://cmake.org/download/) が必要です。
-[Releases](https://github.com/VOICEVOX/voicevox_core/releases) にあるビルド済みのコアライブラリを利用せず、自分で一からビルドした場合は、model フォルダにある onnx モデルのみが利用できます。
-このモデルはダミーのため、ノイズの混じった音声が出力されます。
 
 ```bash
 # DLLをビルド
@@ -162,10 +163,10 @@ sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
   > ./voicevox_core.h
 ```
 
-## コアライブラリのテスト
+## C APIライブラリのテスト
 
 ```bash
-cargo test
+cargo test -p voicevox_core_c_api --features load-onnxruntime -- --include-ignored
 ```
 
 ## ダウンローダーの実行
@@ -208,4 +209,4 @@ typos
 
 VOICEVOX CORE のソースコード及びビルド成果物のライセンスは [MIT LICENSE](./LICENSE) です。
 
-[Releases](https://github.com/VOICEVOX/voicevox_core/releases) にあるバージョン 0.16 未満のビルド済みのコアライブラリは別ライセンスなのでご注意ください。
+[Releases](https://github.com/VOICEVOX/voicevox_core/releases) にあるバージョン 0.16 未満のビルド済みのC/Python/Java APIライブラリは別ライセンスなのでご注意ください。
