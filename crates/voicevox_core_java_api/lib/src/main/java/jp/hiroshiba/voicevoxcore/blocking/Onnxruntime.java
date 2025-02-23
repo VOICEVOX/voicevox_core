@@ -1,10 +1,9 @@
 package jp.hiroshiba.voicevoxcore.blocking;
 
-import static jp.hiroshiba.voicevoxcore.GlobalInfo.SupportedDevices;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.Optional;
+import jp.hiroshiba.voicevoxcore.SupportedDevices;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /**
