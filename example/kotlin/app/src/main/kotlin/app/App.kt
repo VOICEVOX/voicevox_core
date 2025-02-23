@@ -2,6 +2,7 @@ package app
 
 import java.io.File
 import jp.hiroshiba.voicevoxcore.*
+import jp.hiroshiba.voicevoxcore.blocking.*
 import kotlinx.cli.*
 
 enum class Mode {
@@ -39,9 +40,9 @@ fun main(args: Array<String>) {
       Synthesizer.builder(ort, openJtalk)
           .accelerationMode(
               when (mode) {
-                Mode.AUTO -> Synthesizer.AccelerationMode.AUTO
-                Mode.CPU -> Synthesizer.AccelerationMode.CPU
-                Mode.GPU -> Synthesizer.AccelerationMode.GPU
+                Mode.AUTO -> AccelerationMode.AUTO
+                Mode.CPU -> AccelerationMode.CPU
+                Mode.GPU -> AccelerationMode.GPU
               }
           )
           .build()
