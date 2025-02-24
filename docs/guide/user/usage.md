@@ -39,7 +39,27 @@ chmod +x download
 
 `voicevox_core`ディレクトリにファイル一式がダウンロードされています。以降の説明ではこのディレクトリで作業を行います。
 
-詳細な Downloader の使い方は [こちら](./downloader.md) で紹介しています。
+詳細な Downloader の使い方は [こちら](./downloader.md) で紹介しています。また、GPUの使用については[こちら](./gpu.md)で説明しています。
+
+<details>
+<summary> Downloader を使わない場合</summary>
+
+<!--
+#### Raspberry Pi (armhf)の場合
+
+Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます。
+
+- <https://github.com/VOICEVOX/onnxruntime-builder/releases>
+
+動作には、libgomp のインストールが必要です。
+-->
+
+1. まず [Releases](https://github.com/VOICEVOX/voicevox_core/releases/latest) からダウンロードしたC APIライブラリ（`c-api`）の zip を、適当なディレクトリ名で展開します。CUDA 版、DirectML 版はかならずその zip ファイルをダウンロードしてください。
+2. 同じく Releases から音声モデルの zip をダウンロードしてください。
+3. [Open JTalk から配布されている辞書ファイル](https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz) をダウンロードしてC APIライブラリを展開したディレクトリに展開してください。
+4. CUDA や DirectML を利用する場合は、 [追加ライブラリ](https://github.com/VOICEVOX/voicevox_additional_libraries/releases/latest) をダウンロードして、C APIライブラリを展開したディレクトリに展開してください。
+
+</details>
 
 ### Python ライブラリのインストール
 
