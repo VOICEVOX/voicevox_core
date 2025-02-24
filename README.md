@@ -169,15 +169,6 @@ sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
 cargo test -p voicevox_core_c_api --features load-onnxruntime -- --include-ignored
 ```
 
-## ダウンローダーの実行
-
-```bash
-cargo run -p downloader
-
-# ヘルプを表示
-cargo run -p downloader -- -h
-```
-
 ## ヘッダファイルの更新
 
 ```bash
