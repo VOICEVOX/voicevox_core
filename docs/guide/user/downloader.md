@@ -13,7 +13,7 @@ VOICEVOX CORE Downloaderは環境に合わせてそれらをダウンロード�
 | :- | :- | :- |
 | `c-api` | {output}/c_api/ | VOICEVOX CORE C APIのビルド済みバイナリおよびその利用規約ファイル等 |
 | `onnxruntime` | {output}/onnxruntime/ | (VOICEVOX) ONNX Runtime |
-| `additional-libraries` | {output}/additional_libraries/ | **`--devices`で指定した**DirectMLやCUDA |
+| `additional-libraries` | {output}/additional_libraries/ | `--devices`で指定したDirectMLやCUDA |
 | `models` | {output}/models/ | VOICEVOX音声モデル（VVMファイル） |
 | `dict` | {output}/dict/ | Open JTalkのシステム辞書 |
 
