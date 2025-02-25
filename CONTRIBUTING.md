@@ -14,6 +14,15 @@ Issue 側で取り組み始めたことを伝えるか、最初に Draft プル�
 
 [cbindgen](https://crates.io/crates/cbindgen) が手元にインストールされているなら、それを使いヘッダファイルを生成することもできます。
 
+## ダウンローダーの実行
+
+```bash
+cargo run -p downloader
+
+# ヘルプを表示
+cargo run -p downloader -- -h
+```
+
 ## タイポチェック
 
 [typos](https://github.com/crate-ci/typos) を使ってタイポのチェックを行っています。
