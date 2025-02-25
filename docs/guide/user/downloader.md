@@ -17,7 +17,7 @@ VOICEVOX CORE Downloaderは環境に合わせてそれらをダウンロード�
 | `models` | {output}/models/ | VOICEVOX音声モデル（VVMファイル） |
 | `dict` | {output}/dict/ | Open JTalkのシステム辞書 |
 
-(`-o, --output`（デフォルトは`./voicevox_core/`） のディレクトリを{output}とする)
+{output}は`-o, --output`で指定したディレクトリで、デフォルトは`./voicevox_core/`です。
 
 # ダウンローダーの入手
 
