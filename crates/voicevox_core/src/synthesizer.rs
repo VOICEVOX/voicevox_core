@@ -33,15 +33,19 @@ use crate::{
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
 pub const DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK: bool = true;
+pub const DEFAULT_ASYNC_CANCELLABLE: bool = false;
+pub const BLOCKING_CANCELLABLE: bool = false;
 
 struct SynthesisOptions {
     enable_interrogative_upspeak: bool,
+    async_cancellable: bool,
 }
 
 impl Default for SynthesisOptions {
     fn default() -> Self {
         Self {
             enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+            async_cancellable: DEFAULT_ASYNC_CANCELLABLE,
         }
     }
 }
@@ -57,12 +61,14 @@ impl From<&TtsOptions> for SynthesisOptions {
     fn from(options: &TtsOptions) -> Self {
         Self {
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+            async_cancellable: options.async_cancellable,
         }
     }
 }
 
 struct TtsOptions {
     enable_interrogative_upspeak: bool,
+    async_cancellable: bool,
 }
 
 // FIXME: this is dead code
@@ -76,6 +82,7 @@ impl Default for TtsOptions {
     fn default() -> Self {
         Self {
             enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+            async_cancellable: DEFAULT_ASYNC_CANCELLABLE,
         }
     }
 }
@@ -421,6 +428,7 @@ trait AsInner {
                     &f0,
                     phoneme.as_flattened(),
                     style_id,
+                    options.async_cancellable,
                 )
                 .await?;
             return Ok(wav_from_s16le(
@@ -781,12 +789,20 @@ trait AsInner {
         f0: &[f32],
         phoneme_vector: &[f32],
         style_id: StyleId,
+        async_cancellable: bool,
     ) -> Result<Vec<f32>> {
         let status = self.status().clone();
         let f0 = ndarray::arr1(f0);
         let phoneme_vector = ndarray::arr1(phoneme_vector);
         status
-            .decode::<Self::Async>(length, phoneme_size, f0, phoneme_vector, style_id)
+            .decode::<Self::Async>(
+                length,
+                phoneme_size,
+                f0,
+                phoneme_vector,
+                style_id,
+                async_cancellable,
+            )
             .await
     }
 }
@@ -843,6 +859,7 @@ impl<R: InferenceRuntime> Status<R> {
                         phoneme_list: phoneme_vector,
                         speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                     },
+                    BLOCKING_CANCELLABLE,
                 )
                 .await?;
             return Ok(ensure_minimum_phoneme_length(output.into_raw_vec()));
@@ -858,6 +875,7 @@ impl<R: InferenceRuntime> Status<R> {
                     phoneme_list: phoneme_vector,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
+                BLOCKING_CANCELLABLE,
             )
             .await?;
         Ok(ensure_minimum_phoneme_length(output.into_raw_vec()))
@@ -895,6 +913,7 @@ impl<R: InferenceRuntime> Status<R> {
                         end_accent_phrase_list: end_accent_phrase_vector,
                         speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                     },
+                    BLOCKING_CANCELLABLE,
                 )
                 .await?;
             return Ok(output.into_raw_vec());
@@ -914,6 +933,7 @@ impl<R: InferenceRuntime> Status<R> {
                     end_accent_phrase_list: end_accent_phrase_vector,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
+                BLOCKING_CANCELLABLE,
             )
             .await?;
 
@@ -951,6 +971,7 @@ impl<R: InferenceRuntime> Status<R> {
                     phoneme: phoneme_with_padding,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
+                BLOCKING_CANCELLABLE,
             )
             .await?;
 
@@ -977,7 +998,11 @@ impl<R: InferenceRuntime> Status<R> {
     ) -> Result<ndarray::Array1<f32>> {
         let (model_id, _inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
         let RenderAudioSegmentOutput { wave } = self
-            .run_session::<A, _>(model_id, RenderAudioSegmentInput { spec })
+            .run_session::<A, _>(
+                model_id,
+                RenderAudioSegmentInput { spec },
+                DEFAULT_ASYNC_CANCELLABLE, // TODO: 外部から指定可能にする
+            )
             .await?;
         Ok(wave)
     }
@@ -989,6 +1014,7 @@ impl<R: InferenceRuntime> Status<R> {
         f0: ndarray::Array1<f32>,
         phoneme_vector: ndarray::Array1<f32>,
         style_id: StyleId,
+        async_cancellable: bool,
     ) -> Result<Vec<f32>> {
         // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
         if self.contains_domain::<TalkDomain>(style_id) {
@@ -1008,6 +1034,7 @@ impl<R: InferenceRuntime> Status<R> {
                         phoneme: phoneme_with_padding,
                         speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                     },
+                    async_cancellable,
                 )
                 .await?;
             let len = output.len();
@@ -1047,6 +1074,7 @@ impl<R: InferenceRuntime> Status<R> {
                     note_durations: note_duration.into_one_row(),
                     speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
                 },
+                BLOCKING_CANCELLABLE,
             )
             .await?;
 
@@ -1069,6 +1097,7 @@ impl<R: InferenceRuntime> Status<R> {
                     notes: note.into_one_row(),
                     speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
                 },
+                BLOCKING_CANCELLABLE,
             )
             .await?;
 
@@ -1093,6 +1122,7 @@ impl<R: InferenceRuntime> Status<R> {
                     frame_f0s: f0.into_one_row(),
                     speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
                 },
+                BLOCKING_CANCELLABLE,
             )
             .await?;
 
@@ -1105,6 +1135,7 @@ impl<R: InferenceRuntime> Status<R> {
         f0: ndarray::Array1<f32>,
         volume: ndarray::Array1<f32>,
         style_id: StyleId,
+        async_cancellable: bool,
     ) -> Result<ndarray::Array2<f32>> {
         let (model_id, inner_voice_id) = self.ids_for::<FrameDecodeDomain>(style_id)?;
 
@@ -1117,6 +1148,7 @@ impl<R: InferenceRuntime> Status<R> {
                     frame_volumes: volume.into_one_row(),
                     speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
                 },
+                async_cancellable,
             )
             .await?;
 
@@ -1204,7 +1236,7 @@ pub(crate) mod blocking {
 
     use super::{
         AccelerationMode, AsInner as _, AssumeSingleTasked, InitializeOptions, Inner,
-        InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
+        InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions, BLOCKING_CANCELLABLE,
     };
 
     pub use super::AudioFeature;
@@ -1613,7 +1645,14 @@ pub(crate) mod blocking {
             style_id: StyleId,
         ) -> crate::Result<Vec<f32>> {
             self.0
-                .decode(length, phoneme_size, f0, phoneme_vector, style_id)
+                .decode(
+                    length,
+                    phoneme_size,
+                    f0,
+                    phoneme_vector,
+                    style_id,
+                    BLOCKING_CANCELLABLE,
+                )
                 .block_on()
         }
 
@@ -1669,7 +1708,7 @@ pub(crate) mod blocking {
         ) -> crate::Result<ndarray::Array2<f32>> {
             self.0
                 .status
-                .sf_decode::<SingleTasked>(phoneme, f0, volume, style_id)
+                .sf_decode::<SingleTasked>(phoneme, f0, volume, style_id, BLOCKING_CANCELLABLE)
                 .block_on()
         }
     }
@@ -1904,6 +1943,12 @@ pub(crate) mod nonblocking {
         }
 
         /// AudioQueryから音声合成を行う。
+        ///
+        /// # Caveats
+        ///
+        /// [`cancellable`]を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
+        ///
+        /// [`cancellable`]: Synthesis::cancellable
         pub fn synthesis<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
@@ -2013,6 +2058,12 @@ pub(crate) mod nonblocking {
         }
 
         /// AquesTalk風記法から音声合成を行う。
+        ///
+        /// # Caveats
+        ///
+        /// [`cancellable`]を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
+        ///
+        /// [`cancellable`]: TtsFromKana::cancellable
         pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
             TtsFromKana {
                 synthesizer: self.0.without_text_analyzer(),
@@ -2091,6 +2142,12 @@ pub(crate) mod nonblocking {
         }
 
         /// 日本語のテキストから音声合成を行う。
+        ///
+        /// # Caveats
+        ///
+        /// [`cancellable`]を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
+        ///
+        /// [`cancellable`]: Tts::cancellable
         pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
             Tts {
                 synthesizer: &self.0,
@@ -2163,6 +2220,16 @@ pub(crate) mod nonblocking {
             self
         }
 
+        /// 音声モデルの実行をキャンセル可能にするかどうか。
+        ///
+        /// このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。[VOICEVOX/voicevox_core#968]を参照。
+        ///
+        /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
+        pub fn cancellable(mut self, cancellable: bool) -> Self {
+            self.options.async_cancellable = cancellable;
+            self
+        }
+
         /// 実行する。
         pub async fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
@@ -2182,6 +2249,16 @@ pub(crate) mod nonblocking {
     impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 音声モデルの実行をキャンセル可能にするかどうか。
+        ///
+        /// このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。[VOICEVOX/voicevox_core#968]を参照。
+        ///
+        /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
+        pub fn cancellable(mut self, cancellable: bool) -> Self {
+            self.options.async_cancellable = cancellable;
             self
         }
 
@@ -2207,6 +2284,16 @@ pub(crate) mod nonblocking {
             self
         }
 
+        /// 音声モデルの実行をキャンセル可能にするかどうか。
+        ///
+        /// このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。[VOICEVOX/voicevox_core#968]を参照。
+        ///
+        /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
+        pub fn cancellable(mut self, cancellable: bool) -> Self {
+            self.options.async_cancellable = cancellable;
+            self
+        }
+
         /// 実行する。
         pub async fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
@@ -2218,7 +2305,7 @@ pub(crate) mod nonblocking {
 
 #[cfg(test)]
 mod tests {
-    use super::{AccelerationMode, AsInner as _};
+    use super::{AccelerationMode, AsInner as _, DEFAULT_ASYNC_CANCELLABLE};
     use crate::{
         asyncs::BlockingThreadPool, engine::Mora, macros::tests::assert_debug_fmt_eq, AccentPhrase,
         Result, StyleId,
@@ -2408,7 +2495,14 @@ mod tests {
 
         let result = syntesizer
             .0
-            .decode(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, StyleId::new(1))
+            .decode(
+                F0_LENGTH,
+                PHONEME_SIZE,
+                &f0,
+                &phoneme,
+                StyleId::new(1),
+                DEFAULT_ASYNC_CANCELLABLE,
+            )
             .await;
 
         assert!(result.is_ok(), "{result:?}");
@@ -2538,6 +2632,7 @@ mod tests {
                 ndarray::arr1(&f0),
                 ndarray::arr1(&volume),
                 sf_decode_style_id,
+                DEFAULT_ASYNC_CANCELLABLE,
             )
             .await;
 

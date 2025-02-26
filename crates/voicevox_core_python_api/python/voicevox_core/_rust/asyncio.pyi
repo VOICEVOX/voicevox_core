@@ -380,9 +380,13 @@ class Synthesizer:
         style_id: StyleId | int,
         *,
         enable_interrogative_upspeak: bool = True,
+        cancellable: bool = False,
     ) -> bytes:
         """
         :class:`AudioQuery` から音声合成する。
+
+        ``cancellable``
+        を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
 
         Parameters
         ----------
@@ -392,6 +396,9 @@ class Synthesizer:
             スタイルID。
         enable_interrogative_upspeak
             疑問文の調整を有効にするかどうか。
+        cancellable
+            音声モデルの実行をキャンセル可能にするかどうか。このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。
+            `VOICEVOX/voicevox_core#968 <https://github.com/VOICEVOX/voicevox_core/issues/968>`_ を参照。
 
         Returns
         -------
@@ -404,9 +411,13 @@ class Synthesizer:
         style_id: StyleId | int,
         *,
         enable_interrogative_upspeak: bool = True,
+        cancellable: bool = False,
     ) -> bytes:
         """
         AquesTalk風記法から音声合成を行う。
+
+        ``cancellable``
+        を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
 
         Parameters
         ----------
@@ -416,6 +427,9 @@ class Synthesizer:
             スタイルID。
         enable_interrogative_upspeak
             疑問文の調整を有効にするかどうか。
+        cancellable
+            音声モデルの実行をキャンセル可能にするかどうか。このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。
+            `VOICEVOX/voicevox_core#968 <https://github.com/VOICEVOX/voicevox_core/issues/968>`_ を参照。
         """
         ...
     async def tts(
@@ -424,9 +438,13 @@ class Synthesizer:
         style_id: StyleId | int,
         *,
         enable_interrogative_upspeak: bool = True,
+        cancellable: bool = False,
     ) -> bytes:
         """
         日本語のテキストから音声合成を行う。
+
+        ``cancellable``
+        を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
 
         Parameters
         ----------
@@ -436,6 +454,9 @@ class Synthesizer:
             スタイルID。
         enable_interrogative_upspeak
             疑問文の調整を有効にするかどうか。
+        cancellable
+            音声モデルの実行をキャンセル可能にするかどうか。このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。
+            `VOICEVOX/voicevox_core#968 <https://github.com/VOICEVOX/voicevox_core/issues/968>`_ を参照。
 
         Returns
         -------

@@ -1332,18 +1332,21 @@ mod asyncio {
             *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+            cancellable = voicevox_core::__internal::interop::DEFAULT_ASYNC_CANCELLABLE,
         ))]
         async fn synthesis(
             &self,
             #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
             style_id: u32,
             enable_interrogative_upspeak: bool,
+            cancellable: bool,
         ) -> PyResult<Vec<u8>> {
             let synthesizer = self.synthesizer.clone();
             let wav = synthesizer
                 .read()?
                 .synthesis(&audio_query, StyleId::new(style_id))
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .cancellable(cancellable)
                 .perform()
                 .await;
             Python::with_gil(|py| wav.into_py_result(py))
@@ -1355,12 +1358,14 @@ mod asyncio {
             *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+            cancellable = voicevox_core::__internal::interop::DEFAULT_ASYNC_CANCELLABLE,
         ))]
         async fn tts_from_kana(
             &self,
             kana: String,
             style_id: u32,
             enable_interrogative_upspeak: bool,
+            cancellable: bool,
         ) -> PyResult<Vec<u8>> {
             let style_id = StyleId::new(style_id);
             let synthesizer = self.synthesizer.clone();
@@ -1368,6 +1373,7 @@ mod asyncio {
                 .read()?
                 .tts_from_kana(&kana, style_id)
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .cancellable(cancellable)
                 .perform()
                 .await;
             Python::with_gil(|py| wav.into_py_result(py))
@@ -1379,12 +1385,14 @@ mod asyncio {
             *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+            cancellable = voicevox_core::__internal::interop::DEFAULT_ASYNC_CANCELLABLE,
         ))]
         async fn tts(
             &self,
             text: String,
             style_id: u32,
             enable_interrogative_upspeak: bool,
+            cancellable: bool,
         ) -> PyResult<Vec<u8>> {
             let style_id = StyleId::new(style_id);
             let synthesizer = self.synthesizer.clone();
@@ -1392,6 +1400,7 @@ mod asyncio {
                 .read()?
                 .tts(&text, style_id)
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .cancellable(cancellable)
                 .perform()
                 .await;
             Python::with_gil(|py| wav.into_py_result(py))

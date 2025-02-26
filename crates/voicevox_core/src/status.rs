@@ -119,6 +119,7 @@ impl<R: InferenceRuntime> Status<R> {
         &self,
         model_id: VoiceModelId,
         input: I,
+        async_cancellable: bool,
     ) -> Result<<I::Signature as InferenceSignature>::Output>
     where
         A: infer::AsyncExt,
@@ -126,7 +127,7 @@ impl<R: InferenceRuntime> Status<R> {
         <I::Signature as InferenceSignature>::Domain: InferenceDomainExt,
     {
         let sess = self.loaded_models.lock().unwrap().get(model_id);
-        sess.run::<A>(input).await
+        sess.run::<A>(input, async_cancellable).await
     }
 }
 

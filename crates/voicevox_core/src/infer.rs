@@ -20,12 +20,14 @@ use crate::{
 pub(crate) trait AsyncExt: Async {
     async fn run_session<R: InferenceRuntime>(
         ctx: R::RunContext,
+        async_cancellable: bool,
     ) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
 impl AsyncExt for SingleTasked {
     async fn run_session<R: InferenceRuntime>(
         ctx: R::RunContext,
+        _: bool,
     ) -> anyhow::Result<Vec<OutputTensor>> {
         R::run_blocking(ctx)
     }
@@ -34,8 +36,9 @@ impl AsyncExt for SingleTasked {
 impl AsyncExt for BlockingThreadPool {
     async fn run_session<R: InferenceRuntime>(
         ctx: R::RunContext,
+        async_cancellable: bool,
     ) -> anyhow::Result<Vec<OutputTensor>> {
-        R::run_async(ctx).await
+        R::run_async(ctx, async_cancellable).await
     }
 }
 
@@ -72,7 +75,10 @@ pub(crate) trait InferenceRuntime: 'static {
 
     fn run_blocking(ctx: Self::RunContext) -> anyhow::Result<Vec<OutputTensor>>;
 
-    async fn run_async(ctx: Self::RunContext) -> anyhow::Result<Vec<OutputTensor>>;
+    async fn run_async(
+        ctx: Self::RunContext,
+        cancellable: bool,
+    ) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
 /// 共に扱われるべき推論操作の集合を示す。
