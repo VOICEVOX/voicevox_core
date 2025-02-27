@@ -92,13 +92,11 @@ impl<R: InferenceRuntime, I: InferenceInputSignature> InferenceSessionCell<R, I>
     pub(crate) async fn run<A: super::AsyncExt>(
         self,
         input: I,
-        async_cancellable: bool,
+        cancellable: A::Cancellable,
     ) -> crate::Result<<I::Signature as InferenceSignature>::Output> {
         async {
             let ctx = input.make_run_context::<R>(self.inner.clone())?;
-            A::run_session::<R>(ctx, async_cancellable)
-                .await?
-                .try_into()
+            A::run_session::<R>(ctx, cancellable).await?.try_into()
         }
         .await
         .map_err(ErrorRepr::RunModel)

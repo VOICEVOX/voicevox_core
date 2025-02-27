@@ -1332,7 +1332,7 @@ mod asyncio {
             *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
-            cancellable = voicevox_core::__internal::interop::DEFAULT_ASYNC_CANCELLABLE,
+            cancellable = voicevox_core::__internal::interop::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
         ))]
         async fn synthesis(
             &self,
@@ -1358,7 +1358,7 @@ mod asyncio {
             *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
-            cancellable = voicevox_core::__internal::interop::DEFAULT_ASYNC_CANCELLABLE,
+            cancellable = voicevox_core::__internal::interop::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
         ))]
         async fn tts_from_kana(
             &self,
@@ -1385,7 +1385,7 @@ mod asyncio {
             *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
-            cancellable = voicevox_core::__internal::interop::DEFAULT_ASYNC_CANCELLABLE,
+            cancellable = voicevox_core::__internal::interop::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
         ))]
         async fn tts(
             &self,

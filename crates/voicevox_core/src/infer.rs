@@ -18,27 +18,39 @@ use crate::{
 };
 
 pub(crate) trait AsyncExt: Async {
+    type Cancellable: Copy;
+    const LIGHT_INFERENCE_CANCELLABLE: Self::Cancellable;
+    const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: Self::Cancellable;
+
     async fn run_session<R: InferenceRuntime>(
         ctx: R::RunContext,
-        async_cancellable: bool,
+        cancellable: Self::Cancellable,
     ) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
 impl AsyncExt for SingleTasked {
+    type Cancellable = ();
+    const LIGHT_INFERENCE_CANCELLABLE: Self::Cancellable = ();
+    const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: Self::Cancellable = ();
+
     async fn run_session<R: InferenceRuntime>(
         ctx: R::RunContext,
-        _: bool,
+        (): Self::Cancellable,
     ) -> anyhow::Result<Vec<OutputTensor>> {
         R::run_blocking(ctx)
     }
 }
 
 impl AsyncExt for BlockingThreadPool {
+    type Cancellable = bool;
+    const LIGHT_INFERENCE_CANCELLABLE: Self::Cancellable = false;
+    const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: Self::Cancellable = false;
+
     async fn run_session<R: InferenceRuntime>(
         ctx: R::RunContext,
-        async_cancellable: bool,
+        cancellable: Self::Cancellable,
     ) -> anyhow::Result<Vec<OutputTensor>> {
-        R::run_async(ctx, async_cancellable).await
+        R::run_async(ctx, cancellable).await
     }
 }
 
