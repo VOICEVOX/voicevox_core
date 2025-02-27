@@ -3,6 +3,7 @@ use std::{
     env,
     ffi::{CStr, CString},
     mem::MaybeUninit,
+    slice,
     sync::LazyLock,
 };
 
@@ -94,19 +95,37 @@ impl assert_cdylib::TestCase for TestCase {
 
         assert_ok(lib.voicevox_synthesizer_load_voice_model(synthesizer, model));
 
-        let audio_query = {
-            let mut audio_query = MaybeUninit::uninit();
-            let text = CString::new(&*self.text).unwrap();
-            assert_ok(lib.voicevox_synthesizer_create_audio_query(
+        let text = CString::new(&*self.text).unwrap();
+
+        // `voicevox_synthesizer_tts`
+        let (wav_length1, wav1) = {
+            let mut wav_length = MaybeUninit::uninit();
+            let mut wav = MaybeUninit::uninit();
+            assert_ok(lib.voicevox_synthesizer_tts(
                 synthesizer,
                 text.as_ptr(),
                 STYLE_ID,
-                audio_query.as_mut_ptr(),
+                lib.voicevox_make_default_tts_options(),
+                wav_length.as_mut_ptr(),
+                wav.as_mut_ptr(),
             ));
-            audio_query.assume_init()
+            (wav_length.assume_init(), wav.assume_init())
         };
 
-        let (wav_length, wav) = {
+        // `voicevox_synthesizer_create_audio_query`
+        // → `voicevox_synthesizer_synthesis`
+        let (wav_length2, wav2) = {
+            let audio_query = {
+                let mut audio_query = MaybeUninit::uninit();
+                assert_ok(lib.voicevox_synthesizer_create_audio_query(
+                    synthesizer,
+                    text.as_ptr(),
+                    STYLE_ID,
+                    audio_query.as_mut_ptr(),
+                ));
+                audio_query.assume_init()
+            };
+
             let mut wav_length = MaybeUninit::uninit();
             let mut wav = MaybeUninit::uninit();
             assert_ok(lib.voicevox_synthesizer_synthesis(
@@ -117,16 +136,142 @@ impl assert_cdylib::TestCase for TestCase {
                 wav_length.as_mut_ptr(),
                 wav.as_mut_ptr(),
             ));
+            lib.voicevox_json_free(audio_query);
             (wav_length.assume_init(), wav.assume_init())
         };
 
-        std::assert_eq!(SNAPSHOTS.output[&self.text].wav_length, wav_length);
+        // `voicevox_open_jtalk_rc_analyze`
+        // → `voicevox_synthesizer_replace_mora_data`
+        // → `voicevox_audio_query_create_from_accent_phrases`
+        // → `voicevox_synthesizer_synthesis`
+        let (wav_length3, wav3) = {
+            let accent_phrases = {
+                let mut accent_phrases = MaybeUninit::uninit();
+                assert_ok(lib.voicevox_open_jtalk_rc_analyze(
+                    openjtalk,
+                    text.as_ptr(),
+                    accent_phrases.as_mut_ptr(),
+                ));
+                accent_phrases.assume_init()
+            };
+            let accent_phrases = {
+                let mut next_accent_phrases = MaybeUninit::uninit();
+                assert_ok(lib.voicevox_synthesizer_replace_mora_data(
+                    synthesizer,
+                    accent_phrases,
+                    STYLE_ID,
+                    next_accent_phrases.as_mut_ptr(),
+                ));
+                lib.voicevox_json_free(accent_phrases);
+                next_accent_phrases.assume_init()
+            };
+            let audio_query = {
+                let mut audio_query = MaybeUninit::uninit();
+                assert_ok(lib.voicevox_audio_query_create_from_accent_phrases(
+                    accent_phrases,
+                    audio_query.as_mut_ptr(),
+                ));
+                lib.voicevox_json_free(accent_phrases);
+                audio_query.assume_init()
+            };
+
+            let mut wav_length = MaybeUninit::uninit();
+            let mut wav = MaybeUninit::uninit();
+            assert_ok(lib.voicevox_synthesizer_synthesis(
+                synthesizer,
+                audio_query,
+                STYLE_ID,
+                lib.voicevox_make_default_synthesis_options(),
+                wav_length.as_mut_ptr(),
+                wav.as_mut_ptr(),
+            ));
+            lib.voicevox_json_free(audio_query);
+            (wav_length.assume_init(), wav.assume_init())
+        };
+
+        // `voicevox_open_jtalk_rc_analyze`
+        // → `voicevox_synthesizer_replace_phoneme_length`
+        // → `voicevox_synthesizer_replace_mora_pitch`
+        // → `voicevox_audio_query_create_from_accent_phrases`
+        // → `voicevox_synthesizer_synthesis`
+        let (wav_length4, wav4) = {
+            let accent_phrases = {
+                let mut accent_phrases = MaybeUninit::uninit();
+                assert_ok(lib.voicevox_open_jtalk_rc_analyze(
+                    openjtalk,
+                    text.as_ptr(),
+                    accent_phrases.as_mut_ptr(),
+                ));
+                accent_phrases.assume_init()
+            };
+            let accent_phrases = {
+                let mut next_accent_phrases = MaybeUninit::uninit();
+                assert_ok(lib.voicevox_synthesizer_replace_phoneme_length(
+                    synthesizer,
+                    accent_phrases,
+                    STYLE_ID,
+                    next_accent_phrases.as_mut_ptr(),
+                ));
+                lib.voicevox_json_free(accent_phrases);
+                next_accent_phrases.assume_init()
+            };
+            let accent_phrases = {
+                let mut next_accent_phrases = MaybeUninit::uninit();
+                assert_ok(lib.voicevox_synthesizer_replace_mora_pitch(
+                    synthesizer,
+                    accent_phrases,
+                    STYLE_ID,
+                    next_accent_phrases.as_mut_ptr(),
+                ));
+                lib.voicevox_json_free(accent_phrases);
+                next_accent_phrases.assume_init()
+            };
+            let audio_query = {
+                let mut audio_query = MaybeUninit::uninit();
+                assert_ok(lib.voicevox_audio_query_create_from_accent_phrases(
+                    accent_phrases,
+                    audio_query.as_mut_ptr(),
+                ));
+                lib.voicevox_json_free(accent_phrases);
+                audio_query.assume_init()
+            };
+
+            let mut wav_length = MaybeUninit::uninit();
+            let mut wav = MaybeUninit::uninit();
+            assert_ok(lib.voicevox_synthesizer_synthesis(
+                synthesizer,
+                audio_query,
+                STYLE_ID,
+                lib.voicevox_make_default_synthesis_options(),
+                wav_length.as_mut_ptr(),
+                wav.as_mut_ptr(),
+            ));
+            lib.voicevox_json_free(audio_query);
+            (wav_length.assume_init(), wav.assume_init())
+        };
+
+        std::assert_eq!(SNAPSHOTS.output[&self.text].wav_length, wav_length1);
+
+        std::assert_eq!(
+            unsafe { slice::from_raw_parts(wav2, wav_length2) },
+            unsafe { slice::from_raw_parts(wav1, wav_length1) },
+        );
+        std::assert_eq!(
+            unsafe { slice::from_raw_parts(wav3, wav_length3) },
+            unsafe { slice::from_raw_parts(wav1, wav_length1) },
+        );
+        std::assert_eq!(
+            unsafe { slice::from_raw_parts(wav4, wav_length4) },
+            unsafe { slice::from_raw_parts(wav1, wav_length1) },
+        );
 
         lib.voicevox_voice_model_file_delete(model);
         lib.voicevox_open_jtalk_rc_delete(openjtalk);
         lib.voicevox_synthesizer_delete(synthesizer);
-        lib.voicevox_json_free(audio_query);
-        lib.voicevox_wav_free(wav);
+        lib.voicevox_wav_free(wav1);
+        lib.voicevox_wav_free(wav2);
+        lib.voicevox_wav_free(wav3);
+        lib.voicevox_wav_free(wav4);
 
         return Ok(());
 

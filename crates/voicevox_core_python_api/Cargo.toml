@@ -9,6 +9,7 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+anyhow.workspace = true
 async-lock.workspace = true
 blocking.workspace = true
 camino.workspace = true

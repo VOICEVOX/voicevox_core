@@ -6,7 +6,11 @@ import pydantic.alias_generators
 from pydantic import ConfigDict
 from pydantic_core import ArgsKwargs
 
-from .._rust import _to_zenkaku, _validate_user_dict_word
+from .._rust import (
+    _audio_query_from_accent_phrases,
+    _to_zenkaku,
+    _validate_user_dict_word,
+)
 from ._please_do_not_use import _Reserved
 
 StyleId = NewType("StyleId", int)
@@ -397,6 +401,10 @@ class AudioQuery:
     :func:`Synthesizer.create_audio_query` が返すもののみ ``str`` となる。入力として
     のAudioQueryでは無視される。
     """
+
+    @staticmethod
+    def from_accent_phrases(accent_phrases: list["AccentPhrase"]) -> "AudioQuery":
+        return _audio_query_from_accent_phrases(accent_phrases)
 
 
 UserDictWordType: TypeAlias = (

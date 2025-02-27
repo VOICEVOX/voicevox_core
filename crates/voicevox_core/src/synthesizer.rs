@@ -1,6 +1,7 @@
 use easy_ext::ext;
 use enum_map::enum_map;
-use std::{marker::PhantomData, ops::Range, sync::Arc};
+use futures_util::TryFutureExt as _;
+use std::{future::Future, marker::PhantomData, ops::Range, sync::Arc};
 use tracing::info;
 
 use crate::{
@@ -26,7 +27,6 @@ use crate::{
         },
         InferenceRuntime, InferenceSessionOptions,
     },
-    nonblocking::TextAnalyzer as _,
     status::Status,
     voice_model, AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
 };
@@ -664,14 +664,7 @@ trait AsInner {
     where
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
-        let accent_phrases =
-            self.text_analyzer()
-                .analyze(text)
-                .await
-                .map_err(|source| ErrorRepr::AnalyzeText {
-                    text: text.to_owned(),
-                    source,
-                })?;
+        let accent_phrases = self.text_analyzer().analyze_(text).await?;
         self.replace_mora_data(&accent_phrases, style_id).await
     }
 
@@ -680,7 +673,7 @@ trait AsInner {
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
         let accent_phrases = self.create_accent_phrases(text, style_id).await?;
-        Ok(AudioQuery::from_accent_phrases(accent_phrases))
+        Ok(accent_phrases.into())
     }
 
     async fn tts(
@@ -1200,10 +1193,51 @@ fn list_windows_video_cards() {
 }
 
 impl AudioQuery {
-    fn from_accent_phrases(accent_phrases: Vec<AccentPhrase>) -> Self {
+    /// アクセント句の配列からAudioQueryを作る。
+    #[doc(alias = "voicevox_audio_query_create_from_accent_phrases")]
+    pub fn from_accent_phrases(accent_phrases: Vec<AccentPhrase>) -> Self {
         let kana = create_kana(&accent_phrases);
         Self {
             accent_phrases,
+            kana: Some(kana),
+            ..Default::default()
+        }
+    }
+}
+
+#[ext(BlockingTextAnalyzerExt)]
+impl<T: crate::blocking::TextAnalyzer> T {
+    pub fn analyze_(&self, text: &str) -> crate::Result<Vec<AccentPhrase>> {
+        self.analyze(text).map_err(|source| {
+            ErrorRepr::AnalyzeText {
+                text: text.to_owned(),
+                source,
+            }
+            .into()
+        })
+    }
+}
+
+#[ext(NonblockingTextAnalyzerExt)]
+impl<T: crate::nonblocking::TextAnalyzer> T {
+    pub fn analyze_(
+        &self,
+        text: &str,
+    ) -> impl Future<Output = crate::Result<Vec<AccentPhrase>>> + Send {
+        self.analyze(text).map_err(|source| {
+            ErrorRepr::AnalyzeText {
+                text: text.to_owned(),
+                source,
+            }
+            .into()
+        })
+    }
+}
+
+impl Default for AudioQuery {
+    fn default() -> Self {
+        Self {
+            accent_phrases: vec![],
             speed_scale: 1.,
             pitch_scale: 0.,
             intonation_scale: 1.,
@@ -1212,8 +1246,14 @@ impl AudioQuery {
             post_phoneme_length: 0.1,
             output_sampling_rate: DEFAULT_SAMPLING_RATE,
             output_stereo: false,
-            kana: Some(kana),
+            kana: None,
         }
+    }
+}
+
+impl From<Vec<AccentPhrase>> for AudioQuery {
+    fn from(accent_phrases: Vec<AccentPhrase>) -> Self {
+        Self::from_accent_phrases(accent_phrases)
     }
 }
 
@@ -1288,6 +1328,11 @@ pub(crate) mod blocking {
         #[doc(alias = "voicevox_synthesizer_get_onnxruntime")]
         pub fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
             self.0.onnxruntime()
+        }
+
+        /// テキスト解析器。
+        pub fn text_analyzer(&self) -> &T {
+            &self.0.text_analyzer().0
         }
 
         /// ハードウェアアクセラレーションがGPUモードか判定する。
@@ -1410,6 +1455,12 @@ pub(crate) mod blocking {
         }
 
         /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
+        ///
+        /// [`replace_phoneme_length`]と[`replace_mora_pitch`]が一体になったショートハンド。詳細は[音声の調整]の節。
+        ///
+        /// [`replace_phoneme_length`]: Self::replace_phoneme_length
+        /// [`replace_mora_pitch`]: Self::replace_mora_pitch
+        /// [音声の調整]: ../index.html#音声の調整
         #[doc(alias = "voicevox_synthesizer_replace_mora_data")]
         pub fn replace_mora_data(
             &self,
@@ -1498,6 +1549,8 @@ pub(crate) mod blocking {
     impl<T: crate::blocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
         ///
+        /// [`TextAnalyzer::analyze`]と[`replace_mora_data`]が一体になったショートハンド。詳細は[音声の調整]の節。
+        ///
         /// # Example
         ///
         /// ```
@@ -1521,6 +1574,10 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
+        ///
+        /// [`TextAnalyzer::analyze`]: crate::blocking::TextAnalyzer::analyze
+        /// [`replace_mora_data`]: Self::replace_mora_data
+        /// [音声の調整]: ../index.html#音声の調整
         #[doc(alias = "voicevox_synthesizer_create_accent_phrases")]
         pub fn create_accent_phrases(
             &self,
@@ -1531,6 +1588,8 @@ pub(crate) mod blocking {
         }
 
         /// 日本語のテキストから[AudioQuery]を生成する。
+        ///
+        /// [`create_accent_phrases`]と[`AudioQuery::from_accent_phrases`]が一体になったショートハンド。詳細は[音声の調整]の節。
         ///
         /// # Examples
         ///
@@ -1557,6 +1616,8 @@ pub(crate) mod blocking {
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
+        /// [`create_accent_phrases`]: Self::create_accent_phrases
+        /// [音声の調整]: ../index.html#音声の調整
         #[doc(alias = "voicevox_synthesizer_create_audio_query")]
         pub fn create_audio_query(
             &self,
@@ -1567,6 +1628,12 @@ pub(crate) mod blocking {
         }
 
         /// 日本語のテキストから音声合成を行う。
+        ///
+        /// [`create_audio_query`]と[`synthesis`]が一体になったショートハンド。詳細は[音声の調整]の節。
+        ///
+        /// [`create_audio_query`]: Self::create_audio_query
+        /// [`synthesis`]: Self::synthesis
+        /// [音声の調整]: ../index.html#音声の調整
         #[doc(alias = "voicevox_synthesizer_tts")]
         pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
             Tts {
@@ -1712,6 +1779,7 @@ pub(crate) mod blocking {
     }
 
     impl<T> Builder<T> {
+        /// テキスト解析器。
         pub fn text_analyzer<T2>(self, text_analyzer: T2) -> Builder<T2> {
             Builder {
                 text_analyzer,
@@ -1900,6 +1968,11 @@ pub(crate) mod nonblocking {
             crate::nonblocking::Onnxruntime::from_blocking(self.0.onnxruntime())
         }
 
+        /// テキスト解析器。
+        pub fn text_analyzer(&self) -> &T {
+            self.0.text_analyzer()
+        }
+
         /// ハードウェアアクセラレーションがGPUモードか判定する。
         pub fn is_gpu_mode(&self) -> bool {
             self.0.is_gpu_mode()
@@ -1986,6 +2059,12 @@ pub(crate) mod nonblocking {
         }
 
         /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
+        ///
+        /// [`replace_phoneme_length`]と[`replace_mora_pitch`]が一体になったショートハンド。詳細は[音声の調整]の節。
+        ///
+        /// [`replace_phoneme_length`]: Self::replace_phoneme_length
+        /// [`replace_mora_pitch`]: Self::replace_mora_pitch
+        /// [音声の調整]: ../index.html#音声の調整
         pub async fn replace_mora_data(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -2068,6 +2147,8 @@ pub(crate) mod nonblocking {
     impl<T: crate::nonblocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
         ///
+        /// [`TextAnalyzer::analyze`]と[`replace_mora_data`]が一体になったショートハンド。詳細は[音声の調整]の節。
+        ///
         /// # Example
         ///
         /// ```
@@ -2090,6 +2171,10 @@ pub(crate) mod nonblocking {
         /// # Ok(())
         /// # }
         /// ```
+        ///
+        /// [`TextAnalyzer::analyze`]: crate::nonblocking::TextAnalyzer::analyze
+        /// [`replace_mora_data`]: Self::replace_mora_data
+        /// [音声の調整]: ../index.html#音声の調整
         pub async fn create_accent_phrases(
             &self,
             text: &str,
@@ -2099,6 +2184,8 @@ pub(crate) mod nonblocking {
         }
 
         /// 日本語のテキストから[AudioQuery]を生成する。
+        ///
+        /// [`create_accent_phrases`]と[`AudioQuery::from_accent_phrases`]が一体になったショートハンド。詳細は[音声の調整]の節。
         ///
         /// # Examples
         ///
@@ -2124,6 +2211,8 @@ pub(crate) mod nonblocking {
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
+        /// [`create_accent_phrases`]: Self::create_accent_phrases
+        /// [音声の調整]: ../index.html#音声の調整
         pub async fn create_audio_query(
             &self,
             text: &str,
@@ -2134,10 +2223,15 @@ pub(crate) mod nonblocking {
 
         /// 日本語のテキストから音声合成を行う。
         ///
+        /// [`create_audio_query`]と[`synthesis`]が一体になったショートハンド。詳細は[音声の調整]の節。
+        ///
         /// # Caveats
         ///
         /// [`cancellable`]を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
         ///
+        /// [`create_audio_query`]: Self::create_audio_query
+        /// [`synthesis`]: Self::synthesis
+        /// [音声の調整]: ../index.html#音声の調整
         /// [`cancellable`]: Tts::cancellable
         pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
             Tts {
@@ -2165,6 +2259,7 @@ pub(crate) mod nonblocking {
     }
 
     impl<T> Builder<T> {
+        /// テキスト解析器。
         pub fn text_analyzer<T2>(self, text_analyzer: T2) -> Builder<T2> {
             Builder {
                 text_analyzer,

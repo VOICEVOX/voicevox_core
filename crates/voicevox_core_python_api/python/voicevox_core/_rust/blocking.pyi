@@ -154,6 +154,16 @@ class OpenJtalk:
             ユーザー辞書。
         """
         ...
+    def analyze(self, text: str) -> list[AccentPhrase]:
+        """
+        日本語のテキストを解析する。
+
+        Parameters
+        ----------
+        text
+            日本語のテキスト。
+        """
+        ...
 
 class AudioFeature:
     @property
@@ -191,6 +201,10 @@ class Synthesizer:
     @property
     def onnxruntime(self) -> Onnxruntime:
         """ONNX Runtime。"""
+        ...
+    @property
+    def open_jtalk(self) -> OpenJtalk:
+        """Open JTalk。"""
         ...
     @property
     def is_gpu_mode(self) -> bool:
@@ -261,6 +275,14 @@ class Synthesizer:
         """
         日本語のテキストから :class:`AudioQuery` を生成する。
 
+        :func:`create_accent_phrases` と |from-accent-phrases|_
+        が一体になったショートハンド。詳細は `テキスト音声合成の流れ
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md>`_
+        を参照。
+
+        .. |from-accent-phrases| replace:: ``AudioQuery.from_accent_phrases()``
+        .. _from-accent-phrases: ../index.html#voicevox_core.AudioQuery.from_accent_phrases
+
         Parameters
         ----------
         text
@@ -301,6 +323,11 @@ class Synthesizer:
         """
         日本語のテキストからAccentPhrase（アクセント句）の配列を生成する。
 
+        :func:`OpenJtalk.analyze` と :func:`replace_mora_data`
+        が一体になったショートハンド。詳細は `テキスト音声合成の流れ
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md>`_
+        を参照。
+
         Parameters
         ----------
         text
@@ -322,6 +349,11 @@ class Synthesizer:
         アクセント句の音高・音素長を変更した新しいアクセント句の配列を生成する。
 
         元のアクセント句の音高・音素長は変更されない。
+
+        :func:`replace_phoneme_length` と :func:`replace_mora_pitch`
+        が一体になったショートハンド。詳細は `テキスト音声合成の流れ
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md>`_
+        を参照。
 
         Parameters
         ----------
@@ -437,6 +469,11 @@ class Synthesizer:
     ) -> bytes:
         """
         日本語のテキストから音声合成を行う。
+
+        :func:`create_audio_query` と :func:`synthesis`
+        が一体になったショートハンド。詳細は `テキスト音声合成の流れ
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md>`_
+        を参照。
 
         Parameters
         ----------
