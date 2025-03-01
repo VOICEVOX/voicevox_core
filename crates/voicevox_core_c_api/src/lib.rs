@@ -38,7 +38,9 @@ use std::sync::Once;
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
-use voicevox_core::__internal::interop::{ToJsonValue as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE};
+use voicevox_core::__internal::interop::{
+    BlockingTextAnalyzerExt as _, ToJsonValue as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE,
+};
 use voicevox_core::{AccentPhrase, AudioQuery, StyleId};
 
 fn init_logger_once() {
@@ -362,6 +364,41 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
 
 // TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 日本語のテキストを解析する。
+///
+/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+///
+/// @param [in] open_jtalk Open JTalkのオブジェクト
+/// @param [in] text UTF-8の日本語テキスト
+/// @param [out] output_accent_phrases_json 生成先
+///
+/// \orig-impl{voicevox_open_jtalk_rc_use_user_dict}
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_open_jtalk_rc_analyze(
+    open_jtalk: *const OpenJtalkRc,
+    text: *const c_char,
+    output_accent_phrases_json: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    let text = unsafe {
+        // SAFETY: The safety contract must be upheld by the caller.
+        CStr::from_ptr(text)
+    };
+    into_result_code_with_error((|| {
+        let accent_phrases = &open_jtalk.body().analyze_(ensure_utf8(text)?)?;
+        let accent_phrases = serde_json::to_string(accent_phrases).expect("should not fail");
+        let accent_phrases = CString::new(accent_phrases).expect("should not contain '\\0'");
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_accent_phrases_json
+                .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        }
+        Ok(())
+    })())
+}
+
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::OpenJtalkRc を<b>破棄</b>(_destruct_)する。
 ///
 /// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
@@ -443,6 +480,46 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
     } else {
         panic!("`$CARGO_PKG_VERSION` should be a SemVer, so it should not contain `\\0`");
     };
+}
+
+// TODO: cbindgenが`#[unsafe(no_mangle)]`に対応したら`#[no_mangle]`を置き換える
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// AccentPhraseの配列からAudioQueryを作る。
+///
+/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+///
+/// @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
+/// @param [out] output_accent_phrases_json 生成先
+///
+/// \safety{
+/// - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_audio_query_create_from_accent_phrases}
+#[no_mangle]
+pub unsafe extern "C" fn voicevox_audio_query_create_from_accent_phrases(
+    accent_phrases_json: *const c_char,
+    output_audio_query_json: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    let accent_phrases_json = unsafe {
+        // SAFETY: The safety contract must be upheld by the caller.
+        CStr::from_ptr(accent_phrases_json)
+    };
+    into_result_code_with_error((|| {
+        let accent_phrases = serde_json::from_str(ensure_utf8(accent_phrases_json)?)
+            .map_err(CApiError::InvalidAccentPhrase)?;
+        let audio_query = &AudioQuery::from_accent_phrases(accent_phrases);
+        let audio_query = serde_json::to_string(audio_query).expect("should not fail");
+        let audio_query = CString::new(audio_query).expect("should not contain '\\0'");
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_audio_query_json
+                .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
+        }
+        Ok(())
+    })())
 }
 
 /// 音声モデルファイル。
@@ -836,6 +913,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
+/// ::voicevox_synthesizer_create_accent_phrases と ::voicevox_audio_query_create_from_accent_phrases
+/// が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
+///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] text UTF-8の日本語テキスト
 /// @param [in] style_id スタイルID
@@ -858,6 +938,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
 /// }
 ///
 /// \orig-impl{voicevox_synthesizer_create_audio_query}
+///
+/// [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
     synthesizer: *const VoicevoxSynthesizer,
@@ -937,6 +1019,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
+/// ::voicevox_open_jtalk_rc_analyze と ::voicevox_synthesizer_replace_mora_data
+/// が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
+///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] text UTF-8の日本語テキスト
 /// @param [in] style_id スタイルID
@@ -959,6 +1044,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
 /// }
 ///
 /// \orig-impl{voicevox_synthesizer_create_accent_phrases}
+///
+/// [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     synthesizer: *const VoicevoxSynthesizer,
@@ -986,6 +1073,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
 ///
+/// ::voicevox_synthesizer_replace_phoneme_length と ::voicevox_synthesizer_replace_mora_pitch
+/// が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
+///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
 /// @param [in] style_id スタイルID
@@ -999,6 +1089,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
 /// }
 ///
 /// \orig-impl{voicevox_synthesizer_replace_mora_data}
+///
+/// [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     synthesizer: *const VoicevoxSynthesizer,
@@ -1252,6 +1344,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
 ///
 /// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
 ///
+/// ::voicevox_synthesizer_create_audio_query と ::voicevox_synthesizer_synthesis
+/// が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
+///
 /// @param [in] synthesizer
 /// @param [in] text UTF-8の日本語テキスト
 /// @param [in] style_id スタイルID
@@ -1268,6 +1363,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
 /// }
 ///
 /// \orig-impl{voicevox_synthesizer_tts}
+///
+/// [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
 #[no_mangle]
 pub unsafe extern "C" fn voicevox_synthesizer_tts(
     synthesizer: *const VoicevoxSynthesizer,
@@ -1301,8 +1398,10 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 ///
 /// \safety{
 /// - `json`は以下のAPIで得られたポインタでなくてはいけない。
+///     - ::voicevox_audio_query_create_from_accent_phrases
 ///     - ::voicevox_onnxruntime_create_supported_devices_json
 ///     - ::voicevox_voice_model_file_create_metas_json
+///     - ::voicevox_open_jtalk_rc_analyze
 ///     - ::voicevox_synthesizer_create_metas_json
 ///     - ::voicevox_synthesizer_create_audio_query
 ///     - ::voicevox_synthesizer_create_accent_phrases

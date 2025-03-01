@@ -13,7 +13,7 @@ use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
     pyfunction, pymodule,
-    types::{PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _},
+    types::{PyAnyMethods as _, PyList, PyListMethods as _, PyModule, PyModuleMethods as _},
     wrap_pyfunction, Bound, Py, PyAny, PyObject, PyResult, PyTypeInfo, Python,
 };
 use voicevox_core::__internal::interop::raii::MaybeClosed;
@@ -24,6 +24,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     pyo3_log::init();
 
     module.add("__version__", pyproject_project_version!())?;
+    module.add_wrapped(wrap_pyfunction!(_audio_query_from_accent_phrases))?;
     module.add_wrapped(wrap_pyfunction!(_validate_user_dict_word))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
     module.add_wrapped(wrap_pyfunction!(wav_from_s16le))?;
@@ -239,6 +240,20 @@ struct VoiceModelFilePyFields {
 }
 
 #[pyfunction]
+fn _audio_query_from_accent_phrases<'py>(
+    accent_phrases: &Bound<'py, PyList>,
+) -> PyResult<Bound<'py, PyAny>> {
+    let py = accent_phrases.py();
+    let cls = &py.import("voicevox_core")?.getattr("AudioQuery")?;
+    let accent_phrases = accent_phrases
+        .iter()
+        .map(|x| convert::from_dataclass(&x))
+        .collect::<Result<_, _>>()?;
+    let audio_query = voicevox_core::AudioQuery::from_accent_phrases(accent_phrases);
+    convert::to_pydantic_dataclass(audio_query, cls)
+}
+
+#[pyfunction]
 fn _validate_user_dict_word(ob: &Bound<'_, PyAny>) -> PyResult<()> {
     convert::to_rust_user_dict_word(ob).map(|_| ())
 }
@@ -264,7 +279,10 @@ mod blocking {
         Bound, Py, PyAny, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
-    use voicevox_core::{AccelerationMode, AudioQuery, StyleId, UserDictWord};
+    use voicevox_core::{
+        AccelerationMode, AccentPhrase, AudioQuery, StyleId, UserDictWord,
+        __internal::interop::BlockingTextAnalyzerExt as _,
+    };
 
     use crate::{
         convert::{SupportedDevicesExt as _, VoicevoxCoreResultExt as _},
@@ -420,8 +438,7 @@ mod blocking {
         }
     }
 
-    #[pyclass]
-    #[derive(Clone)]
+    #[pyclass(frozen)]
     pub(crate) struct OpenJtalk {
         open_jtalk: voicevox_core::blocking::OpenJtalk,
     }
@@ -442,6 +459,23 @@ mod blocking {
             self.open_jtalk
                 .use_user_dict(&user_dict.dict)
                 .into_py_result(py)
+        }
+
+        fn analyze<'py>(&self, text: &str, py: Python<'py>) -> PyResult<Vec<Bound<'py, PyAny>>> {
+            let cls = &py.import("voicevox_core")?.getattr("AccentPhrase")?;
+            let accent_phrases = self.open_jtalk.analyze_(text).into_py_result(py)?;
+            accent_phrases
+                .iter()
+                .map(|x| crate::convert::to_pydantic_dataclass(x, cls))
+                .collect()
+        }
+    }
+
+    struct OwnedOpenJtalk(Py<OpenJtalk>);
+
+    impl voicevox_core::blocking::TextAnalyzer for OwnedOpenJtalk {
+        fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
+            self.0.get().open_jtalk.analyze(text)
         }
     }
 
@@ -465,11 +499,8 @@ mod blocking {
 
     #[pyclass]
     pub(crate) struct Synthesizer {
-        synthesizer: Closable<
-            voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>,
-            Self,
-            SingleTasked,
-        >,
+        synthesizer:
+            Closable<voicevox_core::blocking::Synthesizer<OwnedOpenJtalk>, Self, SingleTasked>,
     }
 
     #[pymethods]
@@ -484,14 +515,14 @@ mod blocking {
         ))]
         fn new(
             onnxruntime: Onnxruntime,
-            open_jtalk: OpenJtalk,
+            open_jtalk: Py<OpenJtalk>,
             #[pyo3(from_py_with = "crate::convert::from_acceleration_mode")]
             acceleration_mode: AccelerationMode,
             cpu_num_threads: u16,
             py: Python<'_>,
         ) -> PyResult<Self> {
             let inner = voicevox_core::blocking::Synthesizer::builder(onnxruntime.0)
-                .text_analyzer(open_jtalk.open_jtalk.clone())
+                .text_analyzer(OwnedOpenJtalk(open_jtalk))
                 .acceleration_mode(acceleration_mode)
                 .cpu_num_threads(cpu_num_threads)
                 .build()
@@ -534,6 +565,12 @@ mod blocking {
                 .get()
                 .expect("should be initialized")
                 .clone_ref(py)
+        }
+
+        #[getter]
+        fn open_jtalk(&self, py: Python<'_>) -> PyResult<Py<OpenJtalk>> {
+            let this = self.synthesizer.read()?;
+            Ok(this.text_analyzer().0.clone_ref(py))
         }
 
         #[getter]
@@ -901,7 +938,10 @@ mod asyncio {
         Bound, Py, PyAny, PyErr, PyObject, PyRef, PyResult, Python,
     };
     use uuid::Uuid;
-    use voicevox_core::{AccelerationMode, AudioQuery, StyleId, UserDictWord};
+    use voicevox_core::{
+        AccelerationMode, AccentPhrase, AudioQuery, StyleId, UserDictWord,
+        __internal::interop::NonblockingTextAnalyzerExt as _,
+    };
 
     use crate::{
         convert::{SupportedDevicesExt as _, VoicevoxCoreResultExt as _},
@@ -1057,8 +1097,7 @@ mod asyncio {
         }
     }
 
-    #[pyclass]
-    #[derive(Clone)]
+    #[pyclass(frozen)]
     pub(crate) struct OpenJtalk {
         open_jtalk: voicevox_core::nonblocking::OpenJtalk,
     }
@@ -1093,17 +1132,33 @@ mod asyncio {
             let result = this.use_user_dict(&user_dict.dict).await;
             Python::with_gil(|py| result.into_py_result(py))
         }
+
+        async fn analyze(&self, text: String) -> PyResult<Vec<PyObject>> {
+            let accent_phrases = self.open_jtalk.analyze_(&text).await;
+
+            Python::with_gil(|py| {
+                let cls = &py.import("voicevox_core")?.getattr("AccentPhrase")?;
+                accent_phrases
+                    .into_py_result(py)?
+                    .iter()
+                    .map(|x| crate::convert::to_pydantic_dataclass(x, cls).map(Into::into))
+                    .collect::<Result<Vec<_>, _>>()
+            })
+        }
+    }
+
+    struct OwnedOpenJtalk(Py<OpenJtalk>);
+
+    impl voicevox_core::nonblocking::TextAnalyzer for OwnedOpenJtalk {
+        async fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
+            self.0.get().open_jtalk.analyze(text).await
+        }
     }
 
     #[pyclass]
     pub(crate) struct Synthesizer {
-        synthesizer: Arc<
-            Closable<
-                voicevox_core::nonblocking::Synthesizer<voicevox_core::nonblocking::OpenJtalk>,
-                Self,
-                Tokio,
-            >,
-        >,
+        synthesizer:
+            Arc<Closable<voicevox_core::nonblocking::Synthesizer<OwnedOpenJtalk>, Self, Tokio>>,
     }
 
     #[pymethods]
@@ -1118,13 +1173,13 @@ mod asyncio {
         ))]
         fn new(
             onnxruntime: Onnxruntime,
-            open_jtalk: OpenJtalk,
+            open_jtalk: Py<OpenJtalk>,
             #[pyo3(from_py_with = "crate::convert::from_acceleration_mode")]
             acceleration_mode: AccelerationMode,
             cpu_num_threads: u16,
         ) -> PyResult<Self> {
             let synthesizer = voicevox_core::nonblocking::Synthesizer::builder(onnxruntime.0)
-                .text_analyzer(open_jtalk.open_jtalk.clone())
+                .text_analyzer(OwnedOpenJtalk(open_jtalk))
                 .acceleration_mode(acceleration_mode)
                 .cpu_num_threads(cpu_num_threads)
                 .build();
@@ -1159,6 +1214,12 @@ mod asyncio {
                 .get()
                 .expect("should be initialized")
                 .clone_ref(py)
+        }
+
+        #[getter]
+        fn open_jtalk(&self, py: Python<'_>) -> PyResult<Py<OpenJtalk>> {
+            let this = self.synthesizer.read()?;
+            Ok(this.text_analyzer().0.clone_ref(py))
         }
 
         #[getter]
