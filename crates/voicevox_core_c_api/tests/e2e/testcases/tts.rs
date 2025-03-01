@@ -32,7 +32,7 @@ struct TestCase {
     text: String,
 }
 
-#[typetag::serde(name = "tts_via_audio_query")]
+#[typetag::serde(name = "tts")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
         let lib = CApi::from_library(lib)?;
@@ -332,7 +332,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(tts_via_audio_query);
+static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(tts);
 
 #[derive(Deserialize)]
 struct Snapshots {
