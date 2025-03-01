@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     env,
     ffi::{CStr, CString},
     mem::MaybeUninit,
@@ -140,11 +140,49 @@ impl assert_cdylib::TestCase for TestCase {
             (wav_length.assume_init(), wav.assume_init())
         };
 
+        // `voicevox_synthesizer_create_accent_phrases`
+        // → `voicevox_audio_query_create_from_accent_phrases`
+        // → `voicevox_synthesizer_synthesis`
+        let (wav_length3, wav3) = {
+            let accent_phrases = {
+                let mut accent_phrases = MaybeUninit::uninit();
+                assert_ok(lib.voicevox_synthesizer_create_accent_phrases(
+                    synthesizer,
+                    text.as_ptr(),
+                    STYLE_ID,
+                    accent_phrases.as_mut_ptr(),
+                ));
+                accent_phrases.assume_init()
+            };
+            let audio_query = {
+                let mut audio_query = MaybeUninit::uninit();
+                assert_ok(lib.voicevox_audio_query_create_from_accent_phrases(
+                    accent_phrases,
+                    audio_query.as_mut_ptr(),
+                ));
+                lib.voicevox_json_free(accent_phrases);
+                audio_query.assume_init()
+            };
+
+            let mut wav_length = MaybeUninit::uninit();
+            let mut wav = MaybeUninit::uninit();
+            assert_ok(lib.voicevox_synthesizer_synthesis(
+                synthesizer,
+                audio_query,
+                STYLE_ID,
+                lib.voicevox_make_default_synthesis_options(),
+                wav_length.as_mut_ptr(),
+                wav.as_mut_ptr(),
+            ));
+            lib.voicevox_json_free(audio_query);
+            (wav_length.assume_init(), wav.assume_init())
+        };
+
         // `voicevox_open_jtalk_rc_analyze`
         // → `voicevox_synthesizer_replace_mora_data`
         // → `voicevox_audio_query_create_from_accent_phrases`
         // → `voicevox_synthesizer_synthesis`
-        let (wav_length3, wav3) = {
+        let (wav_length4, wav4) = {
             let accent_phrases = {
                 let mut accent_phrases = MaybeUninit::uninit();
                 assert_ok(lib.voicevox_open_jtalk_rc_analyze(
@@ -194,7 +232,7 @@ impl assert_cdylib::TestCase for TestCase {
         // → `voicevox_synthesizer_replace_mora_pitch`
         // → `voicevox_audio_query_create_from_accent_phrases`
         // → `voicevox_synthesizer_synthesis`
-        let (wav_length4, wav4) = {
+        let (wav_length5, wav5) = {
             let accent_phrases = {
                 let mut accent_phrases = MaybeUninit::uninit();
                 assert_ok(lib.voicevox_open_jtalk_rc_analyze(
@@ -253,16 +291,15 @@ impl assert_cdylib::TestCase for TestCase {
         std::assert_eq!(SNAPSHOTS.output[&self.text].wav_length, wav_length1);
 
         std::assert_eq!(
-            unsafe { slice::from_raw_parts(wav2, wav_length2) },
-            unsafe { slice::from_raw_parts(wav1, wav_length1) },
-        );
-        std::assert_eq!(
-            unsafe { slice::from_raw_parts(wav3, wav_length3) },
-            unsafe { slice::from_raw_parts(wav1, wav_length1) },
-        );
-        std::assert_eq!(
-            unsafe { slice::from_raw_parts(wav4, wav_length4) },
-            unsafe { slice::from_raw_parts(wav1, wav_length1) },
+            1,
+            HashSet::from([
+                unsafe { slice::from_raw_parts(wav1, wav_length1) },
+                unsafe { slice::from_raw_parts(wav2, wav_length2) },
+                unsafe { slice::from_raw_parts(wav3, wav_length3) },
+                unsafe { slice::from_raw_parts(wav4, wav_length4) },
+                unsafe { slice::from_raw_parts(wav5, wav_length5) },
+            ])
+            .len(),
         );
 
         lib.voicevox_voice_model_file_delete(model);
@@ -272,6 +309,7 @@ impl assert_cdylib::TestCase for TestCase {
         lib.voicevox_wav_free(wav2);
         lib.voicevox_wav_free(wav3);
         lib.voicevox_wav_free(wav4);
+        lib.voicevox_wav_free(wav5);
 
         return Ok(());
 

@@ -137,39 +137,49 @@ class SynthesizerTest extends TestUtils {
     AudioQuery query = synthesizer.createAudioQuery(TEXT, styleId);
     byte[] wav2 = synthesizer.synthesis(query, styleId).perform();
 
-    List<AccentPhrase> phrases = synthesizer.getOpenJtalk().analyze(TEXT);
-    phrases = synthesizer.replaceMoraData(phrases, styleId);
+    List<AccentPhrase> phrases = synthesizer.createAccentPhrases(TEXT, styleId);
     query = AudioQuery.fromAccentPhrases(phrases);
     byte[] wav3 = synthesizer.synthesis(query, styleId).perform();
 
     phrases = synthesizer.getOpenJtalk().analyze(TEXT);
-    phrases = synthesizer.replacePhonemeLength(phrases, styleId);
-    phrases = synthesizer.replaceMoraPitch(phrases, styleId);
+    phrases = synthesizer.replaceMoraData(phrases, styleId);
     query = AudioQuery.fromAccentPhrases(phrases);
     byte[] wav4 = synthesizer.synthesis(query, styleId).perform();
 
-    byte[] wav5 = synthesizer.tts(TEXT, styleId).interrogativeUpspeak(true).perform();
+    phrases = synthesizer.getOpenJtalk().analyze(TEXT);
+    phrases = synthesizer.replacePhonemeLength(phrases, styleId);
+    phrases = synthesizer.replaceMoraPitch(phrases, styleId);
+    query = AudioQuery.fromAccentPhrases(phrases);
+    byte[] wav5 = synthesizer.synthesis(query, styleId).perform();
+
+    byte[] wav6 = synthesizer.tts(TEXT, styleId).interrogativeUpspeak(true).perform();
 
     query = synthesizer.createAudioQuery(TEXT, styleId);
-    byte[] wav6 = synthesizer.synthesis(query, styleId).interrogativeUpspeak(true).perform();
+    byte[] wav7 = synthesizer.synthesis(query, styleId).interrogativeUpspeak(true).perform();
+
+    phrases = synthesizer.createAccentPhrases(TEXT, styleId);
+    query = AudioQuery.fromAccentPhrases(phrases);
+    byte[] wav8 = synthesizer.synthesis(query, styleId).interrogativeUpspeak(true).perform();
 
     phrases = synthesizer.getOpenJtalk().analyze(TEXT);
     phrases = synthesizer.replaceMoraData(phrases, styleId);
     query = AudioQuery.fromAccentPhrases(phrases);
-    byte[] wav7 = synthesizer.synthesis(query, styleId).interrogativeUpspeak(true).perform();
+    byte[] wav9 = synthesizer.synthesis(query, styleId).interrogativeUpspeak(true).perform();
 
     phrases = synthesizer.getOpenJtalk().analyze(TEXT);
     phrases = synthesizer.replacePhonemeLength(phrases, styleId);
     phrases = synthesizer.replaceMoraPitch(phrases, styleId);
     query = AudioQuery.fromAccentPhrases(phrases);
-    byte[] wav8 = synthesizer.synthesis(query, styleId).interrogativeUpspeak(true).perform();
+    byte[] wav10 = synthesizer.synthesis(query, styleId).interrogativeUpspeak(true).perform();
 
-    assertFalse(Arrays.equals(wav1, wav5));
+    assertFalse(Arrays.equals(wav1, wav6));
     assertArrayEquals(wav1, wav2);
     assertArrayEquals(wav1, wav3);
     assertArrayEquals(wav1, wav4);
-    assertArrayEquals(wav5, wav6);
-    assertArrayEquals(wav5, wav7);
-    assertArrayEquals(wav5, wav8);
+    assertArrayEquals(wav1, wav5);
+    assertArrayEquals(wav6, wav7);
+    assertArrayEquals(wav6, wav8);
+    assertArrayEquals(wav6, wav9);
+    assertArrayEquals(wav6, wav10);
   }
 }

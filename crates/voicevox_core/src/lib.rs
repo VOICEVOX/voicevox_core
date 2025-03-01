@@ -52,13 +52,19 @@
 //!     };
 //!
 //!     let wav3 = {
+//!         let phrases = synth.create_accent_phrases(TEXT, STYLE_ID)?;
+//!         let query = AudioQuery::from(phrases);
+//!         synth.synthesis(&query, STYLE_ID).perform()?
+//!     };
+//!
+//!     let wav4 = {
 //!         let phrases = synth.text_analyzer().analyze(TEXT)?;
 //!         let phrases = synth.replace_mora_data(&phrases, STYLE_ID)?;
 //!         let query = AudioQuery::from(phrases);
 //!         synth.synthesis(&query, STYLE_ID).perform()?
 //!     };
 //!
-//!     let wav4 = {
+//!     let wav5 = {
 //!         let phrases = synth.text_analyzer().analyze(TEXT)?;
 //!         let phrases = synth.replace_phoneme_length(&phrases, STYLE_ID)?;
 //!         let phrases = synth.replace_mora_pitch(&phrases, STYLE_ID)?;
@@ -66,7 +72,7 @@
 //!         synth.synthesis(&query, STYLE_ID).perform()?
 //!     };
 //!
-//!     assert_eq!(1, HashSet::from([wav1, wav2, wav3, wav4]).len());
+//!     assert_eq!(1, HashSet::from([wav1, wav2, wav3, wav4, wav5]).len());
 //!     Ok(())
 //! }
 //! #

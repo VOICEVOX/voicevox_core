@@ -19,36 +19,44 @@ def test(synthesizer: Synthesizer) -> None:
     query = synthesizer.create_audio_query(TEXT, STYLE_ID)
     wav2 = synthesizer.synthesis(query, STYLE_ID)
 
-    phrases = synthesizer.open_jtalk.analyze(TEXT)
-    phrases = synthesizer.replace_mora_data(phrases, STYLE_ID)
+    phrases = synthesizer.create_accent_phrases(TEXT, STYLE_ID)
     query = AudioQuery.from_accent_phrases(phrases)
     wav3 = synthesizer.synthesis(query, STYLE_ID)
 
     phrases = synthesizer.open_jtalk.analyze(TEXT)
-    phrases = synthesizer.replace_phoneme_length(phrases, STYLE_ID)
-    phrases = synthesizer.replace_mora_pitch(phrases, STYLE_ID)
+    phrases = synthesizer.replace_mora_data(phrases, STYLE_ID)
     query = AudioQuery.from_accent_phrases(phrases)
     wav4 = synthesizer.synthesis(query, STYLE_ID)
 
-    wav5 = synthesizer.tts(TEXT, STYLE_ID, enable_interrogative_upspeak=False)
+    phrases = synthesizer.open_jtalk.analyze(TEXT)
+    phrases = synthesizer.replace_phoneme_length(phrases, STYLE_ID)
+    phrases = synthesizer.replace_mora_pitch(phrases, STYLE_ID)
+    query = AudioQuery.from_accent_phrases(phrases)
+    wav5 = synthesizer.synthesis(query, STYLE_ID)
+
+    wav6 = synthesizer.tts(TEXT, STYLE_ID, enable_interrogative_upspeak=False)
 
     query = synthesizer.create_audio_query(TEXT, STYLE_ID)
-    wav6 = synthesizer.synthesis(query, STYLE_ID, enable_interrogative_upspeak=False)
+    wav7 = synthesizer.synthesis(query, STYLE_ID, enable_interrogative_upspeak=False)
+
+    phrases = synthesizer.create_accent_phrases(TEXT, STYLE_ID)
+    query = AudioQuery.from_accent_phrases(phrases)
+    wav8 = synthesizer.synthesis(query, STYLE_ID, enable_interrogative_upspeak=False)
 
     phrases = synthesizer.open_jtalk.analyze(TEXT)
     phrases = synthesizer.replace_mora_data(phrases, STYLE_ID)
     query = AudioQuery.from_accent_phrases(phrases)
-    wav7 = synthesizer.synthesis(query, STYLE_ID, enable_interrogative_upspeak=False)
+    wav9 = synthesizer.synthesis(query, STYLE_ID, enable_interrogative_upspeak=False)
 
     phrases = synthesizer.open_jtalk.analyze(TEXT)
     phrases = synthesizer.replace_phoneme_length(phrases, STYLE_ID)
     phrases = synthesizer.replace_mora_pitch(phrases, STYLE_ID)
     query = AudioQuery.from_accent_phrases(phrases)
-    wav8 = synthesizer.synthesis(query, STYLE_ID, enable_interrogative_upspeak=False)
+    wav10 = synthesizer.synthesis(query, STYLE_ID, enable_interrogative_upspeak=False)
 
-    assert wav1 != wav5
-    assert len({wav1, wav2, wav3, wav4}) == 1
-    assert len({wav5, wav6, wav7, wav8}) == 1
+    assert wav1 != wav6
+    assert len({wav1, wav2, wav3, wav4, wav5}) == 1
+    assert len({wav6, wav7, wav8, wav9, wav10}) == 1
 
 
 @pytest.fixture
