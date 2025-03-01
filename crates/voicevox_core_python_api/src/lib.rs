@@ -1270,7 +1270,7 @@ mod asyncio {
                     .into_py_result(py)?
                     .iter()
                     .map(|ap| crate::convert::to_pydantic_dataclass(ap, class))
-                    .collect::<PyResult<Vec<_>>>();
+                    .collect::<PyResult<Vec<_>>>()?;
                 PyList::new(py, accent_phrases).map(Into::into)
             })
         }
