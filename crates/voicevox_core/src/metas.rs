@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Display};
 
+use derive_more::From;
 use derive_new::new;
 use indexmap::IndexMap;
 use itertools::Itertools as _;
@@ -51,6 +52,7 @@ pub fn merge<'a>(metas: impl IntoIterator<Item = &'a CharacterMeta>) -> Vec<Char
     Ord,
     Hash,
     PartialOrd,
+    From,
     derive_more::FromStr,
     Deserialize,
     Serialize,
