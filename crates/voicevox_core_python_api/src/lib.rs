@@ -5,7 +5,7 @@ use std::{
 };
 
 mod convert;
-use self::convert::from_utf8_path;
+use self::convert::{from_utf8_path, ToDataclass};
 use easy_ext::ext;
 use log::{debug, warn};
 use macros::pyproject_project_version;
@@ -13,10 +13,12 @@ use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
     pyfunction, pymodule,
-    types::{PyAnyMethods as _, PyList, PyListMethods as _, PyModule, PyModuleMethods as _},
-    wrap_pyfunction, Bound, Py, PyAny, PyObject, PyResult, PyTypeInfo, Python,
+    types::{PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _},
+    wrap_pyfunction, Bound, Py, PyObject, PyResult, PyTypeInfo, Python,
 };
-use voicevox_core::__internal::interop::raii::MaybeClosed;
+use voicevox_core::{
+    AccentPhrase, AudioQuery, UserDictWord, __internal::interop::raii::MaybeClosed,
+};
 
 #[pymodule]
 #[pyo3(name = "_rust")]
@@ -240,22 +242,18 @@ struct VoiceModelFilePyFields {
 }
 
 #[pyfunction]
-fn _audio_query_from_accent_phrases<'py>(
-    accent_phrases: &Bound<'py, PyList>,
-) -> PyResult<Bound<'py, PyAny>> {
-    let py = accent_phrases.py();
-    let cls = &py.import("voicevox_core")?.getattr("AudioQuery")?;
-    let accent_phrases = accent_phrases
-        .iter()
-        .map(|x| convert::from_dataclass(&x))
-        .collect::<Result<_, _>>()?;
-    let audio_query = voicevox_core::AudioQuery::from_accent_phrases(accent_phrases);
-    convert::to_pydantic_dataclass(audio_query, cls)
+fn _audio_query_from_accent_phrases(
+    #[pyo3(from_py_with = "convert::from_accent_phrases")] accent_phrases: Vec<AccentPhrase>,
+) -> ToDataclass<AudioQuery> {
+    AudioQuery::from_accent_phrases(accent_phrases).into()
 }
 
 #[pyfunction]
-fn _validate_user_dict_word(ob: &Bound<'_, PyAny>) -> PyResult<()> {
-    convert::to_rust_user_dict_word(ob).map(|_| ())
+fn _validate_user_dict_word(
+    #[expect(unused_variables)]
+    #[pyo3(from_py_with = "convert::to_rust_user_dict_word")]
+    word: UserDictWord,
+) {
 }
 
 #[pyfunction]
@@ -275,17 +273,18 @@ mod blocking {
     use pyo3::{
         exceptions::{PyIndexError, PyTypeError, PyValueError},
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyAnyMethods as _, PyDict, PyList, PyTuple, PyType},
-        Bound, Py, PyAny, PyObject, PyRef, PyResult, Python,
+        types::{IntoPyDict as _, PyDict, PyList, PyTuple, PyType},
+        Bound, IntoPyObject as _, Py, PyAny, PyObject, PyRef, PyResult, Python,
     };
+    use ref_cast::RefCast as _;
     use uuid::Uuid;
     use voicevox_core::{
-        AccelerationMode, AccentPhrase, AudioQuery, StyleId, UserDictWord,
-        __internal::interop::BlockingTextAnalyzerExt as _,
+        AccelerationMode, AccentPhrase, AudioQuery, StyleId, SupportedDevices, UserDictWord,
+        VoiceModelMeta, __internal::interop::BlockingTextAnalyzerExt as _,
     };
 
     use crate::{
-        convert::{SupportedDevicesExt as _, VoicevoxCoreResultExt as _},
+        convert::{ToDataclass, ToPyUuid, VoicevoxCoreResultExt as _},
         Closable, SingleTasked, VoiceModelFilePyFields,
     };
 
@@ -315,8 +314,10 @@ mod blocking {
         fn open(py: Python<'_>, path: PathBuf) -> PyResult<Self> {
             let model = voicevox_core::blocking::VoiceModelFile::open(path).into_py_result(py)?;
 
-            let id = crate::convert::to_py_uuid(py, model.id().0)?.into();
-            let metas = crate::convert::to_pydantic_voice_model_meta(model.metas(), py)?.into();
+            let id = ToPyUuid(model.id().0).into_pyobject(py)?.into();
+            let metas = ToDataclass::ref_cast(model.metas())
+                .into_pyobject(py)?
+                .into();
 
             let model = Closable::new(model);
 
@@ -433,8 +434,11 @@ mod blocking {
                 .map(|onnxruntime| onnxruntime.clone_ref(py))
         }
 
-        fn supported_devices<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-            self.0.supported_devices().into_py_result(py)?.to_py(py)
+        fn supported_devices(&self, py: Python<'_>) -> PyResult<ToDataclass<SupportedDevices>> {
+            self.0
+                .supported_devices()
+                .map(Into::into)
+                .into_py_result(py)
         }
     }
 
@@ -461,13 +465,11 @@ mod blocking {
                 .into_py_result(py)
         }
 
-        fn analyze<'py>(&self, text: &str, py: Python<'py>) -> PyResult<Vec<Bound<'py, PyAny>>> {
-            let cls = &py.import("voicevox_core")?.getattr("AccentPhrase")?;
-            let accent_phrases = self.open_jtalk.analyze_(text).into_py_result(py)?;
-            accent_phrases
-                .iter()
-                .map(|x| crate::convert::to_pydantic_dataclass(x, cls))
-                .collect()
+        fn analyze(&self, text: &str, py: Python<'_>) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
+            self.open_jtalk
+                .analyze_(text)
+                .map(Into::into)
+                .into_py_result(py)
         }
     }
 
@@ -579,9 +581,9 @@ mod blocking {
             Ok(synthesizer.is_gpu_mode())
         }
 
-        fn metas<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
+        fn metas(&self) -> PyResult<ToDataclass<VoiceModelMeta>> {
             let synthesizer = self.synthesizer.read()?;
-            crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
+            Ok(synthesizer.metas().into())
         }
 
         fn load_voice_model(
@@ -615,119 +617,105 @@ mod blocking {
                 .is_loaded_voice_model(voice_model_id.into()))
         }
 
-        fn create_audio_query_from_kana<'py>(
+        fn create_audio_query_from_kana(
             &self,
             kana: &str,
             style_id: u32,
-            py: Python<'py>,
-        ) -> PyResult<Bound<'py, PyAny>> {
+            py: Python<'_>,
+        ) -> PyResult<ToDataclass<AudioQuery>> {
             let synthesizer = self.synthesizer.read()?;
 
-            let audio_query = synthesizer
+            synthesizer
                 .create_audio_query_from_kana(kana, StyleId::new(style_id))
-                .into_py_result(py)?;
-
-            let class = &py.import("voicevox_core")?.getattr("AudioQuery")?;
-            crate::convert::to_pydantic_dataclass(audio_query, class)
+                .map(Into::into)
+                .into_py_result(py)
         }
 
-        fn create_audio_query<'py>(
+        fn create_audio_query(
             &self,
             text: &str,
             style_id: u32,
-            py: Python<'py>,
-        ) -> PyResult<Bound<'py, PyAny>> {
+            py: Python<'_>,
+        ) -> PyResult<ToDataclass<AudioQuery>> {
             let synthesizesr = self.synthesizer.read()?;
 
-            let audio_query = synthesizesr
+            synthesizesr
                 .create_audio_query(text, StyleId::new(style_id))
-                .into_py_result(py)?;
-
-            let class = &py.import("voicevox_core")?.getattr("AudioQuery")?;
-            crate::convert::to_pydantic_dataclass(audio_query, class)
+                .map(Into::into)
+                .into_py_result(py)
         }
 
-        fn create_accent_phrases_from_kana<'py>(
+        fn create_accent_phrases_from_kana(
             &self,
             kana: &str,
             style_id: u32,
-            py: Python<'py>,
-        ) -> PyResult<Vec<Bound<'py, PyAny>>> {
+            py: Python<'_>,
+        ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
 
-            let accent_phrases = synthesizer
+            synthesizer
                 .create_accent_phrases_from_kana(kana, StyleId::new(style_id))
-                .into_py_result(py)?;
-
-            let class = &py.import("voicevox_core")?.getattr("AccentPhrase")?;
-            accent_phrases
-                .iter()
-                .map(|ap| crate::convert::to_pydantic_dataclass(ap, class))
-                .collect()
+                .map(Into::into)
+                .into_py_result(py)
         }
 
-        fn create_accent_phrases<'py>(
+        fn create_accent_phrases(
             &self,
             text: &str,
             style_id: u32,
-            py: Python<'py>,
-        ) -> PyResult<Vec<Bound<'py, PyAny>>> {
+            py: Python<'_>,
+        ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
 
-            let accent_phrases = synthesizer
+            synthesizer
                 .create_accent_phrases(text, StyleId::new(style_id))
-                .into_py_result(py)?;
-
-            let class = &py.import("voicevox_core")?.getattr("AccentPhrase")?;
-            accent_phrases
-                .iter()
-                .map(|ap| crate::convert::to_pydantic_dataclass(ap, class))
-                .collect()
+                .map(Into::into)
+                .into_py_result(py)
         }
 
-        fn replace_mora_data<'py>(
+        fn replace_mora_data(
             &self,
-            accent_phrases: &Bound<'py, PyList>,
+            #[pyo3(from_py_with = "crate::convert::from_accent_phrases")] accent_phrases: Vec<
+                AccentPhrase,
+            >,
             style_id: u32,
-            py: Python<'py>,
-        ) -> PyResult<Vec<Bound<'py, PyAny>>> {
+            py: Python<'_>,
+        ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
-            crate::convert::blocking_modify_accent_phrases(
-                accent_phrases,
-                StyleId::new(style_id),
-                py,
-                |a, s| synthesizer.replace_mora_data(&a, s),
-            )
+            synthesizer
+                .replace_mora_data(&accent_phrases, style_id.into())
+                .map(Into::into)
+                .into_py_result(py)
         }
 
-        fn replace_phoneme_length<'py>(
+        fn replace_phoneme_length(
             &self,
-            accent_phrases: &Bound<'py, PyList>,
+            #[pyo3(from_py_with = "crate::convert::from_accent_phrases")] accent_phrases: Vec<
+                AccentPhrase,
+            >,
             style_id: u32,
-            py: Python<'py>,
-        ) -> PyResult<Vec<Bound<'py, PyAny>>> {
+            py: Python<'_>,
+        ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
-            crate::convert::blocking_modify_accent_phrases(
-                accent_phrases,
-                StyleId::new(style_id),
-                py,
-                |a, s| synthesizer.replace_phoneme_length(&a, s),
-            )
+            synthesizer
+                .replace_phoneme_length(&accent_phrases, style_id.into())
+                .map(Into::into)
+                .into_py_result(py)
         }
 
-        fn replace_mora_pitch<'py>(
+        fn replace_mora_pitch(
             &self,
-            accent_phrases: &Bound<'py, PyList>,
+            #[pyo3(from_py_with = "crate::convert::from_accent_phrases")] accent_phrases: Vec<
+                AccentPhrase,
+            >,
             style_id: u32,
-            py: Python<'py>,
-        ) -> PyResult<Vec<Bound<'py, PyAny>>> {
+            py: Python<'_>,
+        ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
-            crate::convert::blocking_modify_accent_phrases(
-                accent_phrases,
-                StyleId::new(style_id),
-                py,
-                |a, s| synthesizer.replace_mora_pitch(&a, s),
-            )
+            synthesizer
+                .replace_mora_pitch(&accent_phrases, style_id.into())
+                .map(Into::into)
+                .into_py_result(py)
         }
 
         // TODO: 後で復活させる
@@ -742,7 +730,7 @@ mod blocking {
         ))]
         fn _Synthesizer__precompute_render(
             &self,
-            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
+            #[pyo3(from_py_with = "crate::convert::from_audio_query")] audio_query: AudioQuery,
             style_id: u32,
             enable_interrogative_upspeak: bool,
             py: Python<'_>,
@@ -793,7 +781,7 @@ mod blocking {
         ))]
         fn synthesis(
             &self,
-            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
+            #[pyo3(from_py_with = "crate::convert::from_audio_query")] audio_query: AudioQuery,
             style_id: u32,
             enable_interrogative_upspeak: bool,
             py: Python<'_>,
@@ -878,14 +866,12 @@ mod blocking {
             self.dict.save(path).into_py_result(py)
         }
 
-        fn add_word<'py>(
+        fn add_word(
             &mut self,
             #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
-            py: Python<'py>,
-        ) -> PyResult<Bound<'py, PyAny>> {
-            let uuid = self.dict.add_word(word).into_py_result(py)?;
-
-            crate::convert::to_py_uuid(py, uuid)
+            py: Python<'_>,
+        ) -> PyResult<ToPyUuid> {
+            self.dict.add_word(word).map(Into::into).into_py_result(py)
         }
 
         fn update_word(
@@ -912,17 +898,12 @@ mod blocking {
         }
 
         fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-            let words = self.dict.with_words(|words| {
+            self.dict.with_words(|words| {
                 words
                     .iter()
-                    .map(|(&uuid, word)| {
-                        let uuid = crate::convert::to_py_uuid(py, uuid)?;
-                        let word = crate::convert::to_py_user_dict_word(py, word)?;
-                        Ok((uuid, word))
-                    })
-                    .collect::<PyResult<Vec<_>>>()
-            })?;
-            words.into_py_dict(py)
+                    .map(|(&uuid, word)| (ToPyUuid(uuid), ToDataclass::ref_cast(word)))
+                    .into_py_dict(py)
+            })
         }
     }
 }
@@ -934,17 +915,18 @@ mod asyncio {
     use pyo3::{
         exceptions::PyTypeError,
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyAnyMethods as _, PyDict, PyList, PyTuple, PyType},
-        Bound, Py, PyAny, PyErr, PyObject, PyRef, PyResult, Python,
+        types::{IntoPyDict as _, PyDict, PyList, PyTuple, PyType},
+        Bound, IntoPyObject as _, Py, PyAny, PyErr, PyObject, PyRef, PyResult, Python,
     };
+    use ref_cast::RefCast as _;
     use uuid::Uuid;
     use voicevox_core::{
-        AccelerationMode, AccentPhrase, AudioQuery, StyleId, UserDictWord,
-        __internal::interop::NonblockingTextAnalyzerExt as _,
+        AccelerationMode, AccentPhrase, AudioQuery, StyleId, SupportedDevices, UserDictWord,
+        VoiceModelMeta, __internal::interop::NonblockingTextAnalyzerExt as _,
     };
 
     use crate::{
-        convert::{SupportedDevicesExt as _, VoicevoxCoreResultExt as _},
+        convert::{ToDataclass, ToPyUuid, VoicevoxCoreResultExt as _},
         Closable, Tokio, VoiceModelFilePyFields,
     };
 
@@ -975,8 +957,10 @@ mod asyncio {
             let model = voicevox_core::nonblocking::VoiceModelFile::open(path).await;
             let (model, id, metas) = Python::with_gil(|py| {
                 let model = Python::with_gil(|py| model.into_py_result(py))?;
-                let id = crate::convert::to_py_uuid(py, model.id().0)?.into();
-                let metas = crate::convert::to_pydantic_voice_model_meta(model.metas(), py)?.into();
+                let id = ToPyUuid(model.id().0).into_pyobject(py)?.into();
+                let metas = ToDataclass::ref_cast(model.metas())
+                    .into_pyobject(py)?
+                    .into();
                 Ok::<_, PyErr>((model, id, metas))
             })?;
 
@@ -1092,8 +1076,11 @@ mod asyncio {
             })
         }
 
-        fn supported_devices<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-            self.0.supported_devices().into_py_result(py)?.to_py(py)
+        fn supported_devices(&self, py: Python<'_>) -> PyResult<ToDataclass<SupportedDevices>> {
+            self.0
+                .supported_devices()
+                .into_py_result(py)
+                .map(Into::into)
         }
     }
 
@@ -1133,17 +1120,9 @@ mod asyncio {
             Python::with_gil(|py| result.into_py_result(py))
         }
 
-        async fn analyze(&self, text: String) -> PyResult<Vec<PyObject>> {
-            let accent_phrases = self.open_jtalk.analyze_(&text).await;
-
-            Python::with_gil(|py| {
-                let cls = &py.import("voicevox_core")?.getattr("AccentPhrase")?;
-                accent_phrases
-                    .into_py_result(py)?
-                    .iter()
-                    .map(|x| crate::convert::to_pydantic_dataclass(x, cls).map(Into::into))
-                    .collect::<Result<Vec<_>, _>>()
-            })
+        async fn analyze(&self, text: String) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
+            let accent_phrases = self.open_jtalk.analyze_(&text).await.map(Into::into);
+            Python::with_gil(|py| accent_phrases.into_py_result(py))
         }
     }
 
@@ -1228,12 +1207,9 @@ mod asyncio {
             Ok(synthesizer.is_gpu_mode())
         }
 
-        fn metas(&self) -> PyResult<Py<PyList>> {
+        fn metas(&self) -> PyResult<ToDataclass<VoiceModelMeta>> {
             let synthesizer = self.synthesizer.read()?;
-            Python::with_gil(|py| {
-                crate::convert::to_pydantic_voice_model_meta(&synthesizer.metas(), py)
-                    .map(Into::into)
-            })
+            Ok(synthesizer.metas().into())
         }
 
         async fn load_voice_model(&mut self, model: Py<VoiceModelFile>) -> PyResult<()> {
@@ -1272,119 +1248,101 @@ mod asyncio {
             &self,
             kana: String,
             style_id: u32,
-        ) -> PyResult<PyObject> {
+        ) -> PyResult<ToDataclass<AudioQuery>> {
             let synthesizer = self.synthesizer.clone();
             let audio_query = synthesizer
                 .read()?
                 .create_audio_query_from_kana(&kana, StyleId::new(style_id))
-                .await;
-            Python::with_gil(|py| {
-                let class = &py.import("voicevox_core")?.getattr("AudioQuery")?;
-                crate::convert::to_pydantic_dataclass(audio_query.into_py_result(py)?, class)
-                    .map(Into::into)
-            })
+                .await
+                .map(Into::into);
+            Python::with_gil(|py| audio_query.into_py_result(py))
         }
 
-        async fn create_audio_query(&self, text: String, style_id: u32) -> PyResult<PyObject> {
+        async fn create_audio_query(
+            &self,
+            text: String,
+            style_id: u32,
+        ) -> PyResult<ToDataclass<AudioQuery>> {
             let synthesizer = self.synthesizer.clone();
             let audio_query = synthesizer
                 .read()?
                 .create_audio_query(&text, StyleId::new(style_id))
-                .await;
-            Python::with_gil(|py| {
-                let audio_query = audio_query.into_py_result(py)?;
-                let class = &py.import("voicevox_core")?.getattr("AudioQuery")?;
-                crate::convert::to_pydantic_dataclass(audio_query, class).map(Into::into)
-            })
+                .await
+                .map(Into::into);
+            Python::with_gil(|py| audio_query.into_py_result(py))
         }
 
         async fn create_accent_phrases_from_kana(
             &self,
             kana: String,
             style_id: u32,
-        ) -> PyResult<Py<PyList>> {
+        ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.clone();
             let accent_phrases = synthesizer
                 .read()?
                 .create_accent_phrases_from_kana(&kana, StyleId::new(style_id))
-                .await;
-            Python::with_gil(|py| {
-                let class = &py.import("voicevox_core")?.getattr("AccentPhrase")?;
-                let accent_phrases = accent_phrases
-                    .into_py_result(py)?
-                    .iter()
-                    .map(|ap| crate::convert::to_pydantic_dataclass(ap, class))
-                    .collect::<PyResult<Vec<_>>>();
-                PyList::new(py, accent_phrases).map(Into::into)
-            })
+                .await
+                .map(Into::into);
+            Python::with_gil(|py| accent_phrases.into_py_result(py))
         }
 
-        async fn create_accent_phrases(&self, text: String, style_id: u32) -> PyResult<Py<PyList>> {
+        async fn create_accent_phrases(
+            &self,
+            text: String,
+            style_id: u32,
+        ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.clone();
             let accent_phrases = synthesizer
                 .read()?
                 .create_accent_phrases(&text, StyleId::new(style_id))
-                .await;
-            Python::with_gil(|py| {
-                let class = &py.import("voicevox_core")?.getattr("AccentPhrase")?;
-                let accent_phrases = accent_phrases
-                    .into_py_result(py)?
-                    .iter()
-                    .map(|ap| crate::convert::to_pydantic_dataclass(ap, class))
-                    .collect::<PyResult<Vec<_>>>()?;
-                PyList::new(py, accent_phrases).map(Into::into)
-            })
+                .await
+                .map(Into::into);
+            Python::with_gil(|py| accent_phrases.into_py_result(py))
         }
 
         async fn replace_mora_data(
             &self,
-            accent_phrases: Py<PyList>,
+            #[pyo3(from_py_with = "crate::convert::from_accent_phrases")] accent_phrases: Vec<
+                AccentPhrase,
+            >,
             style_id: u32,
-        ) -> PyResult<Py<PyList>> {
-            let synthesizer = self.synthesizer.clone();
-            crate::convert::async_modify_accent_phrases(
-                accent_phrases,
-                StyleId::new(style_id),
-                |a, s| async move {
-                    let result = synthesizer.read()?.replace_mora_data(&a, s).await;
-                    Python::with_gil(|py| result.into_py_result(py))
-                },
-            )
-            .await
+        ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
+            let synthesizer = self.synthesizer.read()?;
+            let phrases = synthesizer
+                .replace_mora_data(&accent_phrases, style_id.into())
+                .await
+                .map(Into::into);
+            Python::with_gil(|py| phrases.into_py_result(py))
         }
 
         async fn replace_phoneme_length(
             &self,
-            accent_phrases: Py<PyList>,
+            #[pyo3(from_py_with = "crate::convert::from_accent_phrases")] accent_phrases: Vec<
+                AccentPhrase,
+            >,
             style_id: u32,
-        ) -> PyResult<Py<PyList>> {
-            let synthesizer = self.synthesizer.clone();
-            crate::convert::async_modify_accent_phrases(
-                accent_phrases,
-                StyleId::new(style_id),
-                |a, s| async move {
-                    let result = synthesizer.read()?.replace_phoneme_length(&a, s).await;
-                    Python::with_gil(|py| result.into_py_result(py))
-                },
-            )
-            .await
+        ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
+            let synthesizer = self.synthesizer.read()?;
+            let phrases = synthesizer
+                .replace_phoneme_length(&accent_phrases, style_id.into())
+                .await
+                .map(Into::into);
+            Python::with_gil(|py| phrases.into_py_result(py))
         }
 
         async fn replace_mora_pitch(
             &self,
-            accent_phrases: Py<PyList>,
+            #[pyo3(from_py_with = "crate::convert::from_accent_phrases")] accent_phrases: Vec<
+                AccentPhrase,
+            >,
             style_id: u32,
-        ) -> PyResult<Py<PyList>> {
-            let synthesizer = self.synthesizer.clone();
-            crate::convert::async_modify_accent_phrases(
-                accent_phrases,
-                StyleId::new(style_id),
-                |a, s| async move {
-                    let result = synthesizer.read()?.replace_mora_pitch(&a, s).await;
-                    Python::with_gil(|py| result.into_py_result(py))
-                },
-            )
-            .await
+        ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
+            let synthesizer = self.synthesizer.read()?;
+            let phrases = synthesizer
+                .replace_mora_pitch(&accent_phrases, style_id.into())
+                .await
+                .map(Into::into);
+            Python::with_gil(|py| phrases.into_py_result(py))
         }
 
         #[pyo3(signature=(
@@ -1397,7 +1355,7 @@ mod asyncio {
         ))]
         async fn synthesis(
             &self,
-            #[pyo3(from_py_with = "crate::convert::from_dataclass")] audio_query: AudioQuery,
+            #[pyo3(from_py_with = "crate::convert::from_audio_query")] audio_query: AudioQuery,
             style_id: u32,
             enable_interrogative_upspeak: bool,
             cancellable: bool,
@@ -1501,14 +1459,12 @@ mod asyncio {
             Python::with_gil(|py| result.into_py_result(py))
         }
 
-        fn add_word<'py>(
+        fn add_word(
             &mut self,
             #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
-            py: Python<'py>,
-        ) -> PyResult<Bound<'py, PyAny>> {
-            let uuid = self.dict.add_word(word).into_py_result(py)?;
-
-            crate::convert::to_py_uuid(py, uuid)
+            py: Python<'_>,
+        ) -> PyResult<ToPyUuid> {
+            self.dict.add_word(word).map(Into::into).into_py_result(py)
         }
 
         fn update_word(
@@ -1536,17 +1492,12 @@ mod asyncio {
         }
 
         fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-            let words = self.dict.with_words(|words| {
+            self.dict.with_words(|words| {
                 words
                     .iter()
-                    .map(|(&uuid, word)| {
-                        let uuid = crate::convert::to_py_uuid(py, uuid)?;
-                        let word = crate::convert::to_py_user_dict_word(py, word)?;
-                        Ok((uuid, word))
-                    })
-                    .collect::<PyResult<Vec<_>>>()
-            })?;
-            words.into_py_dict(py)
+                    .map(|(&uuid, word)| (ToPyUuid(uuid), ToDataclass::ref_cast(word)))
+                    .into_py_dict(py)
+            })
         }
     }
 }
