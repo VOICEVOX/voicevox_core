@@ -484,7 +484,7 @@ async fn find_gh_asset(
 
     let asset_name = asset_name(&tag_name, body.as_deref()).with_context(|| {
         format!(
-            "`{repo}`の`{tag_name}`の中から条件に合致するビルドが見つけることができませんでした",
+            "`{repo}`の`{tag_name}`の中から条件に合致するビルドを見つけることができませんでした",
         )
     })?;
     let Asset { id, name, size, .. } = assets
