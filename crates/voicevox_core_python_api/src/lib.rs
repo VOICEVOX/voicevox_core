@@ -5,14 +5,14 @@ use std::{
 };
 
 mod convert;
-use self::convert::{from_utf8_path, ToDataclass};
+use self::convert::{from_utf8_path, AudioQueryExt as _, ToDataclass};
 use easy_ext::ext;
 use log::{debug, warn};
 use macros::pyproject_project_version;
 use pyo3::{
     create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
-    pyfunction, pymodule,
+    pyclass, pyfunction, pymodule,
     types::{PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _},
     wrap_pyfunction, Bound, Py, PyObject, PyResult, PyTypeInfo, Python,
 };
@@ -26,7 +26,10 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     pyo3_log::init();
 
     module.add("__version__", pyproject_project_version!())?;
+    module.add_class::<_ReservedFields>()?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_accent_phrases))?;
+    module.add_wrapped(wrap_pyfunction!(_audio_query_from_json))?;
+    module.add_wrapped(wrap_pyfunction!(_audio_query_to_json))?;
     module.add_wrapped(wrap_pyfunction!(_validate_user_dict_word))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
     module.add_wrapped(wrap_pyfunction!(wav_from_s16le))?;
@@ -241,11 +244,26 @@ struct VoiceModelFilePyFields {
     metas: Py<PyList>, // `list[CharacterMeta]`
 }
 
+#[pyclass]
+struct _ReservedFields;
+
 #[pyfunction]
 fn _audio_query_from_accent_phrases(
     #[pyo3(from_py_with = "convert::from_accent_phrases")] accent_phrases: Vec<AccentPhrase>,
 ) -> ToDataclass<AudioQuery> {
     AudioQuery::from_accent_phrases(accent_phrases).into()
+}
+
+#[pyfunction]
+fn _audio_query_from_json(json: &str) -> PyResult<ToDataclass<AudioQuery>> {
+    AudioQuery::from_json(json).map(Into::into)
+}
+
+#[pyfunction]
+fn _audio_query_to_json(
+    #[pyo3(from_py_with = "convert::from_audio_query")] audio_query: AudioQuery,
+) -> String {
+    audio_query.to_json()
 }
 
 #[pyfunction]
