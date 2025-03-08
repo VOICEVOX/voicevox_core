@@ -1,3 +1,4 @@
+mod audio_query;
 mod common;
 mod info;
 mod logger;

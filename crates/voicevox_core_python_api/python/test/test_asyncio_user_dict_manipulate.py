@@ -10,7 +10,6 @@ import os
 import tempfile
 from uuid import UUID
 
-import pydantic
 import pytest
 import voicevox_core  # noqa: F401
 

@@ -1,6 +1,7 @@
 use easy_ext::ext;
 use enum_map::enum_map;
-use std::{marker::PhantomData, ops::Range, sync::Arc};
+use futures_util::TryFutureExt as _;
+use std::{future::Future, marker::PhantomData, ops::Range, sync::Arc};
 use tracing::info;
 
 use crate::{
@@ -26,56 +27,55 @@ use crate::{
         },
         InferenceRuntime, InferenceSessionOptions,
     },
-    nonblocking::TextAnalyzer as _,
     status::Status,
     voice_model, AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
 };
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
 pub const DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK: bool = true;
+pub const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: bool =
+    <BlockingThreadPool as infer::AsyncExt>::DEFAULT_HEAVY_INFERENCE_CANCELLABLE;
 
-struct SynthesisOptions {
+struct SynthesisOptions<A: infer::AsyncExt> {
     enable_interrogative_upspeak: bool,
+    cancellable: A::Cancellable,
 }
 
-impl Default for SynthesisOptions {
+impl<A: infer::AsyncExt> Default for SynthesisOptions<A> {
     fn default() -> Self {
         Self {
             enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+            cancellable: A::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
         }
     }
 }
 
 // FIXME: this is dead code
-impl AsRef<SynthesisOptions> for SynthesisOptions {
-    fn as_ref(&self) -> &SynthesisOptions {
+impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for SynthesisOptions<A> {
+    fn as_ref(&self) -> &SynthesisOptions<A> {
         self
     }
 }
 
-impl From<&TtsOptions> for SynthesisOptions {
-    fn from(options: &TtsOptions) -> Self {
+impl<A: infer::AsyncExt> From<&TtsOptions<A>> for SynthesisOptions<A> {
+    fn from(options: &TtsOptions<A>) -> Self {
         Self {
             enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+            cancellable: options.cancellable,
         }
     }
 }
 
-struct TtsOptions {
+struct TtsOptions<A: infer::AsyncExt> {
     enable_interrogative_upspeak: bool,
+    cancellable: A::Cancellable,
 }
 
-// FIXME: this is dead code
-impl AsRef<TtsOptions> for TtsOptions {
-    fn as_ref(&self) -> &Self {
-        self
-    }
-}
-
-impl Default for TtsOptions {
+impl<A: infer::AsyncExt> Default for TtsOptions<A> {
     fn default() -> Self {
         Self {
             enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+            cancellable: A::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
         }
     }
 }
@@ -363,7 +363,7 @@ trait AsInner {
         &self,
         audio_query: &AudioQuery,
         style_id: StyleId,
-        options: &SynthesisOptions,
+        options: &SynthesisOptions<Self::Async>,
     ) -> Result<AudioFeature> {
         let DecoderFeature { f0, phoneme } =
             audio_query.decoder_feature(options.enable_interrogative_upspeak);
@@ -409,7 +409,7 @@ trait AsInner {
         &self,
         audio_query: &AudioQuery,
         style_id: StyleId,
-        options: &SynthesisOptions,
+        options: &SynthesisOptions<Self::Async>,
     ) -> Result<Vec<u8>> {
         if self.status().contains_domain::<TalkDomain>(style_id) {
             let DecoderFeature { f0, phoneme } =
@@ -421,6 +421,7 @@ trait AsInner {
                     &f0,
                     phoneme.as_flattened(),
                     style_id,
+                    options.cancellable,
                 )
                 .await?;
             return Ok(wav_from_s16le(
@@ -648,7 +649,7 @@ trait AsInner {
         &self,
         kana: &str,
         style_id: StyleId,
-        options: &TtsOptions,
+        options: &TtsOptions<Self::Async>,
     ) -> Result<Vec<u8>> {
         let audio_query = &self.create_audio_query_from_kana(kana, style_id).await?;
         self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
@@ -663,14 +664,7 @@ trait AsInner {
     where
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
-        let accent_phrases =
-            self.text_analyzer()
-                .analyze(text)
-                .await
-                .map_err(|source| ErrorRepr::AnalyzeText {
-                    text: text.to_owned(),
-                    source,
-                })?;
+        let accent_phrases = self.text_analyzer().analyze_(text).await?;
         self.replace_mora_data(&accent_phrases, style_id).await
     }
 
@@ -679,10 +673,15 @@ trait AsInner {
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
         let accent_phrases = self.create_accent_phrases(text, style_id).await?;
-        Ok(AudioQuery::from_accent_phrases(accent_phrases))
+        Ok(accent_phrases.into())
     }
 
-    async fn tts(&self, text: &str, style_id: StyleId, options: &TtsOptions) -> Result<Vec<u8>>
+    async fn tts(
+        &self,
+        text: &str,
+        style_id: StyleId,
+        options: &TtsOptions<Self::Async>,
+    ) -> Result<Vec<u8>>
     where
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
@@ -781,12 +780,20 @@ trait AsInner {
         f0: &[f32],
         phoneme_vector: &[f32],
         style_id: StyleId,
+        cancellable: <Self::Async as infer::AsyncExt>::Cancellable,
     ) -> Result<Vec<f32>> {
         let status = self.status().clone();
         let f0 = ndarray::arr1(f0);
         let phoneme_vector = ndarray::arr1(phoneme_vector);
         status
-            .decode::<Self::Async>(length, phoneme_size, f0, phoneme_vector, style_id)
+            .decode::<Self::Async>(
+                length,
+                phoneme_size,
+                f0,
+                phoneme_vector,
+                style_id,
+                cancellable,
+            )
             .await
     }
 }
@@ -843,6 +850,7 @@ impl<R: InferenceRuntime> Status<R> {
                         phoneme_list: phoneme_vector,
                         speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                     },
+                    A::LIGHT_INFERENCE_CANCELLABLE,
                 )
                 .await?;
             return Ok(ensure_minimum_phoneme_length(output.into_raw_vec()));
@@ -858,6 +866,7 @@ impl<R: InferenceRuntime> Status<R> {
                     phoneme_list: phoneme_vector,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
+                A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
         Ok(ensure_minimum_phoneme_length(output.into_raw_vec()))
@@ -895,6 +904,7 @@ impl<R: InferenceRuntime> Status<R> {
                         end_accent_phrase_list: end_accent_phrase_vector,
                         speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                     },
+                    A::LIGHT_INFERENCE_CANCELLABLE,
                 )
                 .await?;
             return Ok(output.into_raw_vec());
@@ -914,6 +924,7 @@ impl<R: InferenceRuntime> Status<R> {
                     end_accent_phrase_list: end_accent_phrase_vector,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
+                A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
 
@@ -951,6 +962,7 @@ impl<R: InferenceRuntime> Status<R> {
                     phoneme: phoneme_with_padding,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
+                A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
 
@@ -977,7 +989,11 @@ impl<R: InferenceRuntime> Status<R> {
     ) -> Result<ndarray::Array1<f32>> {
         let (model_id, _inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
         let RenderAudioSegmentOutput { wave } = self
-            .run_session::<A, _>(model_id, RenderAudioSegmentInput { spec })
+            .run_session::<A, _>(
+                model_id,
+                RenderAudioSegmentInput { spec },
+                A::DEFAULT_HEAVY_INFERENCE_CANCELLABLE, // TODO: 外部から指定可能にする
+            )
             .await?;
         Ok(wave)
     }
@@ -989,6 +1005,7 @@ impl<R: InferenceRuntime> Status<R> {
         f0: ndarray::Array1<f32>,
         phoneme_vector: ndarray::Array1<f32>,
         style_id: StyleId,
+        cancellable: A::Cancellable,
     ) -> Result<Vec<f32>> {
         // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
         if self.contains_domain::<TalkDomain>(style_id) {
@@ -1008,6 +1025,7 @@ impl<R: InferenceRuntime> Status<R> {
                         phoneme: phoneme_with_padding,
                         speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                     },
+                    cancellable,
                 )
                 .await?;
             let len = output.len();
@@ -1047,6 +1065,7 @@ impl<R: InferenceRuntime> Status<R> {
                     note_durations: note_duration.into_one_row(),
                     speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
                 },
+                A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
 
@@ -1069,6 +1088,7 @@ impl<R: InferenceRuntime> Status<R> {
                     notes: note.into_one_row(),
                     speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
                 },
+                A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
 
@@ -1093,6 +1113,7 @@ impl<R: InferenceRuntime> Status<R> {
                     frame_f0s: f0.into_one_row(),
                     speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
                 },
+                A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
 
@@ -1105,6 +1126,7 @@ impl<R: InferenceRuntime> Status<R> {
         f0: ndarray::Array1<f32>,
         volume: ndarray::Array1<f32>,
         style_id: StyleId,
+        cancellable: A::Cancellable,
     ) -> Result<ndarray::Array2<f32>> {
         let (model_id, inner_voice_id) = self.ids_for::<FrameDecodeDomain>(style_id)?;
 
@@ -1117,6 +1139,7 @@ impl<R: InferenceRuntime> Status<R> {
                     frame_volumes: volume.into_one_row(),
                     speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
                 },
+                cancellable,
             )
             .await?;
 
@@ -1170,10 +1193,51 @@ fn list_windows_video_cards() {
 }
 
 impl AudioQuery {
-    fn from_accent_phrases(accent_phrases: Vec<AccentPhrase>) -> Self {
+    /// アクセント句の配列からAudioQueryを作る。
+    #[doc(alias = "voicevox_audio_query_create_from_accent_phrases")]
+    pub fn from_accent_phrases(accent_phrases: Vec<AccentPhrase>) -> Self {
         let kana = create_kana(&accent_phrases);
         Self {
             accent_phrases,
+            kana: Some(kana),
+            ..Default::default()
+        }
+    }
+}
+
+#[ext(BlockingTextAnalyzerExt)]
+impl<T: crate::blocking::TextAnalyzer> T {
+    pub fn analyze_(&self, text: &str) -> crate::Result<Vec<AccentPhrase>> {
+        self.analyze(text).map_err(|source| {
+            ErrorRepr::AnalyzeText {
+                text: text.to_owned(),
+                source,
+            }
+            .into()
+        })
+    }
+}
+
+#[ext(NonblockingTextAnalyzerExt)]
+impl<T: crate::nonblocking::TextAnalyzer> T {
+    pub fn analyze_(
+        &self,
+        text: &str,
+    ) -> impl Future<Output = crate::Result<Vec<AccentPhrase>>> + Send {
+        self.analyze(text).map_err(|source| {
+            ErrorRepr::AnalyzeText {
+                text: text.to_owned(),
+                source,
+            }
+            .into()
+        })
+    }
+}
+
+impl Default for AudioQuery {
+    fn default() -> Self {
+        Self {
+            accent_phrases: vec![],
             speed_scale: 1.,
             pitch_scale: 0.,
             intonation_scale: 1.,
@@ -1182,8 +1246,14 @@ impl AudioQuery {
             post_phoneme_length: 0.1,
             output_sampling_rate: DEFAULT_SAMPLING_RATE,
             output_stereo: false,
-            kana: Some(kana),
+            kana: None,
         }
+    }
+}
+
+impl From<Vec<AccentPhrase>> for AudioQuery {
+    fn from(accent_phrases: Vec<AccentPhrase>) -> Self {
+        Self::from_accent_phrases(accent_phrases)
     }
 }
 
@@ -1258,6 +1328,11 @@ pub(crate) mod blocking {
         #[doc(alias = "voicevox_synthesizer_get_onnxruntime")]
         pub fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
             self.0.onnxruntime()
+        }
+
+        /// テキスト解析器。
+        pub fn text_analyzer(&self) -> &T {
+            &self.0.text_analyzer().0
         }
 
         /// ハードウェアアクセラレーションがGPUモードか判定する。
@@ -1380,6 +1455,12 @@ pub(crate) mod blocking {
         }
 
         /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
+        ///
+        /// [`replace_phoneme_length`]と[`replace_mora_pitch`]が一体になったショートハンド。詳細は[音声の調整]の節。
+        ///
+        /// [`replace_phoneme_length`]: Self::replace_phoneme_length
+        /// [`replace_mora_pitch`]: Self::replace_mora_pitch
+        /// [音声の調整]: ../index.html#音声の調整
         #[doc(alias = "voicevox_synthesizer_replace_mora_data")]
         pub fn replace_mora_data(
             &self,
@@ -1468,6 +1549,8 @@ pub(crate) mod blocking {
     impl<T: crate::blocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
         ///
+        /// [`TextAnalyzer::analyze`]と[`replace_mora_data`]が一体になったショートハンド。詳細は[音声の調整]の節。
+        ///
         /// # Example
         ///
         /// ```
@@ -1491,6 +1574,10 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
+        ///
+        /// [`TextAnalyzer::analyze`]: crate::blocking::TextAnalyzer::analyze
+        /// [`replace_mora_data`]: Self::replace_mora_data
+        /// [音声の調整]: ../index.html#音声の調整
         #[doc(alias = "voicevox_synthesizer_create_accent_phrases")]
         pub fn create_accent_phrases(
             &self,
@@ -1501,6 +1588,8 @@ pub(crate) mod blocking {
         }
 
         /// 日本語のテキストから[AudioQuery]を生成する。
+        ///
+        /// [`create_accent_phrases`]と[`AudioQuery::from_accent_phrases`]が一体になったショートハンド。詳細は[音声の調整]の節。
         ///
         /// # Examples
         ///
@@ -1527,6 +1616,8 @@ pub(crate) mod blocking {
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
+        /// [`create_accent_phrases`]: Self::create_accent_phrases
+        /// [音声の調整]: ../index.html#音声の調整
         #[doc(alias = "voicevox_synthesizer_create_audio_query")]
         pub fn create_audio_query(
             &self,
@@ -1537,6 +1628,12 @@ pub(crate) mod blocking {
         }
 
         /// 日本語のテキストから音声合成を行う。
+        ///
+        /// [`create_audio_query`]と[`synthesis`]が一体になったショートハンド。詳細は[音声の調整]の節。
+        ///
+        /// [`create_audio_query`]: Self::create_audio_query
+        /// [`synthesis`]: Self::synthesis
+        /// [音声の調整]: ../index.html#音声の調整
         #[doc(alias = "voicevox_synthesizer_tts")]
         pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
             Tts {
@@ -1613,7 +1710,7 @@ pub(crate) mod blocking {
             style_id: StyleId,
         ) -> crate::Result<Vec<f32>> {
             self.0
-                .decode(length, phoneme_size, f0, phoneme_vector, style_id)
+                .decode(length, phoneme_size, f0, phoneme_vector, style_id, ())
                 .block_on()
         }
 
@@ -1669,7 +1766,7 @@ pub(crate) mod blocking {
         ) -> crate::Result<ndarray::Array2<f32>> {
             self.0
                 .status
-                .sf_decode::<SingleTasked>(phoneme, f0, volume, style_id)
+                .sf_decode::<SingleTasked>(phoneme, f0, volume, style_id, ())
                 .block_on()
         }
     }
@@ -1682,6 +1779,7 @@ pub(crate) mod blocking {
     }
 
     impl<T> Builder<T> {
+        /// テキスト解析器。
         pub fn text_analyzer<T2>(self, text_analyzer: T2) -> Builder<T2> {
             Builder {
                 text_analyzer,
@@ -1717,7 +1815,7 @@ pub(crate) mod blocking {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
-        options: SynthesisOptions,
+        options: SynthesisOptions<SingleTasked>,
     }
 
     impl PrecomputeRender<'_> {
@@ -1739,7 +1837,7 @@ pub(crate) mod blocking {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
-        options: SynthesisOptions,
+        options: SynthesisOptions<SingleTasked>,
     }
 
     impl Synthesis<'_> {
@@ -1761,7 +1859,7 @@ pub(crate) mod blocking {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         kana: &'a str,
         style_id: StyleId,
-        options: TtsOptions,
+        options: TtsOptions<SingleTasked>,
     }
 
     impl TtsFromKana<'_> {
@@ -1783,7 +1881,7 @@ pub(crate) mod blocking {
         synthesizer: &'a Inner<AssumeSingleTasked<T>, SingleTasked>,
         text: &'a str,
         style_id: StyleId,
-        options: TtsOptions,
+        options: TtsOptions<SingleTasked>,
     }
 
     impl<T: crate::blocking::TextAnalyzer> Tts<'_, T> {
@@ -1870,6 +1968,11 @@ pub(crate) mod nonblocking {
             crate::nonblocking::Onnxruntime::from_blocking(self.0.onnxruntime())
         }
 
+        /// テキスト解析器。
+        pub fn text_analyzer(&self) -> &T {
+            self.0.text_analyzer()
+        }
+
         /// ハードウェアアクセラレーションがGPUモードか判定する。
         pub fn is_gpu_mode(&self) -> bool {
             self.0.is_gpu_mode()
@@ -1904,6 +2007,12 @@ pub(crate) mod nonblocking {
         }
 
         /// AudioQueryから音声合成を行う。
+        ///
+        /// # Caveats
+        ///
+        /// [`cancellable`]を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
+        ///
+        /// [`cancellable`]: Synthesis::cancellable
         pub fn synthesis<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
@@ -1950,6 +2059,12 @@ pub(crate) mod nonblocking {
         }
 
         /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
+        ///
+        /// [`replace_phoneme_length`]と[`replace_mora_pitch`]が一体になったショートハンド。詳細は[音声の調整]の節。
+        ///
+        /// [`replace_phoneme_length`]: Self::replace_phoneme_length
+        /// [`replace_mora_pitch`]: Self::replace_mora_pitch
+        /// [音声の調整]: ../index.html#音声の調整
         pub async fn replace_mora_data(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -2013,6 +2128,12 @@ pub(crate) mod nonblocking {
         }
 
         /// AquesTalk風記法から音声合成を行う。
+        ///
+        /// # Caveats
+        ///
+        /// [`cancellable`]を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
+        ///
+        /// [`cancellable`]: TtsFromKana::cancellable
         pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
             TtsFromKana {
                 synthesizer: self.0.without_text_analyzer(),
@@ -2025,6 +2146,8 @@ pub(crate) mod nonblocking {
 
     impl<T: crate::nonblocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
+        ///
+        /// [`TextAnalyzer::analyze`]と[`replace_mora_data`]が一体になったショートハンド。詳細は[音声の調整]の節。
         ///
         /// # Example
         ///
@@ -2048,6 +2171,10 @@ pub(crate) mod nonblocking {
         /// # Ok(())
         /// # }
         /// ```
+        ///
+        /// [`TextAnalyzer::analyze`]: crate::nonblocking::TextAnalyzer::analyze
+        /// [`replace_mora_data`]: Self::replace_mora_data
+        /// [音声の調整]: ../index.html#音声の調整
         pub async fn create_accent_phrases(
             &self,
             text: &str,
@@ -2057,6 +2184,8 @@ pub(crate) mod nonblocking {
         }
 
         /// 日本語のテキストから[AudioQuery]を生成する。
+        ///
+        /// [`create_accent_phrases`]と[`AudioQuery::from_accent_phrases`]が一体になったショートハンド。詳細は[音声の調整]の節。
         ///
         /// # Examples
         ///
@@ -2082,6 +2211,8 @@ pub(crate) mod nonblocking {
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
+        /// [`create_accent_phrases`]: Self::create_accent_phrases
+        /// [音声の調整]: ../index.html#音声の調整
         pub async fn create_audio_query(
             &self,
             text: &str,
@@ -2091,6 +2222,17 @@ pub(crate) mod nonblocking {
         }
 
         /// 日本語のテキストから音声合成を行う。
+        ///
+        /// [`create_audio_query`]と[`synthesis`]が一体になったショートハンド。詳細は[音声の調整]の節。
+        ///
+        /// # Caveats
+        ///
+        /// [`cancellable`]を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
+        ///
+        /// [`create_audio_query`]: Self::create_audio_query
+        /// [`synthesis`]: Self::synthesis
+        /// [音声の調整]: ../index.html#音声の調整
+        /// [`cancellable`]: Tts::cancellable
         pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
             Tts {
                 synthesizer: &self.0,
@@ -2117,6 +2259,7 @@ pub(crate) mod nonblocking {
     }
 
     impl<T> Builder<T> {
+        /// テキスト解析器。
         pub fn text_analyzer<T2>(self, text_analyzer: T2) -> Builder<T2> {
             Builder {
                 text_analyzer,
@@ -2154,12 +2297,22 @@ pub(crate) mod nonblocking {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
-        options: SynthesisOptions,
+        options: SynthesisOptions<BlockingThreadPool>,
     }
 
     impl Synthesis<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 音声モデルの実行をキャンセル可能にするかどうか。
+        ///
+        /// このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。[VOICEVOX/voicevox_core#968]を参照。
+        ///
+        /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
+        pub fn cancellable(mut self, cancellable: bool) -> Self {
+            self.options.cancellable = cancellable;
             self
         }
 
@@ -2176,12 +2329,22 @@ pub(crate) mod nonblocking {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         kana: &'a str,
         style_id: StyleId,
-        options: TtsOptions,
+        options: TtsOptions<BlockingThreadPool>,
     }
 
     impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 音声モデルの実行をキャンセル可能にするかどうか。
+        ///
+        /// このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。[VOICEVOX/voicevox_core#968]を参照。
+        ///
+        /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
+        pub fn cancellable(mut self, cancellable: bool) -> Self {
+            self.options.cancellable = cancellable;
             self
         }
 
@@ -2198,12 +2361,22 @@ pub(crate) mod nonblocking {
         synthesizer: &'a Inner<T, BlockingThreadPool>,
         text: &'a str,
         style_id: StyleId,
-        options: TtsOptions,
+        options: TtsOptions<BlockingThreadPool>,
     }
 
     impl<T: crate::nonblocking::TextAnalyzer> Tts<'_, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 音声モデルの実行をキャンセル可能にするかどうか。
+        ///
+        /// このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。[VOICEVOX/voicevox_core#968]を参照。
+        ///
+        /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
+        pub fn cancellable(mut self, cancellable: bool) -> Self {
+            self.options.cancellable = cancellable;
             self
         }
 
@@ -2218,7 +2391,7 @@ pub(crate) mod nonblocking {
 
 #[cfg(test)]
 mod tests {
-    use super::{AccelerationMode, AsInner as _};
+    use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
         asyncs::BlockingThreadPool, engine::Mora, macros::tests::assert_debug_fmt_eq, AccentPhrase,
         Result, StyleId,
@@ -2408,7 +2581,14 @@ mod tests {
 
         let result = syntesizer
             .0
-            .decode(F0_LENGTH, PHONEME_SIZE, &f0, &phoneme, StyleId::new(1))
+            .decode(
+                F0_LENGTH,
+                PHONEME_SIZE,
+                &f0,
+                &phoneme,
+                StyleId::new(1),
+                DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
+            )
             .await;
 
         assert!(result.is_ok(), "{result:?}");
@@ -2538,6 +2718,7 @@ mod tests {
                 ndarray::arr1(&f0),
                 ndarray::arr1(&volume),
                 sf_decode_style_id,
+                DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
             )
             .await;
 

@@ -94,6 +94,78 @@
 //! }
 //! # Ok::<_, anyhow::Error>(())
 //! ```
+//!
+//! # 音声の調整
+//!
+//! ユーザーガイドの[テキスト音声合成の流れ]を参照。
+//!
+//! 以下の`wav1`から`wav4`はすべて同一となる。
+//!
+//! [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
+//!
+//! ```
+//! use std::collections::HashSet;
+//!
+//! use voicevox_core::{
+//!     blocking::{Synthesizer, TextAnalyzer},
+//!     AudioQuery, StyleId,
+//! };
+//! #
+//! # use test_util::{ONNXRUNTIME_DYLIB_PATH, OPEN_JTALK_DIC_DIR, SAMPLE_VOICE_MODEL_FILE_PATH};
+//! # use voicevox_core::blocking::{Onnxruntime, OpenJtalk, VoiceModelFile};
+//!
+//! fn f(synth: &Synthesizer<impl TextAnalyzer>) -> anyhow::Result<()> {
+//! #    const TEXT: &str = "";
+//! #   #[cfg(any())]
+//!     const TEXT: &str = _;
+//! #
+//! #   const STYLE_ID: StyleId = StyleId(0);
+//! #   #[cfg(any())]
+//!     const STYLE_ID: StyleId = _;
+//!
+//!     let wav1 = synth.tts(TEXT, STYLE_ID).perform()?;
+//!
+//!     let wav2 = {
+//!         let query = synth.create_audio_query(TEXT, STYLE_ID)?;
+//!         synth.synthesis(&query, STYLE_ID).perform()?
+//!     };
+//!
+//!     let wav3 = {
+//!         let phrases = synth.create_accent_phrases(TEXT, STYLE_ID)?;
+//!         let query = AudioQuery::from(phrases);
+//!         synth.synthesis(&query, STYLE_ID).perform()?
+//!     };
+//!
+//!     let wav4 = {
+//!         let phrases = synth.text_analyzer().analyze(TEXT)?;
+//!         let phrases = synth.replace_mora_data(&phrases, STYLE_ID)?;
+//!         let query = AudioQuery::from(phrases);
+//!         synth.synthesis(&query, STYLE_ID).perform()?
+//!     };
+//!
+//!     let wav5 = {
+//!         let phrases = synth.text_analyzer().analyze(TEXT)?;
+//!         let phrases = synth.replace_phoneme_length(&phrases, STYLE_ID)?;
+//!         let phrases = synth.replace_mora_pitch(&phrases, STYLE_ID)?;
+//!         let query = AudioQuery::from(phrases);
+//!         synth.synthesis(&query, STYLE_ID).perform()?
+//!     };
+//!
+//!     assert_eq!(1, HashSet::from([wav1, wav2, wav3, wav4, wav5]).len());
+//!     Ok(())
+//! }
+//! #
+//! # let synth = &{
+//! #     let ort = Onnxruntime::load_once()
+//! #         .filename(ONNXRUNTIME_DYLIB_PATH)
+//! #         .perform()?;
+//! #     let ojt = OpenJtalk::new(OPEN_JTALK_DIC_DIR)?;
+//! #     Synthesizer::builder(ort).text_analyzer(ojt).build()?
+//! # };
+//! # synth.load_voice_model(&VoiceModelFile::open(SAMPLE_VOICE_MODEL_FILE_PATH)?)?;
+//! # f(synth)?;
+//! # anyhow::Ok(())
+//! ```
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

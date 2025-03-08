@@ -56,13 +56,12 @@ const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
 
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
-    LazyLock::new(|| "=0.0.1-preview.4".parse().unwrap());
+    LazyLock::new(|| "=0.0.1-preview.5".parse().unwrap());
 const MODELS_README_FILENAME: &str = "README.md";
 const MODELS_README_RENAME: &str = "README.txt";
 const MODELS_DIR_NAME: &str = "vvms";
 const MODELS_TERMS_NAME: &str = "VOICEVOX 音声モデル 利用規約";
-const MODELS_TERMS_FILE: &str = "TERMS.md";
-const MODELS_TERMS_RENAME: &str = "TERMS.txt";
+const MODELS_TERMS_FILE: &str = "TERMS.txt";
 
 static OPEN_JTALK_DIC_URL: LazyLock<Url> = LazyLock::new(|| {
     "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
@@ -485,7 +484,7 @@ async fn find_gh_asset(
 
     let asset_name = asset_name(&tag_name, body.as_deref()).with_context(|| {
         format!(
-            "`{repo}`の`{tag_name}`の中から条件に合致するビルドが見つけることができませんでした",
+            "`{repo}`の`{tag_name}`の中から条件に合致するビルドを見つけることができませんでした",
         )
     })?;
     let Asset { id, name, size, .. } = assets
@@ -899,7 +898,7 @@ fn download_models(
     Ok(async move {
         fs_err::tokio::create_dir_all(&output.join(MODELS_DIR_NAME)).await?;
         fs_err::tokio::write(output.join(MODELS_README_RENAME), readme).await?;
-        fs_err::tokio::write(output.join(MODELS_TERMS_RENAME), terms).await?;
+        fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
         let reqwest = &reqwest;
         let output = &output;
         models

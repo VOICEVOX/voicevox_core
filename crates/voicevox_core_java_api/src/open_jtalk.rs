@@ -1,10 +1,12 @@
-use std::{borrow::Cow, sync::Arc};
+use std::{borrow::Cow, ptr, sync::Arc};
 
 use crate::common::throw_if_err;
 use jni::{
     objects::{JObject, JString},
+    sys::jstring,
     JNIEnv,
 };
+use voicevox_core::__internal::interop::BlockingTextAnalyzerExt as _;
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
@@ -45,6 +47,25 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_OpenJtalk_rsUs
         internal.use_user_dict(&user_dict)?;
 
         Ok(())
+    })
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_OpenJtalk_rsAnalyze<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    text: JString<'local>,
+) -> jstring {
+    throw_if_err(env, ptr::null_mut(), |env| {
+        let text = &String::from(env.get_string(&text)?);
+        let internal = env
+            .get_rust_field::<_, _, voicevox_core::blocking::OpenJtalk>(&this, "handle")?
+            .clone();
+        let accent_phrases = &internal.analyze_(text)?;
+        let accent_phrases = serde_json::to_string(accent_phrases).expect("should not fail");
+        let accent_phrases = env.new_string(accent_phrases)?;
+        Ok(accent_phrases.into_raw())
     })
 }
 

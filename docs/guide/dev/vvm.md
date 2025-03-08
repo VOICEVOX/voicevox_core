@@ -15,7 +15,7 @@
 model は `.onnx` や `.bin` など様々ある。例えば `sample.vvm` は `predict_duration.onnx` / `predict_intonation.onnx` / `decode.onnx` を含む。  
 
 VOICEVOX OSS が提供する VVM には `sample.vvm` がある（ビルドを行うと `crates/test_util/data/model/sample.vvm` が生成される）。  
-製品版 VOICEVOX で利用される VVM は [こちらのレポジトリ](https://github.com/VOICEVOX/voicevox_fat_resource/tree/main/core/model) で確認できる。  
+製品版 VOICEVOX で利用される VVM は [こちらのレポジトリ](https://github.com/VOICEVOX/voicevox_vvm/tree/main/vvms) で確認できる。  
 
 ## マニフェストファイル
 

@@ -6,7 +6,6 @@ import jakarta.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import jp.hiroshiba.voicevoxcore.AccelerationMode;
 import jp.hiroshiba.voicevoxcore.AccentPhrase;
@@ -28,9 +27,13 @@ public class Synthesizer {
   }
 
   private long handle;
+  @Nonnull private final Onnxruntime onnxruntime;
+  @Nonnull private final OpenJtalk openJtalk;
 
   private Synthesizer(Onnxruntime onnxruntime, OpenJtalk openJtalk, Builder builder) {
     rsNew(onnxruntime, openJtalk, builder);
+    this.onnxruntime = onnxruntime;
+    this.openJtalk = openJtalk;
   }
 
   protected void finalize() throws Throwable {
@@ -45,9 +48,17 @@ public class Synthesizer {
    */
   @Nonnull
   public Onnxruntime getOnnxruntime() {
-    Optional<Onnxruntime> onnxruntime = Onnxruntime.get();
-    assert onnxruntime.isPresent() : "`Synthesizer`のコンストラクタで要求しているはず";
-    return onnxruntime.get();
+    return onnxruntime;
+  }
+
+  /**
+   * Open JTalk。
+   *
+   * @return {@link OpenJtalk}。
+   */
+  @Nonnull
+  public OpenJtalk getOpenJtalk() {
+    return openJtalk;
   }
 
   /**
@@ -132,6 +143,9 @@ public class Synthesizer {
   /**
    * 日本語のテキストから {@link AudioQuery} を生成する。
    *
+   * <p>{@link #createAccentPhrases}と{@link AudioQuery#fromAccentPhrases}を合わせたショートハンド。詳細は<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md">テキスト音声合成の流れ</a>を参照。
+   *
    * @param text 日本語のテキスト。
    * @param styleId スタイルID。
    * @return {@link AudioQuery}。
@@ -175,6 +189,9 @@ public class Synthesizer {
   /**
    * 日本語のテキストから {@link AccentPhrase} のリストを生成する。
    *
+   * <p>{@link OpenJtalk#analyze}と{@link #replaceMoraData}を合わせたショートハンド。詳細は<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md">テキスト音声合成の流れ</a>を参照。
+   *
    * @param text 日本語のテキスト。
    * @param styleId スタイルID。
    * @return {@link AccentPhrase} のリスト。
@@ -193,6 +210,9 @@ public class Synthesizer {
 
   /**
    * アクセント句の音高・音素長を変更する。
+   *
+   * <p>{@link #replacePhonemeLength}と{@link #replaceMoraPitch}を合わせたショートハンド。詳細は<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md">テキスト音声合成の流れ</a>を参照。
    *
    * @param accentPhrases 変更元のアクセント句の配列。
    * @param styleId スタイルID。
@@ -279,6 +299,9 @@ public class Synthesizer {
 
   /**
    * 日本語のテキストをもとに音声合成を実行するためのオブジェクトを生成する。
+   *
+   * <p>{@link #createAudioQuery}と{@link #synthesis}を合わせたショートハンド。詳細は<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md">テキスト音声合成の流れ</a>を参照。
    *
    * @param text 日本語のテキスト。
    * @param styleId スタイルID。

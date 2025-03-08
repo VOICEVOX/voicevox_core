@@ -1,13 +1,20 @@
 import dataclasses
-from typing import Literal, NewType, TypeAlias
+import typing
+from dataclasses import InitVar
+from typing import Literal, NewType, NoReturn, TypeAlias
 from uuid import UUID
 
-import pydantic.alias_generators
-from pydantic import ConfigDict
-from pydantic_core import ArgsKwargs
-
-from .._rust import _to_zenkaku, _validate_user_dict_word
+from .._rust import (
+    _audio_query_from_accent_phrases,
+    _audio_query_from_json,
+    _audio_query_to_json,
+    _ReservedFields,
+    _to_zenkaku,
+    _validate_user_dict_word,
+)
 from ._please_do_not_use import _Reserved
+
+Never: TypeAlias = NoReturn
 
 StyleId = NewType("StyleId", int)
 """
@@ -100,18 +107,10 @@ def _(style_type: StyleType):
     _: str = style_type
 
 
-@pydantic.dataclasses.dataclass
+@dataclasses.dataclass
 class StyleMeta:
     """
     *スタイル* のメタ情報。
-
-    現在は |pydantic-dataclasses-dataclass-stylemeta|_ ではあるが、将来的には
-    |de-pydantic-stylemeta|_ 。
-
-    .. |pydantic-dataclasses-dataclass-stylemeta| replace:: ``@pydantic.dataclasses.dataclass``
-    .. _pydantic-dataclasses-dataclass-stylemeta: https://docs.pydantic.dev/2.10/concepts/dataclasses/
-    .. |de-pydantic-stylemeta| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
-    .. _de-pydantic-stylemeta: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
     """
 
     name: str
@@ -131,18 +130,10 @@ class StyleMeta:
     """
 
 
-@pydantic.dataclasses.dataclass
+@dataclasses.dataclass
 class CharacterMeta:
     """
     *キャラクター* のメタ情報。
-
-    現在は |pydantic-dataclasses-dataclass-charactermeta|_ ではあるが、将来的には
-    |de-pydantic-charactermeta|_ 。
-
-    .. |pydantic-dataclasses-dataclass-charactermeta| replace:: ``@pydantic.dataclasses.dataclass``
-    .. _pydantic-dataclasses-dataclass-charactermeta: https://docs.pydantic.dev/2.10/concepts/dataclasses/
-    .. |de-pydantic-charactermeta| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
-    .. _de-pydantic-charactermeta: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
     """
 
     name: str
@@ -165,7 +156,7 @@ class CharacterMeta:
     """
 
 
-@pydantic.dataclasses.dataclass
+@dataclasses.dataclass
 class SupportedDevices:
     """
     ONNX Runtimeとして利用可能なデバイスの情報。
@@ -173,16 +164,7 @@ class SupportedDevices:
     あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても
     ``cuda`` や ``dml`` は ``True`` を示しうる。
 
-    JSONからの変換も含め、VOICEVOX CORE以外が作ることはできない。作ろうとした場合
-    ``TypeError`` となる。
-
-    現在は |pydantic-dataclasses-dataclass-supporteddevices|_ ではあるが、将来的には
-    |de-pydantic-supporteddevices|_ 。
-
-    .. |pydantic-dataclasses-dataclass-supporteddevices| replace:: ``@pydantic.dataclasses.dataclass``
-    .. _pydantic-dataclasses-dataclass-supporteddevices: https://docs.pydantic.dev/2.10/concepts/dataclasses/
-    .. |de-pydantic-supporteddevices| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
-    .. _de-pydantic-supporteddevices: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
+    VOICEVOX CORE以外が作ることはできない。作ろうとした場合 ``TypeError`` となる。
     """
 
     cpu: bool
@@ -208,12 +190,11 @@ class SupportedDevices:
     (``DmlExecutionProvider``)に対応する。必要な環境についてはそちらを参照。
     """
 
-    @pydantic.model_validator(mode="before")
-    @staticmethod
-    def _deny_unless_from_pyo3(data: ArgsKwargs) -> ArgsKwargs:
-        if "I AM FROM PYO3" not in data.args:
-            raise TypeError("You cannot deserialize `SupportedDevices`")
-        return ArgsKwargs((), kwargs=data.kwargs)
+    _reserved: InitVar[Never]
+
+    def __post_init__(self, reserved: Never) -> None:
+        if not isinstance(typing.cast(object, reserved), _ReservedFields):
+            raise TypeError("You cannot instantiate `SupportedDevices` by yourself")
 
 
 AccelerationMode: TypeAlias = Literal["AUTO", "CPU", "GPU"] | _Reserved
@@ -261,18 +242,10 @@ def _(mode: AccelerationMode):
     _: str = mode
 
 
-@pydantic.dataclasses.dataclass
+@dataclasses.dataclass
 class Mora:
     """
     モーラ（子音＋母音）ごとの情報。
-
-    現在は |pydantic-dataclasses-dataclass-mora|_ ではあるが、将来的には
-    |de-pydantic-mora|_ 。
-
-    .. |pydantic-dataclasses-dataclass-mora| replace:: ``@pydantic.dataclasses.dataclass``
-    .. _pydantic-dataclasses-dataclass-mora: https://docs.pydantic.dev/2.10/concepts/dataclasses/
-    .. |de-pydantic-mora| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
-    .. _de-pydantic-mora: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
     """
 
     text: str
@@ -294,18 +267,10 @@ class Mora:
     """子音の音長。"""
 
 
-@pydantic.dataclasses.dataclass
+@dataclasses.dataclass
 class AccentPhrase:
     """
     AccentPhrase (アクセント句ごとの情報)。
-
-    現在は |pydantic-dataclasses-dataclass-accentphrase|_ ではあるが、将来的には
-    |de-pydantic-accentphrase|_ 。
-
-    .. |pydantic-dataclasses-dataclass-accentphrase| replace:: ``@pydantic.dataclasses.dataclass``
-    .. _pydantic-dataclasses-dataclass-accentphrase: https://docs.pydantic.dev/2.10/concepts/dataclasses/
-    .. |de-pydantic-accentphrase| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
-    .. _de-pydantic-accentphrase: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
     """
 
     moras: list[Mora]
@@ -321,46 +286,10 @@ class AccentPhrase:
     """疑問系かどうか。"""
 
 
-def _rename_audio_query_field(name: str) -> str:
-    match name:
-        case "accent_phrases":
-            return "accent_phrases"
-        case _:
-            return pydantic.alias_generators.to_camel(name)
-
-
-@pydantic.dataclasses.dataclass(
-    config=ConfigDict(alias_generator=_rename_audio_query_field),
-)
+@dataclasses.dataclass
 class AudioQuery:
     """
     AudioQuery (音声合成用のクエリ)。
-
-    現在は |pydantic-dataclasses-dataclass-audioquery|_ ではあるが、将来的には
-    |de-pydantic-audioquery|_ 。
-
-    .. |pydantic-dataclasses-dataclass-audioquery| replace:: ``@pydantic.dataclasses.dataclass``
-    .. _pydantic-dataclasses-dataclass-audioquery: https://docs.pydantic.dev/2.10/concepts/dataclasses/
-    .. |de-pydantic-audioquery| replace:: JSONと相互変換するメソッドのみ付いた、素の ``dataclass`` になる予定
-    .. _de-pydantic-audioquery: https://github.com/VOICEVOX/voicevox_core/issues/960#issuecomment-2629424401
-
-    JSONへの変換は ``pydantic.TypeAdapter.dump_json`` を用いなければならない。また、
-    ``dump_json`` や ``json_schema`` を用いるときは ``by_alias=True``
-    を指定しなければならない。
-
-    .. code-block::
-
-        from pydantic import TypeAdapter
-        from voicevox_core import AudioQuery
-
-        JSON = '{"accent_phrases":[],"speedScale":1.0,"pitchScale":0.0,"intonationScale":1.0,"volumeScale":1.0,"prePhonemeLength":0.1,"postPhonemeLength":0.1,"outputSamplingRate":24000,"outputStereo":false,"kana":null}'
-        query = TypeAdapter(AudioQuery).validate_json(JSON)
-
-        # `JSON`が必須フィールドを含んでいる場合のみ
-        assert TypeAdapter(AudioQuery).dump_json(query, by_alias=True).decode() == JSON
-
-        # `by_alias`が無いと、`accent_phrases`以外snake_caseのままJSONが出力されてしまう
-        assert TypeAdapter(AudioQuery).dump_json(query).decode() != JSON
     """
 
     accent_phrases: list[AccentPhrase]
@@ -397,6 +326,21 @@ class AudioQuery:
     :func:`Synthesizer.create_audio_query` が返すもののみ ``str`` となる。入力として
     のAudioQueryでは無視される。
     """
+
+    @staticmethod
+    def from_accent_phrases(accent_phrases: list["AccentPhrase"]) -> "AudioQuery":
+        return _audio_query_from_accent_phrases(accent_phrases)
+
+    # テストに使用する目的でのみ存在
+
+    @staticmethod
+    def __from_json(  # pyright: ignore [reportUnusedFunction]
+        json: str,
+    ) -> "AudioQuery":
+        return _audio_query_from_json(json)
+
+    def __to_json(self) -> str:  # pyright: ignore [reportUnusedFunction]
+        return _audio_query_to_json(self)
 
 
 UserDictWordType: TypeAlias = (
@@ -454,7 +398,9 @@ def _(word_type: UserDictWordType):
 
 @dataclasses.dataclass(frozen=True)
 class UserDictWord:
-    """ユーザー辞書の単語。"""
+    """
+    ユーザー辞書の単語。
+    """
 
     surface: str
     """言葉の表層形。"""

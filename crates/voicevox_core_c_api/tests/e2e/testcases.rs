@@ -7,6 +7,6 @@ mod double_delete_voice_model_file;
 mod global_info;
 mod simple_tts;
 mod synthesizer_new_output_json;
-mod tts_via_audio_query;
+mod tts;
 mod user_dict_load;
 mod user_dict_manipulate;

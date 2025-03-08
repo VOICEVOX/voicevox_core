@@ -9,18 +9,22 @@ license.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+anyhow.workspace = true
+async-lock.workspace = true
+blocking.workspace = true
 camino.workspace = true
-duplicate.workspace = true
+derive_more = { workspace = true, features = ["from"] }
 easy-ext.workspace = true
 futures-lite.workspace = true
+heck.workspace = true
 log.workspace = true
 once_cell.workspace = true
-pyo3 = { workspace = true, features = ["abi3-py310", "extension-module"] }
-pyo3-asyncio = { workspace = true, features = ["tokio-runtime"] }
+pyo3 = { workspace = true, features = ["experimental-async", "abi3-py310", "extension-module"] }
 pyo3-log.workspace = true
+ref-cast.workspace = true
 serde = { workspace = true, features = ["derive"] }
+serde-pyobject.workspace = true
 serde_json.workspace = true
-tokio = { workspace = true, features = ["rt", "sync"] }
 tracing = { workspace = true, features = ["log"] }
 uuid.workspace = true
 voicevox_core = { workspace = true, features = ["load-onnxruntime"] }
