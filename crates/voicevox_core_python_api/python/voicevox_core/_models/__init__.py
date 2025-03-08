@@ -331,7 +331,7 @@ class AudioQuery:
     def from_accent_phrases(accent_phrases: list["AccentPhrase"]) -> "AudioQuery":
         return _audio_query_from_accent_phrases(accent_phrases)
 
-    # 既存のpytest用
+    # テストに使用する目的でのみ存在
 
     @staticmethod
     def __from_json(  # pyright: ignore [reportUnusedFunction]
