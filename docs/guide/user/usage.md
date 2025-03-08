@@ -14,7 +14,7 @@ VOICEVOX の音声合成のコア部分で、VOICEVOX 音声合成が可能で�
 
 ### 実行に必要なファイルのダウンロード
 
-コアを動作させるには依存ライブラリである ONNX Runtime や、音声合成のための音声モデル（VVM ファイル）が必要です。これらはコア用の Downloader を用いてダウンロードすることができます。
+コアを動作させるには依存ライブラリである VOICEVOX ONNX Runtime や、音声合成のための音声モデル（VVM ファイル）が必要です。これらはコア用の Downloader を用いてダウンロードすることができます。
 
 > [!NOTE]
 > 音声モデル（VVM ファイル）には利用規約が存在します。詳しくはダウンロードしたファイル内の README に記載されています。
@@ -77,6 +77,22 @@ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/[バー�
 ## テキスト音声合成
 
 VOICEVOX コアでは`Synthesizer`に音声モデルを読み込むことでテキスト音声合成できます。まずサンプルコードを紹介し、その後で処理１つ１つを説明します。
+
+### VOICEVOX ONNX Runtimeを動的ライブラリの検索パスに追加
+
+VOICEVOXコアを使うためにはVOICEVOX ONNX Runtimeの動的ライブラリが必要です。VOICEVOX ONNX Runtimeがあるディレクトリを動的ライブラリの検索パスに追加してください。
+
+```powershell
+# WindowsのPowerShellの場合
+$Env:PATH = "./onnxruntime/lib;" + $Env:PATH
+```
+
+```sh
+# MacやLinuxの場合
+export LD_LIBRARY_PATH=./onnxruntime/lib
+```
+
+動的ライブラリの検索パスに追加する代わりに、以下に出てくる`Onnxruntime.load_once`の引数にて直接VOICEVOX ONNX Runtimeのファイルを指定することもできます。
 
 ### サンプルコード
 
