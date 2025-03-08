@@ -78,22 +78,6 @@ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/[バー�
 
 VOICEVOX コアでは`Synthesizer`に音声モデルを読み込むことでテキスト音声合成できます。まずサンプルコードを紹介し、その後で処理１つ１つを説明します。
 
-### VOICEVOX ONNX Runtimeを動的ライブラリの検索パスに追加
-
-VOICEVOXコアを使うためにはVOICEVOX ONNX Runtimeの動的ライブラリが必要です。VOICEVOX ONNX Runtimeがあるディレクトリを動的ライブラリの検索パスに追加してください。
-
-```powershell
-# WindowsのPowerShellの場合
-$Env:PATH = "./onnxruntime/lib;" + $Env:PATH
-```
-
-```sh
-# MacやLinuxの場合
-export LD_LIBRARY_PATH=./onnxruntime/lib
-```
-
-動的ライブラリの検索パスに追加する代わりに、以下に出てくる`Onnxruntime.load_once`の引数にて直接VOICEVOX ONNX Runtimeのファイルを指定することもできます。
-
 ### サンプルコード
 
 これは Python で書かれたサンプルコードですが、大枠の流れはどの言語でも同じです。
@@ -103,8 +87,9 @@ from pprint import pprint
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 # 1. Synthesizerの初期化
+voicevox_onnxruntime_path = "onnxruntime/lib/" + Onnxruntime.LIB_VERSIONED_FILENAME
 open_jtalk_dict_dir = "dict/open_jtalk_dic_utf_8-1.11"
-synthesizer = Synthesizer(Onnxruntime.load_once(), OpenJtalk(open_jtalk_dict_dir))
+synthesizer = Synthesizer(Onnxruntime.load_once(filename=voicevox_onnxruntime_path), OpenJtalk(open_jtalk_dict_dir))
 
 # 2. 音声モデルの読み込み
 with VoiceModelFile.open("models/vvms/0.vvm") as model:
