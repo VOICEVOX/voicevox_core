@@ -1,7 +1,5 @@
 # VOICEVOX CORE
 
-## **現在の main ブランチは工事中なので正しく動かないことがあります。[バージョン 0.15.4](https://github.com/VOICEVOX/voicevox_core/tree/0.15.4)をご利用ください。**
-
 [![releases](https://img.shields.io/github/v/release/VOICEVOX/voicevox_core?label=release)](https://github.com/VOICEVOX/voicevox_core/releases)
 [![test](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml/badge.svg)](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml)
 [![dependency status](https://deps.rs/repo/github/VOICEVOX/voicevox_core/status.svg)](https://deps.rs/repo/github/VOICEVOX/voicevox_core)
