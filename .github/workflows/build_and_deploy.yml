@@ -66,7 +66,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "ubuntu-20.04",
+              "os": "ubuntu-22.04",
               "target": "x86_64-unknown-linux-gnu",
               "artifact_name": "linux-x64",
               "c_release_format": "plain-cdylib",
@@ -74,7 +74,7 @@ jobs:
               "can_skip_in_simple_test": false
             },
             {
-              "os": "ubuntu-20.04",
+              "os": "ubuntu-22.04",
               "target": "aarch64-unknown-linux-gnu",
               "artifact_name": "linux-arm64",
               "c_release_format": "plain-cdylib",
@@ -82,7 +82,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "ubuntu-20.04",
+              "os": "ubuntu-22.04",
               "target": "aarch64-linux-android",
               "artifact_name": "android-arm64",
               "c_release_format": "plain-cdylib",
@@ -90,7 +90,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "ubuntu-20.04",
+              "os": "ubuntu-22.04",
               "target": "x86_64-linux-android",
               "artifact_name": "android-x86_64",
               "c_release_format": "plain-cdylib",
@@ -310,31 +310,6 @@ jobs:
         run: |
           cd ${{ steps.create-xcframework.outputs.output_asset_path }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
-      - name: Upload to Release
-        if: fromJson(needs.config.outputs.deploy)
-        uses: softprops/action-gh-release@v2
-        with:
-          prerelease: true
-          tag_name: ${{ env.VERSION }}
-          files: |-
-            ${{ env.ASSET_NAME }}.zip
-          target_commitish: ${{ github.sha }}
-
-  deploy_model:
-    runs-on: ubuntu-latest
-    needs: config
-    env:
-      ASSET_NAME: model-${{ needs.config.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create artifact
-        run: |
-          mkdir "artifact"
-          mv model "artifact/${{ env.ASSET_NAME }}/"
-      - name: Archive artifact
-        run: |
-          cd artifact
-          7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
         uses: softprops/action-gh-release@v2

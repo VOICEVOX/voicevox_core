@@ -282,8 +282,8 @@ typedef struct OpenJtalkRc OpenJtalkRc;
  *
  * ```c
  * const VoicevoxOnnxruntime *ort1;
- * voicevox_onnxruntime_load_once(voicevox_make_default_load_onnxruntime_options,
- *                                &ort1);
+ * voicevox_onnxruntime_load_once(
+ *     voicevox_make_default_load_onnxruntime_options(), &ort1);
  * const VoicevoxOnnxruntime *ort2 = voicevox_onnxruntime_get();
  * assert(ort1 == ort2);
  * ```
@@ -365,7 +365,7 @@ typedef const uint8_t (*VoicevoxVoiceModelId)[16];
 /**
  * スタイルID。
  *
- * VOICEVOXにおける、ある<b>キャラクター</b>のある<b>スタイル</b>(_style_)を指す。
+ * VOICEVOXにおける、ある<i>キャラクター</i>のある<i>スタイル</i>を指す。
  *
  * \orig-impl{VoicevoxStyleId}
  */
@@ -595,6 +595,24 @@ VoicevoxResultCode voicevox_open_jtalk_rc_use_user_dict(const struct OpenJtalkRc
                                                         const struct VoicevoxUserDict *user_dict);
 
 /**
+ * 日本語のテキストを解析する。
+ *
+ * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ *
+ * @param [in] open_jtalk Open JTalkのオブジェクト
+ * @param [in] text UTF-8の日本語テキスト
+ * @param [out] output_accent_phrases_json 生成先
+ *
+ * \orig-impl{voicevox_open_jtalk_rc_use_user_dict}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_open_jtalk_rc_analyze(const struct OpenJtalkRc *open_jtalk,
+                                                  const char *text,
+                                                  char **output_accent_phrases_json);
+
+/**
  * ::OpenJtalkRc を<b>破棄</b>(_destruct_)する。
  *
  * 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
@@ -637,6 +655,27 @@ struct VoicevoxInitializeOptions voicevox_make_default_initialize_options(void);
 __declspec(dllimport)
 #endif
 const char *voicevox_get_version(void);
+
+/**
+ * AccentPhraseの配列からAudioQueryを作る。
+ *
+ * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ *
+ * @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
+ * @param [out] output_accent_phrases_json 生成先
+ *
+ * \safety{
+ * - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_audio_query_create_from_accent_phrases}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_audio_query_create_from_accent_phrases(const char *accent_phrases_json,
+                                                                   char **output_audio_query_json);
 
 /**
  * VVMファイルを開く。
@@ -923,6 +962,9 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query_from_kana(const struc
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
  *
+ * ::voicevox_synthesizer_create_accent_phrases と ::voicevox_audio_query_create_from_accent_phrases
+ * が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
+ *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] text UTF-8の日本語テキスト
  * @param [in] style_id スタイルID
@@ -945,6 +987,8 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query_from_kana(const struc
  * }
  *
  * \orig-impl{voicevox_synthesizer_create_audio_query}
+ *
+ * [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -996,6 +1040,9 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases_from_kana(const st
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
  *
+ * ::voicevox_open_jtalk_rc_analyze と ::voicevox_synthesizer_replace_mora_data
+ * が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
+ *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] text UTF-8の日本語テキスト
  * @param [in] style_id スタイルID
@@ -1018,6 +1065,8 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases_from_kana(const st
  * }
  *
  * \orig-impl{voicevox_synthesizer_create_accent_phrases}
+ *
+ * [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -1032,6 +1081,9 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct Voice
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
  *
+ * ::voicevox_synthesizer_replace_phoneme_length と ::voicevox_synthesizer_replace_mora_pitch
+ * が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
+ *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
  * @param [in] style_id スタイルID
@@ -1045,6 +1097,8 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct Voice
  * }
  *
  * \orig-impl{voicevox_synthesizer_replace_mora_data}
+ *
+ * [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -1199,6 +1253,9 @@ VoicevoxResultCode voicevox_synthesizer_tts_from_kana(const struct VoicevoxSynth
  *
  * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
  *
+ * ::voicevox_synthesizer_create_audio_query と ::voicevox_synthesizer_synthesis
+ * が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
+ *
  * @param [in] synthesizer
  * @param [in] text UTF-8の日本語テキスト
  * @param [in] style_id スタイルID
@@ -1215,6 +1272,8 @@ VoicevoxResultCode voicevox_synthesizer_tts_from_kana(const struct VoicevoxSynth
  * }
  *
  * \orig-impl{voicevox_synthesizer_tts}
+ *
+ * [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
  */
 #ifdef _WIN32
 __declspec(dllimport)
@@ -1233,8 +1292,10 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  *
  * \safety{
  * - `json`は以下のAPIで得られたポインタでなくてはいけない。
+ *     - ::voicevox_audio_query_create_from_accent_phrases
  *     - ::voicevox_onnxruntime_create_supported_devices_json
  *     - ::voicevox_voice_model_file_create_metas_json
+ *     - ::voicevox_open_jtalk_rc_analyze
  *     - ::voicevox_synthesizer_create_metas_json
  *     - ::voicevox_synthesizer_create_audio_query
  *     - ::voicevox_synthesizer_create_accent_phrases
@@ -1308,6 +1369,7 @@ const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
  *
  * @param [in] surface 表記
  * @param [in] pronunciation 読み
+ * @param [in] accent_type アクセント型
  * @returns ::VoicevoxUserDictWord
  *
  * \orig-impl{voicevox_user_dict_word_make}
@@ -1316,7 +1378,8 @@ const char *voicevox_error_result_to_message(VoicevoxResultCode result_code);
 __declspec(dllimport)
 #endif
 struct VoicevoxUserDictWord voicevox_user_dict_word_make(const char *surface,
-                                                         const char *pronunciation);
+                                                         const char *pronunciation,
+                                                         uintptr_t accent_type);
 
 /**
  * ユーザー辞書をb>構築</b>(_construct_)する。

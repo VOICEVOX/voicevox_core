@@ -25,6 +25,8 @@ defaults:
   run:
     shell: bash
 
+# TODO: テスト内容がv0.14当時の考え方を引きずっているので、今のダウンローダーに合うように再考する。
+
 jobs:
   download-releases:
     strategy:
@@ -36,151 +38,112 @@ jobs:
             download_command: cargo run -v -p downloader -- # バージョン指定のために -- が必要
             download_dir: voicevox_core
             check_items: |
-              voicevox_core.dll
-              model/README.*
-              open_jtalk_dic_utf_8-1.11
-              README.txt
+              c_api/lib/voicevox_core.dll
+              models/README.txt
+              dict/open_jtalk_dic_utf_8-1.11
+              c_api/README.txt
+            # TODO: ↓ 今のONNX RuntimeだとCPU用のproviderはもう無いはず
             # https://github.com/VOICEVOX/voicevox_core/pull/411#issuecomment-1412457592
             check_not_exists_items: |
-              *directml*
-              *cuda*
-              *cudnn*
-              *eula*
-              *nvidia*
-              *cufft*
-              *curand*
+              additional_libraries/
           - name: CpuArch指定
             os: windows-latest
             download_command: cargo run -v -p downloader -- --cpu-arch x86
             download_dir: voicevox_core
             check_items: |
-              voicevox_core.dll
-              model/README.*
-              open_jtalk_dic_utf_8-1.11
-              README.txt
+              c_api/lib/voicevox_core.dll
+              models/README.txt
+              dict/open_jtalk_dic_utf_8-1.11
+              c_api/README.txt
             check_not_exists_items: |
-              *directml*
-              *cuda*
-              *cudnn*
-              *eula*
-              *nvidia*
-              *cufft*
-              *curand*
+              additional_libraries/
           - name: output先指定ダウンロード
             os: windows-latest
             download_command: cargo run -v -p downloader -- -o other_output
             download_dir: other_output
             check_items: |
-              voicevox_core.dll
-              model/README.*
-              open_jtalk_dic_utf_8-1.11
-              README.txt
+              c_api/lib/voicevox_core.dll
+              models/README.txt
+              dict/open_jtalk_dic_utf_8-1.11
+              c_api/README.txt
             check_not_exists_items: |
-              *directml*
-              *cuda*
-              *cudnn*
-              *eula*
-              *nvidia*
-              *cufft*
-              *curand*
+              additional_libraries/
           - name: Min option確認
             os: windows-latest
             download_command: cargo run -v -p downloader -- --min
             download_dir: voicevox_core
             check_items: |
-              voicevox_core.dll
-              README.txt
+              c_api/lib/voicevox_core.dll
+              c_api/README.txt
             check_not_exists_items: |
-              *directml*
-              *cuda*
-              *cudnn*
-              *eula*
-              *nvidia*
-              *cufft*
-              *curand*
-              model/README.*
-              open_jtalk_dic_utf_8-1.11
+              onnxruntime/
+              additional_libraries/
+              models/
+              dict/
           - name: DirectML option確認
             os: windows-latest
             download_command: cargo run -v -p downloader -- --devices directml
             download_dir: voicevox_core
             check_items: |
-              voicevox_core.dll
-              model/README.*
-              open_jtalk_dic_utf_8-1.11
-              README.txt
-              DirectML.dll
-              DirectML_LICENSE.txt
+              c_api/lib/voicevox_core.dll
+              models/README.txt
+              dict/open_jtalk_dic_utf_8-1.11
+              c_api/README.txt
+              additional_libraries/DirectML.dll
+              additional_libraries/DirectML_LICENSE.txt
             check_not_exists_items: |
-              *directml*
-              *cuda*
-              *cudnn*
-              *eula*
-              *nvidia*
-              *cufft*
-              *curand*
+              additional_libraries/*cuda*
+              additional_libraries/*cudnn*
+              additional_libraries/*eula*
+              additional_libraries/*nvidia*
+              additional_libraries/*cufft*
+              additional_libraries/*curand*
           - name: DirectMLかつMin option確認
             os: windows-latest
             download_command: cargo run -v -p downloader -- --devices directml --min
             download_dir: voicevox_core
             check_items: |
-              voicevox_core.dll
-              README.txt
+              c_api/README.txt
+              c_api/lib/voicevox_core.dll
             check_not_exists_items: |
-              *cuda*
-              *cudnn*
-              *eula*
-              *nvidia*
-              *cufft*
-              *curand*
-              Directml.dll
-              DirectML_LICENSE.txt
-              model/README.*
-              open_jtalk_dic_utf_8-1.11
+              onnxruntime/
+              additional_libraries/
+              models/
+              dict/
           - name: cuda option確認
             os: windows-latest
             download_command: cargo run -v -p downloader -- --devices cuda
             download_dir: voicevox_core
             check_items: |
-              voicevox_core.dll
-              model/README.*
-              open_jtalk_dic_utf_8-1.11
-              README.txt
-              EULA.txt
-              NVIDIA_SLA_cuDNN_Support.txt
-              cublas64_*.dll
-              cublasLt64_*.dll
-              cudart64_*.dll
-              cudnn64_*.dll
-              cudnn_adv_infer64_*.dll
-              cudnn_cnn_infer64_*.dll
-              cudnn_ops_infer64_*.dll
-              cufft64_*.dll
-              curand64_*.dll
+              c_api/lib/voicevox_core.dll
+              models/README.txt
+              dict/open_jtalk_dic_utf_8-1.11
+              c_api/README.txt
+              additional_libraries/EULA.txt
+              additional_libraries/NVIDIA_SLA_cuDNN_Support.txt
+              additional_libraries/cublas64_*.dll
+              additional_libraries/cublasLt64_*.dll
+              additional_libraries/cudart64_*.dll
+              additional_libraries/cudnn64_*.dll
+              additional_libraries/cudnn_adv_infer64_*.dll
+              additional_libraries/cudnn_cnn_infer64_*.dll
+              additional_libraries/cudnn_ops_infer64_*.dll
+              additional_libraries/cufft64_*.dll
+              additional_libraries/curand64_*.dll
             check_not_exists_items: |
-              *directml*
+              additional_libraries/*directml*
           - name: cudaかつmin option確認
             os: windows-latest
             download_command: cargo run -v -p downloader -- --devices cuda --min
             download_dir: voicevox_core
             check_items: |
-              voicevox_core.dll
-              README.txt
+              c_api/lib/voicevox_core.dll
+              c_api/README.txt
             check_not_exists_items: |
-              *directml*
-              EULA.txt
-              NVIDIA_SLA_cuDNN_Support.txt
-              cublas64_*.dll
-              cublasLt64_*.dll
-              cudart64_*.dll
-              cudnn64_*.dll
-              cudnn_adv_infer64_*.dll
-              cudnn_cnn_infer64_*.dll
-              cudnn_ops_infer64_*.dll
-              cufft64_*.dll
-              curand64_*.dll
-              model/README.*
-              open_jtalk_dic_utf_8-1.11
+              onnxruntime/
+              additional_libraries/
+              models/
+              dict/
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}-${{ matrix.os }}
     steps:
@@ -198,13 +161,16 @@ jobs:
           )
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Execute download command
-        run: ${{ matrix.download_command }} --c-api-version ${{ env.VERSION }} --c-api-repo ${{ github.repository }}
+        # TODO: `voicevox_onnxruntime-1.17.3`のprerelease指定を外したら`--onnxruntime-version`はlatest指定にする
+        # `"y"`を流し込むことで「利用規約への同意」を行う
+        # (この際`echo y`ではなく`yes`を使うと謎の要因により無言で異常終了する)
+        run: echo y | ${{ matrix.download_command }} --c-api-version ${{ env.VERSION }} --c-api-repo ${{ github.repository }} --onnxruntime-version voicevox_onnxruntime-1.17.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Check downloaded version
         run: |
-          [ -e "${{ matrix.download_dir }}/VERSION" ]
-          [ "$(cat "${{ matrix.download_dir }}/VERSION")" = "${{ env.VERSION }}" ]
+          [ -e "${{ matrix.download_dir }}/c_api/VERSION" ]
+          [ "$(cat "${{ matrix.download_dir }}/c_api/VERSION")" = "${{ env.VERSION }}" ]
       - name: Check downloaded files
         run: |
           mapfile -t items < <(echo -n '${{ matrix.check_items }}')

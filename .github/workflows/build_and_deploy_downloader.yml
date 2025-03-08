@@ -47,11 +47,11 @@ jobs:
 
           - name: download-linux-x64
             target: x86_64-unknown-linux-gnu
-            os: ubuntu-20.04
+            os: ubuntu-22.04
 
           - name: download-linux-arm64
             target: aarch64-unknown-linux-gnu
-            os: ubuntu-20.04
+            os: ubuntu-22.04
 
           - name: download-osx-x64
             target: x86_64-apple-darwin

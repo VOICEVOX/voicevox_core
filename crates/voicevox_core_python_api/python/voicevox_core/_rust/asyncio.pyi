@@ -136,6 +136,9 @@ class OpenJtalk:
     テキスト解析器としてのOpen JTalk。
     """
 
+    def __new__(
+        cls, *args: tuple[object], **kwargs: dict[object, object]
+    ) -> NoReturn: ...
     @staticmethod
     async def new(open_jtalk_dict_dir: str | PathLike[str]) -> "OpenJtalk":
         """
@@ -157,6 +160,16 @@ class OpenJtalk:
         ----------
         user_dict
             ユーザー辞書。
+        """
+        ...
+    async def analyze(self, text: str) -> list[AccentPhrase]:
+        """
+        日本語のテキストを解析する。
+
+        Parameters
+        ----------
+        text
+            日本語のテキスト。
         """
         ...
 
@@ -181,6 +194,7 @@ class Synthesizer:
         self,
         onnxruntime: Onnxruntime,
         open_jtalk: OpenJtalk,
+        *,
         acceleration_mode: AccelerationMode = "AUTO",
         cpu_num_threads: int = 0,
     ) -> None: ...
@@ -190,6 +204,10 @@ class Synthesizer:
     @property
     def onnxruntime(self) -> Onnxruntime:
         """ONNX Runtime。"""
+        ...
+    @property
+    def open_jtalk(self) -> OpenJtalk:
+        """Open JTalk。"""
         ...
     @property
     def is_gpu_mode(self) -> bool:
@@ -260,6 +278,14 @@ class Synthesizer:
         """
         日本語のテキストから :class:`AudioQuery` を生成する。
 
+        :func:`create_accent_phrases` と |from-accent-phrases|_
+        が一体になったショートハンド。詳細は `テキスト音声合成の流れ
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md>`_
+        を参照。
+
+        .. |from-accent-phrases| replace:: ``AudioQuery.from_accent_phrases()``
+        .. _from-accent-phrases: ../index.html#voicevox_core.AudioQuery.from_accent_phrases
+
         Parameters
         ----------
         text
@@ -300,6 +326,11 @@ class Synthesizer:
         """
         日本語のテキストからAccentPhrase（アクセント句）の配列を生成する。
 
+        :func:`OpenJtalk.analyze` と :func:`replace_mora_data`
+        が一体になったショートハンド。詳細は `テキスト音声合成の流れ
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md>`_
+        を参照。
+
         Parameters
         ----------
         text
@@ -321,6 +352,11 @@ class Synthesizer:
         アクセント句の音高・音素長を変更した新しいアクセント句の配列を生成する。
 
         元のアクセント句の音高・音素長は変更されない。
+
+        :func:`replace_phoneme_length` と :func:`replace_mora_pitch`
+        が一体になったショートハンド。詳細は `テキスト音声合成の流れ
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md>`_
+        を参照。
 
         Parameters
         ----------
@@ -374,10 +410,15 @@ class Synthesizer:
         self,
         audio_query: AudioQuery,
         style_id: StyleId | int,
+        *,
         enable_interrogative_upspeak: bool = True,
+        cancellable: bool = False,
     ) -> bytes:
         """
         :class:`AudioQuery` から音声合成する。
+
+        ``cancellable``
+        を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
 
         Parameters
         ----------
@@ -387,6 +428,9 @@ class Synthesizer:
             スタイルID。
         enable_interrogative_upspeak
             疑問文の調整を有効にするかどうか。
+        cancellable
+            音声モデルの実行をキャンセル可能にするかどうか。このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。
+            `VOICEVOX/voicevox_core#968 <https://github.com/VOICEVOX/voicevox_core/issues/968>`_ を参照。
 
         Returns
         -------
@@ -397,10 +441,15 @@ class Synthesizer:
         self,
         kana: str,
         style_id: StyleId | int,
+        *,
         enable_interrogative_upspeak: bool = True,
+        cancellable: bool = False,
     ) -> bytes:
         """
         AquesTalk風記法から音声合成を行う。
+
+        ``cancellable``
+        を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
 
         Parameters
         ----------
@@ -410,16 +459,29 @@ class Synthesizer:
             スタイルID。
         enable_interrogative_upspeak
             疑問文の調整を有効にするかどうか。
+        cancellable
+            音声モデルの実行をキャンセル可能にするかどうか。このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。
+            `VOICEVOX/voicevox_core#968 <https://github.com/VOICEVOX/voicevox_core/issues/968>`_ を参照。
         """
         ...
     async def tts(
         self,
         text: str,
         style_id: StyleId | int,
+        *,
         enable_interrogative_upspeak: bool = True,
+        cancellable: bool = False,
     ) -> bytes:
         """
         日本語のテキストから音声合成を行う。
+
+        :func:`create_audio_query` と :func:`synthesis`
+        が一体になったショートハンド。詳細は `テキスト音声合成の流れ
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md>`_
+        を参照。
+
+        ``cancellable``
+        を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
 
         Parameters
         ----------
@@ -429,6 +491,9 @@ class Synthesizer:
             スタイルID。
         enable_interrogative_upspeak
             疑問文の調整を有効にするかどうか。
+        cancellable
+            音声モデルの実行をキャンセル可能にするかどうか。このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。
+            `VOICEVOX/voicevox_core#968 <https://github.com/VOICEVOX/voicevox_core/issues/968>`_ を参照。
 
         Returns
         -------

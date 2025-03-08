@@ -7,8 +7,7 @@ import multiprocessing
 from argparse import ArgumentParser
 from pathlib import Path
 
-from pydantic import TypeAdapter
-from voicevox_core import AccelerationMode, AudioQuery
+from voicevox_core import AccelerationMode
 from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
@@ -109,15 +108,11 @@ async def main() -> None:
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
     audio_query = await synthesizer.create_audio_query(args.text, args.style_id)
 
-    logger.info("%s", f"Synthesizing with {display_as_json(audio_query)}")
+    logger.info("%s", f"Synthesizing with {audio_query}")
     wav = await synthesizer.synthesis(audio_query, args.style_id)
 
     args.out.write_bytes(wav)
     logger.info("%s", f"Wrote `{args.out}`")
-
-
-def display_as_json(audio_query: AudioQuery) -> str:
-    return TypeAdapter(AudioQuery).dump_json(audio_query, by_alias=True).decode()
 
 
 if __name__ == "__main__":

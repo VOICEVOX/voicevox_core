@@ -1,11 +1,13 @@
 package jp.hiroshiba.voicevoxcore;
 
+import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /**
  * AudioQuery（音声合成用のクエリ）。
@@ -14,6 +16,10 @@ import java.util.List;
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
 public class AudioQuery {
+  static {
+    Dll.loadLibrary();
+  }
+
   /** アクセント句の配列。 */
   @SerializedName("accent_phrases")
   @Expose
@@ -44,12 +50,6 @@ public class AudioQuery {
   /** 音声データをステレオ出力するか否か。 */
   @Expose public boolean outputStereo;
 
-  /** 句読点などの無音時間。{@code null}のときは無視される。デフォルト値は{@code null}。 */
-  @Expose @Nullable public Double pauseLength;
-
-  /** 読点などの無音時間（倍率）。デフォルト値は{@code 1.}。 */
-  @Expose public double pauseLengthScale;
-
   /**
    * [読み取り専用] AquesTalk風記法。
    *
@@ -67,8 +67,19 @@ public class AudioQuery {
     this.prePhonemeLength = 0.1;
     this.postPhonemeLength = 0.1;
     this.outputSamplingRate = 24000;
-    this.pauseLength = null;
-    this.pauseLengthScale = 1.0;
     this.kana = null;
   }
+
+  public static AudioQuery fromAccentPhrases(List<AccentPhrase> accentPhrases) {
+    Gson gson = new Gson();
+    String queryJson = rsFromAccentPhrases(gson.toJson(accentPhrases));
+    AudioQuery query = gson.fromJson(queryJson, AudioQuery.class);
+    if (query == null) {
+      throw new NullPointerException();
+    }
+    return query;
+  }
+
+  @Nonnull
+  private static native String rsFromAccentPhrases(String accentPhrases);
 }
