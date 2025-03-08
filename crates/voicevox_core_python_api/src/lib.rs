@@ -244,7 +244,7 @@ struct VoiceModelFilePyFields {
     metas: Py<PyList>, // `list[CharacterMeta]`
 }
 
-#[pyclass]
+#[pyclass(frozen)]
 struct _ReservedFields;
 
 #[pyfunction]
@@ -387,7 +387,7 @@ mod blocking {
     static ONNXRUNTIME: once_cell::sync::OnceCell<Py<Onnxruntime>> =
         once_cell::sync::OnceCell::new();
 
-    #[pyclass]
+    #[pyclass(frozen)]
     #[derive(Clone)]
     pub(crate) struct Onnxruntime(&'static voicevox_core::blocking::Onnxruntime);
 
@@ -499,7 +499,7 @@ mod blocking {
         }
     }
 
-    #[pyclass]
+    #[pyclass(frozen)]
     pub(crate) struct AudioFeature {
         audio: voicevox_core::blocking::__AudioFeature,
     }
@@ -517,7 +517,7 @@ mod blocking {
         }
     }
 
-    #[pyclass]
+    #[pyclass(frozen)]
     pub(crate) struct Synthesizer {
         synthesizer:
             Closable<voicevox_core::blocking::Synthesizer<OwnedOpenJtalk>, Self, SingleTasked>,
@@ -562,7 +562,7 @@ mod blocking {
         }
 
         fn __exit__(
-            &mut self,
+            &self,
             #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_type: &Bound<
                 '_,
                 PyAny,
@@ -605,7 +605,7 @@ mod blocking {
         }
 
         fn load_voice_model(
-            &mut self,
+            &self,
             model: &Bound<'_, VoiceModelFile>,
             py: Python<'_>,
         ) -> PyResult<()> {
@@ -615,7 +615,7 @@ mod blocking {
         }
 
         fn unload_voice_model(
-            &mut self,
+            &self,
             #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] voice_model_id: Uuid,
             py: Python<'_>,
         ) -> PyResult<()> {
@@ -858,12 +858,12 @@ mod blocking {
                 .into_py_result(py)
         }
 
-        fn close(&mut self) {
+        fn close(&self) {
             drop(self.synthesizer.close());
         }
     }
 
-    #[pyclass]
+    #[pyclass(frozen)]
     #[derive(Default, Debug, Clone)]
     pub(crate) struct UserDict {
         dict: Arc<voicevox_core::blocking::UserDict>,
@@ -885,7 +885,7 @@ mod blocking {
         }
 
         fn add_word(
-            &mut self,
+            &self,
             #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
             py: Python<'_>,
         ) -> PyResult<ToPyUuid> {
@@ -893,7 +893,7 @@ mod blocking {
         }
 
         fn update_word(
-            &mut self,
+            &self,
             #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] word_uuid: Uuid,
             #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
             py: Python<'_>,
@@ -902,7 +902,7 @@ mod blocking {
         }
 
         fn remove_word(
-            &mut self,
+            &self,
             #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] word_uuid: Uuid,
             py: Python<'_>,
         ) -> PyResult<()> {
@@ -910,7 +910,7 @@ mod blocking {
             Ok(())
         }
 
-        fn import_dict(&mut self, other: &UserDict, py: Python<'_>) -> PyResult<()> {
+        fn import_dict(&self, other: &UserDict, py: Python<'_>) -> PyResult<()> {
             self.dict.import(&other.dict).into_py_result(py)?;
             Ok(())
         }
@@ -1027,7 +1027,7 @@ mod asyncio {
     static ONNXRUNTIME: once_cell::sync::OnceCell<Py<Onnxruntime>> =
         once_cell::sync::OnceCell::new();
 
-    #[pyclass]
+    #[pyclass(frozen)]
     #[derive(Clone)]
     pub(crate) struct Onnxruntime(&'static voicevox_core::nonblocking::Onnxruntime);
 
@@ -1152,7 +1152,7 @@ mod asyncio {
         }
     }
 
-    #[pyclass]
+    #[pyclass(frozen)]
     pub(crate) struct Synthesizer {
         synthesizer:
             Arc<Closable<voicevox_core::nonblocking::Synthesizer<OwnedOpenJtalk>, Self, Tokio>>,
@@ -1197,7 +1197,7 @@ mod asyncio {
         }
 
         async fn __aexit__(
-            &mut self,
+            &self,
             #[expect(unused_variables, reason = "`__aexit__`としては必要")] exc_type: PyObject,
             #[expect(unused_variables, reason = "`__aexit__`としては必要")] exc_value: PyObject,
             #[expect(unused_variables, reason = "`__aexit__`としては必要")] traceback: PyObject,
@@ -1230,7 +1230,7 @@ mod asyncio {
             Ok(synthesizer.metas().into())
         }
 
-        async fn load_voice_model(&mut self, model: Py<VoiceModelFile>) -> PyResult<()> {
+        async fn load_voice_model(&self, model: Py<VoiceModelFile>) -> PyResult<()> {
             let model = &*model.get().model.read()?;
             let result = self
                 .synthesizer
@@ -1242,7 +1242,7 @@ mod asyncio {
         }
 
         fn unload_voice_model(
-            &mut self,
+            &self,
             #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] voice_model_id: Uuid,
             py: Python<'_>,
         ) -> PyResult<()> {
@@ -1452,7 +1452,7 @@ mod asyncio {
         }
     }
 
-    #[pyclass]
+    #[pyclass(frozen)]
     #[derive(Default, Debug, Clone)]
     pub(crate) struct UserDict {
         dict: Arc<voicevox_core::nonblocking::UserDict>,
@@ -1478,7 +1478,7 @@ mod asyncio {
         }
 
         fn add_word(
-            &mut self,
+            &self,
             #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
             py: Python<'_>,
         ) -> PyResult<ToPyUuid> {
@@ -1486,7 +1486,7 @@ mod asyncio {
         }
 
         fn update_word(
-            &mut self,
+            &self,
             #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] word_uuid: Uuid,
             #[pyo3(from_py_with = "crate::convert::to_rust_user_dict_word")] word: UserDictWord,
             py: Python<'_>,
@@ -1496,7 +1496,7 @@ mod asyncio {
         }
 
         fn remove_word(
-            &mut self,
+            &self,
             #[pyo3(from_py_with = "crate::convert::to_rust_uuid")] word_uuid: Uuid,
             py: Python<'_>,
         ) -> PyResult<()> {
@@ -1504,7 +1504,7 @@ mod asyncio {
             Ok(())
         }
 
-        fn import_dict(&mut self, other: &UserDict, py: Python<'_>) -> PyResult<()> {
+        fn import_dict(&self, other: &UserDict, py: Python<'_>) -> PyResult<()> {
             self.dict.import(&other.dict).into_py_result(py)?;
             Ok(())
         }
