@@ -14,15 +14,16 @@ async-lock.workspace = true
 blocking.workspace = true
 camino.workspace = true
 derive_more = { workspace = true, features = ["from"] }
-duplicate.workspace = true
 easy-ext.workspace = true
 futures-lite.workspace = true
+heck.workspace = true
 log.workspace = true
 once_cell.workspace = true
 pyo3 = { workspace = true, features = ["experimental-async", "abi3-py310", "extension-module"] }
 pyo3-log.workspace = true
 ref-cast.workspace = true
 serde = { workspace = true, features = ["derive"] }
+serde-pyobject.workspace = true
 serde_json.workspace = true
 tracing = { workspace = true, features = ["log"] }
 uuid.workspace = true
