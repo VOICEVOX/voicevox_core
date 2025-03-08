@@ -197,7 +197,7 @@ user_dict.add_word(UserDictWord("手札", "テフダ", 1, priority=6))
 synthesizer.open_jtalk.use_user_dict(user_dict)
 
 # 音声合成
-text = "カードゲームにおける手札"
+text = "手札をシュサツと読んでしまうのをテフダにします"
 style_id = 0
 wav = synthesizer.tts(text, style_id)
 with open("output.wav", "wb") as f:
