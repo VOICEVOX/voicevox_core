@@ -63,7 +63,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rs
         });
 
         let devices = env.new_object(
-            object!("GlobalInfo$SupportedDevices"),
+            object!("SupportedDevices"),
             "(ZZZ)V",
             &[devices.cpu.into(), devices.cuda.into(), devices.dml.into()],
         )?;
