@@ -111,8 +111,6 @@ def _(style_type: StyleType):
 class StyleMeta:
     """
     *スタイル* のメタ情報。
-
-    JSONからの変換およびJSONへの変換は現在サポートされていない。
     """
 
     name: str
@@ -136,8 +134,6 @@ class StyleMeta:
 class CharacterMeta:
     """
     *キャラクター* のメタ情報。
-
-    JSONからの変換およびJSONへの変換は現在サポートされていない。
     """
 
     name: str
@@ -169,8 +165,6 @@ class SupportedDevices:
     ``cuda`` や ``dml`` は ``True`` を示しうる。
 
     VOICEVOX CORE以外が作ることはできない。作ろうとした場合 ``TypeError`` となる。
-
-    JSONへの変換は現在サポートされていない。
     """
 
     cpu: bool
@@ -252,8 +246,6 @@ def _(mode: AccelerationMode):
 class Mora:
     """
     モーラ（子音＋母音）ごとの情報。
-
-    JSONからの変換およびJSONへの変換は現在サポートされていない。
     """
 
     text: str
@@ -279,8 +271,6 @@ class Mora:
 class AccentPhrase:
     """
     AccentPhrase (アクセント句ごとの情報)。
-
-    JSONからの変換およびJSONへの変換は現在サポートされていない。
     """
 
     moras: list[Mora]
@@ -300,8 +290,6 @@ class AccentPhrase:
 class AudioQuery:
     """
     AudioQuery (音声合成用のクエリ)。
-
-    JSONからの変換およびJSONへの変換は現在サポートされていない。
     """
 
     accent_phrases: list[AccentPhrase]
@@ -412,8 +400,6 @@ def _(word_type: UserDictWordType):
 class UserDictWord:
     """
     ユーザー辞書の単語。
-
-    このクラス単体でのJSONからの変換およびJSONへの変換は、現在サポートされていない。
     """
 
     surface: str
