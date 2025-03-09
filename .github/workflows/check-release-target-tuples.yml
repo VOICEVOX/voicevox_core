@@ -29,5 +29,6 @@ jobs:
           targets=$(yq -ro json '.jobs.config.steps[] | select(.id == "strategy_matrix").run' ./.github/workflows/build_and_deploy.yml)
           targets=$(sed -n 's/^ \+"target": \(".*"\),$/\1/p' <<< "$targets")
           targets=$(jq -sr sort[] <<< "$targets")
+          [ -z "$targets" ]
 
           diff -u <(cat <<< "$targets") <(yq -ro json '.graph.targets | map(.triple) | sort[]' ./deny.toml)
