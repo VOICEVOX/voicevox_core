@@ -1,0 +1,42 @@
+# deny.tomlの`graph.targets`がbuild and deploy workflowのものと一致しているかを検査する。
+name: Check release target tuples
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - .github/workflows/check-release-target-tuples.yml
+      - .github/workflows/build_and_deploy.yml
+      - deny.toml
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install go-yq v4
+        run: |
+          mkdir -p ~/.local/bin
+          echo ~/.local/bin >> "$GITHUB_PATH"
+          tag=$(
+            gh release ls -R mikefarah/yq --json tagName,isPrerelease \
+              -q 'map(select(.isPrerelease | not).tagName | select(test("^v4\\.")))[0]'
+          )
+          gh release download -R mikefarah/yq "$tag" -p yq_linux_amd64 -O ~/.local/bin/yq
+          chmod u+x ~/.local/bin/yq
+          ~/.local/bin/yq -V
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check release target tuples
+        run: |
+          targets=$(yq -ro json '.jobs.config.steps[] | select(.id == "strategy_matrix").run' ./.github/workflows/build_and_deploy.yml)
+          targets=$(sed -n 's/^ \+"target": \(".*"\),$/\1/p' <<< "$targets")
+          targets=$(jq -sr sort[] <<< "$targets")
+          [ -z "$targets" ]
+
+          diff -u <(cat <<< "$targets") <(yq -ro json '.graph.targets | map(.triple) | sort[]' ./deny.toml)
