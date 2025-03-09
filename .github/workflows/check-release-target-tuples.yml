@@ -17,9 +17,9 @@ jobs:
     steps:
       - name: Install yq
         run: |
-          sudo add-apt-repository ppa:rmescandon/yq
-          sudo apt-get update
-          sudo apt-get install yq -y
+          add-apt-repository ppa:rmescandon/yq
+          apt update
+          apt install yq -y
 
       - name: Checkout
         uses: actions/checkout@v4
