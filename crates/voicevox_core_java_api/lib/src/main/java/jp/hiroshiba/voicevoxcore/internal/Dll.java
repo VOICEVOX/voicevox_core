@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 /** ライブラリを読み込むためだけ。 */
 public class Dll {
@@ -61,7 +62,10 @@ public class Dll {
           Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
           Path dllPath = tempDir.resolve(dllName);
           dllPath.toFile().deleteOnExit();
-          Files.copy(in, dllPath);
+
+          // https://github.com/VOICEVOX/voicevox_core/issues/1042
+          // Windowsだと`deleteOnExit`が機能せずに残り続けるらしいため、`REPLACE_EXISTING`でコピー。
+          Files.copy(in, dllPath, StandardCopyOption.REPLACE_EXISTING);
 
           System.load(dllPath.toAbsolutePath().toString());
         }
