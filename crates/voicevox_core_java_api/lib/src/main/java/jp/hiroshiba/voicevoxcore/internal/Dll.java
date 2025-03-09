@@ -3,7 +3,6 @@ package jp.hiroshiba.voicevoxcore.internal;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /** ライブラリを読み込むためだけ。 */
 public class Dll {
@@ -58,7 +57,7 @@ public class Dll {
             throw new RuntimeException("Failed to load Voicevox Core DLL for " + target, e);
           }
         } else {
-          Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
+          Path tempDir = Files.createTempDirectory("voicevox-core-java-api");
           Path dllPath = tempDir.resolve(dllName);
           dllPath.toFile().deleteOnExit();
           Files.copy(in, dllPath);
