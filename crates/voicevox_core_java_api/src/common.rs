@@ -36,9 +36,9 @@ macro_rules! static_field {
     };
 }
 
-pub(crate) fn throw_if_err<T, F>(mut env: JNIEnv<'_>, fallback: T, inner: F) -> T
+pub(crate) fn throw_if_err<'local, T, F>(mut env: JNIEnv<'local>, fallback: T, inner: F) -> T
 where
-    F: FnOnce(&mut JNIEnv<'_>) -> Result<T, JavaApiError>,
+    F: FnOnce(&mut JNIEnv<'local>) -> Result<T, JavaApiError>,
 {
     match inner(&mut env) {
         Ok(value) => value as _,
@@ -167,7 +167,7 @@ where
     }
 }
 
-type JavaApiResult<T> = Result<T, JavaApiError>;
+pub(crate) type JavaApiResult<T> = Result<T, JavaApiError>;
 
 #[derive(From, Debug)]
 pub(crate) enum JavaApiError {

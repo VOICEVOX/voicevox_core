@@ -20,8 +20,10 @@ flate2.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
 futures-core.workspace = true
 futures-util.workspace = true
+indexmap.workspace = true
 indicatif.workspace = true
 itertools.workspace = true
+minus = { workspace = true, features = ["static_output"] }
 octocrab = { workspace = true, default-features = false, features = ["rustls-tls", "stream"] }
 parse-display.workspace = true
 rayon.workspace = true
@@ -33,6 +35,7 @@ strum = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync"] }
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
+unicode-width.workspace = true
 url.workspace = true
 zip.workspace = true
 

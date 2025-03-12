@@ -1,8 +1,5 @@
 package jp.hiroshiba.voicevoxcore.blocking;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.internal.LinkedTreeMap;
 import jakarta.annotation.Nonnull;
 import java.io.File;
 import java.nio.file.Path;
@@ -38,12 +35,7 @@ public class UserDict {
    */
   @Nonnull
   public String addWord(UserDictWord word) {
-    GsonBuilder gsonBuilder = new GsonBuilder();
-    gsonBuilder.registerTypeAdapter(UserDictWord.Type.class, new UserDictWord.Type.Serializer());
-    Gson gson = gsonBuilder.create();
-    String wordJson = gson.toJson(word);
-
-    return rsAddWord(wordJson);
+    return rsAddWord(word);
   }
 
   /**
@@ -53,12 +45,7 @@ public class UserDict {
    * @param word 新しい単語のデータ。
    */
   public void updateWord(String uuid, UserDictWord word) {
-    GsonBuilder gsonBuilder = new GsonBuilder();
-    gsonBuilder.registerTypeAdapter(UserDictWord.Type.class, new UserDictWord.Type.Serializer());
-    Gson gson = gsonBuilder.create();
-    String wordJson = gson.toJson(word);
-
-    rsUpdateWord(uuid, wordJson);
+    rsUpdateWord(uuid, word);
   }
 
   /**
@@ -146,34 +133,15 @@ public class UserDict {
    */
   @Nonnull
   public HashMap<String, UserDictWord> toHashMap() {
-    String json = rsGetWords();
-    GsonBuilder gsonBuilder = new GsonBuilder();
-    gsonBuilder.registerTypeAdapter(UserDictWord.Type.class, new UserDictWord.Type.Deserializer());
-    Gson gson = gsonBuilder.create();
-    @SuppressWarnings("unchecked")
-    HashMap<String, LinkedTreeMap<String, ?>> rawWords = gson.fromJson(json, HashMap.class);
-    if (rawWords == null) {
-      throw new NullPointerException("words");
-    }
-    HashMap<String, UserDictWord> words = new HashMap<>();
-    rawWords.forEach(
-        (uuid, rawWord) -> {
-          UserDictWord word = gson.fromJson(gson.toJson(rawWord), UserDictWord.class);
-          if (word == null) {
-            throw new NullPointerException("word");
-          }
-          words.put(uuid, word);
-        });
-
-    return words;
+    return rsToHashMap();
   }
 
   private native void rsNew();
 
   @Nonnull
-  private native String rsAddWord(String word);
+  private native String rsAddWord(UserDictWord word);
 
-  private native void rsUpdateWord(String uuid, String word);
+  private native void rsUpdateWord(String uuid, UserDictWord word);
 
   private native void rsRemoveWord(String uuid);
 
@@ -184,7 +152,7 @@ public class UserDict {
   private native void rsSave(String path) throws SaveUserDictException;
 
   @Nonnull
-  private native String rsGetWords();
+  private native HashMap<String, UserDictWord> rsToHashMap();
 
   private native void rsDrop();
 }

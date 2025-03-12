@@ -36,9 +36,8 @@ bypass = [
     { name = "cbindgen", version = "0.27", build-script = "f0fa57ad2c0dca5855cc2636a2e95acbadb52fa887609216022bdf71ed996dec" }, # https://docs.rs/crate/cbindgen/0.27.0/source/build.rs
     { name = "crc32fast", version = "1", build-script = "4ccc50c3da67eb27f0b622440d2b7aee2f73fa9c71884571f3c041122231d105" }, # https://docs.rs/crate/crc32fast/1.3.2/source/build.rs
     { name = "crossbeam-epoch", version = "0.9", build-script = "901be3c21843440be5c456ff049f57f72ee5ec365918a772ad2a4751e52f69c5" }, # https://docs.rs/crate/crossbeam-epoch/0.9.13/source/build.rs
-    { name = "crossbeam-utils", version = "0.8", build-script = "4859f9c926c230023e861bf01c4b225b460035faf8cf6240108530efedbb747f" }, # https://docs.rs/crate/crossbeam-utils/0.8.2/source/build.rs
+    { name = "crossbeam-utils", version = "0.8", build-script = "7a7f9e56ea7fb4f78c4e532b84b9d27be719d600e85eaeb3a2f4b79a4f0b419c" }, # https://docs.rs/crate/crossbeam-utils/0.8.21/source/build.rs
     { name = "doc-comment", version = "0.3", build-script = "a342cd0a760b7e04b13406c5de82a9b6b39d9b8495a274c2f78d56d676aeca3a" }, # https://docs.rs/crate/doc-comment/0.3.3/source/build.rs
-    { name = "encoding_rs", version = "0.8", build-script = "9276ee24ef71433d46323c15296b3fbbb29c0b37c4b1ca45416587f14ba8e777" }, # https://docs.rs/crate/encoding_rs/0.8.31/source/build.rs
     { name = "eyre", version = "0.6", build-script = "fbd0d04cc64884da6b65ad460084ad49e56f8a14fba24a256e161cb18b15441c" }, # https://docs.rs/crate/eyre/0.6.12/source/build.rs
     { name = "fs-err", version = "2", build-script = "f1d5a299d68f91e26fbe9dd642dfcd00e122ec9cb999d4a4b38c6d7200fb9763" }, # https://docs.rs/crate/fs-err/2.11.0/source/build.rs
     { name = "generic-array", version = "0.14", build-script = "08fa30c4a2c1ad24fe5f987e721dfb20131f45ea5b5dc3e836dcf88a8e33248c" }, # https://docs.rs/crate/generic-array/0.14.6/source/build.rs
@@ -59,8 +58,9 @@ bypass = [
     { name = "portable-atomic", version = "1", build-script = "0d5e11d1d1376259bbd99269b52728a5a7e3f93403d82fa4ee1cfbd11ed892dd" }, # https://docs.rs/crate/portable-atomic/1.9.0/source/build.rs
     { name = "proc-macro2", version = "1", build-script = "cf78c0005f11d54ca42dbaee77cb76a440e6fa2e0b64798d3f74c04770a0ad2b" }, # https://docs.rs/crate/proc-macro2/1.0.86/source/build.rs
     { name = "proc-macro2-diagnostics", version = "0.10", build-script = "66fcc487972086f42011c84a1949861799dc7cfde1e56201d22cf8e71b59b8b1" }, # https://docs.rs/crate/proc-macro2-diagnostics/0.10.1/source/build.rs
-    { name = "pyo3", version = "0.20", build-script = "9d56905da256ac81e171d4cc6c07789f4cfba73a6fc32ed10e29a4f1f6b6f852" }, # https://docs.rs/crate/pyo3/0.20.3/source/build.rs
-    { name = "pyo3-build-config", version = "0.20", build-script = "905cbe245028aa0a6841ce7543dd8fc3e289872e7a630247d4fc81759fc938c3" }, # https://docs.rs/crate/pyo3-build-config/0.20.3/source/build.rs
+    { name = "pyo3", version = "0.23", build-script = "f8243bd965459d7a53c946047fc57daadda9c2efd9e01846399b71eb686de583" }, # https://docs.rs/crate/pyo3/0.23.4/source/build.rs
+    { name = "pyo3-build-config", version = "0.23", build-script = "ffcc7dcd075be5c5f157e98c6aeec86a1e22fcb40089c49a0d2ebc852da80387" }, # https://docs.rs/crate/pyo3-build-config/0.23.4/source/build.rs
+    { name = "pyo3-macros-backend", version = "0.23", build-script = "297616b244181f0f18db54be8cd5762d7fba19298b6221f4cff668a34abd24f2" }, # https://docs.rs/crate/pyo3-macros-backend/0.23.4/source/build.rs
     { name = "rayon-core", version = "1", build-script = "fa31cb198b772600d100a7c403ddedccef637d2e6b2da431fa7f02ca41307fc6" }, # https://docs.rs/crate/rayon-core/1.12.1/source/build.rs
     { name = "ref-cast", version = "1", build-script = "606c77f4c4497ccb44841cbf7c13bf7f0d46a887163f7476b77722accc04acae" }, # https://docs.rs/crate/ref-cast/1.0.23/source/build.rs
     { name = "rstest_macros", version = "0.14", build-script = "d2973e71d6322a29cf96a47e957e60ed0ce83822878c436f22bda0d33253c5a6" }, # https://docs.rs/crate/rstest_macros/0.14.0/source/build.rs
@@ -72,9 +72,10 @@ bypass = [
     { name = "semver", version = "1", build-script = "eedfc19afa205955347175916974cdad121b55cb940e40c61931e5e7629f0e65" }, # https://docs.rs/crate/semver/1.0.14/source/build.rs
     { name = "serde", version = "1", build-script = "a98eaa82c783fdb4169d1646c06028ec5cb82937d39ee127ec8ed33651d2f238" }, # https://docs.rs/crate/serde/1.0.210/source/build.rs
     { name = "serde_json", version = "1", build-script = "1630d0bbfc936b0975d840cec5cfb5910d861b6afeeeeabe11000a2c202d571d" }, # https://docs.rs/crate/serde_json/1.0.128/source/build.rs
+    { name = "signal-hook", version = "0.3", build-script = "3a95a69d2921f1c28922a141a671e23a061f358b6d831350043003e13ef96463" }, # https://docs.rs/crate/signal-hook/0.3.17/source/build.rs
     { name = "slab", version = "0.4", build-script = "2c008232a3ae7c83c166f61c2942314717976776a4dba38e9063cd8e57a1b9bd" }, # https://docs.rs/crate/slab/0.4.7/source/build.rs
     { name = "syn", version = "1", build-script = "b815649fd2929d3debd93a58f5da2fb8eba506047a6a5ba538347305828a87b0" }, # https://docs.rs/crate/syn/1.0.102/source/build.rs
-    { name = "target-lexicon", version = "0.12", build-script = "4716b4f955c7a4cb39cb3b7521c1745d5110c1cbd1e054bca906e37f5e974675" }, # https://docs.rs/crate/target-lexicon/0.12.4/source/build.rs
+    { name = "target-lexicon", version = "0.12", build-script = "678ba872ef2254e8901d6a00536f64d74d375d919f845113bd3ded709b6edb4a" }, # https://docs.rs/crate/target-lexicon/0.12.16/source/build.rs
     { name = "thiserror", version = "1", build-script = "14f51456047fbf92c32020daea746f15482a0832a752edbbe3e809075d97674b" }, # https://docs.rs/crate/thiserror/1.0.64/source/build.rs
     { name = "typeid", version = "1", build-script = "688afbcaa398ea159c3481b26d74fde6ce3a675d48364d772557c8e91100de46" }, # https://docs.rs/crate/typeid/1.0.2/source/build.rs
     { name = "winapi", version = "0.3", build-script = "fa1782968d33345772093666220c7841c2fb4f6dd32fa47951c68a3a400a1a98" }, # https://docs.rs/crate/winapi/0.3.9/source/build.rs
@@ -115,10 +116,10 @@ bypass = [
     # Open JTalk is licensed under: https://github.com/VOICEVOX/open_jtalk/blob/1.11/src/COPYING
     { name = "open_jtalk-sys", version = "=0.16.111", build-script = "d9c3766132686fb7f7bf8f138d94bb59aa09ce4af14e4bca2dad347999d30225" },
 
-    # https://docs.rs/crate/pyo3-ffi/0.20.3/source/build.rs
+    # https://docs.rs/crate/pyo3-ffi/0.23.4/source/build.rs
     #
     # pyo3-ffi **dynamically** links Python, which is licensed under: https://docs.python.org/3/license.html
-    { name = "pyo3-ffi", version = "0.20", build-script = "8c72b9eff0d71295daef54a999fa0d0cf4700793cdb69c97065c65402016bcbc" },
+    { name = "pyo3-ffi", version = "0.23", build-script = "3268f21fd5c4b7a575537a0a77eefc96f968eb11663b09b01f5dadf6cc946f6b" },
 
     # https://docs.rs/crate/ring/0.16.20/source/build.rs
     #

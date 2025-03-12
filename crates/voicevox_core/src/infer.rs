@@ -18,24 +18,39 @@ use crate::{
 };
 
 pub(crate) trait AsyncExt: Async {
+    type Cancellable: Copy;
+    const LIGHT_INFERENCE_CANCELLABLE: Self::Cancellable;
+    const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: Self::Cancellable;
+
     async fn run_session<R: InferenceRuntime>(
         ctx: R::RunContext,
+        cancellable: Self::Cancellable,
     ) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
 impl AsyncExt for SingleTasked {
+    type Cancellable = ();
+    const LIGHT_INFERENCE_CANCELLABLE: Self::Cancellable = ();
+    const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: Self::Cancellable = ();
+
     async fn run_session<R: InferenceRuntime>(
         ctx: R::RunContext,
+        (): Self::Cancellable,
     ) -> anyhow::Result<Vec<OutputTensor>> {
         R::run_blocking(ctx)
     }
 }
 
 impl AsyncExt for BlockingThreadPool {
+    type Cancellable = bool;
+    const LIGHT_INFERENCE_CANCELLABLE: Self::Cancellable = false;
+    const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: Self::Cancellable = false;
+
     async fn run_session<R: InferenceRuntime>(
         ctx: R::RunContext,
+        cancellable: Self::Cancellable,
     ) -> anyhow::Result<Vec<OutputTensor>> {
-        R::run_async(ctx).await
+        R::run_async(ctx, cancellable).await
     }
 }
 
@@ -72,7 +87,10 @@ pub(crate) trait InferenceRuntime: 'static {
 
     fn run_blocking(ctx: Self::RunContext) -> anyhow::Result<Vec<OutputTensor>>;
 
-    async fn run_async(ctx: Self::RunContext) -> anyhow::Result<Vec<OutputTensor>>;
+    async fn run_async(
+        ctx: Self::RunContext,
+        cancellable: bool,
+    ) -> anyhow::Result<Vec<OutputTensor>>;
 }
 
 /// 共に扱われるべき推論操作の集合を示す。

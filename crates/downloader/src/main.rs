@@ -3,7 +3,7 @@ use std::{
     collections::{BTreeSet, HashSet},
     env,
     future::Future,
-    io::{self, Cursor, IsTerminal as _, Read},
+    io::{self, Cursor, IsTerminal as _, Read, Write as _},
     path::{Path, PathBuf},
     sync::{Arc, LazyLock},
     time::Duration,
@@ -21,6 +21,7 @@ use futures_util::{
     stream::{FuturesOrdered, FuturesUnordered},
     StreamExt as _, TryStreamExt as _,
 };
+use indexmap::IndexMap;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use itertools::Itertools as _;
 use octocrab::{
@@ -35,7 +36,8 @@ use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
 use semver::VersionReq;
 use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
-use tracing::{info, warn};
+use tracing::{error, info, warn};
+use unicode_width::UnicodeWidthStr as _;
 use url::Url;
 use zip::ZipArchive;
 
@@ -51,16 +53,15 @@ const DEFAULT_ONNXRUNTIME_BUILDER_REPO: &str = "VOICEVOX/onnxruntime-builder";
 const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
 const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 
-const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX RUNTIME TERMS OF USE";
+const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
 
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
-    LazyLock::new(|| "=0.0.1-preview.4".parse().unwrap());
+    LazyLock::new(|| "=0.0.1-preview.5".parse().unwrap());
 const MODELS_README_FILENAME: &str = "README.md";
 const MODELS_README_RENAME: &str = "README.txt";
 const MODELS_DIR_NAME: &str = "vvms";
-const MODELS_TERMS_NAME: &str = "VOICEVOX VVM TERMS OF USE";
-const MODELS_TERMS_FILE: &str = "TERMS.md";
-const MODELS_TERMS_RENAME: &str = "TERMS.txt";
+const MODELS_TERMS_NAME: &str = "VOICEVOX 音声モデル 利用規約";
+const MODELS_TERMS_FILE: &str = "TERMS.txt";
 
 static OPEN_JTALK_DIC_URL: LazyLock<Url> = LazyLock::new(|| {
     "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
@@ -318,6 +319,23 @@ async fn main() -> anyhow::Result<()> {
     .await
     .transpose()?;
 
+    ensure_confirmation(
+        &itertools::chain(
+            models
+                .as_ref()
+                .map(|ModelsWithTerms { terms, .. }| &**terms)
+                .map(|terms| (MODELS_TERMS_NAME, terms)),
+            onnxruntime
+                .as_ref()
+                .map(extract_voicevox_onnxruntime_terms)
+                .transpose()?
+                .flatten()
+                .as_deref()
+                .map(|terms| (ONNXRUNTIME_TERMS_NAME, terms)),
+        )
+        .collect(),
+    )?;
+
     let additional_libraries = devices
         .iter()
         .filter(|&&device| device != Device::Cpu)
@@ -466,7 +484,7 @@ async fn find_gh_asset(
 
     let asset_name = asset_name(&tag_name, body.as_deref()).with_context(|| {
         format!(
-            "`{repo}`の`{tag_name}`の中から条件に合致するビルドが見つけることができませんでした",
+            "`{repo}`の`{tag_name}`の中から条件に合致するビルドを見つけることができませんでした",
         )
     })?;
     let Asset { id, name, size, .. } = assets
@@ -478,13 +496,14 @@ async fn find_gh_asset(
         octocrab: octocrab.clone(),
         repo: repo.clone(),
         tag: tag_name,
+        body,
         id,
         name,
         size: size as _,
     })
 }
 
-/// `find_gh_asset`に用いる。ついでにユーザーに利用規約の同意を求める。
+/// `find_gh_asset`に用いる。
 ///
 /// 候補が複数あった場合、「デバイス」の数が最も小さいもののうち最初のものを選ぶ。
 fn find_onnxruntime(
@@ -493,52 +512,17 @@ fn find_onnxruntime(
     cpu_arch: CpuArch,
     devices: &BTreeSet<Device>,
 ) -> anyhow::Result<String> {
-    macro_rules! selector {
-        ($expr:expr $(,)?) => {{
-            static SELECTOR: LazyLock<scraper::Selector> =
-                LazyLock::new(|| scraper::Selector::parse($expr).expect("should be valid"));
-            &SELECTOR
-        }};
-    }
-
-    const TARGET_TERMS: &str = "pre[data-voicevox-onnxruntime-terms] > code";
-    const TARGET_TABLE: &str = "table\
+    const TARGET: &str = "table\
         [data-voicevox-onnxruntime-specs-format-version=\"1\"]\
         [data-voicevox-onnxruntime-specs-type=\"dylibs\"]";
 
-    let html_blocks = comrak::parse_document(&Default::default(), body, &Default::default())
-        .descendants()
-        .flat_map(|node| match &node.data.borrow().value {
-            comrak::nodes::NodeValue::HtmlBlock(comrak::nodes::NodeHtmlBlock {
-                literal, ..
-            }) => Some(scraper::Html::parse_fragment(literal)),
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-
-    match &*html_blocks
+    html_blocks(body)
         .iter()
-        .flat_map(|html_block| html_block.select(selector!(TARGET_TERMS)))
-        .collect::<Vec<_>>()
-    {
-        [] => {}
-        [terms] => {
-            let terms = terms
-                .text()
-                .exactly_one()
-                .map_err(|e| anyhow!("should be exactly_one, got {n} fragments", n = e.count()))?;
-            ensure_confirmation(terms, ONNXRUNTIME_TERMS_NAME)?;
-        }
-        [..] => bail!("リリースノートの中に`{TARGET_TERMS}`が複数ありました"),
-    }
-
-    html_blocks
-        .iter()
-        .flat_map(|html_block| html_block.select(selector!(TARGET_TABLE)))
+        .flat_map(|html_block| html_block.select(selector!(TARGET)))
         .exactly_one()
         .map_err(|err| match err.count() {
-            0 => anyhow!("リリースノートの中に`{TARGET_TABLE}`が見つかりませんでした"),
-            _ => anyhow!("リリースノートの中に`{TARGET_TABLE}`が複数ありました"),
+            0 => anyhow!("リリースノートの中に`{TARGET}`が見つかりませんでした"),
+            _ => anyhow!("リリースノートの中に`{TARGET}`が複数ありました"),
         })?
         .select(selector!("tbody > tr"))
         .map(|tr| {
@@ -546,9 +530,7 @@ fn find_onnxruntime(
                 .map(|td| td.text().exactly_one().ok())
                 .collect::<Option<Vec<_>>>()
                 .and_then(|text| text.try_into().ok())
-                .with_context(|| {
-                    format!("リリースノート中の`{TARGET_TABLE}`をパースできませんでした")
-                })
+                .with_context(|| format!("リリースノート中の`{TARGET}`をパースできませんでした"))
         })
         .collect::<Result<Vec<[_; 4]>, _>>()?
         .into_iter()
@@ -581,6 +563,55 @@ fn find_onnxruntime(
         .with_context(|| "指定されたOS, アーキテクチャ, デバイスを含むものが見つかりませんでした")
 }
 
+fn extract_voicevox_onnxruntime_terms(asset: &GhAsset) -> anyhow::Result<Option<String>> {
+    const TARGET: &str = "pre[data-voicevox-onnxruntime-terms] > code";
+
+    let GhAsset {
+        body: Some(body), ..
+    } = asset
+    else {
+        return Ok(None);
+    };
+
+    match &*html_blocks(body)
+        .iter()
+        .flat_map(|html_block| html_block.select(selector!(TARGET)))
+        .collect::<Vec<_>>()
+    {
+        [] => Ok(None),
+        [terms] => {
+            let terms = terms
+                .text()
+                .exactly_one()
+                .map_err(|e| anyhow!("should be exactly_one, got {n} fragments", n = e.count()))?
+                .to_owned();
+            Ok(Some(terms))
+        }
+        [..] => bail!("リリースノートの中に`{TARGET}`が複数ありました"),
+    }
+}
+
+fn html_blocks(markdown: &str) -> Vec<scraper::Html> {
+    comrak::parse_document(&Default::default(), markdown, &Default::default())
+        .descendants()
+        .flat_map(|node| match &node.data.borrow().value {
+            comrak::nodes::NodeValue::HtmlBlock(comrak::nodes::NodeHtmlBlock {
+                literal, ..
+            }) => Some(scraper::Html::parse_fragment(literal)),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+}
+
+macro_rules! selector {
+    ($expr:expr $(,)?) => {{
+        static SELECTOR: LazyLock<scraper::Selector> =
+            LazyLock::new(|| scraper::Selector::parse($expr).expect("should be valid"));
+        &SELECTOR
+    }};
+}
+use selector;
+
 /// ダウンロードすべきモデル、利用規約を見つける。その際ユーザーに利用規約の同意を求める。
 async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<ModelsWithTerms> {
     let repos = octocrab.repos(&repo.owner, &repo.repo);
@@ -611,8 +642,6 @@ async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<Mod
     let tag = tag.to_string();
 
     let terms = repos.fetch_file_content(&sha, MODELS_TERMS_FILE).await?;
-    ensure_confirmation(&terms, MODELS_TERMS_NAME)?;
-
     let readme = repos
         .fetch_file_content(&sha, MODELS_README_FILENAME)
         .await?;
@@ -680,38 +709,103 @@ async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<Mod
     }
 }
 
-fn ensure_confirmation(terms: &str, terms_name: &'static str) -> anyhow::Result<()> {
-    eprintln!(
-        "----------BEGIN {terms_name}----------\n\
-         {terms}\n\
-         ----------END {terms_name}----------",
-        terms = terms.trim_end(),
-    );
-    if !ask_yn()? {
-        bail!("you must agree with the term of use");
+fn ensure_confirmation(terms: &IndexMap<&'static str, &str>) -> anyhow::Result<()> {
+    if terms.is_empty() {
+        return Ok(());
     }
-    return Ok(());
 
-    const PROMPT: &str =
-        "上記の利用規約に同意しますか？ (Do you agree with the above terms of use?) (y/N): ";
+    let terms_pretty = &{
+        let Some(max_line_width) = terms
+            .values()
+            .flat_map(|terms| terms.lines())
+            .map(|line| line.width())
+            .max()
+        else {
+            return Ok(());
+        };
 
-    fn ask_yn() -> anyhow::Result<bool> {
+        let mut terms_pretty = "\
+            ダウンロードには以下の利用規約への同意が必要です。\n\
+            （矢印キーで移動、q で終了）\n"
+            .to_owned();
+        terms_pretty += &format!("─┬─{}\n", "─".repeat(max_line_width));
+        let mut it = terms.values().peekable();
+        while let Some(terms) = it.next() {
+            for line in terms.lines() {
+                terms_pretty += &format!(" │ {line}\n");
+            }
+            let joint = if it.peek().is_some() { '┼' } else { '┴' };
+            terms_pretty += &format!("─{joint}─{}\n", "─".repeat(max_line_width));
+        }
+        terms_pretty
+    };
+
+    return loop {
+        // どうも非ASCII文字が全体的に駄目らしくパニックする場合があるので、
+        // そのときはページングせずに表示する。
+
+        let result = std::panic::catch_unwind(|| {
+            minus::page_all({
+                let pager = minus::Pager::new();
+                pager.set_text(terms_pretty)?;
+                pager.set_prompt(
+                    "上下キーとスペースでスクロールし、読み終えたらqを押してください",
+                )?;
+                pager.set_exit_strategy(minus::ExitStrategy::PagerQuit)?;
+                pager
+            })
+        });
+
+        if let Ok(result) = result {
+            result?;
+        } else {
+            error!("something went wrong with the pager");
+            print!("{terms_pretty}");
+            io::stdout().flush()?;
+        }
+
+        match ask(terms)? {
+            UserInput::Yes => break Ok(()),
+            UserInput::No => bail!("you must agree with the term of use"),
+            UserInput::ReadAgain => {}
+        }
+    };
+
+    fn ask(terms: &IndexMap<&'static str, impl Sized>) -> anyhow::Result<UserInput> {
         loop {
             let input = rprompt::prompt_reply_from_bufread(
                 &mut io::stdin().lock(),
                 &mut io::stderr(),
-                PROMPT,
+                format!(
+                    "[Agreement Required]\n\
+                     {terms}に同意しますか？\n\
+                     同意する場合は y を、同意しない場合は n を、再確認する場合は r を入力し、\
+                     エンターキーを押してください。\n\
+                     [y,n,r] : ",
+                    terms = terms
+                        .keys()
+                        .format_with("と", |terms, f| f(&format_args!("「{terms}」"))),
+                ),
             )?;
             if ["y", "yes"].contains(&&*input.to_lowercase()) {
-                break Ok(true);
+                break Ok(UserInput::Yes);
             }
-            if ["n", "no", ""].contains(&&*input.to_lowercase()) {
-                break Ok(false);
+            if ["n", "no"].contains(&&*input.to_lowercase()) {
+                break Ok(UserInput::No);
+            }
+            if ["r"].contains(&&*input.to_lowercase()) {
+                break Ok(UserInput::ReadAgain);
             }
             if !io::stdin().is_terminal() {
                 bail!("the stdin is not a TTY but received invalid input: {input:?}");
             }
         }
+    }
+
+    enum UserInput {
+        Yes,
+        No,
+        ReadAgain,
     }
 }
 
@@ -804,7 +898,7 @@ fn download_models(
     Ok(async move {
         fs_err::tokio::create_dir_all(&output.join(MODELS_DIR_NAME)).await?;
         fs_err::tokio::write(output.join(MODELS_README_RENAME), readme).await?;
-        fs_err::tokio::write(output.join(MODELS_TERMS_RENAME), terms).await?;
+        fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
         let reqwest = &reqwest;
         let output = &output;
         models
@@ -1013,6 +1107,7 @@ struct GhAsset {
     octocrab: Arc<Octocrab>,
     repo: RepoName,
     tag: String,
+    body: Option<String>,
     id: AssetId,
     name: String,
     size: usize,
