@@ -109,7 +109,10 @@ fn word_from_java<'local>(
         .try_into()
         .expect("should be validated");
 
-    voicevox_core::UserDictWord::new(surface, pronunciation, accent_type, word_type, priority)
+    voicevox_core::UserDictWord::builder()
+        .word_type(word_type)
+        .priority(priority)
+        .build(surface, pronunciation, accent_type)
         .map_err(Into::into)
 }
 

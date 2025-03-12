@@ -140,6 +140,12 @@ impl Serialize for UserDictWord {
     }
 }
 
+/// [`UserDictWord`]のビルダー。
+pub struct UserDictWordBuilder {
+    word_type: UserDictWordType,
+    priority: u32,
+}
+
 #[expect(clippy::enum_variant_names, reason = "特に理由はないので正されるべき")] // FIXME
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub(crate) enum InvalidWordError {
@@ -182,9 +188,12 @@ static MORA_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 static SPACE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\p{Z}").unwrap());
 
 impl UserDictWord {
-    // TODO: これビルダースタイルにすべきでは？
     #[doc(alias = "voicevox_user_dict_word_make")]
-    pub fn new(
+    pub fn builder() -> UserDictWordBuilder {
+        Default::default()
+    }
+
+    fn new(
         surface: &str,
         pronunciation: String,
         accent_type: usize,
@@ -307,6 +316,44 @@ pub(crate) fn to_zenkaku(surface: &str) -> String {
         })
         .collect()
 }
+
+impl UserDictWordBuilder {
+    /// 単語の種類。
+    pub fn word_type(self, word_type: UserDictWordType) -> Self {
+        Self { word_type, ..self }
+    }
+
+    /// 単語の優先度。
+    pub fn priority(self, priority: u32) -> Self {
+        Self { priority, ..self }
+    }
+
+    /// [`UserDictWord`]をコンストラクトする。
+    pub fn build(
+        self,
+        surface: &str,
+        pronunciation: String,
+        accent_type: usize,
+    ) -> crate::Result<UserDictWord> {
+        UserDictWord::new(
+            surface,
+            pronunciation,
+            accent_type,
+            self.word_type,
+            self.priority,
+        )
+    }
+}
+
+impl Default for UserDictWordBuilder {
+    fn default() -> Self {
+        Self {
+            word_type: DEFAULT_WORD_TYPE,
+            priority: DEFAULT_PRIORITY,
+        }
+    }
+}
+
 /// ユーザー辞書の単語の種類。
 #[doc(alias = "VoicevoxUserDictWordType")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]

@@ -282,15 +282,18 @@ fn to_py_uuid(py: Python<'_>, uuid: Uuid) -> PyResult<Bound<'_, PyAny>> {
     let uuid = uuid.hyphenated().to_string();
     py.import("uuid")?.call_method1("UUID", (uuid,))
 }
-pub(crate) fn to_rust_user_dict_word(ob: &Bound<'_, PyAny>) -> PyResult<UserDictWord> {
-    UserDictWord::new(
-        ob.getattr("surface")?.extract()?,
-        ob.getattr("pronunciation")?.extract()?,
-        ob.getattr("accent_type")?.extract()?,
-        from_literal_choice(ob.getattr("word_type")?.extract()?)?,
-        ob.getattr("priority")?.extract()?,
-    )
-    .into_py_result(ob.py())
+pub(crate) fn to_rust_user_dict_word(
+    ob: &Bound<'_, PyAny>,
+) -> PyResult<voicevox_core::UserDictWord> {
+    voicevox_core::UserDictWord::builder()
+        .word_type(from_literal_choice(ob.getattr("word_type")?.extract()?)?)
+        .priority(ob.getattr("priority")?.extract()?)
+        .build(
+            ob.getattr("surface")?.extract()?,
+            ob.getattr("pronunciation")?.extract()?,
+            ob.getattr("accent_type")?.extract()?,
+        )
+        .into_py_result(ob.py())
 }
 fn to_py_user_dict_word<'py>(
     py: Python<'py>,
