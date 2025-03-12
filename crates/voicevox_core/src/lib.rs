@@ -16,6 +16,85 @@
 //! [`Onnxruntime`]: blocking::Onnxruntime
 //! [ONNX RuntimeのGPU機能]: https://onnxruntime.ai/docs/execution-providers/
 //!
+//! # Example
+//!
+//! ```
+//! use std::io::Cursor;
+//!
+//! use anyhow::Context as _;
+//! use const_format::concatcp;
+//!
+//! use voicevox_core::{
+//!     blocking::{Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile},
+//!     CharacterMeta, StyleMeta,
+//! };
+//!
+//! // ダウンローダーにて`onnxruntime`としてダウンロードできるもの
+//! # #[cfg(any())]
+//! const VVORT: &str = concatcp!(
+//!     "./voicevox_core/onnxruntime/lib/",
+//!     Onnxruntime::LIB_VERSIONED_FILENAME,
+//! );
+//! # use test_util::ONNXRUNTIME_DYLIB_PATH as VVORT;
+//!
+//! // ダウンローダーにて`dict`としてダウンロードできるもの
+//! # #[cfg(any())]
+//! const OJT_DIC: &str = "./voicevox_core/dict/open_jtalk_dic_utf_8-1.11";
+//! # use test_util::OPEN_JTALK_DIC_DIR as OJT_DIC;
+//!
+//! // ダウンローダーにて`models`としてダウンロードできるもの
+//! # #[cfg(any())]
+//! const VVM: &str = "./voicevox_core/models/vvms/0.vvm";
+//! # use test_util::SAMPLE_VOICE_MODEL_FILE_PATH as VVM;
+//!
+//! # #[cfg(any())]
+//! const TARGET_CHARACTER_NAME: &str = "ずんだもん";
+//! # const TARGET_CHARACTER_NAME: &str = "dummy1";
+//! #
+//! # #[cfg(any())]
+//! const TARGET_STYLE_NAME: &str = "ノーマル";
+//! # const TARGET_STYLE_NAME: &str = "style1";
+//! #
+//! const TEXT: &str = "こんにちは";
+//!
+//! let synth = {
+//!     let ort = Onnxruntime::load_once().filename(VVORT).perform()?;
+//!     let ojt = OpenJtalk::new(OJT_DIC)?;
+//!     Synthesizer::builder(ort).text_analyzer(ojt).build()?
+//! };
+//!
+//! dbg!(synth.is_gpu_mode());
+//!
+//! synth.load_voice_model(&VoiceModelFile::open(VVM)?)?;
+//!
+//! let StyleMeta { id: style_id, .. } = synth
+//!     .metas()
+//!     .into_iter()
+//!     .filter(|CharacterMeta { name, .. }| name == TARGET_CHARACTER_NAME)
+//!     .flat_map(|CharacterMeta { styles, .. }| styles)
+//!     .find(|StyleMeta { name, .. }| name == TARGET_STYLE_NAME)
+//!     .with_context(|| {
+//!         format!("could not find \"{TARGET_CHARACTER_NAME} ({TARGET_STYLE_NAME})\"")
+//!     })?;
+//!
+//! eprintln!("Synthesizing");
+//! let wav = synth.tts(TEXT, style_id).perform()?;
+//!
+//! eprintln!("Playing the WAV");
+//! # if false {
+//! play(wav)?;
+//! # }
+//!
+//! fn play(wav: Vec<u8>) -> anyhow::Result<()> {
+//!     let (_stream, hdl) = rodio::OutputStream::try_default()?;
+//!     let sink = rodio::Sink::try_new(&hdl)?;
+//!     sink.append(rodio::Decoder::new_wav(Cursor::new(wav))?);
+//!     sink.sleep_until_end();
+//!     Ok(())
+//! }
+//! # Ok::<_, anyhow::Error>(())
+//! ```
+//!
 //! # 音声の調整
 //!
 //! ユーザーガイドの[テキスト音声合成の流れ]を参照。
