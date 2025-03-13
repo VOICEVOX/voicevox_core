@@ -19,7 +19,7 @@
 //! # Example
 //!
 //! ```
-//! use std::io::Cursor;
+//! use std::{io::Write as _, panic};
 //!
 //! use anyhow::Context as _;
 //! use const_format::concatcp;
@@ -78,18 +78,20 @@
 //!     })?;
 //!
 //! eprintln!("Synthesizing");
-//! let wav = synth.tts(TEXT, style_id).perform()?;
+//! let wav = &synth.tts(TEXT, style_id).perform()?;
 //!
 //! eprintln!("Playing the WAV");
 //! # if false {
 //! play(wav)?;
 //! # }
 //!
-//! fn play(wav: Vec<u8>) -> anyhow::Result<()> {
-//!     let (_stream, hdl) = rodio::OutputStream::try_default()?;
-//!     let sink = rodio::Sink::try_new(&hdl)?;
-//!     sink.append(rodio::Decoder::new_wav(Cursor::new(wav))?);
-//!     sink.sleep_until_end();
+//! fn play(wav: &[u8]) -> anyhow::Result<()> {
+//!     let tempfile = tempfile::Builder::new().suffix(".wav").tempfile()?;
+//!     (&tempfile).write_all(wav)?;
+//!     let tempfile = &tempfile.into_temp_path();
+//!     open::that_in_background(tempfile)
+//!         .join()
+//!         .unwrap_or_else(|e| panic::resume_unwind(e))?;
 //!     Ok(())
 //! }
 //! # Ok::<_, anyhow::Error>(())
