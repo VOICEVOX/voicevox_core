@@ -56,9 +56,9 @@ voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-
 voicevox_core_macros.workspace = true
 
 [dev-dependencies]
+open.workspace = true
 pollster = { workspace = true, features = ["macro"] }
 pretty_assertions.workspace = true
-rodio.workspace = true
 rstest.workspace = true
 rstest_reuse.workspace = true
 test_util.workspace = true
