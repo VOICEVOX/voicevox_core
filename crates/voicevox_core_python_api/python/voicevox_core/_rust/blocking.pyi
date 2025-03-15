@@ -18,9 +18,7 @@ class VoiceModelFile:
     """
     音声モデルファイル。"""
 
-    def __new__(
-        cls, *args: tuple[object], **kwargs: dict[object, object]
-    ) -> NoReturn: ...
+    def __new__(cls, *args: object, **kwargs: object) -> NoReturn: ...
     @staticmethod
     def open(path: str | PathLike[str]) -> VoiceModelFile:
         """
@@ -98,9 +96,7 @@ class Onnxruntime:
     LIB_UNVERSIONED_FILENAME: str
     """:attr:`LIB_NAME` からなる動的ライブラリのファイル名。"""
 
-    def __new__(
-        cls, *args: tuple[object], **kwargs: dict[object, object]
-    ) -> NoReturn: ...
+    def __new__(cls, *args: object, **kwargs: object) -> NoReturn: ...
     @staticmethod
     def get() -> Union["Onnxruntime", None]:
         """
