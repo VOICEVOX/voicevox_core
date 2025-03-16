@@ -7,6 +7,10 @@ import jakarta.validation.constraints.Min;
 /**
  * ユーザー辞書の単語。
  *
+ * <p>JSONの形式はVOICEVOX ENGINEと同じになっている。<a
+ * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md"
+ * target="_blank">データのシリアライゼーション</a>を参照。
+ *
  * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
