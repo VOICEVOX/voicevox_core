@@ -60,6 +60,16 @@ VOICEVOX CORE の Python バインディングです。
 ❯ maturin build --release --locked
 ```
 
+## テスト
+
+`maturin develop` で editable な状態でインストールした後に[pytestのテスト]を実行します。
+
+```console
+❯ pytest
+```
+
+[pytestのテスト]: ./python/test/
+
 ## サンプル実行
 
 `maturin develop` で editable な状態でインストールした後、[example/python](../../example/python) にてサンプルを実行できます。

@@ -14,6 +14,25 @@ Issue 側で取り組み始めたことを伝えるか、最初に Draft プル�
 
 [cbindgen](https://crates.io/crates/cbindgen) が手元にインストールされているなら、それを使いヘッダファイルを生成することもできます。
 
+## テスト
+
+テストの方法は各言語ごとに異なります。各言語のreadmeを参照してください。
+
+Rustのコードに対しては一般的なRustライブラリと同様、`cargo test`でテストできます。
+
+```bash
+cargo test # Rust APIのテストを実行
+```
+
+[`--include-ignored`]を付けることで[C API]のテストも一緒に実行できます。
+
+```bash
+cargo test -- --include-ignored # Rust APIとC APIをまとめてテスト
+```
+
+[`--include-ignored`]: https://doc.rust-lang.org/reference/attributes/testing.html#the-ignore-attribute
+[C API]: ./crates/voicevox_core_c_api/
+
 ## ダウンローダーの実行
 
 ```bash
