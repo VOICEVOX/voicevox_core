@@ -46,7 +46,8 @@
 **[voicevoxcore4s](https://github.com/windymelt/voicevoxcore4s) [@windymelt](https://github.com/windymelt)** ･･･ VOICEVOX CORE の Scala(JVM) 向け FFI ラッパー  
 **[voicevox_flutter](https://github.com/char5742/voicevox_flutter) [@char5742](https://github.com/char5742)** ･･･ VOICEVOX CORE の Flutter 向け FFI ラッパー  
 **[voicevoxcore.go](https://github.com/sh1ma/voicevoxcore.go) [@sh1ma](https://github.com/sh1ma)** ･･･ VOICEVOX CORE の Go 言語 向け FFI ラッパー  
-**[VoicevoxCoreSharp](https://github.com/yamachu/VoicevoxCoreSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX CORE の C# 向け FFI ラッパー
+**[VoicevoxCoreSharp](https://github.com/yamachu/VoicevoxCoreSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX CORE の C# 向け FFI ラッパー  
+**[VoicevoxCoreSwift](https://github.com/yamachu/VoicevoxCoreSwift) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX CORE の Swift 向け FFI ラッパー  
 
 ## ライセンス
 
