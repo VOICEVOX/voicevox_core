@@ -56,7 +56,7 @@ const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
 
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
-    LazyLock::new(|| "=0.0.1-preview.5".parse().unwrap());
+    LazyLock::new(|| ">=0.1,<0.2".parse().unwrap());
 const MODELS_README_FILENAME: &str = "README.md";
 const MODELS_README_RENAME: &str = "README.txt";
 const MODELS_DIR_NAME: &str = "vvms";
