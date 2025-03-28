@@ -4,6 +4,7 @@ import jakarta.annotation.Nonnull;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.UUID;
 import jp.hiroshiba.voicevoxcore.UserDictWord;
 import jp.hiroshiba.voicevoxcore.exceptions.LoadUserDictException;
 import jp.hiroshiba.voicevoxcore.exceptions.SaveUserDictException;
@@ -34,7 +35,7 @@ public class UserDict {
    * @return 追加した単語のUUID。
    */
   @Nonnull
-  public String addWord(UserDictWord word) {
+  public UUID addWord(UserDictWord word) {
     return rsAddWord(word);
   }
 
@@ -44,7 +45,7 @@ public class UserDict {
    * @param uuid 更新する単語のUUID。
    * @param word 新しい単語のデータ。
    */
-  public void updateWord(String uuid, UserDictWord word) {
+  public void updateWord(UUID uuid, UserDictWord word) {
     rsUpdateWord(uuid, word);
   }
 
@@ -53,7 +54,7 @@ public class UserDict {
    *
    * @param uuid 削除する単語のUUID。
    */
-  public void removeWord(String uuid) {
+  public void removeWord(UUID uuid) {
     rsRemoveWord(uuid);
   }
 
@@ -132,18 +133,18 @@ public class UserDict {
    * @return ユーザー辞書の単語。
    */
   @Nonnull
-  public HashMap<String, UserDictWord> toHashMap() {
+  public HashMap<UUID, UserDictWord> toHashMap() {
     return rsToHashMap();
   }
 
   private native void rsNew();
 
   @Nonnull
-  private native String rsAddWord(UserDictWord word);
+  private native UUID rsAddWord(UserDictWord word);
 
-  private native void rsUpdateWord(String uuid, UserDictWord word);
+  private native void rsUpdateWord(UUID uuid, UserDictWord word);
 
-  private native void rsRemoveWord(String uuid);
+  private native void rsRemoveWord(UUID uuid);
 
   private native void rsImportDict(UserDict dict);
 
@@ -152,7 +153,7 @@ public class UserDict {
   private native void rsSave(String path) throws SaveUserDictException;
 
   @Nonnull
-  private native HashMap<String, UserDictWord> rsToHashMap();
+  private native HashMap<UUID, UserDictWord> rsToHashMap();
 
   private native void rsDrop();
 }
