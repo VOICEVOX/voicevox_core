@@ -1,7 +1,7 @@
 use jni::objects::JClass;
 use std::{borrow::Cow, sync::Arc};
 
-use crate::common::{throw_if_err, JavaApiResult};
+use crate::common::{throw_if_err, JNIEnvExt as _, JavaApiResult};
 use jni::{
     objects::{JObject, JString},
     sys::jobject,
@@ -37,9 +37,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsAdd
             .clone();
 
         let uuid = internal.add_word(word_from_java(env, word)?)?;
-
-        let uuid = uuid.hyphenated().to_string();
-        let uuid = env.new_string(uuid)?;
+        let uuid = env.new_uuid(uuid)?;
 
         Ok(uuid.into_raw())
     })
@@ -50,7 +48,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsAdd
 unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsUpdateWord<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
-    uuid: JString<'local>,
+    uuid: JObject<'local>,
     word: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
@@ -58,8 +56,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsUpd
             .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
             .clone();
 
-        let uuid = env.get_string(&uuid)?;
-        let uuid = Cow::from(&uuid).parse()?;
+        let uuid = env.get_uuid(&uuid)?;
 
         internal.update_word(uuid, word_from_java(env, word)?)?;
 
@@ -121,16 +118,14 @@ fn word_from_java<'local>(
 unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsRemoveWord<'local>(
     env: JNIEnv<'local>,
     this: JObject<'local>,
-    uuid: JString<'local>,
+    uuid: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
         let internal = env
             .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
             .clone();
 
-        let uuid = env.get_string(&uuid)?;
-        let uuid = Cow::from(&uuid).parse()?;
-
+        let uuid = env.get_uuid(&uuid)?;
         internal.remove_word(uuid)?;
 
         Ok(())
@@ -215,7 +210,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsToH
 
         internal.with_words(|words| {
             for (&uuid, word) in words {
-                let uuid = &env.new_string(uuid.hyphenated().to_string())?;
+                let uuid = &env.new_uuid(uuid)?;
                 let word = &env.new_object(
                     "jp/hiroshiba/voicevoxcore/UserDictWord",
                     "(Ljava/lang/String;Ljava/lang/String;I)V",

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import jp.hiroshiba.voicevoxcore.AudioQuery;
 import jp.hiroshiba.voicevoxcore.TestUtils;
 import jp.hiroshiba.voicevoxcore.UserDictWord;
@@ -45,7 +46,7 @@ class UserDictTest extends TestUtils {
   void checkManipulation() throws Exception {
     UserDict userDict = new UserDict();
     // 単語追加
-    String uuid = userDict.addWord(new UserDictWord("hoge", "ホゲ", 0));
+    UUID uuid = userDict.addWord(new UserDictWord("hoge", "ホゲ", 0));
     assertTrue(userDict.toHashMap().get(uuid) != null);
 
     // 単語更新

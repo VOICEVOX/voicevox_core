@@ -230,13 +230,13 @@ pub(crate) trait HasJavaClassIdent {
 }
 
 #[ext(JNIEnvExt)]
-pub(crate) impl JNIEnv<'_> {
-    fn new_uuid(&mut self, uuid: Uuid) -> jni::errors::Result<JObject<'_>> {
+pub(crate) impl<'local> JNIEnv<'local> {
+    fn new_uuid(&mut self, uuid: Uuid) -> jni::errors::Result<JObject<'local>> {
         let (msbs, lsbs) = split_uuid(uuid);
         self.new_object("java/util/UUID", "(JJ)V", &[msbs.into(), lsbs.into()])
     }
 
-    fn get_uuid(&mut self, obj: &JObject<'_>) -> jni::errors::Result<Uuid> {
+    fn get_uuid(&mut self, obj: &JObject<'local>) -> jni::errors::Result<Uuid> {
         let mut get_bits = |method_name| self.call_method(obj, method_name, "()J", &[])?.j();
         let msbs = get_bits("getMostSignificantBits")?;
         let lsbs = get_bits("getLeastSignificantBits")?;
