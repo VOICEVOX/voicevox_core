@@ -15,6 +15,18 @@
  *     - `VOICEVOX_LINK_ONNXRUNTIME`: ::voicevox_onnxruntime_init_once が利用可能になる。またこのマクロが存在するなら、このライブラリはONNX Runtimeをロード時動的リンクする。
  *   </dd>
  * </dl>
+
+ * <dl>
+ *   <dt id="voicevox-core-serialization">
+ *     <a href="#voicevox-core-serialization">Serialization</a>
+ *   </dt>
+ *
+ *   <dd>
+ *     JSONの形式はVOICEVOX ENGINEと同じになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
+ *
+ *     [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
+ *   </dd>
+ * </dl>
  *
  * <dl>
  *   <dt id="voicevox-core-safety">

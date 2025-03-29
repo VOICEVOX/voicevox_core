@@ -290,6 +290,11 @@ class AccentPhrase:
 class AudioQuery:
     """
     AudioQuery (音声合成用のクエリ)。
+
+    シリアライゼーションのサポートはされていない。詳細は
+    `データのシリアライゼーション
+    <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md>`_
+    を参照。
     """
 
     accent_phrases: list[AccentPhrase]
@@ -400,6 +405,11 @@ def _(word_type: UserDictWordType):
 class UserDictWord:
     """
     ユーザー辞書の単語。
+
+    シリアライゼーションのサポートはされていない。詳細は
+    `データのシリアライゼーション
+    <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md>`_
+    を参照。
     """
 
     surface: str
