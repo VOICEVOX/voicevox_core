@@ -13,6 +13,14 @@ if [ ! -v IOS_AARCH64_PATH ]; then # AARCH64用のモジュールのディレク
     echo "IOS_AARCH64_PATHが未定義です"
     exit 1
 fi
+if [ ! -v MACOS_ARM64_PATH ]; then # MACOS_ARM64用のモジュールのディレクトリ
+    echo "MACOS_ARM64_PATHが未定義です"
+    exit 1
+fi
+if [ ! -v MACOS_X64_PATH ]; then # MACOS_X64用のモジュールのディレクトリ
+    echo "MACOS_X64_PATHが未定義です"
+    exit 1
+fi
 if [ ! -v OUTPUT_ASSET_PATH ]; then # 出力するASSETのディレクトリ
     echo "OUTPUT_ASSET_PATHが未定義です"
     exit 1
@@ -37,8 +45,8 @@ fi
 echo "Original onnx dylib file name: $dylib_string"
 
 echo "* Copy Framework template"
-arches=("aarch64" "sim")
-artifacts=("${IOS_AARCH64_PATH}" "${IOS_AARCH64_SIM_PATH}")
+arches=("aarch64" "sim" "arm64")
+artifacts=("${IOS_AARCH64_PATH}" "${IOS_AARCH64_SIM_PATH}" "${MACOS_ARM64_PATH}")
 for i in "${!arches[@]}"; do
     arch="${arches[$i]}"
     artifact="${artifacts[$i]}"
@@ -59,11 +67,21 @@ lipo -create "${IOS_X86_64_PATH}/lib/libvoicevox_core.dylib" \
     "${IOS_AARCH64_SIM_PATH}/lib/libvoicevox_core.dylib" \
     -output "Framework-sim/voicevox_core.framework/voicevox_core"
 
+# macはx64とarrch64を合わせてdylib作成
+lipo -create "${MACOS_X64_PATH}/lib/libvoicevox_core.dylib" \
+    "${MACOS_ARM64_PATH}/lib/libvoicevox_core.dylib" \
+    -output "Framework-arm64/voicevox_core.framework/voicevox_core"
+
 for arch in "${arches[@]}"; do
     echo "* Change ${arch} @rpath"
     # 自身への@rpathを変更
     install_name_tool -id "@rpath/voicevox_core.framework/voicevox_core" \
         "Framework-${arch}/voicevox_core.framework/voicevox_core"
+
+    # arm64（macOS）はonnxruntimeを依存に入れていないため、以下の処理はスキップ
+    if [[ "$arch" == "arm64" ]]; then
+        continue
+    fi
 
     # onnxruntimeへの@rpathを、voicevox_onnxruntimeのXCFrameworkに変更
     install_name_tool -change "@rpath/$dylib_string" \
@@ -76,4 +94,5 @@ mkdir -p "${OUTPUT_ASSET_PATH}"
 xcodebuild -create-xcframework \
     -framework "Framework-sim/voicevox_core.framework" \
     -framework "Framework-aarch64/voicevox_core.framework" \
+    -framework "Framework-arm64/voicevox_core.framework" \
     -output "${OUTPUT_ASSET_PATH}/voicevox_core.xcframework"
