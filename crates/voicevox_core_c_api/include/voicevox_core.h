@@ -22,7 +22,7 @@
  *   </dt>
  *
  *   <dd>
- *     JSONの形式はVOICEVOX ENGINEと同じになっている。[データのシリアライゼーション]を参照。
+ *     JSONの形式はVOICEVOX ENGINEと同じになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
  *
  *     [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
  *   </dd>
