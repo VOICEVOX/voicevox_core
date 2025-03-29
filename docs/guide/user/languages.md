@@ -4,10 +4,10 @@
 
 | 言語 | パッケージレジストリ | 非同期API | [シリアライゼーション] | [ストリーミングAPI] |
 | :- | :- | :- | :- | :-|
-| Rust | :x: | :heavy_check_mark: | :heavy_check_mark: | :x: ([#972]) |
-| C | :x: | :x: ([#1047]) | :heavy_check_mark: ([#975]) | :x: |
+| Rust | :x: | :heavy_check_mark: | :bomb: | :x: ([#972]) |
+| C | :x: | :x: ([#1047]) | :bomb: ([#975]) | :x: |
 | Python | :x: ([#653], [#489]) | :heavy_check_mark: | :x: | :x: ([#972]) |
-| Java | :x: ([#651]) | :x: ([#769]) | :heavy_check_mark: | :x: |
+| Java | :x: ([#651]) | :x: ([#769]) | :bomb: | :x: |
 
 [シリアライゼーション]: ./serialization.md
 [ストリーミングAPI]: https://github.com/VOICEVOX/voicevox_core/issues/853
