@@ -6,6 +6,8 @@ mod kana_parser;
 mod model;
 mod mora_list;
 pub(crate) mod open_jtalk;
+pub(crate) mod text_analyzer;
+pub(crate) mod user_dict;
 
 pub(crate) use self::acoustic_feature_extractor::OjtPhoneme;
 pub(crate) use self::audio_file::to_s16le_pcm;

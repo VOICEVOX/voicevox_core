@@ -11,12 +11,11 @@ use enum_map::EnumMap;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
-use crate::{
-    infer::domains::{
-        inference_domain_map_values, ExperimentalTalkOperation, FrameDecodeOperation,
-        InferenceDomainMap, SingingTeacherOperation, TalkOperation,
-    },
-    StyleId, VoiceModelId,
+use crate::{StyleId, VoiceModelId};
+
+use super::infer::domains::{
+    inference_domain_map_values, ExperimentalTalkOperation, FrameDecodeOperation,
+    InferenceDomainMap, SingingTeacherOperation, TalkOperation,
 };
 
 #[derive(Clone)]
@@ -76,13 +75,13 @@ impl Display for InnerVoiceId {
 pub struct Manifest {
     #[expect(dead_code, reason = "現状はバリデーションのためだけに存在")]
     vvm_format_version: FormatVersionV1,
-    pub(crate) id: VoiceModelId,
+    pub(super) id: VoiceModelId,
     metas_filename: String,
     #[serde(flatten)]
     domains: InferenceDomainMap<ManifestDomains>,
 }
 
-pub(crate) type ManifestDomains = inference_domain_map_values!(for<D> Option<D::Manifest>);
+pub(super) type ManifestDomains = inference_domain_map_values!(for<D> Option<D::Manifest>);
 
 // TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
 #[derive(Index, Deserialize)]
@@ -93,7 +92,7 @@ pub(crate) struct TalkManifest {
     filenames: EnumMap<TalkOperation, ModelFile>,
 
     #[serde(default)]
-    pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
+    pub(super) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
 // TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
@@ -105,7 +104,7 @@ pub(crate) struct ExperimentalTalkManifest {
     filenames: EnumMap<ExperimentalTalkOperation, ModelFile>,
 
     #[serde(default)]
-    pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
+    pub(super) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
 #[derive(Index, Deserialize)]
@@ -116,7 +115,7 @@ pub(crate) struct SingingTeacherManifest {
     filenames: EnumMap<SingingTeacherOperation, ModelFile>,
 
     #[serde(default)]
-    pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
+    pub(super) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
 // TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
@@ -128,13 +127,13 @@ pub(crate) struct FrameDecodeManifest {
     filenames: EnumMap<FrameDecodeOperation, ModelFile>,
 
     #[serde(default)]
-    pub(crate) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
+    pub(super) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
 #[derive(Deserialize, Clone)]
 pub(crate) struct ModelFile {
-    pub(crate) r#type: ModelFileType,
-    pub(crate) filename: Arc<str>,
+    pub(super) r#type: ModelFileType,
+    pub(super) filename: Arc<str>,
 }
 
 #[cfg(test)]
@@ -149,7 +148,7 @@ impl Default for ModelFile {
 
 #[derive(Deserialize, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
-pub(crate) enum ModelFileType {
+pub(super) enum ModelFileType {
     Onnx,
     VvBin,
 }

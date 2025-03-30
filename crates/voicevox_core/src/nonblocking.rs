@@ -15,16 +15,21 @@
 //! [`cpu_num_threads`]: crate::nonblocking::synthesizer::Builder::cpu_num_threads
 
 pub use crate::{
-    engine::open_jtalk::nonblocking::OpenJtalk,
-    infer::runtimes::onnxruntime::nonblocking::Onnxruntime, synthesizer::nonblocking::Synthesizer,
-    text_analyzer::nonblocking::TextAnalyzer, user_dict::dict::nonblocking::UserDict,
-    voice_model::nonblocking::VoiceModelFile,
+    core::{
+        infer::runtimes::onnxruntime::nonblocking::Onnxruntime,
+        voice_model::nonblocking::VoiceModelFile,
+    },
+    engine::{
+        open_jtalk::nonblocking::OpenJtalk, text_analyzer::nonblocking::TextAnalyzer,
+        user_dict::dict::nonblocking::UserDict,
+    },
+    synthesizer::nonblocking::Synthesizer,
 };
 
 pub mod onnxruntime {
     #[cfg(feature = "load-onnxruntime")]
     #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
-    pub use crate::infer::runtimes::onnxruntime::nonblocking::LoadOnce;
+    pub use crate::core::infer::runtimes::onnxruntime::nonblocking::LoadOnce;
 }
 
 pub mod synthesizer {

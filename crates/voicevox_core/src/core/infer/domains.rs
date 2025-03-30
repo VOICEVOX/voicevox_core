@@ -34,7 +34,7 @@ pub(crate) struct InferenceDomainMap<V: InferenceDomainMapValues + ?Sized> {
 }
 
 impl<T, X, S, F> InferenceDomainMap<(T, X, S, F)> {
-    pub(crate) fn each_ref(&self) -> InferenceDomainMap<(&T, &X, &S, &F)> {
+    pub(in super::super) fn each_ref(&self) -> InferenceDomainMap<(&T, &X, &S, &F)> {
         let talk = &self.talk;
         let experimental_talk = &self.experimental_talk;
         let singing_teacher = &self.singing_teacher;
@@ -47,7 +47,7 @@ impl<T, X, S, F> InferenceDomainMap<(T, X, S, F)> {
         }
     }
 
-    pub(crate) fn map<
+    pub(in super::super) fn map<
         T2,
         X2,
         S2,
@@ -74,7 +74,7 @@ impl<T, X, S, F> InferenceDomainMap<(T, X, S, F)> {
 }
 
 impl<T, X, S, F, E> InferenceDomainMap<(Result<T, E>, Result<X, E>, Result<S, E>, Result<F, E>)> {
-    pub(crate) fn collect(self) -> Result<InferenceDomainMap<(T, X, S, F)>, E> {
+    pub(in super::super) fn collect(self) -> Result<InferenceDomainMap<(T, X, S, F)>, E> {
         let talk = self.talk?;
         let experimental_talk = self.experimental_talk?;
         let singing_teacher = self.singing_teacher?;
@@ -141,19 +141,19 @@ macro_rules! inference_domain_map_values {
         (
             ::macros::substitute_type!(
                 $body
-                where $arg = crate::infer::domains::TalkDomain as crate::infer::InferenceDomain
+                where $arg = crate::core::infer::domains::TalkDomain as crate::core::infer::InferenceDomain
             ),
             ::macros::substitute_type!(
                 $body
-                where $arg = crate::infer::domains::ExperimentalTalkDomain as crate::infer::InferenceDomain
+                where $arg = crate::core::infer::domains::ExperimentalTalkDomain as crate::core::infer::InferenceDomain
             ),
             ::macros::substitute_type!(
                 $body
-                where $arg = crate::infer::domains::SingingTeacherDomain as crate::infer::InferenceDomain
+                where $arg = crate::core::infer::domains::SingingTeacherDomain as crate::core::infer::InferenceDomain
             ),
             ::macros::substitute_type!(
                 $body
-                where $arg = crate::infer::domains::FrameDecodeDomain as crate::infer::InferenceDomain
+                where $arg = crate::core::infer::domains::FrameDecodeDomain as crate::core::infer::InferenceDomain
             ),
         )
     };

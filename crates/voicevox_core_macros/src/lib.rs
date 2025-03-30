@@ -7,7 +7,7 @@ mod python_api;
 
 use syn::parse_macro_input;
 
-/// Rust APIクレート内で、`crate::infer::InferenceDomain`の導出などを行う。
+/// Rust APIクレート内で、`crate::core::infer::InferenceDomain`の導出などを行う。
 ///
 /// 次のことを行う。
 ///
@@ -58,7 +58,7 @@ pub fn derive_inference_operation(input: proc_macro::TokenStream) -> proc_macro:
     from_syn(inference_domain::derive_inference_operation(input))
 }
 
-/// Rust APIクレート内で、`crate::infer::InferenceInputSignature`を導出する。
+/// Rust APIクレート内で、`crate::core::infer::InferenceInputSignature`を導出する。
 ///
 /// # Example
 ///
@@ -81,7 +81,7 @@ pub fn derive_inference_input_signature(input: proc_macro::TokenStream) -> proc_
     from_syn(inference_domain::derive_inference_input_signature(input))
 }
 
-/// Rust APIクレート内で`crate::infer::InferenceInputSignature`を、`TryFrom<OutputTensor>`ごと導出
+/// Rust APIクレート内で`crate::core::infer::InferenceInputSignature`を、`TryFrom<OutputTensor>`ごと導出
 /// する。
 ///
 /// # Example

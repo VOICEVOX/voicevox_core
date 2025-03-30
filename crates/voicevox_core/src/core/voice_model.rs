@@ -22,6 +22,10 @@ use uuid::Uuid;
 use crate::{
     asyncs::{Async, Mutex as _},
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
+    CharacterMeta, StyleMeta, StyleType, VoiceModelMeta,
+};
+
+use super::{
     infer::{
         domains::{
             inference_domain_map_values, ExperimentalTalkDomain, FrameDecodeDomain,
@@ -30,10 +34,9 @@ use crate::{
         InferenceDomain,
     },
     manifest::{Manifest, ManifestDomains, ModelFile, ModelFileType, StyleIdToInnerVoiceId},
-    CharacterMeta, StyleMeta, StyleType, VoiceModelMeta,
 };
 
-pub(crate) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_values!(
+pub(super) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_values!(
     for<D> Option<(StyleIdToInnerVoiceId, EnumMap<D::Operation, ModelBytes>)>
 );
 
@@ -467,12 +470,12 @@ impl<R: AsyncBufRead + AsyncSeek + Unpin> async_zip::base::read::seek::ZipFileRe
 ///
 /// モデルの`[u8]`と分けて`Status`に渡す。
 pub(crate) struct VoiceModelHeader {
-    pub(crate) manifest: Manifest,
+    pub(super) manifest: Manifest,
     /// メタ情報。
     ///
     /// `manifest`が対応していない`StyleType`のスタイルは含まれるべきではない。
-    pub(crate) metas: VoiceModelMeta,
-    pub(crate) path: PathBuf,
+    pub(super) metas: VoiceModelMeta,
+    pub(super) path: PathBuf,
 }
 
 impl VoiceModelHeader {
@@ -680,13 +683,14 @@ mod tests {
     use rstest::rstest;
     use serde_json::json;
 
-    use crate::{
+    use crate::{CharacterMeta, StyleType};
+
+    use super::super::{
         infer::domains::InferenceDomainMap,
         manifest::{
             ExperimentalTalkManifest, FrameDecodeManifest, ManifestDomains, SingingTeacherManifest,
             TalkManifest,
         },
-        CharacterMeta, StyleType,
     };
 
     #[rstest]

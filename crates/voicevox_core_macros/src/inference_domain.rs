@@ -58,29 +58,30 @@ pub(crate) fn derive_inference_operation(
             quote! {
                 #vis enum #variant_name {}
 
-                impl crate::infer::InferenceSignature for #variant_name {
+                impl crate::core::infer::InferenceSignature for #variant_name {
                     type Domain = #domain_ty;
                     type Input = #input_ty;
                     type Output = #output_ty;
 
-                    const OPERATION: <Self::Domain as crate::infer::InferenceDomain>::Operation =
-                        #operation_ty_name :: #variant_name;
+                    const OPERATION: <
+                        Self::Domain as crate::core::infer::InferenceDomain
+                    >::Operation = #operation_ty_name :: #variant_name;
                 }
             }
         });
 
     return Ok(quote! {
-        impl crate::infer::InferenceOperation for #operation_ty_name {
+        impl crate::core::infer::InferenceOperation for #operation_ty_name {
             const PARAM_INFOS: ::enum_map::EnumMap<
                 Self,
                 (
-                    &'static [crate::infer::ParamInfo<crate::infer::InputScalarKind>],
-                    &'static [crate::infer::ParamInfo<crate::infer::OutputScalarKind>],
+                    &'static [crate::core::infer::ParamInfo<crate::core::infer::InputScalarKind>],
+                    &'static [crate::core::infer::ParamInfo<crate::core::infer::OutputScalarKind>],
                 ),
             > = ::enum_map::EnumMap::from_array([
                 #((
-                    <#variant_names as crate::infer::InferenceSignature>::Input::PARAM_INFOS,
-                    <#variant_names as crate::infer::InferenceSignature>::Output::PARAM_INFOS
+                    <#variant_names as crate::core::infer::InferenceSignature>::Input::PARAM_INFOS,
+                    <#variant_names as crate::core::infer::InferenceSignature>::Output::PARAM_INFOS
                 )),*
             ]);
         }
@@ -185,9 +186,9 @@ pub(crate) fn derive_inference_input_signature(
         .map(|(_, name, ty)| {
             let name = name.to_string();
             quote! {
-                crate::infer::ParamInfo {
+                crate::core::infer::ParamInfo {
                     name: ::std::borrow::Cow::Borrowed(#name),
-                    dt: <<#ty as __ArrayExt>::Scalar as crate::infer::InputScalar>::KIND,
+                    dt: <<#ty as __ArrayExt>::Scalar as crate::core::infer::InputScalar>::KIND,
                     ndim: <<#ty as __ArrayExt>::Dimension as ::ndarray::Dimension>::NDIM,
                 },
             }
@@ -197,20 +198,20 @@ pub(crate) fn derive_inference_input_signature(
     let field_names = fields.iter().map(|(_, name, _)| name);
 
     return Ok(quote! {
-        impl #impl_generics crate::infer::InferenceInputSignature for #ident #ty_generics
+        impl #impl_generics crate::core::infer::InferenceInputSignature for #ident #ty_generics
         #where_clause
         {
             type Signature = #signature;
 
-            const PARAM_INFOS: &'static [crate::infer::ParamInfo<
-                crate::infer::InputScalarKind
+            const PARAM_INFOS: &'static [crate::core::infer::ParamInfo<
+                crate::core::infer::InputScalarKind
             >] = {
                 trait __ArrayExt {
-                    type Scalar: crate::infer::InputScalar;
+                    type Scalar: crate::core::infer::InputScalar;
                     type Dimension: ::ndarray::Dimension + 'static;
                 }
 
-                impl<A: crate::infer::InputScalar, D: ::ndarray::Dimension + 'static> __ArrayExt
+                impl<A: crate::core::infer::InputScalar, D: ::ndarray::Dimension + 'static> __ArrayExt
                     for ::ndarray::Array<A, D>
                 {
                     type Scalar = A;
@@ -220,7 +221,7 @@ pub(crate) fn derive_inference_input_signature(
                 &[#param_infos]
             };
 
-            fn make_run_context<R: crate::infer::InferenceRuntime>(
+            fn make_run_context<R: crate::core::infer::InferenceRuntime>(
                 self,
                 sess: ::std::sync::Arc<R::Session>,
             ) -> ::anyhow::Result<R::RunContext> {
@@ -238,17 +239,19 @@ pub(crate) fn derive_inference_input_signature(
                     fn push_to_ctx(
                         self,
                         name: &'static str,
-                        ctx: &mut impl crate::infer::PushInputTensor,
+                        ctx: &mut impl crate::core::infer::PushInputTensor,
                     ) -> ::anyhow::Result<()>;
                 }
 
-                impl<A: crate::infer::InputScalar, D: ::ndarray::Dimension + 'static> __ArrayExt
-                    for ::ndarray::Array<A, D>
+                impl<
+                    A: crate::core::infer::InputScalar,
+                    D: ::ndarray::Dimension + 'static,
+                > __ArrayExt for ::ndarray::Array<A, D>
                 {
                     fn push_to_ctx(
                         self,
                         name: &'static str,
-                        ctx: &mut impl crate::infer::PushInputTensor,
+                        ctx: &mut impl crate::core::infer::PushInputTensor,
                     ) -> ::anyhow::Result<()> {
                         A::push_tensor_to_ctx(name, self, ctx)
                     }
@@ -291,9 +294,9 @@ pub(crate) fn derive_inference_output_signature(
         .map(|(_, name, ty)| {
             let name = name.to_string();
             quote! {
-                crate::infer::ParamInfo {
+                crate::core::infer::ParamInfo {
                     name: ::std::borrow::Cow::Borrowed(#name),
-                    dt: <<#ty as __ArrayExt>::Scalar as crate::infer::OutputScalar>::KIND,
+                    dt: <<#ty as __ArrayExt>::Scalar as crate::core::infer::OutputScalar>::KIND,
                     ndim: <<#ty as __ArrayExt>::Dimension as ::ndarray::Dimension>::NDIM,
                 },
             }
@@ -303,19 +306,21 @@ pub(crate) fn derive_inference_output_signature(
     let field_names = fields.iter().map(|(_, name, _)| name);
 
     Ok(quote! {
-        impl #impl_generics crate::infer::InferenceOutputSignature for #ident #ty_generics
+        impl #impl_generics crate::core::infer::InferenceOutputSignature for #ident #ty_generics
         #where_clause
         {
-            const PARAM_INFOS: &'static [crate::infer::ParamInfo<
-                crate::infer::OutputScalarKind
+            const PARAM_INFOS: &'static [crate::core::infer::ParamInfo<
+                crate::core::infer::OutputScalarKind
             >] = {
                 trait __ArrayExt {
-                    type Scalar: crate::infer::OutputScalar;
+                    type Scalar: crate::core::infer::OutputScalar;
                     type Dimension: ::ndarray::Dimension + 'static;
                 }
 
-                impl<A: crate::infer::OutputScalar, D: ::ndarray::Dimension + 'static> __ArrayExt
-                    for ::ndarray::Array<A, D>
+                impl<
+                    A: crate::core::infer::OutputScalar,
+                    D: ::ndarray::Dimension + 'static,
+                > __ArrayExt for ::ndarray::Array<A, D>
                 {
                     type Scalar = A;
                     type Dimension = D;
@@ -325,8 +330,9 @@ pub(crate) fn derive_inference_output_signature(
             };
         }
 
-        impl #impl_generics ::std::convert::TryFrom<::std::vec::Vec<crate::infer::OutputTensor>>
-            for #ident #ty_generics
+        impl #impl_generics ::std::convert::TryFrom<
+            ::std::vec::Vec<crate::core::infer::OutputTensor>
+        > for #ident #ty_generics
         #where_clause
         {
             type Error = ::anyhow::Error;

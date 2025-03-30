@@ -8,6 +8,10 @@ use itertools::iproduct;
 
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
+    Result,
+};
+
+use super::{
     infer::{
         self,
         domains::{
@@ -21,7 +25,6 @@ use crate::{
     manifest::{InnerVoiceId, StyleIdToInnerVoiceId},
     metas::{self, CharacterMeta, StyleId, StyleMeta, VoiceModelMeta},
     voice_model::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId},
-    Result,
 };
 
 pub(crate) struct Status<R: InferenceRuntime> {
@@ -395,19 +398,21 @@ mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
 
-    use crate::{
-        devices::{DeviceSpec, GpuSpec},
-        infer::{
-            domains::{
-                ExperimentalTalkOperation, FrameDecodeOperation, InferenceDomainMap,
-                SingingTeacherOperation, TalkOperation,
-            },
-            InferenceSessionOptions,
-        },
-        macros::tests::assert_debug_fmt_eq,
-    };
+    use crate::macros::tests::assert_debug_fmt_eq;
 
-    use super::Status;
+    use super::{
+        super::{
+            devices::{DeviceSpec, GpuSpec},
+            infer::{
+                domains::{
+                    ExperimentalTalkOperation, FrameDecodeOperation, InferenceDomainMap,
+                    SingingTeacherOperation, TalkOperation,
+                },
+                InferenceSessionOptions,
+            },
+        },
+        Status,
+    };
 
     #[rstest]
     #[case(DeviceSpec::Gpu(GpuSpec::Cuda), 0)]

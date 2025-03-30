@@ -182,7 +182,7 @@ pub(crate) mod blocking {
         }
 
         /// MeCabで使用する形式に変換する。
-        pub(crate) fn to_mecab_format(&self) -> String {
+        pub(in super::super::super) fn to_mecab_format(&self) -> String {
             self.0.to_mecab_format()
         }
     }
@@ -260,7 +260,7 @@ pub(crate) mod nonblocking {
         }
 
         /// MeCabで使用する形式に変換する。
-        pub(crate) fn to_mecab_format(&self) -> String {
+        pub(in super::super::super) fn to_mecab_format(&self) -> String {
             self.0.to_mecab_format()
         }
     }
