@@ -10,10 +10,10 @@ voicevox_core ライブラリ の Python バインディングを使った音声
 `[バージョン]`の部分は適宜書き換えてください。
 
 ```console
-❯ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/[バージョン]/voicevox_core-[バージョン]+cpu-cp38-abi3-linux_x86_64.whl
+❯ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/[バージョン]/voicevox_core-[バージョン]+cpu-cp310-abi3-linux_x86_64.whl
 ```
 
-cpu-cp38-abi3-linux_x86_64 のところはアーキテクチャや OS によって適宜読み替えてください。
+cpu-cp310-abi3-linux_x86_64 のところはアーキテクチャや OS によって適宜読み替えてください。
 https://github.com/VOICEVOX/voicevox_core/releases/latest
 
 2. ダウンローダーを使って環境構築します。

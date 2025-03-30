@@ -71,7 +71,7 @@ Raspberry Pi 用の ONNX Runtime は以下からダウンロードできます�
 `pip install`で Python ライブラリをインストールします。使いたい OS・アーキテクチャ・デバイス・バージョンによって URL が変わるので、[最新のリリース](https://github.com/VOICEVOX/voicevox_core/releases/latest/)の`Python wheel`に合わせます。
 
 ```sh
-pip install https://github.com/VOICEVOX/voicevox_core/releases/download/[バージョン]/voicevox_core-[バージョン]+[デバイス]-cp38-abi3-[OS・アーキテクチャ].whl
+pip install https://github.com/VOICEVOX/voicevox_core/releases/download/[バージョン]/voicevox_core-[バージョン]+[デバイス]-cp310-abi3-[OS・アーキテクチャ].whl
 ```
 
 ## テキスト音声合成
