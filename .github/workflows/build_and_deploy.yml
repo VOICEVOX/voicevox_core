@@ -18,11 +18,8 @@ on:
   push:
 
 env:
-  VOICEVOX_RESOURCE_VERSION: "0.15.0-preview.3"
-  VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-preview.4"
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0' }}
-  PRODUCTION_REPOSITORY_TAG: "0.15.0-preview.2" # 製品版のタグ名
   # 簡易テストとするかどうか。releaseとworkflow_dispatch以外は簡易テストとする
   IS_SIMPLE_TEST: ${{ github.event_name != 'release' && github.event_name != 'workflow_dispatch' }}
 
@@ -235,8 +232,7 @@ jobs:
           cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
-        run:
-          bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.dll"
+        run: bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.dll"
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
@@ -342,8 +338,7 @@ jobs:
       - name: Install cargo-edit
         run: cargo binstall cargo-edit@^0.11 --no-confirm
       - name: set cargo version
-        run:
-          cargo set-version "$VERSION" -p voicevox_core_java_api
+        run: cargo set-version "$VERSION" -p voicevox_core_java_api
 
       - name: "Download artifact (android-arm64)"
         uses: actions/download-artifact@v4
