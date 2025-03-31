@@ -1,3 +1,6 @@
+//! 音声シンセサイザ。
+//!
+//! メインの部分。[`crate::core`]と[`crate::engine`]の二つはここで用いる。
 use easy_ext::ext;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
