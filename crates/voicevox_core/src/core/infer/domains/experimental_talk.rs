@@ -5,10 +5,11 @@ use macros::{InferenceInputSignature, InferenceOperation, InferenceOutputSignatu
 use ndarray::{Array0, Array1, Array2};
 use serde::Deserialize;
 
-use crate::{manifest::ExperimentalTalkManifest, StyleType};
+use crate::StyleType;
 
 use super::super::{
-    InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
+    super::manifest::ExperimentalTalkManifest, InferenceDomain, InferenceInputSignature as _,
+    InferenceOutputSignature as _, OutputTensor,
 };
 
 pub(crate) enum ExperimentalTalkDomain {}

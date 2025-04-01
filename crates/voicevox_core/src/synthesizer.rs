@@ -1,3 +1,7 @@
+//! 音声シンセサイザ。
+//!
+//! メインの部分。[`crate::core`]と[`crate::engine`]の二つはここで用いる。
+
 use easy_ext::ext;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
@@ -6,29 +10,34 @@ use tracing::info;
 
 use crate::{
     asyncs::{Async, BlockingThreadPool, SingleTasked},
-    core::{ensure_minimum_phoneme_length, pad_decoder_feature},
-    devices::{DeviceSpec, GpuSpec},
+    core::{
+        devices::{self, DeviceSpec, GpuSpec},
+        ensure_minimum_phoneme_length,
+        infer::{
+            self,
+            domains::{
+                experimental_talk, talk, DecodeInput, DecodeOutput, ExperimentalTalkDomain,
+                ExperimentalTalkOperation, FrameDecodeDomain, FrameDecodeOperation,
+                GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
+                PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput,
+                PredictSingF0Input, PredictSingF0Output, PredictSingVolumeInput,
+                PredictSingVolumeOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
+                SfDecodeInput, SfDecodeOutput, SingingTeacherDomain, SingingTeacherOperation,
+                TalkDomain, TalkOperation,
+            },
+            InferenceRuntime, InferenceSessionOptions,
+        },
+        pad_decoder_feature,
+        status::Status,
+        voice_model,
+    },
     engine::{
         create_kana, initial_process, parse_kana, split_mora, to_s16le_pcm, wav_from_s16le,
         DecoderFeature, Mora, OjtPhoneme,
     },
     error::ErrorRepr,
     future::FutureExt as _,
-    infer::{
-        self,
-        domains::{
-            experimental_talk, talk, DecodeInput, DecodeOutput, ExperimentalTalkDomain,
-            ExperimentalTalkOperation, FrameDecodeDomain, FrameDecodeOperation,
-            GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
-            PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput, PredictSingF0Input,
-            PredictSingF0Output, PredictSingVolumeInput, PredictSingVolumeOutput,
-            RenderAudioSegmentInput, RenderAudioSegmentOutput, SfDecodeInput, SfDecodeOutput,
-            SingingTeacherDomain, SingingTeacherOperation, TalkDomain, TalkOperation,
-        },
-        InferenceRuntime, InferenceSessionOptions,
-    },
-    status::Status,
-    voice_model, AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
+    AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
 };
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
@@ -236,7 +245,7 @@ impl<T, A: AsyncExt> Inner<T, A> {
 
         let test_gpus = || {
             info!("GPUをテストします:");
-            let availabilities = crate::devices::test_gpus(
+            let availabilities = devices::test_gpus(
                 GpuSpec::defaults(),
                 crate::blocking::Onnxruntime::DISPLAY_NAME,
                 onnxruntime.supported_devices()?,

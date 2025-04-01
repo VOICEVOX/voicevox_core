@@ -4,11 +4,11 @@ use anyhow::bail;
 use enum_map::{Enum as _, EnumMap};
 use itertools::Itertools as _;
 
-use crate::{error::ErrorRepr, voice_model::ModelBytes};
+use crate::error::ErrorRepr;
 
 use super::{
-    InferenceDomain, InferenceInputSignature, InferenceOperation, InferenceRuntime,
-    InferenceSessionOptions, InferenceSignature, ParamInfo,
+    super::voice_model::ModelBytes, InferenceDomain, InferenceInputSignature, InferenceOperation,
+    InferenceRuntime, InferenceSessionOptions, InferenceSignature, ParamInfo,
 };
 
 pub(crate) struct InferenceSessionSet<R: InferenceRuntime, D: InferenceDomain>(
@@ -16,7 +16,7 @@ pub(crate) struct InferenceSessionSet<R: InferenceRuntime, D: InferenceDomain>(
 );
 
 impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
-    pub(crate) fn new(
+    pub(in super::super) fn new(
         rt: &R,
         model_bytes: &EnumMap<D::Operation, ModelBytes>,
         options: &EnumMap<D::Operation, InferenceSessionOptions>,
@@ -72,7 +72,7 @@ impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
 }
 
 impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
-    pub(crate) fn get<I>(&self) -> InferenceSessionCell<R, I>
+    pub(in super::super) fn get<I>(&self) -> InferenceSessionCell<R, I>
     where
         I: InferenceInputSignature<Signature: InferenceSignature<Domain = D>>,
     {
@@ -83,13 +83,13 @@ impl<R: InferenceRuntime, D: InferenceDomain> InferenceSessionSet<R, D> {
     }
 }
 
-pub(crate) struct InferenceSessionCell<R: InferenceRuntime, I> {
+pub(in super::super) struct InferenceSessionCell<R: InferenceRuntime, I> {
     inner: Arc<R::Session>,
     marker: PhantomData<fn(I)>,
 }
 
 impl<R: InferenceRuntime, I: InferenceInputSignature> InferenceSessionCell<R, I> {
-    pub(crate) async fn run<A: super::AsyncExt>(
+    pub(in super::super) async fn run<A: super::AsyncExt>(
         self,
         input: I,
         cancellable: A::Cancellable,

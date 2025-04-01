@@ -21,13 +21,13 @@ use ort::{
     GraphOptimizationLevel, PrimitiveTensorElementType, TensorElementType, ValueType,
 };
 
-use crate::{
-    devices::{DeviceSpec, GpuSpec, SupportedDevices},
-    error::ErrorRepr,
-    voice_model::ModelBytes,
-};
+use crate::error::ErrorRepr;
 
 use super::super::{
+    super::{
+        devices::{DeviceSpec, GpuSpec, SupportedDevices},
+        voice_model::ModelBytes,
+    },
     InferenceRuntime, InferenceSessionOptions, InputScalarKind, OutputScalarKind, OutputTensor,
     ParamInfo, PushInputTensor,
 };

@@ -105,7 +105,7 @@ impl CharacterMeta {
     /// # Panics
     ///
     /// `speaker_uuid`が異なるときパニックする。
-    pub(crate) fn warn_diff_except_styles(&self, other: &Self) {
+    pub(super) fn warn_diff_except_styles(&self, other: &Self) {
         let Self {
             name: name1,
             styles: _,

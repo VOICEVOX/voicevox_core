@@ -1,6 +1,7 @@
 use crate::{
-    devices::DeviceAvailabilities, engine::KanaParseError, user_dict::InvalidWordError, StyleId,
-    StyleType, VoiceModelId,
+    core::devices::DeviceAvailabilities,
+    engine::{user_dict::InvalidWordError, KanaParseError},
+    StyleId, StyleType, VoiceModelId,
 };
 //use engine::
 use duplicate::duplicate_item;

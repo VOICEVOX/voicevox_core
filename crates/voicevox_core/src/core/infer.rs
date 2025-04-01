@@ -12,9 +12,12 @@ use thiserror::Error;
 
 use crate::{
     asyncs::{Async, BlockingThreadPool, SingleTasked},
+    StyleType, SupportedDevices,
+};
+
+use super::{
     devices::{DeviceSpec, GpuSpec},
     voice_model::ModelBytes,
-    StyleType, SupportedDevices,
 };
 
 pub(crate) trait AsyncExt: Async {
@@ -150,7 +153,7 @@ pub(crate) trait InferenceInputSignature {
     ) -> anyhow::Result<R::RunContext>;
 }
 
-pub(crate) trait InputScalar: Sized {
+trait InputScalar: Sized {
     const KIND: InputScalarKind;
 
     // TODO: `Array`ではなく`ArrayView`を取ることができるかもしれない
@@ -210,7 +213,7 @@ pub(crate) trait InferenceOutputSignature:
     const PARAM_INFOS: &'static [ParamInfo<OutputScalarKind>];
 }
 
-pub(crate) trait OutputScalar: Sized {
+trait OutputScalar: Sized {
     const KIND: OutputScalarKind;
     fn extract(tensor: OutputTensor) -> std::result::Result<ArrayD<Self>, ExtractError>;
 }

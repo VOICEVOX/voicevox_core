@@ -246,23 +246,15 @@ pub mod __doc {
 mod asyncs;
 mod convert;
 mod core;
-mod devices;
 /// cbindgen:ignore
 mod engine;
 mod error;
 mod future;
-mod infer;
 mod macros;
-mod manifest;
-mod metas;
 mod result;
-mod status;
 mod synthesizer;
 mod task;
-mod text_analyzer;
-mod user_dict;
 mod version;
-mod voice_model;
 
 #[doc(hidden)]
 pub mod __internal;
@@ -280,15 +272,19 @@ mod test_util;
 use rstest_reuse;
 
 pub use self::{
-    devices::SupportedDevices,
-    engine::{AccentPhrase, AudioQuery, Mora},
+    core::{
+        devices::SupportedDevices,
+        metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
+        voice_model::VoiceModelId,
+    },
+    engine::{
+        user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
+        AccentPhrase, AudioQuery, Mora,
+    },
     error::{Error, ErrorKind},
-    metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
     result::Result,
     synthesizer::AccelerationMode,
-    user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
     version::VERSION,
-    voice_model::VoiceModelId,
 };
 
 // TODO: 後で復活させる

@@ -1,9 +1,14 @@
 //! ブロッキング版API。
 
 pub use crate::{
-    engine::open_jtalk::blocking::OpenJtalk, infer::runtimes::onnxruntime::blocking::Onnxruntime,
-    synthesizer::blocking::Synthesizer, text_analyzer::blocking::TextAnalyzer,
-    user_dict::dict::blocking::UserDict, voice_model::blocking::VoiceModelFile,
+    core::{
+        infer::runtimes::onnxruntime::blocking::Onnxruntime, voice_model::blocking::VoiceModelFile,
+    },
+    engine::{
+        open_jtalk::blocking::OpenJtalk, text_analyzer::blocking::TextAnalyzer,
+        user_dict::dict::blocking::UserDict,
+    },
+    synthesizer::blocking::Synthesizer,
 };
 
 // TODO: 後で復活させる
@@ -14,7 +19,7 @@ pub use crate::synthesizer::blocking::AudioFeature as __AudioFeature;
 pub mod onnxruntime {
     #[cfg(feature = "load-onnxruntime")]
     #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
-    pub use crate::infer::runtimes::onnxruntime::blocking::LoadOnce;
+    pub use crate::core::infer::runtimes::onnxruntime::blocking::LoadOnce;
 }
 
 pub mod synthesizer {
