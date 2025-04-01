@@ -12,8 +12,8 @@
 [VOICEVOX](https://voicevox.hiroshiba.jp/) の音声合成コア。  
 [Releases](https://github.com/VOICEVOX/voicevox_core/releases) に以下のビルド済みのライブラリがあります。
 
-- C API の動的ライブラリ（.so/.dll/.dylib）
-- Python API の wheel（.whl）
+- C APIの動的ライブラリ（.so/.dll/.dylib）
+- Python APIのwheel（.whl）
 
 （エディターは [VOICEVOX](https://github.com/VOICEVOX/voicevox/) 、
 エンジンは [VOICEVOX ENGINE](https://github.com/VOICEVOX/voicevox_engine/) 、
@@ -51,7 +51,7 @@
 **[voicevox_flutter](https://github.com/char5742/voicevox_flutter) [@char5742](https://github.com/char5742)** ･･･ VOICEVOX CORE の Flutter 向け FFI ラッパー  
 **[voicevoxcore.go](https://github.com/sh1ma/voicevoxcore.go) [@sh1ma](https://github.com/sh1ma)** ･･･ VOICEVOX CORE の Go 言語 向け FFI ラッパー  
 **[VoicevoxCoreSharp](https://github.com/yamachu/VoicevoxCoreSharp) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX CORE の C# 向け FFI ラッパー  
-**[VoicevoxCoreSwift](https://github.com/yamachu/VoicevoxCoreSwift) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX CORE の Swift 向け FFI ラッパー
+**[VoicevoxCoreSwift](https://github.com/yamachu/VoicevoxCoreSwift) [@yamachu](https://github.com/yamachu)** ･･･ VOICEVOX CORE の Swift 向け FFI ラッパー  
 
 ## ライセンス
 
