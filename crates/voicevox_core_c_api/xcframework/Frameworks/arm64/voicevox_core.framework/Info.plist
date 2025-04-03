@@ -42,9 +42,5 @@
 	<string>15C65</string>
 	<key>MinimumOSVersion</key>
 	<string>11.0</string>
-	<key>UIDeviceFamily</key>
-	<array>
-		<integer>1</integer>
-	</array>
 </dict>
 </plist>
