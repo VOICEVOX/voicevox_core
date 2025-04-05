@@ -47,6 +47,17 @@ echo "Original onnx dylib file name: $dylib_string"
 echo "* Copy Framework template"
 platforms=("ios" "sim" "macos")
 artifacts=("${IOS_AARCH64_PATH}" "${IOS_AARCH64_SIM_PATH}" "${MACOS_ARM64_PATH}")
+
+declare -a link_onnxruntime_platform=()
+# ONNXRUNTIMEのリンクが必要なプラットフォームを確認
+for i in "${!platforms[@]}"; do
+    platform="${platforms[$i]}"
+    artifact="${artifacts[$i]}"
+    if grep -q -e '^#define VOICEVOX_LINK_ONNXRUNTIME$' -e '^//#define VOICEVOX_LOAD_ONNXRUNTIME$' "${artifact}/include/voicevox_core.h"; then
+        link_onnxruntime_platform+=("${platform}")
+    fi
+done
+
 for i in "${!platforms[@]}"; do
     platform="${platforms[$i]}"
     artifact="${artifacts[$i]}"
@@ -77,12 +88,10 @@ for platform in "${platforms[@]}"; do
     # 自身への@rpathを変更
     install_name_tool -id "@rpath/voicevox_core.framework/voicevox_core" \
         "Framework-${platform}/voicevox_core.framework/voicevox_core"
+done
 
-    # macOSはonnxruntimeを依存に入れていないため、以下の処理はスキップ
-    if [[ "$platform" == "macos" ]]; then
-        continue
-    fi
-
+for platform in "${link_onnxruntime_platform[@]}"; do
+    echo "* Change ${platform} onnxruntime @rpath"
     # onnxruntimeへの@rpathを、voicevox_onnxruntimeのXCFrameworkに変更
     install_name_tool -change "@rpath/$dylib_string" \
         "@rpath/voicevox_onnxruntime.framework/voicevox_onnxruntime" \
