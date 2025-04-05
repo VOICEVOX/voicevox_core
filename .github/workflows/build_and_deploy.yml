@@ -238,7 +238,7 @@ jobs:
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
       - name: Upload artifact to build XCFramework
-        if: matrix.c_release_format == 'ios-xcframework'
+        if: matrix.artifact_name == 'osx-arm64' || matrix.artifact_name == 'osx-x64' || matrix.c_release_format == 'ios-xcframework'
         uses: actions/upload-artifact@v4
         with:
           name: voicevox_core-${{ matrix.target }}
@@ -280,7 +280,9 @@ jobs:
       IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
       IOS_AARCH64_SIM_PATH: artifact/voicevox_core-aarch64-apple-ios-sim
       IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
-      ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
+      MACOS_ARM64_PATH: artifact/voicevox_core-aarch64-apple-darwin
+      MACOS_X64_PATH: artifact/voicevox_core-x86_64-apple-darwin
+      ASSET_NAME: voicevox_core-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -295,13 +297,21 @@ jobs:
         with:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: voicevox_core-aarch64-apple-darwin
+          path: ${{ env.MACOS_ARM64_PATH }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: voicevox_core-x86_64-apple-darwin
+          path: ${{ env.MACOS_X64_PATH }}
       - name: Create xcframework
         id: create-xcframework
         run: |
-          build_util/make_ios_xcframework.bash
+          build_util/make_xcframework.bash
           echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT"
         env:
-          OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
+          OUTPUT_ASSET_PATH: artifact/voicevox_core-xcframework-cpu
       - name: Archive artifact
         run: |
           cd ${{ steps.create-xcframework.outputs.output_asset_path }}
