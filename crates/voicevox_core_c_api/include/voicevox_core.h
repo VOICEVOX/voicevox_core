@@ -69,7 +69,7 @@
 #ifndef VOICEVOX_CORE_INCLUDE_GUARD
 #define VOICEVOX_CORE_INCLUDE_GUARD
 
-/* Generated with cbindgen:0.27.0 */
+/* Generated with cbindgen:0.28.0 */
 
 #ifdef __cplusplus
 #include <cstdint>
