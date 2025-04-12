@@ -17,5 +17,7 @@ pub use self::audio_file::wav_from_s16le;
 pub(crate) use self::full_context_label::extract_full_context_label;
 pub(crate) use self::interpret_query::{initial_process, split_mora, DecoderFeature};
 pub(crate) use self::kana_parser::{create_kana, parse_kana, KanaParseError};
-pub use self::model::{AccentPhrase, AudioQuery, Mora};
+pub use self::model::{
+    AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Mora, Note, NoteId, Score,
+};
 pub(crate) use self::mora_list::mora2text;

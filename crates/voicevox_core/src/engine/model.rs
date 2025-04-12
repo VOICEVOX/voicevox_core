@@ -96,6 +96,73 @@ impl AudioQuery {
     }
 }
 
+/// 音符のID。
+#[derive(Clone, Deserialize, Serialize)]
+pub struct NoteId(pub String);
+
+/// 音符ごとの情報。
+pub struct Note {
+    /// ID。
+    pub id: Option<NoteId>,
+
+    /// 音階。
+    pub key: Option<usize>,
+
+    /// 音符のフレーム長。
+    pub frame_length: usize,
+
+    /// 音符の歌詞。
+    pub lyric: String,
+}
+
+/// 楽譜情報。
+pub struct Score {
+    /// 音符のリスト。
+    pub notes: Vec<Note>,
+}
+
+/// 音素の情報。
+#[derive(Deserialize, Serialize)]
+pub struct FramePhoneme {
+    /// 音素。
+    pub phoneme: String,
+
+    /// 音素のフレーム長。
+    pub frame_length: usize,
+
+    /// 音符のID。
+    pub note_id: Option<NoteId>,
+}
+
+/// フレームごとの音声合成用のクエリ。
+///
+/// # Serialization
+///
+/// VOICEVOX ENGINEと同じスキーマになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
+///
+/// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FrameAudioQuery {
+    /// フレームごとの基本周波数。
+    pub f0: Vec<f32>,
+
+    /// フレームごとの音量。
+    pub volume: Vec<f32>,
+
+    /// 音素のリスト。
+    pub phonemes: Vec<FramePhoneme>,
+
+    /// 全体の音量。
+    pub volume_scale: f32,
+
+    /// 音声データの出力サンプリングレート。
+    pub output_sample_rate: f32,
+
+    /// 音声データをステレオ出力するか否か。
+    pub output_stereo: bool,
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;

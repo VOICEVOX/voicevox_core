@@ -279,7 +279,7 @@ pub use self::{
     },
     engine::{
         user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
-        AccentPhrase, AudioQuery, Mora,
+        AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Mora, Note, NoteId, Score,
     },
     error::{Error, ErrorKind},
     result::Result,

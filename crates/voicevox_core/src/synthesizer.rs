@@ -37,7 +37,8 @@ use crate::{
     },
     error::ErrorRepr,
     future::FutureExt as _,
-    AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
+    AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Note, NoteId, Result, StyleId,
+    VoiceModelId, VoiceModelMeta,
 };
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
@@ -697,6 +698,120 @@ trait AsInner {
         let audio_query = &self.create_audio_query(text, style_id).await?;
         self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
             .await
+    }
+
+    async fn create_sing_frame_audio_query(
+        &self,
+        notes: &[Note],
+        style_id: StyleId,
+    ) -> Result<Vec<FrameAudioQuery>> {
+        todo!();
+
+        struct KeysAndPhonemes {
+            note_lengths: ndarray::Array1<i64>,
+            note_constants: ndarray::Array1<i64>,
+            note_vowels: ndarray::Array1<i64>,
+            phonemes: ndarray::Array1<i64>,
+            phoneme_keys: ndarray::Array1<i64>,
+            phoneme_note_ids: Vec<Option<NoteId>>,
+        }
+
+        impl TryFrom<&'_ [Note]> for KeysAndPhonemes {
+            type Error = std::convert::Infallible; // TODO
+
+            fn try_from(notes: &'_ [Note]) -> std::result::Result<Self, Self::Error> {
+                let (
+                    note_lengths,
+                    (note_constants, (note_vowels, (phonemes, (phoneme_keys, phoneme_note_ids)))),
+                ) = notes
+                    .iter()
+                    .map(
+                        |Note {
+                             id,
+                             key,
+                             frame_length,
+                             lyric,
+                         }| {
+                            struct KeyAndPhoneme {
+                                note_length: i64,
+                                note_constant: i64,
+                                note_vowel: i64,
+                                phoneme: i64,
+                                phoneme_key: i64,
+                                phoneme_note_id: Option<NoteId>,
+                            }
+
+                            let KeyAndPhoneme {
+                                note_length,
+                                note_constant,
+                                note_vowel,
+                                phoneme,
+                                phoneme_key,
+                                phoneme_note_id,
+                            } = match &**lyric {
+                                "" => KeyAndPhoneme {
+                                    note_length: *frame_length as _, // FIXME
+                                    note_constant: -1,
+                                    note_vowel: 0, // pau
+                                    phoneme: 0,    // pau
+                                    phoneme_key: -1,
+                                    phoneme_note_id: id.clone(),
+                                },
+                                lyric => {
+                                    todo!();
+                                }
+                            };
+
+                            (
+                                note_length,
+                                (
+                                    note_constant,
+                                    (note_vowel, (phoneme, (phoneme_key, phoneme_note_id))),
+                                ),
+                            )
+                        },
+                    )
+                    .collect();
+
+                // FIXME: ndarray v0.16なら`Vec`を介する必要がない
+                use std::convert::identity;
+                let note_lengths = identity::<Vec<_>>(note_lengths).into();
+                let note_constants = identity::<Vec<_>>(note_constants).into();
+                let note_vowels = identity::<Vec<_>>(note_vowels).into();
+                let phonemes = identity::<Vec<_>>(phonemes).into();
+                let phoneme_keys = identity::<Vec<_>>(phoneme_keys).into();
+
+                Ok(Self {
+                    note_lengths,
+                    note_constants,
+                    note_vowels,
+                    phonemes,
+                    phoneme_keys,
+                    phoneme_note_ids,
+                })
+            }
+        }
+    }
+
+    async fn create_sing_frame_f0(
+        &self,
+        phonemes: &[FramePhoneme],
+        style_id: StyleId,
+    ) -> Result<ndarray::Array1<f32>> {
+        todo!();
+    }
+
+    async fn create_sing_frame_volume(
+        &self,
+        phonemes: &[FramePhoneme],
+        f0: &[f32],
+        style_id: StyleId,
+    ) -> Result<ndarray::Array1<f32>> {
+        todo!();
+    }
+
+    async fn frame_synthesis(&self, query: &FrameAudioQuery, style_id: StyleId) -> Result<Vec<u8>> {
+        todo!();
     }
 
     // TODO: この層を破壊する
