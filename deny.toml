@@ -33,7 +33,7 @@ bypass = [
     { name = "bindgen", version = "0.70", build-script = "4a9c4ac3759572e17de312a9d3f4ced3b6fd3c71811729e5a8d06bfbd1ac8f82" }, # https://docs.rs/crate/bindgen/0.70.1/source/build.rs
     { name = "camino", version = "1", build-script = "cbdfaa56ff8e211896e75fc7867e3230aa8aa09fdda901111db957c65306f1d8" }, # https://docs.rs/crate/camino/1.1.9/source/build.rs
     { name = "caseless", version = "0.2", build-script = "8ab1dc9ef269f28202fe1156c5c655f286cbc03b6dd4fb20a2f9f9e00763b6f5" }, # https://docs.rs/crate/caseless/0.2.1/source/src/build.rs
-    { name = "cbindgen", version = "0.27", build-script = "f0fa57ad2c0dca5855cc2636a2e95acbadb52fa887609216022bdf71ed996dec" }, # https://docs.rs/crate/cbindgen/0.27.0/source/build.rs
+    { name = "cbindgen", version = "0.28", build-script = "f0fa57ad2c0dca5855cc2636a2e95acbadb52fa887609216022bdf71ed996dec" }, # https://docs.rs/crate/cbindgen/0.28.0/source/build.rs
     { name = "crc32fast", version = "1", build-script = "4ccc50c3da67eb27f0b622440d2b7aee2f73fa9c71884571f3c041122231d105" }, # https://docs.rs/crate/crc32fast/1.3.2/source/build.rs
     { name = "crossbeam-epoch", version = "0.9", build-script = "901be3c21843440be5c456ff049f57f72ee5ec365918a772ad2a4751e52f69c5" }, # https://docs.rs/crate/crossbeam-epoch/0.9.13/source/build.rs
     { name = "crossbeam-utils", version = "0.8", build-script = "7a7f9e56ea7fb4f78c4e532b84b9d27be719d600e85eaeb3a2f4b79a4f0b419c" }, # https://docs.rs/crate/crossbeam-utils/0.8.21/source/build.rs
