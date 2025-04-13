@@ -707,7 +707,7 @@ trait AsInner {
     ) -> Result<Vec<FrameAudioQuery>> {
         todo!();
 
-        struct KeysAndPhonemes {
+        struct ScoreFeature {
             note_lengths: ndarray::Array1<i64>,
             note_constants: ndarray::Array1<i64>,
             note_vowels: ndarray::Array1<i64>,
@@ -716,7 +716,7 @@ trait AsInner {
             phoneme_note_ids: Vec<Option<NoteId>>,
         }
 
-        impl TryFrom<&'_ [Note]> for KeysAndPhonemes {
+        impl TryFrom<&'_ [Note]> for ScoreFeature {
             type Error = std::convert::Infallible; // TODO
 
             fn try_from(notes: &'_ [Note]) -> std::result::Result<Self, Self::Error> {
@@ -732,7 +732,7 @@ trait AsInner {
                              frame_length,
                              lyric,
                          }| {
-                            struct KeyAndPhoneme {
+                            struct NoteFeature {
                                 note_length: i64,
                                 note_constant: i64,
                                 note_vowel: i64,
@@ -741,7 +741,7 @@ trait AsInner {
                                 phoneme_note_id: Option<NoteId>,
                             }
 
-                            let KeyAndPhoneme {
+                            let NoteFeature {
                                 note_length,
                                 note_constant,
                                 note_vowel,
@@ -749,7 +749,7 @@ trait AsInner {
                                 phoneme_key,
                                 phoneme_note_id,
                             } = match &**lyric {
-                                "" => KeyAndPhoneme {
+                                "" => NoteFeature {
                                     note_length: *frame_length as _, // FIXME
                                     note_constant: -1,
                                     note_vowel: 0, // pau
