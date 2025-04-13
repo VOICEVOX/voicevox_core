@@ -32,8 +32,8 @@ use crate::{
         voice_model,
     },
     engine::{
-        create_kana, initial_process, parse_kana, split_mora, to_s16le_pcm, wav_from_s16le,
-        DecoderFeature, Mora, OjtPhoneme,
+        talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
+        to_s16le_pcm, wav_from_s16le, OjtPhoneme,
     },
     error::ErrorRepr,
     future::FutureExt as _,
@@ -2402,8 +2402,8 @@ pub(crate) mod nonblocking {
 mod tests {
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
-        asyncs::BlockingThreadPool, engine::Mora, macros::tests::assert_debug_fmt_eq, AccentPhrase,
-        Result, StyleId,
+        asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
+        AccentPhrase, Result, StyleId,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use rstest::rstest;

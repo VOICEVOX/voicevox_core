@@ -1,6 +1,6 @@
 use std::io::{Cursor, Write as _};
 
-use super::AudioQuery;
+use super::talk::AudioQuery;
 
 pub(crate) fn to_s16le_pcm<const BASE_SAMPLING_RATE: u32>(
     wave: &[f32],

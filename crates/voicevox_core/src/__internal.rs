@@ -1,7 +1,7 @@
 pub mod doctest_fixtures;
 pub mod interop;
 
-use crate::engine::user_dict;
+use crate::engine::talk::user_dict;
 
 // VOICEVOX CORE内のラッパー向けの実装
 // FIXME: 要議論: https://github.com/VOICEVOX/voicevox_core/issues/595
