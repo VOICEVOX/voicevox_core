@@ -1,11 +1,11 @@
 use std::str::FromStr;
 
-use crate::{
-    engine::{self, open_jtalk::FullcontextExtractor},
-    AccentPhrase,
-};
 use jlabel::Label;
 use smallvec::SmallVec;
+
+use crate::AccentPhrase;
+
+use super::open_jtalk::FullcontextExtractor;
 
 #[derive(thiserror::Error, Debug)]
 #[error("入力テキストからのフルコンテキストラベル抽出に失敗しました: {context}")]
@@ -173,27 +173,25 @@ pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
         }
     );
     // もしカタカナに変換できなければ、引数で与えた文字列がそのまま返ってくる
-    engine::mora2text(&mora_text).to_string()
+    super::mora2text(&mora_text).to_string()
 }
 
 #[cfg(test)]
 mod tests {
-    use rstest_reuse::*;
-
-    use ::test_util::OPEN_JTALK_DIC_DIR;
-    use rstest::rstest;
-
     use std::str::FromStr;
 
-    use crate::{
-        engine::{
-            full_context_label::{extract_full_context_label, generate_accent_phrases},
-            open_jtalk::FullcontextExtractor,
-            Mora,
-        },
-        AccentPhrase,
-    };
+    use ::test_util::OPEN_JTALK_DIC_DIR;
     use jlabel::Label;
+    use rstest::rstest;
+    use rstest_reuse::*;
+
+    use crate::AccentPhrase;
+
+    use super::super::{
+        full_context_label::{extract_full_context_label, generate_accent_phrases},
+        open_jtalk::FullcontextExtractor,
+        Mora,
+    };
 
     fn mora(text: &str, consonant: Option<&str>, vowel: &str) -> Mora {
         Mora {

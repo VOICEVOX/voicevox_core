@@ -4,7 +4,7 @@ pub use crate::{
     core::{
         infer::runtimes::onnxruntime::blocking::Onnxruntime, voice_model::blocking::VoiceModelFile,
     },
-    engine::{
+    engine::talk::{
         open_jtalk::blocking::OpenJtalk, text_analyzer::blocking::TextAnalyzer,
         user_dict::dict::blocking::UserDict,
     },
