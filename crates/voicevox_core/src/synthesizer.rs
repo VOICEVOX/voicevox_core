@@ -725,52 +725,24 @@ trait AsInner {
                     (note_constants, (note_vowels, (phonemes, (phoneme_keys, phoneme_note_ids)))),
                 ) = notes
                     .iter()
-                    .map(
-                        |Note {
-                             id,
-                             key,
-                             frame_length,
-                             lyric,
-                         }| {
-                            struct NoteFeature {
-                                note_length: i64,
-                                note_constant: i64,
-                                note_vowel: i64,
-                                phoneme: i64,
-                                phoneme_key: i64,
-                                phoneme_note_id: Option<NoteId>,
-                            }
+                    .map(|note| {
+                        let NoteFeature {
+                            note_length,
+                            note_constant,
+                            note_vowel,
+                            phoneme,
+                            phoneme_key,
+                            phoneme_note_id,
+                        } = note.into();
 
-                            let NoteFeature {
-                                note_length,
-                                note_constant,
-                                note_vowel,
-                                phoneme,
-                                phoneme_key,
-                                phoneme_note_id,
-                            } = match &**lyric {
-                                "" => NoteFeature {
-                                    note_length: *frame_length as _, // FIXME
-                                    note_constant: -1,
-                                    note_vowel: 0, // pau
-                                    phoneme: 0,    // pau
-                                    phoneme_key: -1,
-                                    phoneme_note_id: id.clone(),
-                                },
-                                lyric => {
-                                    todo!();
-                                }
-                            };
-
+                        (
+                            note_length,
                             (
-                                note_length,
-                                (
-                                    note_constant,
-                                    (note_vowel, (phoneme, (phoneme_key, phoneme_note_id))),
-                                ),
-                            )
-                        },
-                    )
+                                note_constant,
+                                (note_vowel, (phoneme, (phoneme_key, phoneme_note_id))),
+                            ),
+                        )
+                    })
                     .collect();
 
                 // FIXME: ndarray v0.16なら`Vec`を介する必要がない
@@ -789,6 +761,40 @@ trait AsInner {
                     phoneme_keys,
                     phoneme_note_ids,
                 })
+            }
+        }
+
+        struct NoteFeature {
+            note_length: i64,
+            note_constant: i64,
+            note_vowel: i64,
+            phoneme: i64,
+            phoneme_key: i64,
+            phoneme_note_id: Option<NoteId>,
+        }
+
+        impl From<&'_ Note> for NoteFeature {
+            fn from(
+                Note {
+                    id,
+                    key,
+                    frame_length,
+                    lyric,
+                }: &'_ Note,
+            ) -> Self {
+                match &**lyric {
+                    "" => Self {
+                        note_length: *frame_length as _, // FIXME
+                        note_constant: -1,
+                        note_vowel: 0, // pau
+                        phoneme: 0,    // pau
+                        phoneme_key: -1,
+                        phoneme_note_id: id.clone(),
+                    },
+                    lyric => {
+                        todo!();
+                    }
+                }
             }
         }
     }
