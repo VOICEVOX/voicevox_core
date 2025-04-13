@@ -82,7 +82,7 @@ impl OjtPhoneme {
         }
     }
 
-    pub(crate) fn convert(phonemes: &[OjtPhoneme]) -> Vec<OjtPhoneme> {
+    pub(super) fn convert(phonemes: &[OjtPhoneme]) -> Vec<OjtPhoneme> {
         let mut phonemes = phonemes.to_owned();
         if let Some(first_phoneme) = phonemes.first_mut() {
             if first_phoneme.phoneme.contains("sil") {

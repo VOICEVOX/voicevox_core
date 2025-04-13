@@ -32,10 +32,8 @@ use crate::{
         voice_model,
     },
     engine::{
-        talk::{
-            create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora, OjtPhoneme,
-        },
-        to_s16le_pcm, wav_from_s16le,
+        talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
+        to_s16le_pcm, wav_from_s16le, OjtPhoneme,
     },
     error::ErrorRepr,
     future::FutureExt as _,
