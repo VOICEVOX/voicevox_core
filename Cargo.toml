@@ -7,6 +7,7 @@ android_logger = "0.13.1"
 anstream = { version = "0.6.18", default-features = false }
 anstyle-query = "1.1.1"
 anyhow = "1.0.89"
+arrayvec = "0.7.6"
 assert_cmd = "2.0.16"
 async-fs = "2.1.2"
 async-lock = "3.4.0"
