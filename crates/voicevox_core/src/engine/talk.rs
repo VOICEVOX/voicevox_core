@@ -1,5 +1,3 @@
-//! テキスト関係やAudioQuery周り、またWAV出力に関する「エンジン」の領域。
-
 mod acoustic_feature_extractor;
 mod full_context_label;
 mod interpret_query;
