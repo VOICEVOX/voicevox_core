@@ -19,7 +19,7 @@ pub use crate::{
         infer::runtimes::onnxruntime::nonblocking::Onnxruntime,
         voice_model::nonblocking::VoiceModelFile,
     },
-    engine::{
+    engine::talk::{
         open_jtalk::nonblocking::OpenJtalk, text_analyzer::nonblocking::TextAnalyzer,
         user_dict::dict::nonblocking::UserDict,
     },

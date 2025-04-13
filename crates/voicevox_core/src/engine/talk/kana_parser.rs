@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-use std::sync::LazyLock;
+use std::{collections::HashMap, sync::LazyLock};
 
-use crate::engine::{
+use super::{
     model::{AccentPhrase, Mora},
     mora_list::MORA_LIST_MINIMUM,
 };
@@ -197,9 +196,10 @@ pub(crate) fn create_kana(accent_phrases: &[AccentPhrase]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::engine::mora_list::MORA_LIST_MINIMUM;
     use pretty_assertions::assert_eq;
     use rstest::rstest;
+
+    use super::super::mora_list::MORA_LIST_MINIMUM;
 
     #[rstest]
     #[case(Some("da"), "ダ")]

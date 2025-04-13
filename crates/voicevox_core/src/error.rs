@@ -1,6 +1,6 @@
 use crate::{
     core::devices::DeviceAvailabilities,
-    engine::{user_dict::InvalidWordError, KanaParseError},
+    engine::talk::{user_dict::InvalidWordError, KanaParseError},
     StyleId, StyleType, VoiceModelId,
 };
 //use engine::
