@@ -12,5 +12,3 @@ pub(crate) use self::interpret_query::{initial_process, split_mora, DecoderFeatu
 pub(crate) use self::kana_parser::{create_kana, parse_kana, KanaParseError};
 pub use self::model::{AccentPhrase, AudioQuery, Mora};
 pub(crate) use self::mora_list::mora2text;
-
-pub use self::model::{FrameAudioQuery, FramePhoneme, Note, NoteId, Score};
