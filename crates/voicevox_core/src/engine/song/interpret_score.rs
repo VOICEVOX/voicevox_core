@@ -1,5 +1,7 @@
 use arrayvec::ArrayVec;
+use easy_ext::ext;
 use ndarray::Array1;
+use typeshare::U53;
 
 use crate::{Note, NoteId};
 
@@ -83,7 +85,7 @@ impl<'score> From<&'score Note> for NoteFeature<'score> {
                     todo!("lyricが空文字列の場合、keyはnullである必要があります。");
                 }
                 Self {
-                    note_length: *frame_length as _, // FIXME
+                    note_length: frame_length.to_i64(),
                     note_constant: -1,
                     note_vowel: 0, // pau
                     phonemes: [PhonemeFeature {
@@ -109,4 +111,11 @@ struct PhonemeFeature<'score> {
     phoneme: i64,
     phoneme_key: i64,
     phoneme_note_id: Option<&'score NoteId>,
+}
+
+#[ext]
+impl U53 {
+    fn to_i64(self) -> i64 {
+        u64::from(self).try_into().expect("this is 53-bit")
+    }
 }

@@ -52,6 +52,7 @@ strum = { workspace = true, features = ["derive"] }
 tempfile.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+typeshare = { workspace = true, default-features = false }
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-voicevox"] }
 voicevox_core_macros.workspace = true

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use typeshare::U53;
 
 /// 音符のID。
 #[derive(Clone, Deserialize, Serialize)]
@@ -10,10 +11,10 @@ pub struct Note {
     pub id: Option<NoteId>,
 
     /// 音階。
-    pub key: Option<usize>,
+    pub key: Option<U53>,
 
     /// 音符のフレーム長。
-    pub frame_length: usize,
+    pub frame_length: U53,
 
     /// 音符の歌詞。
     pub lyric: String,
@@ -32,7 +33,7 @@ pub struct FramePhoneme {
     pub phoneme: String,
 
     /// 音素のフレーム長。
-    pub frame_length: usize,
+    pub frame_length: U53,
 
     /// 音符のID。
     pub note_id: Option<NoteId>,
