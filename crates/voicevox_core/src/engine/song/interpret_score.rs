@@ -74,16 +74,13 @@ impl<'score> From<&'score Note> for NoteFeature<'score> {
     fn from(
         Note {
             id,
-            key,
+            key_and_lyric,
             frame_length,
-            lyric,
         }: &'score Note,
     ) -> Self {
-        match &**lyric {
+        match key_and_lyric.lyric() {
             "" => {
-                if key.is_some() {
-                    todo!("lyricが空文字列の場合、keyはnullである必要があります。");
-                }
+                assert!(key_and_lyric.key().is_none(), "should have been validated");
                 Self {
                     note_length: frame_length.to_i64(),
                     note_constant: -1,
@@ -98,9 +95,7 @@ impl<'score> From<&'score Note> for NoteFeature<'score> {
                 }
             }
             lyric => {
-                if key.is_none() {
-                    todo!("keyがnullの場合、lyricは空文字列である必要があります。");
-                }
+                assert!(key_and_lyric.key().is_some(), "should have been validated");
                 todo!();
             }
         }

@@ -10,14 +10,39 @@ pub struct Note {
     /// ID。
     pub id: Option<NoteId>,
 
-    /// 音階。
-    pub key: Option<U53>,
+    /// 音階と歌詞。
+    pub key_and_lyric: KeyAndLyric,
 
     /// 音符のフレーム長。
     pub frame_length: U53,
+}
+
+/// 音階と歌詞。
+pub struct KeyAndLyric {
+    key: Option<U53>,
+    lyric: String,
+}
+
+impl KeyAndLyric {
+    pub fn new(key: Option<U53>, lyric: String) -> Result<Self, std::convert::Infallible> {
+        if key.is_some() && lyric.is_empty() {
+            todo!("lyricが空文字列の場合、keyはnullである必要があります。");
+        }
+        if key.is_none() && !lyric.is_empty() {
+            todo!("keyがnullの場合、lyricは空文字列である必要があります。");
+        }
+        Ok(Self { key, lyric })
+    }
+
+    /// 音階。
+    pub fn key(&self) -> Option<U53> {
+        self.key
+    }
 
     /// 音符の歌詞。
-    pub lyric: String,
+    pub fn lyric(&self) -> &str {
+        &self.lyric
+    }
 }
 
 /// 楽譜情報。
