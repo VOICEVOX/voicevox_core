@@ -1,8 +1,8 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use super::{
+    super::mora_list::MORA_LIST_MINIMUM,
     model::{AccentPhrase, Mora},
-    mora_list::MORA_LIST_MINIMUM,
 };
 
 const UNVOICE_SYMBOL: char = '_';
@@ -199,7 +199,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
 
-    use super::super::mora_list::MORA_LIST_MINIMUM;
+    use super::super::super::mora_list::MORA_LIST_MINIMUM;
 
     #[rstest]
     #[case(Some("da"), "ダ")]
