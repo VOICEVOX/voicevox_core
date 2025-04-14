@@ -2,6 +2,7 @@
 
 mod acoustic_feature_extractor;
 mod audio_file;
+mod mora_list;
 pub(crate) mod song;
 pub(crate) mod talk;
 
