@@ -2,6 +2,7 @@
 
 mod acoustic_feature_extractor;
 mod audio_file;
+mod mora_list;
 pub(crate) mod talk;
 
 pub use self::audio_file::wav_from_s16le;
