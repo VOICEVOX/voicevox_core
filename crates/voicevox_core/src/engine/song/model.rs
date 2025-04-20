@@ -87,7 +87,7 @@ pub struct FrameAudioQuery {
     pub volume_scale: f32,
 
     /// 音声データの出力サンプリングレート。
-    pub output_sample_rate: f32,
+    pub output_sample_rate: u32,
 
     /// 音声データをステレオ出力するか否か。
     pub output_stereo: bool,
