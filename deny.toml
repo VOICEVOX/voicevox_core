@@ -56,7 +56,7 @@ bypass = [
     { name = "parking_lot_core", version = "0.9", build-script = "29e629057144d1238dcd8ea70ad6cbb6ec14ca742797af3fa9335710ff5cbaaa" }, # https://docs.rs/crate/parking_lot_core/0.9.3/source/build.rs
     { name = "prettyplease", version = "0.2", build-script = "fdf8aa9b5441b298c72ae23645e227adc52ac69d2decc1bda04e1a91f70ff87d" }, # https://docs.rs/crate/prettyplease/0.2.17/source/build.rs
     { name = "portable-atomic", version = "1", build-script = "0d5e11d1d1376259bbd99269b52728a5a7e3f93403d82fa4ee1cfbd11ed892dd" }, # https://docs.rs/crate/portable-atomic/1.9.0/source/build.rs
-    { name = "proc-macro2", version = "1", build-script = "cf78c0005f11d54ca42dbaee77cb76a440e6fa2e0b64798d3f74c04770a0ad2b" }, # https://docs.rs/crate/proc-macro2/1.0.86/source/build.rs
+    { name = "proc-macro2", version = "1", build-script = "29344b7dbd94595f9fbcbc3f2be9b4bb52b5e8a26d21d4363714bab2a18f32ad" }, # https://docs.rs/crate/proc-macro2/1.0.95/source/build.rs
     { name = "proc-macro2-diagnostics", version = "0.10", build-script = "66fcc487972086f42011c84a1949861799dc7cfde1e56201d22cf8e71b59b8b1" }, # https://docs.rs/crate/proc-macro2-diagnostics/0.10.1/source/build.rs
     { name = "pyo3", version = "0.23", build-script = "f8243bd965459d7a53c946047fc57daadda9c2efd9e01846399b71eb686de583" }, # https://docs.rs/crate/pyo3/0.23.4/source/build.rs
     { name = "pyo3-build-config", version = "0.23", build-script = "ffcc7dcd075be5c5f157e98c6aeec86a1e22fcb40089c49a0d2ebc852da80387" }, # https://docs.rs/crate/pyo3-build-config/0.23.4/source/build.rs
