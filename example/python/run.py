@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import dataclasses
 import logging
 import multiprocessing

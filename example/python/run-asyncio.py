@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """asyncio版のサンプルコードです。"""
 
 import asyncio
