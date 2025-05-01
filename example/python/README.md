@@ -46,7 +46,7 @@ TODO:
 run.py もしくは run-asyncio.py を実行します。 Open JTalk 辞書ディレクトリ、読み上げさせたい文章、出力 wav ファイルのパスをオプションで指定することができます。
 
 ```console
-❯ ./run.py -h
+❯ python ./run.py -h
 usage: run.py [-h] [--mode MODE] [--dict-dir DICT_DIR] [--text TEXT] [--out OUT] [--style-id STYLE_ID] vvm
 
 positional arguments:
@@ -65,7 +65,7 @@ optional arguments:
 ## 実行例
 
 ```console
-❯ ./run.py ./models/vvms/0.vvm
+❯ python ./run.py ./models/vvms/0.vvm
 [INFO] __main__: Loading ONNX Runtime (args.onnxruntime='./onnxruntime/lib/libvoicevox_onnxruntime.so.1.17.3')
 [DEBUG] __main__: onnxruntime.supported_devices()=SupportedDevices(cpu=True, cuda=True, dml=False)
 [INFO] __main__: Initializing (args.mode=<AccelerationMode.AUTO: 'AUTO'>, args.dict_dir=PosixPath('dict/open_jtalk_dic_utf_8-1.11'))
