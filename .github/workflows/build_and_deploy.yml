@@ -143,6 +143,14 @@ jobs:
           includes=$(echo "$includes" | jq -c '[.[] | del(.can_skip_in_simple_test)]')
           echo "includes=${includes}" >> "$GITHUB_OUTPUT"
 
+  check_version:
+    needs: config
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          version=${{ needs.config.outputs.version }}
+          [[ "$version" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-(beta|rc)\.[0-9]+)?$ ]]
+
   build_and_deploy:
     needs: config
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
