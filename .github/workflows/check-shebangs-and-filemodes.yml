@@ -22,33 +22,33 @@ jobs:
             first_line=$(head -n 1 "$filename")
             shebang_line=$(grep '^#!/' <<< "$first_line" || true)
 
-            has-shebang() {
+            has_shebang() {
               [ -n "$shebang_line" ]
             }
 
-            is-shellscript() {
+            is_shellscript() {
               [[ "$filename" =~ \.(ba)?sh$ ]]
             }
 
-            is-executable() {
+            is_executable() {
               [ "$filemode" = 100755 ]
             }
 
             echo -n "$filename ($filemode): "
 
-            if has-shebang && ! is-executable; then
+            if has_shebang && ! is_executable; then
               # shellcheck disable=SC2016
               echo 'A shebanged file must be executable (note: if you are using Windows, please change the filemode with `git update-index --chmod+x`)'
               exit 1
             fi
 
-            if is-shellscript && ! is-executable; then
+            if is_shellscript && ! is_executable; then
               # shellcheck disable=SC2016
               echo 'A shell script file must be executable (note: if you are using Windows, please change the filemode with `git update-index --chmod+x`)'
               exit 1
             fi
 
-            if is-executable && ! has-shebang; then
+            if is_executable && ! has_shebang; then
               echo 'An executable blob must have a shebang'
               exit 1
             fi
