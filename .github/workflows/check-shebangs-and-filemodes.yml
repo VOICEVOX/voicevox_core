@@ -37,12 +37,14 @@ jobs:
             echo -n "$filename ($filemode): "
 
             if has-shebang && ! is-executable; then
-              echo 'A shebanged file must be executable'
+              # shellcheck disable=SC2016
+              echo 'A shebanged file must be executable (note: if you are using Windows, please change the filemode with `git update-index --chmod+x`)'
               exit 1
             fi
 
             if is-shellscript && ! is-executable; then
-              echo 'A shell script file must be executable'
+              # shellcheck disable=SC2016
+              echo 'A shell script file must be executable (note: if you are using Windows, please change the filemode with `git update-index --chmod+x`)'
               exit 1
             fi
 
