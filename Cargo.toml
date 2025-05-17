@@ -24,7 +24,7 @@ chrono = { version = "0.4.38", default-features = false }
 clap = "4.5.19"
 color-eyre = "0.6.3"
 colorchoice = "1.0.2"
-comrak = "0.26.0"
+comrak = { version = "0.26.0", default-features = false }
 const_format = "0.2.33"
 derive-getters = "0.2.0"
 derive-new = "0.5.9"

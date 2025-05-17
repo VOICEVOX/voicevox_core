@@ -14,7 +14,7 @@ base64.workspace = true
 binstall-tar.workspace = true
 bytes.workspace = true
 clap = { workspace = true, features = ["derive"] }
-comrak.workspace = true
+comrak = { workspace = true, default-features = false }
 easy-ext.workspace = true
 flate2.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
