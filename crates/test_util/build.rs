@@ -10,7 +10,7 @@ use cargo_metadata::MetadataCommand;
 use flate2::read::GzDecoder;
 use indoc::formatdoc;
 use tar::Archive;
-use zip::{write::FileOptions, ZipWriter};
+use zip::{ZipWriter, write::FileOptions};
 
 #[path = "src/typing.rs"]
 mod typing;

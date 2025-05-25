@@ -1,6 +1,6 @@
 use std::str;
 
-use serde::{de::DeserializeOwned, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, de::DeserializeOwned};
 
 /// snapshots.tomlの`[$section_name]`部分を`deserialize`する。
 macro_rules! section {

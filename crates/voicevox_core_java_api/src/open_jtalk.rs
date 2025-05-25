@@ -2,9 +2,9 @@ use std::{borrow::Cow, ptr, sync::Arc};
 
 use crate::common::throw_if_err;
 use jni::{
+    JNIEnv,
     objects::{JObject, JString},
     sys::jstring,
-    JNIEnv,
 };
 use voicevox_core::__internal::interop::BlockingTextAnalyzerExt as _;
 

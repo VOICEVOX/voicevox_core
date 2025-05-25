@@ -15,13 +15,13 @@ mod result_code;
 mod slice_owner;
 use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::{
-    accent_phrases_to_json, audio_query_model_to_json, ensure_utf8, into_result_code_with_error,
-    CApiError, UuidBytesExt as _,
+    CApiError, UuidBytesExt as _, accent_phrases_to_json, audio_query_model_to_json, ensure_utf8,
+    into_result_code_with_error,
 };
 use self::object::{CApiObject as _, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
-use anstream::{stream::RawStream, AutoStream};
+use anstream::{AutoStream, stream::RawStream};
 use c_impls::{VoicevoxSynthesizerPtrExt as _, VoicevoxVoiceModelFilePtrExt as _};
 use chrono::SecondsFormat;
 use colorchoice::ColorChoice;
@@ -35,11 +35,11 @@ use std::mem::MaybeUninit;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 use std::sync::Once;
-use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::format::Writer;
 use uuid::Uuid;
 use voicevox_core::__internal::interop::{
-    BlockingTextAnalyzerExt as _, ToJsonValue as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE,
+    BlockingTextAnalyzerExt as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE, ToJsonValue as _,
 };
 use voicevox_core::{AccentPhrase, AudioQuery, StyleId};
 

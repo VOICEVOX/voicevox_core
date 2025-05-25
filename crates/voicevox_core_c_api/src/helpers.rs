@@ -9,8 +9,9 @@ use tracing::error;
 use voicevox_core::AccentPhrase;
 
 use crate::{
-    result_code::VoicevoxResultCode, VoicevoxAccelerationMode, VoicevoxInitializeOptions,
-    VoicevoxSynthesisOptions, VoicevoxTtsOptions, VoicevoxUserDictWord, VoicevoxUserDictWordType,
+    VoicevoxAccelerationMode, VoicevoxInitializeOptions, VoicevoxSynthesisOptions,
+    VoicevoxTtsOptions, VoicevoxUserDictWord, VoicevoxUserDictWordType,
+    result_code::VoicevoxResultCode,
 };
 
 pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxResultCode {
@@ -20,9 +21,9 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
     return into_result_code(result);
 
     fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
-        use voicevox_core::ErrorKind::*;
         use CApiError::*;
         use VoicevoxResultCode::*;
+        use voicevox_core::ErrorKind::*;
 
         match result {
             Ok(()) => VOICEVOX_RESULT_OK,

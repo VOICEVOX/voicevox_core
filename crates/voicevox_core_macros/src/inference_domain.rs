@@ -1,10 +1,10 @@
 use indexmap::IndexMap;
 use quote::quote;
 use syn::{
-    parse::{Parse, ParseStream},
-    spanned::Spanned as _,
     Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Fields, Generics, ItemType,
     Type, Variant,
+    parse::{Parse, ParseStream},
+    spanned::Spanned as _,
 };
 
 pub(crate) fn derive_inference_operation(
@@ -129,7 +129,7 @@ pub(crate) fn derive_inference_operation(
                         return Err(syn::Error::new(
                             ident.span(),
                             "expected `Input` or `Output`",
-                        ))
+                        ));
                     }
                 } = Some(*ty);
             }

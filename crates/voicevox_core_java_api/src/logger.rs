@@ -1,4 +1,4 @@
-use jni::{objects::JObject, JNIEnv};
+use jni::{JNIEnv, objects::JObject};
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
@@ -24,7 +24,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_internal_Dll_00024LoggerInitia
             env, fmt,
             io::{self, IsTerminal, Write},
         };
-        use tracing_subscriber::{fmt::format::Writer, EnvFilter};
+        use tracing_subscriber::{EnvFilter, fmt::format::Writer};
 
         tracing_subscriber::fmt()
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {

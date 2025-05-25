@@ -8,10 +8,10 @@ use assert_cmd::assert::AssertResult;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 
-use test_util::{c_api::CApi, EXAMPLE_DATA};
+use test_util::{EXAMPLE_DATA, c_api::CApi};
 
 use crate::{
-    assert_cdylib::{self, case, Utf8Output},
+    assert_cdylib::{self, Utf8Output, case},
     float_assert, snapshots,
 };
 

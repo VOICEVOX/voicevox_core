@@ -278,8 +278,8 @@ pub use self::{
         voice_model::VoiceModelId,
     },
     engine::talk::{
-        user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
         AccentPhrase, AudioQuery, Mora,
+        user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
     },
     error::{Error, ErrorKind},
     result::Result,

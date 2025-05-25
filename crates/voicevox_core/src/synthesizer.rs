@@ -9,35 +9,35 @@ use std::{future::Future, marker::PhantomData, ops::Range, sync::Arc};
 use tracing::info;
 
 use crate::{
+    AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
     core::{
         devices::{self, DeviceSpec, GpuSpec},
         ensure_minimum_phoneme_length,
         infer::{
-            self,
+            self, InferenceRuntime, InferenceSessionOptions,
             domains::{
-                experimental_talk, talk, DecodeInput, DecodeOutput, ExperimentalTalkDomain,
-                ExperimentalTalkOperation, FrameDecodeDomain, FrameDecodeOperation,
-                GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
+                DecodeInput, DecodeOutput, ExperimentalTalkDomain, ExperimentalTalkOperation,
+                FrameDecodeDomain, FrameDecodeOperation, GenerateFullIntermediateInput,
+                GenerateFullIntermediateOutput, InferenceDomainMap,
                 PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput,
                 PredictSingF0Input, PredictSingF0Output, PredictSingVolumeInput,
                 PredictSingVolumeOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
                 SfDecodeInput, SfDecodeOutput, SingingTeacherDomain, SingingTeacherOperation,
-                TalkDomain, TalkOperation,
+                TalkDomain, TalkOperation, experimental_talk, talk,
             },
-            InferenceRuntime, InferenceSessionOptions,
         },
         pad_decoder_feature,
         status::Status,
         voice_model,
     },
     engine::{
-        talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
-        to_s16le_pcm, wav_from_s16le, OjtPhoneme,
+        OjtPhoneme,
+        talk::{DecoderFeature, Mora, create_kana, initial_process, parse_kana, split_mora},
+        to_s16le_pcm, wav_from_s16le,
     },
     error::ErrorRepr,
     future::FutureExt as _,
-    AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
 };
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
@@ -978,7 +978,9 @@ impl<R: InferenceRuntime> Status<R> {
         // マージンがデータからはみ出さないことを保証
         // cf. https://github.com/VOICEVOX/voicevox_core/pull/854#discussion_r1803691291
         if MARGIN > PADDING_FRAME_LENGTH {
-            unreachable!("Validation error: Too short padding for input, please report this issue on GitHub.");
+            unreachable!(
+                "Validation error: Too short padding for input, please report this issue on GitHub."
+            );
         }
         // マージン分を両端に残して音声特徴量を返す
         Ok(spec_with_padding
@@ -1171,7 +1173,7 @@ fn list_windows_video_cards() {
     use humansize::BINARY;
     use tracing::{error, info};
     use windows::Win32::Graphics::Dxgi::{
-        CreateDXGIFactory, IDXGIFactory, DXGI_ADAPTER_DESC, DXGI_ERROR_NOT_FOUND,
+        CreateDXGIFactory, DXGI_ADAPTER_DESC, DXGI_ERROR_NOT_FOUND, IDXGIFactory,
     };
 
     info!("検出されたGPU (DirectMLにはGPU 0が使われます):");
@@ -1277,8 +1279,8 @@ pub(crate) mod blocking {
     use easy_ext::ext;
 
     use crate::{
-        asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, StyleId,
-        VoiceModelId, VoiceModelMeta,
+        AccentPhrase, AudioQuery, StyleId, VoiceModelId, VoiceModelMeta, asyncs::SingleTasked,
+        future::FutureExt as _,
     };
 
     use super::{
@@ -1912,8 +1914,8 @@ pub(crate) mod nonblocking {
     use easy_ext::ext;
 
     use crate::{
-        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId,
-        VoiceModelMeta,
+        AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
+        asyncs::BlockingThreadPool,
     };
 
     use super::{
@@ -2402,8 +2404,8 @@ pub(crate) mod nonblocking {
 mod tests {
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
-        asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
-        AccentPhrase, Result, StyleId,
+        AccentPhrase, Result, StyleId, asyncs::BlockingThreadPool, engine::talk::Mora,
+        macros::tests::assert_debug_fmt_eq,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use rstest::rstest;

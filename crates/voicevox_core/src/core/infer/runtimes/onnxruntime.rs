@@ -277,9 +277,9 @@ fn extract_outputs(outputs: &ort::SessionOutputs<'_, '_>) -> anyhow::Result<Vec<
 
 pub(crate) mod blocking {
     use ort::EnvHandle;
-    use ref_cast::{ref_cast_custom, RefCastCustom};
+    use ref_cast::{RefCastCustom, ref_cast_custom};
 
-    use crate::{error::ErrorRepr, SupportedDevices};
+    use crate::{SupportedDevices, error::ErrorRepr};
 
     use super::super::super::InferenceRuntime;
 
@@ -469,7 +469,7 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod nonblocking {
-    use ref_cast::{ref_cast_custom, RefCastCustom};
+    use ref_cast::{RefCastCustom, ref_cast_custom};
 
     use crate::SupportedDevices;
 

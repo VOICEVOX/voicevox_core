@@ -1,11 +1,11 @@
 use jni::objects::JClass;
 use std::{borrow::Cow, sync::Arc};
 
-use crate::common::{throw_if_err, JNIEnvExt as _, JavaApiResult};
+use crate::common::{JNIEnvExt as _, JavaApiResult, throw_if_err};
 use jni::{
+    JNIEnv,
     objects::{JObject, JString},
     sys::jobject,
-    JNIEnv,
 };
 use serde_json::json;
 

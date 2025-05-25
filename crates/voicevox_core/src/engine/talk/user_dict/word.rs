@@ -1,12 +1,12 @@
 use std::{ops::RangeToInclusive, sync::LazyLock};
 
 use regex::Regex;
-use serde::{de::Error as _, Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer, de::Error as _};
 
 use crate::{error::ErrorRepr, result::Result};
 
 use super::part_of_speech_data::{
-    priority2cost, PartOfSpeechDetail, MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL,
+    MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL, PartOfSpeechDetail, priority2cost,
 };
 
 /// ユーザー辞書の単語。

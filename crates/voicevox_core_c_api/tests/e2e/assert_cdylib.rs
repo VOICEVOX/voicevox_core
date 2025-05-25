@@ -3,7 +3,7 @@ use std::{
     process::{ExitStatus, Output},
 };
 
-use anyhow::{ensure, Context as _};
+use anyhow::{Context as _, ensure};
 use assert_cmd::assert::{Assert, AssertResult, OutputAssertExt as _};
 use clap::Parser as _;
 use duct::cmd;

@@ -133,15 +133,18 @@ fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<crate::Mor
 
             // 音素が3つ以上ある場合：
             // position_forwardとposition_backwardが飽和している場合は無視する
-            [Label {
-                mora:
-                    Some(jlabel::Mora {
-                        position_forward: 49,
-                        position_backward: 49,
-                        ..
-                    }),
-                ..
-            }, ..] => {}
+            [
+                Label {
+                    mora:
+                        Some(jlabel::Mora {
+                            position_forward: 49,
+                            position_backward: 49,
+                            ..
+                        }),
+                    ..
+                },
+                ..,
+            ] => {}
             _ => {
                 return Err(ErrorKind::TooLongMora);
             }
@@ -201,9 +204,9 @@ mod tests {
     use crate::AccentPhrase;
 
     use super::super::{
+        Mora,
         full_context_label::{extract_full_context_label, generate_accent_phrases},
         open_jtalk::FullcontextExtractor,
-        Mora,
     };
 
     fn mora(text: &str, consonant: Option<&str>, vowel: &str) -> Mora {

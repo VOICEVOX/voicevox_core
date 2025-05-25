@@ -3,8 +3,8 @@ use std::{error::Error as _, iter, mem, ops::Deref};
 use derive_more::From;
 use easy_ext::ext;
 use jni::{
-    objects::{JObject, JThrowable},
     JNIEnv,
+    objects::{JObject, JThrowable},
 };
 use tracing::debug;
 use uuid::Uuid;
@@ -263,7 +263,7 @@ fn construct_uuid(msbs: i64, lsbs: i64) -> Uuid {
 mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
-    use uuid::{uuid, Uuid};
+    use uuid::{Uuid, uuid};
 
     #[rstest]
     #[case(uuid!("a1a2a3a4-b1b2-c1c2-d1d2-e1e2e3e4e5e6"))]
