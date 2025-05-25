@@ -296,8 +296,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsDro
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.UserDict.handle` must correspond to
             //   `Arc<voicevox_core::blocking::UserDict>`.
-            // FIXME: これだとデストラクトが行われないのでは？
-            env.take_rust_field::<_, _, ()>(&this, "handle")
+            env.take_rust_field(&this, "handle")
         }?;
         Ok(())
     })
