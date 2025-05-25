@@ -508,7 +508,8 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        type RustObject = Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+        type RustObject =
+            Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
         env.take_rust_field::<_, _, RustObject>(&this, "handle")?;
         Ok(())
     })
