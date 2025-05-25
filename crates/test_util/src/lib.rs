@@ -6,6 +6,7 @@ include!(concat!(env!("OUT_DIR"), "/sample_voice_model_file.rs"));
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
+    unsafe_op_in_unsafe_fn, // https://github.com/rust-lang/rust-bindgen/issues/3147
     unused_extern_crates,
     clippy::missing_safety_doc,
     clippy::too_many_arguments,

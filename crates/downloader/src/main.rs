@@ -9,28 +9,28 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{anyhow, bail, ensure, Context as _};
-use base64::{prelude::BASE64_STANDARD, Engine as _};
+use anyhow::{Context as _, anyhow, bail, ensure};
+use base64::{Engine as _, prelude::BASE64_STANDARD};
 use bytes::Bytes;
 use clap::{Parser as _, ValueEnum};
 use easy_ext::ext;
 use flate2::read::GzDecoder;
 use futures_core::Stream;
 use futures_util::{
+    StreamExt as _, TryStreamExt as _,
     future::OptionFuture,
     stream::{FuturesOrdered, FuturesUnordered},
-    StreamExt as _, TryStreamExt as _,
 };
 use indexmap::IndexMap;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use itertools::Itertools as _;
 use octocrab::{
+    Octocrab,
     models::{
-        repos::{Asset, CommitObject, Content, Release, Tag},
         AssetId,
+        repos::{Asset, CommitObject, Content, Release, Tag},
     },
     repos::RepoHandler,
-    Octocrab,
 };
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
 use semver::VersionReq;
@@ -637,7 +637,7 @@ async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<Mod
         .into_iter()
         .filter(|(version, _)| ALLOWED_MODELS_VERSIONS.matches(version))
         .sorted()
-        .last()
+        .next_back()
         .with_context(|| format!("`{repo}`"))?;
     let tag = tag.to_string();
 
@@ -821,7 +821,7 @@ fn download_and_extract_from_gh(
     stripping: Stripping,
     output: PathBuf,
     progresses: &MultiProgress,
-) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
+) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
     let archive_kind = ArchiveKind::from_filename(&name)?;
     let pb = add_progress_bar(progresses, size as _, name);
 
@@ -850,10 +850,10 @@ fn download_and_extract_from_url(
     stripping: Stripping,
     output: PathBuf,
     progresses: &MultiProgress,
-) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
+) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
     let name = url
         .path_segments()
-        .and_then(|s| s.last())
+        .and_then(|s| { s }.next_back())
         .unwrap_or_default();
     let archive_kind = ArchiveKind::from_filename(name)?;
     let pb = add_progress_bar(progresses, 0, name);
@@ -884,7 +884,7 @@ fn download_models(
     }: ModelsWithTerms,
     output: PathBuf,
     progresses: &MultiProgress,
-) -> anyhow::Result<impl Future<Output = anyhow::Result<()>>> {
+) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
     let reqwest = reqwest::Client::builder().build()?;
 
     let models = models
