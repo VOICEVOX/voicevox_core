@@ -53,7 +53,7 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         // SAFETY:
-        // - `dict.surface` and `dict.pronounciation` are valid.
+        // - `dict.surface` and `dict.pronunciation` are valid.
         // - `word_uuid` is valid for writes.
         assert_ok(unsafe { lib.voicevox_user_dict_add_word(dict, &word, &mut word_uuid) });
 

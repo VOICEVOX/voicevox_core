@@ -55,7 +55,7 @@ impl assert_cdylib::TestCase for TestCase {
             let mut word_uuid = [0u8; 16];
             assert_ok(unsafe {
                 // SAFETY:
-                // - `dict.surface` and `dict.pronounciation` are valid.
+                // - `dict.surface` and `dict.pronunciation` are valid.
                 // - `word_uuid` is valid for writes.
                 lib.voicevox_user_dict_add_word(dict, &raw const *word, &mut word_uuid)
             });
@@ -87,7 +87,7 @@ impl assert_cdylib::TestCase for TestCase {
         assert_ok(unsafe {
             // SAFETY:
             // - A `[u8; 16]` is valid for reads.
-            // - `dict.surface` and `dict.pronounciation` are valid.
+            // - `dict.surface` and `dict.pronunciation` are valid.
             lib.voicevox_user_dict_update_word(dict, &word_uuid.into_bytes(), &word)
         });
 
