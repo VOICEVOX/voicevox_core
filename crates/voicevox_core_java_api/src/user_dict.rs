@@ -243,7 +243,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsDro
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        env.take_rust_field(&this, "handle")?;
+        env.take_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?;
         Ok(())
     })
 }

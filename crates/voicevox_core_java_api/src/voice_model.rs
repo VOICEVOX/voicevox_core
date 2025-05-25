@@ -90,7 +90,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_VoiceModelFile
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        env.take_rust_field(&this, "handle")?;
+        env.take_rust_field::<_, _, VoiceModelFile>(&this, "handle")?;
         Ok(())
     })
 }
