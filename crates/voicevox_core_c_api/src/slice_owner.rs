@@ -55,8 +55,9 @@ impl<T> SliceOwner<T> {
             );
         }
 
-        out_ptr.write_unaligned(ptr);
-        out_len.write_unaligned(len);
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { out_ptr.write_unaligned(ptr) };
+        unsafe { out_len.write_unaligned(len) };
     }
 
     /// `own_and_lend`でC API利用者に貸し出したポインタに対応する`Box<[u8]>`をデストラクトする。
