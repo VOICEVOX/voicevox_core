@@ -122,9 +122,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -160,9 +160,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
         internal.load_voice_model(&model)?;
@@ -187,9 +187,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -216,9 +216,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -248,9 +248,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -284,9 +284,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -320,9 +320,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -356,9 +356,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -394,9 +394,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -431,9 +431,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -468,9 +468,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -506,9 +506,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -543,9 +543,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
@@ -578,9 +578,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            type Handle =
+            type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
-            env.get_rust_field::<_, _, Handle>(&this, "handle")
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
 
