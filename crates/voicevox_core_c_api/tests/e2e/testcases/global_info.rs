@@ -29,13 +29,6 @@ impl assert_cdylib::TestCase for TestCase {
 
         let onnxruntime = {
             let mut onnxruntime = MaybeUninit::uninit();
-            let _ = const {
-                if true {
-                    0
-                } else {
-                    panic!();
-                }
-            };
             assert_ok(
                 lib.voicevox_onnxruntime_load_once(
                     VoicevoxLoadOnnxruntimeOptions {
