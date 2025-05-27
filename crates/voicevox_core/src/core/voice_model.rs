@@ -328,7 +328,7 @@ impl<A: Async> Inner<A> {
             })
         });
 
-        let talk = OptionFuture::from(talk.map(|(entries, style_id_to_inner_voice_id)| async {
+        let talk = OptionFuture::from(talk.map(async |(entries, style_id_to_inner_voice_id)| {
             let [predict_duration, predict_intonation, decode] = entries.into_array();
 
             let predict_duration = read_file!(predict_duration);
@@ -343,7 +343,7 @@ impl<A: Async> Inner<A> {
         .transpose()?;
 
         let experimental_talk = OptionFuture::from(experimental_talk.map(
-            |(entries, style_id_to_inner_voice_id)| async {
+            async |(entries, style_id_to_inner_voice_id)| {
                 let [
                     predict_duration,
                     predict_intonation,
@@ -370,7 +370,7 @@ impl<A: Async> Inner<A> {
         .transpose()?;
 
         let singing_teacher = OptionFuture::from(singing_teacher.map(
-            |(entries, style_id_to_inner_voice_id)| async {
+            async |(entries, style_id_to_inner_voice_id)| {
                 let [
                     predict_sing_consonant_length,
                     predict_sing_f0,
@@ -394,7 +394,7 @@ impl<A: Async> Inner<A> {
         .transpose()?;
 
         let frame_decode = OptionFuture::from(frame_decode.map(
-            |(entries, style_id_to_inner_voice_id)| async {
+            async |(entries, style_id_to_inner_voice_id)| {
                 let [sf_decode] = entries.into_array();
 
                 let sf_decode = read_file!(sf_decode);

@@ -904,14 +904,14 @@ fn download_models(
         models
             .into_iter()
             .map(
-                |(
+                async move |(
                     GhContent {
                         name,
                         download_url,
                         size,
                     },
                     pb,
-                )| async move {
+                )| {
                     let res = reqwest.get(download_url).send().await?.error_for_status()?;
                     let bytes_stream = res.bytes_stream().map_err(Into::into);
                     let pb = with_style(pb, &PROGRESS_STYLE1).await?;
@@ -1071,7 +1071,7 @@ async fn download(
         pb.set_length(content_length);
     }
 
-    return with_progress(pb, |pos_tx| async move {
+    return with_progress(pb, async move |pos_tx| {
         let mut downloaded = Vec::with_capacity(content_length.unwrap_or(0) as _);
         while let Some(chunk) = bytes_stream.next().await.transpose()? {
             downloaded.extend_from_slice(&chunk);
