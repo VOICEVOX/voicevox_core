@@ -192,7 +192,7 @@ impl<T: HasJavaClassIdent> Closable<T> {
         Self(MaybeClosed::Open(content).into())
     }
 
-    pub(crate) fn read(&self) -> JavaApiResult<impl Deref<Target = T> + '_> {
+    pub(crate) fn read(&self) -> JavaApiResult<impl Deref<Target = T>> {
         let lock = self.0.try_read().map_err(|e| match e {
             std::sync::TryLockError::Poisoned(e) => panic!("{e}"),
             std::sync::TryLockError::WouldBlock => {

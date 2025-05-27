@@ -117,7 +117,7 @@ impl<T, C: PyTypeInfo, A: Async> Closable<T, C, A> {
         }
     }
 
-    fn read(&self) -> PyResult<impl Deref<Target = T> + '_> {
+    fn read(&self) -> PyResult<impl Deref<Target = T>> {
         let lock = self
             .content
             .try_read_()
