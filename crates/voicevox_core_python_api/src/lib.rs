@@ -5,19 +5,19 @@ use std::{
 };
 
 mod convert;
-use self::convert::{from_utf8_path, AudioQueryExt as _, ToDataclass};
+use self::convert::{AudioQueryExt as _, ToDataclass, from_utf8_path};
 use easy_ext::ext;
 use log::{debug, warn};
 use macros::pyproject_project_version;
 use pyo3::{
-    create_exception,
+    Bound, Py, PyObject, PyResult, PyTypeInfo, Python, create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
     pyclass, pyfunction, pymodule,
     types::{PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _},
-    wrap_pyfunction, Bound, Py, PyObject, PyResult, PyTypeInfo, Python,
+    wrap_pyfunction,
 };
 use voicevox_core::{
-    AccentPhrase, AudioQuery, UserDictWord, __internal::interop::raii::MaybeClosed,
+    __internal::interop::raii::MaybeClosed, AccentPhrase, AudioQuery, UserDictWord,
 };
 
 #[pymodule]
@@ -117,7 +117,7 @@ impl<T, C: PyTypeInfo, A: Async> Closable<T, C, A> {
         }
     }
 
-    fn read(&self) -> PyResult<impl Deref<Target = T> + '_> {
+    fn read(&self) -> PyResult<impl Deref<Target = T>> {
         let lock = self
             .content
             .try_read_()
@@ -289,21 +289,21 @@ mod blocking {
 
     use camino::Utf8PathBuf;
     use pyo3::{
+        Bound, IntoPyObject as _, Py, PyAny, PyObject, PyRef, PyResult, Python,
         exceptions::{PyIndexError, PyTypeError, PyValueError},
         pyclass, pymethods,
         types::{IntoPyDict as _, PyDict, PyList, PyTuple, PyType},
-        Bound, IntoPyObject as _, Py, PyAny, PyObject, PyRef, PyResult, Python,
     };
     use ref_cast::RefCast as _;
     use uuid::Uuid;
     use voicevox_core::{
-        AccelerationMode, AccentPhrase, AudioQuery, StyleId, SupportedDevices, UserDictWord,
-        VoiceModelMeta, __internal::interop::BlockingTextAnalyzerExt as _,
+        __internal::interop::BlockingTextAnalyzerExt as _, AccelerationMode, AccentPhrase,
+        AudioQuery, StyleId, SupportedDevices, UserDictWord, VoiceModelMeta,
     };
 
     use crate::{
-        convert::{ToDataclass, ToPyUuid, VoicevoxCoreResultExt as _},
         Closable, SingleTasked, VoiceModelFilePyFields,
+        convert::{ToDataclass, ToPyUuid, VoicevoxCoreResultExt as _},
     };
 
     #[pyclass(frozen)]
@@ -931,21 +931,21 @@ mod asyncio {
 
     use camino::Utf8PathBuf;
     use pyo3::{
+        Bound, IntoPyObject as _, Py, PyAny, PyErr, PyObject, PyRef, PyResult, Python,
         exceptions::PyTypeError,
         pyclass, pymethods,
         types::{IntoPyDict as _, PyDict, PyList, PyTuple, PyType},
-        Bound, IntoPyObject as _, Py, PyAny, PyErr, PyObject, PyRef, PyResult, Python,
     };
     use ref_cast::RefCast as _;
     use uuid::Uuid;
     use voicevox_core::{
-        AccelerationMode, AccentPhrase, AudioQuery, StyleId, SupportedDevices, UserDictWord,
-        VoiceModelMeta, __internal::interop::NonblockingTextAnalyzerExt as _,
+        __internal::interop::NonblockingTextAnalyzerExt as _, AccelerationMode, AccentPhrase,
+        AudioQuery, StyleId, SupportedDevices, UserDictWord, VoiceModelMeta,
     };
 
     use crate::{
-        convert::{ToDataclass, ToPyUuid, VoicevoxCoreResultExt as _},
         Closable, Tokio, VoiceModelFilePyFields,
+        convert::{ToDataclass, ToPyUuid, VoicevoxCoreResultExt as _},
     };
 
     #[pyclass(frozen)]

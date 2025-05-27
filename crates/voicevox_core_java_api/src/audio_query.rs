@@ -1,10 +1,10 @@
 use std::ptr;
 
-use crate::common::{throw_if_err, JavaApiError};
+use crate::common::{JavaApiError, throw_if_err};
 use jni::{
+    JNIEnv,
     objects::{JClass, JString},
     sys::jstring,
-    JNIEnv,
 };
 use voicevox_core::AudioQuery;
 

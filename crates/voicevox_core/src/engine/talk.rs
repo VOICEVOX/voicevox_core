@@ -7,6 +7,6 @@ pub(crate) mod text_analyzer;
 pub(crate) mod user_dict;
 
 pub(crate) use self::full_context_label::extract_full_context_label;
-pub(crate) use self::interpret_query::{initial_process, split_mora, DecoderFeature};
-pub(crate) use self::kana_parser::{create_kana, parse_kana, KanaParseError};
+pub(crate) use self::interpret_query::{DecoderFeature, initial_process, split_mora};
+pub(crate) use self::kana_parser::{KanaParseError, create_kana, parse_kana};
 pub use self::model::{AccentPhrase, AudioQuery, Mora};

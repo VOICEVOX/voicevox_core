@@ -1,12 +1,12 @@
 use crate::{
-    common::{throw_if_err, JNIEnvExt as _, JavaApiError},
+    common::{JNIEnvExt as _, JavaApiError, throw_if_err},
     object, object_type, static_field,
 };
 
 use jni::{
+    JNIEnv,
     objects::{JObject, JString},
     sys::{jboolean, jint, jobject},
-    JNIEnv,
 };
 use std::sync::Arc;
 

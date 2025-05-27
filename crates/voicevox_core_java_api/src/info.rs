@@ -1,5 +1,5 @@
 use crate::common::throw_if_err;
-use jni::{sys::jobject, JNIEnv};
+use jni::{JNIEnv, sys::jobject};
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]

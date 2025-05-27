@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeSet,
-    ffi::{c_char, CStr, CString},
+    ffi::{CStr, CString, c_char},
     num::NonZero,
     ptr::NonNull,
     sync::Mutex,
@@ -116,7 +116,7 @@ impl CStr {
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::{c_char, CStr};
+    use std::ffi::{CStr, c_char};
 
     use super::CStringDropChecker;
 

@@ -3,7 +3,7 @@ use std::{
     process::{ExitStatus, Output},
 };
 
-use anyhow::{ensure, Context as _};
+use anyhow::{Context as _, ensure};
 use assert_cmd::assert::{Assert, AssertResult, OutputAssertExt as _};
 use clap::Parser as _;
 use duct::cmd;
@@ -118,6 +118,10 @@ pub(crate) trait TestCase: Send {
     ///
     /// `exec`は独立したプロセスで実行されるため、stdout/stderrへの出力をしたりグローバルな状態に
     /// 依存してもよい。
+    ///
+    /// # Safety
+    ///
+    /// `lib`は[`test_util::c_api::CApi`]として正しい動的ライブラリでなければならない。
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()>;
 
     /// 別プロセスで実行された`exec`の結果をチェックする。

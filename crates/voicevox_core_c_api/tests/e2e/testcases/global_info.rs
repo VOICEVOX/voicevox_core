@@ -4,11 +4,11 @@ use assert_cmd::assert::AssertResult;
 use const_format::concatcp;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 use test_util::c_api::{self, CApi, VoicevoxLoadOnnxruntimeOptions, VoicevoxResultCode};
 
 use crate::{
-    assert_cdylib::{self, case, Utf8Output},
+    assert_cdylib::{self, Utf8Output, case},
     snapshots,
 };
 

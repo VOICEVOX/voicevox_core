@@ -11,8 +11,8 @@ use ndarray::{Array, ArrayD, Dimension, ShapeError};
 use thiserror::Error;
 
 use crate::{
-    asyncs::{Async, BlockingThreadPool, SingleTasked},
     StyleType, SupportedDevices,
+    asyncs::{Async, BlockingThreadPool, SingleTasked},
 };
 
 use super::{

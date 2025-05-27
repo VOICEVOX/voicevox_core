@@ -2,9 +2,9 @@ use std::ptr;
 
 use duplicate::duplicate_item;
 use jni::{
+    JNIEnv,
     objects::{JObject, JString},
     sys::jobject,
-    JNIEnv,
 };
 use voicevox_core::__internal::interop::ToJsonValue as _;
 

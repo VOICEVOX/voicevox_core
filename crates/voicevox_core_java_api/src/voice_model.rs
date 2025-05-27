@@ -1,10 +1,10 @@
 use std::{borrow::Cow, sync::Arc};
 
-use crate::common::{throw_if_err, Closable, HasJavaClassIdent, JNIEnvExt as _};
+use crate::common::{Closable, HasJavaClassIdent, JNIEnvExt as _, throw_if_err};
 use jni::{
+    JNIEnv,
     objects::{JObject, JString},
     sys::jobject,
-    JNIEnv,
 };
 
 pub(crate) type VoiceModelFile = Arc<Closable<voicevox_core::blocking::VoiceModelFile>>;

@@ -7,12 +7,12 @@ use indexmap::IndexSet;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 use test_util::{
-    c_api::{self, CApi, VoicevoxResultCode},
     OPEN_JTALK_DIC_DIR,
+    c_api::{self, CApi, VoicevoxResultCode},
 };
 
 use crate::{
-    assert_cdylib::{self, case, Utf8Output},
+    assert_cdylib::{self, Utf8Output, case},
     snapshots,
 };
 

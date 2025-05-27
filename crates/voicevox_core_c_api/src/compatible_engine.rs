@@ -1,7 +1,7 @@
 use std::{
     collections::BTreeMap,
     env,
-    ffi::{c_char, CString},
+    ffi::{CString, c_char},
     sync::{Arc, LazyLock, Mutex, MutexGuard},
 };
 
@@ -9,8 +9,8 @@ use libc::c_int;
 
 use tracing::warn;
 use voicevox_core::{
-    StyleId, VoiceModelId,
     __internal::interop::{PerformInference as _, ToJsonValue as _},
+    StyleId, VoiceModelId,
 };
 
 use crate::{helpers::display_error, init_logger_once};

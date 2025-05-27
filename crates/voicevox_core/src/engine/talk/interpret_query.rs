@@ -1,6 +1,6 @@
 //! [`AudioQuery`]から特徴量を取り出す処理を集めたもの。
 
-use super::{super::OjtPhoneme, full_context_label::mora_to_text, AccentPhrase, AudioQuery, Mora};
+use super::{super::OjtPhoneme, AccentPhrase, AudioQuery, Mora, full_context_label::mora_to_text};
 
 pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<OjtPhoneme>) {
     let flatten_moras = to_flatten_moras(accent_phrases);

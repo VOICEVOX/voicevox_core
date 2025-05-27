@@ -1,7 +1,7 @@
 use crate::{
-    core::devices::DeviceAvailabilities,
-    engine::talk::{user_dict::InvalidWordError, KanaParseError},
     StyleId, StyleType, VoiceModelId,
+    core::devices::DeviceAvailabilities,
+    engine::talk::{KanaParseError, user_dict::InvalidWordError},
 };
 //use engine::
 use duplicate::duplicate_item;
@@ -39,7 +39,7 @@ impl Error {
                 LoadModelErrorKind::ReadZipEntry { .. } => ErrorKind::ReadZipEntry,
                 LoadModelErrorKind::ModelAlreadyLoaded { .. } => ErrorKind::ModelAlreadyLoaded,
                 LoadModelErrorKind::StyleAlreadyLoaded { .. } => ErrorKind::StyleAlreadyLoaded,
-                LoadModelErrorKind::InvalidModelFormat { .. } => ErrorKind::InvalidModelFormat,
+                LoadModelErrorKind::InvalidModelFormat => ErrorKind::InvalidModelFormat,
                 LoadModelErrorKind::InvalidModelData => ErrorKind::InvalidModelData,
             },
             ErrorRepr::GetSupportedDevices(_) => ErrorKind::GetSupportedDevices,
