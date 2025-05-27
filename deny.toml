@@ -29,8 +29,8 @@ bypass = [
     { name = "assert_cmd", version = "2", build-script = "367a36318cd9bb47aeb730f8a8ddad39c10b926175465393f0d5b01cbd993d44" }, # https://docs.rs/crate/assert_cmd/2.0.16/source/build.rs
     { name = "async-trait", version = "0.1", build-script = "b45aa3a5c177cbeaeb4847163088924491ac27b79534f8ea4c53ed3e10c163ea" }, # https://docs.rs/crate/async-trait/0.1.57/source/build.rs
     { name = "backtrace", version = "0.3", build-script = "8d5e860da109f86c67596b10b5613ff6d19f9d24c2970f491a55261fb1973692" }, # https://docs.rs/crate/backtrace/0.3.66/source/build.rs
-    { name = "bindgen", version = "0.69", build-script = "4a9c4ac3759572e17de312a9d3f4ced3b6fd3c71811729e5a8d06bfbd1ac8f82" }, # https://docs.rs/crate/bindgen/0.69.4/source/build.rs
     { name = "bindgen", version = "0.70", build-script = "4a9c4ac3759572e17de312a9d3f4ced3b6fd3c71811729e5a8d06bfbd1ac8f82" }, # https://docs.rs/crate/bindgen/0.70.1/source/build.rs
+    { name = "bindgen", version = "0.71", build-script = "f7a10af0a21662e104e0058da7e3471a20be328eef6c7c41988525be90fdfe92" }, # https://docs.rs/crate/bindgen/0.71.1/source/build.rs
     { name = "camino", version = "1", build-script = "cbdfaa56ff8e211896e75fc7867e3230aa8aa09fdda901111db957c65306f1d8" }, # https://docs.rs/crate/camino/1.1.9/source/build.rs
     { name = "caseless", version = "0.2", build-script = "8ab1dc9ef269f28202fe1156c5c655f286cbc03b6dd4fb20a2f9f9e00763b6f5" }, # https://docs.rs/crate/caseless/0.2.1/source/src/build.rs
     { name = "cbindgen", version = "0.28", build-script = "f0fa57ad2c0dca5855cc2636a2e95acbadb52fa887609216022bdf71ed996dec" }, # https://docs.rs/crate/cbindgen/0.28.0/source/build.rs
@@ -105,11 +105,6 @@ bypass = [
     #
     # link-cplusplus links libc++ and libstdc++
     { name = "link-cplusplus", version = "1", build-script = "1590afe3a11449e69028849ea8d5df9183e388c0b5ee50c322f3c4c9044917f8" },
-
-    # https://docs.rs/crate/onig_sys/69.8.1/source/build.rs
-    #
-    # Oniguruma is licensed under `BSD-2-Clause`: https://docs.rs/crate/onig_sys/69.8.1/source/oniguruma/COPYING
-    { name = "onig_sys", version = "69", build-script = "c84df2a143d2ffb0fbb8f9f6102992f1b38f44037edbee74f2d364616ea4863f" },
 
     # https://github.com/VOICEVOX/open_jtalk-rs/blob/579d52c29165654b8fc50e212bae36a61c119163/crates/open_jtalk-sys/build.rs
     #

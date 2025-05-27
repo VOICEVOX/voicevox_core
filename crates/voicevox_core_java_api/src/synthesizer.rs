@@ -607,8 +607,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
             //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
-            // FIXME: これだとデストラクトが行われないのでは？
-            env.take_rust_field::<_, _, ()>(&this, "handle")
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.take_rust_field::<_, _, RustField>(&this, "handle")
         }?;
         Ok(())
     })

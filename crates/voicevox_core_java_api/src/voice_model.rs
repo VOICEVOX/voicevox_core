@@ -108,8 +108,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_VoiceModelFile
         // - The safety contract must be upheld by the caller.
         // - `jp.hiroshiba.voicevoxcore.blocking.VoiceModelFile.handle` must correspond to
         //   `self::VoiceModelFile`.
-        // FIXME: これだとデストラクトが行われないのでは？
-        unsafe { env.take_rust_field::<_, _, ()>(&this, "handle") }?;
+        unsafe { env.take_rust_field::<_, _, VoiceModelFile>(&this, "handle") }?;
         Ok(())
     })
 }

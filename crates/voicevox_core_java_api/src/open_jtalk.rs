@@ -101,8 +101,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_OpenJtalk_rsDr
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.blocking.OpenJtalk.handle` must correspond to
             //   `voicevox_core::blocking::OpenJtalk`.
-            // FIXME: これだとデストラクトが行われないのでは？
-            env.take_rust_field::<_, _, ()>(&this, "handle")
+            env.take_rust_field::<_, _, voicevox_core::blocking::OpenJtalk>(&this, "handle")
         }?;
         Ok(())
     })
