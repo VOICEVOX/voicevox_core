@@ -255,7 +255,7 @@ fn construct_uuid(msbs: i64, lsbs: i64) -> Uuid {
     return Uuid::from_u128((to_u128(msbs) << 64) + to_u128(lsbs));
 
     fn to_u128(bits: i64) -> u128 {
-        (bits as u64).into()
+        bits.cast_unsigned().into()
     }
 }
 
