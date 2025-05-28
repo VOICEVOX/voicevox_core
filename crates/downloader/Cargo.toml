@@ -14,7 +14,7 @@ base64.workspace = true
 binstall-tar.workspace = true
 bytes.workspace = true
 clap = { workspace = true, features = ["derive"] }
-comrak = { workspace = true, default-features = false }
+comrak.workspace = true
 easy-ext.workspace = true
 flate2.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
@@ -24,10 +24,10 @@ indexmap.workspace = true
 indicatif.workspace = true
 itertools.workspace = true
 minus = { workspace = true, features = ["static_output"] }
-octocrab = { workspace = true, default-features = false, features = ["rustls-tls", "stream"] }
+octocrab = { workspace = true, features = ["rustls-tls", "stream"] }
 parse-display.workspace = true
 rayon.workspace = true
-reqwest = { workspace = true, default-features = false, features = ["rustls-tls", "stream"] }
+reqwest = { workspace = true, features = ["rustls-tls", "stream"] }
 rprompt.workspace = true
 scraper.workspace = true
 semver.workspace = true
