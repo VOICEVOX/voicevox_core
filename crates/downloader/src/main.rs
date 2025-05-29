@@ -289,10 +289,12 @@ async fn main() -> anyhow::Result<()> {
             );
         }
     }
+
+    // FIXME: `--models-repo`に対しても警告を出す
     if !targets.contains(&DownloadTarget::Models) && models_pattern.as_str() != "*" {
         warn!(
-            "`--models-pattern={models_pattern}`が指定されていますが、`models-pattern`は\
-             ダウンロード対象から除外されています",
+            "`--models-pattern={models_pattern}`が指定されていますが、`models`はダウンロード対象\
+             から除外されています",
             models_pattern = models_pattern.as_str(),
         );
     }
