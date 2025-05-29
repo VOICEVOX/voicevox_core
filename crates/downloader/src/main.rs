@@ -115,6 +115,9 @@ struct Args {
     #[arg(long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
     additional_libraries_version: String,
 
+    #[arg(long, value_name("GLOB"), default_value("*"))]
+    models_pattern: glob::Pattern,
+
     /// ダウンロードするデバイスを指定する(cudaはlinuxのみ)
     #[arg(value_enum, long, num_args(1..), default_value(<&str>::from(Device::default())))]
     devices: Vec<Device>,
@@ -225,6 +228,7 @@ async fn main() -> anyhow::Result<()> {
         c_api_version,
         onnxruntime_version,
         additional_libraries_version,
+        models_pattern,
         devices,
         cpu_arch,
         os,
@@ -285,6 +289,13 @@ async fn main() -> anyhow::Result<()> {
             );
         }
     }
+    if !targets.contains(&DownloadTarget::Models) && models_pattern.as_str() != "*" {
+        warn!(
+            "`--models-pattern={models_pattern}`が指定されていますが、`models-pattern`は\
+             ダウンロード対象から除外されています",
+            models_pattern = models_pattern.as_str(),
+        );
+    }
 
     let octocrab = &octocrab()?;
 
@@ -314,7 +325,7 @@ async fn main() -> anyhow::Result<()> {
     let models = OptionFuture::from(
         targets
             .contains(&DownloadTarget::Models)
-            .then(|| find_models(octocrab, &models_repo)),
+            .then(|| find_models(octocrab, &models_repo, &models_pattern)),
     )
     .await
     .transpose()?;
@@ -613,7 +624,11 @@ macro_rules! selector {
 use selector;
 
 /// ダウンロードすべきモデル、利用規約を見つける。その際ユーザーに利用規約の同意を求める。
-async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<ModelsWithTerms> {
+async fn find_models(
+    octocrab: &Octocrab,
+    repo: &RepoName,
+    pattern: &glob::Pattern,
+) -> anyhow::Result<ModelsWithTerms> {
     let repos = octocrab.repos(&repo.owner, &repo.repo);
 
     let (tag, sha) = repos
@@ -663,13 +678,17 @@ async fn find_models(octocrab: &Octocrab, repo: &RepoName) -> anyhow::Result<Mod
                  ..
              }| {
                 ensure!(r#type == "file", "found directory");
-                Ok(GhContent {
+                if !pattern.matches(&name) {
+                    return Ok(None);
+                }
+                Ok(Some(GhContent {
                     name,
                     download_url: download_url.expect("should present"),
                     size: size as _,
-                })
+                }))
             },
         )
+        .flat_map(Result::transpose)
         .collect::<anyhow::Result<_>>()?;
 
     return Ok(ModelsWithTerms {

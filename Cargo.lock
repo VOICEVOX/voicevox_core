@@ -1118,6 +1118,7 @@ dependencies = [
  "fs-err",
  "futures-core",
  "futures-util",
+ "glob",
  "indexmap 2.6.0",
  "indicatif",
  "itertools 0.10.5",

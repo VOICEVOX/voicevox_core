@@ -82,6 +82,18 @@ download --devices directml
 download --devices cuda
 ```
 
+<a id="models-pattern"></a>
+
+## ダウンロードする音声モデル（VVM ファイル）を絞る場合
+
+```bash
+download --models-pattern 0.vvm # 0.vvmのみダウンロード
+```
+
+```bash
+download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用VVMをダウンロードしないように
+```
+
 <a id="help"></a>
 
 ## その他詳細なオプションを指定したい場合
