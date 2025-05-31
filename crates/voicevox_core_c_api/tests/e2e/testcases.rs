@@ -4,6 +4,7 @@ mod double_delete_openjtalk;
 mod double_delete_synthesizer;
 mod double_delete_user_dict;
 mod double_delete_voice_model_file;
+mod free_for_null;
 mod global_info;
 mod simple_tts;
 mod synthesizer_new_output_json;
