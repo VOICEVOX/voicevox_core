@@ -10,3 +10,4 @@ mod synthesizer_new_output_json;
 mod tts;
 mod user_dict_load;
 mod user_dict_manipulate;
+mod free_for_null;
