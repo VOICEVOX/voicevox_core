@@ -1,3 +1,8 @@
+from typing import TYPE_CHECKING, NoReturn
+
+if TYPE_CHECKING:
+    from voicevox_core import AccentPhrase, AudioQuery, UserDictWord
+
 __version__: str
 
 class NotLoadedOpenjtalkDictError(Exception):
@@ -65,8 +70,8 @@ class RunModelError(Exception):
 
     ...
 
-class ExtractFullContextLabelError(Exception):
-    """コンテキストラベル出力に失敗した。"""
+class AnalyzeTextError(Exception):
+    """入力テキストの解析に失敗した。"""
 
     ...
 
@@ -100,5 +105,32 @@ class InvalidWordError(ValueError):
 
     ...
 
-def _validate_pronunciation(pronunciation: str) -> None: ...
+class _ReservedFields:
+    def __new__(cls, *args: object, **kwargs: object) -> NoReturn: ...
+
+def _audio_query_from_accent_phrases(
+    accent_phrases: list[AccentPhrase],
+) -> AudioQuery: ...
+def _audio_query_from_json(json: str) -> AudioQuery: ...
+def _audio_query_to_json(audio_query: AudioQuery) -> str: ...
+def _validate_user_dict_word(word: UserDictWord) -> None: ...
 def _to_zenkaku(text: str) -> str: ...
+def wav_from_s16le(pcm: bytes, sampling_rate: int, is_stereo: bool) -> bytes:
+    """
+    16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
+
+    Parameters
+    ----------
+    pcm : bytes
+        16bit PCMで表現された音声データ
+    sampling_rate: int
+        入力pcmのサンプリングレート
+    is_stereo: bool
+        入力pcmがステレオかどうか
+
+    Returns
+    -------
+    bytes
+        WAVフォーマットで表現された音声データ
+    """
+    ...

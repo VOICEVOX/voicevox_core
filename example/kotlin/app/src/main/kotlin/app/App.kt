@@ -2,6 +2,7 @@ package app
 
 import java.io.File
 import jp.hiroshiba.voicevoxcore.*
+import jp.hiroshiba.voicevoxcore.blocking.*
 import kotlinx.cli.*
 
 enum class Mode {
@@ -33,15 +34,15 @@ fun main(args: Array<String>) {
   parser.parse(args)
 
   println("Inititalizing: ${mode}, ${onnxruntime}, ${dictDir}")
-  val ort = Onnxruntime.loadOnce().filename(onnxruntime).exec()
+  val ort = Onnxruntime.loadOnce().filename(onnxruntime).perform()
   val openJtalk = OpenJtalk(dictDir)
   val synthesizer =
       Synthesizer.builder(ort, openJtalk)
           .accelerationMode(
               when (mode) {
-                Mode.AUTO -> Synthesizer.AccelerationMode.AUTO
-                Mode.CPU -> Synthesizer.AccelerationMode.CPU
-                Mode.GPU -> Synthesizer.AccelerationMode.GPU
+                Mode.AUTO -> AccelerationMode.AUTO
+                Mode.CPU -> AccelerationMode.CPU
+                Mode.GPU -> AccelerationMode.GPU
               }
           )
           .build()
@@ -54,7 +55,7 @@ fun main(args: Array<String>) {
   val audioQuery = synthesizer.createAudioQuery(text, styleId)
 
   println("Synthesizing...")
-  val audio = synthesizer.synthesis(audioQuery, styleId).execute()
+  val audio = synthesizer.synthesis(audioQuery, styleId).perform()
 
   println("Saving the audio to ${out}")
   File(out).writeBytes(audio)

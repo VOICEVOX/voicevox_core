@@ -1,6 +1,8 @@
 [package]
 name = "test_util"
 edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
 
 [dependencies]
 libloading.workspace = true

@@ -1,8 +1,7 @@
 use crate::{
-    devices::DeviceAvailabilities,
-    engine::{FullContextLabelError, KanaParseError},
-    user_dict::InvalidWordError,
     StyleId, StyleType, VoiceModelId,
+    core::devices::DeviceAvailabilities,
+    engine::talk::{KanaParseError, user_dict::InvalidWordError},
 };
 //use engine::
 use duplicate::duplicate_item;
@@ -19,7 +18,6 @@ pub struct Error(#[from] ErrorRepr);
 #[duplicate_item(
     E;
     [ LoadModelError ];
-    [ FullContextLabelError ];
     [ KanaParseError ];
     [ InvalidWordError ];
 )]
@@ -41,14 +39,14 @@ impl Error {
                 LoadModelErrorKind::ReadZipEntry { .. } => ErrorKind::ReadZipEntry,
                 LoadModelErrorKind::ModelAlreadyLoaded { .. } => ErrorKind::ModelAlreadyLoaded,
                 LoadModelErrorKind::StyleAlreadyLoaded { .. } => ErrorKind::StyleAlreadyLoaded,
-                LoadModelErrorKind::InvalidModelFormat { .. } => ErrorKind::InvalidModelFormat,
+                LoadModelErrorKind::InvalidModelFormat => ErrorKind::InvalidModelFormat,
                 LoadModelErrorKind::InvalidModelData => ErrorKind::InvalidModelData,
             },
             ErrorRepr::GetSupportedDevices(_) => ErrorKind::GetSupportedDevices,
             ErrorRepr::StyleNotFound { .. } => ErrorKind::StyleNotFound,
             ErrorRepr::ModelNotFound { .. } => ErrorKind::ModelNotFound,
             ErrorRepr::RunModel { .. } => ErrorKind::RunModel,
-            ErrorRepr::ExtractFullContextLabel(_) => ErrorKind::ExtractFullContextLabel,
+            ErrorRepr::AnalyzeText { .. } => ErrorKind::AnalyzeText,
             ErrorRepr::ParseKana(_) => ErrorKind::ParseKana,
             ErrorRepr::LoadUserDict(_) => ErrorKind::LoadUserDict,
             ErrorRepr::SaveUserDict(_) => ErrorKind::SaveUserDict,
@@ -99,8 +97,12 @@ pub(crate) enum ErrorRepr {
     #[error("推論に失敗しました")]
     RunModel(#[source] anyhow::Error),
 
-    #[error(transparent)]
-    ExtractFullContextLabel(#[from] FullContextLabelError),
+    #[error("入力テキストの解析に失敗しました")]
+    AnalyzeText {
+        text: String,
+        #[source]
+        source: anyhow::Error,
+    },
 
     #[error(transparent)]
     ParseKana(#[from] KanaParseError),
@@ -122,6 +124,11 @@ pub(crate) enum ErrorRepr {
 }
 
 /// エラーの種類。
+#[expect(
+    clippy::manual_non_exhaustive,
+    reason = "バインディングを作るときはexhaustiveとして扱いたい"
+)]
+#[doc(alias = "VoicevoxResultCode")]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ErrorKind {
     /// open_jtalk辞書ファイルが読み込まれていない。
@@ -150,8 +157,8 @@ pub enum ErrorKind {
     ModelNotFound,
     /// 推論に失敗した。
     RunModel,
-    /// コンテキストラベル出力に失敗した。
-    ExtractFullContextLabel,
+    /// 入力テキストの解析に失敗した。
+    AnalyzeText,
     /// AquesTalk風記法のテキストの解析に失敗した。
     ParseKana,
     /// ユーザー辞書を読み込めなかった。
@@ -164,6 +171,8 @@ pub enum ErrorKind {
     UseUserDict,
     /// ユーザー辞書の単語のバリデーションに失敗した。
     InvalidWord,
+    #[doc(hidden)]
+    __NonExhaustive,
 }
 
 pub(crate) type LoadModelResult<T> = std::result::Result<T, LoadModelError>;
@@ -180,16 +189,16 @@ pub(crate) struct LoadModelError {
 
 #[derive(derive_more::Display, Debug)]
 pub(crate) enum LoadModelErrorKind {
-    #[display(fmt = "ZIPファイルとして開くことができませんでした")]
+    #[display("ZIPファイルとして開くことができませんでした")]
     OpenZipFile,
-    #[display(fmt = "`{filename}`を読み取れませんでした")]
+    #[display("`{filename}`を読み取れませんでした")]
     ReadZipEntry { filename: String },
-    #[display(fmt = "モデルの形式が不正です")]
+    #[display("モデルの形式が不正です")]
     InvalidModelFormat,
-    #[display(fmt = "モデル`{id}`は既に読み込まれています")]
+    #[display("モデル`{id}`は既に読み込まれています")]
     ModelAlreadyLoaded { id: VoiceModelId },
-    #[display(fmt = "スタイル`{id}`は既に読み込まれています")]
+    #[display("スタイル`{id}`は既に読み込まれています")]
     StyleAlreadyLoaded { id: StyleId },
-    #[display(fmt = "モデルデータを読むことができませんでした")]
+    #[display("モデルデータを読むことができませんでした")]
     InvalidModelData,
 }

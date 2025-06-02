@@ -1,7 +1,8 @@
-use jni::{objects::JObject, JNIEnv};
+use jni::{JNIEnv, objects::JObject};
 
-#[no_mangle]
-extern "system" fn Java_jp_hiroshiba_voicevoxcore_Dll_00024LoggerInitializer_initLogger(
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_internal_Dll_00024LoggerInitializer_initLogger(
     _: JNIEnv<'_>,
     _: JObject<'_>,
 ) {
@@ -23,13 +24,14 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_Dll_00024LoggerInitializer_ini
             env, fmt,
             io::{self, IsTerminal, Write},
         };
-        use tracing_subscriber::{fmt::format::Writer, EnvFilter};
+        use tracing_subscriber::{EnvFilter, fmt::format::Writer};
 
         tracing_subscriber::fmt()
             .with_env_filter(if env::var_os(EnvFilter::DEFAULT_ENV).is_some() {
                 EnvFilter::from_default_env()
             } else {
                 // FIXME: `c_api`じゃないし、ortも`warn`は出すべき
+                // FIXME: c_apiじゃなくてjava_api
                 "error,voicevox_core=info,voicevox_core_c_api=info,ort=error".into()
             })
             .with_timer(local_time as fn(&mut Writer<'_>) -> _)

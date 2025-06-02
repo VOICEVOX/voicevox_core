@@ -7,8 +7,8 @@ VOICEVOX CORE の Python バインディングです。
 以下の環境が必要です。
 
 - Rustup
-- Python ≧ 3.8
-- Poetry ≧ 1.6
+- Python ≧ 3.10
+- Poetry ≧ 2
 
 ```console
 ❯ poetry install --with dev
@@ -19,20 +19,31 @@ VOICEVOX CORE の Python バインディングです。
 ```console
 .
 ├── Cargo.toml                        : Rustプロジェクトとしてのマニフェストファイルです。
+├── poetry.lock
 ├── pyproject.toml
-├── python                            : このディレクトリの内容がwhlに入ります。
-│   └── voicevox_core
+├── python
+│   ├── test                          : pytestのテストです。
+│   │   └── …
+│   └── voicevox_core                 : このディレクトリの内容がwhlに入ります。
+│       ├── asyncio.py
+│       ├── blocking.py
 │       ├── __init__.py
-│       ├── _load_dlls.py
 │       ├── _models.py
-│       ├── __pycache__               : maturin developで生成されます。
+│       │   ├── __init__.py
+│       │   ├── _please_do_not_use.py
+│       │   └─ __pycache__            : maturin developで生成されます。gitignoreされているはずです。
+│       │      └── …
+│       ├── __pycache__               : 〃
 │       │   └── …
 │       ├── py.typed
-│       ├── _rust.abi3.{dll,dylib,so} : maturin developで生成されるpydファイルです。
-│       └── _rust.pyi                 : _rust.abi3.{dll,dylib,so}用のpyiファイルです。
+│       ├── _rust                     : _rust.abi3.{dll,dylib,so}用のpyiファイル達です。
+│       │   ├── asyncio.pyi
+│       │   ├── blocking.pyi
+│       │   └── __init__.pyi
+│       └── _rust.abi3.{dll,dylib,so} : maturin developで生成されるpydファイルです。こちらもgitignoreされているはずです。
 ├── README.md
 └── src                               : Rustのソースコードです。_rust.abi3.{dll,dylib,so}にコンパイルされます。
-    └── lib.rs
+    └── …
 ```
 
 ## ビルド
@@ -48,6 +59,16 @@ VOICEVOX CORE の Python バインディングです。
 ```console
 ❯ maturin build --release --locked
 ```
+
+## テスト
+
+`maturin develop` で editable な状態でインストールした後に[pytestのテスト]を実行します。
+
+```console
+❯ pytest
+```
+
+[pytestのテスト]: ./python/test/
 
 ## サンプル実行
 

@@ -1,5 +1,6 @@
 use std::sync::LazyLock;
 
+use const_format::concatcp;
 use regex::{Regex, Replacer};
 
 use crate::assert_cdylib::Utf8Output;
@@ -21,17 +22,29 @@ impl Utf8Output {
         )
     }
 
-    pub(crate) fn mask_onnxruntime_version(self) -> Self {
+    pub(crate) fn mask_onnxruntime_filename(self) -> Self {
         self.mask_stderr(
-            static_regex!(regex::escape(ort::downloaded_version!())),
-            "{onnxruntime_version}",
+            static_regex!(regex::escape(
+                const {
+                    if cfg!(windows) {
+                        r"onnxruntime.dll"
+                    } else if cfg!(target_os = "linux") {
+                        concatcp!("libonnxruntime.so.", ort::downloaded_version!())
+                    } else if cfg!(target_os = "macos") {
+                        concatcp!("libonnxruntime.", ort::downloaded_version!(), ".dylib")
+                    } else {
+                        panic!("unsupported")
+                    }
+                }
+            )),
+            "{onnxruntime_filename}",
         )
     }
 
     pub(crate) fn mask_windows_video_cards(self) -> Self {
         self.mask_stderr(
             static_regex!(
-                r#"(?m)^\{timestamp\}  INFO voicevox_core::synthesizer::blocking: 検出されたGPU \(DirectMLにはGPU 0が使われます\):(\n\{timestamp\}  INFO voicevox_core::synthesizer::blocking:   GPU [0-9]+: "[^"]+" \([0-9.]+ [a-zA-Z]+\))+"#,
+                r#"(?m)^\{timestamp\}  INFO voicevox_core::synthesizer: 検出されたGPU \(DirectMLにはGPU 0が使われます\):(\n\{timestamp\}  INFO voicevox_core::synthesizer:   GPU [0-9]+: "[^"]+" \([0-9.]+ [a-zA-Z]+\))+"#,
             ),
             "{windows-video-cards}",
         )

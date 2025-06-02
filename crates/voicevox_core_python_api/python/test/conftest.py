@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import List, TypedDict
+from typing import TypedDict
 
 import pytest
 import voicevox_core
@@ -13,7 +13,9 @@ onnxruntime_filename = str(
     / "test_util"
     / "data"
     / "lib"
-    / voicevox_core.blocking.Onnxruntime.LIB_VERSIONED_FILENAME
+    / voicevox_core.blocking.Onnxruntime.LIB_VERSIONED_FILENAME.replace(
+        "voicevox_onnxruntime", "onnxruntime"
+    )
 )
 open_jtalk_dic_dir = (
     root_dir.parent.parent.parent / "test_util" / "data" / "open_jtalk_dic_utf_8-1.11"
@@ -25,26 +27,26 @@ model_dir = (
 
 class DurationExampleData(TypedDict):
     length: int
-    phoneme_vector: List[int]
-    result: List[float]
+    phoneme_vector: list[int]
+    result: list[float]
 
 
 class IntonationExampleData(TypedDict):
     length: int
-    vowel_phoneme_vector: List[int]
-    consonant_phoneme_vector: List[int]
-    start_accent_vector: List[int]
-    end_accent_vector: List[int]
-    start_accent_phrase_vector: List[int]
-    end_accent_phrase_vector: List[int]
-    result: List[float]
+    vowel_phoneme_vector: list[int]
+    consonant_phoneme_vector: list[int]
+    start_accent_vector: list[int]
+    end_accent_vector: list[int]
+    start_accent_phrase_vector: list[int]
+    end_accent_phrase_vector: list[int]
+    result: list[float]
 
 
 class DecodeExampleData(TypedDict):
     f0_length: int
     phoneme_size: int
-    f0_vector: List[float]
-    phoneme_vector: List[float]
+    f0_vector: list[float]
+    phoneme_vector: list[float]
 
 
 class ExampleData(TypedDict):

@@ -1,7 +1,7 @@
 use easy_ext::ext;
 use std::{ffi::CStr, fmt::Debug, iter};
 use uuid::Uuid;
-use voicevox_core::{AudioQuery, UserDictWord, VoiceModelId};
+use voicevox_core::{AccelerationMode, AudioQuery, UserDictWord, VoiceModelId};
 
 use thiserror::Error;
 use tracing::error;
@@ -9,8 +9,9 @@ use tracing::error;
 use voicevox_core::AccentPhrase;
 
 use crate::{
-    result_code::VoicevoxResultCode, VoicevoxAccelerationMode, VoicevoxInitializeOptions,
-    VoicevoxSynthesisOptions, VoicevoxTtsOptions, VoicevoxUserDictWord, VoicevoxUserDictWordType,
+    VoicevoxAccelerationMode, VoicevoxInitializeOptions, VoicevoxSynthesisOptions,
+    VoicevoxTtsOptions, VoicevoxUserDictWord, VoicevoxUserDictWordType,
+    result_code::VoicevoxResultCode,
 };
 
 pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxResultCode {
@@ -20,9 +21,9 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
     return into_result_code(result);
 
     fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
-        use voicevox_core::ErrorKind::*;
         use CApiError::*;
         use VoicevoxResultCode::*;
+        use voicevox_core::ErrorKind::*;
 
         match result {
             Ok(()) => VOICEVOX_RESULT_OK,
@@ -40,13 +41,14 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 StyleNotFound => VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
                 ModelNotFound => VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
                 RunModel => VOICEVOX_RESULT_RUN_MODEL_ERROR,
-                ExtractFullContextLabel => VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
+                AnalyzeText => VOICEVOX_RESULT_ANALYZE_TEXT_ERROR,
                 ParseKana => VOICEVOX_RESULT_PARSE_KANA_ERROR,
                 LoadUserDict => VOICEVOX_RESULT_LOAD_USER_DICT_ERROR,
                 SaveUserDict => VOICEVOX_RESULT_SAVE_USER_DICT_ERROR,
                 WordNotFound => VOICEVOX_RESULT_USER_DICT_WORD_NOT_FOUND_ERROR,
                 UseUserDict => VOICEVOX_RESULT_USE_USER_DICT_ERROR,
                 InvalidWord => VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR,
+                __NonExhaustive => unreachable!(),
             },
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
@@ -92,14 +94,6 @@ pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {
     s.to_str().map_err(|_| CApiError::InvalidUtf8Input)
 }
 
-impl From<VoicevoxSynthesisOptions> for voicevox_core::SynthesisOptions {
-    fn from(options: VoicevoxSynthesisOptions) -> Self {
-        Self {
-            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
-        }
-    }
-}
-
 impl From<voicevox_core::AccelerationMode> for VoicevoxAccelerationMode {
     fn from(mode: voicevox_core::AccelerationMode) -> Self {
         use voicevox_core::AccelerationMode::*;
@@ -107,6 +101,7 @@ impl From<voicevox_core::AccelerationMode> for VoicevoxAccelerationMode {
             Auto => Self::VOICEVOX_ACCELERATION_MODE_AUTO,
             Cpu => Self::VOICEVOX_ACCELERATION_MODE_CPU,
             Gpu => Self::VOICEVOX_ACCELERATION_MODE_GPU,
+            __NonExhaustive => unreachable!(),
         }
     }
 }
@@ -124,44 +119,27 @@ impl From<VoicevoxAccelerationMode> for voicevox_core::AccelerationMode {
 
 impl Default for VoicevoxInitializeOptions {
     fn default() -> Self {
-        let options = voicevox_core::InitializeOptions::default();
         Self {
-            acceleration_mode: options.acceleration_mode.into(),
-            cpu_num_threads: options.cpu_num_threads,
-        }
-    }
-}
-
-impl From<VoicevoxInitializeOptions> for voicevox_core::InitializeOptions {
-    fn from(value: VoicevoxInitializeOptions) -> Self {
-        voicevox_core::InitializeOptions {
-            acceleration_mode: value.acceleration_mode.into(),
-            cpu_num_threads: value.cpu_num_threads,
-        }
-    }
-}
-
-impl From<voicevox_core::TtsOptions> for VoicevoxTtsOptions {
-    fn from(options: voicevox_core::TtsOptions) -> Self {
-        Self {
-            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
-        }
-    }
-}
-
-impl From<VoicevoxTtsOptions> for voicevox_core::TtsOptions {
-    fn from(options: VoicevoxTtsOptions) -> Self {
-        Self {
-            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+            acceleration_mode: AccelerationMode::default().into(),
+            cpu_num_threads: voicevox_core::__internal::interop::DEFAULT_CPU_NUM_THREADS,
         }
     }
 }
 
 impl Default for VoicevoxSynthesisOptions {
     fn default() -> Self {
-        let options = voicevox_core::TtsOptions::default();
         Self {
-            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
+            enable_interrogative_upspeak:
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        }
+    }
+}
+
+impl Default for VoicevoxTtsOptions {
+    fn default() -> Self {
+        Self {
+            enable_interrogative_upspeak:
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         }
     }
 }
@@ -175,13 +153,23 @@ pub(crate) impl uuid::Bytes {
 
 impl VoicevoxUserDictWord {
     pub(crate) unsafe fn try_into_word(&self) -> CApiResult<voicevox_core::UserDictWord> {
-        Ok(UserDictWord::new(
-            ensure_utf8(CStr::from_ptr(self.surface))?,
-            ensure_utf8(CStr::from_ptr(self.pronunciation))?.to_string(),
-            self.accent_type,
-            self.word_type.into(),
-            self.priority,
-        )?)
+        let (surface, pronunciation) = unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            (
+                CStr::from_ptr(self.surface),
+                CStr::from_ptr(self.pronunciation),
+            )
+        };
+
+        UserDictWord::builder()
+            .word_type(self.word_type.into())
+            .priority(self.priority)
+            .build(
+                ensure_utf8(surface)?,
+                ensure_utf8(pronunciation)?.to_string(),
+                self.accent_type,
+            )
+            .map_err(Into::into)
     }
 }
 
@@ -211,6 +199,7 @@ impl From<voicevox_core::UserDictWordType> for VoicevoxUserDictWordType {
                 Self::VOICEVOX_USER_DICT_WORD_TYPE_ADJECTIVE
             }
             voicevox_core::UserDictWordType::Suffix => Self::VOICEVOX_USER_DICT_WORD_TYPE_SUFFIX,
+            voicevox_core::UserDictWordType::__NonExhaustive => unreachable!(),
         }
     }
 }

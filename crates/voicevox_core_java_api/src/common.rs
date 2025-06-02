@@ -3,10 +3,10 @@ use std::{error::Error as _, iter, mem, ops::Deref};
 use derive_more::From;
 use easy_ext::ext;
 use jni::{
-    objects::{JObject, JThrowable},
     JNIEnv,
+    objects::{JObject, JThrowable},
 };
-use tracing::{debug, warn};
+use tracing::debug;
 use uuid::Uuid;
 use voicevox_core::__internal::interop::raii::MaybeClosed;
 
@@ -23,22 +23,22 @@ macro_rules! object_type {
     };
 }
 #[macro_export]
-macro_rules! enum_object {
-    ($env: ident, $name: literal, $variant: literal) => {
-        $env.get_static_field(object!($name), $variant, object_type!($name))
+macro_rules! static_field {
+    ($env: ident, $name: literal, $field: literal) => {
+        $env.get_static_field(object!($name), $field, object_type!($name))
             .unwrap_or_else(|_| {
                 panic!(
                     "Failed to get field {}",
-                    concat!($variant, "L", object!($name), ";")
+                    concat!($field, "L", object!($name), ";")
                 )
             })
             .l()
     };
 }
 
-pub(crate) fn throw_if_err<T, F>(mut env: JNIEnv<'_>, fallback: T, inner: F) -> T
+pub(crate) fn throw_if_err<'local, T, F>(mut env: JNIEnv<'local>, fallback: T, inner: F) -> T
 where
-    F: FnOnce(&mut JNIEnv<'_>) -> Result<T, JavaApiError>,
+    F: FnOnce(&mut JNIEnv<'local>) -> Result<T, JavaApiError>,
 {
     match inner(&mut env) {
         Ok(value) => value as _,
@@ -67,6 +67,7 @@ where
                                             "Exception",
                                         ),
                                     )*
+                                    voicevox_core::ErrorKind::__NonExhaustive => unreachable!(),
                                 }
                             };
                         }
@@ -85,7 +86,7 @@ where
                             StyleNotFound,
                             ModelNotFound,
                             RunModel,
-                            ExtractFullContextLabel,
+                            AnalyzeText,
                             ParseKana,
                             LoadUserDict,
                             SaveUserDict,
@@ -166,7 +167,7 @@ where
     }
 }
 
-type JavaApiResult<T> = Result<T, JavaApiError>;
+pub(crate) type JavaApiResult<T> = Result<T, JavaApiError>;
 
 #[derive(From, Debug)]
 pub(crate) enum JavaApiError {
@@ -191,7 +192,7 @@ impl<T: HasJavaClassIdent> Closable<T> {
         Self(MaybeClosed::Open(content).into())
     }
 
-    pub(crate) fn read(&self) -> JavaApiResult<impl Deref<Target = T> + '_> {
+    pub(crate) fn read(&self) -> JavaApiResult<impl Deref<Target = T>> {
         let lock = self.0.try_read().map_err(|e| match e {
             std::sync::TryLockError::Poisoned(e) => panic!("{e}"),
             std::sync::TryLockError::WouldBlock => {
@@ -224,35 +225,18 @@ impl<T: HasJavaClassIdent> Closable<T> {
     }
 }
 
-impl<T: HasJavaClassIdent> Drop for Closable<T> {
-    fn drop(&mut self) {
-        let content = mem::replace(
-            self.0.get_mut().unwrap_or_else(|e| panic!("{e}")),
-            MaybeClosed::Closed,
-        );
-        if let MaybeClosed::Open(content) = content {
-            warn!(
-                "デストラクタにより`{}`のクローズを行います。通常は、可能な限り`close`でクローズす\
-                 るようにして下さい",
-                T::JAVA_CLASS_IDENT,
-            );
-            drop(content);
-        }
-    }
-}
-
 pub(crate) trait HasJavaClassIdent {
     const JAVA_CLASS_IDENT: &str;
 }
 
 #[ext(JNIEnvExt)]
-pub(crate) impl JNIEnv<'_> {
-    fn new_uuid(&mut self, uuid: Uuid) -> jni::errors::Result<JObject<'_>> {
+pub(crate) impl<'local> JNIEnv<'local> {
+    fn new_uuid(&mut self, uuid: Uuid) -> jni::errors::Result<JObject<'local>> {
         let (msbs, lsbs) = split_uuid(uuid);
         self.new_object("java/util/UUID", "(JJ)V", &[msbs.into(), lsbs.into()])
     }
 
-    fn get_uuid(&mut self, obj: &JObject<'_>) -> jni::errors::Result<Uuid> {
+    fn get_uuid(&mut self, obj: &JObject<'local>) -> jni::errors::Result<Uuid> {
         let mut get_bits = |method_name| self.call_method(obj, method_name, "()J", &[])?.j();
         let msbs = get_bits("getMostSignificantBits")?;
         let lsbs = get_bits("getLeastSignificantBits")?;
@@ -271,7 +255,7 @@ fn construct_uuid(msbs: i64, lsbs: i64) -> Uuid {
     return Uuid::from_u128((to_u128(msbs) << 64) + to_u128(lsbs));
 
     fn to_u128(bits: i64) -> u128 {
-        (bits as u64).into()
+        bits.cast_unsigned().into()
     }
 }
 
@@ -279,7 +263,7 @@ fn construct_uuid(msbs: i64, lsbs: i64) -> Uuid {
 mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
-    use uuid::{uuid, Uuid};
+    use uuid::{Uuid, uuid};
 
     #[rstest]
     #[case(uuid!("a1a2a3a4-b1b2-c1c2-d1d2-e1e2e3e4e5e6"))]

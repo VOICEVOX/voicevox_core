@@ -1,0 +1,22 @@
+# 依存ライブラリのライセンスを確認する。
+#
+# `advisories`以外についてcargo-denyを実行する。
+
+name: licenses
+
+# 外部からの貢献者の負担を減らすため、PR時点では不適合になることを許容する。その代わりmainブランチで
+# は毎回本ワークフローを実行する。
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  licenses:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cargo-deny
+        uses: ./.github/actions/install-cargo-deny
+      - name: cargo-deny
+        run: cargo deny --all-features check -s bans licenses sources

@@ -1,9 +1,12 @@
 package jp.hiroshiba.voicevoxcore;
 
 import java.io.File;
+import jp.hiroshiba.voicevoxcore.blocking.Onnxruntime;
+import jp.hiroshiba.voicevoxcore.blocking.OpenJtalk;
+import jp.hiroshiba.voicevoxcore.blocking.VoiceModelFile;
 
-class TestUtils {
-  VoiceModelFile openModel() {
+public class TestUtils {
+  protected VoiceModelFile openModel() {
     // cwdはvoicevox_core/crates/voicevox_core_java_api/lib
     String cwd = System.getProperty("user.dir");
     File path = new File(cwd + "/../../test_util/data/model/sample.vvm");
@@ -15,17 +18,19 @@ class TestUtils {
     }
   }
 
-  Onnxruntime loadOnnxruntime() {
-    final String FILENAME = "../../test_util/data/lib/" + Onnxruntime.LIB_VERSIONED_FILENAME;
+  protected Onnxruntime loadOnnxruntime() {
+    final String FILENAME =
+        "../../test_util/data/lib/"
+            + Onnxruntime.LIB_VERSIONED_FILENAME.replace("voicevox_onnxruntime", "onnxruntime");
 
     try {
-      return Onnxruntime.loadOnce().filename(FILENAME).exec();
+      return Onnxruntime.loadOnce().filename(FILENAME).perform();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  OpenJtalk loadOpenJtalk() {
+  protected OpenJtalk loadOpenJtalk() {
     String cwd = System.getProperty("user.dir");
     File path = new File(cwd + "/../../test_util/data/open_jtalk_dic_utf_8-1.11");
 

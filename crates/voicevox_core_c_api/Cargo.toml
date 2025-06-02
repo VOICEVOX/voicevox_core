@@ -3,6 +3,8 @@ name = "voicevox_core_c_api"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
+rust-version.workspace = true
+license.workspace = true
 
 [lib]
 crate-type = ["cdylib"]
@@ -17,17 +19,20 @@ load-onnxruntime = ["voicevox_core/load-onnxruntime"]
 link-onnxruntime = ["voicevox_core/link-onnxruntime"]
 
 [dependencies]
-anstream = { workspace = true, default-features = false, features = ["auto"] }
+anstream = { workspace = true, features = ["auto"] }
 anstyle-query.workspace = true
+boxcar.workspace = true
 camino.workspace = true
-chrono = { workspace = true, default-features = false, features = ["clock"] }
+chrono = { workspace = true, features = ["clock"] }
 colorchoice.workspace = true
 const_format.workspace = true
-cstr.workspace = true
-derive-getters.workspace = true
+duplicate.workspace = true
 easy-ext.workspace = true
+educe.workspace = true
 itertools.workspace = true
 libc.workspace = true
+ndarray.workspace = true
+parking_lot = { workspace = true, features = ["arc_lock"] }
 process_path.workspace = true
 ref-cast.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
@@ -44,10 +49,12 @@ clap = { workspace = true, features = ["derive"] }
 duct.workspace = true
 easy-ext.workspace = true
 inventory.workspace = true
+indexmap = { workspace = true, features = ["serde"] }
 libloading.workspace = true
 libtest-mimic.workspace = true
 ndarray.workspace = true
 ndarray-stats.workspace = true
+predicates.workspace = true
 regex.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true

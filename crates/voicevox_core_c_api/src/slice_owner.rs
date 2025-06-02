@@ -1,4 +1,4 @@
-use std::{cell::UnsafeCell, collections::BTreeMap, ptr::NonNull, sync::Mutex};
+use std::{cell::UnsafeCell, collections::BTreeMap, num::NonZeroUsize, ptr::NonNull, sync::Mutex};
 
 /// Cの世界に貸し出す`[u8]`の所有者(owner)。
 ///
@@ -16,7 +16,7 @@ use std::{cell::UnsafeCell, collections::BTreeMap, ptr::NonNull, sync::Mutex};
 pub(crate) static U8_SLICE_OWNER: SliceOwner<u8> = SliceOwner::new();
 
 pub(crate) struct SliceOwner<T> {
-    slices: Mutex<BTreeMap<usize, UnsafeCell<Box<[T]>>>>,
+    slices: Mutex<BTreeMap<NonZeroUsize, UnsafeCell<Box<[T]>>>>,
 }
 
 impl<T> SliceOwner<T> {
@@ -37,16 +37,16 @@ impl<T> SliceOwner<T> {
     pub(crate) unsafe fn own_and_lend(
         &self,
         slice: impl Into<Box<[T]>>,
-        out_ptr: NonNull<*mut T>,
+        out_ptr: NonNull<NonNull<T>>,
         out_len: NonNull<usize>,
     ) {
         let mut slices = self.slices.lock().unwrap();
 
         let slice = slice.into();
-        let ptr = slice.as_ptr() as *mut T;
+        let ptr = NonNull::new(slice.as_ptr() as *mut T).expect("comes from a slice");
         let len = slice.len();
 
-        let duplicated = slices.insert(ptr as usize, slice.into()).is_some();
+        let duplicated = slices.insert(ptr.addr(), slice.into()).is_some();
         if duplicated {
             panic!(
                 "別の{ptr:p}が管理下にあります。原因としては以前に別の配列が{ptr:p}として存在\
@@ -55,19 +55,22 @@ impl<T> SliceOwner<T> {
             );
         }
 
-        out_ptr.write_unaligned(ptr);
-        out_len.write_unaligned(len);
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { out_ptr.write_unaligned(ptr) };
+        unsafe { out_len.write_unaligned(len) };
     }
 
     /// `own_and_lend`でC API利用者に貸し出したポインタに対応する`Box<[u8]>`をデストラクトする。
     ///
+    /// ヌルポインタに対しては何もしない。
+    ///
     /// # Panics
     ///
-    /// `ptr`が`own_and_lend`で貸し出されたポインタではないとき、パニックする。
+    /// `ptr`が非ヌルで、かつ`own_and_lend`で貸し出されたポインタではないとき、パニックする。
     pub(crate) fn drop_for(&self, ptr: *mut T) {
-        let mut slices = self.slices.lock().unwrap();
+        let Some(ptr) = NonNull::new(ptr) else { return };
 
-        slices.remove(&(ptr as usize)).expect(
+        self.slices.lock().unwrap().remove(&ptr.addr()).expect(
             "解放しようとしたポインタはvoicevox_coreの管理下にありません。\
              誤ったポインタであるか、二重解放になっていることが考えられます",
         );
@@ -76,7 +79,10 @@ impl<T> SliceOwner<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::{mem::MaybeUninit, ptr::NonNull};
+    use std::{
+        mem::MaybeUninit,
+        ptr::{self, NonNull},
+    };
 
     use super::SliceOwner;
 
@@ -108,7 +114,7 @@ mod tests {
                 (ptr.assume_init(), len.assume_init())
             };
             assert_eq!(expected_len, len);
-            owner.drop_for(ptr);
+            owner.drop_for(ptr.as_ptr());
         }
 
         fn vec<T: Clone>(initial_cap: usize, elems: &[T]) -> Vec<T> {
@@ -119,12 +125,18 @@ mod tests {
     }
 
     #[test]
+    fn it_accepts_null() {
+        let owner = SliceOwner::<i32>::new();
+        owner.drop_for(ptr::null_mut());
+    }
+
+    #[test]
     #[should_panic(
         expected = "解放しようとしたポインタはvoicevox_coreの管理下にありません。誤ったポインタであるか、二重解放になっていることが考えられます"
     )]
     fn it_denies_unknown_ptr() {
         let owner = SliceOwner::<i32>::new();
-        let x = 42;
-        owner.drop_for(&x as *const i32 as *mut i32);
+        let mut x = 42;
+        owner.drop_for(&raw mut x);
     }
 }

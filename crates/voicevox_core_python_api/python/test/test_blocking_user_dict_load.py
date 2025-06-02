@@ -22,7 +22,7 @@ def test_user_dict_load() -> None:
 
     synthesizer.load_voice_model(model)
 
-    audio_query_without_dict = synthesizer.audio_query(
+    audio_query_without_dict = synthesizer.create_audio_query(
         "this_word_should_not_exist_in_default_dictionary", style_id=0
     )
 
@@ -31,13 +31,14 @@ def test_user_dict_load() -> None:
         voicevox_core.UserDictWord(
             surface="this_word_should_not_exist_in_default_dictionary",
             pronunciation="アイウエオ",
+            accent_type=0,
         )
     )
     assert isinstance(uuid, UUID)
 
     open_jtalk.use_user_dict(temp_dict)
 
-    audio_query_with_dict = synthesizer.audio_query(
+    audio_query_with_dict = synthesizer.create_audio_query(
         "this_word_should_not_exist_in_default_dictionary", style_id=0
     )
     assert audio_query_without_dict != audio_query_with_dict

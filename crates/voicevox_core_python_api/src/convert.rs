@@ -1,178 +1,327 @@
-use std::{error::Error as _, future::Future, iter, panic, path::PathBuf};
+use std::{error::Error as _, iter, path::PathBuf};
 
 use camino::Utf8PathBuf;
+use derive_more::From;
 use easy_ext::ext;
+use heck::{ToLowerCamelCase as _, ToSnakeCase as _};
 use pyo3::{
-    exceptions::{PyException, PyRuntimeError, PyValueError},
-    types::{IntoPyDict as _, PyList},
-    FromPyObject as _, IntoPy, PyAny, PyObject, PyResult, Python, ToPyObject,
+    Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python,
+    exceptions::{PyException, PyValueError},
+    types::{
+        IntoPyDict as _, PyAnyMethods as _, PyDict, PyDictMethods as _, PyList, PyListMethods as _,
+        PyString, PyStringMethods as _,
+    },
 };
-use serde::{de::DeserializeOwned, Serialize};
+use ref_cast::RefCast;
+use serde::{Serialize, de::DeserializeOwned};
 use serde_json::json;
 use uuid::Uuid;
-use voicevox_core::{AccelerationMode, AccentPhrase, StyleId, UserDictWordType, VoiceModelMeta};
+use voicevox_core::{
+    __internal::interop::ToJsonValue as _, AccelerationMode, AccentPhrase, AudioQuery,
+    SupportedDevices, UserDictWord, VoiceModelMeta,
+};
 
 use crate::{
-    ExtractFullContextLabelError, GetSupportedDevicesError, GpuSupportError,
+    _ReservedFields, AnalyzeTextError, GetSupportedDevicesError, GpuSupportError,
     InitInferenceRuntimeError, InvalidModelDataError, InvalidModelFormatError, InvalidWordError,
     LoadUserDictError, ModelAlreadyLoadedError, ModelNotFoundError, NotLoadedOpenjtalkDictError,
     OpenZipFileError, ParseKanaError, ReadZipEntryError, RunModelError, SaveUserDictError,
     StyleAlreadyLoadedError, StyleNotFoundError, UseUserDictError, WordNotFoundError,
 };
 
-pub(crate) fn from_acceleration_mode(ob: &PyAny) -> PyResult<AccelerationMode> {
-    let py = ob.py();
-
-    let class = py.import("voicevox_core")?.getattr("AccelerationMode")?;
-    let mode = class.get_item(ob)?;
-
-    if mode.eq(class.getattr("AUTO")?)? {
-        Ok(AccelerationMode::Auto)
-    } else if mode.eq(class.getattr("CPU")?)? {
-        Ok(AccelerationMode::Cpu)
-    } else if mode.eq(class.getattr("GPU")?)? {
-        Ok(AccelerationMode::Gpu)
-    } else {
-        unreachable!("{} should be one of {{AUTO, CPU, GPU}}", mode.repr()?);
+pub(crate) fn from_acceleration_mode(ob: &Bound<'_, PyAny>) -> PyResult<AccelerationMode> {
+    match ob.extract::<&str>()? {
+        "AUTO" => Ok(AccelerationMode::Auto),
+        "CPU" => Ok(AccelerationMode::Cpu),
+        "GPU" => Ok(AccelerationMode::Gpu),
+        mode => Err(PyValueError::new_err(format!(
+            "`AccelerationMode` should be one of {{AUTO, CPU, GPU}}: {mode}",
+            mode = PyString::new(ob.py(), mode).repr()?,
+        ))),
     }
 }
 
-pub(crate) fn from_utf8_path(ob: &PyAny) -> PyResult<Utf8PathBuf> {
-    PathBuf::extract(ob)?
+pub(crate) fn from_audio_query(ob: &Bound<'_, PyAny>) -> PyResult<AudioQuery> {
+    let py = ob.py();
+
+    let fields = dataclasses_asdict(ob)?
+        .iter()
+        .map(|(key, value)| {
+            let key = match key.downcast::<PyString>()?.to_str()? {
+                "accent_phrases" => "accent_phrases".to_owned(),
+                key => key.to_lower_camel_case(),
+            };
+            Ok((key, value))
+        })
+        .collect::<PyResult<Vec<_>>>()?
+        .into_py_dict(py)?;
+
+    serde_pyobject::from_pyobject(fields).map_err(Into::into)
+}
+
+pub(crate) fn from_accent_phrases(ob: &Bound<'_, PyAny>) -> PyResult<Vec<AccentPhrase>> {
+    ob.downcast::<PyList>()?
+        .iter()
+        .map(|p| from_dataclass_via_serde(&p))
+        .collect()
+}
+
+pub(crate) fn from_utf8_path(ob: &Bound<'_, PyAny>) -> PyResult<Utf8PathBuf> {
+    PathBuf::extract_bound(ob)?
         .into_os_string()
         .into_string()
         .map(Utf8PathBuf::from)
         .map_err(|s| PyValueError::new_err(format!("{s:?} cannot be encoded to UTF-8")))
 }
 
-pub(crate) fn from_dataclass<T: DeserializeOwned>(ob: &PyAny) -> PyResult<T> {
-    let py = ob.py();
+/// Pythonのデータクラスもしくはデータクラスのリストへの変換。
+#[derive(From, RefCast)]
+#[repr(transparent)]
+pub(crate) struct ToDataclass<T>(T);
 
-    let ob = py.import("dataclasses")?.call_method1("asdict", (ob,))?;
-    let json = &py
-        .import("json")?
-        .call_method1("dumps", (ob,))?
-        .extract::<String>()?;
-    serde_json::from_str(json).into_py_value_result()
+impl<'py, T: RustData> IntoPyObject<'py> for ToDataclass<T> {
+    type Target = T::Target;
+    type Output = Bound<'py, T::Target>;
+    type Error = PyErr;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        self.0.to_dataclass(py)
+    }
 }
 
-pub(crate) fn to_pydantic_voice_model_meta<'py>(
-    metas: &VoiceModelMeta,
-    py: Python<'py>,
-) -> PyResult<&'py PyList> {
-    let class = py
-        .import("voicevox_core")?
-        .getattr("SpeakerMeta")?
-        .downcast()?;
+impl<'py, T: RustData> IntoPyObject<'py> for &'_ ToDataclass<T> {
+    type Target = T::Target;
+    type Output = Bound<'py, T::Target>;
+    type Error = PyErr;
 
-    let metas = metas
-        .iter()
-        .map(|m| to_pydantic_dataclass(m, class))
-        .collect::<PyResult<Vec<_>>>()?;
-    Ok(PyList::new(py, metas))
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        self.0.to_dataclass(py)
+    }
 }
 
-pub(crate) fn to_pydantic_dataclass(x: impl Serialize, class: &PyAny) -> PyResult<&PyAny> {
-    let py = class.py();
-
-    let x = serde_json::to_string(&x).into_py_value_result()?;
-    let x = py.import("json")?.call_method1("loads", (x,))?.downcast()?;
-    class.call((), Some(x))
+pub(crate) trait RustData {
+    type Target;
+    fn to_dataclass<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, Self::Target>>;
 }
 
-pub(crate) fn blocking_modify_accent_phrases<'py>(
-    accent_phrases: &'py PyList,
-    speaker_id: StyleId,
-    py: Python<'py>,
-    method: impl FnOnce(Vec<AccentPhrase>, StyleId) -> voicevox_core::Result<Vec<AccentPhrase>>,
-) -> PyResult<Vec<&'py PyAny>> {
-    let rust_accent_phrases = accent_phrases
-        .iter()
-        .map(from_dataclass)
-        .collect::<PyResult<Vec<AccentPhrase>>>()?;
+impl RustData for SupportedDevices {
+    type Target = PyAny;
 
-    method(rust_accent_phrases, speaker_id)
-        .into_py_result(py)?
-        .iter()
-        .map(move |accent_phrase| {
-            to_pydantic_dataclass(
-                accent_phrase,
-                py.import("voicevox_core")?.getattr("AccentPhrase")?,
+    fn to_dataclass<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, Self::Target>> {
+        self.to_py(py)
+    }
+}
+
+impl RustData for VoiceModelMeta {
+    type Target = PyList;
+
+    fn to_dataclass<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, Self::Target>> {
+        let (character_meta_cls, style_meta_cls) = {
+            let module = py.import("voicevox_core")?;
+            (
+                module.getattr("CharacterMeta")?,
+                module.getattr("StyleMeta")?,
             )
-        })
-        .collect()
-}
+        };
 
-pub(crate) fn async_modify_accent_phrases<'py, Fun, Fut>(
-    accent_phrases: &'py PyList,
-    speaker_id: StyleId,
-    py: Python<'py>,
-    method: Fun,
-) -> PyResult<&'py PyAny>
-where
-    Fun: FnOnce(Vec<AccentPhrase>, StyleId) -> Fut + Send + 'static,
-    Fut: Future<Output = voicevox_core::Result<Vec<AccentPhrase>>> + Send + 'static,
-{
-    let rust_accent_phrases = accent_phrases
-        .iter()
-        .map(from_dataclass)
-        .collect::<PyResult<Vec<AccentPhrase>>>()?;
-    pyo3_asyncio::tokio::future_into_py_with_locals(
-        py,
-        pyo3_asyncio::tokio::get_current_locals(py)?,
-        async move {
-            let replaced_accent_phrases = method(rust_accent_phrases, speaker_id).await;
-            Python::with_gil(|py| {
-                let replaced_accent_phrases = replaced_accent_phrases
-                    .into_py_result(py)?
-                    .iter()
-                    .map(move |accent_phrase| {
-                        to_pydantic_dataclass(
-                            accent_phrase,
-                            py.import("voicevox_core")?.getattr("AccentPhrase")?,
-                        )
-                    })
-                    .collect::<PyResult<Vec<_>>>()?;
-                let replaced_accent_phrases = PyList::new(py, replaced_accent_phrases);
-                Ok(replaced_accent_phrases.to_object(py))
+        let metas = self
+            .iter()
+            .map(|meta| {
+                to_dataclass_via_serde(meta, &character_meta_cls, |kwargs| {
+                    kwargs.set_item(
+                        "styles",
+                        kwargs
+                            .get_item("styles")?
+                            .expect("should be present")
+                            .downcast::<PyList>()?
+                            .iter()
+                            .map(|style| style_meta_cls.call((), Some(style.downcast()?)))
+                            .collect::<Result<Vec<_>, _>>()?,
+                    )
+                })
             })
-        },
-    )
+            .collect::<PyResult<Vec<_>>>()?;
+        PyList::new(py, metas)
+    }
 }
 
-pub(crate) fn to_rust_uuid(ob: &PyAny) -> PyResult<Uuid> {
-    let uuid = ob.getattr("hex")?.extract::<String>()?;
-    uuid.parse::<Uuid>().into_py_value_result()
+impl RustData for AudioQuery {
+    type Target = PyAny;
+
+    fn to_dataclass<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, Self::Target>> {
+        let (audio_query_cls, accent_phrase_cls, mora_cls) = {
+            let module = py.import("voicevox_core")?;
+            (
+                module.getattr("AudioQuery")?,
+                module.getattr("AccentPhrase")?,
+                module.getattr("Mora")?,
+            )
+        };
+
+        to_dataclass_via_serde(self, &audio_query_cls, |kwargs| {
+            kwargs.set_item(
+                "accent_phrases",
+                kwargs
+                    .get_item("accent_phrases")?
+                    .expect("should be present")
+                    .downcast::<PyList>()?
+                    .iter()
+                    .map(|phrase| {
+                        let phrase = phrase.downcast::<PyDict>()?;
+                        phrase.set_item(
+                            "moras",
+                            phrase
+                                .get_item("moras")?
+                                .expect("should be present")
+                                .downcast::<PyList>()?
+                                .iter()
+                                .map(|mora| mora_cls.call((), Some(mora.downcast()?)))
+                                .collect::<Result<Vec<_>, _>>()?,
+                        )?;
+                        accent_phrase_cls.call((), Some(phrase))
+                    })
+                    .collect::<Result<Vec<_>, _>>()?,
+            )?;
+            for key in kwargs.keys().iter() {
+                let key = key.downcast::<PyString>()?.to_str()?;
+                let key_rename = key.to_snake_case();
+                if key_rename != key {
+                    let val = kwargs.get_item(key)?.expect("should be present");
+                    kwargs.set_item(key_rename, val)?;
+                    kwargs.del_item(key)?;
+                }
+            }
+            Ok(())
+        })
+    }
 }
-pub(crate) fn to_py_uuid(py: Python<'_>, uuid: Uuid) -> PyResult<PyObject> {
+
+impl RustData for Vec<AccentPhrase> {
+    type Target = PyList;
+
+    fn to_dataclass<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, Self::Target>> {
+        let (accent_phrase_cls, mora_cls) = {
+            let module = py.import("voicevox_core")?;
+            (module.getattr("AccentPhrase")?, module.getattr("Mora")?)
+        };
+
+        let phrases = self
+            .iter()
+            .map(|phrase| {
+                to_dataclass_via_serde(phrase, &accent_phrase_cls, |kwargs| {
+                    kwargs.set_item(
+                        "moras",
+                        kwargs
+                            .get_item("moras")?
+                            .expect("should be present")
+                            .downcast::<PyList>()?
+                            .iter()
+                            .map(|mora| mora_cls.call((), Some(mora.downcast()?)))
+                            .collect::<Result<Vec<_>, _>>()?,
+                    )
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        PyList::new(py, phrases)
+    }
+}
+
+impl RustData for UserDictWord {
+    type Target = PyAny;
+
+    fn to_dataclass<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, Self::Target>> {
+        to_py_user_dict_word(py, self)
+    }
+}
+
+#[derive(From)]
+pub(crate) struct ToPyUuid(pub(crate) Uuid);
+
+impl<'py> IntoPyObject<'py> for ToPyUuid {
+    type Target = PyAny;
+    type Output = Bound<'py, PyAny>;
+    type Error = PyErr;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        to_py_uuid(py, self.0)
+    }
+}
+
+fn from_dataclass_via_serde<T: DeserializeOwned>(instance: &Bound<'_, PyAny>) -> PyResult<T> {
+    let fields = dataclasses_asdict(instance)?;
+    serde_pyobject::from_pyobject(fields).map_err(Into::into)
+}
+
+fn dataclasses_asdict<'py>(instance: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyDict>> {
+    let py = instance.py();
+    let asdict = py.import("dataclasses")?.getattr("asdict")?;
+    asdict
+        .call1((instance,))?
+        .downcast_into()
+        .map_err(Into::into)
+}
+
+fn to_dataclass_via_serde<'py>(
+    x: impl Serialize,
+    class: &Bound<'py, PyAny>,
+    modify: impl FnOnce(&Bound<'py, PyDict>) -> PyResult<()>,
+) -> PyResult<Bound<'py, PyAny>> {
+    let py = class.py();
+    let kwargs = &serde_pyobject::to_pyobject(py, &x)?.downcast_into::<PyDict>()?;
+    modify(kwargs)?;
+    class.call((), Some(kwargs))
+}
+
+pub(crate) fn to_rust_uuid(ob: &Bound<'_, PyAny>) -> PyResult<Uuid> {
+    ob.getattr("hex")?
+        .extract::<&str>()?
+        .parse::<Uuid>()
+        .into_py_value_result()
+}
+fn to_py_uuid(py: Python<'_>, uuid: Uuid) -> PyResult<Bound<'_, PyAny>> {
     let uuid = uuid.hyphenated().to_string();
-    let uuid = py.import("uuid")?.call_method1("UUID", (uuid,))?;
-    Ok(uuid.to_object(py))
+    py.import("uuid")?.call_method1("UUID", (uuid,))
 }
-pub(crate) fn to_rust_user_dict_word(ob: &PyAny) -> PyResult<voicevox_core::UserDictWord> {
-    voicevox_core::UserDictWord::new(
-        ob.getattr("surface")?.extract()?,
-        ob.getattr("pronunciation")?.extract()?,
-        ob.getattr("accent_type")?.extract()?,
-        to_rust_word_type(ob.getattr("word_type")?.extract()?)?,
-        ob.getattr("priority")?.extract()?,
-    )
-    .into_py_result(ob.py())
+pub(crate) fn to_rust_user_dict_word(
+    ob: &Bound<'_, PyAny>,
+) -> PyResult<voicevox_core::UserDictWord> {
+    voicevox_core::UserDictWord::builder()
+        .word_type(from_literal_choice(ob.getattr("word_type")?.extract()?)?)
+        .priority(ob.getattr("priority")?.extract()?)
+        .build(
+            ob.getattr("surface")?.extract()?,
+            ob.getattr("pronunciation")?.extract()?,
+            ob.getattr("accent_type")?.extract()?,
+        )
+        .into_py_result(ob.py())
 }
-pub(crate) fn to_py_user_dict_word<'py>(
+fn to_py_user_dict_word<'py>(
     py: Python<'py>,
     word: &voicevox_core::UserDictWord,
-) -> PyResult<&'py PyAny> {
-    let class = py
-        .import("voicevox_core")?
-        .getattr("UserDictWord")?
-        .downcast()?;
-    to_pydantic_dataclass(word, class)
-}
-pub(crate) fn to_rust_word_type(word_type: &PyAny) -> PyResult<UserDictWordType> {
-    let name = word_type.getattr("name")?.extract::<String>()?;
+) -> PyResult<Bound<'py, PyAny>> {
+    let class = py.import("voicevox_core")?.getattr("UserDictWord")?;
 
-    serde_json::from_value::<UserDictWordType>(json!(name)).into_py_value_result()
+    class.call(
+        (),
+        Some(&{
+            let kwargs = PyDict::new(py);
+            kwargs.set_item("surface", word.surface())?;
+            kwargs.set_item("pronunciation", word.pronunciation())?;
+            kwargs.set_item("accent_type", word.accent_type())?;
+            kwargs.set_item(
+                "word_type",
+                serde_json::to_value(word.word_type())
+                    .expect("should success")
+                    .as_str()
+                    .expect("should be a string"),
+            )?;
+            kwargs.set_item("priority", word.priority())?;
+            kwargs
+        }),
+    )
+}
+fn from_literal_choice<T: DeserializeOwned>(s: &str) -> PyResult<T> {
+    serde_json::from_value::<T>(json!(s)).into_py_value_result()
 }
 
 /// おおよそ以下のコードにおける`f(x)`のようなものを得る。
@@ -183,8 +332,12 @@ pub(crate) fn to_rust_word_type(word_type: &PyAny) -> PyResult<UserDictWordType>
 ///
 /// return f(x)
 /// ```
-pub(crate) fn ready(x: impl IntoPy<PyObject>, py: Python<'_>) -> PyResult<&PyAny> {
+pub(crate) fn ready<'py>(
+    x: impl IntoPyObject<'py>,
+    py: Python<'py>,
+) -> PyResult<Bound<'py, PyAny>> {
     // ```py
+    // import asyncio
     // from asyncio import Future
     //
     // running_loop = asyncio.get_running_loop()
@@ -193,25 +346,13 @@ pub(crate) fn ready(x: impl IntoPy<PyObject>, py: Python<'_>) -> PyResult<&PyAny
     // return fut
     // ```
 
-    let asyncio_future = py.import("asyncio")?.getattr("Future")?;
+    let asyncio = py.import("asyncio")?;
+    let asyncio_future = asyncio.getattr("Future")?;
 
-    let running_loop = pyo3_asyncio::get_running_loop(py)?;
-    let fut = asyncio_future.call((), Some([("loop", running_loop)].into_py_dict(py)))?;
+    let running_loop = asyncio.call_method0("get_running_loop")?;
+    let fut = asyncio_future.call((), Some(&[("loop", running_loop)].into_py_dict(py)?))?;
     fut.call_method1("set_result", (x,))?;
     Ok(fut)
-}
-
-pub(crate) async fn run_in_executor<F, R>(f: F) -> PyResult<R>
-where
-    F: FnOnce() -> R + Send + 'static,
-    R: Send + 'static,
-{
-    tokio::task::spawn_blocking(f)
-        .await
-        .map_err(|e| match e.try_into_panic() {
-            Ok(p) => panic::resume_unwind(p),
-            Err(e) => PyRuntimeError::new_err(e.to_string()),
-        })
 }
 
 #[ext(VoicevoxCoreResultExt)]
@@ -235,13 +376,14 @@ pub(crate) impl<T> voicevox_core::Result<T> {
                 ErrorKind::StyleNotFound => StyleNotFoundError::new_err(msg),
                 ErrorKind::ModelNotFound => ModelNotFoundError::new_err(msg),
                 ErrorKind::RunModel => RunModelError::new_err(msg),
-                ErrorKind::ExtractFullContextLabel => ExtractFullContextLabelError::new_err(msg),
+                ErrorKind::AnalyzeText => AnalyzeTextError::new_err(msg),
                 ErrorKind::ParseKana => ParseKanaError::new_err(msg),
                 ErrorKind::LoadUserDict => LoadUserDictError::new_err(msg),
                 ErrorKind::SaveUserDict => SaveUserDictError::new_err(msg),
                 ErrorKind::WordNotFound => WordNotFoundError::new_err(msg),
                 ErrorKind::UseUserDict => UseUserDictError::new_err(msg),
                 ErrorKind::InvalidWord => InvalidWordError::new_err(msg),
+                ErrorKind::__NonExhaustive => unreachable!(),
             };
 
             [top]
@@ -259,6 +401,40 @@ pub(crate) impl<T> voicevox_core::Result<T> {
                 })
                 .expect("should not be empty")
         })
+    }
+}
+
+#[ext]
+impl SupportedDevices {
+    fn to_py(self, py: Python<'_>) -> PyResult<Bound<'_, PyAny>> {
+        assert!(match self.to_json_value() {
+            serde_json::Value::Object(o) => o.len() == 3, // `cpu`, `cuda`, `dml`
+            _ => false,
+        });
+
+        let cls = py.import("voicevox_core")?.getattr("SupportedDevices")?;
+        cls.call(
+            (),
+            Some(&{
+                let kwargs = serde_pyobject::to_pyobject(py, &self)?.downcast_into::<PyDict>()?;
+                kwargs.set_item("_reserved", _ReservedFields)?;
+                kwargs
+            }),
+        )
+    }
+}
+
+#[ext(AudioQueryExt)]
+impl AudioQuery
+where
+    Self: Sized,
+{
+    pub(crate) fn from_json(json: &str) -> PyResult<Self> {
+        serde_json::from_str(json).into_py_value_result()
+    }
+
+    pub(crate) fn to_json(&self) -> String {
+        serde_json::to_string(self).expect("should not fail")
     }
 }
 

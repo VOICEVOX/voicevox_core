@@ -18,7 +18,7 @@
 #include "voicevox_core.h"
 
 #define OPENJTALK_DICT_NAME L"open_jtalk_dic_utf_8-1.11"
-#define MODEL_DIR_NAME L"model"
+#define MODEL_DIR_NAME L"models\\vvms"
 
 int main() {
   std::wcout.imbue(std::locale(""));
@@ -70,7 +70,7 @@ int main() {
       OutErrorMessage(result);
       return 0;
     }
-    voicevox_voice_model_file_close(model);
+    voicevox_voice_model_file_delete(model);
   }
 
   std::wcout << L"音声生成中" << std::endl;

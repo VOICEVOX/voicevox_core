@@ -1,10 +1,5 @@
 name: build and deploy workflow
 
-# 製品版もビルドできる。製品版ビルド時の違いは以下の3点
-# 1. production環境を使う
-# 2. 製品版リポジトリのコードをmergeする
-# 3. RESOURCEリポジトリからモデルをダウンロードして置き換える
-
 on:
   workflow_dispatch:
     inputs:
@@ -16,11 +11,6 @@ on:
         type: boolean
         required: false
         default: false
-      is_production:
-        description: "製品版をビルドする"
-        type: boolean
-        required: false
-        default: false
   release:
     types:
       - published
@@ -28,11 +18,8 @@ on:
   push:
 
 env:
-  VOICEVOX_RESOURCE_VERSION: "0.15.0-preview.3"
-  VOICEVOX_FAT_RESOURCE_VERSION: "0.15.0-preview.4"
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0' }}
-  PRODUCTION_REPOSITORY_TAG: "0.15.0-preview.2" # 製品版のタグ名
   # 簡易テストとするかどうか。releaseとworkflow_dispatch以外は簡易テストとする
   IS_SIMPLE_TEST: ${{ github.event_name != 'release' && github.event_name != 'workflow_dispatch' }}
 
@@ -78,7 +65,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "ubuntu-20.04",
+              "os": "ubuntu-22.04",
               "target": "x86_64-unknown-linux-gnu",
               "artifact_name": "linux-x64",
               "c_release_format": "plain-cdylib",
@@ -87,7 +74,7 @@ jobs:
               "can_skip_in_simple_test": false
             },
             {
-              "os": "ubuntu-20.04",
+              "os": "ubuntu-22.04",
               "target": "aarch64-unknown-linux-gnu",
               "artifact_name": "linux-arm64",
               "c_release_format": "plain-cdylib",
@@ -96,7 +83,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "ubuntu-20.04",
+              "os": "ubuntu-22.04",
               "target": "aarch64-linux-android",
               "artifact_name": "android-arm64",
               "c_release_format": "plain-cdylib",
@@ -105,7 +92,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "ubuntu-20.04",
+              "os": "ubuntu-22.04",
               "target": "x86_64-linux-android",
               "artifact_name": "android-x86_64",
               "c_release_format": "plain-cdylib",
@@ -114,7 +101,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-12",
+              "os": "macos-13",
               "target": "aarch64-apple-darwin",
               "artifact_name": "osx-arm64",
               "c_release_format": "plain-cdylib",
@@ -123,7 +110,7 @@ jobs:
               "can_skip_in_simple_test": false
             },
             {
-              "os": "macos-12",
+              "os": "macos-13",
               "target": "x86_64-apple-darwin",
               "artifact_name": "osx-x64",
               "c_release_format": "plain-cdylib",
@@ -132,7 +119,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-12",
+              "os": "macos-13",
               "target": "aarch64-apple-ios",
               "artifact_name": "ios-arm64-cpu",
               "c_release_format": "ios-xcframework",
@@ -141,7 +128,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-12",
+              "os": "macos-13",
               "target": "aarch64-apple-ios-sim",
               "artifact_name": "ios-arm64-cpu-sim",
               "c_release_format": "ios-xcframework",
@@ -150,7 +137,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-12",
+              "os": "macos-13",
               "target": "x86_64-apple-ios",
               "artifact_name": "ios-x64-cpu",
               "c_release_format": "ios-xcframework",
@@ -169,7 +156,7 @@ jobs:
 
   build_and_deploy:
     needs: config
-    environment: ${{ inputs.is_production && 'production' || '' }} # 製品版のenvironment
+    environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
         include: ${{ fromJson(needs.config.outputs.includes) }}
@@ -177,27 +164,12 @@ jobs:
     env:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v4 # 製品版ではない場合
-        if: ${{ !inputs.is_production }}
-      - uses: actions/checkout@v4 # 製品版の場合
-        if: inputs.is_production
-        with:
-          fetch-depth: 0 # 全履歴取得
-          token: ${{ secrets.PRODUCTION_GITHUB_TOKEN }}
-      - name: Merge production branch
-        if: inputs.is_production
-        shell: bash
-        run: |
-          (
-            git remote add private ${{ secrets.PRODUCTION_REPOSITORY_URL }}
-            git fetch private refs/tags/${{ env.PRODUCTION_REPOSITORY_TAG }}
-            git -c user.name=dummy -c user.email=dummy@dummy.dummy merge FETCH_HEAD
-          ) > /dev/null 2>&1
-      - name: Set up Python 3.8
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
         if: matrix.python_whl
         uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: "3.10"
           architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
       - name: set up ${{ matrix.target }}
         uses: ./.github/actions/rust-toolchain-from-file
@@ -217,17 +189,6 @@ jobs:
         run: |
           echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
           echo "AR_${{ matrix.target }}=llvm-ar" >> "$GITHUB_ENV"
-      - name: Checkout VOICEVOX RESOURCE
-        if: inputs.is_production
-        uses: actions/checkout@v4
-        with:
-          repository: VOICEVOX/voicevox_resource
-          ref: ${{ env.VOICEVOX_RESOURCE_VERSION }}
-          path: download/resource
-      - name: Replace resource
-        if: inputs.is_production
-        shell: bash
-        run: mv -f download/resource/core/README.md ./README.md
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-edit
@@ -235,10 +196,11 @@ jobs:
       - name: set cargo version
         run: |
           cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude downloader --exclude xtask
-          if ${{ matrix.python_whl }}; then cargo set-version "$VERSION" -p voicevox_core_python_api; fi
+          if ${{ matrix.python_whl }}; then
+            sed -i_ 's/version = "\(0\.0\.0\)"/version = "'"$VERSION"'"/' ./crates/voicevox_core_python_api/pyproject.toml
+          fi
       - name: cache target
         uses: Swatinem/rust-cache@v2
-        if: ${{ !inputs.is_production }}
       - name: build voicevox_core_c_api
         shell: bash
         run: |
@@ -246,14 +208,7 @@ jobs:
             plain-cdylib) linking=load-onnxruntime ;;
             ios-xcframework) linking=link-onnxruntime ;;
           esac
-          function build() {
-            cargo build -p voicevox_core_c_api -vv --features "$linking" --target ${{ matrix.target }} --release
-          }
-          if ${{ !inputs.is_production }}; then
-            build
-          else
-            build > /dev/null 2>&1
-          fi
+          cargo build -p voicevox_core_c_api -v --features "$linking" --target ${{ matrix.target }} --release
         env:
           RUSTFLAGS: -C panic=abort
       - name: build voicevox_core_python_api
@@ -264,51 +219,37 @@ jobs:
           pip install --upgrade poetry
           poetry config virtualenvs.create false
           (cd crates/voicevox_core_python_api && poetry install --with dev)
-          function build() {
-            maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --target ${{ matrix.target }} --release
-          }
-          if ${{ !inputs.is_production }}; then
-            build
-          else
-            build > /dev/null 2>&1
-          fi
+          maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --target ${{ matrix.target }} --release
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
       - name: build voicevox_core_java_api
         if: ${{ matrix.java }}
-        run: |
-          function build() {
-            cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
-          }
-          if ${{ !inputs.is_production }}; then
-            build
-          else
-            build > /dev/null 2>&1
-          fi
+        run: cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
       - name: Organize artifact
         run: |
-          mkdir -p "artifact/${{ env.ASSET_NAME }}"
+          mkdir -p artifact/${{ env.ASSET_NAME }}/{include,lib}
           case ${{ matrix.c_release_format }} in
             plain-cdylib) feature=VOICEVOX_LOAD_ONNXRUNTIME ;;
             ios-xcframework) feature=VOICEVOX_LINK_ONNXRUNTIME ;;
           esac
           sed 's:^//\(#define '"$feature"'\)$:\1:' crates/voicevox_core_c_api/include/voicevox_core.h \
-            > "artifact/${{ env.ASSET_NAME }}/voicevox_core.h"
-          cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}" || true
-          cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/voicevox_core.lib" || true
+            > "artifact/${{ env.ASSET_NAME }}/include/voicevox_core.h"
+          cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}/lib" || true
+          cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.lib" || true
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
+          cp -v LICENSE "artifact/${{ env.ASSET_NAME }}/"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
           mkdir java_artifact
           cp -v target/${{ matrix.target }}/release/*voicevox_core_java_api.{dll,so,dylib} "java_artifact" || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
-        run: bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/voicevox_core.dll"
+        run: bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.dll"
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
       - name: Upload artifact to build XCFramework
-        if: matrix.c_release_format == 'ios-xcframework'
+        if: matrix.artifact_name == 'osx-arm64' || matrix.artifact_name == 'osx-x64' || matrix.c_release_format == 'ios-xcframework'
         uses: actions/upload-artifact@v4
         with:
           name: voicevox_core-${{ matrix.target }}
@@ -345,12 +286,14 @@ jobs:
   build_xcframework:
     if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
     needs: [config, build_and_deploy]
-    runs-on: macos-12
+    runs-on: macos-13
     env:
       IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
       IOS_AARCH64_SIM_PATH: artifact/voicevox_core-aarch64-apple-ios-sim
       IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
-      ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
+      MACOS_ARM64_PATH: artifact/voicevox_core-aarch64-apple-darwin
+      MACOS_X64_PATH: artifact/voicevox_core-x86_64-apple-darwin
+      ASSET_NAME: voicevox_core-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -365,53 +308,25 @@ jobs:
         with:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: voicevox_core-aarch64-apple-darwin
+          path: ${{ env.MACOS_ARM64_PATH }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: voicevox_core-x86_64-apple-darwin
+          path: ${{ env.MACOS_X64_PATH }}
       - name: Create xcframework
         id: create-xcframework
         run: |
-          build_util/make_ios_xcframework.bash
+          build_util/make_xcframework.bash
           echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT"
         env:
-          OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
+          OUTPUT_ASSET_PATH: artifact/voicevox_core-xcframework-cpu
       - name: Archive artifact
         run: |
           cd ${{ steps.create-xcframework.outputs.output_asset_path }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
-      - name: Upload to Release
-        if: fromJson(needs.config.outputs.deploy)
-        uses: softprops/action-gh-release@v2
-        with:
-          prerelease: true
-          tag_name: ${{ env.VERSION }}
-          files: |-
-            ${{ env.ASSET_NAME }}.zip
-          target_commitish: ${{ github.sha }}
-
-  deploy_model:
-    runs-on: ubuntu-latest
-    needs: config
-    env:
-      ASSET_NAME: model-${{ needs.config.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Checkout VOICEVOX FAT RESOURCE
-        if: inputs.is_production
-        uses: actions/checkout@v4
-        with:
-          repository: VOICEVOX/voicevox_fat_resource
-          ref: ${{ env.VOICEVOX_FAT_RESOURCE_VERSION }}
-          path: download/fat_resource
-      - name: Replace resource
-        if: inputs.is_production
-        shell: bash
-        run: rm -r ./model; mv download/fat_resource/core/model ./model
-      - name: Create artifact
-        run: |
-          mkdir "artifact"
-          mv model "artifact/${{ env.ASSET_NAME }}/"
-      - name: Archive artifact
-        run: |
-          cd artifact
-          7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
         uses: softprops/action-gh-release@v2
@@ -520,7 +435,8 @@ jobs:
           cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/arm64-v8a/
           cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/x86_64/
 
-          OS=android DEVICE=cpu gradle publishToMavenLocal
+          cd crates/voicevox_core_java_api
+          OS=android gradle publishToMavenLocal
 
       - name: Package
         run: |

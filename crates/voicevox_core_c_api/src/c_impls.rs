@@ -1,12 +1,23 @@
-use std::{ffi::CString, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    ffi::CString,
+    num::NonZero,
+    path::Path,
+    ptr::NonNull,
+    sync::{Arc, LazyLock},
+};
 
 use camino::Utf8Path;
+use duplicate::duplicate_item;
+use easy_ext::ext;
 use ref_cast::ref_cast_custom;
-use voicevox_core::{InitializeOptions, Result, VoiceModelId};
+use voicevox_core::{CharacterMeta, Result, VoiceModelId};
 
 use crate::{
-    helpers::CApiResult, OpenJtalkRc, VoicevoxOnnxruntime, VoicevoxSynthesizer,
-    VoicevoxVoiceModelFile,
+    OpenJtalkRc, VoicevoxInitializeOptions, VoicevoxOnnxruntime, VoicevoxSynthesizer,
+    VoicevoxUserDict, VoicevoxVoiceModelFile,
+    helpers::CApiResult,
+    object::{CApiObject, CApiObjectPtrExt as _},
 };
 
 // FIXME: 中身(Rust API)を直接操作するかラッパーメソッド越しにするのかが混在していて、一貫性を
@@ -14,14 +25,12 @@ use crate::{
 
 impl VoicevoxOnnxruntime {
     #[cfg(feature = "load-onnxruntime")]
-    pub(crate) fn lib_versioned_filename() -> &'static std::ffi::CStr {
-        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME)
-    }
+    pub(crate) const LIB_VERSIONED_FILENAME: &'static std::ffi::CStr =
+        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME);
 
     #[cfg(feature = "load-onnxruntime")]
-    pub(crate) fn lib_unversioned_filename() -> &'static std::ffi::CStr {
-        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME)
-    }
+    pub(crate) const LIB_UNVERSIONED_FILENAME: &'static std::ffi::CStr =
+        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME);
 
     #[ref_cast_custom]
     fn new(rust: &voicevox_core::blocking::Onnxruntime) -> &Self;
@@ -36,7 +45,7 @@ impl VoicevoxOnnxruntime {
 
         let inner = voicevox_core::blocking::Onnxruntime::load_once()
             .filename(ensure_utf8(filename)?)
-            .exec()?;
+            .perform()?;
         Ok(Self::new(inner))
     }
 
@@ -50,65 +59,113 @@ impl VoicevoxOnnxruntime {
 #[cfg(feature = "load-onnxruntime")]
 macro_rules! to_cstr {
     ($s:expr) => {{
-        const __RUST_STR: &str = $s;
-        static __C_STR: &[u8] = const_format::concatcp!(__RUST_STR, '\0').as_bytes();
-
-        std::ffi::CStr::from_bytes_with_nul(__C_STR)
-            .unwrap_or_else(|e| panic!("{__RUST_STR:?} should not contain `\\0`: {e}"))
+        static CSTR: &[u8] = const_format::concatcp!($s, '\0').as_bytes();
+        unsafe {
+            // SAFETY: added a nul with `concatcp!`
+            std::ffi::CStr::from_bytes_with_nul_unchecked(CSTR)
+        }
     }};
 }
 #[cfg(feature = "load-onnxruntime")]
 use to_cstr;
 
 impl OpenJtalkRc {
-    pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Utf8Path>) -> Result<Self> {
-        Ok(Self {
-            open_jtalk: voicevox_core::blocking::OpenJtalk::new(open_jtalk_dic_dir)?,
-        })
+    pub(crate) fn new(open_jtalk_dic_dir: impl AsRef<Utf8Path>) -> Result<NonNull<Self>> {
+        let body = voicevox_core::blocking::OpenJtalk::new(open_jtalk_dic_dir)?;
+        Ok(<Self as CApiObject>::new(body))
     }
 }
 
 impl VoicevoxSynthesizer {
     pub(crate) fn new(
         onnxruntime: &'static VoicevoxOnnxruntime,
-        open_jtalk: &OpenJtalkRc,
-        options: &InitializeOptions,
-    ) -> Result<Self> {
-        let synthesizer = voicevox_core::blocking::Synthesizer::new(
-            &onnxruntime.0,
-            open_jtalk.open_jtalk.clone(),
-            options,
-        )?;
-        Ok(Self { synthesizer })
+        open_jtalk: *const OpenJtalkRc,
+        VoicevoxInitializeOptions {
+            acceleration_mode,
+            cpu_num_threads,
+        }: VoicevoxInitializeOptions,
+    ) -> Result<NonNull<Self>> {
+        let body = voicevox_core::blocking::Synthesizer::builder(&onnxruntime.0)
+            .text_analyzer(open_jtalk.body().clone())
+            .acceleration_mode(acceleration_mode.into())
+            .cpu_num_threads(cpu_num_threads)
+            .build()?;
+        Ok(<Self as CApiObject>::new(body))
     }
+}
 
-    pub(crate) fn onnxruntime(&self) -> &'static VoicevoxOnnxruntime {
-        VoicevoxOnnxruntime::new(self.synthesizer.onnxruntime())
+#[ext(VoicevoxSynthesizerPtrExt)]
+impl *const VoicevoxSynthesizer {
+    pub(crate) fn onnxruntime(self) -> &'static VoicevoxOnnxruntime {
+        VoicevoxOnnxruntime::new(self.body().onnxruntime())
     }
 
     pub(crate) fn load_voice_model(
-        &self,
+        self,
         model: &voicevox_core::blocking::VoiceModelFile,
     ) -> CApiResult<()> {
-        self.synthesizer.load_voice_model(model)?;
+        self.body().load_voice_model(model)?;
         Ok(())
     }
 
-    pub(crate) fn unload_voice_model(&self, model_id: VoiceModelId) -> Result<()> {
-        self.synthesizer.unload_voice_model(model_id)?;
+    pub(crate) fn unload_voice_model(self, model_id: VoiceModelId) -> Result<()> {
+        self.body().unload_voice_model(model_id)?;
         Ok(())
     }
 
-    pub(crate) fn metas(&self) -> CString {
-        let metas = &self.synthesizer.metas();
-        CString::new(serde_json::to_string(metas).unwrap()).unwrap()
+    pub(crate) fn metas(self) -> CString {
+        metas_to_json(&self.body().metas())
     }
 }
 
 impl VoicevoxVoiceModelFile {
-    pub(crate) fn open(path: impl AsRef<Path>) -> Result<Self> {
+    pub(crate) fn open(path: impl AsRef<Path>) -> Result<NonNull<Self>> {
         let model = voicevox_core::blocking::VoiceModelFile::open(path)?;
-        let metas = CString::new(serde_json::to_string(model.metas()).unwrap()).unwrap();
-        Ok(Self { model, metas })
+        Ok(Self::new(model))
+    }
+}
+
+#[ext(VoicevoxVoiceModelFilePtrExt)]
+impl *const VoicevoxVoiceModelFile {
+    pub(crate) fn metas(self) -> CString {
+        metas_to_json(self.body().metas())
+    }
+}
+
+fn metas_to_json(metas: &[CharacterMeta]) -> CString {
+    let metas = serde_json::to_string(metas).expect("should not fail");
+    CString::new(metas).expect("should not contain NUL")
+}
+
+#[duplicate_item(
+    H                          B;
+    [ OpenJtalkRc ]            [ voicevox_core::blocking::OpenJtalk ];
+    [ VoicevoxUserDict ]       [ voicevox_core::blocking::UserDict ];
+    [ VoicevoxSynthesizer ]    [ voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk> ];
+    [ VoicevoxVoiceModelFile ] [ voicevox_core::blocking::VoiceModelFile ];
+)]
+impl CApiObject for H {
+    type RustApiObject = B;
+
+    fn known_addrs() -> &'static std::sync::Mutex<HashSet<NonZero<usize>>> {
+        static KNOWN_ADDRS: LazyLock<std::sync::Mutex<HashSet<NonZero<usize>>>> =
+            LazyLock::new(Default::default);
+        &KNOWN_ADDRS
+    }
+
+    fn heads() -> &'static boxcar::Vec<Self> {
+        static HEADS: boxcar::Vec<H> = boxcar::Vec::new();
+        &HEADS
+    }
+
+    fn bodies() -> &'static std::sync::Mutex<
+        HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>,
+    > {
+        #[expect(clippy::type_complexity, reason = "`CApiObject::bodies`と同様")]
+        static BODIES: LazyLock<
+            std::sync::Mutex<HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<B>>>>>,
+        > = LazyLock::new(Default::default);
+
+        &BODIES
     }
 }

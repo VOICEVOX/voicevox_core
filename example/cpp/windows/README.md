@@ -6,7 +6,7 @@ Visual Studio Installerを使用しインストールしてください。
 
 ## simple_tts
 
-単純な音声合成を行うコンシールアプリケーションです。
+単純な音声合成を行うコンソールアプリケーションです。
 
 ### 環境構築・ビルド方法
 
@@ -14,7 +14,7 @@ Visual Studio Installerを使用しインストールしてください。
 
 出力フォルダを作成するために、一度ビルドします。「windows_example.sln」をVisual Studioで開き、メニューの「ビルド」→「ソリューションのビルド」を押します。
 この段階では、ビルドは失敗します。「bin」フォルダと「lib」フォルダが生成されていればOKです。  
-[Releases](https://github.com/VOICEVOX/voicevox_core/releases/latest)から「voicevox_core-windows-x64-{バージョン名}.zip」をダウンロードし、展開します。[ダウンローダー](https://github.com/VOICEVOX/voicevox_core/blob/main/docs/downloader.md)を使うと便利です。  
+[Releases](https://github.com/VOICEVOX/voicevox_core/releases/latest)から「voicevox_core-windows-x64-{バージョン名}.zip」をダウンロードし、展開します。[ダウンローダー](https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/downloader.md)を使うと便利です。  
 展開してできたファイル・フォルダをそれぞれ下記のフォルダへ配置します。
 
 - simple_tts に配置
@@ -22,9 +22,8 @@ Visual Studio Installerを使用しインストールしてください。
 
 - simple_tts\bin\x64\Debug に配置
   - voicevox_core.dll
-  - onnxruntime.dll
-  - onnxruntime_providers_shared.dll
-  - modelフォルダ
+  - voicevox_onnxruntime.dll
+  - modelsフォルダ
 
 - simple_tts\lib\x64 に配置
   - voicevox_core.lib
@@ -50,13 +49,14 @@ simple_tts
  ├─bin
  │  └─x64
  │      └─Debug
- │         │  onnxruntime.dll
- │         │  onnxruntime_providers_shared.dll
  │         │  simple_tts.exe
  │         │  simple_tts.pdb
  │         │  voicevox_core.dll
+ │         │  voicevox_onnxruntime.dll
  │         │
- │         ├─model
+ │         ├─models
+ │         │     vvms
+ │         │
  │         └─open_jtalk_dic_utf_8-1.11
  │
  └─lib
@@ -67,5 +67,5 @@ simple_tts
 ```
 
 ### 実行
-Visual Studioのツールバーにある「ローカル Windows デバッガー」と書いてある三角のつているボタンを押すと実行できます。出力フォルダにある「simple_tts.exe」を直接実行することもできます。
+Visual Studioのツールバーにある「ローカル Windows デバッガー」と書いてある三角のついているボタンを押すと実行できます。出力フォルダにある「simple_tts.exe」を直接実行することもできます。
 表示されたコンソール画面に、生成したい音声の文字列を入力しエンターキーを押します。そうすると音声合成が開始し、合成された音声が再生されます。

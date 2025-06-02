@@ -1,8 +1,12 @@
 use std::{
     collections::BTreeSet,
-    ffi::{c_char, CStr, CString},
+    ffi::{CStr, CString, c_char},
+    num::NonZero,
+    ptr::NonNull,
     sync::Mutex,
 };
+
+use easy_ext::ext;
 
 /// dropして良い`*mut c_char`を把握し、チェックする。
 ///
@@ -26,8 +30,8 @@ pub(crate) static C_STRING_DROP_CHECKER: CStringDropChecker = CStringDropChecker
 pub(crate) struct CStringDropChecker(Mutex<Inner>);
 
 struct Inner {
-    owned_str_addrs: BTreeSet<usize>,
-    static_str_addrs: BTreeSet<usize>,
+    owned_str_addrs: BTreeSet<NonZero<usize>>,
+    static_str_addrs: BTreeSet<NonZero<usize>>,
 }
 
 impl CStringDropChecker {
@@ -46,8 +50,8 @@ impl CStringDropChecker {
             owned_str_addrs, ..
         } = &mut *self.0.lock().unwrap();
 
-        let ptr = s.as_ptr();
-        let duplicated = !owned_str_addrs.insert(ptr as usize);
+        let ptr = s.as_non_null_ptr();
+        let duplicated = !owned_str_addrs.insert(ptr.addr());
         if duplicated {
             panic!(
                 "別の{ptr:p}が管理下にあります。原因としては以前に別の文字列が{ptr:p}として存在\
@@ -69,23 +73,26 @@ impl CStringDropChecker {
             static_str_addrs, ..
         } = &mut *self.0.lock().unwrap();
 
-        static_str_addrs.insert(s.as_ptr() as usize);
+        static_str_addrs.insert(s.as_non_null_ptr().addr());
         s
     }
 
     /// `*mut c_char`が`whitelist`を通ったものかどうかチェックする。
     ///
+    /// ヌルポインタを許容する。
+    ///
     /// # Panics
     ///
-    /// `ptr`が`Self::whitelist`を経由したものではないならパニックする。
-    pub(crate) fn check(&self, ptr: *mut c_char) -> *mut c_char {
+    /// `ptr`が非ヌルで、`Self::whitelist`を経由したものではないならパニックする。
+    pub(crate) fn check(&self, ptr: *mut c_char) -> Option<NonNull<c_char>> {
         let Inner {
             owned_str_addrs,
             static_str_addrs,
             ..
         } = &mut *self.0.lock().unwrap();
 
-        let addr = ptr as usize;
+        #[cfg_attr(any(), rustfmt::skip)] // FIXME: Rust 1.88になったらlet chainで書く
+        if let Some(addr) = NonZero::new(ptr.addr()) {
         if !owned_str_addrs.remove(&addr) {
             if static_str_addrs.contains(&addr) {
                 panic!(
@@ -99,17 +106,32 @@ impl CStringDropChecker {
                  誤ったポインタであるか、二重解放になっていることが考えられます",
             );
         }
-        ptr
+        }
+        NonNull::new(ptr)
+    }
+}
+
+#[ext]
+impl CStr {
+    fn as_non_null_ptr(&self) -> NonNull<c_char> {
+        NonNull::new(self.as_ptr() as *mut c_char).expect("comes from a `CStr`")
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::{c_char, CStr};
-
-    use cstr::cstr;
+    use std::{
+        ffi::{CStr, c_char},
+        ptr,
+    };
 
     use super::CStringDropChecker;
+
+    #[test]
+    fn it_accepts_null() {
+        let checker = CStringDropChecker::new();
+        checker.check(ptr::null_mut());
+    }
 
     #[test]
     #[should_panic(
@@ -118,7 +140,7 @@ mod tests {
     )]
     fn it_denies_duplicated_char_ptr() {
         let checker = CStringDropChecker::new();
-        let s = cstr!("").to_owned();
+        let s = c"".to_owned();
         checker.whitelist(checker.whitelist(s));
     }
 
@@ -128,7 +150,7 @@ mod tests {
     )]
     fn it_denies_unknown_char_ptr() {
         let checker = CStringDropChecker::new();
-        let s = CStr::from_bytes_with_nul(b"\0").unwrap().to_owned();
+        let s = c"".to_owned();
         checker.check(s.into_raw());
     }
 
@@ -141,6 +163,6 @@ mod tests {
         checker.blacklist(STATIC);
         checker.check(STATIC.as_ptr() as *mut c_char);
 
-        static STATIC: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"\0") };
+        static STATIC: &CStr = c"";
     }
 }

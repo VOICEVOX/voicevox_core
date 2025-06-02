@@ -48,21 +48,67 @@ metas = '''
     "version": "0.0.1",
     "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
     "order": null
+  },
+  {
+    "name": "dummy4",
+    "styles": [
+      {
+        "id": 3000,
+        "name": "style4-1",
+        "type": "frame_decode",
+        "order": null
+      },
+      {
+        "id": 6000,
+        "name": "style4-2",
+        "type": "singing_teacher",
+        "order": null
+      }
+    ],
+    "version": "0.0.1",
+    "speaker_uuid": "32478dc2-4c8b-44f7-b041-c836e0df6d56",
+    "order": null
   }
 ]'''
 stderr.windows = '''
-{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
+{timestamp}  WARN voicevox_core::compatible_engine: ONNX Runtimeのロードまたは初期化ができませんでした
+{timestamp}  WARN voicevox_core::compatible_engine: falling back to `{onnxruntime_filename}`
 {windows-video-cards}
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''
 stderr.unix = '''
-{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  WARN voicevox_core::compatible_engine: ONNX Runtimeのロードまたは初期化ができませんでした
+{timestamp}  WARN voicevox_core::compatible_engine: falling back to `{onnxruntime_filename}`
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''
 
 [compatible_engine_load_model_before_initialize]
 last_error_message = "Statusが初期化されていません"
 stderr = ""
+
+[double_delete_openjtalk]
+stderr_matches_all = [
+    '\n`OpenJtalkRc` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
+
+[double_delete_synthesizer]
+stderr_matches_all = [
+    '\n`VoicevoxSynthesizer` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
+
+[double_delete_user_dict]
+stderr_matches_all = [
+    '\n`VoicevoxUserDict` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
+
+[double_delete_voice_model_file]
+stderr_matches_all = [
+    '\n`VoicevoxVoiceModelFile` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
+    "\nthread caused non-unwinding panic. aborting.\n",
+]
 
 [global_info]
 result_messages.0 = "エラーが発生しませんでした"
@@ -72,7 +118,7 @@ result_messages.4 = "GPU機能をサポートすることができません"
 result_messages.6 = "指定されたIDに対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています"
 result_messages.7 = "指定されたIDに対する音声モデルが見つかりませんでした。読み込まれていないか、読み込みが既に解除されています"
 result_messages.8 = "推論に失敗しました"
-result_messages.11 = "入力テキストからのフルコンテキストラベル抽出に失敗しました"
+result_messages.11 = "入力テキストの解析に失敗しました"
 result_messages.12 = "入力テキストが無効なUTF-8データでした"
 result_messages.13 = "入力テキストをAquesTalk風記法としてパースすることに失敗しました"
 result_messages.14 = "無効なaudio_queryです"
@@ -90,20 +136,16 @@ result_messages.24 = "ユーザー辞書の単語のバリデーションに失�
 result_messages.25 = "UUIDの変換に失敗しました"
 result_messages.28 = "モデルの形式が不正です"
 result_messages.29 = "推論ライブラリのロードまたは初期化ができませんでした"
-stderr = '''
-{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
-'''
+stderr = ''
 
 [simple_tts]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
 stderr.windows = '''
-{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''
 stderr.unix = '''
-{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''
 
 [synthesizer_new_output_json]
@@ -156,39 +198,53 @@ metas = '''
     "version": "0.0.1",
     "speaker_uuid": "5d3d9aa9-88e5-4a96-8ef7-f13a3cad1cb3",
     "order": null
+  },
+  {
+    "name": "dummy4",
+    "styles": [
+      {
+        "id": 3000,
+        "name": "style4-1",
+        "type": "frame_decode",
+        "order": null
+      },
+      {
+        "id": 6000,
+        "name": "style4-2",
+        "type": "singing_teacher",
+        "order": null
+      }
+    ],
+    "version": "0.0.1",
+    "speaker_uuid": "32478dc2-4c8b-44f7-b041-c836e0df6d56",
+    "order": null
   }
 ]'''
 stderr.windows = '''
-{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''
 stderr.unix = '''
-{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''
 
-[tts_via_audio_query]
+[tts]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
 stderr.windows = '''
-{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''
 stderr.unix = '''
-{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''
 
 [user_dict_load]
 stderr.windows = '''
-{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
 {windows-video-cards}
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''
 stderr.unix = '''
-{timestamp}  INFO ort: Loaded ONNX Runtime dylib with version '{onnxruntime_version}'
-{timestamp}  INFO voicevox_core::synthesizer::blocking: CPUを利用します
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''
 
 [user_dict_manipulate]

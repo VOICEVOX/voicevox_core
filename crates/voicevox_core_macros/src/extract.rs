@@ -1,5 +1,5 @@
 use syn::{
-    spanned::Spanned as _, Attribute, Data, DataEnum, DataStruct, DataUnion, Field, Fields, Type,
+    Attribute, Data, DataEnum, DataStruct, DataUnion, Field, Fields, Type, spanned::Spanned as _,
 };
 
 pub(crate) fn struct_fields(data: &Data) -> syn::Result<Vec<(&[Attribute], &syn::Ident, &Type)>> {

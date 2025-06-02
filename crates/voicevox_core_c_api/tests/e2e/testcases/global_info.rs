@@ -1,14 +1,14 @@
-use std::{collections::HashMap, ffi::CStr, mem::MaybeUninit, str, sync::LazyLock};
+use std::{collections::HashMap, env, ffi::CStr, mem::MaybeUninit, str, sync::LazyLock};
 
 use assert_cmd::assert::AssertResult;
+use const_format::concatcp;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
-use test_util::c_api::{self, CApi, VoicevoxResultCode};
-use voicevox_core::SupportedDevices;
+use serde_with::{DisplayFromStr, serde_as};
+use test_util::c_api::{self, CApi, VoicevoxLoadOnnxruntimeOptions, VoicevoxResultCode};
 
 use crate::{
-    assert_cdylib::{self, case, Utf8Output},
+    assert_cdylib::{self, Utf8Output, case},
     snapshots,
 };
 
@@ -20,31 +20,68 @@ struct TestCase;
 #[typetag::serde(name = "global_info")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
-        let lib = CApi::from_library(lib)?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let lib = unsafe { CApi::from_library(lib) }?;
 
         std::assert_eq!(
             env!("CARGO_PKG_VERSION"),
-            CStr::from_ptr(lib.voicevox_get_version()).to_str()?,
+            // SAFETY: `voicevox_get_version` has no safety requirements, and returns a valid
+            // string.
+            unsafe { CStr::from_ptr(lib.voicevox_get_version()) }.to_str()?,
         );
 
         let onnxruntime = {
             let mut onnxruntime = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_onnxruntime_load_once(
-                lib.voicevox_make_default_load_onnxruntime_options(),
-                onnxruntime.as_mut_ptr(),
-            ));
-            onnxruntime.assume_init()
+            assert_ok(unsafe {
+                // SAFETY:
+                // - A `CStr` is a valid string.
+                // - `onnxruntime` is valid for writes.
+                lib.voicevox_onnxruntime_load_once(
+                    VoicevoxLoadOnnxruntimeOptions {
+                        filename: CStr::from_bytes_with_nul(
+                            concatcp!(
+                                env::consts::DLL_PREFIX,
+                                "onnxruntime",
+                                env::consts::DLL_SUFFIX,
+                                '\0'
+                            )
+                            .as_ref(),
+                        )
+                        .expect("this ends with nul")
+                        .as_ptr(),
+                    },
+                    onnxruntime.as_mut_ptr(),
+                )
+            });
+            // SAFETY: `voicevox_onnxruntime_load_once` initializes `onnxruntime` if succeeded.
+            unsafe { onnxruntime.assume_init() }
         };
 
         {
-            let mut supported_devices = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_onnxruntime_create_supported_devices_json(
-                onnxruntime,
-                supported_devices.as_mut_ptr(),
-            ));
-            let supported_devices = supported_devices.assume_init();
-            serde_json::from_str::<SupportedDevices>(CStr::from_ptr(supported_devices).to_str()?)?;
-            lib.voicevox_json_free(supported_devices);
+            let supported_devices = {
+                let mut supported_devices = MaybeUninit::uninit();
+                assert_ok(unsafe {
+                    // SAFETY:
+                    // - `onnxruntime` is valid for reads.
+                    // - `supported_devices` is valid for writes.
+                    lib.voicevox_onnxruntime_create_supported_devices_json(
+                        onnxruntime,
+                        supported_devices.as_mut_ptr(),
+                    )
+                });
+                // SAFETY: `voicevox_onnxruntime_create_supported_devices_json` initializes
+                // `supported_devices` if succeeded.
+                unsafe { supported_devices.assume_init() }
+            };
+
+            serde_json::from_str::<HashMap<String, bool>>(
+                // SAFETY: `voicevox_onnxruntime_create_supported_devices_json` returns a valid
+                // string if succeeded.
+                unsafe { CStr::from_ptr(supported_devices) }.to_str()?,
+            )?;
+
+            // SAFETY: `supported_devices` is valid and is no longer used.
+            unsafe { lib.voicevox_json_free(supported_devices) };
         }
 
         for result_code in [
@@ -55,7 +92,7 @@ impl assert_cdylib::TestCase for TestCase {
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_RUN_MODEL_ERROR,
-            c_api::VoicevoxResultCode_VOICEVOX_RESULT_EXTRACT_FULL_CONTEXT_LABEL_ERROR,
+            c_api::VoicevoxResultCode_VOICEVOX_RESULT_ANALYZE_TEXT_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_PARSE_KANA_ERROR,
             c_api::VoicevoxResultCode_VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
@@ -74,9 +111,10 @@ impl assert_cdylib::TestCase for TestCase {
         ] {
             std::assert_eq!(
                 SNAPSHOTS.result_messages[&result_code],
-                str::from_utf8(
-                    CStr::from_ptr(lib.voicevox_error_result_to_message(result_code)).to_bytes()
-                )?,
+                // SAFETY: `voicevox_get_version` has safety requirement, and returns a valid
+                // string.
+                unsafe { CStr::from_ptr(lib.voicevox_error_result_to_message(result_code)) }
+                    .to_str()?,
             );
         }
         return Ok(());
@@ -89,7 +127,7 @@ impl assert_cdylib::TestCase for TestCase {
     fn assert_output(&self, output: Utf8Output) -> AssertResult {
         output
             .mask_timestamps()
-            .mask_onnxruntime_version()
+            .mask_onnxruntime_filename()
             .mask_windows_video_cards()
             .assert()
             .try_success()?
