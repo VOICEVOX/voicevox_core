@@ -47,7 +47,7 @@ jobs:
         run: |
           includes='[
             {
-              "os": "windows-2019",
+              "os": "windows-2022",
               "target": "x86_64-pc-windows-msvc",
               "artifact_name": "windows-x64",
               "c_release_format": "plain-cdylib",
@@ -55,7 +55,7 @@ jobs:
               "can_skip_in_simple_test": false
             },
             {
-              "os": "windows-2019",
+              "os": "windows-2022",
               "target": "i686-pc-windows-msvc",
               "artifact_name": "windows-x86",
               "c_release_format": "plain-cdylib",

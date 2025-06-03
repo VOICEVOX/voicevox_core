@@ -104,9 +104,10 @@ jobs:
       - name: declare strategy matrix
         id: strategy-matrix
         run: |
+          # FIXME: `windows-2022`はテスト対象に含むべき
           includes='[
-            { "os": "windows-2019", "can_skip_in_simple_test": true },
             { "os": "windows-2022", "can_skip_in_simple_test": true },
+            { "os": "windows-2025", "can_skip_in_simple_test": true },
             { "os": "macos-13", "can_skip_in_simple_test": false },
             { "os": "macos-14", "can_skip_in_simple_test": true },
             { "os": "ubuntu-22.04", "can_skip_in_simple_test": false },
