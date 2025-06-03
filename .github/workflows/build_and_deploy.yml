@@ -405,7 +405,7 @@ jobs:
 
           OS=desktop gradle publishToMavenLocal
 
-          # android: cpu
+          # android
           clean_dlls
           copy_dll android-arm64 arm64-v8a
           copy_dll android-x86_64 x86_64
