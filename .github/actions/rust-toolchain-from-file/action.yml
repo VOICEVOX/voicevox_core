@@ -12,7 +12,7 @@ runs:
   steps:
     - id: read-rust-toolchain
       shell: bash
-      run: echo "toolchain=$(cat ./rust-toolchain)" >> "$GITHUB_OUTPUT"
+      run: echo "toolchain=$(< ./rust-toolchain)" >> "$GITHUB_OUTPUT"
     - uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ steps.read-rust-toolchain.outputs.toolchain }}
