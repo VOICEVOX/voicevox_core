@@ -127,6 +127,10 @@ struct Args {
     #[arg(value_enum, long, default_value(Os::default_opt().map(<&str>::from)))]
     os: Os,
 
+    /// ダウンロードする場合のリトライ回数
+    #[arg(long, default_value("0"))]
+    retry: u32,
+
     #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_C_API_REPO))]
     c_api_repo: RepoName,
 
@@ -228,6 +232,7 @@ async fn main() -> anyhow::Result<()> {
         devices,
         cpu_arch,
         os,
+        retry,
         c_api_repo,
         onnxruntime_builder_repo,
         models_repo,
@@ -390,33 +395,51 @@ async fn main() -> anyhow::Result<()> {
     let mut tasks = JoinSet::new();
 
     if let Some(c_api) = c_api {
-        tasks.spawn(download_and_extract_from_gh(
-            c_api,
-            Stripping::FirstDir,
-            output.join("c_api"),
-            &progresses,
+        tasks.spawn(retry_result(
+            || {
+                download_and_extract_from_gh(
+                    c_api.clone(),
+                    Stripping::FirstDir,
+                    output.join("c_api"),
+                    &progresses,
+                )
+            },
+            retry,
         )?);
     }
     if let Some(onnxruntime) = onnxruntime {
-        tasks.spawn(download_and_extract_from_gh(
-            onnxruntime,
-            Stripping::FirstDir,
-            output.join("onnxruntime"),
-            &progresses,
+        tasks.spawn(retry_result(
+            || {
+                download_and_extract_from_gh(
+                    onnxruntime.clone(),
+                    Stripping::FirstDir,
+                    output.join("onnxruntime"),
+                    &progresses,
+                )
+            },
+            retry,
         )?);
     }
     if targets.contains(&DownloadTarget::AdditionalLibraries) {
         for additional_libraries in additional_libraries {
-            tasks.spawn(download_and_extract_from_gh(
-                additional_libraries,
-                Stripping::FirstDir,
-                output.join("additional_libraries"),
-                &progresses,
+            tasks.spawn(retry_result(
+                || {
+                    download_and_extract_from_gh(
+                        additional_libraries.clone(),
+                        Stripping::FirstDir,
+                        output.join("additional_libraries"),
+                        &progresses,
+                    )
+                },
+                retry,
             )?);
         }
     }
     if let Some(models) = models {
-        tasks.spawn(download_models(models, output.join("models"), &progresses)?);
+        tasks.spawn(retry_result(
+            || download_models(models.clone(), output.join("models"), &progresses),
+            retry,
+        )?);
     }
     if targets.contains(&DownloadTarget::Dict) {
         tasks.spawn(download_and_extract_from_url(
@@ -456,6 +479,20 @@ fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
     }
 
     octocrab.build().map(Arc::new)
+}
+
+fn retry_result<T, E, Fun>(f: Fun, retries: u32) -> Result<T, E>
+where
+    Fun: Fn() -> Result<T, E>,
+{
+    let mut ctr = retries + 1;
+    while ctr > 1 {
+        if let Ok(o) = f() {
+            return Ok(o);
+        }
+        ctr -= 1;
+    }
+    return f();
 }
 
 async fn find_gh_asset(
@@ -1103,6 +1140,7 @@ async fn download(
     }
 }
 
+#[derive(Clone)]
 struct GhAsset {
     octocrab: Arc<Octocrab>,
     repo: RepoName,
@@ -1113,6 +1151,7 @@ struct GhAsset {
     size: usize,
 }
 
+#[derive(Clone)]
 struct ModelsWithTerms {
     tag: String,
     readme: String,
@@ -1120,6 +1159,7 @@ struct ModelsWithTerms {
     models: Vec<GhContent>,
 }
 
+#[derive(Clone)]
 struct GhContent {
     name: String,
     download_url: String,
