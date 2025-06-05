@@ -481,9 +481,9 @@ fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
     octocrab.build().map(Arc::new)
 }
 
-fn retry_result<T, E, Fun>(f: Fun, retries: u32) -> Result<T, E>
+fn retry_result<T, E, F>(f: F, retries: u32) -> Result<T, E>
 where
-    Fun: Fn() -> Result<T, E>,
+    F: Fn() -> Result<T, E>,
 {
     for _ in 0..retries {
         if let Ok(o) = f() {
