@@ -485,14 +485,12 @@ fn retry_result<T, E, Fun>(f: Fun, retries: u32) -> Result<T, E>
 where
     Fun: Fn() -> Result<T, E>,
 {
-    let mut ctr = retries + 1;
-    while ctr > 1 {
+    for _ in 0..retries {
         if let Ok(o) = f() {
             return Ok(o);
         }
-        ctr -= 1;
     }
-    return f();
+    f()
 }
 
 async fn find_gh_asset(
