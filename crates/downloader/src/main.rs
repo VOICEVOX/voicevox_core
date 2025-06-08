@@ -472,11 +472,11 @@ fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
     octocrab.build().map(Arc::new)
 }
 
-async fn retry<E, F>(retries: u32, f: F) -> Result<(), E>
+async fn retry<E, F>(tries: u32, f: F) -> Result<(), E>
 where
     F: AsyncFnOnce() -> Result<(), E> + Clone,
 {
-    for _ in 0..retries {
+    for _ in 0..tries - 1 {
         if let Ok(o) = f.clone()().await {
             return Ok(o);
         }
