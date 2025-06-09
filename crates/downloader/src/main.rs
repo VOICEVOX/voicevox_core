@@ -4,7 +4,9 @@ use std::{
     env,
     future::Future,
     io::{self, Cursor, IsTerminal as _, Read, Write as _},
+    num::NonZero,
     path::{Path, PathBuf},
+    str::FromStr,
     sync::{Arc, LazyLock},
     time::Duration,
 };
@@ -129,7 +131,7 @@ struct Args {
 
     /// ダウンロードする場合のリトライ回数
     #[arg(short, long, default_value("5"))]
-    tries: u32,
+    tries: Tries,
 
     #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_C_API_REPO))]
     c_api_repo: RepoName,
@@ -215,6 +217,26 @@ impl Os {
 struct RepoName {
     owner: String,
     repo: String,
+}
+
+#[derive(Clone, Copy)]
+enum Tries {
+    Finite(NonZero<u32>),
+    Infinite,
+}
+
+impl FromStr for Tries {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "0" | "inf" => Ok(Self::Infinite),
+            s => s
+                .parse()
+                .map(Self::Finite)
+                .map_err(|_| "must be a positive integer or `inf`"),
+        }
+    }
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -396,18 +418,18 @@ async fn main() -> anyhow::Result<()> {
 
     if let Some(c_api) = c_api {
         tasks.spawn(download_and_extract_from_gh(
-            c_api.clone(),
+            c_api,
             Stripping::FirstDir,
-            output.clone().join("c_api"),
+            output.join("c_api"),
             &progresses,
             tries,
         )?);
     }
     if let Some(onnxruntime) = onnxruntime {
         tasks.spawn(download_and_extract_from_gh(
-            onnxruntime.clone(),
+            onnxruntime,
             Stripping::FirstDir,
-            output.clone().join("onnxruntime"),
+            output.join("onnxruntime"),
             &progresses,
             tries,
         )?);
@@ -415,9 +437,9 @@ async fn main() -> anyhow::Result<()> {
     if targets.contains(&DownloadTarget::AdditionalLibraries) {
         for additional_libraries in additional_libraries {
             tasks.spawn(download_and_extract_from_gh(
-                additional_libraries.clone(),
+                additional_libraries,
                 Stripping::FirstDir,
-                output.clone().join("additional_libraries"),
+                output.join("additional_libraries"),
                 &progresses,
                 tries,
             )?);
@@ -425,7 +447,7 @@ async fn main() -> anyhow::Result<()> {
     }
     if let Some(models) = models {
         tasks.spawn(download_models(
-            models.clone(),
+            models,
             output.join("models"),
             &progresses,
             tries,
@@ -472,16 +494,25 @@ fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
     octocrab.build().map(Arc::new)
 }
 
-async fn retry<E, F>(tries: u32, f: F) -> Result<(), E>
+async fn retry<E, F>(tries: Tries, f: F) -> Result<(), E>
 where
     F: AsyncFnOnce() -> Result<(), E> + Clone,
 {
-    for _ in 0..tries - 1 {
-        if let Ok(o) = f.clone()().await {
-            return Ok(o);
+    match tries {
+        Tries::Infinite => loop {
+            if let Ok(o) = f.clone()().await {
+                return Ok(o);
+            }
+        },
+        Tries::Finite(nonzero) => {
+            for _ in 0..Into::<u32>::into(nonzero) - 1 {
+                if let Ok(o) = f.clone()().await {
+                    return Ok(o);
+                }
+            }
+            f().await
         }
     }
-    f().await
 }
 
 async fn find_gh_asset(
@@ -847,33 +878,29 @@ fn download_and_extract_from_gh(
     stripping: Stripping,
     output: PathBuf,
     progresses: &MultiProgress,
-    tries: u32,
+    tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
     let archive_kind = ArchiveKind::from_filename(&name)?;
     let pb = add_progress_bar(progresses, size as _, name);
 
-    let fetcher = {
-        async move || {
-            let bytes_stream = octocrab
-                .repos(&repo.owner, &repo.repo)
-                .releases()
-                .stream_asset(id)
-                .await?
-                .map_err(Into::into);
+    Ok(retry(tries, async move || {
+        let bytes_stream = octocrab
+            .repos(&repo.owner, &repo.repo)
+            .releases()
+            .stream_asset(id)
+            .await?
+            .map_err(Into::into);
 
-            download_and_extract(
-                bytes_stream,
-                Some(size as _),
-                archive_kind,
-                stripping,
-                &output,
-                pb,
-            )
-            .await
-        }
-    };
-
-    Ok(retry(tries, fetcher))
+        download_and_extract(
+            bytes_stream,
+            Some(size as _),
+            archive_kind,
+            stripping,
+            &output,
+            pb,
+        )
+        .await
+    }))
 }
 
 fn download_and_extract_from_url(
@@ -881,7 +908,7 @@ fn download_and_extract_from_url(
     stripping: Stripping,
     output: PathBuf,
     progresses: &MultiProgress,
-    tries: u32,
+    tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
     let name = url
         .path_segments()
@@ -890,24 +917,21 @@ fn download_and_extract_from_url(
     let archive_kind = ArchiveKind::from_filename(name)?;
     let pb = add_progress_bar(progresses, 0, name);
 
-    let fetcher = {
-        async move || {
-            let res = reqwest::get(url.clone()).await?.error_for_status()?;
-            let content_length = res.content_length();
-            let bytes_stream = res.bytes_stream().map_err(Into::into);
+    Ok(retry(tries, async move || {
+        let res = reqwest::get(url.clone()).await?.error_for_status()?;
+        let content_length = res.content_length();
+        let bytes_stream = res.bytes_stream().map_err(Into::into);
 
-            download_and_extract(
-                bytes_stream,
-                content_length,
-                archive_kind,
-                stripping,
-                &output,
-                pb,
-            )
-            .await
-        }
-    };
-    Ok(retry(tries, fetcher))
+        download_and_extract(
+            bytes_stream,
+            content_length,
+            archive_kind,
+            stripping,
+            &output,
+            pb.clone(),
+        )
+        .await
+    }))
 }
 
 fn download_models(
@@ -919,7 +943,7 @@ fn download_models(
     }: ModelsWithTerms,
     output: PathBuf,
     progresses: &MultiProgress,
-    tries: u32,
+    tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
     let reqwest = reqwest::Client::builder().build()?;
 
@@ -935,8 +959,6 @@ fn download_models(
         fs_err::tokio::create_dir_all(&output.join(MODELS_DIR_NAME)).await?;
         fs_err::tokio::write(output.join(MODELS_README_RENAME), readme).await?;
         fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
-        let reqwest = &reqwest;
-        let output = &output;
         models
             .into_iter()
             .map(
@@ -948,10 +970,10 @@ fn download_models(
                     },
                     pb,
                 )| {
-                    let res = reqwest.get(download_url).send().await?.error_for_status()?;
-                    let bytes_stream = res.bytes_stream().map_err(Into::into);
-                    let pb = with_style(pb, &PROGRESS_STYLE1).await?;
-                    let model = download(bytes_stream, Some(size), pb.clone()).await?;
+                    let res = &reqwest.get(download_url).send().await?.error_for_status()?;
+                    let bytes_stream = &res.bytes_stream().map_err(Into::into);
+                    let pb = with_style(pb.clone(), &PROGRESS_STYLE1).await?;
+                    let model = download(bytes_stream, Some(size), pb).await?;
                     let pb = tokio::task::spawn_blocking(move || {
                         pb.set_style(PROGRESS_STYLE2.clone());
                         pb.set_message("Writing...");
