@@ -41,7 +41,7 @@ pub(super) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_value
 );
 
 /// 音声モデルID。
-#[doc(alias = "VoicevoxVoiceModelId")]
+#[cfg_attr(doc, doc(alias = "VoicevoxVoiceModelId"))]
 #[derive(
     PartialEq,
     Eq,
@@ -603,12 +603,12 @@ pub(crate) mod blocking {
     /// 音声モデルファイル。
     ///
     /// VVMファイルと対応する。
-    #[doc(alias = "VoicevoxVoiceModelFile")]
+    #[cfg_attr(doc, doc(alias = "VoicevoxVoiceModelFile"))]
     pub struct VoiceModelFile(Inner<SingleTasked>);
 
     impl self::VoiceModelFile {
         /// VVMファイルを開く。
-        #[doc(alias = "voicevox_voice_model_file_open")]
+        #[cfg_attr(doc, doc(alias = "voicevox_voice_model_file_open"))]
         pub fn open(path: impl AsRef<Path>) -> crate::Result<Self> {
             Inner::open(path).block_on().map(Self)
         }
@@ -624,13 +624,13 @@ pub(crate) mod blocking {
         }
 
         /// ID。
-        #[doc(alias = "voicevox_voice_model_file_id")]
+        #[cfg_attr(doc, doc(alias = "voicevox_voice_model_file_id"))]
         pub fn id(&self) -> VoiceModelId {
             self.0.id()
         }
 
         /// メタ情報。
-        #[doc(alias = "voicevox_voice_model_file_create_metas_json")]
+        #[cfg_attr(doc, doc(alias = "voicevox_voice_model_file_create_metas_json"))]
         pub fn metas(&self) -> &VoiceModelMeta {
             self.0.metas()
         }

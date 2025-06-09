@@ -44,12 +44,12 @@ pub(crate) mod blocking {
     };
 
     /// テキスト解析器としてのOpen JTalk。
-    #[doc(alias = "OpenJtalkRc")]
+    #[cfg_attr(doc, doc(alias = "OpenJtalkRc"))]
     #[derive(Clone)]
     pub struct OpenJtalk(pub(super) Arc<Inner>);
 
     impl self::OpenJtalk {
-        #[doc(alias = "voicevox_open_jtalk_rc_new")]
+        #[cfg_attr(doc, doc(alias = "voicevox_open_jtalk_rc_new"))]
         pub fn new(open_jtalk_dict_dir: impl AsRef<Utf8Path>) -> crate::result::Result<Self> {
             let dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
 
@@ -75,7 +75,7 @@ pub(crate) mod blocking {
         /// ユーザー辞書を設定する。
         ///
         /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
-        #[doc(alias = "voicevox_open_jtalk_rc_use_user_dict")]
+        #[cfg_attr(doc, doc(alias = "voicevox_open_jtalk_rc_use_user_dict"))]
         pub fn use_user_dict(
             &self,
             user_dict: &crate::blocking::UserDict,
