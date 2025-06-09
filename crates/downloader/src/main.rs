@@ -128,7 +128,7 @@ struct Args {
     os: Os,
 
     /// ダウンロードする場合のリトライ回数
-    #[arg(long, default_value("5"))]
+    #[arg(short, long, default_value("5"))]
     tries: u32,
 
     #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_C_API_REPO))]
