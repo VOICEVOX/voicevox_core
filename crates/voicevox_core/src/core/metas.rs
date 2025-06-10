@@ -59,7 +59,7 @@ pub fn merge<'a>(metas: impl IntoIterator<Item = &'a CharacterMeta>) -> Vec<Char
     new,
     Debug,
 )]
-#[doc(alias = "VoicevoxStyleId")]
+#[cfg_attr(doc, doc(alias = "VoicevoxStyleId"))]
 pub struct StyleId(pub u32);
 
 impl Display for StyleId {
