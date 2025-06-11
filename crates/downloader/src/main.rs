@@ -501,7 +501,7 @@ where
             }
         },
         Tries::Finite(nonzero) => {
-            for _ in 0..Into::<u32>::into(nonzero) - 1 {
+            for _ in 0..nonzero.get() - 1 {
                 if let Ok(o) = f().await {
                     return Ok(o);
                 }
