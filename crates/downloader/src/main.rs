@@ -958,7 +958,7 @@ async fn download_models(
         models
             .clone()
             .into_iter()
-            .map(|(a, b)| fetch_model(a, b, reqwest.clone(), &output))
+            .map(|(c, b)| fetch_model(c, b, reqwest.clone(), &output))
             .collect::<FuturesUnordered<_>>()
             .try_collect::<()>()
             .await
