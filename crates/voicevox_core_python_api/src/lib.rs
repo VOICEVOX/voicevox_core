@@ -1,4 +1,5 @@
 use std::{
+    fmt::{self, Debug},
     marker::PhantomData,
     mem,
     ops::{Deref, DerefMut},
@@ -13,7 +14,7 @@ use pyo3::{
     Bound, Py, PyObject, PyResult, PyTypeInfo, Python, create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
     pyclass, pyfunction, pymodule,
-    types::{PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _},
+    types::{PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _, PyString},
     wrap_pyfunction,
 };
 use voicevox_core::{
@@ -107,6 +108,17 @@ exceptions! {
 struct Closable<T, C: PyTypeInfo, A: Async> {
     content: A::RwLock<MaybeClosed<T>>,
     marker: PhantomData<(C, A)>,
+}
+
+impl<T, C, A> Debug for Closable<T, C, A>
+where
+    A::RwLock<MaybeClosed<T>>: Debug,
+    C: PyTypeInfo,
+    A: Async,
+{
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.debug_tuple("Closable").field(&self.content).finish()
+    }
 }
 
 impl<T, C: PyTypeInfo, A: Async> Closable<T, C, A> {
@@ -244,6 +256,16 @@ struct VoiceModelFilePyFields {
     metas: Py<PyList>, // `list[CharacterMeta]`
 }
 
+impl VoiceModelFilePyFields {
+    fn format<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
+        let Self { id, metas } = self;
+        let ret = id.bind(py).repr()?;
+        let ret = ret.add(" ")?;
+        let ret = ret.add(metas.bind(py).repr()?)?;
+        ret.downcast_into::<PyString>().map_err(Into::into)
+    }
+}
+
 #[pyclass(frozen)]
 struct _ReservedFields;
 
@@ -289,10 +311,10 @@ mod blocking {
 
     use camino::Utf8PathBuf;
     use pyo3::{
-        Bound, IntoPyObject as _, Py, PyAny, PyObject, PyRef, PyResult, Python,
+        Bound, IntoPyObject as _, Py, PyAny, PyObject, PyRef, PyResult, PyTypeInfo as _, Python,
         exceptions::{PyIndexError, PyTypeError, PyValueError},
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyDict, PyList, PyTuple, PyType},
+        types::{IntoPyDict as _, PyAnyMethods as _, PyDict, PyList, PyString, PyTuple, PyType},
     };
     use ref_cast::RefCast as _;
     use uuid::Uuid;
@@ -343,6 +365,21 @@ mod blocking {
                 model,
                 fields: VoiceModelFilePyFields { id, metas },
             })
+        }
+
+        fn __repr__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
+            let Self {
+                model: rust,
+                fields,
+            } = self;
+            let ret = &format!(
+                "<voicevox_core.blocking.{NAME} rust=`{rust:?}` ",
+                NAME = Self::NAME,
+            );
+            let ret = PyString::new(py, ret);
+            let ret = ret.add(fields.format(py)?)?;
+            let ret = ret.add(">")?;
+            ret.downcast_into::<PyString>().map_err(Into::into)
         }
 
         fn close(&self) {
@@ -452,6 +489,14 @@ mod blocking {
                 .map(|onnxruntime| onnxruntime.clone_ref(py))
         }
 
+        fn __repr__(&self) -> String {
+            let Self(rust) = self;
+            format!(
+                "<voicevox_core.blocking.{NAME} rust=`{rust:?}`>",
+                NAME = Self::NAME,
+            )
+        }
+
         fn supported_devices(&self, py: Python<'_>) -> PyResult<ToDataclass<SupportedDevices>> {
             self.0
                 .supported_devices()
@@ -461,6 +506,8 @@ mod blocking {
     }
 
     #[pyclass(frozen)]
+    #[derive(derive_more::Debug)]
+    #[debug("{open_jtalk:?}")]
     pub(crate) struct OpenJtalk {
         open_jtalk: voicevox_core::blocking::OpenJtalk,
     }
@@ -477,6 +524,14 @@ mod blocking {
             Ok(Self { open_jtalk })
         }
 
+        fn __repr__(&self) -> String {
+            let Self { open_jtalk: rust } = self;
+            format!(
+                "<voicevox_core.blocking.{NAME} rust=`{rust:?}`>",
+                NAME = Self::NAME,
+            )
+        }
+
         fn use_user_dict(&self, user_dict: UserDict, py: Python<'_>) -> PyResult<()> {
             self.open_jtalk
                 .use_user_dict(&user_dict.dict)
@@ -491,6 +546,8 @@ mod blocking {
         }
     }
 
+    #[derive(derive_more::Debug)]
+    #[debug("{:?}", _0.get())]
     struct OwnedOpenJtalk(Py<OpenJtalk>);
 
     impl voicevox_core::blocking::TextAnalyzer for OwnedOpenJtalk {
@@ -552,8 +609,12 @@ mod blocking {
             })
         }
 
-        fn __repr__(&self) -> &'static str {
-            "Synthesizer { .. }"
+        fn __repr__(&self) -> String {
+            let Self { synthesizer: rust } = self;
+            format!(
+                "<voicevox_core.blocking.{NAME} rust=`{rust:?}`>",
+                NAME = Self::NAME,
+            )
         }
 
         fn __enter__(slf: PyRef<'_, Self>) -> PyResult<PyRef<'_, Self>> {
@@ -864,7 +925,7 @@ mod blocking {
     }
 
     #[pyclass(frozen)]
-    #[derive(Default, Debug, Clone)]
+    #[derive(Default, Clone)]
     pub(crate) struct UserDict {
         dict: Arc<voicevox_core::blocking::UserDict>,
     }
@@ -874,6 +935,14 @@ mod blocking {
         #[new]
         fn new() -> Self {
             Self::default()
+        }
+
+        fn __repr__(&self) -> String {
+            let Self { dict: rust } = self;
+            format!(
+                "<voicevox_core.blocking.{NAME} rust=`{rust:?}`>",
+                NAME = Self::NAME,
+            )
         }
 
         fn load(&self, path: PathBuf, py: Python<'_>) -> PyResult<()> {
@@ -931,10 +1000,11 @@ mod asyncio {
 
     use camino::Utf8PathBuf;
     use pyo3::{
-        Bound, IntoPyObject as _, Py, PyAny, PyErr, PyObject, PyRef, PyResult, Python,
+        Bound, IntoPyObject as _, Py, PyAny, PyErr, PyObject, PyRef, PyResult, PyTypeInfo as _,
+        Python,
         exceptions::PyTypeError,
         pyclass, pymethods,
-        types::{IntoPyDict as _, PyDict, PyList, PyTuple, PyType},
+        types::{IntoPyDict as _, PyAnyMethods as _, PyDict, PyList, PyString, PyTuple, PyType},
     };
     use ref_cast::RefCast as _;
     use uuid::Uuid;
@@ -988,6 +1058,21 @@ mod asyncio {
                 model,
                 fields: VoiceModelFilePyFields { id, metas },
             })
+        }
+
+        fn __repr__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
+            let Self {
+                model: rust,
+                fields,
+            } = self;
+            let ret = &format!(
+                "<voicevox_core.asyncio.{NAME} rust=`{rust:?}` ",
+                NAME = Self::NAME,
+            );
+            let ret = PyString::new(py, ret);
+            let ret = ret.add(fields.format(py)?)?;
+            let ret = ret.add(">")?;
+            ret.downcast_into::<PyString>().map_err(Into::into)
         }
 
         async fn close(&self) -> PyResult<()> {
@@ -1094,6 +1179,14 @@ mod asyncio {
             })
         }
 
+        fn __repr__(&self) -> String {
+            let Self(rust) = self;
+            format!(
+                "<voicevox_core.asyncio.{NAME} rust=`{rust:?}`>",
+                NAME = Self::NAME,
+            )
+        }
+
         fn supported_devices(&self, py: Python<'_>) -> PyResult<ToDataclass<SupportedDevices>> {
             self.0
                 .supported_devices()
@@ -1103,6 +1196,8 @@ mod asyncio {
     }
 
     #[pyclass(frozen)]
+    #[derive(derive_more::Debug)]
+    #[debug("{open_jtalk:?}")]
     pub(crate) struct OpenJtalk {
         open_jtalk: voicevox_core::nonblocking::OpenJtalk,
     }
@@ -1132,6 +1227,14 @@ mod asyncio {
             Ok(Self { open_jtalk })
         }
 
+        fn __repr__(&self) -> String {
+            let Self { open_jtalk: rust } = self;
+            format!(
+                "<voicevox_core.asyncio.{NAME} rust=`{rust:?}`>",
+                NAME = Self::NAME,
+            )
+        }
+
         async fn use_user_dict(&self, user_dict: UserDict) -> PyResult<()> {
             let this = self.open_jtalk.clone();
             let result = this.use_user_dict(&user_dict.dict).await;
@@ -1144,6 +1247,8 @@ mod asyncio {
         }
     }
 
+    #[derive(derive_more::Debug)]
+    #[debug("{:?}", _0.get())]
     struct OwnedOpenJtalk(Py<OpenJtalk>);
 
     impl voicevox_core::nonblocking::TextAnalyzer for OwnedOpenJtalk {
@@ -1185,8 +1290,12 @@ mod asyncio {
             Ok(Self { synthesizer })
         }
 
-        fn __repr__(&self) -> &'static str {
-            "Synthesizer { .. }"
+        fn __repr__(&self) -> String {
+            let Self { synthesizer: rust } = self;
+            format!(
+                "<voicevox_core.asyncio.{NAME} rust=`{rust:?}`>",
+                NAME = Self::NAME,
+            )
         }
 
         fn __aenter__(slf: PyRef<'_, Self>) -> PyResult<Bound<'_, PyAny>> {
@@ -1453,7 +1562,7 @@ mod asyncio {
     }
 
     #[pyclass(frozen)]
-    #[derive(Default, Debug, Clone)]
+    #[derive(Default, Clone)]
     pub(crate) struct UserDict {
         dict: Arc<voicevox_core::nonblocking::UserDict>,
     }
@@ -1463,6 +1572,14 @@ mod asyncio {
         #[new]
         fn new() -> Self {
             Self::default()
+        }
+
+        fn __repr__(&self) -> String {
+            let Self { dict: rust } = self;
+            format!(
+                "<voicevox_core.asyncio.{NAME} rust=`{rust:?}`>",
+                NAME = Self::NAME,
+            )
         }
 
         async fn load(&self, path: PathBuf) -> PyResult<()> {
