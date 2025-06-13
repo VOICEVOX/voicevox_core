@@ -17,7 +17,7 @@ use super::part_of_speech_data::{
 ///
 /// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
 #[cfg_attr(doc, doc(alias = "VoicevoxUserDictWord"))]
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct UserDictWord {
     /// 単語の表記。
     surface: String,
@@ -145,6 +145,7 @@ impl Serialize for UserDictWord {
 }
 
 /// [`UserDictWord`]のビルダー。
+#[derive(Debug)]
 pub struct UserDictWordBuilder {
     word_type: UserDictWordType,
     priority: u32,
@@ -360,7 +361,7 @@ impl Default for UserDictWordBuilder {
 
 /// ユーザー辞書の単語の種類。
 #[cfg_attr(doc, doc(alias = "VoicevoxUserDictWordType"))]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UserDictWordType {
     /// 固有名詞。

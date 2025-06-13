@@ -42,4 +42,18 @@ public class AccentPhrase {
     this.pauseMora = null;
     this.isInterrogative = false;
   }
+
+  // `moras`の型が`List`のため、`clone`は実装できない
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof AccentPhrase)) {
+      return false;
+    }
+    AccentPhrase other = (AccentPhrase) obj;
+    return moras.equals(other.moras)
+        && accent == other.accent
+        && pauseMora == other.pauseMora
+        && isInterrogative == other.isInterrogative;
+  }
 }

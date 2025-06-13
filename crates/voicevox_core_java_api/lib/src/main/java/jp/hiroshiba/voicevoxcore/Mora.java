@@ -11,7 +11,7 @@ import jakarta.annotation.Nullable;
  * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
-public class Mora {
+public class Mora implements Cloneable {
   /** 文字。 */
   @SerializedName("text")
   @Expose
@@ -54,5 +54,30 @@ public class Mora {
     this.vowel = "";
     this.vowelLength = 0.0;
     this.pitch = 0.0;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof Mora)) {
+      return false;
+    }
+    Mora other = (Mora) obj;
+    return text.equals(other.text)
+        && consonant.equals(other.consonant)
+        && vowel.equals(other.vowel)
+        && vowelLength == other.vowelLength
+        && pitch == other.pitch;
+  }
+
+  @Override
+  public Mora clone() {
+    Mora ret = new Mora();
+    ret.text = text;
+    ret.consonant = consonant;
+    ret.consonantLength = consonantLength;
+    ret.vowel = vowel;
+    ret.vowelLength = vowelLength;
+    ret.pitch = pitch;
+    return ret;
   }
 }

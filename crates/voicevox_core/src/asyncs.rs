@@ -69,6 +69,8 @@ impl Async for SingleTasked {
     }
 }
 
+#[derive(derive_more::Debug)]
+#[debug("{_0:?}")]
 pub(crate) struct StdMutex<T>(std::sync::Mutex<T>);
 
 impl<T> From<T> for StdMutex<T> {
@@ -83,6 +85,8 @@ impl<T: Send + Sync + Unpin> Mutex<T> for StdMutex<T> {
     }
 }
 
+#[derive(derive_more::Debug)]
+#[debug("{_0:?}")]
 pub(crate) struct StdFile(std::fs::File);
 
 impl AsyncRead for StdFile {
@@ -136,6 +140,7 @@ impl<T: Send + Sync + Unpin> Mutex<T> for async_lock::Mutex<T> {
 }
 
 // TODO: `async_fs::File::into_std_file`みたいなのがあればこんなの↓は作らなくていいはず。PR出す？
+#[derive(Debug)]
 pub(crate) struct AsyncRoFile {
     // `poll_read`と`poll_seek`しかしない
     unblock: Unblock<std::fs::File>,

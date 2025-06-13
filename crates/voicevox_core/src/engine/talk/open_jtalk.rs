@@ -27,6 +27,7 @@ pub(crate) trait FullcontextExtractor {
 
 pub(crate) mod blocking {
     use std::{
+        fmt::{self, Debug},
         io::Write as _,
         sync::{Arc, Mutex},
     };
@@ -151,6 +152,20 @@ pub(crate) mod blocking {
         }
     }
 
+    impl Debug for self::OpenJtalk {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let Self(inner) = self;
+            let Inner {
+                resources,
+                dict_dir,
+            } = &**inner;
+            fmt.debug_struct("OpenJtalk")
+                .field("resources", resources)
+                .field("dict_dir", dict_dir)
+                .finish()
+        }
+    }
+
     pub(super) struct Inner {
         resources: std::sync::Mutex<Resources>,
         dict_dir: Utf8PathBuf,
@@ -213,6 +228,22 @@ pub(crate) mod blocking {
         njd: ManagedResource<Njd>,
         jpcommon: ManagedResource<JpCommon>,
     }
+
+    impl Debug for Resources {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            // FIXME: open_jtalk-rs側に`Debug`実装を入れる
+            let Self {
+                mecab: _,
+                njd: _,
+                jpcommon: _,
+            } = self;
+            fmt.debug_struct("Resources")
+                .field("mecab", &format_args!("_"))
+                .field("njd", &format_args!("_"))
+                .field("jpcommon", &format_args!("_"))
+                .finish()
+        }
+    }
 }
 
 pub(crate) mod nonblocking {
@@ -228,7 +259,8 @@ pub(crate) mod nonblocking {
     ///
     /// [blocking]: https://docs.rs/crate/blocking
     /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
-    #[derive(Clone)]
+    #[derive(Clone, derive_more::Debug)]
+    #[debug("{_0:?}")]
     pub struct OpenJtalk(pub(in super::super) super::blocking::OpenJtalk);
 
     impl self::OpenJtalk {

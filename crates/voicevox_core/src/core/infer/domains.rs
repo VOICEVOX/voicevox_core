@@ -3,6 +3,8 @@ mod frame_decode;
 mod singing_teacher;
 pub(crate) mod talk;
 
+use std::fmt::Debug;
+
 use educe::Educe;
 use serde::{Deserialize, Deserializer};
 
@@ -23,9 +25,14 @@ pub(crate) use self::{
 #[derive(Educe)]
 // TODO: `bounds`に`V: ?Sized`も入れようとすると、よくわからない理由で弾かれる。最新版のeduce
 // でもそうなのか？また最新版でも駄目だとしたら、弾いている理由は何なのか？
-#[educe(Clone(
-    bound = "V: InferenceDomainMapValues, V::Talk: Clone, V::ExperimentalTalk: Clone, V::SingingTeacher: Clone, V::FrameDecode: Clone"
-))]
+#[educe(
+    Clone(
+        bound = "V: InferenceDomainMapValues, V::Talk: Clone, V::ExperimentalTalk: Clone, V::SingingTeacher: Clone, V::FrameDecode: Clone"
+    ),
+    Debug(
+        bound = "V: InferenceDomainMapValues, V::Talk: Debug, V::ExperimentalTalk: Debug, V::SingingTeacher: Debug, V::FrameDecode: Debug"
+    )
+)]
 pub(crate) struct InferenceDomainMap<V: InferenceDomainMapValues + ?Sized> {
     pub(crate) talk: V::Talk,
     pub(crate) experimental_talk: V::ExperimentalTalk,
