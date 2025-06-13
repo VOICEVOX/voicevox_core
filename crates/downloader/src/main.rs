@@ -4,7 +4,9 @@ use std::{
     env,
     future::Future,
     io::{self, Cursor, IsTerminal as _, Read, Write as _},
+    num::NonZero,
     path::{Path, PathBuf},
+    str::FromStr,
     sync::{Arc, LazyLock},
     time::Duration,
 };
@@ -33,6 +35,7 @@ use octocrab::{
     repos::RepoHandler,
 };
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
+use reqwest::Client;
 use semver::VersionReq;
 use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
@@ -127,6 +130,10 @@ struct Args {
     #[arg(value_enum, long, default_value(Os::default_opt().map(<&str>::from)))]
     os: Os,
 
+    /// ダウンロードする場合のリトライ回数
+    #[arg(short, long, default_value("5"))]
+    tries: Tries,
+
     #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_C_API_REPO))]
     c_api_repo: RepoName,
 
@@ -213,6 +220,26 @@ struct RepoName {
     repo: String,
 }
 
+#[derive(Clone, Copy)]
+enum Tries {
+    Finite(NonZero<u32>),
+    Infinite,
+}
+
+impl FromStr for Tries {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "0" | "inf" => Ok(Self::Infinite),
+            s => s
+                .parse()
+                .map(Self::Finite)
+                .map_err(|_| "must be a positive integer or `inf`"),
+        }
+    }
+}
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     setup_logger();
@@ -228,6 +255,7 @@ async fn main() -> anyhow::Result<()> {
         devices,
         cpu_arch,
         os,
+        tries,
         c_api_repo,
         onnxruntime_builder_repo,
         models_repo,
@@ -395,6 +423,7 @@ async fn main() -> anyhow::Result<()> {
             Stripping::FirstDir,
             output.join("c_api"),
             &progresses,
+            tries,
         )?);
     }
     if let Some(onnxruntime) = onnxruntime {
@@ -403,6 +432,7 @@ async fn main() -> anyhow::Result<()> {
             Stripping::FirstDir,
             output.join("onnxruntime"),
             &progresses,
+            tries,
         )?);
     }
     if targets.contains(&DownloadTarget::AdditionalLibraries) {
@@ -412,11 +442,12 @@ async fn main() -> anyhow::Result<()> {
                 Stripping::FirstDir,
                 output.join("additional_libraries"),
                 &progresses,
+                tries,
             )?);
         }
     }
     if let Some(models) = models {
-        tasks.spawn(download_models(models, output.join("models"), &progresses)?);
+        tasks.spawn(download_models(models, output.join("models"), &progresses, tries).await?);
     }
     if targets.contains(&DownloadTarget::Dict) {
         tasks.spawn(download_and_extract_from_url(
@@ -424,6 +455,7 @@ async fn main() -> anyhow::Result<()> {
             Stripping::None,
             output.join("dict"),
             &progresses,
+            tries,
         )?);
     }
 
@@ -456,6 +488,27 @@ fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
     }
 
     octocrab.build().map(Arc::new)
+}
+
+async fn retry<E, F>(tries: Tries, mut f: F) -> Result<(), E>
+where
+    F: AsyncFnMut() -> Result<(), E>,
+{
+    match tries {
+        Tries::Infinite => loop {
+            if let Ok(o) = f().await {
+                return Ok(o);
+            }
+        },
+        Tries::Finite(nonzero) => {
+            for _ in 0..nonzero.get() - 1 {
+                if let Ok(o) = f().await {
+                    return Ok(o);
+                }
+            }
+            f().await
+        }
+    }
 }
 
 async fn find_gh_asset(
@@ -821,11 +874,12 @@ fn download_and_extract_from_gh(
     stripping: Stripping,
     output: PathBuf,
     progresses: &MultiProgress,
+    tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
     let archive_kind = ArchiveKind::from_filename(&name)?;
     let pb = add_progress_bar(progresses, size as _, name);
 
-    Ok(async move {
+    Ok(retry(tries, async move || {
         let bytes_stream = octocrab
             .repos(&repo.owner, &repo.repo)
             .releases()
@@ -839,10 +893,10 @@ fn download_and_extract_from_gh(
             archive_kind,
             stripping,
             &output,
-            pb,
+            pb.clone(),
         )
         .await
-    })
+    }))
 }
 
 fn download_and_extract_from_url(
@@ -850,6 +904,7 @@ fn download_and_extract_from_url(
     stripping: Stripping,
     output: PathBuf,
     progresses: &MultiProgress,
+    tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
     let name = url
         .path_segments()
@@ -858,7 +913,7 @@ fn download_and_extract_from_url(
     let archive_kind = ArchiveKind::from_filename(name)?;
     let pb = add_progress_bar(progresses, 0, name);
 
-    Ok(async move {
+    Ok(retry(tries, async move || {
         let res = reqwest::get(url.clone()).await?.error_for_status()?;
         let content_length = res.content_length();
         let bytes_stream = res.bytes_stream().map_err(Into::into);
@@ -869,13 +924,13 @@ fn download_and_extract_from_url(
             archive_kind,
             stripping,
             &output,
-            pb,
+            pb.clone(),
         )
         .await
-    })
+    }))
 }
 
-fn download_models(
+async fn download_models(
     ModelsWithTerms {
         readme,
         terms,
@@ -884,6 +939,7 @@ fn download_models(
     }: ModelsWithTerms,
     output: PathBuf,
     progresses: &MultiProgress,
+    tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
     let reqwest = reqwest::Client::builder().build()?;
 
@@ -895,42 +951,44 @@ fn download_models(
         })
         .collect::<Vec<_>>();
 
-    Ok(async move {
-        fs_err::tokio::create_dir_all(&output.join(MODELS_DIR_NAME)).await?;
-        fs_err::tokio::write(output.join(MODELS_README_RENAME), readme).await?;
-        fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
-        let reqwest = &reqwest;
-        let output = &output;
+    fs_err::tokio::create_dir_all(output.join(MODELS_DIR_NAME)).await?;
+    fs_err::tokio::write(output.join(MODELS_README_RENAME), readme).await?;
+    fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
+    Ok(retry(tries, async move || {
         models
+            .clone()
             .into_iter()
-            .map(
-                async move |(
-                    GhContent {
-                        name,
-                        download_url,
-                        size,
-                    },
-                    pb,
-                )| {
-                    let res = reqwest.get(download_url).send().await?.error_for_status()?;
-                    let bytes_stream = res.bytes_stream().map_err(Into::into);
-                    let pb = with_style(pb, &PROGRESS_STYLE1).await?;
-                    let model = download(bytes_stream, Some(size), pb.clone()).await?;
-                    let pb = tokio::task::spawn_blocking(move || {
-                        pb.set_style(PROGRESS_STYLE2.clone());
-                        pb.set_message("Writing...");
-                        pb
-                    })
-                    .await?;
-                    fs_err::tokio::write(output.join(MODELS_DIR_NAME).join(name), model).await?;
-                    tokio::task::spawn_blocking(move || pb.finish_with_message("Done!")).await?;
-                    Ok(())
-                },
-            )
+            .map(|(c, b)| fetch_model(c, b, reqwest.clone(), &output))
             .collect::<FuturesUnordered<_>>()
             .try_collect::<()>()
             .await
+    }))
+}
+
+async fn fetch_model(
+    content: GhContent,
+    pb: ProgressBar,
+    reqwest: Client,
+    output: &Path,
+) -> anyhow::Result<()> {
+    let GhContent {
+        name,
+        download_url,
+        size,
+    } = content;
+    let res = reqwest.get(download_url).send().await?.error_for_status()?;
+    let bytes_stream = res.bytes_stream().map_err(Into::into);
+    let pb = with_style(pb.clone(), &PROGRESS_STYLE1).await?;
+    let model = download(bytes_stream, Some(size), pb.clone()).await?;
+    let pb = tokio::task::spawn_blocking(move || {
+        pb.set_style(PROGRESS_STYLE2.clone());
+        pb.set_message("Writing...");
+        pb
     })
+    .await?;
+    fs_err::tokio::write(output.join(MODELS_DIR_NAME).join(name), model).await?;
+    tokio::task::spawn_blocking(move || pb.finish_with_message("Done!")).await?;
+    Ok(())
 }
 
 fn add_progress_bar(
@@ -1103,6 +1161,7 @@ async fn download(
     }
 }
 
+#[derive(Clone)]
 struct GhAsset {
     octocrab: Arc<Octocrab>,
     repo: RepoName,
@@ -1113,6 +1172,7 @@ struct GhAsset {
     size: usize,
 }
 
+#[derive(Clone)]
 struct ModelsWithTerms {
     tag: String,
     readme: String,
@@ -1120,6 +1180,7 @@ struct ModelsWithTerms {
     models: Vec<GhContent>,
 }
 
+#[derive(Clone)]
 struct GhContent {
     name: String,
     download_url: String,
