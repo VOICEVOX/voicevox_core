@@ -373,7 +373,7 @@ mod blocking {
                 fields,
             } = self;
             let ret = &format!(
-                "<voicevox_core.blocking.{NAME} rust=`{rust:?}` ",
+                "<voicevox_core.blocking.{NAME} rust=<`{rust:?}`> ",
                 NAME = Self::NAME,
             );
             let ret = PyString::new(py, ret);
@@ -492,7 +492,7 @@ mod blocking {
         fn __repr__(&self) -> String {
             let Self(rust) = self;
             format!(
-                "<voicevox_core.blocking.{NAME} rust=`{rust:?}`>",
+                "<voicevox_core.blocking.{NAME} rust=<`{rust:?}`>>",
                 NAME = Self::NAME,
             )
         }
@@ -527,7 +527,7 @@ mod blocking {
         fn __repr__(&self) -> String {
             let Self { open_jtalk: rust } = self;
             format!(
-                "<voicevox_core.blocking.{NAME} rust=`{rust:?}`>",
+                "<voicevox_core.blocking.{NAME} rust=<`{rust:?}`>>",
                 NAME = Self::NAME,
             )
         }
@@ -612,7 +612,7 @@ mod blocking {
         fn __repr__(&self) -> String {
             let Self { synthesizer: rust } = self;
             format!(
-                "<voicevox_core.blocking.{NAME} rust=`{rust:?}`>",
+                "<voicevox_core.blocking.{NAME} rust=<`{rust:?}`>>",
                 NAME = Self::NAME,
             )
         }
@@ -940,7 +940,7 @@ mod blocking {
         fn __repr__(&self) -> String {
             let Self { dict: rust } = self;
             format!(
-                "<voicevox_core.blocking.{NAME} rust=`{rust:?}`>",
+                "<voicevox_core.blocking.{NAME} rust=<`{rust:?}`>>",
                 NAME = Self::NAME,
             )
         }
@@ -1066,7 +1066,7 @@ mod asyncio {
                 fields,
             } = self;
             let ret = &format!(
-                "<voicevox_core.asyncio.{NAME} rust=`{rust:?}` ",
+                "<voicevox_core.asyncio.{NAME} rust=<`{rust:?}`> ",
                 NAME = Self::NAME,
             );
             let ret = PyString::new(py, ret);
@@ -1182,7 +1182,7 @@ mod asyncio {
         fn __repr__(&self) -> String {
             let Self(rust) = self;
             format!(
-                "<voicevox_core.asyncio.{NAME} rust=`{rust:?}`>",
+                "<voicevox_core.asyncio.{NAME} rust=<`{rust:?}`>>",
                 NAME = Self::NAME,
             )
         }
@@ -1230,7 +1230,7 @@ mod asyncio {
         fn __repr__(&self) -> String {
             let Self { open_jtalk: rust } = self;
             format!(
-                "<voicevox_core.asyncio.{NAME} rust=`{rust:?}`>",
+                "<voicevox_core.asyncio.{NAME} rust=<`{rust:?}`>>",
                 NAME = Self::NAME,
             )
         }
@@ -1293,7 +1293,7 @@ mod asyncio {
         fn __repr__(&self) -> String {
             let Self { synthesizer: rust } = self;
             format!(
-                "<voicevox_core.asyncio.{NAME} rust=`{rust:?}`>",
+                "<voicevox_core.asyncio.{NAME} rust=<`{rust:?}`>>",
                 NAME = Self::NAME,
             )
         }
@@ -1577,7 +1577,7 @@ mod asyncio {
         fn __repr__(&self) -> String {
             let Self { dict: rust } = self;
             format!(
-                "<voicevox_core.asyncio.{NAME} rust=`{rust:?}`>",
+                "<voicevox_core.asyncio.{NAME} rust=<`{rust:?}`>>",
                 NAME = Self::NAME,
             )
         }
