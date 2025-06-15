@@ -1,5 +1,4 @@
 use std::{
-    fmt::Debug,
     marker::PhantomData,
     mem,
     ops::{Deref, DerefMut},
