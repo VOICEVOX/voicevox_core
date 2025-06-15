@@ -190,9 +190,10 @@ fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Arr
 // TODO: 後で復活させる
 // https://github.com/VOICEVOX/voicevox_core/issues/970
 #[doc(hidden)]
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, derive_more::Debug)]
 pub struct AudioFeature {
     /// (フレーム数, 特徴数)の形を持つ音声特徴量。
+    #[debug("_")]
     internal_state: ndarray::Array2<f32>,
     /// 生成時に指定したスタイル番号。
     style_id: crate::StyleId,
