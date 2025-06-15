@@ -1,5 +1,5 @@
 use std::{
-    fmt::{self, Debug},
+    fmt::Debug,
     marker::PhantomData,
     mem,
     ops::{Deref, DerefMut},
@@ -105,20 +105,12 @@ exceptions! {
     InvalidWordError: PyValueError;
 }
 
+#[derive(derive_more::Debug)]
+#[debug("{content:?}")]
+#[debug(bound(A::RwLock<MaybeClosed<T>>: Debug, C: PyTypeInfo, A: Async))]
 struct Closable<T, C: PyTypeInfo, A: Async> {
     content: A::RwLock<MaybeClosed<T>>,
     marker: PhantomData<(C, A)>,
-}
-
-impl<T, C, A> Debug for Closable<T, C, A>
-where
-    A::RwLock<MaybeClosed<T>>: Debug,
-    C: PyTypeInfo,
-    A: Async,
-{
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.debug_tuple("Closable").field(&self.content).finish()
-    }
 }
 
 impl<T, C: PyTypeInfo, A: Async> Closable<T, C, A> {
