@@ -52,7 +52,7 @@ pub const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: bool =
     <BlockingThreadPool as infer::AsyncExt>::DEFAULT_HEAVY_INFERENCE_CANCELLABLE;
 
 #[derive(derive_more::Debug)]
-#[debug(bounds(A::Cancellable: Debug))]
+#[debug(bound(A::Cancellable: Debug))]
 struct SynthesisOptions<A: infer::AsyncExt> {
     enable_interrogative_upspeak: bool,
     cancellable: A::Cancellable,
@@ -84,7 +84,7 @@ impl<A: infer::AsyncExt> From<&TtsOptions<A>> for SynthesisOptions<A> {
 }
 
 #[derive(derive_more::Debug)]
-#[debug(bounds(A::Cancellable: Debug))]
+#[debug(bound(A::Cancellable: Debug))]
 struct TtsOptions<A: infer::AsyncExt> {
     enable_interrogative_upspeak: bool,
     cancellable: A::Cancellable,
