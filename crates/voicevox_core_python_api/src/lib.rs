@@ -107,7 +107,6 @@ exceptions! {
 
 #[derive(derive_more::Debug)]
 #[debug("{content:?}")]
-#[debug(bound(A::RwLock<MaybeClosed<T>>: Debug, C: PyTypeInfo, A: Async))]
 struct Closable<T, C: PyTypeInfo, A: Async> {
     content: A::RwLock<MaybeClosed<T>>,
     marker: PhantomData<(C, A)>,

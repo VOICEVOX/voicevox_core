@@ -435,7 +435,7 @@ type InferenceModelEntries<'manifest> =
     inference_domain_map_values!(for<D> Option<InferenceModelEntry<D, &'manifest D::Manifest>>);
 
 #[derive(derive_more::Debug)]
-#[debug(bound(D::Operation: Debug))]
+#[debug(bounds(D::Operation: Debug))]
 struct InferenceModelEntry<D: InferenceDomain, M> {
     indices: EnumMap<D::Operation, usize>,
     manifest: M,

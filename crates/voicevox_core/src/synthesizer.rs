@@ -205,7 +205,6 @@ pub struct AudioFeature {
 }
 
 #[derive(derive_more::Debug)]
-#[debug(bounds(T: Debug))]
 struct Inner<T, A: Async> {
     status: Arc<Status<crate::blocking::Onnxruntime>>,
     text_analyzer: T,
@@ -215,7 +214,6 @@ struct Inner<T, A: Async> {
 }
 
 #[derive(derive_more::Debug)]
-#[debug(bounds())]
 struct InnerRefWithoutTextAnalyzer<'a, A: Async> {
     status: &'a Arc<Status<crate::blocking::Onnxruntime>>,
     use_gpu: bool,
