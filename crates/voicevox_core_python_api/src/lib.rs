@@ -568,6 +568,15 @@ mod blocking {
         fn frame_rate(&self) -> f64 {
             self.audio.frame_rate
         }
+
+        fn __repr__(&self, py: Python<'_>) -> String {
+            let Self { audio: rust_api } = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
+            format!(
+                "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}>>",
+                NAME = Self::NAME,
+            )
+        }
     }
 
     #[pyclass(frozen)]
