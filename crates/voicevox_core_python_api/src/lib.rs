@@ -372,6 +372,7 @@ mod blocking {
                 model: rust_api,
                 fields,
             } = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
             let ret = &format!(
                 "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}> ",
                 NAME = Self::NAME,
@@ -489,8 +490,9 @@ mod blocking {
                 .map(|onnxruntime| onnxruntime.clone_ref(py))
         }
 
-        fn __repr__(&self) -> String {
+        fn __repr__(&self, py: Python<'_>) -> String {
             let Self(rust_api) = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
             format!(
                 "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}>>",
                 NAME = Self::NAME,
@@ -524,10 +526,11 @@ mod blocking {
             Ok(Self { open_jtalk })
         }
 
-        fn __repr__(&self) -> String {
+        fn __repr__(&self, py: Python<'_>) -> String {
             let Self {
                 open_jtalk: rust_api,
             } = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
             format!(
                 "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}>>",
                 NAME = Self::NAME,
@@ -611,10 +614,11 @@ mod blocking {
             })
         }
 
-        fn __repr__(&self) -> String {
+        fn __repr__(&self, py: Python<'_>) -> String {
             let Self {
                 synthesizer: rust_api,
             } = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
             format!(
                 "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}>>",
                 NAME = Self::NAME,
@@ -941,8 +945,9 @@ mod blocking {
             Self::default()
         }
 
-        fn __repr__(&self) -> String {
+        fn __repr__(&self, py: Python<'_>) -> String {
             let Self { dict: rust_api } = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
             format!(
                 "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}>>",
                 NAME = Self::NAME,
@@ -1069,6 +1074,7 @@ mod asyncio {
                 model: rust_api,
                 fields,
             } = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
             let ret = &format!(
                 "<voicevox_core.asyncio.{NAME} rust_api=<{rust_api:?}> ",
                 NAME = Self::NAME,
@@ -1183,8 +1189,9 @@ mod asyncio {
             })
         }
 
-        fn __repr__(&self) -> String {
+        fn __repr__(&self, py: Python<'_>) -> String {
             let Self(rust_api) = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
             format!(
                 "<voicevox_core.asyncio.{NAME} rust_api=<{rust_api:?}>>",
                 NAME = Self::NAME,
@@ -1231,10 +1238,11 @@ mod asyncio {
             Ok(Self { open_jtalk })
         }
 
-        fn __repr__(&self) -> String {
+        fn __repr__(&self, py: Python<'_>) -> String {
             let Self {
                 open_jtalk: rust_api,
             } = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
             format!(
                 "<voicevox_core.asyncio.{NAME} rust_api=<{rust_api:?}>>",
                 NAME = Self::NAME,
@@ -1296,10 +1304,11 @@ mod asyncio {
             Ok(Self { synthesizer })
         }
 
-        fn __repr__(&self) -> String {
+        fn __repr__(&self, py: Python<'_>) -> String {
             let Self {
                 synthesizer: rust_api,
             } = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
             format!(
                 "<voicevox_core.asyncio.{NAME} rust_api=<{rust_api:?}>>",
                 NAME = Self::NAME,
@@ -1582,8 +1591,9 @@ mod asyncio {
             Self::default()
         }
 
-        fn __repr__(&self) -> String {
+        fn __repr__(&self, py: Python<'_>) -> String {
             let Self { dict: rust_api } = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
             format!(
                 "<voicevox_core.asyncio.{NAME} rust_api=<{rust_api:?}>>",
                 NAME = Self::NAME,
