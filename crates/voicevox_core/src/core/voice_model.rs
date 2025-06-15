@@ -4,6 +4,7 @@
 
 use std::{
     collections::HashMap,
+    fmt::{self, Debug},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -416,9 +417,25 @@ impl<A: Async> Inner<A> {
     }
 }
 
+impl<A: Async> Inner<A> {
+    fn fill_debug_struct_body(&self, mut fmt: fmt::DebugStruct<'_, '_>) -> fmt::Result
+    where
+        A::Mutex<A::RoFile>: Debug,
+    {
+        fmt.field("header", self.header());
+        self.with_inference_model_entries(|inference_model_entries| {
+            fmt.field("inference_model_entries", inference_model_entries)
+        });
+        self.with_zip(|zip| fmt.field("zip", zip));
+        fmt.finish()
+    }
+}
+
 type InferenceModelEntries<'manifest> =
     inference_domain_map_values!(for<D> Option<InferenceModelEntry<D, &'manifest D::Manifest>>);
 
+#[derive(derive_more::Debug)]
+#[debug(bound(D::Operation: Debug))]
 struct InferenceModelEntry<D: InferenceDomain, M> {
     indices: EnumMap<D::Operation, usize>,
     manifest: M,
@@ -476,6 +493,7 @@ impl<R: AsyncBufRead + AsyncSeek + Unpin> async_zip::base::read::seek::ZipFileRe
 /// 音声モデルが持つ、各モデルファイルの実体を除く情報。
 ///
 /// モデルの`[u8]`と分けて`Status`に渡す。
+#[derive(Debug)]
 pub(crate) struct VoiceModelHeader {
     pub(super) manifest: Manifest,
     /// メタ情報。
@@ -594,7 +612,10 @@ impl InferenceDomainMap<ManifestDomains> {
 }
 
 pub(crate) mod blocking {
-    use std::path::Path;
+    use std::{
+        fmt::{self, Debug},
+        path::Path,
+    };
 
     use crate::{VoiceModelMeta, asyncs::SingleTasked, future::FutureExt as _};
 
@@ -635,10 +656,20 @@ pub(crate) mod blocking {
             self.0.metas()
         }
     }
+
+    impl Debug for VoiceModelFile {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let fmt = fmt.debug_struct("VoiceModelFile");
+            self.0.fill_debug_struct_body(fmt)
+        }
+    }
 }
 
 pub(crate) mod nonblocking {
-    use std::path::Path;
+    use std::{
+        fmt::{self, Debug},
+        path::Path,
+    };
 
     use crate::{Result, VoiceModelMeta, asyncs::BlockingThreadPool};
 
@@ -681,6 +712,13 @@ pub(crate) mod nonblocking {
         /// メタ情報。
         pub fn metas(&self) -> &VoiceModelMeta {
             self.0.metas()
+        }
+    }
+
+    impl Debug for VoiceModelFile {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let fmt = fmt.debug_struct("VoiceModelFile");
+            self.0.fill_debug_struct_body(fmt)
         }
     }
 }

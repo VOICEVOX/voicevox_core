@@ -11,7 +11,7 @@ import jakarta.annotation.Nullable;
  * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
-public class CharacterMeta {
+public class CharacterMeta implements Cloneable {
   /** キャラクター名。 */
   @SerializedName("name")
   @Expose
@@ -54,5 +54,32 @@ public class CharacterMeta {
     this.speakerUuid = "";
     this.version = "";
     this.order = null;
+  }
+
+  private CharacterMeta(
+      String name, StyleMeta[] styles, String speakerUuid, String version, Integer order) {
+    this.name = name;
+    this.styles = styles;
+    this.speakerUuid = speakerUuid;
+    this.version = version;
+    this.order = order;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof CharacterMeta)) {
+      return false;
+    }
+    CharacterMeta other = (CharacterMeta) obj;
+    return name.equals(other.name)
+        && styles.equals(other.styles)
+        && speakerUuid.equals(other.speakerUuid)
+        && version.equals(other.version)
+        && order.equals(other.order);
+  }
+
+  @Override
+  public CharacterMeta clone() {
+    return new CharacterMeta(name, styles.clone(), speakerUuid, version, order);
   }
 }

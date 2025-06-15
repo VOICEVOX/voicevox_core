@@ -74,6 +74,23 @@ public class AudioQuery {
     this.kana = null;
   }
 
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof AudioQuery)) {
+      return false;
+    }
+    AudioQuery other = (AudioQuery) obj;
+    return accentPhrases.equals(other.accentPhrases)
+        && speedScale == other.speedScale
+        && pitchScale == other.pitchScale
+        && intonationScale == other.intonationScale
+        && volumeScale == other.volumeScale
+        && prePhonemeLength == other.prePhonemeLength
+        && postPhonemeLength == other.postPhonemeLength
+        && outputSamplingRate == other.outputSamplingRate
+        && outputStereo == other.outputStereo;
+  }
+
   public static AudioQuery fromAccentPhrases(List<AccentPhrase> accentPhrases) {
     Gson gson = new Gson();
     String queryJson = rsFromAccentPhrases(gson.toJson(accentPhrases));

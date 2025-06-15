@@ -11,7 +11,7 @@ import jakarta.annotation.Nullable;
  * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
-public class StyleMeta {
+public class StyleMeta implements Cloneable {
   /** スタイル名。 */
   @SerializedName("name")
   @Expose
@@ -44,5 +44,29 @@ public class StyleMeta {
     this.id = 0;
     this.type = StyleType.TALK;
     this.order = null;
+  }
+
+  private StyleMeta(String name, int id, StyleType type, Integer order) {
+    this.name = name;
+    this.id = id;
+    this.type = type;
+    this.order = order;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof StyleMeta)) {
+      return false;
+    }
+    StyleMeta other = (StyleMeta) obj;
+    return name.equals(other.name)
+        && id == other.id
+        && type == other.type
+        && order.equals(other.order);
+  }
+
+  @Override
+  public StyleMeta clone() {
+    return new StyleMeta(name, id, type, order);
   }
 }

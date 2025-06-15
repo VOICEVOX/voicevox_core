@@ -25,7 +25,7 @@ impl InferenceDomain for TalkDomain {
     }
 }
 
-#[derive(Clone, Copy, Deserialize, Enum, InferenceOperation)]
+#[derive(Clone, Copy, Debug, Deserialize, Enum, InferenceOperation)]
 #[serde(rename_all = "snake_case")]
 #[inference_operation(
     type Domain = TalkDomain;

@@ -26,7 +26,7 @@ camino.workspace = true
 const_format.workspace = true
 derive-getters.workspace = true
 derive-new.workspace = true
-derive_more = { workspace = true, features = ["add", "deref", "display", "from", "from_str", "index"] }
+derive_more = { workspace = true, features = ["add", "as_ref", "debug", "deref", "display", "from", "from_str", "index", "into"] }
 duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
