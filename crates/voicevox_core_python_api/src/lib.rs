@@ -259,8 +259,9 @@ struct VoiceModelFilePyFields {
 impl VoiceModelFilePyFields {
     fn format<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyString>> {
         let Self { id, metas } = self;
-        let ret = id.bind(py).repr()?;
-        let ret = ret.add(" ")?;
+        let ret = PyString::new(py, "id=");
+        let ret = ret.add(id.bind(py).repr()?)?;
+        let ret = ret.add(" metas=")?;
         let ret = ret.add(metas.bind(py).repr()?)?;
         ret.downcast_into::<PyString>().map_err(Into::into)
     }
