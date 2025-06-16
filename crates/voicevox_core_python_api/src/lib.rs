@@ -933,7 +933,7 @@ mod blocking {
     }
 
     #[pyclass(frozen)]
-    #[derive(Default, Clone)]
+    #[derive(Default, Debug, Clone)]
     pub(crate) struct UserDict {
         dict: Arc<voicevox_core::blocking::UserDict>,
     }
@@ -1579,7 +1579,7 @@ mod asyncio {
     }
 
     #[pyclass(frozen)]
-    #[derive(Default, Clone)]
+    #[derive(Default, Debug, Clone)]
     pub(crate) struct UserDict {
         dict: Arc<voicevox_core::nonblocking::UserDict>,
     }
