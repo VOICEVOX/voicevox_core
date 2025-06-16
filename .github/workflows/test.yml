@@ -276,7 +276,7 @@ jobs:
         run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
       - name: Run
         shell: bash
-        run: simple_tts/bin/x64/Debug/simple_tts.exe <<< この音声は、ボイスボックスを使用して、出力されています。
+        run: example/cpp/windows/simple_tts/bin/x64/Debug/simple_tts.exe <<< この音声は、ボイスボックスを使用して、出力されています。
 
   build-and-test-python-api:
     strategy:
