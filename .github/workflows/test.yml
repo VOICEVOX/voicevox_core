@@ -196,6 +196,11 @@ jobs:
       - name: Install Aristotle Pagaltzis's `rename(1)`
         if: runner.os == 'macOS'
         run: brew install rename
+      - name: Install Aristotle Pagaltzis's `rename(1)`
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rename
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
@@ -206,6 +211,9 @@ jobs:
         run: cargo check -vp test_util # build scriptにより/crates/test_util/data/の生成
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            alias prename=rename
+          fi
           mkdir -p example/cpp/unix/voicevox_core/{c_api/{include,lib},dict,models,onnxruntime}
           sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
             crates/voicevox_core_c_api/include/voicevox_core.h \
@@ -214,7 +222,7 @@ jobs:
           cp -v target/debug/libonnxruntime.so.* example/cpp/unix/voicevox_core/onnxruntime/lib/ || true
           cp -v target/debug/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/onnxruntime/lib/ || true
           cp -vr crates/test_util/data/lib example/cpp/unix/voicevox_core/onnxruntime/
-          rename -v s/onnxruntime/voicevox_onnxruntime/ ./libonnxruntime.so.1.17.3 example/cpp/unix/voicevox_core/onnxruntime/lib/*
+          rename -v s/onnxruntime/voicevox_onnxruntime/ example/cpp/unix/voicevox_core/onnxruntime/lib/*
           cp -vr crates/test_util/data/model example/cpp/unix/voicevox_core/models/vvms
           cp -vr crates/test_util/data/open_jtalk_dic_utf_8-1.11 example/cpp/unix/voicevox_core/dict/
 
@@ -223,7 +231,6 @@ jobs:
       - name: Install build dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt-get update
           sudo apt-get install -y cmake
       - name: Build
         run: |
