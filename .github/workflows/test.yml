@@ -203,19 +203,12 @@ jobs:
         run: cargo check -vp test_util # build scriptにより/crates/test_util/data/の生成
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
-          mkdir -p example/cpp/unix/voicevox_core/{c_api/{include,lib},dict,models,onnxruntime/lib}
+          mkdir -p example/cpp/unix/voicevox_core/{c_api/{include,lib},dict,models,onnxruntime}
           sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
             crates/voicevox_core_c_api/include/voicevox_core.h \
             > example/cpp/unix/voicevox_core/c_api/include/voicevox_core.h
-          case "$RUNNER_OS" in
-            macOS) dylib_ext=dylib ;;
-            Linux) dylib_ext=so ;;
-            *)
-              echo 'unexpected OS' >&2
-              exit 1
-          exac
-          cp -v target/debug/libvoicevox_core."$dylib_ext" example/cpp/unix/voicevox_core/c_api/lib/
-          find crates/test_util/data/lib -exec cp -v {} "example/cpp/unix/voicevox_core/onnxruntime/lib/libonnxruntime.$dylib_ext" ';'
+          cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/c_api/lib/ || true
+          cp -vr crates/test_util/data/lib example/cpp/unix/voicevox_core/onnxruntime/
           cp -vr crates/test_util/data/model example/cpp/unix/voicevox_core/models/vvms
           cp -vr crates/test_util/data/open_jtalk_dic_utf_8-1.11 example/cpp/unix/voicevox_core/dict/
 
