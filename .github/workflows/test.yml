@@ -203,7 +203,7 @@ jobs:
         run: cargo check -vp test_util # build scriptにより/crates/test_util/data/の生成
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
-          mkdir -p example/cpp/unix/voicevox_core/{c_api/{include,lib},dict,models,onnxruntime}
+          mkdir -p example/cpp/unix/voicevox_core/{c_api/{include,lib},dict,models,onnxruntime/lib}
           sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
             crates/voicevox_core_c_api/include/voicevox_core.h \
             > example/cpp/unix/voicevox_core/c_api/include/voicevox_core.h
