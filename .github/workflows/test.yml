@@ -226,6 +226,7 @@ jobs:
           cmake --build build
       - name: Run
         run: |
+          cd example/cpp/unix
           ./build/simple_tts この音声は、ボイスボックスを使用して、出力されています。
           [ "$(file audio.wav)" = 'audio.wav: RIFF (little-endian) data, WAVE audio, Microsoft PCM, 16 bit, mono 24000 Hz' ]
 
