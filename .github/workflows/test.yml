@@ -213,7 +213,7 @@ jobs:
             *)
               echo 'unexpected OS' >&2
               exit 1
-          exac
+          esac
           cp -v target/debug/libvoicevox_core."$dylib_ext" example/cpp/unix/voicevox_core/c_api/lib/
           find crates/test_util/data/lib -exec cp -v {} "example/cpp/unix/voicevox_core/onnxruntime/lib/libonnxruntime.$dylib_ext" ';'
           cp -vr crates/test_util/data/model example/cpp/unix/voicevox_core/models/vvms
