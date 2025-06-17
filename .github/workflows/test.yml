@@ -222,7 +222,7 @@ jobs:
           cp -v target/debug/libonnxruntime.so.* example/cpp/unix/voicevox_core/onnxruntime/lib/ || true
           cp -v target/debug/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/onnxruntime/lib/ || true
           cp -vr crates/test_util/data/lib example/cpp/unix/voicevox_core/onnxruntime/
-          rename -v s/onnxruntime/voicevox_onnxruntime/ example/cpp/unix/voicevox_core/onnxruntime/lib/*
+          rename -v s/libonnxruntime/libvoicevox_onnxruntime/ example/cpp/unix/voicevox_core/onnxruntime/lib/*
           cp -vr crates/test_util/data/model example/cpp/unix/voicevox_core/models/vvms
           cp -vr crates/test_util/data/open_jtalk_dic_utf_8-1.11 example/cpp/unix/voicevox_core/dict/
 
