@@ -208,7 +208,8 @@ jobs:
             crates/voicevox_core_c_api/include/voicevox_core.h \
             > example/cpp/unix/voicevox_core/c_api/include/voicevox_core.h
           cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/c_api/lib/ || true
-          cp -vr crates/test_util/data/lib example/cpp/unix/voicevox_core/onnxruntime/
+          cp -v target/debug/libonnxruntime.so.* example/cpp/unix/voicevox_core/onnxruntime/lib/ || true
+          cp -v target/debug/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/onnxruntime/lib/ || true
           cp -vr crates/test_util/data/model example/cpp/unix/voicevox_core/models/vvms
           cp -vr crates/test_util/data/open_jtalk_dic_utf_8-1.11 example/cpp/unix/voicevox_core/dict/
 
