@@ -275,8 +275,7 @@ jobs:
             > example/cpp/windows/simple_tts/voicevox_core.h
           cp target/debug/voicevox_core.dll.lib example/cpp/windows/simple_tts/lib/x64/voicevox_core.lib
           cp target/debug/voicevox_core.dll example/cpp/windows/simple_tts/bin/x64/Debug/
-          #cp crates/test_util/data/lib/onnxruntime.dll example/cpp/windows/simple_tts/bin/x64/Debug/voicevox_onnxruntime.dll
-          touch example/cpp/windows/simple_tts/bin/x64/Debug/voicevox_onnxruntime.dll
+          cp crates/test_util/data/lib/onnxruntime.dll example/cpp/windows/simple_tts/bin/x64/Debug/voicevox_onnxruntime.dll
           cp -r crates/test_util/data/model example/cpp/windows/simple_tts/bin/x64/Debug/models
           cp -r crates/test_util/data/open_jtalk_dic_utf_8-1.11 example/cpp/windows/simple_tts/bin/x64/Debug/
 
