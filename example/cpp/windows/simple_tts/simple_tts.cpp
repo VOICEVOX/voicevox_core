@@ -54,6 +54,8 @@ int main() {
   }
   voicevox_open_jtalk_rc_delete(open_jtalk);
 
+  return 1111;
+
   for (const auto& entry : std::filesystem::directory_iterator{GetModelDir()}) {
     const auto path = entry.path();
     if (path.extension() != ".vvm") {
