@@ -5,7 +5,13 @@
 use easy_ext::ext;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
-use std::{future::Future, marker::PhantomData, ops::Range, sync::Arc};
+use std::{
+    fmt::{self, Debug},
+    future::Future,
+    marker::PhantomData,
+    ops::Range,
+    sync::Arc,
+};
 use tracing::info;
 
 use crate::{
@@ -45,6 +51,8 @@ pub const DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK: bool = true;
 pub const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: bool =
     <BlockingThreadPool as infer::AsyncExt>::DEFAULT_HEAVY_INFERENCE_CANCELLABLE;
 
+#[derive(derive_more::Debug)]
+#[debug(bound(A::Cancellable: Debug))]
 struct SynthesisOptions<A: infer::AsyncExt> {
     enable_interrogative_upspeak: bool,
     cancellable: A::Cancellable,
@@ -75,6 +83,8 @@ impl<A: infer::AsyncExt> From<&TtsOptions<A>> for SynthesisOptions<A> {
     }
 }
 
+#[derive(derive_more::Debug)]
+#[debug(bound(A::Cancellable: Debug))]
 struct TtsOptions<A: infer::AsyncExt> {
     enable_interrogative_upspeak: bool,
     cancellable: A::Cancellable,
@@ -95,7 +105,7 @@ impl<A: infer::AsyncExt> Default for TtsOptions<A> {
     clippy::manual_non_exhaustive,
     reason = "バインディングを作るときはexhaustiveとして扱いたい"
 )]
-#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AccelerationMode {
     /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
     #[default]
@@ -108,6 +118,7 @@ pub enum AccelerationMode {
     __NonExhaustive,
 }
 
+#[derive(Debug)]
 struct InitializeOptions {
     acceleration_mode: AccelerationMode,
     cpu_num_threads: u16,
@@ -179,8 +190,10 @@ fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Arr
 // TODO: 後で復活させる
 // https://github.com/VOICEVOX/voicevox_core/issues/970
 #[doc(hidden)]
+#[derive(Clone, PartialEq, derive_more::Debug)]
 pub struct AudioFeature {
     /// (フレーム数, 特徴数)の形を持つ音声特徴量。
+    #[debug("_")]
     internal_state: ndarray::Array2<f32>,
     /// 生成時に指定したスタイル番号。
     style_id: crate::StyleId,
@@ -192,16 +205,20 @@ pub struct AudioFeature {
     audio_query: AudioQuery,
 }
 
+#[derive(derive_more::Debug)]
 struct Inner<T, A: Async> {
     status: Arc<Status<crate::blocking::Onnxruntime>>,
     text_analyzer: T,
     use_gpu: bool,
+    #[debug(ignore)]
     _marker: PhantomData<fn(A) -> A>,
 }
 
+#[derive(derive_more::Debug)]
 struct InnerRefWithoutTextAnalyzer<'a, A: Async> {
     status: &'a Arc<Status<crate::blocking::Onnxruntime>>,
     use_gpu: bool,
+    #[debug(ignore)]
     _marker: PhantomData<fn(A) -> A>,
 }
 
@@ -218,6 +235,8 @@ impl<T> From<Inner<T, BlockingThreadPool>>
     }
 }
 
+#[derive(derive_more::Debug)]
+#[debug("{_0:?}")]
 struct AssumeSingleTasked<T>(T);
 
 impl<T: crate::blocking::TextAnalyzer> crate::nonblocking::TextAnalyzer for AssumeSingleTasked<T> {
@@ -326,6 +345,23 @@ impl<T, A: AsyncExt> Inner<T, A> {
             use_gpu: self.use_gpu,
             _marker: PhantomData,
         }
+    }
+
+    fn fill_debug_struct_body(&self, mut fmt: fmt::DebugStruct<'_, '_>) -> fmt::Result
+    where
+        T: Debug,
+    {
+        let Self {
+            status,
+            text_analyzer,
+            use_gpu,
+            _marker: _,
+        } = self;
+
+        fmt.field("status", status)
+            .field("text_analyzer", text_analyzer)
+            .field("use_gpu", use_gpu)
+            .finish_non_exhaustive()
     }
 }
 
@@ -1274,7 +1310,10 @@ impl From<Vec<AccentPhrase>> for AudioQuery {
               形を考えると、ここの引数を構造体にまとめたりしても可読性に寄与しない"
 )]
 pub(crate) mod blocking {
-    use std::ops::Range;
+    use std::{
+        fmt::{self, Debug},
+        ops::Range,
+    };
 
     use easy_ext::ext;
 
@@ -1659,6 +1698,13 @@ pub(crate) mod blocking {
         }
     }
 
+    impl<T: Debug> Debug for self::Synthesizer<T> {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let fmt = fmt.debug_struct("Synthesizer");
+            self.0.fill_debug_struct_body(fmt)
+        }
+    }
+
     #[ext(PerformInference)]
     impl self::Synthesizer<()> {
         pub fn predict_duration(
@@ -1786,6 +1832,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use]
+    #[derive(Debug)]
     pub struct Builder<T> {
         onnxruntime: &'static crate::blocking::Onnxruntime,
         text_analyzer: T,
@@ -1825,6 +1872,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct PrecomputeRender<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -1847,6 +1895,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Synthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -1869,6 +1918,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct TtsFromKana<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         kana: &'a str,
@@ -1891,6 +1941,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Tts<'a, T> {
         synthesizer: &'a Inner<AssumeSingleTasked<T>, SingleTasked>,
         text: &'a str,
@@ -1914,6 +1965,8 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod nonblocking {
+    use std::fmt::{self, Debug};
+
     use easy_ext::ext;
 
     use crate::{
@@ -2257,6 +2310,13 @@ pub(crate) mod nonblocking {
         }
     }
 
+    impl<T: Debug> Debug for self::Synthesizer<T> {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let fmt = fmt.debug_struct("Synthesizer");
+            self.0.fill_debug_struct_body(fmt)
+        }
+    }
+
     #[ext(IntoBlocking)]
     impl<T> self::Synthesizer<T> {
         pub fn into_blocking(self) -> super::blocking::Synthesizer<AssumeBlockable<T>> {
@@ -2266,6 +2326,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use]
+    #[derive(Debug)]
     pub struct Builder<T> {
         onnxruntime: &'static crate::nonblocking::Onnxruntime,
         text_analyzer: T,
@@ -2307,6 +2368,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Synthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
@@ -2339,6 +2401,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct TtsFromKana<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         kana: &'a str,
@@ -2371,6 +2434,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Tts<'a, T> {
         synthesizer: &'a Inner<T, BlockingThreadPool>,
         text: &'a str,
