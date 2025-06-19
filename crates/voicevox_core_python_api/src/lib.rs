@@ -552,7 +552,8 @@ mod blocking {
         }
     }
 
-    #[pyclass(frozen)]
+    #[pyclass(frozen, eq)]
+    #[derive(PartialEq)]
     pub(crate) struct AudioFeature {
         audio: voicevox_core::blocking::__AudioFeature,
     }
