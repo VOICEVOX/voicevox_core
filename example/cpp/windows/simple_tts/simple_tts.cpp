@@ -54,16 +54,6 @@ int main() {
   }
   voicevox_open_jtalk_rc_delete(open_jtalk);
 
-  std::cout << "hello?" << std::endl;
-  std::cout << "MAX_PATH=" << MAX_PATH << std::endl;
-  std::cout << "GetModelDir()=" << GetModelDir() << std::endl;
-  std::cout << "std::filesystem::path{GetModelDir()}=" << std::filesystem::path{GetModelDir()} << std::endl;
-  auto it = std::filesystem::directory_iterator{std::filesystem::path{GetModelDir()}};
-  std::cout << "iterator created" << std::endl;
-  for (const auto& entry : it) {
-  }
-  return 111;
-
   for (const auto& entry : std::filesystem::directory_iterator{GetModelDir()}) {
     const auto path = entry.path();
     if (path.extension() != ".vvm") {
