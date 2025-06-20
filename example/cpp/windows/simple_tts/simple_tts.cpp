@@ -28,7 +28,7 @@ int main() {
   std::wcout << L">";
   std::wstring speak_words;
   std::wcin >> speak_words;
-  std::cout << "入力: " << speak_words.c_str() << std::endl;
+  std::cout << "Input: " << std::string{speak_words.c_str()} << std::endl;
 
   std::wcout << L"coreの初期化中" << std::endl;
   VoicevoxInitializeOptions  initializeOptions = voicevox_make_default_initialize_options();
