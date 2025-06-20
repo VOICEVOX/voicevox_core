@@ -291,7 +291,8 @@ jobs:
       - name: Run
         shell: bash
         run: |
-          <<< この音声は、ボイスボックスを使用して、出力されています。 iconv -f UTF-8 -t UTF-16LE | example/cpp/windows/simple_tts/bin/x64/Debug/simple_tts.exe
+          cd example/cpp/windows/simple_tts/bin/x64/Debug
+          <<< この音声は、ボイスボックスを使用して、出力されています。 iconv -f UTF-8 -t UTF-16LE | ./simple_tts.exe
           file speech.wav
           [ "$(file speech.wav)" = 'speech.wav: RIFF (little-endian) data, WAVE audio, Microsoft PCM, 16 bit, mono 24000 Hz' ]
 
