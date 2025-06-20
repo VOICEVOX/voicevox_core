@@ -269,14 +269,14 @@ jobs:
       - name: 必要なfileをexampleのディレクトリに移動させる
         shell: bash
         run: |
-          mkdir -p example/cpp/windows/simple_tts/{bin/x64/Debug,lib/x64}
+          mkdir -p example/cpp/windows/simple_tts/{bin/x64/Debug/models,lib/x64}
           sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
             crates/voicevox_core_c_api/include/voicevox_core.h \
             > example/cpp/windows/simple_tts/voicevox_core.h
           cp target/debug/voicevox_core.dll.lib example/cpp/windows/simple_tts/lib/x64/voicevox_core.lib
           cp target/debug/voicevox_core.dll example/cpp/windows/simple_tts/bin/x64/Debug/
           cp crates/test_util/data/lib/onnxruntime.dll example/cpp/windows/simple_tts/bin/x64/Debug/voicevox_onnxruntime.dll
-          cp -r crates/test_util/data/model example/cpp/windows/simple_tts/bin/x64/Debug/models
+          cp -r crates/test_util/data/model example/cpp/windows/simple_tts/bin/x64/Debug/models/vvms
           cp -r crates/test_util/data/open_jtalk_dic_utf_8-1.11 example/cpp/windows/simple_tts/bin/x64/Debug/
 
       - name: Add MSBuild to PATH
