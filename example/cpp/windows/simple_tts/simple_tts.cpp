@@ -57,6 +57,10 @@ int main() {
   std::cout << "hello?" << std::endl;
   std::cout << "MAX_PATH=" << MAX_PATH << std::endl;
   std::cout << "GetModelDir()=" << GetModelDir() << std::endl;
+  auto it = std::filesystem::directory_iterator{GetModelDir()};
+  std::cout << "iterator created" << std::endl;
+  for (const auto& entry : it) {
+  }
   return 111;
 
   for (const auto& entry : std::filesystem::directory_iterator{GetModelDir()}) {
