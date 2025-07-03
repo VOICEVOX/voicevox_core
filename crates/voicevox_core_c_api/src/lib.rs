@@ -177,7 +177,7 @@ pub extern "C" fn voicevox_make_default_load_onnxruntime_options() -> VoicevoxLo
 /// ```
 ///
 /// \orig-impl{VoicevoxOnnxruntime}
-#[cfg(any())]
+#[cfg(false)]
 pub struct VoicevoxOnnxruntime(!);
 
 /// cbindgen:ignore

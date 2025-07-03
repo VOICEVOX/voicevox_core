@@ -91,9 +91,9 @@ impl CStringDropChecker {
             ..
         } = &mut *self.0.lock().unwrap();
 
-        #[cfg_attr(any(), rustfmt::skip)] // FIXME: Rust 1.88になったらlet chainで書く
-        if let Some(addr) = NonZero::new(ptr.addr()) {
-        if !owned_str_addrs.remove(&addr) {
+        if let Some(addr) = NonZero::new(ptr.addr())
+            && !owned_str_addrs.remove(&addr)
+        {
             if static_str_addrs.contains(&addr) {
                 panic!(
                     "解放しようとしたポインタはvoicevox_core管理下のものですが、\
@@ -105,7 +105,6 @@ impl CStringDropChecker {
                 "解放しようとしたポインタはvoicevox_coreの管理下にありません。\
                  誤ったポインタであるか、二重解放になっていることが考えられます",
             );
-        }
         }
         NonNull::new(ptr)
     }
