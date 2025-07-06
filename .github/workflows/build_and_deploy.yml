@@ -180,10 +180,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-      - uses: nttld/setup-ndk@v1
-        if: endsWith(matrix.target, '-linux-android')
-        with:
-          ndk-version: r25b
       - name: Set path for android
         if: endsWith(matrix.target, '-linux-android')
         run: |
@@ -350,10 +346,6 @@ jobs:
         with:
           java-version: "17"
           distribution: "adopt"
-      - uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r25b
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-edit
@@ -410,8 +402,8 @@ jobs:
           copy_dll android-arm64 arm64-v8a
           copy_dll android-x86_64 x86_64
 
-          cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/arm64-v8a/
-          cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/x86_64/
+          cp "$ANDROID_NDK"/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/arm64-v8a/
+          cp "$ANDROID_NDK"/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/x86_64/
 
           OS=android gradle publishToMavenLocal
 
