@@ -20,6 +20,7 @@ flate2.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
 futures-core.workspace = true
 futures-util.workspace = true
+glob.workspace = true
 indexmap.workspace = true
 indicatif.workspace = true
 itertools.workspace = true
