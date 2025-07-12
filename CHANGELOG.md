@@ -2,19 +2,84 @@
 
 ## [Unreleased]
 
-TODO: 執筆中
+TODO: 執筆中。PR三十数個分
 
 ## [0.16.0] - 2025-03-29 (+09:00)
 
-TODO: 執筆中
+TODO: 執筆中。PR18個分
 
 ## [0.16.0-preview.1] - 2025-03-08 (+09:00)
 
-TODO: 執筆中
+TODO: 執筆中。PR8個分
 
 ## [0.16.0-preview.0] - 2025-03-01 (+09:00)
 
-TODO: 執筆中
+TODO: 執筆中。あとPR195個分
+
+### Added
+
+- \[Python\] :tada: ブロッキングAPIを提供する`voicevox_core.blocking`モジュールが追加されます ([#702], [#706])。
+
+    ```py
+    wav = synthesizer.tts("こんにちは", 0)
+    ```
+
+- `SpeakerMeta`に、オプショナルな整数型フィールド`order`が追加されます ([#728])。
+
+- \[C,Python\] 不必要なUTF-8の要求が無くなります ([#752])。
+
+    - C
+        - `voicevox_synthesizer_is_loaded_voice_model`: 引数`model_id`がUTF-8ではない場合、パニックする代わりに黙って`false`を返すようになります。
+    - Python
+        - `VoiceModel::is_loaded_voice_model`: 引数がUTF-8ではない場合黙って`False`を返ようになります。C APIと一貫性を持たせる形です。
+        - `VoiceModel::from_path`: 引数がUTF-8であることを要求ないようになります。
+
+- \[Python\] 一般的な慣習に合わせ、ファイルパスを受け取る引数の型が`Union[str, PathLike[str]]`になります ([#753])。
+
+- \[Python\] Pyright/Pylanceをサポートするようになります ([#719])。
+
+- TODO: エラーメッセージ関連
+    - open_jtalk-rsを更新し、caminoを利用 ([#745])。
+- TODO: readme関連
+    - [docs] ユーザーガイドを追加 ([#699])。
+    - [docs] ドキュメント整理（ユーザーガイドをリンク、VVMのリンク追加、利用規約があることを案内） ([#707])。
+
+### Changed
+
+- \[Python\] \[BREAKING\] ブロックングAPIの実装に伴い、`Synthesizer`, `OpenJtalk`, `VoiceModel`, `UserDict`は`voicevox_core.asyncio`モジュール化に移動します ([#706])。
+
+- TODO: #829の一部
+    - async_zipをv0.0.16に上げる ([#747])。
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- 先述の`SpeakerMeta::order`により、`metas`の出力が適切にソートされます ([#728])。
+
+    これにより、キャラクター/スタイルの順番がバージョン0.14およびVOICEVOX ENGINEのように整います。
+
+- 空の`UserDict`を`use_user_dict`したときにクラッシュする問題が修正されます ([#733])。
+
+- \[C\] \[iOS\] clang++ 15.0.0でSIM向けビルドが失敗する問題が解決されます ([#720] by [@nekomimimi])。
+
+### Security
+
+### Non notable
+
+- TODO: Rust APIの布石
+    - RustのブロッキングAPIを実装 ([#702])。
+    - open_jtalk-rsを更新し、caminoを利用 ([#745])。
+    - TextAnalyzer traitにstring->AccentPhraseModel[]を移動 ([#740] by [@eyr1n])。
+    - ?
+        - モジュールレベルのglob importをすべて取り除く ([#708])。
+- TODO: `TextAnalyzer`構想の布石
+    - TextAnalyzer traitにstring->AccentPhraseModel[]を移動 ([#740] by [@eyr1n])。
+    - jlabel導入 ([#742] by [@phenylshima], [#750] by [@phenylshima])。
+- TODO: project-s
+    - [project-s] スタイルタイプの名称変更 ([#738])。
 
 ## [0.15.0-preview.16] - 2023-12-01 (+09:00)
 
@@ -531,10 +596,30 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#694]: https://github.com/VOICEVOX/voicevox_core/pull/694
 [#695]: https://github.com/VOICEVOX/voicevox_core/pull/695
 [#696]: https://github.com/VOICEVOX/voicevox_core/pull/696
+[#699]: https://github.com/VOICEVOX/voicevox_core/pull/699
+[#702]: https://github.com/VOICEVOX/voicevox_core/pull/702
+[#706]: https://github.com/VOICEVOX/voicevox_core/pull/706
+[#707]: https://github.com/VOICEVOX/voicevox_core/pull/707
+[#708]: https://github.com/VOICEVOX/voicevox_core/pull/708
+[#719]: https://github.com/VOICEVOX/voicevox_core/pull/719
+[#720]: https://github.com/VOICEVOX/voicevox_core/pull/720
+[#728]: https://github.com/VOICEVOX/voicevox_core/pull/728
+[#733]: https://github.com/VOICEVOX/voicevox_core/pull/733
+[#738]: https://github.com/VOICEVOX/voicevox_core/pull/738
+[#740]: https://github.com/VOICEVOX/voicevox_core/pull/740
+[#742]: https://github.com/VOICEVOX/voicevox_core/pull/742
+[#745]: https://github.com/VOICEVOX/voicevox_core/pull/745
+[#747]: https://github.com/VOICEVOX/voicevox_core/pull/747
+[#750]: https://github.com/VOICEVOX/voicevox_core/pull/750
+[#752]: https://github.com/VOICEVOX/voicevox_core/pull/752
+[#753]: https://github.com/VOICEVOX/voicevox_core/pull/753
 
 [@char5742]: https://github.com/char5742
+[@eyr1n]: https://github.com/eyr1n
 [@fuziki]: https://github.com/fuziki
 [@HyodaKazuaki]: https://github.com/HyodaKazuaki
+[@nekomimimi]: https://github.com/nekomimimi
+[@phenylshima]: https://github.com/phenylshima
 [@sh1ma]: https://github.com/sh1ma
 [@shigobu]: https://github.com/shigobu
 [@weweweok]: https://github.com/weweweok
