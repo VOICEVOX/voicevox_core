@@ -183,7 +183,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 - \[C\] 引数の`VoicevoxUserDictWord*`はunalignedであってもよくなります ([#601])。
 - \[Python\] `__version__`が追加されます ([#597])。
     - TODO: これを"Added"とするならば、`__version__`を実装したときまで遡って探す必要がある
-- TODO: reamdeの改善
+- TODO: readmeの改善
     - C# の参考実装のリポジトリをREADMEに記載する ([#590])。
 - TODO: exampleの改善
     - 他言語のlintのWorkflowを追加 ([#598])。
