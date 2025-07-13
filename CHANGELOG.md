@@ -14,7 +14,7 @@ TODO: 執筆中。PR8個分
 
 ## [0.16.0-preview.0] - 2025-03-01 (+09:00)
 
-TODO: 執筆中。あとPR195個分
+TODO: 執筆中。あとPR165個分
 
 ### Added
 
@@ -46,14 +46,26 @@ TODO: 執筆中。あとPR195個分
 
 ### Changed
 
+- `Onnxruntime`型からONNX Runtimeのロードを行う形になりました ([#725], [#802])。
+
+    TODO: `dlopen`/`LoadLibrary*`による恩恵
+
 - \[Python\] \[BREAKING\] ブロックングAPIの実装に伴い、`Synthesizer`, `OpenJtalk`, `VoiceModel`, `UserDict`は`voicevox_core.asyncio`モジュール化に移動します ([#706])。
 
 - TODO: #829の一部
     - async_zipをv0.0.16に上げる ([#747])。
 
+- \[C\] \[iOS\] XCFrameworkへのdylibの入れかたが誤っていたために[App Storeへの申請が通らない](https://github.com/VOICEVOX/voicevox_core/issues/715)状態だったため、入れかたを変えました ([#723] by [@nekomimimi], [VOICEVOX/onnxruntime-builder#25] by [@nekomimimi])。
+
+- \[BREAKING\]  VVMのフォーマットが変更されます ([#794], [#795], [#796])。
+
+- \[BREAKING\] `VoiceModelId`は、VVMに固有のUUIDになります ([#796])。
+
 ### Deprecated
 
 ### Removed
+
+- macOS 11がサポート範囲から外れます ([#801])。
 
 ### Fixed
 
@@ -62,6 +74,8 @@ TODO: 執筆中。あとPR195個分
     これにより、キャラクター/スタイルの順番がバージョン0.14およびVOICEVOX ENGINEのように整います。
 
 - 空の`UserDict`を`use_user_dict`したときにクラッシュする問題が修正されます ([#733])。
+
+- \[C\] `voicevox_user_dict_add_word`がスタックを破壊してしまう問題が修正されます ([#800])。
 
 - \[C\] \[iOS\] clang++ 15.0.0でSIM向けビルドが失敗する問題が解決されます ([#720] by [@nekomimimi])。
 
@@ -75,11 +89,14 @@ TODO: 執筆中。あとPR195個分
     - TextAnalyzer traitにstring->AccentPhraseModel[]を移動 ([#740] by [@eyr1n])。
     - ?
         - モジュールレベルのglob importをすべて取り除く ([#708])。
+    - Rust APIのAPIドキュメントをデプロイするようにする ([#803])。
+    - アイテムの可視性を必要最低限にする ([#759])。
 - TODO: `TextAnalyzer`構想の布石
     - TextAnalyzer traitにstring->AccentPhraseModel[]を移動 ([#740] by [@eyr1n])。
     - jlabel導入 ([#742] by [@phenylshima], [#750] by [@phenylshima])。
 - TODO: project-s
     - [project-s] スタイルタイプの名称変更 ([#738])。
+    - `StyleMeta::r#type`を追加し、トークという区分を実装に導入する ([#761])。
 
 ## [0.15.0-preview.16] - 2023-12-01 (+09:00)
 
@@ -603,6 +620,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#708]: https://github.com/VOICEVOX/voicevox_core/pull/708
 [#719]: https://github.com/VOICEVOX/voicevox_core/pull/719
 [#720]: https://github.com/VOICEVOX/voicevox_core/pull/720
+[#723]: https://github.com/VOICEVOX/voicevox_core/pull/723
+[#725]: https://github.com/VOICEVOX/voicevox_core/pull/725
 [#728]: https://github.com/VOICEVOX/voicevox_core/pull/728
 [#733]: https://github.com/VOICEVOX/voicevox_core/pull/733
 [#738]: https://github.com/VOICEVOX/voicevox_core/pull/738
@@ -613,6 +632,17 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#750]: https://github.com/VOICEVOX/voicevox_core/pull/750
 [#752]: https://github.com/VOICEVOX/voicevox_core/pull/752
 [#753]: https://github.com/VOICEVOX/voicevox_core/pull/753
+[#759]: https://github.com/VOICEVOX/voicevox_core/pull/759
+[#761]: https://github.com/VOICEVOX/voicevox_core/pull/761
+[#794]: https://github.com/VOICEVOX/voicevox_core/pull/794
+[#795]: https://github.com/VOICEVOX/voicevox_core/pull/795
+[#796]: https://github.com/VOICEVOX/voicevox_core/pull/796
+[#800]: https://github.com/VOICEVOX/voicevox_core/pull/800
+[#801]: https://github.com/VOICEVOX/voicevox_core/pull/801
+[#802]: https://github.com/VOICEVOX/voicevox_core/pull/802
+[#803]: https://github.com/VOICEVOX/voicevox_core/pull/803
+
+[VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
 [@char5742]: https://github.com/char5742
 [@eyr1n]: https://github.com/eyr1n
