@@ -14,7 +14,7 @@ TODO: 執筆中。PR8個分
 
 ## [0.16.0-preview.0] - 2025-03-01 (+09:00)
 
-TODO: 執筆中。あとPR165個分
+TODO: 執筆中。あとPR148個分
 
 ### Added
 
@@ -43,23 +43,30 @@ TODO: 執筆中。あとPR165個分
 - TODO: readme関連
     - [docs] ユーザーガイドを追加 ([#699])。
     - [docs] ドキュメント整理（ユーザーガイドをリンク、VVMのリンク追加、利用規約があることを案内） ([#707])。
+    - Update jump-to version on README ([#824] by [@cm-ayf]).
 
 ### Changed
 
-- `Onnxruntime`型からONNX Runtimeのロードを行う形になりました ([#725], [#802])。
+- \[BREAKING\] `Onnxruntime`型からONNX Runtimeのロードを行う形になりました ([#725], [#802], [#806])。
 
     TODO: `dlopen`/`LoadLibrary*`による恩恵
+
+    またこれに伴いmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_2_31"になります。
 
 - \[Python\] \[BREAKING\] ブロックングAPIの実装に伴い、`Synthesizer`, `OpenJtalk`, `VoiceModel`, `UserDict`は`voicevox_core.asyncio`モジュール化に移動します ([#706])。
 
 - TODO: #829の一部
     - async_zipをv0.0.16に上げる ([#747])。
 
-- \[C\] \[iOS\] XCFrameworkへのdylibの入れかたが誤っていたために[App Storeへの申請が通らない](https://github.com/VOICEVOX/voicevox_core/issues/715)状態だったため、入れかたを変えました ([#723] by [@nekomimimi], [VOICEVOX/onnxruntime-builder#25] by [@nekomimimi])。
-
 - \[BREAKING\]  VVMのフォーマットが変更されます ([#794], [#795], [#796])。
 
 - \[BREAKING\] `VoiceModelId`は、VVMに固有のUUIDになります ([#796])。
+
+- \[BREAKING\] `InferenceFailed`エラーは `RunModel`エラーになります ([#823]).
+
+- TODO: 結構でかい変更のはず
+    - rework GPU features ([#810]).
+    - rework `VoiceModel` ([#830]).
 
 ### Deprecated
 
@@ -77,6 +84,8 @@ TODO: 執筆中。あとPR165個分
 
 - \[C\] `voicevox_user_dict_add_word`がスタックを破壊してしまう問題が修正されます ([#800])。
 
+- \[C\] \[iOS\] XCFrameworkへのdylibの入れかたが誤っていたために[App Storeへの申請が通らない](https://github.com/VOICEVOX/voicevox_core/issues/715)状態だったため、入れかたを変えました ([#723] by [@nekomimimi], [VOICEVOX/onnxruntime-builder#25] by [@nekomimimi])。
+
 - \[C\] \[iOS\] clang++ 15.0.0でSIM向けビルドが失敗する問題が解決されます ([#720] by [@nekomimimi])。
 
 ### Security
@@ -91,12 +100,17 @@ TODO: 執筆中。あとPR165個分
         - モジュールレベルのglob importをすべて取り除く ([#708])。
     - Rust APIのAPIドキュメントをデプロイするようにする ([#803])。
     - アイテムの可視性を必要最低限にする ([#759])。
+    - Rust APIにおけるgetterをパブリックAPIとして整える ([#807]).
+    - rework GPU features ([#810]).
+    - Rust APIのAudioQuery系の型名から接尾辞"Model"を削除 ([#805]).
 - TODO: `TextAnalyzer`構想の布石
     - TextAnalyzer traitにstring->AccentPhraseModel[]を移動 ([#740] by [@eyr1n])。
     - jlabel導入 ([#742] by [@phenylshima], [#750] by [@phenylshima])。
 - TODO: project-s
     - [project-s] スタイルタイプの名称変更 ([#738])。
     - `StyleMeta::r#type`を追加し、トークという区分を実装に導入する ([#761])。
+
+- ortを更新 ([#822]).
 
 ## [0.15.0-preview.16] - 2023-12-01 (+09:00)
 
@@ -641,10 +655,19 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#801]: https://github.com/VOICEVOX/voicevox_core/pull/801
 [#802]: https://github.com/VOICEVOX/voicevox_core/pull/802
 [#803]: https://github.com/VOICEVOX/voicevox_core/pull/803
+[#805]: https://github.com/VOICEVOX/voicevox_core/pull/805
+[#806]: https://github.com/VOICEVOX/voicevox_core/pull/806
+[#807]: https://github.com/VOICEVOX/voicevox_core/pull/807
+[#810]: https://github.com/VOICEVOX/voicevox_core/pull/810
+[#822]: https://github.com/VOICEVOX/voicevox_core/pull/822
+[#823]: https://github.com/VOICEVOX/voicevox_core/pull/823
+[#824]: https://github.com/VOICEVOX/voicevox_core/pull/824
+[#830]: https://github.com/VOICEVOX/voicevox_core/pull/830
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
 [@char5742]: https://github.com/char5742
+[@cm-ayf]: https://github.com/cm-ayf
 [@eyr1n]: https://github.com/eyr1n
 [@fuziki]: https://github.com/fuziki
 [@HyodaKazuaki]: https://github.com/HyodaKazuaki
