@@ -38,11 +38,62 @@ TODO: 執筆中。PR三十数個分
 
 ## [0.16.0] - 2025-03-29 (+09:00)
 
-TODO: 執筆中。PR18個分
+### Added
+
+- 次の二つのドキュメントが追加され、APIドキュメント側からも言及されるようになります ([#1049])。
+    - [docs/guide/user/languages.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0/docs/guide/user/languages.md)
+    - [docs/guide/user/serialization.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0/docs/guide/user/serialization.md)
+- [READMEの「事例紹介」](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0/README.md#事例紹介)に、Swiftの事例として[VoicevoxCoreSwift](https://github.com/yamachu/VoicevoxCoreSwift)が追加されます ([#1055])。
+- \[Rust\] APIドキュメントのトップにコード例が入ります ([#1016], [#1045])。
+- \[ダウンローダー\] `models`のダウンロード元であるvoicevox\_vvmのバージョン範囲が、`>=0.1,<0.2`になります ([#1057])。
+
+### Changed
+
+- \[Rust\] \[BREAKING\] `UserDictWord`のコンストラクトがビルダースタイルになります ([#999])。
+- \[Java\] \[BREAKING\] `jp.hiroshiba.voicevoxcore.GlobalInfo.SupportedDevices`は`voicevoxcore`直下に移動します ([#991])。
+- \[Java\] \[BREAKING\] `UserDict`が扱う"UUID"はすべて、`String`ではなく[`java.util.UUID`](https://docs.oracle.com/javase/8/docs/api/java/util/UUID.html)になります ([#1058])。
+- \[Java\] \[Windows,macOS,Linux\] build.gradleに`javadoc.options.encoding = 'UTF-8'`が足されます ([#995])。
+
+### Removed
+
+- \[Java\] docs: APIドキュメントのポータルにおいて、Java APIのJavadocへの案内が一時的に消えます ([#1044])。
+
+### Fixed
+
+- \[Python\] `voicevox_core.{blocking,asyncio}`のクラスのインスタンスに対して、同時にアクセスしたときに`RuntimeError`が出る場合があった問題が解決されます ([#1041])。
+
+- \[Python\] （返り値が`NoReturn`であるダミーの）`__new__`の型付けが直ります ([#1048])。
+
+- \[Java\] \[Windows\] 同じ環境で二度起動しようとすると失敗する問題が修正されます ([#1043])。
+
+     VOICEVOX CORE Java APIは、voicevox\_core\_java\_api.dllを`%TEMP%`直下に展開してそれをロードすることにより動いています。その動的ライブラリは[`File#deleteOnExit`](https://docs.oracle.com/javase/8/docs/api/java/io/File.html#deleteOnExit--)によってJVMの終了時に削除されるはずでしたが、Windowsの場合上手く消えないことがわかりました。そのためDLL展開時に、以前のものを[`REPLACE_EXISTING`](https://docs.oracle.com/javase/8/docs/api/java/nio/file/StandardCopyOption.html#REPLACE_EXISTING)で上書きすることで問題を解決しました。
+
+     voicevox\_core\_java\_api.dllは依然として`%TEMP%`下に残り続ける上に、VOICEVOX CORE Java APIの多重起動ができないことには変わらないことに注意する必要はあります。
+
+- \[Java\] \[Windows,macOS,Linux\] 壊れていたKotlin exampleが直ります ([#994])。
+
+- \[C\] \[Windows\] C++ exampleのREADME.mdのタイポが修正されます ([#1040] by [@nanae772])。
 
 ## [0.16.0-preview.1] - 2025-03-08 (+09:00)
 
-TODO: 執筆中。PR8個分
+### Added
+
+- 書きかけの状態だったdocs/guide/user/usage.mdが書き上がります ([#1032])。
+- readmeから「バージョン 0.15.4をご利用ください」の注意書きが削除されます ([#1035])。
+
+### Changed
+
+- \[Python\] \[BREAKING\] Pydanticが依存から外れ、`@pydantic.dataclasses.dataclass`のクラスはすべて素のdataclassになります。dataclassのシリアライズについては代替手段は用意されず、非推奨になります ([#1034])。
+- \[ダウンローダー\] `models`のダウンロード元がvoicevox\_vvmの`0.0.1-preview.5` (= 今の[`0.1.0`](https://github.com/VOICEVOX/voicevox_vvm/releases/tag/0.1.0))になり、readmeおよび利用規約の文面が更新されます ([VOICEVOX/voicevox\_vvm#12], [VOICEVOX/voicevox\_vvm#14], [#1015])。
+
+### Removed
+
+- sample.vvmはGitHub Releasesに含まれなくなります ([#1033])。
+- \[Linux\] Ubuntu 20.04がサポート対象から外れ、バイナリのリリースはUbuntu 22.04で行われるようになります ([#1028])。
+
+### Fixed
+
+- \[ダウンローダー\] エラーメッセージの文面が修正されます ([#1030] by [@nanae772])。
 
 ## [0.16.0-preview.0] - 2025-03-01 (+09:00)
 
@@ -322,6 +373,8 @@ TODO: 執筆中。PR8個分
 - \[macOS\] \[BREAKING\] macOS 11およびmacOS 12がサポート範囲から外れます ([#801], [#884])。
 
 - \[Python,Java\] \[BREAKING\] `SupportedDevices`のデシアライズ（JSON → `SupportedDevices`の変換）ができなくなります ([#958])。
+
+    TODO: コンストラクタもだったような？
 
 - \[Python\] \[BREAKING\] Pythonのバージョンが≧3.10に引き上げられます ([#915], [#926], [#927])。
 
@@ -1032,25 +1085,50 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#988]: https://github.com/VOICEVOX/voicevox_core/pull/988
 [#989]: https://github.com/VOICEVOX/voicevox_core/pull/989
 [#990]: https://github.com/VOICEVOX/voicevox_core/pull/990
+[#991]: https://github.com/VOICEVOX/voicevox_core/pull/991
 [#992]: https://github.com/VOICEVOX/voicevox_core/pull/992
 [#993]: https://github.com/VOICEVOX/voicevox_core/pull/993
+[#994]: https://github.com/VOICEVOX/voicevox_core/pull/994
+[#995]: https://github.com/VOICEVOX/voicevox_core/pull/995
 [#996]: https://github.com/VOICEVOX/voicevox_core/pull/996
 [#997]: https://github.com/VOICEVOX/voicevox_core/pull/997
 [#998]: https://github.com/VOICEVOX/voicevox_core/pull/998
+[#999]: https://github.com/VOICEVOX/voicevox_core/pull/999
 [#1002]: https://github.com/VOICEVOX/voicevox_core/pull/1002
 [#1003]: https://github.com/VOICEVOX/voicevox_core/pull/1003
 [#1006]: https://github.com/VOICEVOX/voicevox_core/pull/1006
 [#1011]: https://github.com/VOICEVOX/voicevox_core/pull/1011
 [#1014]: https://github.com/VOICEVOX/voicevox_core/pull/1014
+[#1015]: https://github.com/VOICEVOX/voicevox_core/pull/1015
+[#1016]: https://github.com/VOICEVOX/voicevox_core/pull/1016
 [#1019]: https://github.com/VOICEVOX/voicevox_core/pull/1019
 [#1020]: https://github.com/VOICEVOX/voicevox_core/pull/1020
 [#1021]: https://github.com/VOICEVOX/voicevox_core/pull/1021
 [#1023]: https://github.com/VOICEVOX/voicevox_core/pull/1023
 [#1024]: https://github.com/VOICEVOX/voicevox_core/pull/1024
 [#1025]: https://github.com/VOICEVOX/voicevox_core/pull/1025
+[#1028]: https://github.com/VOICEVOX/voicevox_core/pull/1028
+[#1030]: https://github.com/VOICEVOX/voicevox_core/pull/1030
+[#1032]: https://github.com/VOICEVOX/voicevox_core/pull/1032
+[#1033]: https://github.com/VOICEVOX/voicevox_core/pull/1033
+[#1034]: https://github.com/VOICEVOX/voicevox_core/pull/1034
+[#1035]: https://github.com/VOICEVOX/voicevox_core/pull/1035
+[#1040]: https://github.com/VOICEVOX/voicevox_core/pull/1040
+[#1041]: https://github.com/VOICEVOX/voicevox_core/pull/1041
+[#1043]: https://github.com/VOICEVOX/voicevox_core/pull/1043
+[#1044]: https://github.com/VOICEVOX/voicevox_core/pull/1044
+[#1045]: https://github.com/VOICEVOX/voicevox_core/pull/1045
+[#1048]: https://github.com/VOICEVOX/voicevox_core/pull/1048
+[#1049]: https://github.com/VOICEVOX/voicevox_core/pull/1049
+[#1055]: https://github.com/VOICEVOX/voicevox_core/pull/1055
+[#1057]: https://github.com/VOICEVOX/voicevox_core/pull/1057
+[#1058]: https://github.com/VOICEVOX/voicevox_core/pull/1058
 [#1073]: https://github.com/VOICEVOX/voicevox_core/pull/1073
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
+
+[VOICEVOX/voicevox\_vvm#12]: https://github.com/VOICEVOX/voicevox_vvm/pull/12
+[VOICEVOX/voicevox\_vvm#14]: https://github.com/VOICEVOX/voicevox_vvm/pull/14
 
 [@char5742]: https://github.com/char5742
 [@cm-ayf]: https://github.com/cm-ayf
