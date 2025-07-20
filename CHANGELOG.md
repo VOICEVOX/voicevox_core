@@ -34,7 +34,88 @@
 [#918]: https://github.com/VOICEVOX/voicevox_core/pull/918
 -->
 
-TODO: 執筆中。PR三十数個分
+### Added
+
+- \[Rust,Python,Java\] 基本的なインターフェイスや特殊メソッドが、以下のように実装されます ([#1100])。
+
+    - Rust API
+        - `Debug` for
+            - `AudioQuery`
+            - `UserDictWordBuilder`
+            - `{blocking,nonblocking}.onnxruntime.LoadOnce`
+            - `{blocking,nonblocking}.VoiceModelFile`
+            - `{blocking,nonblocking}.OpenJtalk`
+            - `{blocking,nonblocking}.Synthesizer`
+            - `{blocking,nonblocking}.synthesizer.*`
+        - `PartialEq` for
+            - `StyleMeta`
+            - `AudioQuery`
+            - `UserDictWord`
+        - `{PartialOrd,Ord}` for
+            - `AccelerationMode`
+            - `UserDictWordType`
+        - `Hash` for
+            - `CharacterVersion`
+            - `AccelerationMode`
+        - `{AsRef,AsMut}` for `CharacterVersion`
+        - `{UpperHex,LowerHex,Octal,Binary}` for `StyleId`
+        - `Into<u32>` for `StyleId` (via `From`)
+    - Python API
+        - `__repr__` for
+            - `{blocking,asyncio}.VoiceModelFile`
+            - `{blocking,asyncio}.Onnxruntime`
+            - `{blocking,asyncio}.VoiceModelFile`
+            - `{blocking,asyncio}.OpenJtalk`
+            - `{blocking,asyncio}.UserDict`
+    - Java API
+        - `Object.equals` for
+            - `SupportedDevices`
+            - `StyleMeta`
+            - `CharacterMeta`
+            - `Mora`
+            - `AccentPhrase`
+            - `AudioQuery`
+        - `Cloneable` for
+            - `SupportedDevices`
+            - `StyleMeta`
+            - `CharacterMeta`
+            - `Mora`
+
+- \[Rust\] Rust Analyzerが、[C APIから参照する目的で導入した`doc(alias)`](https://github.com/VOICEVOX/voicevox_core/pull/976)に反応しないようになります ([#1099])。
+
+- \[C\] `free`系と`delete`系の関数が、`free(3)`や`HeapFree`のようにヌルポインタを許容するようになります ([#1094])。
+
+- \[C\] \[macOS\] :tada: GitHub ReleasesのXCFrameworkが、macOS向けのライブラリも同梱するようになります ([#1056])。
+
+- \[Python\] exampleコードにはshebangが付き、filemodeも`100755` (`GIT_FILEMODE_BLOB_EXECUTABLE`)になります ([#1077])。
+
+- \[Java\] \[Windows,macOS,Linux\] :tada: GitHub Releasesのjava\_packages.zipに、PC用のビルドが追加されます ([#764])。
+
+    ```diff
+     java_packages.zip
+     └── jp
+         └── hiroshiba
+             └── voicevoxcore
+    +            ├── voicevoxcore/
+                 └── voicevoxcore-android/
+    ```
+
+- \[ダウンローダー\] :tada: リトライ機構が導入されます。`-t, --tries <N>`でリトライ回数を指定でき、デフォルトは`5`回です ([#1098] by [@shuntia])。
+
+### Removed
+
+- \[Windows\] `windows-2019`がサポートから外れ、リリースは`windows-2022`で行われることになります ([#1096])。
+
+    ただしVOICEVOX ONNX Runtimeが既に元々`windows-2022`でビルドされているため、通常の用途においては特に変わらないはずです。
+
+### Fixed
+
+- 不要であるはずの[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
+- \[Rust\] Nightly Rustでビルドできない問題（[dtolnay/proc-macro2#497]）が発生したため、`proc-macro2`の依存がv1.0.95に上がります ([#1078])。
+- \[Python\] ドキュメントにおいて、wheelファイルの名前が誤っていたのが修正されます ([#1063])。
+- \[Java\] \[Android\] GHAのUbuntuイメージ備え付けの`$ANDROID_NDK` (現時点ではバージョン27)を使ったリリースがされるようになります。これにより、[#1103]で報告されたAndroidビルドにおけるC++シンボルの問題が解決されるはずです ([#1108])。
+- \[Java\] Javaのファイナライザから中身のデータのデストラクトがされない問題が解決されます ([#1085])。
+- \[ダウンローダー\] \[Windows\] GitHub Releasesにおいて、再び署名がされるようになります ([#1060])。
 
 ## [0.16.0] - 2025-03-29 (+09:00)
 
@@ -988,6 +1069,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#753]: https://github.com/VOICEVOX/voicevox_core/pull/753
 [#759]: https://github.com/VOICEVOX/voicevox_core/pull/759
 [#761]: https://github.com/VOICEVOX/voicevox_core/pull/761
+[#764]: https://github.com/VOICEVOX/voicevox_core/pull/764
 [#794]: https://github.com/VOICEVOX/voicevox_core/pull/794
 [#795]: https://github.com/VOICEVOX/voicevox_core/pull/795
 [#796]: https://github.com/VOICEVOX/voicevox_core/pull/796
@@ -1121,14 +1203,30 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1048]: https://github.com/VOICEVOX/voicevox_core/pull/1048
 [#1049]: https://github.com/VOICEVOX/voicevox_core/pull/1049
 [#1055]: https://github.com/VOICEVOX/voicevox_core/pull/1055
+[#1056]: https://github.com/VOICEVOX/voicevox_core/pull/1056
 [#1057]: https://github.com/VOICEVOX/voicevox_core/pull/1057
 [#1058]: https://github.com/VOICEVOX/voicevox_core/pull/1058
+[#1060]: https://github.com/VOICEVOX/voicevox_core/pull/1060
+[#1063]: https://github.com/VOICEVOX/voicevox_core/pull/1063
 [#1073]: https://github.com/VOICEVOX/voicevox_core/pull/1073
+[#1077]: https://github.com/VOICEVOX/voicevox_core/pull/1077
+[#1078]: https://github.com/VOICEVOX/voicevox_core/pull/1078
+[#1082]: https://github.com/VOICEVOX/voicevox_core/pull/1082
+[#1085]: https://github.com/VOICEVOX/voicevox_core/pull/1085
+[#1094]: https://github.com/VOICEVOX/voicevox_core/pull/1094
+[#1096]: https://github.com/VOICEVOX/voicevox_core/pull/1096
+[#1098]: https://github.com/VOICEVOX/voicevox_core/pull/1098
+[#1099]: https://github.com/VOICEVOX/voicevox_core/pull/1099
+[#1100]: https://github.com/VOICEVOX/voicevox_core/pull/1100
+[#1103]: https://github.com/VOICEVOX/voicevox_core/issues/1103
+[#1108]: https://github.com/VOICEVOX/voicevox_core/pull/1108
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
 [VOICEVOX/voicevox\_vvm#12]: https://github.com/VOICEVOX/voicevox_vvm/pull/12
 [VOICEVOX/voicevox\_vvm#14]: https://github.com/VOICEVOX/voicevox_vvm/pull/14
+
+[dtolnay/proc-macro2#497]: https://github.com/dtolnay/proc-macro2/pull/497
 
 [@char5742]: https://github.com/char5742
 [@cm-ayf]: https://github.com/cm-ayf
@@ -1140,4 +1238,5 @@ Windows版ダウンローダーのビルドに失敗しています。
 [@phenylshima]: https://github.com/phenylshima
 [@sh1ma]: https://github.com/sh1ma
 [@shigobu]: https://github.com/shigobu
+[@shuntia]: https://github.com/shuntia
 [@weweweok]: https://github.com/weweweok
