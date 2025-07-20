@@ -2,6 +2,38 @@
 
 ## [Unreleased]
 
+<!--
+### ソング
+
+- [project-s] ピッチ輪郭推論を追加 ([#531])
+- [project-s] モデルへの入力の形・データを修正 ([#732])
+- [project-s] スタイルタイプの名称変更 ([#738])
+- `StyleMeta::r#type`を追加し、トークという区分を実装に導入する ([#761])
+- fix: fix up #761: JavaとPythonの`StyleType`を埋める ([#895])
+- chore: [0.15] remove obsolete parts ([#896])
+- Merge `0.15.5` ([#894])
+
+[#732]: https://github.com/VOICEVOX/voicevox_core/pull/732
+[#896]: https://github.com/VOICEVOX/voicevox_core/pull/896
+[#894]: https://github.com/VOICEVOX/voicevox_core/pull/894
+
+### ストリーミングAPI
+
+- split decoder into spectrogram and vocoder without changing API ([#851])
+- ストリーミングモードのdecodeを実装（precompute_renderとrender） ([#854])
+- fix: Python APIとexample/python/run.pyの型付けを直す ([#864])
+- fix compat breaking: revive workaround padding in decode() ([#867])
+- feat!: `render`の引数の範囲指定部分を各言語の慣習に合わせる ([#879])
+- feat!: decode.onnxを復活させる ([#918])
+
+[#851]: https://github.com/VOICEVOX/voicevox_core/pull/851
+[#854]: https://github.com/VOICEVOX/voicevox_core/pull/854
+[#864]: https://github.com/VOICEVOX/voicevox_core/pull/864
+[#867]: https://github.com/VOICEVOX/voicevox_core/pull/867
+[#879]: https://github.com/VOICEVOX/voicevox_core/pull/879
+[#918]: https://github.com/VOICEVOX/voicevox_core/pull/918
+-->
+
 TODO: 執筆中。PR三十数個分
 
 ## [0.16.0] - 2025-03-29 (+09:00)
@@ -14,17 +46,32 @@ TODO: 執筆中。PR8個分
 
 ## [0.16.0-preview.0] - 2025-03-01 (+09:00)
 
-TODO: 執筆中。あとPR148個分
-
 ### Added
 
-- \[Python\] :tada: ブロッキングAPIを提供する`voicevox_core.blocking`モジュールが追加されます ([#702], [#706])。
+- :tada: Rust APIが利用できるようになります ([#825], [#911], [#919], [#932], [#931], [#940], [#941], [#937], [#949], [#974], [#982], [#990], [#992], [#996], [#1002], [#1025] 他たくさん)。
+
+    ```console
+    ❯ cargo add voicevox_core --git https://github.com/VOICEVOX/voicevox_core.git --tag 0.16.0-preview.0 --features load-onnxruntime
+    ```
+
+    [mainブランチのAPIドキュメント](https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/)
+
+- \[Python\] :tada: ブロッキングAPIを提供する`voicevox_core.blocking`モジュールが追加されます ([#702], [#706], [#992])。
 
     ```py
     wav = synthesizer.tts("こんにちは", 0)
     ```
 
+- 次のAPIが追加されます ([#1025])。
+
+    - `AudioQuery::from_accent_phrases` (C API: `voicevox_audio_query_create_from_accent_phrases`)
+    - `OpenJtalk::analyze` (C API: `voicevox_open_jtalk_rc_analyze`)
+
 - `SpeakerMeta`に、オプショナルな整数型フィールド`order`が追加されます ([#728])。
+
+- `StyleMeta`に`type`というフィールドが追加されます ([#531], [#738], [#761], [#895], [#996])。
+
+    取り得る値は`"talk" | "singing_teacher" | "frame_decode" | "sing"`です。ソング機能自体は今後[#1073]で行われる予定です。
 
 - \[C,Python\] 不必要なUTF-8の要求が無くなります ([#752])。
 
@@ -34,9 +81,37 @@ TODO: 執筆中。あとPR148個分
         - `VoiceModel::is_loaded_voice_model`: 引数がUTF-8ではない場合黙って`False`を返ようになります。C APIと一貫性を持たせる形です。
         - `VoiceModel::from_path`: 引数がUTF-8であることを要求ないようになります。
 
+- \[Python,Java\] `Synthesizer`から`OpenJtalk`を得ることができるゲッターが追加されます ([#1025])。
+
+- \[Python,Java\] \[BREAKING\] `UserDict`の`load`と`store`が引数に取ることができるファイルパスの表現が広くなります ([#835])。
+
+    Python APIでは`StrPath`相当になり、Java APIでは`java.io.File`と`java.nio.file.Path`のオーバーロードが追加されます。
+
 - \[Python\] 一般的な慣習に合わせ、ファイルパスを受け取る引数の型が`Union[str, PathLike[str]]`になります ([#753])。
 
 - \[Python\] Pyright/Pylanceをサポートするようになります ([#719])。
+
+- \[C\] `VoicevoxSynthesizer`などのオブジェクトに対する`…_delete`が、どのタイミングで行っても安全になります ([#849], [#862])。
+
+    - "delete"時に対象オブジェクトに対するアクセスがあった場合、アクセスが終わるまで待つようになります。
+    - 次の操作が未定義動作ではなくなります。ただし未定義動作ではないだけで明示的にクラッシュするため、起きないように依然として注意する必要があります。
+        - "delete"後に他の通常のメソッド関数の利用を試みる
+        - "delete"後に"delete"を試みる
+        - そもそもオブジェクトとして変なダングリングポインタが渡される
+
+- \[C\] リリース内容物にLICENSEファイルが追加されます ([#965])。
+
+- \[Python\] :tada: 推論を行うAPIにオプション引数`cancellable`が追加されます ([#889], [#1024], [#903], [#992])。
+
+    `True`にすると[タスクとしてキャンセル](https://docs.python.org/3.11/library/asyncio-task.html#task-cancellation)できるようになります。
+
+    デフォルトでキャンセル可能ではない理由は、ドキュメントにも書いてありますがキャンセル可能にすると（キャンセルを行わない場合でも）[ハングする危険性がある](https://github.com/VOICEVOX/voicevox_core/issues/968)からです。ご注意ください。
+
+- \[Python\] wheelは`Metadata-Version: 2.4`になり、またライセンス情報とreadmeが含まれるようになります ([#947], [#949], [#959])。
+
+- \[ダウンローダー\] 対象外の`<TARGET>`を見に行かないようになります ([#939])。
+
+    これまでは例えばC APIが必要無くても`--core-repo qryxip/voicevox_core --version 999.999.999`のようにする必要がありましたが、不要になります。
 
 - TODO: エラーメッセージ関連
     - open_jtalk-rsを更新し、caminoを利用 ([#745])。
@@ -44,19 +119,68 @@ TODO: 執筆中。あとPR148個分
     - [docs] ユーザーガイドを追加 ([#699])。
     - [docs] ドキュメント整理（ユーザーガイドをリンク、VVMのリンク追加、利用規約があることを案内） ([#707])。
     - Update jump-to version on README ([#824] by [@cm-ayf]).
+    - chore: READMEからvoicevox.github.io/voicevox_core/apisにリンク ([#838])
+    - feat(docs): docs/を整理する ([#863])
+    - docs: ダウンローダー周りの記述を更新 ([#945])
+    - docs(fix): readmeの古い記述を更新 ([#1019])
+        - 0.15.0-preview.16からのfeatも含まれる
+    - docs: readmeのダイエット ([#1021])
+        - featのはず
+- TODO: APIドキュメント関連
+    - chore: voicevox.github.io/voicevox_core/apis内のリンクを置き換え ([#837])
+    - chore: READMEからvoicevox.github.io/voicevox_core/apisにリンク ([#838])
+    - fix(docs): `SpeakerMeta.{speaker_uuid,version}`が逆だった ([#935])
+        - これはfix
+    - feat!: "話者" ("speaker") → "キャラクター" ("character") ([#943])
+    - docs: [Python] 型エイリアス系へのリンクについてワークアラウンド ([#952])
+    - docs: [Python] Sphinxをv8に上げ、extension達もアップデート ([#953])
+    - docs: [C] 各アイテムからRust APIにリンクを張る ([#976])
+    - docs: APIドキュメントの`{Character,Style}Meta`周りの記述を統一 ([#996])
+        - 0.15.0-preview.16からのfixも含まれる
+    - docs: "ダウンローダーがダウンロードするもの"の節を追加 ([#1023])
+        - feat
+    - feat: いくつかのAPIを露出し、「テキスト音声合成の流れ」を明確に ([#1025])
+        - feat
+- TODO: example改善
+    - refactor: Python APIのexampleのCLI引数をdataclass化 ([#881])
+    - docs: [Python (example)] `metas`を表示するタイミングを直す ([#986])
+    - docs: 軽く解決可能なTODOとFIXMEを解消 ([#992])
 
 ### Changed
 
-- \[BREAKING\] `Onnxruntime`型からONNX Runtimeのロードを行う形になりました ([#725], [#802], [#806])。
+- \[BREAKING\] :tada: VOICEVOX COREは完全にMIT Licenseになり、代わりにプロプライエタリ部分はONNX Runtime側に移ります ([#913], [#825], [#965], [#973], [#979], [#1019])。
+
+    TODO: もっと詳しく書く
+
+- \[BREAKING\] `Onnxruntime`型から(VOICEVOX) ONNX Runtimeのロードを行う形になります ([#725], [#802], [#806], [#860], [#898], [#911], [#933], [#992], [#1019])。
 
     TODO: `dlopen`/`LoadLibrary*`による恩恵
 
-    またこれに伴いmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_2_31"になります。
+    またこれに伴い:
+
+    - C APIでは、LinuxとmacOS用のrpath設定が削除されます。
+    - Python APIはmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_2_31"になります。また、カレントディレクトリ下の動的ライブラリを自動で読み込む機能は無くなります。
+    - Java APIの依存からcom.microsoft.onnxruntime/onnxruntime{,_gpu}は消えます。
+
+- \[BREAKING\] `AudioQuery`および`UserDictWord`のJSON表現はVOICEVOX ENGINEと同じになります ([#946], [#1014])。
+
+    これにより、VOICEVOX ENGINEとVOICEVOX COREとで同じ`AudioQuery`と`UserDictWord`が使い回せるようになります。Python APIおよびJava APIにおける、クラスの形には影響しません。
+
+    ```json
+    {
+      "accent_phrases": […],
+      "speedScale": 1.0,
+      "pitchScale": 0.0,
+      "intonationScale": 1.0,
+      "volumeScale": 1.0,
+      "prePhonemeLength": 0.1,
+      "postPhonemeLength": 0.1,
+      "outputSamplingRate": 24000,
+      "outputStereo": false
+    }
+    ```
 
 - \[Python\] \[BREAKING\] ブロックングAPIの実装に伴い、`Synthesizer`, `OpenJtalk`, `VoiceModel`, `UserDict`は`voicevox_core.asyncio`モジュール化に移動します ([#706])。
-
-- TODO: #829の一部
-    - async_zipをv0.0.16に上げる ([#747])。
 
 - \[BREAKING\]  VVMのフォーマットが変更されます ([#794], [#795], [#796])。
 
@@ -64,17 +188,149 @@ TODO: 執筆中。あとPR148個分
 
 - \[BREAKING\] `InferenceFailed`エラーは `RunModel`エラーになります ([#823]).
 
+- \[BREAKING\] `ExtractFullContextLabel`エラーは`AnalyzeText`エラーになります ([#919])。
+
+- \[BREAKING\] `UserDictWord`の`accent_type`はオプショナルではなくなります ([#1002])。
+
+    VOICEVOX ENGINEに合わせる形です。
+
+- `Synthesizer::unload_voice_model`と`UserDict::remove_word`における削除後の要素の順序が変わります ([#846])。
+
+    例えば`[a, b, c, d, e]`のようなキーの並びから`b`を削除したときに、順序を保って`[a, c, d, e]`になります。以前までは`[a, e, c, d]`になってました。
+
+- \[C\] \[BREAKING\] 次の`VoicevoxVoiceModelFile`のゲッターに位置付けられる関数が、ゲッターではなくなります ([#850])。
+
+    - `voicevox_voice_model_file_id`
+
+        `uint8_t (*output_voice_model_id)[16]`に吐き出すように。
+
+    - `voicevox_voice_model_file_get_metas_json`
+
+        `voicevox_voice_model_file_create_metas_json`に改名。
+
+- \[BREAKING\] `UserDictWord`の`priority`のデフォルトが`0`から`5`に変わります ([#1002])。
+
+    Python API、Java API、VOICEVOX ENGINEに合わせる形です。
+
+- \[C\] \[BREAKING\] リリース内容物において、動的ライブラリはlib/に、ヘッダはinclude/に入るようになります ([#954], [#967], [#980])。
+
+    ```
+    ├── include
+    │   └── voicevox_core.h
+    ├── lib
+    │   ├── voicevox_core.dll
+    │   └── voicevox_core.lib
+    ├── LICENSE
+    ├── README.txt
+    └── VERSION
+    ```
+
+- \[Python,Java\] \[BREAKING\] `SpeakerMeta`は<code>**Character**Meta</code>に、`StyleVersion`は<code>**Character**Meta</code>に改名されます ([#931], [#943], [#996])。
+
+- \[Python\] \[BREAKING\] `Enum`だったクラスはすべて`Literal`と、実質的なボトム型`_Reserved`の合併型になります ([#950], [#957])。
+
+    ```diff
+    -class AccelerationMode(str, Enum):
+    -    AUTO = "AUTO"
+    -    CPU = "CPU"
+    -    GPU = "GPU"
+    +AccelerationMode: TypeAlias = Literal["AUTO", "CPU", "GPU"] | _Reserved
+    ```
+
+    `_Reserved`の存在により、型チェックにおいて`match`での網羅はできなくなります。
+
+- \[Python\] \[BREAKING\] `Synthesizer.audio_query`は、C APIとJava APIに合わせる形で`create_audio_query`に改名されます ([#882])。
+
+- \[Python\] \[BREAKING\] `UserDict.words`は`UserDict.to_dict`に改名されます ([#977])。
+
+- \[Python\] \[BREAKING\] `Synthesizer.metas`と`UserDict.words`は`@property`ではなく普通のメソッドになります ([#914])。
+
+- \[Python\] \[BREAKING\] `UserDictWord`へのPydanticは非サポートになります。またdataclassとして`frozen`になり、コンストラクタ時点で各種バリデートが行われるようになります ([#1014])。
+
+- \[Python\] \[BREAKING\] デフォルト引数の前には一律で`*,`が挟まれるようになります ([#998])。
+
+- \[Java\] \[BREAKING\] `Synthesizer`, `OpenJtalk`, `VoiceModelFile`, `UserDict`は`voicevoxcore.blocking`パッケージの下に移ります。それに伴い、いくつかのクラスは`voicevoxcore`パッケージの直下に置かれるようになります ([#861])。
+
+    - `voicevoxcore.{Synthesizer. => }AccelerationMode`
+    - `voicevoxcore.{VoiceModelFile. => }SpeakerMeta`
+    - `voicevoxcore.{VoiceModelFile. => }StyleMeta`
+    - `voicevoxcore.{UserDict.Word => UserDictWord}`
+
+    (`Synthesizer`, `VoiceModelFile`, `UserDict`自体は`voicevoxcore.blocking`下に移動)
+
+- \[Java\] \[BREAKING\] `AccelerationMode`と`UserDictWord.Type`はenumではなくなり、`switch`での網羅ができなくなります ([#955])。
+
+    それぞれの値自体はそのままの名前で`public static final`な定数として定義されているので、引き続きそのまま利用可能です。
+
+    ```java
+    var mode = AccelerationMode.AUTO;
+    ```
+
+- \[Java\] \[BREAKING\] ビルダーパターンメソッドの締めの`execute`は`perform`に改名されます ([#911])。
+
+- \[ダウンローダー\] \[BREAKING\] VVMのダウンロードは[voicevox\_vvm](https://github.com/VOICEVOX/voicevox_vvm)から行うようになります ([#928], [#964], [#1020] by [@nanae772])。
+
+    TODO: VVORTと一緒にすべきでは？
+
+- \[ダウンローダー\] \[BREAKING\] `onnxruntime`および`models`のダウンロードの際、利用規約への同意が求められるようになります ([#928], [#983], [#989], [#1006], [#1011])。
+
+- \[ダウンローダー\] \[BREAKING\] `<TARGET>`のうち`core`は`c-api`に改名され、それに伴い`-v, --version`も`--c-api-version`、`--core-repo`も`--c-api-repo`に改名されます ([#942], [#1019])。
+
+- \[ダウンローダー\] \[BREAKING\] `<TARGET>`ごとにディレクトリが切られるようになります ([#944], [#969])。
+
+    ```console
+          --only <TARGET>...
+              ダウンロード対象を限定する [possible values: c-api, onnxruntime, additional-libraries, models, dict]
+          --exclude <TARGET>...
+              ダウンロード対象を除外する [possible values: c-api, onnxruntime, additional-libraries, models, dict]
+    ```
+
+    ```
+    voicevox_core
+    ├── c_api/
+    ├── onnxruntime/
+    ├── additional_libraries/
+    ├── models/
+    └── dict/
+    ```
+
+- \[ダウンローダー\] \[BREAKING\] `models`において、README.mdはREADME.txtになります ([#989])。
+
+    TODO: 0.15.0-preview.16の時点でREADME.mdだったか…?
+
 - TODO: 結構でかい変更のはず
+    - async_zipをv0.0.16に上げる ([#747])。
     - rework GPU features ([#810]).
     - rework `VoiceModel` ([#830]).
+    - change: `VoiceModel` → `VoiceModelFile` ([#832])
+    - #830 の設計を`UserDict`にも ([#834])
+    - \[C\] `voicevox_voice_model_file_close`は`voicevox_voice_model_file_delete`に改名 ([#937])。
+        - \[Python,Java\] あと、`__(a)exit__`後も`id`と`metas`にアクセス可能であることが保証される
+    - feat: [Python, Java] fix up #832: `Drop`のメッセージをやめる ([#993])
 
 ### Deprecated
 
+- docs: [Python, Java] PydanticおよびGSONは廃止予定になります ([#985])。
+
+    現段階においては代替手段は無く、シリアライズ自体が推奨されない状態になっています。
+
 ### Removed
 
-- macOS 11がサポート範囲から外れます ([#801])。
+- \[macOS\] \[BREAKING\] macOS 11およびmacOS 12がサポート範囲から外れます ([#801], [#884])。
+
+- \[Python,Java\] \[BREAKING\] `SupportedDevices`のデシアライズ（JSON → `SupportedDevices`の変換）ができなくなります ([#958])。
+
+- \[Python\] \[BREAKING\] Pythonのバージョンが≧3.10に引き上げられます ([#915], [#926], [#927])。
+
+    Python 3.10以降では、[asyncioランタイム終了時にクラッシュする問題](https://github.com/VOICEVOX/voicevox_core/issues/873)が発生しなくなります。
+
+- \[Java\] \[BREAKING\] `UserDict.Word`改め`UserDictWord`には、GSONによるシリアライズは使えなくなります ([#1014])。
 
 ### Fixed
+
+- TODO: 非同期周りの改善
+
+    - fix: 非同期関連のtodoとfixmeを解消 ([#868])
 
 - 先述の`SpeakerMeta::order`により、`metas`の出力が適切にソートされます ([#728])。
 
@@ -88,7 +344,24 @@ TODO: 執筆中。あとPR148個分
 
 - \[C\] \[iOS\] clang++ 15.0.0でSIM向けビルドが失敗する問題が解決されます ([#720] by [@nekomimimi])。
 
+- \[Python\] `StyleMeta`が`voicevox_core`モジュール直下に置かれるようになります ([#930])。
+
+- \[Python\] 型定義において呼べないはずのコンストラクタが呼べることになってしまってたため、ダミーとなる`def __new__(cls, *args, **kwargs) -> NoReturn`を定義することで解決します（エラーメッセージも改善） ([#988], [#997])。
+
+- TODO: ライセンス関連
+
+    - chore(deps): bump open_jtalk-rs ([#886])
+
 ### Security
+
+- TODO: ダウンローダーの依存ライブラリについて (書く必要あるか…?)
+
+    - chore(deps): `advisories`に対応するためいくつかのクレートをbump ([#856])
+
+- TODO:
+
+    - chore(deps): bump `anstream` to 0.6.18, `hashbrown@15` to 0.15.2 ([#887])
+    * chore(deps): bump `url` to v2.5.4 ([#890])
 
 ### Non notable
 
@@ -103,14 +376,23 @@ TODO: 執筆中。あとPR148個分
     - Rust APIにおけるgetterをパブリックAPIとして整える ([#807]).
     - rework GPU features ([#810]).
     - Rust APIのAudioQuery系の型名から接尾辞"Model"を削除 ([#805]).
+    - change: Rust APIの脱Tokioと、`voicevox_core::`{`tokio`→`nonblocking`} ([#831])
+    - change: minor changes for `UserDict` API ([#835])
+    - chore: `package.rust-version`を書く ([#844])
+    - fix: `IndexMap::`{`remove`→`shift_remove`} ([#846])
+    - docs: Rust APIの`Synthesizer`のドキュメントを訂正 ([#847])
+    * feat!: `Synthesizer::audio_query`を`create_audio_query`に改名 ([#882])
+    * refactor: Rust APIの`Synthesizer`のメソッドをビルダースタイルに ([#907])
+    * feat: Rust APIのビルダー構造体を`#[must_use]`にする ([#910])
+    * refactor: fix up #907: remove unnecessary type arguments ([#912])
 - TODO: `TextAnalyzer`構想の布石
     - TextAnalyzer traitにstring->AccentPhraseModel[]を移動 ([#740] by [@eyr1n])。
     - jlabel導入 ([#742] by [@phenylshima], [#750] by [@phenylshima])。
-- TODO: project-s
-    - [project-s] スタイルタイプの名称変更 ([#738])。
-    - `StyleMeta::r#type`を追加し、トークという区分を実装に導入する ([#761])。
 
 - ortを更新 ([#822]).
+    - chore(deps)!: bump ort ([#876])
+    - fix: bump ort ([#921])
+    - chore(deps): update voicevox-ort ([#1003])
 
 ## [0.15.0-preview.16] - 2023-12-01 (+09:00)
 
@@ -193,7 +475,7 @@ TODO: 執筆中。あとPR148個分
 
 - \[ダウンローダー\] :tada: ダウンロード対象を限定および除外するオプションが追加されます ([#647])。
 
-    `--only <TARGET>...`で限定、`--exclude <TARGET>...`で除外ができます。
+    `--only <TARGET>...`で限定、`--exclude <TARGET>...`で除外ができます。`--min`は`--only core`のエイリアスになります。
 
 - \[Python,Java\] エラーの文脈が例外チェーンとしてくっつくようになりました ([#640])。
 
@@ -555,6 +837,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#522]: https://github.com/VOICEVOX/voicevox_core/pull/522
 [#523]: https://github.com/VOICEVOX/voicevox_core/pull/523
 [#525]: https://github.com/VOICEVOX/voicevox_core/pull/525
+[#531]: https://github.com/VOICEVOX/voicevox_core/pull/531
 [#532]: https://github.com/VOICEVOX/voicevox_core/pull/532
 [#534]: https://github.com/VOICEVOX/voicevox_core/pull/534
 [#535]: https://github.com/VOICEVOX/voicevox_core/pull/535
@@ -635,6 +918,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#719]: https://github.com/VOICEVOX/voicevox_core/pull/719
 [#720]: https://github.com/VOICEVOX/voicevox_core/pull/720
 [#723]: https://github.com/VOICEVOX/voicevox_core/pull/723
+[#724]: https://github.com/VOICEVOX/voicevox_core/pull/724
 [#725]: https://github.com/VOICEVOX/voicevox_core/pull/725
 [#728]: https://github.com/VOICEVOX/voicevox_core/pull/728
 [#733]: https://github.com/VOICEVOX/voicevox_core/pull/733
@@ -662,7 +946,106 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#822]: https://github.com/VOICEVOX/voicevox_core/pull/822
 [#823]: https://github.com/VOICEVOX/voicevox_core/pull/823
 [#824]: https://github.com/VOICEVOX/voicevox_core/pull/824
+[#825]: https://github.com/VOICEVOX/voicevox_core/pull/825
 [#830]: https://github.com/VOICEVOX/voicevox_core/pull/830
+[#831]: https://github.com/VOICEVOX/voicevox_core/pull/831
+[#832]: https://github.com/VOICEVOX/voicevox_core/pull/832
+[#834]: https://github.com/VOICEVOX/voicevox_core/pull/834
+[#835]: https://github.com/VOICEVOX/voicevox_core/pull/835
+[#837]: https://github.com/VOICEVOX/voicevox_core/pull/837
+[#838]: https://github.com/VOICEVOX/voicevox_core/pull/838
+[#844]: https://github.com/VOICEVOX/voicevox_core/pull/844
+[#846]: https://github.com/VOICEVOX/voicevox_core/pull/846
+[#847]: https://github.com/VOICEVOX/voicevox_core/pull/847
+[#849]: https://github.com/VOICEVOX/voicevox_core/pull/849
+[#850]: https://github.com/VOICEVOX/voicevox_core/pull/850
+[#856]: https://github.com/VOICEVOX/voicevox_core/pull/856
+[#860]: https://github.com/VOICEVOX/voicevox_core/pull/860
+[#861]: https://github.com/VOICEVOX/voicevox_core/pull/861
+[#862]: https://github.com/VOICEVOX/voicevox_core/pull/862
+[#863]: https://github.com/VOICEVOX/voicevox_core/pull/863
+[#868]: https://github.com/VOICEVOX/voicevox_core/pull/868
+[#876]: https://github.com/VOICEVOX/voicevox_core/pull/876
+[#881]: https://github.com/VOICEVOX/voicevox_core/pull/881
+[#882]: https://github.com/VOICEVOX/voicevox_core/pull/882
+[#884]: https://github.com/VOICEVOX/voicevox_core/pull/884
+[#886]: https://github.com/VOICEVOX/voicevox_core/pull/886
+[#887]: https://github.com/VOICEVOX/voicevox_core/pull/887
+[#889]: https://github.com/VOICEVOX/voicevox_core/pull/889
+[#890]: https://github.com/VOICEVOX/voicevox_core/pull/890
+[#895]: https://github.com/VOICEVOX/voicevox_core/pull/895
+[#898]: https://github.com/VOICEVOX/voicevox_core/pull/898
+[#903]: https://github.com/VOICEVOX/voicevox_core/pull/903
+[#907]: https://github.com/VOICEVOX/voicevox_core/pull/907
+[#910]: https://github.com/VOICEVOX/voicevox_core/pull/910
+[#911]: https://github.com/VOICEVOX/voicevox_core/pull/911
+[#912]: https://github.com/VOICEVOX/voicevox_core/pull/912
+[#913]: https://github.com/VOICEVOX/voicevox_core/pull/913
+[#914]: https://github.com/VOICEVOX/voicevox_core/pull/914
+[#915]: https://github.com/VOICEVOX/voicevox_core/pull/915
+[#919]: https://github.com/VOICEVOX/voicevox_core/pull/919
+[#921]: https://github.com/VOICEVOX/voicevox_core/pull/921
+[#926]: https://github.com/VOICEVOX/voicevox_core/pull/926
+[#927]: https://github.com/VOICEVOX/voicevox_core/pull/927
+[#928]: https://github.com/VOICEVOX/voicevox_core/pull/928
+[#930]: https://github.com/VOICEVOX/voicevox_core/pull/930
+[#931]: https://github.com/VOICEVOX/voicevox_core/pull/931
+[#932]: https://github.com/VOICEVOX/voicevox_core/pull/932
+[#933]: https://github.com/VOICEVOX/voicevox_core/pull/933
+[#935]: https://github.com/VOICEVOX/voicevox_core/pull/935
+[#937]: https://github.com/VOICEVOX/voicevox_core/pull/937
+[#939]: https://github.com/VOICEVOX/voicevox_core/pull/939
+[#940]: https://github.com/VOICEVOX/voicevox_core/pull/940
+[#941]: https://github.com/VOICEVOX/voicevox_core/pull/941
+[#942]: https://github.com/VOICEVOX/voicevox_core/pull/942
+[#943]: https://github.com/VOICEVOX/voicevox_core/pull/943
+[#944]: https://github.com/VOICEVOX/voicevox_core/pull/944
+[#945]: https://github.com/VOICEVOX/voicevox_core/pull/945
+[#946]: https://github.com/VOICEVOX/voicevox_core/pull/946
+[#947]: https://github.com/VOICEVOX/voicevox_core/pull/947
+[#949]: https://github.com/VOICEVOX/voicevox_core/pull/949
+[#950]: https://github.com/VOICEVOX/voicevox_core/pull/950
+[#952]: https://github.com/VOICEVOX/voicevox_core/pull/952
+[#953]: https://github.com/VOICEVOX/voicevox_core/pull/953
+[#954]: https://github.com/VOICEVOX/voicevox_core/pull/954
+[#955]: https://github.com/VOICEVOX/voicevox_core/pull/955
+[#957]: https://github.com/VOICEVOX/voicevox_core/pull/957
+[#958]: https://github.com/VOICEVOX/voicevox_core/pull/958
+[#959]: https://github.com/VOICEVOX/voicevox_core/pull/959
+[#964]: https://github.com/VOICEVOX/voicevox_core/pull/964
+[#965]: https://github.com/VOICEVOX/voicevox_core/pull/965
+[#967]: https://github.com/VOICEVOX/voicevox_core/pull/967
+[#969]: https://github.com/VOICEVOX/voicevox_core/pull/969
+[#973]: https://github.com/VOICEVOX/voicevox_core/pull/973
+[#974]: https://github.com/VOICEVOX/voicevox_core/pull/974
+[#976]: https://github.com/VOICEVOX/voicevox_core/pull/976
+[#977]: https://github.com/VOICEVOX/voicevox_core/pull/977
+[#979]: https://github.com/VOICEVOX/voicevox_core/pull/979
+[#980]: https://github.com/VOICEVOX/voicevox_core/pull/980
+[#982]: https://github.com/VOICEVOX/voicevox_core/pull/982
+[#983]: https://github.com/VOICEVOX/voicevox_core/pull/983
+[#985]: https://github.com/VOICEVOX/voicevox_core/pull/985
+[#986]: https://github.com/VOICEVOX/voicevox_core/pull/986
+[#988]: https://github.com/VOICEVOX/voicevox_core/pull/988
+[#989]: https://github.com/VOICEVOX/voicevox_core/pull/989
+[#990]: https://github.com/VOICEVOX/voicevox_core/pull/990
+[#992]: https://github.com/VOICEVOX/voicevox_core/pull/992
+[#993]: https://github.com/VOICEVOX/voicevox_core/pull/993
+[#996]: https://github.com/VOICEVOX/voicevox_core/pull/996
+[#997]: https://github.com/VOICEVOX/voicevox_core/pull/997
+[#998]: https://github.com/VOICEVOX/voicevox_core/pull/998
+[#1002]: https://github.com/VOICEVOX/voicevox_core/pull/1002
+[#1003]: https://github.com/VOICEVOX/voicevox_core/pull/1003
+[#1006]: https://github.com/VOICEVOX/voicevox_core/pull/1006
+[#1011]: https://github.com/VOICEVOX/voicevox_core/pull/1011
+[#1014]: https://github.com/VOICEVOX/voicevox_core/pull/1014
+[#1019]: https://github.com/VOICEVOX/voicevox_core/pull/1019
+[#1020]: https://github.com/VOICEVOX/voicevox_core/pull/1020
+[#1021]: https://github.com/VOICEVOX/voicevox_core/pull/1021
+[#1023]: https://github.com/VOICEVOX/voicevox_core/pull/1023
+[#1024]: https://github.com/VOICEVOX/voicevox_core/pull/1024
+[#1025]: https://github.com/VOICEVOX/voicevox_core/pull/1025
+[#1073]: https://github.com/VOICEVOX/voicevox_core/pull/1073
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
@@ -671,6 +1054,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [@eyr1n]: https://github.com/eyr1n
 [@fuziki]: https://github.com/fuziki
 [@HyodaKazuaki]: https://github.com/HyodaKazuaki
+[@nanae772]: https://github.com/nanae772
 [@nekomimimi]: https://github.com/nekomimimi
 [@phenylshima]: https://github.com/phenylshima
 [@sh1ma]: https://github.com/sh1ma
