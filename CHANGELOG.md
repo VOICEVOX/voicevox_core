@@ -59,6 +59,9 @@ TODO: 執筆中。PR8個分
 - \[Python\] :tada: ブロッキングAPIを提供する`voicevox_core.blocking`モジュールが追加されます ([#702], [#706], [#992])。
 
     ```py
+    from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+
+    # …
     wav = synthesizer.tts("こんにちは", 0)
     ```
 
@@ -67,7 +70,7 @@ TODO: 執筆中。PR8個分
     - `AudioQuery::from_accent_phrases` (C API: `voicevox_audio_query_create_from_accent_phrases`)
     - `OpenJtalk::analyze` (C API: `voicevox_open_jtalk_rc_analyze`)
 
-- `SpeakerMeta`に、オプショナルな整数型フィールド`order`が追加されます ([#728])。
+- `SpeakerMeta`および`StyleMeta`に、オプショナルな整数型フィールド`order`が追加されます ([#728])。
 
 - `StyleMeta`に`type`というフィールドが追加されます ([#531], [#738], [#761], [#895], [#996])。
 
