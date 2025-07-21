@@ -81,15 +81,29 @@
             - `CharacterMeta`
             - `Mora`
 
-- \[Rust\] Rust Analyzerが、[C APIから参照する目的で導入した`doc(alias)`](https://github.com/VOICEVOX/voicevox_core/pull/976)に反応しないようになります ([#1099])。
+- 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
+
+- \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
 - \[C\] `free`系と`delete`系の関数が、`free(3)`や`HeapFree`のようにヌルポインタを許容するようになります ([#1094])。
 
 - \[C\] \[macOS\] :tada: GitHub ReleasesのXCFrameworkが、macOS向けのライブラリも同梱するようになります ([#1056])。
 
+    ```diff
+    -voicevox_core-ios-xcframework-cpu-{version}.zip
+    +voicevox_core-xcframework-cpu-{version}.zip
+     └── voicevox_core.xcframework
+         ├── Info.plist
+    +    ├── macos-arm64_x86_64/
+         ├── ios-arm64/
+         └── ios-arm64_x86_64-simulator/
+    ```
+
+    Changedの章で後述する通り、リリースの名前は変わります。
+
 - \[Python\] exampleコードにはshebangが付き、filemodeも`100755` (`GIT_FILEMODE_BLOB_EXECUTABLE`)になります ([#1077])。
 
-- \[Java\] \[Windows,macOS,Linux\] :tada: GitHub Releasesのjava\_packages.zipに、PC用のビルドが追加されます ([#764])。
+- \[Java\] \[Windows,macOS,Linux\] :tada: GitHub Releasesのjava\_packages.zipに、PC用のパッケージが追加されます ([#764])。
 
     ```diff
      java_packages.zip
@@ -100,7 +114,13 @@
                  └── voicevoxcore-android/
     ```
 
-- \[ダウンローダー\] :tada: リトライ機構が導入されます。`-t, --tries <N>`でリトライ回数を指定でき、デフォルトは`5`回です ([#1098] by [@shuntia])。
+- \[ダウンローダー\] :tada: リトライ機構が導入されます ([#1098] by [@shuntia])。
+
+    `-t, --tries <N>`で試行回数を指定できます。デフォルトは`5`回です。
+
+### Changed
+
+- \[C\] \[macOS\] GitHub Releasesにおいて、macOS版XCFrameworkの提供に伴ってリリースの名前が変わります ([#1056])。
 
 ### Removed
 
@@ -110,11 +130,10 @@
 
 ### Fixed
 
-- 不要であるはずの[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
 - \[Rust\] Nightly Rustでビルドできない問題（[dtolnay/proc-macro2#497]）が発生したため、`proc-macro2`の依存がv1.0.95に上がります ([#1078])。
-- \[Python\] ドキュメントにおいて、wheelファイルの名前が誤っていたのが修正されます ([#1063])。
+- \[Python\] ドキュメントの誤記が修正されます ([#1063])。
 - \[Java\] \[Android\] GHAのUbuntuイメージ備え付けの`$ANDROID_NDK` (現時点ではバージョン27)を使ったリリースがされるようになります。これにより、[#1103]で報告されたAndroidビルドにおけるC++シンボルの問題が解決されるはずです ([#1108])。
-- \[Java\] Javaのファイナライザから中身のデータのデストラクトがされない問題が解決されます ([#1085])。
+- \[Java\] Javaのファイナライザから中身のRustオブジェクトのデストラクトがされない問題が解決されます ([#1085])。
 - \[ダウンローダー\] \[Windows\] GitHub Releasesにおいて、再び署名がされるようになります ([#1060])。
 
 ## [0.16.0] - 2025-03-29 (+09:00)
@@ -147,19 +166,19 @@
 
 - \[Java\] \[Windows\] 同じ環境で二度起動しようとすると失敗する問題が修正されます ([#1043])。
 
-     VOICEVOX CORE Java APIは、voicevox\_core\_java\_api.dllを`%TEMP%`直下に展開してそれをロードすることにより動いています。その動的ライブラリは[`File#deleteOnExit`](https://docs.oracle.com/javase/8/docs/api/java/io/File.html#deleteOnExit--)によってJVMの終了時に削除されるはずでしたが、Windowsの場合上手く消えないことがわかりました。そのためDLL展開時に、以前のものを[`REPLACE_EXISTING`](https://docs.oracle.com/javase/8/docs/api/java/nio/file/StandardCopyOption.html#REPLACE_EXISTING)で上書きすることで問題を解決しました。
+     VOICEVOX CORE Java APIは、voicevox\_core\_java\_api.dllを`%TEMP%`直下に展開してそれをロードすることにより動いています。その動的ライブラリは[`File#deleteOnExit`](https://docs.oracle.com/javase/8/docs/api/java/io/File.html#deleteOnExit--)によってJVMの終了時に削除されるはずでしたが、Windowsの場合上手く消えないことがわかりました。そのためDLL展開時に、以前のものを[`REPLACE_EXISTING`](https://docs.oracle.com/javase/8/docs/api/java/nio/file/StandardCopyOption.html#REPLACE_EXISTING)で上書きすることで問題を解決します。
 
      voicevox\_core\_java\_api.dllは依然として`%TEMP%`下に残り続ける上に、VOICEVOX CORE Java APIの多重起動ができないことには変わらないことに注意する必要はあります。
 
 - \[Java\] \[Windows,macOS,Linux\] 壊れていたKotlin exampleが直ります ([#994])。
 
-- \[C\] \[Windows\] C++ exampleのREADME.mdのタイポが修正されます ([#1040] by [@nanae772])。
+- \[C\] \[Windows\] C++ exampleのREADME.mdの誤記が修正されます ([#1040] by [@nanae772])。
 
 ## [0.16.0-preview.1] - 2025-03-08 (+09:00)
 
 ### Added
 
-- 書きかけの状態だったdocs/guide/user/usage.mdが書き上がります ([#1032])。
+- 書きかけの状態だった[docs/guide/user/usage.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0-preview.1/docs/guide/user/usage.md)が書き上がります ([#1032])。
 - readmeから「バージョン 0.15.4をご利用ください」の注意書きが削除されます ([#1035])。
 
 ### Changed
@@ -170,7 +189,7 @@
 ### Removed
 
 - sample.vvmはGitHub Releasesに含まれなくなります ([#1033])。
-- \[Linux\] Ubuntu 20.04がサポート対象から外れ、バイナリのリリースはUbuntu 22.04で行われるようになります ([#1028])。
+- \[Linux\] \[BREAKING\] Ubuntu 20.04がサポート対象から外れ、バイナリのリリースはUbuntu 22.04で行われるようになります ([#1028])。
 
 ### Fixed
 
@@ -180,7 +199,7 @@
 
 ### Added
 
-- :tada: Rust APIが利用できるようになります ([#825], [#911], [#919], [#932], [#931], [#940], [#941], [#937], [#949], [#974], [#982], [#990], [#992], [#996], [#1002], [#1025] 他たくさん)。
+- :tada: Rust APIが利用できるようになります ([#825], [#911], [#919], [#932], [#931], [#940], [#941], [#937], [#949], [#958], [#974], [#982], [#990], [#992], [#996], [#1002], [#1025] 他たくさん)。
 
     ```console
     ❯ cargo add voicevox_core --git https://github.com/VOICEVOX/voicevox_core.git --tag 0.16.0-preview.0 --features load-onnxruntime
@@ -208,21 +227,21 @@
 
     取り得る値は`"talk" | "singing_teacher" | "frame_decode" | "sing"`です。ソング機能自体は今後[#1073]で行われる予定です。
 
-- \[C,Python\] 不必要なUTF-8の要求が無くなります ([#752])。
+- \[C,Python\] 次の関数の引数が不必要にUTF-8を要求することがなくなります ([#752])。
 
     - C
-        - `voicevox_synthesizer_is_loaded_voice_model`: 引数`model_id`がUTF-8ではない場合、パニックする代わりに黙って`false`を返すようになります。
+        - `voicevox_synthesizer_is_loaded_voice_model`
     - Python
-        - `VoiceModel::is_loaded_voice_model`: 引数がUTF-8ではない場合黙って`False`を返ようになります。C APIと一貫性を持たせる形です。
-        - `VoiceModel::from_path`: 引数がUTF-8であることを要求ないようになります。
+        - `VoiceModel.is_loaded_voice_model`
+        - `VoiceModel.from_path`
 
 - \[Python,Java\] `Synthesizer`から`OpenJtalk`を得ることができるゲッターが追加されます ([#1025])。
 
-- \[Python,Java\] \[BREAKING\] `UserDict`の`load`と`store`が引数に取ることができるファイルパスの表現が広くなります ([#835])。
+- \[Python,Java\] `UserDict`の`load`と`store`が引数に取ることができるファイルパスの表現が広くなります ([#835])。
 
     Python APIでは`StrPath`相当になり、Java APIでは`java.io.File`と`java.nio.file.Path`のオーバーロードが追加されます。
 
-- \[Python\] 一般的な慣習に合わせ、ファイルパスを受け取る引数の型が`Union[str, PathLike[str]]`になります ([#753])。
+- \[Python\] 引数の型が`Path | str`となっていた箇所は、一般的な慣習に合わせる形で`str | PathLike[str]`になります ([#753])。
 
 - \[Python\] Pyright/Pylanceをサポートするようになります ([#719])。
 
@@ -233,6 +252,7 @@
         - "delete"後に他の通常のメソッド関数の利用を試みる
         - "delete"後に"delete"を試みる
         - そもそもオブジェクトとして変なダングリングポインタが渡される
+        - ヌルポインタが渡される (注: [#1094]にて許容される予定です)
 
 - \[C\] リリース内容物にLICENSEファイルが追加されます ([#965])。
 
@@ -246,7 +266,7 @@
 
 - \[ダウンローダー\] 対象外の`<TARGET>`を見に行かないようになります ([#939])。
 
-    これまでは例えばC APIが必要無くても`--core-repo qryxip/voicevox_core --version 999.999.999`のようにする必要がありましたが、不要になります。
+    これまではダウンロード対象外であっても、不必要にリポジトリを見にいくようになってました。
 
 - TODO: エラーメッセージ関連
     - open_jtalk-rsを更新し、caminoを利用 ([#745])。
@@ -294,7 +314,8 @@
     またこれに伴い:
 
     - C APIでは、LinuxとmacOS用のrpath設定が削除されます。
-    - Python APIはmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_2_31"になります。また、カレントディレクトリ下の動的ライブラリを自動で読み込む機能は無くなります。
+    - Python APIはmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_{glibcのバージョン}"になります。また、カレントディレクトリ下の動的ライブラリを自動で読み込む機能は無くなります。
+        TODO: glibcのバージョンだったっけ？
     - Java APIの依存からcom.microsoft.onnxruntime/onnxruntime{,_gpu}は消えます。
 
 - \[BREAKING\] `AudioQuery`および`UserDictWord`のJSON表現はVOICEVOX ENGINEと同じになります ([#946], [#1014])。
@@ -315,8 +336,6 @@
     }
     ```
 
-- \[Python\] \[BREAKING\] ブロックングAPIの実装に伴い、`Synthesizer`, `OpenJtalk`, `VoiceModel`, `UserDict`は`voicevox_core.asyncio`モジュール化に移動します ([#706])。
-
 - \[BREAKING\]  VVMのフォーマットが変更されます ([#794], [#795], [#796])。
 
 - \[BREAKING\] `VoiceModelId`は、VVMに固有のUUIDになります ([#796])。
@@ -328,6 +347,10 @@
 - \[BREAKING\] `UserDictWord`の`accent_type`はオプショナルではなくなります ([#1002])。
 
     VOICEVOX ENGINEに合わせる形です。
+
+- \[BREAKING\] `UserDictWord`の`priority`のデフォルトが`0`から`5`に変わります ([#1002])。
+
+    Python API、Java API、VOICEVOX ENGINEに合わせる形です。
 
 - `Synthesizer::unload_voice_model`と`UserDict::remove_word`における削除後の要素の順序が変わります ([#846])。
 
@@ -343,10 +366,6 @@
 
         `voicevox_voice_model_file_create_metas_json`に改名。
 
-- \[BREAKING\] `UserDictWord`の`priority`のデフォルトが`0`から`5`に変わります ([#1002])。
-
-    Python API、Java API、VOICEVOX ENGINEに合わせる形です。
-
 - \[C\] \[BREAKING\] リリース内容物において、動的ライブラリはlib/に、ヘッダはinclude/に入るようになります ([#954], [#967], [#980])。
 
     ```
@@ -361,6 +380,8 @@
     ```
 
 - \[Python,Java\] \[BREAKING\] `SpeakerMeta`は<code>**Character**Meta</code>に、`StyleVersion`は<code>**Character**Meta</code>に改名されます ([#931], [#943], [#996])。
+
+- \[Python\] \[BREAKING\] ブロックングAPIの実装に伴い、`Synthesizer`, `OpenJtalk`, `VoiceModel`, `UserDict`は`voicevox_core.asyncio`モジュール下に移動します ([#706])。
 
 - \[Python\] \[BREAKING\] `Enum`だったクラスはすべて`Literal`と、実質的なボトム型`_Reserved`の合併型になります ([#950], [#957])。
 
@@ -445,17 +466,17 @@
 
 ### Deprecated
 
-- docs: [Python, Java] PydanticおよびGSONは廃止予定になります ([#985])。
+- \[Python,Java\] PydanticおよびGSONは廃止予定になります ([#985])。
 
     現段階においては代替手段は無く、シリアライズ自体が推奨されない状態になっています。
+
+    補足: Pydanticについては[0.16.0-preview.1](#0160-preview1---2025-03-08-0900)で消されます。
 
 ### Removed
 
 - \[macOS\] \[BREAKING\] macOS 11およびmacOS 12がサポート範囲から外れます ([#801], [#884])。
 
-- \[Python,Java\] \[BREAKING\] `SupportedDevices`のデシアライズ（JSON → `SupportedDevices`の変換）ができなくなります ([#958])。
-
-    TODO: コンストラクタもだったような？
+- \[Python,Java\] \[BREAKING\] `SupportedDevices`のデシアライズ（JSON → `SupportedDevices`の変換）ができなくなります。Python APIにおいてはコンストラクトもできなくなります ([#958])。
 
 - \[Python\] \[BREAKING\] Pythonのバージョンが≧3.10に引き上げられます ([#915], [#926], [#927])。
 
@@ -469,7 +490,7 @@
 
     - fix: 非同期関連のtodoとfixmeを解消 ([#868])
 
-- 先述の`SpeakerMeta::order`により、`metas`の出力が適切にソートされます ([#728])。
+- "Added"の章で述べた`SpeakerMeta::order`により、`metas`の出力が適切にソートされます ([#728])。
 
     これにより、キャラクター/スタイルの順番がバージョン0.14およびVOICEVOX ENGINEのように整います。
 
@@ -477,13 +498,13 @@
 
 - \[C\] `voicevox_user_dict_add_word`がスタックを破壊してしまう問題が修正されます ([#800])。
 
-- \[C\] \[iOS\] XCFrameworkへのdylibの入れかたが誤っていたために[App Storeへの申請が通らない](https://github.com/VOICEVOX/voicevox_core/issues/715)状態だったため、入れかたを変えました ([#723] by [@nekomimimi], [VOICEVOX/onnxruntime-builder#25] by [@nekomimimi])。
+- \[C\] \[iOS\] XCFrameworkへのdylibの入れかたが誤っていたために[App Storeへの申請が通らない](https://github.com/VOICEVOX/voicevox_core/issues/715)状態だったため、入れかたを変えました ([VOICEVOX/onnxruntime-builder#25] by [@nekomimimi], [#723] by [@nekomimimi])。
 
 - \[C\] \[iOS\] clang++ 15.0.0でSIM向けビルドが失敗する問題が解決されます ([#720] by [@nekomimimi])。
 
 - \[Python\] `StyleMeta`が`voicevox_core`モジュール直下に置かれるようになります ([#930])。
 
-- \[Python\] 型定義において呼べないはずのコンストラクタが呼べることになってしまってたため、ダミーとなる`def __new__(cls, *args, **kwargs) -> NoReturn`を定義することで解決します（エラーメッセージも改善） ([#988], [#997])。
+- \[Python\] 型定義において呼べないはずのコンストラクタが呼べることになってしまってたため、ダミーとなる`def __new__(cls, *args, **kwargs) -> NoReturn`を定義することで解決します。エラーメッセージも改善されます ([#988], [#997])。
 
 - TODO: ライセンス関連
 
