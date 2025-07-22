@@ -208,7 +208,7 @@
 
 ### Added
 
-- :tada: Rust APIが利用できるようになります ([#825], [#911], [#919], [#932], [#931], [#940], [#941], [#937], [#949], [#958], [#974], [#982], [#990], [#992], [#996], [#1002], [#1025] 他たくさん)。
+- :tada: Rust APIが利用できるようになります ([#702], [#745], [#740] by [@eyr1n], [#708], [#803], [#759], [#807], [#810], [#805], [#831], [#835], [#844], [#846], [#847], [#882], [#907], [#910], [#912], [#825], [#911], [#919], [#932], [#931], [#940], [#941], [#937], [#949], [#958], [#974], [#982], [#990], [#992], [#996], [#1002], [#1025] 他たくさん)。
 
     ```console
     ❯ cargo add voicevox_core --git https://github.com/VOICEVOX/voicevox_core.git --tag 0.16.0-preview.0 --features load-onnxruntime
@@ -316,7 +316,7 @@
 
     TODO: もっと詳しく書く
 
-- \[BREAKING\] `Onnxruntime`型から(VOICEVOX) ONNX Runtimeのロードを行う形になります ([#725], [#802], [#806], [#860], [#898], [#911], [#933], [#992], [#1019])。
+- \[BREAKING\] `Onnxruntime`型から(VOICEVOX) ONNX Runtimeのロードを行う形になります ([#725], [#802], [#806], [#822], [#860], [#876], [#898], [#921], [#911], [#933], [#992], [#1003], [#1019])。
 
     TODO: `dlopen`/`LoadLibrary*`による恩恵
 
@@ -529,34 +529,6 @@
 
     - chore(deps): bump `anstream` to 0.6.18, `hashbrown@15` to 0.15.2 ([#887])
     * chore(deps): bump `url` to v2.5.4 ([#890])
-
-### Non notable
-
-- TODO: Rust APIの布石
-    - RustのブロッキングAPIを実装 ([#702])。
-    - open_jtalk-rsを更新し、caminoを利用 ([#745])。
-    - TextAnalyzer traitにstring->AccentPhraseModel[]を移動 ([#740] by [@eyr1n])。
-    - ?
-        - モジュールレベルのglob importをすべて取り除く ([#708])。
-    - Rust APIのAPIドキュメントをデプロイするようにする ([#803])。
-    - アイテムの可視性を必要最低限にする ([#759])。
-    - Rust APIにおけるgetterをパブリックAPIとして整える ([#807]).
-    - rework GPU features ([#810]).
-    - Rust APIのAudioQuery系の型名から接尾辞"Model"を削除 ([#805]).
-    - change: Rust APIの脱Tokioと、`voicevox_core::`{`tokio`→`nonblocking`} ([#831])
-    - change: minor changes for `UserDict` API ([#835])
-    - chore: `package.rust-version`を書く ([#844])
-    - fix: `IndexMap::`{`remove`→`shift_remove`} ([#846])
-    - docs: Rust APIの`Synthesizer`のドキュメントを訂正 ([#847])
-    * feat!: `Synthesizer::audio_query`を`create_audio_query`に改名 ([#882])
-    * refactor: Rust APIの`Synthesizer`のメソッドをビルダースタイルに ([#907])
-    * feat: Rust APIのビルダー構造体を`#[must_use]`にする ([#910])
-    * refactor: fix up #907: remove unnecessary type arguments ([#912])
-
-- ortを更新 ([#822]).
-    - chore(deps)!: bump ort ([#876])
-    - fix: bump ort ([#921])
-    - chore(deps): update voicevox-ort ([#1003])
 
 ## [0.15.0-preview.16] - 2023-12-01 (+09:00)
 
