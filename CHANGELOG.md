@@ -90,8 +90,8 @@
 - \[C\] \[macOS\] :tada: GitHub ReleasesのXCFrameworkが、macOS向けのライブラリも同梱するようになります ([#1056])。
 
     ```diff
-    -voicevox_core-ios-xcframework-cpu-{version}.zip
-    +voicevox_core-xcframework-cpu-{version}.zip
+    -voicevox_core-ios-xcframework-cpu-{バージョン}.zip
+    +voicevox_core-xcframework-cpu-{バージョン}.zip
      └── voicevox_core.xcframework
          ├── Info.plist
     +    ├── macos-arm64_x86_64/
@@ -120,13 +120,13 @@
 
 ### Changed
 
-- \[C\] \[macOS\] GitHub Releasesにおいて、macOS版XCFrameworkの提供に伴ってリリースの名前が変わります ([#1056])。
+- \[C\] \[macOS\] GitHub Releasesにおいてvoicevox\_core-**ios**-xcframework-cpu-{バージョン}.zipは、macOS版XCFrameworkの提供に伴ってvoicevox\_core-xcframework-cpu-{バージョン}.zipに改名されます ([#1056])。
 
 ### Removed
 
 - \[Windows\] `windows-2019`がサポートから外れ、リリースは`windows-2022`で行われることになります ([#1096])。
 
-    ただしVOICEVOX ONNX Runtimeが既に元々`windows-2022`でビルドされているため、通常の用途においては特に変わらないはずです。
+    ただし、`windows-2022`でビルドしたバイナリであっても`windows-2019`相当の環境で動作すると考えられています。またVOICEVOX ONNX Runtimeが既に元々`windows-2022`でビルドされているため、通常の用途においては特に変わらないはずです。
 
 ### Fixed
 
