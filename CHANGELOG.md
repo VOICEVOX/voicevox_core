@@ -32,6 +32,15 @@
 [#867]: https://github.com/VOICEVOX/voicevox_core/pull/867
 [#879]: https://github.com/VOICEVOX/voicevox_core/pull/879
 [#918]: https://github.com/VOICEVOX/voicevox_core/pull/918
+
+### もし`TextAnalyzer`機能を充実させた場合
+
+- TextAnalyzer traitにstring->AccentPhraseModel[]を移動 ([#740] by [@eyr1n])。
+- jlabel導入 ([#742] by [@phenylshima], [#750] by [@phenylshima])。
+- feat!: Rust APIだけ`TextAnalyzer`をパブリックにする ([#919])
+
+[#742]: https://github.com/VOICEVOX/voicevox_core/pull/742
+[#750]: https://github.com/VOICEVOX/voicevox_core/pull/750
 -->
 
 ### Added
@@ -543,9 +552,6 @@
     * refactor: Rust APIの`Synthesizer`のメソッドをビルダースタイルに ([#907])
     * feat: Rust APIのビルダー構造体を`#[must_use]`にする ([#910])
     * refactor: fix up #907: remove unnecessary type arguments ([#912])
-- TODO: `TextAnalyzer`構想の布石
-    - TextAnalyzer traitにstring->AccentPhraseModel[]を移動 ([#740] by [@eyr1n])。
-    - jlabel導入 ([#742] by [@phenylshima], [#750] by [@phenylshima])。
 
 - ortを更新 ([#822]).
     - chore(deps)!: bump ort ([#876])
@@ -1082,10 +1088,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#733]: https://github.com/VOICEVOX/voicevox_core/pull/733
 [#738]: https://github.com/VOICEVOX/voicevox_core/pull/738
 [#740]: https://github.com/VOICEVOX/voicevox_core/pull/740
-[#742]: https://github.com/VOICEVOX/voicevox_core/pull/742
 [#745]: https://github.com/VOICEVOX/voicevox_core/pull/745
 [#747]: https://github.com/VOICEVOX/voicevox_core/pull/747
-[#750]: https://github.com/VOICEVOX/voicevox_core/pull/750
 [#752]: https://github.com/VOICEVOX/voicevox_core/pull/752
 [#753]: https://github.com/VOICEVOX/voicevox_core/pull/753
 [#759]: https://github.com/VOICEVOX/voicevox_core/pull/759
