@@ -314,9 +314,17 @@
 
 - \[BREAKING\] :tada: VOICEVOX COREは完全にMIT Licenseになり、代わりにプロプライエタリ部分はONNX Runtime側に移ります ([#913], [#825], [#965], [#973], [#979], [#1019])。
 
-    TODO: もっと詳しく書く
+    御自身で手を加えたVOICEVOX COREをそのまま実行できるようになります。
 
-- \[BREAKING\] `Onnxruntime`型から(VOICEVOX) ONNX Runtimeのロードを行う形になります ([#725], [#802], [#806], [#822], [#860], [#876], [#898], [#921], [#911], [#933], [#992], [#1003], [#1019])。
+    製品版VVMを読み込む際は、ONNX Runtimeの代わりに**VOICEVOX** ONNX Runtimeというライブラリが必要になります。VOICEVOX ONNX Runtimeは、ダウンローダーにて`onnxruntime`としてダウンロードできます。
+
+    ```console
+    ❯ ./download --only onnxruntime --onnxruntime-version voicevox_onnxruntime-1.17.3
+    ```
+
+    なお、[0.15.0-preview.16](#0150-preview16---2023-12-01-0900)までのVVMは利用できなくなります。
+
+- \[BREAKING\] :tada: (VOICEVOX) ONNX Runtimeを動的リンクすることは基本的になくなり、代わりに`dlopen`/`LoadLibraryExW`でロードするようになります。ロードは`Onnxruntime`型から行う形になります ([#725], [#802], [#806], [#822], [#860], [#876], [#898], [#921], [#911], [#933], [#992], [#1003], [#1019])。
 
     TODO: `dlopen`/`LoadLibrary*`による恩恵
 
@@ -324,7 +332,6 @@
 
     - C APIでは、LinuxとmacOS用のrpath設定が削除されます。
     - Python APIはmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_{glibcのバージョン}"になります。また、カレントディレクトリ下の動的ライブラリを自動で読み込む機能は無くなります。
-        TODO: glibcのバージョンだったっけ？
     - Java APIの依存からcom.microsoft.onnxruntime/onnxruntime{,_gpu}は消えます。
 
 - \[BREAKING\] `AudioQuery`および`UserDictWord`のJSON表現はVOICEVOX ENGINEと同じになります ([#946], [#1014])。
@@ -346,6 +353,8 @@
     ```
 
 - \[BREAKING\]  VVMのフォーマットが変更されます ([#794], [#795], [#796])。
+
+    TODO: VVORTと一緒にすべきでは？
 
 - \[BREAKING\] `VoiceModelId`は、VVMに固有のUUIDになります ([#796])。
 
