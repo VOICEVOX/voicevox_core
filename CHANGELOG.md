@@ -330,15 +330,23 @@
 
     なお、[0.15.0-preview.16](#0150-preview16---2023-12-01-0900)までのVVMは利用できなくなります。
 
-- \[BREAKING\] :tada: (VOICEVOX) ONNX Runtimeを動的リンクすることは基本的になくなり、代わりに`dlopen`/`LoadLibraryExW`でロードするようになります。ロードは`Onnxruntime`型から行う形になります ([#725], [#802], [#806], [#822], [#860], [#876], [#898], [#921], [#911], [#933], [#992], [#1003], [#1019])。
+- \[BREAKING\] :tada: (VOICEVOX) ONNX Runtimeを動的リンクすることは基本的になくなり、代わりに`dlopen`/`LoadLibraryExW`でロードするようになります。ロードは`Onnxruntime`型から行う形になります ([#725], [#802], [#806], [#810], [#822], [#860], [#876], [#898], [#921], [#911], [#933], [#992], [#1003], [#1019])。
 
     TODO: `dlopen`/`LoadLibrary*`による恩恵
+
+    TODO: iOSにおいては動的リンクを継続する旨
 
     またこれに伴い:
 
     - C APIでは、LinuxとmacOS用のrpath設定が削除されます。
     - Python APIはmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_{glibcのバージョン}"になります。また、カレントディレクトリ下の動的ライブラリを自動で読み込む機能は無くなります。
     - Java APIの依存からcom.microsoft.onnxruntime/onnxruntime{,_gpu}は消えます。
+
+- \[BREAKING\] VOICEVOX CORE自体からはCPU版/GPU版という区分は無くなり、GPU違いのリリースについては完全に(VOICEVOX) ONNX Runtimeに委ねる形になります ([#802], [#810])。
+
+- \[BREAKING\] `acceleration_mode`を`GPU`または`AUTO`にしたときの挙動が変わります ([#810])。
+
+    `Synthesizer`のコンストラクトの時点でGPUの簡易的なチェックを行うことで、適切なGPUの種類が選択されるようになります。チェックがすべて失敗した場合、`GPU`であればエラー、`AUTO`であればCPUにフォールバックとなります。
 
 - \[BREAKING\] `AudioQuery`および`UserDictWord`のJSON表現はVOICEVOX ENGINEと同じになります ([#946], [#1014])。
 
@@ -478,15 +486,9 @@
 
     TODO: 0.15.0-preview.16の時点でREADME.mdだったか…?
 
-- TODO: 結構でかい変更のはず
-    - async_zipをv0.0.16に上げる ([#747])。
-    - rework GPU features ([#810]).
-    - rework `VoiceModel` ([#830]).
-    - change: `VoiceModel` → `VoiceModelFile` ([#832])
-    - #830 の設計を`UserDict`にも ([#834])
-    - \[C\] `voicevox_voice_model_file_close`は`voicevox_voice_model_file_delete`に改名 ([#937])。
-        - \[Python,Java\] あと、`__(a)exit__`後も`id`と`metas`にアクセス可能であることが保証される
-    - feat: [Python, Java] fix up #832: `Drop`のメッセージをやめる ([#993])
+- \[BREAKING\] `VoiceModel`は`VoiceModelFile`になり、ファイルディスクリプタを保持する形になります。コンストラクタの名前は"from\_path"から"open"になり、Python APIとJava APIではクローズ可能になります ([#832], [#937], [#993])。
+
+    クローズ (`__{,a}{enter,exit}__`/`java.io.Closeable`)の挙動については、詳しくはAPI ドキュメントをご覧ください。
 
 ### Deprecated
 
@@ -513,12 +515,16 @@
 - TODO: 非同期周りの改善
 
     - fix: 非同期関連のtodoとfixmeを解消 ([#868])
+    - #830 の設計を`UserDict`にも ([#834])
+        - `async-fs`の導入 (changelogに書くには微妙すぎる?)
 
 - "Added"の章で述べた`SpeakerMeta::order`により、製品版VVMにおいて`metas`の出力が適切にソートされるようになります ([#728])。
 
     これにより、キャラクター/スタイルの順番がバージョン0.14およびVOICEVOX ENGINEのように整います。
 
 - 空の`UserDict`を`use_user_dict`したときにクラッシュする問題が修正されます ([#733])。
+
+- `VoiceModelFile::open` (旧`VoiceModel::from_path`)の実行時点で、ある程度の中身のバリデートがされるようになります ([#830])。
 
 - \[C\] `voicevox_user_dict_add_word`がスタックを破壊してしまう問題が修正されます ([#800])。
 
