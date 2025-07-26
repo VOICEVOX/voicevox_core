@@ -328,23 +328,28 @@
     ❯ ./download --only onnxruntime --onnxruntime-version voicevox_onnxruntime-1.17.3
     ```
 
-    なお、[0.15.0-preview.16](#0150-preview16---2023-12-01-0900)までのVVMは利用できなくなります。
-
 - \[BREAKING\] :tada: (VOICEVOX) ONNX Runtimeを動的リンクすることは基本的になくなり、代わりに`dlopen`/`LoadLibraryExW`でロードするようになります。ロードは`Onnxruntime`型から行う形になります ([#725], [#802], [#806], [#810], [#822], [#860], [#876], [#898], [#921], [#911], [#933], [#992], [#1003], [#1019])。
 
-    TODO: `dlopen`/`LoadLibrary*`による恩恵
-
-    TODO: iOSにおいては動的リンクを継続する旨
+    これにより、VOICEVOX COREの起動後に(VOICEVOX) ONNX Runtimeを探して読み込むことができるようになりました。ただし、iOS版のリリースにおいてのみ従来の動的リンクの形を継続します。
 
     またこれに伴い:
 
     - C APIでは、LinuxとmacOS用のrpath設定が削除されます。
     - Python APIはmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_{glibcのバージョン}"になります。また、カレントディレクトリ下の動的ライブラリを自動で読み込む機能は無くなります。
-    - Java APIの依存からcom.microsoft.onnxruntime/onnxruntime{,_gpu}は消えます。
 
 - \[BREAKING\] VOICEVOX CORE自体からはCPU版/GPU版という区分は無くなり、GPU違いのリリースについては完全に(VOICEVOX) ONNX Runtimeに委ねる形になります ([#802], [#810])。
 
-- \[BREAKING\] `acceleration_mode`を`GPU`または`AUTO`にしたときの挙動が変わります ([#810])。
+- \[BREAKING\] このリポジトリのGitHub ReleasesはONNX Runtimeを含まなくなります。Java APIの依存からはcom.microsoft.onnxruntime/onnxruntime{,\_gpu}が消えます。 ([#810])。
+
+    ダウンローダーは[VOICEVOX/onnxruntime-builder](https://github.com/VOICEVOX/onnxruntime-builder)から直接(VOICEVOX) ONNX Runtimeをダウンロードするようになります。
+
+- \[BREAKING\] VVMの形式が変わり、[0.15.0-preview.16](#0150-preview16---2023-12-01-0900)までのVVMは利用できなくなります ([#794], [#795], [#796], [#825])。
+
+- \[BREAKING\] 製品版VVMは、このリポジトリのGitHub Releasesには置かれなくなります ([#928], [#964], [#1020] by [@nanae772])。
+
+    [VOICEVOX/voicevox\_vvm](https://github.com/VOICEVOX/voicevox_vvm)に置かれるようになり、ダウンローダーはそこからダウンロードします。なお、VOICEVOX/voicevox\_fat\_resourceは[リポジトリごと削除されました](https://github.com/VOICEVOX/voicevox_fat_resource)。
+
+- \[BREAKING\] `acceleration_mode`を`GPU`または`AUTO`（デフォルト）にしたときの挙動が変わります ([#810])。
 
     `Synthesizer`のコンストラクトの時点でGPUの簡易的なチェックを行うことで、適切なGPUの種類が選択されるようになります。チェックがすべて失敗した場合、`GPU`であればエラー、`AUTO`であればCPUにフォールバックとなります。
 
@@ -365,10 +370,6 @@
       "outputStereo": false
     }
     ```
-
-- \[BREAKING\]  VVMのフォーマットが変更されます ([#794], [#795], [#796])。
-
-    TODO: VVORTと一緒にすべきでは？
 
 - \[BREAKING\] `VoiceModelId`は、VVMに固有のUUIDになります ([#796])。
 
@@ -455,10 +456,6 @@
     ```
 
 - \[Java\] \[BREAKING\] ビルダーパターンメソッドの締めの`execute`は`perform`に改名されます ([#911])。
-
-- \[ダウンローダー\] \[BREAKING\] VVMのダウンロードは[voicevox\_vvm](https://github.com/VOICEVOX/voicevox_vvm)から行うようになります ([#928], [#964], [#1020] by [@nanae772])。
-
-    TODO: VVORTと一緒にすべきでは？
 
 - \[ダウンローダー\] \[BREAKING\] `onnxruntime`および`models`のダウンロードの際、利用規約への同意が求められるようになります ([#928], [#983], [#989], [#1006], [#1011])。
 
