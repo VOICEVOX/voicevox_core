@@ -47,7 +47,8 @@
 
 - \[Rust,Python,Java\] 基本的なインターフェイスや特殊メソッドが、以下のように実装されます ([#1100])。
 
-    - Rust API
+    - <details><summary>Rust API</summary>
+
         - `Debug` for
             - `AudioQuery`
             - `UserDictWordBuilder`
@@ -69,14 +70,18 @@
         - `{AsRef,AsMut}` for `CharacterVersion`
         - `{UpperHex,LowerHex,Octal,Binary}` for `StyleId`
         - `Into<u32>` for `StyleId` (via `From`)
-    - Python API
+        </details>
+    - <details><summary>Python API</summary>
+
         - `__repr__` for
             - `{blocking,asyncio}.VoiceModelFile`
             - `{blocking,asyncio}.Onnxruntime`
             - `{blocking,asyncio}.VoiceModelFile`
             - `{blocking,asyncio}.OpenJtalk`
             - `{blocking,asyncio}.UserDict`
-    - Java API
+        </details>
+    - <details><summary>Java API</summary>
+
         - `Object.equals` for
             - `SupportedDevices`
             - `StyleMeta`
@@ -89,6 +94,7 @@
             - `StyleMeta`
             - `CharacterMeta`
             - `Mora`
+        </details>
 
 - 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
 
