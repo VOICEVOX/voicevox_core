@@ -164,9 +164,9 @@
 
 ### Changed
 
-- \[Rust\] \[BREAKING\] `UserDictWord`のコンストラクトがビルダースタイルになります ([#999])。
+- \[Rust\] \[BREAKING\] `UserDictWord`のコンストラクト方法がビルダースタイルになります ([#999])。
 - \[Java\] \[BREAKING\] `jp.hiroshiba.voicevoxcore.GlobalInfo.SupportedDevices`は`voicevoxcore`直下に移動します ([#991])。
-- \[Java\] \[BREAKING\] `UserDict`が扱う"UUID"はすべて、`String`ではなく[`java.util.UUID`](https://docs.oracle.com/javase/8/docs/api/java/util/UUID.html)になります ([#1058])。
+- \[Java\] \[BREAKING\] `UserDict`が扱う"UUID"はすべて、`String`ではなく`java.util.UUID`になります ([#1058])。
 - \[Java\] \[Windows,macOS,Linux\] build.gradleに`javadoc.options.encoding = 'UTF-8'`が足されます ([#995])。
 
 ### Removed
@@ -498,7 +498,7 @@
 
 ### Removed
 
-- \[macOS\] \[BREAKING\] macOS 11およびmacOS 12がサポート範囲から外れます ([#801], [#884])。
+- \[macOS\] \[BREAKING\] macOS 11およびmacOS 12がサポート範囲から外れ、バイナリのリリースはmacOS 13で行われるようになります ([#801], [#884])。
 
 - \[Python,Java\] \[BREAKING\] `SupportedDevices`のデシアライズ（JSON → `SupportedDevices`の変換）ができなくなります。Python APIにおいてはコンストラクトもできなくなります ([#958])。
 
@@ -514,7 +514,7 @@
 
     - fix: 非同期関連のtodoとfixmeを解消 ([#868])
 
-- "Added"の章で述べた`SpeakerMeta::order`により、`metas`の出力が適切にソートされます ([#728])。
+- "Added"の章で述べた`SpeakerMeta::order`により、製品版VVMにおいて`metas`の出力が適切にソートされるようになります ([#728])。
 
     これにより、キャラクター/スタイルの順番がバージョン0.14およびVOICEVOX ENGINEのように整います。
 
@@ -522,7 +522,7 @@
 
 - \[C\] `voicevox_user_dict_add_word`がスタックを破壊してしまう問題が修正されます ([#800])。
 
-- \[C\] \[iOS\] XCFrameworkへのdylibの入れかたが誤っていたために[App Storeへの申請が通らない](https://github.com/VOICEVOX/voicevox_core/issues/715)状態だったため、入れかたを変えました ([VOICEVOX/onnxruntime-builder#25] by [@nekomimimi], [#723] by [@nekomimimi])。
+- \[C\] \[iOS\] XCFrameworkへのdylibの入れかたが誤っていたために[App Storeへの申請が通らない](https://github.com/VOICEVOX/voicevox_core/issues/715)状態だったため、入れかたを変えます ([VOICEVOX/onnxruntime-builder#25] by [@nekomimimi], [#723] by [@nekomimimi])。
 
 - \[C\] \[iOS\] clang++ 15.0.0でSIM向けビルドが失敗する問題が解決されます ([#720] by [@nekomimimi])。
 
@@ -636,7 +636,7 @@
 
 ### Fixed
 
-- \[Java\] JVMのMUTF-8 (modified UTF-8)の文字列が誤ってUTF-8として読まれていた問題が解決されます ([#654])。
+- \[Java\] MUTF-8である`String`の内容を誤ってUTF-8として認識してしまっていた問題が解決されます ([#654])。
 
 ### Non notable
 
