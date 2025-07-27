@@ -129,9 +129,12 @@
                  └── voicevoxcore-android/
     ```
 
-- \[ダウンローダー\] :tada: リトライ機構が導入され、デフォルトで4回のリトライを行うようになります ([#1098] by [@shuntia])。
+- \[ダウンローダー\] :tada: リトライ機構が導入され、デフォルトで4回のリトライを行うようになります ([#1098] by [@shuntia], [#1111])。
 
-    `-t, --tries <N>`で試行回数を指定できます。デフォルトは`5`回です。`0`にすると無限にリトライするようになります。
+    ```console
+      -t, --tries <NUMBER>
+              ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ [default: 5]
+    ```
 
 ### Changed
 
@@ -1235,6 +1238,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1100]: https://github.com/VOICEVOX/voicevox_core/pull/1100
 [#1103]: https://github.com/VOICEVOX/voicevox_core/issues/1103
 [#1108]: https://github.com/VOICEVOX/voicevox_core/pull/1108
+[#1111]: https://github.com/VOICEVOX/voicevox_core/pull/1111
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
