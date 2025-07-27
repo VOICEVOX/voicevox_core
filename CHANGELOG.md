@@ -245,7 +245,7 @@
 
     取り得る値は`"talk" | "singing_teacher" | "frame_decode" | "sing"`です。ソング機能自体は今後[#1073]で行われる予定です。
 
-- リポジトリ上のMarkdownドキュメントが色々改善されます ([#699], [#707], [#824] by [@cm-ayf], [#838], [#863], [#945], [#1021])。
+- リポジトリ上のMarkdownドキュメントが色々改善されます ([#699], [#707], [#824] by [@cm-ayf], [#838], [#863], [#945], [#1021], [#1023], [#1025])。
 
     - docs/ディレクトリが再編されます。
 
@@ -259,9 +259,18 @@
 
     - [docs/guide/user/usage.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0-preview.0/docs/guide/user/usage.md)が追加されます。
 
+    - [docs/guide/user/tts-process.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0-preview.0/docs/guide/user/tts-process.md)が追加され、各APIドキュメントからも参照されるようになります。
+
+    - [docs/guide/user/downloader.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0-preview.0/docs/guide/user/downloader.md) (旧docs/downloader.md)に、`<TARGET>`についての説明が足されます。
+
     - 貢献者用のドキュメントがCONTRIBUTING.mdとcrates/voicevox\_core\_c\_api/README.mdに隔離されます。
 
     - 他色々
+
+- [APIドキュメントのポータル](https://voicevox.github.io/voicevox_core/apis/)に以下の改善が入りました ([#837], [#838])。
+
+    - C APIとPython APIについてのリンク先が変わりました。
+    - TODOとして[#496]へのリンクが置かれ、いつかまともなページを用意する意思が表明されました (補足: その後、[#1001]という話が進行中です)。
 
 - \[C,Python\] 次の関数の引数が不必要にUTF-8を要求することがなくなります ([#752])。
 
@@ -281,6 +290,8 @@
 
 - \[Python\] 引数の型が`Path | str`となっていた箇所は、一般的な慣習に合わせる形で`str | PathLike[str]`になります ([#753])。
 
+- \[Python\] GitHub Pagesに使うSphinxがアップデートされました。また、`NewType`型へのリンクが張られるようになりました ([#952], [#953])。
+
 - \[Python\] Pyright/Pylanceをサポートするようになります ([#719])。
 
 - \[C\] `VoicevoxSynthesizer`などのオブジェクトに対する`…_delete`が、どのタイミングで行っても安全になります ([#849], [#862])。
@@ -291,6 +302,10 @@
         - "delete"後に"delete"を試みる
         - そもそもオブジェクトとして変なダングリングポインタが渡される
         - ヌルポインタが渡される (注: [#1094]にて許容される予定です)
+
+- \[C\] ドキュメンテーションコメントから、GitHub PagesのRust APIドキュメントへのリンクが張られるようになります ([#976])。
+
+- \[C\] ドキュメンテーションコメント上のコードブロックが、clang-formatをかけたものになります ([#992])。
 
 - \[C\] リリース内容物にLICENSEファイルが追加されます ([#965])。
 
@@ -305,23 +320,6 @@
 - \[ダウンローダー\] 対象外の`<TARGET>`を見に行かないようになります ([#939])。
 
     これまではダウンロード対象外であっても、不必要にリポジトリを見にいくようになってました。
-
-- TODO: APIドキュメント関連
-    - chore: voicevox.github.io/voicevox_core/apis内のリンクを置き換え ([#837])
-    - chore: READMEからvoicevox.github.io/voicevox_core/apisにリンク ([#838])
-    - fix(docs): `SpeakerMeta.{speaker_uuid,version}`が逆だった ([#935])
-        - これはfix
-    - feat!: "話者" ("speaker") → "キャラクター" ("character") ([#943])
-    - docs: [Python] 型エイリアス系へのリンクについてワークアラウンド ([#952])
-    - docs: [Python] Sphinxをv8に上げ、extension達もアップデート ([#953])
-    - docs: [C] 各アイテムからRust APIにリンクを張る ([#976])
-    - docs: 軽く解決可能なTODOとFIXMEを解消 ([#992])
-    - docs: APIドキュメントの`{Character,Style}Meta`周りの記述を統一 ([#996])
-        - 0.15.0-preview.16からのfixも含まれる
-    - docs: "ダウンローダーがダウンロードするもの"の節を追加 ([#1023])
-        - feat
-    - feat: いくつかのAPIを露出し、「テキスト音声合成の流れ」を明確に ([#1025])
-        - feat
 
 ### Changed
 
@@ -395,6 +393,8 @@
 - `Synthesizer::unload_voice_model`と`UserDict::remove_word`における削除後の要素の順序が変わります ([#846])。
 
     例えば`[a, b, c, d, e]`のようなキーの並びから`b`を削除したときに、順序を保って`[a, c, d, e]`になります。以前までは`[a, e, c, d]`になってました。
+
+- ドキュメント上の「話者」という表現は「キャラクター」になります ([#943], [#996])。
 
 - \[C\] \[BREAKING\] 次の`VoicevoxVoiceModelFile`のゲッターに位置付けられる関数が、ゲッターではなくなります ([#850])。
 
@@ -539,6 +539,10 @@
 - \[Python\] `StyleMeta`が`voicevox_core`モジュール直下に置かれるようになります ([#930])。
 
 - \[Python\] 型定義において呼べないはずのコンストラクタが呼べることになってしまってたため、ダミーとなる`def __new__(cls, *args, **kwargs) -> NoReturn`を定義することで解決します。エラーメッセージも改善されます ([#988], [#997])。
+
+- \[Python\] `SpeakerMeta`改め`CharacterMeta`において、`speaker_uuid`と`version`のdocstringが逆だったのが直ります ([#935])。
+
+- \[Python\] Sphinx上で壊れるようなdocstringは書かれないようになります ([#996])。
 
 ### Security
 
@@ -974,6 +978,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#487]: https://github.com/VOICEVOX/voicevox_core/pull/487
 [#494]: https://github.com/VOICEVOX/voicevox_core/pull/494
 [#495]: https://github.com/VOICEVOX/voicevox_core/pull/495
+[#496]: https://github.com/VOICEVOX/voicevox_core/issues/496
 [#497]: https://github.com/VOICEVOX/voicevox_core/pull/497
 [#498]: https://github.com/VOICEVOX/voicevox_core/pull/498
 [#500]: https://github.com/VOICEVOX/voicevox_core/pull/500
@@ -1194,6 +1199,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#997]: https://github.com/VOICEVOX/voicevox_core/pull/997
 [#998]: https://github.com/VOICEVOX/voicevox_core/pull/998
 [#999]: https://github.com/VOICEVOX/voicevox_core/pull/999
+[#1001]: https://github.com/VOICEVOX/voicevox_core/issues/1001
 [#1002]: https://github.com/VOICEVOX/voicevox_core/pull/1002
 [#1003]: https://github.com/VOICEVOX/voicevox_core/pull/1003
 [#1006]: https://github.com/VOICEVOX/voicevox_core/pull/1006
