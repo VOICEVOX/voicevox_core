@@ -130,8 +130,8 @@ struct Args {
     #[arg(value_enum, long, default_value(Os::default_opt().map(<&str>::from)))]
     os: Os,
 
-    /// ダウンロードする場合のリトライ回数
-    #[arg(short, long, default_value("5"))]
+    /// ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ
+    #[arg(short, long, value_name("NUMBER"), default_value("5"))]
     tries: Tries,
 
     #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_C_API_REPO))]
