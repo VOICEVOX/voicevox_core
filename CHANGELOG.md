@@ -49,52 +49,52 @@
 
     - <details><summary>Rust API</summary>
 
-        - `Debug` for
-            - `AudioQuery`
-            - `UserDictWordBuilder`
-            - `{blocking,nonblocking}.onnxruntime.LoadOnce`
-            - `{blocking,nonblocking}.VoiceModelFile`
-            - `{blocking,nonblocking}.OpenJtalk`
-            - `{blocking,nonblocking}.Synthesizer`
-            - `{blocking,nonblocking}.synthesizer.*`
-        - `PartialEq` for
-            - `StyleMeta`
-            - `AudioQuery`
-            - `UserDictWord`
-        - `{PartialOrd,Ord}` for
-            - `AccelerationMode`
-            - `UserDictWordType`
-        - `Hash` for
-            - `CharacterVersion`
-            - `AccelerationMode`
-        - `{AsRef,AsMut}` for `CharacterVersion`
-        - `{UpperHex,LowerHex,Octal,Binary}` for `StyleId`
-        - `Into<u32>` for `StyleId` (via `From`)
-        </details>
+      - `Debug` for
+          - `AudioQuery`
+          - `UserDictWordBuilder`
+          - `{blocking,nonblocking}.onnxruntime.LoadOnce`
+          - `{blocking,nonblocking}.VoiceModelFile`
+          - `{blocking,nonblocking}.OpenJtalk`
+          - `{blocking,nonblocking}.Synthesizer`
+          - `{blocking,nonblocking}.synthesizer.*`
+      - `PartialEq` for
+          - `StyleMeta`
+          - `AudioQuery`
+          - `UserDictWord`
+      - `{PartialOrd,Ord}` for
+          - `AccelerationMode`
+          - `UserDictWordType`
+      - `Hash` for
+          - `CharacterVersion`
+          - `AccelerationMode`
+      - `{AsRef,AsMut}` for `CharacterVersion`
+      - `{UpperHex,LowerHex,Octal,Binary}` for `StyleId`
+      - `Into<u32>` for `StyleId` (via `From`)
+      </details>
     - <details><summary>Python API</summary>
 
-        - `__repr__` for
-            - `{blocking,asyncio}.VoiceModelFile`
-            - `{blocking,asyncio}.Onnxruntime`
-            - `{blocking,asyncio}.VoiceModelFile`
-            - `{blocking,asyncio}.OpenJtalk`
-            - `{blocking,asyncio}.UserDict`
-        </details>
+      - `__repr__` for
+          - `{blocking,asyncio}.VoiceModelFile`
+          - `{blocking,asyncio}.Onnxruntime`
+          - `{blocking,asyncio}.VoiceModelFile`
+          - `{blocking,asyncio}.OpenJtalk`
+          - `{blocking,asyncio}.UserDict`
+      </details>
     - <details><summary>Java API</summary>
 
-        - `Object.equals` for
-            - `SupportedDevices`
-            - `StyleMeta`
-            - `CharacterMeta`
-            - `Mora`
-            - `AccentPhrase`
-            - `AudioQuery`
-        - `Cloneable` for
-            - `SupportedDevices`
-            - `StyleMeta`
-            - `CharacterMeta`
-            - `Mora`
-        </details>
+      - `Object.equals` for
+          - `SupportedDevices`
+          - `StyleMeta`
+          - `CharacterMeta`
+          - `Mora`
+          - `AccentPhrase`
+          - `AudioQuery`
+      - `Cloneable` for
+          - `SupportedDevices`
+          - `StyleMeta`
+          - `CharacterMeta`
+          - `Mora`
+      </details>
 
 - 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
 
