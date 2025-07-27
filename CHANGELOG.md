@@ -41,6 +41,8 @@
 
 [#742]: https://github.com/VOICEVOX/voicevox_core/pull/742
 [#750]: https://github.com/VOICEVOX/voicevox_core/pull/750
+
+[@phenylshima]: https://github.com/phenylshima
 -->
 
 ### Added
@@ -1260,7 +1262,6 @@ Windows版ダウンローダーのビルドに失敗しています。
 [@HyodaKazuaki]: https://github.com/HyodaKazuaki
 [@nanae772]: https://github.com/nanae772
 [@nekomimimi]: https://github.com/nekomimimi
-[@phenylshima]: https://github.com/phenylshima
 [@sh1ma]: https://github.com/sh1ma
 [@shigobu]: https://github.com/shigobu
 [@shuntia]: https://github.com/shuntia
