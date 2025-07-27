@@ -494,6 +494,8 @@
 
     現段階においては代替手段は無く、シリアライズ自体が推奨されない状態になっています。
 
+    GSONについてはJacksonへの移行が予定されています ([#984])。
+
     補足: Pydanticについては[0.16.0-preview.1](#0160-preview1---2025-03-08-0900)で消されます。
 
 ### Removed
@@ -1178,6 +1180,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#980]: https://github.com/VOICEVOX/voicevox_core/pull/980
 [#982]: https://github.com/VOICEVOX/voicevox_core/pull/982
 [#983]: https://github.com/VOICEVOX/voicevox_core/pull/983
+[#984]: https://github.com/VOICEVOX/voicevox_core/issues/984
 [#985]: https://github.com/VOICEVOX/voicevox_core/pull/985
 [#986]: https://github.com/VOICEVOX/voicevox_core/pull/986
 [#988]: https://github.com/VOICEVOX/voicevox_core/pull/988
