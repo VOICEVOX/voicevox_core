@@ -333,6 +333,52 @@ jobs:
             ${{ env.ASSET_NAME }}.zip
           target_commitish: ${{ github.sha }}
 
+  # 0.16.0のリリースと同名のものを出す。
+  # TODO: このリリースはdeprecated扱いとし、0.17.0をリリースする際に消す。
+  build_compat_ios_xcframework:
+    if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
+    needs: [config, build_and_deploy]
+    runs-on: macos-13
+    env:
+      IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
+      IOS_AARCH64_SIM_PATH: artifact/voicevox_core-aarch64-apple-ios-sim
+      IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
+      ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: voicevox_core-x86_64-apple-ios
+          path: ${{ env.IOS_X86_64_PATH }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: voicevox_core-aarch64-apple-ios-sim
+          path: ${{ env.IOS_AARCH64_SIM_PATH }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: voicevox_core-aarch64-apple-ios
+          path: ${{ env.IOS_AARCH64_PATH }}
+      - name: Create xcframework
+        id: create-xcframework
+        run: |
+          build_util/make_xcframework.bash
+          echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT"
+        env:
+          OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
+      - name: Archive artifact
+        run: |
+          cd ${{ steps.create-xcframework.outputs.output_asset_path }}
+          7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
+      - name: Upload to Release
+        if: fromJson(needs.config.outputs.deploy)
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ env.ASSET_NAME }}.zip
+          target_commitish: ${{ github.sha }}
+
   build_java_package:
     runs-on: ubuntu-latest
     if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
