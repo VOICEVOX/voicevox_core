@@ -539,14 +539,13 @@
 
 ### Security
 
-- TODO: ダウンローダーの依存ライブラリについて (書く必要あるか…?)
+- VOICEVOX COREおよびダウンローダーに影響するものだったのかどうかはわかりませんが、以下の脆弱性登録の影響を受けないように依存ライブラリがアップデートされます ([#856], [#887], [#890])。
 
-    - chore(deps): `advisories`に対応するためいくつかのクレートをbump ([#856])
-
-- TODO:
-
-    - chore(deps): bump `anstream` to 0.6.18, `hashbrown@15` to 0.15.2 ([#887])
-    * chore(deps): bump `url` to v2.5.4 ([#890])
+    - [RUSTSEC-2024-0332](https://rustsec.org/advisories/RUSTSEC-2024-0332)
+    - [RUSTSEC-2024-0336](https://rustsec.org/advisories/RUSTSEC-2024-0336)
+    - [RUSTSEC-2024-0402](https://rustsec.org/advisories/RUSTSEC-2024-0402)
+    - [RUSTSEC-2024-0404](https://rustsec.org/advisories/RUSTSEC-2024-0404)
+    - [RUSTSEC-2024-0421](https://rustsec.org/advisories/RUSTSEC-2024-0421)
 
 ## [0.15.0-preview.16] - 2023-12-01 (+09:00)
 
