@@ -259,6 +259,8 @@
 
     Python APIでは`StrPath`相当になり、Java APIでは`java.io.File`と`java.nio.file.Path`のオーバーロードが追加されます。
 
+- \[Python,Java\] exampleコードとそのドキュメントに細かい改善が入ります ([#881], [#986], [#992])。
+
 - \[Python\] 引数の型が`Path | str`となっていた箇所は、一般的な慣習に合わせる形で`str | PathLike[str]`になります ([#753])。
 
 - \[Python\] Pyright/Pylanceをサポートするようになります ([#719])。
@@ -306,16 +308,13 @@
     - docs: [Python] 型エイリアス系へのリンクについてワークアラウンド ([#952])
     - docs: [Python] Sphinxをv8に上げ、extension達もアップデート ([#953])
     - docs: [C] 各アイテムからRust APIにリンクを張る ([#976])
+    - docs: 軽く解決可能なTODOとFIXMEを解消 ([#992])
     - docs: APIドキュメントの`{Character,Style}Meta`周りの記述を統一 ([#996])
         - 0.15.0-preview.16からのfixも含まれる
     - docs: "ダウンローダーがダウンロードするもの"の節を追加 ([#1023])
         - feat
     - feat: いくつかのAPIを露出し、「テキスト音声合成の流れ」を明確に ([#1025])
         - feat
-- TODO: example改善
-    - refactor: Python APIのexampleのCLI引数をdataclass化 ([#881])
-    - docs: [Python (example)] `metas`を表示するタイミングを直す ([#986])
-    - docs: 軽く解決可能なTODOとFIXMEを解消 ([#992])
 
 ### Changed
 
