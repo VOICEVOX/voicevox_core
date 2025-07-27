@@ -47,7 +47,7 @@ jobs:
         run: pip install 'pyflakes>3,<4'
       - name: actionlint
         run: |
-          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          bash <(curl -f --retry 3 --retry-delay 5 https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
           ./actionlint -color
 
   validate-cargo-lock:
