@@ -350,8 +350,6 @@
 
     [VOICEVOX/voicevox\_vvm](https://github.com/VOICEVOX/voicevox_vvm)に置かれるようになり、ダウンローダーはそこからダウンロードします。なお、VOICEVOX/voicevox\_fat\_resourceは[リポジトリごと削除されました](https://github.com/VOICEVOX/voicevox_fat_resource)。
 
-    TODO: 0.15.0-preview.16の製品版VVMリリースにはmetas.jsonがあったけど、これfat\_resourcesの時点であったんだっけ…?
-
 - \[BREAKING\] `acceleration_mode`を`GPU`または`AUTO`（デフォルト）にしたときの挙動が変わります ([#810])。
 
     `Synthesizer`のコンストラクトの時点でGPUの簡易的なチェックを行うことで、適切なGPUの種類が選択されるようになります。チェックがすべて失敗した場合、`GPU`であればエラー、`AUTO`であればCPUにフォールバックとなります。
@@ -482,7 +480,11 @@
     └── dict/
     ```
 
-- \[ダウンローダー\] \[BREAKING\] `models`において、README.mdはREADME.txtとしてダウンロードされるようになります ([#989])。
+- \[ダウンローダー\] \[BREAKING\] `models`において、上記のようにmodels/下に置かれるようになった他に次のような変更があります ([#928], [#989])。
+
+    - VVM自体はvvm/というディレクトリに入る形になります。
+    - README.mdはREADME.txtとして置かれるようになります。
+    - [0.15.0-preview.16](#0150-preview16---2023-12-01-0900)まで含まれていたmetas.jsonは無くなります。
 
 - \[BREAKING\] `VoiceModel`は`VoiceModelFile`になり、ファイルディスクリプタを保持する形になります。コンストラクタの名前は"from\_path"から"open"になり、Python APIとJava APIではクローズ可能になります ([#832], [#937], [#993])。
 
