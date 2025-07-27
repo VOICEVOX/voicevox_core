@@ -500,7 +500,7 @@
 
 ### Removed
 
-- \[macOS\] \[BREAKING\] macOS 11およびmacOS 12がサポート範囲から外れ、バイナリのリリースはmacOS 13で行われるようになります ([#801], [#884])。
+- \[macOS\] macOS 11およびmacOS 12がサポート範囲から外れ、バイナリのリリースはmacOS 13で行われるようになります ([#801], [#884])。
 
 - \[Python,Java\] \[BREAKING\] `SupportedDevices`のデシアライズ（JSON → `SupportedDevices`の変換）ができなくなります。Python APIにおいてはコンストラクトもできなくなります ([#958])。
 
