@@ -217,7 +217,7 @@
 
 ### Added
 
-- :tada: Rust APIが利用できるようになります ([#702], [#745], [#740] by [@eyr1n], [#708], [#803], [#759], [#807], [#810], [#805], [#831], [#835], [#844], [#846], [#847], [#882], [#886], [#907], [#910], [#912], [#825], [#911], [#919], [#932], [#931], [#940], [#941], [#937], [#949], [#958], [#974], [#982], [#990], [#992], [#996], [#1002], [#1025] 他たくさん)。
+- :tada: Rust APIが利用できるようになります ([#702], [#745], [#740] by [@eyr1n], [#708], [#803], [#759], [#807], [#810], [#805], [#831], [#834], [#835], [#844], [#846], [#847], [#868], [#882], [#886], [#907], [#910], [#912], [#825], [#911], [#919], [#932], [#931], [#940], [#941], [#937], [#949], [#958], [#974], [#982], [#990], [#992], [#996], [#1002], [#1025] 他たくさん)。
 
     ```console
     ❯ cargo add voicevox_core --git https://github.com/VOICEVOX/voicevox_core.git --tag 0.16.0-preview.0 --features load-onnxruntime
@@ -244,6 +244,24 @@
 - `StyleMeta`に`type`というフィールドが追加されます ([#531], [#738], [#761], [#895], [#996])。
 
     取り得る値は`"talk" | "singing_teacher" | "frame_decode" | "sing"`です。ソング機能自体は今後[#1073]で行われる予定です。
+
+- リポジトリ上のMarkdownドキュメントが色々改善されます ([#699], [#707], [#824] by [@cm-ayf], [#838], [#863], [#945], [#1021])。
+
+    - docs/ディレクトリが再編されます。
+
+        ```
+        docs
+        ├── ghpages/apis/ : GitHub Pages用
+        └── guide
+            ├── dev/      : コードに潜る人用のMarkdownドキュメント
+            └── user/     : ユーザー用のMarkdownドキュメント
+        ```
+
+    - [docs/guide/user/usage.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0-preview.0/docs/guide/user/usage.md)が追加されます。
+
+    - 貢献者用のドキュメントがCONTRIBUTING.mdとcrates/voicevox\_core\_c\_api/README.mdに隔離されます。
+
+    - 他色々
 
 - \[C,Python\] 次の関数の引数が不必要にUTF-8を要求することがなくなります ([#752])。
 
@@ -288,17 +306,6 @@
 
     これまではダウンロード対象外であっても、不必要にリポジトリを見にいくようになってました。
 
-- TODO: readme関連
-    - [docs] ユーザーガイドを追加 ([#699])。
-    - [docs] ドキュメント整理（ユーザーガイドをリンク、VVMのリンク追加、利用規約があることを案内） ([#707])。
-    - Update jump-to version on README ([#824] by [@cm-ayf]).
-    - chore: READMEからvoicevox.github.io/voicevox_core/apisにリンク ([#838])
-    - feat(docs): docs/を整理する ([#863])
-    - docs: ダウンローダー周りの記述を更新 ([#945])
-    - docs(fix): readmeの古い記述を更新 ([#1019])
-        - 0.15.0-preview.16からのfeatも含まれる
-    - docs: readmeのダイエット ([#1021])
-        - featのはず
 - TODO: APIドキュメント関連
     - chore: voicevox.github.io/voicevox_core/apis内のリンクを置き換え ([#837])
     - chore: READMEからvoicevox.github.io/voicevox_core/apisにリンク ([#838])
@@ -485,7 +492,7 @@
     - README.mdはREADME.txtとして置かれるようになります。
     - [0.15.0-preview.16](#0150-preview16---2023-12-01-0900)まで含まれていたmetas.jsonは無くなります。
 
-- \[BREAKING\] `VoiceModel`は`VoiceModelFile`になり、ファイルディスクリプタを保持する形になります。コンストラクタの名前は"from\_path"から"open"になり、Python APIとJava APIではクローズ可能になります ([#832], [#937], [#993])。
+- \[BREAKING\] `VoiceModel`は`VoiceModelFile`になり、ファイルディスクリプタを保持する形になります。コンストラクタの名前は"from\_path"から"open"になり、Python APIとJava APIではクローズ可能になります ([#832], [#868], [#937], [#993])。
 
     クローズ (`__{,a}{enter,exit}__`/`java.io.Closeable`)の挙動については、詳しくはAPI ドキュメントをご覧ください。
 
@@ -513,11 +520,7 @@
 
 ### Fixed
 
-- TODO: 非同期周りの改善
-
-    - fix: 非同期関連のtodoとfixmeを解消 ([#868])
-    - #830 の設計を`UserDict`にも ([#834])
-        - `async-fs`の導入 (changelogに書くには微妙すぎる?)
+- \[Python\] asyncioについての挙動が改善されます ([#834], [#868])。
 
 - "Added"の章で述べた`SpeakerMeta::order`により、製品版VVMにおいて`metas`の出力が適切にソートされるようになります ([#728])。
 
