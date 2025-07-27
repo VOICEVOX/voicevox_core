@@ -361,7 +361,7 @@ jobs:
       - name: Create xcframework
         id: create-xcframework
         run: |
-          build_util/make_xcframework.bash
+          build_util/make_compat_ios_xcframework.bash
           echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT"
         env:
           OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
