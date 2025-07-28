@@ -354,7 +354,7 @@
 
 - \[BREAKING\] 製品版VVMは、このリポジトリのGitHub Releasesには置かれなくなります ([#928], [#964], [#1020] by [@nanae772])。
 
-    [VOICEVOX/voicevox\_vvm](https://github.com/VOICEVOX/voicevox_vvm)に置かれるようになり、ダウンローダーはそこからダウンロードします。なお、VOICEVOX/voicevox\_fat\_resourceは[リポジトリごと削除されました](https://github.com/VOICEVOX/voicevox_fat_resource)。
+    [VOICEVOX/voicevox\_vvm](https://github.com/VOICEVOX/voicevox_vvm)に置かれるようになり、ダウンローダーはそこからダウンロードします。なお、VOICEVOX/voicevox\_fat\_resourceは[リポジトリごと削除されました](https://github.com/VOICEVOX/voicevox_core/issues/1061#issuecomment-2766705584)。
 
 - \[BREAKING\] `acceleration_mode`を`GPU`または`AUTO`（デフォルト）にしたときの挙動が変わります ([#810])。
 
