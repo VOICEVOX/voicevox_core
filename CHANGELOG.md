@@ -120,7 +120,7 @@
 
 - \[Python\] exampleコードにはshebangが付き、filemodeも`100755` (`GIT_FILEMODE_BLOB_EXECUTABLE`)になります ([#1077])。
 
-- \[Java\] \[Windows,macOS,Linux\] :tada: GitHub Releasesのjava\_packages.zipに、PC用のパッケージが追加されます ([#764])。
+- \[Java\] \[Windows,macOS,Linux\] :tada: GitHub Releasesのjava\_packages.zipに、PC用のパッケージが追加されます ([#682], [#764])。
 
     ```diff
      java_packages.zip
@@ -574,9 +574,6 @@
     - `AccentPhrase.is_interrogative: bool`
     - `AudioQuery.kana: Optional[str]`
 
-- TODO: API docs関連
-    - Androidでの注意を追加 ([#682])。
-
 ### Changed
 
 - \[Python\] \[BREAKING\] 次のメソッドがasync化されます ([#667])。
@@ -588,15 +585,11 @@
 
 - \[Python\] \[BREAKING\] Pydanticがv2になります ([#695])。
 
-- TODO: この`withSourcesJar`、何…?
-    - Androidでの注意を追加 ([#682])。
-
 ### Fixed
 
-- \[Python\] 音声合成の処理がasyncioのランタイムを阻害しないようになります ([#692])。
-
-- TODO: これだと壊れるんだっけ…?
-    - UserDict.to_mecab_formatが2重に改行していたのを修正 ([#684])。
+- \[Python\] 音声合成の処理がasyncioのランタイムをブロックしないようになります ([#692])。
+- \[Java\] ユーザー辞書の利用時に出ていた警告が消えます ([#684])。
+- \[Java\] `OpenJtalk.useUserDict`を利用する際は`$TMPDIR`の設定が必要、ということがドキュメンテーションコメントに書かれます ([#682])。
 
 ### Non notable
 
@@ -610,16 +603,11 @@
 
 ### Added
 
+- READMEおよびPython exampleが改善されます ([#661], [#663])。
 - \[Python,Java\] `Synthesizer`が不要に排他制御されていたのが解消されます ([#666])。
 - \[Java\] `Synthesizer#{getMetas,isGpuMode}`および、バージョン情報とデバイス情報が取得できる`GlobalInfo`クラスが追加されます ([#673])。
+- \[Java\] ドキュメンテーションコメントが充実します ([#673])。
 - `InferenceFailed`エラーが、ONNX Runtimeからの情報をきちんと持つようになります ([#668])。
-
-- TODO: readme関連
-    - READMEのドキュメントの順番を整理 ([#661])。
-- TODO: example関連
-    - Python版exampleで、asyncやawaitは必須であることをコメントで書いておく ([#663])。
-- TODO: API docs関連
-    - Java APIを色々改善 ([#673])。
 
 ### Changed
 
@@ -639,7 +627,16 @@
 
 - \[ダウンローダー\] :tada: ダウンロード対象を限定および除外するオプションが追加されます ([#647])。
 
-    `--only <TARGET>...`で限定、`--exclude <TARGET>...`で除外ができます。`--min`は`--only core`のエイリアスになります。
+    ```console
+          --only <TARGET>...
+              ダウンロード対象を限定する [possible values: core, models, additional-libraries, dict]
+          --exclude <TARGET>...
+              ダウンロード対象を除外する [possible values: core, models, additional-libraries, dict]
+          --min
+              `--only core`のエイリアス
+    ```
+
+    補足: [0.16.0-preview.0](#0160-preview0---2025-03-01-0900)において、`core`は`c-api`に改名されます。またONNX Runtimeが`onnxruntime`という名前で分離されます。
 
 - \[Python,Java\] エラーの文脈が例外チェーンとしてくっつくようになりました ([#640])。
 
@@ -661,7 +658,7 @@
 
 ### Fixed
 
-- \[ダウンローダー\] Windows版のビルドの問題が解決され、リリースされるようになりました ([#643])。
+- \[ダウンローダー\] \[Windows\] ビルドの問題が解決され、リリースされるようになりました ([#643])。
 
 ## [0.15.0-preview.12] - 2023-10-14 (+09:00)
 
@@ -673,20 +670,25 @@ Windows版ダウンローダーのビルドに失敗しています。
 
     ```java
     var wav = synthesizer.tts("こんにちは", 0).execute();
+    // 補足: 0.16.0-preview.0において、`execute`は`perform`になります
     ```
 
     ~/.m2/repository/の内容をZIPにしたものがjava\_package.zipとしてリリースされます。
 
 - \[ダウンローダー\] リポジトリ指定機能が追加されます ([#641])。
 
-    `--core-repo <REPOSITORY>`でvoicevox\_core（C API）の、`--additional-libraries-repo <REPOSITORY>`でvoicevox\_additional\_librariesのリポジトリを指定できます。
+    ```console
+          --core-repo <REPOSITORY>
+              [default: VOICEVOX/voicevox_core]
+          --additional-libraries-repo <REPOSITORY>
+              [default: VOICEVOX/voicevox_additional_libraries]
+    ```
 
     ```console
     ❯ download --core-repo ${fork先}/voicevox_core --additional-libraries-repo ${fork先}/voicevox_additional_libraries
     ```
 
-- TODO: readmeの改善
-    - [docs] Rust以外の１つの言語でのコア機能追加実装はしない方針であることを明記 ([#632])。
+    補足: [0.16.0-preview.0](#0160-preview0---2025-03-01-0900)において、`--core-repo`は`--c-api-repo`に改名されます。
 
 ### Changed
 
@@ -694,54 +696,51 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 ### Fixed
 
-- \[C\] 不正な`delete`および`json_free`に対するセーフティネットのメッセージが改善されます ([#625])。
+- \[C\] [0.15.0-preview.5](#0150-preview5---2023-08-06-0900)で導入された、不正な`delete`および`json_free`に対するセーフティネットのメッセージが改善されます ([#625])。
 
 ## [0.15.0-preview.11] - 2023-10-08 (+09:00)
 
 ### Fixed
 
-- TODO: 内容物のfix?
-    - リソースのバージョンを更新 ([#630])
+- 入っていなかった同梱物、おそらくreadmeがちゃんと入るようになります ([#630])。
 
 ## [0.15.0-preview.10] - 2023-10-07 (+09:00)
 
 ### Added
 
-- TODO: APIドキュメントの改善
-    - Sphinxをv6に上げる ([#626])。
+- エラーメッセージが改善されます ([#624])。
+- \[Python\] GitHub Pagesに使うSphinxがアップデートされました ([#626])。
 
 ### Changed
 
-- `kana: bool`をやめ、"_from_kana"を復活させる ([#577])。
-- `InvalidStyleId`, `InvalidModelId`, `UnknownWord`を`…NotFound`にする ([#622])。
-- `UnloadedModel` → `ModelNotFound` ([#623])。
-- エラーメッセージにおけるcontextとsourceを明確に区分する ([#624])。
+- \[BREAKING\] `kana`オプションは廃止されます。代わりにバージョン0.13にあったような、"\_from\_kana"が付いたAPIが再び追加されます ([#577])。
+- \[BREAKING\] 一部のエラーの名前が改名されます ([#622], [#623])。
+    - `InvalidStyleId` → `StyleIdNotFound`
+    - `InvalidModelId` → `ModelIdNotFound`
+    - `UnknownWord` → `WordNotFound`
+    - `UnloadedModel` → `ModelNotFound`
 
 ## [0.15.0-preview.9] - 2023-09-18 (+09:00)
 
 ### Added
 
-- \[Rust版ダウンローダー\] helpの表示が改善されます ([#604])。
-- \[C\] 引数の`VoicevoxUserDictWord*`はunalignedであってもよくなります ([#601])。
+- READMEおよびPython exampleが改善されます ([#584] by [@weweweok], [#590], [#598], [#613])。
+    - [READMEの「事例紹介」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.9/README.md#事例紹介)に[VoicevoxCoreSharp](https://github.com/yamachu/VoicevoxCoreSharp)が追加されます。
+    - Python exampleはBlackとisortでフォーマットされ、`--speaker-id`は`--style-id`になります。
+- \[C\] 引数の`VoicevoxUserDictWord *`はunalignedであってもよくなります ([#601])。
 - \[Python\] `__version__`が追加されます ([#597])。
-    - TODO: これを"Added"とするならば、`__version__`を実装したときまで遡って探す必要がある
-- TODO: readmeの改善
-    - C# の参考実装のリポジトリをREADMEに記載する ([#590])。
-- TODO: exampleの改善
-    - 他言語のlintのWorkflowを追加 ([#598])。
-    - Code: blackでフォーマット ([#613])。
-    - example下の"speaker_id"を、"style_id"に直す ([#584] by [@weweweok])。
+- \[Rust版ダウンローダー\] helpの表示が改善されます ([#604])。
 
 ### Changed
 
 - \[C\] エラーの表示は`ERROR`レベルのログとしてなされるようになります ([#600])。
-- \[Rust版ダウンローダー\] \[BREAKING\] `--min`と`--additional-libraries-version`同時使用は無意味であるため、禁止されます ([#605])。
+- \[Rust版ダウンローダー\] \[BREAKING\] `--min`と`--additional-libraries-version`の同時使用は無意味であるため、禁止されます ([#605])。
 
 ### Removed
 
 - \[BREAKING\] `load_all_models`が廃止されます ([#587])。
 
-    [0.15.0-preview.5]以降においても`${dllの場所}/model/`もしくは`$VV_MODELS_ROOT_DIR`下のVVMを一括で読む機能として残っていましたが、混乱を招くだけと判断して削除されることとなりました。
+    [0.15.0-preview.5](#0150-preview5---2023-08-06-0900)以降においても`${dllの場所}/model/`もしくは`$VV_MODELS_ROOT_DIR`下のVVMを一括で読む機能として残っていましたが、混乱を招くだけと判断して削除されることとなりました。
 
 - \[BREAKING\] Bash版ダウンローダーとPowerShell版ダウンローダーは削除されます ([#602])。
 
@@ -1050,7 +1049,6 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#625]: https://github.com/VOICEVOX/voicevox_core/pull/625
 [#626]: https://github.com/VOICEVOX/voicevox_core/pull/626
 [#630]: https://github.com/VOICEVOX/voicevox_core/pull/630
-[#632]: https://github.com/VOICEVOX/voicevox_core/pull/632
 [#640]: https://github.com/VOICEVOX/voicevox_core/pull/640
 [#641]: https://github.com/VOICEVOX/voicevox_core/pull/641
 [#643]: https://github.com/VOICEVOX/voicevox_core/pull/643
