@@ -227,19 +227,12 @@
 
     [mainブランチのAPIドキュメント](https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/)
 
-- \[Python\] :tada: ブロッキングAPIを提供する`voicevox_core.blocking`モジュールが追加されます ([#702], [#706], [#992])。
-
-    ```py
-    from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
-
-    # …
-    wav = synthesizer.tts("こんにちは", 0)
-    ```
-
 - 次のAPIが追加されます ([#1025])。
 
     - `AudioQuery::from_accent_phrases` (C API: `voicevox_audio_query_create_from_accent_phrases`)
     - `OpenJtalk::analyze` (C API: `voicevox_open_jtalk_rc_analyze`)
+
+    これらがどのような位置付けなのかは、後述する[tts-process.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0-preview.0/docs/guide/user/tts-process.md)にて図示されます。
 
 - `SpeakerMeta`および`StyleMeta`に、オプショナルな整数型フィールド`order`が追加されます ([#728])。
 
@@ -265,7 +258,7 @@
 
     - [docs/guide/user/downloader.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0-preview.0/docs/guide/user/downloader.md) (旧docs/downloader.md)に、`<TARGET>`についての説明が足されます。
 
-    - 貢献者用のドキュメントがCONTRIBUTING.mdとcrates/voicevox\_core\_c\_api/README.mdに隔離されます。
+    - ユーザー用ではない、貢献者用のドキュメントがCONTRIBUTING.mdとcrates/voicevox\_core\_c\_api/README.mdに隔離されます。
 
     - 他色々
 
@@ -274,40 +267,19 @@
     - C APIとPython APIについてのリンク先が変わりました。
     - TODOとして[#496]へのリンクが置かれ、いつかまともなページを用意する意思が表明されました (補足: その後、[#1001]という話が進行中です)。
 
-- \[C,Python\] 次の関数の引数が不必要にUTF-8を要求することがなくなります ([#752])。
-
-    - C
-        - `voicevox_synthesizer_is_loaded_voice_model`
-    - Python
-        - `VoiceModel.is_loaded_voice_model`
-        - `VoiceModel.from_path`
-
-- \[Python,Java\] `Synthesizer`から`OpenJtalk`を得ることができるゲッターが追加されます ([#1025])。
-
-- \[Python,Java\] `UserDict`の`load`と`store`が引数に取ることができるファイルパスの表現が広くなります ([#835])。
-
-    Python APIでは`StrPath`相当になり、Java APIでは`java.io.File`と`java.nio.file.Path`のオーバーロードが追加されます。
-
-- \[Python,Java\] exampleコードとそのドキュメントに細かい改善が入ります ([#881], [#986], [#992])。
-
-- \[Python\] 引数の型が`Path | str`となっていた箇所は、一般的な慣習に合わせる形で`str | PathLike[str]`になります ([#753])。
-
-- \[Python\] GitHub Pagesに使うSphinxがアップデートされました。また、`NewType`型へのリンクが張られるようになりました ([#952], [#953])。
-
-- \[Python\] Pyright/Pylanceをサポートするようになります ([#719])。
-
-- \[C\] `VoicevoxSynthesizer`などのオブジェクトに対する`…_delete`が、どのタイミングで行っても安全になります ([#849], [#862])。
+- \[C\] :tada: `VoicevoxSynthesizer`などのオブジェクトに対する`…_delete`が、どのタイミングで行っても安全になります ([#849], [#862])。
 
     - "delete"時に対象オブジェクトに対するアクセスがあった場合、アクセスが終わるまで待つようになります。
     - 次の操作が未定義動作ではなくなります。ただし未定義動作ではないだけで明示的にクラッシュするため、起きないように依然として注意する必要があります。
         - "delete"後に他の通常のメソッド関数の利用を試みる
         - "delete"後に"delete"を試みる
         - そもそもオブジェクトとして変なダングリングポインタが渡される
-        - ヌルポインタが渡される (注: [#1094]にて許容される予定です)
+        - ヌルポインタが渡される (補足: [#1094]にて許容される予定です)
 
-- \[C\] ドキュメンテーションコメントから、GitHub PagesのRust APIドキュメントへのリンクが張られるようになります ([#976])。
+- \[C\] ドキュメンテーションコメントに以下の改善が入ります ([#976], [#992])。
 
-- \[C\] ドキュメンテーションコメント上のコードブロックが、clang-formatをかけたものになります ([#992])。
+    - GitHub PagesのRust APIドキュメントへのリンクが張られるようになります。
+    - コードブロックがclang-formatで整形されます。
 
 - \[C\] リリース内容物にLICENSEファイルが追加されます ([#965])。
 
@@ -317,7 +289,32 @@
 
     デフォルトでキャンセル可能ではない理由は、ドキュメントにも書いてありますがキャンセル可能にすると（キャンセルを行わない場合でも）[ハングする危険性がある](https://github.com/VOICEVOX/voicevox_core/issues/968)からです。ご注意ください。
 
+- \[Python\] :tada: ブロッキングAPIを提供する`voicevox_core.blocking`モジュールが追加されます ([#702], [#706], [#992])。
+
+    ```py
+    from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+
+    # …
+    wav = synthesizer.tts("こんにちは", 0)
+    ```
+
+- \[Python\] `VoiceModel.from_path`改め`VoiceModelFile.open`が引数に取るファイルパスが、UTF-8でなくてもよくなります ([#752])。
+
+- \[Python\] 引数の型が`Path | str`となっていた箇所は、一般的な慣習に合わせる形で`str | PathLike[str]`になります ([#753])。
+
 - \[Python\] wheelは`Metadata-Version: 2.4`になり、またライセンス情報とreadmeが含まれるようになります ([#947], [#949], [#959])。
+
+- \[Python\] Pyright/Pylanceをサポートするようになります ([#719])。
+
+- \[Python\] GitHub Pagesに使うSphinxがアップデートされました。また、`NewType`型へのリンクが張られるようになりました ([#952], [#953])。
+
+- \[Python,Java\] `Synthesizer`から`OpenJtalk`を得ることができるゲッターが追加されます ([#1025])。
+
+- \[Python,Java\] `UserDict`の`load`と`store`が引数に取ることができるファイルパスの表現が広くなります ([#835])。
+
+    Python APIでは`StrPath`相当になり、Java APIでは`java.io.File`と`java.nio.file.Path`のオーバーロードが追加されます。
+
+- \[Python,Java\] exampleコードとそのドキュメントに細かい改善が入ります ([#881], [#986], [#992])。
 
 - \[ダウンローダー\] 対象外の`<TARGET>`を見に行かないようになります ([#939])。
 
@@ -356,9 +353,9 @@
 
     [VOICEVOX/voicevox\_vvm](https://github.com/VOICEVOX/voicevox_vvm)に置かれるようになり、ダウンローダーはそこからダウンロードします。なお、VOICEVOX/voicevox\_fat\_resourceは[リポジトリごと削除されました](https://github.com/VOICEVOX/voicevox_core/issues/1061#issuecomment-2766705584)。
 
-- \[BREAKING\] `acceleration_mode`を`GPU`または`AUTO`（デフォルト）にしたときの挙動が変わります ([#810])。
+- \[BREAKING\] `VoiceModel`は`VoiceModelFile`になり、ファイルディスクリプタを保持する形になります。コンストラクタの名前は"from\_path"から"open"になり、Python APIとJava APIではクローズ可能になります ([#832], [#868], [#937], [#993])。
 
-    `Synthesizer`のコンストラクトの時点でGPUの簡易的なチェックを行うことで、適切なGPUの種類が選択されるようになります。チェックがすべて失敗した場合、`GPU`であればエラー、`AUTO`であればCPUにフォールバックとなります。
+    クローズ (`__{,a}{enter,exit}__`/`java.io.Closeable`)の挙動については、詳しくはAPI ドキュメントをご覧ください。
 
 - \[BREAKING\] `AudioQuery`および`UserDictWord`のJSON表現はVOICEVOX ENGINEと同じになります ([#946], [#1014])。
 
@@ -380,9 +377,16 @@
 
 - \[BREAKING\] `VoiceModelId`は、VVMに固有のUUIDになります ([#796])。
 
-- \[BREAKING\] `InferenceFailed`エラーは `RunModel`エラーになります ([#823]).
+- \[BREAKING\] 一部のエラーの名前が変わります ([#823], [#919])。
 
-- \[BREAKING\] `ExtractFullContextLabel`エラーは`AnalyzeText`エラーになります ([#919])。
+    - `InferenceFailed` → `RunModel`
+    - `ExtractFullContextLabel` → `AnalyzeText`
+
+    TODO: 追加されたエラーも"Added"や"Fixed"で紹介した方がよいかも？
+
+    ```console
+    ❯ git diff 0.15.0-preview.16 0.16.0-preview.0 crates/voicevox_core_c_api/include/voicevox_core.h
+    ```
 
 - \[BREAKING\] `UserDictWord`の`accent_type`はオプショナルではなくなります ([#1002])。
 
@@ -392,6 +396,10 @@
 
     Python API、Java API、VOICEVOX ENGINEに合わせる形です。
 
+- \[BREAKING\] `acceleration_mode`を`GPU`または`AUTO`（デフォルト）にしたときの挙動が変わります ([#810])。
+
+    `Synthesizer`のコンストラクトの時点でGPUの簡易的なチェックを行うことで、適切なGPUの種類が選択されるようになります。チェックがすべて失敗した場合、`GPU`であればエラー、`AUTO`であればCPUにフォールバックとなります。
+
 - `Synthesizer::unload_voice_model`と`UserDict::remove_word`における削除後の要素の順序が変わります ([#846])。
 
     例えば`[a, b, c, d, e]`のようなキーの並びから`b`を削除したときに、順序を保って`[a, c, d, e]`になります。以前までは`[a, e, c, d]`になってました。
@@ -400,13 +408,13 @@
 
 - \[C\] \[BREAKING\] 次の`VoicevoxVoiceModelFile`のゲッターに位置付けられる関数が、ゲッターではなくなります ([#850])。
 
-    - `voicevox_voice_model_file_id`
+    - `voicevox_voice_model_id`改め`voicevox_voice_model_file_id`
 
         `uint8_t (*output_voice_model_id)[16]`に吐き出すように。
 
-    - `voicevox_voice_model_file_get_metas_json`
+    - `voicevox_voice_model_get_metas_json`
 
-        `voicevox_voice_model_file_create_metas_json`に改名。
+        `voicevox_voice_model_file_create_metas_json`になり、`VoicevoxVoiceModelFile`が保有しない形でアロケートされた文字列を作成するように。
 
 - \[C\] \[BREAKING\] リリース内容物において、動的ライブラリはlib/に、ヘッダはinclude/に入るようになります ([#954], [#967], [#980])。
 
@@ -421,8 +429,6 @@
     └── VERSION
     ```
 
-- \[Python,Java\] \[BREAKING\] `SpeakerMeta`は<code>**Character**Meta</code>に、`StyleVersion`は<code>**Character**Meta</code>に改名されます ([#931], [#943], [#996])。
-
 - \[Python\] \[BREAKING\] ブロックングAPIの実装に伴い、`Synthesizer`, `OpenJtalk`, `VoiceModel`, `UserDict`は`voicevox_core.asyncio`モジュール下に移動します ([#706])。
 
 - \[Python\] \[BREAKING\] `Enum`だったクラスはすべて`Literal`と、実質的なボトム型`_Reserved`の合併型になります ([#950], [#957])。
@@ -435,8 +441,6 @@
     +AccelerationMode: TypeAlias = Literal["AUTO", "CPU", "GPU"] | _Reserved
     ```
 
-    `_Reserved`の存在により、型チェックにおいて`match`での網羅はできなくなります。
-
 - \[Python\] \[BREAKING\] `Synthesizer.audio_query`は、C APIとJava APIに合わせる形で`create_audio_query`に改名されます ([#882])。
 
 - \[Python\] \[BREAKING\] `UserDict.words`は`UserDict.to_dict`に改名されます ([#977])。
@@ -446,6 +450,8 @@
 - \[Python\] \[BREAKING\] `UserDictWord`へのPydanticは非サポートになります。またdataclassとして`frozen`になり、コンストラクタ時点で各種バリデートが行われるようになります ([#1014])。
 
 - \[Python\] \[BREAKING\] デフォルト引数の前には一律で`*,`が挟まれるようになります ([#998])。
+
+- \[Python,Java\] \[BREAKING\] `SpeakerMeta`は<code>**Character**Meta</code>に、`StyleVersion`は<code>**Character**Meta</code>に改名されます ([#931], [#943], [#996])。
 
 - \[Java\] \[BREAKING\] `Synthesizer`, `OpenJtalk`, `VoiceModelFile`, `UserDict`は`voicevoxcore.blocking`パッケージの下に移ります。それに伴い、いくつかのクラスは`voicevoxcore`パッケージの直下に置かれるようになります ([#861])。
 
@@ -494,10 +500,6 @@
     - README.mdはREADME.txtとして置かれるようになります。
     - [0.15.0-preview.16](#0150-preview16---2023-12-01-0900)まで含まれていたmetas.jsonは無くなります。
 
-- \[BREAKING\] `VoiceModel`は`VoiceModelFile`になり、ファイルディスクリプタを保持する形になります。コンストラクタの名前は"from\_path"から"open"になり、Python APIとJava APIではクローズ可能になります ([#832], [#868], [#937], [#993])。
-
-    クローズ (`__{,a}{enter,exit}__`/`java.io.Closeable`)の挙動については、詳しくはAPI ドキュメントをご覧ください。
-
 ### Deprecated
 
 - \[Python,Java\] PydanticおよびGSONは廃止予定になります ([#985])。
@@ -512,17 +514,15 @@
 
 - \[macOS\] macOS 11およびmacOS 12がサポート範囲から外れ、バイナリのリリースはmacOS 13で行われるようになります ([#801], [#884])。
 
-- \[Python,Java\] \[BREAKING\] `SupportedDevices`のデシアライズ（JSON → `SupportedDevices`の変換）ができなくなります。Python APIにおいてはコンストラクトもできなくなります ([#958])。
-
 - \[Python\] \[BREAKING\] Pythonのバージョンが≧3.10に引き上げられます ([#915], [#926], [#927])。
 
     Python 3.10以降では、[asyncioランタイム終了時にクラッシュする問題](https://github.com/VOICEVOX/voicevox_core/issues/873)が発生しなくなります。
 
+- \[Python,Java\] \[BREAKING\] `SupportedDevices`のデシアライズ（JSON → `SupportedDevices`の変換）ができなくなります。Python APIにおいてはコンストラクトもできなくなります ([#958])。
+
 - \[Java\] \[BREAKING\] `UserDict.Word`改め`UserDictWord`には、GSONによるシリアライズは使えなくなります ([#1014])。
 
 ### Fixed
-
-- \[Python\] asyncioについての挙動が改善されます ([#834], [#868])。
 
 - "Added"の章で述べた`SpeakerMeta::order`により、製品版VVMにおいて`metas`の出力が適切にソートされるようになります ([#728])。
 
@@ -537,6 +537,8 @@
 - \[C\] \[iOS\] XCFrameworkへのdylibの入れかたが誤っていたために[App Storeへの申請が通らない](https://github.com/VOICEVOX/voicevox_core/issues/715)状態だったため、入れかたを変えます ([VOICEVOX/onnxruntime-builder#25] by [@nekomimimi], [#723] by [@nekomimimi])。
 
 - \[C\] \[iOS\] clang++ 15.0.0でSIM向けビルドが失敗する問題が解決されます ([#720] by [@nekomimimi])。
+
+- \[Python\] asyncioについての挙動が改善されます ([#834], [#868])。
 
 - \[Python\] `StyleMeta`が`voicevox_core`モジュール直下に置かれるようになります ([#930])。
 
