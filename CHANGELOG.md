@@ -1,3 +1,5 @@
+<!-- このChangelogの書き方の方針については、./docs/guide/dev/changelog.mdにまとめる。  -->
+
 # Changelog
 
 ## [Unreleased]
@@ -696,7 +698,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 ### Fixed
 
-- \[C\] [0.15.0-preview.5](#0150-preview5---2023-08-06-0900)で導入された、不正な`delete`および`json_free`に対するセーフティネットのメッセージが改善されます ([#625])。
+- \[C\] [0.15.0-preview.3](#0150-preview3---2023-05-18-0900)と[0.15.0-preview.4](#0150-preview4---2023-06-21-0900)で導入された、不正な`json_free`および`wav_free`に対するセーフティネットのメッセージが改善されます ([#625])。
 
 ## [0.15.0-preview.11] - 2023-10-08 (+09:00)
 
@@ -771,22 +773,32 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 ### Added
 
-- TODO: mutabilityとasyncnessを仕上げる ([#553])。
-- \[Python\] `Synthesizer`に`__enter__`と`__close__`が実装されます ([#555])。
-- \[C\] \[iOS\] XCFrameworkにmodulemapが入るようになります ([#579] by [@fuziki])。
+- エラーの内容が一部改善されます ([#553])。
+- \[Python\] `Synthesizer`に`__enter__`と`__close__`が実装されます。`__close__`後の`Synthesizer`は使用不可になり、ロードされた音声モデルは解放されます ([#555])。
+- \[Python\] docstringが書かれていなかった部分について、書かれます ([#570])。
 
 ### Changed
 
-- \[C\] \[BREAKING\] C APIの名前を少し変更 ([#576])。
 - \[C\] \[BREAKING\] `voicevox_synthesizer_audio_query`は`voicevox_synthesizer_create_audio_query`にリネームされます ([#576])。
-- \[C\] \[BREAKING\] 定数化されたものを関数へ戻します ([#557] by [@shigobu])。
+- \[C\] \[BREAKING\] エラーの名前はすべて`VOICEVOX_RESULT_`が付く形に統一されます ([#576])。
+- \[C\] \[BREAKING\] [0.15.0-preview.5](#0150-preview5---2023-08-06-0900)の[#503]はリバートされ、定数化された`voicevox_version`および`_options`はすべて関数に戻ります ([#557] by [@shigobu])。
+- \[Python\] docstirngはNumPy記法で統一されます ([#570])。
+
+### Removed
+
+- \[Python\] \[BREAKING\] 意図せず露出してしまっていた内部関数がプライベートになります ([#570])。
 
 ### Fixed
 
-- TODO: Pythonドキュメント周りの色々を修正 ([#570])。
-- TODO: voicevox_json_freeの対象が漏れていたことの修正 ([#571])。
-- TODO: VoiceModelのget_all_modelsがvvm以外のファイルも読み込もうとしてクラッシュすることの修正 ([#574])。
-- TODO: C-APIのnew_with_initializeで初期化した場合、metas jsonが空になってしまうことの修正 ([#575])。
+- `Synthesizer`は並行に使えるようになります ([#553])。
+
+- `load_all_models`における問題が修正されます ([#574], [#575])。
+
+    補足: `load_all_models`は[0.15.0-preview.9](#0150-preview9---2023-09-18-0900)で削除されます。
+
+- \[C\] \[iOS\] XCFrameworkにmodulemapが入るようになります ([#579] by [@fuziki])。
+
+- \[C,Python\] ドキュメンテーションコメントが色々修正されます ([#571], [#570])。
 
 ### Non notable
 
@@ -841,16 +853,16 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 ### Added
 
-- TODO: readmeとexampleの改善
-    - 事例紹介にvoicevoxcore.goを追加 ([#498] by [@sh1ma])
-    - Fix up #421 ([#494])
-    - Pythonコードをリファクタ ([#495])
-    - READMEのスペースが足りてなかった ([#511])
+- [READMEの「事例紹介」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.4/README.md#事例紹介)に、Goラッパーの事例として[voicevoxcore.go](https://github.com/sh1ma/voicevoxcore.go)が追加されます ([#498] by [@sh1ma], [#511])。
 - \[C\] :tada: iOS向けXCFrameworkがリリースに含まれるようになります ([#485] by [@HyodaKazuaki])。
 - \[C\] 知らない文字列、既知の静的領域の文字列、解放済みの文字列への`json_free`は明示的に拒否されるようになります ([#500])。
 - \[C\] ヘッダに[cbindgen](https://docs.rs/crate/cbindgen)のバージョンが記載されるようになります ([#519])。
 - \[C\] ヘッダにおける変な空行が削除されます ([#518])。
 - \[Python\] Rustのパニックが発生したときの挙動が「プロセスのabort」から、「`pyo3_runtime.PanicException`の発生」に変わります ([#505])。
+
+### Fixed
+
+- \[Python\] exampleコードおよびドキュメントが修正されます ([#494], [#495])。
 
 ## [0.15.0-preview.3] - 2023-05-18 (+09:00)
 
@@ -866,14 +878,15 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - `AudioQuery`の`kana`が、VOICEVOX ENGINEと同様に省略可能になります ([#486], [#487])。
 
-- APIドキュメントが改善されます ([#438])。
+- README。
+    - [READMEの「事例紹介」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.3/README.md#事例紹介)に、Goラッパーの事例として[VOICEVOX CORE Go サンプル](https://github.com/yerrowTail/voicevox_core_go_sample)が追加されます ([#455] by [@yerrowTail])。
+    - voicevoxcore4s(Scala FFI Wrapper)を事例紹介に追加 ([#429] by [@windymelt])
 
-    - テキストの文字コードはUTF8だと案内
+- APIドキュメントが改善されます ()。
+    - テキストの文字コードはUTF8だと案内 ([#438])。
 
 - TODO: readmeとexampleの改善
 
-    - Goサンプルコードを追加 ([#455])
-    - voicevoxcore4s(Scala FFI Wrapper)を事例紹介に追加 ([#429])
     - Flutter 向け FFI ラッパーを事例紹介に追加 ([#458])
     - READMEにDiscordへの案内などを追加 ([#463])
     - ダウンローダーをスクリプト版からrust版を使うよう案内 ([#439])
@@ -892,6 +905,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 - \[C\] アロケーションの回数を抑えるパフォーマンス改善が入ります ([#392], [#478])。
 
     TODO: フールプルーフ機構がこのあたりから入ってなかったか？要確認
+    TODO: [@higumachan](https://github.com/higumachan)さんの名前が消えとる!
 
 - \[Rust版ダウンローダー\] download-windows-x64.exeはコード署名されるようになります ([#412])。
 
@@ -902,7 +916,11 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 ### Fixed
 
-- `kana`オプションを有効化したときに、音素の流さと音高が未設定になってしまう問題が修正されます ([#407])。
+- kanaからAudioQueryを作る際、音素の流さと音高が未設定になってしまう問題が修正されます ([#407])。
+
+- READMEの書式について、軽微な修正が入ります（日本語とアルファベットの間にスペースが入っていたりいなかったりしていたので、スペースを入れるよう統一しました）([#455] by [@yerrowTail])。
+
+    補足: その後は特に気にされてはおらず、混在する状態になっています。またこのようなスペースについてissueが提議されたこともありません。
 
 [Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...HEAD
 [0.16.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.1...0.16.0
@@ -1266,3 +1284,5 @@ Windows版ダウンローダーのビルドに失敗しています。
 [@shigobu]: https://github.com/shigobu
 [@shuntia]: https://github.com/shuntia
 [@weweweok]: https://github.com/weweweok
+[@windymelt]: https://github.com/windymelt
+[@yerrowTail]: https://github.com/yerrowTail
