@@ -631,6 +631,7 @@
 
 ### Fixed
 
+- \[Python\] [0.15.0-preview.5](#0150-preview5---2023-08-06-0900)の時点で不要になっていたNumPyの依存が外れます ([#656])。
 - \[Java\] MUTF-8である`String`の内容を誤ってUTF-8として認識してしまっていた問題が解決されます ([#654])。
 
 ## [0.15.0-preview.13] - 2023-10-14 (+09:00)
@@ -707,7 +708,7 @@ Windows版ダウンローダーのビルドに失敗しています。
     - [READMEの「その他の言語」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.9/README.md#その他の言語)に[VoicevoxCoreSharp](https://github.com/yamachu/VoicevoxCoreSharp)が追加されます。
     - Python exampleはBlackとisortでフォーマットされ、`--speaker-id`は`--style-id`になります。
 - \[C\] 引数の`VoicevoxUserDictWord *`はunalignedであってもよくなります ([#601])。
-- \[Python\] `__version__`が追加されます ([#597])。
+- \[Python\] `__version__`が追加されます ([#507], [#597])。
 - \[Rust版ダウンローダー\] helpの表示が改善されます ([#604])。
 
 ### Changed
@@ -791,6 +792,8 @@ Windows版ダウンローダーのビルドに失敗しています。
     open_jtalk.use_user_dict(user_dict)
     ```
 
+    二つのユーザー辞書をマージしたり、JSONとの相互変換をすることができます。
+
 - :tada: ドキュメンテーションコメントが充実します ([#532], [#534])。
 
     C APIについては、[RustのUB](https://doc.rust-lang.org/reference/behavior-considered-undefined.html)に踏み込むような領域について「安全性要件」が定められ、詳しく記述されるようになります。
@@ -839,6 +842,10 @@ Windows版ダウンローダーのビルドに失敗しています。
 - \[Python\] \[BREAKING\] wheelには音声モデルは埋め込まれなくなります ([#522])。
 
     補足: [0.15.0-preview.12](#0150-preview12---2023-10-14-0900)ではC APIのリリースからも分離されます。
+
+### Removed
+
+- \[BREAKING\] `predict_duration`といった、推論を直接実行するAPIは削除されます ([#370])。
 
 ### Fixed
 
@@ -912,6 +919,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
     補足: その後は特に気にされてはおらず、混在する状態になっています。またこのようなスペースについてissueが提議されたこともありません。
 
+- [#422]が解決されます ([Hiroshiba/vv\_core\_inference#12])。
+
 - \[C\] \[Windows\] C++ exampleが修正されます ([#420] by [@shigobu])。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
@@ -946,6 +955,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#419]: https://github.com/VOICEVOX/voicevox_core/pull/419
 [#420]: https://github.com/VOICEVOX/voicevox_core/pull/420
 [#421]: https://github.com/VOICEVOX/voicevox_core/pull/421
+[#422]: https://github.com/VOICEVOX/voicevox_core/issues/422
 [#425]: https://github.com/VOICEVOX/voicevox_core/pull/425
 [#429]: https://github.com/VOICEVOX/voicevox_core/pull/429
 [#432]: https://github.com/VOICEVOX/voicevox_core/pull/432
@@ -979,6 +989,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#502]: https://github.com/VOICEVOX/voicevox_core/pull/502
 [#503]: https://github.com/VOICEVOX/voicevox_core/pull/503
 [#505]: https://github.com/VOICEVOX/voicevox_core/pull/505
+[#507]: https://github.com/VOICEVOX/voicevox_core/pull/507
 [#508]: https://github.com/VOICEVOX/voicevox_core/pull/508
 [#511]: https://github.com/VOICEVOX/voicevox_core/pull/511
 [#512]: https://github.com/VOICEVOX/voicevox_core/pull/512
@@ -1243,6 +1254,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 [VOICEVOX/voicevox\_vvm#12]: https://github.com/VOICEVOX/voicevox_vvm/pull/12
 [VOICEVOX/voicevox\_vvm#14]: https://github.com/VOICEVOX/voicevox_vvm/pull/14
+
+[Hiroshiba/vv\_core\_inference#12]: https://github.com/Hiroshiba/vv_core_inference/pull/12
 
 [dtolnay/proc-macro2#497]: https://github.com/dtolnay/proc-macro2/pull/497
 
