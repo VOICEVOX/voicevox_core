@@ -221,7 +221,7 @@
 
 ### Added
 
-- :tada: Rust APIが利用できるようになります ([#702], [#745], [#740] by [@eyr1n], [#708], [#803], [#759], [#807], [#810], [#805], [#831], [#834], [#835], [#844], [#846], [#847], [#868], [#882], [#886], [#907], [#910], [#912], [#825], [#911], [#919], [#932], [#931], [#940], [#941], [#937], [#949], [#958], [#974], [#982], [#990], [#992], [#996], [#1002], [#1025] 他たくさん)。
+- :tada: Rust APIが利用できるようになります ([#425], [#443], [#479], [#486], [#487], [#508], [#370], [#501], [#502], [#515], [#538], [#532], [#551], [#573], [#580], [#589], [#577], [#622], [#623], [#624], [#646], [#656], [#669], [#675], [#667], [#692], [#694], [#702], [#745], [#740] by [@eyr1n], [#708], [#803], [#759], [#807], [#810], [#805], [#831], [#834], [#835], [#844], [#846], [#847], [#868], [#882], [#886], [#907], [#910], [#912], [#825], [#911], [#919], [#932], [#931], [#940], [#941], [#937], [#949], [#958], [#974], [#982], [#990], [#992], [#996], [#1002], [#1025])。
 
     ```console
     ❯ cargo add voicevox_core --git https://github.com/VOICEVOX/voicevox_core.git --tag 0.16.0-preview.0 --features load-onnxruntime
@@ -590,14 +590,6 @@
 - \[Java\] ユーザー辞書の利用時に出ていた警告が消えます ([#684])。
 - \[Java\] `OpenJtalk.useUserDict`を利用する際は`$TMPDIR`の設定が必要、ということがドキュメンテーションコメントに書かれます ([#682])。
 
-### Non notable
-
-- TODO: Rust APIの布石
-    - ONNX Runtimeとモデルのシグネチャを隔離する ([#675])。
-    - IOが発生するメソッドをすべてasync化する ([#667])。
-    - 音声合成の処理を丸ごとスレッド分離して実行する ([#692])。
-    - `OpenJtalk`を`Synthesizer<OpenJtalk> | Synthesizer<()>`として持つ ([#694])。
-
 ## [0.15.0-preview.15] - 2023-11-13 (+09:00)
 
 ### Added
@@ -613,11 +605,6 @@
 
 - \[C,Python\] \[BREAKING\] `Synthesizer`および`OpenJtalk`の`new_with_initialize`は`new`にリネームされます ([#669])。
 - \[Python\] \[BREAKING\] `Synthesizer.new(_with_initialize)`は無くなり、`__new__`からコンストラクトできるようになります ([#671])。
-
-### Non notable
-
-- TODO: Rust API
-    - "new_with_initialize" → "new" ([#669])。
 
 ## [0.15.0-preview.14] - 2023-10-27 (+09:00)
 
@@ -645,12 +632,6 @@
 ### Fixed
 
 - \[Java\] MUTF-8である`String`の内容を誤ってUTF-8として認識してしまっていた問題が解決されます ([#654])。
-
-### Non notable
-
-- TODO: Rust API
-    - `workspace.resolver`を設定 ([#646])。
-    - 不要な依存を削除 ([#656])。
 
 ## [0.15.0-preview.13] - 2023-10-14 (+09:00)
 
@@ -750,11 +731,6 @@ Windows版ダウンローダーのビルドに失敗しています。
 
     従来は環境変数のみで判定していましたが、これからはstderrがTTYかどうかを見て、必要なら`ENABLE_VIRTUAL_TERMINAL_PROCESSING`を有効化するようになります。
 
-### Non notable
-
-- TODO: Rust API?
-    - Rust APIが公開するエラーの種類を`ErrorKind`として表現する ([#589])。
-
 ## [0.15.0-preview.8] - 2023-08-26 (+09:00)
 
 ### Fixed
@@ -795,12 +771,6 @@ Windows版ダウンローダーのビルドに失敗しています。
 - \[C\] \[iOS\] XCFrameworkにmodulemapが入るようになります ([#579] by [@fuziki])。
 
 - \[C,Python\] ドキュメンテーションコメントが色々修正されます ([#571], [#570])。
-
-### Non notable
-
-- TODO: Rust APIとして…?
-    - RustのdoctestをCI ([#573])。
-    - `VoicevoxResultCode`をC APIに移動 ([#580])。
 
 ## [0.15.0-preview.5] - 2023-08-06 (+09:00)
 
@@ -870,27 +840,10 @@ Windows版ダウンローダーのビルドに失敗しています。
 
     補足: [0.15.0-preview.12](#0150-preview12---2023-10-14-0900)ではC APIのリリースからも分離されます。
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 - \[C\] `output_`系引数がunalignedであってもよくなります。以前はおそらく[RustのUB](https://doc.rust-lang.org/reference/behavior-considered-undefined.html)になっていました ([#534], [#535])。
 - \[C\] [0.15.0-preview.3](#0150-preview3---2023-05-18-0900)で導入された不正な`json_free`およびに対するセーフティネットのメッセージが、[0.15.0-preview.4](#0150-preview4---2023-06-21-0900)に引き続き改善されます ([#521])。
-
-### Security
-
-### Non notable
-
-- TODO: Rust API
-    * fb24f4fc 新クラス設計API ([#370])
-    * 14aa242f [project-vvm-async-api] ドキュメントの表記ゆれを解消 ([#501])
-    * 38549d31 [project-vvm-async-api] `get_supported_devices_json`をfallibleに ([#502])
-    * dfbb5333 [project-vvm-async-api] `$OUT_DIR`を使うものをtest_utilクレートに移動 ([#515])
-    * 8cf307df [vvm-async-api] Add: ユーザー辞書APIを追加 ([#538])
-    * f2b66ec0 ドキュメントを刷新する ([#532])
-    * e0d32a50 styleIdとsession.runに渡す数値が異なっているVVMでも音声合成できるようにする ([#551])
 
 ## [0.15.0-preview.4] - 2023-06-21 (+09:00)
 
@@ -902,11 +855,6 @@ Windows版ダウンローダーのビルドに失敗しています。
 - \[C\] ヘッダに[cbindgen](https://docs.rs/crate/cbindgen)のバージョンが記載されるようになります ([#519])。
 - \[C\] ヘッダにおける変な空行が削除されます ([#518])。
 - \[Python\] Rustのパニックが発生したときの挙動が「プロセスのabort」から、「`pyo3_runtime.PanicException`の発生」に変わります ([#505])。
-
-### Non notable
-
-- Rust API
-    * a9c8652d Rust APIのbuild.rsを抹消する ([#508])
 
 ### Fixed
 
@@ -967,15 +915,6 @@ Windows版ダウンローダーのビルドに失敗しています。
 - \[C\] \[Windows\] C++ exampleが修正されます ([#420] by [@shigobu])。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
-
-### Non notable
-
-- TODO: Rust API
-    * b6e7e863 C APIのE2Eテストを作る ([#425])
-    * 44c45824 `anyhow::Error`を抱えたエラー型は`"{:#?}"`を比較する ([#443])
-    * 629fa0bb Add: C APIに中レベル（？）のAPIを追加 ([#479])
-    * 74522553 `#[serde(default)]`を入れる ([#486])
-    * da84ce38 Fix up #486 ([#487])
 
 [Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...HEAD
 [0.16.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.1...0.16.0
