@@ -405,7 +405,7 @@
 
 - ドキュメント上の「話者」という表現は「キャラクター」になります ([#943], [#996])。
 
-- \[C\] \[BREAKING\] 次の`VoicevoxVoiceModelFile`のゲッターに位置付けられる関数が、ゲッターではなくなります ([#850])。
+- \[C\] \[BREAKING\] 次の`VoicevoxVoiceModelFile` (旧`VoicevoxVoiceModel`)のゲッターに位置付けられる関数が、ゲッターではなくなります ([#850])。
 
     - `voicevox_voice_model_id`改め`voicevox_voice_model_file_id`
 
@@ -694,7 +694,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 ### Fixed
 
-- \[C\] [0.15.0-preview.3](#0150-preview3---2023-05-18-0900)で導入された不正な`json_free`および`wav_free`に対するセーフティネットのメッセージが、[0.15.0-preview.4](#0150-preview4---2023-06-21-0900)に引き続き改善されます ([#625])。
+- \[C\] [0.15.0-preview.3](#0150-preview3---2023-05-18-0900)で導入された不正な`json_free`および`wav_free`に対するセーフティネットのメッセージが、[0.15.0-preview.4](#0150-preview4---2023-06-21-0900)と[0.15.0-preview.5](#0150-preview5---2023-08-06-0900)に引き続き改善されます ([#625])。
 
 ## [0.15.0-preview.11] - 2023-10-08 (+09:00)
 
@@ -763,7 +763,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 ## [0.15.0-preview.7] - 2023-08-24 (+09:00)
 
-各ライブラリのビルドが不可能な状態に陥り、ダウンローダーだけがリリースされています。コミットとしては[0.15.0-preview.6]と同一です。
+各ライブラリのビルドが不可能な状態に陥り、ダウンローダーだけがリリースされています。コミットとしては[0.15.0-preview.6](#0150-preview6---2023-08-24-0900)と同一です。
 
 ## [0.15.0-preview.6] - 2023-08-24 (+09:00)
 
@@ -804,32 +804,71 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 ## [0.15.0-preview.5] - 2023-08-06 (+09:00)
 
+このバージョンではAPIの根本的な刷新が行われました。変更量が多いため、漏れがあるかもしれないことをご了承ください。
+
 ### Added
 
+- :tada: 音声モデルが扱いやすい形式になり、音声モデル単位での明示的なロードが可能になります。またアンロードも可能になります ([#370], [#501], [#523], [#512], [#569], [#551])。
+
+    音声モデルのファイルは _VVM_ と呼ばれます。拡張子は.vvmです。
+
 - :tada: ユーザー辞書機能が使えるようになります ([#538], [#546])。
-- TODO: ドキュメント改善
-    - ドキュメントを刷新する ([#532])
-    - Add: IGNORE_PREFIXオプションを追加 ([#565])
+
+    ```py
+    user_dict = UserDict()
+    user_dict.add_word(UserDictWord("手札", "テフダ", 1, priority=6))
+
+    open_jtalk.use_user_dict(user_dict)
+    ```
+
+- :tada: ドキュメンテーションコメントが充実します ([#532], [#534])。
+
+    C APIについては、[RustのUB](https://doc.rust-lang.org/reference/behavior-considered-undefined.html)に踏み込むような領域について「安全性要件」が定められ、詳しく記述されるようになります。
+
+- \[C\] Doxygenに`IGNORE_PREFIX`オプションを追加され、目次がよい感じになります ([#565])。
 
 ### Changed
 
-- TODO: project-vvm-async-api ([#497])
-    - 新クラス設計API ([#370])
-    - [project-vvm-async-api] ドキュメントの表記ゆれを解消 ([#501])
-    - [project-vvm-async-api] `voicevox_{,synthesizer_}is_loaded_voice_model` ([#523])
-    - [project-vvm-async-api] 工事中の案内を書く ([#542])
-    - [project-vvm-async-api] C/Python APIクレート側のバージョンを出す ([#507])
-    - [project-vvm-async-api] `get_supported_devices_json`をfallibleに ([#502])
-    - [project-vvm-async-api] いくつかのC関数を定数にする ([#503])
-    - [project-vvm-async-api] ZSTにポインタキャストして提供するのをやめる ([#512])
-    - [project-vvm-async-api] `extern "C"`の生ポインタをABI互換のに置き換え ([#514])
-    - [project-vvm-async-api] "buffer"をRustの世界で保持し続ける ([#525])
-    - [project-vvm-async-api] `output_`系引数がunalignedであることを許す ([#534])
-    - [project-vvm-async-api] whlに"modelディレクトリ"を埋め込むのをやめる ([#522])
-    - [project-vvm-async-api] Fix up #500 ([#521])
-    - [project-vvm-async-api] Fix up #534 ([#535])
-    - 製品版VVMを使うようにする ([#569])
-    - styleIdとsession.runに渡す数値が異なっているVVMでも音声合成できるようにする ([#551])
+- \[BREAKING\] 上記のVVMを表す`VoiceModel`型が追加され、音声モデルのロードはそこから行うことになります。"metas"は定数ではなくなり、`VoiceModel`もしくは下記の`Synthesizer`から取得する形になります ([#370], [#501], [#523], [#512], [#551])。
+
+    補足: [0.16.0-preview.0](#0160-preview0---2025-03-01-0900)において<code>VoiceModel**File**</code>に改名され、性質も変わります。
+
+- \[BREAKING\] `OpenJtalk`型 (C API: <code>OpenJtalk**Rc**</code>)が追加され、システム辞書とユーザー辞書の登録はそこから行うことになります ([#370])。
+
+- \[BREAKING\] `SupportedDevices`のインスタンスは定数ではなくなり、関数から取得する形になります ([#370], [#502])。
+
+    将来のONNX Runtime次第ではありますが、エラーとなりうる形の関数になっています。
+
+    補足: この時点では引数ゼロの静的な関数ですが、[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)において`Onnxruntime`型のメソッドになります。
+
+- \[BREAKING\] `speaker_id`はすべて`style_id`になります (Python APIのみ破壊的変更) ([#370], [#532])。
+
+- READMEに「工事中」の案内が復活します ([#542])。
+
+    補足: [0.16.0-preview.1](#0160-preview1---2025-03-08-0900)で解除されます。
+
+- \[C\] \[BREAKING\] `voicevox_initialize`と`voicevox_finalize`は無くなります。代わりに`VoicevoxSynthesizer`型が追加され、ほとんどの操作はここから行うようになります ([#370], [#501], [#512])。
+
+- \[C\] \[BREAKING\] `voicevox_audio_query_json_free`と`voicevox_accent_phrases_json_free`は、`voicevox_json_free`に統合されます ([#370])。
+
+- \[C\] \[BREAKING\] いくつかの関数が定数になります ([#503])。
+
+    補足: [0.15.0-preview.6](#0150-preview6---2023-08-24-0900)でリバートされます。
+
+- \[Python\] \[BREAKING\] :tada: asyncioを用いたAPIへと変わります ([#370])。
+
+    補足: [0.16.0-preview.0](#0160-preview0---2025-03-01-0900)にて、asyncioによらないブロッキングAPIが復活します。
+    補足: この後に登場するRust APIやNode.js API (予定)でも、非同期APIが利用可能になります。
+
+- \[Python\] \[BREAKING\] `VoicevoxCore`は`Synthesizer`に改名されます ([#370])。
+
+- \[Python\] \[BREAKING\] `Style`は`StyleMeta`に、`Meta`は`SpeakerMeta`に改名されます ([#370])。
+
+    補足: [0.16.0-preview.0](#0160-preview0---2025-03-01-0900)にて、`SpeakerMeta`は`CharacterMeta`になります。
+
+- \[Python\] \[BREAKING\] wheelには音声モデルは埋め込まれなくなります ([#522])。
+
+    補足: [0.15.0-preview.12](#0150-preview12---2023-10-14-0900)ではC APIのリリースからも分離されます。
 
 ### Deprecated
 
@@ -837,13 +876,21 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 ### Fixed
 
+- \[C\] `output_`系引数がunalignedであってもよくなります。以前はおそらく[RustのUB](https://doc.rust-lang.org/reference/behavior-considered-undefined.html)になっていました ([#534], [#535])。
+- \[C\] [0.15.0-preview.3](#0150-preview3---2023-05-18-0900)で導入された不正な`json_free`およびに対するセーフティネットのメッセージが、[0.15.0-preview.4](#0150-preview4---2023-06-21-0900)に引き続き改善されます ([#521])。
+
 ### Security
 
 ### Non notable
 
-- [project-vvm-async-api] mainをマージする ([#516])
-- [project-vvm-async-api] mainをsquashせずにマージする ([#520])
-- [project-vvm-async-api] mainをマージする ([#536])
+- TODO: Rust API
+    * fb24f4fc 新クラス設計API ([#370])
+    * 14aa242f [project-vvm-async-api] ドキュメントの表記ゆれを解消 ([#501])
+    * 38549d31 [project-vvm-async-api] `get_supported_devices_json`をfallibleに ([#502])
+    * dfbb5333 [project-vvm-async-api] `$OUT_DIR`を使うものをtest_utilクレートに移動 ([#515])
+    * 8cf307df [vvm-async-api] Add: ユーザー辞書APIを追加 ([#538])
+    * f2b66ec0 ドキュメントを刷新する ([#532])
+    * e0d32a50 styleIdとsession.runに渡す数値が異なっているVVMでも音声合成できるようにする ([#551])
 
 ## [0.15.0-preview.4] - 2023-06-21 (+09:00)
 
@@ -855,6 +902,11 @@ Windows版ダウンローダーのビルドに失敗しています。
 - \[C\] ヘッダに[cbindgen](https://docs.rs/crate/cbindgen)のバージョンが記載されるようになります ([#519])。
 - \[C\] ヘッダにおける変な空行が削除されます ([#518])。
 - \[Python\] Rustのパニックが発生したときの挙動が「プロセスのabort」から、「`pyo3_runtime.PanicException`の発生」に変わります ([#505])。
+
+### Non notable
+
+- Rust API
+    * a9c8652d Rust APIのbuild.rsを抹消する ([#508])
 
 ### Fixed
 
@@ -916,6 +968,15 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
+### Non notable
+
+- TODO: Rust API
+    * b6e7e863 C APIのE2Eテストを作る ([#425])
+    * 44c45824 `anyhow::Error`を抱えたエラー型は`"{:#?}"`を比較する ([#443])
+    * 629fa0bb Add: C APIに中レベル（？）のAPIを追加 ([#479])
+    * 74522553 `#[serde(default)]`を入れる ([#486])
+    * da84ce38 Fix up #486 ([#487])
+
 [Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...HEAD
 [0.16.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.1...0.16.0
 [0.16.0-preview.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.0...0.16.0-preview.1
@@ -951,6 +1012,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#420]: https://github.com/VOICEVOX/voicevox_core/pull/420
 [#421]: https://github.com/VOICEVOX/voicevox_core/pull/421
 [#421]: https://github.com/VOICEVOX/voicevox_core/pull/421
+[#425]: https://github.com/VOICEVOX/voicevox_core/pull/425
 [#429]: https://github.com/VOICEVOX/voicevox_core/pull/429
 [#429]: https://github.com/VOICEVOX/voicevox_core/pull/429
 [#432]: https://github.com/VOICEVOX/voicevox_core/pull/432
@@ -960,6 +1022,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#438]: https://github.com/VOICEVOX/voicevox_core/pull/438
 [#439]: https://github.com/VOICEVOX/voicevox_core/pull/439
 [#439]: https://github.com/VOICEVOX/voicevox_core/pull/439
+[#443]: https://github.com/VOICEVOX/voicevox_core/pull/443
 [#444]: https://github.com/VOICEVOX/voicevox_core/pull/444
 [#444]: https://github.com/VOICEVOX/voicevox_core/pull/444
 [#450]: https://github.com/VOICEVOX/voicevox_core/pull/450
@@ -1001,10 +1064,11 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#502]: https://github.com/VOICEVOX/voicevox_core/pull/502
 [#503]: https://github.com/VOICEVOX/voicevox_core/pull/503
 [#505]: https://github.com/VOICEVOX/voicevox_core/pull/505
-[#507]: https://github.com/VOICEVOX/voicevox_core/pull/507
+[#508]: https://github.com/VOICEVOX/voicevox_core/pull/508
 [#511]: https://github.com/VOICEVOX/voicevox_core/pull/511
 [#512]: https://github.com/VOICEVOX/voicevox_core/pull/512
 [#514]: https://github.com/VOICEVOX/voicevox_core/pull/514
+[#515]: https://github.com/VOICEVOX/voicevox_core/pull/
 [#516]: https://github.com/VOICEVOX/voicevox_core/pull/516
 [#518]: https://github.com/VOICEVOX/voicevox_core/pull/518
 [#519]: https://github.com/VOICEVOX/voicevox_core/pull/519
