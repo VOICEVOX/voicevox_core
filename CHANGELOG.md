@@ -1,4 +1,4 @@
-<!-- このChangelogの書き方の方針については、./docs/guide/dev/changelog.mdにまとめる。  -->
+<!-- このChangelogの書き方の方針については、./docs/guide/dev/changelog.mdにまとめる。 -->
 
 # Changelog
 
