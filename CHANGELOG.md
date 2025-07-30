@@ -242,6 +242,8 @@
 
     取り得る値は`"talk" | "singing_teacher" | "frame_decode" | "sing"`です。ソング機能自体は今後[#1073]で行われる予定です。
 
+    また、エラーの種類として`InvalidModelFormat` (C API: <code>VOICEVOX\_RESULT\_INVALID\_MODEL\_**HEADER**\_ERROR</code>)が追加されます。
+
 - リポジトリ上のMarkdownドキュメントが色々改善されます ([#699], [#707], [#824] by [@cm-ayf], [#838], [#863], [#945], [#1021], [#1023], [#1025])。
 
     - docs/ディレクトリが再編されます。
@@ -340,6 +342,7 @@
 
     またこれに伴い:
 
+    - エラーの種類として`InitInferenceRuntime`が追加されます。
     - C APIでは、LinuxとmacOS用のrpath設定が削除されます。
     - Python APIはmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_{glibcのバージョン}"になります。また、カレントディレクトリ下の動的ライブラリを自動で読み込む機能は無くなります。
 
@@ -383,12 +386,6 @@
 
     - `InferenceFailed` → `RunModel`
     - `ExtractFullContextLabel` → `AnalyzeText`
-
-    TODO: 追加されたエラーも"Added"や"Fixed"で紹介した方がよいかも？
-
-    ```console
-    ❯ git diff 0.15.0-preview.16 0.16.0-preview.0 crates/voicevox_core_c_api/include/voicevox_core.h
-    ```
 
 - \[BREAKING\] `UserDictWord`の`accent_type`はオプショナルではなくなります ([#1002])。
 
@@ -455,11 +452,11 @@
 
 - \[Python,Java\] \[BREAKING\] `SpeakerMeta`は<code>**Character**Meta</code>に、`StyleVersion`は<code>**Character**Meta</code>に改名されます ([#931], [#943], [#996])。
 
-- \[Java\] \[BREAKING\] `Synthesizer`, `OpenJtalk`, `VoiceModelFile`, `UserDict`は`voicevoxcore.blocking`パッケージの下に移ります。それに伴い、いくつかのクラスは`voicevoxcore`パッケージの直下に置かれるようになります ([#861])。
+- \[Java\] \[BREAKING\] `Synthesizer`, `OpenJtalk`, `VoiceModelFile` (旧`VoiceModel`), `UserDict`は`voicevoxcore.blocking`パッケージの下に移ります。それに伴い、いくつかのクラスは`voicevoxcore`パッケージの直下に置かれるようになります ([#861])。
 
     - `voicevoxcore.{Synthesizer. => }AccelerationMode`
-    - `voicevoxcore.{VoiceModelFile. => }SpeakerMeta`
-    - `voicevoxcore.{VoiceModelFile. => }StyleMeta`
+    - `voicevoxcore.{VoiceModel. => }SpeakerMeta`
+    - `voicevoxcore.{VoiceModel. => }StyleMeta`
     - `voicevoxcore.{UserDict.Word => UserDictWord}`
 
     (`Synthesizer`, `VoiceModelFile`, `UserDict`自体は`voicevoxcore.blocking`下に移動)
@@ -606,20 +603,19 @@
 ### Added
 
 - READMEおよびPython exampleが改善されます ([#661], [#663])。
+- `InferenceFailed`エラーが、ONNX Runtimeからの情報をきちんと持つようになります (補足: [0.16.0-preview.0](#0160-preview0---2025-03-01-0900)にて`InferenceFailed`エラーは`RunModel`エラーに改名されます) ([#668])。
+- \[Python\] ビルドに用いているMaturin, PyO3, pyo3-asyncio, pyo3-logがアップデートされます ([#664])。
 - \[Python,Java\] `Synthesizer`が不要に排他制御されていたのが解消されます ([#666])。
 - \[Java\] `Synthesizer#{getMetas,isGpuMode}`および、バージョン情報とデバイス情報が取得できる`GlobalInfo`クラスが追加されます ([#673])。
 - \[Java\] ドキュメンテーションコメントが充実します ([#673])。
-- `InferenceFailed`エラーが、ONNX Runtimeからの情報をきちんと持つようになります ([#668])。
 
 ### Changed
 
 - \[C,Python\] \[BREAKING\] `Synthesizer`および`OpenJtalk`の`new_with_initialize`は`new`にリネームされます ([#669])。
-- \[Python\] \[BREAKING\] `Synthesizer.new`は無くなり、`__new__`からコンストラクトできるようになります ([#671])。
+- \[Python\] \[BREAKING\] `Synthesizer.new(_with_initialize)`は無くなり、`__new__`からコンストラクトできるようになります ([#671])。
 
 ### Non notable
 
-- TODO: Pythonのsdist
-    - Maturin, PyO3, pyo3-asyncio, pyo3-logをアップデート ([#664])。
 - TODO: Rust API
     - "new_with_initialize" → "new" ([#669])。
 
@@ -698,7 +694,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 ### Fixed
 
-- \[C\] [0.15.0-preview.3](#0150-preview3---2023-05-18-0900)と[0.15.0-preview.4](#0150-preview4---2023-06-21-0900)で導入された、不正な`json_free`および`wav_free`に対するセーフティネットのメッセージが改善されます ([#625])。
+- \[C\] [0.15.0-preview.3](#0150-preview3---2023-05-18-0900)で導入された不正な`json_free`および`wav_free`に対するセーフティネットのメッセージが、[0.15.0-preview.4](#0150-preview4---2023-06-21-0900)に引き続き改善されます ([#625])。
 
 ## [0.15.0-preview.11] - 2023-10-08 (+09:00)
 
@@ -727,7 +723,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 ### Added
 
 - READMEおよびPython exampleが改善されます ([#584] by [@weweweok], [#590], [#598], [#613])。
-    - [READMEの「事例紹介」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.9/README.md#事例紹介)に[VoicevoxCoreSharp](https://github.com/yamachu/VoicevoxCoreSharp)が追加されます。
+    - [READMEの「その他の言語」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.9/README.md#その他の言語)に[VoicevoxCoreSharp](https://github.com/yamachu/VoicevoxCoreSharp)が追加されます。
     - Python exampleはBlackとisortでフォーマットされ、`--speaker-id`は`--style-id`になります。
 - \[C\] 引数の`VoicevoxUserDictWord *`はunalignedであってもよくなります ([#601])。
 - \[Python\] `__version__`が追加されます ([#597])。
@@ -855,7 +851,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - [READMEの「事例紹介」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.4/README.md#事例紹介)に、Goラッパーの事例として[voicevoxcore.go](https://github.com/sh1ma/voicevoxcore.go)が追加されます ([#498] by [@sh1ma], [#511])。
 - \[C\] :tada: iOS向けXCFrameworkがリリースに含まれるようになります ([#485] by [@HyodaKazuaki])。
-- \[C\] 知らない文字列、既知の静的領域の文字列、解放済みの文字列への`json_free`は明示的に拒否されるようになります ([#500])。
+- \[C\] [0.15.0-preview.3](#0150-preview3---2023-05-18-0900)で導入された`json_free`のセーフティネットについて、メッセージが改善されます ([#500])。
 - \[C\] ヘッダに[cbindgen](https://docs.rs/crate/cbindgen)のバージョンが記載されるようになります ([#519])。
 - \[C\] ヘッダにおける変な空行が削除されます ([#518])。
 - \[Python\] Rustのパニックが発生したときの挙動が「プロセスのabort」から、「`pyo3_runtime.PanicException`の発生」に変わります ([#505])。
@@ -870,7 +866,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - :tada: 音素の長さ、もしくは音高の再生成ができるようになります ([#479], [#483])。
 
-    VOICEVOX ENGINEの`/mora_{length,pitch,data}`にあたります。
+    VOICEVOX ENGINEの`/mora_{length,pitch,data}`にあたります。これまでは、テキストから`AudioQuery`を丸ごと作る必要がありました。
 
 - `AudioQuery`ではない、`accent_phrases`のみの生成ができるようになります ([#479], [#483])。
 
@@ -878,49 +874,47 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - `AudioQuery`の`kana`が、VOICEVOX ENGINEと同様に省略可能になります ([#486], [#487])。
 
-- README。
-    - [READMEの「事例紹介」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.3/README.md#事例紹介)に、Goラッパーの事例として[VOICEVOX CORE Go サンプル](https://github.com/yerrowTail/voicevox_core_go_sample)が追加されます ([#455] by [@yerrowTail])。
-    - voicevoxcore4s(Scala FFI Wrapper)を事例紹介に追加 ([#429] by [@windymelt])
+- READMEが改善されます ([#404], [#429] by [@windymelt], [#439], [#458] by [@char5742], [#455] by [@yerrowTail], [#463])。
 
-- APIドキュメントが改善されます ()。
-    - テキストの文字コードはUTF8だと案内 ([#438])。
-
-- TODO: readmeとexampleの改善
-
-    - Flutter 向け FFI ラッパーを事例紹介に追加 ([#458])
-    - READMEにDiscordへの案内などを追加 ([#463])
-    - ダウンローダーをスクリプト版からrust版を使うよう案内 ([#439])
-    - 0.13工事中の表記を消す ([#404])
-    - example/pythonのloggingを改善 ([#481])
-    - example/pyo3 を利用しやすく修正 ([#419]) ([#475])
-    - wheelを利用したexampleをわかりやすく ([#421])
-    - init.pyに__all__を追加 ([#415])
-    - Windows c++サンプル修正 ([#420])
-    - python (FFI) example を削除 ([#432])
+    - [READMEの「その他の言語」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.3/README.md#その他の言語)に、Goラッパーの事例として[VOICEVOX CORE Go サンプル](https://github.com/yerrowTail/voicevox_core_go_sample)が追加されます。
+    - [READMEの「事例紹介」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.3/README.md#事例紹介)に、次の二つが追加されます。
+        - Flutterラッパーの事例として[voicevox\_flutter](https://github.com/char5742/voicevox_flutter) ([@char5742])
+        - Scalaラッパーの事例として[voicevoxcore4s](https://github.com/windymelt/voicevoxcore4s) ([@windymelt])
+    - [VOICEVOX Community by Discord](https://discord.gg/WMwWetrzuh)をはじめとしたバッジが載ります。
+    - スクリプト版ダウンローダーの代わりにRust版を使うよう案内されます（補足: [0.15.0-preview.9](#0150-preview9---2023-09-18-0900)にてスクリプト版は削除されます）。
+    - 「工事中」の表記が消えます。
 
 - \[C\] :tada: Androidをターゲットとしたビルドが追加されます ([#444] by [@char5742], [#450], [#452] by [@char5742], [#473])。
 
 - \[C\] :tada: iOSをターゲットとしたビルドが追加されます ([#471] by [@HyodaKazuaki])。
 
-- \[C\] アロケーションの回数を抑えるパフォーマンス改善が入ります ([#392], [#478])。
+- \[C\] `json_free`および`wav_free`に、知らない配列/文字列と解放済みの配列/文字列を拒否するセーフティネット機構が入ります ([#392] by [@higumachan], [#478])。
 
-    TODO: フールプルーフ機構がこのあたりから入ってなかったか？要確認
-    TODO: [@higumachan](https://github.com/higumachan)さんの名前が消えとる!
+    アロケーションの回数を抑える、パフォーマンス改善でもあります。
+
+- \[Python\] PyO3版exampleとそのドキュメントが改善されます ([#481], [#419] by [@osakanataro], [#475], [#421] by [@misogihagi])
 
 - \[Rust版ダウンローダー\] download-windows-x64.exeはコード署名されるようになります ([#412])。
 
 ### Changed
 
 - \[C\] ログの時刻がローカル時刻になります ([#400], [#434])。
+- \[Python\] `ctypes`版exampleは削除され、PyO3版exampleが[example/python](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.3/example/python)になります ([#432])。
 - \[Rust版ダウンローダー\] \[BREAKING\] リリースの`download-{linux,osx}-aarch64`は`…-arm64`に改名されます ([#416])。
 
 ### Fixed
 
 - kanaからAudioQueryを作る際、音素の流さと音高が未設定になってしまう問題が修正されます ([#407])。
 
+- `text`がUTF-8である必要があるという案内がドキュメンテーションコメントに書かれます ([#438])。
+
 - READMEの書式について、軽微な修正が入ります（日本語とアルファベットの間にスペースが入っていたりいなかったりしていたので、スペースを入れるよう統一しました）([#455] by [@yerrowTail])。
 
     補足: その後は特に気にされてはおらず、混在する状態になっています。またこのようなスペースについてissueが提議されたこともありません。
+
+- \[C\] \[Windows\] C++ exampleが修正されます ([#420] by [@shigobu])。
+
+- \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
 [Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...HEAD
 [0.16.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.1...0.16.0
@@ -1277,9 +1271,12 @@ Windows版ダウンローダーのビルドに失敗しています。
 [@cm-ayf]: https://github.com/cm-ayf
 [@eyr1n]: https://github.com/eyr1n
 [@fuziki]: https://github.com/fuziki
+[@higumachan]: https://github.com/higumachan
 [@HyodaKazuaki]: https://github.com/HyodaKazuaki
+[@misogihagi]: https://github.com/misogihagi
 [@nanae772]: https://github.com/nanae772
 [@nekomimimi]: https://github.com/nekomimimi
+[@osakanataro]: https://github.com/osakanataro
 [@sh1ma]: https://github.com/sh1ma
 [@shigobu]: https://github.com/shigobu
 [@shuntia]: https://github.com/shuntia
