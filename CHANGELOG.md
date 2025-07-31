@@ -106,7 +106,7 @@
 
 - \[C\] `free`系と`delete`系の関数が、`free(3)`や`HeapFree`のようにヌルポインタを許容するようになります ([#1094])。
 
-- \[C\] \[macOS\] :tada: GitHub ReleasesのXCFrameworkが、macOS向けのライブラリも同梱するようになります ([#1056])。
+- \[C\] \[macOS\] :tada: GitHub ReleasesのXCFrameworkが、macOS向けのライブラリも同梱するようになります ([#1056] helped by [@nekomimimi])。
 
     ```diff
     -voicevox_core-ios-xcframework-cpu-{バージョン}.zip
@@ -142,7 +142,7 @@
 
 ### Changed
 
-- \[C\] \[macOS\] GitHub Releasesにおいてvoicevox\_core-**ios**-xcframework-cpu-{バージョン}.zipは、macOS版XCFrameworkの提供に伴ってvoicevox\_core-xcframework-cpu-{バージョン}.zipに改名されます ([#1056])。
+- \[C\] \[macOS\] GitHub Releasesにおいてvoicevox\_core-**ios**-xcframework-cpu-{バージョン}.zipは、macOS版XCFrameworkの提供に伴ってvoicevox\_core-xcframework-cpu-{バージョン}.zipに改名されます ([#1056] helped by [@nekomimimi])。
 
 ### Removed
 
@@ -153,7 +153,7 @@
 ### Fixed
 
 - \[Rust\] Nightly Rustでビルドできない問題（[dtolnay/proc-macro2#497]）が発生したため、`proc-macro2`の依存がv1.0.95に上がります ([#1078])。
-- \[Python\] ドキュメントの誤記が修正されます ([#1063])。
+- \[Python\] リポジトリにあるMarkdownドキュメントの誤記が修正されます ([#1063])。
 - \[Java\] \[Android\] GHAのUbuntuイメージ備え付けの`$ANDROID_NDK` (現時点ではバージョン27)を使ったリリースがされるようになります。これにより、[#1103]で報告されたAndroidビルドにおけるC++シンボルの問題が解決されます ([#1108])。
 - \[Java\] Javaのファイナライザから中身のRustオブジェクトのデストラクトがされない問題が解決されます ([#1085])。
 - \[ダウンローダー\] \[Windows\] GitHub Releasesにおいて、再び署名がされるようになります ([#1060])。
@@ -167,7 +167,7 @@
     - [docs/guide/user/serialization.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0/docs/guide/user/serialization.md)
 - [READMEの「事例紹介」](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0/README.md#事例紹介)に、Swiftの事例として[VoicevoxCoreSwift](https://github.com/yamachu/VoicevoxCoreSwift)が追加されます ([#1055])。
 - \[Rust\] APIドキュメントのトップにコード例が入ります ([#1016], [#1045])。
-- \[ダウンローダー\] `models`のダウンロード元であるvoicevox\_vvmのバージョン範囲が、`>=0.1,<0.2`になります ([#1057])。
+- \[ダウンローダー\] `models`のダウンロード元である[VOICEVOX/voicevox\_vvm]のバージョン範囲が、`>=0.1,<0.2`になります ([#1057])。
 
 ### Changed
 
@@ -206,7 +206,7 @@
 ### Changed
 
 - \[Python\] \[BREAKING\] Pydanticが依存から外れ、`@pydantic.dataclasses.dataclass`のクラスはすべて素のdataclassになります。dataclassのシリアライズについては代替手段は用意されず、非推奨になります ([#1034])。
-- \[ダウンローダー\] `models`のダウンロード元がvoicevox\_vvmの`0.0.1-preview.5` (= 今の[`0.1.0`](https://github.com/VOICEVOX/voicevox_vvm/releases/tag/0.1.0))になり、readmeおよび利用規約の文面が更新されます ([VOICEVOX/voicevox\_vvm#12], [VOICEVOX/voicevox\_vvm#14], [#1015])。
+- \[ダウンローダー\] `models`のダウンロード元が[VOICEVOX/voicevox\_vvm]の`0.0.1-preview.5` (= 今の[`0.1.0`](https://github.com/VOICEVOX/voicevox_vvm/releases/tag/0.1.0))になり、readmeおよび利用規約の文面が更新されます ([VOICEVOX/voicevox\_vvm#12], [VOICEVOX/voicevox\_vvm#14], [#1015])。
 
 ### Removed
 
@@ -221,7 +221,7 @@
 
 ### Added
 
-- :tada: Rust APIが利用できるようになります ([#425], [#443], [#479], [#486], [#487], [#508], [#370], [#501], [#502], [#515], [#538], [#532], [#551], [#573], [#580], [#589], [#577], [#622], [#623], [#624], [#646], [#656], [#669], [#675], [#667], [#692], [#694], [#702], [#745], [#740] by [@eyr1n], [#708], [#803], [#759], [#807], [#810], [#805], [#831], [#834], [#835], [#844], [#846], [#847], [#868], [#882], [#886], [#907], [#910], [#912], [#825], [#911], [#919], [#932], [#931], [#940], [#941], [#937], [#949], [#958], [#974], [#982], [#990], [#992], [#996], [#1002], [#1025])。
+- :tada: Rust APIが利用できるようになります ([#425], [#443], [#479], [#486], [#487], [#508], [#370], [#501], [#502], [#515], [#538], [#532] helped by [@wappon28dev], [#551], [#573], [#580], [#589], [#577], [#622], [#623], [#624], [#646], [#656], [#669], [#675], [#667], [#692], [#694], [#702], [#745], [#740] by [@eyr1n], [#708], [#803], [#759], [#807], [#810], [#805], [#831], [#834], [#835], [#844], [#846], [#847], [#868], [#882], [#886], [#907], [#910], [#912], [#825], [#911], [#919], [#932], [#931], [#940], [#941], [#937], [#949], [#958], [#974], [#982], [#990], [#992], [#996], [#1002], [#1025])。
 
     ```console
     ❯ cargo add voicevox_core --git https://github.com/VOICEVOX/voicevox_core.git --tag 0.16.0-preview.0 --features load-onnxruntime
@@ -236,7 +236,7 @@
 
     これらがどのような位置付けなのかは、後述する[tts-process.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0-preview.0/docs/guide/user/tts-process.md)にて図示されます。
 
-- `SpeakerMeta`および`StyleMeta`に、オプショナルな整数型フィールド`order`が追加されます ([#728])。
+- `SpeakerMeta`改め`CharacterMeta`（後述）、および`StyleMeta`に、オプショナルな整数型フィールド`order`が追加されます ([#728])。
 
 - `StyleMeta`に`type`というフィールドが追加されます ([#531], [#738], [#761], [#895], [#996])。
 
@@ -356,11 +356,13 @@
 
 - \[BREAKING\] 製品版VVMは、このリポジトリのGitHub Releasesには置かれなくなります ([#928], [#964], [#1020] by [@nanae772])。
 
-    [VOICEVOX/voicevox\_vvm](https://github.com/VOICEVOX/voicevox_vvm)に置かれるようになり、ダウンローダーはそこからダウンロードします。なお、VOICEVOX/voicevox\_fat\_resourceは[リポジトリごと削除されました](https://github.com/VOICEVOX/voicevox_core/issues/1061#issuecomment-2766705584)。
+    [VOICEVOX/voicevox\_vvm]に置かれるようになり、ダウンローダーはそこからダウンロードします。なお、VOICEVOX/voicevox\_fat\_resourceは[リポジトリごと削除されました](https://github.com/VOICEVOX/voicevox_core/issues/1061#issuecomment-2766705584)。
+
+    補足: このバージョンでは製品版VVMの代わりにsample.vvmのみがアップロードされていますが、[0.16.0-preview.1](#0160-preview1---2025-03-08-0900)にてそれも無くなります。
 
 - \[BREAKING\] `VoiceModel`は`VoiceModelFile`になり、ファイルディスクリプタを保持する形になります。コンストラクタの名前は"from\_path"から"open"になり、Python APIとJava APIではクローズ可能になります ([#832], [#868], [#937], [#993])。
 
-    クローズ (`__{,a}{enter,exit}__`/`java.io.Closeable`)の挙動については、詳しくはAPI ドキュメントをご覧ください。
+    クローズ (`__{,a}{enter,exit}__`/`java.io.Closeable`)の挙動については、詳しくはAPIドキュメントをご覧ください。
 
 - \[BREAKING\] `AudioQuery`および`UserDictWord`のJSON表現はVOICEVOX ENGINEと同じになります ([#946], [#1014])。
 
@@ -403,7 +405,7 @@
 
     例えば`[a, b, c, d, e]`のようなキーの並びから`b`を削除したときに、順序を保って`[a, c, d, e]`になります。以前までは`[a, e, c, d]`になってました。
 
-- ドキュメント上の「話者」という表現は「キャラクター」になります ([#943], [#996])。
+- ドキュメンテーションコメント上の「話者」という表現は「キャラクター」になります ([#943], [#996])。
 
 - \[C\] \[BREAKING\] 次の`VoicevoxVoiceModelFile` (旧`VoicevoxVoiceModel`)のゲッターに位置付けられる関数が、ゲッターではなくなります ([#850])。
 
@@ -455,7 +457,7 @@
 - \[Java\] \[BREAKING\] `Synthesizer`, `OpenJtalk`, `VoiceModelFile` (旧`VoiceModel`), `UserDict`は`voicevoxcore.blocking`パッケージの下に移ります。それに伴い、いくつかのクラスは`voicevoxcore`パッケージの直下に置かれるようになります ([#861])。
 
     - `voicevoxcore.{Synthesizer. => }AccelerationMode`
-    - `voicevoxcore.{VoiceModel. => }SpeakerMeta`
+    - `voicevoxcore.{VoiceModel.SpeakerMeta => CharacterMeta}`
     - `voicevoxcore.{VoiceModel. => }StyleMeta`
     - `voicevoxcore.{UserDict.Word => UserDictWord}`
 
@@ -523,7 +525,7 @@
 
 ### Fixed
 
-- "Added"の章で述べた`SpeakerMeta::order`により、製品版VVMにおいて`metas`の出力が適切にソートされるようになります ([#728])。
+- "Added"の章で述べた`CharacterMeta::order`により、製品版VVMにおいて`metas`の出力が適切にソートされるようになります ([#728])。
 
     これにより、キャラクター/スタイルの順番がバージョン0.14およびVOICEVOX ENGINEのように整います。
 
@@ -794,7 +796,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
     二つのユーザー辞書をマージしたり、JSONとの相互変換をすることができます。
 
-- :tada: ドキュメンテーションコメントが充実します ([#532], [#534])。
+- :tada: ドキュメンテーションコメントが充実します ([#532] helped by [@wappon28dev], [#534])。
 
     C APIについては、[RustのUB](https://doc.rust-lang.org/reference/behavior-considered-undefined.html)に踏み込むような領域について「安全性要件」が定められ、詳しく記述されるようになります。
 
@@ -814,7 +816,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
     補足: この時点では引数ゼロの静的な関数ですが、[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)において`Onnxruntime`型のメソッドになります。
 
-- \[BREAKING\] `speaker_id`はすべて`style_id`になります (Python APIのみ破壊的変更) ([#370], [#532])。
+- \[BREAKING\] `speaker_id`はすべて`style_id`になります (Python APIのみ破壊的変更) ([#370], [#532] helped by [@wappon28dev])。
 
 - READMEに「工事中」の案内が復活します ([#542])。
 
@@ -865,7 +867,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 ### Fixed
 
-- \[Python\] exampleコードおよびドキュメントが修正されます ([#494], [#495])。
+- \[Python\] exampleコードとそのドキュメントが修正されます ([#494], [#495])。
 
 ## [0.15.0-preview.3] - 2023-05-18 (+09:00)
 
@@ -881,7 +883,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - `AudioQuery`の`kana`が、VOICEVOX ENGINEと同様に省略可能になります ([#486], [#487])。
 
-- READMEが改善されます ([#404], [#429] by [@windymelt], [#439], [#458] by [@char5742], [#455] by [@yerrowTail], [#463])。
+- READMEが改善されます ([#404], [#429] by [@windymelt], [#439] by [@misogihagi], [#458] by [@char5742], [#455] by [@yerrowTail], [#463])。
 
     - [READMEの「その他の言語」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.3/README.md#その他の言語)に、Goラッパーの事例として[VOICEVOX CORE Go サンプル](https://github.com/yerrowTail/voicevox_core_go_sample)が追加されます。
     - [READMEの「事例紹介」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.3/README.md#事例紹介)に、次の二つが追加されます。
@@ -907,7 +909,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[C\] ログの時刻がローカル時刻になります ([#400], [#434])。
 - \[Python\] `ctypes`版exampleは削除され、PyO3版exampleが[example/python](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.3/example/python)になります ([#432])。
-- \[Rust版ダウンローダー\] \[BREAKING\] リリースの`download-{linux,osx}-aarch64`は`…-arm64`に改名されます ([#416])。
+- \[Rust版ダウンローダー\] リリースの`download-{linux,osx}-aarch64`は`…-arm64`に改名されます ([#416])。
 
 ### Fixed
 
@@ -1252,6 +1254,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
+[VOICEVOX/voicevox\_vvm]: https://github.com/VOICEVOX/voicevox_vvm
 [VOICEVOX/voicevox\_vvm#12]: https://github.com/VOICEVOX/voicevox_vvm/pull/12
 [VOICEVOX/voicevox\_vvm#14]: https://github.com/VOICEVOX/voicevox_vvm/pull/14
 
@@ -1275,3 +1278,4 @@ Windows版ダウンローダーのビルドに失敗しています。
 [@weweweok]: https://github.com/weweweok
 [@windymelt]: https://github.com/windymelt
 [@yerrowTail]: https://github.com/yerrowTail
+[@wappon28dev]: https://github.com/wappon28dev
