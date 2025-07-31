@@ -1,6 +1,6 @@
 # [CHANGELOG.md]の書き方の方針
 
-この方針は今のところ人間のために、というより@qryxipの忘備録として書いている。LLMにやらせることは今のところ計画されていない。
+この方針は今のところ人間のために、というよりメンテナである[@qryxip]の忘備録として書いている。LLMにやらせることは今のところ計画されていない。
 
 - [オリジナルのKeep a Changelog]を拡大解釈する形で、次のルールを定める。
     - 日付の形式は`yyyy-mm-dd (+09:00)`とする。確信が持てないが、この形が多分最も合法。
@@ -35,6 +35,7 @@
     - 変更量が膨大なため、ベストエフォートを心掛ける。また、できる限り簡潔に書くようにする。
 
 [CHANGELOG.md]: ../../../CHANGELOG.md
+[@qryxip]: https://github.com/qryxip
 [オリジナルのKeep a Changelog]: https://keepachangelog.com/en/1.1.0/
 [@VOICEVOX]: https://github.com/VOICEVOX
 [リリースの削除]: https://github.com/VOICEVOX/voicevox_core/issues/1067
