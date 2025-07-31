@@ -102,6 +102,8 @@
 
 - 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
 
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンからGitHub Releasesの本文にも同じ内容が載るようになります ([#1109])。
+
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
 - \[C\] `free`系と`delete`系の関数が、`free(3)`や`HeapFree`のようにヌルポインタを許容するようになります ([#1094])。
@@ -1250,6 +1252,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1100]: https://github.com/VOICEVOX/voicevox_core/pull/1100
 [#1103]: https://github.com/VOICEVOX/voicevox_core/issues/1103
 [#1108]: https://github.com/VOICEVOX/voicevox_core/pull/1108
+[#1109]: https://github.com/VOICEVOX/voicevox_core/pull/1109
 [#1111]: https://github.com/VOICEVOX/voicevox_core/pull/1111
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
