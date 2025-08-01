@@ -27,6 +27,7 @@ pub(crate) trait FullcontextExtractor {
 
 pub(crate) mod blocking {
     use std::{
+        fmt::{self, Debug},
         io::Write as _,
         sync::{Arc, Mutex},
     };
@@ -44,12 +45,12 @@ pub(crate) mod blocking {
     };
 
     /// テキスト解析器としてのOpen JTalk。
-    #[doc(alias = "OpenJtalkRc")]
+    #[cfg_attr(doc, doc(alias = "OpenJtalkRc"))]
     #[derive(Clone)]
     pub struct OpenJtalk(pub(super) Arc<Inner>);
 
     impl self::OpenJtalk {
-        #[doc(alias = "voicevox_open_jtalk_rc_new")]
+        #[cfg_attr(doc, doc(alias = "voicevox_open_jtalk_rc_new"))]
         pub fn new(open_jtalk_dict_dir: impl AsRef<Utf8Path>) -> crate::result::Result<Self> {
             let dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
 
@@ -75,7 +76,7 @@ pub(crate) mod blocking {
         /// ユーザー辞書を設定する。
         ///
         /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
-        #[doc(alias = "voicevox_open_jtalk_rc_use_user_dict")]
+        #[cfg_attr(doc, doc(alias = "voicevox_open_jtalk_rc_use_user_dict"))]
         pub fn use_user_dict(
             &self,
             user_dict: &crate::blocking::UserDict,
@@ -151,6 +152,20 @@ pub(crate) mod blocking {
         }
     }
 
+    impl Debug for self::OpenJtalk {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let Self(inner) = self;
+            let Inner {
+                resources,
+                dict_dir,
+            } = &**inner;
+            fmt.debug_struct("OpenJtalk")
+                .field("resources", resources)
+                .field("dict_dir", dict_dir)
+                .finish()
+        }
+    }
+
     pub(super) struct Inner {
         resources: std::sync::Mutex<Resources>,
         dict_dir: Utf8PathBuf,
@@ -213,6 +228,22 @@ pub(crate) mod blocking {
         njd: ManagedResource<Njd>,
         jpcommon: ManagedResource<JpCommon>,
     }
+
+    impl Debug for Resources {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            // FIXME: open_jtalk-rs側に`Debug`実装を入れる
+            let Self {
+                mecab: _,
+                njd: _,
+                jpcommon: _,
+            } = self;
+            fmt.debug_struct("Resources")
+                .field("mecab", &format_args!("_"))
+                .field("njd", &format_args!("_"))
+                .field("jpcommon", &format_args!("_"))
+                .finish()
+        }
+    }
 }
 
 pub(crate) mod nonblocking {
@@ -228,7 +259,8 @@ pub(crate) mod nonblocking {
     ///
     /// [blocking]: https://docs.rs/crate/blocking
     /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
-    #[derive(Clone)]
+    #[derive(Clone, derive_more::Debug)]
+    #[debug("{_0:?}")]
     pub struct OpenJtalk(pub(in super::super) super::blocking::OpenJtalk);
 
     impl self::OpenJtalk {

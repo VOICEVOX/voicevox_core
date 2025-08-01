@@ -1,5 +1,5 @@
 /// 本クレートの`package.version`。
-#[doc(alias = "voicevox_get_version")]
+#[cfg_attr(doc, doc(alias = "voicevox_get_version"))]
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg(test)]

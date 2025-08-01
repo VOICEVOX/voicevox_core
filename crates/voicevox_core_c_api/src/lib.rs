@@ -177,7 +177,7 @@ pub extern "C" fn voicevox_make_default_load_onnxruntime_options() -> VoicevoxLo
 /// ```
 ///
 /// \orig-impl{VoicevoxOnnxruntime}
-#[cfg(any())]
+#[cfg(false)]
 pub struct VoicevoxOnnxruntime(!);
 
 /// cbindgen:ignore
@@ -397,7 +397,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_analyze(
 ///
 /// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
 ///
-/// @param [in] open_jtalk 破棄対象
+/// @param [in] open_jtalk 破棄対象。nullable
 ///
 /// \example{
 /// ```c
@@ -611,7 +611,7 @@ pub extern "C" fn voicevox_voice_model_file_create_metas_json(
 ///
 /// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
 ///
-/// @param [in] model 破棄対象
+/// @param [in] model 破棄対象。nullable
 ///
 /// \no-orig-impl{voicevox_voice_model_file_delete}
 #[unsafe(no_mangle)]
@@ -670,7 +670,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
 ///
 /// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
 ///
-/// @param [in] synthesizer 破棄対象
+/// @param [in] synthesizer 破棄対象。nullable
 ///
 /// \no-orig-impl{voicevox_synthesizer_delete}
 #[unsafe(no_mangle)]
@@ -1397,10 +1397,10 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// JSON文字列を解放する。
 ///
-/// @param [in] json 解放するJSON文字列
+/// @param [in] json 解放するJSON文字列。nullable
 ///
 /// \safety{
-/// - `json`は以下のAPIで得られたポインタでなくてはいけない。
+/// - `json`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
 ///     - ::voicevox_audio_query_create_from_accent_phrases
 ///     - ::voicevox_onnxruntime_create_supported_devices_json
 ///     - ::voicevox_voice_model_file_create_metas_json
@@ -1413,29 +1413,31 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 ///     - ::voicevox_synthesizer_replace_mora_pitch
 ///     - ::voicevox_user_dict_to_json
 /// - 文字列の長さは生成時より変更されていてはならない。
-/// - `json`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
-/// - `json`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+/// - `json`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+/// - `json`がヌルポインタでないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
 /// }
 ///
 /// \no-orig-impl{voicevox_json_free}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
     init_logger_once();
-    // SAFETY: The safety contract must be upheld by the caller.
-    drop(unsafe { CString::from_raw(C_STRING_DROP_CHECKER.check(json)) });
+    if let Some(json) = C_STRING_DROP_CHECKER.check(json) {
+        // SAFETY: The safety contract must be upheld by the caller.
+        drop(unsafe { CString::from_raw(json.as_ptr()) });
+    }
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// WAVデータを解放する。
 ///
-/// @param [in] wav 解放するWAVデータ
+/// @param [in] wav 解放するWAVデータ。nullable
 ///
 /// \safety{
-/// - `wav`は以下のAPIで得られたポインタでなくてはいけない。
+/// - `wav`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
 ///     - ::voicevox_synthesizer_synthesis
 ///     - ::voicevox_synthesizer_tts
-/// - `wav`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
-/// - `wav`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+/// - `wav`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+/// - `wav`がヌルポインタでないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
 /// }
 ///
 /// \no-orig-impl{voicevox_wav_free}
@@ -1760,7 +1762,7 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 ///
 /// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
 ///
-/// @param [in] user_dict 破棄対象
+/// @param [in] user_dict 破棄対象。nullable
 ///
 /// \no-orig-impl{voicevox_user_dict_delete}
 #[unsafe(no_mangle)]

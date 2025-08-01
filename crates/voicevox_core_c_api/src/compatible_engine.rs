@@ -183,7 +183,7 @@ pub extern "C" fn load_model(style_id: i64) -> bool {
             true
         }
     } else {
-        set_message(&format!("{}は無効なStyle IDです", style_id));
+        set_message(&format!("{style_id}は無効なStyle IDです"));
         false
     }
 }

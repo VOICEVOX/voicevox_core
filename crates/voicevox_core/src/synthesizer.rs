@@ -5,7 +5,13 @@
 use easy_ext::ext;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
-use std::{future::Future, marker::PhantomData, ops::Range, sync::Arc};
+use std::{
+    fmt::{self, Debug},
+    future::Future,
+    marker::PhantomData,
+    ops::Range,
+    sync::Arc,
+};
 use tracing::info;
 
 use crate::{
@@ -45,6 +51,8 @@ pub const DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK: bool = true;
 pub const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: bool =
     <BlockingThreadPool as infer::AsyncExt>::DEFAULT_HEAVY_INFERENCE_CANCELLABLE;
 
+#[derive(derive_more::Debug)]
+#[debug(bound(A::Cancellable: Debug))]
 struct SynthesisOptions<A: infer::AsyncExt> {
     enable_interrogative_upspeak: bool,
     cancellable: A::Cancellable,
@@ -75,6 +83,8 @@ impl<A: infer::AsyncExt> From<&TtsOptions<A>> for SynthesisOptions<A> {
     }
 }
 
+#[derive(derive_more::Debug)]
+#[debug(bound(A::Cancellable: Debug))]
 struct TtsOptions<A: infer::AsyncExt> {
     enable_interrogative_upspeak: bool,
     cancellable: A::Cancellable,
@@ -90,12 +100,12 @@ impl<A: infer::AsyncExt> Default for TtsOptions<A> {
 }
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
-#[doc(alias = "VoicevoxAccelerationMode")]
+#[cfg_attr(doc, doc(alias = "VoicevoxAccelerationMode"))]
 #[expect(
     clippy::manual_non_exhaustive,
     reason = "バインディングを作るときはexhaustiveとして扱いたい"
 )]
-#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AccelerationMode {
     /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
     #[default]
@@ -108,6 +118,7 @@ pub enum AccelerationMode {
     __NonExhaustive,
 }
 
+#[derive(Debug)]
 struct InitializeOptions {
     acceleration_mode: AccelerationMode,
     cpu_num_threads: u16,
@@ -179,8 +190,10 @@ fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Arr
 // TODO: 後で復活させる
 // https://github.com/VOICEVOX/voicevox_core/issues/970
 #[doc(hidden)]
+#[derive(Clone, PartialEq, derive_more::Debug)]
 pub struct AudioFeature {
     /// (フレーム数, 特徴数)の形を持つ音声特徴量。
+    #[debug("_")]
     internal_state: ndarray::Array2<f32>,
     /// 生成時に指定したスタイル番号。
     style_id: crate::StyleId,
@@ -192,16 +205,20 @@ pub struct AudioFeature {
     audio_query: AudioQuery,
 }
 
+#[derive(derive_more::Debug)]
 struct Inner<T, A: Async> {
     status: Arc<Status<crate::blocking::Onnxruntime>>,
     text_analyzer: T,
     use_gpu: bool,
+    #[debug(ignore)]
     _marker: PhantomData<fn(A) -> A>,
 }
 
+#[derive(derive_more::Debug)]
 struct InnerRefWithoutTextAnalyzer<'a, A: Async> {
     status: &'a Arc<Status<crate::blocking::Onnxruntime>>,
     use_gpu: bool,
+    #[debug(ignore)]
     _marker: PhantomData<fn(A) -> A>,
 }
 
@@ -218,6 +235,8 @@ impl<T> From<Inner<T, BlockingThreadPool>>
     }
 }
 
+#[derive(derive_more::Debug)]
+#[debug("{_0:?}")]
 struct AssumeSingleTasked<T>(T);
 
 impl<T: crate::blocking::TextAnalyzer> crate::nonblocking::TextAnalyzer for AssumeSingleTasked<T> {
@@ -326,6 +345,23 @@ impl<T, A: AsyncExt> Inner<T, A> {
             use_gpu: self.use_gpu,
             _marker: PhantomData,
         }
+    }
+
+    fn fill_debug_struct_body(&self, mut fmt: fmt::DebugStruct<'_, '_>) -> fmt::Result
+    where
+        T: Debug,
+    {
+        let Self {
+            status,
+            text_analyzer,
+            use_gpu,
+            _marker: _,
+        } = self;
+
+        fmt.field("status", status)
+            .field("text_analyzer", text_analyzer)
+            .field("use_gpu", use_gpu)
+            .finish_non_exhaustive()
     }
 }
 
@@ -1205,7 +1241,7 @@ fn list_windows_video_cards() {
 
 impl AudioQuery {
     /// アクセント句の配列からAudioQueryを作る。
-    #[doc(alias = "voicevox_audio_query_create_from_accent_phrases")]
+    #[cfg_attr(doc, doc(alias = "voicevox_audio_query_create_from_accent_phrases"))]
     pub fn from_accent_phrases(accent_phrases: Vec<AccentPhrase>) -> Self {
         let kana = create_kana(&accent_phrases);
         Self {
@@ -1274,7 +1310,10 @@ impl From<Vec<AccentPhrase>> for AudioQuery {
               形を考えると、ここの引数を構造体にまとめたりしても可読性に寄与しない"
 )]
 pub(crate) mod blocking {
-    use std::ops::Range;
+    use std::{
+        fmt::{self, Debug},
+        ops::Range,
+    };
 
     use easy_ext::ext;
 
@@ -1291,7 +1330,7 @@ pub(crate) mod blocking {
     pub use super::AudioFeature;
 
     /// 音声シンセサイザ。
-    #[doc(alias = "VoicevoxSynthesizer")]
+    #[cfg_attr(doc, doc(alias = "VoicevoxSynthesizer"))]
     pub struct Synthesizer<T>(pub(super) Inner<AssumeSingleTasked<T>, SingleTasked>);
 
     impl self::Synthesizer<()> {
@@ -1325,7 +1364,7 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
-        #[doc(alias = "voicevox_synthesizer_new")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_new"))]
         pub fn builder(onnxruntime: &'static crate::blocking::Onnxruntime) -> Builder<()> {
             Builder {
                 onnxruntime,
@@ -1336,7 +1375,7 @@ pub(crate) mod blocking {
     }
 
     impl<T> self::Synthesizer<T> {
-        #[doc(alias = "voicevox_synthesizer_get_onnxruntime")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_get_onnxruntime"))]
         pub fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
             self.0.onnxruntime()
         }
@@ -1347,13 +1386,13 @@ pub(crate) mod blocking {
         }
 
         /// ハードウェアアクセラレーションがGPUモードか判定する。
-        #[doc(alias = "voicevox_synthesizer_is_gpu_mode")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_is_gpu_mode"))]
         pub fn is_gpu_mode(&self) -> bool {
             self.0.is_gpu_mode()
         }
 
         /// 音声モデルを読み込む。
-        #[doc(alias = "voicevox_synthesizer_load_voice_model")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_load_voice_model"))]
         pub fn load_voice_model(
             &self,
             model: &crate::blocking::VoiceModelFile,
@@ -1362,13 +1401,13 @@ pub(crate) mod blocking {
         }
 
         /// 音声モデルの読み込みを解除する。
-        #[doc(alias = "voicevox_synthesizer_unload_voice_model")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_unload_voice_model"))]
         pub fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> crate::Result<()> {
             self.0.unload_voice_model(voice_model_id)
         }
 
         /// 指定したIDの音声モデルが読み込まれているか判定する。
-        #[doc(alias = "voicevox_synthesizer_is_loaded_voice_model")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_is_loaded_voice_model"))]
         pub fn is_loaded_voice_model(&self, voice_model_id: VoiceModelId) -> bool {
             self.0.is_loaded_voice_model(voice_model_id)
         }
@@ -1379,7 +1418,7 @@ pub(crate) mod blocking {
         }
 
         /// 今読み込んでいる音声モデルのメタ情報を返す。
-        #[doc(alias = "voicevox_synthesizer_create_metas_json")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_metas_json"))]
         pub fn metas(&self) -> VoiceModelMeta {
             self.0.metas()
         }
@@ -1414,7 +1453,7 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから直接WAVフォーマットで音声波形を生成する。
-        #[doc(alias = "voicevox_synthesizer_synthesis")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_synthesis"))]
         pub fn synthesis<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
@@ -1454,7 +1493,10 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
-        #[doc(alias = "voicevox_synthesizer_create_accent_phrases_from_kana")]
+        #[cfg_attr(
+            doc,
+            doc(alias = "voicevox_synthesizer_create_accent_phrases_from_kana")
+        )]
         pub fn create_accent_phrases_from_kana(
             &self,
             kana: &str,
@@ -1472,7 +1514,7 @@ pub(crate) mod blocking {
         /// [`replace_phoneme_length`]: Self::replace_phoneme_length
         /// [`replace_mora_pitch`]: Self::replace_mora_pitch
         /// [音声の調整]: ../index.html#音声の調整
-        #[doc(alias = "voicevox_synthesizer_replace_mora_data")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_replace_mora_data"))]
         pub fn replace_mora_data(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1484,7 +1526,7 @@ pub(crate) mod blocking {
         }
 
         /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
-        #[doc(alias = "voicevox_synthesizer_replace_phoneme_length")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_replace_phoneme_length"))]
         pub fn replace_phoneme_length(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1496,7 +1538,7 @@ pub(crate) mod blocking {
         }
 
         /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
-        #[doc(alias = "voicevox_synthesizer_replace_mora_pitch")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_replace_mora_pitch"))]
         pub fn replace_mora_pitch(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1534,7 +1576,7 @@ pub(crate) mod blocking {
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
-        #[doc(alias = "voicevox_synthesizer_create_audio_query_from_kana")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_audio_query_from_kana"))]
         pub fn create_audio_query_from_kana(
             &self,
             kana: &str,
@@ -1546,7 +1588,7 @@ pub(crate) mod blocking {
         }
 
         /// AquesTalk風記法から音声合成を行う。
-        #[doc(alias = "voicevox_synthesizer_tts_from_kana")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_tts_from_kana"))]
         pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
             TtsFromKana {
                 synthesizer: self.0.without_text_analyzer(),
@@ -1589,7 +1631,7 @@ pub(crate) mod blocking {
         /// [`TextAnalyzer::analyze`]: crate::blocking::TextAnalyzer::analyze
         /// [`replace_mora_data`]: Self::replace_mora_data
         /// [音声の調整]: ../index.html#音声の調整
-        #[doc(alias = "voicevox_synthesizer_create_accent_phrases")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_accent_phrases"))]
         pub fn create_accent_phrases(
             &self,
             text: &str,
@@ -1629,7 +1671,7 @@ pub(crate) mod blocking {
         /// [AudioQuery]: crate::AudioQuery
         /// [`create_accent_phrases`]: Self::create_accent_phrases
         /// [音声の調整]: ../index.html#音声の調整
-        #[doc(alias = "voicevox_synthesizer_create_audio_query")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_audio_query"))]
         pub fn create_audio_query(
             &self,
             text: &str,
@@ -1645,7 +1687,7 @@ pub(crate) mod blocking {
         /// [`create_audio_query`]: Self::create_audio_query
         /// [`synthesis`]: Self::synthesis
         /// [音声の調整]: ../index.html#音声の調整
-        #[doc(alias = "voicevox_synthesizer_tts")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_tts"))]
         pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
             Tts {
                 synthesizer: &self.0,
@@ -1653,6 +1695,13 @@ pub(crate) mod blocking {
                 style_id,
                 options: TtsOptions::default(),
             }
+        }
+    }
+
+    impl<T: Debug> Debug for self::Synthesizer<T> {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let fmt = fmt.debug_struct("Synthesizer");
+            self.0.fill_debug_struct_body(fmt)
         }
     }
 
@@ -1783,6 +1832,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use]
+    #[derive(Debug)]
     pub struct Builder<T> {
         onnxruntime: &'static crate::blocking::Onnxruntime,
         text_analyzer: T,
@@ -1822,6 +1872,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct PrecomputeRender<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -1844,6 +1895,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Synthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -1866,6 +1918,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct TtsFromKana<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         kana: &'a str,
@@ -1888,6 +1941,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Tts<'a, T> {
         synthesizer: &'a Inner<AssumeSingleTasked<T>, SingleTasked>,
         text: &'a str,
@@ -1911,6 +1965,8 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod nonblocking {
+    use std::fmt::{self, Debug};
+
     use easy_ext::ext;
 
     use crate::{
@@ -2254,6 +2310,13 @@ pub(crate) mod nonblocking {
         }
     }
 
+    impl<T: Debug> Debug for self::Synthesizer<T> {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let fmt = fmt.debug_struct("Synthesizer");
+            self.0.fill_debug_struct_body(fmt)
+        }
+    }
+
     #[ext(IntoBlocking)]
     impl<T> self::Synthesizer<T> {
         pub fn into_blocking(self) -> super::blocking::Synthesizer<AssumeBlockable<T>> {
@@ -2263,6 +2326,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use]
+    #[derive(Debug)]
     pub struct Builder<T> {
         onnxruntime: &'static crate::nonblocking::Onnxruntime,
         text_analyzer: T,
@@ -2304,6 +2368,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Synthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
@@ -2336,6 +2401,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct TtsFromKana<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         kana: &'a str,
@@ -2368,6 +2434,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Tts<'a, T> {
         synthesizer: &'a Inner<T, BlockingThreadPool>,
         text: &'a str,
