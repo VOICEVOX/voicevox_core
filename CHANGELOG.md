@@ -205,7 +205,7 @@
 
 - \[Python\] `voicevox_core.{blocking,asyncio}`のクラスのインスタンスに対して、同時にアクセスしたときに`RuntimeError`が出る場合があった問題が解決されます ([#1041])。
 
-- \[Python\] （返り値が`NoReturn`であるダミーの）`__new__`の型付けが直ります ([#1048])。
+- \[Python\] [0.16.0-preview.0](#0160-preview0---2025-03-01-0900)で追加された`__new__`の型定義が修正されます ([#1048])。
 
 - \[Java\] \[Windows\] 同じ環境で二度起動しようとすると失敗する問題が修正されます ([#1043])。
 
@@ -347,7 +347,7 @@
 
 ### Changed
 
-- \[BREAKING\] :tada: VOICEVOX COREは完全にMIT Licenseになり、代わりにプロプライエタリ部分はONNX Runtime側に移ります ([#913], [#825], [#965], [#973], [#979], [#1019])。
+- \[BREAKING\] :tada: VOICEVOX COREは完全にMIT Licenseになり、代わりにプロプライエタリ部分はONNX Runtime側に移ります ([#913], [VOICEVOX/voicevox\_vvm#1], [#825], [VOICEVOX/voicevox\_vvm#5], [VOICEVOX/voicevox\_vvm#9], [#965], [#973], [#979], [#1019])。
 
     御自身で手を加えたVOICEVOX COREをそのまま実行できるようになります。
 
@@ -373,7 +373,9 @@
 
     ダウンローダーは[VOICEVOX/onnxruntime-builder](https://github.com/VOICEVOX/onnxruntime-builder)から直接(VOICEVOX) ONNX Runtimeをダウンロードするようになります。
 
-- \[BREAKING\] VVMの形式が変わり、[0.15.0-preview.16](#0150-preview16---2023-12-01-0900)までのVVMは利用できなくなります ([#794], [#795], [#796], [#825])。
+- \[BREAKING\] VVMの形式が変わり、[0.15.0-preview.16](#0150-preview16---2023-12-01-0900)までのVVMは利用できなくなります ([#795], [#796], [#794], [VOICEVOX/voicevox\_vvm#1], [#825], [VOICEVOX/voicevox\_vvm#5], [VOICEVOX/voicevox\_vvm#9])。
+
+    このバージョンのVOICEVOX COREで利用できるVVMの形式が、`vvm_format_version=1`として定められます。
 
 - \[BREAKING\] 製品版VVMは、このリポジトリのGitHub Releasesには置かれなくなります ([#928], [#964], [#1020] by [@nanae772])。
 
@@ -404,6 +406,8 @@
     ```
 
 - \[BREAKING\] `VoiceModelId`は、VVMに固有のUUIDになります ([#796])。
+
+    この「固有」の意味については、[VOICEVOX/voicevox\_vvm#19]にて議論されることになります。
 
 - \[BREAKING\] 一部のエラーの名前が変わります ([#823], [#919])。
 
@@ -473,7 +477,9 @@
 
 - \[Python\] \[BREAKING\] デフォルト引数の前には一律で`*,`が挟まれるようになります ([#998])。
 
-- \[Python,Java\] \[BREAKING\] `SpeakerMeta`は<code>**Character**Meta</code>に、`StyleVersion`は<code>**Character**Meta</code>に改名されます ([#931], [#943], [#996])。
+- \[Python,Java\] \[BREAKING\] `SpeakerMeta`は<code>**Character**Meta</code>に、`StyleVersion`は<code>**Character**Version</code>に改名されます ([#931], [#943], [#996])。
+
+    `speaker_uuid`はそのままです。
 
 - \[Java\] \[BREAKING\] `Synthesizer`, `OpenJtalk`, `VoiceModelFile` (旧`VoiceModel`), `UserDict`は`voicevoxcore.blocking`パッケージの下に移ります。それに伴い、いくつかのクラスは`voicevoxcore`パッケージの直下に置かれるようになります ([#861])。
 
@@ -494,7 +500,7 @@
 
 - \[Java\] \[BREAKING\] ビルダーパターンメソッドの締めの`execute`は`perform`に改名されます ([#911])。
 
-- \[ダウンローダー\] \[BREAKING\] `onnxruntime`（新規追加）および`models`のダウンロードの際、利用規約への同意が求められるようになります ([#928], [#983], [#989], [#1006], [#1011])。
+- \[ダウンローダー\] \[BREAKING\] `onnxruntime`（新規追加）および`models`のダウンロードの際、利用規約への同意が求められるようになります ([VOICEVOX/voicevox\_vvm#1], [#928], [VOICEVOX/voicevox\_vvm#5], [#964], [#983], [#989], [#1006], [#1011])。
 
 - \[ダウンローダー\] \[BREAKING\] `<TARGET>`のうち`core`は`c-api`に改名され、それに伴い`-v, --version`も`--c-api-version`、`--core-repo`も`--c-api-repo`に改名されます ([#942], [#1019])。
 
@@ -1278,8 +1284,12 @@ Windows版ダウンローダーのビルドに失敗しています。
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
 [VOICEVOX/voicevox\_vvm]: https://github.com/VOICEVOX/voicevox_vvm
+[VOICEVOX/voicevox\_vvm#1]: https://github.com/VOICEVOX/voicevox_vvm/pull/1
+[VOICEVOX/voicevox\_vvm#5]: https://github.com/VOICEVOX/voicevox_vvm/pull/5
+[VOICEVOX/voicevox\_vvm#9]: https://github.com/VOICEVOX/voicevox_vvm/pull/9
 [VOICEVOX/voicevox\_vvm#12]: https://github.com/VOICEVOX/voicevox_vvm/pull/12
 [VOICEVOX/voicevox\_vvm#14]: https://github.com/VOICEVOX/voicevox_vvm/pull/14
+[VOICEVOX/voicevox\_vvm#19]: https://github.com/VOICEVOX/voicevox_vvm/issues/19
 
 [Hiroshiba/vv\_core\_inference#12]: https://github.com/Hiroshiba/vv_core_inference/pull/12
 
