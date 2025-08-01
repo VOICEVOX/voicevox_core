@@ -142,6 +142,25 @@
               ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ [default: 5]
     ```
 
+- \[ダウンローダー\] `--models-pattern <GLOB>`オプションが追加されます ([#1093])。
+
+    ```console
+          --models-pattern <GLOB>
+              [default: *]
+    ```
+
+    <details>
+    <summary>例えばダウンロード対象を特定のVVMのみにしたり、トーク用、もしくはソング用VVMに限定することができるようになります。</summary>
+
+    ```console
+    ❯ download --models-pattern 0.vvm # 0.vvmのみダウンロード
+    ```
+
+    ```console
+    ❯ download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用VVMをダウンロードしないように
+    ```
+    </details>
+
 ### Changed
 
 - \[C\] \[macOS\] GitHub Releasesにおいてvoicevox\_core-**ios**-xcframework-cpu-{バージョン}.zipは、macOS版XCFrameworkの提供に伴ってvoicevox\_core-xcframework-cpu-{バージョン}.zipに改名されます ([#1056] helped by [@nekomimimi])。
@@ -1245,6 +1264,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1078]: https://github.com/VOICEVOX/voicevox_core/pull/1078
 [#1082]: https://github.com/VOICEVOX/voicevox_core/pull/1082
 [#1085]: https://github.com/VOICEVOX/voicevox_core/pull/1085
+[#1093]: https://github.com/VOICEVOX/voicevox_core/pull/1093
 [#1094]: https://github.com/VOICEVOX/voicevox_core/pull/1094
 [#1096]: https://github.com/VOICEVOX/voicevox_core/pull/1096
 [#1098]: https://github.com/VOICEVOX/voicevox_core/pull/1098
