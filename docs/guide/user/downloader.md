@@ -84,7 +84,7 @@ download --devices cuda
 
 <a id="models-pattern"></a>
 
-## ダウンロードする音声モデル（VVM ファイル）を絞る場合
+## 一部の音声モデル（VVMファイル）だけダウンロードする場合
 
 ```bash
 download --models-pattern 0.vvm # 0.vvmのみダウンロード
