@@ -5,6 +5,26 @@
 ## [Unreleased]
 
 <!--
+### macOSのXCFramework追加
+
+- \[C\] \[macOS\] :tada: GitHub ReleasesのXCFrameworkが、macOS向けのライブラリも同梱するようになります ([#1056] helped by [@nekomimimi])。
+
+    ```diff
+    -voicevox_core-ios-xcframework-cpu-{バージョン}.zip
+    +voicevox_core-xcframework-cpu-{バージョン}.zip
+     └── voicevox_core.xcframework
+         ├── Info.plist
+    +    ├── macos-arm64_x86_64/
+         ├── ios-arm64/
+         └── ios-arm64_x86_64-simulator/
+    ```
+
+    Changedの章で後述する通り、リリースの名前は変わります。
+
+- \[C\] \[macOS\] GitHub Releasesにおいてvoicevox\_core-**ios**-xcframework-cpu-{バージョン}.zipは、macOS版XCFrameworkの提供に伴ってvoicevox\_core-xcframework-cpu-{バージョン}.zipに改名されます ([#1056] helped by [@nekomimimi])。
+
+[#1056]: https://github.com/VOICEVOX/voicevox_core/pull/1056
+
 ### ソング
 
 - [project-s] ピッチ輪郭推論を追加 ([#531])
@@ -106,20 +126,6 @@
 
 - \[C\] `free`系と`delete`系の関数が、`free(3)`や`HeapFree`のようにヌルポインタを許容するようになります ([#1094])。
 
-- \[C\] \[macOS\] :tada: GitHub ReleasesのXCFrameworkが、macOS向けのライブラリも同梱するようになります ([#1056] helped by [@nekomimimi])。
-
-    ```diff
-    -voicevox_core-ios-xcframework-cpu-{バージョン}.zip
-    +voicevox_core-xcframework-cpu-{バージョン}.zip
-     └── voicevox_core.xcframework
-         ├── Info.plist
-    +    ├── macos-arm64_x86_64/
-         ├── ios-arm64/
-         └── ios-arm64_x86_64-simulator/
-    ```
-
-    Changedの章で後述する通り、リリースの名前は変わります。
-
 - \[Python\] exampleコードにはshebangが付き、filemodeも`100755` (`GIT_FILEMODE_BLOB_EXECUTABLE`)になります ([#1077])。
 
 - \[Java\] \[Windows,macOS,Linux\] :tada: GitHub Releasesのjava\_packages.zipに、PC用のパッケージが追加されます ([#682], [#764])。
@@ -160,10 +166,6 @@
     </details>
 
 - \[ダウンローダー\] 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
-
-### Changed
-
-- \[C\] \[macOS\] GitHub Releasesにおいてvoicevox\_core-**ios**-xcframework-cpu-{バージョン}.zipは、macOS版XCFrameworkの提供に伴ってvoicevox\_core-xcframework-cpu-{バージョン}.zipに改名されます ([#1056] helped by [@nekomimimi])。
 
 ### Removed
 
@@ -1266,7 +1268,6 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1048]: https://github.com/VOICEVOX/voicevox_core/pull/1048
 [#1049]: https://github.com/VOICEVOX/voicevox_core/pull/1049
 [#1055]: https://github.com/VOICEVOX/voicevox_core/pull/1055
-[#1056]: https://github.com/VOICEVOX/voicevox_core/pull/1056
 [#1057]: https://github.com/VOICEVOX/voicevox_core/pull/1057
 [#1058]: https://github.com/VOICEVOX/voicevox_core/pull/1058
 [#1060]: https://github.com/VOICEVOX/voicevox_core/pull/1060
