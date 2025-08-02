@@ -163,6 +163,18 @@
     ```
     </details>
 
+- \[ダウンローダー\] 同様の ([#????])。
+
+    ```console
+      -V, --version
+              Print version
+    ```
+
+    ```console
+    ❯ download -V
+    downloader 0.0.0
+    ```
+
 - \[ダウンローダー\] 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
 
 ### Removed

@@ -84,6 +84,7 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
     LazyLock::new(|| ProgressStyle::with_template("{prefix:55} {spinner} {msg}").unwrap());
 
 #[derive(clap::Parser)]
+#[command(version)]
 struct Args {
     /// ダウンロード対象を限定する
     #[arg(
