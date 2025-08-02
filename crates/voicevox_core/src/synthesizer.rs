@@ -1689,6 +1689,7 @@ pub(crate) mod blocking {
         /// [音声の調整]: ../index.html#音声の調整
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_tts"))]
         pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
+            dbg!(text);
             Tts {
                 synthesizer: &self.0,
                 text,
