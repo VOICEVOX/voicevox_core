@@ -163,7 +163,7 @@
     ```
     </details>
 
-- \[ダウンローダー\] 同様の ([#????])。
+- \[ダウンローダー\] ダウンローダーは正式にVOICEVOX COREの一部と定められ、バージョンを共にするようになります。それに伴い、`-V, --version`でVOICEVOX CORE兼ダウンローダーのバージョンを取得できるようになります ([#1116])。
 
     ```console
       -V, --version
@@ -172,7 +172,7 @@
 
     ```console
     ❯ download -V
-    downloader 0.0.0
+    VOICEVOX CORE 0.16.1
     ```
 
 - \[ダウンローダー\] 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
@@ -1299,6 +1299,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1108]: https://github.com/VOICEVOX/voicevox_core/pull/1108
 [#1109]: https://github.com/VOICEVOX/voicevox_core/pull/1109
 [#1111]: https://github.com/VOICEVOX/voicevox_core/pull/1111
+[#1116]: https://github.com/VOICEVOX/voicevox_core/pull/1116
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
