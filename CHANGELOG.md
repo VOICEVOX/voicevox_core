@@ -100,9 +100,7 @@
           - `Mora`
       </details>
 
-- 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
-
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンからGitHub Releasesの本文にも同じ内容が載るようになります ([#1109])。
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -150,7 +148,7 @@
     ```
 
     <details>
-    <summary>例えばダウンロード対象を特定のVVMのみにしたり、トーク用、もしくはソング用VVMに限定することができるようになります。</summary>
+    <summary>例えばダウンロード対象を特定のVVMのみにしたり、トーク用、もしくは今後追加されるソング用VVMに限定することができるようになります。</summary>
 
     ```console
     ❯ download --models-pattern 0.vvm # 0.vvmのみダウンロード
@@ -160,6 +158,8 @@
     ❯ download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用VVMをダウンロードしないように
     ```
     </details>
+
+- \[ダウンローダー\] 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
 
 ### Changed
 
@@ -469,13 +469,15 @@
 
 - \[Python\] \[BREAKING\] `Synthesizer.audio_query`は、C APIとJava APIに合わせる形で`create_audio_query`に改名されます ([#882])。
 
-- \[Python\] \[BREAKING\] `UserDict.words`は`UserDict.to_dict`に改名されます ([#977])。
+- \[Python\] \[BREAKING\] `UserDict.words`は、Java APIに合わせる形で`UserDict.to_dict`に改名されます ([#977])。
 
 - \[Python\] \[BREAKING\] `Synthesizer.metas`と`UserDict.words`は`@property`ではなく普通のメソッドになります ([#914])。
 
-- \[Python\] \[BREAKING\] `UserDictWord`へのPydanticは非サポートになります。またdataclassとして`frozen`になり、コンストラクタ時点で各種バリデートが行われるようになります ([#1014])。
+- \[Python\] \[BREAKING\] `UserDictWord`の`@pydantic.dataclasses.dataclass`としての操作は非サポートになります。またdataclassとして`frozen`になり、コンストラクタ時点で各種バリデートが行われるようになります ([#1014])。
 
-- \[Python\] \[BREAKING\] デフォルト引数の前には一律で`*,`が挟まれるようになります ([#998])。
+    補足: Pydanticは[0.16.0-preview.1](#0160-preview1---2025-03-08-0900)で消されます。
+
+- \[Python\] \[BREAKING\] デフォルト値付きの引数はすべて[keyword-only argument](https://peps.python.org/pep-3102/)になります ([#998])。
 
 - \[Python,Java\] \[BREAKING\] `SpeakerMeta`は<code>**Character**Meta</code>に、`StyleVersion`は<code>**Character**Version</code>に改名されます ([#931], [#943], [#996])。
 
@@ -570,6 +572,8 @@
 
 - \[Python\] `StyleMeta`が`voicevox_core`モジュール直下に置かれるようになります ([#930])。
 
+    これまでは、プライベートなモジュールに置かれているだけでした。
+
 - \[Python\] 型定義において呼べないはずのコンストラクタが呼べることになってしまってたため、ダミーとなる`def __new__(cls, *args, **kwargs) -> NoReturn`を定義することで解決します。エラーメッセージも改善されます ([#988], [#997])。
 
 - \[Python\] `SpeakerMeta`改め`CharacterMeta`において、`speaker_uuid`と`version`のdocstringが逆だったのが直ります ([#935])。
@@ -612,6 +616,8 @@
     - `OpenJtalk.use_user_dict`
 
 - \[Python\] \[BREAKING\] Pydanticがv2になります ([#695])。
+
+    補足: Pydanticは[0.16.0-preview.1](#0160-preview1---2025-03-08-0900)で消されます。
 
 ### Fixed
 
@@ -737,7 +743,7 @@ Windows版ダウンローダーのビルドに失敗しています。
     - [READMEの「その他の言語」](https://github.com/VOICEVOX/voicevox_core/blob/0.15.0-preview.9/README.md#その他の言語)に[VoicevoxCoreSharp](https://github.com/yamachu/VoicevoxCoreSharp)が追加されます。
     - Python exampleはBlackとisortでフォーマットされ、`--speaker-id`は`--style-id`になります。
 - \[C\] 引数の`VoicevoxUserDictWord *`はunalignedであってもよくなります ([#601])。
-- \[Python\] `__version__`が追加されます ([#507], [#597])。
+- \[Python\] `__version__`が追加されます。以前から存在してはいましたが、プライベートなモジュールに置かれているだけでした ([#507], [#597])。
 - \[Rust版ダウンローダー\] helpの表示が改善されます ([#604])。
 
 ### Changed
@@ -866,7 +872,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] \[BREAKING\] `Style`は`StyleMeta`に、`Meta`は`SpeakerMeta`に改名されます ([#370])。
 
-    補足: [0.16.0-preview.0](#0160-preview0---2025-03-01-0900)にて、`SpeakerMeta`は`CharacterMeta`になります。
+    補足: [0.16.0-preview.0](#0160-preview0---2025-03-01-0900)にて、`SpeakerMeta`は`CharacterMeta`になります。また、`StyleMeta`はきちんとre-exportされるようになります。
 
 - \[Python\] \[BREAKING\] wheelには音声モデルは埋め込まれなくなります ([#522])。
 
