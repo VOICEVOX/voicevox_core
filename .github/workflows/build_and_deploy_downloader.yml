@@ -77,6 +77,15 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+
+      - name: Install cargo-edit
+        run: cargo binstall cargo-edit@^0.13 --no-confirm --log-level debug
+
+      - name: Set version
+        run: cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude xtask
+
       - name: Build downloader
         run: cargo build -v --release -p downloader --target ${{ matrix.target }}
 
