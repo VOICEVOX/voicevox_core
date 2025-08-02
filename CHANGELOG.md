@@ -48,12 +48,10 @@
 - feat!: `render`の引数の範囲指定部分を各言語の慣習に合わせる ([#879])
 - feat!: decode.onnxを復活させる ([#918])
 
-[#851]: https://github.com/VOICEVOX/voicevox_core/pull/851
 [#854]: https://github.com/VOICEVOX/voicevox_core/pull/854
 [#864]: https://github.com/VOICEVOX/voicevox_core/pull/864
 [#867]: https://github.com/VOICEVOX/voicevox_core/pull/867
 [#879]: https://github.com/VOICEVOX/voicevox_core/pull/879
-[#918]: https://github.com/VOICEVOX/voicevox_core/pull/918
 
 ### もし`TextAnalyzer`機能を充実させた場合
 
@@ -375,7 +373,7 @@
 
     ダウンローダーは[VOICEVOX/onnxruntime-builder](https://github.com/VOICEVOX/onnxruntime-builder)から直接(VOICEVOX) ONNX Runtimeをダウンロードするようになります。
 
-- \[BREAKING\] VVMの形式が変わり、[0.15.0-preview.16](#0150-preview16---2023-12-01-0900)までのVVMは利用できなくなります ([#795], [#796], [#794], [VOICEVOX/voicevox\_vvm#1], [#825], [VOICEVOX/voicevox\_vvm#5], [VOICEVOX/voicevox\_vvm#9])。
+- \[BREAKING\] VVMの形式が変わり、[0.15.0-preview.16](#0150-preview16---2023-12-01-0900)までのVVMは利用できなくなります ([#795], [#796], [#794], [#851], [#918], [VOICEVOX/voicevox\_vvm#1], [#825], [VOICEVOX/voicevox\_vvm#5], [VOICEVOX/voicevox\_vvm#9])。
 
     このバージョンのVOICEVOX COREで利用できるVVMの形式が、`vvm_format_version=1`として定められます。
 
@@ -1160,6 +1158,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#847]: https://github.com/VOICEVOX/voicevox_core/pull/847
 [#849]: https://github.com/VOICEVOX/voicevox_core/pull/849
 [#850]: https://github.com/VOICEVOX/voicevox_core/pull/850
+[#851]: https://github.com/VOICEVOX/voicevox_core/pull/851
 [#856]: https://github.com/VOICEVOX/voicevox_core/pull/856
 [#860]: https://github.com/VOICEVOX/voicevox_core/pull/860
 [#861]: https://github.com/VOICEVOX/voicevox_core/pull/861
@@ -1184,6 +1183,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#913]: https://github.com/VOICEVOX/voicevox_core/pull/913
 [#914]: https://github.com/VOICEVOX/voicevox_core/pull/914
 [#915]: https://github.com/VOICEVOX/voicevox_core/pull/915
+[#918]: https://github.com/VOICEVOX/voicevox_core/pull/918
 [#919]: https://github.com/VOICEVOX/voicevox_core/pull/919
 [#921]: https://github.com/VOICEVOX/voicevox_core/pull/921
 [#926]: https://github.com/VOICEVOX/voicevox_core/pull/926
