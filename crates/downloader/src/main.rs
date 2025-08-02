@@ -14,7 +14,7 @@ use std::{
 use anyhow::{Context as _, anyhow, bail, ensure};
 use base64::{Engine as _, prelude::BASE64_STANDARD};
 use bytes::Bytes;
-use clap::{Parser as _, ValueEnum};
+use clap::{Parser as _, ValueEnum, crate_version};
 use easy_ext::ext;
 use flate2::read::GzDecoder;
 use futures_core::Stream;
@@ -84,7 +84,7 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
     LazyLock::new(|| ProgressStyle::with_template("{prefix:55} {spinner} {msg}").unwrap());
 
 #[derive(clap::Parser)]
-#[command(name("VOICEVOX CORE"), version)]
+#[command(name("VOICEVOX CORE"), version(concat!(crate_version!(), " downloader")))]
 struct Args {
     /// ダウンロード対象を限定する
     #[arg(

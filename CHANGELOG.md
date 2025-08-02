@@ -172,7 +172,7 @@
 
     ```console
     ❯ download -V
-    VOICEVOX CORE 0.16.1
+    VOICEVOX CORE 0.16.1 downloader
     ```
 
 - \[ダウンローダー\] 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
@@ -517,6 +517,8 @@
 - \[ダウンローダー\] \[BREAKING\] `onnxruntime`（新規追加）および`models`のダウンロードの際、利用規約への同意が求められるようになります ([VOICEVOX/voicevox\_vvm#1], [#928], [VOICEVOX/voicevox\_vvm#5], [#964], [#983], [#989], [#1006], [#1011])。
 
 - \[ダウンローダー\] \[BREAKING\] `<TARGET>`のうち`core`は`c-api`に改名され、それに伴い`-v, --version`も`--c-api-version`、`--core-repo`も`--c-api-repo`に改名されます ([#942], [#1019])。
+
+    補足: [#1116]にて`--version`は、VOICEVOX COREとしてのバージョンを出力するフラグになります。
 
 - \[ダウンローダー\] \[BREAKING\] `<TARGET>`ごとにディレクトリが切られるようになります ([#944], [#969])。
 
