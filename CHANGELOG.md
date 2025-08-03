@@ -118,7 +118,7 @@
           - `Mora`
       </details>
 
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109])。
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -162,6 +162,18 @@
     ❯ download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用VVMをダウンロードしないように
     ```
     </details>
+
+- \[ダウンローダー\] ダウンローダーは正式にVOICEVOX COREの一部と定められ、バージョンを共にするようになります。それに伴い、`-V, --version`でVOICEVOX CORE兼ダウンローダーのバージョンを見ることができるようになります ([#1116])。
+
+    ```console
+      -V, --version
+              Print version
+    ```
+
+    ```console
+    ❯ download -V
+    VOICEVOX CORE 0.16.1 downloader
+    ```
 
 - \[ダウンローダー\] 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
 
@@ -505,6 +517,8 @@
 - \[ダウンローダー\] \[BREAKING\] `onnxruntime`（新規追加）および`models`のダウンロードの際、利用規約への同意が求められるようになります ([VOICEVOX/voicevox\_vvm#1], [#928], [VOICEVOX/voicevox\_vvm#5], [#964], [#983], [#989], [#1006], [#1011])。
 
 - \[ダウンローダー\] \[BREAKING\] `<TARGET>`のうち`core`は`c-api`に改名され、それに伴い`-v, --version`も`--c-api-version`、`--core-repo`も`--c-api-repo`に改名されます ([#942], [#1019])。
+
+    補足: [#1116]にて`--version`は、VOICEVOX COREとしてのバージョンを出力するフラグになります。
 
 - \[ダウンローダー\] \[BREAKING\] `<TARGET>`ごとにディレクトリが切られるようになります ([#944], [#969])。
 
@@ -1287,6 +1301,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1108]: https://github.com/VOICEVOX/voicevox_core/pull/1108
 [#1109]: https://github.com/VOICEVOX/voicevox_core/pull/1109
 [#1111]: https://github.com/VOICEVOX/voicevox_core/pull/1111
+[#1116]: https://github.com/VOICEVOX/voicevox_core/pull/1116
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

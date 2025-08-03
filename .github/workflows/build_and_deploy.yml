@@ -191,7 +191,7 @@ jobs:
         run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
       - name: set cargo version
         run: |
-          cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude downloader --exclude xtask
+          cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude xtask
           if ${{ matrix.python_whl }}; then
             sed -i_ 's/version = "\(0\.0\.0\)"/version = "'"$VERSION"'"/' ./crates/voicevox_core_python_api/pyproject.toml
           fi
