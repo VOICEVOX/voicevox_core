@@ -119,6 +119,7 @@ struct Args {
     #[arg(long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
     additional_libraries_version: String,
 
+    /// ダウンロードするVVMファイルのファイル名パターン
     #[arg(long, value_name("GLOB"), default_value("*"))]
     models_pattern: glob::Pattern,
 
@@ -138,9 +139,11 @@ struct Args {
     #[arg(short, long, value_name("NUMBER"), default_value("5"))]
     tries: Tries,
 
+    /// VOICEVOX CORE C API (`c-api`)のリポジトリ
     #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_C_API_REPO))]
     c_api_repo: RepoName,
 
+    /// (VOICEVOX) ONNX Runtime (`onnxruntime`)のリポジトリ
     #[arg(
         long,
         value_name("REPOSITORY"),
@@ -148,6 +151,7 @@ struct Args {
     )]
     onnxruntime_builder_repo: RepoName,
 
+    /// 追加でダウンロードするライブラリ (`additional-libraries`)のリポジトリ
     #[arg(
         long,
         value_name("REPOSITORY"),
@@ -155,6 +159,7 @@ struct Args {
     )]
     additional_libraries_repo: RepoName,
 
+    /// VOICEVOX音声モデル (`models`)のリポジトリ
     #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_MODELS_REPO))]
     models_repo: RepoName,
 }

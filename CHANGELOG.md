@@ -118,7 +118,7 @@
           - `Mora`
       </details>
 
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116])。
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -144,11 +144,11 @@
               ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ [default: 5]
     ```
 
-- \[ダウンローダー\] `--models-pattern <GLOB>`オプションが追加されます ([#1093])。
+- \[ダウンローダー\] `--models-pattern <GLOB>`オプションが追加されます ([#1093], [#1117])。
 
     ```console
           --models-pattern <GLOB>
-              [default: *]
+              ダウンロードするVVMファイルのファイル名パターン [default: *]
     ```
 
     <details>
@@ -174,6 +174,8 @@
     ❯ download -V
     VOICEVOX CORE 0.16.1 downloader
     ```
+
+- \[ダウンローダー\] リポジトリ指定オプション (`--{target}-repo <REPOSITORY>`)にhelpの文章が書かれます ([#1117])。
 
 - \[ダウンローダー\] 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
 
@@ -1302,6 +1304,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1109]: https://github.com/VOICEVOX/voicevox_core/pull/1109
 [#1111]: https://github.com/VOICEVOX/voicevox_core/pull/1111
 [#1116]: https://github.com/VOICEVOX/voicevox_core/pull/1116
+[#1117]: https://github.com/VOICEVOX/voicevox_core/pull/1117
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
