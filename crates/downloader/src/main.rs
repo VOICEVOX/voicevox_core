@@ -983,8 +983,7 @@ async fn download_models(
     fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
     Ok(retry(tries, async move || {
         models
-            .clone()
-            .into_iter()
+            .iter()
             .map(|(c, b)| fetch_model(c, b, reqwest.clone(), &output))
             .collect::<FuturesUnordered<_>>()
             .try_collect::<()>()
@@ -993,8 +992,8 @@ async fn download_models(
 }
 
 async fn fetch_model(
-    content: GhContent,
-    pb: ProgressBar,
+    content: &GhContent,
+    pb: &ProgressBar,
     reqwest: Client,
     output: &Path,
 ) -> anyhow::Result<()> {
@@ -1006,7 +1005,7 @@ async fn fetch_model(
     let res = reqwest.get(download_url).send().await?.error_for_status()?;
     let bytes_stream = res.bytes_stream().map_err(Into::into);
     let pb = with_style(pb.clone(), &PROGRESS_STYLE1).await?;
-    let model = download(bytes_stream, Some(size), pb.clone()).await?;
+    let model = download(bytes_stream, Some(*size), pb.clone()).await?;
     let pb = tokio::task::spawn_blocking(move || {
         pb.set_style(PROGRESS_STYLE2.clone());
         pb.set_message("Writing...");
@@ -1188,7 +1187,6 @@ async fn download(
     }
 }
 
-#[derive(Clone)]
 struct GhAsset {
     octocrab: Arc<Octocrab>,
     repo: RepoName,
@@ -1199,7 +1197,6 @@ struct GhAsset {
     size: usize,
 }
 
-#[derive(Clone)]
 struct ModelsWithTerms {
     tag: String,
     readme: String,
@@ -1207,7 +1204,6 @@ struct ModelsWithTerms {
     models: Vec<GhContent>,
 }
 
-#[derive(Clone)]
 struct GhContent {
     name: String,
     download_url: String,
