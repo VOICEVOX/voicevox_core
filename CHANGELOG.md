@@ -118,7 +118,7 @@
           - `Mora`
       </details>
 
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117])。
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#????])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -144,7 +144,15 @@
               ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ [default: 5]
     ```
 
-- \[ダウンローダー\] `--models-pattern <GLOB>`オプションが追加されます ([#1093], [#1117])。
+- \[ダウンローダー\] :tada: `models`のダウンロード元が[VOICEVOX/voicevox\_vvm]の`>=0.16,<0.17`になります ([VOICEVOX/voicevox\_vvm#21], [VOICEVOX/voicevox\_vvm#22], [VOICEVOX/voicevox\_vvm#23], [VOICEVOX/voicevox\_vvm#30], [VOICEVOX/voicevox\_vvm#31], [VOICEVOX/voicevox\_vvm#33], [VOICEVOX/voicevox\_vvm#34], [#????])。
+
+    [VOICEVOX/voicevox\_vvmのバージョン0.16.0](https://github.com/VOICEVOX/voicevox_vvm/releases/tag/0.16.0)には以下の変更が含まれます。
+
+    - VOICEVOX ENGINEでは2025-06-06と2025-07-08に追加されていた、[10期生](https://voicevox.hiroshiba.jp/dormitory/#10th)のVVMを追加 (19.vvm、20.vvm、21.vvm)
+    - ソング用VVMを追加 (s0.vvm)
+    - [`Character::version`を`0.1.0`から`0.16.0`に変更](https://github.com/VOICEVOX/voicevox_vvm/pull/34)
+
+- \[ダウンローダー\] `--models-pattern <GLOB>`オプションが追加されます ([#1093], [#1117], [#????])。
 
     ```console
           --models-pattern <GLOB>
@@ -152,7 +160,7 @@
     ```
 
     <details>
-    <summary>例えばダウンロード対象を特定のVVMのみにしたり、トーク用、もしくは今後追加されるソング用VVMに限定することができるようになります。</summary>
+    <summary>例えばダウンロード対象を特定のVVMのみにしたり、トーク用、あるいは先述したソング用VVMに限定することができるようになります。</summary>
 
     ```console
     ❯ download --models-pattern 0.vvm # 0.vvmのみダウンロード
@@ -1315,6 +1323,13 @@ Windows版ダウンローダーのビルドに失敗しています。
 [VOICEVOX/voicevox\_vvm#12]: https://github.com/VOICEVOX/voicevox_vvm/pull/12
 [VOICEVOX/voicevox\_vvm#14]: https://github.com/VOICEVOX/voicevox_vvm/pull/14
 [VOICEVOX/voicevox\_vvm#19]: https://github.com/VOICEVOX/voicevox_vvm/issues/19
+[VOICEVOX/voicevox\_vvm#21]: https://github.com/VOICEVOX/voicevox_vvm/pull/21
+[VOICEVOX/voicevox\_vvm#22]: https://github.com/VOICEVOX/voicevox_vvm/pull/22
+[VOICEVOX/voicevox\_vvm#23]: https://github.com/VOICEVOX/voicevox_vvm/pull/23
+[VOICEVOX/voicevox\_vvm#30]: https://github.com/VOICEVOX/voicevox_vvm/pull/30
+[VOICEVOX/voicevox\_vvm#31]: https://github.com/VOICEVOX/voicevox_vvm/pull/31
+[VOICEVOX/voicevox\_vvm#33]: https://github.com/VOICEVOX/voicevox_vvm/pull/33
+[VOICEVOX/voicevox\_vvm#34]: https://github.com/VOICEVOX/voicevox_vvm/pull/34
 
 [Hiroshiba/vv\_core\_inference#12]: https://github.com/Hiroshiba/vv_core_inference/pull/12
 

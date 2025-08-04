@@ -11,8 +11,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context as _, anyhow, bail, ensure};
-use base64::{Engine as _, prelude::BASE64_STANDARD};
+use anyhow::{Context as _, anyhow, bail};
 use bytes::Bytes;
 use clap::{Parser as _, ValueEnum, crate_version};
 use easy_ext::ext;
@@ -30,12 +29,11 @@ use octocrab::{
     Octocrab,
     models::{
         AssetId,
-        repos::{Asset, CommitObject, Content, Release, Tag},
+        repos::{Asset, Release, Tag},
     },
     repos::RepoHandler,
 };
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
-use reqwest::Client;
 use semver::VersionReq;
 use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
@@ -59,7 +57,7 @@ const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
 
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
-    LazyLock::new(|| ">=0.1,<0.2".parse().unwrap());
+    LazyLock::new(|| ">=0.16,<0.17".parse().unwrap());
 const MODELS_README_FILENAME: &str = "README.md";
 const MODELS_README_RENAME: &str = "README.txt";
 const MODELS_DIR_NAME: &str = "vvms";
@@ -686,71 +684,60 @@ use selector;
 
 /// ダウンロードすべきモデル、利用規約を見つける。その際ユーザーに利用規約の同意を求める。
 async fn find_models(
-    octocrab: &Octocrab,
+    octocrab: &Arc<Octocrab>,
     repo: &RepoName,
     pattern: &glob::Pattern,
 ) -> anyhow::Result<ModelsWithTerms> {
     let repos = octocrab.repos(&repo.owner, &repo.repo);
 
-    let (tag, sha) = repos
+    let tag = repos
         .list_tags()
         .send()
         .await?
         .into_iter()
-        .map(
-            |Tag {
-                 name,
-                 commit: CommitObject { sha, .. },
-                 ..
-             }| {
-                let tag = name
-                    .parse()
-                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))?;
-                Ok((tag, sha))
-            },
-        )
+        .map(|Tag { name, .. }| {
+            name.parse()
+                .with_context(|| format!("`{repo}` contains non-SemVer tags"))
+        })
         .collect::<anyhow::Result<Vec<_>>>()?
         .into_iter()
-        .filter(|(version, _)| ALLOWED_MODELS_VERSIONS.matches(version))
+        .filter(|version| ALLOWED_MODELS_VERSIONS.matches(version))
         .sorted()
         .next_back()
-        .with_context(|| format!("`{repo}`"))?;
-    let tag = tag.to_string();
+        .with_context(|| format!("`{repo}`"))?
+        .to_string();
 
-    let terms = repos.fetch_file_content(&sha, MODELS_TERMS_FILE).await?;
-    let readme = repos
-        .fetch_file_content(&sha, MODELS_README_FILENAME)
-        .await?;
+    let Release {
+        html_url, assets, ..
+    } = repos.releases().get_by_tag(&tag).await?;
 
-    let models = repos
-        .get_content()
-        .r#ref(&sha)
-        .path(MODELS_DIR_NAME)
-        .send()
-        .await?
-        .items
+    let find_by_name = |name| {
+        assets
+            .iter()
+            .find(|a| a.name == name)
+            .with_context(|| anyhow!("could not find `{name}` in '{html_url}'"))
+    };
+
+    let terms = find_by_name(MODELS_TERMS_FILE)?;
+    let terms = repos.fetch_asset_content(terms).await?;
+
+    //let readme = find_by_name(MODELS_README_FILENAME)?;
+    //let readme = repos.fetch_asset_content(readme).await?;
+    let readme = "".to_owned(); // FIXME: https://github.com/VOICEVOX/voicevox_vvm/issues/35
+
+    let models = assets
         .into_iter()
-        .map(
-            |Content {
-                 name,
-                 size,
-                 download_url,
-                 r#type,
-                 ..
-             }| {
-                ensure!(r#type == "file", "found directory");
-                if !pattern.matches(&name) {
-                    return Ok(None);
-                }
-                Ok(Some(GhContent {
-                    name,
-                    download_url: download_url.expect("should present"),
-                    size: size as _,
-                }))
-            },
-        )
-        .flat_map(Result::transpose)
-        .collect::<anyhow::Result<_>>()?;
+        .filter(|Asset { name, .. }| {
+            ![MODELS_README_FILENAME, MODELS_TERMS_FILE].contains(&&**name) && pattern.matches(name)
+        })
+        .map(|Asset { id, name, size, .. }| VvmAsset {
+            octocrab: octocrab.clone(),
+            repo: repo.clone(),
+            id,
+            name,
+            size: size as _,
+        })
+        .collect();
 
     return Ok(ModelsWithTerms {
         tag,
@@ -761,30 +748,21 @@ async fn find_models(
 
     #[ext]
     impl RepoHandler<'_> {
-        async fn fetch_file_content(&self, sha: &str, path: &str) -> anyhow::Result<String> {
-            let Content {
-                encoding, content, ..
-            } = self
-                .get_content()
-                .r#ref(sha)
-                .path(path)
-                .send()
+        async fn fetch_asset_content(&self, asset: &Asset) -> anyhow::Result<String> {
+            let content = self
+                .releases()
+                .stream_asset(asset.id)
                 .await?
-                .items
-                .into_iter()
-                .exactly_one()
-                .map_err(|_| anyhow!("could not find `{path}`"))?;
-
-            ensure!(
-                encoding.as_deref() == Some("base64"),
-                r#"expected `encoding="base64"`"#,
-            );
-
-            let content = content.expect("should present").replace('\n', "");
-            let content = BASE64_STANDARD.decode(content)?;
-            let content = String::from_utf8(content)
-                .with_context(|| format!("`{path}` is not valid UTF-8"))?;
-            Ok(content)
+                .try_fold(
+                    Vec::with_capacity(asset.size as _),
+                    |mut content, chunk| async move {
+                        content.extend_from_slice(&chunk);
+                        Ok(content)
+                    },
+                )
+                .await?;
+            String::from_utf8(content)
+                .with_context(|| format!("'{}' is not valid UTF-8", asset.url))
         }
     }
 }
@@ -968,12 +946,10 @@ async fn download_models(
     progresses: &MultiProgress,
     tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
-    let reqwest = reqwest::Client::builder().build()?;
-
     let models = models
         .into_iter()
         .map(|model| {
-            let pb = add_progress_bar(progresses, model.size as _, model.name.clone());
+            let pb = add_progress_bar(progresses, model.size, model.name.clone());
             (model, pb)
         })
         .collect::<Vec<_>>();
@@ -985,7 +961,7 @@ async fn download_models(
         models
             .clone()
             .into_iter()
-            .map(|(c, b)| fetch_model(c, b, reqwest.clone(), &output))
+            .map(|(a, b)| fetch_model(a, b, &output))
             .collect::<FuturesUnordered<_>>()
             .try_collect::<()>()
             .await
@@ -993,18 +969,22 @@ async fn download_models(
 }
 
 async fn fetch_model(
-    content: GhContent,
+    VvmAsset {
+        octocrab,
+        repo,
+        id,
+        name,
+        size,
+    }: VvmAsset,
     pb: ProgressBar,
-    reqwest: Client,
     output: &Path,
 ) -> anyhow::Result<()> {
-    let GhContent {
-        name,
-        download_url,
-        size,
-    } = content;
-    let res = reqwest.get(download_url).send().await?.error_for_status()?;
-    let bytes_stream = res.bytes_stream().map_err(Into::into);
+    let bytes_stream = octocrab
+        .repos(&repo.owner, &repo.repo)
+        .releases()
+        .stream_asset(id)
+        .await?
+        .map_err(Into::into);
     let pb = with_style(pb.clone(), &PROGRESS_STYLE1).await?;
     let model = download(bytes_stream, Some(size), pb.clone()).await?;
     let pb = tokio::task::spawn_blocking(move || {
@@ -1204,13 +1184,15 @@ struct ModelsWithTerms {
     tag: String,
     readme: String,
     terms: String,
-    models: Vec<GhContent>,
+    models: Vec<VvmAsset>,
 }
 
 #[derive(Clone)]
-struct GhContent {
+struct VvmAsset {
+    octocrab: Arc<Octocrab>,
+    repo: RepoName,
+    id: AssetId,
     name: String,
-    download_url: String,
     size: u64,
 }
 
