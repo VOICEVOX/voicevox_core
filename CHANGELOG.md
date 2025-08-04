@@ -191,7 +191,7 @@
 - \[Python\] リポジトリにあるMarkdownドキュメントの誤記が修正されます ([#1063])。
 - \[Java\] \[Android\] GHAのUbuntuイメージ備え付けの`$ANDROID_NDK` (現時点ではバージョン27)を使ったリリースがされるようになります。これにより、[#1103]で報告されたAndroidビルドにおけるC++シンボルの問題が解決されます ([#1108])。
 - \[Java\] Javaのファイナライザから中身のRustオブジェクトのデストラクトがされない問題が解決されます ([#1085])。
-- \[ダウンローダー\] 将来的に[VOICEVOX/voicevox\_vvm]のタグの数が30を超えたときに、もしかしたら起きうるかもしれない問題の対処がされます ([#????])。
+- \[ダウンローダー\] 将来的に[VOICEVOX/voicevox\_vvm]のタグの数が30を超えたときに、もしかしたら起きうるかもしれない問題の対処がされます ([#1123])。
 - \[ダウンローダー\] \[Windows\] GitHub Releasesにおいて、再び署名がされるようになります ([#1060])。
 
 ## [0.16.0] - 2025-03-29 (+09:00)
@@ -1306,6 +1306,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1111]: https://github.com/VOICEVOX/voicevox_core/pull/1111
 [#1116]: https://github.com/VOICEVOX/voicevox_core/pull/1116
 [#1117]: https://github.com/VOICEVOX/voicevox_core/pull/1117
+[#1123]: https://github.com/VOICEVOX/voicevox_core/pull/1123
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
