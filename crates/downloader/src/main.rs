@@ -904,7 +904,7 @@ fn download_and_extract_from_gh(
     tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
     let archive_kind = ArchiveKind::from_filename(&name)?;
-    let pb = add_progress_bar(progresses, size as _, name);
+    let pb = add_progress_bar(progresses, size, name);
 
     Ok(retry(tries, async move || {
         let bytes_stream = octocrab
@@ -916,7 +916,7 @@ fn download_and_extract_from_gh(
 
         download_and_extract(
             bytes_stream,
-            Some(size as _),
+            Some(size),
             archive_kind,
             stripping,
             &output,
@@ -973,7 +973,7 @@ async fn download_models(
     let models = models
         .into_iter()
         .map(|model| {
-            let pb = add_progress_bar(progresses, model.size as _, model.name.clone());
+            let pb = add_progress_bar(progresses, model.size, model.name.clone());
             (model, pb)
         })
         .collect::<Vec<_>>();
@@ -1194,7 +1194,7 @@ struct GhAsset {
     body: Option<String>,
     id: AssetId,
     name: String,
-    size: usize,
+    size: u64,
 }
 
 struct ModelsWithTerms {
