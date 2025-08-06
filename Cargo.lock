@@ -643,6 +643,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "color-print"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3aa954171903797d5623e047d9ab69d91b493657917bdfb8c2c80ecaf9cdb6f4"
+dependencies = [
+ "color-print-proc-macro",
+]
+
+[[package]]
+name = "color-print-proc-macro"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "692186b5ebe54007e45a59aea47ece9eb4108e141326c304cdc91699a7118a22"
+dependencies = [
+ "nom",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
 name = "color-spantrace"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1112,6 +1133,7 @@ dependencies = [
  "binstall-tar",
  "bytes",
  "clap",
+ "color-print",
  "comrak",
  "easy-ext",
  "flate2",
@@ -1119,8 +1141,10 @@ dependencies = [
  "futures-core",
  "futures-util",
  "glob",
+ "heck 0.5.0",
  "indexmap 2.6.0",
  "indicatif",
+ "indoc",
  "itertools 0.10.5",
  "minus",
  "octocrab",

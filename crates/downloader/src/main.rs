@@ -23,8 +23,10 @@ use futures_util::{
     future::OptionFuture,
     stream::{FuturesOrdered, FuturesUnordered},
 };
+use heck::ToSnakeCase as _;
 use indexmap::IndexMap;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use indoc::{formatdoc, indoc};
 use itertools::Itertools as _;
 use octocrab::{
     Octocrab,
@@ -84,70 +86,190 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
     LazyLock::new(|| ProgressStyle::with_template("{prefix:55} {spinner} {msg}").unwrap());
 
 #[derive(clap::Parser)]
-#[command(name("VOICEVOX CORE"), version(concat!(crate_version!(), " downloader")))]
+#[command(
+    name("VOICEVOX CORE"),
+    version(concat!(crate_version!(), " downloader")),
+    about("簡潔な説明を見るには`-h`、詳細な説明を見るには`--help`を使ってください。"),
+    after_long_help(formatdoc! {"
+          {targets_section_header}
+
+            `--only`や`--exclude`で特に指定しない場合、ダウンローダーは次のすべてをダウンロードします。
+
+          {targets_section_target_values}
+
+          {examples_section_header}
+
+            デフォルト(CPU 版)をダウンロードする場合:
+
+                download
+
+            DirectML 版をダウンロードする場合:
+
+                download --devices directml
+
+            CUDA 版をダウンロードする場合:
+
+                download --devices cuda
+
+            デフォルト(CPU 版)をダウンロードする場合:
+
+                download --models-pattern 0.vvm # 0.vvmのみダウンロード
+
+                download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用VVMをダウンロードしないように
+          ",
+          targets_section_header = color_print::cstr!("<s><u>Targets:</u></s>"),
+          targets_section_target_values = DownloadTarget::value_variants()
+              .iter()
+              .map(|download_target| formatdoc! {"
+                  • {download_target} (展開先: {{output}}/{dir_name}/):
+                          {description}",
+                  download_target = color_print::cformat!("<s>{download_target}</s>"),
+                  dir_name = download_target.dir_name(),
+                  description = download_target.description(),
+              })
+              .join("\n\n")
+              .lines()
+              .map(|line| format!("  {line}"))
+              .join("\n"),
+          examples_section_header = color_print::cstr!("<s><u>Examples:</u></s>"),
+    })
+)]
 struct Args {
     /// ダウンロード対象を限定する
     #[arg(
         long,
         num_args(1..),
         value_name("TARGET"),
-        conflicts_with_all(["exclude", "min"]))
-    ]
+        conflicts_with_all(["exclude", "min"]),
+        long_help(indoc! {"
+            ダウンロード対象を限定する。
+
+            ダウンロード対象の詳細はTARGETSの章で説明。",
+        })
+    )]
     only: Vec<DownloadTarget>,
 
     /// ダウンロード対象を除外する
-    #[arg(long, num_args(1..), value_name("TARGET"), conflicts_with("min"))]
+    #[arg(
+        long,
+        num_args(1..),
+        value_name("TARGET"),
+        conflicts_with("min"),
+        long_help(indoc! {"
+            ダウンロード対象を除外する。
+
+            ダウンロード対象の詳細はTARGETSの章で説明。",
+        })
+    )]
     exclude: Vec<DownloadTarget>,
 
     /// `--only c-api`のエイリアス
-    #[arg(long, conflicts_with("additional_libraries_version"))]
+    #[arg(
+        long,
+        conflicts_with("additional_libraries_version"),
+        long_help("`--only c-api`のエイリアス。")
+    )]
     min: bool,
 
     /// 出力先の指定
-    #[arg(short, long, value_name("DIRECTORY"), default_value(DEFAULT_OUTPUT))]
+    #[arg(
+        short,
+        long,
+        value_name("DIRECTORY"),
+        default_value(DEFAULT_OUTPUT),
+        long_help("出力先の指定。")
+    )]
     output: PathBuf,
 
     /// ダウンロードするVOICEVOX CORE C APIのバージョンの指定
-    #[arg(long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
+    #[arg(
+        long,
+        value_name("GIT_TAG_OR_LATEST"),
+        default_value("latest"),
+        long_help("ダウンロードするVOICEVOX CORE C APIのバージョンの指定。")
+    )]
     c_api_version: String,
 
     /// ダウンロードするONNX Runtimeのバージョンの指定
-    #[arg(long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
+    #[arg(
+        long,
+        value_name("GIT_TAG_OR_LATEST"),
+        default_value("latest"),
+        long_help("ダウンロードするONNX Runtimeのバージョンの指定。")
+    )]
     onnxruntime_version: String,
 
     /// 追加でダウンロードするライブラリのバージョン
-    #[arg(long, value_name("GIT_TAG_OR_LATEST"), default_value("latest"))]
+    #[arg(
+        long,
+        value_name("GIT_TAG_OR_LATEST"),
+        default_value("latest"),
+        long_help("追加でダウンロードするライブラリのバージョン。")
+    )]
     additional_libraries_version: String,
 
     /// ダウンロードするVVMファイルのファイル名パターン
-    #[arg(long, value_name("GLOB"), default_value("*"))]
+    #[arg(
+        long,
+        value_name("GLOB"),
+        default_value("*"),
+        long_help("ダウンロードするVVMファイルのファイル名パターン。")
+    )]
     models_pattern: glob::Pattern,
 
     /// ダウンロードするデバイスを指定する(cudaはlinuxのみ)
-    #[arg(value_enum, long, num_args(1..), default_value(<&str>::from(Device::default())))]
+    #[arg(
+        value_enum,
+        long,
+        num_args(1..),
+        default_value(<&str>::from(Device::default())),
+        long_help("ダウンロードするデバイスを指定する(cudaはlinuxのみ)。")
+    )]
     devices: Vec<Device>,
 
     /// ダウンロードするcpuのアーキテクチャを指定する
-    #[arg(value_enum, long, default_value(CpuArch::default_opt().map(<&str>::from)))]
+    #[arg(
+        value_enum,
+        long,
+        default_value(CpuArch::default_opt().map(<&str>::from)),
+        long_help("ダウンロードするcpuのアーキテクチャを指定する。")
+    )]
     cpu_arch: CpuArch,
 
     /// ダウンロードする対象のOSを指定する
-    #[arg(value_enum, long, default_value(Os::default_opt().map(<&str>::from)))]
+    #[arg(
+        value_enum,
+        long,
+        default_value(Os::default_opt().map(<&str>::from)),
+        long_help("ダウンロードする対象のOSを指定する。")
+    )]
     os: Os,
 
     /// ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ
-    #[arg(short, long, value_name("NUMBER"), default_value("5"))]
+    #[arg(
+        short,
+        long,
+        value_name("NUMBER"),
+        default_value("5"),
+        long_help("ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ。")
+    )]
     tries: Tries,
 
     /// VOICEVOX CORE C API (`c-api`)のリポジトリ
-    #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_C_API_REPO))]
+    #[arg(
+        long,
+        value_name("REPOSITORY"),
+        default_value(DEFAULT_C_API_REPO),
+        long_help("VOICEVOX CORE C API (`c-api`)のリポジトリ。")
+    )]
     c_api_repo: RepoName,
 
     /// (VOICEVOX) ONNX Runtime (`onnxruntime`)のリポジトリ
     #[arg(
         long,
         value_name("REPOSITORY"),
-        default_value(DEFAULT_ONNXRUNTIME_BUILDER_REPO)
+        default_value(DEFAULT_ONNXRUNTIME_BUILDER_REPO),
+        long_help("(VOICEVOX) ONNX Runtime (`onnxruntime`)のリポジトリ。")
     )]
     onnxruntime_builder_repo: RepoName,
 
@@ -155,22 +277,45 @@ struct Args {
     #[arg(
         long,
         value_name("REPOSITORY"),
-        default_value(DEFAULT_ADDITIONAL_LIBRARIES_REPO)
+        default_value(DEFAULT_ADDITIONAL_LIBRARIES_REPO),
+        long_help("追加でダウンロードするライブラリ (`additional-libraries`)のリポジトリ。")
     )]
     additional_libraries_repo: RepoName,
 
     /// VOICEVOX音声モデル (`models`)のリポジトリ
-    #[arg(long, value_name("REPOSITORY"), default_value(DEFAULT_MODELS_REPO))]
+    #[arg(
+        long,
+        value_name("REPOSITORY"),
+        default_value(DEFAULT_MODELS_REPO),
+        long_help("VOICEVOX音声モデル (`models`)のリポジトリ。")
+    )]
     models_repo: RepoName,
 }
 
-#[derive(ValueEnum, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq, Eq, Hash)]
+#[strum(serialize_all = "kebab-case")]
 enum DownloadTarget {
     CApi,
     Onnxruntime,
     AdditionalLibraries,
     Models,
     Dict,
+}
+
+impl DownloadTarget {
+    fn description(self) -> &'static str {
+        match self {
+            Self::CApi => "VOICEVOX CORE C APIのビルド済みバイナリおよびその利用規約ファイル等。",
+            Self::Onnxruntime => "(VOICEVOX) ONNX Runtime。",
+            Self::AdditionalLibraries => "`--devices`で指定したDirectMLやCUDA。",
+            Self::Models => "VOICEVOX音声モデル（VVMファイル）。",
+            Self::Dict => "Open JTalkのシステム辞書。",
+        }
+    }
+
+    fn dir_name(self) -> String {
+        <&str>::from(self).to_snake_case()
+    }
 }
 
 #[derive(
@@ -440,7 +585,7 @@ async fn main() -> anyhow::Result<()> {
         tasks.spawn(download_and_extract_from_gh(
             c_api,
             Stripping::FirstDir,
-            output.join("c_api"),
+            output.join(DownloadTarget::CApi.dir_name()),
             &progresses,
             tries,
         )?);
@@ -449,7 +594,7 @@ async fn main() -> anyhow::Result<()> {
         tasks.spawn(download_and_extract_from_gh(
             onnxruntime,
             Stripping::FirstDir,
-            output.join("onnxruntime"),
+            output.join(DownloadTarget::Onnxruntime.dir_name()),
             &progresses,
             tries,
         )?);
@@ -459,20 +604,28 @@ async fn main() -> anyhow::Result<()> {
             tasks.spawn(download_and_extract_from_gh(
                 additional_libraries,
                 Stripping::FirstDir,
-                output.join("additional_libraries"),
+                output.join(DownloadTarget::AdditionalLibraries.dir_name()),
                 &progresses,
                 tries,
             )?);
         }
     }
     if let Some(models) = models {
-        tasks.spawn(download_models(models, output.join("models"), &progresses, tries).await?);
+        tasks.spawn(
+            download_models(
+                models,
+                output.join(DownloadTarget::Models.dir_name()),
+                &progresses,
+                tries,
+            )
+            .await?,
+        );
     }
     if targets.contains(&DownloadTarget::Dict) {
         tasks.spawn(download_and_extract_from_url(
             &OPEN_JTALK_DIC_URL,
             Stripping::None,
-            output.join("dict"),
+            output.join(DownloadTarget::Dict.dir_name()),
             &progresses,
             tries,
         )?);
