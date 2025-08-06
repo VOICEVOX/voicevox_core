@@ -874,9 +874,8 @@ async fn find_models(
     let terms = find_by_name(MODELS_TERMS_FILE)?;
     let terms = repos.fetch_asset_content(terms).await?;
 
-    //let readme = find_by_name(MODELS_README_FILENAME)?;
-    //let readme = repos.fetch_asset_content(readme).await?;
-    let readme = "".to_owned(); // FIXME: https://github.com/VOICEVOX/voicevox_vvm/issues/35
+    let readme = find_by_name(MODELS_README_FILENAME)?;
+    let readme = repos.fetch_asset_content(readme).await?;
 
     let models = assets
         .into_iter()
