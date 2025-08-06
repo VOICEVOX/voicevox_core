@@ -123,7 +123,7 @@ struct Args {
     #[arg(long, value_name("GLOB"), default_value("*"))]
     models_pattern: glob::Pattern,
 
-    /// ダウンロードするデバイスを指定する(cudaはlinuxのみ)
+    /// ダウンロードするデバイスを指定する
     #[arg(value_enum, long, num_args(1..), default_value(<&str>::from(Device::default())))]
     devices: Vec<Device>,
 
