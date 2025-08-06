@@ -118,7 +118,7 @@
           - `Mora`
       </details>
 
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117])。
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -137,7 +137,7 @@
                  └── voicevoxcore-android/
     ```
 
-- \[ダウンローダー\] :tada: リトライ機構が導入され、デフォルトで4回のリトライを行うようになります ([#1098] by [@shuntia], [#1111])。
+- \[ダウンローダー\] :tada: リトライ機構が導入され、デフォルトで4回のリトライを行うようになります ([#1098] by [@shuntia], [#1111], [#1121])。
 
     ```console
       -t, --tries <NUMBER>
@@ -175,9 +175,18 @@
     VOICEVOX CORE 0.16.1 downloader
     ```
 
-- \[ダウンローダー\] リポジトリ指定オプション (`--{target}-repo <REPOSITORY>`)にhelpの文章が書かれます ([#1117])。
+- \[ダウンローダー\] helpの文章が充実します ([#1117], [#1125])。
+
+    - リポジトリ指定オプション (`--{target}-repo <REPOSITORY>`)には何も書かれていませんでしたが、書かれます。
+    - `-h`ではなく`--help`のみ、オプションの説明の下に"TARGETS"と"EXAMPLES"の章が追加されます。内容は[https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/downloader.md](https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/downloader.md)に書かれているものとほぼ同じです。
 
 - \[ダウンローダー\] 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
+
+### Changed
+
+- \[ダウンローダー\] `-h`と`--help`は別々の表示をするようになります ([#1125])。
+
+    簡潔な説明は`-h`で、詳細な説明は`--help`で行われます。
 
 ### Removed
 
@@ -192,6 +201,7 @@
 - \[Java\] \[Android\] GHAのUbuntuイメージ備え付けの`$ANDROID_NDK` (現時点ではバージョン27)を使ったリリースがされるようになります。これにより、[#1103]で報告されたAndroidビルドにおけるC++シンボルの問題が解決されます ([#1108])。
 - \[Java\] Javaのファイナライザから中身のRustオブジェクトのデストラクトがされない問題が解決されます ([#1085])。
 - \[ダウンローダー\] 将来的に[VOICEVOX/voicevox\_vvm]のタグの数が30を超えたときに、もしかしたら起きうるかもしれない問題の対処がされます ([#1123])。
+- \[ダウンローダー\] `--devices <DEVICES>...`のhelpにはダウンローダーの誕生 ([#249])からずっと「(cudaはlinuxのみ)」と書かれていましたが、この記述は当時から正しくなかったので消されます ([#1124])。
 - \[ダウンローダー\] \[Windows\] GitHub Releasesにおいて、再び署名がされるようになります ([#1060])。
 
 ## [0.16.0] - 2025-03-29 (+09:00)
@@ -996,6 +1006,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [0.15.0-preview.4]: https://github.com/VOICEVOX/voicevox_core/compare/0.15.0-preview.3...0.15.0-preview.4
 [0.15.0-preview.3]: https://github.com/VOICEVOX/voicevox_core/compare/0.14.0...0.15.0-preview.3
 
+[#249]: https://github.com/VOICEVOX/voicevox_core/pull/249
 [#370]: https://github.com/VOICEVOX/voicevox_core/pull/370
 [#392]: https://github.com/VOICEVOX/voicevox_core/pull/392
 [#400]: https://github.com/VOICEVOX/voicevox_core/pull/400
@@ -1306,7 +1317,10 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1111]: https://github.com/VOICEVOX/voicevox_core/pull/1111
 [#1116]: https://github.com/VOICEVOX/voicevox_core/pull/1116
 [#1117]: https://github.com/VOICEVOX/voicevox_core/pull/1117
+[#1121]: https://github.com/VOICEVOX/voicevox_core/pull/1121
 [#1123]: https://github.com/VOICEVOX/voicevox_core/pull/1123
+[#1124]: https://github.com/VOICEVOX/voicevox_core/pull/1124
+[#1125]: https://github.com/VOICEVOX/voicevox_core/pull/1125
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
