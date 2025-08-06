@@ -111,7 +111,7 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
 
                 download --devices cuda
 
-            デフォルト(CPU 版)をダウンロードする場合:
+            一部の音声モデル（VVMファイル）だけダウンロードする場合:
 
                 download --models-pattern 0.vvm # 0.vvmのみダウンロード
 
