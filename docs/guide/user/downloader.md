@@ -107,4 +107,8 @@ download --help
 
 # アクセストークンの設定
 
-TODO
+環境変数`GITHUB_TOKEN`からGitHubの認証トークンを設定することができます。[2025年5月より](https://github.blog/changelog/2025-05-08-updated-rate-limits-for-unauthenticated-requests/)トークン無しのアクセスには60回/hのレートリミットが課せられているため、設定することをおすすめします。
+
+```bash
+GITHUB_TOKEN=$(gh auth token) download …
+```

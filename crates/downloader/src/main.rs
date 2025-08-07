@@ -117,9 +117,12 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
 
                 download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用VVMをダウンロードしないように
 
-          {access_token_header}
+          {github_token_section_header}
 
-            TODO
+            環境変数{env_github_token}からGitHubの認証トークンを設定することができます。
+            2025年5月よりトークン無しのアクセスには60回/hのレートリミットが課せられているため、設定することをおすすめします。
+
+                GITHUB_TOKEN=$(gh auth token) download …
           ",
           targets_section_header = color_print::cstr!("<s><u>Targets:</u></s>"),
           targets_section_target_values = DownloadTarget::value_variants()
@@ -136,7 +139,10 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
               .map(|line| format!("  {line}"))
               .join("\n"),
           examples_section_header = color_print::cstr!("<s><u>Examples:</u></s>"),
-          access_token_header = color_print::cstr!("<s><u>Access Token:</u></s>"),
+          github_token_section_header = color_print::cstr!(
+              "<s><u>GitHub Authentication Token:</u></s>",
+          ),
+          env_github_token = color_print::cstr!("<s>GITHUB_TOKEN</s>"),
     })
 )]
 struct Args {

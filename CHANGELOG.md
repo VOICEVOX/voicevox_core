@@ -175,11 +175,14 @@
     VOICEVOX CORE 0.16.1 downloader
     ```
 
-- \[ダウンローダー\] helpの文章が充実します ([#1117], [#1125], [#1126])。
+- \[ダウンローダー\] 環境変数`GITHUB_TOKEN`でGitHubの認証トークンをセットする機能がドキュメント化されます ([#1128])。
+
+    Rust版ダウンローダー実装当初 (#350)から存在した機能ですが、このたび正式に使い方が説明されます。
+
+- \[ダウンローダー\] helpの文章が充実します ([#1117], [#1125], [#1126], [#1128])。
 
     - リポジトリ指定オプション (`--{target}-repo <REPOSITORY>`)には何も書かれていませんでしたが、書かれます。
-    - `-h`ではなく`--help`のみ、オプションの説明の下に"TARGETS"と"EXAMPLES"の章が追加されます。内容は[https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/downloader.md](https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/downloader.md)に書かれているものとほぼ同じです。
-    - TODO ([#1128])。
+    - `-h`ではなく`--help`のみ、オプションの説明の下にいくつかの章が追加されます。内容は[https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/downloader.md](https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/downloader.md)に書かれているものとほぼ同じです。
 
 - \[ダウンローダー\] 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
 
