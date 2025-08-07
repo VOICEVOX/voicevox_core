@@ -116,6 +116,10 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
                 download --models-pattern 0.vvm # 0.vvmのみダウンロード
 
                 download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用VVMをダウンロードしないように
+
+          {access_token_header}
+
+            TODO
           ",
           targets_section_header = color_print::cstr!("<s><u>Targets:</u></s>"),
           targets_section_target_values = DownloadTarget::value_variants()
@@ -132,6 +136,7 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
               .map(|line| format!("  {line}"))
               .join("\n"),
           examples_section_header = color_print::cstr!("<s><u>Examples:</u></s>"),
+          access_token_header = color_print::cstr!("<s><u>Access Token:</u></s>"),
     })
 )]
 struct Args {
@@ -650,15 +655,9 @@ fn setup_logger() {
 
 fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
     let mut octocrab = Octocrab::builder();
-
-    // パーソナルトークン無しだと、GitHubのREST APIの利用に強い回数制限がかかる。
-    // そのためCI上では`${{ secrets.GITHUB_TOKEN }}`を使わないとかなりの確率で失敗するようになる。
-    // 手元の手動実行であってもやりすぎると制限に引っ掛かるので、手元でも`$GITHUB_TOKEN`を
-    // 与えられるようにする。
     if let Ok(github_token) = env::var("GITHUB_TOKEN") {
         octocrab = octocrab.personal_token(github_token);
     }
-
     octocrab.build().map(Arc::new)
 }
 

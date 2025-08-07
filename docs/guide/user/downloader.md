@@ -104,3 +104,7 @@ download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用
 ```
 download --help
 ```
+
+# アクセストークンの設定
+
+TODO
