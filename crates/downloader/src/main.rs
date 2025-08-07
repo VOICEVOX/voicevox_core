@@ -144,7 +144,7 @@ struct Args {
         long_help(indoc! {"
             ダウンロード対象を限定する。
 
-            ダウンロード対象の詳細はTARGETSの章で説明。",
+            ダウンロード対象の詳細はTargetsの章で説明。",
         })
     )]
     only: Vec<DownloadTarget>,
@@ -158,7 +158,7 @@ struct Args {
         long_help(indoc! {"
             ダウンロード対象を除外する。
 
-            ダウンロード対象の詳細はTARGETSの章で説明。",
+            ダウンロード対象の詳細はTargetsの章で説明。",
         })
     )]
     exclude: Vec<DownloadTarget>,
