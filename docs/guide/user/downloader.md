@@ -94,6 +94,16 @@ download --models-pattern 0.vvm # 0.vvmのみダウンロード
 download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用VVMをダウンロードしないように
 ```
 
+<a id="github-authentication-token"></a>
+
+## アクセストークンを設定する場合
+
+環境変数`GITHUB_TOKEN`からGitHubの認証トークンを設定することができます。[2025年5月より](https://github.blog/changelog/2025-05-08-updated-rate-limits-for-unauthenticated-requests/)トークン無しのアクセスには60回/hのレートリミットが課せられているため、設定することをおすすめします。
+
+```bash
+GITHUB_TOKEN=$(gh auth token) download …
+```
+
 <a id="help"></a>
 
 ## その他詳細なオプションを指定したい場合
@@ -103,12 +113,4 @@ download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用
 
 ```
 download --help
-```
-
-# アクセストークンの設定
-
-環境変数`GITHUB_TOKEN`からGitHubの認証トークンを設定することができます。[2025年5月より](https://github.blog/changelog/2025-05-08-updated-rate-limits-for-unauthenticated-requests/)トークン無しのアクセスには60回/hのレートリミットが課せられているため、設定することをおすすめします。
-
-```bash
-GITHUB_TOKEN=$(gh auth token) download …
 ```
