@@ -96,9 +96,9 @@ download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用
 
 <a id="github-authentication-token"></a>
 
-## アクセストークンを設定する場合
+## レートリミットを回避する
 
-環境変数`GITHUB_TOKEN`からGitHubの認証トークンを設定することができます。[2025年5月より](https://github.blog/changelog/2025-05-08-updated-rate-limits-for-unauthenticated-requests/)トークン無しのアクセスには60回/hのレートリミットが課せられているため、設定することをおすすめします。
+もしも繰り返しダウンローダーを使っていてGitHubのレートリミットによるエラーが発生するのなら、環境変数`GITHUB_TOKEN`でGitHubの認証トークンを設定してください。設定していれば、通常の用途においてレートリミットには達しないはずです。
 
 ```bash
 GITHUB_TOKEN=$(gh auth token) download …

@@ -100,7 +100,7 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
           {github_token_section_header}
 
             環境変数{env_github_token}からGitHubの認証トークンを設定することができます。
-            2025年5月よりトークン無しのアクセスには60回/hのレートリミットが課せられているため、設定することをおすすめします。
+            トークン無しのアクセスには低いレートリミットが課せられているため、設定することをおすすめします。
 
                 GITHUB_TOKEN=$(gh auth token) download …
 
