@@ -118,7 +118,7 @@
           - `Mora`
       </details>
 
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125])。
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -175,7 +175,7 @@
     VOICEVOX CORE 0.16.1 downloader
     ```
 
-- \[ダウンローダー\] helpの文章が充実します ([#1117], [#1125])。
+- \[ダウンローダー\] helpの文章が充実します ([#1117], [#1125], [#1126])。
 
     - リポジトリ指定オプション (`--{target}-repo <REPOSITORY>`)には何も書かれていませんでしたが、書かれます。
     - `-h`ではなく`--help`のみ、オプションの説明の下に"TARGETS"と"EXAMPLES"の章が追加されます。内容は[https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/downloader.md](https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/downloader.md)に書かれているものとほぼ同じです。
