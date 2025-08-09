@@ -1358,19 +1358,16 @@ async fn download(
 // ただしどちらもoctocrab側の対応が必要。
 // cf. https://github.com/VOICEVOX/voicevox_core/issues/1120
 /// [`octocrab::repo::ReleasesHandler::stream_asset`]でダウンロードしたものを検証する。
-fn validate_github_asset_content(
-    asset_content: Vec<u8>,
-    kind: GhAssetKind,
-) -> anyhow::Result<Vec<u8>> {
-    match (kind, &*asset_content) {
+fn validate_github_asset_content(content: Vec<u8>, kind: GhAssetKind) -> anyhow::Result<Vec<u8>> {
+    match (kind, &*content) {
         (GhAssetKind::Archive(ArchiveKind::Zip), [0x50, 0x4b, 0x03, 0x04, ..])
-        | (GhAssetKind::Archive(ArchiveKind::Tgz), [0x1f, 0x8b, 0x08, ..]) => Ok(asset_content),
-        (_, asset_content) => Err({
+        | (GhAssetKind::Archive(ArchiveKind::Tgz), [0x1f, 0x8b, 0x08, ..]) => Ok(content),
+        (_, content) => Err({
             let mut msg = "予期しない応答をGitHubが返しました".to_owned();
-            if let Ok(asset_content) = str::from_utf8(asset_content) {
+            if let Ok(content) = str::from_utf8(content) {
                 msg += ": ";
-                msg += asset_content.trim_end();
-                if asset_content.contains("API rate limit exceeded for") {
+                msg += content.trim_end();
+                if content.contains("API rate limit exceeded for") {
                     msg += " (note: レートリミットによるエラーのようです。\
                             認証トークンを設定することでレートリミットは緩和されます。\
                             詳細は`--help`をご覧ください)";
