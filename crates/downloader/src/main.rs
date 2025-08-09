@@ -854,22 +854,23 @@ async fn find_models(
 
     let (tag, sha) = repos
         .list_tags()
+        .per_page(100)
         .send()
         .await?
-        .into_iter()
-        .map(
-            |Tag {
-                 name,
-                 commit: CommitObject { sha, .. },
-                 ..
-             }| {
-                let tag = name
-                    .parse()
-                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))?;
-                Ok((tag, sha))
-            },
-        )
-        .collect::<anyhow::Result<Vec<_>>>()?
+        .into_stream(octocrab)
+        .map(|tag| {
+            let Tag {
+                name,
+                commit: CommitObject { sha, .. },
+                ..
+            } = tag?;
+            let tag = name
+                .parse()
+                .with_context(|| format!("`{repo}` contains non-SemVer tags"))?;
+            anyhow::Ok((tag, sha))
+        })
+        .try_collect::<Vec<_>>()
+        .await?
         .into_iter()
         .filter(|(version, _)| ALLOWED_MODELS_VERSIONS.matches(version))
         .sorted()
