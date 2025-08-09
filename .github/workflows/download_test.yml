@@ -166,7 +166,7 @@ jobs:
         # (この際`echo y`ではなく`yes`を使うと謎の要因により無言で異常終了する)
         run: echo y | ${{ matrix.download_command }} --c-api-version ${{ env.VERSION }} --c-api-repo ${{ github.repository }} --onnxruntime-version voicevox_onnxruntime-1.17.3
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Check downloaded version
         run: |
           [ -e "${{ matrix.download_dir }}/c_api/VERSION" ]

@@ -94,6 +94,16 @@ download --models-pattern 0.vvm # 0.vvmのみダウンロード
 download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用VVMをダウンロードしないように
 ```
 
+<a id="github-authentication-token"></a>
+
+## レートリミットを回避する
+
+もしGitHubのレートリミットによるエラーが発生する場合は、環境変数`GH_TOKEN`または`GITHUB_TOKEN`でGitHubの認証トークンを設定してください。認証トークンを設定することでGithubのレートリミットが緩和されます。
+
+```bash
+GH_TOKEN=$(gh auth token) download …
+```
+
 <a id="help"></a>
 
 ## その他詳細なオプションを指定したい場合
