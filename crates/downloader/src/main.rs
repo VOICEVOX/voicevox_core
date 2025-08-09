@@ -97,6 +97,13 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
 
           {targets_section_target_values}
 
+          {github_token_section_header}
+
+            環境変数{env_github_token}からGitHubの認証トークンを設定することができます。
+            トークン無しのアクセスには低いレートリミットが課せられているため、設定することをおすすめします。
+
+                GITHUB_TOKEN=$(gh auth token) download …
+
           {examples_section_header}
 
             デフォルト(CPU 版)をダウンロードする場合:
@@ -131,6 +138,10 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
               .lines()
               .map(|line| format!("  {line}"))
               .join("\n"),
+          github_token_section_header = color_print::cstr!(
+              "<s><u>GitHub Authentication Token:</u></s>",
+          ),
+          env_github_token = color_print::cstr!("<s>GITHUB_TOKEN</s>"),
           examples_section_header = color_print::cstr!("<s><u>Examples:</u></s>"),
     })
 )]
@@ -650,15 +661,9 @@ fn setup_logger() {
 
 fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
     let mut octocrab = Octocrab::builder();
-
-    // パーソナルトークン無しだと、GitHubのREST APIの利用に強い回数制限がかかる。
-    // そのためCI上では`${{ secrets.GITHUB_TOKEN }}`を使わないとかなりの確率で失敗するようになる。
-    // 手元の手動実行であってもやりすぎると制限に引っ掛かるので、手元でも`$GITHUB_TOKEN`を
-    // 与えられるようにする。
     if let Ok(github_token) = env::var("GITHUB_TOKEN") {
         octocrab = octocrab.personal_token(github_token);
     }
-
     octocrab.build().map(Arc::new)
 }
 
