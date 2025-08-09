@@ -142,7 +142,7 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
           github_token_section_header = color_print::cstr!(
               "<s><u>GitHub Authentication Token:</u></s>",
           ),
-          env_gh_token = color_print::cstr!("<s>gh_TOKEN</s>"),
+          env_gh_token = color_print::cstr!("<s>GH_TOKEN</s>"),
           env_github_token = color_print::cstr!("<s>GITHUB_TOKEN</s>"),
           examples_section_header = color_print::cstr!("<s><u>Examples:</u></s>"),
     })
