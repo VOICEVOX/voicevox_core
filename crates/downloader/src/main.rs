@@ -99,10 +99,11 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
 
           {github_token_section_header}
 
-            環境変数{env_github_token}からGitHubの認証トークンを設定することができます。
+            環境変数{env_gh_token}または{env_github_token}からGitHubの認証トークンを設定することができます。
+            両方設定されている場合は{env_gh_token}が優先されます。
             トークン無しのアクセスには低いレートリミットが課せられているため、設定することをおすすめします。
 
-                GITHUB_TOKEN=$(gh auth token) download …
+                GH_TOKEN=$(gh auth token) download …
 
           {examples_section_header}
 
@@ -141,6 +142,7 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
           github_token_section_header = color_print::cstr!(
               "<s><u>GitHub Authentication Token:</u></s>",
           ),
+          env_gh_token = color_print::cstr!("<s>GH_TOKEN</s>"),
           env_github_token = color_print::cstr!("<s>GITHUB_TOKEN</s>"),
           examples_section_header = color_print::cstr!("<s><u>Examples:</u></s>"),
     })
@@ -661,7 +663,7 @@ fn setup_logger() {
 
 fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
     let mut octocrab = Octocrab::builder();
-    if let Ok(github_token) = env::var("GITHUB_TOKEN") {
+    if let Ok(github_token) = env::var("GH_TOKEN").or_else(|_| env::var("GITHUB_TOKEN")) {
         octocrab = octocrab.personal_token(github_token);
     }
     octocrab.build().map(Arc::new)
