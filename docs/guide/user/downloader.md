@@ -98,7 +98,7 @@ download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用
 
 ## レートリミットを回避する
 
-もしも繰り返しダウンローダーを使っていてGitHubのレートリミットによるエラーが発生するのなら、環境変数`GITHUB_TOKEN`でGitHubの認証トークンを設定してください。設定していれば、通常の用途においてレートリミットには達しないはずです。
+もしGitHubのレートリミットによるエラーが発生する場合は、環境変数`GITHUB_TOKEN`でGitHubの認証トークンを設定してください。認証トークンを設定することでGithubのレートリミットが緩和されます。
 
 ```bash
 GITHUB_TOKEN=$(gh auth token) download …
