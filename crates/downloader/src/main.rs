@@ -97,6 +97,14 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
 
           {targets_section_target_values}
 
+          {github_token_section_header}
+
+            環境変数{env_gh_token}または{env_github_token}からGitHubの認証トークンを設定することができます。
+            両方設定されている場合は{env_gh_token}が優先されます。
+            トークン無しのアクセスには低いレートリミットが課せられているため、設定することをおすすめします。
+
+                GH_TOKEN=$(gh auth token) download …
+
           {examples_section_header}
 
             デフォルト(CPU 版)をダウンロードする場合:
@@ -131,6 +139,11 @@ static PROGRESS_STYLE2: LazyLock<ProgressStyle> =
               .lines()
               .map(|line| format!("  {line}"))
               .join("\n"),
+          github_token_section_header = color_print::cstr!(
+              "<s><u>GitHub Authentication Token:</u></s>",
+          ),
+          env_gh_token = color_print::cstr!("<s>GH_TOKEN</s>"),
+          env_github_token = color_print::cstr!("<s>GITHUB_TOKEN</s>"),
           examples_section_header = color_print::cstr!("<s><u>Examples:</u></s>"),
     })
 )]
@@ -650,15 +663,9 @@ fn setup_logger() {
 
 fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
     let mut octocrab = Octocrab::builder();
-
-    // パーソナルトークン無しだと、GitHubのREST APIの利用に強い回数制限がかかる。
-    // そのためCI上では`${{ secrets.GITHUB_TOKEN }}`を使わないとかなりの確率で失敗するようになる。
-    // 手元の手動実行であってもやりすぎると制限に引っ掛かるので、手元でも`$GITHUB_TOKEN`を
-    // 与えられるようにする。
-    if let Ok(github_token) = env::var("GITHUB_TOKEN") {
+    if let Ok(github_token) = env::var("GH_TOKEN").or_else(|_| env::var("GITHUB_TOKEN")) {
         octocrab = octocrab.personal_token(github_token);
     }
-
     octocrab.build().map(Arc::new)
 }
 
@@ -1159,7 +1166,7 @@ async fn fetch_model(
     let res = reqwest.get(download_url).send().await?.error_for_status()?;
     let bytes_stream = res.bytes_stream().map_err(Into::into);
     let pb = with_style(pb.clone(), &PROGRESS_STYLE1).await?;
-    let model = download(bytes_stream, Some(*size), pb.clone()).await?;
+    let model = download(bytes_stream, Some(*size), Ok, pb.clone()).await?;
     let pb = tokio::task::spawn_blocking(move || {
         pb.set_style(PROGRESS_STYLE2.clone());
         pb.set_message("Writing...");
@@ -1194,7 +1201,13 @@ async fn download_and_extract(
     pb: ProgressBar,
 ) -> anyhow::Result<()> {
     let pb = with_style(pb, &PROGRESS_STYLE1).await?;
-    let archive = download(bytes_stream, content_length, pb.clone()).await?;
+    let archive = download(
+        bytes_stream,
+        content_length,
+        |content| validate_github_asset_content(content, GhAssetKind::Archive(archive_kind)),
+        pb.clone(),
+    )
+    .await?;
 
     let pb = with_style(pb, &PROGRESS_STYLE2).await?;
     let files = &read_archive(archive, archive_kind, pb.clone()).await?;
@@ -1303,6 +1316,7 @@ async fn with_style(
 async fn download(
     mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
     content_length: Option<u64>,
+    validate: impl FnOnce(Vec<u8>) -> anyhow::Result<Vec<u8>>,
     pb: ProgressBar,
 ) -> anyhow::Result<Vec<u8>> {
     if let Some(content_length) = content_length {
@@ -1315,7 +1329,7 @@ async fn download(
             downloaded.extend_from_slice(&chunk);
             pos_tx.send(downloaded.len() as _)?;
         }
-        Ok(downloaded)
+        validate(downloaded)
     })
     .await;
 
@@ -1341,6 +1355,30 @@ async fn download(
     }
 }
 
+// FIXME: HTTPステータスを確認したりSHA-256をチェックしたりといったまともな方法にする。
+// ただしどちらもoctocrab側の対応が必要。
+// cf. https://github.com/VOICEVOX/voicevox_core/issues/1120
+/// [`octocrab::repo::ReleasesHandler::stream_asset`]でダウンロードしたものを検証する。
+fn validate_github_asset_content(content: Vec<u8>, kind: GhAssetKind) -> anyhow::Result<Vec<u8>> {
+    match (kind, &*content) {
+        (GhAssetKind::Archive(ArchiveKind::Zip), [0x50, 0x4b, 0x03, 0x04, ..])
+        | (GhAssetKind::Archive(ArchiveKind::Tgz), [0x1f, 0x8b, 0x08, ..]) => Ok(content),
+        (_, content) => Err({
+            let mut msg = "予期しない応答をGitHubが返しました".to_owned();
+            if let Ok(content) = str::from_utf8(content) {
+                msg += ": ";
+                msg += content.trim_end();
+                if content.contains("API rate limit exceeded for") {
+                    msg += " (Note: レートリミットによるエラーの可能性があります。\
+                            認証トークンを設定すると制限が緩和されます。\
+                            詳細は`--help`をご覧ください)";
+                }
+            }
+            anyhow!("{msg}")
+        }),
+    }
+}
+
 struct GhAsset {
     octocrab: Arc<Octocrab>,
     repo: RepoName,
@@ -1362,6 +1400,11 @@ struct GhContent {
     name: String,
     download_url: String,
     size: u64,
+}
+
+#[derive(Clone, Copy)]
+enum GhAssetKind {
+    Archive(ArchiveKind),
 }
 
 #[derive(Clone, Copy)]
