@@ -290,15 +290,15 @@ jobs:
       ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: voicevox_core-x86_64-apple-ios
           path: ${{ env.IOS_X86_64_PATH }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: voicevox_core-aarch64-apple-ios-sim
           path: ${{ env.IOS_AARCH64_SIM_PATH }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
@@ -344,7 +344,7 @@ jobs:
         run: cargo set-version "$VERSION" -p voicevox_core_java_api
 
       - name: "Download artifact"
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: voicevox_core_java_api-*
           path: artifacts/
