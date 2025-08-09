@@ -923,8 +923,10 @@ async fn find_models(
                     },
                 )
                 .await?;
-            String::from_utf8(content)
-                .with_context(|| format!("'{}' is not valid UTF-8", asset.url))
+            let content =
+                validate_github_asset_content(content, GhAssetKind::VoicevoxReadmeOrTerms)?;
+            Ok(String::from_utf8(content)
+                .unwrap_or_else(|_| unreachable!("should have been checked"))) // FIXME: 関数分けるべきか？
         }
     }
 }
@@ -1147,7 +1149,13 @@ async fn fetch_model(
         .await?
         .map_err(Into::into);
     let pb = with_style(pb.clone(), &PROGRESS_STYLE1).await?;
-    let model = download(bytes_stream, Some(*size), Ok, pb.clone()).await?;
+    let model = download(
+        bytes_stream,
+        Some(*size),
+        GhAssetKind::Archive(ArchiveKind::Zip),
+        pb.clone(),
+    )
+    .await?;
     let pb = tokio::task::spawn_blocking(move || {
         pb.set_style(PROGRESS_STYLE2.clone());
         pb.set_message("Writing...");
@@ -1185,7 +1193,7 @@ async fn download_and_extract(
     let archive = download(
         bytes_stream,
         content_length,
-        |content| validate_github_asset_content(content, GhAssetKind::Archive(archive_kind)),
+        GhAssetKind::Archive(archive_kind),
         pb.clone(),
     )
     .await?;
@@ -1297,7 +1305,7 @@ async fn with_style(
 async fn download(
     mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
     content_length: Option<u64>,
-    validate: impl FnOnce(Vec<u8>) -> anyhow::Result<Vec<u8>>,
+    kind: GhAssetKind,
     pb: ProgressBar,
 ) -> anyhow::Result<Vec<u8>> {
     if let Some(content_length) = content_length {
@@ -1310,7 +1318,7 @@ async fn download(
             downloaded.extend_from_slice(&chunk);
             pos_tx.send(downloaded.len() as _)?;
         }
-        validate(downloaded)
+        validate_github_asset_content(downloaded, kind)
     })
     .await;
 
@@ -1342,6 +1350,12 @@ async fn download(
 /// [`octocrab::repo::ReleasesHandler::stream_asset`]でダウンロードしたものを検証する。
 fn validate_github_asset_content(content: Vec<u8>, kind: GhAssetKind) -> anyhow::Result<Vec<u8>> {
     match (kind, &*content) {
+        (GhAssetKind::VoicevoxReadmeOrTerms, content_)
+            if str::from_utf8(content_)
+                .is_ok_and(|content_| content_.starts_with("# VOICEVOX ")) =>
+        {
+            Ok(content)
+        }
         (GhAssetKind::Archive(ArchiveKind::Zip), [0x50, 0x4b, 0x03, 0x04, ..])
         | (GhAssetKind::Archive(ArchiveKind::Tgz), [0x1f, 0x8b, 0x08, ..]) => Ok(content),
         (_, content) => Err({
@@ -1385,8 +1399,10 @@ struct VvmAsset {
     size: u64,
 }
 
+// FIXME: SourceForgeからのものもあるので、"gh"とは限らない！
 #[derive(Clone, Copy)]
 enum GhAssetKind {
+    VoicevoxReadmeOrTerms,
     Archive(ArchiveKind),
 }
 
