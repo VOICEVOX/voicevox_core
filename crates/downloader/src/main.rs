@@ -1368,8 +1368,8 @@ fn validate_github_asset_content(content: Vec<u8>, kind: GhAssetKind) -> anyhow:
                 msg += ": ";
                 msg += content.trim_end();
                 if content.contains("API rate limit exceeded for") {
-                    msg += " (note: レートリミットによるエラーのようです。\
-                            認証トークンを設定することでレートリミットは緩和されます。\
+                    msg += " (Note: レートリミットによるエラーの可能性があります。\
+                            認証トークンを設定すると制限が緩和されます。\
                             詳細は`--help`をご覧ください)";
                 }
             }
