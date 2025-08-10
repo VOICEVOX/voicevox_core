@@ -635,7 +635,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
     if targets.contains(&DownloadTarget::Dict) {
-        tasks.spawn(download_and_extract_from_url(
+        tasks.spawn(download_and_extract_from_sourceforge(
             &OPEN_JTALK_DIC_URL,
             Stripping::None,
             output.join(DownloadTarget::Dict.dir_name()),
@@ -1080,6 +1080,7 @@ fn download_and_extract_from_gh(
             Some(size),
             archive_kind,
             stripping,
+            WebService::Github,
             &output,
             pb.clone(),
         )
@@ -1087,13 +1088,23 @@ fn download_and_extract_from_gh(
     }))
 }
 
-fn download_and_extract_from_url(
+/// # Panics
+///
+/// `url`が"sourceforge.net"のものでなければパニックする。
+fn download_and_extract_from_sourceforge(
     url: &'static Url,
     stripping: Stripping,
     output: PathBuf,
     progresses: &MultiProgress,
     tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
+    if !url.host_str().is_some_and(|host| {
+        host.split('.')
+            .collect::<Vec<_>>()
+            .ends_with(&["sourceforge", "net"])
+    }) {
+        panic!("`url` must be for SourceForge");
+    }
     let name = url
         .path_segments()
         .and_then(|s| { s }.next_back())
@@ -1111,6 +1122,7 @@ fn download_and_extract_from_url(
             content_length,
             archive_kind,
             stripping,
+            WebService::Sourceforge,
             &output,
             pb.clone(),
         )
@@ -1197,6 +1209,7 @@ async fn download_and_extract(
     content_length: Option<u64>,
     archive_kind: ArchiveKind,
     stripping: Stripping,
+    service: WebService,
     output: &Path,
     pb: ProgressBar,
 ) -> anyhow::Result<()> {
@@ -1204,7 +1217,7 @@ async fn download_and_extract(
     let archive = download(
         bytes_stream,
         content_length,
-        |content| validate_github_asset_content(content, GhAssetKind::Archive(archive_kind)),
+        |content| validate_archive_file(content, archive_kind, service),
         pb.clone(),
     )
     .await?;
@@ -1358,14 +1371,19 @@ async fn download(
 // FIXME: HTTPステータスを確認したりSHA-256をチェックしたりといったまともな方法にする。
 // ただしどちらもoctocrab側の対応が必要。
 // cf. https://github.com/VOICEVOX/voicevox_core/issues/1120
+// その際、`download_and_extract_from_sourceforge`の名前も`…_from_url`に戻す。
 /// [`octocrab::repo::ReleasesHandler::stream_asset`]でダウンロードしたものを検証する。
-fn validate_github_asset_content(content: Vec<u8>, kind: GhAssetKind) -> anyhow::Result<Vec<u8>> {
-    match (kind, &*content) {
-        (GhAssetKind::Archive(ArchiveKind::Zip), [0x50, 0x4b, 0x03, 0x04, ..])
-        | (GhAssetKind::Archive(ArchiveKind::Tgz), [0x1f, 0x8b, 0x08, ..]) => Ok(content),
+fn validate_archive_file(
+    content: Vec<u8>,
+    content_kind: ArchiveKind,
+    service: WebService,
+) -> anyhow::Result<Vec<u8>> {
+    match (content_kind, &*content) {
+        (ArchiveKind::Zip, [0x50, 0x4b, 0x03, 0x04, ..])
+        | (ArchiveKind::Tgz, [0x1f, 0x8b, 0x08, ..]) => Ok(content),
         (_, content) => Err({
-            let mut msg = "予期しない応答をGitHubが返しました".to_owned();
-            if let Ok(content) = str::from_utf8(content) {
+            let mut msg = format!("予期しない応答を{service}が返しました");
+            if let (WebService::Github, Ok(content)) = (service, str::from_utf8(content)) {
                 msg += ": ";
                 msg += content.trim_end();
                 if content.contains("API rate limit exceeded for") {
@@ -1377,6 +1395,15 @@ fn validate_github_asset_content(content: Vec<u8>, kind: GhAssetKind) -> anyhow:
             anyhow!("{msg}")
         }),
     }
+}
+
+#[derive(Clone, Copy, Display)]
+enum WebService {
+    #[strum(to_string = "GitHub")]
+    Github,
+
+    #[strum(to_string = "SourceForge")]
+    Sourceforge,
 }
 
 struct GhAsset {
@@ -1400,11 +1427,6 @@ struct GhContent {
     name: String,
     download_url: String,
     size: u64,
-}
-
-#[derive(Clone, Copy)]
-enum GhAssetKind {
-    Archive(ArchiveKind),
 }
 
 #[derive(Clone, Copy)]
