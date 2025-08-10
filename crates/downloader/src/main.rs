@@ -60,8 +60,7 @@ const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
 
 static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
     LazyLock::new(|| ">=0.16,<0.17".parse().unwrap());
-const MODELS_README_FILENAME: &str = "README.md";
-const MODELS_README_RENAME: &str = "README.txt";
+const MODELS_README_FILENAME: &str = "README.txt";
 const MODELS_DIR_NAME: &str = "vvms";
 const MODELS_TERMS_NAME: &str = "VOICEVOX 音声モデル 利用規約";
 const MODELS_TERMS_FILE: &str = "TERMS.txt";
@@ -633,7 +632,7 @@ async fn main() -> anyhow::Result<()> {
         );
     }
     if targets.contains(&DownloadTarget::Dict) {
-        tasks.spawn(download_and_extract_from_url(
+        tasks.spawn(download_and_extract_from_sourceforge(
             &OPEN_JTALK_DIC_URL,
             Stripping::None,
             output.join(DownloadTarget::Dict.dir_name()),
@@ -923,10 +922,9 @@ async fn find_models(
                     },
                 )
                 .await?;
-            let content =
-                validate_github_asset_content(content, GhAssetKind::VoicevoxReadmeOrTerms)?;
-            Ok(String::from_utf8(content)
-                .unwrap_or_else(|_| unreachable!("should have been checked"))) // FIXME: 関数分けるべきか？
+            let content = String::from_utf8(content)
+                .with_context(|| format!("`{}` is not valid UTF-8", asset.name))?;
+            validate_models_readme_or_terms_txt(content)
         }
     }
 }
@@ -1061,6 +1059,7 @@ fn download_and_extract_from_gh(
             Some(size),
             archive_kind,
             stripping,
+            WebService::Github,
             &output,
             pb.clone(),
         )
@@ -1068,13 +1067,23 @@ fn download_and_extract_from_gh(
     }))
 }
 
-fn download_and_extract_from_url(
+/// # Panics
+///
+/// `url`が"sourceforge.net"のものでなければパニックする。
+fn download_and_extract_from_sourceforge(
     url: &'static Url,
     stripping: Stripping,
     output: PathBuf,
     progresses: &MultiProgress,
     tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
+    if !url.host_str().is_some_and(|host| {
+        host.split('.')
+            .collect::<Vec<_>>()
+            .ends_with(&["sourceforge", "net"])
+    }) {
+        panic!("`url` must be for SourceForge");
+    }
     let name = url
         .path_segments()
         .and_then(|s| { s }.next_back())
@@ -1092,6 +1101,7 @@ fn download_and_extract_from_url(
             content_length,
             archive_kind,
             stripping,
+            WebService::Sourceforge,
             &output,
             pb.clone(),
         )
@@ -1119,7 +1129,7 @@ async fn download_models(
         .collect::<Vec<_>>();
 
     fs_err::tokio::create_dir_all(output.join(MODELS_DIR_NAME)).await?;
-    fs_err::tokio::write(output.join(MODELS_README_RENAME), readme).await?;
+    fs_err::tokio::write(output.join(MODELS_README_FILENAME), readme).await?;
     fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
     Ok(retry(tries, async move || {
         models
@@ -1152,7 +1162,8 @@ async fn fetch_model(
     let model = download(
         bytes_stream,
         Some(*size),
-        GhAssetKind::Archive(ArchiveKind::Zip),
+        ArchiveKind::Zip,
+        WebService::Github,
         pb.clone(),
     )
     .await?;
@@ -1186,6 +1197,7 @@ async fn download_and_extract(
     content_length: Option<u64>,
     archive_kind: ArchiveKind,
     stripping: Stripping,
+    service: WebService,
     output: &Path,
     pb: ProgressBar,
 ) -> anyhow::Result<()> {
@@ -1193,7 +1205,8 @@ async fn download_and_extract(
     let archive = download(
         bytes_stream,
         content_length,
-        GhAssetKind::Archive(archive_kind),
+        archive_kind,
+        service,
         pb.clone(),
     )
     .await?;
@@ -1305,7 +1318,8 @@ async fn with_style(
 async fn download(
     mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
     content_length: Option<u64>,
-    kind: GhAssetKind,
+    kind: ArchiveKind,
+    service: WebService,
     pb: ProgressBar,
 ) -> anyhow::Result<Vec<u8>> {
     if let Some(content_length) = content_length {
@@ -1318,7 +1332,7 @@ async fn download(
             downloaded.extend_from_slice(&chunk);
             pos_tx.send(downloaded.len() as _)?;
         }
-        validate_github_asset_content(downloaded, kind)
+        validate_archive_file(downloaded, kind, service)
     })
     .await;
 
@@ -1347,31 +1361,54 @@ async fn download(
 // FIXME: HTTPステータスを確認したりSHA-256をチェックしたりといったまともな方法にする。
 // ただしどちらもoctocrab側の対応が必要。
 // cf. https://github.com/VOICEVOX/voicevox_core/issues/1120
+// その際、`download_and_extract_from_sourceforge`の名前も`…_from_url`に戻す。
 /// [`octocrab::repo::ReleasesHandler::stream_asset`]でダウンロードしたものを検証する。
-fn validate_github_asset_content(content: Vec<u8>, kind: GhAssetKind) -> anyhow::Result<Vec<u8>> {
-    match (kind, &*content) {
-        (GhAssetKind::VoicevoxReadmeOrTerms, content_)
-            if str::from_utf8(content_)
-                .is_ok_and(|content_| content_.starts_with("# VOICEVOX ")) =>
-        {
-            Ok(content)
-        }
-        (GhAssetKind::Archive(ArchiveKind::Zip), [0x50, 0x4b, 0x03, 0x04, ..])
-        | (GhAssetKind::Archive(ArchiveKind::Tgz), [0x1f, 0x8b, 0x08, ..]) => Ok(content),
-        (_, content) => Err({
-            let mut msg = "予期しない応答をGitHubが返しました".to_owned();
-            if let Ok(content) = str::from_utf8(content) {
-                msg += ": ";
-                msg += content.trim_end();
-                if content.contains("API rate limit exceeded for") {
-                    msg += " (Note: レートリミットによるエラーの可能性があります。\
-                            認証トークンを設定すると制限が緩和されます。\
-                            詳細は`--help`をご覧ください)";
-                }
-            }
-            anyhow!("{msg}")
-        }),
+fn validate_archive_file(
+    content: Vec<u8>,
+    content_kind: ArchiveKind,
+    service: WebService,
+) -> anyhow::Result<Vec<u8>> {
+    match (content_kind, &*content) {
+        (ArchiveKind::Zip, [0x50, 0x4b, 0x03, 0x04, ..])
+        | (ArchiveKind::Tgz, [0x1f, 0x8b, 0x08, ..]) => Ok(content),
+        (_, content) => Err(error_for_unexpected_asset_content(content, service)),
     }
+}
+
+// FIXME: `validate_archive_file`と同様。
+/// [`DownloadTarget::Models`]におけるreadmeと利用規約のテキストを検証する。
+fn validate_models_readme_or_terms_txt(content: String) -> anyhow::Result<String> {
+    if content.starts_with("# VOICEVOX ") {
+        Ok(content)
+    } else {
+        Err(error_for_unexpected_asset_content(
+            content.as_ref(),
+            WebService::Github,
+        ))
+    }
+}
+
+fn error_for_unexpected_asset_content(content: &[u8], service: WebService) -> anyhow::Error {
+    let mut msg = format!("予期しない応答を{service}が返しました");
+    if let (WebService::Github, Ok(content)) = (service, str::from_utf8(content)) {
+        msg += ": ";
+        msg += content.trim_end();
+        if content.contains("API rate limit exceeded for") {
+            msg += " (Note: レートリミットによるエラーの可能性があります。\
+                    認証トークンを設定すると制限が緩和されます。\
+                    詳細は`--help`をご覧ください)";
+        }
+    }
+    anyhow!("{msg}")
+}
+
+#[derive(Clone, Copy, Display)]
+enum WebService {
+    #[strum(to_string = "GitHub")]
+    Github,
+
+    #[strum(to_string = "SourceForge")]
+    Sourceforge,
 }
 
 struct GhAsset {
@@ -1399,13 +1436,6 @@ struct VvmAsset {
     size: u64,
 }
 
-// FIXME: SourceForgeからのものもあるので、"gh"とは限らない！
-#[derive(Clone, Copy)]
-enum GhAssetKind {
-    VoicevoxReadmeOrTerms,
-    Archive(ArchiveKind),
-}
-
 #[derive(Clone, Copy)]
 enum ArchiveKind {
     Zip,
@@ -1414,7 +1444,8 @@ enum ArchiveKind {
 
 impl ArchiveKind {
     fn from_filename(filename: &str) -> anyhow::Result<Self> {
-        if filename.ends_with(".zip") {
+        // 実際には.vvmがここに来ることは無いはず。
+        if filename.ends_with(".zip") || filename.ends_with(".vvm") {
             Ok(Self::Zip)
         } else if filename.ends_with(".tar.gz") || filename.ends_with(".tgz") {
             Ok(Self::Tgz)
