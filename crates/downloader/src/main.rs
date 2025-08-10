@@ -1099,10 +1099,9 @@ fn download_and_extract_from_sourceforge(
     tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
     if !url.host_str().is_some_and(|host| {
-        matches!(
-            *host.split('.').collect::<Vec<_>>(),
-            [.., "sourceforge", "net"]
-        )
+        host.split('.')
+            .collect::<Vec<_>>()
+            .ends_with(&["sourceforge", "net"])
     }) {
         panic!("`url` must be for SourceForge");
     }
