@@ -2,7 +2,7 @@ use std::{
     borrow::Cow,
     collections::{BTreeSet, HashSet},
     env,
-    future::Future,
+    future::{self, Future},
     io::{self, Cursor, IsTerminal as _, Read, Write as _},
     num::NonZero,
     path::{Path, PathBuf},
@@ -898,47 +898,35 @@ async fn find_models(
     let tag = if let Some(version) = version {
         version.clone()
     } else {
-        let releases = repos
+        repos
             .releases()
             .list()
             .per_page(100)
             .send()
             .await?
             .into_stream(octocrab)
+            .try_filter(
+                |&Release {
+                     draft, prerelease, ..
+                 }| future::ready(!(draft || prerelease)),
+            )
             .map(|release| {
-                let Release {
-                    tag_name,
-                    prerelease,
-                    ..
-                } = release?;
-                let tag = tag_name
-                    .parse::<Version>()
-                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))?;
-                anyhow::Ok((tag, prerelease))
+                release?
+                    .tag_name
+                    .parse()
+                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))
             })
             .try_collect::<Vec<_>>()
-            .await?;
-
-        // FIXME: #928 の頃からこのメッセージだが、もうちょっとちゃんとした方がよいかもしれない。
-        // ただここのメッセージは、我々が誤操作でvoicevox_vvmのリリースを全部吹き飛ばしたりしない
-        // 限りユーザーは見ないはず。
-        ensure!(!releases.is_empty(), "`{repo}`");
-
-        if releases.iter().all(|&(_, prerelease)| prerelease) {
-            warn!(
-                "{repo}にある`{SUPPORTED_MODELS_VERSIONS}`の範囲のリリースが\
-                 すべてpre-releaseであるため、pre-releaseを利用します",
-                SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
-            );
-            releases.into_iter().map(|(tag, _)| tag).max()
-        } else {
-            releases
-                .into_iter()
-                .filter(|&(_, prerelease)| !prerelease)
-                .map(|(tag, _)| tag)
-                .max()
-        }
-        .expect("we should have checked `releases` is not empty")
+            .await?
+            .into_iter()
+            .max()
+            .with_context(|| {
+                format!(
+                    "{repo}の`{SUPPORTED_MODELS_VERSIONS}`の範囲には、\
+                     pre-releaseではないリリースがありません",
+                    SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
+                )
+            })?
     }
     .to_string();
 
