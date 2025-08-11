@@ -118,7 +118,7 @@
           - `Mora`
       </details>
 
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136], [#1138], [#1139])。
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136], [#1138], [#1139], [#1140])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -137,12 +137,19 @@
                  └── voicevoxcore-android/
     ```
 
-- \[ダウンローダー\] :tada: リトライ機構が導入され、デフォルトで4回のリトライを行うようになります ([#1098] by [@shuntia], [#1111], [#1121], [#1139])。
+- \[ダウンローダー\] :tada: リトライ機構が導入され、デフォルトで4回のリトライを行うようになります ([#1098] by [@shuntia], [#1111], [#1121], [#1139], [#1140])。
 
     ```console
       -t, --tries <NUMBER>
               ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ [default: 5]
     ```
+
+    以下に示す挙動をします。
+
+    - 各試行は`<TARGET>`単位で行われる。ダウンロードしたzipやtgzの解答に失敗してもリトライが行われる。また`models`の場合、どれか一つのVVMのダウンロードに失敗すると、他のVVMも全部まとめてリトライが行われる。
+    - プログレスバーを出す前の段階でエラーが発生した場合、リトライは行われない。
+
+    これらの挙動は将来的に変更される予定であり、議論は[#1127]で行われています。
 
 - \[ダウンローダー\] `--models-version <SEMVER>`オプションが追加されます ([#1134], [#1137], [#1138])。
 
@@ -1344,6 +1351,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1123]: https://github.com/VOICEVOX/voicevox_core/pull/1123
 [#1124]: https://github.com/VOICEVOX/voicevox_core/pull/1124
 [#1125]: https://github.com/VOICEVOX/voicevox_core/pull/1125
+[#1127]: https://github.com/VOICEVOX/voicevox_core/issues/1127
 [#1128]: https://github.com/VOICEVOX/voicevox_core/pull/1128
 [#1131]: https://github.com/VOICEVOX/voicevox_core/pull/1131
 [#1132]: https://github.com/VOICEVOX/voicevox_core/pull/1132
@@ -1353,6 +1361,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1137]: https://github.com/VOICEVOX/voicevox_core/pull/1137
 [#1138]: https://github.com/VOICEVOX/voicevox_core/pull/1138
 [#1139]: https://github.com/VOICEVOX/voicevox_core/pull/1139
+[#1140]: https://github.com/VOICEVOX/voicevox_core/pull/1140
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

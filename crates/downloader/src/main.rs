@@ -284,7 +284,22 @@ struct Args {
         long,
         value_name("NUMBER"),
         default_value("5"),
-        long_help("ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ。")
+        long_help(formatdoc! {"
+            ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ。
+
+            現段階では以下に示す挙動をする。
+
+            • 各試行は{DOWNLOAD_TARGET}単位で行われる。
+              ダウンロードしたzipやtgzの解答に失敗してもリトライが行われる。
+              また`models`の場合、どれか一つのVVMのダウンロードに失敗すると
+              他のVVMも全部まとめてリトライが行われる。
+            • プログレスバーを出す前の段階でエラーが発生した場合、リトライは行われない。
+
+            これらの挙動は将来的に変更される予定であり、議論は
+            https://github.com/VOICEVOX/voicevox_core/issues/1127
+            で行われている。",
+            DOWNLOAD_TARGET = color_print::cstr!("<s><<TARGET>></>"),
+        })
     )]
     tries: Tries,
 
