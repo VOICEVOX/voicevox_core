@@ -1,9 +1,9 @@
 [package]
 name = "voicevox_core_macros"
 version.workspace = true
-edition.workspace = true
+edition = "2021"
 publish.workspace = true
-rust-version.workspace = true
+rust-version = "1.84.0"
 license.workspace = true
 
 [lib]

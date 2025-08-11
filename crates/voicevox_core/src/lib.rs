@@ -30,7 +30,7 @@
 //! };
 //!
 //! // ダウンローダーにて`onnxruntime`としてダウンロードできるもの
-//! # #[cfg(false)]
+//! # #[cfg(any())]
 //! const VVORT: &str = concatcp!(
 //!     "./voicevox_core/onnxruntime/lib/",
 //!     Onnxruntime::LIB_VERSIONED_FILENAME,
@@ -38,20 +38,20 @@
 //! # use test_util::ONNXRUNTIME_DYLIB_PATH as VVORT;
 //!
 //! // ダウンローダーにて`dict`としてダウンロードできるもの
-//! # #[cfg(false)]
+//! # #[cfg(any())]
 //! const OJT_DIC: &str = "./voicevox_core/dict/open_jtalk_dic_utf_8-1.11";
 //! # use test_util::OPEN_JTALK_DIC_DIR as OJT_DIC;
 //!
 //! // ダウンローダーにて`models`としてダウンロードできるもの
-//! # #[cfg(false)]
+//! # #[cfg(any())]
 //! const VVM: &str = "./voicevox_core/models/vvms/0.vvm";
 //! # use test_util::SAMPLE_VOICE_MODEL_FILE_PATH as VVM;
 //!
-//! # #[cfg(false)]
+//! # #[cfg(any())]
 //! const TARGET_CHARACTER_NAME: &str = "ずんだもん";
 //! # const TARGET_CHARACTER_NAME: &str = "dummy1";
 //! #
-//! # #[cfg(false)]
+//! # #[cfg(any())]
 //! const TARGET_STYLE_NAME: &str = "ノーマル";
 //! # const TARGET_STYLE_NAME: &str = "style1";
 //! #
@@ -118,11 +118,11 @@
 //!
 //! fn f(synth: &Synthesizer<impl TextAnalyzer>) -> anyhow::Result<()> {
 //! #    const TEXT: &str = "";
-//! #   #[cfg(false)]
+//! #   #[cfg(any())]
 //!     const TEXT: &str = _;
 //! #
 //! #   const STYLE_ID: StyleId = StyleId(0);
-//! #   #[cfg(false)]
+//! #   #[cfg(any())]
 //!     const STYLE_ID: StyleId = _;
 //!
 //!     let wav1 = synth.tts(TEXT, STYLE_ID).perform()?;
@@ -278,8 +278,8 @@ pub use self::{
         voice_model::VoiceModelId,
     },
     engine::talk::{
-        AccentPhrase, AudioQuery, Mora,
         user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
+        AccentPhrase, AudioQuery, Mora,
     },
     error::{Error, ErrorKind},
     result::Result,

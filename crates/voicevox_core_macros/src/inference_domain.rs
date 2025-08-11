@@ -1,10 +1,10 @@
 use indexmap::IndexMap;
 use quote::quote;
 use syn::{
-    Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Fields, Generics, ItemType,
-    Type, Variant,
     parse::{Parse, ParseStream},
     spanned::Spanned as _,
+    Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Fields, Generics, ItemType,
+    Type, Variant,
 };
 
 pub(crate) fn derive_inference_operation(
