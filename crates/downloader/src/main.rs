@@ -916,9 +916,6 @@ async fn find_models(
                     .with_context(|| format!("`{repo}` contains non-SemVer tags"))?;
                 anyhow::Ok((tag, prerelease))
             })
-            .try_filter(|(tag, prerelease)| {
-                future::ready(!prerelease || tag.patch == 0 && tag.pre.is_empty())
-            })
             .try_collect::<Vec<_>>()
             .await?;
 
