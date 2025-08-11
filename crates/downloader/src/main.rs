@@ -892,10 +892,15 @@ async fn find_models(
 ) -> anyhow::Result<ModelsWithTerms> {
     let repos = octocrab.repos(&repo.owner, &repo.repo);
 
-    let tag = if let Some(version) = version {
-        version.clone()
+    let Release {
+        html_url,
+        tag_name,
+        assets,
+        ..
+    } = if let Some(version) = version {
+        repos.releases().get_by_tag(&version.to_string()).await?
     } else {
-        repos
+        let (_, release) = repos
             .releases()
             .list()
             .per_page(100)
@@ -908,28 +913,27 @@ async fn find_models(
                  }| future::ready(!(draft || prerelease)),
             )
             .map(|release| {
-                release?
+                let release = release?;
+                let tag = release
                     .tag_name
-                    .parse()
-                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))
+                    .parse::<Version>()
+                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))?;
+                anyhow::Ok((tag, release))
             })
+            .try_filter(|(tag, _)| future::ready(SUPPORTED_MODELS_VERSIONS.matches(tag))) // TODO: 別PRにする
             .try_collect::<Vec<_>>()
             .await?
             .into_iter()
-            .max()
+            .max_by(|(k1, _), (k2, _)| k1.cmp(k2))
             .with_context(|| {
                 format!(
                     "{repo}の`{SUPPORTED_MODELS_VERSIONS}`の範囲には、\
                      pre-releaseではないリリースがありません",
                     SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
                 )
-            })?
-    }
-    .to_string();
-
-    let Release {
-        html_url, assets, ..
-    } = repos.releases().get_by_tag(&tag).await?;
+            })?;
+        release
+    };
 
     let find_by_name = |name| {
         assets
@@ -959,7 +963,7 @@ async fn find_models(
         .collect();
 
     return Ok(ModelsWithTerms {
-        tag,
+        tag: tag_name,
         readme,
         terms,
         models,
@@ -1220,7 +1224,7 @@ async fn fetch_model(
     let model = download(
         bytes_stream,
         Some(*size),
-        ArchiveKind::Zip,
+        FileKind::ZipOrVvm,
         WebService::Github,
         pb.clone(),
     )
@@ -1263,7 +1267,7 @@ async fn download_and_extract(
     let archive = download(
         bytes_stream,
         content_length,
-        archive_kind,
+        archive_kind.into(),
         service,
         pb.clone(),
     )
@@ -1376,7 +1380,7 @@ async fn with_style(
 async fn download(
     mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
     content_length: Option<u64>,
-    kind: ArchiveKind,
+    kind: FileKind,
     service: WebService,
     pb: ProgressBar,
 ) -> anyhow::Result<Vec<u8>> {
@@ -1423,12 +1427,12 @@ async fn download(
 /// [`octocrab::repo::ReleasesHandler::stream_asset`]でダウンロードしたものを検証する。
 fn validate_archive_file(
     content: Vec<u8>,
-    content_kind: ArchiveKind,
+    content_kind: FileKind,
     service: WebService,
 ) -> anyhow::Result<Vec<u8>> {
     match (content_kind, &*content) {
-        (ArchiveKind::Zip, [0x50, 0x4b, 0x03, 0x04, ..])
-        | (ArchiveKind::Tgz, [0x1f, 0x8b, 0x08, ..]) => Ok(content),
+        (FileKind::ZipOrVvm, [0x50, 0x4b, 0x03, 0x04, ..])
+        | (FileKind::Tgz, [0x1f, 0x8b, 0x08, ..]) => Ok(content),
         (_, content) => Err(error_for_unexpected_asset_content(content, service)),
     }
 }
@@ -1495,6 +1499,21 @@ struct VvmAsset {
 }
 
 #[derive(Clone, Copy)]
+enum FileKind {
+    ZipOrVvm,
+    Tgz,
+}
+
+impl From<ArchiveKind> for FileKind {
+    fn from(archive_kind: ArchiveKind) -> Self {
+        match archive_kind {
+            ArchiveKind::Zip => Self::ZipOrVvm,
+            ArchiveKind::Tgz => Self::Tgz,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
 enum ArchiveKind {
     Zip,
     Tgz,
@@ -1502,8 +1521,7 @@ enum ArchiveKind {
 
 impl ArchiveKind {
     fn from_filename(filename: &str) -> anyhow::Result<Self> {
-        // 実際には.vvmがここに来ることは無いはず。
-        if filename.ends_with(".zip") || filename.ends_with(".vvm") {
+        if filename.ends_with(".zip") {
             Ok(Self::Zip)
         } else if filename.ends_with(".tar.gz") || filename.ends_with(".tgz") {
             Ok(Self::Tgz)
