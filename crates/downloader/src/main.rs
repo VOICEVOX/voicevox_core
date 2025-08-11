@@ -708,9 +708,9 @@ fn octocrab() -> octocrab::Result<Arc<Octocrab>> {
     octocrab.build().map(Arc::new)
 }
 
-async fn retry<E, F>(tries: Tries, mut f: F) -> Result<(), E>
+async fn retry<F>(tries: Tries, mut f: F) -> anyhow::Result<()>
 where
-    F: AsyncFnMut() -> Result<(), E>,
+    F: AsyncFnMut() -> anyhow::Result<()>,
 {
     match tries {
         Tries::Infinite => loop {
@@ -719,12 +719,26 @@ where
             }
         },
         Tries::Finite(nonzero) => {
+            let mut attempt = async || {
+                f().await.map_err(|err| {
+                    err.chain().skip(1).fold(format!("- {err}"), |msg, cause| {
+                        format!("{msg}\n  Caused by: {cause}")
+                    })
+                })
+            };
+
+            let mut result = attempt().await;
             for _ in 0..nonzero.get() - 1 {
-                if let Ok(o) = f().await {
-                    return Ok(o);
+                if let Err(err1) = result {
+                    result = attempt().await.map_err(|err2| format!("{err1}\n{err2}"));
+                } else {
+                    break;
                 }
             }
-            f().await
+            result.map_err(|causes| {
+                anyhow::Error::msg(causes)
+                    .context(format!("{nonzero}回のダウンロード試行がすべて失敗しました"))
+            })
         }
     }
 }
@@ -920,7 +934,7 @@ async fn find_models(
                     .with_context(|| format!("`{repo}` contains non-SemVer tags"))?;
                 anyhow::Ok((tag, release))
             })
-            .try_filter(|(tag, _)| future::ready(SUPPORTED_MODELS_VERSIONS.matches(tag))) // TODO: 別PRにする
+            .try_filter(|(tag, _)| future::ready(SUPPORTED_MODELS_VERSIONS.matches(tag)))
             .try_collect::<Vec<_>>()
             .await?
             .into_iter()
