@@ -36,7 +36,7 @@ use octocrab::{
     repos::RepoHandler,
 };
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
-use semver::VersionReq;
+use semver::{Version, VersionReq};
 use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
 use tracing::{error, info, warn};
@@ -58,7 +58,7 @@ const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 
 const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
 
-static ALLOWED_MODELS_VERSIONS: LazyLock<VersionReq> =
+static SUPPORTED_MODELS_VERSIONS: LazyLock<VersionReq> =
     LazyLock::new(|| ">=0.16,<0.17".parse().unwrap());
 const MODELS_README_FILENAME: &str = "README.txt";
 const MODELS_DIR_NAME: &str = "vvms";
@@ -217,6 +217,26 @@ struct Args {
         long_help("追加でダウンロードするライブラリのバージョン。")
     )]
     additional_libraries_version: String,
+
+    #[arg(
+        long,
+        value_name("SEMVER"),
+        help(format!(
+            "VOICEVOX音声モデル (`models`)のバージョン。\
+             無指定だと`{SUPPORTED_MODELS_VERSIONS}`のうち最新",
+            SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
+        )),
+        long_help(format!(
+            "VOICEVOX音声モデル (`models`)のバージョン。\n\
+             \n\
+             無指定の場合{SUPPORTED_MODELS_VERSIONS}のうち最新のものになる。",
+            SUPPORTED_MODELS_VERSIONS = color_print::cformat!(
+                "<s>{SUPPORTED_MODELS_VERSIONS}</s>",
+                SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
+            ),
+        ))
+    )]
+    models_version: Option<Version>,
 
     /// ダウンロードするVVMファイルのファイル名パターン
     #[arg(
@@ -416,6 +436,7 @@ async fn main() -> anyhow::Result<()> {
         c_api_version,
         onnxruntime_version,
         additional_libraries_version,
+        models_version,
         models_pattern,
         devices,
         cpu_arch,
@@ -480,11 +501,29 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // FIXME: `--models-repo`に対しても警告を出す
+    // FIXME: あと`--models-pattern`にも
     if !targets.contains(&DownloadTarget::Models) && models_pattern.as_str() != "*" {
         warn!(
             "`--models-pattern={models_pattern}`が指定されていますが、`models`はダウンロード対象\
              から除外されています",
             models_pattern = models_pattern.as_str(),
+        );
+    }
+    if !targets.contains(&DownloadTarget::Models)
+        && let Some(models_version) = &models_version
+    {
+        warn!(
+            "`--models-version={models_version}`が指定されていますが、`models`はダウンロード対象\
+             から除外されています",
+        );
+    }
+
+    if let Some(models_version) = &models_version
+        && !SUPPORTED_MODELS_VERSIONS.matches(models_version)
+    {
+        warn!(
+            "サポートされているバージョンは{SUPPORTED_MODELS_VERSIONS}です: {models_version}",
+            SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
         );
     }
 
@@ -513,11 +552,14 @@ async fn main() -> anyhow::Result<()> {
         .await
         .transpose()?;
 
-    let models = OptionFuture::from(
-        targets
-            .contains(&DownloadTarget::Models)
-            .then(|| find_models(octocrab, &models_repo, &models_pattern)),
-    )
+    let models = OptionFuture::from(targets.contains(&DownloadTarget::Models).then(|| {
+        find_models(
+            octocrab,
+            &models_repo,
+            models_version.as_ref(),
+            &models_pattern,
+        )
+    }))
     .await
     .transpose()?;
 
@@ -845,29 +887,34 @@ use selector;
 async fn find_models(
     octocrab: &Arc<Octocrab>,
     repo: &RepoName,
+    version: Option<&Version>,
     pattern: &glob::Pattern,
 ) -> anyhow::Result<ModelsWithTerms> {
     let repos = octocrab.repos(&repo.owner, &repo.repo);
 
-    let tag = repos
-        .list_tags()
-        .per_page(100)
-        .send()
-        .await?
-        .into_stream(octocrab)
-        .map(|tag| {
-            let Tag { name, .. } = tag?;
-            name.parse()
-                .with_context(|| format!("`{repo}` contains non-SemVer tags"))
-        })
-        .try_collect::<Vec<_>>()
-        .await?
-        .into_iter()
-        .filter(|version| ALLOWED_MODELS_VERSIONS.matches(version))
-        .sorted()
-        .next_back()
-        .with_context(|| format!("`{repo}`"))?
-        .to_string();
+    let tag = if let Some(version) = version {
+        version.to_string()
+    } else {
+        repos
+            .list_tags()
+            .per_page(100)
+            .send()
+            .await?
+            .into_stream(octocrab)
+            .map(|tag| {
+                let Tag { name, .. } = tag?;
+                name.parse()
+                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))
+            })
+            .try_collect::<Vec<_>>()
+            .await?
+            .into_iter()
+            .filter(|version| SUPPORTED_MODELS_VERSIONS.matches(version))
+            .sorted()
+            .next_back()
+            .with_context(|| format!("`{repo}`"))?
+            .to_string()
+    };
 
     let Release {
         html_url, assets, ..
