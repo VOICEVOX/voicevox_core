@@ -226,13 +226,13 @@ struct Args {
         value_name("SEMVER"),
         help(format!(
             "VOICEVOX音声モデル (`models`)のバージョン。\
-             無指定だと`{SUPPORTED_MODELS_VERSIONS}`のうち最新",
+             省略時は`{SUPPORTED_MODELS_VERSIONS}`のうち最新",
             SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
         )),
         long_help(format!(
             "VOICEVOX音声モデル (`models`)のバージョン。\n\
              \n\
-             無指定の場合{SUPPORTED_MODELS_VERSIONS}のうち最新のものになる。",
+             省略した場合は{SUPPORTED_MODELS_VERSIONS}のうち最新のものになる。",
             SUPPORTED_MODELS_VERSIONS = color_print::cformat!(
                 "<s>{SUPPORTED_MODELS_VERSIONS}</s>",
                 SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
