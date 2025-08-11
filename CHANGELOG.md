@@ -118,7 +118,7 @@
           - `Mora`
       </details>
 
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136], [#1138], [#1139], [#1118])。
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136], [#1138], [#1139], [#1140], [#1118])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -136,14 +136,6 @@
     +            ├── voicevoxcore/
                  └── voicevoxcore-android/
     ```
-
-- \[ダウンローダー\] :tada: リトライ機構が導入され、デフォルトで4回のリトライを行うようになります ([#1098] by [@shuntia], [#1111], [#1121], [#1139])。
-
-    ```console
-      -t, --tries <NUMBER>
-              ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ [default: 5]
-    ```
-
 - \[ダウンローダー\] :tada: `models`のダウンロード元が[VOICEVOX/voicevox\_vvm]の`>=0.16,<0.17`になります ([VOICEVOX/voicevox\_vvm#21], [VOICEVOX/voicevox\_vvm#22], [VOICEVOX/voicevox\_vvm#23], [VOICEVOX/voicevox\_vvm#30], [VOICEVOX/voicevox\_vvm#31], [VOICEVOX/voicevox\_vvm#33], [VOICEVOX/voicevox\_vvm#34], [#1118])。
 
     [VOICEVOX/voicevox\_vvmのバージョン0.16.0](https://github.com/VOICEVOX/voicevox_vvm/releases/tag/0.16.0)には以下の変更が含まれます。
@@ -151,6 +143,20 @@
     - VOICEVOX ENGINEでは2025-06-06と2025-07-08に追加されていた、[10期生](https://voicevox.hiroshiba.jp/dormitory/#10th)のVVMを追加 (19.vvm、20.vvm、21.vvm)
     - ソング用VVMを追加 (s0.vvm)
     - [`Character::version`を`0.1.0`から`0.16.0`に変更](https://github.com/VOICEVOX/voicevox_vvm/pull/34)
+
+- \[ダウンローダー\] :tada: リトライ機構が導入され、デフォルトで4回のリトライを行うようになります ([#1098] by [@shuntia], [#1111], [#1121], [#1139], [#1140])。
+
+    ```console
+      -t, --tries <NUMBER>
+              ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ [default: 5]
+    ```
+
+    以下に示す挙動をします。
+
+    - 各試行は`<TARGET>`単位で行われる。ダウンロードしたzipやtgzの解凍に失敗してもリトライが行われる。また`models`の場合、どれか一つのVVMのダウンロードに失敗すると、他のVVMも全部まとめてリトライが行われる。
+    - プログレスバーを出す前の段階でエラーが発生した場合、リトライは行われない。
+
+    これらの挙動は将来的に変更される予定であり、議論は[#1127]で行われています。
 
 - \[ダウンローダー\] `--models-version <SEMVER>`オプションが追加されます ([#1134], [#1137], [#1138])。
 
@@ -1352,6 +1358,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1123]: https://github.com/VOICEVOX/voicevox_core/pull/1123
 [#1124]: https://github.com/VOICEVOX/voicevox_core/pull/1124
 [#1125]: https://github.com/VOICEVOX/voicevox_core/pull/1125
+[#1127]: https://github.com/VOICEVOX/voicevox_core/issues/1127
 [#1128]: https://github.com/VOICEVOX/voicevox_core/pull/1128
 [#1131]: https://github.com/VOICEVOX/voicevox_core/pull/1131
 [#1132]: https://github.com/VOICEVOX/voicevox_core/pull/1132
@@ -1361,6 +1368,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1137]: https://github.com/VOICEVOX/voicevox_core/pull/1137
 [#1138]: https://github.com/VOICEVOX/voicevox_core/pull/1138
 [#1139]: https://github.com/VOICEVOX/voicevox_core/pull/1139
+[#1140]: https://github.com/VOICEVOX/voicevox_core/pull/1140
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
