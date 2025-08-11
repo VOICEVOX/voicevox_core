@@ -916,6 +916,7 @@ async fn find_models(
                     .parse()
                     .with_context(|| format!("`{repo}` contains non-SemVer tags"))
             })
+            .try_filter(|tag| future::ready(SUPPORTED_MODELS_VERSIONS.matches(tag)))
             .try_collect::<Vec<_>>()
             .await?
             .into_iter()
