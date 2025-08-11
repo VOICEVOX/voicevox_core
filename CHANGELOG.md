@@ -136,6 +136,7 @@
     +            ├── voicevoxcore/
                  └── voicevoxcore-android/
     ```
+
 - \[ダウンローダー\] :tada: `models`のダウンロード元が[VOICEVOX/voicevox\_vvm]の`>=0.16,<0.17`になります ([VOICEVOX/voicevox\_vvm#21], [VOICEVOX/voicevox\_vvm#22], [VOICEVOX/voicevox\_vvm#23], [VOICEVOX/voicevox\_vvm#30], [VOICEVOX/voicevox\_vvm#31], [VOICEVOX/voicevox\_vvm#33], [VOICEVOX/voicevox\_vvm#34], [#1118])。
 
     [VOICEVOX/voicevox\_vvmのバージョン0.16.0](https://github.com/VOICEVOX/voicevox_vvm/releases/tag/0.16.0)には以下の変更が含まれます。
@@ -215,9 +216,7 @@
 
 ### Changed
 
-- \[ダウンローダー\] \[BREAKING\] `models`において、GitHub Releaseが無いGitタグは利用できなくなります。また上記の`--models-version <SEMVER>`を指定しない限り、pre-releaseのものは使われなくなります ([#1136])。
-
-    [#1118]がマージされない限り、これは破壊的変更です。
+- \[ダウンローダー\] `models`において、GitHub Releaseが無いGitタグは利用できなくなります。また上記の`--models-version <SEMVER>`を指定しない限り、pre-releaseのものは使われなくなります ([#1136], [#1118])。
 
 - \[ダウンローダー\] `-h`と`--help`は別々の表示をするようになります ([#1125])。
 
