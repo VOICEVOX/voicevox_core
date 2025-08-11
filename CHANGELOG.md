@@ -118,7 +118,7 @@
           - `Mora`
       </details>
 
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1136])。
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -144,11 +144,11 @@
               ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ [default: 5]
     ```
 
-- \[ダウンローダー\] `--models-version <SEMVER>`オプションが追加されます ([#1134])。
+- \[ダウンローダー\] `--models-version <SEMVER>`オプションが追加されます ([#1134], [#1137])。
 
     ```console
           --models-version <SEMVER>
-              VOICEVOX音声モデル (`models`)のバージョン。無指定だと`>=0.1, <0.2`のうち最新
+              VOICEVOX音声モデル (`models`)のバージョン。省略時は`>=0.1, <0.2`のうち最新
     ```
 
     ダウンローダーから見て未来のバージョンを使うことも可能になります。ただしその場合警告は出ます。
@@ -1352,6 +1352,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1133]: https://github.com/VOICEVOX/voicevox_core/pull/1133
 [#1134]: https://github.com/VOICEVOX/voicevox_core/pull/1134
 [#1136]: https://github.com/VOICEVOX/voicevox_core/pull/1136
+[#1137]: https://github.com/VOICEVOX/voicevox_core/pull/1137
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
