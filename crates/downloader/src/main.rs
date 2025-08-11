@@ -2,7 +2,7 @@ use std::{
     borrow::Cow,
     collections::{BTreeSet, HashSet},
     env,
-    future::Future,
+    future::{self, Future},
     io::{self, Cursor, IsTerminal as _, Read, Write as _},
     num::NonZero,
     path::{Path, PathBuf},
@@ -226,13 +226,13 @@ struct Args {
         value_name("SEMVER"),
         help(format!(
             "VOICEVOX音声モデル (`models`)のバージョン。\
-             省略時は`{SUPPORTED_MODELS_VERSIONS}`のうち最新",
+             省略時は`{SUPPORTED_MODELS_VERSIONS}`のうちpre-releaseではない最新",
             SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
         )),
         long_help(format!(
             "VOICEVOX音声モデル (`models`)のバージョン。\n\
              \n\
-             省略した場合は{SUPPORTED_MODELS_VERSIONS}のうち最新のものになる。",
+             省略した場合は{SUPPORTED_MODELS_VERSIONS}のうち、pre-releaseではない最新のものになる。",
             SUPPORTED_MODELS_VERSIONS = color_print::cformat!(
                 "<s>{SUPPORTED_MODELS_VERSIONS}</s>",
                 SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
@@ -895,51 +895,56 @@ async fn find_models(
 ) -> anyhow::Result<ModelsWithTerms> {
     let repos = octocrab.repos(&repo.owner, &repo.repo);
 
-    // #1118 ではこの`sha`は不要になる予定。
-    let (tag, sha) = if let Some(version) = version {
-        let tag = version.clone();
-        let Tag {
-            commit: CommitObject { sha, .. },
-            ..
-        } = repos
-            .list_tags()
-            .per_page(100)
-            .send()
-            .await?
-            .into_stream(octocrab)
-            .try_collect::<Vec<_>>()
-            .await?
-            .into_iter()
-            .find(|Tag { name, .. }| *name == tag.to_string())
-            .with_context(|| format!("`{tag}` not found"))?;
-        (tag, sha)
+    let tag = if let Some(version) = version {
+        version.clone()
     } else {
         repos
-            .list_tags()
+            .releases()
+            .list()
             .per_page(100)
             .send()
             .await?
             .into_stream(octocrab)
-            .map(|tag| {
-                let Tag {
-                    name,
-                    commit: CommitObject { sha, .. },
-                    ..
-                } = tag?;
-                let tag = name
+            .try_filter(
+                |&Release {
+                     draft, prerelease, ..
+                 }| future::ready(!(draft || prerelease)),
+            )
+            .map(|release| {
+                release?
+                    .tag_name
                     .parse()
-                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))?;
-                anyhow::Ok((tag, sha))
+                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))
             })
             .try_collect::<Vec<_>>()
             .await?
             .into_iter()
-            .filter(|(version, _)| SUPPORTED_MODELS_VERSIONS.matches(version))
-            .sorted()
-            .next_back()
-            .with_context(|| format!("`{repo}`"))?
-    };
-    let tag = tag.to_string();
+            .max()
+            .with_context(|| {
+                format!(
+                    "{repo}の`{SUPPORTED_MODELS_VERSIONS}`の範囲には、\
+                     pre-releaseではないリリースがありません",
+                    SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
+                )
+            })?
+    }
+    .to_string();
+
+    // #1118 ではこの`sha`は不要になる予定。
+    let Tag {
+        commit: CommitObject { sha, .. },
+        ..
+    } = repos
+        .list_tags()
+        .per_page(100)
+        .send()
+        .await?
+        .into_stream(octocrab)
+        .try_collect::<Vec<_>>()
+        .await?
+        .into_iter()
+        .find(|Tag { name, .. }| *name == tag)
+        .with_context(|| format!("`{tag}` not found"))?;
 
     let terms = repos.fetch_file_content(&sha, MODELS_TERMS_FILE).await?;
     let readme = repos

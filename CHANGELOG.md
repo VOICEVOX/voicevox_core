@@ -118,7 +118,7 @@
           - `Mora`
       </details>
 
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137])。
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -201,6 +201,10 @@
 
 ### Changed
 
+- \[ダウンローダー\] \[BREAKING\] `models`において、GitHub Releaseが無いGitタグは利用できなくなります。また上記の`--models-version <SEMVER>`を指定しない限り、pre-releaseのものは使われなくなります ([#1136])。
+
+    [#1118]がマージされない限り、これは破壊的変更です。
+
 - \[ダウンローダー\] `-h`と`--help`は別々の表示をするようになります ([#1125])。
 
     簡潔な説明は`-h`で、詳細な説明は`--help`で行われます。
@@ -218,7 +222,7 @@
 - \[Java\] \[Android\] GHAのUbuntuイメージ備え付けの`$ANDROID_NDK` (現時点ではバージョン27)を使ったリリースがされるようになります。これにより、[#1103]で報告されたAndroidビルドにおけるC++シンボルの問題が解決されます ([#1108])。
 - \[Java\] Javaのファイナライザから中身のRustオブジェクトのデストラクトがされない問題が解決されます ([#1085])。
 - \[ダウンローダー\] 将来的に[VOICEVOX/voicevox\_vvm]のタグの数が30を超えたときに、もしかしたら起きうるかもしれない問題の対処がされます ([#1123])。
-- \[ダウンローダー\] `models`以外において、ダウンロードされたzipやgzipが壊れていたときのエラーの出かたが改善されます ([#1132], [#1133])。
+- \[ダウンローダー\] いくつかのエラーの出かたが改善されます ([#1132], [#1133], [#1136])。
 - \[ダウンローダー\] `--devices <DEVICES>...`のhelpにはダウンローダーの誕生 ([#249])からずっと「(cudaはlinuxのみ)」と書かれていましたが、この記述は当時から正しくなかったので消されます ([#1124])。
 - \[ダウンローダー\] \[Windows\] GitHub Releasesにおいて、再び署名がされるようになります ([#1060])。
 
@@ -1335,6 +1339,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1111]: https://github.com/VOICEVOX/voicevox_core/pull/1111
 [#1116]: https://github.com/VOICEVOX/voicevox_core/pull/1116
 [#1117]: https://github.com/VOICEVOX/voicevox_core/pull/1117
+[#1118]: https://github.com/VOICEVOX/voicevox_core/pull/1118
 [#1121]: https://github.com/VOICEVOX/voicevox_core/pull/1121
 [#1123]: https://github.com/VOICEVOX/voicevox_core/pull/1123
 [#1124]: https://github.com/VOICEVOX/voicevox_core/pull/1124
@@ -1344,6 +1349,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1132]: https://github.com/VOICEVOX/voicevox_core/pull/1132
 [#1133]: https://github.com/VOICEVOX/voicevox_core/pull/1133
 [#1134]: https://github.com/VOICEVOX/voicevox_core/pull/1134
+[#1136]: https://github.com/VOICEVOX/voicevox_core/pull/1136
 [#1137]: https://github.com/VOICEVOX/voicevox_core/pull/1137
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
