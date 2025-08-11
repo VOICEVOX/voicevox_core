@@ -739,7 +739,7 @@ where
                 }
             }
             result.map_err(|causes| {
-                anyhow!("{causes}")
+                anyhow::Error::msg(causes)
                     .context(format!("{nonzero}回のダウンロード試行がすべて失敗しました"))
             })
         }
