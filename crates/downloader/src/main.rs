@@ -291,7 +291,7 @@ struct Args {
 
             • 各試行は{DOWNLOAD_TARGET}単位で行われる。
               ダウンロードしたzipやtgzの解凍に失敗してもリトライが行われる。
-              また`models`の場合、どれか一つのVVMのダウンロードに失敗すると
+              また{DOWNLOAD_TARGET_MODEL}の場合、どれか一つのVVMのダウンロードに失敗すると
               他のVVMも全部まとめてリトライが行われる。
             • プログレスバーを出す前の段階でエラーが発生した場合、リトライは行われない。
 
@@ -299,6 +299,7 @@ struct Args {
             https://github.com/VOICEVOX/voicevox_core/issues/1127
             で行われている。",
             DOWNLOAD_TARGET = color_print::cstr!("<s><<TARGET>></>"),
+            DOWNLOAD_TARGET_MODEL = color_print::cstr!("<s>models</>"),
         })
     )]
     tries: Tries,
