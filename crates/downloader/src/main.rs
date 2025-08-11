@@ -2,7 +2,7 @@ use std::{
     borrow::Cow,
     collections::{BTreeSet, HashSet},
     env,
-    future::{self, Future},
+    future::Future,
     io::{self, Cursor, IsTerminal as _, Read, Write as _},
     num::NonZero,
     path::{Path, PathBuf},
