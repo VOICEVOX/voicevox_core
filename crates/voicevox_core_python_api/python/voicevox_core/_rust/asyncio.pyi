@@ -44,6 +44,8 @@ class VoiceModelFile:
         """
         ID。
 
+        詳細は :class:`voicevox_core.VoiceModelId` を参照。
+
         :attr:`close` および :attr:`__aexit__` の後でも利用可能。
         """
         ...

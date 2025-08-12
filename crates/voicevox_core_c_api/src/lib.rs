@@ -525,7 +525,18 @@ pub struct VoicevoxVoiceModelFile {
 
 /// 音声モデルID。
 ///
+/// ::VoicevoxSynthesizer はこのIDをキーとして、音声モデルのロード・アンロードを行う。
+///
+/// 同じIDを持つ複数のVVMファイルがあるときは、ファイルとして新しい方を常に使うことが推奨される。[VOICEVOX/voicevox_vvm]で管理されているVVMでは、次のような方針が取られている。
+///
+/// - VVMに含まれる声が変化せず、`metas`のみが変化する場合は以前のVVMと同じファイル名と同じIDでリリースする。
+///
+/// これ以外は未定であり、更なるルールについては[VOICEVOX/voicevox_vvm#19]で議論される予定。
+///
 /// \orig-impl{VoicevoxVoiceModelId}
+///
+/// [VOICEVOX/voicevox_vvm]: https://github.com/VOICEVOX/voicevox_vvm
+/// [VOICEVOX/voicevox_vvm#19]: https://github.com/VOICEVOX/voicevox_vvm/issues/19
 pub type VoicevoxVoiceModelId<'a> = &'a [u8; 16];
 
 /// スタイルID。
@@ -569,7 +580,7 @@ pub unsafe extern "C" fn voicevox_voice_model_file_open(
 /// ::VoicevoxVoiceModelFile からIDを取得する。
 ///
 /// @param [in] model 音声モデル
-/// @param [out] output_voice_model_id 音声モデルID
+/// @param [out] output_voice_model_id 音声モデルID。詳細は ::VoicevoxVoiceModelId
 ///
 /// \safety{
 /// - `output_voice_model_id`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
