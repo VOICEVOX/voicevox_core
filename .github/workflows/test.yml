@@ -70,8 +70,8 @@ jobs:
           rust_version=$(
             jq -r '
               .workspace_default_members[] as $id
-                | .packages[] | select(.id == $id)
-                | .rust_version
+                | .packages[]
+                | select(.id == $id).rust_version
               ' <<< "$metadata"
           )
           echo "rust-version=$rust_version" >> "$GITHUB_OUTPUT"
