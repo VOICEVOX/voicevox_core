@@ -954,7 +954,7 @@ async fn find_models(
             .try_collect::<Vec<_>>()
             .await?
             .into_iter()
-            .max_by(|(k1, _), (k2, _)| k1.cmp(k2))
+            .max_by(|(tag1, _), (tag2, _)| tag1.cmp(tag2))
             .with_context(|| {
                 format!(
                     "{repo}の`{SUPPORTED_MODELS_VERSIONS}`の範囲には、\
@@ -973,10 +973,10 @@ async fn find_models(
     };
 
     let terms = find_by_name(MODELS_TERMS_FILE)?;
-    let terms = repos.fetch_asset_content(terms).await?;
+    let terms = repos.fetch_asset_utf8_content(terms).await?;
 
     let readme = find_by_name(MODELS_README_FILENAME)?;
-    let readme = repos.fetch_asset_content(readme).await?;
+    let readme = repos.fetch_asset_utf8_content(readme).await?;
 
     let models = assets
         .into_iter()
@@ -1001,7 +1001,7 @@ async fn find_models(
 
     #[ext]
     impl RepoHandler<'_> {
-        async fn fetch_asset_content(&self, asset: &Asset) -> anyhow::Result<String> {
+        async fn fetch_asset_utf8_content(&self, asset: &Asset) -> anyhow::Result<String> {
             let content = self
                 .releases()
                 .stream_asset(asset.id)
@@ -1463,7 +1463,7 @@ fn validate_archive_file(
     match (content_kind, &*content) {
         (FileKind::ZipOrVvm, [0x50, 0x4b, 0x03, 0x04, ..])
         | (FileKind::Tgz, [0x1f, 0x8b, 0x08, ..]) => Ok(content),
-        (_, content) => Err(error_for_unexpected_asset_content(content, service)),
+        (_, content) => Err(error_for_unexpected_file_content(content, service)),
     }
 }
 
@@ -1473,14 +1473,14 @@ fn validate_models_readme_or_terms_txt(content: String) -> anyhow::Result<String
     if content.starts_with("# VOICEVOX ") {
         Ok(content)
     } else {
-        Err(error_for_unexpected_asset_content(
+        Err(error_for_unexpected_file_content(
             content.as_ref(),
             WebService::Github,
         ))
     }
 }
 
-fn error_for_unexpected_asset_content(content: &[u8], service: WebService) -> anyhow::Error {
+fn error_for_unexpected_file_content(content: &[u8], service: WebService) -> anyhow::Error {
     let mut msg = format!("予期しない応答を{service}が返しました");
     if let (WebService::Github, Ok(content)) = (service, str::from_utf8(content)) {
         msg += ": ";
