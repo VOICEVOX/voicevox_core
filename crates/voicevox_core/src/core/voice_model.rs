@@ -329,6 +329,7 @@ impl<A: Async> Inner<A> {
             })
         });
 
+        // TODO: Rust 1.85にしたらasync closureに戻す
         let talk = OptionFuture::from(talk.map(|(entries, style_id_to_inner_voice_id)| async {
             let [predict_duration, predict_intonation, decode] = entries.into_array();
 
@@ -343,6 +344,7 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
+        // TODO: Rust 1.85にしたらasync closureに戻す
         let experimental_talk = OptionFuture::from(experimental_talk.map(
             |(entries, style_id_to_inner_voice_id)| async {
                 let [predict_duration, predict_intonation, predict_spectrogram, run_vocoder] =
@@ -366,6 +368,7 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
+        // TODO: Rust 1.85にしたらasync closureに戻す
         let singing_teacher = OptionFuture::from(singing_teacher.map(
             |(entries, style_id_to_inner_voice_id)| async {
                 let [predict_sing_consonant_length, predict_sing_f0, predict_sing_volume] =
@@ -387,6 +390,7 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
+        // TODO: Rust 1.85にしたらasync closureに戻す
         let frame_decode = OptionFuture::from(frame_decode.map(
             |(entries, style_id_to_inner_voice_id)| async {
                 let [sf_decode] = entries.into_array();
