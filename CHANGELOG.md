@@ -118,7 +118,7 @@
           - `Mora`
       </details>
 
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136], [#1138], [#1139], [#1140])。
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136], [#1138], [#1139], [#1140], [#1144])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -193,7 +193,7 @@
 
 - \[ダウンローダー\] 環境変数`GITHUB_TOKEN`でGitHubの認証トークンをセットする機能がドキュメント化されます ([#1128])。
 
-    Rust版ダウンローダー実装当初 (#350)から存在した機能ですが、このたび正式に使い方が説明されます。
+    Rust版ダウンローダー実装当初 ([#375])から存在した機能ですが、このたび正式に使い方が説明されます。
 
 - \[ダウンローダー\] 環境変数`GITHUB_TOKEN`に加え、`GH_TOKEN`でもGitHubの認証トークンをセットすることができるようになります ([#1131])。
 
@@ -230,7 +230,7 @@
 - \[Java\] Javaのファイナライザから中身のRustオブジェクトのデストラクトがされない問題が解決されます ([#1085])。
 - \[ダウンローダー\] 将来的に[VOICEVOX/voicevox\_vvm]のタグの数が30を超えたときに、もしかしたら起きうるかもしれない問題の対処がされます ([#1123])。
 - \[ダウンローダー\] いくつかのエラーの出かたが改善されます ([#1132], [#1133], [#1136])。
-- \[ダウンローダー\] `--devices <DEVICES>...`のhelpにはダウンローダーの誕生 ([#249])からずっと「(cudaはlinuxのみ)」と書かれていましたが、この記述は当時から正しくなかったので消されます ([#1124])。
+- \[ダウンローダー\] `--devices <DEVICES>...`のhelpには「(cudaはlinuxのみ)」と書かれていましたが、この記述は[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の時点で正しくなくなったので消されます ([#1124])。
 - \[ダウンローダー\] \[Windows\] GitHub Releasesにおいて、再び署名がされるようになります ([#1060])。
 
 ## [0.16.0] - 2025-03-29 (+09:00)
@@ -585,6 +585,8 @@
     - VVM自体はvvm/というディレクトリに入る形になります。
     - README.mdはREADME.txtとして置かれるようになります。
     - [0.15.0-preview.16](#0150-preview16---2023-12-01-0900)まで含まれていたmetas.jsonは無くなります。
+
+- \[ダウンローダー\] \\[BREAKING\] `--device`は`--devices`に改名され、複数の引数を取ることが可能になります ([#810])。
 
 ### Deprecated
 
@@ -1035,8 +1037,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 [0.15.0-preview.4]: https://github.com/VOICEVOX/voicevox_core/compare/0.15.0-preview.3...0.15.0-preview.4
 [0.15.0-preview.3]: https://github.com/VOICEVOX/voicevox_core/compare/0.14.0...0.15.0-preview.3
 
-[#249]: https://github.com/VOICEVOX/voicevox_core/pull/249
 [#370]: https://github.com/VOICEVOX/voicevox_core/pull/370
+[#375]: https://github.com/VOICEVOX/voicevox_core/pull/375
 [#392]: https://github.com/VOICEVOX/voicevox_core/pull/392
 [#400]: https://github.com/VOICEVOX/voicevox_core/pull/400
 [#404]: https://github.com/VOICEVOX/voicevox_core/pull/404
@@ -1351,6 +1353,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1123]: https://github.com/VOICEVOX/voicevox_core/pull/1123
 [#1124]: https://github.com/VOICEVOX/voicevox_core/pull/1124
 [#1125]: https://github.com/VOICEVOX/voicevox_core/pull/1125
+[#1126]: https://github.com/VOICEVOX/voicevox_core/pull/1126
 [#1127]: https://github.com/VOICEVOX/voicevox_core/issues/1127
 [#1128]: https://github.com/VOICEVOX/voicevox_core/pull/1128
 [#1131]: https://github.com/VOICEVOX/voicevox_core/pull/1131
@@ -1362,6 +1365,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1138]: https://github.com/VOICEVOX/voicevox_core/pull/1138
 [#1139]: https://github.com/VOICEVOX/voicevox_core/pull/1139
 [#1140]: https://github.com/VOICEVOX/voicevox_core/pull/1140
+[#1144]: https://github.com/VOICEVOX/voicevox_core/pull/1144
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
