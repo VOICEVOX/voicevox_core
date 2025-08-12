@@ -22,13 +22,15 @@ public class VoiceModelFile implements Closeable {
    *
    * <p>{@link Synthesizer}はこのIDをキーとして、音声モデルのロード・アンロードを行う。
    *
-   * <p>同じIDを持つ複数のVVMファイルがあるときは、ファイルとして新しい方を常に使うことが推奨される。<a href="https://github.com/VOICEVOX/voicevox_vvm">VOICEVOX/voicevox_vvm</a>で管理されているVVMでは、次のような方針が取られている。
+   * <p>同じIDを持つ複数のVVMファイルがあるときは、ファイルとして新しい方を常に使うことが推奨される。<a
+   * href="https://github.com/VOICEVOX/voicevox_vvm">VOICEVOX/voicevox_vvm</a>で管理されているVVMでは、次のような方針が取られている。
    *
    * <ul>
-   *  <li>VVMに含まれる声が変化せず、{@link #metas}のみが変化する場合は以前のVVMと同じファイル名と同じIDでリリースする。</li>
+   *   <li>VVMに含まれる声が変化せず、{@link #metas}のみが変化する場合は以前のVVMと同じファイル名と同じIDでリリースする。
    * </ul>
    *
-   * <p>これ以外は未定であり、更なるルールについては<a href="https://github.com/VOICEVOX/voicevox_vvm/issues/19">VOICEVOX/voicevox_vvm#19</a>で議論される予定。
+   * <p>これ以外は未定であり、更なるルールについては<a
+   * href="https://github.com/VOICEVOX/voicevox_vvm/issues/19">VOICEVOX/voicevox_vvm#19</a>で議論される予定。
    *
    * <p>{@link #close}の後でも利用可能。
    */
