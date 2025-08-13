@@ -45,9 +45,10 @@ pub(super) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_value
 ///
 /// `Synthesizer`はこのIDをキーとして、音声モデルのロード・アンロードを行う。
 ///
-/// 同じIDを持つ複数のVVMファイルがあるときは、ファイルとして新しい方を常に使うことが推奨される。[VOICEVOX/voicevox_vvm]で管理されているVVMでは、次のような方針が取られている。
+/// 同じIDを持つ複数のVVMファイルがあるときは、ファイルとして新しい方を常に使うことが推奨される。[VOICEVOX/voicevox_vvm]で管理されているVVMでは、次の方針が取られている。
 ///
-/// - VVMに含まれる声が変化せず、`metas`のみが変化する場合は以前のVVMと同じファイル名と同じIDでリリースする。
+/// - VVMに含まれる声が変化せず、軽微な修正のみのときはIDを使い回してリリースする。
+/// - VVMに含まれる声が明確に変化するかもしくは削除されるような実質的な変更のときは、新しいIDを割り振ってリリースする。
 ///
 /// これ以外は未定であり、更なるルールについては[VOICEVOX/voicevox_vvm#19]で議論される予定。
 ///

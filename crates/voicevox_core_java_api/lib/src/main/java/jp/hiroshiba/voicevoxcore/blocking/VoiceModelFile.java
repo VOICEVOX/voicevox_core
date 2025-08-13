@@ -26,7 +26,8 @@ public class VoiceModelFile implements Closeable {
    * href="https://github.com/VOICEVOX/voicevox_vvm">VOICEVOX/voicevox_vvm</a>で管理されているVVMでは、次のような方針が取られている。
    *
    * <ul>
-   *   <li>VVMに含まれる声が変化せず、{@link #metas}のみが変化する場合は以前のVVMと同じファイル名と同じIDでリリースする。
+   *   <li>VVMに含まれる声が変化せず、軽微な修正のみのときはIDを使い回してリリースする。
+   *   <li>VVMに含まれる声が明確に変化するかもしくは削除されるような実質的な変更のときは、新しいIDを割り振ってリリースする。
    * </ul>
    *
    * <p>これ以外は未定であり、更なるルールについては<a
