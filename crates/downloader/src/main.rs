@@ -11,8 +11,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context as _, anyhow, bail, ensure};
-use base64::{Engine as _, prelude::BASE64_STANDARD};
+use anyhow::{Context as _, anyhow, bail};
 use bytes::Bytes;
 use clap::{Parser as _, ValueEnum, crate_version};
 use easy_ext::ext;
@@ -32,12 +31,11 @@ use octocrab::{
     Octocrab,
     models::{
         AssetId,
-        repos::{Asset, CommitObject, Content, Release, Tag},
+        repos::{Asset, Release},
     },
     repos::RepoHandler,
 };
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
-use reqwest::Client;
 use semver::{Version, VersionReq};
 use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
@@ -61,9 +59,8 @@ const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
 
 static SUPPORTED_MODELS_VERSIONS: LazyLock<VersionReq> =
-    LazyLock::new(|| ">=0.1,<0.2".parse().unwrap());
-const MODELS_README_FILENAME: &str = "README.md";
-const MODELS_README_RENAME: &str = "README.txt";
+    LazyLock::new(|| ">=0.16,<0.17".parse().unwrap());
+const MODELS_README_FILENAME: &str = "README.txt";
 const MODELS_DIR_NAME: &str = "vvms";
 const MODELS_TERMS_NAME: &str = "VOICEVOX 音声モデル 利用規約";
 const MODELS_TERMS_FILE: &str = "TERMS.txt";
@@ -918,17 +915,22 @@ use selector;
 
 /// ダウンロードすべきモデル、利用規約を見つける。その際ユーザーに利用規約の同意を求める。
 async fn find_models(
-    octocrab: &Octocrab,
+    octocrab: &Arc<Octocrab>,
     repo: &RepoName,
     version: Option<&Version>,
     pattern: &glob::Pattern,
 ) -> anyhow::Result<ModelsWithTerms> {
     let repos = octocrab.repos(&repo.owner, &repo.repo);
 
-    let tag = if let Some(version) = version {
-        version.clone()
+    let Release {
+        html_url,
+        tag_name,
+        assets,
+        ..
+    } = if let Some(version) = version {
+        repos.releases().get_by_tag(&version.to_string()).await?
     } else {
-        repos
+        let (_, release) = repos
             .releases()
             .list()
             .per_page(100)
@@ -941,79 +943,57 @@ async fn find_models(
                  }| future::ready(!(draft || prerelease)),
             )
             .map(|release| {
-                release?
+                let release = release?;
+                let tag = release
                     .tag_name
-                    .parse()
-                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))
+                    .parse::<Version>()
+                    .with_context(|| format!("`{repo}` contains non-SemVer tags"))?;
+                anyhow::Ok((tag, release))
             })
-            .try_filter(|tag| future::ready(SUPPORTED_MODELS_VERSIONS.matches(tag)))
+            .try_filter(|(tag, _)| future::ready(SUPPORTED_MODELS_VERSIONS.matches(tag)))
             .try_collect::<Vec<_>>()
             .await?
             .into_iter()
-            .max()
+            .max_by(|(tag1, _), (tag2, _)| tag1.cmp(tag2))
             .with_context(|| {
                 format!(
                     "{repo}の`{SUPPORTED_MODELS_VERSIONS}`の範囲には、\
                      pre-releaseではないリリースがありません",
                     SUPPORTED_MODELS_VERSIONS = *SUPPORTED_MODELS_VERSIONS,
                 )
-            })?
-    }
-    .to_string();
+            })?;
+        release
+    };
 
-    // #1118 ではこの`sha`は不要になる予定。
-    let Tag {
-        commit: CommitObject { sha, .. },
-        ..
-    } = repos
-        .list_tags()
-        .per_page(100)
-        .send()
-        .await?
-        .into_stream(octocrab)
-        .try_collect::<Vec<_>>()
-        .await?
+    let find_by_name = |name| {
+        assets
+            .iter()
+            .find(|a| a.name == name)
+            .with_context(|| anyhow!("could not find `{name}` in '{html_url}'"))
+    };
+
+    let terms = find_by_name(MODELS_TERMS_FILE)?;
+    let terms = repos.fetch_asset_utf8_content(terms).await?;
+
+    let readme = find_by_name(MODELS_README_FILENAME)?;
+    let readme = repos.fetch_asset_utf8_content(readme).await?;
+
+    let models = assets
         .into_iter()
-        .find(|Tag { name, .. }| *name == tag)
-        .with_context(|| format!("`{tag}` not found"))?;
-
-    let terms = repos.fetch_file_content(&sha, MODELS_TERMS_FILE).await?;
-    let readme = repos
-        .fetch_file_content(&sha, MODELS_README_FILENAME)
-        .await?;
-
-    let models = repos
-        .get_content()
-        .r#ref(&sha)
-        .path(MODELS_DIR_NAME)
-        .send()
-        .await?
-        .items
-        .into_iter()
-        .map(
-            |Content {
-                 name,
-                 size,
-                 download_url,
-                 r#type,
-                 ..
-             }| {
-                ensure!(r#type == "file", "found directory");
-                if !pattern.matches(&name) {
-                    return Ok(None);
-                }
-                Ok(Some(GhContent {
-                    name,
-                    download_url: download_url.expect("should present"),
-                    size: size as _,
-                }))
-            },
-        )
-        .flat_map(Result::transpose)
-        .collect::<anyhow::Result<_>>()?;
+        .filter(|Asset { name, .. }| {
+            ![MODELS_README_FILENAME, MODELS_TERMS_FILE].contains(&&**name) && pattern.matches(name)
+        })
+        .map(|Asset { id, name, size, .. }| VvmAsset {
+            octocrab: octocrab.clone(),
+            repo: repo.clone(),
+            id,
+            name,
+            size: size as _,
+        })
+        .collect();
 
     return Ok(ModelsWithTerms {
-        tag,
+        tag: tag_name,
         readme,
         terms,
         models,
@@ -1021,30 +1001,22 @@ async fn find_models(
 
     #[ext]
     impl RepoHandler<'_> {
-        async fn fetch_file_content(&self, sha: &str, path: &str) -> anyhow::Result<String> {
-            let Content {
-                encoding, content, ..
-            } = self
-                .get_content()
-                .r#ref(sha)
-                .path(path)
-                .send()
+        async fn fetch_asset_utf8_content(&self, asset: &Asset) -> anyhow::Result<String> {
+            let content = self
+                .releases()
+                .stream_asset(asset.id)
                 .await?
-                .items
-                .into_iter()
-                .exactly_one()
-                .map_err(|_| anyhow!("could not find `{path}`"))?;
-
-            ensure!(
-                encoding.as_deref() == Some("base64"),
-                r#"expected `encoding="base64"`"#,
-            );
-
-            let content = content.expect("should present").replace('\n', "");
-            let content = BASE64_STANDARD.decode(content)?;
+                .try_fold(
+                    Vec::with_capacity(asset.size as _),
+                    |mut content, chunk| async move {
+                        content.extend_from_slice(&chunk);
+                        Ok(content)
+                    },
+                )
+                .await?;
             let content = String::from_utf8(content)
-                .with_context(|| format!("`{path}` is not valid UTF-8"))?;
-            Ok(content)
+                .with_context(|| format!("`{}` is not valid UTF-8", asset.name))?;
+            validate_models_readme_or_terms_txt(content)
         }
     }
 }
@@ -1240,8 +1212,6 @@ async fn download_models(
     progresses: &MultiProgress,
     tries: Tries,
 ) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
-    let reqwest = reqwest::Client::builder().build()?;
-
     let models = models
         .into_iter()
         .map(|model| {
@@ -1251,12 +1221,12 @@ async fn download_models(
         .collect::<Vec<_>>();
 
     fs_err::tokio::create_dir_all(output.join(MODELS_DIR_NAME)).await?;
-    fs_err::tokio::write(output.join(MODELS_README_RENAME), readme).await?;
+    fs_err::tokio::write(output.join(MODELS_README_FILENAME), readme).await?;
     fs_err::tokio::write(output.join(MODELS_TERMS_FILE), terms).await?;
     Ok(retry(tries, async move || {
         models
             .iter()
-            .map(|(c, b)| fetch_model(c, b, reqwest.clone(), &output))
+            .map(|(a, b)| fetch_model(a, b, &output))
             .collect::<FuturesUnordered<_>>()
             .try_collect::<()>()
             .await
@@ -1264,20 +1234,31 @@ async fn download_models(
 }
 
 async fn fetch_model(
-    content: &GhContent,
+    VvmAsset {
+        octocrab,
+        repo,
+        id,
+        name,
+        size,
+    }: &VvmAsset,
     pb: &ProgressBar,
-    reqwest: Client,
     output: &Path,
 ) -> anyhow::Result<()> {
-    let GhContent {
-        name,
-        download_url,
-        size,
-    } = content;
-    let res = reqwest.get(download_url).send().await?.error_for_status()?;
-    let bytes_stream = res.bytes_stream().map_err(Into::into);
+    let bytes_stream = octocrab
+        .repos(&repo.owner, &repo.repo)
+        .releases()
+        .stream_asset(*id)
+        .await?
+        .map_err(Into::into);
     let pb = with_style(pb.clone(), &PROGRESS_STYLE1).await?;
-    let model = download(bytes_stream, Some(*size), Ok, pb.clone()).await?;
+    let model = download(
+        bytes_stream,
+        Some(*size),
+        FileKind::ZipOrVvm,
+        WebService::Github,
+        pb.clone(),
+    )
+    .await?;
     let pb = tokio::task::spawn_blocking(move || {
         pb.set_style(PROGRESS_STYLE2.clone());
         pb.set_message("Writing...");
@@ -1316,7 +1297,8 @@ async fn download_and_extract(
     let archive = download(
         bytes_stream,
         content_length,
-        |content| validate_archive_file(content, archive_kind, service),
+        archive_kind.into(),
+        service,
         pb.clone(),
     )
     .await?;
@@ -1428,7 +1410,8 @@ async fn with_style(
 async fn download(
     mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
     content_length: Option<u64>,
-    validate: impl FnOnce(Vec<u8>) -> anyhow::Result<Vec<u8>>,
+    kind: FileKind,
+    service: WebService,
     pb: ProgressBar,
 ) -> anyhow::Result<Vec<u8>> {
     if let Some(content_length) = content_length {
@@ -1441,7 +1424,7 @@ async fn download(
             downloaded.extend_from_slice(&chunk);
             pos_tx.send(downloaded.len() as _)?;
         }
-        validate(downloaded)
+        validate_archive_file(downloaded, kind, service)
     })
     .await;
 
@@ -1474,26 +1457,41 @@ async fn download(
 /// [`octocrab::repo::ReleasesHandler::stream_asset`]でダウンロードしたものを検証する。
 fn validate_archive_file(
     content: Vec<u8>,
-    content_kind: ArchiveKind,
+    content_kind: FileKind,
     service: WebService,
 ) -> anyhow::Result<Vec<u8>> {
     match (content_kind, &*content) {
-        (ArchiveKind::Zip, [0x50, 0x4b, 0x03, 0x04, ..])
-        | (ArchiveKind::Tgz, [0x1f, 0x8b, 0x08, ..]) => Ok(content),
-        (_, content) => Err({
-            let mut msg = format!("予期しない応答を{service}が返しました");
-            if let (WebService::Github, Ok(content)) = (service, str::from_utf8(content)) {
-                msg += ": ";
-                msg += content.trim_end();
-                if content.contains("API rate limit exceeded for") {
-                    msg += " (Note: レートリミットによるエラーの可能性があります。\
-                            認証トークンを設定すると制限が緩和されます。\
-                            詳細は`--help`をご覧ください)";
-                }
-            }
-            anyhow!("{msg}")
-        }),
+        (FileKind::ZipOrVvm, [0x50, 0x4b, 0x03, 0x04, ..])
+        | (FileKind::Tgz, [0x1f, 0x8b, 0x08, ..]) => Ok(content),
+        (_, content) => Err(error_for_unexpected_file_content(content, service)),
     }
+}
+
+// FIXME: `validate_archive_file`と同様。
+/// [`DownloadTarget::Models`]におけるreadmeと利用規約のテキストを検証する。
+fn validate_models_readme_or_terms_txt(content: String) -> anyhow::Result<String> {
+    if content.starts_with("# VOICEVOX ") {
+        Ok(content)
+    } else {
+        Err(error_for_unexpected_file_content(
+            content.as_ref(),
+            WebService::Github,
+        ))
+    }
+}
+
+fn error_for_unexpected_file_content(content: &[u8], service: WebService) -> anyhow::Error {
+    let mut msg = format!("予期しない応答を{service}が返しました");
+    if let (WebService::Github, Ok(content)) = (service, str::from_utf8(content)) {
+        msg += ": ";
+        msg += content.trim_end();
+        if content.contains("API rate limit exceeded for") {
+            msg += " (Note: レートリミットによるエラーの可能性があります。\
+                    認証トークンを設定すると制限が緩和されます。\
+                    詳細は`--help`をご覧ください)";
+        }
+    }
+    anyhow!("{msg}")
 }
 
 #[derive(Clone, Copy, Display)]
@@ -1519,13 +1517,30 @@ struct ModelsWithTerms {
     tag: String,
     readme: String,
     terms: String,
-    models: Vec<GhContent>,
+    models: Vec<VvmAsset>,
 }
 
-struct GhContent {
+struct VvmAsset {
+    octocrab: Arc<Octocrab>,
+    repo: RepoName,
+    id: AssetId,
     name: String,
-    download_url: String,
     size: u64,
+}
+
+#[derive(Clone, Copy)]
+enum FileKind {
+    ZipOrVvm,
+    Tgz,
+}
+
+impl From<ArchiveKind> for FileKind {
+    fn from(archive_kind: ArchiveKind) -> Self {
+        match archive_kind {
+            ArchiveKind::Zip => Self::ZipOrVvm,
+            ArchiveKind::Tgz => Self::Tgz,
+        }
+    }
 }
 
 #[derive(Clone, Copy)]

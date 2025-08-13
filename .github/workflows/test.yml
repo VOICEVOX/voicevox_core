@@ -63,7 +63,24 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Rust
+      - name: Extract Rust API's MSRV
+        id: msrv-for-rust-api
+        run: |
+          metadata=$(cargo metadata --format-version 1 --manifest-path ./crates/voicevox_core/Cargo.toml --no-deps)
+          rust_version=$(
+            jq -r '
+              .workspace_default_members[] as $id
+                | .packages[]
+                | select(.id == $id).rust_version
+              ' <<< "$metadata"
+          )
+          echo "rust-version=$rust_version" >> "$GITHUB_OUTPUT"
+      - name: Set up Rust (for Rust API)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.msrv-for-rust-api.outputs.rust-version }}
+          components: clippy
+      - name: Set up Rust (for rest packages)
         uses: ./.github/actions/rust-toolchain-from-file
         with:
           components: clippy,rustfmt
@@ -76,6 +93,18 @@ jobs:
       - run: cargo clippy -v --features load-onnxruntime -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
+      - name: Do `cargo check` the Rust API with its MSRV
+        run: |
+          rust_api=$(realpath ./crates/voicevox_core)
+          mkdir /tmp/use-rust-api
+          cd "$_"
+          rustup override set ${{ steps.msrv-for-rust-api.outputs.rust-version }}
+          cargo init
+          cargo add --path "$rust_api" --features load-onnxruntime
+          cargo check
+          cargo rm voicevox_core
+          cargo add --path "$rust_api" --features link-onnxruntime
+          cargo check
       - run: cargo fmt -- --check
 
   rust-unit-test:

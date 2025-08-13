@@ -8,14 +8,14 @@ use derive_getters::Getters;
 use derive_more::{Deref, Index};
 use derive_new::new;
 use enum_map::EnumMap;
-use serde::{Deserialize, Deserializer, Serialize, de};
-use serde_with::{DisplayFromStr, serde_as};
+use serde::{de, Deserialize, Deserializer, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{StyleId, VoiceModelId};
 
 use super::infer::domains::{
-    ExperimentalTalkOperation, FrameDecodeOperation, InferenceDomainMap, SingingTeacherOperation,
-    TalkOperation, inference_domain_map_values,
+    inference_domain_map_values, ExperimentalTalkOperation, FrameDecodeOperation,
+    InferenceDomainMap, SingingTeacherOperation, TalkOperation,
 };
 
 #[derive(Clone, Debug)]

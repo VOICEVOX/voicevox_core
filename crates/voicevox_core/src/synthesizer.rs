@@ -15,35 +15,35 @@ use std::{
 use tracing::info;
 
 use crate::{
-    AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
     core::{
         devices::{self, DeviceSpec, GpuSpec},
         ensure_minimum_phoneme_length,
         infer::{
-            self, InferenceRuntime, InferenceSessionOptions,
+            self,
             domains::{
-                DecodeInput, DecodeOutput, ExperimentalTalkDomain, ExperimentalTalkOperation,
-                FrameDecodeDomain, FrameDecodeOperation, GenerateFullIntermediateInput,
-                GenerateFullIntermediateOutput, InferenceDomainMap,
+                experimental_talk, talk, DecodeInput, DecodeOutput, ExperimentalTalkDomain,
+                ExperimentalTalkOperation, FrameDecodeDomain, FrameDecodeOperation,
+                GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
                 PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput,
                 PredictSingF0Input, PredictSingF0Output, PredictSingVolumeInput,
                 PredictSingVolumeOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
                 SfDecodeInput, SfDecodeOutput, SingingTeacherDomain, SingingTeacherOperation,
-                TalkDomain, TalkOperation, experimental_talk, talk,
+                TalkDomain, TalkOperation,
             },
+            InferenceRuntime, InferenceSessionOptions,
         },
         pad_decoder_feature,
         status::Status,
         voice_model,
     },
     engine::{
-        OjtPhoneme,
-        talk::{DecoderFeature, Mora, create_kana, initial_process, parse_kana, split_mora},
-        to_s16le_pcm, wav_from_s16le,
+        talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
+        to_s16le_pcm, wav_from_s16le, OjtPhoneme,
     },
     error::ErrorRepr,
     future::FutureExt as _,
+    AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
 };
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
@@ -1209,7 +1209,7 @@ fn list_windows_video_cards() {
     use humansize::BINARY;
     use tracing::{error, info};
     use windows::Win32::Graphics::Dxgi::{
-        CreateDXGIFactory, DXGI_ADAPTER_DESC, DXGI_ERROR_NOT_FOUND, IDXGIFactory,
+        CreateDXGIFactory, IDXGIFactory, DXGI_ADAPTER_DESC, DXGI_ERROR_NOT_FOUND,
     };
 
     info!("検出されたGPU (DirectMLにはGPU 0が使われます):");
@@ -1318,8 +1318,8 @@ pub(crate) mod blocking {
     use easy_ext::ext;
 
     use crate::{
-        AccentPhrase, AudioQuery, StyleId, VoiceModelId, VoiceModelMeta, asyncs::SingleTasked,
-        future::FutureExt as _,
+        asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, StyleId,
+        VoiceModelId, VoiceModelMeta,
     };
 
     use super::{
@@ -1970,8 +1970,8 @@ pub(crate) mod nonblocking {
     use easy_ext::ext;
 
     use crate::{
-        AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
-        asyncs::BlockingThreadPool,
+        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId,
+        VoiceModelMeta,
     };
 
     use super::{
@@ -2471,8 +2471,8 @@ pub(crate) mod nonblocking {
 mod tests {
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
-        AccentPhrase, Result, StyleId, asyncs::BlockingThreadPool, engine::talk::Mora,
-        macros::tests::assert_debug_fmt_eq,
+        asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
+        AccentPhrase, Result, StyleId,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use rstest::rstest;
