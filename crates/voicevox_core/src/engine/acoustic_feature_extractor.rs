@@ -84,6 +84,9 @@ impl OjtPhoneme {
 
     pub(super) fn convert(phonemes: &[OjtPhoneme]) -> Vec<OjtPhoneme> {
         let mut phonemes = phonemes.to_owned();
+        // TODO: Rust 2024にしたらlet chainに戻す
+        #[cfg(any())]
+        __! {
         if let Some(first_phoneme) = phonemes.first_mut()
             && first_phoneme.phoneme.contains("sil")
         {
@@ -93,6 +96,17 @@ impl OjtPhoneme {
             && last_phoneme.phoneme.contains("sil")
         {
             last_phoneme.phoneme = OjtPhoneme::space_phoneme();
+        }
+        }
+        if let Some(first_phoneme) = phonemes.first_mut() {
+            if first_phoneme.phoneme.contains("sil") {
+                first_phoneme.phoneme = OjtPhoneme::space_phoneme();
+            }
+        }
+        if let Some(last_phoneme) = phonemes.last_mut() {
+            if last_phoneme.phoneme.contains("sil") {
+                last_phoneme.phoneme = OjtPhoneme::space_phoneme();
+            }
         }
         phonemes
     }

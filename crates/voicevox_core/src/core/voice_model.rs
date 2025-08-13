@@ -9,7 +9,7 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::{Context as _, anyhow};
+use anyhow::{anyhow, Context as _};
 use derive_more::From;
 use easy_ext::ext;
 use enum_map::{Enum, EnumMap};
@@ -21,18 +21,18 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    CharacterMeta, StyleMeta, StyleType, VoiceModelMeta,
     asyncs::{Async, Mutex as _},
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
+    CharacterMeta, StyleMeta, StyleType, VoiceModelMeta,
 };
 
 use super::{
     infer::{
-        InferenceDomain,
         domains::{
-            ExperimentalTalkDomain, FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain,
-            TalkDomain, inference_domain_map_values,
+            inference_domain_map_values, ExperimentalTalkDomain, FrameDecodeDomain,
+            InferenceDomainMap, SingingTeacherDomain, TalkDomain,
         },
+        InferenceDomain,
     },
     manifest::{Manifest, ManifestDomains, ModelFile, ModelFileType, StyleIdToInnerVoiceId},
 };
@@ -329,7 +329,8 @@ impl<A: Async> Inner<A> {
             })
         });
 
-        let talk = OptionFuture::from(talk.map(async |(entries, style_id_to_inner_voice_id)| {
+        // TODO: Rust 1.85にしたらasync closureに戻す
+        let talk = OptionFuture::from(talk.map(|(entries, style_id_to_inner_voice_id)| async {
             let [predict_duration, predict_intonation, decode] = entries.into_array();
 
             let predict_duration = read_file!(predict_duration);
@@ -343,14 +344,11 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
+        // TODO: Rust 1.85にしたらasync closureに戻す
         let experimental_talk = OptionFuture::from(experimental_talk.map(
-            async |(entries, style_id_to_inner_voice_id)| {
-                let [
-                    predict_duration,
-                    predict_intonation,
-                    predict_spectrogram,
-                    run_vocoder,
-                ] = entries.into_array();
+            |(entries, style_id_to_inner_voice_id)| async {
+                let [predict_duration, predict_intonation, predict_spectrogram, run_vocoder] =
+                    entries.into_array();
 
                 let predict_duration = read_file!(predict_duration);
                 let predict_intonation = read_file!(predict_intonation);
@@ -370,13 +368,11 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
+        // TODO: Rust 1.85にしたらasync closureに戻す
         let singing_teacher = OptionFuture::from(singing_teacher.map(
-            async |(entries, style_id_to_inner_voice_id)| {
-                let [
-                    predict_sing_consonant_length,
-                    predict_sing_f0,
-                    predict_sing_volume,
-                ] = entries.into_array();
+            |(entries, style_id_to_inner_voice_id)| async {
+                let [predict_sing_consonant_length, predict_sing_f0, predict_sing_volume] =
+                    entries.into_array();
 
                 let predict_sing_consonant_length = read_file!(predict_sing_consonant_length);
                 let predict_sing_f0 = read_file!(predict_sing_f0);
@@ -394,8 +390,9 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
+        // TODO: Rust 1.85にしたらasync closureに戻す
         let frame_decode = OptionFuture::from(frame_decode.map(
-            async |(entries, style_id_to_inner_voice_id)| {
+            |(entries, style_id_to_inner_voice_id)| async {
                 let [sf_decode] = entries.into_array();
 
                 let sf_decode = read_file!(sf_decode);
@@ -617,7 +614,7 @@ pub(crate) mod blocking {
         path::Path,
     };
 
-    use crate::{VoiceModelMeta, asyncs::SingleTasked, future::FutureExt as _};
+    use crate::{asyncs::SingleTasked, future::FutureExt as _, VoiceModelMeta};
 
     use super::{Inner, VoiceModelId};
 
@@ -671,7 +668,7 @@ pub(crate) mod nonblocking {
         path::Path,
     };
 
-    use crate::{Result, VoiceModelMeta, asyncs::BlockingThreadPool};
+    use crate::{asyncs::BlockingThreadPool, Result, VoiceModelMeta};
 
     use super::{Inner, VoiceModelId};
 
