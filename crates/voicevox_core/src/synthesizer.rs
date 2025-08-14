@@ -43,7 +43,8 @@ use crate::{
     },
     error::ErrorRepr,
     future::FutureExt as _,
-    AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
+    AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Note, NoteId, Result, StyleId,
+    VoiceModelId, VoiceModelMeta,
 };
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
@@ -733,6 +734,35 @@ trait AsInner {
         let audio_query = &self.create_audio_query(text, style_id).await?;
         self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
             .await
+    }
+
+    async fn create_sing_frame_audio_query(
+        &self,
+        notes: &[Note],
+        style_id: StyleId,
+    ) -> Result<Vec<FrameAudioQuery>> {
+        todo!();
+    }
+
+    async fn create_sing_frame_f0(
+        &self,
+        phonemes: &[FramePhoneme],
+        style_id: StyleId,
+    ) -> Result<ndarray::Array1<f32>> {
+        todo!();
+    }
+
+    async fn create_sing_frame_volume(
+        &self,
+        phonemes: &[FramePhoneme],
+        f0: &[f32],
+        style_id: StyleId,
+    ) -> Result<ndarray::Array1<f32>> {
+        todo!();
+    }
+
+    async fn frame_synthesis(&self, query: &FrameAudioQuery, style_id: StyleId) -> Result<Vec<u8>> {
+        todo!();
     }
 
     // TODO: この層を破壊する
