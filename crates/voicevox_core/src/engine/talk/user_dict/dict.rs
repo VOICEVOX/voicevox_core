@@ -114,7 +114,7 @@ pub(crate) mod blocking {
     use indexmap::IndexMap;
     use uuid::Uuid;
 
-    use crate::{Result, asyncs::SingleTasked, future::FutureExt as _};
+    use crate::{asyncs::SingleTasked, future::FutureExt as _, Result};
 
     use super::{super::word::UserDictWord, Inner};
 
@@ -194,7 +194,7 @@ pub(crate) mod nonblocking {
     use indexmap::IndexMap;
     use uuid::Uuid;
 
-    use crate::{Result, asyncs::BlockingThreadPool};
+    use crate::{asyncs::BlockingThreadPool, Result};
 
     use super::{super::word::UserDictWord, Inner};
 

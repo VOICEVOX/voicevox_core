@@ -10,19 +10,20 @@ use indexmap::IndexMap;
 use itertools::iproduct;
 
 use crate::{
-    Result,
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
+    Result,
 };
 
 use super::{
     infer::{
-        self, InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
-        InferenceSignature,
+        self,
         domains::{
-            ExperimentalTalkDomain, FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain,
-            TalkDomain, inference_domain_map_values,
+            inference_domain_map_values, ExperimentalTalkDomain, FrameDecodeDomain,
+            InferenceDomainMap, SingingTeacherDomain, TalkDomain,
         },
         session_set::{InferenceSessionCell, InferenceSessionSet},
+        InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
+        InferenceSignature,
     },
     manifest::{InnerVoiceId, StyleIdToInnerVoiceId},
     metas::{self, CharacterMeta, StyleId, StyleMeta, VoiceModelMeta},
@@ -415,11 +416,11 @@ mod tests {
         super::{
             devices::{DeviceSpec, GpuSpec},
             infer::{
-                InferenceSessionOptions,
                 domains::{
                     ExperimentalTalkOperation, FrameDecodeOperation, InferenceDomainMap,
                     SingingTeacherOperation, TalkOperation,
                 },
+                InferenceSessionOptions,
             },
         },
         Status,

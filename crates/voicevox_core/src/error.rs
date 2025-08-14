@@ -1,7 +1,7 @@
 use crate::{
-    StyleId, StyleType, VoiceModelId,
     core::devices::DeviceAvailabilities,
-    engine::talk::{KanaParseError, user_dict::InvalidWordError},
+    engine::talk::{user_dict::InvalidWordError, KanaParseError},
+    StyleId, StyleType, VoiceModelId,
 };
 //use engine::
 use duplicate::duplicate_item;

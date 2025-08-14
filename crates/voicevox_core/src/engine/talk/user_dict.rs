@@ -2,7 +2,7 @@ pub(crate) mod dict;
 mod part_of_speech_data;
 mod word;
 
+pub(crate) use self::word::{to_zenkaku, validate_pronunciation, InvalidWordError};
 pub use self::word::{
-    DEFAULT_PRIORITY, DEFAULT_WORD_TYPE, UserDictWord, UserDictWordBuilder, UserDictWordType,
+    UserDictWord, UserDictWordBuilder, UserDictWordType, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE,
 };
-pub(crate) use self::word::{InvalidWordError, to_zenkaku, validate_pronunciation};

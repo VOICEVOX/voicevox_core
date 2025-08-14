@@ -1,9 +1,9 @@
 [package]
 name = "voicevox_core"
 version.workspace = true
-edition.workspace = true
+edition = "2021"
 publish.workspace = true
-rust-version.workspace = true
+rust-version = "1.84.0" # TODO: Rust 1.88以降にするときは、 #1083 (async closures) および #1104 (let chain, `#[cfg(false)]`) と同じことをする
 license.workspace = true
 
 [package.metadata.docs.rs]
