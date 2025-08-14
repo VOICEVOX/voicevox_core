@@ -118,7 +118,9 @@
           - `Mora`
       </details>
 
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136], [#1138], [#1139], [#1140], [#1118])。
+- `VoiceModelId`が指すIDの意味がドキュメンテーションコメントに書かれます ([#1143])。
+
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136], [#1138], [#1139], [#1140], [#1118], [#1143])。
 
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
 
@@ -1368,6 +1370,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1138]: https://github.com/VOICEVOX/voicevox_core/pull/1138
 [#1139]: https://github.com/VOICEVOX/voicevox_core/pull/1139
 [#1140]: https://github.com/VOICEVOX/voicevox_core/pull/1140
+[#1143]: https://github.com/VOICEVOX/voicevox_core/pull/1143
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

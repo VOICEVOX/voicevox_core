@@ -42,6 +42,18 @@ pub(super) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_value
 );
 
 /// 音声モデルID。
+///
+/// `Synthesizer`はこのIDをキーとして、音声モデルのロード・アンロードを行う。
+///
+/// 同じIDを持つ複数のVVMファイルがあるときは、ファイルとして新しい方を常に使うことが推奨される。[VOICEVOX/voicevox_vvm]で管理されているVVMでは、次の方針が取られている。
+///
+/// - VVMに含まれる声が変化せず、軽微な修正のみのときはIDを使い回してリリースする。
+/// - VVMに含まれる声が明確に変化するかもしくは削除されるような実質的な変更のときは、新しいIDを割り振ってリリースする。
+///
+/// これ以外は未定であり、更なるルールについては[VOICEVOX/voicevox_vvm#19]で議論される予定。
+///
+/// [VOICEVOX/voicevox_vvm]: https://github.com/VOICEVOX/voicevox_vvm
+/// [VOICEVOX/voicevox_vvm#19]: https://github.com/VOICEVOX/voicevox_vvm/issues/19
 #[cfg_attr(doc, doc(alias = "VoicevoxVoiceModelId"))]
 #[derive(
     PartialEq,
@@ -642,6 +654,8 @@ pub(crate) mod blocking {
         }
 
         /// ID。
+        ///
+        /// 詳細は[`VoiceModelId`]を参照。
         #[cfg_attr(doc, doc(alias = "voicevox_voice_model_file_id"))]
         pub fn id(&self) -> VoiceModelId {
             self.0.id()
@@ -702,6 +716,8 @@ pub(crate) mod nonblocking {
         }
 
         /// ID。
+        ///
+        /// 詳細は[`VoiceModelId`]を参照。
         pub fn id(&self) -> VoiceModelId {
             self.0.id()
         }
