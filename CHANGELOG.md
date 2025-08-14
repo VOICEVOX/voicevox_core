@@ -232,15 +232,19 @@
 
     ただし、`windows-2022`でビルドしたバイナリであっても`windows-2019`相当の環境で動作すると考えられています。またVOICEVOX ONNX Runtimeが既に元々`windows-2022`でビルドされているため、通常の用途においては特に変わらないはずです。
 
+- \[Rust\] 依存ライブラリのバージョン要求が変わります ([#1070], [#1078])。
+
+    - `proc-macro2@1`: `^1.0.86` → `^1.0.95`
+    - `syn@2`: `^2.0.79` → `^1.0.86`
+
 ### Fixed
 
-- \[Rust\] Nightly Rustでビルドできない問題（[dtolnay/proc-macro2#497]）が発生したため、`proc-macro2`の依存がv1.0.95に上がります ([#1078])。
 - \[Python\] リポジトリにあるMarkdownドキュメントの誤記が修正されます ([#1063])。
 - \[Java\] \[Android\] GHAのUbuntuイメージ備え付けの`$ANDROID_NDK` (現時点ではバージョン27)を使ったリリースがされるようになります。これにより、[#1103]で報告されたAndroidビルドにおけるC++シンボルの問題が解決されます ([#1108])。
 - \[Java\] Javaのファイナライザから中身のRustオブジェクトのデストラクトがされない問題が解決されます ([#1085])。
 - \[ダウンローダー\] 将来的に[VOICEVOX/voicevox\_vvm]のタグの数が30を超えたときに、もしかしたら起きうるかもしれない問題の対処がされます ([#1123])。
 - \[ダウンローダー\] いくつかのエラーの出かたが改善されます ([#1132], [#1133], [#1136])。
-- \[ダウンローダー\] `--devices <DEVICES>...`のhelpには「(cudaはlinuxのみ)」と書かれていましたが、この記述は[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の時点で正しくなくなったので消されます ([#1124])。
+- \[ダウンローダー\] `--devices <DEVICES>...`のhelpには「(cudaはlinuxのみ)」と書かれていましたが、この記述は[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の時点で正しくなくなっていたため消されます ([#1124])。
 - \[ダウンローダー\] \[Windows\] GitHub Releasesにおいて、再び署名がされるようになります ([#1060])。
 
 ## [0.16.0] - 2025-03-29 (+09:00)
@@ -285,7 +289,7 @@
 
 ### Added
 
-- 書きかけの状態だった[docs/guide/user/usage.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0-preview.1/docs/guide/user/usage.md)が書き上がります ([#1032])。
+- [0.16.0-preview.0](#0160-preview0---2025-03-01-0900)にて追加された時点では書きかけの状態だった、[docs/guide/user/usage.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.0-preview.1/docs/guide/user/usage.md)が書き上がります ([#1032])。
 - readmeから「バージョン 0.15.4をご利用ください」の注意書きが削除されます ([#1035])。
 
 ### Changed
@@ -295,8 +299,8 @@
 
 ### Removed
 
-- sample.vvmはGitHub Releasesに含まれなくなります ([#1033])。
-- \[Linux\] \[BREAKING\] Ubuntu 20.04がサポート対象から外れ、バイナリのリリースはUbuntu 22.04で行われるようになります ([#1028])。
+- [0.16.0-preview.0](#0160-preview0---2025-03-01-0900)では製品版VVMがこのリポジトリのGitHub Releasesに置かれなくなり、代わりにsample.vvmが置かれていましたが、今回からそれも無くなります ([#1033])。
+- \[Linux\] \[BREAKING\] Ubuntu 20.04がサポート対象から外れ、バイナリのリリースはUbuntu 22.04で行われるようになります。それに伴い、glibcの最小バージョンが2.31から2.34に上がります ([#1028])。
 
 ### Fixed
 
@@ -455,19 +459,44 @@
 
     これにより、VOICEVOX ENGINEとVOICEVOX COREとで同じ`AudioQuery`と`UserDictWord`が使い回せるようになります。Python APIおよびJava APIにおける、クラスの形には影響しません。
 
-    ```json
-    {
-      "accent_phrases": […],
-      "speedScale": 1.0,
-      "pitchScale": 0.0,
-      "intonationScale": 1.0,
-      "volumeScale": 1.0,
-      "prePhonemeLength": 0.1,
-      "postPhonemeLength": 0.1,
-      "outputSamplingRate": 24000,
-      "outputStereo": false
-    }
-    ```
+    - <details><summary><code>AudioQuery</code>の例</summary>
+
+      ```json
+      {
+        "accent_phrases": […],
+        "speedScale": 1.0,
+        "pitchScale": 0.0,
+        "intonationScale": 1.0,
+        "volumeScale": 1.0,
+        "prePhonemeLength": 0.1,
+        "postPhonemeLength": 0.1,
+        "outputSamplingRate": 24000,
+        "outputStereo": false
+      }
+      ```
+      </details>
+    - <details><summary><code>UserDictWord</code>の例</summary>
+
+      ```json
+      {
+        "surface": "手札",
+        "priority": 6,
+        "context_id": 1345,
+        "part_of_speech": "名詞",
+        "part_of_speech_detail_1": "一般",
+        "part_of_speech_detail_2": "*",
+        "part_of_speech_detail_3": "*",
+        "inflectional_type": "*",
+        "inflectional_form": "*",
+        "stem": "*",
+        "yomi": "テフダ",
+        "pronunciation": "テフダ",
+        "accent_type": 0,
+        "mora_count": 3,
+        "accent_associative_rule": "*"
+      }
+      ```
+      </details>
 
 - \[BREAKING\] `VoiceModelId`は、VVMに固有のUUIDになります ([#796])。
 
@@ -481,10 +510,6 @@
 - \[BREAKING\] `UserDictWord`の`accent_type`はオプショナルではなくなります ([#1002])。
 
     VOICEVOX ENGINEに合わせる形です。
-
-- \[BREAKING\] `UserDictWord`の`priority`のデフォルトが`0`から`5`に変わります ([#1002])。
-
-    Python API、Java API、VOICEVOX ENGINEに合わせる形です。
 
 - \[BREAKING\] `acceleration_mode`を`GPU`または`AUTO`（デフォルト）にしたときの挙動が変わります ([#810])。
 
@@ -505,6 +530,10 @@
     - `voicevox_voice_model_get_metas_json`
 
         `voicevox_voice_model_file_create_metas_json`になり、`VoicevoxVoiceModelFile`が保有しない形でアロケートされた文字列を作成するように。
+
+- \[C\] \[BREAKING\] `UserDictWord`の`priority`のデフォルトが`0`から`5`に変わります ([#1002])。
+
+    Python API、Java API、VOICEVOX ENGINEに合わせる形です。
 
 - \[C\] \[BREAKING\] リリース内容物において、動的ライブラリはlib/に、ヘッダはinclude/に入るようになります ([#954], [#967], [#980])。
 
@@ -1341,6 +1370,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1058]: https://github.com/VOICEVOX/voicevox_core/pull/1058
 [#1060]: https://github.com/VOICEVOX/voicevox_core/pull/1060
 [#1063]: https://github.com/VOICEVOX/voicevox_core/pull/1063
+[#1070]: https://github.com/VOICEVOX/voicevox_core/pull/1070
 [#1073]: https://github.com/VOICEVOX/voicevox_core/pull/1073
 [#1077]: https://github.com/VOICEVOX/voicevox_core/pull/1077
 [#1078]: https://github.com/VOICEVOX/voicevox_core/pull/1078
@@ -1396,8 +1426,6 @@ Windows版ダウンローダーのビルドに失敗しています。
 [VOICEVOX/voicevox\_vvm#34]: https://github.com/VOICEVOX/voicevox_vvm/pull/34
 
 [Hiroshiba/vv\_core\_inference#12]: https://github.com/Hiroshiba/vv_core_inference/pull/12
-
-[dtolnay/proc-macro2#497]: https://github.com/dtolnay/proc-macro2/pull/497
 
 [@char5742]: https://github.com/char5742
 [@cm-ayf]: https://github.com/cm-ayf
