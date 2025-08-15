@@ -17,8 +17,13 @@ use anyhow::{anyhow, bail, ensure};
 use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
-    CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider, ExecutionProvider as _,
-    GraphOptimizationLevel, PrimitiveTensorElementType, TensorElementType, ValueType,
+    execution_providers::{
+        CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider,
+        ExecutionProvider as _,
+    },
+    session::{builder::GraphOptimizationLevel, RunOptions},
+    tensor::{PrimitiveTensorElementType, TensorElementType},
+    value::ValueType,
 };
 
 use crate::error::ErrorRepr;
@@ -33,7 +38,7 @@ use super::super::{
 };
 
 impl InferenceRuntime for self::blocking::Onnxruntime {
-    type Session = async_lock::Mutex<ort::Session>; // WASMでは`ort`を利用しないので、ここはasync-lockを用いてよいはず
+    type Session = async_lock::Mutex<ort::session::Session>; // WASMでは`ort`を利用しないので、ここはasync-lockを用いてよいはず
     type RunContext = OnnxruntimeRunContext;
 
     const DISPLAY_NAME: &'static str = if cfg!(feature = "load-onnxruntime") {
@@ -63,7 +68,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
     }
 
     fn test_gpu(&self, gpu: GpuSpec) -> anyhow::Result<()> {
-        let sess_builder = &ort::SessionBuilder::new()?;
+        let sess_builder = &mut ort::session::builder::SessionBuilder::new()?;
         match gpu {
             GpuSpec::Cuda => CUDAExecutionProvider::default().register(sess_builder),
             GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
@@ -80,20 +85,20 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         Vec<ParamInfo<InputScalarKind>>,
         Vec<ParamInfo<OutputScalarKind>>,
     )> {
-        let mut builder = ort::Session::builder()?
+        let mut builder = ort::session::Session::builder()?
             .with_optimization_level(GraphOptimizationLevel::Level1)?
             .with_intra_threads(options.cpu_num_threads.into())?;
 
         match options.device {
             DeviceSpec::Cpu => {}
             DeviceSpec::Gpu(GpuSpec::Cuda) => {
-                CUDAExecutionProvider::default().register(&builder)?;
+                CUDAExecutionProvider::default().register(&mut builder)?;
             }
             DeviceSpec::Gpu(GpuSpec::Dml) => {
                 builder = builder
                     .with_parallel_execution(false)?
                     .with_memory_pattern(false)?;
-                DirectMLExecutionProvider::default().register(&builder)?;
+                DirectMLExecutionProvider::default().register(&mut builder)?;
             }
         };
 
@@ -129,6 +134,13 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     TensorElementType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
                     TensorElementType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
                     TensorElementType::Bool => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL"),
+                    TensorElementType::Complex64 => Err(""),
+                    TensorElementType::Complex128 => Err(""),
+                    TensorElementType::Float8E4M3FN => Err(""),
+                    TensorElementType::Float8E4M3FNUZ => Err(""),
+                    TensorElementType::Float8E5M2 => Err(""),
+                    TensorElementType::Float8E5M2FNUZ => Err(""),
+                    TensorElementType::Undefined => Err(""),
                 }
                 .map_err(|actual| {
                     anyhow!("unsupported input datatype `{actual}` for `{}`", info.name)
@@ -137,7 +149,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                 Ok(ParamInfo {
                     name: info.name.clone().into(),
                     dt,
-                    ndim: info.input_type.tensor_dimensions().map(Vec::len),
+                    ndim: info.input_type.tensor_shape().map(|s| s.len()),
                 })
             })
             .collect::<anyhow::Result<_>>()?;
@@ -169,6 +181,13 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     TensorElementType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
                     TensorElementType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
                     TensorElementType::Bool => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL"),
+                    TensorElementType::Complex64 => Err(""),
+                    TensorElementType::Complex128 => Err(""),
+                    TensorElementType::Float8E4M3FN => Err(""),
+                    TensorElementType::Float8E4M3FNUZ => Err(""),
+                    TensorElementType::Float8E5M2 => Err(""),
+                    TensorElementType::Float8E5M2FNUZ => Err(""),
+                    TensorElementType::Undefined => Err(""),
                 }
                 .map_err(|actual| {
                     anyhow!("unsupported output datatype `{actual}` for `{}`", info.name)
@@ -177,7 +196,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                 Ok(ParamInfo {
                     name: info.name.clone().into(),
                     dt,
-                    ndim: info.output_type.tensor_dimensions().map(|d| d.len()),
+                    ndim: info.output_type.tensor_shape().map(|s| s.len()),
                 })
             })
             .collect::<anyhow::Result<_>>()?;
@@ -196,7 +215,13 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         cancellable: bool,
     ) -> anyhow::Result<Vec<OutputTensor>> {
         if cancellable {
-            extract_outputs(&sess.lock().await.run_async(inputs)?.await?)
+            extract_outputs(
+                &sess
+                    .lock()
+                    .await
+                    .run_async(inputs, &RunOptions::new()?)?
+                    .await?,
+            )
         } else {
             ::blocking::unblock(move || extract_outputs(&sess.lock_blocking().run(inputs)?)).await
         }
@@ -204,8 +229,8 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
 }
 
 pub(crate) struct OnnxruntimeRunContext {
-    sess: Arc<async_lock::Mutex<ort::Session>>,
-    inputs: Vec<(&'static str, ort::SessionInputValue<'static>)>,
+    sess: Arc<async_lock::Mutex<ort::session::Session>>,
+    inputs: Vec<(&'static str, ort::session::SessionInputValue<'static>)>,
 }
 
 impl OnnxruntimeRunContext {
@@ -217,14 +242,14 @@ impl OnnxruntimeRunContext {
             impl Dimension + 'static,
         >,
     ) -> anyhow::Result<()> {
-        let input = ort::Value::from_array(input)?.into();
+        let input = ort::value::Value::from_array(input)?.into();
         self.inputs.push((name, input));
         Ok(())
     }
 }
 
-impl From<Arc<async_lock::Mutex<ort::Session>>> for OnnxruntimeRunContext {
-    fn from(sess: Arc<async_lock::Mutex<ort::Session>>) -> Self {
+impl From<Arc<async_lock::Mutex<ort::session::Session>>> for OnnxruntimeRunContext {
+    fn from(sess: Arc<async_lock::Mutex<ort::session::Session>>) -> Self {
         Self {
             sess,
             inputs: vec![],
@@ -248,12 +273,14 @@ impl PushInputTensor for OnnxruntimeRunContext {
 }
 
 // FIXME: use ouroboros to reduce copies
-fn extract_outputs(outputs: &ort::SessionOutputs<'_, '_>) -> anyhow::Result<Vec<OutputTensor>> {
+fn extract_outputs(
+    outputs: &ort::session::SessionOutputs<'_>,
+) -> anyhow::Result<Vec<OutputTensor>> {
     (0..outputs.len())
         .map(|i| {
             let output = &outputs[i];
 
-            let ValueType::Tensor { ty, .. } = output.dtype()? else {
+            let ValueType::Tensor { ty, .. } = output.dtype() else {
                 bail!(
                     "unexpected output. currently `ONNX_TYPE_TENSOR` and `ONNX_TYPE_SPARSETENSOR`
                      is supported",
@@ -262,11 +289,11 @@ fn extract_outputs(outputs: &ort::SessionOutputs<'_, '_>) -> anyhow::Result<Vec<
 
             match ty {
                 TensorElementType::Int64 => {
-                    let output = output.try_extract_tensor::<i64>()?;
+                    let output = output.try_extract_array::<i64>()?;
                     Ok(OutputTensor::Int64(output.into_owned()))
                 }
                 TensorElementType::Float32 => {
-                    let output = output.try_extract_tensor::<f32>()?;
+                    let output = output.try_extract_array::<f32>()?;
                     Ok(OutputTensor::Float32(output.into_owned()))
                 }
                 _ => bail!("unexpected output tensor element data type"),
