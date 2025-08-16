@@ -107,7 +107,7 @@ zip = "0.6.3"
 
 [workspace.dependencies.voicevox-ort]
 git = "https://github.com/qryxip/ort.git"
-branch = "pr/merge-v2-0-0-rc10-keeping-onnxruntime-v1-17"
+rev = "34202b4c362f70a72baa828f0ec0f05236406510"
 
 [workspace.dependencies.open_jtalk]
 git = "https://github.com/VOICEVOX/open_jtalk-rs.git"

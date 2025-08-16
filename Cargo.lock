@@ -4675,7 +4675,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "voicevox-ort"
 version = "2.0.0-rc.10"
-source = "git+https://github.com/qryxip/ort.git?branch=pr%2Fmerge-v2-0-0-rc10-keeping-onnxruntime-v1-17#5cfe359bae7846c109393d6806b8bc2beea46457"
+source = "git+https://github.com/qryxip/ort.git?rev=34202b4c362f70a72baa828f0ec0f05236406510#34202b4c362f70a72baa828f0ec0f05236406510"
 dependencies = [
  "anyhow",
  "libloading 0.8.3",
@@ -4689,7 +4689,7 @@ dependencies = [
 [[package]]
 name = "voicevox-ort-sys"
 version = "2.0.0-rc.10"
-source = "git+https://github.com/qryxip/ort.git?branch=pr%2Fmerge-v2-0-0-rc10-keeping-onnxruntime-v1-17#5cfe359bae7846c109393d6806b8bc2beea46457"
+source = "git+https://github.com/qryxip/ort.git?rev=34202b4c362f70a72baa828f0ec0f05236406510#34202b4c362f70a72baa828f0ec0f05236406510"
 dependencies = [
  "flate2",
  "pkg-config",
