@@ -70,10 +70,10 @@
 - \[Rust\] 依存ライブラリが変化します ([#1147])。
     - \[削除\] `ndarray@0.15`
     - \[削除\] `ndarray-stats@0.5`
-    - \[削除\] `voicevox-ort@2.0.0-rc.4`
+    - \[削除\] `git+https://github.com/VOICEVOX/ort.git?rev=12101456be9975b7d263478c7c53554017b7927c#voicevox-ort@2.0.0-rc.4`
     - \[追加\] `ndarray@0.16`: `^0.16.1`
     - \[追加\] `ndarray-stats@0.6`: `^0.6.0`
-    - \[追加\] `voicevox-ort@2.0.0-rc.10`: `git+https://github.com/VOICEVOX/ort.git?rev=未定`
+    - \[追加\] `git+https://github.com/VOICEVOX/ort.git?rev=未定#voicevox-ort@2.0.0-rc.10`
 
 ### Fixed
 
