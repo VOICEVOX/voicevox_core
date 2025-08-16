@@ -65,6 +65,24 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+### Changed
+
+- \[Rust\] 依存ライブラリが変化します ([#1147])。
+    - \[削除\] `ndarray@0.15`
+    - \[削除\] `ndarray-stats@0.5`
+    - \[削除\] `git+https://github.com/VOICEVOX/ort.git?rev=12101456be9975b7d263478c7c53554017b7927c#voicevox-ort@2.0.0-rc.4`
+    - \[追加\] `ndarray@0.16`: `^0.16.1`
+    - \[追加\] `ndarray-stats@0.6`: `^0.6.0`
+    - \[追加\] `git+https://github.com/VOICEVOX/ort.git?rev=34202b4c362f70a72baa828f0ec0f05236406510#voicevox-ort@2.0.0-rc.10`
+
+### Fixed
+
+- もしかしたらですが、async周りの問題が解決されているかもしれません ([#1147])。
+
+    <!-- TODO: もしハングする問題(#968)が解決しているんだったら、`cancellable`をデフォルトで`true`にできる！ -->
+
+<!-- ↓ #1146 -->
+
 ### Added
 
 - \[Rust,Python,Java\] 基本的なインターフェイスや特殊メソッドが、以下のように実装されます ([#1100])。
@@ -1407,6 +1425,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1140]: https://github.com/VOICEVOX/voicevox_core/pull/1140
 [#1143]: https://github.com/VOICEVOX/voicevox_core/pull/1143
 [#1144]: https://github.com/VOICEVOX/voicevox_core/pull/1144
+[#1147]: https://github.com/VOICEVOX/voicevox_core/pull/1147
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
