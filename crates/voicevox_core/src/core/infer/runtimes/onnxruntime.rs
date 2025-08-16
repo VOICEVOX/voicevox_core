@@ -135,11 +135,21 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     TensorElementType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
                     TensorElementType::Bool => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL"),
                     TensorElementType::Complex64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64"),
-                    TensorElementType::Complex128 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128"),
-                    TensorElementType::Float8E4M3FN => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FN"),
-                    TensorElementType::Float8E4M3FNUZ => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FNUZ"),
-                    TensorElementType::Float8E5M2 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2"),
-                    TensorElementType::Float8E5M2FNUZ => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2FNUZ"),
+                    TensorElementType::Complex128 => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128")
+                    }
+                    TensorElementType::Float8E4M3FN => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FN")
+                    }
+                    TensorElementType::Float8E4M3FNUZ => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FNUZ")
+                    }
+                    TensorElementType::Float8E5M2 => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2")
+                    }
+                    TensorElementType::Float8E5M2FNUZ => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2FNUZ")
+                    }
                     TensorElementType::Undefined => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED"),
                 }
                 .map_err(|actual| {
@@ -182,11 +192,21 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     TensorElementType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
                     TensorElementType::Bool => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL"),
                     TensorElementType::Complex64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64"),
-                    TensorElementType::Complex128 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128"),
-                    TensorElementType::Float8E4M3FN => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FN"),
-                    TensorElementType::Float8E4M3FNUZ => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FNUZ"),
-                    TensorElementType::Float8E5M2 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2"),
-                    TensorElementType::Float8E5M2FNUZ => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2FNUZ"),
+                    TensorElementType::Complex128 => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128")
+                    }
+                    TensorElementType::Float8E4M3FN => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FN")
+                    }
+                    TensorElementType::Float8E4M3FNUZ => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FNUZ")
+                    }
+                    TensorElementType::Float8E5M2 => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2")
+                    }
+                    TensorElementType::Float8E5M2FNUZ => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2FNUZ")
+                    }
                     TensorElementType::Undefined => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED"),
                 }
                 .map_err(|actual| {
