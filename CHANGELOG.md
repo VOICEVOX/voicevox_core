@@ -65,6 +65,10 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+### Added
+
+- 未計測ですが、パフォーマンスが少しだけ向上しているはずです ([#1147])。
+
 ### Changed
 
 - \[Rust\] 依存ライブラリが変化します ([#1147])。
@@ -74,12 +78,6 @@
     - \[追加\] `ndarray@0.16`: `^0.16.1`
     - \[追加\] `ndarray-stats@0.6`: `^0.6.0`
     - \[追加\] `git+https://github.com/VOICEVOX/ort.git?rev=34202b4c362f70a72baa828f0ec0f05236406510#voicevox-ort@2.0.0-rc.10`
-
-### Fixed
-
-- もしかしたらですが、async周りの問題が解決されているかもしれません ([#1147])。
-
-    <!-- TODO: もしハングする問題(#968)が解決しているんだったら、`cancellable`をデフォルトで`true`にできる！ -->
 
 <!-- ↓ #1146 -->
 
