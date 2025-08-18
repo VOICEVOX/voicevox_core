@@ -65,8 +65,6 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
-## [0.16.1] - 2025-08-14 (+09:00)
-
 ### Added
 
 - 未計測ですが、パフォーマンスが少しだけ向上しているはずです ([#1147])。
@@ -81,7 +79,7 @@
     - \[追加\] `ndarray-stats@0.6`: `^0.6.0`
     - \[追加\] `git+https://github.com/VOICEVOX/ort.git?rev=34202b4c362f70a72baa828f0ec0f05236406510#voicevox-ort@2.0.0-rc.10`
 
-<!-- ↓ #1146 -->
+## [0.16.1] - 2025-08-14 (+09:00)
 
 ### Added
 
