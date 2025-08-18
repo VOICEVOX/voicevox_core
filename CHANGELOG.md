@@ -65,6 +65,8 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+## [0.16.1] - 2025-08-14 (+09:00)
+
 ### Added
 
 - \[Rust,Python,Java\] 基本的なインターフェイスや特殊メソッドが、以下のように実装されます ([#1100])。
@@ -214,7 +216,7 @@
 - \[ダウンローダー\] helpの文章が充実します ([#1117], [#1125], [#1126], [#1128])。
 
     - リポジトリ指定オプション (`--{target}-repo <REPOSITORY>`)には何も書かれていませんでしたが、書かれます。
-    - `-h`ではなく`--help`のみ、オプションの説明の下にいくつかの章が追加されます。内容は[https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/downloader.md](https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/downloader.md)に書かれているものとほぼ同じです。
+    - `-h`ではなく`--help`のみ、オプションの説明の下にいくつかの章が追加されます。内容は[downloader.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.1/docs/guide/user/downloader.md)に書かれているものとほぼ同じです。
 
 - \[ダウンローダー\] 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
 
@@ -367,7 +369,7 @@
         - "delete"後に他の通常のメソッド関数の利用を試みる
         - "delete"後に"delete"を試みる
         - そもそもオブジェクトとして変なダングリングポインタが渡される
-        - ヌルポインタが渡される (補足: [#1094]にて許容される予定です)
+        - ヌルポインタが渡される (補足: [0.16.1](#0161---2025-08-14-0900)にて許容されるようになります)
 
 - \[C\] ドキュメンテーションコメントに以下の改善が入ります ([#976], [#992])。
 
@@ -500,7 +502,7 @@
 
 - \[BREAKING\] `VoiceModelId`は、VVMに固有のUUIDになります ([#796])。
 
-    補足: この「固有」の意味については[#1143]で補足されます。
+    補足: この「固有」の意味については[0.16.1](#0161---2025-08-14-0900)で補足されます。
 
 - \[BREAKING\] 一部のエラーの名前が変わります ([#823], [#919])。
 
@@ -599,7 +601,7 @@
 
 - \[ダウンローダー\] \[BREAKING\] `<TARGET>`のうち`core`は`c-api`に改名され、それに伴い`-v, --version`も`--c-api-version`、`--core-repo`も`--c-api-repo`に改名されます ([#942], [#1019])。
 
-    補足: [#1116]にて`--version`は、VOICEVOX COREとしてのバージョンを出力するフラグになります。
+    補足: [0.16.1](#0161---2025-08-14-0900)にて`--version`は、VOICEVOX COREとしてのバージョンを出力するフラグになります。
 
 - \[ダウンローダー\] \[BREAKING\] `<TARGET>`ごとにディレクトリが切られるようになります ([#944], [#969])。
 
@@ -1057,7 +1059,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
-[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...HEAD
+[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...HEAD
+[0.16.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...0.16.1
 [0.16.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.1...0.16.0
 [0.16.0-preview.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.0...0.16.0-preview.1
 [0.16.0-preview.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.15.0-preview.16...0.16.0-preview.0
