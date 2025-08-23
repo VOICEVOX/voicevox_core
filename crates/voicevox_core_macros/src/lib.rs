@@ -1,4 +1,7 @@
 #![warn(rust_2018_idioms)]
+//! `voicevox_core`用の内部クレート。
+//!
+//! SemVerに従わない。
 
 mod extract;
 mod inference_domain;

@@ -65,6 +65,10 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+### Changed
+
+- \[Rust\] `voicevox_core_macros`は内部クレートであり、SemVerに従わないということが明記されます。`substitute_type!`と`pyproject_project_version!`に関してはバージョン0.16の間は保持しますが、バージョン0.17以降の保証はしません ([#1149])。
+
 ## [0.16.1] - 2025-08-14 (+09:00)
 
 ### Added
@@ -1410,6 +1414,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1140]: https://github.com/VOICEVOX/voicevox_core/pull/1140
 [#1143]: https://github.com/VOICEVOX/voicevox_core/pull/1143
 [#1144]: https://github.com/VOICEVOX/voicevox_core/pull/1144
+[#1149]: https://github.com/VOICEVOX/voicevox_core/pull/1149
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
