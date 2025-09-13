@@ -42,5 +42,5 @@ jobs:
         env:
           VOICEVOX_CORE_BENCH_CONFIG: |
             {
-              "include-long-input-text": ${{ github.event_name != 'pull_request'  }}
+              "include-long-input-text": ${{ github.event_name != 'pull_request' }}
             }
