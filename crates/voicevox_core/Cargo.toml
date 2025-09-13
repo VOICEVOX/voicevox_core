@@ -11,12 +11,7 @@ features = ["load-onnxruntime", "link-onnxruntime"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [[bench]]
-name = "cpu-and-sample-vvm"
-harness = false
-required-features = ["load-onnxruntime"]
-
-[[bench]]
-name = "gpu-and-voicevox-vvm"
+name = "benches"
 harness = false
 required-features = ["load-onnxruntime"]
 

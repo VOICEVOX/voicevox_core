@@ -1,3 +1,5 @@
+"""GHAで動かすベンチマーク。結果はCodSpeedにアップロードされる。"""
+
 import asyncio
 from pathlib import Path
 

@@ -1,4 +1,4 @@
-name: Benchmarks
+name: Python API Benchmarks
 
 on:
   push:
@@ -6,41 +6,21 @@ on:
       - main
   pull_request:
     paths:
-      - .github/workflows/benchmarks.yml
+      - .github/workflows/python-benchmarks.yml
       - Cargo.*
-      - crates/voicevox_core/**
-      - crates/voicevox_core_python_api/**
+      - crates/voicevox_core/Cargo.toml
+      - crates/voicevox_core/src/**
+      - crates/voicevox_core_python_api/Cargo.toml
+      - crates/voicevox_core_python_api/poetry.lock
+      - crates/voicevox_core_python_api/pyproject.toml
+      - crates/voicevox_core_python_api/python/benches/*.py
+      - crates/voicevox_core_python_api/python/voicevox_core/**
+      - crates/voicevox_core_python_api/src/**
   workflow_dispatch:
 
 jobs:
-  rust-benchmarks:
-    name: Run Rust benchmarks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup rust toolchain, cache and cargo-codspeed binary
-        uses: moonrepo/setup-rust@v1
-        with:
-          bins: cargo-codspeed
-          cache-target: release
-          inherit-toolchain: true
-
-      - name: Setup test data
-        run: cargo check -vp test_util
-
-      - name: Build
-        run: cargo codspeed build -p voicevox_core --features load-onnxruntime -m walltime cpu-and-sample-vvm
-
-      - name: Run the benchmarks
-        uses: CodSpeedHQ/action@v4
-        with:
-          run: cargo codspeed run -m walltime
-          mode: walltime
-
-  python-benchmarks:
-    name: Run Python benchmarks
+  benchmarks:
+    name: Benchmarks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
