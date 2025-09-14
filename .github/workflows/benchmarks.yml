@@ -22,7 +22,9 @@ on:
 jobs:
   benchmarks:
     name: Benchmarks
-    runs-on: codspeed-macro
+    runs-on:
+      group: CodSpeed
+      labels: codspeed-macro
     steps:
       - name: Checkout
         uses: actions/checkout@v5
