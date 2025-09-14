@@ -20,11 +20,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  benchmarks:
-    name: Benchmarks
-    runs-on:
-      group: CodSpeed
-      labels: codspeed-macro
+  rust-api:
+    name: Rust API
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -33,6 +31,36 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           bins: cargo-codspeed
+          cache-target: release
+          inherit-toolchain: true
+
+      - name: Set up test data
+        run: cargo check -vp test_util
+
+      - name: Build
+        run: cargo codspeed build -p voicevox_core --features load-onnxruntime -m walltime benches
+
+      - name: Run the benchmarks
+        uses: CodSpeedHQ/action@v4
+        with:
+          run: cargo codspeed run -m walltime
+          mode: walltime
+        env:
+          VOICEVOX_CORE_BENCH_CONFIG: |
+            {
+              "include-long-input-text": ${{ github.event_name != 'pull_request' }}
+            }
+
+  python-api:
+    name: Python API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain and cache
+        uses: moonrepo/setup-rust@v1
+        with:
           cache-target: release
           inherit-toolchain: true
 
@@ -47,27 +75,13 @@ jobs:
       - name: Set up test data
         run: cargo check -vp test_util
 
-      - name: Build Rust API
-        run: cargo codspeed build -p voicevox_core --features load-onnxruntime -m walltime benches
-
-      - name: Build Python API
+      - name: Build
         working-directory: ./crates/voicevox_core_python_api
         run: |
           poetry install --with dev --with test
           poetry run maturin develop --locked --profile release -v
 
-      - name: Run Rust API
-        uses: CodSpeedHQ/action@v4
-        with:
-          run: cargo codspeed run -m walltime
-          mode: walltime
-        env:
-          VOICEVOX_CORE_BENCH_CONFIG: |
-            {
-              "include-long-input-text": ${{ github.event_name != 'pull_request' }}
-            }
-
-      - name: Run Python API
+      - name: Run the benchmarks
         uses: CodSpeedHQ/action@v4
         with:
           run: poetry run pytest ./python/benches/ --codspeed --codspeed-mode walltime
