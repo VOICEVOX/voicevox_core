@@ -77,7 +77,7 @@ struct Config {
     #[serde(default = "default_style_id")]
     style_id: StyleId,
 
-    // 長文の入力でのベンチマークも行う。
+    /// 長文の入力でのベンチマークも行う。
     #[serde(default)]
     include_long_input_text: bool,
 
