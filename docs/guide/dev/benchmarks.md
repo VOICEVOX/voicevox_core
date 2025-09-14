@@ -5,7 +5,7 @@
 1. TTSの速度に変化があったときにアナウンスできるようにするため。
 2. 意図せぬパフォーマンス低下が無いかどうかをチェックするため。
 
-1.については、ONNX Runtime周りに手を加えるときにPC上で行う。その際GPUと製品版VVMを用いる。Rust APIのベンチマークコードのdocを参照。
+1.については、ONNX Runtime周りに手を加えるときにPC上で行う。GPUと製品版VVMを用いる。Rust APIのベンチマークコードのdocを参照。
 
 2.についてはテストのひとつとしてCIでベンチマークを行い、結果をCodSpeedにアップロードする。
 <https://codspeed.io/VOICEVOX/voicevox_core>
