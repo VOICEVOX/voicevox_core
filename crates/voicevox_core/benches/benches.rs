@@ -81,7 +81,7 @@ struct Config {
     #[serde(default)]
     include_long_input_text: bool,
 
-    /// `sample_count`を10倍に、`sample_size`を5倍に、ウォームアップ回数を50倍に。
+    /// イテレート回数を、ウォームアップも含めて増やす。
     #[serde(default)]
     iterate_more: bool,
 }
