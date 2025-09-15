@@ -226,7 +226,6 @@ mod blocking {
         let run = || {
             divan::black_box_drop(OpenJtalk::new(test_util::OPEN_JTALK_DIC_DIR).unwrap());
         };
-        // warmup
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             run();
         }
@@ -241,7 +240,6 @@ mod blocking {
     fn analyze_text(bencher: Bencher<'_, '_>, input: InputText) {
         let ojt = FIXTURE.0.text_analyzer();
         let run = || ojt.analyze(input.value).unwrap();
-        // warmup
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             run();
         }
@@ -256,7 +254,6 @@ mod blocking {
         let run = || {
             divan::black_box_drop(VoiceModelFile::open(&CONFIG.vvm).unwrap());
         };
-        // warmup
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             run();
         }
@@ -274,7 +271,6 @@ mod blocking {
             synth.unload_voice_model(vvm.id()).unwrap();
             synth.load_voice_model(vvm).unwrap();
         };
-        // warmup
         for _ in 0..CONFIG.iterations_for_unload_and_load_vvm().warmups {
             run();
         }
@@ -292,7 +288,6 @@ mod blocking {
         let input = &synth.text_analyzer().analyze(input.value).unwrap();
 
         let run = || synth.replace_mora_pitch(input, CONFIG.style_id).unwrap();
-        // warmup
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             divan::black_box(run());
         }
@@ -314,7 +309,6 @@ mod blocking {
                 .replace_phoneme_length(input, CONFIG.style_id)
                 .unwrap()
         };
-        // warmup
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             divan::black_box(run());
         }
@@ -334,7 +328,6 @@ mod blocking {
             .unwrap();
 
         let run = || synth.synthesis(query, CONFIG.style_id).perform().unwrap();
-        // warmup
         for _ in 0..CONFIG.iterations_for_synthesis().warmups {
             divan::black_box(run());
         }
@@ -378,7 +371,6 @@ mod nonblocking {
                 pollster::block_on(OpenJtalk::new(test_util::OPEN_JTALK_DIC_DIR)).unwrap(),
             );
         };
-        // warmup
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             run();
         }
@@ -394,7 +386,6 @@ mod nonblocking {
     async fn analyze_text(bencher: Bencher<'_, '_>, input: InputText) {
         let ojt = FIXTURE.0.text_analyzer();
         let run = || pollster::block_on(ojt.analyze(input.value)).unwrap();
-        // warmup
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             run();
         }
@@ -409,7 +400,6 @@ mod nonblocking {
         let run = || {
             divan::black_box_drop(pollster::block_on(VoiceModelFile::open(&CONFIG.vvm)).unwrap());
         };
-        // warmup
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             run();
         }
@@ -428,7 +418,6 @@ mod nonblocking {
             synth.unload_voice_model(vvm.id()).unwrap();
             pollster::block_on(synth.load_voice_model(vvm)).unwrap();
         };
-        // warmup
         for _ in 0..CONFIG.iterations_for_unload_and_load_vvm().warmups {
             run();
         }
@@ -447,7 +436,6 @@ mod nonblocking {
         let input = &synth.text_analyzer().analyze(input.value).await.unwrap();
 
         let run = || pollster::block_on(synth.replace_mora_pitch(input, CONFIG.style_id)).unwrap();
-        // warmup
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             divan::black_box(run());
         }
@@ -467,7 +455,6 @@ mod nonblocking {
 
         let run =
             || pollster::block_on(synth.replace_phoneme_length(input, CONFIG.style_id)).unwrap();
-        // warmup
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             divan::black_box(run());
         }
@@ -489,7 +476,6 @@ mod nonblocking {
             .unwrap();
 
         let run = || pollster::block_on(synth.synthesis(query, CONFIG.style_id).perform()).unwrap();
-        // warmup
         for _ in 0..CONFIG.iterations_for_synthesis().warmups {
             divan::black_box(run());
         }
