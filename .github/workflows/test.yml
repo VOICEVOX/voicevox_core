@@ -210,8 +210,7 @@ jobs:
           cargo xtask update-c-header --verify
           git diff
 
-  # TODO: "build-and-test-…"にする
-  build-unix-cpp-example:
+  build-and-test-unix-cpp-example:
     strategy:
       fail-fast: false
       matrix:
@@ -223,38 +222,57 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install Aristotle Pagaltzis's `rename(1)`
+        if: runner.os == 'macOS'
+        run: brew install rename
+      - name: Install Aristotle Pagaltzis's `rename(1)`
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rename
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api --features load-onnxruntime -v
+      - name: run test_util's build script
+        run: cargo check -vp test_util # build scriptにより/crates/test_util/data/の生成
       - name: 必要なfileをunix用exampleのディレクトリに移動させる
         run: |
-          mkdir -p example/cpp/unix/voicevox_core/c_api/{include,lib}
+          if [ "$RUNNER_OS" = Linux ]; then
+            alias prename=rename
+          fi
+          mkdir -p example/cpp/unix/voicevox_core/{c_api/{include,lib},dict,models,onnxruntime}
           sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
             crates/voicevox_core_c_api/include/voicevox_core.h \
             > example/cpp/unix/voicevox_core/c_api/include/voicevox_core.h
           cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/c_api/lib/ || true
-          # FIXME: ↓この二つ要らないのでは？
-          cp -v target/debug/libonnxruntime.so.* example/cpp/unix/voicevox_core/ || true
-          cp -v target/debug/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/ || true
+          cp -v target/debug/libonnxruntime.so.* example/cpp/unix/voicevox_core/onnxruntime/lib/ || true
+          cp -v target/debug/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/onnxruntime/lib/ || true
+          cp -vr crates/test_util/data/lib example/cpp/unix/voicevox_core/onnxruntime/
+          rename -v s/libonnxruntime/libvoicevox_onnxruntime/ example/cpp/unix/voicevox_core/onnxruntime/lib/*
+          cp -vr crates/test_util/data/model example/cpp/unix/voicevox_core/models/vvms
+          cp -vr crates/test_util/data/open_jtalk_dic_utf_8-1.11 example/cpp/unix/voicevox_core/dict/
 
       - if: startsWith(matrix.os, 'mac')
         uses: jwlawson/actions-setup-cmake@v2
       - name: Install build dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt-get update
           sudo apt-get install -y cmake
       - name: Build
         run: |
           cd example/cpp/unix
           cmake -S . -B build
           cmake --build build
+      - name: Run
+        run: |
+          cd example/cpp/unix
+          ./build/simple_tts この音声は、ボイスボックスを使用して、出力されています。
+          [ "$(file audio.wav)" = 'audio.wav: RIFF (little-endian) data, WAVE audio, Microsoft PCM, 16 bit, mono 24000 Hz' ]
 
-  # TODO: "build-and-test-…"にする
-  build-windows-cpp-example:
+  build-and-test-windows-cpp-example:
     strategy:
       fail-fast: false
     runs-on: windows-latest
@@ -275,14 +293,20 @@ jobs:
         uses: taiki-e/install-action@cargo-binstall
       - name: build voicevox_core_c_api
         run: cargo build -p voicevox_core_c_api --features load-onnxruntime -v
+      - name: run test_util's build script
+        run: cargo check -vp test_util # build scriptにより/crates/test_util/data/の生成
       - name: 必要なfileをexampleのディレクトリに移動させる
         shell: bash
         run: |
-          mkdir -p example/cpp/windows/simple_tts/lib/x64
+          mkdir -p example/cpp/windows/simple_tts/{bin/x64/Debug/models,lib/x64}
           sed 's:^//\(#define VOICEVOX_LOAD_ONNXRUNTIME\)$:\1:' \
             crates/voicevox_core_c_api/include/voicevox_core.h \
             > example/cpp/windows/simple_tts/voicevox_core.h
           cp target/debug/voicevox_core.dll.lib example/cpp/windows/simple_tts/lib/x64/voicevox_core.lib
+          cp target/debug/voicevox_core.dll example/cpp/windows/simple_tts/bin/x64/Debug/
+          cp crates/test_util/data/lib/onnxruntime.dll example/cpp/windows/simple_tts/bin/x64/Debug/voicevox_onnxruntime.dll
+          cp -r crates/test_util/data/model example/cpp/windows/simple_tts/bin/x64/Debug/models/vvms
+          cp -r crates/test_util/data/open_jtalk_dic_utf_8-1.11 example/cpp/windows/simple_tts/bin/x64/Debug/
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
@@ -293,6 +317,13 @@ jobs:
       - name: Build
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
+      - name: Run
+        shell: bash
+        run: |
+          cd example/cpp/windows/simple_tts/bin/x64/Debug
+          <<< この音声は、ボイスボックスを使用して、出力されています。 iconv -f UTF-8 -t UTF-16LE | ./simple_tts.exe
+          file speech.wav
+          [ "$(file speech.wav)" = 'speech.wav: RIFF (little-endian) data, WAVE audio, Microsoft PCM, 16 bit, mono 24000 Hz' ]
 
   build-and-test-python-api:
     strategy:
