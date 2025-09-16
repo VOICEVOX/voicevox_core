@@ -60,7 +60,7 @@ jobs:
       - name: cp crates/voicevox_core_c_api/include/voicevox_core.h
         run: cp crates/voicevox_core_c_api/include/voicevox_core.h docs/ghpages/apis/c_api/doxygen/
       - name: Generate doxygen document
-        uses: mattnotmitt/doxygen-action@v1.9.8
+        uses: mattnotmitt/doxygen-action@v1.12.0
         with:
           working-directory: "docs/ghpages/apis/c_api/doxygen"
       - name: Build voicevox_core_python_api
