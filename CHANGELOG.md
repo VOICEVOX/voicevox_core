@@ -65,6 +65,10 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+### Added
+
+- \[C\] Doxygenがv1.9.8-r0からv1.12.0-r0になります ([#1155])。
+
 ### Changed
 
 - \[Rust\] `voicevox_core_macros`は内部クレートであり、SemVerに従わないということが明記されます。`substitute_type!`と`pyproject_project_version!`に関してはバージョン0.16の間は保持しますが、バージョン0.17以降の保証はしません ([#1149])。
@@ -1324,6 +1328,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1143]: https://github.com/VOICEVOX/voicevox_core/pull/1143
 [#1144]: https://github.com/VOICEVOX/voicevox_core/pull/1144
 [#1149]: https://github.com/VOICEVOX/voicevox_core/pull/1149
+[#1155]: https://github.com/VOICEVOX/voicevox_core/pull/1155
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
