@@ -164,10 +164,10 @@ jobs:
     env:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.10
         if: matrix.python_whl
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
           architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
@@ -289,16 +289,16 @@ jobs:
       IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
       ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
         with:
           name: voicevox_core-x86_64-apple-ios
           path: ${{ env.IOS_X86_64_PATH }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: voicevox_core-aarch64-apple-ios-sim
           path: ${{ env.IOS_AARCH64_SIM_PATH }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
@@ -328,11 +328,11 @@ jobs:
     if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
     needs: [config, build_and_deploy]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: "17"
           distribution: "adopt"
@@ -344,7 +344,7 @@ jobs:
         run: cargo set-version "$VERSION" -p voicevox_core_java_api
 
       - name: "Download artifact"
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: voicevox_core_java_api-*
           path: artifacts/
