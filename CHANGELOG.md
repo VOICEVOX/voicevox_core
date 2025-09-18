@@ -72,6 +72,11 @@
 ### Changed
 
 - \[Rust\] `voicevox_core_macros`は内部クレートであり、SemVerに従わないということが明記されます。`substitute_type!`と`pyproject_project_version!`に関してはバージョン0.16の間は保持しますが、バージョン0.17以降の保証はしません ([#1149])。
+- \[Rust\] 依存ライブラリが変化します ([#1153])。
+    - \[変更\] `anyhow@1`: `^1.0.89` → `^1.0.99`
+    - \[変更\] `serde@1`: `^1.0.210` → `^1.0.219`
+    - \[変更\] `serde_json@1`: `^1.0.128` → `^1.0.143`
+    - \[変更\] `uuid@1`: `^1.10.0` → `^1.18.1`
 
 ## [0.16.1] - 2025-08-14 (+09:00)
 
@@ -1328,6 +1333,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1143]: https://github.com/VOICEVOX/voicevox_core/pull/1143
 [#1144]: https://github.com/VOICEVOX/voicevox_core/pull/1144
 [#1149]: https://github.com/VOICEVOX/voicevox_core/pull/1149
+[#1153]: https://github.com/VOICEVOX/voicevox_core/pull/1153
 [#1155]: https://github.com/VOICEVOX/voicevox_core/pull/1155
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25

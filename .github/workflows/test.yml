@@ -322,7 +322,7 @@ jobs:
       - run: poetry run maturin build --locked
       - run: poetry run maturin develop --locked
       - name: pytestを実行
-        run: poetry run pytest
+        run: poetry run pytest ./python/test/
       - name: Exampleを実行
         run: |
           for file in ../../example/python/run{,-asyncio}.py; do
