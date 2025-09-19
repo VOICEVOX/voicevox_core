@@ -68,194 +68,110 @@
 ### Added
 
 - 未計測ですが、パフォーマンスが少しだけ向上しているはずです ([#1147])。
+- \[C\] Doxygenがv1.9.8-r0からv1.12.0-r0になります ([#1155])。
 
 ### Changed
 
-- \[Rust\] 依存ライブラリが変化します ([#1147])。
+- \[Rust\] `voicevox_core_macros`は内部クレートであり、SemVerに従わないということが明記されます。`substitute_type!`と`pyproject_project_version!`に関してはバージョン0.16の間は保持しますが、バージョン0.17以降の保証はしません ([#1149])。
+- \[Rust\] 依存ライブラリが変化します ([#1147], [#1153])。
     - \[削除\] `ndarray@0.15`
     - \[削除\] `ndarray-stats@0.5`
     - \[削除\] `git+https://github.com/VOICEVOX/ort.git?rev=12101456be9975b7d263478c7c53554017b7927c#voicevox-ort@2.0.0-rc.4`
     - \[追加\] `ndarray@0.16`: `^0.16.1`
     - \[追加\] `ndarray-stats@0.6`: `^0.6.0`
     - \[追加\] `git+https://github.com/VOICEVOX/ort.git?rev=34202b4c362f70a72baa828f0ec0f05236406510#voicevox-ort@2.0.0-rc.10`
+    - \[変更\] `anyhow@1`: `^1.0.89` → `^1.0.99`
+    - \[変更\] `serde@1`: `^1.0.210` → `^1.0.219`
+    - \[変更\] `serde_json@1`: `^1.0.128` → `^1.0.143`
+    - \[変更\] `uuid@1`: `^1.10.0` → `^1.18.1`
 
 ## [0.16.1] - 2025-08-14 (+09:00)
+
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.1)をご覧ください。
 
 ### Added
 
 - \[Rust,Python,Java\] 基本的なインターフェイスや特殊メソッドが、以下のように実装されます ([#1100])。
-
-    - <details><summary>Rust API</summary>
-
-      - `Debug` for
-          - `AudioQuery`
-          - `UserDictWordBuilder`
-          - `{blocking,nonblocking}.onnxruntime.LoadOnce`
-          - `{blocking,nonblocking}.VoiceModelFile`
-          - `{blocking,nonblocking}.OpenJtalk`
-          - `{blocking,nonblocking}.Synthesizer`
-          - `{blocking,nonblocking}.synthesizer.*`
-      - `PartialEq` for
-          - `StyleMeta`
-          - `AudioQuery`
-          - `UserDictWord`
-      - `{PartialOrd,Ord}` for
-          - `AccelerationMode`
-          - `UserDictWordType`
-      - `Hash` for
-          - `CharacterVersion`
-          - `AccelerationMode`
-      - `{AsRef,AsMut}` for `CharacterVersion`
-      - `{UpperHex,LowerHex,Octal,Binary}` for `StyleId`
-      - `Into<u32>` for `StyleId` (via `From`)
-      </details>
-    - <details><summary>Python API</summary>
-
-      - `__repr__` for
-          - `{blocking,asyncio}.VoiceModelFile`
-          - `{blocking,asyncio}.Onnxruntime`
-          - `{blocking,asyncio}.VoiceModelFile`
-          - `{blocking,asyncio}.OpenJtalk`
-          - `{blocking,asyncio}.UserDict`
-      </details>
-    - <details><summary>Java API</summary>
-
-      - `Object.equals` for
-          - `SupportedDevices`
-          - `StyleMeta`
-          - `CharacterMeta`
-          - `Mora`
-          - `AccentPhrase`
-          - `AudioQuery`
-      - `Cloneable` for
-          - `SupportedDevices`
-          - `StyleMeta`
-          - `CharacterMeta`
-          - `Mora`
-      </details>
-
+    - Rust API
+        - `Debug` for
+            - `AudioQuery`
+            - `UserDictWordBuilder`
+            - `{blocking,nonblocking}.onnxruntime.LoadOnce`
+            - `{blocking,nonblocking}.VoiceModelFile`
+            - `{blocking,nonblocking}.OpenJtalk`
+            - `{blocking,nonblocking}.Synthesizer`
+            - `{blocking,nonblocking}.synthesizer.*`
+        - `PartialEq` for
+            - `StyleMeta`
+            - `AudioQuery`
+            - `UserDictWord`
+        - `{PartialOrd,Ord}` for
+            - `AccelerationMode`
+            - `UserDictWordType`
+        - `Hash` for
+            - `CharacterVersion`
+            - `AccelerationMode`
+        - `{AsRef,AsMut}` for `CharacterVersion`
+        - `{UpperHex,LowerHex,Octal,Binary}` for `StyleId`
+        - `Into<u32>` for `StyleId` (via `From`)
+    - Python API
+        - `__repr__` for
+            - `{blocking,asyncio}.VoiceModelFile`
+            - `{blocking,asyncio}.Onnxruntime`
+            - `{blocking,asyncio}.VoiceModelFile`
+            - `{blocking,asyncio}.OpenJtalk`
+            - `{blocking,asyncio}.UserDict`
+    - Java API
+        - `Object.equals` for
+            - `SupportedDevices`
+            - `StyleMeta`
+            - `CharacterMeta`
+            - `Mora`
+            - `AccentPhrase`
+            - `AudioQuery`
+        - `Cloneable` for
+            - `SupportedDevices`
+            - `StyleMeta`
+            - `CharacterMeta`
+            - `Mora`
 - `VoiceModelId`が指すIDが何に対して固有なのかが暫定的に定められ、ドキュメンテーションコメントに書かれます ([#1143])。
-
-    後述する[VOICEVOX/voicevox\_vvmのバージョン0.16.0](https://github.com/VOICEVOX/voicevox_vvm/releases/tag/0.16.0)で、IDを変えないまま`Character::version`のみ変えた([VOICEVOX/voicevox\_vvm#34])際に定めたものです。詳細はドキュメンテーションコメントをご覧ください。
-
-- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます。またこのバージョンから、GitHub Releasesの本文にも同じ内容が載るようになります ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136], [#1138], [#1139], [#1140], [#1118], [#1143], [#1144])。
-
+- バージョン0.14.0からの歴史をまとめた[Keep a Changelog](https://keepachangelog.com)形式のCHANGELOG.mdが追加されます ([#1109], [#1116], [#1117], [#1124], [#1125], [#1126], [#1128], [#1131], [#1132], [#1123], [#1133], [#1134], [#1137], [#1136], [#1138], [#1139], [#1140], [#1118], [#1143], [#1144])。
 - \[Rust\] Rust Analyzerが、C APIから参照する目的で[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)の[#976]にて導入した`doc(alias)`に反応しないようになります ([#1099])。
-
 - \[C\] `free`系と`delete`系の関数が、`free(3)`や`HeapFree`のようにヌルポインタを許容するようになります ([#1094])。
-
 - \[Python\] exampleコードにはshebangが付き、filemodeも`100755` (`GIT_FILEMODE_BLOB_EXECUTABLE`)になります ([#1077])。
-
 - \[Java\] \[Windows,macOS,Linux\] :tada: GitHub Releasesのjava\_packages.zipに、PC用のパッケージが追加されます ([#682], [#764])。
-
-    ```diff
-     java_packages.zip
-     └── jp
-         └── hiroshiba
-             └── voicevoxcore
-    +            ├── voicevoxcore/
-                 └── voicevoxcore-android/
-    ```
-
-- \[ダウンローダー\] :tada: `models`のダウンロード元が[VOICEVOX/voicevox\_vvm]の`>=0.16,<0.17`になります ([VOICEVOX/voicevox\_vvm#21], [VOICEVOX/voicevox\_vvm#22], [VOICEVOX/voicevox\_vvm#23], [VOICEVOX/voicevox\_vvm#30], [VOICEVOX/voicevox\_vvm#31], [VOICEVOX/voicevox\_vvm#33], [VOICEVOX/voicevox\_vvm#34], [#1118])。
-
-    [VOICEVOX/voicevox\_vvmのバージョン0.16.0](https://github.com/VOICEVOX/voicevox_vvm/releases/tag/0.16.0)には以下の変更が含まれます。
-
-    - VOICEVOX ENGINEでは2025-06-06と2025-07-08に追加されていた、[10期生](https://voicevox.hiroshiba.jp/dormitory/#10th)のVVMを追加 (19.vvm、20.vvm、21.vvm)
-    - ソング用VVMを追加 (s0.vvm)
+- \[ダウンローダー\] :tada: `models`のダウンロード元が[VOICEVOX/voicevox\_vvm]の`>=0.16,<0.17`になります。[VOICEVOX/voicevox\_vvmのバージョン0.16.0](https://github.com/VOICEVOX/voicevox_vvm/releases/tag/0.16.0)には以下の変更が含まれます。今後`>=0.16.1,<0.17`のvoicevox\_vvmをリリースする際は、voicevox\_coreリポジトリでは案内をしません ([VOICEVOX/voicevox\_vvm#21], [VOICEVOX/voicevox\_vvm#22], [VOICEVOX/voicevox\_vvm#23], [VOICEVOX/voicevox\_vvm#30], [VOICEVOX/voicevox\_vvm#31], [VOICEVOX/voicevox\_vvm#33], [VOICEVOX/voicevox\_vvm#34], [#1118])。
+    - [10期生](https://voicevox.hiroshiba.jp/dormitory/#10th)および同時期に作られていた追加スタイルに対応するVVM(19.vvm、20.vvm、21.vvm)を追加
+    - ソング用VVM(s0.vvm)を追加
     - [`Character::version`を`0.1.0`から`0.16.0`に変更](https://github.com/VOICEVOX/voicevox_vvm/pull/34)
-
-- \[ダウンローダー\] :tada: リトライ機構が導入され、デフォルトで4回のリトライを行うようになります ([#1098] by [@shuntia], [#1111], [#1121], [#1139], [#1140])。
-
-    ```console
-      -t, --tries <NUMBER>
-              ダウンロードにおける試行回数。'0'か'inf'で無限にリトライ [default: 5]
-    ```
-
-    以下に示す挙動をします。
-
+- \[ダウンローダー\] :tada: リトライ機構が導入され、デフォルトで4回のリトライを行うようになります。この回数は`-t, --tries <NUMBER>`で変更可能です。現段階では以下に示す挙動をします。これらの挙動は将来的に変更される予定であり、議論は[#1127]で行われています。 ([#1098] by [@shuntia], [#1111], [#1121], [#1139], [#1140])。
     - 各試行は`<TARGET>`単位で行われる。ダウンロードしたzipやtgzの解凍に失敗してもリトライが行われる。また`models`の場合、どれか一つのVVMのダウンロードに失敗すると、他のVVMも全部まとめてリトライが行われる。
     - プログレスバーを出す前の段階でエラーが発生した場合、リトライは行われない。
-
-    これらの挙動は将来的に変更される予定であり、議論は[#1127]で行われています。
-
-- \[ダウンローダー\] `--models-version <SEMVER>`オプションが追加されます ([#1134], [#1137], [#1138], [#1136], [#1118])。
-
-    ```console
-          --models-version <SEMVER>
-              VOICEVOX音声モデル (`models`)のバージョン。省略時は`>=0.16, <0.17`のうちpre-releaseではない最新
-    ```
-
-    ダウンローダーから見て未来のバージョンを使うことも可能になります。ただしその場合警告は出ます。
-
-- \[ダウンローダー\] `--models-pattern <GLOB>`オプションが追加されます ([#1093], [#1117])。
-
-    ```console
-          --models-pattern <GLOB>
-              ダウンロードするVVMファイルのファイル名パターン [default: *]
-    ```
-
-    <details>
-    <summary>例えばダウンロード対象を特定のVVMのみにしたり、トーク用、あるいは先述したソング用VVMに限定することができるようになります。</summary>
-
-    ```console
-    ❯ download --models-pattern 0.vvm # 0.vvmのみダウンロード
-    ```
-
-    ```console
-    ❯ download --models-pattern '[0-9]*.vvm' # トーク用VVMに絞り、ソング用VVMをダウンロードしないように
-    ```
-    </details>
-
+- \[ダウンローダー\] `--models-version <SEMVER>`オプションが追加されます。ダウンローダーから見て未来のバージョンを使うことも可能になりますが、警告は出ます ([#1134], [#1137], [#1138], [#1136], [#1118])。
+- \[ダウンローダー\] `--models-pattern <GLOB>`オプションが追加され、ダウンロードするVVMファイルを限定できるようになります ([#1093], [#1117])。
 - \[ダウンローダー\] ダウンローダーは正式にVOICEVOX COREの一部と定められ、バージョンを共にするようになります。それに伴い、`-V, --version`でVOICEVOX CORE兼ダウンローダーのバージョンを見ることができるようになります ([#1116])。
-
-    ```console
-      -V, --version
-              Print version
-    ```
-
-    ```console
-    ❯ download -V
-    VOICEVOX CORE 0.16.1 downloader
-    ```
-
 - \[ダウンローダー\] 環境変数`GITHUB_TOKEN`でGitHubの認証トークンをセットする機能がドキュメント化されます ([#1128])。
-
-    Rust版ダウンローダー実装当初 ([#375])から存在した機能ですが、このたび正式に使い方が説明されます。
-
 - \[ダウンローダー\] 環境変数`GITHUB_TOKEN`に加え、`GH_TOKEN`でもGitHubの認証トークンをセットすることができるようになります ([#1131])。
-
-    両方設定されている場合、`GH_TOKEN`の方が優先されます。
-
 - \[ダウンローダー\] helpの文章が充実します ([#1117], [#1125], [#1126], [#1128])。
-
     - リポジトリ指定オプション (`--{target}-repo <REPOSITORY>`)には何も書かれていませんでしたが、書かれます。
     - `-h`ではなく`--help`のみ、オプションの説明の下にいくつかの章が追加されます。内容は[downloader.md](https://github.com/VOICEVOX/voicevox_core/blob/0.16.1/docs/guide/user/downloader.md)に書かれているものとほぼ同じです。
-
 - \[ダウンローダー\] 不要である[Oniguruma](https://github.com/kkos/oniguruma)のリンクをやめます ([#1082])。
 
 ### Changed
 
 - \[ダウンローダー\] `models`において、GitHub Releaseが無いGitタグは利用できなくなります。また上記の`--models-version <SEMVER>`を指定しない限り、pre-releaseのものは使われなくなります ([#1136], [#1118])。
-
 - \[ダウンローダー\] `-h`と`--help`は別々の表示をするようになります ([#1125])。
-
-    簡潔な説明は`-h`で、詳細な説明は`--help`で行われます。
 
 ### Removed
 
-- \[Windows\] `windows-2019`がサポートから外れ、リリースは`windows-2022`で行われることになります ([#1096])。
-
-    ただし、`windows-2022`でビルドしたバイナリであっても`windows-2019`相当の環境で動作すると考えられています。またVOICEVOX ONNX Runtimeが既に元々`windows-2022`でビルドされているため、通常の用途においては特に変わらないはずです。
-
+- \[Windows\] `windows-2019`がサポートから外れ、リリースは`windows-2022`で行われることになります。ただし、`windows-2022`でビルドしたバイナリであっても`windows-2019`相当の環境で動作すると考えられています。またVOICEVOX ONNX Runtimeが既に元々`windows-2022`でビルドされているため、通常の用途においては特に変わらないはずです ([#1096])。
 - \[Rust\] 依存ライブラリのバージョン要求が変わります ([#1070], [#1078])。
-
     - `proc-macro2@1`: `^1.0.86` → `^1.0.95`
     - `syn@2`: `^2.0.79` → `^1.0.86`
 
 ### Fixed
 
-- \[Python\] リポジトリにあるMarkdownドキュメントの誤記が修正されます ([#1063])。
+- \[Python\] リポジトリにあるMarkdownドキュメントにおいて、wheelファイル名が古いままだった問題が修正されます ([#1063])。
 - \[Java\] \[Android\] GHAのUbuntuイメージ備え付けの`$ANDROID_NDK` (現時点ではバージョン27)を使ったリリースがされるようになります。これにより、[#1103]で報告されたAndroidビルドにおけるC++シンボルの問題が解決されます ([#1108])。
 - \[Java\] Javaのファイナライザから中身のRustオブジェクトのデストラクトがされない問題が解決されます ([#1085])。
 - \[ダウンローダー\] 将来的に[VOICEVOX/voicevox\_vvm]のタグの数が30を超えたときに、もしかしたら起きうるかもしれない問題の対処がされます ([#1123])。
@@ -1094,7 +1010,6 @@ Windows版ダウンローダーのビルドに失敗しています。
 [0.15.0-preview.3]: https://github.com/VOICEVOX/voicevox_core/compare/0.14.0...0.15.0-preview.3
 
 [#370]: https://github.com/VOICEVOX/voicevox_core/pull/370
-[#375]: https://github.com/VOICEVOX/voicevox_core/pull/375
 [#392]: https://github.com/VOICEVOX/voicevox_core/pull/392
 [#400]: https://github.com/VOICEVOX/voicevox_core/pull/400
 [#404]: https://github.com/VOICEVOX/voicevox_core/pull/404
@@ -1425,6 +1340,9 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1143]: https://github.com/VOICEVOX/voicevox_core/pull/1143
 [#1144]: https://github.com/VOICEVOX/voicevox_core/pull/1144
 [#1147]: https://github.com/VOICEVOX/voicevox_core/pull/1147
+[#1149]: https://github.com/VOICEVOX/voicevox_core/pull/1149
+[#1153]: https://github.com/VOICEVOX/voicevox_core/pull/1153
+[#1155]: https://github.com/VOICEVOX/voicevox_core/pull/1155
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

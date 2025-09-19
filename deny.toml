@@ -25,7 +25,7 @@ allow-build-scripts = [
 ]
 bypass = [
     { name = "ahash", version = "0.8", build-script = "23cbf4cf1b742e2c4da8bc58d06d1d021479dec80cec6a0bc3704c7172e2864a" }, # https://docs.rs/crate/ahash/0.8.1/source/build.rs
-    { name = "anyhow", version = "1", build-script = "1de78cc91e63321318aa336cb550e3acdcda9b39f0648436a884d783247cfcd2" }, # https://docs.rs/crate/anyhow/1.0.89/source/build.rs
+    { name = "anyhow", version = "1", build-script = "2cd2c3a980dcecdf1b0e0f1fff31b440d8ddcab9340434d4f678ed807a9d7cdd" }, # https://docs.rs/crate/anyhow/1.0.99/source/build.rs
     { name = "assert_cmd", version = "2", build-script = "367a36318cd9bb47aeb730f8a8ddad39c10b926175465393f0d5b01cbd993d44" }, # https://docs.rs/crate/assert_cmd/2.0.16/source/build.rs
     { name = "async-trait", version = "0.1", build-script = "b45aa3a5c177cbeaeb4847163088924491ac27b79534f8ea4c53ed3e10c163ea" }, # https://docs.rs/crate/async-trait/0.1.57/source/build.rs
     { name = "backtrace", version = "0.3", build-script = "8d5e860da109f86c67596b10b5613ff6d19f9d24c2970f491a55261fb1973692" }, # https://docs.rs/crate/backtrace/0.3.66/source/build.rs
@@ -34,6 +34,7 @@ bypass = [
     { name = "camino", version = "1", build-script = "cbdfaa56ff8e211896e75fc7867e3230aa8aa09fdda901111db957c65306f1d8" }, # https://docs.rs/crate/camino/1.1.9/source/build.rs
     { name = "caseless", version = "0.2", build-script = "8ab1dc9ef269f28202fe1156c5c655f286cbc03b6dd4fb20a2f9f9e00763b6f5" }, # https://docs.rs/crate/caseless/0.2.1/source/src/build.rs
     { name = "cbindgen", version = "0.28", build-script = "f0fa57ad2c0dca5855cc2636a2e95acbadb52fa887609216022bdf71ed996dec" }, # https://docs.rs/crate/cbindgen/0.28.0/source/build.rs
+    { name = "codspeed-divan-compat", version = "3", build-script = "c389c9c87396d2966977c9fa5933073e3eba788dfeb3e9dc1e99313d0d9085bf" }, # https://docs.rs/crate/codspeed-divan-compat/3.0.5/source/build.rs
     { name = "crc32fast", version = "1", build-script = "4ccc50c3da67eb27f0b622440d2b7aee2f73fa9c71884571f3c041122231d105" }, # https://docs.rs/crate/crc32fast/1.3.2/source/build.rs
     { name = "crossbeam-epoch", version = "0.9", build-script = "901be3c21843440be5c456ff049f57f72ee5ec365918a772ad2a4751e52f69c5" }, # https://docs.rs/crate/crossbeam-epoch/0.9.13/source/build.rs
     { name = "crossbeam-utils", version = "0.8", build-script = "7a7f9e56ea7fb4f78c4e532b84b9d27be719d600e85eaeb3a2f4b79a4f0b419c" }, # https://docs.rs/crate/crossbeam-utils/0.8.21/source/build.rs
@@ -41,6 +42,7 @@ bypass = [
     { name = "eyre", version = "0.6", build-script = "fbd0d04cc64884da6b65ad460084ad49e56f8a14fba24a256e161cb18b15441c" }, # https://docs.rs/crate/eyre/0.6.12/source/build.rs
     { name = "fs-err", version = "2", build-script = "f1d5a299d68f91e26fbe9dd642dfcd00e122ec9cb999d4a4b38c6d7200fb9763" }, # https://docs.rs/crate/fs-err/2.11.0/source/build.rs
     { name = "generic-array", version = "0.14", build-script = "08fa30c4a2c1ad24fe5f987e721dfb20131f45ea5b5dc3e836dcf88a8e33248c" }, # https://docs.rs/crate/generic-array/0.14.6/source/build.rs
+    { name = "getrandom", version = "0.3", build-script = "9280e324b69c0c80c65de8074046104ac561cbfe0b7856e02a939e491936aaac" }, # https://docs.rs/crate/getrandom/0.3.3/source/build.rs
     { name = "html5ever", version = "0.27", build-script = "c3aa75b3b3dcea627b2158405b3ed597cab24f5b6220396f1ee9800e9fa40b7d" }, # https://docs.rs/crate/html5ever/0.27.0/source/build.rs
     { name = "httparse", version = "1", build-script = "8ae7a55b0cca81a9997a151bd52e4658af9c6a5c176e65bbec532a20ab23360a" }, # https://docs.rs/crate/httparse/1.8.0/source/build.rs
     { name = "indexmap", version = "1", build-script = "558b4d0b9e9b3a44f7e1a2b69f7a7567ea721cd45cb54f4e458e850bf702f35c" }, # https://docs.rs/crate/indexmap/1.9.1/source/build.rs
@@ -50,6 +52,7 @@ bypass = [
     { name = "markup5ever", version = "0.12", build-script = "bd7d2c0e564d71953b40504081f934541c60270b78db6b1e59230cad73607462" }, # https://docs.rs/crate/markup5ever/0.12.1/source/build.rs
     { name = "memoffset", version = "0.7", build-script = "6d677e33a1c98d588c97ec7985d4d5c3b954683e0a73c3dc53d79db4fbb5e638" }, # https://docs.rs/crate/memoffset/0.7.1/source/build.rs
     { name = "memoffset", version = "0.9", build-script = "df34c830dbb08eba3474304eed481bc2c8a29e897bc50f46d37b5dbb6e443a2b" }, # https://docs.rs/crate/memoffset/0.9.0/source/build.rs
+    { name = "nix", version = "0.29", build-script = "7e47b7c39f11b745b4eb3d30560be80247ebaba1342c9ac62c4a8bfdd463e977" }, # https://docs.rs/crate/nix/0.29.0/source/build.rs
     { name = "num-bigint", version = "0.4", build-script = "4955639b370d3636b8c44cb7743e6c5fb129077b069d78becbc135eba37e1ece" }, # https://docs.rs/crate/num-bigint/0.4.3/source/build.rs
     { name = "num-integer", version = "0.1", build-script = "575b157527243fe355a7c8d7d874a1f790c3fb0177beba9032076a7803c5b9dd" }, # https://docs.rs/crate/num-integer/0.1.45/source/build.rs
     { name = "num-traits", version = "0.2", build-script = "cf682b2322303196e241048cb56d873597b78a3b4e3f275f6f761dadb33a65f5" }, # https://docs.rs/crate/num-traits/0.2.15/source/build.rs
@@ -70,7 +73,7 @@ bypass = [
     { name = "rustversion", version = "1", build-script = "a5ac3f88a152167bdf624d18346b6db6459828bdbd1162a275fcde9c36e3ade6" }, # https://docs.rs/crate/rustversion/1.0.11/source/build/build.rs
     { name = "selectors", version = "0.25", build-script = "36ba09a8d2089d0cae8e310829ecf0e94bcbaa87e775a6578c7d2f0459a5b6ca" }, # https://docs.rs/crate/selectors/0.25.0/source/build.rs
     { name = "semver", version = "1", build-script = "eedfc19afa205955347175916974cdad121b55cb940e40c61931e5e7629f0e65" }, # https://docs.rs/crate/semver/1.0.14/source/build.rs
-    { name = "serde", version = "1", build-script = "a98eaa82c783fdb4169d1646c06028ec5cb82937d39ee127ec8ed33651d2f238" }, # https://docs.rs/crate/serde/1.0.210/source/build.rs
+    { name = "serde", version = "1", build-script = "8bce1d4e3594972da27e54bac89058e1a73024205535d58008f7d0db5c4b4461" }, # https://docs.rs/crate/serde/1.0.219/source/build.rs
     { name = "serde_json", version = "1", build-script = "1630d0bbfc936b0975d840cec5cfb5910d861b6afeeeeabe11000a2c202d571d" }, # https://docs.rs/crate/serde_json/1.0.128/source/build.rs
     { name = "signal-hook", version = "0.3", build-script = "3a95a69d2921f1c28922a141a671e23a061f358b6d831350043003e13ef96463" }, # https://docs.rs/crate/signal-hook/0.3.17/source/build.rs
     { name = "slab", version = "0.4", build-script = "2c008232a3ae7c83c166f61c2942314717976776a4dba38e9063cd8e57a1b9bd" }, # https://docs.rs/crate/slab/0.4.7/source/build.rs
@@ -159,7 +162,6 @@ allow = [
     "MPL-2.0",
     "OpenSSL",
     "Unicode-3.0",
-    "Unicode-DFS-2016",
     "Zlib",
 ]
 clarify = [

@@ -18,7 +18,7 @@ jobs:
   shellcheck:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Update ShellCheck
         run: |
           sudo apt-get update
@@ -29,7 +29,7 @@ jobs:
   actionlint:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # ShellCheckとPyflakesをインストールしておくと、shell: bashとshell: pythonのコードを検査してくれるようになる
       #
       # 参考:
@@ -40,7 +40,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y shellcheck
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
       - name: Install Pyflakes
@@ -53,7 +53,7 @@ jobs:
   validate-cargo-lock:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Validate Cargo.lock
@@ -62,7 +62,7 @@ jobs:
   rust-lint:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Extract Rust API's MSRV
         id: msrv-for-rust-api
         run: |
@@ -85,7 +85,7 @@ jobs:
         with:
           components: clippy,rustfmt
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
       - uses: Swatinem/rust-cache@v2
@@ -111,11 +111,11 @@ jobs:
   rust-unit-test:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
       - uses: Swatinem/rust-cache@v2
@@ -159,9 +159,9 @@ jobs:
         include: ${{ fromJson(needs.rust-integration-test-strategy-matrix.outputs.includes) }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
       - name: Set up Rust
@@ -175,7 +175,7 @@ jobs:
   c-header:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
@@ -223,7 +223,7 @@ jobs:
             artifact_name: linux-x64-cpu-cpp-shared
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
@@ -269,7 +269,7 @@ jobs:
         shell: pwsh
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Install cargo-binstall
@@ -309,9 +309,9 @@ jobs:
         shell: bash
         working-directory: ./crates/voicevox_core_python_api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
       - name: Set up Rust
@@ -323,7 +323,7 @@ jobs:
       - run: poetry run maturin build --locked
       - run: poetry run maturin develop --locked
       - name: pytestを実行
-        run: poetry run pytest
+        run: poetry run pytest ./python/test/
       - name: Exampleを実行
         run: |
           for file in ../../example/python/run{,-asyncio}.py; do
@@ -351,11 +351,11 @@ jobs:
           - os: ubuntu-latest
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: "11"
           distribution: "adopt"

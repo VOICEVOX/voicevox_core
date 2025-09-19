@@ -10,6 +10,11 @@ license.workspace = true
 features = ["load-onnxruntime", "link-onnxruntime"]
 rustdoc-args = ["--cfg", "docsrs"]
 
+[[bench]]
+name = "benches"
+harness = false
+required-features = ["load-onnxruntime"]
+
 # rustdocを参照
 [features]
 default = []
@@ -56,6 +61,7 @@ voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-
 voicevox_core_macros.workspace = true
 
 [dev-dependencies]
+divan.workspace = true
 open.workspace = true
 pollster = { workspace = true, features = ["macro"] }
 pretty_assertions.workspace = true

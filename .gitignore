@@ -43,3 +43,6 @@ target
 
 # Documents
 public/
+
+# CodSpeed
+.codspeed/
