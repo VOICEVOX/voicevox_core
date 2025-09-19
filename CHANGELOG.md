@@ -67,12 +67,19 @@
 
 ### Added
 
+- 未計測ですが、パフォーマンスが少しだけ向上しているはずです ([#1147])。
 - \[C\] Doxygenがv1.9.8-r0からv1.12.0-r0になります ([#1155])。
 
 ### Changed
 
 - \[Rust\] `voicevox_core_macros`は内部クレートであり、SemVerに従わないということが明記されます。`substitute_type!`と`pyproject_project_version!`に関してはバージョン0.16の間は保持しますが、バージョン0.17以降の保証はしません ([#1149])。
-- \[Rust\] 依存ライブラリが変化します ([#1153])。
+- \[Rust\] 依存ライブラリが変化します ([#1147], [#1153])。
+    - \[削除\] `ndarray@0.15`
+    - \[削除\] `ndarray-stats@0.5`
+    - \[削除\] `git+https://github.com/VOICEVOX/ort.git?rev=12101456be9975b7d263478c7c53554017b7927c#voicevox-ort@2.0.0-rc.4`
+    - \[追加\] `ndarray@0.16`: `^0.16.1`
+    - \[追加\] `ndarray-stats@0.6`: `^0.6.0`
+    - \[追加\] `git+https://github.com/VOICEVOX/ort.git?rev=34202b4c362f70a72baa828f0ec0f05236406510#voicevox-ort@2.0.0-rc.10`
     - \[変更\] `anyhow@1`: `^1.0.89` → `^1.0.99`
     - \[変更\] `serde@1`: `^1.0.210` → `^1.0.219`
     - \[変更\] `serde_json@1`: `^1.0.128` → `^1.0.143`
@@ -1332,6 +1339,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1140]: https://github.com/VOICEVOX/voicevox_core/pull/1140
 [#1143]: https://github.com/VOICEVOX/voicevox_core/pull/1143
 [#1144]: https://github.com/VOICEVOX/voicevox_core/pull/1144
+[#1147]: https://github.com/VOICEVOX/voicevox_core/pull/1147
 [#1149]: https://github.com/VOICEVOX/voicevox_core/pull/1149
 [#1153]: https://github.com/VOICEVOX/voicevox_core/pull/1153
 [#1155]: https://github.com/VOICEVOX/voicevox_core/pull/1155
