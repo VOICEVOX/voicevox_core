@@ -81,7 +81,7 @@ pub struct Voice<'metas> {
 
 #[ext(VoiceSpecExt)]
 impl<S: VoiceSpec> S {
-    pub(crate) fn as_mut(&mut self) -> impl VoiceSpec + use<'_, S> {
+    pub(crate) fn as_mut(&mut self) -> impl VoiceSpec {
         return VoiceSpecAsMut(self);
 
         struct VoiceSpecAsMut<'a, S>(&'a mut S);

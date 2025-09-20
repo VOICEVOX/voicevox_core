@@ -115,7 +115,7 @@ result_messages.0 = "エラーが発生しませんでした"
 result_messages.1 = "OpenJTalkの辞書が読み込まれていません"
 result_messages.3 = "サポートされているデバイス情報取得中にエラーが発生しました"
 result_messages.4 = "GPU機能をサポートすることができません"
-result_messages.6 = "指定されたIDに対するスタイルが見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています"
+result_messages.6 = "該当する声が見つかりませんでした。音声モデルが読み込まれていないか、読み込みが解除されています"
 result_messages.7 = "指定されたIDに対する音声モデルが見つかりませんでした。読み込まれていないか、読み込みが既に解除されています"
 result_messages.8 = "推論に失敗しました"
 result_messages.11 = "入力テキストの解析に失敗しました"
@@ -136,6 +136,7 @@ result_messages.24 = "ユーザー辞書の単語のバリデーションに失�
 result_messages.25 = "UUIDの変換に失敗しました"
 result_messages.28 = "モデルの形式が不正です"
 result_messages.29 = "推論ライブラリのロードまたは初期化ができませんでした"
+result_messages.30 = "該当する声が複数あります"
 stderr = ''
 
 [simple_tts]
