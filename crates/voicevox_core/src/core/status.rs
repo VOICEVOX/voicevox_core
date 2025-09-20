@@ -7,7 +7,7 @@ use duplicate::{duplicate, duplicate_item};
 use educe::Educe;
 use enum_map::EnumMap;
 use indexmap::IndexMap;
-use itertools::iproduct;
+use itertools::{iproduct, Itertools as _};
 
 use crate::{
     error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
@@ -28,6 +28,7 @@ use super::{
     manifest::{InnerVoiceId, StyleIdToInnerVoiceId},
     metas::{self, CharacterMeta, StyleId, StyleMeta, VoiceModelMeta},
     voice_model::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId},
+    voice_spec::{Voice, VoiceSpec},
 };
 
 #[derive(Debug)]
@@ -82,15 +83,21 @@ impl<R: InferenceRuntime> Status<R> {
         self.loaded_models.lock().unwrap().metas()
     }
 
-    /// あるスタイルに対応する`VoiceModelId`と`InnerVoiceId`の組を返す。
-    ///
+    pub(crate) fn find_voice(&self, spec: impl VoiceSpec) -> Result<(VoiceModelId, StyleId)> {
+        self.loaded_models.lock().unwrap().find_voice(spec)
+    }
+
     /// `StyleId` → `InnerVoiceId`のマッピングが存在しない場合は、`InnerVoiceId`としては
     /// `style_id`と同じ値を返す。
-    pub(crate) fn ids_for<D: InferenceDomainExt>(
+    pub(crate) fn inner_voice_id<D: InferenceDomainExt>(
         &self,
+        model_id: VoiceModelId,
         style_id: StyleId,
-    ) -> Result<(VoiceModelId, InnerVoiceId)> {
-        self.loaded_models.lock().unwrap().ids_for::<D>(style_id)
+    ) -> InnerVoiceId {
+        self.loaded_models
+            .lock()
+            .unwrap()
+            .inner_voice_id::<D>(model_id, style_id)
     }
 
     pub(crate) fn contains_domain<D: InferenceDomainExt>(&self, style_id: StyleId) -> bool {
@@ -163,37 +170,53 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         metas::merge(self.0.values().flat_map(|LoadedModel { metas, .. }| metas))
     }
 
-    fn ids_for<D: InferenceDomainExt>(
-        &self,
-        style_id: StyleId,
-    ) -> Result<(VoiceModelId, InnerVoiceId)> {
-        let (
-            model_id,
-            LoadedModel {
-                session_sets_with_inner_ids,
-                ..
-            },
-        ) = self
+    fn find_voice(&self, mut spec: impl VoiceSpec) -> Result<(VoiceModelId, StyleId)> {
+        let candidates = &*self
             .0
             .iter()
-            .find(|(_, LoadedModel { metas, .. })| {
+            .flat_map(|(&model_id, LoadedModel { metas, .. })| {
                 metas
                     .iter()
-                    .flat_map(|CharacterMeta { styles, .. }| styles)
-                    .any(|style| style.id == style_id && D::style_types().contains(&style.r#type))
+                    .flat_map(|character| {
+                        character
+                            .styles
+                            .iter()
+                            .map(move |style| Voice { style, character })
+                    })
+                    .map(|v| (v, model_id))
+                    .collect::<Vec<_>>()
             })
-            .ok_or(ErrorRepr::StyleNotFound {
-                style_id,
-                style_types: D::style_types(),
-            })?;
+            .max_set_by_key(move |&(v, _)| spec.priority(v));
 
-        let inner_voice_id = session_sets_with_inner_ids
-            .get::<D>()
+        match candidates {
+            [(
+                Voice {
+                    style: StyleMeta { id, .. },
+                    ..
+                },
+                model_id,
+            )] => Ok((*model_id, *id)),
+            _ => todo!("multiple or zero candidates"),
+        }
+    }
+
+    fn inner_voice_id<D: InferenceDomainExt>(
+        &self,
+        model_id: VoiceModelId,
+        style_id: StyleId,
+    ) -> InnerVoiceId {
+        // TODO: 流石にもうちょっとましな方法を探したい
+        self.0
+            .get(&model_id)
+            .and_then(
+                |LoadedModel {
+                     session_sets_with_inner_ids,
+                     ..
+                 }| session_sets_with_inner_ids.get::<D>(),
+            )
             .as_ref()
             .and_then(|(inner_voice_ids, _)| inner_voice_ids.get(&style_id).copied())
-            .unwrap_or_else(|| InnerVoiceId::new(style_id.0));
-
-        Ok((*model_id, inner_voice_id))
+            .unwrap_or_else(|| InnerVoiceId::new(style_id.0))
     }
 
     /// # Panics

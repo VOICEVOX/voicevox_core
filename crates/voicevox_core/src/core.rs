@@ -7,5 +7,6 @@ mod manifest;
 pub(crate) mod metas;
 pub(crate) mod status;
 pub(crate) mod voice_model;
+pub(crate) mod voice_spec;
 
 pub(crate) use self::adjust::{ensure_minimum_phoneme_length, pad_decoder_feature};
