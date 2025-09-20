@@ -186,7 +186,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
                     .map(|v| (v, model_id))
                     .collect::<Vec<_>>()
             })
-            .max_set_by_key(move |&(v, _)| spec.priority(v));
+            .max_set_by_key(|&(v, _)| spec.priority(v));
 
         match candidates {
             [(
@@ -196,7 +196,14 @@ impl<R: InferenceRuntime> LoadedModels<R> {
                 },
                 model_id,
             )] => Ok((*model_id, *id)),
-            _ => todo!("multiple or zero candidates"),
+            [] => Err(ErrorRepr::VoiceNotFound {
+                target: spec.display().to_string(),
+            }
+            .into()),
+            [..] => Err(ErrorRepr::AmbiguousVoice {
+                target: spec.display().to_string(),
+            }
+            .into()),
         }
     }
 

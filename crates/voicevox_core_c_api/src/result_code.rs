@@ -20,8 +20,10 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_GPU_SUPPORT_ERROR = 4,
     /// 推論ライブラリのロードまたは初期化ができなかった
     VOICEVOX_RESULT_INIT_INFERENCE_RUNTIME_ERROR = 29,
-    /// スタイルIDに対するスタイルが見つからなかった
-    VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR = 6,
+    /// 該当する声が見つからなかった
+    VOICEVOX_RESULT_VOICE_NOT_FOUND_ERROR = 6,
+    /// 該当する声が複数あった
+    VOICEVOX_RESULT_AMBIGUOUS_VOICE_ERROR = 30,
     /// 音声モデルIDに対する音声モデルが見つからなかった
     VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR = 7,
     /// 推論に失敗した
@@ -74,10 +76,11 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
             c"推論ライブラリのロードまたは初期化ができませんでした"
         }
         VOICEVOX_RESULT_OK => c"エラーが発生しませんでした",
-        VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR => {
-            c"指定されたIDに対するスタイルが見つかりませんでした。音声モデルが読み込まれていない\
+        VOICEVOX_RESULT_VOICE_NOT_FOUND_ERROR => {
+            c"該当する声が見つかりませんでした。音声モデルが読み込まれていない\
               か、読み込みが解除されています"
         }
+        VOICEVOX_RESULT_AMBIGUOUS_VOICE_ERROR => c"該当する声が複数あります",
         VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR => {
             c"指定されたIDに対する音声モデルが見つかりませんでした。読み込まれていないか、読み込み\
               が既に解除されています"

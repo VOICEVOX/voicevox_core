@@ -92,7 +92,8 @@ exceptions! {
     InvalidModelFormatError: PyException;
     InvalidModelDataError: PyException;
     GetSupportedDevicesError: PyException;
-    StyleNotFoundError: PyKeyError;
+    VoiceNotFoundError: PyKeyError;
+    AmbiguousVoiceError: PyException;
     ModelNotFoundError: PyKeyError;
     RunModelError: PyException;
     AnalyzeTextError: PyException;

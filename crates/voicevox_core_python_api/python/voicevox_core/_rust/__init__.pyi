@@ -55,8 +55,13 @@ class GetSupportedDevicesError(Exception):
 
     ...
 
-class StyleNotFoundError(KeyError):
-    """スタイルIDに対するスタイルが見つからなかった。"""
+class VoiceNotFoundError(KeyError):
+    """該当する声が見つからなかった。"""
+
+    ...
+
+class AmbiguousVoiceError(KeyError):
+    """該当する声が複数あった。"""
 
     ...
 
