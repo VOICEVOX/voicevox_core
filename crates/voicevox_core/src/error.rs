@@ -1,12 +1,11 @@
 use crate::{
     core::devices::DeviceAvailabilities,
     engine::talk::{user_dict::InvalidWordError, KanaParseError},
-    StyleId, StyleType, VoiceModelId,
+    StyleId, VoiceModelId,
 };
 //use engine::
 use duplicate::duplicate_item;
-use itertools::Itertools as _;
-use std::{collections::BTreeSet, path::PathBuf};
+use std::path::PathBuf;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -43,7 +42,8 @@ impl Error {
                 LoadModelErrorKind::InvalidModelData => ErrorKind::InvalidModelData,
             },
             ErrorRepr::GetSupportedDevices(_) => ErrorKind::GetSupportedDevices,
-            ErrorRepr::StyleNotFound { .. } => ErrorKind::StyleNotFound,
+            ErrorRepr::VoiceNotFound { .. } => ErrorKind::VoiceNotFound,
+            ErrorRepr::AmbiguousVoice { .. } => ErrorKind::AmbiguousVoice,
             ErrorRepr::ModelNotFound { .. } => ErrorKind::ModelNotFound,
             ErrorRepr::RunModel { .. } => ErrorKind::RunModel,
             ErrorRepr::AnalyzeText { .. } => ErrorKind::AnalyzeText,
@@ -79,14 +79,13 @@ pub(crate) enum ErrorRepr {
     GetSupportedDevices(#[source] anyhow::Error),
 
     #[error(
-        "`{style_id}` ([{style_types}])に対するスタイルが見つかりませんでした。音声モデルが\
-         読み込まれていないか、読み込みが解除されています",
-        style_types = style_types.iter().format(", ")
+        "`{target}`に該当する声が見つかりませんでした。音声モデルが読み込まれていないか、\
+         読み込みが解除されています"
     )]
-    StyleNotFound {
-        style_id: StyleId,
-        style_types: &'static BTreeSet<StyleType>,
-    },
+    VoiceNotFound { target: String },
+
+    #[error("`{target}`に該当する声が複数あります")]
+    AmbiguousVoice { target: String },
 
     #[error(
         "`{model_id}`に対する音声モデルが見つかりませんでした。読み込まれていないか、読み込みが既\
@@ -146,13 +145,15 @@ pub enum ErrorKind {
     /// すでに読み込まれている音声モデルを読み込もうとした。
     ModelAlreadyLoaded,
     /// すでに読み込まれているスタイルを読み込もうとした。
-    StyleAlreadyLoaded,
+    StyleAlreadyLoaded, // TODO: これも改名する
     /// 無効なモデルデータ。
     InvalidModelData,
     /// サポートされているデバイス情報取得に失敗した。
     GetSupportedDevices,
-    /// スタイルIDに対するスタイルが見つからなかった。
-    StyleNotFound,
+    /// 該当する声が見つからなかった。
+    VoiceNotFound,
+    /// 該当する声が複数あった。
+    AmbiguousVoice,
     /// 音声モデルIDに対する音声モデルが見つからなかった。
     ModelNotFound,
     /// 推論に失敗した。
