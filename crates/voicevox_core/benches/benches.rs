@@ -111,8 +111,8 @@ impl Config {
     fn iterations_for_light_operations(&self) -> Iterations {
         if self.iterate_more {
             Iterations {
-                sample_count: 1000,
-                sample_size: 500,
+                sample_count: 500,
+                sample_size: 100,
                 warmups: 50000,
             }
         } else {
