@@ -28,7 +28,7 @@ use super::{
     manifest::{InnerVoiceId, StyleIdToInnerVoiceId},
     metas::{self, CharacterMeta, StyleId, StyleMeta, VoiceModelMeta},
     voice_model::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId},
-    voice_spec::{Voice, VoiceSpec},
+    voice_spec::{VoiceInfo, VoiceSpec},
 };
 
 #[derive(Debug)]
@@ -181,7 +181,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
                         character
                             .styles
                             .iter()
-                            .map(move |style| Voice { style, character })
+                            .map(move |style| VoiceInfo { style, character })
                     })
                     .map(|v| (v, model_id))
                     .collect::<Vec<_>>()
@@ -190,7 +190,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
 
         match candidates {
             [(
-                Voice {
+                VoiceInfo {
                     style: StyleMeta { id, .. },
                     ..
                 },

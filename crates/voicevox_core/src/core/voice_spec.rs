@@ -7,30 +7,18 @@ use crate::{CharacterMeta, StyleId, StyleMeta};
 pub trait VoiceSpec {
     type Priority: Ord;
     fn display(&self) -> impl Display;
-    fn priority(&mut self, voice: Voice<'_>) -> Self::Priority;
+    fn priority(&mut self, voice: VoiceInfo<'_>) -> Self::Priority;
 }
 
-impl<F: FnMut(Voice<'_>) -> T, T: Ord> VoiceSpec for F {
+impl<F: FnMut(VoiceInfo<'_>) -> T, T: Ord> VoiceSpec for F {
     type Priority = T;
 
     fn display(&self) -> impl Display {
         "<custom>"
     }
 
-    fn priority(&mut self, voice: Voice<'_>) -> Self::Priority {
+    fn priority(&mut self, voice: VoiceInfo<'_>) -> Self::Priority {
         self(voice)
-    }
-}
-
-impl VoiceSpec for Voice<'_> {
-    type Priority = bool;
-
-    fn display(&self) -> impl Display {
-        self
-    }
-
-    fn priority(&mut self, voice: Voice<'_>) -> Self::Priority {
-        voice.style.id == self.style.id
     }
 }
 
@@ -41,7 +29,7 @@ impl VoiceSpec for u32 {
         self
     }
 
-    fn priority(&mut self, voice: Voice<'_>) -> Self::Priority {
+    fn priority(&mut self, voice: VoiceInfo<'_>) -> Self::Priority {
         voice.style.id == StyleId(*self)
     }
 }
@@ -53,7 +41,7 @@ impl VoiceSpec for StyleId {
         self
     }
 
-    fn priority(&mut self, voice: Voice<'_>) -> Self::Priority {
+    fn priority(&mut self, voice: VoiceInfo<'_>) -> Self::Priority {
         voice.style.id == *self
     }
 }
@@ -66,7 +54,7 @@ impl<'metas> VoiceSpec for (&'metas str, &'metas str) {
         format!("{character_name}（{style_name}）")
     }
 
-    fn priority(&mut self, voice: Voice<'_>) -> Self::Priority {
+    fn priority(&mut self, voice: VoiceInfo<'_>) -> Self::Priority {
         (&*voice.character.name, &*voice.style.name) == *self
     }
 }
@@ -74,7 +62,7 @@ impl<'metas> VoiceSpec for (&'metas str, &'metas str) {
 #[derive(Clone, Copy, Debug, derive_more::Display)]
 #[display("{}（{}）", character.name, style.name)]
 #[non_exhaustive]
-pub struct Voice<'metas> {
+pub struct VoiceInfo<'metas> {
     pub style: &'metas StyleMeta,
     pub character: &'metas CharacterMeta,
 }
@@ -93,7 +81,7 @@ impl<S: VoiceSpec> S {
                 self.0.display()
             }
 
-            fn priority(&mut self, voice: Voice<'_>) -> Self::Priority {
+            fn priority(&mut self, voice: VoiceInfo<'_>) -> Self::Priority {
                 self.0.priority(voice)
             }
         }
