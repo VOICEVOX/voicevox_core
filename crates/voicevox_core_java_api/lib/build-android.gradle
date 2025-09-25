@@ -1,7 +1,7 @@
 plugins {
     id 'com.android.library' version '8.7.0'
     id 'maven-publish'
-    id 'org.jetbrains.kotlin.android' version '1.9.10'
+    id 'org.jetbrains.kotlin.android' version '2.2.20'
 }
 
 version = gradle.ext.version
