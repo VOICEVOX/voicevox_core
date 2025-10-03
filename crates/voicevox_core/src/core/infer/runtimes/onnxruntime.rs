@@ -47,7 +47,9 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
     fn supported_devices(&self) -> crate::Result<SupportedDevices> {
         (|| {
             let cpu = CPUExecutionProvider::default().is_available()?;
-            let cuda = CUDAExecutionProvider::default().is_available()?;
+            let cuda = CUDAExecutionProvider::default()
+                .with_conv_algorithm_search(ort::CUDAExecutionProviderCuDNNConvAlgoSearch::Default)
+                .is_available()?;
             let dml = DirectMLExecutionProvider::default().is_available()?;
 
             ensure!(cpu, "missing `CPUExecutionProvider`");
@@ -65,7 +67,9 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
     fn test_gpu(&self, gpu: GpuSpec) -> anyhow::Result<()> {
         let sess_builder = &ort::SessionBuilder::new()?;
         match gpu {
-            GpuSpec::Cuda => CUDAExecutionProvider::default().register(sess_builder),
+            GpuSpec::Cuda => CUDAExecutionProvider::default()
+                .with_conv_algorithm_search(ort::CUDAExecutionProviderCuDNNConvAlgoSearch::Default)
+                .register(sess_builder),
             GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
         }
         .map_err(Into::into)
@@ -87,7 +91,11 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         match options.device {
             DeviceSpec::Cpu => {}
             DeviceSpec::Gpu(GpuSpec::Cuda) => {
-                CUDAExecutionProvider::default().register(&builder)?;
+                CUDAExecutionProvider::default()
+                    .with_conv_algorithm_search(
+                        ort::CUDAExecutionProviderCuDNNConvAlgoSearch::Default,
+                    )
+                    .register(&builder)?;
             }
             DeviceSpec::Gpu(GpuSpec::Dml) => {
                 builder = builder
