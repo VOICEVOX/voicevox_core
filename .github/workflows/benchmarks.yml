@@ -38,7 +38,7 @@ jobs:
         run: cargo check -vp test_util
 
       - name: Build
-        run: cargo codspeed build -p voicevox_core --features load-onnxruntime -m walltime benches
+        run: cargo codspeed build -p voicevox_core --bench benches --features load-onnxruntime -m walltime
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v4
