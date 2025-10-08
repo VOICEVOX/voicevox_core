@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # よくわからないがディスク容量が足りなくなることがあるため、
-      # とりあえずAndroid, .NET, Haskell関係のものだけ削除して容量を確保し、発生しないことを祈る。
+      # とりあえずAndroid, .NET, Haskell関係のものだけ削除して容量を確保する。
       # https://github.com/VOICEVOX/voicevox_core/issues/1167
       - name: Save Disk Space
         uses: jlumbroso/free-disk-space@v1.3.1
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # よくわからないがディスク容量が足りなくなることがあるため、
-      # とりあえずAndroid, .NET, Haskell関係のものだけ削除して容量を確保し、発生しないことを祈る。
+      # とりあえずAndroid, .NET, Haskell関係のものだけ削除して容量を確保する。
       # https://github.com/VOICEVOX/voicevox_core/issues/1167
       - name: Save Disk Space
         uses: jlumbroso/free-disk-space@v1.3.1
