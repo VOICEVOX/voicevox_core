@@ -147,9 +147,13 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_INIT_INFERENCE_RUNTIME_ERROR = 29,
   /**
-   * スタイルIDに対するスタイルが見つからなかった
+   * 該当する声が見つからなかった
    */
-  VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR = 6,
+  VOICEVOX_RESULT_VOICE_NOT_FOUND_ERROR = 6,
+  /**
+   * 該当する声が複数あった
+   */
+  VOICEVOX_RESULT_AMBIGUOUS_VOICE_ERROR = 30,
   /**
    * 音声モデルIDに対する音声モデルが見つからなかった
    */
