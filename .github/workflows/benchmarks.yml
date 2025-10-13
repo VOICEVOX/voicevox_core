@@ -21,7 +21,7 @@ on:
 
 jobs:
   rust-api:
-    if: false # 現在performance reportのファイルが数十GB単位に膨れ上がってアップロードに失敗する(あとその前にランナーのディスク容量が足りなくなる)という問題(#1167)があるため。ベンチマークを分割するというワークアラウンドがあるにはあるが、job単位で5分割しなければならないことからCodSpeed側での根本的な対応を待つ。幸い、事が事だけにCodSpeed側の対応も期待していいはず。
+    if: false # FIXME: 一時的に無効化。詳細は #1167
     name: Rust API
     runs-on: ubuntu-latest
     steps:
