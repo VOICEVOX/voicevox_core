@@ -78,6 +78,10 @@
     - \[変更\] `serde_json@1`: `^1.0.128` → `^1.0.143`
     - \[変更\] `uuid@1`: `^1.10.0` → `^1.18.1`
 
+### Fixed
+
+- \[Windows,Linux\] バージョン[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)にて意図せず著しく低下していた、CUDAでの音声合成のパフォーマンスが元に戻ります ([#1164] by [@Sanzentyo])。
+
 ## [0.16.1] - 2025-08-14 (+09:00)
 
 主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.1)をご覧ください。
@@ -359,6 +363,8 @@
     - エラーの種類として`InitInferenceRuntime`が追加されます。
     - C APIでは、LinuxとmacOS用のrpath設定が削除されます。
     - Python APIはmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_{glibcのバージョン}"になります。また、カレントディレクトリ下の動的ライブラリを自動で読み込む機能は無くなります。
+
+    補足: この変更によりCUDAでの音声合成のパフォーマンスが意図せず著しく低下しましたが、[#1164]にて修正されます。
 
 - \[BREAKING\] VOICEVOX CORE自体からはCPU版/GPU版という区分は無くなり、GPU違いのリリースについては完全に(VOICEVOX) ONNX Runtimeに委ねる形になります ([#802], [#810])。
 
@@ -1335,6 +1341,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1149]: https://github.com/VOICEVOX/voicevox_core/pull/1149
 [#1153]: https://github.com/VOICEVOX/voicevox_core/pull/1153
 [#1155]: https://github.com/VOICEVOX/voicevox_core/pull/1155
+[#1164]: https://github.com/VOICEVOX/voicevox_core/pull/1164
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
@@ -1365,6 +1372,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [@nanae772]: https://github.com/nanae772
 [@nekomimimi]: https://github.com/nekomimimi
 [@osakanataro]: https://github.com/osakanataro
+[@Sanzentyo]: https://github.com/Sanzentyo
 [@sh1ma]: https://github.com/sh1ma
 [@shigobu]: https://github.com/shigobu
 [@shuntia]: https://github.com/shuntia
