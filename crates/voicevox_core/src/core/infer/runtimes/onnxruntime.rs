@@ -18,8 +18,8 @@ use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
     execution_providers::{
-        CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider,
-        ExecutionProvider as _,
+        cuda::CuDNNConvAlgorithmSearch, CPUExecutionProvider, CUDAExecutionProvider,
+        DirectMLExecutionProvider, ExecutionProvider as _,
     },
     session::{builder::GraphOptimizationLevel, RunOptions},
     tensor::{PrimitiveTensorElementType, TensorElementType},
@@ -70,7 +70,9 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
     fn test_gpu(&self, gpu: GpuSpec) -> anyhow::Result<()> {
         let sess_builder = &mut ort::session::builder::SessionBuilder::new()?;
         match gpu {
-            GpuSpec::Cuda => CUDAExecutionProvider::default().register(sess_builder),
+            GpuSpec::Cuda => CUDAExecutionProvider::default()
+                .with_conv_algorithm_search(CuDNNConvAlgorithmSearch::Default)
+                .register(sess_builder),
             GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
         }
         .map_err(Into::into)
@@ -92,7 +94,9 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         match options.device {
             DeviceSpec::Cpu => {}
             DeviceSpec::Gpu(GpuSpec::Cuda) => {
-                CUDAExecutionProvider::default().register(&mut builder)?;
+                CUDAExecutionProvider::default()
+                    .with_conv_algorithm_search(CuDNNConvAlgorithmSearch::Default)
+                    .register(&mut builder)?;
             }
             DeviceSpec::Gpu(GpuSpec::Dml) => {
                 builder = builder
