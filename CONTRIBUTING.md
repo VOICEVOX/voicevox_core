@@ -14,10 +14,6 @@ Issue 側で取り組み始めたことを伝えるか、最初に Draft プル�
 
 [cbindgen](https://crates.io/crates/cbindgen) が手元にインストールされているなら、それを使いヘッダファイルを生成することもできます。
 
-## CHANGELOG.mdの更新
-
-プルリクエストにて[CHANGELOG.md](./CHANGELOG.md)も同時に更新するかどうかは任意です。しない場合は、メンテナが後から行います (例: [#1172](https://github.com/VOICEVOX/voicevox_core/pull/1172))。
-
 ## テスト
 
 テストの方法は各言語ごとに異なります。各言語のreadmeを参照してください。
@@ -54,6 +50,10 @@ cargo run -p downloader -- -h
 ```bash
 typos
 ```
+
+## CHANGELOG.mdの更新
+
+プルリクエストにて[CHANGELOG.md](./CHANGELOG.md)も同時に更新するかどうかは任意です。しない場合は、メンテナが後から行います。
 
 ## プルリクエストにおけるCI
 
