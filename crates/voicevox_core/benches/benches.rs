@@ -14,6 +14,7 @@
 //!       "acceleration-mode":"GPU",
 //!       "vvm": "../../voicevox_core/models/vvms/0.vvm",
 //!       "include-long-input-text": true,
+//!       "include-open-and-close-vvm": true,
 //!       "iterate-more": true
 //!     }' \
 //!   cargo bench -p voicevox_core --features load-onnxruntime --bench benches
@@ -80,6 +81,10 @@ struct Config {
     /// 長文の入力でのベンチマークも行う。
     #[serde(default)]
     include_long_input_text: bool,
+
+    /// `open_and_close_vvm`を実行対象に含める。
+    #[serde(default)]
+    include_open_and_close_vvm: bool,
 
     /// イテレート回数を、ウォームアップも含めて増やす。
     #[serde(default)]
@@ -249,6 +254,7 @@ mod blocking {
     #[divan::bench(
         sample_count = CONFIG.iterations_for_light_operations().sample_count,
         sample_size = CONFIG.iterations_for_light_operations().sample_size,
+        ignore = !CONFIG.include_open_and_close_vvm,
     )]
     fn open_and_close_vvm(bencher: Bencher<'_, '_>) {
         let run = || {
@@ -395,6 +401,7 @@ mod nonblocking {
     #[divan::bench(
         sample_count = CONFIG.iterations_for_light_operations().sample_count,
         sample_size = CONFIG.iterations_for_light_operations().sample_size,
+        ignore = !CONFIG.include_open_and_close_vvm,
     )]
     fn open_and_close_vvm(bencher: Bencher<'_, '_>) {
         let run = || {
