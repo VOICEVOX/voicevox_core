@@ -898,7 +898,7 @@ impl<R: InferenceRuntime> Status<R> {
                     A::LIGHT_INFERENCE_CANCELLABLE,
                 )
                 .await?;
-            return Ok(ensure_minimum_phoneme_length(output.into_raw_vec()));
+            return Ok(ensure_minimum_phoneme_length(output.into_vec()));
         }
         let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
@@ -914,7 +914,7 @@ impl<R: InferenceRuntime> Status<R> {
                 A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
-        Ok(ensure_minimum_phoneme_length(output.into_raw_vec()))
+        Ok(ensure_minimum_phoneme_length(output.into_vec()))
     }
 
     #[expect(
@@ -952,7 +952,7 @@ impl<R: InferenceRuntime> Status<R> {
                     A::LIGHT_INFERENCE_CANCELLABLE,
                 )
                 .await?;
-            return Ok(output.into_raw_vec());
+            return Ok(output.into_vec());
         }
         let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
@@ -973,7 +973,7 @@ impl<R: InferenceRuntime> Status<R> {
             )
             .await?;
 
-        Ok(output.into_raw_vec())
+        Ok(output.into_vec())
     }
 
     /// モデル`generate_full_intermediate`の実行と、その前後の処理を行う。
@@ -992,7 +992,9 @@ impl<R: InferenceRuntime> Status<R> {
         let (length_with_padding, f0_with_padding, phoneme_with_padding) =
             pad_decoder_feature::<PADDING_FRAME_LENGTH>(
                 f0,
-                phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
+                phoneme_vector
+                    .into_shape_with_order([length, phoneme_size])
+                    .unwrap(),
             );
 
         let GenerateFullIntermediateOutput {
@@ -1002,7 +1004,7 @@ impl<R: InferenceRuntime> Status<R> {
                 model_id,
                 GenerateFullIntermediateInput {
                     f0: f0_with_padding
-                        .into_shape([length_with_padding, 1])
+                        .into_shape_with_order([length_with_padding, 1])
                         .unwrap(),
                     phoneme: phoneme_with_padding,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
@@ -1060,14 +1062,16 @@ impl<R: InferenceRuntime> Status<R> {
             let (length_with_padding, f0_with_padding, phoneme_with_padding) =
                 pad_decoder_feature::<PADDING_FRAME_LENGTH>(
                     f0,
-                    phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
+                    phoneme_vector
+                        .into_shape_with_order([length, phoneme_size])
+                        .unwrap(),
                 );
             let DecodeOutput { wave: output } = self
                 .run_session::<A, _>(
                     model_id,
                     DecodeInput {
                         f0: f0_with_padding
-                            .into_shape([length_with_padding, 1])
+                            .into_shape_with_order([length_with_padding, 1])
                             .unwrap(),
                         phoneme: phoneme_with_padding,
                         speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
@@ -1082,7 +1086,7 @@ impl<R: InferenceRuntime> Status<R> {
                 ])
                 .as_standard_layout()
                 .into_owned()
-                .into_raw_vec());
+                .into_vec());
         }
         let intermediate = self
             .generate_full_intermediate::<A>(length, phoneme_size, f0, phoneme_vector, style_id)
@@ -1198,7 +1202,18 @@ impl<R: InferenceRuntime> Status<R> {
 impl<T> ndarray::Array1<T> {
     fn into_one_row(self) -> ndarray::Array2<T> {
         let n = self.len();
-        self.into_shape([1, n]).expect("should be ok")
+        self.into_shape_with_order([1, n]).expect("should be ok")
+    }
+
+    fn into_vec(self) -> Vec<T> {
+        let (vec, offset) = self.into_raw_vec_and_offset();
+        // TODO: Rust 2024にしたらlet chainにする
+        if let Some(offset) = offset {
+            if offset != 0 {
+                unimplemented!("offset = {offset}");
+            }
+        }
+        vec
     }
 }
 
