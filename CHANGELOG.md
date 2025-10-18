@@ -73,7 +73,7 @@
 ### Changed
 
 - \[Rust\] `voicevox_core_macros`は内部クレートであり、SemVerに従わないということが明記されます。`substitute_type!`と`pyproject_project_version!`に関してはバージョン0.16の間は保持しますが、バージョン0.17以降の保証はしません ([#1149])。
-- \[Rust\] 依存ライブラリが変化します ([#1147], [#1153])。
+- \[Rust\] 依存ライブラリが変化します ([#1153], [#1147])。
     - \[削除\] `ndarray@0.15`
     - \[削除\] `ndarray-stats@0.5`
     - \[削除\] `git+https://github.com/VOICEVOX/ort.git?rev=12101456be9975b7d263478c7c53554017b7927c#voicevox-ort@2.0.0-rc.4`
