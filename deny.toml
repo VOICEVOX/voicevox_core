@@ -134,10 +134,10 @@ bypass = [
     # system-configuration-sys links System Configuration framework on macOS.
     { name = "system-configuration-sys", version = "0.5", build-script = "cf4c21c898e9671345d4684c75014189623574f9ec96414999a9db2d73b1e40f" },
 
-    # https://github.com/VOICEVOX/ort/blob/17f741301db0bb08da0eafe8a338e5efd8a4b5df/ort-sys/build.rs
+    # https://github.com/VOICEVOX/ort/blob/34202b4c362f70a72baa828f0ec0f05236406510/ort-sys/build.rs
     #
     # ONNX Runtime is licensed under `MIT` (https://github.com/microsoft/onnxruntime/blob/v1.11.1/LICENSE)
-    { name = "voicevox-ort-sys", version = "=2.0.0-rc.4", build-script = "5358c54ff958abeebfbe6cad4b0cd925db393f174ad3b443e18309782a9a3f57" },
+    { name = "voicevox-ort-sys", version = "=2.0.0-rc.10", build-script = "0f5f0ca831d86dbd09094e8885f93c03c3c10878af9b3f4b61c462cfcb332cbc" },
 
     # https://docs.rs/crate/zstd-sys/2.0.9+zstd.1.5.5/source/build.rs
     #
