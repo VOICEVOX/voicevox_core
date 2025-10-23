@@ -3,6 +3,7 @@
 //! メインの部分。[`crate::core`]と[`crate::engine`]の二つはここで用いる。
 
 use easy_ext::ext;
+use educe::Educe;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
 use std::{
@@ -74,28 +75,16 @@ impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for SynthesisOptions<A> {
     }
 }
 
-impl<A: infer::AsyncExt> From<&TtsOptions<A>> for SynthesisOptions<A> {
-    fn from(options: &TtsOptions<A>) -> Self {
-        Self {
-            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
-            cancellable: options.cancellable,
-        }
-    }
-}
-
-#[derive(derive_more::Debug)]
+#[derive(Educe, derive_more::Debug)]
+#[educe(Default(bound = "A: infer::AsyncExt"))]
 #[debug(bound(A::Cancellable: Debug))]
 struct TtsOptions<A: infer::AsyncExt> {
-    enable_interrogative_upspeak: bool,
-    cancellable: A::Cancellable,
+    synthesis: SynthesisOptions<A>,
 }
 
-impl<A: infer::AsyncExt> Default for TtsOptions<A> {
-    fn default() -> Self {
-        Self {
-            enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
-            cancellable: A::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
-        }
+impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for TtsOptions<A> {
+    fn as_ref(&self) -> &SynthesisOptions<A> {
+        &self.synthesis
     }
 }
 
@@ -697,7 +686,7 @@ trait AsInner {
         options: &TtsOptions<Self::Async>,
     ) -> Result<Vec<u8>> {
         let audio_query = &self.create_audio_query_from_kana(kana, style_id).await?;
-        self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
+        self.synthesis(audio_query, style_id, options.as_ref())
             .await
     }
 
@@ -731,7 +720,7 @@ trait AsInner {
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
         let audio_query = &self.create_audio_query(text, style_id).await?;
-        self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
+        self.synthesis(audio_query, style_id, options.as_ref())
             .await
     }
 
@@ -1943,7 +1932,7 @@ pub(crate) mod blocking {
 
     impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -1966,7 +1955,7 @@ pub(crate) mod blocking {
 
     impl<T: crate::blocking::TextAnalyzer> Tts<'_, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -2426,7 +2415,7 @@ pub(crate) mod nonblocking {
 
     impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -2436,7 +2425,7 @@ pub(crate) mod nonblocking {
         ///
         /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
         pub fn cancellable(mut self, cancellable: bool) -> Self {
-            self.options.cancellable = cancellable;
+            self.options.synthesis.cancellable = cancellable;
             self
         }
 
@@ -2459,7 +2448,7 @@ pub(crate) mod nonblocking {
 
     impl<T: crate::nonblocking::TextAnalyzer> Tts<'_, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -2469,7 +2458,7 @@ pub(crate) mod nonblocking {
         ///
         /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
         pub fn cancellable(mut self, cancellable: bool) -> Self {
-            self.options.cancellable = cancellable;
+            self.options.synthesis.cancellable = cancellable;
             self
         }
 
