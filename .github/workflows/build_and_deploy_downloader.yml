@@ -81,7 +81,9 @@ jobs:
         uses: taiki-e/install-action@cargo-binstall
 
       - name: Install cargo-edit
-        run: cargo binstall cargo-edit@^0.13 --no-confirm --log-level debug
+        # cargo-bins/cargo-quickinstall#466 により、cargo-editのv0.13あたりは現状cargo-editでまともに扱えないため。
+        # FIXME: cargo-editのv0.13.8もしくはv0.14.0が出て、cargo-bins/cargo-quickinstallに正しくホストされるようになったらcargo-binstallを使う
+        run: cargo install cargo-edit@^0.13 -v --locked
 
       - name: Set version
         run: cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude xtask
