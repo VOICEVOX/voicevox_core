@@ -81,8 +81,9 @@ jobs:
         uses: taiki-e/install-action@cargo-binstall
 
       - name: Install cargo-edit
-        # cargo-bins/cargo-quickinstall#466 により、cargo-editのv0.13あたりは現状cargo-editでまともに扱えないため。
-        # FIXME: cargo-editのv0.13.8もしくはv0.14.0が出て、cargo-bins/cargo-quickinstallに正しくホストされるようになったらcargo-binstallを使う
+        # cargo-binstall だと quickinstall の不具合 (cargo-bins/cargo-quickinstall#466) で cargo-edit v0.13 系の導入が失敗する。
+        # かつ Rust 1.88 環境では smol_str v0.3.4 の影響で --locked なしの cargo install が失敗するため、--locked で固定インストールする。
+        # TODO: cargo-edit v0.13.8 / v0.14.0 がリリースされ、 quickinstall に正しくホストされたら cargo-binstall に戻す。
         run: cargo install cargo-edit@^0.13 -v --locked
 
       - name: Set version
