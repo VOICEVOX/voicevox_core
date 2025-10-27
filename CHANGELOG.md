@@ -65,6 +65,8 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+## [0.16.2] - 2025-10-28 (+09:00)
+
 ### Added
 
 - \[C\] Doxygenがv1.9.8-r0からv1.12.0-r0になります ([#1155])。
@@ -370,7 +372,7 @@
     - C APIでは、LinuxとmacOS用のrpath設定が削除されます。
     - Python APIはmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_{glibcのバージョン}"になります。また、カレントディレクトリ下の動的ライブラリを自動で読み込む機能は無くなります。
 
-    補足: この変更によりCUDAでの音声合成のパフォーマンスが意図せず著しく低下しましたが、[#1164]にて修正されます。
+    補足: この変更によりCUDAでの音声合成のパフォーマンスが意図せず著しく低下しましたが、バージョン[0.16.2](#0162---2025-10-28-0900)にて修正されます。
 
 - \[BREAKING\] VOICEVOX CORE自体からはCPU版/GPU版という区分は無くなり、GPU違いのリリースについては完全に(VOICEVOX) ONNX Runtimeに委ねる形になります ([#802], [#810])。
 
@@ -994,7 +996,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
-[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...HEAD
+[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...HEAD
+[0.16.2]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...0.16.2
 [0.16.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...0.16.1
 [0.16.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.1...0.16.0
 [0.16.0-preview.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.0...0.16.0-preview.1
