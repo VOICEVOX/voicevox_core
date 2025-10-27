@@ -4873,7 +4873,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "voicevox-ort"
 version = "2.0.0-rc.10"
-source = "git+https://github.com/VOICEVOX/ort.git?rev=34202b4c362f70a72baa828f0ec0f05236406510#34202b4c362f70a72baa828f0ec0f05236406510"
+source = "git+https://github.com/VOICEVOX/ort.git?rev=22172d0fcf0715c1316f95ea08db50cf55cf0ad4#22172d0fcf0715c1316f95ea08db50cf55cf0ad4"
 dependencies = [
  "anyhow",
  "libloading 0.8.3",
@@ -4887,7 +4887,7 @@ dependencies = [
 [[package]]
 name = "voicevox-ort-sys"
 version = "2.0.0-rc.10"
-source = "git+https://github.com/VOICEVOX/ort.git?rev=34202b4c362f70a72baa828f0ec0f05236406510#34202b4c362f70a72baa828f0ec0f05236406510"
+source = "git+https://github.com/VOICEVOX/ort.git?rev=22172d0fcf0715c1316f95ea08db50cf55cf0ad4#22172d0fcf0715c1316f95ea08db50cf55cf0ad4"
 dependencies = [
  "flate2",
  "pkg-config",
