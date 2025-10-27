@@ -80,7 +80,7 @@
     - \[削除\] `git+https://github.com/VOICEVOX/ort.git?rev=12101456be9975b7d263478c7c53554017b7927c#voicevox-ort@2.0.0-rc.4`
     - \[追加\] `ndarray@0.16`: `^0.16.1`
     - \[追加\] `ndarray-stats@0.6`: `^0.6.0`
-    - \[追加\] `git+https://github.com/VOICEVOX/ort.git?rev=34202b4c362f70a72baa828f0ec0f05236406510#voicevox-ort@2.0.0-rc.10`
+    - \[追加\] `git+https://github.com/VOICEVOX/ort.git?rev=22172d0fcf0715c1316f95ea08db50cf55cf0ad4#voicevox-ort@2.0.0-rc.10`
     - \[変更\] `anyhow@1`: `^1.0.89` → `^1.0.99`
     - \[変更\] `serde@1`: `^1.0.210` → `^1.0.219`
     - \[変更\] `serde_json@1`: `^1.0.128` → `^1.0.143`
