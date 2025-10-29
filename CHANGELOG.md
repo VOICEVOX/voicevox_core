@@ -65,9 +65,11 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+## [0.16.2] - 2025-10-28 (+09:00)
+
 ### Added
 
-- \[C\] Doxygenがv1.9.8-r0からv1.12.0-r0になります ([#1155])。
+- \[C\] APIドキュメントに使っているDoxygenがv1.9.8-r0からv1.12.0-r0になります ([#1155])。
 
 ### Changed
 
@@ -78,7 +80,7 @@
     - \[削除\] `git+https://github.com/VOICEVOX/ort.git?rev=12101456be9975b7d263478c7c53554017b7927c#voicevox-ort@2.0.0-rc.4`
     - \[追加\] `ndarray@0.16`: `^0.16.1`
     - \[追加\] `ndarray-stats@0.6`: `^0.6.0`
-    - \[追加\] `git+https://github.com/VOICEVOX/ort.git?rev=34202b4c362f70a72baa828f0ec0f05236406510#voicevox-ort@2.0.0-rc.10`
+    - \[追加\] `git+https://github.com/VOICEVOX/ort.git?rev=22172d0fcf0715c1316f95ea08db50cf55cf0ad4#voicevox-ort@2.0.0-rc.10`
     - \[変更\] `anyhow@1`: `^1.0.89` → `^1.0.99`
     - \[変更\] `serde@1`: `^1.0.210` → `^1.0.219`
     - \[変更\] `serde_json@1`: `^1.0.128` → `^1.0.143`
@@ -370,7 +372,7 @@
     - C APIでは、LinuxとmacOS用のrpath設定が削除されます。
     - Python APIはmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_{glibcのバージョン}"になります。また、カレントディレクトリ下の動的ライブラリを自動で読み込む機能は無くなります。
 
-    補足: この変更によりCUDAでの音声合成のパフォーマンスが意図せず著しく低下しましたが、[#1164]にて修正されます。
+    補足: この変更によりCUDAでの音声合成のパフォーマンスが意図せず著しく低下しましたが、バージョン[0.16.2](#0162---2025-10-28-0900)にて修正されます。
 
 - \[BREAKING\] VOICEVOX CORE自体からはCPU版/GPU版という区分は無くなり、GPU違いのリリースについては完全に(VOICEVOX) ONNX Runtimeに委ねる形になります ([#802], [#810])。
 
@@ -994,7 +996,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
-[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...HEAD
+[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...HEAD
+[0.16.2]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...0.16.2
 [0.16.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...0.16.1
 [0.16.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.1...0.16.0
 [0.16.0-preview.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.0...0.16.0-preview.1
