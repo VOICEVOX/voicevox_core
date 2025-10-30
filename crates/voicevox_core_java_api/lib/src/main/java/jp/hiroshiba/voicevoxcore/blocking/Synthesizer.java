@@ -360,7 +360,8 @@ public class Synthesizer {
       throws RunModelException;
 
   @Nonnull
-  private native byte[] rsTts(String text, int styleId, boolean enableInterrogativeUpspeak)
+  private native byte[] rsTts(
+      String text, int styleId, boolean enableKatakanaEnglish, boolean enableInterrogativeUpspeak)
       throws RunModelException;
 
   private native void rsDrop();
@@ -519,6 +520,7 @@ public class Synthesizer {
     private Synthesizer synthesizer;
     private String text;
     private int styleId;
+    private boolean katakanaEnglish;
     private boolean interrogativeUpspeak;
 
     private TtsConfigurator(Synthesizer synthesizer, String text, int styleId) {
@@ -528,6 +530,12 @@ public class Synthesizer {
       this.synthesizer = synthesizer;
       this.text = text;
       this.styleId = styleId;
+    }
+
+    @Nonnull
+    public TtsConfigurator katakanaEnglish(boolean katakanaEnglish) {
+      this.katakanaEnglish = katakanaEnglish;
+      return this;
     }
 
     /**
@@ -553,7 +561,8 @@ public class Synthesizer {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }
-      return synthesizer.rsTts(this.text, this.styleId, this.interrogativeUpspeak);
+      return synthesizer.rsTts(
+          this.text, this.styleId, this.katakanaEnglish, this.interrogativeUpspeak);
     }
   }
 }

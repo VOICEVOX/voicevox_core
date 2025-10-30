@@ -1,6 +1,7 @@
 mod full_context_label;
 mod interpret_query;
 mod kana_parser;
+mod katakana_english;
 mod model;
 pub(crate) mod open_jtalk;
 pub(crate) mod text;

@@ -567,6 +567,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     this: JObject<'local>,
     query_json: JString<'local>,
     style_id: jint,
+    enable_katakana_english: jboolean,
     enable_interrogative_upspeak: jboolean,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
@@ -586,6 +587,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
 
         let wave = internal
             .tts(&text, voicevox_core::StyleId::new(style_id))
+            .enable_katakana_english(enable_katakana_english != 0)
             .enable_interrogative_upspeak(enable_interrogative_upspeak != 0)
             .perform()?;
 

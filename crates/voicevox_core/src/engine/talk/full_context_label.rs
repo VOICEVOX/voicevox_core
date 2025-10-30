@@ -32,9 +32,10 @@ type Result<T> = std::result::Result<T, FullContextLabelError>;
 pub(crate) fn extract_full_context_label(
     open_jtalk: &impl FullcontextExtractor,
     text: impl AsRef<str>,
+    enable_katakana_english: bool,
 ) -> Result<Vec<AccentPhrase>> {
     let labels = open_jtalk
-        .extract_fullcontext(text.as_ref())
+        .extract_fullcontext(text.as_ref(), enable_katakana_english)
         .map_err(|source| FullContextLabelError {
             context: ErrorKind::OpenJtalk,
             source: Some(source),
@@ -203,6 +204,7 @@ mod tests {
     use super::super::{
         full_context_label::{extract_full_context_label, generate_accent_phrases},
         open_jtalk::FullcontextExtractor,
+        text_analyzer::DEFAULT_ENABLE_KATAKANA_ENGLISH,
         Mora,
     };
 
@@ -438,7 +440,13 @@ mod tests {
         let open_jtalk = crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
             .await
             .unwrap();
-        assert_eq!(&open_jtalk.0.extract_fullcontext(text).unwrap(), labels);
+        assert_eq!(
+            &open_jtalk
+                .0
+                .extract_fullcontext(text, DEFAULT_ENABLE_KATAKANA_ENGLISH)
+                .unwrap(),
+            labels,
+        );
     }
 
     #[apply(label_cases)]
@@ -461,7 +469,8 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(
-            &extract_full_context_label(&open_jtalk.0, text).unwrap(),
+            &extract_full_context_label(&open_jtalk.0, text, DEFAULT_ENABLE_KATAKANA_ENGLISH)
+                .unwrap(),
             accent_phrase
         );
     }
