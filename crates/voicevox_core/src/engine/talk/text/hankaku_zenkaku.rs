@@ -25,6 +25,15 @@ pub(crate) fn to_zenkaku(s: &str) -> String {
         .collect()
 }
 
+pub(crate) fn to_hankaku(s: &str) -> String {
+    s.chars()
+        .map(|c| match u32::from(c) {
+            c @ 0xFF01..=0xFF5E => char::from_u32(c - 0xFF01 + 0x21).unwrap(),
+            _ => c,
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;

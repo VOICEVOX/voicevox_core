@@ -943,6 +943,33 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
     style_id: VoicevoxStyleId,
     output_audio_query_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
+    unsafe {
+        // SAFETY: The safety contract must be upheld by the caller.
+        voicevox_synthesizer_create_audio_query_with_options(
+            synthesizer,
+            text,
+            style_id,
+            voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
+            output_audio_query_json,
+        )
+    }
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// \safety{
+/// - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_synthesizer_create_audio_query_with_options}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_with_options(
+    synthesizer: *const VoicevoxSynthesizer,
+    text: *const c_char,
+    style_id: VoicevoxStyleId,
+    enable_katakana_english: bool,
+    output_audio_query_json: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
@@ -951,7 +978,9 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
 
         let audio_query = synthesizer
             .body()
-            .create_audio_query(text, StyleId::new(style_id))?;
+            .create_audio_query_with_options(text, StyleId::new(style_id))
+            .enable_katakana_english(enable_katakana_english)
+            .perform()?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
         unsafe {
@@ -1055,13 +1084,42 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     style_id: VoicevoxStyleId,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
+    unsafe {
+        // SAFETY: The safety contract must be upheld by the caller.
+        voicevox_synthesizer_create_accent_phrases_with_options(
+            synthesizer,
+            text,
+            style_id,
+            voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
+            output_accent_phrases_json,
+        )
+    }
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// \safety{
+/// - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_synthesizer_create_accent_phrases_with_options}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_with_options(
+    synthesizer: *const VoicevoxSynthesizer,
+    text: *const c_char,
+    style_id: VoicevoxStyleId,
+    enable_katakana_english: bool,
+    output_accent_phrases_json: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
         let text = ensure_utf8(unsafe { CStr::from_ptr(text) })?;
         let accent_phrases = synthesizer
             .body()
-            .create_accent_phrases(text, StyleId::new(style_id))?;
+            .create_accent_phrases_with_options(text, StyleId::new(style_id))
+            .enable_katakana_english(enable_katakana_english)
+            .perform()?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         unsafe {
@@ -1285,6 +1343,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     })())
 }
 
+// TODO: ここにどうにかして`enable_katakana_english`を追加する。
 /// ::voicevox_synthesizer_tts のオプション。
 ///
 /// \no-orig-impl{VoicevoxTtsOptions}

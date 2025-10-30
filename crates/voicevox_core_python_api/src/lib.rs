@@ -719,16 +719,26 @@ mod blocking {
                 .into_py_result(py)
         }
 
+        #[pyo3(signature=(
+            text,
+            style_id,
+            *,
+            enable_katakana_english =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
+        ))]
         fn create_audio_query(
             &self,
             text: &str,
             style_id: u32,
+            enable_katakana_english: bool,
             py: Python<'_>,
         ) -> PyResult<ToDataclass<AudioQuery>> {
             let synthesizesr = self.synthesizer.read()?;
 
             synthesizesr
-                .create_audio_query(text, StyleId::new(style_id))
+                .create_audio_query_with_options(text, StyleId::new(style_id))
+                .__enable_katakana_english(enable_katakana_english)
+                .perform()
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -747,16 +757,26 @@ mod blocking {
                 .into_py_result(py)
         }
 
+        #[pyo3(signature=(
+            text,
+            style_id,
+            *,
+            enable_katakana_english =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
+        ))]
         fn create_accent_phrases(
             &self,
             text: &str,
             style_id: u32,
+            enable_katakana_english: bool,
             py: Python<'_>,
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
 
             synthesizer
-                .create_accent_phrases(text, StyleId::new(style_id))
+                .create_accent_phrases_with_options(text, StyleId::new(style_id))
+                .__enable_katakana_english(enable_katakana_english)
+                .perform()
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -909,6 +929,8 @@ mod blocking {
             text,
             style_id,
             *,
+            enable_katakana_english =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -916,6 +938,7 @@ mod blocking {
             &self,
             text: &str,
             style_id: u32,
+            enable_katakana_english: bool,
             enable_interrogative_upspeak: bool,
             py: Python<'_>,
         ) -> PyResult<Vec<u8>> {
@@ -923,6 +946,7 @@ mod blocking {
             self.synthesizer
                 .read()?
                 .tts(text, style_id)
+                .__enable_katakana_english(enable_katakana_english)
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
                 .into_py_result(py)
@@ -1257,7 +1281,14 @@ mod asyncio {
         }
 
         async fn analyze(&self, text: String) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
-            let accent_phrases = self.open_jtalk.analyze_(&text).await.map(Into::into);
+            let accent_phrases = self
+                .open_jtalk
+                .analyze_(
+                    &text,
+                    voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
+                )
+                .await
+                .map(Into::into);
             Python::with_gil(|py| accent_phrases.into_py_result(py))
         }
     }
@@ -1403,15 +1434,25 @@ mod asyncio {
             Python::with_gil(|py| audio_query.into_py_result(py))
         }
 
+        #[pyo3(signature=(
+            text,
+            style_id,
+            *,
+            enable_katakana_english =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
+        ))]
         async fn create_audio_query(
             &self,
             text: String,
             style_id: u32,
+            enable_katakana_english: bool,
         ) -> PyResult<ToDataclass<AudioQuery>> {
             let synthesizer = self.synthesizer.clone();
             let audio_query = synthesizer
                 .read()?
-                .create_audio_query(&text, StyleId::new(style_id))
+                .create_audio_query_with_options(&text, StyleId::new(style_id))
+                .__enable_katakana_english(enable_katakana_english)
+                .perform()
                 .await
                 .map(Into::into);
             Python::with_gil(|py| audio_query.into_py_result(py))
@@ -1431,15 +1472,25 @@ mod asyncio {
             Python::with_gil(|py| accent_phrases.into_py_result(py))
         }
 
+        #[pyo3(signature=(
+            text,
+            style_id,
+            *,
+            enable_katakana_english =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
+        ))]
         async fn create_accent_phrases(
             &self,
             text: String,
             style_id: u32,
+            enable_katakana_english: bool,
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.clone();
             let accent_phrases = synthesizer
                 .read()?
-                .create_accent_phrases(&text, StyleId::new(style_id))
+                .create_accent_phrases_with_options(&text, StyleId::new(style_id))
+                .__enable_katakana_english(enable_katakana_english)
+                .perform()
                 .await
                 .map(Into::into);
             Python::with_gil(|py| accent_phrases.into_py_result(py))
@@ -1547,6 +1598,8 @@ mod asyncio {
             text,
             style_id,
             *,
+            enable_katakana_english =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
             cancellable = voicevox_core::__internal::interop::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
@@ -1555,6 +1608,7 @@ mod asyncio {
             &self,
             text: String,
             style_id: u32,
+            enable_katakana_english: bool,
             enable_interrogative_upspeak: bool,
             cancellable: bool,
         ) -> PyResult<Vec<u8>> {
@@ -1563,6 +1617,7 @@ mod asyncio {
             let wav = synthesizer
                 .read()?
                 .tts(&text, style_id)
+                .__enable_katakana_english(enable_katakana_english)
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .cancellable(cancellable)
                 .perform()
