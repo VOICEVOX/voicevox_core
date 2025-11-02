@@ -165,7 +165,7 @@ jobs:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v5
-      # PyO3とMaturinはクロスコンパイルをサポートしているが、RustのターゲットとPythonインタプリタとでポインタ幅だけは同じである必要がある。
+      # NOTE: PyO3の制約で、RustのターゲットとPythonのビット数を一致させる必要がある。
       # https://github.com/PyO3/pyo3/blob/v0.27.1/pyo3-ffi/build.rs#L138-L143
       - name: Determine Python interpreter architecture
         if: matrix.python_whl
