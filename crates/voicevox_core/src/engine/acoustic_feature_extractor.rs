@@ -2,6 +2,146 @@ use std::{collections::HashMap, sync::LazyLock};
 
 use derive_getters::Getters;
 use derive_new::new;
+use enum_map::Enum;
+use strum::EnumString;
+
+#[derive(Clone, Copy, Enum, EnumString)]
+pub(crate) enum Phoneme {
+    #[strum(serialize = "pau")]
+    ShortPause,
+
+    #[strum(serialize = "A")]
+    UnvoicedA,
+
+    #[strum(serialize = "E")]
+    UnvoicedE,
+
+    #[strum(serialize = "I")]
+    UnvoicedI,
+
+    #[strum(serialize = "N")]
+    Hatsuon,
+
+    #[strum(serialize = "O")]
+    UnvoicedO,
+
+    #[strum(serialize = "U")]
+    UnvoicedU,
+
+    #[strum(serialize = "a")]
+    VoicedA,
+
+    #[strum(serialize = "b")]
+    どうしよう,
+
+    #[strum(serialize = "by")]
+    どうしよう,
+
+    #[strum(serialize = "ch")]
+    どうしよう,
+
+    #[strum(serialize = "cl")]
+    どうしよう,
+
+    #[strum(serialize = "d")]
+    どうしよう,
+
+    #[strum(serialize = "dy")]
+    どうしよう,
+
+    #[strum(serialize = "e")]
+    どうしよう,
+
+    #[strum(serialize = "f")]
+    どうしよう,
+
+    #[strum(serialize = "g")]
+    どうしよう,
+
+    #[strum(serialize = "gw")]
+    どうしよう,
+
+    #[strum(serialize = "gy")]
+    どうしよう,
+
+    #[strum(serialize = "h")]
+    どうしよう,
+
+    #[strum(serialize = "hy")]
+    どうしよう,
+
+    #[strum(serialize = "i")]
+    どうしよう,
+
+    #[strum(serialize = "j")]
+    どうしよう,
+
+    #[strum(serialize = "k")]
+    どうしよう,
+
+    #[strum(serialize = "kw")]
+    どうしよう,
+
+    #[strum(serialize = "ky")]
+    どうしよう,
+
+    #[strum(serialize = "m")]
+    どうしよう,
+
+    #[strum(serialize = "my")]
+    どうしよう,
+
+    #[strum(serialize = "n")]
+    どうしよう,
+
+    #[strum(serialize = "ny")]
+    どうしよう,
+
+    #[strum(serialize = "o")]
+    どうしよう,
+
+    #[strum(serialize = "p")]
+    どうしよう,
+
+    #[strum(serialize = "py")]
+    どうしよう,
+
+    #[strum(serialize = "r")]
+    どうしよう,
+
+    #[strum(serialize = "ry")]
+    どうしよう,
+
+    #[strum(serialize = "s")]
+    どうしよう,
+
+    #[strum(serialize = "sh")]
+    どうしよう,
+
+    #[strum(serialize = "t")]
+    どうしよう,
+
+    #[strum(serialize = "ts")]
+    どうしよう,
+
+    #[strum(serialize = "ty")]
+    どうしよう,
+
+    #[strum(serialize = "u")]
+    どうしよう,
+
+    #[strum(serialize = "v")]
+    どうしよう,
+
+    #[strum(serialize = "w")]
+    どうしよう,
+
+    #[strum(serialize = "y")]
+    どうしよう,
+
+    #[strum(serialize = "z")]
+    どうしよう,
+}
 
 #[rustfmt::skip]
 const PHONEME_LIST: &[&str] = &[
