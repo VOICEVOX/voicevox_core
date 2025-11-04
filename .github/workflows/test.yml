@@ -139,7 +139,7 @@ jobs:
             { "os": "windows-2022", "can_skip_in_simple_test": true },
             { "os": "windows-2025", "can_skip_in_simple_test": true },
             { "os": "macos-14", "can_skip_in_simple_test": false },
-            { "os": "macos-15", "can_skip_in_simple_test": true },
+            { "os": "macos-15-intel", "can_skip_in_simple_test": true },
             { "os": "ubuntu-22.04", "can_skip_in_simple_test": false },
             { "os": "ubuntu-24.04", "can_skip_in_simple_test": true }
           ]'
