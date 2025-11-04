@@ -2838,7 +2838,7 @@ dependencies = [
 [[package]]
 name = "open_jtalk"
 version = "0.1.25"
-source = "git+https://github.com/qryxip/open_jtalk-rs.git?branch=pr%2Ffeat-add-njd-update#c773025e84d4eb7c09c3b4d9bdaf410e727852e3"
+source = "git+https://github.com/qryxip/open_jtalk-rs.git?branch=pr%2Ffeat-add-njd-update#0b1e8b45b610e5f1937a0b5a068e75b9e60a2745"
 dependencies = [
  "camino",
  "libc",
@@ -2849,7 +2849,7 @@ dependencies = [
 [[package]]
 name = "open_jtalk-sys"
 version = "0.16.111"
-source = "git+https://github.com/qryxip/open_jtalk-rs.git?branch=pr%2Ffeat-add-njd-update#c773025e84d4eb7c09c3b4d9bdaf410e727852e3"
+source = "git+https://github.com/qryxip/open_jtalk-rs.git?branch=pr%2Ffeat-add-njd-update#0b1e8b45b610e5f1937a0b5a068e75b9e60a2745"
 dependencies = [
  "bindgen 0.70.1",
  "cmake",
