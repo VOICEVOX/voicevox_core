@@ -274,6 +274,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     this: JObject<'local>,
     text: JString<'local>,
     style_id: jint,
+    enable_katakana_english: jboolean,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let text: String = env.get_string(&text)?.into();
@@ -290,8 +291,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         }?
         .clone();
 
-        let audio_query =
-            internal.create_audio_query(&text, voicevox_core::StyleId::new(style_id))?;
+        let audio_query = internal
+            .create_audio_query_with_options(&text, voicevox_core::StyleId::new(style_id))
+            .enable_katakana_english(enable_katakana_english != 0)
+            .perform()?;
 
         let query_json = serde_json::to_string(&audio_query).expect("should not fail");
 
@@ -346,6 +349,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     this: JObject<'local>,
     text: JString<'local>,
     style_id: jint,
+    enable_katakana_english: jboolean,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let text: String = env.get_string(&text)?.into();
@@ -362,8 +366,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         }?
         .clone();
 
-        let accent_phrases =
-            internal.create_accent_phrases(&text, voicevox_core::StyleId::new(style_id))?;
+        let accent_phrases = internal
+            .create_accent_phrases_with_options(&text, voicevox_core::StyleId::new(style_id))
+            .enable_katakana_english(enable_katakana_english != 0)
+            .perform()?;
 
         let query_json = serde_json::to_string(&accent_phrases).expect("should not fail");
 
