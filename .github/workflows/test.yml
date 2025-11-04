@@ -100,7 +100,7 @@ jobs:
           cd "$_"
           rustup override set ${{ steps.msrv-for-rust-api.outputs.rust-version }}
           cargo init
-          cargo add base64ct@=1.6.0 # TODO: MSRVが1.85以上になったら不要
+          cargo add base64ct@=1.6.0 cfg-elif@=0.6.2 # TODO: MSRVが1.85以上になったら不要
           cargo add --path "$rust_api" --features load-onnxruntime
           cargo check
           cargo rm voicevox_core

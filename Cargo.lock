@@ -2350,7 +2350,7 @@ dependencies = [
 [[package]]
 name = "kanalizer"
 version = "0.0.0"
-source = "git+https://github.com/VOICEVOX/kanalizer.git?tag=0.1.1#a65240e586cbf3cbbb46ea413df0fe9128166a49"
+source = "git+https://github.com/qryxip/kanalizer.git?branch=pr%2Ffeat-infer-make-rust-apis-msrv-1-84#83c3edec2a9bacf89a482ddfaf721d6cdb9441e8"
 dependencies = [
  "anyhow",
  "brotli",
