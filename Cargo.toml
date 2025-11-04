@@ -112,7 +112,7 @@ tag = "0.1.1"
 
 [workspace.dependencies.voicevox-ort]
 git = "https://github.com/VOICEVOX/ort.git"
-rev = "34202b4c362f70a72baa828f0ec0f05236406510"
+rev = "22172d0fcf0715c1316f95ea08db50cf55cf0ad4"
 
 [workspace.dependencies.open_jtalk]
 git = "https://github.com/qryxip/open_jtalk-rs.git"

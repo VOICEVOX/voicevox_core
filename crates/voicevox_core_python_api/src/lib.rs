@@ -168,7 +168,6 @@ impl<T, C: PyTypeInfo> Closable<T, C, Tokio> {
 }
 
 trait Async {
-    const EXIT_METHOD: &str;
     type RwLock<T>: RwLock<Item = T>;
 }
 
@@ -176,12 +175,10 @@ enum SingleTasked {}
 enum Tokio {}
 
 impl Async for SingleTasked {
-    const EXIT_METHOD: &str = "__exit__";
     type RwLock<T> = std::sync::RwLock<T>;
 }
 
 impl Async for Tokio {
-    const EXIT_METHOD: &str = "__aexit__";
     type RwLock<T> = async_lock::RwLock<T>;
 }
 
