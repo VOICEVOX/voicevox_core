@@ -3,6 +3,7 @@ mod interpret_query;
 mod kana_parser;
 mod model;
 pub(crate) mod open_jtalk;
+pub(crate) mod text;
 pub(crate) mod text_analyzer;
 pub(crate) mod user_dict;
 
