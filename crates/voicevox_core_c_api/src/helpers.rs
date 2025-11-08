@@ -59,7 +59,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
 }
 
 pub(crate) fn display_error(err: &impl std::error::Error) {
-    itertools::chain(
+    iter::chain(
         [err.to_string()],
         iter::successors(err.source(), |&e| e.source()).map(|e| format!("Caused by: {e}")),
     )

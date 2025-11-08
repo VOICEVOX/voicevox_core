@@ -173,7 +173,7 @@ impl AudioQuery {
                 let phoneme_id = phoneme_data_list[i].phoneme_id();
 
                 for _ in 0..phoneme_length {
-                    let mut phonemes_vec = [0.; OjtPhoneme::num_phoneme()];
+                    let mut phonemes_vec = [0.; OjtPhoneme::num_phoneme()]; // TODO: Rust 1.89であればサイズが型推論可能になる
                     phonemes_vec[phoneme_id as usize] = 1.;
                     phoneme.push(phonemes_vec)
                 }

@@ -29,7 +29,6 @@ const_format.workspace = true
 duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
-itertools.workspace = true
 libc.workspace = true
 ndarray.workspace = true
 parking_lot = { workspace = true, features = ["arc_lock"] }
@@ -50,6 +49,7 @@ duct.workspace = true
 easy-ext.workspace = true
 inventory.workspace = true
 indexmap = { workspace = true, features = ["serde"] }
+itertools.workspace = true
 libloading.workspace = true
 libtest-mimic.workspace = true
 ndarray.workspace = true
