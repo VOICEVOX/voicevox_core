@@ -174,6 +174,7 @@ impl AsyncExt for BlockingThreadPool {
 
 const DEFAULT_SAMPLING_RATE: u32 = 24000;
 /// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（フレーム数）
+// TODO: Rust 1.90であれば`{float}::round`がそのまま使える
 const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * 24000Hz / 256.0).round()
 /// 音声生成の際、音声特徴量の前後に確保すべきマージン幅（フレーム数）
 /// モデルの受容野から計算される
