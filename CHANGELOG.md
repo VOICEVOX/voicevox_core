@@ -65,6 +65,10 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+### Removed
+
+- \[macOS\] macOS 13がサポート範囲から外れ、バイナリのリリースはmacOS 14で行われるようになります。ただし、macOS 14でビルドされたバイナリでもmacOS 13で動作すると考えられています ([#1174])。
+
 ## [0.16.2] - 2025-10-28 (+09:00)
 
 ### Added
@@ -1352,6 +1356,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1153]: https://github.com/VOICEVOX/voicevox_core/pull/1153
 [#1155]: https://github.com/VOICEVOX/voicevox_core/pull/1155
 [#1164]: https://github.com/VOICEVOX/voicevox_core/pull/1164
+[#1174]: https://github.com/VOICEVOX/voicevox_core/pull/1174
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

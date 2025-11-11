@@ -34,7 +34,7 @@ impl assert_cdylib::TestCase for TestCase {
         // SAFETY: `voicevox_user_dict_new`には特にはsafety requirementsは無いはず。
         let dict = unsafe { lib.voicevox_user_dict_new() };
 
-        let mut word_uuid = [0u8; 16];
+        let mut word_uuid = [0u8; _];
 
         let word = {
             // SAFETY: `voicevox_user_dict_word_make` itself has no safety requirements.
