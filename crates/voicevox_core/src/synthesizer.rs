@@ -1958,6 +1958,13 @@ pub(crate) mod blocking {
     }
 
     impl CreateAccentPhrases<'_, crate::blocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
         pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
             self.__enable_katakana_english(enable_katakana_english)
         }
@@ -1988,6 +1995,13 @@ pub(crate) mod blocking {
     }
 
     impl CreateAudioQuery<'_, crate::blocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
         pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
             self.__enable_katakana_english(enable_katakana_english)
         }
@@ -2087,6 +2101,13 @@ pub(crate) mod blocking {
     }
 
     impl Tts<'_, crate::blocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
         pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
             self.__enable_katakana_english(enable_katakana_english)
         }
@@ -2562,6 +2583,13 @@ pub(crate) mod nonblocking {
     }
 
     impl CreateAccentPhrases<'_, crate::nonblocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
         pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
             self.__enable_katakana_english(enable_katakana_english)
         }
@@ -2592,6 +2620,13 @@ pub(crate) mod nonblocking {
     }
 
     impl CreateAudioQuery<'_, crate::nonblocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
         pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
             self.__enable_katakana_english(enable_katakana_english)
         }
@@ -2688,6 +2723,13 @@ pub(crate) mod nonblocking {
     }
 
     impl Tts<'_, crate::nonblocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
         pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
             self.__enable_katakana_english(enable_katakana_english)
         }

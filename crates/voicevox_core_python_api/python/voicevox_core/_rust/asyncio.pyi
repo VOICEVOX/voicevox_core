@@ -293,6 +293,8 @@ class Synthesizer:
         style_id
             スタイルID。
         enable_katakana_english
+            テキスト中の読みが不明な英単語をカタカナ読みにする。デフォルト値はバージョン0.17にて
+            ``True`` になる予定。
 
         Returns
         -------
@@ -340,6 +342,8 @@ class Synthesizer:
         style_id
             スタイルID。
         enable_katakana_english
+            テキスト中の読みが不明な英単語をカタカナ読みにする。デフォルト値はバージョン0.17にて
+            ``True`` になる予定。
 
         Returns
         -------
@@ -494,6 +498,8 @@ class Synthesizer:
         style_id
             スタイルID。
         enable_katakana_english
+            テキスト中の読みが不明な英単語をカタカナ読みにする。デフォルト値はバージョン0.17にて
+            ``True`` になる予定。
         enable_interrogative_upspeak
             疑問文の調整を有効にするかどうか。
         cancellable
