@@ -370,6 +370,7 @@ impl OjtPhoneme {
         }
     }
 
+    // TODO: https://github.com/VOICEVOX/voicevox_engine/pull/791
     pub(super) fn convert(phonemes: &[OjtPhoneme]) -> Vec<OjtPhoneme> {
         let mut phonemes = phonemes.to_owned();
         // TODO: Rust 2024にしたらlet chainに戻す
