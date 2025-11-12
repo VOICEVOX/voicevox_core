@@ -355,7 +355,10 @@ impl OjtPhoneme {
         match s {
             "" => Self::Empty,
             s if s.contains("sil") => Self::HasSil,
-            s => Self::HasId(s.parse().unwrap_or_else(|e| panic!("invalid phoneme: {e}"))),
+            s => Self::HasId(
+                s.parse()
+                    .unwrap_or_else(|_| panic!("invalid phoneme: {s:?}")),
+            ),
         }
     }
 
