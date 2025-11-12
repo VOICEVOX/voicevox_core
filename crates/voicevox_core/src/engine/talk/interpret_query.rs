@@ -86,12 +86,12 @@ pub(crate) fn split_mora(
         .map(|vowel_index| phoneme_list[*vowel_index as usize])
         .collect();
 
-    let mut consonant_phoneme_list = vec![OjtPhoneme::default()];
+    let mut consonant_phoneme_list = vec![OjtPhoneme::None];
     for i in 0..(vowel_indexes.len() - 1) {
         let prev = vowel_indexes[i];
         let next = vowel_indexes[i + 1];
         if next - prev == 1 {
-            consonant_phoneme_list.push(OjtPhoneme::default());
+            consonant_phoneme_list.push(OjtPhoneme::None);
         } else {
             consonant_phoneme_list.push(phoneme_list[next as usize - 1]);
         }

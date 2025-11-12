@@ -324,13 +324,10 @@ pub(crate) enum Phoneme {
     ConsonantZ,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum OjtPhoneme {
-    #[default]
-    Empty,
-
-    HasSil,
-
+    None,
+    HasSil, // TODO: https://github.com/VOICEVOX/voicevox_engine/pull/791
     HasId(Phoneme),
 }
 
@@ -353,7 +350,7 @@ impl OjtPhoneme {
     /// `s`が不正ならパニックする。
     pub(crate) fn new(s: &str) -> Self {
         match s {
-            "" => Self::Empty,
+            "" => Self::None,
             s if s.contains("sil") => Self::HasSil,
             s => Self::HasId(
                 s.parse()
@@ -364,13 +361,12 @@ impl OjtPhoneme {
 
     pub(crate) fn phoneme_id(&self) -> i64 {
         match self {
-            Self::Empty => -1,
+            Self::None => -1,
             Self::HasSil => panic!("should have been converted"),
             Self::HasId(p) => p.into_usize() as _,
         }
     }
 
-    // TODO: https://github.com/VOICEVOX/voicevox_engine/pull/791
     pub(super) fn convert(phonemes: &[OjtPhoneme]) -> Vec<OjtPhoneme> {
         let mut phonemes = phonemes.to_owned();
         // TODO: Rust 2024にしたらlet chainに戻す
