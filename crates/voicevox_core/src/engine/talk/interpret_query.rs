@@ -61,9 +61,7 @@ pub(crate) fn split_mora(
         .filter(|&(_, phoneme)| {
             matches!(
                 *phoneme,
-                OjtPhoneme::HasId(phoneme)
-                if matches!(
-                    phoneme,
+                OjtPhoneme::HasId(
                     phoneme!("a")
                         | phoneme!("i")
                         | phoneme!("u")
@@ -76,7 +74,7 @@ pub(crate) fn split_mora(
                         | phoneme!("E")
                         | phoneme!("O")
                         | phoneme!("cl")
-                        | phoneme!("pau")
+                        | phoneme!("pau"),
                 )
             )
         })

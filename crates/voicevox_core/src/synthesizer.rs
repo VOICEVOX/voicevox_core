@@ -611,17 +611,15 @@ trait AsInner {
         for i in 0..vowel_phoneme_data_list.len() {
             if matches!(
                 vowel_phoneme_data_list[i],
-                OjtPhoneme::HasId(phoneme)
-                if matches!(
-                    phoneme,
+                OjtPhoneme::HasId(
                     phoneme!("A")
-                    | phoneme!("I")
-                    | phoneme!("U")
-                    | phoneme!("E")
-                    | phoneme!("O")
-                    | phoneme!("cl")
-                    | phoneme!("pau")
-                 )
+                        | phoneme!("I")
+                        | phoneme!("U")
+                        | phoneme!("E")
+                        | phoneme!("O")
+                        | phoneme!("cl")
+                        | phoneme!("pau"),
+                )
             ) {
                 f0_list[i] = 0.;
             }
