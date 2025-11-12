@@ -141,7 +141,7 @@ macro_rules! phoneme {
 }
 pub(crate) use phoneme;
 
-#[derive(Clone, Copy, Debug, PartialEq, Enum, EnumString, strum::Display, IntoStaticStr)]
+#[derive(Clone, Copy, PartialEq, Debug, Enum, EnumString, strum::Display, IntoStaticStr)]
 pub(crate) enum Phoneme {
     /// `pau`。
     #[strum(serialize = "pau")]
