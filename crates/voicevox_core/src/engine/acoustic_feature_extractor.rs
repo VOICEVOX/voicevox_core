@@ -73,7 +73,7 @@ impl OjtPhoneme {
         "pau".into()
     }
 
-    pub fn new(phoneme: &str) -> Self {
+    pub(super) fn new(phoneme: &str) -> Self {
         let phoneme = if phoneme.contains("sil") {
             Self::space_phoneme()
         } else {
