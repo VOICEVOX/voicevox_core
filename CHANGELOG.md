@@ -65,6 +65,10 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+### Added
+
+- 最初と最後以外に`sil`音素が挟まっているAudioQueryが許容されるようになります ([#1197])。
+
 ### Removed
 
 - \[macOS\] macOS 13がサポート範囲から外れ、バイナリのリリースはmacOS 14で行われるようになります。ただし、macOS 14でビルドされたバイナリでもmacOS 13で動作すると考えられています ([#1174])。
@@ -1357,6 +1361,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1155]: https://github.com/VOICEVOX/voicevox_core/pull/1155
 [#1164]: https://github.com/VOICEVOX/voicevox_core/pull/1164
 [#1174]: https://github.com/VOICEVOX/voicevox_core/pull/1174
+[#1197]: https://github.com/VOICEVOX/voicevox_core/pull/1197
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
