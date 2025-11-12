@@ -1,6 +1,10 @@
 //! [`AudioQuery`]から特徴量を取り出す処理を集めたもの。
 
-use super::{super::OjtPhoneme, full_context_label::mora_to_text, AccentPhrase, AudioQuery, Mora};
+use super::{
+    super::{phoneme, OjtPhoneme},
+    full_context_label::mora_to_text,
+    AccentPhrase, AudioQuery, Mora,
+};
 
 pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<OjtPhoneme>) {
     let flatten_moras = to_flatten_moras(accent_phrases);
@@ -41,7 +45,6 @@ pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Ve
             phoneme_str_list
                 .iter()
                 .map(AsRef::as_ref)
-                .map(ToOwned::to_owned)
                 .map(OjtPhoneme::new)
                 .collect::<Vec<OjtPhoneme>>()
                 .as_slice(),
@@ -52,23 +55,37 @@ pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Ve
 pub(crate) fn split_mora(
     phoneme_list: &[OjtPhoneme],
 ) -> (Vec<OjtPhoneme>, Vec<OjtPhoneme>, Vec<i64>) {
-    let mut vowel_indexes = Vec::new();
-    for (i, phoneme) in phoneme_list.iter().enumerate() {
-        const MORA_PHONEME_LIST: &[&str] = &[
-            "a", "i", "u", "e", "o", "N", "A", "I", "U", "E", "O", "cl", "pau",
-        ];
-
-        if MORA_PHONEME_LIST
-            .iter()
-            .any(|mora_phoneme| *mora_phoneme == phoneme.phoneme())
-        {
-            vowel_indexes.push(i as i64);
-        }
-    }
+    let vowel_indexes = phoneme_list
+        .iter()
+        .enumerate()
+        .filter(|&(_, phoneme)| {
+            matches!(
+                *phoneme,
+                OjtPhoneme::HasId(phoneme)
+                if matches!(
+                    phoneme,
+                    phoneme!("a")
+                        | phoneme!("i")
+                        | phoneme!("u")
+                        | phoneme!("e")
+                        | phoneme!("o")
+                        | phoneme!("N")
+                        | phoneme!("A")
+                        | phoneme!("I")
+                        | phoneme!("U")
+                        | phoneme!("E")
+                        | phoneme!("O")
+                        | phoneme!("cl")
+                        | phoneme!("pau")
+                )
+            )
+        })
+        .map(|(i, _)| i as i64)
+        .collect::<Vec<_>>();
 
     let vowel_phoneme_list = vowel_indexes
         .iter()
-        .map(|vowel_index| phoneme_list[*vowel_index as usize].clone())
+        .map(|vowel_index| phoneme_list[*vowel_index as usize])
         .collect();
 
     let mut consonant_phoneme_list = vec![OjtPhoneme::default()];
@@ -78,7 +95,7 @@ pub(crate) fn split_mora(
         if next - prev == 1 {
             consonant_phoneme_list.push(OjtPhoneme::default());
         } else {
-            consonant_phoneme_list.push(phoneme_list[next as usize - 1].clone());
+            consonant_phoneme_list.push(phoneme_list[next as usize - 1]);
         }
     }
 

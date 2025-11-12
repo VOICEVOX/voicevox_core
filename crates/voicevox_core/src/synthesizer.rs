@@ -39,6 +39,7 @@ use crate::{
         voice_model,
     },
     engine::{
+        phoneme,
         talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
         to_s16le_pcm, wav_from_s16le, OjtPhoneme,
     },
@@ -608,12 +609,20 @@ trait AsInner {
             .await?;
 
         for i in 0..vowel_phoneme_data_list.len() {
-            const UNVOICED_MORA_PHONEME_LIST: &[&str] = &["A", "I", "U", "E", "O", "cl", "pau"];
-
-            if UNVOICED_MORA_PHONEME_LIST
-                .iter()
-                .any(|phoneme| *phoneme == vowel_phoneme_data_list[i].phoneme())
-            {
+            if matches!(
+                vowel_phoneme_data_list[i],
+                OjtPhoneme::HasId(phoneme)
+                if matches!(
+                    phoneme,
+                    phoneme!("A")
+                    | phoneme!("I")
+                    | phoneme!("U")
+                    | phoneme!("E")
+                    | phoneme!("O")
+                    | phoneme!("cl")
+                    | phoneme!("pau")
+                 )
+            ) {
                 f0_list[i] = 0.;
             }
         }

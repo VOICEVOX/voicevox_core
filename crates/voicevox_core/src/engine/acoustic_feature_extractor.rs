@@ -1,224 +1,369 @@
-use std::{collections::HashMap, sync::LazyLock};
-
-use derive_getters::Getters;
-use derive_new::new;
+use easy_ext::ext;
 use enum_map::Enum;
-use strum::EnumString;
+use strum::{EnumString, IntoStaticStr};
 
-#[derive(Clone, Copy, Enum, EnumString)]
+macro_rules! phoneme {
+    ("pau") => {
+        crate::engine::Phoneme::MorablePau
+    };
+    ("A") => {
+        crate::engine::Phoneme::UnvoicedVowelA
+    };
+    ("E") => {
+        crate::engine::Phoneme::UnvoicedVowelE
+    };
+    ("I") => {
+        crate::engine::Phoneme::UnvoicedVowelI
+    };
+    ("N") => {
+        crate::engine::Phoneme::MorableN
+    };
+    ("O") => {
+        crate::engine::Phoneme::UnvoicedVowelO
+    };
+    ("U") => {
+        crate::engine::Phoneme::UnvoicedVowelU
+    };
+    ("a") => {
+        crate::engine::Phoneme::VoicedVowelA
+    };
+    ("b") => {
+        crate::engine::Phoneme::ConsonantB
+    };
+    ("by") => {
+        crate::engine::Phoneme::ConsonantBy
+    };
+    ("ch") => {
+        crate::engine::Phoneme::ConsonantCh
+    };
+    ("cl") => {
+        crate::engine::Phoneme::MorableCl
+    };
+    ("d") => {
+        crate::engine::Phoneme::ConsonantD
+    };
+    ("dy") => {
+        crate::engine::Phoneme::ConsonantDy
+    };
+    ("e") => {
+        crate::engine::Phoneme::VoicedVowelE
+    };
+    ("f") => {
+        crate::engine::Phoneme::ConsonantF
+    };
+    ("g") => {
+        crate::engine::Phoneme::ConsonantG
+    };
+    ("gw") => {
+        crate::engine::Phoneme::ConsonantGw
+    };
+    ("gy") => {
+        crate::engine::Phoneme::ConsonantGy
+    };
+    ("h") => {
+        crate::engine::Phoneme::ConsonantH
+    };
+    ("hy") => {
+        crate::engine::Phoneme::ConsonantHy
+    };
+    ("i") => {
+        crate::engine::Phoneme::VoicedVowelI
+    };
+    ("j") => {
+        crate::engine::Phoneme::ConsonantJ
+    };
+    ("k") => {
+        crate::engine::Phoneme::ConsonantK
+    };
+    ("kw") => {
+        crate::engine::Phoneme::ConsonantKw
+    };
+    ("ky") => {
+        crate::engine::Phoneme::ConsonantKy
+    };
+    ("m") => {
+        crate::engine::Phoneme::ConsonantM
+    };
+    ("my") => {
+        crate::engine::Phoneme::ConsonantMy
+    };
+    ("n") => {
+        crate::engine::Phoneme::ConsonantN
+    };
+    ("ny") => {
+        crate::engine::Phoneme::ConsonantNy
+    };
+    ("o") => {
+        crate::engine::Phoneme::VoicedVowelO
+    };
+    ("p") => {
+        crate::engine::Phoneme::ConsonantP
+    };
+    ("py") => {
+        crate::engine::Phoneme::ConsonantPy
+    };
+    ("r") => {
+        crate::engine::Phoneme::ConsonantR
+    };
+    ("ry") => {
+        crate::engine::Phoneme::ConsonantRy
+    };
+    ("s") => {
+        crate::engine::Phoneme::ConsonantS
+    };
+    ("sh") => {
+        crate::engine::Phoneme::ConsonantSh
+    };
+    ("t") => {
+        crate::engine::Phoneme::ConsonantT
+    };
+    ("ts") => {
+        crate::engine::Phoneme::ConsonantTs
+    };
+    ("ty") => {
+        crate::engine::Phoneme::ConsonantTy
+    };
+    ("u") => {
+        crate::engine::Phoneme::VoicedVowelU
+    };
+    ("v") => {
+        crate::engine::Phoneme::ConsonantV
+    };
+    ("w") => {
+        crate::engine::Phoneme::ConsonantW
+    };
+    ("y") => {
+        crate::engine::Phoneme::ConsonantY
+    };
+    ("z") => {
+        crate::engine::Phoneme::ConsonantZ
+    };
+}
+pub(crate) use phoneme;
+
+#[derive(Clone, Copy, Debug, PartialEq, Enum, EnumString, strum::Display, IntoStaticStr)]
 pub(crate) enum Phoneme {
+    /// `pau`。
     #[strum(serialize = "pau")]
-    ShortPause,
+    MorablePau,
 
+    /// `A`。
     #[strum(serialize = "A")]
-    UnvoicedA,
+    UnvoicedVowelA,
 
+    /// `E`。
     #[strum(serialize = "E")]
-    UnvoicedE,
+    UnvoicedVowelE,
 
+    /// `I`。
     #[strum(serialize = "I")]
-    UnvoicedI,
+    UnvoicedVowelI,
 
+    /// `N`。
     #[strum(serialize = "N")]
-    Hatsuon,
+    MorableN,
 
+    /// `O`。
     #[strum(serialize = "O")]
-    UnvoicedO,
+    UnvoicedVowelO,
 
+    /// `U`。
     #[strum(serialize = "U")]
-    UnvoicedU,
+    UnvoicedVowelU,
 
+    /// `a`。
     #[strum(serialize = "a")]
-    VoicedA,
+    VoicedVowelA,
 
+    /// `b`。
     #[strum(serialize = "b")]
-    どうしよう,
+    ConsonantB,
 
+    /// `by`。
     #[strum(serialize = "by")]
-    どうしよう,
+    ConsonantBy,
 
+    /// `ch`。
     #[strum(serialize = "ch")]
-    どうしよう,
+    ConsonantCh,
 
+    /// `cl`。
     #[strum(serialize = "cl")]
-    どうしよう,
+    MorableCl,
 
+    /// `d`。
     #[strum(serialize = "d")]
-    どうしよう,
+    ConsonantD,
 
+    /// `dy`。
     #[strum(serialize = "dy")]
-    どうしよう,
+    ConsonantDy,
 
+    /// `e`。
     #[strum(serialize = "e")]
-    どうしよう,
+    VoicedVowelE,
 
+    /// `f`。
     #[strum(serialize = "f")]
-    どうしよう,
+    ConsonantF,
 
+    /// `g`。
     #[strum(serialize = "g")]
-    どうしよう,
+    ConsonantG,
 
+    /// `gw`。
     #[strum(serialize = "gw")]
-    どうしよう,
+    ConsonantGw,
 
+    /// `gy`。
     #[strum(serialize = "gy")]
-    どうしよう,
+    ConsonantGy,
 
+    /// `h`。
     #[strum(serialize = "h")]
-    どうしよう,
+    ConsonantH,
 
+    /// `hy`。
     #[strum(serialize = "hy")]
-    どうしよう,
+    ConsonantHy,
 
+    /// `i`。
     #[strum(serialize = "i")]
-    どうしよう,
+    VoicedVowelI,
 
+    /// `j`。
     #[strum(serialize = "j")]
-    どうしよう,
+    ConsonantJ,
 
+    /// `k`。
     #[strum(serialize = "k")]
-    どうしよう,
+    ConsonantK,
 
+    /// `kw`。
     #[strum(serialize = "kw")]
-    どうしよう,
+    ConsonantKw,
 
+    /// `ky`。
     #[strum(serialize = "ky")]
-    どうしよう,
+    ConsonantKy,
 
+    /// `m`。
     #[strum(serialize = "m")]
-    どうしよう,
+    ConsonantM,
 
+    /// `my`。
     #[strum(serialize = "my")]
-    どうしよう,
+    ConsonantMy,
 
+    /// `n`。
     #[strum(serialize = "n")]
-    どうしよう,
+    ConsonantN,
 
+    /// `ny`。
     #[strum(serialize = "ny")]
-    どうしよう,
+    ConsonantNy,
 
+    /// `o`。
     #[strum(serialize = "o")]
-    どうしよう,
+    VoicedVowelO,
 
+    /// `p`。
     #[strum(serialize = "p")]
-    どうしよう,
+    ConsonantP,
 
+    /// `py`。
     #[strum(serialize = "py")]
-    どうしよう,
+    ConsonantPy,
 
+    /// `r`。
     #[strum(serialize = "r")]
-    どうしよう,
+    ConsonantR,
 
+    /// `ry`。
     #[strum(serialize = "ry")]
-    どうしよう,
+    ConsonantRy,
 
+    /// `s`。
     #[strum(serialize = "s")]
-    どうしよう,
+    ConsonantS,
 
+    /// `sh`。
     #[strum(serialize = "sh")]
-    どうしよう,
+    ConsonantSh,
 
+    /// `t`。
     #[strum(serialize = "t")]
-    どうしよう,
+    ConsonantT,
 
+    /// `ts`。
     #[strum(serialize = "ts")]
-    どうしよう,
+    ConsonantTs,
 
+    /// `ty`。
     #[strum(serialize = "ty")]
-    どうしよう,
+    ConsonantTy,
 
+    /// `u`。
     #[strum(serialize = "u")]
-    どうしよう,
+    VoicedVowelU,
 
+    /// `v`。
     #[strum(serialize = "v")]
-    どうしよう,
+    ConsonantV,
 
+    /// `w`。
     #[strum(serialize = "w")]
-    どうしよう,
+    ConsonantW,
 
+    /// `y`。
     #[strum(serialize = "y")]
-    どうしよう,
+    ConsonantY,
 
+    /// `z`。
     #[strum(serialize = "z")]
-    どうしよう,
+    ConsonantZ,
 }
 
-#[rustfmt::skip]
-const PHONEME_LIST: &[&str] = &[
-    "pau",
-    "A",
-    "E",
-    "I",
-    "N",
-    "O",
-    "U",
-    "a",
-    "b",
-    "by",
-    "ch",
-    "cl",
-    "d",
-    "dy",
-    "e",
-    "f",
-    "g",
-    "gw",
-    "gy",
-    "h",
-    "hy",
-    "i",
-    "j",
-    "k",
-    "kw",
-    "ky",
-    "m",
-    "my",
-    "n",
-    "ny",
-    "o",
-    "p",
-    "py",
-    "r",
-    "ry",
-    "s",
-    "sh",
-    "t",
-    "ts",
-    "ty",
-    "u",
-    "v",
-    "w",
-    "y",
-    "z",
-];
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub(crate) enum OjtPhoneme {
+    #[default]
+    Empty,
 
-static PHONEME_MAP: LazyLock<HashMap<&str, i64>> = LazyLock::new(|| {
-    let mut m = HashMap::new();
-    for (i, s) in PHONEME_LIST.iter().enumerate() {
-        m.insert(*s, i as i64);
-    }
-    m
-});
+    HasSil,
 
-#[derive(Debug, Clone, PartialEq, new, Default, Getters)]
-pub(crate) struct OjtPhoneme {
-    phoneme: String,
+    HasId(Phoneme),
 }
 
 impl OjtPhoneme {
     pub(crate) const fn num_phoneme() -> usize {
-        PHONEME_LIST.len() // == PHONEME_MAP.len()
+        return <Phoneme as Enum>::Array::<()>::LEN;
+
+        #[ext]
+        impl<T, const N: usize> [T; N] {
+            const LEN: usize = N;
+        }
     }
 
-    fn space_phoneme() -> String {
-        "pau".into()
+    fn space_phoneme() -> Self {
+        Self::HasId(Phoneme::MorablePau)
+    }
+
+    /// # Panics
+    ///
+    /// `s`が不正ならパニックする。
+    pub(crate) fn new(s: &str) -> Self {
+        match s {
+            "" => Self::Empty,
+            s if s.contains("sil") => Self::HasSil,
+            s => Self::HasId(s.parse().unwrap_or_else(|e| panic!("invalid phoneme: {e}"))),
+        }
     }
 
     pub(crate) fn phoneme_id(&self) -> i64 {
-        if self.phoneme.is_empty() {
-            -1
-        } else {
-            *PHONEME_MAP.get(&self.phoneme.as_str()).unwrap()
+        match self {
+            Self::Empty => -1,
+            Self::HasSil => panic!("should have been converted"),
+            Self::HasId(p) => p.into_usize() as _,
         }
     }
 
@@ -228,24 +373,24 @@ impl OjtPhoneme {
         #[cfg(any())]
         __! {
         if let Some(first_phoneme) = phonemes.first_mut()
-            && first_phoneme.phoneme.contains("sil")
+            && *first_phoneme == Self::HasSil
         {
-            first_phoneme.phoneme = OjtPhoneme::space_phoneme();
+            *first_phoneme = Self::space_phoneme();
         }
         if let Some(last_phoneme) = phonemes.last_mut()
-            && last_phoneme.phoneme.contains("sil")
+            && *last_phoneme == Self::HasSil
         {
-            last_phoneme.phoneme = OjtPhoneme::space_phoneme();
+            *last_phoneme = Self::space_phoneme();
         }
         }
         if let Some(first_phoneme) = phonemes.first_mut() {
-            if first_phoneme.phoneme.contains("sil") {
-                first_phoneme.phoneme = OjtPhoneme::space_phoneme();
+            if *first_phoneme == Self::HasSil {
+                *first_phoneme = Self::space_phoneme();
             }
         }
         if let Some(last_phoneme) = phonemes.last_mut() {
-            if last_phoneme.phoneme.contains("sil") {
-                last_phoneme.phoneme = OjtPhoneme::space_phoneme();
+            if *last_phoneme == Self::HasSil {
+                *last_phoneme = Self::space_phoneme();
             }
         }
         phonemes
@@ -254,17 +399,17 @@ impl OjtPhoneme {
 
 #[cfg(test)]
 mod tests {
+    use enum_map::Enum as _;
     use pretty_assertions::assert_eq;
     use rstest::rstest;
 
-    use super::OjtPhoneme;
+    use super::{OjtPhoneme, Phoneme};
 
     const STR_HELLO_HIHO: &str = "sil k o N n i ch i w a pau h i h o d e s U sil";
 
     fn base_hello_hiho() -> Vec<OjtPhoneme> {
         STR_HELLO_HIHO
             .split_whitespace()
-            .map(ToOwned::to_owned)
             .map(OjtPhoneme::new)
             .collect()
     }
@@ -280,7 +425,7 @@ mod tests {
     #[case(38, "ts")]
     #[case(41, "v")]
     fn test_phoneme_list(#[case] index: usize, #[case] phoneme_str: &str) {
-        assert_eq!(super::PHONEME_LIST[index], phoneme_str);
+        assert_eq!(<&str>::from(Phoneme::from_usize(index)), phoneme_str);
     }
 
     #[rstest]
@@ -290,7 +435,10 @@ mod tests {
 
     #[rstest]
     fn test_space_phoneme_works() {
-        assert_eq!(OjtPhoneme::space_phoneme(), "pau");
+        assert_eq!(
+            OjtPhoneme::space_phoneme(),
+            OjtPhoneme::HasId(Phoneme::MorablePau),
+        );
     }
 
     #[rstest]
@@ -298,15 +446,18 @@ mod tests {
     fn test_convert_works(#[case] ojt_phonemes: Vec<OjtPhoneme>, #[case] expected: &str) {
         let ojt_str_hello_hiho: String = ojt_phonemes
             .iter()
-            .map(|phoneme| phoneme.phoneme().clone())
+            .map(|phoneme| match phoneme {
+                OjtPhoneme::HasId(phoneme) => phoneme.to_string(),
+                _ => panic!(),
+            })
             .collect::<Vec<_>>()
             .join(" ");
         assert_eq!(ojt_str_hello_hiho, expected);
     }
 
     #[rstest]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a".into()), true)]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("k".into()), false)]
+    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a"), true)]
+    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("k"), false)]
     fn test_ojt_phoneme_equality(
         #[case] ojt_phonemes: Vec<OjtPhoneme>,
         #[case] index: usize,
