@@ -1,0 +1,27 @@
+name: Cache ONNX Runtime
+description: voicevox-ortクレートがダウンロードするONNX Runtimeをキャッシュする。voicevox-ortがシンボリックリンクを利用するmacOSとLinuxだけ対象で、Windowsは対象外。
+
+inputs:
+  key:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - id: cache-dir-location
+      shell: bash
+      run: |
+        case "$RUNNER_OS" in
+          macOS) cache_dir=/Users/runner/Library/Caches ;;
+          Linux) cache_dir=/home/runner/.cache ;;
+          *)
+            echo 'OS must be macOS or Linux' >&2
+            exit 1
+        esac
+
+        echo cache-dir=$cache_dir >> "$GITHUB_OUTPUT"
+
+    - uses: actions/cache@v4
+      with:
+        key: ${{ inputs.key }}
+        path: ${{ steps.cache-dir-location.outputs.cache-dir }}/voicevox_ort/dfbin
