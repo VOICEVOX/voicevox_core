@@ -4991,7 +4991,6 @@ dependencies = [
  "tracing-subscriber",
  "typetag",
  "uuid",
- "voicevox-ort",
  "voicevox_core",
 ]
 
