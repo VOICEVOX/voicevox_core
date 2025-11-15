@@ -6,12 +6,20 @@ use std::{
 
 use anyhow::Context as _;
 use camino::{Utf8Path, Utf8PathBuf};
+use easy_ext::ext;
+use itertools::Itertools as _;
 use open_jtalk::{
-    mecab_dict_index, text2mecab, JpCommon, ManagedResource, Mecab, Njd, Text2MecabError,
+    mecab_dict_index, text2mecab, JpCommon, ManagedResource, Mecab, Njd, NjdNode, Text2MecabError,
+    Utf8LibcString,
 };
 use tempfile::NamedTempFile;
 
 use crate::error::ErrorRepr;
+
+use super::{
+    katakana_english::HankakuAlphabets,
+    text::{hankaku_zenkaku, katakana},
+};
 
 #[derive(thiserror::Error, Debug)]
 #[error("`{function}`の実行が失敗しました")]
@@ -22,7 +30,11 @@ pub(crate) struct OpenjtalkFunctionError {
 }
 
 pub(crate) trait FullcontextExtractor {
-    fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>>;
+    fn extract_fullcontext(
+        &self,
+        text: &str,
+        enable_katakana_english: bool,
+    ) -> anyhow::Result<Vec<String>>;
 }
 
 struct Inner {
@@ -105,7 +117,11 @@ impl Inner {
 }
 
 impl FullcontextExtractor for Inner {
-    fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>> {
+    fn extract_fullcontext(
+        &self,
+        text: &str,
+        enable_katakana_english: bool,
+    ) -> anyhow::Result<Vec<String>> {
         let Resources {
             mecab,
             njd,
@@ -120,7 +136,7 @@ impl FullcontextExtractor for Inner {
             function: "text2mecab",
             source: Some(e),
         })?;
-        if mecab.analysis(mecab_text) {
+        return if mecab.analysis(mecab_text) {
             njd.mecab2njd(
                 mecab.get_feature().ok_or(OpenjtalkFunctionError {
                     function: "Mecab_get_feature",
@@ -134,6 +150,26 @@ impl FullcontextExtractor for Inner {
             njd.set_accent_type();
             njd.set_unvoiced_vowel();
             njd.set_long_vowel();
+            if enable_katakana_english {
+                njd.update(|mut features| {
+                    for feature in &mut features {
+                        let string = feature.string.as_ref().unwrap_or_else(|| todo!());
+                        let string = &hankaku_zenkaku::to_hankaku(string.as_ref());
+
+                        //  TODO: Rust 2024になったらlet chainに
+                        if let Some(string) = feature
+                            .is_unknown_reading_word()
+                            .then(|| HankakuAlphabets::new(string))
+                            .flatten()
+                        {
+                            let new_pron = &string.convert_english_to_katakana();
+                            feature.update_with_kana(new_pron);
+                        }
+                    }
+
+                    remove_pau_spaces_between_alphabets(features)
+                });
+            }
             jpcommon.njd2jpcommon(njd);
             jpcommon.make_label();
             jpcommon
@@ -150,6 +186,69 @@ impl FullcontextExtractor for Inner {
                 source: None,
             }
             .into())
+        };
+
+        #[ext]
+        impl NjdNode {
+            fn is_unknown_reading_word(&self) -> bool {
+                matches!(&self.pos, Some(pos) if pos == "フィラー") && self.chain_rule.is_none()
+            }
+
+            fn is_pau_space(&self) -> bool {
+                matches!(
+                    (&self.string, &self.pron),
+                    (Some(string), Some(pron))
+                    if string ==  "　" && pron == "、"
+                )
+            }
+        }
+
+        #[easy_ext::ext]
+        impl NjdNode {
+            fn update_with_kana(&mut self, kana: &str) {
+                self.pos = Some(Utf8LibcString::new("名詞"));
+                self.pos_group1 = Some(Utf8LibcString::new("固有名詞"));
+                self.pos_group2 = Some(Utf8LibcString::new("一般"));
+                self.pos_group3 = Some(Utf8LibcString::new("*"));
+                self.read = Some(Utf8LibcString::new(kana));
+                self.pron = Some(Utf8LibcString::new(kana));
+                self.acc = 1;
+                self.mora_size = katakana::count_moras(kana) as _;
+                self.chain_rule = Some(Utf8LibcString::new("*"));
+                self.chain_flag = -1;
+            }
+        }
+
+        fn remove_pau_spaces_between_alphabets(features: Vec<NjdNode>) -> Vec<NjdNode> {
+            if features.len() == 1 {
+                return features;
+            }
+
+            itertools::chain!(
+                [false],
+                features
+                    .iter()
+                    .tuple_windows()
+                    .map(|(left, center, right)| {
+                        left.string.as_ref().zip(right.string.as_ref()).is_some_and(
+                            |(left, right)| {
+                                is_zenkaku_alphabets(left.as_ref())
+                                    && center.is_pau_space()
+                                    && is_zenkaku_alphabets(right.as_ref())
+                            },
+                        )
+                    })
+                    .collect::<Vec<_>>(),
+                [false],
+            )
+            .zip_eq(features)
+            .filter(|&(is_pau_space_between_alphabets, _)| !is_pau_space_between_alphabets)
+            .map(|(_, feature)| feature)
+            .collect()
+        }
+
+        fn is_zenkaku_alphabets(s: &str) -> bool {
+            s.chars().all(|c| matches!(c, '！'..='～'))
         }
     }
 }
@@ -216,17 +315,33 @@ pub(crate) mod blocking {
     }
 
     impl FullcontextExtractor for self::OpenJtalk {
-        fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>> {
-            self.0.extract_fullcontext(text)
+        fn extract_fullcontext(
+            &self,
+            text: &str,
+            enable_katakana_english: bool,
+        ) -> anyhow::Result<Vec<String>> {
+            self.0.extract_fullcontext(text, enable_katakana_english)
         }
     }
 
     impl crate::blocking::TextAnalyzer for self::OpenJtalk {
         fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
+            self.__analyze_with_options(text, false)
+        }
+
+        fn __analyze_with_options(
+            &self,
+            text: &str,
+            #[allow(unused_variables)] enable_katakana_english: bool,
+        ) -> anyhow::Result<Vec<AccentPhrase>> {
             if text.is_empty() {
                 return Ok(Vec::new());
             }
-            Ok(extract_full_context_label(&*self.0, text)?)
+            Ok(extract_full_context_label(
+                &*self.0,
+                text,
+                enable_katakana_english,
+            )?)
         }
     }
 
@@ -286,14 +401,24 @@ pub(crate) mod nonblocking {
 
     impl crate::nonblocking::TextAnalyzer for self::OpenJtalk {
         async fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
+            self.__analyze_with_options(text, false).await
+        }
+
+        async fn __analyze_with_options(
+            &self,
+            text: &str,
+            enable_katakana_english: bool,
+        ) -> anyhow::Result<Vec<AccentPhrase>> {
             if text.is_empty() {
                 return Ok(Vec::new());
             }
             let inner = self.0 .0.clone();
             let text = text.to_owned();
-            crate::task::asyncify(move || extract_full_context_label(&*inner, &text))
-                .await
-                .map_err(Into::into)
+            crate::task::asyncify(move || {
+                extract_full_context_label(&*inner, &text, enable_katakana_english)
+            })
+            .await
+            .map_err(Into::into)
         }
     }
 }
@@ -405,7 +530,7 @@ mod tests {
         let open_jtalk = super::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
             .await
             .unwrap();
-        let result = open_jtalk.0.extract_fullcontext(text);
+        let result = open_jtalk.0.extract_fullcontext(text, false);
         assert_debug_fmt_eq!(expected, result);
     }
 
@@ -420,7 +545,7 @@ mod tests {
             .await
             .unwrap();
         for _ in 0..10 {
-            let result = open_jtalk.0.extract_fullcontext(text);
+            let result = open_jtalk.0.extract_fullcontext(text, false);
             assert_debug_fmt_eq!(expected, result);
         }
     }
