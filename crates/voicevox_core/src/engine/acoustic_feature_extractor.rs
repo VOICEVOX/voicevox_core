@@ -1,7 +1,6 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use derive_getters::Getters;
-use derive_new::new;
 
 #[rustfmt::skip]
 const PHONEME_LIST: &[&str] = &[
@@ -60,7 +59,7 @@ static PHONEME_MAP: LazyLock<HashMap<&str, i64>> = LazyLock::new(|| {
     m
 });
 
-#[derive(Debug, Clone, PartialEq, new, Default, Getters)]
+#[derive(Debug, Clone, PartialEq, Default, Getters)]
 pub(crate) struct OjtPhoneme {
     phoneme: String,
 }
@@ -74,41 +73,21 @@ impl OjtPhoneme {
         "pau".into()
     }
 
+    pub(super) fn new(phoneme: &str) -> Self {
+        let phoneme = if phoneme.contains("sil") {
+            Self::space_phoneme()
+        } else {
+            phoneme.to_owned()
+        };
+        Self { phoneme }
+    }
+
     pub(crate) fn phoneme_id(&self) -> i64 {
         if self.phoneme.is_empty() {
             -1
         } else {
             *PHONEME_MAP.get(&self.phoneme.as_str()).unwrap()
         }
-    }
-
-    pub(super) fn convert(phonemes: &[OjtPhoneme]) -> Vec<OjtPhoneme> {
-        let mut phonemes = phonemes.to_owned();
-        // TODO: Rust 2024にしたらlet chainに戻す
-        #[cfg(any())]
-        __! {
-        if let Some(first_phoneme) = phonemes.first_mut()
-            && first_phoneme.phoneme.contains("sil")
-        {
-            first_phoneme.phoneme = OjtPhoneme::space_phoneme();
-        }
-        if let Some(last_phoneme) = phonemes.last_mut()
-            && last_phoneme.phoneme.contains("sil")
-        {
-            last_phoneme.phoneme = OjtPhoneme::space_phoneme();
-        }
-        }
-        if let Some(first_phoneme) = phonemes.first_mut() {
-            if first_phoneme.phoneme.contains("sil") {
-                first_phoneme.phoneme = OjtPhoneme::space_phoneme();
-            }
-        }
-        if let Some(last_phoneme) = phonemes.last_mut() {
-            if last_phoneme.phoneme.contains("sil") {
-                last_phoneme.phoneme = OjtPhoneme::space_phoneme();
-            }
-        }
-        phonemes
     }
 }
 
@@ -121,16 +100,11 @@ mod tests {
 
     const STR_HELLO_HIHO: &str = "sil k o N n i ch i w a pau h i h o d e s U sil";
 
-    fn base_hello_hiho() -> Vec<OjtPhoneme> {
+    fn ojt_hello_hiho() -> Vec<OjtPhoneme> {
         STR_HELLO_HIHO
             .split_whitespace()
-            .map(ToOwned::to_owned)
             .map(OjtPhoneme::new)
             .collect()
-    }
-
-    fn ojt_hello_hiho() -> Vec<OjtPhoneme> {
-        OjtPhoneme::convert(&base_hello_hiho())
     }
 
     #[rstest]
@@ -165,8 +139,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a".into()), true)]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("k".into()), false)]
+    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a"), true)]
+    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("k"), false)]
     fn test_ojt_phoneme_equality(
         #[case] ojt_phonemes: Vec<OjtPhoneme>,
         #[case] index: usize,
