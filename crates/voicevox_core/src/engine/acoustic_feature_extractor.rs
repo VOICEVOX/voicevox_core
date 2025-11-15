@@ -1,148 +1,162 @@
-use easy_ext::ext;
-use enum_map::Enum;
-use strum::{EnumString, IntoStaticStr};
+use bytemuck::{Contiguous, NoUninit};
+use strum::EnumString;
 
-macro_rules! phoneme {
-    ("pau") => {
-        crate::engine::Phoneme::MorablePau
-    };
-    ("A") => {
-        crate::engine::Phoneme::UnvoicedVowelA
-    };
-    ("E") => {
-        crate::engine::Phoneme::UnvoicedVowelE
-    };
-    ("I") => {
-        crate::engine::Phoneme::UnvoicedVowelI
-    };
-    ("N") => {
-        crate::engine::Phoneme::MorableN
-    };
-    ("O") => {
-        crate::engine::Phoneme::UnvoicedVowelO
-    };
-    ("U") => {
-        crate::engine::Phoneme::UnvoicedVowelU
-    };
-    ("a") => {
-        crate::engine::Phoneme::VoicedVowelA
-    };
-    ("b") => {
-        crate::engine::Phoneme::ConsonantB
-    };
-    ("by") => {
-        crate::engine::Phoneme::ConsonantBy
-    };
-    ("ch") => {
-        crate::engine::Phoneme::ConsonantCh
-    };
-    ("cl") => {
-        crate::engine::Phoneme::MorableCl
-    };
-    ("d") => {
-        crate::engine::Phoneme::ConsonantD
-    };
-    ("dy") => {
-        crate::engine::Phoneme::ConsonantDy
-    };
-    ("e") => {
-        crate::engine::Phoneme::VoicedVowelE
-    };
-    ("f") => {
-        crate::engine::Phoneme::ConsonantF
-    };
-    ("g") => {
-        crate::engine::Phoneme::ConsonantG
-    };
-    ("gw") => {
-        crate::engine::Phoneme::ConsonantGw
-    };
-    ("gy") => {
-        crate::engine::Phoneme::ConsonantGy
-    };
-    ("h") => {
-        crate::engine::Phoneme::ConsonantH
-    };
-    ("hy") => {
-        crate::engine::Phoneme::ConsonantHy
-    };
-    ("i") => {
-        crate::engine::Phoneme::VoicedVowelI
-    };
-    ("j") => {
-        crate::engine::Phoneme::ConsonantJ
-    };
-    ("k") => {
-        crate::engine::Phoneme::ConsonantK
-    };
-    ("kw") => {
-        crate::engine::Phoneme::ConsonantKw
-    };
-    ("ky") => {
-        crate::engine::Phoneme::ConsonantKy
-    };
-    ("m") => {
-        crate::engine::Phoneme::ConsonantM
-    };
-    ("my") => {
-        crate::engine::Phoneme::ConsonantMy
-    };
-    ("n") => {
-        crate::engine::Phoneme::ConsonantN
-    };
-    ("ny") => {
-        crate::engine::Phoneme::ConsonantNy
-    };
-    ("o") => {
-        crate::engine::Phoneme::VoicedVowelO
-    };
-    ("p") => {
-        crate::engine::Phoneme::ConsonantP
-    };
-    ("py") => {
-        crate::engine::Phoneme::ConsonantPy
-    };
-    ("r") => {
-        crate::engine::Phoneme::ConsonantR
-    };
-    ("ry") => {
-        crate::engine::Phoneme::ConsonantRy
-    };
-    ("s") => {
-        crate::engine::Phoneme::ConsonantS
-    };
-    ("sh") => {
-        crate::engine::Phoneme::ConsonantSh
-    };
-    ("t") => {
-        crate::engine::Phoneme::ConsonantT
-    };
-    ("ts") => {
-        crate::engine::Phoneme::ConsonantTs
-    };
-    ("ty") => {
-        crate::engine::Phoneme::ConsonantTy
-    };
-    ("u") => {
-        crate::engine::Phoneme::VoicedVowelU
-    };
-    ("v") => {
-        crate::engine::Phoneme::ConsonantV
-    };
-    ("w") => {
-        crate::engine::Phoneme::ConsonantW
-    };
-    ("y") => {
-        crate::engine::Phoneme::ConsonantY
-    };
-    ("z") => {
-        crate::engine::Phoneme::ConsonantZ
+macro_rules! phoneme_codes {
+    ($($phoneme_code:tt),* $(,)?) => {
+        $(crate::engine::__phoneme_code!($phoneme_code))|*
     };
 }
-pub(crate) use phoneme;
 
-#[derive(Clone, Copy, PartialEq, Debug, Enum, EnumString, strum::Display, IntoStaticStr)]
-pub(crate) enum Phoneme {
+pub(crate) use phoneme_codes;
+
+macro_rules! __phoneme_code {
+    ("pau") => {
+        crate::engine::PhonemeCode::MorablePau
+    };
+    ("A") => {
+        crate::engine::PhonemeCode::UnvoicedVowelA
+    };
+    ("E") => {
+        crate::engine::PhonemeCode::UnvoicedVowelE
+    };
+    ("I") => {
+        crate::engine::PhonemeCode::UnvoicedVowelI
+    };
+    ("N") => {
+        crate::engine::PhonemeCode::MorableN
+    };
+    ("O") => {
+        crate::engine::PhonemeCode::UnvoicedVowelO
+    };
+    ("U") => {
+        crate::engine::PhonemeCode::UnvoicedVowelU
+    };
+    ("a") => {
+        crate::engine::PhonemeCode::VoicedVowelA
+    };
+    ("b") => {
+        crate::engine::PhonemeCode::ConsonantB
+    };
+    ("by") => {
+        crate::engine::PhonemeCode::ConsonantBy
+    };
+    ("ch") => {
+        crate::engine::PhonemeCode::ConsonantCh
+    };
+    ("cl") => {
+        crate::engine::PhonemeCode::MorableCl
+    };
+    ("d") => {
+        crate::engine::PhonemeCode::ConsonantD
+    };
+    ("dy") => {
+        crate::engine::PhonemeCode::ConsonantDy
+    };
+    ("e") => {
+        crate::engine::PhonemeCode::VoicedVowelE
+    };
+    ("f") => {
+        crate::engine::PhonemeCode::ConsonantF
+    };
+    ("g") => {
+        crate::engine::PhonemeCode::ConsonantG
+    };
+    ("gw") => {
+        crate::engine::PhonemeCode::ConsonantGw
+    };
+    ("gy") => {
+        crate::engine::PhonemeCode::ConsonantGy
+    };
+    ("h") => {
+        crate::engine::PhonemeCode::ConsonantH
+    };
+    ("hy") => {
+        crate::engine::PhonemeCode::ConsonantHy
+    };
+    ("i") => {
+        crate::engine::PhonemeCode::VoicedVowelI
+    };
+    ("j") => {
+        crate::engine::PhonemeCode::ConsonantJ
+    };
+    ("k") => {
+        crate::engine::PhonemeCode::ConsonantK
+    };
+    ("kw") => {
+        crate::engine::PhonemeCode::ConsonantKw
+    };
+    ("ky") => {
+        crate::engine::PhonemeCode::ConsonantKy
+    };
+    ("m") => {
+        crate::engine::PhonemeCode::ConsonantM
+    };
+    ("my") => {
+        crate::engine::PhonemeCode::ConsonantMy
+    };
+    ("n") => {
+        crate::engine::PhonemeCode::ConsonantN
+    };
+    ("ny") => {
+        crate::engine::PhonemeCode::ConsonantNy
+    };
+    ("o") => {
+        crate::engine::PhonemeCode::VoicedVowelO
+    };
+    ("p") => {
+        crate::engine::PhonemeCode::ConsonantP
+    };
+    ("py") => {
+        crate::engine::PhonemeCode::ConsonantPy
+    };
+    ("r") => {
+        crate::engine::PhonemeCode::ConsonantR
+    };
+    ("ry") => {
+        crate::engine::PhonemeCode::ConsonantRy
+    };
+    ("s") => {
+        crate::engine::PhonemeCode::ConsonantS
+    };
+    ("sh") => {
+        crate::engine::PhonemeCode::ConsonantSh
+    };
+    ("t") => {
+        crate::engine::PhonemeCode::ConsonantT
+    };
+    ("ts") => {
+        crate::engine::PhonemeCode::ConsonantTs
+    };
+    ("ty") => {
+        crate::engine::PhonemeCode::ConsonantTy
+    };
+    ("u") => {
+        crate::engine::PhonemeCode::VoicedVowelU
+    };
+    ("v") => {
+        crate::engine::PhonemeCode::ConsonantV
+    };
+    ("w") => {
+        crate::engine::PhonemeCode::ConsonantW
+    };
+    ("y") => {
+        crate::engine::PhonemeCode::ConsonantY
+    };
+    ("z") => {
+        crate::engine::PhonemeCode::ConsonantZ
+    };
+}
+pub(crate) use __phoneme_code;
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, EnumString, strum::Display)]
+pub(super) enum Phoneme {
+    /// 母音モーラにおける子音部分。
+    ///
+    /// 通常、AudioQueryにこの値が入ることはない。またVOICEVOX
+    /// ENGINEではこの値は取り扱っておらず内部エラーとなる。
+    #[strum(serialize = "")]
+    None,
+
     /// `pau`。
     #[strum(serialize = "pau")]
     MorablePau,
@@ -322,111 +336,348 @@ pub(crate) enum Phoneme {
     /// `z`。
     #[strum(serialize = "z")]
     ConsonantZ,
+
+    /// `sil`。
+    #[strum(serialize = "sil")]
+    Sil,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) enum OjtPhoneme {
-    None,
-    HasId(Phoneme),
+#[derive(Clone, Copy, PartialEq, Debug, Contiguous, NoUninit)]
+#[repr(i64)]
+pub(crate) enum PhonemeCode {
+    /// 母音モーラにおける子音部分。
+    None = -1,
+
+    /// `pau`。
+    MorablePau = 0,
+
+    /// `A`。
+    UnvoicedVowelA = 1,
+
+    /// `E`。
+    UnvoicedVowelE = 2,
+
+    /// `I`。
+    UnvoicedVowelI = 3,
+
+    /// `N`。
+    MorableN = 4,
+
+    /// `O`。
+    UnvoicedVowelO = 5,
+
+    /// `U`。
+    UnvoicedVowelU = 6,
+
+    /// `a`。
+    VoicedVowelA = 7,
+
+    /// `b`。
+    ConsonantB = 8,
+
+    /// `by`。
+    ConsonantBy = 9,
+
+    /// `ch`。
+    ConsonantCh = 10,
+
+    /// `cl`。
+    MorableCl = 11,
+
+    /// `d`。
+    ConsonantD = 12,
+
+    /// `dy`。
+    ConsonantDy = 13,
+
+    /// `e`。
+    VoicedVowelE = 14,
+
+    /// `f`。
+    ConsonantF = 15,
+
+    /// `g`。
+    ConsonantG = 16,
+
+    /// `gw`。
+    ConsonantGw = 17,
+
+    /// `gy`。
+    ConsonantGy = 18,
+
+    /// `h`。
+    ConsonantH = 19,
+
+    /// `hy`。
+    ConsonantHy = 20,
+
+    /// `i`。
+    VoicedVowelI = 21,
+
+    /// `j`。
+    ConsonantJ = 22,
+
+    /// `k`。
+    ConsonantK = 23,
+
+    /// `kw`。
+    ConsonantKw = 24,
+
+    /// `ky`。
+    ConsonantKy = 25,
+
+    /// `m`。
+    ConsonantM = 26,
+
+    /// `my`。
+    ConsonantMy = 27,
+
+    /// `n`。
+    ConsonantN = 28,
+
+    /// `ny`。
+    ConsonantNy = 29,
+
+    /// `o`。
+    VoicedVowelO = 30,
+
+    /// `p`。
+    ConsonantP = 31,
+
+    /// `py`。
+    ConsonantPy = 32,
+
+    /// `r`。
+    ConsonantR = 33,
+
+    /// `ry`。
+    ConsonantRy = 34,
+
+    /// `s`。
+    ConsonantS = 35,
+
+    /// `sh`。
+    ConsonantSh = 36,
+
+    /// `t`。
+    ConsonantT = 37,
+
+    /// `ts`。
+    ConsonantTs = 38,
+
+    /// `ty`。
+    ConsonantTy = 39,
+
+    /// `u`。
+    VoicedVowelU = 40,
+
+    /// `v`。
+    ConsonantV = 41,
+
+    /// `w`。
+    ConsonantW = 42,
+
+    /// `y`。
+    ConsonantY = 43,
+
+    /// `z`。
+    ConsonantZ = 44,
 }
 
-impl OjtPhoneme {
+impl PhonemeCode {
     pub(crate) const fn num_phoneme() -> usize {
-        return <Phoneme as Enum>::Array::<()>::LEN;
-
-        #[ext]
-        impl<T, const N: usize> [T; N] {
-            const LEN: usize = N;
-        }
+        Self::MAX_VALUE as usize + 1
     }
 
-    fn space_phoneme() -> Self {
-        Self::HasId(Phoneme::MorablePau)
+    const fn space_phoneme() -> Self {
+        Self::MorablePau
     }
+}
 
-    /// # Panics
-    ///
-    /// `s`が不正ならパニックする。
-    pub(super) fn new(s: &str) -> Self {
-        match s {
-            "" => Self::None,
-            s if s.contains("sil") => Self::space_phoneme(),
-            s => Self::HasId(
-                s.parse()
-                    .unwrap_or_else(|_| panic!("invalid phoneme: {s:?}")),
-            ),
+impl From<Phoneme> for PhonemeCode {
+    fn from(phoneme: Phoneme) -> Self {
+        macro_rules! convert {
+            ($($ident:ident),* $(,)?) => {
+                match phoneme {
+                    $(Phoneme::$ident => Self::$ident,)*
+                    Phoneme::Sil => Self::space_phoneme(),
+                }
+            };
         }
+
+        convert!(
+            None,
+            MorablePau,
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            ConsonantB,
+            ConsonantBy,
+            ConsonantCh,
+            MorableCl,
+            ConsonantD,
+            ConsonantDy,
+            VoicedVowelE,
+            ConsonantF,
+            ConsonantG,
+            ConsonantGw,
+            ConsonantGy,
+            ConsonantH,
+            ConsonantHy,
+            VoicedVowelI,
+            ConsonantJ,
+            ConsonantK,
+            ConsonantKw,
+            ConsonantKy,
+            ConsonantM,
+            ConsonantMy,
+            ConsonantN,
+            ConsonantNy,
+            VoicedVowelO,
+            ConsonantP,
+            ConsonantPy,
+            ConsonantR,
+            ConsonantRy,
+            ConsonantS,
+            ConsonantSh,
+            ConsonantT,
+            ConsonantTs,
+            ConsonantTy,
+            VoicedVowelU,
+            ConsonantV,
+            ConsonantW,
+            ConsonantY,
+            ConsonantZ,
+        )
     }
+}
 
-    pub(crate) fn phoneme_id(&self) -> i64 {
-        match self {
-            Self::None => -1,
-            Self::HasId(p) => p.into_usize() as _,
+#[cfg(test)]
+impl From<PhonemeCode> for Phoneme {
+    fn from(code: PhonemeCode) -> Self {
+        macro_rules! convert {
+            ($($ident:ident),* $(,)?) => {
+                match code {
+                    $(PhonemeCode::$ident => Self::$ident,)*
+                }
+            };
         }
+
+        convert!(
+            None,
+            MorablePau,
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            ConsonantB,
+            ConsonantBy,
+            ConsonantCh,
+            MorableCl,
+            ConsonantD,
+            ConsonantDy,
+            VoicedVowelE,
+            ConsonantF,
+            ConsonantG,
+            ConsonantGw,
+            ConsonantGy,
+            ConsonantH,
+            ConsonantHy,
+            VoicedVowelI,
+            ConsonantJ,
+            ConsonantK,
+            ConsonantKw,
+            ConsonantKy,
+            ConsonantM,
+            ConsonantMy,
+            ConsonantN,
+            ConsonantNy,
+            VoicedVowelO,
+            ConsonantP,
+            ConsonantPy,
+            ConsonantR,
+            ConsonantRy,
+            ConsonantS,
+            ConsonantSh,
+            ConsonantT,
+            ConsonantTs,
+            ConsonantTy,
+            VoicedVowelU,
+            ConsonantV,
+            ConsonantW,
+            ConsonantY,
+            ConsonantZ,
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use enum_map::Enum as _;
+    use bytemuck::Contiguous as _;
     use pretty_assertions::assert_eq;
     use rstest::rstest;
 
-    use super::{OjtPhoneme, Phoneme};
+    use super::{Phoneme, PhonemeCode};
 
     const STR_HELLO_HIHO: &str = "sil k o N n i ch i w a pau h i h o d e s U sil";
 
-    fn ojt_hello_hiho() -> Vec<OjtPhoneme> {
+    fn ojt_hello_hiho() -> Vec<PhonemeCode> {
         STR_HELLO_HIHO
             .split_whitespace()
-            .map(OjtPhoneme::new)
+            .map(|s| s.parse::<Phoneme>().unwrap().into())
             .collect()
     }
 
     #[rstest]
+    #[case(0, "pau")]
     #[case(1, "A")]
     #[case(14, "e")]
     #[case(26, "m")]
     #[case(38, "ts")]
     #[case(41, "v")]
-    fn test_phoneme_list(#[case] index: usize, #[case] phoneme_str: &str) {
-        assert_eq!(<&str>::from(Phoneme::from_usize(index)), phoneme_str);
-    }
-
-    #[rstest]
-    fn test_num_phoneme_works() {
-        assert_eq!(OjtPhoneme::num_phoneme(), 45);
-    }
-
-    #[rstest]
-    fn test_space_phoneme_works() {
+    #[case(44, "z")]
+    fn test_phoneme_list(#[case] index: i64, #[case] phoneme_str: &str) {
         assert_eq!(
-            OjtPhoneme::space_phoneme(),
-            OjtPhoneme::HasId(Phoneme::MorablePau),
+            Phoneme::from(PhonemeCode::from_integer(index).unwrap()).to_string(),
+            phoneme_str,
         );
     }
 
     #[rstest]
+    fn test_num_phoneme_works() {
+        assert_eq!(PhonemeCode::num_phoneme(), 45);
+    }
+
+    #[rstest]
+    fn test_space_phoneme_works() {
+        assert_eq!(PhonemeCode::space_phoneme(), PhonemeCode::MorablePau);
+    }
+
+    #[rstest]
     #[case(ojt_hello_hiho(), "pau k o N n i ch i w a pau h i h o d e s U pau")]
-    fn test_convert_works(#[case] ojt_phonemes: Vec<OjtPhoneme>, #[case] expected: &str) {
+    fn test_convert_works(#[case] ojt_phonemes: Vec<PhonemeCode>, #[case] expected: &str) {
         let ojt_str_hello_hiho: String = ojt_phonemes
             .iter()
-            .map(|phoneme| match phoneme {
-                OjtPhoneme::HasId(phoneme) => phoneme.to_string(),
-                _ => panic!(),
-            })
+            .map(|&code| Phoneme::from(code).to_string())
             .collect::<Vec<_>>()
             .join(" ");
         assert_eq!(ojt_str_hello_hiho, expected);
     }
 
     #[rstest]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("a"), true)]
-    #[case(ojt_hello_hiho(), 9, OjtPhoneme::new("k"), false)]
+    #[case(ojt_hello_hiho(), 9, "a".parse::<Phoneme>().unwrap().into(), true)]
+    #[case(ojt_hello_hiho(), 9, "k".parse::<Phoneme>().unwrap().into(), false)]
     fn test_ojt_phoneme_equality(
-        #[case] ojt_phonemes: Vec<OjtPhoneme>,
+        #[case] ojt_phonemes: Vec<PhonemeCode>,
         #[case] index: usize,
-        #[case] phoneme: OjtPhoneme,
+        #[case] phoneme: PhonemeCode,
         #[case] is_equal: bool,
     ) {
         assert_eq!(ojt_phonemes[index] == phoneme, is_equal);
@@ -434,10 +685,10 @@ mod tests {
 
     #[rstest]
     #[case(ojt_hello_hiho(), &[0, 23, 30, 4, 28, 21, 10, 21, 42, 7, 0, 19, 21, 19, 30, 12, 14, 35, 6, 0])]
-    fn test_phoneme_id_works(#[case] ojt_phonemes: Vec<OjtPhoneme>, #[case] expected_ids: &[i64]) {
+    fn test_phoneme_id_works(#[case] ojt_phonemes: Vec<PhonemeCode>, #[case] expected_ids: &[i64]) {
         let ojt_ids = ojt_phonemes
-            .iter()
-            .map(|phoneme| phoneme.phoneme_id())
+            .into_iter()
+            .map(PhonemeCode::into_integer)
             .collect::<Vec<_>>();
         assert_eq!(ojt_ids, expected_ids);
     }

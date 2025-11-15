@@ -27,6 +27,7 @@ async-fs.workspace = true
 async-lock.workspace = true
 async_zip = { workspace = true, features = ["deflate"] }
 blocking.workspace = true
+bytemuck = { version = "1.24.0", features = ["derive"] }
 camino.workspace = true
 const_format.workspace = true
 derive-getters.workspace = true

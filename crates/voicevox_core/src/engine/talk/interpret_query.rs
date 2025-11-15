@@ -1,12 +1,12 @@
 //! [`AudioQuery`]から特徴量を取り出す処理を集めたもの。
 
 use super::{
-    super::{phoneme, OjtPhoneme},
+    super::{acoustic_feature_extractor::Phoneme, phoneme_codes, PhonemeCode},
     full_context_label::mora_to_text,
     AccentPhrase, AudioQuery, Mora,
 };
 
-pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<OjtPhoneme>) {
+pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<PhonemeCode>) {
     let flatten_moras = to_flatten_moras(accent_phrases);
 
     let mut phoneme_strings = vec!["pau".to_string()];
@@ -40,39 +40,29 @@ pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Ve
         flatten_moras
     }
 
-    fn to_phoneme_data_list<T: AsRef<str>>(phoneme_str_list: &[T]) -> Vec<OjtPhoneme> {
+    fn to_phoneme_data_list<T: AsRef<str>>(phoneme_str_list: &[T]) -> Vec<PhonemeCode> {
         phoneme_str_list
             .iter()
-            .map(AsRef::as_ref)
-            .map(OjtPhoneme::new)
+            .map(|s| {
+                s.as_ref()
+                    .parse::<Phoneme>()
+                    .unwrap_or_else(|e| todo!("{e}"))
+                    .into()
+            })
             .collect()
     }
 }
 
 pub(crate) fn split_mora(
-    phoneme_list: &[OjtPhoneme],
-) -> (Vec<OjtPhoneme>, Vec<OjtPhoneme>, Vec<i64>) {
+    phoneme_list: &[PhonemeCode],
+) -> (Vec<PhonemeCode>, Vec<PhonemeCode>, Vec<i64>) {
     let vowel_indexes = phoneme_list
         .iter()
         .enumerate()
         .filter(|&(_, phoneme)| {
             matches!(
                 *phoneme,
-                OjtPhoneme::HasId(
-                    phoneme!("a")
-                        | phoneme!("i")
-                        | phoneme!("u")
-                        | phoneme!("e")
-                        | phoneme!("o")
-                        | phoneme!("N")
-                        | phoneme!("A")
-                        | phoneme!("I")
-                        | phoneme!("U")
-                        | phoneme!("E")
-                        | phoneme!("O")
-                        | phoneme!("cl")
-                        | phoneme!("pau"),
-                )
+                phoneme_codes!("a", "i", "u", "e", "o", "N", "A", "I", "U", "E", "O", "cl", "pau")
             )
         })
         .map(|(i, _)| i as i64)
@@ -83,12 +73,12 @@ pub(crate) fn split_mora(
         .map(|vowel_index| phoneme_list[*vowel_index as usize])
         .collect();
 
-    let mut consonant_phoneme_list = vec![OjtPhoneme::None];
+    let mut consonant_phoneme_list = vec![PhonemeCode::None];
     for i in 0..(vowel_indexes.len() - 1) {
         let prev = vowel_indexes[i];
         let next = vowel_indexes[i + 1];
         if next - prev == 1 {
-            consonant_phoneme_list.push(OjtPhoneme::None);
+            consonant_phoneme_list.push(PhonemeCode::None);
         } else {
             consonant_phoneme_list.push(phoneme_list[next as usize - 1]);
         }
@@ -99,7 +89,7 @@ pub(crate) fn split_mora(
 
 pub(crate) struct DecoderFeature {
     pub(crate) f0: Vec<f32>,
-    pub(crate) phoneme: Vec<[f32; OjtPhoneme::num_phoneme()]>,
+    pub(crate) phoneme: Vec<[f32; PhonemeCode::num_phoneme()]>,
 }
 
 impl AudioQuery {
@@ -182,11 +172,11 @@ impl AudioQuery {
                 // https://github.com/VOICEVOX/voicevox_engine/issues/552
                 let phoneme_length = ((*phoneme_length * RATE).round_ties_even() / speed_scale)
                     .round_ties_even() as usize;
-                let phoneme_id = phoneme_data_list[i].phoneme_id();
+                let phoneme_id = phoneme_data_list[i] as usize;
 
                 for _ in 0..phoneme_length {
-                    let mut phonemes_vec = [0.; OjtPhoneme::num_phoneme()]; // TODO: Rust 1.89であればサイズが型推論可能になる
-                    phonemes_vec[phoneme_id as usize] = 1.;
+                    let mut phonemes_vec = [0.; PhonemeCode::num_phoneme()]; // TODO: Rust 1.89であればサイズが型推論可能になる
+                    phonemes_vec[phoneme_id] = 1.;
                     phoneme.push(phonemes_vec)
                 }
                 sum_of_phoneme_length += phoneme_length;
