@@ -327,7 +327,6 @@ pub(crate) enum Phoneme {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum OjtPhoneme {
     None,
-    HasSil, // TODO: https://github.com/VOICEVOX/voicevox_engine/pull/791
     HasId(Phoneme),
 }
 
@@ -348,10 +347,10 @@ impl OjtPhoneme {
     /// # Panics
     ///
     /// `s`が不正ならパニックする。
-    pub(crate) fn new(s: &str) -> Self {
+    pub(super) fn new(s: &str) -> Self {
         match s {
             "" => Self::None,
-            s if s.contains("sil") => Self::HasSil,
+            s if s.contains("sil") => Self::space_phoneme(),
             s => Self::HasId(
                 s.parse()
                     .unwrap_or_else(|_| panic!("invalid phoneme: {s:?}")),
@@ -362,38 +361,8 @@ impl OjtPhoneme {
     pub(crate) fn phoneme_id(&self) -> i64 {
         match self {
             Self::None => -1,
-            Self::HasSil => panic!("should have been converted"),
             Self::HasId(p) => p.into_usize() as _,
         }
-    }
-
-    pub(super) fn convert(phonemes: &[OjtPhoneme]) -> Vec<OjtPhoneme> {
-        let mut phonemes = phonemes.to_owned();
-        // TODO: Rust 2024にしたらlet chainに戻す
-        #[cfg(any())]
-        __! {
-        if let Some(first_phoneme) = phonemes.first_mut()
-            && *first_phoneme == Self::HasSil
-        {
-            *first_phoneme = Self::space_phoneme();
-        }
-        if let Some(last_phoneme) = phonemes.last_mut()
-            && *last_phoneme == Self::HasSil
-        {
-            *last_phoneme = Self::space_phoneme();
-        }
-        }
-        if let Some(first_phoneme) = phonemes.first_mut() {
-            if *first_phoneme == Self::HasSil {
-                *first_phoneme = Self::space_phoneme();
-            }
-        }
-        if let Some(last_phoneme) = phonemes.last_mut() {
-            if *last_phoneme == Self::HasSil {
-                *last_phoneme = Self::space_phoneme();
-            }
-        }
-        phonemes
     }
 }
 
@@ -407,15 +376,11 @@ mod tests {
 
     const STR_HELLO_HIHO: &str = "sil k o N n i ch i w a pau h i h o d e s U sil";
 
-    fn base_hello_hiho() -> Vec<OjtPhoneme> {
+    fn ojt_hello_hiho() -> Vec<OjtPhoneme> {
         STR_HELLO_HIHO
             .split_whitespace()
             .map(OjtPhoneme::new)
             .collect()
-    }
-
-    fn ojt_hello_hiho() -> Vec<OjtPhoneme> {
-        OjtPhoneme::convert(&base_hello_hiho())
     }
 
     #[rstest]

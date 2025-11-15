@@ -41,14 +41,11 @@ pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Ve
     }
 
     fn to_phoneme_data_list<T: AsRef<str>>(phoneme_str_list: &[T]) -> Vec<OjtPhoneme> {
-        OjtPhoneme::convert(
-            phoneme_str_list
-                .iter()
-                .map(AsRef::as_ref)
-                .map(OjtPhoneme::new)
-                .collect::<Vec<OjtPhoneme>>()
-                .as_slice(),
-        )
+        phoneme_str_list
+            .iter()
+            .map(AsRef::as_ref)
+            .map(OjtPhoneme::new)
+            .collect()
     }
 }
 
