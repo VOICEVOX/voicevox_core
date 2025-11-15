@@ -62,7 +62,6 @@ tempfile.workspace = true
 test_util.workspace = true
 toml.workspace = true
 typetag.workspace = true
-voicevox-ort.workspace = true
 
 [lints.rust]
 unsafe_code = "allow" # C APIのための操作
