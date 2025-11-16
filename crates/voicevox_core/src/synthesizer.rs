@@ -506,7 +506,7 @@ trait AsInner {
 
         let (_, _, vowel_indexes_data) = split_mora(&phoneme_data_list);
 
-        let phoneme_list_s = bytemuck::cast_slice(&phoneme_data_list);
+        let phoneme_list_s = bytemuck::must_cast_slice(&phoneme_data_list);
         let phoneme_length = self.predict_duration(phoneme_list_s, style_id).await?;
 
         let mut index = 0;
@@ -571,8 +571,8 @@ trait AsInner {
         let (consonant_phoneme_data_list, vowel_phoneme_data_list, vowel_indexes) =
             split_mora(&phoneme_data_list);
 
-        let consonant_phoneme_list = bytemuck::cast_slice(&consonant_phoneme_data_list);
-        let vowel_phoneme_list = bytemuck::cast_slice(&vowel_phoneme_data_list);
+        let consonant_phoneme_list = bytemuck::must_cast_slice(&consonant_phoneme_data_list);
+        let vowel_phoneme_list = bytemuck::must_cast_slice(&vowel_phoneme_data_list);
 
         let mut start_accent_list = Vec::with_capacity(vowel_indexes.len());
         let mut end_accent_list = Vec::with_capacity(vowel_indexes.len());
