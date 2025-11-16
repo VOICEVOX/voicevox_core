@@ -67,6 +67,7 @@
 
 ### Added
 
+- AudioQueryに書かれている音素が不正だったときのクラッシュにおいて、メッセージが改善されます ([#1203])。
 - `sil`に対する扱いが、現行のバージョン0.25.0のVOICEVOX ENGINEと同じになります ([#1197])。
 
 ### Removed
@@ -1362,6 +1363,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1164]: https://github.com/VOICEVOX/voicevox_core/pull/1164
 [#1174]: https://github.com/VOICEVOX/voicevox_core/pull/1174
 [#1197]: https://github.com/VOICEVOX/voicevox_core/pull/1197
+[#1203]: https://github.com/VOICEVOX/voicevox_core/pull/1203
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
