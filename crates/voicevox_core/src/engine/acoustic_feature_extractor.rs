@@ -337,9 +337,9 @@ pub(crate) enum PhonemeCode {
     ConsonantZ = 44,
 }
 
-macro_rules! phoneme_codes {
-    ($($phoneme_code:tt),* $(,)?) => {
-        $(crate::engine::__phoneme_code!($phoneme_code))|*
+macro_rules! phoneme_matches {
+    ($target:expr, $($candidate:tt)|*) => {
+        matches!($target, $(crate::engine::__phoneme_code!($candidate))|*)
     };
 }
 
@@ -481,7 +481,7 @@ macro_rules! __phoneme_code {
     };
 }
 
-pub(crate) use {__phoneme_code, phoneme_codes};
+pub(crate) use {__phoneme_code, phoneme_matches};
 
 impl PhonemeCode {
     pub(crate) const fn num_phoneme() -> usize {

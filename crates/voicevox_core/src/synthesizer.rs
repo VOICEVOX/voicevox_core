@@ -39,7 +39,7 @@ use crate::{
         voice_model,
     },
     engine::{
-        phoneme_codes,
+        phoneme_matches,
         talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
         to_s16le_pcm, wav_from_s16le, PhonemeCode,
     },
@@ -600,9 +600,9 @@ trait AsInner {
             .await?;
 
         for i in 0..vowel_phoneme_data_list.len() {
-            if matches!(
+            if phoneme_matches!(
                 vowel_phoneme_data_list[i],
-                phoneme_codes!("A", "I", "U", "E", "O", "cl", "pau")
+                "A" | "I" | "U" | "E" | "O" | "cl" | "pau"
             ) {
                 f0_list[i] = 0.;
             }

@@ -1,7 +1,7 @@
 //! [`AudioQuery`]から特徴量を取り出す処理を集めたもの。
 
 use super::{
-    super::{acoustic_feature_extractor::Phoneme, phoneme_codes, PhonemeCode},
+    super::{acoustic_feature_extractor::Phoneme, phoneme_matches, PhonemeCode},
     full_context_label::mora_to_text,
     AccentPhrase, AudioQuery, Mora,
 };
@@ -60,9 +60,9 @@ pub(crate) fn split_mora(
         .iter()
         .enumerate()
         .filter(|&(_, phoneme)| {
-            matches!(
+            phoneme_matches!(
                 *phoneme,
-                phoneme_codes!("a", "i", "u", "e", "o", "N", "A", "I", "U", "E", "O", "cl", "pau")
+                "a" | "i" | "u" | "e" | "o" | "N" | "A" | "I" | "U" | "E" | "O" | "cl" | "pau"
             )
         })
         .map(|(i, _)| i as i64)
