@@ -56,17 +56,15 @@ pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Ve
 pub(crate) fn split_mora(
     phoneme_list: &[PhonemeCode],
 ) -> (Vec<PhonemeCode>, Vec<PhonemeCode>, Vec<i64>) {
-    let vowel_indexes = phoneme_list
-        .iter()
-        .enumerate()
-        .filter(|&(_, phoneme)| {
-            phoneme_matches!(
-                *phoneme,
-                "a" | "i" | "u" | "e" | "o" | "N" | "A" | "I" | "U" | "E" | "O" | "cl" | "pau"
-            )
-        })
-        .map(|(i, _)| i as i64)
-        .collect::<Vec<_>>();
+    let mut vowel_indexes = Vec::new();
+    for (i, phoneme) in phoneme_list.iter().enumerate() {
+        if phoneme_matches!(
+            *phoneme,
+            "a" | "i" | "u" | "e" | "o" | "N" | "A" | "I" | "U" | "E" | "O" | "cl" | "pau"
+        ) {
+            vowel_indexes.push(i as i64);
+        }
+    }
 
     let vowel_phoneme_list = vowel_indexes
         .iter()
