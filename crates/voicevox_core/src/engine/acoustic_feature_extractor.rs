@@ -14,6 +14,10 @@ pub(super) enum Phoneme {
     #[strum(serialize = "pau")]
     MorablePau,
 
+    /// `sil`。
+    #[strum(serialize = "sil")]
+    Sil,
+
     /// `A`。
     #[strum(serialize = "A")]
     UnvoicedVowelA,
@@ -189,10 +193,6 @@ pub(super) enum Phoneme {
     /// `z`。
     #[strum(serialize = "z")]
     ConsonantZ,
-
-    /// `sil`。
-    #[strum(serialize = "sil")]
-    Sil,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug, Contiguous, NoUninit)]
