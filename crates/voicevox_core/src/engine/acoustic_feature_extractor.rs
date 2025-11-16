@@ -1,199 +1,262 @@
-use bytemuck::{Contiguous, NoUninit};
-use strum::EnumString;
+use std::str::FromStr;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, EnumString, strum::Display)]
+use bytemuck::{Contiguous, NoUninit};
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
 pub(super) enum Phoneme {
     /// 母音モーラにおける子音部分。
     ///
     /// 通常、AudioQueryにこの値が入ることはない。またVOICEVOX
     /// ENGINEではこの値は取り扱っておらず内部エラーとなる。
-    #[strum(serialize = "")]
+    #[display("")]
     None,
 
     /// `pau`。
-    #[strum(serialize = "pau")]
+    #[display("pau")]
     MorablePau,
 
     /// `sil`。
-    #[strum(serialize = "sil")]
-    Sil,
+    #[display("{_0}")]
+    Sil(Sil),
 
     /// `A`。
-    #[strum(serialize = "A")]
+    #[display("A")]
     UnvoicedVowelA,
 
     /// `E`。
-    #[strum(serialize = "E")]
+    #[display("E")]
     UnvoicedVowelE,
 
     /// `I`。
-    #[strum(serialize = "I")]
+    #[display("I")]
     UnvoicedVowelI,
 
     /// `N`。
-    #[strum(serialize = "N")]
+    #[display("N")]
     MorableN,
 
     /// `O`。
-    #[strum(serialize = "O")]
+    #[display("O")]
     UnvoicedVowelO,
 
     /// `U`。
-    #[strum(serialize = "U")]
+    #[display("U")]
     UnvoicedVowelU,
 
     /// `a`。
-    #[strum(serialize = "a")]
+    #[display("a")]
     VoicedVowelA,
 
     /// `b`。
-    #[strum(serialize = "b")]
+    #[display("b")]
     ConsonantB,
 
     /// `by`。
-    #[strum(serialize = "by")]
+    #[display("by")]
     ConsonantBy,
 
     /// `ch`。
-    #[strum(serialize = "ch")]
+    #[display("ch")]
     ConsonantCh,
 
     /// `cl`。
-    #[strum(serialize = "cl")]
+    #[display("cl")]
     MorableCl,
 
     /// `d`。
-    #[strum(serialize = "d")]
+    #[display("d")]
     ConsonantD,
 
     /// `dy`。
-    #[strum(serialize = "dy")]
+    #[display("dy")]
     ConsonantDy,
 
     /// `e`。
-    #[strum(serialize = "e")]
+    #[display("e")]
     VoicedVowelE,
 
     /// `f`。
-    #[strum(serialize = "f")]
+    #[display("f")]
     ConsonantF,
 
     /// `g`。
-    #[strum(serialize = "g")]
+    #[display("g")]
     ConsonantG,
 
     /// `gw`。
-    #[strum(serialize = "gw")]
+    #[display("gw")]
     ConsonantGw,
 
     /// `gy`。
-    #[strum(serialize = "gy")]
+    #[display("gy")]
     ConsonantGy,
 
     /// `h`。
-    #[strum(serialize = "h")]
+    #[display("h")]
     ConsonantH,
 
     /// `hy`。
-    #[strum(serialize = "hy")]
+    #[display("hy")]
     ConsonantHy,
 
     /// `i`。
-    #[strum(serialize = "i")]
+    #[display("i")]
     VoicedVowelI,
 
     /// `j`。
-    #[strum(serialize = "j")]
+    #[display("j")]
     ConsonantJ,
 
     /// `k`。
-    #[strum(serialize = "k")]
+    #[display("k")]
     ConsonantK,
 
     /// `kw`。
-    #[strum(serialize = "kw")]
+    #[display("kw")]
     ConsonantKw,
 
     /// `ky`。
-    #[strum(serialize = "ky")]
+    #[display("ky")]
     ConsonantKy,
 
     /// `m`。
-    #[strum(serialize = "m")]
+    #[display("m")]
     ConsonantM,
 
     /// `my`。
-    #[strum(serialize = "my")]
+    #[display("my")]
     ConsonantMy,
 
     /// `n`。
-    #[strum(serialize = "n")]
+    #[display("n")]
     ConsonantN,
 
     /// `ny`。
-    #[strum(serialize = "ny")]
+    #[display("ny")]
     ConsonantNy,
 
     /// `o`。
-    #[strum(serialize = "o")]
+    #[display("o")]
     VoicedVowelO,
 
     /// `p`。
-    #[strum(serialize = "p")]
+    #[display("p")]
     ConsonantP,
 
     /// `py`。
-    #[strum(serialize = "py")]
+    #[display("py")]
     ConsonantPy,
 
     /// `r`。
-    #[strum(serialize = "r")]
+    #[display("r")]
     ConsonantR,
 
     /// `ry`。
-    #[strum(serialize = "ry")]
+    #[display("ry")]
     ConsonantRy,
 
     /// `s`。
-    #[strum(serialize = "s")]
+    #[display("s")]
     ConsonantS,
 
     /// `sh`。
-    #[strum(serialize = "sh")]
+    #[display("sh")]
     ConsonantSh,
 
     /// `t`。
-    #[strum(serialize = "t")]
+    #[display("t")]
     ConsonantT,
 
     /// `ts`。
-    #[strum(serialize = "ts")]
+    #[display("ts")]
     ConsonantTs,
 
     /// `ty`。
-    #[strum(serialize = "ty")]
+    #[display("ty")]
     ConsonantTy,
 
     /// `u`。
-    #[strum(serialize = "u")]
+    #[display("u")]
     VoicedVowelU,
 
     /// `v`。
-    #[strum(serialize = "v")]
+    #[display("v")]
     ConsonantV,
 
     /// `w`。
-    #[strum(serialize = "w")]
+    #[display("w")]
     ConsonantW,
 
     /// `y`。
-    #[strum(serialize = "y")]
+    #[display("y")]
     ConsonantY,
 
     /// `z`。
-    #[strum(serialize = "z")]
+    #[display("z")]
     ConsonantZ,
 }
+
+impl FromStr for Phoneme {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            s if s.contains("sil") => Ok(Self::Sil(Sil(s.to_owned()))),
+            "" => Ok(Self::None),
+            "pau" => Ok(Self::MorablePau),
+            "A" => Ok(Self::UnvoicedVowelA),
+            "E" => Ok(Self::UnvoicedVowelE),
+            "I" => Ok(Self::UnvoicedVowelI),
+            "N" => Ok(Self::MorableN),
+            "O" => Ok(Self::UnvoicedVowelO),
+            "U" => Ok(Self::UnvoicedVowelU),
+            "a" => Ok(Self::VoicedVowelA),
+            "b" => Ok(Self::ConsonantB),
+            "by" => Ok(Self::ConsonantBy),
+            "ch" => Ok(Self::ConsonantCh),
+            "cl" => Ok(Self::MorableCl),
+            "d" => Ok(Self::ConsonantD),
+            "dy" => Ok(Self::ConsonantDy),
+            "e" => Ok(Self::VoicedVowelE),
+            "f" => Ok(Self::ConsonantF),
+            "g" => Ok(Self::ConsonantG),
+            "gw" => Ok(Self::ConsonantGw),
+            "gy" => Ok(Self::ConsonantGy),
+            "h" => Ok(Self::ConsonantH),
+            "hy" => Ok(Self::ConsonantHy),
+            "i" => Ok(Self::VoicedVowelI),
+            "j" => Ok(Self::ConsonantJ),
+            "k" => Ok(Self::ConsonantK),
+            "kw" => Ok(Self::ConsonantKw),
+            "ky" => Ok(Self::ConsonantKy),
+            "m" => Ok(Self::ConsonantM),
+            "my" => Ok(Self::ConsonantMy),
+            "n" => Ok(Self::ConsonantN),
+            "ny" => Ok(Self::ConsonantNy),
+            "o" => Ok(Self::VoicedVowelO),
+            "p" => Ok(Self::ConsonantP),
+            "py" => Ok(Self::ConsonantPy),
+            "r" => Ok(Self::ConsonantR),
+            "ry" => Ok(Self::ConsonantRy),
+            "s" => Ok(Self::ConsonantS),
+            "sh" => Ok(Self::ConsonantSh),
+            "t" => Ok(Self::ConsonantT),
+            "ts" => Ok(Self::ConsonantTs),
+            "ty" => Ok(Self::ConsonantTy),
+            "u" => Ok(Self::VoicedVowelU),
+            "v" => Ok(Self::ConsonantV),
+            "w" => Ok(Self::ConsonantW),
+            "y" => Ok(Self::ConsonantY),
+            "z" => Ok(Self::ConsonantZ),
+            s => Err(format!("invalid phoneme: {s:?}")),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
+pub(super) struct Sil(
+    String, // invariant: must contain "sil"
+);
 
 #[derive(Clone, Copy, PartialEq, Debug, Contiguous, NoUninit)]
 #[repr(i64)]
@@ -499,7 +562,7 @@ impl From<Phoneme> for PhonemeCode {
             ($($ident:ident),* $(,)?) => {
                 match phoneme {
                     $(Phoneme::$ident => Self::$ident,)*
-                    Phoneme::Sil => Self::space_phoneme(),
+                    Phoneme::Sil(_) => Self::space_phoneme(),
                 }
             };
         }
