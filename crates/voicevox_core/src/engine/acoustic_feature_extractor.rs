@@ -1,153 +1,6 @@
 use bytemuck::{Contiguous, NoUninit};
 use strum::EnumString;
 
-macro_rules! phoneme_codes {
-    ($($phoneme_code:tt),* $(,)?) => {
-        $(crate::engine::__phoneme_code!($phoneme_code))|*
-    };
-}
-
-pub(crate) use phoneme_codes;
-
-macro_rules! __phoneme_code {
-    ("pau") => {
-        crate::engine::PhonemeCode::MorablePau
-    };
-    ("A") => {
-        crate::engine::PhonemeCode::UnvoicedVowelA
-    };
-    ("E") => {
-        crate::engine::PhonemeCode::UnvoicedVowelE
-    };
-    ("I") => {
-        crate::engine::PhonemeCode::UnvoicedVowelI
-    };
-    ("N") => {
-        crate::engine::PhonemeCode::MorableN
-    };
-    ("O") => {
-        crate::engine::PhonemeCode::UnvoicedVowelO
-    };
-    ("U") => {
-        crate::engine::PhonemeCode::UnvoicedVowelU
-    };
-    ("a") => {
-        crate::engine::PhonemeCode::VoicedVowelA
-    };
-    ("b") => {
-        crate::engine::PhonemeCode::ConsonantB
-    };
-    ("by") => {
-        crate::engine::PhonemeCode::ConsonantBy
-    };
-    ("ch") => {
-        crate::engine::PhonemeCode::ConsonantCh
-    };
-    ("cl") => {
-        crate::engine::PhonemeCode::MorableCl
-    };
-    ("d") => {
-        crate::engine::PhonemeCode::ConsonantD
-    };
-    ("dy") => {
-        crate::engine::PhonemeCode::ConsonantDy
-    };
-    ("e") => {
-        crate::engine::PhonemeCode::VoicedVowelE
-    };
-    ("f") => {
-        crate::engine::PhonemeCode::ConsonantF
-    };
-    ("g") => {
-        crate::engine::PhonemeCode::ConsonantG
-    };
-    ("gw") => {
-        crate::engine::PhonemeCode::ConsonantGw
-    };
-    ("gy") => {
-        crate::engine::PhonemeCode::ConsonantGy
-    };
-    ("h") => {
-        crate::engine::PhonemeCode::ConsonantH
-    };
-    ("hy") => {
-        crate::engine::PhonemeCode::ConsonantHy
-    };
-    ("i") => {
-        crate::engine::PhonemeCode::VoicedVowelI
-    };
-    ("j") => {
-        crate::engine::PhonemeCode::ConsonantJ
-    };
-    ("k") => {
-        crate::engine::PhonemeCode::ConsonantK
-    };
-    ("kw") => {
-        crate::engine::PhonemeCode::ConsonantKw
-    };
-    ("ky") => {
-        crate::engine::PhonemeCode::ConsonantKy
-    };
-    ("m") => {
-        crate::engine::PhonemeCode::ConsonantM
-    };
-    ("my") => {
-        crate::engine::PhonemeCode::ConsonantMy
-    };
-    ("n") => {
-        crate::engine::PhonemeCode::ConsonantN
-    };
-    ("ny") => {
-        crate::engine::PhonemeCode::ConsonantNy
-    };
-    ("o") => {
-        crate::engine::PhonemeCode::VoicedVowelO
-    };
-    ("p") => {
-        crate::engine::PhonemeCode::ConsonantP
-    };
-    ("py") => {
-        crate::engine::PhonemeCode::ConsonantPy
-    };
-    ("r") => {
-        crate::engine::PhonemeCode::ConsonantR
-    };
-    ("ry") => {
-        crate::engine::PhonemeCode::ConsonantRy
-    };
-    ("s") => {
-        crate::engine::PhonemeCode::ConsonantS
-    };
-    ("sh") => {
-        crate::engine::PhonemeCode::ConsonantSh
-    };
-    ("t") => {
-        crate::engine::PhonemeCode::ConsonantT
-    };
-    ("ts") => {
-        crate::engine::PhonemeCode::ConsonantTs
-    };
-    ("ty") => {
-        crate::engine::PhonemeCode::ConsonantTy
-    };
-    ("u") => {
-        crate::engine::PhonemeCode::VoicedVowelU
-    };
-    ("v") => {
-        crate::engine::PhonemeCode::ConsonantV
-    };
-    ("w") => {
-        crate::engine::PhonemeCode::ConsonantW
-    };
-    ("y") => {
-        crate::engine::PhonemeCode::ConsonantY
-    };
-    ("z") => {
-        crate::engine::PhonemeCode::ConsonantZ
-    };
-}
-pub(crate) use __phoneme_code;
-
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, EnumString, strum::Display)]
 pub(super) enum Phoneme {
     /// 母音モーラにおける子音部分。
@@ -483,6 +336,152 @@ pub(crate) enum PhonemeCode {
     /// `z`。
     ConsonantZ = 44,
 }
+
+macro_rules! phoneme_codes {
+    ($($phoneme_code:tt),* $(,)?) => {
+        $(crate::engine::__phoneme_code!($phoneme_code))|*
+    };
+}
+
+macro_rules! __phoneme_code {
+    ("pau") => {
+        crate::engine::PhonemeCode::MorablePau
+    };
+    ("A") => {
+        crate::engine::PhonemeCode::UnvoicedVowelA
+    };
+    ("E") => {
+        crate::engine::PhonemeCode::UnvoicedVowelE
+    };
+    ("I") => {
+        crate::engine::PhonemeCode::UnvoicedVowelI
+    };
+    ("N") => {
+        crate::engine::PhonemeCode::MorableN
+    };
+    ("O") => {
+        crate::engine::PhonemeCode::UnvoicedVowelO
+    };
+    ("U") => {
+        crate::engine::PhonemeCode::UnvoicedVowelU
+    };
+    ("a") => {
+        crate::engine::PhonemeCode::VoicedVowelA
+    };
+    ("b") => {
+        crate::engine::PhonemeCode::ConsonantB
+    };
+    ("by") => {
+        crate::engine::PhonemeCode::ConsonantBy
+    };
+    ("ch") => {
+        crate::engine::PhonemeCode::ConsonantCh
+    };
+    ("cl") => {
+        crate::engine::PhonemeCode::MorableCl
+    };
+    ("d") => {
+        crate::engine::PhonemeCode::ConsonantD
+    };
+    ("dy") => {
+        crate::engine::PhonemeCode::ConsonantDy
+    };
+    ("e") => {
+        crate::engine::PhonemeCode::VoicedVowelE
+    };
+    ("f") => {
+        crate::engine::PhonemeCode::ConsonantF
+    };
+    ("g") => {
+        crate::engine::PhonemeCode::ConsonantG
+    };
+    ("gw") => {
+        crate::engine::PhonemeCode::ConsonantGw
+    };
+    ("gy") => {
+        crate::engine::PhonemeCode::ConsonantGy
+    };
+    ("h") => {
+        crate::engine::PhonemeCode::ConsonantH
+    };
+    ("hy") => {
+        crate::engine::PhonemeCode::ConsonantHy
+    };
+    ("i") => {
+        crate::engine::PhonemeCode::VoicedVowelI
+    };
+    ("j") => {
+        crate::engine::PhonemeCode::ConsonantJ
+    };
+    ("k") => {
+        crate::engine::PhonemeCode::ConsonantK
+    };
+    ("kw") => {
+        crate::engine::PhonemeCode::ConsonantKw
+    };
+    ("ky") => {
+        crate::engine::PhonemeCode::ConsonantKy
+    };
+    ("m") => {
+        crate::engine::PhonemeCode::ConsonantM
+    };
+    ("my") => {
+        crate::engine::PhonemeCode::ConsonantMy
+    };
+    ("n") => {
+        crate::engine::PhonemeCode::ConsonantN
+    };
+    ("ny") => {
+        crate::engine::PhonemeCode::ConsonantNy
+    };
+    ("o") => {
+        crate::engine::PhonemeCode::VoicedVowelO
+    };
+    ("p") => {
+        crate::engine::PhonemeCode::ConsonantP
+    };
+    ("py") => {
+        crate::engine::PhonemeCode::ConsonantPy
+    };
+    ("r") => {
+        crate::engine::PhonemeCode::ConsonantR
+    };
+    ("ry") => {
+        crate::engine::PhonemeCode::ConsonantRy
+    };
+    ("s") => {
+        crate::engine::PhonemeCode::ConsonantS
+    };
+    ("sh") => {
+        crate::engine::PhonemeCode::ConsonantSh
+    };
+    ("t") => {
+        crate::engine::PhonemeCode::ConsonantT
+    };
+    ("ts") => {
+        crate::engine::PhonemeCode::ConsonantTs
+    };
+    ("ty") => {
+        crate::engine::PhonemeCode::ConsonantTy
+    };
+    ("u") => {
+        crate::engine::PhonemeCode::VoicedVowelU
+    };
+    ("v") => {
+        crate::engine::PhonemeCode::ConsonantV
+    };
+    ("w") => {
+        crate::engine::PhonemeCode::ConsonantW
+    };
+    ("y") => {
+        crate::engine::PhonemeCode::ConsonantY
+    };
+    ("z") => {
+        crate::engine::PhonemeCode::ConsonantZ
+    };
+}
+
+pub(crate) use {__phoneme_code, phoneme_codes};
 
 impl PhonemeCode {
     pub(crate) const fn num_phoneme() -> usize {
