@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
-use bytemuck::{Contiguous, NoUninit};
+use bytemuck::{checked::CheckedCastError, CheckedBitPattern, Contiguous, NoUninit};
+use duplicate::duplicate_item;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
 pub(super) enum Phoneme {
@@ -250,297 +251,63 @@ pub(super) struct Sil(
     String, // invariant: must contain "sil"
 );
 
+/// `-1` ([`OptionalConsonant::None`])を除外した音素ID。
 #[derive(Clone, Copy, PartialEq, Debug, Contiguous, NoUninit)]
 #[repr(i64)]
 pub(crate) enum PhonemeCode {
-    /// 母音モーラにおける子音部分。
-    None = -1,
-
-    /// `pau`。
+    //None = -1,
     MorablePau = 0,
-
-    /// `A`。
     UnvoicedVowelA = 1,
-
-    /// `E`。
     UnvoicedVowelE = 2,
-
-    /// `I`。
     UnvoicedVowelI = 3,
-
-    /// `N`。
     MorableN = 4,
-
-    /// `O`。
     UnvoicedVowelO = 5,
-
-    /// `U`。
     UnvoicedVowelU = 6,
-
-    /// `a`。
     VoicedVowelA = 7,
-
-    /// `b`。
     ConsonantB = 8,
-
-    /// `by`。
     ConsonantBy = 9,
-
-    /// `ch`。
     ConsonantCh = 10,
-
-    /// `cl`。
     MorableCl = 11,
-
-    /// `d`。
     ConsonantD = 12,
-
-    /// `dy`。
     ConsonantDy = 13,
-
-    /// `e`。
     VoicedVowelE = 14,
-
-    /// `f`。
     ConsonantF = 15,
-
-    /// `g`。
     ConsonantG = 16,
-
-    /// `gw`。
     ConsonantGw = 17,
-
-    /// `gy`。
     ConsonantGy = 18,
-
-    /// `h`。
     ConsonantH = 19,
-
-    /// `hy`。
     ConsonantHy = 20,
-
-    /// `i`。
     VoicedVowelI = 21,
-
-    /// `j`。
     ConsonantJ = 22,
-
-    /// `k`。
     ConsonantK = 23,
-
-    /// `kw`。
     ConsonantKw = 24,
-
-    /// `ky`。
     ConsonantKy = 25,
-
-    /// `m`。
     ConsonantM = 26,
-
-    /// `my`。
     ConsonantMy = 27,
-
-    /// `n`。
     ConsonantN = 28,
-
-    /// `ny`。
     ConsonantNy = 29,
-
-    /// `o`。
     VoicedVowelO = 30,
-
-    /// `p`。
     ConsonantP = 31,
-
-    /// `py`。
     ConsonantPy = 32,
-
-    /// `r`。
     ConsonantR = 33,
-
-    /// `ry`。
     ConsonantRy = 34,
-
-    /// `s`。
     ConsonantS = 35,
-
-    /// `sh`。
     ConsonantSh = 36,
-
-    /// `t`。
     ConsonantT = 37,
-
-    /// `ts`。
     ConsonantTs = 38,
-
-    /// `ty`。
     ConsonantTy = 39,
-
-    /// `u`。
     VoicedVowelU = 40,
-
-    /// `v`。
     ConsonantV = 41,
-
-    /// `w`。
     ConsonantW = 42,
-
-    /// `y`。
     ConsonantY = 43,
-
-    /// `z`。
     ConsonantZ = 44,
 }
 
-macro_rules! phoneme_matches {
-    ($target:expr, $($candidate:tt)|*) => {
-        matches!($target, $(crate::engine::phoneme_code!($candidate))|*)
-    };
-}
-
-macro_rules! phoneme_code {
-    ("pau") => {
-        crate::engine::PhonemeCode::MorablePau
-    };
-    ("A") => {
-        crate::engine::PhonemeCode::UnvoicedVowelA
-    };
-    ("E") => {
-        crate::engine::PhonemeCode::UnvoicedVowelE
-    };
-    ("I") => {
-        crate::engine::PhonemeCode::UnvoicedVowelI
-    };
-    ("N") => {
-        crate::engine::PhonemeCode::MorableN
-    };
-    ("O") => {
-        crate::engine::PhonemeCode::UnvoicedVowelO
-    };
-    ("U") => {
-        crate::engine::PhonemeCode::UnvoicedVowelU
-    };
-    ("a") => {
-        crate::engine::PhonemeCode::VoicedVowelA
-    };
-    ("b") => {
-        crate::engine::PhonemeCode::ConsonantB
-    };
-    ("by") => {
-        crate::engine::PhonemeCode::ConsonantBy
-    };
-    ("ch") => {
-        crate::engine::PhonemeCode::ConsonantCh
-    };
-    ("cl") => {
-        crate::engine::PhonemeCode::MorableCl
-    };
-    ("d") => {
-        crate::engine::PhonemeCode::ConsonantD
-    };
-    ("dy") => {
-        crate::engine::PhonemeCode::ConsonantDy
-    };
-    ("e") => {
-        crate::engine::PhonemeCode::VoicedVowelE
-    };
-    ("f") => {
-        crate::engine::PhonemeCode::ConsonantF
-    };
-    ("g") => {
-        crate::engine::PhonemeCode::ConsonantG
-    };
-    ("gw") => {
-        crate::engine::PhonemeCode::ConsonantGw
-    };
-    ("gy") => {
-        crate::engine::PhonemeCode::ConsonantGy
-    };
-    ("h") => {
-        crate::engine::PhonemeCode::ConsonantH
-    };
-    ("hy") => {
-        crate::engine::PhonemeCode::ConsonantHy
-    };
-    ("i") => {
-        crate::engine::PhonemeCode::VoicedVowelI
-    };
-    ("j") => {
-        crate::engine::PhonemeCode::ConsonantJ
-    };
-    ("k") => {
-        crate::engine::PhonemeCode::ConsonantK
-    };
-    ("kw") => {
-        crate::engine::PhonemeCode::ConsonantKw
-    };
-    ("ky") => {
-        crate::engine::PhonemeCode::ConsonantKy
-    };
-    ("m") => {
-        crate::engine::PhonemeCode::ConsonantM
-    };
-    ("my") => {
-        crate::engine::PhonemeCode::ConsonantMy
-    };
-    ("n") => {
-        crate::engine::PhonemeCode::ConsonantN
-    };
-    ("ny") => {
-        crate::engine::PhonemeCode::ConsonantNy
-    };
-    ("o") => {
-        crate::engine::PhonemeCode::VoicedVowelO
-    };
-    ("p") => {
-        crate::engine::PhonemeCode::ConsonantP
-    };
-    ("py") => {
-        crate::engine::PhonemeCode::ConsonantPy
-    };
-    ("r") => {
-        crate::engine::PhonemeCode::ConsonantR
-    };
-    ("ry") => {
-        crate::engine::PhonemeCode::ConsonantRy
-    };
-    ("s") => {
-        crate::engine::PhonemeCode::ConsonantS
-    };
-    ("sh") => {
-        crate::engine::PhonemeCode::ConsonantSh
-    };
-    ("t") => {
-        crate::engine::PhonemeCode::ConsonantT
-    };
-    ("ts") => {
-        crate::engine::PhonemeCode::ConsonantTs
-    };
-    ("ty") => {
-        crate::engine::PhonemeCode::ConsonantTy
-    };
-    ("u") => {
-        crate::engine::PhonemeCode::VoicedVowelU
-    };
-    ("v") => {
-        crate::engine::PhonemeCode::ConsonantV
-    };
-    ("w") => {
-        crate::engine::PhonemeCode::ConsonantW
-    };
-    ("y") => {
-        crate::engine::PhonemeCode::ConsonantY
-    };
-    ("z") => {
-        crate::engine::PhonemeCode::ConsonantZ
-    };
-}
-
-pub(crate) use {phoneme_code, phoneme_matches};
-
 impl PhonemeCode {
     pub(crate) const fn num_phoneme() -> usize {
-        Self::MAX_VALUE as usize + 1
+        let ret = Self::MAX_VALUE as usize + 1;
+        assert!(ret == 45);
+        ret
     }
 
     const fn space_phoneme() -> Self {
@@ -606,6 +373,143 @@ impl From<Phoneme> for PhonemeCode {
             ConsonantY,
             ConsonantZ,
         )
+    }
+}
+
+#[expect(dead_code, reason = "we use `bytemuck::checked` to construct values")]
+#[derive(Clone, Copy, CheckedBitPattern, NoUninit)]
+#[repr(i64)]
+pub(crate) enum OptionalConsonant {
+    None = -1,
+    //MorablePau = 0,
+    //UnvoicedVowelA = 1,
+    //UnvoicedVowelE = 2,
+    //UnvoicedVowelI = 3,
+    //MorableN = 4,
+    //UnvoicedVowelO = 5,
+    //UnvoicedVowelU = 6,
+    //VoicedVowelA = 7,
+    ConsonantB = 8,
+    ConsonantBy = 9,
+    ConsonantCh = 10,
+    //MorableCl = 11,
+    ConsonantD = 12,
+    ConsonantDy = 13,
+    //VoicedVowelE = 14,
+    ConsonantF = 15,
+    ConsonantG = 16,
+    ConsonantGw = 17,
+    ConsonantGy = 18,
+    ConsonantH = 19,
+    ConsonantHy = 20,
+    //VoicedVowelI = 21,
+    ConsonantJ = 22,
+    ConsonantK = 23,
+    ConsonantKw = 24,
+    ConsonantKy = 25,
+    ConsonantM = 26,
+    ConsonantMy = 27,
+    ConsonantN = 28,
+    ConsonantNy = 29,
+    //VoicedVowelO = 30,
+    ConsonantP = 31,
+    ConsonantPy = 32,
+    ConsonantR = 33,
+    ConsonantRy = 34,
+    ConsonantS = 35,
+    ConsonantSh = 36,
+    ConsonantT = 37,
+    ConsonantTs = 38,
+    ConsonantTy = 39,
+    //VoicedVowelU = 40,
+    ConsonantV = 41,
+    ConsonantW = 42,
+    ConsonantY = 43,
+    ConsonantZ = 44,
+}
+
+#[expect(dead_code, reason = "we use `bytemuck::checked` to construct values")]
+#[derive(Clone, Copy, CheckedBitPattern, NoUninit)]
+#[repr(i64)]
+pub(crate) enum MoraTail {
+    //None = -1,
+    MorablePau = 0,
+    UnvoicedVowelA = 1,
+    UnvoicedVowelE = 2,
+    UnvoicedVowelI = 3,
+    MorableN = 4,
+    UnvoicedVowelO = 5,
+    UnvoicedVowelU = 6,
+    VoicedVowelA = 7,
+    //ConsonantB = 8,
+    //ConsonantBy = 9,
+    //ConsonantCh = 10,
+    MorableCl = 11,
+    //ConsonantD = 12,
+    //ConsonantDy = 13,
+    VoicedVowelE = 14,
+    //ConsonantF = 15,
+    //ConsonantG = 16,
+    //ConsonantGw = 17,
+    //ConsonantGy = 18,
+    //ConsonantH = 19,
+    //ConsonantHy = 20,
+    VoicedVowelI = 21,
+    //ConsonantJ = 22,
+    //ConsonantK = 23,
+    //ConsonantKw = 24,
+    //ConsonantKy = 25,
+    //ConsonantM = 26,
+    //ConsonantMy = 27,
+    //ConsonantN = 28,
+    //ConsonantNy = 29,
+    VoicedVowelO = 30,
+    //ConsonantP = 31,
+    //ConsonantPy = 32,
+    //ConsonantR = 33,
+    //ConsonantRy = 34,
+    //ConsonantS = 35,
+    //ConsonantSh = 36,
+    //ConsonantT = 37,
+    //ConsonantTs = 38,
+    //ConsonantTy = 39,
+    VoicedVowelU = 40,
+    //ConsonantV = 41,
+    //ConsonantW = 42,
+    //ConsonantY = 43,
+    //ConsonantZ = 44,
+}
+
+impl MoraTail {
+    pub(crate) fn is_unvoiced(self) -> bool {
+        matches!(
+            self,
+            Self::UnvoicedVowelA
+                | Self::UnvoicedVowelI
+                | Self::UnvoicedVowelU
+                | Self::UnvoicedVowelE
+                | Self::UnvoicedVowelO
+                | Self::MorablePau
+                | Self::MorableCl
+        )
+    }
+}
+
+#[duplicate_item(
+    T;
+    [ OptionalConsonant ];
+    [ MoraTail ];
+)]
+impl TryFrom<PhonemeCode> for T {
+    type Error = ();
+
+    fn try_from(code: PhonemeCode) -> Result<Self, Self::Error> {
+        bytemuck::checked::try_cast(code).map_err(|err| {
+            assert!(
+                matches!(err, CheckedCastError::InvalidBitPattern),
+                "there should be no size/alignment issues",
+            );
+        })
     }
 }
 
