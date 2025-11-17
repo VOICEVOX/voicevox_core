@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use bytemuck::{checked::CheckedCastError, CheckedBitPattern, Contiguous, NoUninit};
 use duplicate::duplicate_item;
+use strum::EnumCount;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
 pub(super) enum Phoneme {
@@ -251,8 +252,9 @@ pub(super) struct Sil(
     String, // invariant: must contain "sil"
 );
 
-/// `-1` ([`OptionalConsonant::None`])を除外した音素ID。
-#[derive(Clone, Copy, PartialEq, Debug, Contiguous, NoUninit)]
+/// 音素IDのうち、`-1` ([`OptionalConsonant::None`])を除いたもの。
+#[derive(Clone, Copy, Contiguous, NoUninit, EnumCount)]
+#[cfg_attr(test, derive(PartialEq, Debug, strum::EnumIter))]
 #[repr(i64)]
 pub(crate) enum PhonemeCode {
     //None = -1,
@@ -305,9 +307,7 @@ pub(crate) enum PhonemeCode {
 
 impl PhonemeCode {
     pub(crate) const fn num_phoneme() -> usize {
-        let ret = Self::MAX_VALUE as usize + 1;
-        assert!(ret == 45);
-        ret
+        Self::COUNT
     }
 
     const fn space_phoneme() -> Self {
@@ -318,9 +318,9 @@ impl PhonemeCode {
 impl From<Phoneme> for PhonemeCode {
     fn from(phoneme: Phoneme) -> Self {
         macro_rules! convert {
-            ($($ident:ident),* $(,)?) => {
+            ($($variant:ident),* $(,)?) => {
                 match phoneme {
-                    $(Phoneme::$ident => Self::$ident,)*
+                    $(Phoneme::$variant => Self::$variant,)*
                     Phoneme::Sil(_) => Self::space_phoneme(),
                 }
             };
@@ -376,8 +376,19 @@ impl From<Phoneme> for PhonemeCode {
     }
 }
 
-#[expect(dead_code, reason = "we use `bytemuck::checked` to construct values")]
-#[derive(Clone, Copy, CheckedBitPattern, NoUninit)]
+impl From<PhonemeCode> for usize {
+    fn from(phoneme: PhonemeCode) -> Self {
+        const _: () =
+            assert!(0 <= PhonemeCode::MIN_VALUE && PhonemeCode::MAX_VALUE <= u16::MAX as _);
+        phoneme
+            .into_integer()
+            .try_into()
+            .expect("should be ensured by the above assertion")
+    }
+}
+
+#[expect(dead_code, reason = "we use `bytemuck` to construct values instead")]
+#[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum OptionalConsonant {
     None = -1,
@@ -428,8 +439,8 @@ pub(crate) enum OptionalConsonant {
     ConsonantZ = 44,
 }
 
-#[expect(dead_code, reason = "we use `bytemuck::checked` to construct values")]
-#[derive(Clone, Copy, CheckedBitPattern, NoUninit)]
+#[expect(dead_code, reason = "we use `bytemuck` to construct values instead")]
+#[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum MoraTail {
     //None = -1,
@@ -489,8 +500,8 @@ impl MoraTail {
                 | Self::UnvoicedVowelU
                 | Self::UnvoicedVowelE
                 | Self::UnvoicedVowelO
-                | Self::MorablePau
                 | Self::MorableCl
+                | Self::MorablePau
         )
     }
 }
@@ -503,28 +514,35 @@ impl MoraTail {
 impl TryFrom<PhonemeCode> for T {
     type Error = ();
 
-    fn try_from(code: PhonemeCode) -> Result<Self, Self::Error> {
-        bytemuck::checked::try_cast(code).map_err(|err| {
-            assert!(
-                matches!(err, CheckedCastError::InvalidBitPattern),
+    fn try_from(phoneme: PhonemeCode) -> Result<Self, Self::Error> {
+        bytemuck::checked::try_cast(phoneme).map_err(|err| {
+            assert_eq!(
+                CheckedCastError::InvalidBitPattern,
+                err,
                 "there should be no size/alignment issues",
             );
         })
     }
 }
 
+const _: () = assert!(PhonemeCode::MIN_VALUE == 0);
+const _: () = assert!(PhonemeCode::MAX_VALUE == 44);
+const _: () = assert!(PhonemeCode::COUNT == 45);
+const _: () = assert!(MoraTail::COUNT == 13);
+const _: () = assert!(OptionalConsonant::COUNT == PhonemeCode::COUNT - MoraTail::COUNT + 1);
+
 #[cfg(test)]
 mod tests {
     use bytemuck::Contiguous;
     use pretty_assertions::assert_eq;
     use rstest::rstest;
+    use strum::IntoEnumIterator as _;
 
     use super::{MoraTail, OptionalConsonant, Phoneme, PhonemeCode};
 
     #[test]
     fn each_phoneme_code_should_be_categorized_into_consonant_xor_mora_tail() {
-        for phoneme in PhonemeCode::MIN_VALUE..=PhonemeCode::MAX_VALUE {
-            let phoneme = PhonemeCode::from_integer(phoneme).unwrap();
+        for phoneme in PhonemeCode::iter() {
             assert!(
                 OptionalConsonant::try_from(phoneme).is_ok() ^ MoraTail::try_from(phoneme).is_ok()
             );
@@ -563,16 +581,6 @@ mod tests {
             format!("invalid phoneme: {s:?}"),
             s.parse::<Phoneme>().unwrap_err(),
         );
-    }
-
-    #[rstest]
-    fn test_num_phoneme_works() {
-        assert_eq!(PhonemeCode::num_phoneme(), 45);
-    }
-
-    #[rstest]
-    fn test_space_phoneme_works() {
-        assert_eq!(PhonemeCode::space_phoneme(), PhonemeCode::MorablePau);
     }
 
     #[rstest]

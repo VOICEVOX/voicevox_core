@@ -1,7 +1,5 @@
 //! [`AudioQuery`]から特徴量を取り出す処理を集めたもの。
 
-use bytemuck::Contiguous as _;
-
 use super::{
     super::{
         acoustic_feature_extractor::{MoraTail, OptionalConsonant, Phoneme},
@@ -63,9 +61,9 @@ pub(crate) fn split_mora(
 ) -> (Vec<OptionalConsonant>, Vec<MoraTail>, Vec<i64>) {
     let mut vowel_phoneme_list = Vec::new();
     let mut vowel_indexes = Vec::new();
-    for (i, &phoneme) in phoneme_list.iter().enumerate() {
-        if let Ok(phoneme) = phoneme.try_into() {
-            vowel_phoneme_list.push(phoneme);
+    for (i, phoneme) in phoneme_list.iter().enumerate() {
+        if let Ok(mora_tail) = (*phoneme).try_into() {
+            vowel_phoneme_list.push(mora_tail);
             vowel_indexes.push(i as i64);
         }
     }
@@ -173,14 +171,7 @@ impl AudioQuery {
                 // https://github.com/VOICEVOX/voicevox_engine/issues/552
                 let phoneme_length = ((*phoneme_length * RATE).round_ties_even() / speed_scale)
                     .round_ties_even() as usize;
-                let phoneme_id = {
-                    const _: () = assert!(
-                        PhonemeCode::MIN_VALUE == 0
-                            && PhonemeCode::MAX_VALUE == PhonemeCode::num_phoneme() as i64 - 1,
-                    );
-                    usize::try_from(phoneme_data_list[i].into_integer())
-                        .expect("should be ensured by the above assertion")
-                };
+                let phoneme_id = usize::from(phoneme_data_list[i]);
 
                 for _ in 0..phoneme_length {
                     let mut phonemes_vec = [0.; PhonemeCode::num_phoneme()]; // TODO: Rust 1.89であればサイズが型推論可能になる
