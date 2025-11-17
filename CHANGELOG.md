@@ -72,7 +72,7 @@
 
 ### Removed
 
-- `replace_{phoneme_length,mora_pitch,mora_data}`において[`""`という名の音素を受理してしまって](https://github.com/VOICEVOX/voicevox_core/issues/1202)いましたが、今後は完全に不正な音素となります ([#1203])。
+- `replace_{phoneme_length,mora_pitch,mora_data}`においてこれまでは[`""`という名の音素を受理してしまって](https://github.com/VOICEVOX/voicevox_core/issues/1202)いましたが、今後は完全に不正な音素となります ([#1203])。
 - \[macOS\] macOS 13がサポート範囲から外れ、バイナリのリリースはmacOS 14で行われるようになります。ただし、macOS 14でビルドされたバイナリでもmacOS 13で動作すると考えられています ([#1174])。
 
 ## [0.16.2] - 2025-10-28 (+09:00)
