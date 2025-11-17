@@ -77,6 +77,9 @@ impl OjtPhoneme {
         let phoneme = if phoneme.contains("sil") {
             Self::space_phoneme()
         } else {
+            if !PHONEME_MAP.contains_key(phoneme) {
+                panic!("invalid phoneme: {phoneme:?}");
+            }
             phoneme.to_owned()
         };
         Self { phoneme }
@@ -115,6 +118,14 @@ mod tests {
     #[case(41, "v")]
     fn test_phoneme_list(#[case] index: usize, #[case] phoneme_str: &str) {
         assert_eq!(super::PHONEME_LIST[index], phoneme_str);
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("invalid")]
+    #[should_panic(expected = "invalid phoneme: ")]
+    fn test_invalid_phoneme(#[case] s: &str) {
+        OjtPhoneme::new(s);
     }
 
     #[rstest]

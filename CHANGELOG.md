@@ -67,10 +67,12 @@
 
 ### Added
 
+- AudioQueryに書かれている音素が不正だったときのクラッシュにおいて、メッセージが改善されます ([#1203])。
 - `sil`に対する扱いが、現行のバージョン0.25.0のVOICEVOX ENGINEと同じになります ([#1197])。
 
 ### Removed
 
+- `replace_{phoneme_length,mora_pitch,mora_data}`においてこれまでは[`""`という名の音素を受理してしまって](https://github.com/VOICEVOX/voicevox_core/issues/1202)いましたが、今後は完全に不正な音素となります ([#1203])。
 - \[macOS\] macOS 13がサポート範囲から外れ、バイナリのリリースはmacOS 14で行われるようになります。ただし、macOS 14でビルドされたバイナリでもmacOS 13で動作すると考えられています ([#1174])。
 
 ## [0.16.2] - 2025-10-28 (+09:00)
@@ -1362,6 +1364,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1164]: https://github.com/VOICEVOX/voicevox_core/pull/1164
 [#1174]: https://github.com/VOICEVOX/voicevox_core/pull/1174
 [#1197]: https://github.com/VOICEVOX/voicevox_core/pull/1197
+[#1203]: https://github.com/VOICEVOX/voicevox_core/pull/1203
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
