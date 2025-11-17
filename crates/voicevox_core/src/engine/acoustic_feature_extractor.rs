@@ -121,6 +121,14 @@ mod tests {
     }
 
     #[rstest]
+    #[case("")]
+    #[case("invalid")]
+    #[should_panic(expected = "invalid phoneme: ")]
+    fn test_invalid_phoneme(#[case] s: &str) {
+        OjtPhoneme::new(s);
+    }
+
+    #[rstest]
     fn test_num_phoneme_works() {
         assert_eq!(OjtPhoneme::num_phoneme(), 45);
     }
