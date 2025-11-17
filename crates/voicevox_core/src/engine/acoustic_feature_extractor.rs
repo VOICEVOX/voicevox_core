@@ -519,7 +519,17 @@ mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
 
-    use super::{Phoneme, PhonemeCode};
+    use super::{MoraTail, OptionalConsonant, Phoneme, PhonemeCode};
+
+    #[test]
+    fn each_phoneme_code_should_be_categorized_into_consonant_xor_mora_tail() {
+        for phoneme in PhonemeCode::MIN_VALUE..=PhonemeCode::MAX_VALUE {
+            let phoneme = PhonemeCode::from_integer(phoneme).unwrap();
+            assert!(
+                OptionalConsonant::try_from(phoneme).is_ok() ^ MoraTail::try_from(phoneme).is_ok()
+            );
+        }
+    }
 
     const STR_HELLO_HIHO: &str = "sil k o N n i ch i w a pau h i h o d e s U sil";
 
