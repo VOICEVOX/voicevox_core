@@ -46,7 +46,7 @@ pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Ve
             .map(|s| {
                 s.as_ref()
                     .parse::<Phoneme>()
-                    .unwrap_or_else(|e| todo!("{e}"))
+                    .unwrap_or_else(|msg| panic!("{msg}"))
                     .into()
             })
             .collect()
