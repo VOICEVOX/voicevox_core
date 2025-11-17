@@ -394,11 +394,11 @@ pub(crate) enum PhonemeCode {
 
 macro_rules! phoneme_matches {
     ($target:expr, $($candidate:tt)|*) => {
-        matches!($target, $(crate::engine::__phoneme_code!($candidate))|*)
+        matches!($target, $(crate::engine::phoneme_code!($candidate))|*)
     };
 }
 
-macro_rules! __phoneme_code {
+macro_rules! phoneme_code {
     ("pau") => {
         crate::engine::PhonemeCode::MorablePau
     };
@@ -536,7 +536,7 @@ macro_rules! __phoneme_code {
     };
 }
 
-pub(crate) use {__phoneme_code, phoneme_matches};
+pub(crate) use {phoneme_code, phoneme_matches};
 
 impl PhonemeCode {
     pub(crate) const fn num_phoneme() -> usize {
@@ -611,7 +611,7 @@ impl From<Phoneme> for PhonemeCode {
 
 #[cfg(test)]
 mod tests {
-    use bytemuck::Contiguous as _;
+    use bytemuck::Contiguous;
     use pretty_assertions::assert_eq;
     use rstest::rstest;
 
@@ -619,73 +619,11 @@ mod tests {
 
     const STR_HELLO_HIHO: &str = "sil k o N n i ch i w a pau h i h o d e s U sil";
 
-    fn ojt_hello_hiho() -> Vec<PhonemeCode> {
+    fn hello_hiho() -> Vec<PhonemeCode> {
         STR_HELLO_HIHO
             .split_whitespace()
             .map(|s| s.parse::<Phoneme>().unwrap().into())
             .collect()
-    }
-
-    /// # Panics
-    ///
-    /// `code`が`PhonemeCode::None`のときパニック。
-    fn display_phoneme_code(code: PhonemeCode) -> String {
-        macro_rules! display_phoneme_code {
-            ($($ident:ident),* $(,)?) => {
-                match code {
-                    PhonemeCode::None => panic!(),
-                    $(PhonemeCode::$ident => Phoneme::$ident.to_string(),)*
-                }
-            };
-        }
-
-        display_phoneme_code!(
-            MorablePau,
-            UnvoicedVowelA,
-            UnvoicedVowelE,
-            UnvoicedVowelI,
-            MorableN,
-            UnvoicedVowelO,
-            UnvoicedVowelU,
-            VoicedVowelA,
-            ConsonantB,
-            ConsonantBy,
-            ConsonantCh,
-            MorableCl,
-            ConsonantD,
-            ConsonantDy,
-            VoicedVowelE,
-            ConsonantF,
-            ConsonantG,
-            ConsonantGw,
-            ConsonantGy,
-            ConsonantH,
-            ConsonantHy,
-            VoicedVowelI,
-            ConsonantJ,
-            ConsonantK,
-            ConsonantKw,
-            ConsonantKy,
-            ConsonantM,
-            ConsonantMy,
-            ConsonantN,
-            ConsonantNy,
-            VoicedVowelO,
-            ConsonantP,
-            ConsonantPy,
-            ConsonantR,
-            ConsonantRy,
-            ConsonantS,
-            ConsonantSh,
-            ConsonantT,
-            ConsonantTs,
-            ConsonantTy,
-            VoicedVowelU,
-            ConsonantV,
-            ConsonantW,
-            ConsonantY,
-            ConsonantZ,
-        )
     }
 
     #[rstest]
@@ -696,10 +634,10 @@ mod tests {
     #[case(38, "ts")]
     #[case(41, "v")]
     #[case(44, "z")]
-    fn test_phoneme_list(#[case] index: i64, #[case] phoneme_str: &str) {
+    fn test_discriminant(#[case] index: i64, #[case] phoneme_str: &str) {
         assert_eq!(
-            display_phoneme_code(PhonemeCode::from_integer(index).unwrap()),
-            phoneme_str,
+            PhonemeCode::from_integer(index).unwrap(),
+            phoneme_str.parse::<Phoneme>().unwrap().into(),
         );
     }
 
@@ -725,35 +663,46 @@ mod tests {
     }
 
     #[rstest]
-    #[case(ojt_hello_hiho(), "pau k o N n i ch i w a pau h i h o d e s U pau")]
-    fn test_convert_works(#[case] ojt_phonemes: Vec<PhonemeCode>, #[case] expected: &str) {
-        let ojt_str_hello_hiho: String = ojt_phonemes
+    #[case(
+        hello_hiho(),
+        &[
+            "pau", "k", "o", "N", "n", "i", "ch", "i", "w", "a", "pau", "h", "i", "h", "o", "d",
+            "e", "s", "U", "pau",
+        ],
+    )]
+    fn test_phoneme_into_phoneme_code_works(
+        #[case] phonemes: Vec<PhonemeCode>,
+        #[case] expected: &[&str],
+    ) {
+        let expected = expected
             .iter()
-            .map(|&code| display_phoneme_code(code))
-            .collect::<Vec<_>>()
-            .join(" ");
-        assert_eq!(ojt_str_hello_hiho, expected);
+            .map(|s| s.parse::<Phoneme>().unwrap().into())
+            .collect::<Vec<_>>();
+        assert_eq!(phonemes, expected);
     }
 
     #[rstest]
-    #[case(ojt_hello_hiho(), 9, "a".parse::<Phoneme>().unwrap().into(), true)]
-    #[case(ojt_hello_hiho(), 9, "k".parse::<Phoneme>().unwrap().into(), false)]
-    fn test_ojt_phoneme_equality(
-        #[case] ojt_phonemes: Vec<PhonemeCode>,
+    #[case(hello_hiho(), 9, "a".parse::<Phoneme>().unwrap().into(), true)]
+    #[case(hello_hiho(), 9, "k".parse::<Phoneme>().unwrap().into(), false)]
+    fn test_phoneme_code_equality(
+        #[case] phonemes: Vec<PhonemeCode>,
         #[case] index: usize,
         #[case] phoneme: PhonemeCode,
         #[case] is_equal: bool,
     ) {
-        assert_eq!(ojt_phonemes[index] == phoneme, is_equal);
+        assert_eq!(phonemes[index] == phoneme, is_equal);
     }
 
     #[rstest]
-    #[case(ojt_hello_hiho(), &[0, 23, 30, 4, 28, 21, 10, 21, 42, 7, 0, 19, 21, 19, 30, 12, 14, 35, 6, 0])]
-    fn test_phoneme_id_works(#[case] ojt_phonemes: Vec<PhonemeCode>, #[case] expected_ids: &[i64]) {
-        let ojt_ids = ojt_phonemes
+    #[case(hello_hiho(), &[0, 23, 30, 4, 28, 21, 10, 21, 42, 7, 0, 19, 21, 19, 30, 12, 14, 35, 6, 0])]
+    fn test_phoneme_code_works_as_id(
+        #[case] phonemes: Vec<PhonemeCode>,
+        #[case] expected_ids: &[i64],
+    ) {
+        let ids = phonemes
             .into_iter()
-            .map(PhonemeCode::into_integer)
+            .map(Contiguous::into_integer)
             .collect::<Vec<_>>();
-        assert_eq!(ojt_ids, expected_ids);
+        assert_eq!(ids, expected_ids);
     }
 }
