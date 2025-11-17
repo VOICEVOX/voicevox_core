@@ -77,9 +77,7 @@ impl OjtPhoneme {
         let phoneme = if phoneme.contains("sil") {
             Self::space_phoneme()
         } else {
-            if !(phoneme.is_empty() || // ← #1202 の結論が出次第、この条件は削除
-                PHONEME_MAP.contains_key(phoneme))
-            {
+            if !PHONEME_MAP.contains_key(phoneme) {
                 panic!("invalid phoneme: {phoneme:?}");
             }
             phoneme.to_owned()
