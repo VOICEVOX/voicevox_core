@@ -4,13 +4,6 @@ use bytemuck::{Contiguous, NoUninit};
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
 pub(super) enum Phoneme {
-    /// 母音モーラにおける子音部分。
-    ///
-    /// 通常、AudioQueryにこの値が入ることはない。またVOICEVOX
-    /// ENGINEではこの値は取り扱っておらず内部エラーとなる。
-    #[display("")]
-    None,
-
     /// `pau`。
     #[display("pau")]
     MorablePau,
@@ -202,7 +195,6 @@ impl FromStr for Phoneme {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             s if s.contains("sil") => Ok(Self::Sil(Sil(s.to_owned()))),
-            "" => Ok(Self::None),
             "pau" => Ok(Self::MorablePau),
             "A" => Ok(Self::UnvoicedVowelA),
             "E" => Ok(Self::UnvoicedVowelE),
@@ -568,69 +560,6 @@ impl From<Phoneme> for PhonemeCode {
         }
 
         convert!(
-            None,
-            MorablePau,
-            UnvoicedVowelA,
-            UnvoicedVowelE,
-            UnvoicedVowelI,
-            MorableN,
-            UnvoicedVowelO,
-            UnvoicedVowelU,
-            VoicedVowelA,
-            ConsonantB,
-            ConsonantBy,
-            ConsonantCh,
-            MorableCl,
-            ConsonantD,
-            ConsonantDy,
-            VoicedVowelE,
-            ConsonantF,
-            ConsonantG,
-            ConsonantGw,
-            ConsonantGy,
-            ConsonantH,
-            ConsonantHy,
-            VoicedVowelI,
-            ConsonantJ,
-            ConsonantK,
-            ConsonantKw,
-            ConsonantKy,
-            ConsonantM,
-            ConsonantMy,
-            ConsonantN,
-            ConsonantNy,
-            VoicedVowelO,
-            ConsonantP,
-            ConsonantPy,
-            ConsonantR,
-            ConsonantRy,
-            ConsonantS,
-            ConsonantSh,
-            ConsonantT,
-            ConsonantTs,
-            ConsonantTy,
-            VoicedVowelU,
-            ConsonantV,
-            ConsonantW,
-            ConsonantY,
-            ConsonantZ,
-        )
-    }
-}
-
-#[cfg(test)]
-impl From<PhonemeCode> for Phoneme {
-    fn from(code: PhonemeCode) -> Self {
-        macro_rules! convert {
-            ($($ident:ident),* $(,)?) => {
-                match code {
-                    $(PhonemeCode::$ident => Self::$ident,)*
-                }
-            };
-        }
-
-        convert!(
-            None,
             MorablePau,
             UnvoicedVowelA,
             UnvoicedVowelE,
@@ -697,6 +626,68 @@ mod tests {
             .collect()
     }
 
+    /// # Panics
+    ///
+    /// `code`が`PhonemeCode::None`のときパニック。
+    fn display_phoneme_code(code: PhonemeCode) -> String {
+        macro_rules! display_phoneme_code {
+            ($($ident:ident),* $(,)?) => {
+                match code {
+                    PhonemeCode::None => panic!(),
+                    $(PhonemeCode::$ident => Phoneme::$ident.to_string(),)*
+                }
+            };
+        }
+
+        display_phoneme_code!(
+            MorablePau,
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            ConsonantB,
+            ConsonantBy,
+            ConsonantCh,
+            MorableCl,
+            ConsonantD,
+            ConsonantDy,
+            VoicedVowelE,
+            ConsonantF,
+            ConsonantG,
+            ConsonantGw,
+            ConsonantGy,
+            ConsonantH,
+            ConsonantHy,
+            VoicedVowelI,
+            ConsonantJ,
+            ConsonantK,
+            ConsonantKw,
+            ConsonantKy,
+            ConsonantM,
+            ConsonantMy,
+            ConsonantN,
+            ConsonantNy,
+            VoicedVowelO,
+            ConsonantP,
+            ConsonantPy,
+            ConsonantR,
+            ConsonantRy,
+            ConsonantS,
+            ConsonantSh,
+            ConsonantT,
+            ConsonantTs,
+            ConsonantTy,
+            VoicedVowelU,
+            ConsonantV,
+            ConsonantW,
+            ConsonantY,
+            ConsonantZ,
+        )
+    }
+
     #[rstest]
     #[case(0, "pau")]
     #[case(1, "A")]
@@ -707,8 +698,19 @@ mod tests {
     #[case(44, "z")]
     fn test_phoneme_list(#[case] index: i64, #[case] phoneme_str: &str) {
         assert_eq!(
-            Phoneme::from(PhonemeCode::from_integer(index).unwrap()).to_string(),
+            display_phoneme_code(PhonemeCode::from_integer(index).unwrap()),
             phoneme_str,
+        );
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("invalid")]
+    #[should_panic(expected = "invalid phoneme: ")]
+    fn test_invalid_phoneme(#[case] s: &str) {
+        assert_eq!(
+            format!("invalid phoneme: {s}"),
+            s.parse::<Phoneme>().unwrap_err(),
         );
     }
 
@@ -727,7 +729,7 @@ mod tests {
     fn test_convert_works(#[case] ojt_phonemes: Vec<PhonemeCode>, #[case] expected: &str) {
         let ojt_str_hello_hiho: String = ojt_phonemes
             .iter()
-            .map(|&code| Phoneme::from(code).to_string())
+            .map(|&code| display_phoneme_code(code))
             .collect::<Vec<_>>()
             .join(" ");
         assert_eq!(ojt_str_hello_hiho, expected);
