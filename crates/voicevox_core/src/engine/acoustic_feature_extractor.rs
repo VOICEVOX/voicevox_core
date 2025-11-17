@@ -644,10 +644,9 @@ mod tests {
     #[rstest]
     #[case("")]
     #[case("invalid")]
-    #[should_panic(expected = "invalid phoneme: ")]
     fn test_invalid_phoneme(#[case] s: &str) {
         assert_eq!(
-            format!("invalid phoneme: {s}"),
+            format!("invalid phoneme: {s:?}"),
             s.parse::<Phoneme>().unwrap_err(),
         );
     }
