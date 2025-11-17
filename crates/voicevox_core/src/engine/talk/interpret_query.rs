@@ -74,11 +74,15 @@ pub(crate) fn split_mora(
     for i in 0..(vowel_indexes.len() - 1) {
         let prev = vowel_indexes[i];
         let next = vowel_indexes[i + 1];
-        consonant_phoneme_list.push(if next - prev == 1 {
-            OptionalConsonant::None
+        if next - prev == 1 {
+            consonant_phoneme_list.push(OptionalConsonant::None);
         } else {
-            bytemuck::checked::cast(phoneme_list[next as usize - 1])
-        });
+            consonant_phoneme_list.push(
+                phoneme_list[next as usize - 1]
+                    .try_into()
+                    .expect("`OptionalConsonant` and `MoraTail` should be exclusive"),
+            );
+        }
     }
 
     (consonant_phoneme_list, vowel_phoneme_list, vowel_indexes)
@@ -169,8 +173,14 @@ impl AudioQuery {
                 // https://github.com/VOICEVOX/voicevox_engine/issues/552
                 let phoneme_length = ((*phoneme_length * RATE).round_ties_even() / speed_scale)
                     .round_ties_even() as usize;
-                let phoneme_id = usize::try_from(phoneme_data_list[i].into_integer())
-                    .expect("`initial_process` should never return `PhonemeCode::None`");
+                let phoneme_id = {
+                    const _: () = assert!(
+                        PhonemeCode::MIN_VALUE == 0
+                            && PhonemeCode::MAX_VALUE == PhonemeCode::num_phoneme() as i64 - 1,
+                    );
+                    usize::try_from(phoneme_data_list[i].into_integer())
+                        .expect("should be ensured by the above assertion")
+                };
 
                 for _ in 0..phoneme_length {
                     let mut phonemes_vec = [0.; PhonemeCode::num_phoneme()]; // TODO: Rust 1.89であればサイズが型推論可能になる
