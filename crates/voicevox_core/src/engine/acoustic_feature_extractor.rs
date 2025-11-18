@@ -4,6 +4,8 @@ use bytemuck::{checked::CheckedCastError, CheckedBitPattern, Contiguous, NoUnini
 use duplicate::duplicate_item;
 use strum::EnumCount;
 
+use self::sil::Sil;
+
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
 pub(super) enum Phoneme {
     /// `pau`。
@@ -195,62 +197,60 @@ impl FromStr for Phoneme {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            s if s.contains("sil") => Ok(Self::Sil(Sil(s.to_owned()))),
-            "pau" => Ok(Self::MorablePau),
-            "A" => Ok(Self::UnvoicedVowelA),
-            "E" => Ok(Self::UnvoicedVowelE),
-            "I" => Ok(Self::UnvoicedVowelI),
-            "N" => Ok(Self::MorableN),
-            "O" => Ok(Self::UnvoicedVowelO),
-            "U" => Ok(Self::UnvoicedVowelU),
-            "a" => Ok(Self::VoicedVowelA),
-            "b" => Ok(Self::ConsonantB),
-            "by" => Ok(Self::ConsonantBy),
-            "ch" => Ok(Self::ConsonantCh),
-            "cl" => Ok(Self::MorableCl),
-            "d" => Ok(Self::ConsonantD),
-            "dy" => Ok(Self::ConsonantDy),
-            "e" => Ok(Self::VoicedVowelE),
-            "f" => Ok(Self::ConsonantF),
-            "g" => Ok(Self::ConsonantG),
-            "gw" => Ok(Self::ConsonantGw),
-            "gy" => Ok(Self::ConsonantGy),
-            "h" => Ok(Self::ConsonantH),
-            "hy" => Ok(Self::ConsonantHy),
-            "i" => Ok(Self::VoicedVowelI),
-            "j" => Ok(Self::ConsonantJ),
-            "k" => Ok(Self::ConsonantK),
-            "kw" => Ok(Self::ConsonantKw),
-            "ky" => Ok(Self::ConsonantKy),
-            "m" => Ok(Self::ConsonantM),
-            "my" => Ok(Self::ConsonantMy),
-            "n" => Ok(Self::ConsonantN),
-            "ny" => Ok(Self::ConsonantNy),
-            "o" => Ok(Self::VoicedVowelO),
-            "p" => Ok(Self::ConsonantP),
-            "py" => Ok(Self::ConsonantPy),
-            "r" => Ok(Self::ConsonantR),
-            "ry" => Ok(Self::ConsonantRy),
-            "s" => Ok(Self::ConsonantS),
-            "sh" => Ok(Self::ConsonantSh),
-            "t" => Ok(Self::ConsonantT),
-            "ts" => Ok(Self::ConsonantTs),
-            "ty" => Ok(Self::ConsonantTy),
-            "u" => Ok(Self::VoicedVowelU),
-            "v" => Ok(Self::ConsonantV),
-            "w" => Ok(Self::ConsonantW),
-            "y" => Ok(Self::ConsonantY),
-            "z" => Ok(Self::ConsonantZ),
-            s => Err(format!("invalid phoneme: {s:?}")),
+        if let Ok(sil) = s.parse() {
+            Ok(Self::Sil(sil))
+        } else {
+            match s {
+                "pau" => Ok(Self::MorablePau),
+                "A" => Ok(Self::UnvoicedVowelA),
+                "E" => Ok(Self::UnvoicedVowelE),
+                "I" => Ok(Self::UnvoicedVowelI),
+                "N" => Ok(Self::MorableN),
+                "O" => Ok(Self::UnvoicedVowelO),
+                "U" => Ok(Self::UnvoicedVowelU),
+                "a" => Ok(Self::VoicedVowelA),
+                "b" => Ok(Self::ConsonantB),
+                "by" => Ok(Self::ConsonantBy),
+                "ch" => Ok(Self::ConsonantCh),
+                "cl" => Ok(Self::MorableCl),
+                "d" => Ok(Self::ConsonantD),
+                "dy" => Ok(Self::ConsonantDy),
+                "e" => Ok(Self::VoicedVowelE),
+                "f" => Ok(Self::ConsonantF),
+                "g" => Ok(Self::ConsonantG),
+                "gw" => Ok(Self::ConsonantGw),
+                "gy" => Ok(Self::ConsonantGy),
+                "h" => Ok(Self::ConsonantH),
+                "hy" => Ok(Self::ConsonantHy),
+                "i" => Ok(Self::VoicedVowelI),
+                "j" => Ok(Self::ConsonantJ),
+                "k" => Ok(Self::ConsonantK),
+                "kw" => Ok(Self::ConsonantKw),
+                "ky" => Ok(Self::ConsonantKy),
+                "m" => Ok(Self::ConsonantM),
+                "my" => Ok(Self::ConsonantMy),
+                "n" => Ok(Self::ConsonantN),
+                "ny" => Ok(Self::ConsonantNy),
+                "o" => Ok(Self::VoicedVowelO),
+                "p" => Ok(Self::ConsonantP),
+                "py" => Ok(Self::ConsonantPy),
+                "r" => Ok(Self::ConsonantR),
+                "ry" => Ok(Self::ConsonantRy),
+                "s" => Ok(Self::ConsonantS),
+                "sh" => Ok(Self::ConsonantSh),
+                "t" => Ok(Self::ConsonantT),
+                "ts" => Ok(Self::ConsonantTs),
+                "ty" => Ok(Self::ConsonantTy),
+                "u" => Ok(Self::VoicedVowelU),
+                "v" => Ok(Self::ConsonantV),
+                "w" => Ok(Self::ConsonantW),
+                "y" => Ok(Self::ConsonantY),
+                "z" => Ok(Self::ConsonantZ),
+                s => Err(format!("invalid phoneme: {s:?}")),
+            }
         }
     }
 }
-
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
-pub(super) struct Sil(
-    String, // invariant: must contain "sil"
-);
 
 /// 音素IDのうち、`-1` ([`OptionalConsonant::None`])を除いたもの。
 #[derive(Clone, Copy, Contiguous, NoUninit, EnumCount)]
@@ -530,6 +530,27 @@ const _: () = assert!(PhonemeCode::MAX_VALUE == 44);
 const _: () = assert!(PhonemeCode::COUNT == 45);
 const _: () = assert!(MoraTail::COUNT == 13);
 const _: () = assert!(OptionalConsonant::COUNT == PhonemeCode::COUNT - MoraTail::COUNT + 1);
+
+mod sil {
+    use std::str::FromStr;
+
+    #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
+    pub(in super::super) struct Sil(
+        String, // invariant: must contain "sil"
+    );
+
+    impl FromStr for Sil {
+        type Err = ();
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            if s.contains("sil") {
+                Ok(Self(s.to_owned()))
+            } else {
+                Err(())
+            }
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
