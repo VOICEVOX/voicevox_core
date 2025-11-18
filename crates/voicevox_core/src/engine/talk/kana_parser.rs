@@ -1,9 +1,6 @@
 use std::{collections::HashMap, sync::LazyLock};
 
-use super::{
-    super::mora_list::MORA_LIST_MINIMUM,
-    model::{AccentPhrase, Mora},
-};
+use super::{super::mora_list::MORA_LIST_MINIMUM, AccentPhrase, Mora};
 
 const UNVOICE_SYMBOL: char = '_';
 const ACCENT_SYMBOL: char = '\'';
