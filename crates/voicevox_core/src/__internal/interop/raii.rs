@@ -2,6 +2,7 @@ use std::{marker::PhantomData, ops::Deref};
 
 use ouroboros::self_referencing;
 
+#[derive(Debug)]
 pub enum MaybeClosed<T> {
     Open(T),
     Closed,

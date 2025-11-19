@@ -121,18 +121,18 @@ pub(crate) mod blocking {
     /// ユーザー辞書。
     ///
     /// 単語はJSONとの相互変換のために挿入された順序を保つ。
-    #[doc(alias = "VoicevoxUserDict")]
+    #[cfg_attr(doc, doc(alias = "VoicevoxUserDict"))]
     #[derive(Debug, Default)]
     pub struct UserDict(Inner<SingleTasked>);
 
     impl self::UserDict {
         /// ユーザー辞書を作成する。
-        #[doc(alias = "voicevox_user_dict_new")]
+        #[cfg_attr(doc, doc(alias = "voicevox_user_dict_new"))]
         pub fn new() -> Self {
             Default::default()
         }
 
-        #[doc(alias = "voicevox_user_dict_to_json")]
+        #[cfg_attr(doc, doc(alias = "voicevox_user_dict_to_json"))]
         pub fn to_json(&self) -> String {
             self.0.to_json()
         }
@@ -146,37 +146,37 @@ pub(crate) mod blocking {
         /// # Errors
         ///
         /// ファイルが読めなかった、または内容が不正だった場合はエラーを返す。
-        #[doc(alias = "voicevox_user_dict_load")]
+        #[cfg_attr(doc, doc(alias = "voicevox_user_dict_load"))]
         pub fn load(&self, store_path: impl AsRef<Path>) -> Result<()> {
             self.0.load(store_path).block_on()
         }
 
         /// ユーザー辞書に単語を追加する。
-        #[doc(alias = "voicevox_user_dict_add_word")]
+        #[cfg_attr(doc, doc(alias = "voicevox_user_dict_add_word"))]
         pub fn add_word(&self, word: UserDictWord) -> Result<Uuid> {
             self.0.add_word(word)
         }
 
         /// ユーザー辞書の単語を変更する。
-        #[doc(alias = "voicevox_user_dict_update_word")]
+        #[cfg_attr(doc, doc(alias = "voicevox_user_dict_update_word"))]
         pub fn update_word(&self, word_uuid: Uuid, new_word: UserDictWord) -> Result<()> {
             self.0.update_word(word_uuid, new_word)
         }
 
         /// ユーザー辞書から単語を削除する。
-        #[doc(alias = "voicevox_user_dict_remove_word")]
+        #[cfg_attr(doc, doc(alias = "voicevox_user_dict_remove_word"))]
         pub fn remove_word(&self, word_uuid: Uuid) -> Result<UserDictWord> {
             self.0.remove_word(word_uuid)
         }
 
         /// 他のユーザー辞書をインポートする。
-        #[doc(alias = "voicevox_user_dict_import")]
+        #[cfg_attr(doc, doc(alias = "voicevox_user_dict_import"))]
         pub fn import(&self, other: &Self) -> Result<()> {
             self.0.import(&other.0)
         }
 
         /// ユーザー辞書を保存する。
-        #[doc(alias = "voicevox_user_dict_save")]
+        #[cfg_attr(doc, doc(alias = "voicevox_user_dict_save"))]
         pub fn save(&self, store_path: impl AsRef<Path>) -> Result<()> {
             self.0.save(store_path).block_on()
         }

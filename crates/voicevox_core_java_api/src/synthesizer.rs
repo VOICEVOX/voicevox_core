@@ -1,12 +1,12 @@
 use crate::{
-    common::{throw_if_err, JNIEnvExt as _, JavaApiError},
+    common::{JNIEnvExt as _, JavaApiError, throw_if_err},
     object, object_type, static_field,
 };
 
 use jni::{
+    JNIEnv,
     objects::{JObject, JString},
     sys::{jboolean, jint, jobject},
-    JNIEnv,
 };
 use std::sync::Arc;
 
@@ -49,14 +49,24 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             .i()
             .expect("cpuNumThreads is not integer") as u16;
 
-        let onnxruntime = *env
-            .get_rust_field::<_, _, &'static voicevox_core::blocking::Onnxruntime>(
+        let onnxruntime = *unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Onnxruntime.handle` must correspond to
+            //   `&'static voicevox_core::blocking::Onnxruntime`.
+            env.get_rust_field::<_, _, &'static voicevox_core::blocking::Onnxruntime>(
                 &onnxruntime,
                 "handle",
-            )?;
-        let open_jtalk = env
-            .get_rust_field::<_, _, voicevox_core::blocking::OpenJtalk>(&open_jtalk, "handle")?
-            .clone();
+            )
+        }?;
+        let open_jtalk = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.OpenJtalk.handle` must correspond to
+            //   `voicevox_core::blocking::OpenJtalk`.
+            env.get_rust_field::<_, _, voicevox_core::blocking::OpenJtalk>(&open_jtalk, "handle")
+        }?
+        .clone();
         let internal = Arc::new(
             voicevox_core::blocking::Synthesizer::builder(onnxruntime)
                 .text_analyzer(open_jtalk)
@@ -64,7 +74,11 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
                 .cpu_num_threads(cpu_num_threads)
                 .build()?,
         );
-        env.set_rust_field(&this, "handle", internal)?;
+        // SAFETY:
+        // - The safety contract must be upheld by the caller.
+        // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+        //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+        unsafe { env.set_rust_field(&this, "handle", internal) }?;
         Ok(())
     })
 }
@@ -78,11 +92,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     this: JObject<'local>,
 ) -> jboolean {
     throw_if_err(env, false, |env| {
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            env.get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
                 &this, "handle",
-            )?
-            .clone();
+            )
+        }?
+        .clone();
 
         Ok(internal.is_gpu_mode())
     })
@@ -98,11 +117,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     this: JObject<'local>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let metas_json = serde_json::to_string(&internal.metas()).expect("should not fail");
 
@@ -122,15 +146,25 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     model: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let model = env
-            .get_rust_field::<_, _, crate::voice_model::VoiceModelFile>(&model, "handle")?
-            .clone();
+        let model = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.VoiceModelFile.handle` must correspond to
+            //   `crate::voice_model::VoiceModelFile`.
+            env.get_rust_field::<_, _, crate::voice_model::VoiceModelFile>(&model, "handle")
+        }?
+        .clone();
         let model = model.read()?;
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
         internal.load_voice_model(&model)?;
         Ok(())
     })
@@ -148,11 +182,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     throw_if_err(env, (), |env| {
         let model_id = env.get_uuid(&model_id)?.into();
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         internal.unload_voice_model(model_id)?;
 
@@ -172,11 +211,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     throw_if_err(env, false, |env| {
         let model_id = env.get_uuid(&model_id)?.into();
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let is_loaded = internal.is_loaded_voice_model(model_id);
 
@@ -199,11 +243,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let kana: String = env.get_string(&kana)?.into();
         let style_id = style_id as u32;
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let audio_query =
             internal.create_audio_query_from_kana(&kana, voicevox_core::StyleId::new(style_id))?;
@@ -230,11 +279,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let text: String = env.get_string(&text)?.into();
         let style_id = style_id as u32;
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let audio_query =
             internal.create_audio_query(&text, voicevox_core::StyleId::new(style_id))?;
@@ -261,11 +315,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let kana: String = env.get_string(&kana)?.into();
         let style_id = style_id as u32;
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let accent_phrases = internal
             .create_accent_phrases_from_kana(&kana, voicevox_core::StyleId::new(style_id))?;
@@ -292,11 +351,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let text: String = env.get_string(&text)?.into();
         let style_id = style_id as u32;
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let accent_phrases =
             internal.create_accent_phrases(&text, voicevox_core::StyleId::new(style_id))?;
@@ -325,11 +389,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let replaced_accent_phrases =
             internal.replace_mora_data(&accent_phrases, voicevox_core::StyleId::new(style_id))?;
@@ -357,11 +426,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let replaced_accent_phrases = internal
             .replace_phoneme_length(&accent_phrases, voicevox_core::StyleId::new(style_id))?;
@@ -389,11 +463,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let replaced_accent_phrases =
             internal.replace_mora_pitch(&accent_phrases, voicevox_core::StyleId::new(style_id))?;
@@ -422,11 +501,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             serde_json::from_str(&audio_query).map_err(JavaApiError::DeJson)?;
         let style_id = style_id as u32;
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let wave = internal
             .synthesis(&audio_query, voicevox_core::StyleId::new(style_id))
@@ -454,11 +538,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let kana: String = env.get_string(&kana)?.into();
         let style_id = style_id as u32;
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let wave = internal
             .tts_from_kana(&kana, voicevox_core::StyleId::new(style_id))
@@ -484,11 +573,16 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let text: String = env.get_string(&query_json)?.into();
         let style_id = style_id as u32;
 
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>>(
-                &this, "handle",
-            )?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
 
         let wave = internal
             .tts(&text, voicevox_core::StyleId::new(style_id))
@@ -508,7 +602,15 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        env.take_rust_field(&this, "handle")?;
+        unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.take_rust_field::<_, _, RustField>(&this, "handle")
+        }?;
         Ok(())
     })
 }

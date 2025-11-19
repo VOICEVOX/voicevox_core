@@ -13,14 +13,14 @@ use indexmap::IndexSet;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 use test_util::{
+    OPEN_JTALK_DIC_DIR,
     c_api::{
         self, CApi, VoicevoxInitializeOptions, VoicevoxLoadOnnxruntimeOptions, VoicevoxResultCode,
     },
-    OPEN_JTALK_DIC_DIR,
 };
 
 use crate::{
-    assert_cdylib::{self, case, Utf8Output},
+    assert_cdylib::{self, Utf8Output, case},
     snapshots,
 };
 
@@ -32,11 +32,17 @@ struct TestCase;
 #[typetag::serde(name = "double_delete_synthesizer")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
-        let lib = CApi::from_library(lib)?;
+        let lib = unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            CApi::from_library(lib)
+        }?;
 
         let onnxruntime = {
             let mut onnxruntime = MaybeUninit::uninit();
-            assert_ok(
+            assert_ok(unsafe {
+                // SAFETY:
+                // - A `CStr` is a valid string.
+                // - `onnxruntime` is valid for writes.
                 lib.voicevox_onnxruntime_load_once(
                     VoicevoxLoadOnnxruntimeOptions {
                         filename: CStr::from_bytes_with_nul(
@@ -52,37 +58,49 @@ impl assert_cdylib::TestCase for TestCase {
                         .as_ptr(),
                     },
                     onnxruntime.as_mut_ptr(),
-                ),
-            );
-            onnxruntime.assume_init()
+                )
+            });
+            // SAFETY: `voicevox_onnxruntime_load_once` initializes `onnxruntime` if succeeded.
+            unsafe { onnxruntime.assume_init() }
         };
 
         let openjtalk = {
             let mut openjtalk = MaybeUninit::uninit();
             let open_jtalk_dic_dir = CString::new(OPEN_JTALK_DIC_DIR).unwrap();
-            assert_ok(
-                lib.voicevox_open_jtalk_rc_new(open_jtalk_dic_dir.as_ptr(), openjtalk.as_mut_ptr()),
-            );
-            openjtalk.assume_init()
+            assert_ok(unsafe {
+                // SAFETY:
+                // - A `CString` is a valid string.
+                // - `openjtalk` is valid for writes.
+                lib.voicevox_open_jtalk_rc_new(open_jtalk_dic_dir.as_ptr(), openjtalk.as_mut_ptr())
+            });
+            // SAFETY: `voicevox_open_jtalk_rc_new` initializes `openjtalk` if succeeded.
+            unsafe { openjtalk.assume_init() }
         };
 
         let synthesizer = {
             let mut synthesizer = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_synthesizer_new(
-                onnxruntime,
-                openjtalk,
-                VoicevoxInitializeOptions {
-                    acceleration_mode:
-                        c_api::VoicevoxAccelerationMode_VOICEVOX_ACCELERATION_MODE_CPU,
-                    ..lib.voicevox_make_default_initialize_options()
-                },
-                synthesizer.as_mut_ptr(),
-            ));
-            synthesizer.assume_init()
+            assert_ok(unsafe {
+                // SAFETY:
+                // - `onnxruntime` is valid for reads.
+                // - `synthesizer` is valid for writes.
+                lib.voicevox_synthesizer_new(
+                    onnxruntime,
+                    openjtalk,
+                    VoicevoxInitializeOptions {
+                        acceleration_mode:
+                            c_api::VoicevoxAccelerationMode_VOICEVOX_ACCELERATION_MODE_CPU,
+                        ..lib.voicevox_make_default_initialize_options()
+                    },
+                    synthesizer.as_mut_ptr(),
+                )
+            });
+            // SAFETY: `voicevox_synthesizer_new` initializes `synthesizer` if succeeded.
+            unsafe { synthesizer.assume_init() }
         };
 
-        lib.voicevox_synthesizer_delete(synthesizer);
-        lib.voicevox_synthesizer_delete(synthesizer);
+        // SAFETY: `voicevox_synthesizer_delete` has no safety requirements.
+        unsafe { lib.voicevox_synthesizer_delete(synthesizer) };
+        unsafe { lib.voicevox_synthesizer_delete(synthesizer) };
         unreachable!();
 
         fn assert_ok(result_code: VoicevoxResultCode) {

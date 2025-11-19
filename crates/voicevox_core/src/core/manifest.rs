@@ -18,7 +18,7 @@ use super::infer::domains::{
     InferenceDomainMap, SingingTeacherOperation, TalkOperation,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct FormatVersionV1;
 
 impl<'de> Deserialize<'de> for FormatVersionV1 {
@@ -71,7 +71,7 @@ impl Display for InnerVoiceId {
     }
 }
 
-#[derive(Deserialize, Getters)]
+#[derive(Debug, Deserialize, Getters)]
 pub struct Manifest {
     #[expect(dead_code, reason = "現状はバリデーションのためだけに存在")]
     vvm_format_version: FormatVersionV1,
@@ -84,7 +84,7 @@ pub struct Manifest {
 pub(super) type ManifestDomains = inference_domain_map_values!(for<D> Option<D::Manifest>);
 
 // TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
-#[derive(Index, Deserialize)]
+#[derive(Debug, Index, Deserialize)]
 #[cfg_attr(test, derive(Default))]
 pub(crate) struct TalkManifest {
     #[index]
@@ -96,7 +96,7 @@ pub(crate) struct TalkManifest {
 }
 
 // TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
-#[derive(Index, Deserialize)]
+#[derive(Debug, Index, Deserialize)]
 #[cfg_attr(test, derive(Default))]
 pub(crate) struct ExperimentalTalkManifest {
     #[index]
@@ -107,7 +107,7 @@ pub(crate) struct ExperimentalTalkManifest {
     pub(super) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
-#[derive(Index, Deserialize)]
+#[derive(Debug, Index, Deserialize)]
 #[cfg_attr(test, derive(Default))]
 pub(crate) struct SingingTeacherManifest {
     #[index]
@@ -119,7 +119,7 @@ pub(crate) struct SingingTeacherManifest {
 }
 
 // TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
-#[derive(Index, Deserialize)]
+#[derive(Debug, Index, Deserialize)]
 #[cfg_attr(test, derive(Default))]
 pub(crate) struct FrameDecodeManifest {
     #[index]
@@ -130,7 +130,7 @@ pub(crate) struct FrameDecodeManifest {
     pub(super) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub(crate) struct ModelFile {
     pub(super) r#type: ModelFileType,
     pub(super) filename: Arc<str>,
@@ -146,7 +146,7 @@ impl Default for ModelFile {
     }
 }
 
-#[derive(Deserialize, Clone, Copy)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum ModelFileType {
     Onnx,
@@ -154,7 +154,8 @@ pub(super) enum ModelFileType {
 }
 
 #[serde_as]
-#[derive(Default, Clone, Deref, Deserialize)]
+#[derive(Default, Clone, derive_more::Debug, Deref, Deserialize)]
+#[debug("{_0:?}")]
 #[deref(forward)]
 pub(crate) struct StyleIdToInnerVoiceId(
     #[serde_as(as = "Arc<BTreeMap<DisplayFromStr, _>>")] Arc<BTreeMap<StyleId, InnerVoiceId>>,

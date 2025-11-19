@@ -100,6 +100,10 @@ impl<T: CApiObject> *const T {
     ///
     /// 同じ対象に対してこの関数を二度呼ぶとパニックする。
     pub(crate) fn drop_body(self) {
+        if self.is_null() {
+            return;
+        }
+
         let this = self.validate();
 
         let body = T::lock_bodies()

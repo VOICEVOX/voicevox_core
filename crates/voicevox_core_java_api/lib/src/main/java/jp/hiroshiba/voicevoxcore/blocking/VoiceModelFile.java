@@ -20,6 +20,19 @@ public class VoiceModelFile implements Closeable {
   /**
    * ID。
    *
+   * <p>{@link Synthesizer}はこのIDをキーとして、音声モデルのロード・アンロードを行う。
+   *
+   * <p>同じIDを持つ複数のVVMファイルがあるときは、ファイルとして新しい方を常に使うことが推奨される。<a
+   * href="https://github.com/VOICEVOX/voicevox_vvm">VOICEVOX/voicevox_vvm</a>で管理されているVVMでは、次のような方針が取られている。
+   *
+   * <ul>
+   *   <li>VVMに含まれる声が変化せず、軽微な修正のみのときはIDを使い回してリリースする。
+   *   <li>VVMに含まれる声が明確に変化するかもしくは削除されるような実質的な変更のときは、新しいIDを割り振ってリリースする。
+   * </ul>
+   *
+   * <p>これ以外は未定であり、更なるルールについては<a
+   * href="https://github.com/VOICEVOX/voicevox_vvm/issues/19">VOICEVOX/voicevox_vvm#19</a>で議論される予定。
+   *
    * <p>{@link #close}の後でも利用可能。
    */
   @Nonnull public final UUID id;

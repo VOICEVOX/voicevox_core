@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use test_util::c_api::{self, CApi, VoicevoxResultCode};
 
 use crate::{
-    assert_cdylib::{self, case, Utf8Output},
+    assert_cdylib::{self, Utf8Output, case},
     snapshots,
 };
 
@@ -21,19 +21,27 @@ struct TestCase;
 #[typetag::serde(name = "double_delete_voice_model_file")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
-        let lib = CApi::from_library(lib)?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let lib = unsafe { CApi::from_library(lib) }?;
 
         let model = {
             let mut model = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_voice_model_file_open(
-                c_api::SAMPLE_VOICE_MODEL_FILE_PATH.as_ptr(),
-                model.as_mut_ptr(),
-            ));
-            model.assume_init()
+            assert_ok(unsafe {
+                // SAFETY:
+                // - `SAMPLE_VOICE_MODEL_FILE_PATH` is a valid string.
+                // - `model` is valid for writes.
+                lib.voicevox_voice_model_file_open(
+                    c_api::SAMPLE_VOICE_MODEL_FILE_PATH.as_ptr(),
+                    model.as_mut_ptr(),
+                )
+            });
+            // SAFETY: `voicevox_voice_model_file_open` initializes `model` if succeeded.
+            unsafe { model.assume_init() }
         };
 
-        lib.voicevox_voice_model_file_delete(model);
-        lib.voicevox_voice_model_file_delete(model);
+        // SAFETY: `voicevox_voice_model_file_delete` has no safety requirement.
+        unsafe { lib.voicevox_voice_model_file_delete(model) };
+        unsafe { lib.voicevox_voice_model_file_delete(model) };
         unreachable!();
 
         fn assert_ok(result_code: VoicevoxResultCode) {

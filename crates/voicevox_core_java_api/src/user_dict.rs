@@ -1,11 +1,11 @@
 use jni::objects::JClass;
 use std::{borrow::Cow, sync::Arc};
 
-use crate::common::{throw_if_err, JNIEnvExt as _, JavaApiResult};
+use crate::common::{JNIEnvExt as _, JavaApiResult, throw_if_err};
 use jni::{
+    JNIEnv,
     objects::{JObject, JString},
     sys::jobject,
-    JNIEnv,
 };
 use serde_json::json;
 
@@ -18,7 +18,11 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsNew
     throw_if_err(env, (), |env| {
         let internal = voicevox_core::blocking::UserDict::new();
 
-        env.set_rust_field(&this, "handle", Arc::new(internal))?;
+        // SAFETY:
+        // - The safety contract must be upheld by the caller.
+        // - `jp.hiroshiba.voicevoxcore.blocking.UserDict.handle` must correspond to
+        //   `Arc<voicevox_core::blocking::UserDict>`.
+        unsafe { env.set_rust_field(&this, "handle", Arc::new(internal)) }?;
 
         Ok(())
     })
@@ -32,9 +36,14 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsAdd
     word: JObject<'local>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.UserDict.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::UserDict>`.
+            env.get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")
+        }?
+        .clone();
 
         let uuid = internal.add_word(word_from_java(env, word)?)?;
         let uuid = env.new_uuid(uuid)?;
@@ -52,9 +61,14 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsUpd
     word: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.UserDict.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::UserDict>`.
+            env.get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")
+        }?
+        .clone();
 
         let uuid = env.get_uuid(&uuid)?;
 
@@ -121,9 +135,14 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsRem
     uuid: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.UserDict.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::UserDict>`.
+            env.get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")
+        }?
+        .clone();
 
         let uuid = env.get_uuid(&uuid)?;
         internal.remove_word(uuid)?;
@@ -140,12 +159,26 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsImp
     other_dict: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
-            .clone();
-        let other_dict = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&other_dict, "handle")?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.UserDict.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::UserDict>`.
+            env.get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")
+        }?
+        .clone();
+
+        let other_dict = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.UserDict.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::UserDict>`.
+            env.get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(
+                &other_dict,
+                "handle",
+            )
+        }?
+        .clone();
 
         internal.import(&other_dict)?;
 
@@ -161,9 +194,14 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsLoa
     path: JString<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.UserDict.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::UserDict>`.
+            env.get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")
+        }?
+        .clone();
 
         let path = env.get_string(&path)?;
         let path = &*Cow::from(&path);
@@ -182,9 +220,14 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsSav
     path: JString<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.UserDict.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::UserDict>`.
+            env.get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")
+        }?
+        .clone();
 
         let path = env.get_string(&path)?;
         let path = &*Cow::from(&path);
@@ -202,9 +245,14 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsToH
     this: JObject<'local>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
-        let internal = env
-            .get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")?
-            .clone();
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.UserDict.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::UserDict>`.
+            env.get_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")
+        }?
+        .clone();
 
         let map = env.new_object("java/util/HashMap", "()V", &[])?;
 
@@ -243,7 +291,13 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_UserDict_rsDro
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        env.take_rust_field(&this, "handle")?;
+        unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.UserDict.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::UserDict>`.
+            env.take_rust_field::<_, _, Arc<voicevox_core::blocking::UserDict>>(&this, "handle")
+        }?;
         Ok(())
     })
 }

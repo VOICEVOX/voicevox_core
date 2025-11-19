@@ -55,30 +55,34 @@ impl<T> SliceOwner<T> {
             );
         }
 
-        out_ptr.write_unaligned(ptr);
-        out_len.write_unaligned(len);
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { out_ptr.write_unaligned(ptr) };
+        unsafe { out_len.write_unaligned(len) };
     }
 
     /// `own_and_lend`でC API利用者に貸し出したポインタに対応する`Box<[u8]>`をデストラクトする。
     ///
+    /// ヌルポインタに対しては何もしない。
+    ///
     /// # Panics
     ///
-    /// `ptr`が`own_and_lend`で貸し出されたポインタではないとき、パニックする。
+    /// `ptr`が非ヌルで、かつ`own_and_lend`で貸し出されたポインタではないとき、パニックする。
     pub(crate) fn drop_for(&self, ptr: *mut T) {
-        let mut slices = self.slices.lock().unwrap();
+        let Some(ptr) = NonNull::new(ptr) else { return };
 
-        NonNull::new(ptr)
-            .and_then(|ptr| slices.remove(&ptr.addr()))
-            .expect(
-                "解放しようとしたポインタはvoicevox_coreの管理下にありません。\
-                 誤ったポインタであるか、二重解放になっていることが考えられます",
-            );
+        self.slices.lock().unwrap().remove(&ptr.addr()).expect(
+            "解放しようとしたポインタはvoicevox_coreの管理下にありません。\
+             誤ったポインタであるか、二重解放になっていることが考えられます",
+        );
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{mem::MaybeUninit, ptr::NonNull};
+    use std::{
+        mem::MaybeUninit,
+        ptr::{self, NonNull},
+    };
 
     use super::SliceOwner;
 
@@ -118,6 +122,12 @@ mod tests {
             vec.extend_from_slice(elems);
             vec
         }
+    }
+
+    #[test]
+    fn it_accepts_null() {
+        let owner = SliceOwner::<i32>::new();
+        owner.drop_for(ptr::null_mut());
     }
 
     #[test]

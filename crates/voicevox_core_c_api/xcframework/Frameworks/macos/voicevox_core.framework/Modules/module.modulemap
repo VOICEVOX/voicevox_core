@@ -1,6 +1,0 @@
-framework module voicevox_core {
-  umbrella header "voicevox_core.h"
-  export *
-
-  module * { export * }
-}

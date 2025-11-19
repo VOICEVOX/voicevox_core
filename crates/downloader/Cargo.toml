@@ -1,5 +1,6 @@
 [package]
 name = "downloader"
+version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -10,24 +11,27 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow.workspace = true
-base64.workspace = true
 binstall-tar.workspace = true
 bytes.workspace = true
 clap = { workspace = true, features = ["derive"] }
+color-print.workspace = true
 comrak.workspace = true
 easy-ext.workspace = true
 flate2.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
 futures-core.workspace = true
 futures-util.workspace = true
+glob.workspace = true
+heck.workspace = true
 indexmap.workspace = true
 indicatif.workspace = true
+indoc.workspace = true
 itertools.workspace = true
 minus = { workspace = true, features = ["static_output"] }
-octocrab = { workspace = true, default-features = false, features = ["rustls-tls", "stream"] }
+octocrab = { workspace = true, features = ["rustls-tls", "stream"] }
 parse-display.workspace = true
 rayon.workspace = true
-reqwest = { workspace = true, default-features = false, features = ["rustls-tls", "stream"] }
+reqwest = { workspace = true, features = ["rustls-tls", "stream"] }
 rprompt.workspace = true
 scraper.workspace = true
 semver.workspace = true

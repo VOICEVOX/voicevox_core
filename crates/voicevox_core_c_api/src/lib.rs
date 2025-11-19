@@ -15,13 +15,13 @@ mod result_code;
 mod slice_owner;
 use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::{
-    accent_phrases_to_json, audio_query_model_to_json, ensure_utf8, into_result_code_with_error,
-    CApiError, UuidBytesExt as _,
+    CApiError, UuidBytesExt as _, accent_phrases_to_json, audio_query_model_to_json, ensure_utf8,
+    into_result_code_with_error,
 };
 use self::object::{CApiObject as _, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
-use anstream::{stream::RawStream, AutoStream};
+use anstream::{AutoStream, stream::RawStream};
 use c_impls::{VoicevoxSynthesizerPtrExt as _, VoicevoxVoiceModelFilePtrExt as _};
 use chrono::SecondsFormat;
 use colorchoice::ColorChoice;
@@ -35,11 +35,11 @@ use std::mem::MaybeUninit;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 use std::sync::Once;
-use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::format::Writer;
 use uuid::Uuid;
 use voicevox_core::__internal::interop::{
-    BlockingTextAnalyzerExt as _, ToJsonValue as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE,
+    BlockingTextAnalyzerExt as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE, ToJsonValue as _,
 };
 use voicevox_core::{AccentPhrase, AudioQuery, StyleId};
 
@@ -177,7 +177,7 @@ pub extern "C" fn voicevox_make_default_load_onnxruntime_options() -> VoicevoxLo
 /// ```
 ///
 /// \orig-impl{VoicevoxOnnxruntime}
-#[cfg(any())]
+#[cfg(false)]
 pub struct VoicevoxOnnxruntime(!);
 
 /// cbindgen:ignore
@@ -326,9 +326,11 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_new(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let open_jtalk_dic_dir = ensure_utf8(CStr::from_ptr(open_jtalk_dic_dir))?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let open_jtalk_dic_dir = ensure_utf8(unsafe { CStr::from_ptr(open_jtalk_dic_dir) })?;
         let open_jtalk = OpenJtalkRc::new(open_jtalk_dic_dir)?;
-        out_open_jtalk.write_unaligned(open_jtalk);
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { out_open_jtalk.write_unaligned(open_jtalk) };
         Ok(())
     })())
 }
@@ -395,7 +397,7 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_analyze(
 ///
 /// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
 ///
-/// @param [in] open_jtalk 破棄対象
+/// @param [in] open_jtalk 破棄対象。nullable
 ///
 /// \example{
 /// ```c
@@ -523,7 +525,19 @@ pub struct VoicevoxVoiceModelFile {
 
 /// 音声モデルID。
 ///
+/// ::VoicevoxSynthesizer はこのIDをキーとして、音声モデルのロード・アンロードを行う。
+///
+/// 同じIDを持つ複数のVVMファイルがあるときは、ファイルとして新しい方を常に使うことが推奨される。[VOICEVOX/voicevox_vvm]で管理されているVVMでは、次の方針が取られている。
+///
+/// - VVMに含まれる声が変化せず、軽微な修正のみのときはIDを使い回してリリースする。
+/// - VVMに含まれる声が明確に変化するかもしくは削除されるような実質的な変更のときは、新しいIDを割り振ってリリースする。
+///
+/// これ以外は未定であり、更なるルールについては[VOICEVOX/voicevox_vvm#19]で議論される予定。
+///
 /// \orig-impl{VoicevoxVoiceModelId}
+///
+/// [VOICEVOX/voicevox_vvm]: https://github.com/VOICEVOX/voicevox_vvm
+/// [VOICEVOX/voicevox_vvm#19]: https://github.com/VOICEVOX/voicevox_vvm/issues/19
 pub type VoicevoxVoiceModelId<'a> = &'a [u8; 16];
 
 /// スタイルID。
@@ -554,9 +568,11 @@ pub unsafe extern "C" fn voicevox_voice_model_file_open(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let path = ensure_utf8(CStr::from_ptr(path))?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let path = ensure_utf8(unsafe { CStr::from_ptr(path) })?;
         let model = VoicevoxVoiceModelFile::open(path)?;
-        out_model.write_unaligned(model);
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { out_model.write_unaligned(model) };
         Ok(())
     })())
 }
@@ -565,7 +581,7 @@ pub unsafe extern "C" fn voicevox_voice_model_file_open(
 /// ::VoicevoxVoiceModelFile からIDを取得する。
 ///
 /// @param [in] model 音声モデル
-/// @param [out] output_voice_model_id 音声モデルID
+/// @param [out] output_voice_model_id 音声モデルID。詳細は ::VoicevoxVoiceModelId
 ///
 /// \safety{
 /// - `output_voice_model_id`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -607,7 +623,7 @@ pub extern "C" fn voicevox_voice_model_file_create_metas_json(
 ///
 /// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
 ///
-/// @param [in] model 破棄対象
+/// @param [in] model 破棄対象。nullable
 ///
 /// \no-orig-impl{voicevox_voice_model_file_delete}
 #[unsafe(no_mangle)]
@@ -653,7 +669,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
     init_logger_once();
     into_result_code_with_error((|| {
         let synthesizer = VoicevoxSynthesizer::new(onnxruntime, open_jtalk, options)?;
-        out_synthesizer.write_unaligned(synthesizer);
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { out_synthesizer.write_unaligned(synthesizer) };
         Ok(())
     })())
 }
@@ -665,7 +682,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_new(
 ///
 /// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
 ///
-/// @param [in] synthesizer 破棄対象
+/// @param [in] synthesizer 破棄対象。nullable
 ///
 /// \no-orig-impl{voicevox_synthesizer_delete}
 #[unsafe(no_mangle)]
@@ -821,11 +838,14 @@ pub unsafe extern "C" fn voicevox_onnxruntime_create_supported_devices_json(
     init_logger_once();
     into_result_code_with_error((|| {
         let supported_devices = CString::new(onnxruntime.0.supported_devices()?.to_json()).unwrap();
-        output_supported_devices_json.write_unaligned(
-            C_STRING_DROP_CHECKER
-                .whitelist(supported_devices)
-                .into_raw(),
-        );
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_supported_devices_json.write_unaligned(
+                C_STRING_DROP_CHECKER
+                    .whitelist(supported_devices)
+                    .into_raw(),
+            );
+        }
         Ok(())
     })())
 }
@@ -866,7 +886,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let kana = CStr::from_ptr(kana);
+        // SAFETY: The safety contract must be upheld by the caller.
+        let kana = unsafe { CStr::from_ptr(kana) };
         let kana = ensure_utf8(kana)?;
 
         let audio_query = synthesizer
@@ -874,8 +895,11 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
             .create_audio_query_from_kana(kana, StyleId::new(style_id))?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
-        output_audio_query_json
-            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_audio_query_json
+                .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
+        }
         Ok(())
     })())
 }
@@ -921,7 +945,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let text = CStr::from_ptr(text);
+        // SAFETY: The safety contract must be upheld by the caller.
+        let text = unsafe { CStr::from_ptr(text) };
         let text = ensure_utf8(text)?;
 
         let audio_query = synthesizer
@@ -929,8 +954,11 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
             .create_audio_query(text, StyleId::new(style_id))?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
-        output_audio_query_json
-            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_audio_query_json
+                .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
+        }
         Ok(())
     })())
 }
@@ -972,14 +1000,18 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let kana = ensure_utf8(CStr::from_ptr(kana))?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let kana = ensure_utf8(unsafe { CStr::from_ptr(kana) })?;
         let accent_phrases = synthesizer
             .body()
             .create_accent_phrases_from_kana(kana, StyleId::new(style_id))?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        output_accent_phrases_json
-            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_accent_phrases_json
+                .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        }
         Ok(())
     })())
 }
@@ -1025,14 +1057,18 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let text = ensure_utf8(CStr::from_ptr(text))?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let text = ensure_utf8(unsafe { CStr::from_ptr(text) })?;
         let accent_phrases = synthesizer
             .body()
             .create_accent_phrases(text, StyleId::new(style_id))?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        output_accent_phrases_json
-            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_accent_phrases_json
+                .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        }
         Ok(())
     })())
 }
@@ -1069,16 +1105,20 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
+        // SAFETY: The safety contract must be upheld by the caller.
         let accent_phrases: Vec<AccentPhrase> =
-            serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
+            serde_json::from_str(ensure_utf8(unsafe { CStr::from_ptr(accent_phrases_json) })?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
         let accent_phrases = synthesizer
             .body()
             .replace_mora_data(&accent_phrases, StyleId::new(style_id))?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        output_accent_phrases_json
-            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_accent_phrases_json
+                .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        }
         Ok(())
     })())
 }
@@ -1110,16 +1150,20 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
+        // SAFETY: The safety contract must be upheld by the caller.
         let accent_phrases: Vec<AccentPhrase> =
-            serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
+            serde_json::from_str(ensure_utf8(unsafe { CStr::from_ptr(accent_phrases_json) })?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
         let accent_phrases = synthesizer
             .body()
             .replace_phoneme_length(&accent_phrases, StyleId::new(style_id))?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        output_accent_phrases_json
-            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_accent_phrases_json
+                .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        }
         Ok(())
     })())
 }
@@ -1151,16 +1195,20 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
+        // SAFETY: The safety contract must be upheld by the caller.
         let accent_phrases: Vec<AccentPhrase> =
-            serde_json::from_str(ensure_utf8(CStr::from_ptr(accent_phrases_json))?)
+            serde_json::from_str(ensure_utf8(unsafe { CStr::from_ptr(accent_phrases_json) })?)
                 .map_err(CApiError::InvalidAccentPhrase)?;
         let accent_phrases = synthesizer
             .body()
             .replace_mora_pitch(&accent_phrases, StyleId::new(style_id))?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
-        output_accent_phrases_json
-            .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_accent_phrases_json
+                .write_unaligned(C_STRING_DROP_CHECKER.whitelist(accent_phrases).into_raw());
+        }
         Ok(())
     })())
 }
@@ -1217,7 +1265,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let audio_query_json = CStr::from_ptr(audio_query_json)
+        // SAFETY: The safety contract must be upheld by the caller.
+        let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) }
             .to_str()
             .map_err(|_| CApiError::InvalidUtf8Input)?;
         let audio_query: AudioQuery =
@@ -1230,7 +1279,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
             .synthesis(&audio_query, StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak)
             .perform()?;
-        U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length);
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length) };
         Ok(())
     })())
 }
@@ -1287,7 +1337,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let kana = ensure_utf8(CStr::from_ptr(kana))?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let kana = ensure_utf8(unsafe { CStr::from_ptr(kana) })?;
         let VoicevoxTtsOptions {
             enable_interrogative_upspeak,
         } = options;
@@ -1296,7 +1347,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
             .tts_from_kana(kana, StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak)
             .perform()?;
-        U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length);
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length) };
         Ok(())
     })())
 }
@@ -1338,7 +1390,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let text = ensure_utf8(CStr::from_ptr(text))?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let text = ensure_utf8(unsafe { CStr::from_ptr(text) })?;
         let VoicevoxTtsOptions {
             enable_interrogative_upspeak,
         } = options;
@@ -1347,7 +1400,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
             .tts(text, StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak)
             .perform()?;
-        U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length);
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length) };
         Ok(())
     })())
 }
@@ -1355,10 +1409,10 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// JSON文字列を解放する。
 ///
-/// @param [in] json 解放するJSON文字列
+/// @param [in] json 解放するJSON文字列。nullable
 ///
 /// \safety{
-/// - `json`は以下のAPIで得られたポインタでなくてはいけない。
+/// - `json`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
 ///     - ::voicevox_audio_query_create_from_accent_phrases
 ///     - ::voicevox_onnxruntime_create_supported_devices_json
 ///     - ::voicevox_voice_model_file_create_metas_json
@@ -1371,28 +1425,31 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 ///     - ::voicevox_synthesizer_replace_mora_pitch
 ///     - ::voicevox_user_dict_to_json
 /// - 文字列の長さは生成時より変更されていてはならない。
-/// - `json`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
-/// - `json`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+/// - `json`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+/// - `json`がヌルポインタでないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
 /// }
 ///
 /// \no-orig-impl{voicevox_json_free}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
     init_logger_once();
-    drop(CString::from_raw(C_STRING_DROP_CHECKER.check(json)));
+    if let Some(json) = C_STRING_DROP_CHECKER.check(json) {
+        // SAFETY: The safety contract must be upheld by the caller.
+        drop(unsafe { CString::from_raw(json.as_ptr()) });
+    }
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// WAVデータを解放する。
 ///
-/// @param [in] wav 解放するWAVデータ
+/// @param [in] wav 解放するWAVデータ。nullable
 ///
 /// \safety{
-/// - `wav`は以下のAPIで得られたポインタでなくてはいけない。
+/// - `wav`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
 ///     - ::voicevox_synthesizer_synthesis
 ///     - ::voicevox_synthesizer_tts
-/// - `wav`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
-/// - `wav`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+/// - `wav`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+/// - `wav`がヌルポインタでないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
 /// }
 ///
 /// \no-orig-impl{voicevox_wav_free}
@@ -1571,9 +1628,11 @@ pub unsafe extern "C" fn voicevox_user_dict_add_word(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let word = word.read_unaligned().try_into_word()?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let word = unsafe { word.read_unaligned().try_into_word() }?;
         let uuid = user_dict.body().add_word(word)?;
-        output_word_uuid.write_unaligned(uuid.into_bytes());
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { output_word_uuid.write_unaligned(uuid.into_bytes()) };
 
         Ok(())
     })())
@@ -1602,7 +1661,8 @@ pub unsafe extern "C" fn voicevox_user_dict_update_word(
     init_logger_once();
     into_result_code_with_error((|| {
         let word_uuid = Uuid::from_slice(word_uuid).map_err(CApiError::InvalidUuid)?;
-        let word = word.read_unaligned().try_into_word()?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let word = unsafe { word.read_unaligned().try_into_word() }?;
         user_dict.body().update_word(word_uuid, word)?;
 
         Ok(())
@@ -1657,7 +1717,8 @@ pub unsafe extern "C" fn voicevox_user_dict_to_json(
     init_logger_once();
     let json = user_dict.body().to_json();
     let json = CString::new(json).expect("\\0を含まない文字列であることが保証されている");
-    output_json.write_unaligned(C_STRING_DROP_CHECKER.whitelist(json).into_raw());
+    // SAFETY: The safety contract must be upheld by the caller.
+    unsafe { output_json.write_unaligned(C_STRING_DROP_CHECKER.whitelist(json).into_raw()) };
     VoicevoxResultCode::VOICEVOX_RESULT_OK
 }
 
@@ -1699,7 +1760,8 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let path = ensure_utf8(CStr::from_ptr(path))?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let path = ensure_utf8(unsafe { CStr::from_ptr(path) })?;
         user_dict.body().save(path)?;
         Ok(())
     })())
@@ -1712,7 +1774,7 @@ pub unsafe extern "C" fn voicevox_user_dict_save(
 ///
 /// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
 ///
-/// @param [in] user_dict 破棄対象
+/// @param [in] user_dict 破棄対象。nullable
 ///
 /// \no-orig-impl{voicevox_user_dict_delete}
 #[unsafe(no_mangle)]

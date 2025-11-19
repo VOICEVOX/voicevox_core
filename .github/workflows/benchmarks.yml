@@ -1,0 +1,90 @@
+name: Benchmarks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - .github/workflows/benchmarks.yml
+      - Cargo.*
+      - crates/voicevox_core/Cargo.toml
+      - crates/voicevox_core/benches/*.rs
+      - crates/voicevox_core/src/**
+      - crates/voicevox_core_python_api/Cargo.toml
+      - crates/voicevox_core_python_api/poetry.lock
+      - crates/voicevox_core_python_api/pyproject.toml
+      - crates/voicevox_core_python_api/python/benches/*.py
+      - crates/voicevox_core_python_api/python/voicevox_core/**
+      - crates/voicevox_core_python_api/src/**
+  workflow_dispatch:
+
+jobs:
+  rust-api:
+    if: false # FIXME: 一時的に無効化。詳細は #1167
+    name: Rust API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain, cache and cargo-codspeed binary
+        uses: moonrepo/setup-rust@v1
+        with:
+          bins: cargo-codspeed
+          cache-target: release
+          inherit-toolchain: true
+
+      - name: Set up test data
+        run: cargo check -vp test_util
+
+      - name: Build
+        run: cargo codspeed build -p voicevox_core --bench benches --features load-onnxruntime -m walltime
+
+      - name: Run the benchmarks
+        uses: CodSpeedHQ/action@v4
+        with:
+          run: cargo codspeed run -m walltime
+          mode: walltime
+        env:
+          VOICEVOX_CORE_BENCH_CONFIG: |
+            {
+              "include-long-input-text": ${{ github.event_name != 'pull_request' }}
+            }
+
+  python-api:
+    name: Python API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain and cache
+        uses: moonrepo/setup-rust@v1
+        with:
+          cache-target: release
+          inherit-toolchain: true
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install Poetry
+        run: pip install --upgrade poetry
+
+      - name: Set up test data
+        run: cargo check -vp test_util
+
+      - name: Build
+        working-directory: ./crates/voicevox_core_python_api
+        run: |
+          poetry install --with dev --with test
+          poetry run maturin develop --locked --profile release -v
+
+      - name: Run the benchmarks
+        uses: CodSpeedHQ/action@v4
+        with:
+          run: poetry run pytest ./python/benches/ --codspeed --codspeed-mode walltime
+          mode: walltime
+          working-directory: ./crates/voicevox_core_python_api

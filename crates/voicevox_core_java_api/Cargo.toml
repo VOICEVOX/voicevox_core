@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 android_logger.workspace = true
-chrono = { workspace = true, default-features = false, features = ["clock"] }
+chrono = { workspace = true, features = ["clock"] }
 derive_more = { workspace = true, features = ["from"] }
 duplicate.workspace = true
 easy-ext.workspace = true

@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use test_util::c_api::{self, CApi, VoicevoxResultCode, VoicevoxUserDict, VoicevoxUserDictWord};
 
 use crate::{
-    assert_cdylib::{self, case, Utf8Output},
+    assert_cdylib::{self, Utf8Output, case},
     snapshots,
 };
 
@@ -27,35 +27,49 @@ struct TestCase;
 #[typetag::serde(name = "user_dict_manipulate")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
-        let lib = CApi::from_library(lib)?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let lib = unsafe { CApi::from_library(lib) }?;
 
         let get_json = |dict: *const VoicevoxUserDict| -> String {
             let mut json = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_user_dict_to_json(dict, json.as_mut_ptr()));
 
-            let ret = CStr::from_ptr(json.assume_init())
+            // SAFETY: `json` is valid for writes.
+            assert_ok(unsafe { lib.voicevox_user_dict_to_json(dict, json.as_mut_ptr()) });
+
+            // SAFETY: `voicevox_user_dict_to_json` initializes `json` if succeeded.
+            let ret = unsafe { CStr::from_ptr(json.assume_init()) }
                 .to_str()
                 .unwrap()
                 .to_string();
 
-            lib.voicevox_json_free(json.assume_init());
+            // SAFETY: `json` is valid and is no longer used.
+            unsafe { lib.voicevox_json_free(json.assume_init()) };
 
             serde_json::from_str::<serde_json::Value>(&ret).expect("invalid json");
 
             ret
         };
 
+        // FIXME: This closure itself should be `unsafe`.
         let add_word = |dict: *const VoicevoxUserDict, word: &VoicevoxUserDictWord| -> Uuid {
-            let mut word_uuid = [0u8; 16];
-            assert_ok(lib.voicevox_user_dict_add_word(dict, &raw const *word, &mut word_uuid));
+            let mut word_uuid = [0u8; _];
+            assert_ok(unsafe {
+                // SAFETY:
+                // - `dict.surface` and `dict.pronunciation` are valid.
+                // - `word_uuid` is valid for writes.
+                lib.voicevox_user_dict_add_word(dict, &raw const *word, &mut word_uuid)
+            });
             Uuid::from_slice(&word_uuid).expect("invalid uuid")
         };
 
         // テスト用の辞書ファイルを作成
-        let dict = lib.voicevox_user_dict_new();
+        // SAFETY: `voicevox_user_dict_new` has no safety requirements.
+        let dict = unsafe { lib.voicevox_user_dict_new() };
 
         // 単語の追加のテスト
-        let word = lib.voicevox_user_dict_word_make(c"hoge".as_ptr(), c"ホゲ".as_ptr(), 0);
+        // SAFETY: `voicevox_user_dict_word_make` itself has no safety requirements.
+        let word =
+            unsafe { lib.voicevox_user_dict_word_make(c"hoge".as_ptr(), c"ホゲ".as_ptr(), 0) };
 
         let word_uuid = add_word(dict, &word);
 
@@ -66,9 +80,16 @@ impl assert_cdylib::TestCase for TestCase {
         assert_contains_uuid(&json, &word_uuid);
 
         // 単語の変更のテスト
-        let word = lib.voicevox_user_dict_word_make(c"fuga".as_ptr(), c"フガ".as_ptr(), 0);
+        // SAFETY: `voicevox_user_dict_word_make` itself has no safety requirements.
+        let word =
+            unsafe { lib.voicevox_user_dict_word_make(c"fuga".as_ptr(), c"フガ".as_ptr(), 0) };
 
-        assert_ok(lib.voicevox_user_dict_update_word(dict, &word_uuid.into_bytes(), &word));
+        assert_ok(unsafe {
+            // SAFETY:
+            // - A `[u8; 16]` is valid for reads.
+            // - `dict.surface` and `dict.pronunciation` are valid.
+            lib.voicevox_user_dict_update_word(dict, &word_uuid.into_bytes(), &word)
+        });
 
         let json = get_json(dict);
 
@@ -79,13 +100,17 @@ impl assert_cdylib::TestCase for TestCase {
         assert_contains_uuid(&json, &word_uuid);
 
         // 辞書のインポートのテスト。
-        let other_dict = lib.voicevox_user_dict_new();
+        // SAFETY: `voicevox_user_dict_new` has no safety requirements.
+        let other_dict = unsafe { lib.voicevox_user_dict_new() };
 
-        let other_word = lib.voicevox_user_dict_word_make(c"piyo".as_ptr(), c"ピヨ".as_ptr(), 0);
+        // SAFETY: `voicevox_user_dict_word_make` itself has no safety requirements.
+        let other_word =
+            unsafe { lib.voicevox_user_dict_word_make(c"piyo".as_ptr(), c"ピヨ".as_ptr(), 0) };
 
         let other_word_uuid = add_word(other_dict, &other_word);
 
-        assert_ok(lib.voicevox_user_dict_import(dict, other_dict));
+        // SAFETY: `voicevox_user_dict_import` has no safety requirements.
+        assert_ok(unsafe { lib.voicevox_user_dict_import(dict, other_dict) });
 
         let json = get_json(dict);
         assert!(json.contains("ｆｕｇａ"));
@@ -96,7 +121,8 @@ impl assert_cdylib::TestCase for TestCase {
         assert_contains_uuid(&json, &other_word_uuid);
 
         // 単語の削除のテスト
-        assert_ok(lib.voicevox_user_dict_remove_word(dict, &word_uuid.into_bytes()));
+        // SAFETY: A `[u8; 16]` is valid for reads.
+        assert_ok(unsafe { lib.voicevox_user_dict_remove_word(dict, &word_uuid.into_bytes()) });
 
         let json = get_json(dict);
         assert_not_contains_uuid(&json, &word_uuid);
@@ -106,18 +132,22 @@ impl assert_cdylib::TestCase for TestCase {
         // 辞書のセーブ・ロードのテスト
         let temp_path = NamedTempFile::new().unwrap().into_temp_path();
         let temp_path = CString::new(temp_path.to_str().unwrap()).unwrap();
-        let word = lib.voicevox_user_dict_word_make(c"hoge".as_ptr(), c"ホゲ".as_ptr(), 0);
+        // SAFETY: `voicevox_user_dict_word_make` itself has no safety requirements.
+        let word =
+            unsafe { lib.voicevox_user_dict_word_make(c"hoge".as_ptr(), c"ホゲ".as_ptr(), 0) };
         let word_uuid = add_word(dict, &word);
 
-        assert_ok(lib.voicevox_user_dict_save(dict, temp_path.as_ptr()));
-        assert_ok(lib.voicevox_user_dict_load(other_dict, temp_path.as_ptr()));
+        // SAFETY: A `CString` is a valid string.
+        assert_ok(unsafe { lib.voicevox_user_dict_save(dict, temp_path.as_ptr()) });
+        assert_ok(unsafe { lib.voicevox_user_dict_load(other_dict, temp_path.as_ptr()) });
 
         let json = get_json(other_dict);
         assert_contains_uuid(&json, &word_uuid);
         assert_contains_uuid(&json, &other_word_uuid);
 
-        lib.voicevox_user_dict_delete(dict);
-        lib.voicevox_user_dict_delete(other_dict);
+        // SAFETY: `voicevox_user_dict_delete` has no safety requirements.
+        unsafe { lib.voicevox_user_dict_delete(dict) };
+        unsafe { lib.voicevox_user_dict_delete(other_dict) };
 
         return Ok(());
 

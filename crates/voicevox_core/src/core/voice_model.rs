@@ -4,6 +4,7 @@
 
 use std::{
     collections::HashMap,
+    fmt::{self, Debug},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -41,7 +42,19 @@ pub(super) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_value
 );
 
 /// 音声モデルID。
-#[doc(alias = "VoicevoxVoiceModelId")]
+///
+/// `Synthesizer`はこのIDをキーとして、音声モデルのロード・アンロードを行う。
+///
+/// 同じIDを持つ複数のVVMファイルがあるときは、ファイルとして新しい方を常に使うことが推奨される。[VOICEVOX/voicevox_vvm]で管理されているVVMでは、次の方針が取られている。
+///
+/// - VVMに含まれる声が変化せず、軽微な修正のみのときはIDを使い回してリリースする。
+/// - VVMに含まれる声が明確に変化するかもしくは削除されるような実質的な変更のときは、新しいIDを割り振ってリリースする。
+///
+/// これ以外は未定であり、更なるルールについては[VOICEVOX/voicevox_vvm#19]で議論される予定。
+///
+/// [VOICEVOX/voicevox_vvm]: https://github.com/VOICEVOX/voicevox_vvm
+/// [VOICEVOX/voicevox_vvm#19]: https://github.com/VOICEVOX/voicevox_vvm/issues/19
+#[cfg_attr(doc, doc(alias = "VoicevoxVoiceModelId"))]
 #[derive(
     PartialEq,
     Eq,
@@ -328,6 +341,7 @@ impl<A: Async> Inner<A> {
             })
         });
 
+        // TODO: Rust 1.85にしたらasync closureに戻す
         let talk = OptionFuture::from(talk.map(|(entries, style_id_to_inner_voice_id)| async {
             let [predict_duration, predict_intonation, decode] = entries.into_array();
 
@@ -342,6 +356,7 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
+        // TODO: Rust 1.85にしたらasync closureに戻す
         let experimental_talk = OptionFuture::from(experimental_talk.map(
             |(entries, style_id_to_inner_voice_id)| async {
                 let [predict_duration, predict_intonation, predict_spectrogram, run_vocoder] =
@@ -365,6 +380,7 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
+        // TODO: Rust 1.85にしたらasync closureに戻す
         let singing_teacher = OptionFuture::from(singing_teacher.map(
             |(entries, style_id_to_inner_voice_id)| async {
                 let [predict_sing_consonant_length, predict_sing_f0, predict_sing_volume] =
@@ -386,6 +402,7 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
+        // TODO: Rust 1.85にしたらasync closureに戻す
         let frame_decode = OptionFuture::from(frame_decode.map(
             |(entries, style_id_to_inner_voice_id)| async {
                 let [sf_decode] = entries.into_array();
@@ -409,9 +426,25 @@ impl<A: Async> Inner<A> {
     }
 }
 
+impl<A: Async> Inner<A> {
+    fn fill_debug_struct_body(&self, mut fmt: fmt::DebugStruct<'_, '_>) -> fmt::Result
+    where
+        A::Mutex<A::RoFile>: Debug,
+    {
+        fmt.field("header", self.header());
+        self.with_inference_model_entries(|inference_model_entries| {
+            fmt.field("inference_model_entries", inference_model_entries)
+        });
+        self.with_zip(|zip| fmt.field("zip", zip));
+        fmt.finish()
+    }
+}
+
 type InferenceModelEntries<'manifest> =
     inference_domain_map_values!(for<D> Option<InferenceModelEntry<D, &'manifest D::Manifest>>);
 
+#[derive(derive_more::Debug)]
+#[debug(bound(D::Operation: Debug))]
 struct InferenceModelEntry<D: InferenceDomain, M> {
     indices: EnumMap<D::Operation, usize>,
     manifest: M,
@@ -469,6 +502,7 @@ impl<R: AsyncBufRead + AsyncSeek + Unpin> async_zip::base::read::seek::ZipFileRe
 /// 音声モデルが持つ、各モデルファイルの実体を除く情報。
 ///
 /// モデルの`[u8]`と分けて`Status`に渡す。
+#[derive(Debug)]
 pub(crate) struct VoiceModelHeader {
     pub(super) manifest: Manifest,
     /// メタ情報。
@@ -587,7 +621,10 @@ impl InferenceDomainMap<ManifestDomains> {
 }
 
 pub(crate) mod blocking {
-    use std::path::Path;
+    use std::{
+        fmt::{self, Debug},
+        path::Path,
+    };
 
     use crate::{asyncs::SingleTasked, future::FutureExt as _, VoiceModelMeta};
 
@@ -596,12 +633,12 @@ pub(crate) mod blocking {
     /// 音声モデルファイル。
     ///
     /// VVMファイルと対応する。
-    #[doc(alias = "VoicevoxVoiceModelFile")]
+    #[cfg_attr(doc, doc(alias = "VoicevoxVoiceModelFile"))]
     pub struct VoiceModelFile(Inner<SingleTasked>);
 
     impl self::VoiceModelFile {
         /// VVMファイルを開く。
-        #[doc(alias = "voicevox_voice_model_file_open")]
+        #[cfg_attr(doc, doc(alias = "voicevox_voice_model_file_open"))]
         pub fn open(path: impl AsRef<Path>) -> crate::Result<Self> {
             Inner::open(path).block_on().map(Self)
         }
@@ -617,21 +654,33 @@ pub(crate) mod blocking {
         }
 
         /// ID。
-        #[doc(alias = "voicevox_voice_model_file_id")]
+        ///
+        /// 詳細は[`VoiceModelId`]を参照。
+        #[cfg_attr(doc, doc(alias = "voicevox_voice_model_file_id"))]
         pub fn id(&self) -> VoiceModelId {
             self.0.id()
         }
 
         /// メタ情報。
-        #[doc(alias = "voicevox_voice_model_file_create_metas_json")]
+        #[cfg_attr(doc, doc(alias = "voicevox_voice_model_file_create_metas_json"))]
         pub fn metas(&self) -> &VoiceModelMeta {
             self.0.metas()
+        }
+    }
+
+    impl Debug for VoiceModelFile {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let fmt = fmt.debug_struct("VoiceModelFile");
+            self.0.fill_debug_struct_body(fmt)
         }
     }
 }
 
 pub(crate) mod nonblocking {
-    use std::path::Path;
+    use std::{
+        fmt::{self, Debug},
+        path::Path,
+    };
 
     use crate::{asyncs::BlockingThreadPool, Result, VoiceModelMeta};
 
@@ -667,6 +716,8 @@ pub(crate) mod nonblocking {
         }
 
         /// ID。
+        ///
+        /// 詳細は[`VoiceModelId`]を参照。
         pub fn id(&self) -> VoiceModelId {
             self.0.id()
         }
@@ -674,6 +725,13 @@ pub(crate) mod nonblocking {
         /// メタ情報。
         pub fn metas(&self) -> &VoiceModelMeta {
             self.0.metas()
+        }
+    }
+
+    impl Debug for VoiceModelFile {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let fmt = fmt.debug_struct("VoiceModelFile");
+            self.0.fill_debug_struct_body(fmt)
         }
     }
 }

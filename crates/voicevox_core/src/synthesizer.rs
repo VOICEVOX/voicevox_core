@@ -3,9 +3,16 @@
 //! メインの部分。[`crate::core`]と[`crate::engine`]の二つはここで用いる。
 
 use easy_ext::ext;
+use educe::Educe;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
-use std::{future::Future, marker::PhantomData, ops::Range, sync::Arc};
+use std::{
+    fmt::{self, Debug},
+    future::Future,
+    marker::PhantomData,
+    ops::Range,
+    sync::Arc,
+};
 use tracing::info;
 
 use crate::{
@@ -33,7 +40,7 @@ use crate::{
     },
     engine::{
         talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
-        to_s16le_pcm, wav_from_s16le, OjtPhoneme,
+        to_s16le_pcm, wav_from_s16le, PhonemeCode,
     },
     error::ErrorRepr,
     future::FutureExt as _,
@@ -46,6 +53,8 @@ pub const DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK: bool = true;
 pub const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: bool =
     <BlockingThreadPool as infer::AsyncExt>::DEFAULT_HEAVY_INFERENCE_CANCELLABLE;
 
+#[derive(derive_more::Debug)]
+#[debug(bound(A::Cancellable: Debug))]
 struct SynthesisOptions<A: infer::AsyncExt> {
     enable_interrogative_upspeak: bool,
     cancellable: A::Cancellable,
@@ -67,36 +76,26 @@ impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for SynthesisOptions<A> {
     }
 }
 
-impl<A: infer::AsyncExt> From<&TtsOptions<A>> for SynthesisOptions<A> {
-    fn from(options: &TtsOptions<A>) -> Self {
-        Self {
-            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
-            cancellable: options.cancellable,
-        }
-    }
-}
-
+#[derive(Educe, derive_more::Debug)]
+#[educe(Default(bound = "A: infer::AsyncExt"))]
+#[debug(bound(A::Cancellable: Debug))]
 struct TtsOptions<A: infer::AsyncExt> {
-    enable_interrogative_upspeak: bool,
-    cancellable: A::Cancellable,
+    synthesis: SynthesisOptions<A>,
 }
 
-impl<A: infer::AsyncExt> Default for TtsOptions<A> {
-    fn default() -> Self {
-        Self {
-            enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
-            cancellable: A::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
-        }
+impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for TtsOptions<A> {
+    fn as_ref(&self) -> &SynthesisOptions<A> {
+        &self.synthesis
     }
 }
 
 /// ハードウェアアクセラレーションモードを設定する設定値。
-#[doc(alias = "VoicevoxAccelerationMode")]
+#[cfg_attr(doc, doc(alias = "VoicevoxAccelerationMode"))]
 #[expect(
     clippy::manual_non_exhaustive,
     reason = "バインディングを作るときはexhaustiveとして扱いたい"
 )]
-#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AccelerationMode {
     /// 実行環境に合った適切なハードウェアアクセラレーションモードを選択する。
     #[default]
@@ -109,6 +108,7 @@ pub enum AccelerationMode {
     __NonExhaustive,
 }
 
+#[derive(Debug)]
 struct InitializeOptions {
     acceleration_mode: AccelerationMode,
     cpu_num_threads: u16,
@@ -152,6 +152,7 @@ impl AsyncExt for BlockingThreadPool {
 
 const DEFAULT_SAMPLING_RATE: u32 = 24000;
 /// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（フレーム数）
+// TODO: Rust 1.90であれば`{float}::round`がそのまま使える
 const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * 24000Hz / 256.0).round()
 /// 音声生成の際、音声特徴量の前後に確保すべきマージン幅（フレーム数）
 /// モデルの受容野から計算される
@@ -180,8 +181,10 @@ fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Arr
 // TODO: 後で復活させる
 // https://github.com/VOICEVOX/voicevox_core/issues/970
 #[doc(hidden)]
+#[derive(Clone, PartialEq, derive_more::Debug)]
 pub struct AudioFeature {
     /// (フレーム数, 特徴数)の形を持つ音声特徴量。
+    #[debug("_")]
     internal_state: ndarray::Array2<f32>,
     /// 生成時に指定したスタイル番号。
     style_id: crate::StyleId,
@@ -193,16 +196,20 @@ pub struct AudioFeature {
     audio_query: AudioQuery,
 }
 
+#[derive(derive_more::Debug)]
 struct Inner<T, A: Async> {
     status: Arc<Status<crate::blocking::Onnxruntime>>,
     text_analyzer: T,
     use_gpu: bool,
+    #[debug(ignore)]
     _marker: PhantomData<fn(A) -> A>,
 }
 
+#[derive(derive_more::Debug)]
 struct InnerRefWithoutTextAnalyzer<'a, A: Async> {
     status: &'a Arc<Status<crate::blocking::Onnxruntime>>,
     use_gpu: bool,
+    #[debug(ignore)]
     _marker: PhantomData<fn(A) -> A>,
 }
 
@@ -219,6 +226,8 @@ impl<T> From<Inner<T, BlockingThreadPool>>
     }
 }
 
+#[derive(derive_more::Debug)]
+#[debug("{_0:?}")]
 struct AssumeSingleTasked<T>(T);
 
 impl<T: crate::blocking::TextAnalyzer> crate::nonblocking::TextAnalyzer for AssumeSingleTasked<T> {
@@ -328,6 +337,23 @@ impl<T, A: AsyncExt> Inner<T, A> {
             _marker: PhantomData,
         }
     }
+
+    fn fill_debug_struct_body(&self, mut fmt: fmt::DebugStruct<'_, '_>) -> fmt::Result
+    where
+        T: Debug,
+    {
+        let Self {
+            status,
+            text_analyzer,
+            use_gpu,
+            _marker: _,
+        } = self;
+
+        fmt.field("status", status)
+            .field("text_analyzer", text_analyzer)
+            .field("use_gpu", use_gpu)
+            .finish_non_exhaustive()
+    }
 }
 
 trait AsInner {
@@ -381,7 +407,7 @@ trait AsInner {
         let spec = self
             .generate_full_intermediate(
                 f0.len(),
-                OjtPhoneme::num_phoneme(),
+                PhonemeCode::num_phoneme(),
                 &f0,
                 phoneme.as_flattened(),
                 style_id,
@@ -427,7 +453,7 @@ trait AsInner {
             let wave = &self
                 .decode(
                     f0.len(),
-                    OjtPhoneme::num_phoneme(),
+                    PhonemeCode::num_phoneme(),
                     &f0,
                     phoneme.as_flattened(),
                     style_id,
@@ -480,11 +506,8 @@ trait AsInner {
 
         let (_, _, vowel_indexes_data) = split_mora(&phoneme_data_list);
 
-        let phoneme_list_s: Vec<i64> = phoneme_data_list
-            .iter()
-            .map(|phoneme_data| phoneme_data.phoneme_id())
-            .collect();
-        let phoneme_length = self.predict_duration(&phoneme_list_s, style_id).await?;
+        let phoneme_list_s = bytemuck::must_cast_slice(&phoneme_data_list);
+        let phoneme_length = self.predict_duration(phoneme_list_s, style_id).await?;
 
         let mut index = 0;
         let new_accent_phrases = accent_phrases
@@ -548,14 +571,8 @@ trait AsInner {
         let (consonant_phoneme_data_list, vowel_phoneme_data_list, vowel_indexes) =
             split_mora(&phoneme_data_list);
 
-        let consonant_phoneme_list: Vec<i64> = consonant_phoneme_data_list
-            .iter()
-            .map(|phoneme_data| phoneme_data.phoneme_id())
-            .collect();
-        let vowel_phoneme_list: Vec<i64> = vowel_phoneme_data_list
-            .iter()
-            .map(|phoneme_data| phoneme_data.phoneme_id())
-            .collect();
+        let consonant_phoneme_list = bytemuck::must_cast_slice(&consonant_phoneme_data_list);
+        let vowel_phoneme_list = bytemuck::must_cast_slice(&vowel_phoneme_data_list);
 
         let mut start_accent_list = Vec::with_capacity(vowel_indexes.len());
         let mut end_accent_list = Vec::with_capacity(vowel_indexes.len());
@@ -572,8 +589,8 @@ trait AsInner {
         let mut f0_list = self
             .predict_intonation(
                 vowel_phoneme_list.len(),
-                &vowel_phoneme_list,
-                &consonant_phoneme_list,
+                vowel_phoneme_list,
+                consonant_phoneme_list,
                 &start_accent_list,
                 &end_accent_list,
                 &start_accent_phrase_list,
@@ -583,12 +600,7 @@ trait AsInner {
             .await?;
 
         for i in 0..vowel_phoneme_data_list.len() {
-            const UNVOICED_MORA_PHONEME_LIST: &[&str] = &["A", "I", "U", "E", "O", "cl", "pau"];
-
-            if UNVOICED_MORA_PHONEME_LIST
-                .iter()
-                .any(|phoneme| *phoneme == vowel_phoneme_data_list[i].phoneme())
-            {
+            if vowel_phoneme_data_list[i].is_unvoiced() {
                 f0_list[i] = 0.;
             }
         }
@@ -662,7 +674,7 @@ trait AsInner {
         options: &TtsOptions<Self::Async>,
     ) -> Result<Vec<u8>> {
         let audio_query = &self.create_audio_query_from_kana(kana, style_id).await?;
-        self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
+        self.synthesis(audio_query, style_id, options.as_ref())
             .await
     }
 
@@ -696,7 +708,7 @@ trait AsInner {
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
         let audio_query = &self.create_audio_query(text, style_id).await?;
-        self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
+        self.synthesis(audio_query, style_id, options.as_ref())
             .await
     }
 
@@ -892,7 +904,7 @@ impl<R: InferenceRuntime> Status<R> {
                     A::LIGHT_INFERENCE_CANCELLABLE,
                 )
                 .await?;
-            return Ok(ensure_minimum_phoneme_length(output.into_raw_vec()));
+            return Ok(ensure_minimum_phoneme_length(output.into_vec()));
         }
         let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
@@ -908,7 +920,7 @@ impl<R: InferenceRuntime> Status<R> {
                 A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
-        Ok(ensure_minimum_phoneme_length(output.into_raw_vec()))
+        Ok(ensure_minimum_phoneme_length(output.into_vec()))
     }
 
     #[expect(
@@ -946,7 +958,7 @@ impl<R: InferenceRuntime> Status<R> {
                     A::LIGHT_INFERENCE_CANCELLABLE,
                 )
                 .await?;
-            return Ok(output.into_raw_vec());
+            return Ok(output.into_vec());
         }
         let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
@@ -967,7 +979,7 @@ impl<R: InferenceRuntime> Status<R> {
             )
             .await?;
 
-        Ok(output.into_raw_vec())
+        Ok(output.into_vec())
     }
 
     /// モデル`generate_full_intermediate`の実行と、その前後の処理を行う。
@@ -986,7 +998,9 @@ impl<R: InferenceRuntime> Status<R> {
         let (length_with_padding, f0_with_padding, phoneme_with_padding) =
             pad_decoder_feature::<PADDING_FRAME_LENGTH>(
                 f0,
-                phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
+                phoneme_vector
+                    .into_shape_with_order([length, phoneme_size])
+                    .unwrap(),
             );
 
         let GenerateFullIntermediateOutput {
@@ -996,7 +1010,7 @@ impl<R: InferenceRuntime> Status<R> {
                 model_id,
                 GenerateFullIntermediateInput {
                     f0: f0_with_padding
-                        .into_shape([length_with_padding, 1])
+                        .into_shape_with_order([length_with_padding, 1])
                         .unwrap(),
                     phoneme: phoneme_with_padding,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
@@ -1008,7 +1022,9 @@ impl<R: InferenceRuntime> Status<R> {
         // マージンがデータからはみ出さないことを保証
         // cf. https://github.com/VOICEVOX/voicevox_core/pull/854#discussion_r1803691291
         if MARGIN > PADDING_FRAME_LENGTH {
-            unreachable!("Validation error: Too short padding for input, please report this issue on GitHub.");
+            unreachable!(
+                "Validation error: Too short padding for input, please report this issue on GitHub."
+            );
         }
         // マージン分を両端に残して音声特徴量を返す
         Ok(spec_with_padding
@@ -1052,14 +1068,16 @@ impl<R: InferenceRuntime> Status<R> {
             let (length_with_padding, f0_with_padding, phoneme_with_padding) =
                 pad_decoder_feature::<PADDING_FRAME_LENGTH>(
                     f0,
-                    phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
+                    phoneme_vector
+                        .into_shape_with_order([length, phoneme_size])
+                        .unwrap(),
                 );
             let DecodeOutput { wave: output } = self
                 .run_session::<A, _>(
                     model_id,
                     DecodeInput {
                         f0: f0_with_padding
-                            .into_shape([length_with_padding, 1])
+                            .into_shape_with_order([length_with_padding, 1])
                             .unwrap(),
                         phoneme: phoneme_with_padding,
                         speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
@@ -1074,7 +1092,7 @@ impl<R: InferenceRuntime> Status<R> {
                 ])
                 .as_standard_layout()
                 .into_owned()
-                .into_raw_vec());
+                .into_vec());
         }
         let intermediate = self
             .generate_full_intermediate::<A>(length, phoneme_size, f0, phoneme_vector, style_id)
@@ -1190,7 +1208,18 @@ impl<R: InferenceRuntime> Status<R> {
 impl<T> ndarray::Array1<T> {
     fn into_one_row(self) -> ndarray::Array2<T> {
         let n = self.len();
-        self.into_shape([1, n]).expect("should be ok")
+        self.into_shape_with_order([1, n]).expect("should be ok")
+    }
+
+    fn into_vec(self) -> Vec<T> {
+        let (vec, offset) = self.into_raw_vec_and_offset();
+        // TODO: Rust 2024にしたらlet chainにする
+        if let Some(offset) = offset {
+            if offset != 0 {
+                unimplemented!("offset = {offset}");
+            }
+        }
+        vec
     }
 }
 
@@ -1233,7 +1262,7 @@ fn list_windows_video_cards() {
 
 impl AudioQuery {
     /// アクセント句の配列からAudioQueryを作る。
-    #[doc(alias = "voicevox_audio_query_create_from_accent_phrases")]
+    #[cfg_attr(doc, doc(alias = "voicevox_audio_query_create_from_accent_phrases"))]
     pub fn from_accent_phrases(accent_phrases: Vec<AccentPhrase>) -> Self {
         let kana = create_kana(&accent_phrases);
         Self {
@@ -1302,7 +1331,10 @@ impl From<Vec<AccentPhrase>> for AudioQuery {
               形を考えると、ここの引数を構造体にまとめたりしても可読性に寄与しない"
 )]
 pub(crate) mod blocking {
-    use std::ops::Range;
+    use std::{
+        fmt::{self, Debug},
+        ops::Range,
+    };
 
     use easy_ext::ext;
 
@@ -1319,7 +1351,7 @@ pub(crate) mod blocking {
     pub use super::AudioFeature;
 
     /// 音声シンセサイザ。
-    #[doc(alias = "VoicevoxSynthesizer")]
+    #[cfg_attr(doc, doc(alias = "VoicevoxSynthesizer"))]
     pub struct Synthesizer<T>(pub(super) Inner<AssumeSingleTasked<T>, SingleTasked>);
 
     impl self::Synthesizer<()> {
@@ -1353,7 +1385,7 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
-        #[doc(alias = "voicevox_synthesizer_new")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_new"))]
         pub fn builder(onnxruntime: &'static crate::blocking::Onnxruntime) -> Builder<()> {
             Builder {
                 onnxruntime,
@@ -1364,7 +1396,7 @@ pub(crate) mod blocking {
     }
 
     impl<T> self::Synthesizer<T> {
-        #[doc(alias = "voicevox_synthesizer_get_onnxruntime")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_get_onnxruntime"))]
         pub fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
             self.0.onnxruntime()
         }
@@ -1375,13 +1407,13 @@ pub(crate) mod blocking {
         }
 
         /// ハードウェアアクセラレーションがGPUモードか判定する。
-        #[doc(alias = "voicevox_synthesizer_is_gpu_mode")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_is_gpu_mode"))]
         pub fn is_gpu_mode(&self) -> bool {
             self.0.is_gpu_mode()
         }
 
         /// 音声モデルを読み込む。
-        #[doc(alias = "voicevox_synthesizer_load_voice_model")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_load_voice_model"))]
         pub fn load_voice_model(
             &self,
             model: &crate::blocking::VoiceModelFile,
@@ -1390,13 +1422,13 @@ pub(crate) mod blocking {
         }
 
         /// 音声モデルの読み込みを解除する。
-        #[doc(alias = "voicevox_synthesizer_unload_voice_model")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_unload_voice_model"))]
         pub fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> crate::Result<()> {
             self.0.unload_voice_model(voice_model_id)
         }
 
         /// 指定したIDの音声モデルが読み込まれているか判定する。
-        #[doc(alias = "voicevox_synthesizer_is_loaded_voice_model")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_is_loaded_voice_model"))]
         pub fn is_loaded_voice_model(&self, voice_model_id: VoiceModelId) -> bool {
             self.0.is_loaded_voice_model(voice_model_id)
         }
@@ -1407,7 +1439,7 @@ pub(crate) mod blocking {
         }
 
         /// 今読み込んでいる音声モデルのメタ情報を返す。
-        #[doc(alias = "voicevox_synthesizer_create_metas_json")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_metas_json"))]
         pub fn metas(&self) -> VoiceModelMeta {
             self.0.metas()
         }
@@ -1442,7 +1474,7 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから直接WAVフォーマットで音声波形を生成する。
-        #[doc(alias = "voicevox_synthesizer_synthesis")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_synthesis"))]
         pub fn synthesis<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
@@ -1482,7 +1514,10 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
-        #[doc(alias = "voicevox_synthesizer_create_accent_phrases_from_kana")]
+        #[cfg_attr(
+            doc,
+            doc(alias = "voicevox_synthesizer_create_accent_phrases_from_kana")
+        )]
         pub fn create_accent_phrases_from_kana(
             &self,
             kana: &str,
@@ -1500,7 +1535,7 @@ pub(crate) mod blocking {
         /// [`replace_phoneme_length`]: Self::replace_phoneme_length
         /// [`replace_mora_pitch`]: Self::replace_mora_pitch
         /// [音声の調整]: ../index.html#音声の調整
-        #[doc(alias = "voicevox_synthesizer_replace_mora_data")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_replace_mora_data"))]
         pub fn replace_mora_data(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1512,7 +1547,7 @@ pub(crate) mod blocking {
         }
 
         /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
-        #[doc(alias = "voicevox_synthesizer_replace_phoneme_length")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_replace_phoneme_length"))]
         pub fn replace_phoneme_length(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1524,7 +1559,7 @@ pub(crate) mod blocking {
         }
 
         /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
-        #[doc(alias = "voicevox_synthesizer_replace_mora_pitch")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_replace_mora_pitch"))]
         pub fn replace_mora_pitch(
             &self,
             accent_phrases: &[AccentPhrase],
@@ -1562,7 +1597,7 @@ pub(crate) mod blocking {
         /// ```
         ///
         /// [AudioQuery]: crate::AudioQuery
-        #[doc(alias = "voicevox_synthesizer_create_audio_query_from_kana")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_audio_query_from_kana"))]
         pub fn create_audio_query_from_kana(
             &self,
             kana: &str,
@@ -1574,7 +1609,7 @@ pub(crate) mod blocking {
         }
 
         /// AquesTalk風記法から音声合成を行う。
-        #[doc(alias = "voicevox_synthesizer_tts_from_kana")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_tts_from_kana"))]
         pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
             TtsFromKana {
                 synthesizer: self.0.without_text_analyzer(),
@@ -1617,7 +1652,7 @@ pub(crate) mod blocking {
         /// [`TextAnalyzer::analyze`]: crate::blocking::TextAnalyzer::analyze
         /// [`replace_mora_data`]: Self::replace_mora_data
         /// [音声の調整]: ../index.html#音声の調整
-        #[doc(alias = "voicevox_synthesizer_create_accent_phrases")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_accent_phrases"))]
         pub fn create_accent_phrases(
             &self,
             text: &str,
@@ -1657,7 +1692,7 @@ pub(crate) mod blocking {
         /// [AudioQuery]: crate::AudioQuery
         /// [`create_accent_phrases`]: Self::create_accent_phrases
         /// [音声の調整]: ../index.html#音声の調整
-        #[doc(alias = "voicevox_synthesizer_create_audio_query")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_audio_query"))]
         pub fn create_audio_query(
             &self,
             text: &str,
@@ -1673,7 +1708,7 @@ pub(crate) mod blocking {
         /// [`create_audio_query`]: Self::create_audio_query
         /// [`synthesis`]: Self::synthesis
         /// [音声の調整]: ../index.html#音声の調整
-        #[doc(alias = "voicevox_synthesizer_tts")]
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_tts"))]
         pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
             Tts {
                 synthesizer: &self.0,
@@ -1681,6 +1716,13 @@ pub(crate) mod blocking {
                 style_id,
                 options: TtsOptions::default(),
             }
+        }
+    }
+
+    impl<T: Debug> Debug for self::Synthesizer<T> {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let fmt = fmt.debug_struct("Synthesizer");
+            self.0.fill_debug_struct_body(fmt)
         }
     }
 
@@ -1811,6 +1853,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use]
+    #[derive(Debug)]
     pub struct Builder<T> {
         onnxruntime: &'static crate::blocking::Onnxruntime,
         text_analyzer: T,
@@ -1850,6 +1893,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct PrecomputeRender<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -1872,6 +1916,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Synthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -1894,6 +1939,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct TtsFromKana<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         kana: &'a str,
@@ -1903,7 +1949,7 @@ pub(crate) mod blocking {
 
     impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -1916,6 +1962,7 @@ pub(crate) mod blocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Tts<'a, T> {
         synthesizer: &'a Inner<AssumeSingleTasked<T>, SingleTasked>,
         text: &'a str,
@@ -1925,7 +1972,7 @@ pub(crate) mod blocking {
 
     impl<T: crate::blocking::TextAnalyzer> Tts<'_, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -1939,6 +1986,8 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod nonblocking {
+    use std::fmt::{self, Debug};
+
     use easy_ext::ext;
 
     use crate::{
@@ -2282,6 +2331,13 @@ pub(crate) mod nonblocking {
         }
     }
 
+    impl<T: Debug> Debug for self::Synthesizer<T> {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let fmt = fmt.debug_struct("Synthesizer");
+            self.0.fill_debug_struct_body(fmt)
+        }
+    }
+
     #[ext(IntoBlocking)]
     impl<T> self::Synthesizer<T> {
         pub fn into_blocking(self) -> super::blocking::Synthesizer<AssumeBlockable<T>> {
@@ -2291,6 +2347,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use]
+    #[derive(Debug)]
     pub struct Builder<T> {
         onnxruntime: &'static crate::nonblocking::Onnxruntime,
         text_analyzer: T,
@@ -2332,6 +2389,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Synthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
@@ -2364,6 +2422,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct TtsFromKana<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         kana: &'a str,
@@ -2373,7 +2432,7 @@ pub(crate) mod nonblocking {
 
     impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -2383,7 +2442,7 @@ pub(crate) mod nonblocking {
         ///
         /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
         pub fn cancellable(mut self, cancellable: bool) -> Self {
-            self.options.cancellable = cancellable;
+            self.options.synthesis.cancellable = cancellable;
             self
         }
 
@@ -2396,6 +2455,7 @@ pub(crate) mod nonblocking {
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Tts<'a, T> {
         synthesizer: &'a Inner<T, BlockingThreadPool>,
         text: &'a str,
@@ -2405,7 +2465,7 @@ pub(crate) mod nonblocking {
 
     impl<T: crate::nonblocking::TextAnalyzer> Tts<'_, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -2415,7 +2475,7 @@ pub(crate) mod nonblocking {
         ///
         /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
         pub fn cancellable(mut self, cancellable: bool) -> Self {
-            self.options.cancellable = cancellable;
+            self.options.synthesis.cancellable = cancellable;
             self
         }
 

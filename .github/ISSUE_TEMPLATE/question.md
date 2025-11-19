@@ -21,6 +21,8 @@ labels: 要議論
 - [ ] Windows
 - [ ] macOS
 - [ ] Linux
+- [ ] Android
+- [ ] iOS
 
 <!--
 なるべく詳しく書いてください 記述例:

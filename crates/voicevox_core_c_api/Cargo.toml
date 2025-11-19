@@ -19,17 +19,16 @@ load-onnxruntime = ["voicevox_core/load-onnxruntime"]
 link-onnxruntime = ["voicevox_core/link-onnxruntime"]
 
 [dependencies]
-anstream = { workspace = true, default-features = false, features = ["auto"] }
+anstream = { workspace = true, features = ["auto"] }
 anstyle-query.workspace = true
 boxcar.workspace = true
 camino.workspace = true
-chrono = { workspace = true, default-features = false, features = ["clock"] }
+chrono = { workspace = true, features = ["clock"] }
 colorchoice.workspace = true
 const_format.workspace = true
 duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
-itertools.workspace = true
 libc.workspace = true
 ndarray.workspace = true
 parking_lot = { workspace = true, features = ["arc_lock"] }
@@ -50,6 +49,7 @@ duct.workspace = true
 easy-ext.workspace = true
 inventory.workspace = true
 indexmap = { workspace = true, features = ["serde"] }
+itertools.workspace = true
 libloading.workspace = true
 libtest-mimic.workspace = true
 ndarray.workspace = true
@@ -62,7 +62,6 @@ tempfile.workspace = true
 test_util.workspace = true
 toml.workspace = true
 typetag.workspace = true
-voicevox-ort.workspace = true
 
 [lints.rust]
 unsafe_code = "allow" # C APIのための操作

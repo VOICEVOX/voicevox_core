@@ -147,14 +147,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}-${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Get prerelease latest version
         if: ${{ env.VERSION == 'prerelease-latest' }}
         run: |
           VERSION=$(
-            curl -sSf https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
+            curl -sSf --retry 3 --retry-delay 5 https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
               -H 'authorization: Bearer ${{ github.token }}' \
               -H 'content-type: application/json' |
             jq -er '.[0].tag_name'
@@ -162,11 +162,12 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Execute download command
         # TODO: `voicevox_onnxruntime-1.17.3`のprerelease指定を外したら`--onnxruntime-version`はlatest指定にする
+        # TODO: voicevox_vvm 0.16.0のprerelease指定を外したら`--models-version`の指定をやめる
         # `"y"`を流し込むことで「利用規約への同意」を行う
         # (この際`echo y`ではなく`yes`を使うと謎の要因により無言で異常終了する)
-        run: echo y | ${{ matrix.download_command }} --c-api-version ${{ env.VERSION }} --c-api-repo ${{ github.repository }} --onnxruntime-version voicevox_onnxruntime-1.17.3
+        run: echo y | ${{ matrix.download_command }} --c-api-version ${{ env.VERSION }} --c-api-repo ${{ github.repository }} --onnxruntime-version voicevox_onnxruntime-1.17.3 --models-version 0.16.0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Check downloaded version
         run: |
           [ -e "${{ matrix.download_dir }}/c_api/VERSION" ]

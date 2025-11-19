@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use test_util::c_api::CApi;
 
 use crate::{
-    assert_cdylib::{self, case, Utf8Output},
+    assert_cdylib::{self, Utf8Output, case},
     snapshots,
 };
 
@@ -21,11 +21,14 @@ struct TestCase;
 #[typetag::serde(name = "double_delete_user_dict")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
-        let lib = CApi::from_library(lib)?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let lib = unsafe { CApi::from_library(lib) }?;
 
-        let dict = lib.voicevox_user_dict_new();
-        lib.voicevox_user_dict_delete(dict);
-        lib.voicevox_user_dict_delete(dict);
+        // SAFETY: `voicevox_user_dict_new` and `voicevox_user_dict_delete` have no safety
+        // requirements.
+        let dict = unsafe { lib.voicevox_user_dict_new() };
+        unsafe { lib.voicevox_user_dict_delete(dict) };
+        unsafe { lib.voicevox_user_dict_delete(dict) };
         unreachable!();
     }
 

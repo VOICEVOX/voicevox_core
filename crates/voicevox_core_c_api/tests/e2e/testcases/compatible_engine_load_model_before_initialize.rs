@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use test_util::c_api::CApi;
 
 use crate::{
-    assert_cdylib::{self, case, Utf8Output},
+    assert_cdylib::{self, Utf8Output, case},
     snapshots,
 };
 
@@ -20,11 +20,14 @@ struct TestCase;
 #[typetag::serde(name = "compatible_engine_load_model_before_initialize")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
-        let lib = CApi::from_library(lib)?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let lib = unsafe { CApi::from_library(lib) }?;
 
-        assert!(!lib.load_model(0));
-        let last_error_message = lib.last_error_message();
-        let last_error_message = CStr::from_ptr(last_error_message).to_str()?;
+        // SAFETY: `load_model` has no safety requirements.
+        assert!(unsafe { !lib.load_model(0) });
+
+        // SAFETY: The string `last_error_message` remains valid until another error occurs.
+        let last_error_message = unsafe { CStr::from_ptr(lib.last_error_message()) }.to_str()?;
 
         std::assert_eq!(SNAPSHOTS.last_error_message, last_error_message);
         Ok(())

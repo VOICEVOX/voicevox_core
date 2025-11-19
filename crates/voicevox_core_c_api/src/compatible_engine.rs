@@ -1,7 +1,7 @@
 use std::{
     collections::BTreeMap,
     env,
-    ffi::{c_char, CString},
+    ffi::{CString, c_char},
     sync::{Arc, LazyLock, Mutex, MutexGuard},
 };
 
@@ -9,8 +9,8 @@ use libc::c_int;
 
 use tracing::warn;
 use voicevox_core::{
-    StyleId, VoiceModelId,
     __internal::interop::{PerformInference as _, ToJsonValue as _},
+    StyleId, VoiceModelId,
 };
 
 use crate::{helpers::display_error, init_logger_once};
@@ -172,15 +172,18 @@ pub extern "C" fn load_model(style_id: i64) -> bool {
     if let Some(model_id) = model_set.style_model_map.get(&style_id) {
         let vvm = model_set.model_map.get(model_id).unwrap();
         let synthesizer = &mut *lock_synthesizer();
-        let result = ensure_initialized!(synthesizer).load_voice_model(vvm);
-        if let Some(err) = result.err() {
+        let synthesizer = ensure_initialized!(synthesizer);
+        if let Err(err) = synthesizer.unload_voice_model(*model_id) {
+            assert_eq!(voicevox_core::ErrorKind::ModelNotFound, err.kind());
+        }
+        if let Err(err) = synthesizer.load_voice_model(vvm) {
             set_message(&format!("{err}"));
             false
         } else {
             true
         }
     } else {
-        set_message(&format!("{}は無効なStyle IDです", style_id));
+        set_message(&format!("{style_id}は無効なStyle IDです"));
         false
     }
 }

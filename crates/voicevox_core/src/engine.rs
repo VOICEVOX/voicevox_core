@@ -7,4 +7,4 @@ pub(crate) mod song;
 pub(crate) mod talk;
 
 pub use self::audio_file::wav_from_s16le;
-pub(crate) use self::{acoustic_feature_extractor::OjtPhoneme, audio_file::to_s16le_pcm};
+pub(crate) use self::{acoustic_feature_extractor::PhonemeCode, audio_file::to_s16le_pcm};

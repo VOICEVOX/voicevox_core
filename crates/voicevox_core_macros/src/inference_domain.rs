@@ -129,7 +129,7 @@ pub(crate) fn derive_inference_operation(
                         return Err(syn::Error::new(
                             ident.span(),
                             "expected `Input` or `Output`",
-                        ))
+                        ));
                     }
                 } = Some(*ty);
             }

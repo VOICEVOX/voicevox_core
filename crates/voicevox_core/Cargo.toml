@@ -1,14 +1,19 @@
 [package]
 name = "voicevox_core"
 version.workspace = true
-edition.workspace = true
+edition = "2021"
 publish.workspace = true
-rust-version.workspace = true
+rust-version = "1.84.0" # TODO: Rust 1.88以降にするときは、 #1083 (async closures) および #1104 (let chain, `#[cfg(false)]`) と同じことをする
 license.workspace = true
 
 [package.metadata.docs.rs]
 features = ["load-onnxruntime", "link-onnxruntime"]
 rustdoc-args = ["--cfg", "docsrs"]
+
+[[bench]]
+name = "benches"
+harness = false
+required-features = ["load-onnxruntime"]
 
 # rustdocを参照
 [features]
@@ -23,11 +28,12 @@ async-fs.workspace = true
 async-lock.workspace = true
 async_zip = { workspace = true, features = ["deflate"] }
 blocking.workspace = true
+bytemuck = { workspace = true, features = ["derive", "must_cast"] }
 camino.workspace = true
 const_format.workspace = true
 derive-getters.workspace = true
 derive-new.workspace = true
-derive_more = { workspace = true, features = ["add", "deref", "display", "from", "from_str", "index"] }
+derive_more = { workspace = true, features = ["add", "as_ref", "debug", "deref", "display", "from", "from_str", "index", "into"] }
 duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
@@ -58,6 +64,7 @@ voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-
 voicevox_core_macros.workspace = true
 
 [dev-dependencies]
+divan.workspace = true
 open.workspace = true
 pollster = { workspace = true, features = ["macro"] }
 pretty_assertions.workspace = true

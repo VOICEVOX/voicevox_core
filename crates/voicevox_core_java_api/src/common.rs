@@ -3,8 +3,8 @@ use std::{error::Error as _, iter, mem, ops::Deref};
 use derive_more::From;
 use easy_ext::ext;
 use jni::{
-    objects::{JObject, JThrowable},
     JNIEnv,
+    objects::{JObject, JThrowable},
 };
 use tracing::debug;
 use uuid::Uuid;
@@ -192,7 +192,7 @@ impl<T: HasJavaClassIdent> Closable<T> {
         Self(MaybeClosed::Open(content).into())
     }
 
-    pub(crate) fn read(&self) -> JavaApiResult<impl Deref<Target = T> + '_> {
+    pub(crate) fn read(&self) -> JavaApiResult<impl Deref<Target = T>> {
         let lock = self.0.try_read().map_err(|e| match e {
             std::sync::TryLockError::Poisoned(e) => panic!("{e}"),
             std::sync::TryLockError::WouldBlock => {
@@ -255,7 +255,7 @@ fn construct_uuid(msbs: i64, lsbs: i64) -> Uuid {
     return Uuid::from_u128((to_u128(msbs) << 64) + to_u128(lsbs));
 
     fn to_u128(bits: i64) -> u128 {
-        (bits as u64).into()
+        bits.cast_unsigned().into()
     }
 }
 
@@ -263,7 +263,7 @@ fn construct_uuid(msbs: i64, lsbs: i64) -> Uuid {
 mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
-    use uuid::{uuid, Uuid};
+    use uuid::{Uuid, uuid};
 
     #[rstest]
     #[case(uuid!("a1a2a3a4-b1b2-c1c2-d1d2-e1e2e3e4e5e6"))]

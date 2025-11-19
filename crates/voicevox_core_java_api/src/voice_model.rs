@@ -1,10 +1,10 @@
 use std::{borrow::Cow, sync::Arc};
 
-use crate::common::{throw_if_err, Closable, HasJavaClassIdent, JNIEnvExt as _};
+use crate::common::{Closable, HasJavaClassIdent, JNIEnvExt as _, throw_if_err};
 use jni::{
+    JNIEnv,
     objects::{JObject, JString},
     sys::jobject,
-    JNIEnv,
 };
 
 pub(crate) type VoiceModelFile = Arc<Closable<voicevox_core::blocking::VoiceModelFile>>;
@@ -26,7 +26,12 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_VoiceModelFile
 
         let internal = voicevox_core::blocking::VoiceModelFile::open(model_path)?;
         let internal = Arc::new(Closable::new(internal));
-        env.set_rust_field(&this, "handle", internal)?;
+
+        // SAFETY:
+        // - The safety contract must be upheld by the caller.
+        // - `jp.hiroshiba.voicevoxcore.blocking.VoiceModelFile.handle` must correspond to
+        //   `self::VoiceModelFile`.
+        unsafe { env.set_rust_field(&this, "handle", internal) }?;
 
         Ok(())
     })
@@ -39,9 +44,12 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_VoiceModelFile
     this: JObject<'local>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
-        let internal = env
-            .get_rust_field::<_, _, VoiceModelFile>(&this, "handle")?
-            .clone();
+        // SAFETY:
+        // - The safety contract must be upheld by the caller.
+        // - `jp.hiroshiba.voicevoxcore.blocking.VoiceModelFile.handle` must correspond to
+        //   `self::VoiceModelFile`.
+        let internal =
+            unsafe { env.get_rust_field::<_, _, VoiceModelFile>(&this, "handle") }?.clone();
         let internal = internal.read()?;
 
         let id = env.new_uuid(internal.id().0)?;
@@ -59,9 +67,12 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_VoiceModelFile
     this: JObject<'local>,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
-        let internal = env
-            .get_rust_field::<_, _, VoiceModelFile>(&this, "handle")?
-            .clone();
+        // SAFETY:
+        // - The safety contract must be upheld by the caller.
+        // - `jp.hiroshiba.voicevoxcore.blocking.VoiceModelFile.handle` must correspond to
+        //   `self::VoiceModelFile`.
+        let internal =
+            unsafe { env.get_rust_field::<_, _, VoiceModelFile>(&this, "handle") }?.clone();
         let internal = internal.read()?;
 
         let metas = internal.metas();
@@ -77,8 +88,11 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_VoiceModelFile
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        env.take_rust_field::<_, _, VoiceModelFile>(&this, "handle")?
-            .close();
+        // SAFETY:
+        // - The safety contract must be upheld by the caller.
+        // - `jp.hiroshiba.voicevoxcore.blocking.VoiceModelFile.handle` must correspond to
+        //   `self::VoiceModelFile`.
+        unsafe { env.take_rust_field::<_, _, VoiceModelFile>(&this, "handle") }?.close();
         Ok(())
     })
 }
@@ -90,7 +104,11 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_VoiceModelFile
     this: JObject<'local>,
 ) {
     throw_if_err(env, (), |env| {
-        env.take_rust_field(&this, "handle")?;
+        // SAFETY:
+        // - The safety contract must be upheld by the caller.
+        // - `jp.hiroshiba.voicevoxcore.blocking.VoiceModelFile.handle` must correspond to
+        //   `self::VoiceModelFile`.
+        unsafe { env.take_rust_field::<_, _, VoiceModelFile>(&this, "handle") }?;
         Ok(())
     })
 }

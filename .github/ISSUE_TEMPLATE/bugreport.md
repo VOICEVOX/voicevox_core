@@ -33,6 +33,8 @@ labels: バグ
 - [ ] Windows
 - [ ] macOS
 - [ ] Linux
+- [ ] Android
+- [ ] iOS
 
 <!--
 なるべく詳しく書いてください 記述例:

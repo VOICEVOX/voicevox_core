@@ -17,8 +17,13 @@ use anyhow::{anyhow, bail, ensure};
 use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
-    CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider, ExecutionProvider as _,
-    GraphOptimizationLevel, PrimitiveTensorElementType, TensorElementType, ValueType,
+    execution_providers::{
+        cuda::CuDNNConvAlgorithmSearch, CPUExecutionProvider, CUDAExecutionProvider,
+        DirectMLExecutionProvider, ExecutionProvider as _,
+    },
+    session::{builder::GraphOptimizationLevel, RunOptions},
+    tensor::{PrimitiveTensorElementType, TensorElementType},
+    value::ValueType,
 };
 
 use crate::error::ErrorRepr;
@@ -33,7 +38,7 @@ use super::super::{
 };
 
 impl InferenceRuntime for self::blocking::Onnxruntime {
-    type Session = async_lock::Mutex<ort::Session>; // WASMでは`ort`を利用しないので、ここはasync-lockを用いてよいはず
+    type Session = async_lock::Mutex<ort::session::Session>; // WASMでは`ort`を利用しないので、ここはasync-lockを用いてよいはず
     type RunContext = OnnxruntimeRunContext;
 
     const DISPLAY_NAME: &'static str = if cfg!(feature = "load-onnxruntime") {
@@ -63,9 +68,11 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
     }
 
     fn test_gpu(&self, gpu: GpuSpec) -> anyhow::Result<()> {
-        let sess_builder = &ort::SessionBuilder::new()?;
+        let sess_builder = &mut ort::session::builder::SessionBuilder::new()?;
         match gpu {
-            GpuSpec::Cuda => CUDAExecutionProvider::default().register(sess_builder),
+            GpuSpec::Cuda => CUDAExecutionProvider::default()
+                .with_conv_algorithm_search(CuDNNConvAlgorithmSearch::Default)
+                .register(sess_builder),
             GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
         }
         .map_err(Into::into)
@@ -80,20 +87,22 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         Vec<ParamInfo<InputScalarKind>>,
         Vec<ParamInfo<OutputScalarKind>>,
     )> {
-        let mut builder = ort::Session::builder()?
+        let mut builder = ort::session::Session::builder()?
             .with_optimization_level(GraphOptimizationLevel::Level1)?
             .with_intra_threads(options.cpu_num_threads.into())?;
 
         match options.device {
             DeviceSpec::Cpu => {}
             DeviceSpec::Gpu(GpuSpec::Cuda) => {
-                CUDAExecutionProvider::default().register(&builder)?;
+                CUDAExecutionProvider::default()
+                    .with_conv_algorithm_search(CuDNNConvAlgorithmSearch::Default)
+                    .register(&mut builder)?;
             }
             DeviceSpec::Gpu(GpuSpec::Dml) => {
                 builder = builder
                     .with_parallel_execution(false)?
                     .with_memory_pattern(false)?;
-                DirectMLExecutionProvider::default().register(&builder)?;
+                DirectMLExecutionProvider::default().register(&mut builder)?;
             }
         };
 
@@ -129,6 +138,23 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     TensorElementType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
                     TensorElementType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
                     TensorElementType::Bool => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL"),
+                    TensorElementType::Complex64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64"),
+                    TensorElementType::Complex128 => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128")
+                    }
+                    TensorElementType::Float8E4M3FN => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FN")
+                    }
+                    TensorElementType::Float8E4M3FNUZ => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FNUZ")
+                    }
+                    TensorElementType::Float8E5M2 => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2")
+                    }
+                    TensorElementType::Float8E5M2FNUZ => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2FNUZ")
+                    }
+                    TensorElementType::Undefined => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED"),
                 }
                 .map_err(|actual| {
                     anyhow!("unsupported input datatype `{actual}` for `{}`", info.name)
@@ -137,7 +163,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                 Ok(ParamInfo {
                     name: info.name.clone().into(),
                     dt,
-                    ndim: info.input_type.tensor_dimensions().map(Vec::len),
+                    ndim: info.input_type.tensor_shape().map(|s| s.len()),
                 })
             })
             .collect::<anyhow::Result<_>>()?;
@@ -169,6 +195,23 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     TensorElementType::Uint32 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32"),
                     TensorElementType::Uint64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64"),
                     TensorElementType::Bool => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL"),
+                    TensorElementType::Complex64 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64"),
+                    TensorElementType::Complex128 => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128")
+                    }
+                    TensorElementType::Float8E4M3FN => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FN")
+                    }
+                    TensorElementType::Float8E4M3FNUZ => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E4M3FNUZ")
+                    }
+                    TensorElementType::Float8E5M2 => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2")
+                    }
+                    TensorElementType::Float8E5M2FNUZ => {
+                        Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2FNUZ")
+                    }
+                    TensorElementType::Undefined => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED"),
                 }
                 .map_err(|actual| {
                     anyhow!("unsupported output datatype `{actual}` for `{}`", info.name)
@@ -177,7 +220,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                 Ok(ParamInfo {
                     name: info.name.clone().into(),
                     dt,
-                    ndim: info.output_type.tensor_dimensions().map(|d| d.len()),
+                    ndim: info.output_type.tensor_shape().map(|s| s.len()),
                 })
             })
             .collect::<anyhow::Result<_>>()?;
@@ -196,7 +239,13 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         cancellable: bool,
     ) -> anyhow::Result<Vec<OutputTensor>> {
         if cancellable {
-            extract_outputs(&sess.lock().await.run_async(inputs)?.await?)
+            extract_outputs(
+                &sess
+                    .lock()
+                    .await
+                    .run_async(inputs, &RunOptions::new()?)?
+                    .await?,
+            )
         } else {
             ::blocking::unblock(move || extract_outputs(&sess.lock_blocking().run(inputs)?)).await
         }
@@ -204,8 +253,8 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
 }
 
 pub(crate) struct OnnxruntimeRunContext {
-    sess: Arc<async_lock::Mutex<ort::Session>>,
-    inputs: Vec<(&'static str, ort::SessionInputValue<'static>)>,
+    sess: Arc<async_lock::Mutex<ort::session::Session>>,
+    inputs: Vec<(&'static str, ort::session::SessionInputValue<'static>)>,
 }
 
 impl OnnxruntimeRunContext {
@@ -217,14 +266,14 @@ impl OnnxruntimeRunContext {
             impl Dimension + 'static,
         >,
     ) -> anyhow::Result<()> {
-        let input = ort::Value::from_array(input)?.into();
+        let input = ort::value::Value::from_array(input)?.into();
         self.inputs.push((name, input));
         Ok(())
     }
 }
 
-impl From<Arc<async_lock::Mutex<ort::Session>>> for OnnxruntimeRunContext {
-    fn from(sess: Arc<async_lock::Mutex<ort::Session>>) -> Self {
+impl From<Arc<async_lock::Mutex<ort::session::Session>>> for OnnxruntimeRunContext {
+    fn from(sess: Arc<async_lock::Mutex<ort::session::Session>>) -> Self {
         Self {
             sess,
             inputs: vec![],
@@ -248,12 +297,14 @@ impl PushInputTensor for OnnxruntimeRunContext {
 }
 
 // FIXME: use ouroboros to reduce copies
-fn extract_outputs(outputs: &ort::SessionOutputs<'_, '_>) -> anyhow::Result<Vec<OutputTensor>> {
+fn extract_outputs(
+    outputs: &ort::session::SessionOutputs<'_>,
+) -> anyhow::Result<Vec<OutputTensor>> {
     (0..outputs.len())
         .map(|i| {
             let output = &outputs[i];
 
-            let ValueType::Tensor { ty, .. } = output.dtype()? else {
+            let ValueType::Tensor { ty, .. } = output.dtype() else {
                 bail!(
                     "unexpected output. currently `ONNX_TYPE_TENSOR` and `ONNX_TYPE_SPARSETENSOR`
                      is supported",
@@ -262,11 +313,11 @@ fn extract_outputs(outputs: &ort::SessionOutputs<'_, '_>) -> anyhow::Result<Vec<
 
             match ty {
                 TensorElementType::Int64 => {
-                    let output = output.try_extract_tensor::<i64>()?;
+                    let output = output.try_extract_array::<i64>()?;
                     Ok(OutputTensor::Int64(output.into_owned()))
                 }
                 TensorElementType::Float32 => {
-                    let output = output.try_extract_tensor::<f32>()?;
+                    let output = output.try_extract_array::<f32>()?;
                     Ok(OutputTensor::Float32(output.into_owned()))
                 }
                 _ => bail!("unexpected output tensor element data type"),
@@ -310,7 +361,7 @@ pub(crate) mod blocking {
     /// ```
     ///
     /// [voicevox-ort]: https://github.com/VOICEVOX/ort
-    #[doc(alias = "VoicevoxOnnxruntime")]
+    #[cfg_attr(doc, doc(alias = "VoicevoxOnnxruntime"))]
     #[derive(Debug, RefCastCustom)]
     #[repr(transparent)]
     pub struct Onnxruntime {
@@ -326,7 +377,7 @@ pub(crate) mod blocking {
         /// 推奨されるONNX Runtimeのバージョン。
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
-        pub const LIB_VERSION: &'static str = ort::downloaded_version!();
+        pub const LIB_VERSION: &'static str = include_str!("../../../../onnxruntime-version.txt");
 
         /// [`LIB_NAME`]と[`LIB_VERSION`]からなる動的ライブラリのファイル名。
         ///
@@ -335,7 +386,7 @@ pub(crate) mod blocking {
         /// [`LIB_NAME`]: Self::LIB_NAME
         /// [`LIB_VERSION`]: Self::LIB_VERSION
         /// [`LIB_UNVERSIONED_FILENAME`]: Self::LIB_UNVERSIONED_FILENAME
-        #[doc(alias = "voicevox_get_onnxruntime_lib_versioned_filename")]
+        #[cfg_attr(doc, doc(alias = "voicevox_get_onnxruntime_lib_versioned_filename"))]
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub const LIB_VERSIONED_FILENAME: &'static str = if cfg!(target_os = "linux") {
@@ -360,7 +411,7 @@ pub(crate) mod blocking {
         /// [`LIB_NAME`]からなる動的ライブラリのファイル名。
         ///
         /// [`LIB_NAME`]: Self::LIB_NAME
-        #[doc(alias = "voicevox_get_onnxruntime_lib_unversioned_filename")]
+        #[cfg_attr(doc, doc(alias = "voicevox_get_onnxruntime_lib_unversioned_filename"))]
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub const LIB_UNVERSIONED_FILENAME: &'static str = const_format::concatcp!(
@@ -375,7 +426,7 @@ pub(crate) mod blocking {
         /// インスタンスが既に作られているならそれを得る。
         ///
         /// 作られていなければ`None`を返す。
-        #[doc(alias = "voicevox_onnxruntime_get")]
+        #[cfg_attr(doc, doc(alias = "voicevox_onnxruntime_get"))]
         pub fn get() -> Option<&'static Self> {
             EnvHandle::get().map(Self::new)
         }
@@ -393,7 +444,7 @@ pub(crate) mod blocking {
         /// ONNX Runtimeをロードして初期化する。
         ///
         /// 一度成功したら、以後は引数を無視して同じ参照を返す。
-        #[doc(alias = "voicevox_onnxruntime_load_once")]
+        #[cfg_attr(doc, doc(alias = "voicevox_onnxruntime_load_once"))]
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub fn load_once() -> LoadOnce {
@@ -403,7 +454,7 @@ pub(crate) mod blocking {
         /// ONNX Runtimeを初期化する。
         ///
         /// 一度成功したら以後は同じ参照を返す。
-        #[doc(alias = "voicevox_onnxruntime_init_once")]
+        #[cfg_attr(doc, doc(alias = "voicevox_onnxruntime_init_once"))]
         #[cfg(feature = "link-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "link-onnxruntime")))]
         pub fn init_once() -> crate::Result<&'static Self> {
@@ -427,7 +478,7 @@ pub(crate) mod blocking {
         }
 
         /// ONNX Runtimeとして利用可能なデバイスの情報を取得する。
-        #[doc(alias = "voicevox_onnxruntime_create_supported_devices_json")]
+        #[cfg_attr(doc, doc(alias = "voicevox_onnxruntime_create_supported_devices_json"))]
         pub fn supported_devices(&self) -> crate::Result<SupportedDevices> {
             <Self as InferenceRuntime>::supported_devices(self)
         }
@@ -436,6 +487,7 @@ pub(crate) mod blocking {
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct LoadOnce {
         filename: std::ffi::OsString,
     }
@@ -525,7 +577,7 @@ pub(crate) mod nonblocking {
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         // ブロッキング版と等しいことはテストで担保
-        pub const LIB_VERSION: &'static str = ort::downloaded_version!();
+        pub const LIB_VERSION: &'static str = include_str!("../../../../onnxruntime-version.txt");
 
         /// [`LIB_NAME`]と[`LIB_VERSION`]からなる動的ライブラリのファイル名。
         ///
@@ -591,7 +643,8 @@ pub(crate) mod nonblocking {
 
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
-    #[derive(Default)]
+    #[derive(Default, derive_more::Debug)]
+    #[debug("{_0:?}")]
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     pub struct LoadOnce(super::blocking::LoadOnce);
 

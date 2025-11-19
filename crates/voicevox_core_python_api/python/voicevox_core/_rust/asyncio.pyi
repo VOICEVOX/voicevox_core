@@ -30,6 +30,7 @@ class VoiceModelFile:
             VVMファイルへのパス。
         """
         ...
+    def __repr__(self) -> str: ...
     async def close(self) -> None:
         """
         VVMファイルを閉じる。
@@ -42,6 +43,8 @@ class VoiceModelFile:
     def id(self) -> VoiceModelId:
         """
         ID。
+
+        詳細は :class:`voicevox_core.VoiceModelId` を参照。
 
         :attr:`close` および :attr:`__aexit__` の後でも利用可能。
         """
@@ -121,6 +124,7 @@ class Onnxruntime:
             の引数に使われる。
         """
         ...
+    def __repr__(self) -> str: ...
     def supported_devices(self) -> SupportedDevices:
         """
         このライブラリで利用可能なデバイスの情報を取得する。
@@ -144,6 +148,7 @@ class OpenJtalk:
             Open JTalkの辞書ディレクトリ。
         """
         ...
+    def __repr__(self) -> str: ...
     async def use_user_dict(self, user_dict: UserDict) -> None:
         """
         ユーザー辞書を設定する。
@@ -503,6 +508,7 @@ class UserDict:
         """このオプジェクトを :class:`dict` に変換する。"""
         ...
     def __init__(self) -> None: ...
+    def __repr__(self) -> str: ...
     async def load(self, path: str | PathLike[str]) -> None:
         """ファイルに保存されたユーザー辞書を読み込む。
 

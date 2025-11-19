@@ -50,3 +50,14 @@ cargo run -p downloader -- -h
 ```bash
 typos
 ```
+
+## CHANGELOG.mdの更新
+
+プルリクエストにて[CHANGELOG.md](./CHANGELOG.md)も同時に更新するかどうかは任意です。しない場合は、メンテナが後から行います。
+
+## プルリクエストにおけるCI
+
+[Benchmarksワークフロー]の実行の都合上、たまに`CodSpeed Performance Analysis`が`failure`になることがあります。そうなった場合はアクセス権を持つ誰かが、Benchmarksワークフローをre-runします。実際にパフォーマンスが低下していると考えられる場合は、プルリクエスト内での議論ののち権限のある誰かが[「リグレッションの承認」]を行います。
+
+[Benchmarksワークフロー]: ./.github/workflows/benchmarks.yml
+[「リグレッションの承認」]: https://codspeed.io/docs/features/performance-checks#acknowledge-regressions-or-benchmark-drops

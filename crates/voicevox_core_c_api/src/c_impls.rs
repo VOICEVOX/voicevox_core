@@ -14,10 +14,10 @@ use ref_cast::ref_cast_custom;
 use voicevox_core::{CharacterMeta, Result, VoiceModelId};
 
 use crate::{
-    helpers::CApiResult,
-    object::{CApiObject, CApiObjectPtrExt as _},
     OpenJtalkRc, VoicevoxInitializeOptions, VoicevoxOnnxruntime, VoicevoxSynthesizer,
     VoicevoxUserDict, VoicevoxVoiceModelFile,
+    helpers::CApiResult,
+    object::{CApiObject, CApiObjectPtrExt as _},
 };
 
 // FIXME: 中身(Rust API)を直接操作するかラッパーメソッド越しにするのかが混在していて、一貫性を

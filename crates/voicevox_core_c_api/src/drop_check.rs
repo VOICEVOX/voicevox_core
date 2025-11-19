@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeSet,
-    ffi::{c_char, CStr, CString},
+    ffi::{CStr, CString, c_char},
     num::NonZero,
     ptr::NonNull,
     sync::Mutex,
@@ -79,18 +79,21 @@ impl CStringDropChecker {
 
     /// `*mut c_char`が`whitelist`を通ったものかどうかチェックする。
     ///
+    /// ヌルポインタを許容する。
+    ///
     /// # Panics
     ///
-    /// `ptr`が`Self::whitelist`を経由したものではないならパニックする。
-    pub(crate) fn check(&self, ptr: *mut c_char) -> *mut c_char {
+    /// `ptr`が非ヌルで、`Self::whitelist`を経由したものではないならパニックする。
+    pub(crate) fn check(&self, ptr: *mut c_char) -> Option<NonNull<c_char>> {
         let Inner {
             owned_str_addrs,
             static_str_addrs,
             ..
         } = &mut *self.0.lock().unwrap();
 
-        let addr = NonZero::new(ptr.addr()).expect("ヌルポインタは解放できません");
-        if !owned_str_addrs.remove(&addr) {
+        if let Some(addr) = NonZero::new(ptr.addr())
+            && !owned_str_addrs.remove(&addr)
+        {
             if static_str_addrs.contains(&addr) {
                 panic!(
                     "解放しようとしたポインタはvoicevox_core管理下のものですが、\
@@ -103,7 +106,7 @@ impl CStringDropChecker {
                  誤ったポインタであるか、二重解放になっていることが考えられます",
             );
         }
-        ptr
+        NonNull::new(ptr)
     }
 }
 
@@ -116,9 +119,18 @@ impl CStr {
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::{c_char, CStr};
+    use std::{
+        ffi::{CStr, c_char},
+        ptr,
+    };
 
     use super::CStringDropChecker;
+
+    #[test]
+    fn it_accepts_null() {
+        let checker = CStringDropChecker::new();
+        checker.check(ptr::null_mut());
+    }
 
     #[test]
     #[should_panic(

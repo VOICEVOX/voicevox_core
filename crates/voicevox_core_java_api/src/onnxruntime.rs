@@ -2,9 +2,9 @@ use std::ptr;
 
 use duplicate::duplicate_item;
 use jni::{
+    JNIEnv,
     objects::{JObject, JString},
     sys::jobject,
-    JNIEnv,
 };
 use voicevox_core::__internal::interop::ToJsonValue as _;
 
@@ -38,7 +38,11 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rs
         let internal = voicevox_core::blocking::Onnxruntime::load_once()
             .filename(filename)
             .perform()?;
-        env.set_rust_field(&this, "handle", internal)?;
+        // SAFETY:
+        // - The safety contract must be upheld by the caller.
+        // - `jp.hiroshiba.voicevoxcore.blocking.Onnxruntime.handle` must correspond to
+        //   `&'static voicevox_core::blocking::Onnxruntime`.
+        unsafe { env.set_rust_field(&this, "handle", internal) }?;
         Ok(())
     })
 }
@@ -52,9 +56,15 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rs
     this: JObject<'local>,
 ) -> jobject {
     throw_if_err(env, ptr::null_mut(), |env| {
-        let this = *env.get_rust_field::<_, _, &'static voicevox_core::blocking::Onnxruntime>(
-            &this, "handle",
-        )?;
+        let this = *unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Onnxruntime.handle` must correspond to
+            //   `&'static voicevox_core::blocking::Onnxruntime`.
+            env.get_rust_field::<_, _, &'static voicevox_core::blocking::Onnxruntime>(
+                &this, "handle",
+            )
+        }?;
         let devices = this.supported_devices()?;
 
         assert!(match devices.to_json_value() {

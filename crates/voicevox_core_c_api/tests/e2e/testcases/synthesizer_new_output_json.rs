@@ -11,14 +11,14 @@ use libloading::Library;
 use serde::{Deserialize, Serialize};
 
 use test_util::{
+    OPEN_JTALK_DIC_DIR,
     c_api::{
         self, CApi, VoicevoxInitializeOptions, VoicevoxLoadOnnxruntimeOptions, VoicevoxResultCode,
     },
-    OPEN_JTALK_DIC_DIR,
 };
 
 use crate::{
-    assert_cdylib::{self, case, Utf8Output},
+    assert_cdylib::{self, Utf8Output, case},
     snapshots,
 };
 
@@ -30,11 +30,15 @@ struct TestCase;
 #[typetag::serde(name = "synthesizer_new_output_json")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
-        let lib = CApi::from_library(lib)?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        let lib = unsafe { CApi::from_library(lib) }?;
 
         let onnxruntime = {
             let mut onnxruntime = MaybeUninit::uninit();
-            assert_ok(
+            assert_ok(unsafe {
+                // SAFETY:
+                // - A `CStr` is a valid string.
+                // - `onnxruntime` is valid for writes.
                 lib.voicevox_onnxruntime_load_once(
                     VoicevoxLoadOnnxruntimeOptions {
                         filename: CStr::from_bytes_with_nul(
@@ -50,58 +54,87 @@ impl assert_cdylib::TestCase for TestCase {
                         .as_ptr(),
                     },
                     onnxruntime.as_mut_ptr(),
-                ),
-            );
-            onnxruntime.assume_init()
+                )
+            });
+            // SAFETY: `voicevox_onnxruntime_load_once` initializes `onnxruntime` if succeeded.
+            unsafe { onnxruntime.assume_init() }
         };
 
         let openjtalk = {
             let mut openjtalk = MaybeUninit::uninit();
             let open_jtalk_dic_dir = CString::new(OPEN_JTALK_DIC_DIR).unwrap();
-            assert_ok(
-                lib.voicevox_open_jtalk_rc_new(open_jtalk_dic_dir.as_ptr(), openjtalk.as_mut_ptr()),
-            );
-            openjtalk.assume_init()
+            assert_ok(unsafe {
+                // SAFETY:
+                // - A `CString` is a valid string.
+                // - `openjtalk` is valid for writes.
+                lib.voicevox_open_jtalk_rc_new(open_jtalk_dic_dir.as_ptr(), openjtalk.as_mut_ptr())
+            });
+            // SAFETY: `voicevox_open_jtalk_rc_new` initializes `openjtalk` if succeeded.
+            unsafe { openjtalk.assume_init() }
         };
 
         let synthesizer = {
             let mut synthesizer = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_synthesizer_new(
-                onnxruntime,
-                openjtalk,
-                VoicevoxInitializeOptions {
-                    acceleration_mode:
-                        c_api::VoicevoxAccelerationMode_VOICEVOX_ACCELERATION_MODE_CPU,
-                    ..lib.voicevox_make_default_initialize_options()
-                },
-                synthesizer.as_mut_ptr(),
-            ));
-            synthesizer.assume_init()
+            assert_ok(unsafe {
+                // SAFETY:
+                // - `onnxruntime` is valid for reads.
+                // - `synthesizer` is valid for writes.
+                lib.voicevox_synthesizer_new(
+                    onnxruntime,
+                    openjtalk,
+                    VoicevoxInitializeOptions {
+                        acceleration_mode:
+                            c_api::VoicevoxAccelerationMode_VOICEVOX_ACCELERATION_MODE_CPU,
+                        ..lib.voicevox_make_default_initialize_options()
+                    },
+                    synthesizer.as_mut_ptr(),
+                )
+            });
+            // SAFETY: `voicevox_synthesizer_new` initializes `synthesizer` if succeeded.
+            unsafe { synthesizer.assume_init() }
         };
 
         let model = {
             let mut model = MaybeUninit::uninit();
-            assert_ok(lib.voicevox_voice_model_file_open(
-                c_api::SAMPLE_VOICE_MODEL_FILE_PATH.as_ptr(),
-                model.as_mut_ptr(),
-            ));
-            model.assume_init()
+            assert_ok(unsafe {
+                // SAFETY:
+                // - `SAMPLE_VOICE_MODEL_FILE_PATH` is a valid string.
+                // - `model` is valid for writes.
+                lib.voicevox_voice_model_file_open(
+                    c_api::SAMPLE_VOICE_MODEL_FILE_PATH.as_ptr(),
+                    model.as_mut_ptr(),
+                )
+            });
+            // SAFETY: `voicevox_voice_model_file_open` initializes `model` if succeeded.
+            unsafe { model.assume_init() }
         };
 
-        assert_ok(lib.voicevox_synthesizer_load_voice_model(synthesizer, model));
+        // SAFETY: `voicevox_synthesizer_load_voice_model` has no safety requirements.
+        assert_ok(unsafe { lib.voicevox_synthesizer_load_voice_model(synthesizer, model) });
 
         let metas_json = {
-            let raw = lib.voicevox_synthesizer_create_metas_json(synthesizer);
-            let metas_json = &CStr::from_ptr(raw).to_str()?.parse::<serde_json::Value>()?;
+            // SAFETY: `voicevox_synthesizer_create_metas_json` has no safety requirements.
+            let raw = unsafe { lib.voicevox_synthesizer_create_metas_json(synthesizer) };
+
+            // SAFETY: `voicevox_synthesizer_create_metas_json` returns a valid string.
+            let metas_json = &unsafe { CStr::from_ptr(raw) }
+                .to_str()?
+                .parse::<serde_json::Value>()?;
+
             let metas_json = serde_json::to_string_pretty(metas_json).unwrap();
-            lib.voicevox_json_free(raw);
+
+            // SAFETY: `raw` is valid and is no longer used.
+            unsafe { lib.voicevox_json_free(raw) }
+
             metas_json
         };
 
         std::assert_eq!(SNAPSHOTS.metas, metas_json);
 
-        lib.voicevox_open_jtalk_rc_delete(openjtalk);
-        lib.voicevox_synthesizer_delete(synthesizer);
+        // SAFETY: `voicevox_open_jtalk_rc_delete` and `voicevox_synthesizer_delete` have no safety
+        // requirements.
+        unsafe { lib.voicevox_open_jtalk_rc_delete(openjtalk) };
+        unsafe { lib.voicevox_synthesizer_delete(synthesizer) };
 
         return Ok(());
 

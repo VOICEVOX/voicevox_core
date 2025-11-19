@@ -1,0 +1,57 @@
+# shebangとfilemodeが一貫しているかをチェックする。またbashファイルについてもこの両者についてチェックする。
+name: Check shebangs and filemodes
+
+on:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Check shebangs and filemodes
+        run: |
+          blobs=$(git ls-files -s | grep '^100')
+
+          while read -r blob; do
+            filemode=$(awk '{ print $1 }' <<< "$blob")
+            filename=$(awk '{ print $4 }' <<< "$blob")
+
+            first_line=$(head -n 1 "$filename")
+            shebang_line=$(grep '^#!/' <<< "$first_line" || true)
+
+            has_shebang() {
+              [ -n "$shebang_line" ]
+            }
+
+            is_shellscript() {
+              [[ "$filename" =~ \.(ba)?sh$ ]]
+            }
+
+            is_executable() {
+              [ "$filemode" = 100755 ]
+            }
+
+            echo -n "$filename ($filemode): "
+
+            if has_shebang && ! is_executable; then
+              # shellcheck disable=SC2016
+              echo 'A shebanged file must be executable (note: if you are using Windows, please change the filemode with `git update-index --chmod+x`)'
+              exit 1
+            fi
+
+            if is_shellscript && ! is_executable; then
+              # shellcheck disable=SC2016
+              echo 'A shell script file must be executable (note: if you are using Windows, please change the filemode with `git update-index --chmod+x`)'
+              exit 1
+            fi
+
+            if is_executable && ! has_shebang; then
+              echo 'An executable blob must have a shebang'
+              exit 1
+            fi
+
+            echo OK
+          done <<< "$blobs"

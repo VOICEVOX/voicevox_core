@@ -1,4 +1,7 @@
-use std::any;
+use std::{
+    any,
+    fmt::{self, Debug},
+};
 
 use duplicate::{duplicate, duplicate_item};
 use educe::Educe;
@@ -27,6 +30,7 @@ use super::{
     voice_model::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId},
 };
 
+#[derive(Debug)]
 pub(crate) struct Status<R: InferenceRuntime> {
     pub(crate) rt: &'static R,
     loaded_models: std::sync::Mutex<LoadedModels<R>>,
@@ -140,6 +144,14 @@ impl<R: InferenceRuntime> Status<R> {
 #[derive(Educe)]
 #[educe(Default(bound = "R: InferenceRuntime"))]
 struct LoadedModels<R: InferenceRuntime>(IndexMap<VoiceModelId, LoadedModel<R>>);
+
+impl<R: InferenceRuntime> Debug for LoadedModels<R> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.debug_map()
+            .entries(self.0.keys().map(|id| (id, format_args!("_"))))
+            .finish()
+    }
+}
 
 struct LoadedModel<R: InferenceRuntime> {
     metas: VoiceModelMeta,

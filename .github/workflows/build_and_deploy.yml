@@ -47,19 +47,21 @@ jobs:
         run: |
           includes='[
             {
-              "os": "windows-2019",
+              "os": "windows-2022",
               "target": "x86_64-pc-windows-msvc",
               "artifact_name": "windows-x64",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": false
             },
             {
-              "os": "windows-2019",
+              "os": "windows-2022",
               "target": "i686-pc-windows-msvc",
               "artifact_name": "windows-x86",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": true
             },
             {
@@ -68,6 +70,7 @@ jobs:
               "artifact_name": "linux-x64",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": false
             },
             {
@@ -76,6 +79,7 @@ jobs:
               "artifact_name": "linux-arm64",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": true
             },
             {
@@ -84,6 +88,7 @@ jobs:
               "artifact_name": "android-arm64",
               "c_release_format": "plain-cdylib",
               "python_whl": false,
+              "java": true,
               "can_skip_in_simple_test": true
             },
             {
@@ -92,46 +97,52 @@ jobs:
               "artifact_name": "android-x86_64",
               "c_release_format": "plain-cdylib",
               "python_whl": false,
+              "java": true,
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-13",
+              "os": "macos-14",
               "target": "aarch64-apple-darwin",
               "artifact_name": "osx-arm64",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": false
             },
             {
-              "os": "macos-13",
+              "os": "macos-14",
               "target": "x86_64-apple-darwin",
               "artifact_name": "osx-x64",
               "c_release_format": "plain-cdylib",
               "python_whl": true,
+              "java": true,
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-13",
+              "os": "macos-14",
               "target": "aarch64-apple-ios",
               "artifact_name": "ios-arm64-cpu",
               "c_release_format": "ios-xcframework",
               "python_whl": false,
+              "java": false,
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-13",
+              "os": "macos-14",
               "target": "aarch64-apple-ios-sim",
               "artifact_name": "ios-arm64-cpu-sim",
               "c_release_format": "ios-xcframework",
               "python_whl": false,
+              "java": false,
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-13",
+              "os": "macos-14",
               "target": "x86_64-apple-ios",
               "artifact_name": "ios-x64-cpu",
               "c_release_format": "ios-xcframework",
               "python_whl": false,
+              "java": false,
               "can_skip_in_simple_test": true
             }
           ]'
@@ -153,13 +164,28 @@ jobs:
     env:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      # NOTE: PyO3の制約で、RustのターゲットとPythonのビット数を一致させる必要がある。
+      # https://github.com/PyO3/pyo3/blob/v0.27.1/pyo3-ffi/build.rs#L138-L143
+      - name: Determine Python interpreter architecture
+        if: matrix.python_whl
+        id: python-interpreter-arch
+        run: |
+          case "$RUNNER_ARCH",${{ matrix.target }} in
+            X64,i686-*) architecture=x86 ;;
+            X64,x86_64-*|X64,aarch64-*) architecture=x64 ;;
+            ARM64,aarch64-*) architecture=arm64 ;;
+            *)
+              echo 'unexpected architecture' >&2
+              exit 1
+          esac
+          echo "architecture=$architecture" >> "$GITHUB_OUTPUT"
       - name: Set up Python 3.10
         if: matrix.python_whl
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
-          architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
+          architecture: ${{ steps.python-interpreter-arch.outputs.architecture }}
       - name: set up ${{ matrix.target }}
         uses: ./.github/actions/rust-toolchain-from-file
         with:
@@ -169,10 +195,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-      - uses: nttld/setup-ndk@v1
-        if: endsWith(matrix.target, '-linux-android')
-        with:
-          ndk-version: r25b
       - name: Set path for android
         if: endsWith(matrix.target, '-linux-android')
         run: |
@@ -184,7 +206,7 @@ jobs:
         run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
       - name: set cargo version
         run: |
-          cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude downloader --exclude xtask
+          cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude xtask
           if ${{ matrix.python_whl }}; then
             sed -i_ 's/version = "\(0\.0\.0\)"/version = "'"$VERSION"'"/' ./crates/voicevox_core_python_api/pyproject.toml
           fi
@@ -211,7 +233,7 @@ jobs:
           maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --target ${{ matrix.target }} --release
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
       - name: build voicevox_core_java_api
-        if: contains(matrix.target, 'android')
+        if: ${{ matrix.java }}
         run: cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
       - name: Organize artifact
         run: |
@@ -229,7 +251,7 @@ jobs:
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
 
           mkdir java_artifact
-          cp -v target/${{ matrix.target }}/release/libvoicevox_core_java_api.so java_artifact/ || true
+          cp -v target/${{ matrix.target }}/release/*voicevox_core_java_api.{dll,so,dylib} "java_artifact" || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
         run: bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.dll"
@@ -238,7 +260,7 @@ jobs:
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
       - name: Upload artifact to build XCFramework
-        if: matrix.artifact_name == 'osx-arm64' || matrix.artifact_name == 'osx-x64' || matrix.c_release_format == 'ios-xcframework'
+        if: matrix.c_release_format == 'ios-xcframework'
         uses: actions/upload-artifact@v4
         with:
           name: voicevox_core-${{ matrix.target }}
@@ -266,7 +288,7 @@ jobs:
             ${{ steps.build-voicevox-core-python-api.outputs.whl }}
           target_commitish: ${{ github.sha }}
       - name: Upload voicevox_core_java_api artifact
-        if: fromJson(needs.config.outputs.deploy) && contains(matrix.target, 'android')
+        if: fromJson(needs.config.outputs.deploy) && matrix.java
         uses: actions/upload-artifact@v4
         with:
           name: voicevox_core_java_api-${{ matrix.artifact_name }}
@@ -275,43 +297,33 @@ jobs:
   build_xcframework:
     if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
     needs: [config, build_and_deploy]
-    runs-on: macos-13
+    runs-on: macos-14
     env:
       IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
       IOS_AARCH64_SIM_PATH: artifact/voicevox_core-aarch64-apple-ios-sim
       IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
-      MACOS_ARM64_PATH: artifact/voicevox_core-aarch64-apple-darwin
-      MACOS_X64_PATH: artifact/voicevox_core-x86_64-apple-darwin
-      ASSET_NAME: voicevox_core-xcframework-cpu-${{ needs.config.outputs.version }}
+      ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
         with:
           name: voicevox_core-x86_64-apple-ios
           path: ${{ env.IOS_X86_64_PATH }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: voicevox_core-aarch64-apple-ios-sim
           path: ${{ env.IOS_AARCH64_SIM_PATH }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: voicevox_core-aarch64-apple-darwin
-          path: ${{ env.MACOS_ARM64_PATH }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: voicevox_core-x86_64-apple-darwin
-          path: ${{ env.MACOS_X64_PATH }}
       - name: Create xcframework
         id: create-xcframework
         run: |
-          build_util/make_xcframework.bash
+          build_util/make_ios_xcframework.bash
           echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT"
         env:
-          OUTPUT_ASSET_PATH: artifact/voicevox_core-xcframework-cpu
+          OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
       - name: Archive artifact
         run: |
           cd ${{ steps.create-xcframework.outputs.output_asset_path }}
@@ -331,18 +343,14 @@ jobs:
     if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
     needs: [config, build_and_deploy]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: "17"
           distribution: "adopt"
-      - uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r25b
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-edit
@@ -350,38 +358,59 @@ jobs:
       - name: set cargo version
         run: cargo set-version "$VERSION" -p voicevox_core_java_api
 
-      - name: "Download artifact (android-arm64)"
-        uses: actions/download-artifact@v4
+      - name: "Download artifact"
+        uses: actions/download-artifact@v5
         with:
-          name: voicevox_core_java_api-android-arm64
-          path: artifact/android-arm64
-
-      - name: "Download artifact (android-x86_64)"
-        uses: actions/download-artifact@v4
-        with:
-          name: voicevox_core_java_api-android-x86_64
-          path: artifact/android-x86_64
+          pattern: voicevox_core_java_api-*
+          path: artifacts/
 
       - name: Print tree
-        run: tree artifact
+        run: tree artifacts
 
-      - name: Build voicevoxcore-android
+      - name: Build voicevoxcore
         run: |
-          rm -rf crates/voicevox_core_java_api/lib/src/main/resources/dll
-          cat <<EOF | while read -r line; do
-          android-arm64|arm64-v8a
-          android-x86_64|x86_64
-          EOF
-            IFS='|' read -r artifact_name target <<< "$line"
-            mkdir "crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/${target}/"
-            cp -v "artifact/$artifact_name"/* "crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/${target}/"
-          done
-
-          cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/arm64-v8a/
-          cp ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so crates/voicevox_core_java_api/lib/src/main/resources/jniLibs/x86_64/
-
           cd crates/voicevox_core_java_api
-          OS=android gradle publishToMavenLocal
+          function copy_dll() {
+            artifact_name=$1
+            target=$2
+            root=$(echo "$1" | grep -q android && echo jniLibs || echo dll)
+            dest=lib/src/main/resources/$root/$target
+            case "$artifact_name" in
+              windows-*) ext=dll ;;
+              osx-*)     ext=dylib ;;
+              linux-*)   ext=so ;;
+              android-*) ext=so ;;
+              *)         echo "unknown target: $target"; exit 1 ;;
+            esac
+
+            mkdir -p "$dest"
+            cp -v "../../artifacts/voicevox_core_java_api-$artifact_name"/*."$ext" "$dest"
+          }
+          function clean_dlls() {
+            rm -rf lib/src/main/resources/dll
+            rm -rf lib/src/main/resources/jniLibs
+          }
+
+          # desktop
+          clean_dlls
+          copy_dll windows-x64 windows-x64
+          copy_dll windows-x86 windows-x86
+          copy_dll linux-x64 linux-x64
+          copy_dll linux-arm64 linux-arm64
+          copy_dll osx-x64 macos-x64
+          copy_dll osx-arm64 macos-arm64
+
+          OS=desktop ./gradlew publishToMavenLocal
+
+          # android
+          clean_dlls
+          copy_dll android-arm64 arm64-v8a
+          copy_dll android-x86_64 x86_64
+
+          cp "$ANDROID_NDK"/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/arm64-v8a/
+          cp "$ANDROID_NDK"/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so lib/src/main/resources/jniLibs/x86_64/
+
+          OS=android ./gradlew publishToMavenLocal
 
       - name: Package
         run: |

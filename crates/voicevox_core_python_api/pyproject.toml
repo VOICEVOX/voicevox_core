@@ -23,7 +23,7 @@ build-backend = "maturin"
 profile = "black"
 
 [tool.pyright]
-executionEnvironments = [{ root = "python/test" }, { root = "python" }]
+executionEnvironments = [{ root = "python/benches" }, { root = "python/test" }, { root = "python" }]
 
 [tool.maturin]
 module-name = "voicevox_core._rust"
@@ -48,5 +48,6 @@ maturin = "1.8.1"
 [tool.poetry.group.test.dependencies]
 pytest = "7.3.1"
 pytest-asyncio = "0.21.0"
+pytest-codspeed = "4.0.0"
 black = "23.3.0"
 isort = "5.13.2"

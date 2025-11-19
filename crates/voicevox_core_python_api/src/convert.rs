@@ -5,28 +5,28 @@ use derive_more::From;
 use easy_ext::ext;
 use heck::{ToLowerCamelCase as _, ToSnakeCase as _};
 use pyo3::{
+    Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python,
     exceptions::{PyException, PyValueError},
     types::{
         IntoPyDict as _, PyAnyMethods as _, PyDict, PyDictMethods as _, PyList, PyListMethods as _,
         PyString, PyStringMethods as _,
     },
-    Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python,
 };
 use ref_cast::RefCast;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use serde_json::json;
 use uuid::Uuid;
 use voicevox_core::{
-    AccelerationMode, AccentPhrase, AudioQuery, SupportedDevices, UserDictWord, VoiceModelMeta,
-    __internal::interop::ToJsonValue as _,
+    __internal::interop::ToJsonValue as _, AccelerationMode, AccentPhrase, AudioQuery,
+    SupportedDevices, UserDictWord, VoiceModelMeta,
 };
 
 use crate::{
-    AnalyzeTextError, GetSupportedDevicesError, GpuSupportError, InitInferenceRuntimeError,
-    InvalidModelDataError, InvalidModelFormatError, InvalidWordError, LoadUserDictError,
-    ModelAlreadyLoadedError, ModelNotFoundError, NotLoadedOpenjtalkDictError, OpenZipFileError,
-    ParseKanaError, ReadZipEntryError, RunModelError, SaveUserDictError, StyleAlreadyLoadedError,
-    StyleNotFoundError, UseUserDictError, WordNotFoundError, _ReservedFields,
+    _ReservedFields, AnalyzeTextError, GetSupportedDevicesError, GpuSupportError,
+    InitInferenceRuntimeError, InvalidModelDataError, InvalidModelFormatError, InvalidWordError,
+    LoadUserDictError, ModelAlreadyLoadedError, ModelNotFoundError, NotLoadedOpenjtalkDictError,
+    OpenZipFileError, ParseKanaError, ReadZipEntryError, RunModelError, SaveUserDictError,
+    StyleAlreadyLoadedError, StyleNotFoundError, UseUserDictError, WordNotFoundError,
 };
 
 pub(crate) fn from_acceleration_mode(ob: &Bound<'_, PyAny>) -> PyResult<AccelerationMode> {

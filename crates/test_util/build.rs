@@ -10,7 +10,7 @@ use cargo_metadata::MetadataCommand;
 use flate2::read::GzDecoder;
 use indoc::formatdoc;
 use tar::Archive;
-use zip::{write::FileOptions, ZipWriter};
+use zip::{ZipWriter, write::FileOptions};
 
 #[path = "src/typing.rs"]
 mod typing;
@@ -104,7 +104,7 @@ fn copy_onnxruntime(out_dir: &Path, dist: &Utf8Path) -> anyhow::Result<()> {
         .manifest_path(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"))
         .exec()?;
 
-    const VERSION: &str = ort::downloaded_version!();
+    const VERSION: &str = include_str!("../voicevox_core/onnxruntime-version.txt");
     let filename = &if cfg!(target_os = "linux") {
         format!("libonnxruntime.so.{VERSION}")
     } else if cfg!(any(target_os = "macos", target_os = "ios")) {

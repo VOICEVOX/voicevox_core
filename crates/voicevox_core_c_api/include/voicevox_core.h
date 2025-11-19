@@ -370,7 +370,19 @@ typedef struct VoicevoxInitializeOptions {
 /**
  * 音声モデルID。
  *
+ * ::VoicevoxSynthesizer はこのIDをキーとして、音声モデルのロード・アンロードを行う。
+ *
+ * 同じIDを持つ複数のVVMファイルがあるときは、ファイルとして新しい方を常に使うことが推奨される。[VOICEVOX/voicevox_vvm]で管理されているVVMでは、次の方針が取られている。
+ *
+ * - VVMに含まれる声が変化せず、軽微な修正のみのときはIDを使い回してリリースする。
+ * - VVMに含まれる声が明確に変化するかもしくは削除されるような実質的な変更のときは、新しいIDを割り振ってリリースする。
+ *
+ * これ以外は未定であり、更なるルールについては[VOICEVOX/voicevox_vvm#19]で議論される予定。
+ *
  * \orig-impl{VoicevoxVoiceModelId}
+ *
+ * [VOICEVOX/voicevox_vvm]: https://github.com/VOICEVOX/voicevox_vvm
+ * [VOICEVOX/voicevox_vvm#19]: https://github.com/VOICEVOX/voicevox_vvm/issues/19
  */
 typedef const uint8_t (*VoicevoxVoiceModelId)[16];
 
@@ -631,7 +643,7 @@ VoicevoxResultCode voicevox_open_jtalk_rc_analyze(const struct OpenJtalkRc *open
  *
  * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
  *
- * @param [in] open_jtalk 破棄対象
+ * @param [in] open_jtalk 破棄対象。nullable
  *
  * \example{
  * ```c
@@ -714,7 +726,7 @@ VoicevoxResultCode voicevox_voice_model_file_open(const char *path,
  * ::VoicevoxVoiceModelFile からIDを取得する。
  *
  * @param [in] model 音声モデル
- * @param [out] output_voice_model_id 音声モデルID
+ * @param [out] output_voice_model_id 音声モデルID。詳細は ::VoicevoxVoiceModelId
  *
  * \safety{
  * - `output_voice_model_id`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -751,7 +763,7 @@ char *voicevox_voice_model_file_create_metas_json(const struct VoicevoxVoiceMode
  *
  * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
  *
- * @param [in] model 破棄対象
+ * @param [in] model 破棄対象。nullable
  *
  * \no-orig-impl{voicevox_voice_model_file_delete}
  */
@@ -792,7 +804,7 @@ VoicevoxResultCode voicevox_synthesizer_new(const struct VoicevoxOnnxruntime *on
  *
  * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
  *
- * @param [in] synthesizer 破棄対象
+ * @param [in] synthesizer 破棄対象。nullable
  *
  * \no-orig-impl{voicevox_synthesizer_delete}
  */
@@ -1300,10 +1312,10 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
 /**
  * JSON文字列を解放する。
  *
- * @param [in] json 解放するJSON文字列
+ * @param [in] json 解放するJSON文字列。nullable
  *
  * \safety{
- * - `json`は以下のAPIで得られたポインタでなくてはいけない。
+ * - `json`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
  *     - ::voicevox_audio_query_create_from_accent_phrases
  *     - ::voicevox_onnxruntime_create_supported_devices_json
  *     - ::voicevox_voice_model_file_create_metas_json
@@ -1316,8 +1328,8 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  *     - ::voicevox_synthesizer_replace_mora_pitch
  *     - ::voicevox_user_dict_to_json
  * - 文字列の長さは生成時より変更されていてはならない。
- * - `json`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
- * - `json`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+ * - `json`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+ * - `json`がヌルポインタでないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
  * }
  *
  * \no-orig-impl{voicevox_json_free}
@@ -1330,14 +1342,14 @@ void voicevox_json_free(char *json);
 /**
  * WAVデータを解放する。
  *
- * @param [in] wav 解放するWAVデータ
+ * @param [in] wav 解放するWAVデータ。nullable
  *
  * \safety{
- * - `wav`は以下のAPIで得られたポインタでなくてはいけない。
+ * - `wav`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
  *     - ::voicevox_synthesizer_synthesis
  *     - ::voicevox_synthesizer_tts
- * - `wav`は<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
- * - `wav`は以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+ * - `wav`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+ * - `wav`がヌルポインタでないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
  * }
  *
  * \no-orig-impl{voicevox_wav_free}
@@ -1551,7 +1563,7 @@ VoicevoxResultCode voicevox_user_dict_save(const struct VoicevoxUserDict *user_d
  *
  * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
  *
- * @param [in] user_dict 破棄対象
+ * @param [in] user_dict 破棄対象。nullable
  *
  * \no-orig-impl{voicevox_user_dict_delete}
  */

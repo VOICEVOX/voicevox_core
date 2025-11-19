@@ -43,7 +43,7 @@ jobs:
         include:
           - name: download-windows-x64.exe
             target: x86_64-pc-windows-msvc
-            os: windows-2019
+            os: windows-2022
 
           - name: download-linux-x64
             target: x86_64-unknown-linux-gnu
@@ -55,16 +55,16 @@ jobs:
 
           - name: download-osx-x64
             target: x86_64-apple-darwin
-            os: macos-13
+            os: macos-14
 
           - name: download-osx-arm64
             target: aarch64-apple-darwin
-            os: macos-13
+            os: macos-14
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install cross compiler for aarch64-unknown-linux-gnu
         if: matrix.target == 'aarch64-unknown-linux-gnu'
@@ -76,6 +76,18 @@ jobs:
         uses: ./.github/actions/rust-toolchain-from-file
         with:
           targets: ${{ matrix.target }}
+
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+
+      - name: Install cargo-edit
+        # cargo-binstall だと quickinstall の不具合 (cargo-bins/cargo-quickinstall#466) で cargo-edit v0.13 系の導入が失敗する。
+        # かつ Rust 1.88 環境では smol_str v0.3.4 の影響で --locked なしの cargo install が失敗するため、--locked で固定インストールする。
+        # TODO: cargo-edit v0.13.8 / v0.14.0 がリリースされ、 quickinstall に正しくホストされたら cargo-binstall に戻す。
+        run: cargo install cargo-edit@^0.13 -v --locked
+
+      - name: Set version
+        run: cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude xtask
 
       - name: Build downloader
         run: cargo build -v --release -p downloader --target ${{ matrix.target }}

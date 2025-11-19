@@ -9,8 +9,9 @@ use tracing::error;
 use voicevox_core::AccentPhrase;
 
 use crate::{
-    result_code::VoicevoxResultCode, VoicevoxAccelerationMode, VoicevoxInitializeOptions,
-    VoicevoxSynthesisOptions, VoicevoxTtsOptions, VoicevoxUserDictWord, VoicevoxUserDictWordType,
+    VoicevoxAccelerationMode, VoicevoxInitializeOptions, VoicevoxSynthesisOptions,
+    VoicevoxTtsOptions, VoicevoxUserDictWord, VoicevoxUserDictWordType,
+    result_code::VoicevoxResultCode,
 };
 
 pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxResultCode {
@@ -20,9 +21,9 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
     return into_result_code(result);
 
     fn into_result_code(result: CApiResult<()>) -> VoicevoxResultCode {
-        use voicevox_core::ErrorKind::*;
         use CApiError::*;
         use VoicevoxResultCode::*;
+        use voicevox_core::ErrorKind::*;
 
         match result {
             Ok(()) => VOICEVOX_RESULT_OK,
@@ -58,7 +59,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
 }
 
 pub(crate) fn display_error(err: &impl std::error::Error) {
-    itertools::chain(
+    iter::chain(
         [err.to_string()],
         iter::successors(err.source(), |&e| e.source()).map(|e| format!("Caused by: {e}")),
     )
@@ -152,12 +153,20 @@ pub(crate) impl uuid::Bytes {
 
 impl VoicevoxUserDictWord {
     pub(crate) unsafe fn try_into_word(&self) -> CApiResult<voicevox_core::UserDictWord> {
+        let (surface, pronunciation) = unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            (
+                CStr::from_ptr(self.surface),
+                CStr::from_ptr(self.pronunciation),
+            )
+        };
+
         UserDictWord::builder()
             .word_type(self.word_type.into())
             .priority(self.priority)
             .build(
-                ensure_utf8(CStr::from_ptr(self.surface))?,
-                ensure_utf8(CStr::from_ptr(self.pronunciation))?.to_string(),
+                ensure_utf8(surface)?,
+                ensure_utf8(pronunciation)?.to_string(),
                 self.accent_type,
             )
             .map_err(Into::into)

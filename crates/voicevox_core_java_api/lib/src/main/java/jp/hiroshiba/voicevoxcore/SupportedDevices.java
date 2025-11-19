@@ -15,7 +15,7 @@ import jakarta.annotation.Nonnull;
  *
  * <p>{@code Gson#fromJson} でJSONから変換することはできない。その試みは {@link UnsupportedOperationException} となる。
  */
-public class SupportedDevices {
+public class SupportedDevices implements Cloneable {
   /**
    * CPUが利用可能。
    *
@@ -54,10 +54,23 @@ public class SupportedDevices {
     throw new UnsupportedOperationException("You cannot deserialize `SupportedDevices`");
   }
 
-  /** accessed only via JNI */
   private SupportedDevices(boolean cpu, boolean cuda, boolean dml) {
     this.cpu = cpu;
     this.cuda = cuda;
     this.dml = dml;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof SupportedDevices)) {
+      return false;
+    }
+    SupportedDevices other = (SupportedDevices) obj;
+    return cpu == other.cpu && cuda == other.cuda && dml == other.dml;
+  }
+
+  @Override
+  public SupportedDevices clone() {
+    return new SupportedDevices(cpu, cuda, dml);
   }
 }

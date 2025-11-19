@@ -1,17 +1,17 @@
-// TODO: `VoiceModelFile`のように、次のような設計にする。
-//
-// ```
-// pub(crate) mod blocking {
-//     pub struct OpenJtalk(Inner<SingleTasked>);
-//     // …
-// }
-// pub(crate) mod nonblocking {
-//     pub struct OpenJtalk(Inner<BlockingThreadPool>);
-//     // …
-// }
-// ```
+use std::{
+    fmt::{self, Debug},
+    io::Write as _,
+    sync::Mutex,
+};
 
-use ::open_jtalk::Text2MecabError;
+use anyhow::Context as _;
+use camino::{Utf8Path, Utf8PathBuf};
+use open_jtalk::{
+    mecab_dict_index, text2mecab, JpCommon, ManagedResource, Mecab, Njd, Text2MecabError,
+};
+use tempfile::NamedTempFile;
+
+use crate::error::ErrorRepr;
 
 #[derive(thiserror::Error, Debug)]
 #[error("`{function}`の実行が失敗しました")]
@@ -25,57 +25,187 @@ pub(crate) trait FullcontextExtractor {
     fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>>;
 }
 
+struct Inner {
+    resources: std::sync::Mutex<Resources>,
+    dict_dir: Utf8PathBuf,
+}
+
+impl Inner {
+    fn new(open_jtalk_dict_dir: impl AsRef<Utf8Path>) -> crate::result::Result<Self> {
+        let dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
+
+        let mut resources = Resources {
+            mecab: ManagedResource::initialize(),
+            njd: ManagedResource::initialize(),
+            jpcommon: ManagedResource::initialize(),
+        };
+
+        // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
+        resources
+            .mecab
+            .load(&*dict_dir)
+            .inspect_err(|e| tracing::error!("{e:?}"))
+            .map_err(|_| ErrorRepr::NotLoadedOpenjtalkDict)?;
+
+        Ok(Self {
+            resources: Mutex::new(resources),
+            dict_dir,
+        })
+    }
+
+    // TODO: 中断可能にする
+    fn use_user_dict(&self, words: &str) -> crate::result::Result<()> {
+        // 空の辞書を読み込もうとするとクラッシュするのでユーザー辞書なしでロード
+        if words.is_empty() {
+            self.load_with_userdic(None)
+        } else {
+            // ユーザー辞書用のcsvを作成
+            let mut temp_csv =
+                NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
+            temp_csv
+                .write_all(words.as_ref())
+                .map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
+            let temp_csv_path = temp_csv.into_temp_path();
+            let temp_dict = NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
+            let temp_dict_path = temp_dict.into_temp_path();
+
+            // FIXME: `.unwrap()`ではなく、エラーとして回収する
+            let temp_csv_path = Utf8Path::from_path(temp_csv_path.as_ref()).unwrap();
+            let temp_dict_path = Utf8Path::from_path(temp_dict_path.as_ref()).unwrap();
+
+            // Mecabでユーザー辞書をコンパイル
+            // TODO: エラー（SEGV）が出るパターンを把握し、それをRust側で防ぐ。
+            mecab_dict_index(&[
+                "mecab-dict-index",
+                "-d",
+                self.dict_dir.as_ref(),
+                "-u",
+                temp_dict_path.as_ref(),
+                "-f",
+                "utf-8",
+                "-t",
+                "utf-8",
+                temp_csv_path.as_ref(),
+                "-q",
+            ]);
+
+            self.load_with_userdic(Some(temp_dict_path))
+        }
+    }
+
+    fn load_with_userdic(&self, dict_path: Option<&Utf8Path>) -> crate::result::Result<()> {
+        let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
+
+        mecab
+            .load_with_userdic(self.dict_dir.as_ref(), dict_path)
+            .context("辞書を読み込めませんでした。")
+            .map_err(ErrorRepr::UseUserDict)
+            .map_err(Into::into)
+    }
+}
+
+impl FullcontextExtractor for Inner {
+    fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>> {
+        let Resources {
+            mecab,
+            njd,
+            jpcommon,
+        } = &mut *self.resources.lock().unwrap();
+
+        jpcommon.refresh();
+        njd.refresh();
+        mecab.refresh();
+
+        let mecab_text = text2mecab(text).map_err(|e| OpenjtalkFunctionError {
+            function: "text2mecab",
+            source: Some(e),
+        })?;
+        if mecab.analysis(mecab_text) {
+            njd.mecab2njd(
+                mecab.get_feature().ok_or(OpenjtalkFunctionError {
+                    function: "Mecab_get_feature",
+                    source: None,
+                })?,
+                mecab.get_size(),
+            );
+            njd.set_pronunciation();
+            njd.set_digit();
+            njd.set_accent_phrase();
+            njd.set_accent_type();
+            njd.set_unvoiced_vowel();
+            njd.set_long_vowel();
+            jpcommon.njd2jpcommon(njd);
+            jpcommon.make_label();
+            jpcommon
+                .get_label_feature_to_iter()
+                .ok_or(OpenjtalkFunctionError {
+                    function: "JPCommon_get_label_feature",
+                    source: None,
+                })
+                .map(|iter| iter.map(|s| s.to_string()).collect())
+                .map_err(Into::into)
+        } else {
+            Err(OpenjtalkFunctionError {
+                function: "Mecab_analysis",
+                source: None,
+            }
+            .into())
+        }
+    }
+}
+
+struct Resources {
+    mecab: ManagedResource<Mecab>,
+    njd: ManagedResource<Njd>,
+    jpcommon: ManagedResource<JpCommon>,
+}
+
+impl Debug for Resources {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // FIXME: open_jtalk-rs側に`Debug`実装を入れる
+        let Self {
+            mecab: _,
+            njd: _,
+            jpcommon: _,
+        } = self;
+        fmt.debug_struct("Resources")
+            .field("mecab", &format_args!("_"))
+            .field("njd", &format_args!("_"))
+            .field("jpcommon", &format_args!("_"))
+            .finish()
+    }
+}
+
 pub(crate) mod blocking {
     use std::{
-        io::Write as _,
-        sync::{Arc, Mutex},
+        fmt::{self, Debug},
+        sync::Arc,
     };
 
-    use anyhow::Context as _;
-    use camino::{Utf8Path, Utf8PathBuf};
-    use open_jtalk::{mecab_dict_index, text2mecab, JpCommon, ManagedResource, Mecab, Njd};
-    use tempfile::NamedTempFile;
+    use camino::Utf8Path;
 
-    use crate::error::ErrorRepr;
+    use super::Inner;
 
     use super::{
         super::{extract_full_context_label, AccentPhrase},
-        FullcontextExtractor, OpenjtalkFunctionError,
+        FullcontextExtractor,
     };
 
     /// テキスト解析器としてのOpen JTalk。
-    #[doc(alias = "OpenJtalkRc")]
+    #[cfg_attr(doc, doc(alias = "OpenJtalkRc"))]
     #[derive(Clone)]
     pub struct OpenJtalk(pub(super) Arc<Inner>);
 
     impl self::OpenJtalk {
-        #[doc(alias = "voicevox_open_jtalk_rc_new")]
+        #[cfg_attr(doc, doc(alias = "voicevox_open_jtalk_rc_new"))]
         pub fn new(open_jtalk_dict_dir: impl AsRef<Utf8Path>) -> crate::result::Result<Self> {
-            let dict_dir = open_jtalk_dict_dir.as_ref().to_owned();
-
-            let mut resources = Resources {
-                mecab: ManagedResource::initialize(),
-                njd: ManagedResource::initialize(),
-                jpcommon: ManagedResource::initialize(),
-            };
-
-            // FIXME: 「システム辞書を読もうとしたけど読めなかった」というエラーをちゃんと用意する
-            resources
-                .mecab
-                .load(&*dict_dir)
-                .inspect_err(|e| tracing::error!("{e:?}"))
-                .map_err(|_| ErrorRepr::NotLoadedOpenjtalkDict)?;
-
-            Ok(Self(Arc::new(Inner {
-                resources: Mutex::new(resources),
-                dict_dir,
-            })))
+            Inner::new(open_jtalk_dict_dir).map(Into::into).map(Self)
         }
 
         /// ユーザー辞書を設定する。
         ///
         /// この関数を呼び出した後にユーザー辞書を変更した場合は、再度この関数を呼ぶ必要がある。
-        #[doc(alias = "voicevox_open_jtalk_rc_use_user_dict")]
+        #[cfg_attr(doc, doc(alias = "voicevox_open_jtalk_rc_use_user_dict"))]
         pub fn use_user_dict(
             &self,
             user_dict: &crate::blocking::UserDict,
@@ -91,57 +221,6 @@ pub(crate) mod blocking {
         }
     }
 
-    // TODO: このコードの移動
-    impl FullcontextExtractor for Inner {
-        fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>> {
-            let Resources {
-                mecab,
-                njd,
-                jpcommon,
-            } = &mut *self.resources.lock().unwrap();
-
-            jpcommon.refresh();
-            njd.refresh();
-            mecab.refresh();
-
-            let mecab_text = text2mecab(text).map_err(|e| OpenjtalkFunctionError {
-                function: "text2mecab",
-                source: Some(e),
-            })?;
-            if mecab.analysis(mecab_text) {
-                njd.mecab2njd(
-                    mecab.get_feature().ok_or(OpenjtalkFunctionError {
-                        function: "Mecab_get_feature",
-                        source: None,
-                    })?,
-                    mecab.get_size(),
-                );
-                njd.set_pronunciation();
-                njd.set_digit();
-                njd.set_accent_phrase();
-                njd.set_accent_type();
-                njd.set_unvoiced_vowel();
-                njd.set_long_vowel();
-                jpcommon.njd2jpcommon(njd);
-                jpcommon.make_label();
-                jpcommon
-                    .get_label_feature_to_iter()
-                    .ok_or(OpenjtalkFunctionError {
-                        function: "JPCommon_get_label_feature",
-                        source: None,
-                    })
-                    .map(|iter| iter.map(|s| s.to_string()).collect())
-                    .map_err(Into::into)
-            } else {
-                Err(OpenjtalkFunctionError {
-                    function: "Mecab_analysis",
-                    source: None,
-                }
-                .into())
-            }
-        }
-    }
-
     impl crate::blocking::TextAnalyzer for self::OpenJtalk {
         fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
             if text.is_empty() {
@@ -151,67 +230,18 @@ pub(crate) mod blocking {
         }
     }
 
-    pub(super) struct Inner {
-        resources: std::sync::Mutex<Resources>,
-        dict_dir: Utf8PathBuf,
-    }
-
-    impl Inner {
-        // TODO: 中断可能にする
-        pub(super) fn use_user_dict(&self, words: &str) -> crate::result::Result<()> {
-            // 空の辞書を読み込もうとするとクラッシュするのでユーザー辞書なしでロード
-            if words.is_empty() {
-                self.load_with_userdic(None)
-            } else {
-                // ユーザー辞書用のcsvを作成
-                let mut temp_csv =
-                    NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
-                temp_csv
-                    .write_all(words.as_ref())
-                    .map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
-                let temp_csv_path = temp_csv.into_temp_path();
-                let temp_dict =
-                    NamedTempFile::new().map_err(|e| ErrorRepr::UseUserDict(e.into()))?;
-                let temp_dict_path = temp_dict.into_temp_path();
-
-                // FIXME: `.unwrap()`ではなく、エラーとして回収する
-                let temp_csv_path = Utf8Path::from_path(temp_csv_path.as_ref()).unwrap();
-                let temp_dict_path = Utf8Path::from_path(temp_dict_path.as_ref()).unwrap();
-
-                // Mecabでユーザー辞書をコンパイル
-                // TODO: エラー（SEGV）が出るパターンを把握し、それをRust側で防ぐ。
-                mecab_dict_index(&[
-                    "mecab-dict-index",
-                    "-d",
-                    self.dict_dir.as_ref(),
-                    "-u",
-                    temp_dict_path.as_ref(),
-                    "-f",
-                    "utf-8",
-                    "-t",
-                    "utf-8",
-                    temp_csv_path.as_ref(),
-                    "-q",
-                ]);
-
-                self.load_with_userdic(Some(temp_dict_path))
-            }
+    impl Debug for self::OpenJtalk {
+        fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let Self(inner) = self;
+            let Inner {
+                resources,
+                dict_dir,
+            } = &**inner;
+            fmt.debug_struct("OpenJtalk")
+                .field("resources", resources)
+                .field("dict_dir", dict_dir)
+                .finish()
         }
-        fn load_with_userdic(&self, dict_path: Option<&Utf8Path>) -> crate::result::Result<()> {
-            let Resources { mecab, .. } = &mut *self.resources.lock().unwrap();
-
-            mecab
-                .load_with_userdic(self.dict_dir.as_ref(), dict_path)
-                .context("辞書を読み込めませんでした。")
-                .map_err(ErrorRepr::UseUserDict)
-                .map_err(Into::into)
-        }
-    }
-
-    struct Resources {
-        mecab: ManagedResource<Mecab>,
-        njd: ManagedResource<Njd>,
-        jpcommon: ManagedResource<JpCommon>,
     }
 }
 
@@ -228,7 +258,8 @@ pub(crate) mod nonblocking {
     ///
     /// [blocking]: https://docs.rs/crate/blocking
     /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
-    #[derive(Clone)]
+    #[derive(Clone, derive_more::Debug)]
+    #[debug("{_0:?}")]
     pub struct OpenJtalk(pub(in super::super) super::blocking::OpenJtalk);
 
     impl self::OpenJtalk {
