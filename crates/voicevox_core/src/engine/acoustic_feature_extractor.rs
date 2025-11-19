@@ -2,12 +2,16 @@ use std::str::FromStr;
 
 use bytemuck::{checked::CheckedCastError, CheckedBitPattern, Contiguous, NoUninit};
 use duplicate::duplicate_item;
+use serde::{
+    de::{self, Deserializer},
+    Deserialize, Serialize, Serializer,
+};
 use strum::EnumCount;
 
 use self::sil::Sil;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
-pub(super) enum Phoneme {
+pub enum Phoneme {
     /// `pau`。
     #[display("pau")]
     MorablePau,
@@ -249,6 +253,26 @@ impl FromStr for Phoneme {
                 s => Err(format!("invalid phoneme: {s:?}")),
             }
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for Phoneme {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer)?
+            .parse()
+            .map_err(de::Error::custom)
+    }
+}
+
+impl Serialize for Phoneme {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
     }
 }
 
@@ -535,7 +559,7 @@ mod sil {
     use std::str::FromStr;
 
     #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
-    pub(in super::super) struct Sil(
+    pub struct Sil(
         String, // invariant: must contain "sil"
     );
 

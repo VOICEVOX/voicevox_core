@@ -2,8 +2,8 @@
 
 use super::{
     super::{
-        acoustic_feature_extractor::{MoraTail, OptionalConsonant, Phoneme},
-        PhonemeCode,
+        acoustic_feature_extractor::{MoraTail, OptionalConsonant},
+        Phoneme, PhonemeCode,
     },
     full_context_label::mora_to_text,
     AccentPhrase, AudioQuery, Mora,

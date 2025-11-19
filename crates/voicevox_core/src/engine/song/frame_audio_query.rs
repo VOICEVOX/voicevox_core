@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use typeshare::U53;
 
+use super::super::Phoneme;
+
 /// 音符のID。
 #[derive(Clone, Deserialize, Serialize)]
 pub struct NoteId(pub String);
@@ -55,7 +57,7 @@ pub struct Score {
 #[derive(Deserialize, Serialize)]
 pub struct FramePhoneme {
     /// 音素。
-    pub phoneme: String,
+    pub phoneme: Phoneme,
 
     /// 音素のフレーム長。
     pub frame_length: U53,
