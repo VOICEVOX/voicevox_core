@@ -101,7 +101,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-13",
+              "os": "macos-14",
               "target": "aarch64-apple-darwin",
               "artifact_name": "osx-arm64",
               "c_release_format": "plain-cdylib",
@@ -110,7 +110,7 @@ jobs:
               "can_skip_in_simple_test": false
             },
             {
-              "os": "macos-13",
+              "os": "macos-14",
               "target": "x86_64-apple-darwin",
               "artifact_name": "osx-x64",
               "c_release_format": "plain-cdylib",
@@ -119,7 +119,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-13",
+              "os": "macos-14",
               "target": "aarch64-apple-ios",
               "artifact_name": "ios-arm64-cpu",
               "c_release_format": "ios-xcframework",
@@ -128,7 +128,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-13",
+              "os": "macos-14",
               "target": "aarch64-apple-ios-sim",
               "artifact_name": "ios-arm64-cpu-sim",
               "c_release_format": "ios-xcframework",
@@ -137,7 +137,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-13",
+              "os": "macos-14",
               "target": "x86_64-apple-ios",
               "artifact_name": "ios-x64-cpu",
               "c_release_format": "ios-xcframework",
@@ -165,12 +165,27 @@ jobs:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@v5
+      # NOTE: PyO3の制約で、RustのターゲットとPythonのビット数を一致させる必要がある。
+      # https://github.com/PyO3/pyo3/blob/v0.27.1/pyo3-ffi/build.rs#L138-L143
+      - name: Determine Python interpreter architecture
+        if: matrix.python_whl
+        id: python-interpreter-arch
+        run: |
+          case "$RUNNER_ARCH",${{ matrix.target }} in
+            X64,i686-*) architecture=x86 ;;
+            X64,x86_64-*|X64,aarch64-*) architecture=x64 ;;
+            ARM64,aarch64-*) architecture=arm64 ;;
+            *)
+              echo 'unexpected architecture' >&2
+              exit 1
+          esac
+          echo "architecture=$architecture" >> "$GITHUB_OUTPUT"
       - name: Set up Python 3.10
         if: matrix.python_whl
         uses: actions/setup-python@v6
         with:
           python-version: "3.10"
-          architecture: ${{ contains(matrix.artifact_name,'x86') && 'x86' || 'x64' }}
+          architecture: ${{ steps.python-interpreter-arch.outputs.architecture }}
       - name: set up ${{ matrix.target }}
         uses: ./.github/actions/rust-toolchain-from-file
         with:
@@ -282,7 +297,7 @@ jobs:
   build_xcframework:
     if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
     needs: [config, build_and_deploy]
-    runs-on: macos-13
+    runs-on: macos-14
     env:
       IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
       IOS_AARCH64_SIM_PATH: artifact/voicevox_core-aarch64-apple-ios-sim

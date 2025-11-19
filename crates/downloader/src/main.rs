@@ -4,6 +4,7 @@ use std::{
     env,
     future::{self, Future},
     io::{self, Cursor, IsTerminal as _, Read, Write as _},
+    iter,
     num::NonZero,
     path::{Path, PathBuf},
     str::FromStr,
@@ -580,7 +581,7 @@ async fn main() -> anyhow::Result<()> {
     .transpose()?;
 
     ensure_confirmation(
-        &itertools::chain(
+        &iter::chain(
             models
                 .as_ref()
                 .map(|ModelsWithTerms { terms, .. }| &**terms)
@@ -833,7 +834,7 @@ fn find_onnxruntime(
                 .and_then(|text| text.try_into().ok())
                 .with_context(|| format!("リリースノート中の`{TARGET}`をパースできませんでした"))
         })
-        .collect::<Result<Vec<[_; 4]>, _>>()?
+        .collect::<Result<Vec<[_; _]>, _>>()?
         .into_iter()
         .filter(|&[spec_os, spec_cpu_arch, spec_devices, _]| {
             spec_os

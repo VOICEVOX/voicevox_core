@@ -100,6 +100,7 @@ jobs:
           cd "$_"
           rustup override set ${{ steps.msrv-for-rust-api.outputs.rust-version }}
           cargo init
+          cargo add base64ct@=1.6.0 # TODO: MSRVが1.85以上になったら不要
           cargo add --path "$rust_api" --features load-onnxruntime
           cargo check
           cargo rm voicevox_core
@@ -137,8 +138,8 @@ jobs:
           includes='[
             { "os": "windows-2022", "can_skip_in_simple_test": true },
             { "os": "windows-2025", "can_skip_in_simple_test": true },
-            { "os": "macos-13", "can_skip_in_simple_test": false },
-            { "os": "macos-14", "can_skip_in_simple_test": true },
+            { "os": "macos-14", "can_skip_in_simple_test": false },
+            { "os": "macos-15-intel", "can_skip_in_simple_test": true },
             { "os": "ubuntu-22.04", "can_skip_in_simple_test": false },
             { "os": "ubuntu-24.04", "can_skip_in_simple_test": true }
           ]'
@@ -327,18 +328,6 @@ jobs:
         run: |
           for file in ../../example/python/run{,-asyncio}.py; do
             poetry run python "$file" ../test_util/data/model/sample.vvm --dict-dir ../test_util/data/open_jtalk_dic_utf_8-1.11 --onnxruntime ../test_util/data/lib/*onnxruntime*
-          done
-          # https://github.com/VOICEVOX/voicevox_core/issues/873 が再発しないかの確認。
-          #
-          # Python 3.8においては、プロセスの終了までにFatal Python errorに至らなくても`StopIteration`までは達することが多い。
-          # #873の要因は依然として不明であるが、`StopIteration`が出ないことの確認をもって#873の解決とすることにする。
-          #
-          # TODO: 10回の実行におよそ60秒ほどかかるため、状況の経過を見てやめる。
-          for _ in {1..10}; do
-            poetry run python ../../example/python/run-asyncio.py ../test_util/data/model/sample.vvm --dict-dir ../test_util/data/open_jtalk_dic_utf_8-1.11 --onnxruntime ../test_util/data/lib/*onnxruntime* \
-              2> >(tee ./stderr.txt >&2)
-            # shellcheck disable=SC2059
-            ! grep -q StopIteration ./stderr.txt
           done
   build-and-test-java-api:
     strategy:

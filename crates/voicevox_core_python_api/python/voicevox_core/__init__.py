@@ -3,7 +3,7 @@
 # TODO: `wav_from_s16le`を復活させる
 # https://github.com/VOICEVOX/voicevox_core/issues/970
 
-from ._models import (  # noqa: F401
+from ._python import (  # noqa: F401
     AccelerationMode,
     AccentPhrase,
     AudioQuery,

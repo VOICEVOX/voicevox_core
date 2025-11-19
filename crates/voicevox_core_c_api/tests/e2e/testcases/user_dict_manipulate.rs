@@ -52,7 +52,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         // FIXME: This closure itself should be `unsafe`.
         let add_word = |dict: *const VoicevoxUserDict, word: &VoicevoxUserDictWord| -> Uuid {
-            let mut word_uuid = [0u8; 16];
+            let mut word_uuid = [0u8; _];
             assert_ok(unsafe {
                 // SAFETY:
                 // - `dict.surface` and `dict.pronunciation` are valid.

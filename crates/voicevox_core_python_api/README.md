@@ -28,7 +28,7 @@ VOICEVOX CORE の Python バインディングです。
 │       ├── asyncio.py
 │       ├── blocking.py
 │       ├── __init__.py
-│       ├── _models.py
+│       ├── _python.py
 │       │   ├── __init__.py
 │       │   ├── _please_do_not_use.py
 │       │   └─ __pycache__            : maturin developで生成されます。gitignoreされているはずです。
