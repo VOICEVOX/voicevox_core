@@ -21,7 +21,7 @@ camino = "1.1.9"
 cargo_metadata = "0.18.1"
 cbindgen = "0.28.0"
 chrono = { version = "0.4.38", default-features = false }
-clap = { version = "4.5.19", features = ["cargo"] }
+clap = { version = "4.5.48", features = ["cargo"] }
 color-eyre = "0.6.3"
 color-print = "0.3.7"
 colorchoice = "1.0.2"
@@ -54,10 +54,10 @@ inventory = "0.3.15"
 itertools = "0.10.5"
 jlabel = "0.1.4"
 jni = "0.21.1"
-libc = "0.2.159"
+libc = "0.2.176"
 libloading = "0.7.3"
 libtest-mimic = "0.6.0"
-log = "0.4.22"
+log = "0.4.28"
 minus = "5.6.1"
 ndarray = "0.16.1"
 ndarray-stats = "0.6.0"
@@ -91,7 +91,7 @@ smallvec = "1.13.2"
 strum = "0.24.1"
 syn = "2.0.87"
 tar = "0.4.42"
-tempfile = "3.13.0"
+tempfile = "3.23.0"
 test_util = { path = "crates/test_util" }
 thiserror = "1.0.64"
 tokio = "1.40.0"
@@ -107,13 +107,17 @@ voicevox_core_macros = { path = "crates/voicevox_core_macros" }
 windows = "0.43.0"
 zip = "0.6.3"
 
+[workspace.dependencies.kanalizer]
+git = "https://github.com/qryxip/kanalizer.git"
+branch = "pr/feat-infer-make-rust-apis-msrv-1-84"
+
 [workspace.dependencies.voicevox-ort]
 git = "https://github.com/VOICEVOX/ort.git"
 rev = "22172d0fcf0715c1316f95ea08db50cf55cf0ad4"
 
 [workspace.dependencies.open_jtalk]
-git = "https://github.com/VOICEVOX/open_jtalk-rs.git"
-rev = "7c87b4227bb005b439a3ad473b48ce8975829576"
+git = "https://github.com/qryxip/open_jtalk-rs.git"
+branch = "pr/feat-add-njd-update"
 
 # FIXME: iOS対応のpull request(https://github.com/wesleywiser/process_path/pull/16)がマージされる見込みが無いため
 [workspace.dependencies.process_path]

@@ -78,7 +78,10 @@
 //!     })?;
 //!
 //! eprintln!("Synthesizing");
-//! let wav = &synth.tts(TEXT, style_id).perform()?;
+//! let wav = &synth
+//!     .tts(TEXT, style_id)
+//!     .enable_katakana_english(true)
+//!     .perform()?;
 //!
 //! eprintln!("Playing the WAV");
 //! # if false {
