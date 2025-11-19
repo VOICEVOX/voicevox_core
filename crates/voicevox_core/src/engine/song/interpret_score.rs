@@ -1,6 +1,8 @@
 use arrayvec::ArrayVec;
+use duplicate::duplicate;
 use easy_ext::ext;
 use ndarray::Array1;
+use pastey::paste;
 use typeshare::U53;
 
 use crate::{Note, NoteId};
@@ -18,39 +20,39 @@ impl<'score> TryFrom<&'score [Note]> for ScoreFeature<'score> {
     type Error = std::convert::Infallible; // TODO
 
     fn try_from(notes: &'score [Note]) -> std::result::Result<Self, Self::Error> {
-        let feature = notes.iter().map(NoteFeature::from).collect::<Vec<_>>();
+        let feature = notes.iter().map(Into::into).collect::<Vec<_>>();
 
-        let (note_lengths, (note_constants, note_vowels)) = feature
-            .iter()
-            .map(
-                |&NoteFeature {
-                     note_length,
-                     note_constant,
-                     note_vowel,
-                     ..
-                 }| (note_length, (note_constant, note_vowel)),
-            )
-            .collect();
+        duplicate! {
+            [
+                x;
+                [ note_length ];
+                [ note_constant ];
+                [ note_vowel ];
+            ]
+            let paste! { [<x s>] } = feature
+                .iter()
+                .map(|&NoteFeature { x, .. }| x)
+                .collect();
+        }
 
-        let (phonemes, (phoneme_keys, phoneme_note_ids)) = feature
+        let phoneme_features = feature
             .iter()
             .flat_map(|NoteFeature { phonemes, .. }| phonemes)
-            .map(
-                |&PhonemeFeature {
-                     phoneme,
-                     phoneme_key,
-                     phoneme_note_id,
-                 }| (phoneme, (phoneme_key, phoneme_note_id)),
-            )
-            .collect();
+            .copied()
+            .collect::<Vec<_>>();
 
-        // FIXME: ndarrayをv0.16に上げれば`Vec`を介する必要がない
-        use std::convert::identity;
-        let note_lengths = identity::<Vec<_>>(note_lengths).into();
-        let note_constants = identity::<Vec<_>>(note_constants).into();
-        let note_vowels = identity::<Vec<_>>(note_vowels).into();
-        let phonemes = identity::<Vec<_>>(phonemes).into();
-        let phoneme_keys = identity::<Vec<_>>(phoneme_keys).into();
+        duplicate! {
+            [
+                x;
+                [ phoneme ];
+                [ phoneme_key ];
+                [ phoneme_note_id ];
+            ]
+            let paste! { [<x s>] } = phoneme_features
+                .iter()
+                .map(|&PhonemeFeature { x, .. }| x)
+                .collect();
+        }
 
         Ok(Self {
             note_lengths,
@@ -102,6 +104,7 @@ impl<'score> From<&'score Note> for NoteFeature<'score> {
     }
 }
 
+#[derive(Clone, Copy)]
 struct PhonemeFeature<'score> {
     phoneme: i64,
     phoneme_key: i64,

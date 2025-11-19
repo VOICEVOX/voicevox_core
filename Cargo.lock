@@ -2926,6 +2926,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "pastey"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57d6c094ee800037dff99e02cab0eaf3142826586742a270ab3d7a62656bd27a"
+
+[[package]]
 name = "pathdiff"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4977,6 +4983,7 @@ dependencies = [
  "open",
  "open_jtalk",
  "ouroboros",
+ "pastey",
  "pollster",
  "pretty_assertions",
  "ref-cast",
