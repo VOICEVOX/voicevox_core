@@ -1,8 +1,15 @@
 //! [`AudioQuery`]から特徴量を取り出す処理を集めたもの。
 
-use super::{super::OjtPhoneme, full_context_label::mora_to_text, AccentPhrase, AudioQuery, Mora};
+use super::{
+    super::{
+        acoustic_feature_extractor::{MoraTail, OptionalConsonant, Phoneme},
+        PhonemeCode,
+    },
+    full_context_label::mora_to_text,
+    AccentPhrase, AudioQuery, Mora,
+};
 
-pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<OjtPhoneme>) {
+pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<PhonemeCode>) {
     let flatten_moras = to_flatten_moras(accent_phrases);
 
     let mut phoneme_strings = vec!["pau".to_string()];
@@ -36,49 +43,43 @@ pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Ve
         flatten_moras
     }
 
-    fn to_phoneme_data_list<T: AsRef<str>>(phoneme_str_list: &[T]) -> Vec<OjtPhoneme> {
-        OjtPhoneme::convert(
-            phoneme_str_list
-                .iter()
-                .map(AsRef::as_ref)
-                .map(ToOwned::to_owned)
-                .map(OjtPhoneme::new)
-                .collect::<Vec<OjtPhoneme>>()
-                .as_slice(),
-        )
+    fn to_phoneme_data_list<T: AsRef<str>>(phoneme_str_list: &[T]) -> Vec<PhonemeCode> {
+        phoneme_str_list
+            .iter()
+            .map(|s| {
+                s.as_ref()
+                    .parse::<Phoneme>()
+                    .unwrap_or_else(|msg| panic!("{msg}"))
+                    .into()
+            })
+            .collect()
     }
 }
 
 pub(crate) fn split_mora(
-    phoneme_list: &[OjtPhoneme],
-) -> (Vec<OjtPhoneme>, Vec<OjtPhoneme>, Vec<i64>) {
+    phoneme_list: &[PhonemeCode],
+) -> (Vec<OptionalConsonant>, Vec<MoraTail>, Vec<i64>) {
+    let mut vowel_phoneme_list = Vec::new();
     let mut vowel_indexes = Vec::new();
     for (i, phoneme) in phoneme_list.iter().enumerate() {
-        const MORA_PHONEME_LIST: &[&str] = &[
-            "a", "i", "u", "e", "o", "N", "A", "I", "U", "E", "O", "cl", "pau",
-        ];
-
-        if MORA_PHONEME_LIST
-            .iter()
-            .any(|mora_phoneme| *mora_phoneme == phoneme.phoneme())
-        {
+        if let Ok(mora_tail) = (*phoneme).try_into() {
+            vowel_phoneme_list.push(mora_tail);
             vowel_indexes.push(i as i64);
         }
     }
 
-    let vowel_phoneme_list = vowel_indexes
-        .iter()
-        .map(|vowel_index| phoneme_list[*vowel_index as usize].clone())
-        .collect();
-
-    let mut consonant_phoneme_list = vec![OjtPhoneme::default()];
+    let mut consonant_phoneme_list = vec![OptionalConsonant::None];
     for i in 0..(vowel_indexes.len() - 1) {
         let prev = vowel_indexes[i];
         let next = vowel_indexes[i + 1];
         if next - prev == 1 {
-            consonant_phoneme_list.push(OjtPhoneme::default());
+            consonant_phoneme_list.push(OptionalConsonant::None);
         } else {
-            consonant_phoneme_list.push(phoneme_list[next as usize - 1].clone());
+            consonant_phoneme_list.push(
+                phoneme_list[next as usize - 1]
+                    .try_into()
+                    .expect("`OptionalConsonant` and `MoraTail` should be exclusive"),
+            );
         }
     }
 
@@ -87,7 +88,7 @@ pub(crate) fn split_mora(
 
 pub(crate) struct DecoderFeature {
     pub(crate) f0: Vec<f32>,
-    pub(crate) phoneme: Vec<[f32; OjtPhoneme::num_phoneme()]>,
+    pub(crate) phoneme: Vec<[f32; PhonemeCode::num_phoneme()]>,
 }
 
 impl AudioQuery {
@@ -170,11 +171,11 @@ impl AudioQuery {
                 // https://github.com/VOICEVOX/voicevox_engine/issues/552
                 let phoneme_length = ((*phoneme_length * RATE).round_ties_even() / speed_scale)
                     .round_ties_even() as usize;
-                let phoneme_id = phoneme_data_list[i].phoneme_id();
+                let phoneme_id = usize::from(phoneme_data_list[i]);
 
                 for _ in 0..phoneme_length {
-                    let mut phonemes_vec = [0.; OjtPhoneme::num_phoneme()]; // TODO: Rust 1.89であればサイズが型推論可能になる
-                    phonemes_vec[phoneme_id as usize] = 1.;
+                    let mut phonemes_vec = [0.; PhonemeCode::num_phoneme()]; // TODO: Rust 1.89であればサイズが型推論可能になる
+                    phonemes_vec[phoneme_id] = 1.;
                     phoneme.push(phonemes_vec)
                 }
                 sum_of_phoneme_length += phoneme_length;

@@ -377,7 +377,7 @@ pub(crate) mod blocking {
         /// 推奨されるONNX Runtimeのバージョン。
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
-        pub const LIB_VERSION: &'static str = ort::downloaded_version!();
+        pub const LIB_VERSION: &'static str = include_str!("../../../../onnxruntime-version.txt");
 
         /// [`LIB_NAME`]と[`LIB_VERSION`]からなる動的ライブラリのファイル名。
         ///
@@ -577,7 +577,7 @@ pub(crate) mod nonblocking {
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         // ブロッキング版と等しいことはテストで担保
-        pub const LIB_VERSION: &'static str = ort::downloaded_version!();
+        pub const LIB_VERSION: &'static str = include_str!("../../../../onnxruntime-version.txt");
 
         /// [`LIB_NAME`]と[`LIB_VERSION`]からなる動的ライブラリのファイル名。
         ///
