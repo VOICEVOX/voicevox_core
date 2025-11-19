@@ -40,7 +40,7 @@ use crate::{
     },
     engine::{
         talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
-        to_s16le_pcm, wav_from_s16le, OjtPhoneme,
+        to_s16le_pcm, wav_from_s16le, PhonemeCode,
     },
     error::ErrorRepr,
     future::FutureExt as _,
@@ -406,7 +406,7 @@ trait AsInner {
         let spec = self
             .generate_full_intermediate(
                 f0.len(),
-                OjtPhoneme::num_phoneme(),
+                PhonemeCode::num_phoneme(),
                 &f0,
                 phoneme.as_flattened(),
                 style_id,
@@ -452,7 +452,7 @@ trait AsInner {
             let wave = &self
                 .decode(
                     f0.len(),
-                    OjtPhoneme::num_phoneme(),
+                    PhonemeCode::num_phoneme(),
                     &f0,
                     phoneme.as_flattened(),
                     style_id,
@@ -505,11 +505,8 @@ trait AsInner {
 
         let (_, _, vowel_indexes_data) = split_mora(&phoneme_data_list);
 
-        let phoneme_list_s: Vec<i64> = phoneme_data_list
-            .iter()
-            .map(|phoneme_data| phoneme_data.phoneme_id())
-            .collect();
-        let phoneme_length = self.predict_duration(&phoneme_list_s, style_id).await?;
+        let phoneme_list_s = bytemuck::must_cast_slice(&phoneme_data_list);
+        let phoneme_length = self.predict_duration(phoneme_list_s, style_id).await?;
 
         let mut index = 0;
         let new_accent_phrases = accent_phrases
@@ -573,14 +570,8 @@ trait AsInner {
         let (consonant_phoneme_data_list, vowel_phoneme_data_list, vowel_indexes) =
             split_mora(&phoneme_data_list);
 
-        let consonant_phoneme_list: Vec<i64> = consonant_phoneme_data_list
-            .iter()
-            .map(|phoneme_data| phoneme_data.phoneme_id())
-            .collect();
-        let vowel_phoneme_list: Vec<i64> = vowel_phoneme_data_list
-            .iter()
-            .map(|phoneme_data| phoneme_data.phoneme_id())
-            .collect();
+        let consonant_phoneme_list = bytemuck::must_cast_slice(&consonant_phoneme_data_list);
+        let vowel_phoneme_list = bytemuck::must_cast_slice(&vowel_phoneme_data_list);
 
         let mut start_accent_list = Vec::with_capacity(vowel_indexes.len());
         let mut end_accent_list = Vec::with_capacity(vowel_indexes.len());
@@ -597,8 +588,8 @@ trait AsInner {
         let mut f0_list = self
             .predict_intonation(
                 vowel_phoneme_list.len(),
-                &vowel_phoneme_list,
-                &consonant_phoneme_list,
+                vowel_phoneme_list,
+                consonant_phoneme_list,
                 &start_accent_list,
                 &end_accent_list,
                 &start_accent_phrase_list,
@@ -608,12 +599,7 @@ trait AsInner {
             .await?;
 
         for i in 0..vowel_phoneme_data_list.len() {
-            const UNVOICED_MORA_PHONEME_LIST: &[&str] = &["A", "I", "U", "E", "O", "cl", "pau"];
-
-            if UNVOICED_MORA_PHONEME_LIST
-                .iter()
-                .any(|phoneme| *phoneme == vowel_phoneme_data_list[i].phoneme())
-            {
+            if vowel_phoneme_data_list[i].is_unvoiced() {
                 f0_list[i] = 0.;
             }
         }
