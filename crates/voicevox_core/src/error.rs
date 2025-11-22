@@ -1,6 +1,9 @@
 use crate::{
     core::devices::DeviceAvailabilities,
-    engine::talk::{user_dict::InvalidWordError, KanaParseError},
+    engine::{
+        talk::{user_dict::InvalidWordError, KanaParseError},
+        DEFAULT_SAMPLING_RATE,
+    },
     StyleId, StyleType, VoiceModelId,
 };
 //use engine::
@@ -53,6 +56,7 @@ impl Error {
             ErrorRepr::WordNotFound(_) => ErrorKind::WordNotFound,
             ErrorRepr::UseUserDict(_) => ErrorKind::UseUserDict,
             ErrorRepr::InvalidWord(_) => ErrorKind::InvalidWord,
+            ErrorRepr::InvalidQuery { .. } => ErrorKind::InvalidQuery,
         }
     }
 }
@@ -121,6 +125,13 @@ pub(crate) enum ErrorRepr {
 
     #[error(transparent)]
     InvalidWord(#[from] InvalidWordError),
+
+    #[error("不正な{what}です")]
+    InvalidQuery {
+        what: &'static str,
+        #[source]
+        kind: InvalidQueryErrorKind,
+    },
 }
 
 /// エラーの種類。
@@ -171,6 +182,8 @@ pub enum ErrorKind {
     UseUserDict,
     /// ユーザー辞書の単語のバリデーションに失敗した。
     InvalidWord,
+    /// AudioQuery、もしくはその一部が不正。
+    InvalidQuery,
     #[doc(hidden)]
     __NonExhaustive,
 }
@@ -201,4 +214,20 @@ pub(crate) enum LoadModelErrorKind {
     StyleAlreadyLoaded { id: StyleId },
     #[display("モデルデータを読むことができませんでした")]
     InvalidModelData,
+}
+
+#[derive(Error, Debug)]
+pub(crate) enum InvalidQueryErrorKind {
+    #[error("`consonant_length`があるときは`consonant`もなければなりません")]
+    MissingConsonantPhoneme,
+    #[error("`consonant`があるときは`consonant_length`もなければなりません")]
+    MissingConsonantLength,
+    #[error("`accent`を`0`にすることはできません")]
+    AccentIsZero,
+    #[error(
+        "サンプリングレートは0より大きい{DEFAULT_SAMPLING_RATE}の倍数でなければなりません: {_0:?}"
+    )]
+    InvalidSamplingRate(u32),
+    #[error("音素が不正です: {_0:?}")]
+    InvalidPhoneme(String),
 }

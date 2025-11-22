@@ -93,6 +93,7 @@ where
                             WordNotFound,
                             UseUserDict,
                             InvalidWord,
+                            InvalidQuery,
                         );
 
                         let mut sources =

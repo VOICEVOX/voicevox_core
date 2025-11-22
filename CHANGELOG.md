@@ -70,6 +70,10 @@
 - AudioQueryに書かれている音素が不正だったときのクラッシュにおいて、メッセージが改善されます ([#1203])。
 - `sil`に対する扱いが、現行のバージョン0.25.0のVOICEVOX ENGINEと同じになります ([#1197])。
 
+### Changed
+
+- 不正なAudioQueryもしくは`accent_phrases`が明示的に拒否されるようになります ([#1208])。
+
 ### Removed
 
 - `replace_{phoneme_length,mora_pitch,mora_data}`においてこれまでは[`""`という名の音素を受理してしまって](https://github.com/VOICEVOX/voicevox_core/issues/1202)いましたが、今後は完全に不正な音素となります ([#1203])。
@@ -1365,6 +1369,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1174]: https://github.com/VOICEVOX/voicevox_core/pull/1174
 [#1197]: https://github.com/VOICEVOX/voicevox_core/pull/1197
 [#1203]: https://github.com/VOICEVOX/voicevox_core/pull/1203
+[#1208]: https://github.com/VOICEVOX/voicevox_core/pull/1208
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

@@ -29,6 +29,7 @@ const_format.workspace = true
 duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
+either.workspace = true
 libc.workspace = true
 ndarray.workspace = true
 parking_lot = { workspace = true, features = ["arc_lock"] }
