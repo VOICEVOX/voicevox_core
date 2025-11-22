@@ -7,7 +7,7 @@ use strum::EnumCount;
 use self::sil::Sil;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
-pub(super) enum Phoneme {
+pub(crate) enum Phoneme {
     /// `pau`。
     #[display("pau")]
     MorablePau,
@@ -535,7 +535,7 @@ mod sil {
     use std::str::FromStr;
 
     #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
-    pub(in super::super) struct Sil(
+    pub(crate) struct Sil(
         String, // invariant: must contain "sil"
     );
 

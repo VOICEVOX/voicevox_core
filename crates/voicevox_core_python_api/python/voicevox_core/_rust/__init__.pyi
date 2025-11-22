@@ -105,6 +105,11 @@ class InvalidWordError(ValueError):
 
     ...
 
+class InvalidQueryError(ValueError):
+    """AudioQuery、もしくはその一部が不正。"""
+
+    ...
+
 class _ReservedFields:
     def __new__(cls, *args: object, **kwargs: object) -> NoReturn: ...
 

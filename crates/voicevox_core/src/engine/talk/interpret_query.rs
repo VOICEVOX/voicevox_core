@@ -2,33 +2,35 @@
 
 use super::{
     super::{
-        acoustic_feature_extractor::{MoraTail, OptionalConsonant, Phoneme},
-        PhonemeCode,
+        acoustic_feature_extractor::{MoraTail, OptionalConsonant},
+        talk::{LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora},
+        PhonemeCode, DEFAULT_SAMPLING_RATE,
     },
     full_context_label::mora_to_text,
-    AccentPhrase, AudioQuery, Mora,
 };
 
-pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Vec<PhonemeCode>) {
+pub(crate) fn initial_process<'query>(
+    accent_phrases: &[ValidatedAccentPhrase<'query>],
+) -> (Vec<ValidatedMora<'query>>, Vec<PhonemeCode>) {
     let flatten_moras = to_flatten_moras(accent_phrases);
 
-    let mut phoneme_strings = vec!["pau".to_string()];
+    let mut phoneme_data_list = vec![PhonemeCode::MorablePau];
     for mora in flatten_moras.iter() {
         if let Some(consonant) = &mora.consonant {
-            phoneme_strings.push(consonant.clone())
+            phoneme_data_list.push(consonant.phoneme.clone().into_owned().into())
         }
-        phoneme_strings.push(mora.vowel.clone());
+        phoneme_data_list.push(mora.vowel.phoneme.clone().into_owned().into());
     }
-    phoneme_strings.push("pau".to_string());
-
-    let phoneme_data_list = to_phoneme_data_list(&phoneme_strings);
+    phoneme_data_list.push(PhonemeCode::MorablePau);
 
     return (flatten_moras, phoneme_data_list);
 
-    fn to_flatten_moras(accent_phrases: &[AccentPhrase]) -> Vec<Mora> {
+    fn to_flatten_moras<'query>(
+        accent_phrases: &[ValidatedAccentPhrase<'query>],
+    ) -> Vec<ValidatedMora<'query>> {
         let mut flatten_moras = Vec::new();
 
-        for AccentPhrase {
+        for ValidatedAccentPhrase {
             moras, pause_mora, ..
         } in accent_phrases
         {
@@ -41,18 +43,6 @@ pub(crate) fn initial_process(accent_phrases: &[AccentPhrase]) -> (Vec<Mora>, Ve
         }
 
         flatten_moras
-    }
-
-    fn to_phoneme_data_list<T: AsRef<str>>(phoneme_str_list: &[T]) -> Vec<PhonemeCode> {
-        phoneme_str_list
-            .iter()
-            .map(|s| {
-                s.as_ref()
-                    .parse::<Phoneme>()
-                    .unwrap_or_else(|msg| panic!("{msg}"))
-                    .into()
-            })
-            .collect()
     }
 }
 
@@ -91,9 +81,9 @@ pub(crate) struct DecoderFeature {
     pub(crate) phoneme: Vec<[f32; PhonemeCode::num_phoneme()]>,
 }
 
-impl AudioQuery {
+impl ValidatedAudioQuery<'_> {
     pub(crate) fn decoder_feature(&self, enable_interrogative_upspeak: bool) -> DecoderFeature {
-        let AudioQuery {
+        let ValidatedAudioQuery {
             accent_phrases,
             speed_scale,
             pitch_scale,
@@ -118,17 +108,17 @@ impl AudioQuery {
             let mut sum_of_f0_bigger_than_zero = 0.;
             let mut count_of_f0_bigger_than_zero = 0;
 
-            for Mora {
-                consonant_length,
-                vowel_length,
+            for ValidatedMora {
+                consonant,
+                vowel,
                 pitch,
                 ..
             } in flatten_moras
             {
-                if let Some(consonant_length) = consonant_length {
-                    phoneme_length_list.push(consonant_length);
+                if let Some(consonant) = consonant {
+                    phoneme_length_list.push(consonant.length);
                 }
-                phoneme_length_list.push(vowel_length);
+                phoneme_length_list.push(vowel.length);
 
                 let f0_single = pitch * 2.0_f32.powf(*pitch_scale);
                 f0_list.push(f0_single);
@@ -160,7 +150,7 @@ impl AudioQuery {
         let mut phoneme = Vec::new();
         let mut f0: Vec<f32> = Vec::new();
         {
-            const RATE: f32 = 24000. / 256.;
+            const RATE: f32 = DEFAULT_SAMPLING_RATE as f32 / 256.;
             let mut sum_of_phoneme_length = 0;
             let mut count_of_f0 = 0;
             let mut vowel_indexes_index = 0;
@@ -192,29 +182,29 @@ impl AudioQuery {
         }
         return DecoderFeature { f0, phoneme };
 
-        fn adjust_interrogative_accent_phrases(
-            accent_phrases: &[AccentPhrase],
-        ) -> Vec<AccentPhrase> {
+        fn adjust_interrogative_accent_phrases<'query>(
+            accent_phrases: &[ValidatedAccentPhrase<'query>],
+        ) -> Vec<ValidatedAccentPhrase<'query>> {
             accent_phrases
                 .iter()
-                .map(|accent_phrase| AccentPhrase {
+                .map(|accent_phrase| ValidatedAccentPhrase {
                     moras: adjust_interrogative_moras(accent_phrase),
                     ..accent_phrase.clone()
                 })
                 .collect()
         }
 
-        fn adjust_interrogative_moras(
-            AccentPhrase {
+        fn adjust_interrogative_moras<'query>(
+            ValidatedAccentPhrase {
                 moras,
                 is_interrogative,
                 ..
-            }: &AccentPhrase,
-        ) -> Vec<Mora> {
+            }: &ValidatedAccentPhrase<'query>,
+        ) -> Vec<ValidatedMora<'query>> {
             if *is_interrogative && !moras.is_empty() {
                 let last_mora = moras.last().unwrap();
                 if last_mora.pitch != 0.0 {
-                    let mut new_moras: Vec<Mora> = Vec::with_capacity(moras.len() + 1);
+                    let mut new_moras = Vec::with_capacity(moras.len() + 1);
                     new_moras.extend_from_slice(moras.as_slice());
                     let interrogative_mora = make_interrogative_mora(last_mora);
                     new_moras.push(interrogative_mora);
@@ -224,19 +214,22 @@ impl AudioQuery {
             moras.clone()
         }
 
-        fn make_interrogative_mora(last_mora: &Mora) -> Mora {
+        fn make_interrogative_mora<'query>(
+            last_mora: &ValidatedMora<'query>,
+        ) -> ValidatedMora<'query> {
             const FIX_VOWEL_LENGTH: f32 = 0.15;
             const ADJUST_PITCH: f32 = 0.3;
             const MAX_PITCH: f32 = 6.5;
 
             let pitch = (last_mora.pitch + ADJUST_PITCH).min(MAX_PITCH);
 
-            Mora {
-                text: mora_to_text(None, &last_mora.vowel),
+            ValidatedMora {
+                text: mora_to_text(None, &last_mora.vowel.phoneme.to_string()).into(),
                 consonant: None,
-                consonant_length: None,
-                vowel: last_mora.vowel.clone(),
-                vowel_length: FIX_VOWEL_LENGTH,
+                vowel: LengthedPhoneme {
+                    phoneme: last_mora.vowel.phoneme.clone(),
+                    length: FIX_VOWEL_LENGTH,
+                },
                 pitch,
             }
         }

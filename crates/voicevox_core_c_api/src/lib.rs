@@ -16,7 +16,7 @@ mod slice_owner;
 use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::{
     CApiError, UuidBytesExt as _, accent_phrases_to_json, audio_query_model_to_json, ensure_utf8,
-    into_result_code_with_error,
+    into_result_code_with_error, validate_accent_phrases, validate_audio_query,
 };
 use self::object::{CApiObject as _, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
@@ -41,7 +41,7 @@ use uuid::Uuid;
 use voicevox_core::__internal::interop::{
     BlockingTextAnalyzerExt as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE, ToJsonValue as _,
 };
-use voicevox_core::{AccentPhrase, AudioQuery, StyleId};
+use voicevox_core::{AudioQuery, StyleId};
 
 fn init_logger_once() {
     static ONCE: Once = Once::new();
@@ -497,8 +497,7 @@ pub unsafe extern "C" fn voicevox_audio_query_create_from_accent_phrases(
         CStr::from_ptr(accent_phrases_json)
     };
     into_result_code_with_error((|| {
-        let accent_phrases = serde_json::from_str(ensure_utf8(accent_phrases_json)?)
-            .map_err(CApiError::InvalidAccentPhrase)?;
+        let accent_phrases = validate_accent_phrases(accent_phrases_json)?;
         let audio_query = &AudioQuery::from_accent_phrases(accent_phrases);
         let audio_query = serde_json::to_string(audio_query).expect("should not fail");
         let audio_query = CString::new(audio_query).expect("should not contain '\\0'");
@@ -1106,9 +1105,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     init_logger_once();
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
-        let accent_phrases: Vec<AccentPhrase> =
-            serde_json::from_str(ensure_utf8(unsafe { CStr::from_ptr(accent_phrases_json) })?)
-                .map_err(CApiError::InvalidAccentPhrase)?;
+        let accent_phrases_json = unsafe { CStr::from_ptr(accent_phrases_json) };
+        let accent_phrases = validate_accent_phrases(accent_phrases_json)?;
         let accent_phrases = synthesizer
             .body()
             .replace_mora_data(&accent_phrases, StyleId::new(style_id))?;
@@ -1151,9 +1149,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
     init_logger_once();
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
-        let accent_phrases: Vec<AccentPhrase> =
-            serde_json::from_str(ensure_utf8(unsafe { CStr::from_ptr(accent_phrases_json) })?)
-                .map_err(CApiError::InvalidAccentPhrase)?;
+        let accent_phrases_json = unsafe { CStr::from_ptr(accent_phrases_json) };
+        let accent_phrases = validate_accent_phrases(accent_phrases_json)?;
         let accent_phrases = synthesizer
             .body()
             .replace_phoneme_length(&accent_phrases, StyleId::new(style_id))?;
@@ -1196,9 +1193,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
     init_logger_once();
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
-        let accent_phrases: Vec<AccentPhrase> =
-            serde_json::from_str(ensure_utf8(unsafe { CStr::from_ptr(accent_phrases_json) })?)
-                .map_err(CApiError::InvalidAccentPhrase)?;
+        let accent_phrases_json = unsafe { CStr::from_ptr(accent_phrases_json) };
+        let accent_phrases = validate_accent_phrases(accent_phrases_json)?;
         let accent_phrases = synthesizer
             .body()
             .replace_mora_pitch(&accent_phrases, StyleId::new(style_id))?;
@@ -1266,11 +1262,8 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     init_logger_once();
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
-        let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) }
-            .to_str()
-            .map_err(|_| CApiError::InvalidUtf8Input)?;
-        let audio_query: AudioQuery =
-            serde_json::from_str(audio_query_json).map_err(CApiError::InvalidAudioQuery)?;
+        let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) };
+        let audio_query = validate_audio_query(audio_query_json)?;
         let VoicevoxSynthesisOptions {
             enable_interrogative_upspeak,
         } = options;

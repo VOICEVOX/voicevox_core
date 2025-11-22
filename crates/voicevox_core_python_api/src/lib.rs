@@ -102,6 +102,7 @@ exceptions! {
     WordNotFoundError: PyKeyError;
     UseUserDictError: PyException;
     InvalidWordError: PyValueError;
+    InvalidQueryError: PyValueError;
 }
 
 #[derive(derive_more::Debug)]
