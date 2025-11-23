@@ -37,6 +37,7 @@ use crate::{
         pad_decoder_feature,
         status::Status,
         voice_model,
+        voice_spec::{VoiceSpec, VoiceSpecExt as _},
     },
     engine::{
         talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
@@ -396,9 +397,10 @@ trait AsInner {
     async fn precompute_render(
         &self,
         audio_query: &AudioQuery,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
         options: &SynthesisOptions<Self::Async>,
     ) -> Result<AudioFeature> {
+        let (_, style_id) = self.status().find_voice(voice_spec)?; // TODO: `generate_full_intermediate`が`StyleId`を返すようにする
         let DecoderFeature { f0, phoneme } =
             audio_query.decoder_feature(options.enable_interrogative_upspeak);
 
@@ -442,9 +444,10 @@ trait AsInner {
     async fn synthesis(
         &self,
         audio_query: &AudioQuery,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
         options: &SynthesisOptions<Self::Async>,
     ) -> Result<Vec<u8>> {
+        let (_, style_id) = self.status().find_voice(voice_spec)?; // TODO: `generate_full_intermediate`が`StyleId`を返すようにする
         if self.status().contains_domain::<TalkDomain>(style_id) {
             let DecoderFeature { f0, phoneme } =
                 audio_query.decoder_feature(options.enable_interrogative_upspeak);
@@ -478,34 +481,34 @@ trait AsInner {
     async fn create_accent_phrases_from_kana(
         &self,
         kana: &str,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<Vec<AccentPhrase>> {
         let accent_phrases = parse_kana(kana)?;
-        self.replace_mora_data(&accent_phrases, style_id).await
+        self.replace_mora_data(&accent_phrases, voice_spec).await
     }
 
     async fn replace_mora_data(
         &self,
         accent_phrases: &[AccentPhrase],
-        style_id: StyleId,
+        mut voice_spec: impl VoiceSpec,
     ) -> Result<Vec<AccentPhrase>> {
         let accent_phrases = self
-            .replace_phoneme_length(accent_phrases, style_id)
+            .replace_phoneme_length(accent_phrases, voice_spec.as_mut())
             .await?;
-        self.replace_mora_pitch(&accent_phrases, style_id).await
+        self.replace_mora_pitch(&accent_phrases, voice_spec).await
     }
 
     async fn replace_phoneme_length(
         &self,
         accent_phrases: &[AccentPhrase],
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<Vec<AccentPhrase>> {
         let (_, phoneme_data_list) = initial_process(accent_phrases);
 
         let (_, _, vowel_indexes_data) = split_mora(&phoneme_data_list);
 
         let phoneme_list_s = bytemuck::must_cast_slice(&phoneme_data_list);
-        let phoneme_length = self.predict_duration(phoneme_list_s, style_id).await?;
+        let phoneme_length = self.predict_duration(phoneme_list_s, voice_spec).await?;
 
         let mut index = 0;
         let new_accent_phrases = accent_phrases
@@ -544,7 +547,7 @@ trait AsInner {
     async fn replace_mora_pitch(
         &self,
         accent_phrases: &[AccentPhrase],
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<Vec<AccentPhrase>> {
         let (_, phoneme_data_list) = initial_process(accent_phrases);
 
@@ -593,7 +596,7 @@ trait AsInner {
                 &end_accent_list,
                 &start_accent_phrase_list,
                 &end_accent_phrase_list,
-                style_id,
+                voice_spec,
             )
             .await?;
 
@@ -659,54 +662,58 @@ trait AsInner {
     async fn create_audio_query_from_kana(
         &self,
         kana: &str,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<AudioQuery> {
-        let accent_phrases = self.create_accent_phrases_from_kana(kana, style_id).await?;
+        let accent_phrases = self
+            .create_accent_phrases_from_kana(kana, voice_spec)
+            .await?;
         Ok(AudioQuery::from_accent_phrases(accent_phrases).with_kana(Some(kana.to_owned())))
     }
 
     async fn tts_from_kana(
         &self,
         kana: &str,
-        style_id: StyleId,
+        mut voice_spec: impl VoiceSpec,
         options: &TtsOptions<Self::Async>,
     ) -> Result<Vec<u8>> {
-        let audio_query = &self.create_audio_query_from_kana(kana, style_id).await?;
-        self.synthesis(audio_query, style_id, options.as_ref())
+        let audio_query = &self
+            .create_audio_query_from_kana(kana, voice_spec.as_mut())
+            .await?;
+        self.synthesis(audio_query, voice_spec, options.as_ref())
             .await
     }
 
     async fn create_accent_phrases(
         &self,
         text: &str,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<Vec<AccentPhrase>>
     where
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
         let accent_phrases = self.text_analyzer().analyze_(text).await?;
-        self.replace_mora_data(&accent_phrases, style_id).await
+        self.replace_mora_data(&accent_phrases, voice_spec).await
     }
 
-    async fn create_audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery>
+    async fn create_audio_query(&self, text: &str, voice_spec: impl VoiceSpec) -> Result<AudioQuery>
     where
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
-        let accent_phrases = self.create_accent_phrases(text, style_id).await?;
+        let accent_phrases = self.create_accent_phrases(text, voice_spec).await?;
         Ok(accent_phrases.into())
     }
 
     async fn tts(
         &self,
         text: &str,
-        style_id: StyleId,
+        mut voice_spec: impl VoiceSpec,
         options: &TtsOptions<Self::Async>,
     ) -> Result<Vec<u8>>
     where
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
-        let audio_query = &self.create_audio_query(text, style_id).await?;
-        self.synthesis(audio_query, style_id, options.as_ref())
+        let audio_query = &self.create_audio_query(text, voice_spec.as_mut()).await?;
+        self.synthesis(audio_query, voice_spec, options.as_ref())
             .await
     }
 
@@ -714,12 +721,12 @@ trait AsInner {
     async fn predict_duration(
         &self,
         phoneme_vector: &[i64],
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<Vec<f32>> {
         let status = self.status().clone();
         let phoneme_vector = ndarray::arr1(phoneme_vector);
         status
-            .predict_duration::<Self::Async>(phoneme_vector, style_id)
+            .predict_duration::<Self::Async>(phoneme_vector, voice_spec)
             .await
     }
 
@@ -737,7 +744,7 @@ trait AsInner {
         end_accent_vector: &[i64],
         start_accent_phrase_vector: &[i64],
         end_accent_phrase_vector: &[i64],
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<Vec<f32>> {
         let status = self.status().clone();
         let vowel_phoneme_vector = ndarray::arr1(vowel_phoneme_vector);
@@ -755,7 +762,7 @@ trait AsInner {
                 end_accent_vector,
                 start_accent_phrase_vector,
                 end_accent_phrase_vector,
-                style_id,
+                voice_spec,
             )
             .await
     }
@@ -766,7 +773,7 @@ trait AsInner {
         phoneme_size: usize,
         f0: &[f32],
         phoneme_vector: &[f32],
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<ndarray::Array2<f32>> {
         let status = self.status().clone();
         let f0 = ndarray::arr1(f0);
@@ -777,7 +784,7 @@ trait AsInner {
                 phoneme_size,
                 f0,
                 phoneme_vector,
-                style_id,
+                voice_spec,
             )
             .await
     }
@@ -785,11 +792,11 @@ trait AsInner {
     async fn render_audio_segment(
         &self,
         spec: ndarray::Array2<f32>,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<ndarray::Array1<f32>> {
         let status = self.status().clone();
         status
-            .render_audio_segment::<Self::Async>(spec, style_id)
+            .render_audio_segment::<Self::Async>(spec, voice_spec)
             .await
     }
 
@@ -799,7 +806,7 @@ trait AsInner {
         phoneme_size: usize,
         f0: &[f32],
         phoneme_vector: &[f32],
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
         cancellable: <Self::Async as infer::AsyncExt>::Cancellable,
     ) -> Result<Vec<f32>> {
         let status = self.status().clone();
@@ -811,7 +818,7 @@ trait AsInner {
                 phoneme_size,
                 f0,
                 phoneme_vector,
-                style_id,
+                voice_spec,
                 cancellable,
             )
             .await
@@ -856,11 +863,12 @@ impl<R: InferenceRuntime> Status<R> {
     async fn predict_duration<A: infer::AsyncExt>(
         &self,
         phoneme_vector: ndarray::Array1<i64>,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<Vec<f32>> {
         // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        let (model_id, style_id) = self.find_voice(voice_spec)?;
         if self.contains_domain::<TalkDomain>(style_id) {
-            let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+            let inner_voice_id = self.inner_voice_id::<TalkDomain>(model_id, style_id);
             let talk::PredictDurationOutput {
                 phoneme_length: output,
             } = self
@@ -875,7 +883,7 @@ impl<R: InferenceRuntime> Status<R> {
                 .await?;
             return Ok(ensure_minimum_phoneme_length(output.into_vec()));
         }
-        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let inner_voice_id = self.inner_voice_id::<ExperimentalTalkDomain>(model_id, style_id);
 
         let experimental_talk::PredictDurationOutput {
             phoneme_length: output,
@@ -906,11 +914,12 @@ impl<R: InferenceRuntime> Status<R> {
         end_accent_vector: ndarray::Array1<i64>,
         start_accent_phrase_vector: ndarray::Array1<i64>,
         end_accent_phrase_vector: ndarray::Array1<i64>,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<Vec<f32>> {
         // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        let (model_id, style_id) = self.find_voice(voice_spec)?;
         if self.contains_domain::<TalkDomain>(style_id) {
-            let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+            let inner_voice_id = self.inner_voice_id::<TalkDomain>(model_id, style_id);
             let talk::PredictIntonationOutput { f0_list: output } = self
                 .run_session::<A, _>(
                     model_id,
@@ -929,7 +938,7 @@ impl<R: InferenceRuntime> Status<R> {
                 .await?;
             return Ok(output.into_vec());
         }
-        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let inner_voice_id = self.inner_voice_id::<ExperimentalTalkDomain>(model_id, style_id);
 
         let experimental_talk::PredictIntonationOutput { f0_list: output } = self
             .run_session::<A, _>(
@@ -960,9 +969,10 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme_size: usize,
         f0: ndarray::Array1<f32>,
         phoneme_vector: ndarray::Array1<f32>,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<ndarray::Array2<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let (model_id, style_id) = self.find_voice(voice_spec)?;
+        let inner_voice_id = self.inner_voice_id::<ExperimentalTalkDomain>(model_id, style_id);
 
         let (length_with_padding, f0_with_padding, phoneme_with_padding) =
             pad_decoder_feature::<PADDING_FRAME_LENGTH>(
@@ -1009,9 +1019,9 @@ impl<R: InferenceRuntime> Status<R> {
     async fn render_audio_segment<A: infer::AsyncExt>(
         &self,
         spec: ndarray::Array2<f32>,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<ndarray::Array1<f32>> {
-        let (model_id, _inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let (model_id, _) = self.find_voice(voice_spec)?;
         let RenderAudioSegmentOutput { wave } = self
             .run_session::<A, _>(
                 model_id,
@@ -1028,12 +1038,13 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme_size: usize,
         f0: ndarray::Array1<f32>,
         phoneme_vector: ndarray::Array1<f32>,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
         cancellable: A::Cancellable,
     ) -> Result<Vec<f32>> {
         // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        let (model_id, style_id) = self.find_voice(voice_spec)?;
         if self.contains_domain::<TalkDomain>(style_id) {
-            let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
+            let inner_voice_id = self.inner_voice_id::<TalkDomain>(model_id, style_id);
             let (length_with_padding, f0_with_padding, phoneme_with_padding) =
                 pad_decoder_feature::<PADDING_FRAME_LENGTH>(
                     f0,
@@ -1078,9 +1089,10 @@ impl<R: InferenceRuntime> Status<R> {
         consonant: ndarray::Array1<i64>,
         vowel: ndarray::Array1<i64>,
         note_duration: ndarray::Array1<i64>,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<ndarray::Array2<i64>> {
-        let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherDomain>(style_id)?;
+        let (model_id, style_id) = self.find_voice(voice_spec)?;
+        let inner_voice_id = self.inner_voice_id::<SingingTeacherDomain>(model_id, style_id);
 
         let PredictSingConsonantLengthOutput { consonant_lengths } = self
             .run_session::<A, _>(
@@ -1102,9 +1114,10 @@ impl<R: InferenceRuntime> Status<R> {
         &self,
         phoneme: ndarray::Array1<i64>,
         note: ndarray::Array1<i64>,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<ndarray::Array2<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherDomain>(style_id)?;
+        let (model_id, style_id) = self.find_voice(voice_spec)?;
+        let inner_voice_id = self.inner_voice_id::<SingingTeacherDomain>(model_id, style_id);
 
         let PredictSingF0Output { f0s } = self
             .run_session::<A, _>(
@@ -1126,9 +1139,10 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme: ndarray::Array1<i64>,
         note: ndarray::Array1<i64>,
         f0: ndarray::Array1<f32>,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
     ) -> Result<ndarray::Array2<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherDomain>(style_id)?;
+        let (model_id, style_id) = self.find_voice(voice_spec)?;
+        let inner_voice_id = self.inner_voice_id::<SingingTeacherDomain>(model_id, style_id);
 
         let PredictSingVolumeOutput { volumes } = self
             .run_session::<A, _>(
@@ -1151,10 +1165,11 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme: ndarray::Array1<i64>,
         f0: ndarray::Array1<f32>,
         volume: ndarray::Array1<f32>,
-        style_id: StyleId,
+        voice_spec: impl VoiceSpec,
         cancellable: A::Cancellable,
     ) -> Result<ndarray::Array2<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<FrameDecodeDomain>(style_id)?;
+        let (model_id, style_id) = self.find_voice(voice_spec)?;
+        let inner_voice_id = self.inner_voice_id::<FrameDecodeDomain>(model_id, style_id);
 
         let SfDecodeOutput { wav } = self
             .run_session::<A, _>(
@@ -1308,8 +1323,8 @@ pub(crate) mod blocking {
     use easy_ext::ext;
 
     use crate::{
-        asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, StyleId,
-        VoiceModelId, VoiceModelMeta,
+        asyncs::SingleTasked, core::voice_spec::VoiceSpec, future::FutureExt as _, AccentPhrase,
+        AudioQuery, StyleId, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{
@@ -1417,15 +1432,15 @@ pub(crate) mod blocking {
         // TODO: 後で復活させる
         // https://github.com/VOICEVOX/voicevox_core/issues/970
         #[doc(hidden)]
-        pub fn __precompute_render<'a>(
+        pub fn __precompute_render<'a, S: VoiceSpec>(
             &'a self,
             audio_query: &'a AudioQuery,
-            style_id: StyleId,
-        ) -> PrecomputeRender<'a> {
+            voice_spec: S,
+        ) -> PrecomputeRender<'a, S> {
             PrecomputeRender {
                 synthesizer: self.0.without_text_analyzer(),
                 audio_query,
-                style_id,
+                voice_spec,
                 options: Default::default(),
             }
         }
@@ -1444,15 +1459,15 @@ pub(crate) mod blocking {
 
         /// AudioQueryから直接WAVフォーマットで音声波形を生成する。
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_synthesis"))]
-        pub fn synthesis<'a>(
+        pub fn synthesis<'a, S: VoiceSpec>(
             &'a self,
             audio_query: &'a AudioQuery,
-            style_id: StyleId,
-        ) -> Synthesis<'a> {
+            voice_spec: S,
+        ) -> Synthesis<'a, S> {
             Synthesis {
                 synthesizer: self.0.without_text_analyzer(),
                 audio_query,
-                style_id,
+                voice_spec,
                 options: Default::default(),
             }
         }
@@ -1490,10 +1505,10 @@ pub(crate) mod blocking {
         pub fn create_accent_phrases_from_kana(
             &self,
             kana: &str,
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> crate::Result<Vec<AccentPhrase>> {
             self.0
-                .create_accent_phrases_from_kana(kana, style_id)
+                .create_accent_phrases_from_kana(kana, voice_spec)
                 .block_on()
         }
 
@@ -1508,10 +1523,10 @@ pub(crate) mod blocking {
         pub fn replace_mora_data(
             &self,
             accent_phrases: &[AccentPhrase],
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> crate::Result<Vec<AccentPhrase>> {
             self.0
-                .replace_mora_data(accent_phrases, style_id)
+                .replace_mora_data(accent_phrases, voice_spec)
                 .block_on()
         }
 
@@ -1520,10 +1535,10 @@ pub(crate) mod blocking {
         pub fn replace_phoneme_length(
             &self,
             accent_phrases: &[AccentPhrase],
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> crate::Result<Vec<AccentPhrase>> {
             self.0
-                .replace_phoneme_length(accent_phrases, style_id)
+                .replace_phoneme_length(accent_phrases, voice_spec)
                 .block_on()
         }
 
@@ -1532,10 +1547,10 @@ pub(crate) mod blocking {
         pub fn replace_mora_pitch(
             &self,
             accent_phrases: &[AccentPhrase],
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> crate::Result<Vec<AccentPhrase>> {
             self.0
-                .replace_mora_pitch(accent_phrases, style_id)
+                .replace_mora_pitch(accent_phrases, voice_spec)
                 .block_on()
         }
 
@@ -1570,20 +1585,24 @@ pub(crate) mod blocking {
         pub fn create_audio_query_from_kana(
             &self,
             kana: &str,
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> crate::Result<AudioQuery> {
             self.0
-                .create_audio_query_from_kana(kana, style_id)
+                .create_audio_query_from_kana(kana, voice_spec)
                 .block_on()
         }
 
         /// AquesTalk風記法から音声合成を行う。
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_tts_from_kana"))]
-        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
+        pub fn tts_from_kana<'a, S: VoiceSpec>(
+            &'a self,
+            kana: &'a str,
+            voice_spec: S,
+        ) -> TtsFromKana<'a, S> {
             TtsFromKana {
                 synthesizer: self.0.without_text_analyzer(),
                 kana,
-                style_id,
+                voice_spec,
                 options: TtsOptions::default(),
             }
         }
@@ -1625,9 +1644,9 @@ pub(crate) mod blocking {
         pub fn create_accent_phrases(
             &self,
             text: &str,
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> crate::Result<Vec<AccentPhrase>> {
-            self.0.create_accent_phrases(text, style_id).block_on()
+            self.0.create_accent_phrases(text, voice_spec).block_on()
         }
 
         /// 日本語のテキストから[AudioQuery]を生成する。
@@ -1665,9 +1684,9 @@ pub(crate) mod blocking {
         pub fn create_audio_query(
             &self,
             text: &str,
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> crate::Result<AudioQuery> {
-            self.0.create_audio_query(text, style_id).block_on()
+            self.0.create_audio_query(text, voice_spec).block_on()
         }
 
         /// 日本語のテキストから音声合成を行う。
@@ -1678,11 +1697,11 @@ pub(crate) mod blocking {
         /// [`synthesis`]: Self::synthesis
         /// [音声の調整]: ../index.html#音声の調整
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_tts"))]
-        pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
+        pub fn tts<'a, S: VoiceSpec>(&'a self, text: &'a str, voice_spec: S) -> Tts<'a, T, S> {
             Tts {
                 synthesizer: &self.0,
                 text,
-                style_id,
+                voice_spec,
                 options: TtsOptions::default(),
             }
         }
@@ -1863,14 +1882,14 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct PrecomputeRender<'a> {
+    pub struct PrecomputeRender<'a, S> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
-        style_id: StyleId,
+        voice_spec: S,
         options: SynthesisOptions<SingleTasked>,
     }
 
-    impl PrecomputeRender<'_> {
+    impl<S: VoiceSpec> PrecomputeRender<'_, S> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1879,21 +1898,21 @@ pub(crate) mod blocking {
         /// 実行する。
         pub fn perform(self) -> crate::Result<AudioFeature> {
             self.synthesizer
-                .precompute_render(self.audio_query, self.style_id, &self.options)
+                .precompute_render(self.audio_query, self.voice_spec, &self.options)
                 .block_on()
         }
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct Synthesis<'a> {
+    pub struct Synthesis<'a, S> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
-        style_id: StyleId,
+        voice_spec: S,
         options: SynthesisOptions<SingleTasked>,
     }
 
-    impl Synthesis<'_> {
+    impl<S: VoiceSpec> Synthesis<'_, S> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1902,21 +1921,21 @@ pub(crate) mod blocking {
         /// 実行する。
         pub fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
-                .synthesis(self.audio_query, self.style_id, &self.options)
+                .synthesis(self.audio_query, self.voice_spec, &self.options)
                 .block_on()
         }
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct TtsFromKana<'a> {
+    pub struct TtsFromKana<'a, S> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         kana: &'a str,
-        style_id: StyleId,
+        voice_spec: S,
         options: TtsOptions<SingleTasked>,
     }
 
-    impl TtsFromKana<'_> {
+    impl<S: VoiceSpec> TtsFromKana<'_, S> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1925,21 +1944,21 @@ pub(crate) mod blocking {
         /// 実行する。
         pub fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
-                .tts_from_kana(self.kana, self.style_id, &self.options)
+                .tts_from_kana(self.kana, self.voice_spec, &self.options)
                 .block_on()
         }
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct Tts<'a, T> {
+    pub struct Tts<'a, T, S> {
         synthesizer: &'a Inner<AssumeSingleTasked<T>, SingleTasked>,
         text: &'a str,
-        style_id: StyleId,
+        voice_spec: S,
         options: TtsOptions<SingleTasked>,
     }
 
-    impl<T: crate::blocking::TextAnalyzer> Tts<'_, T> {
+    impl<T: crate::blocking::TextAnalyzer, S: VoiceSpec> Tts<'_, T, S> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1948,7 +1967,7 @@ pub(crate) mod blocking {
         /// 実行する。
         pub fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
-                .tts(self.text, self.style_id, &self.options)
+                .tts(self.text, self.voice_spec, &self.options)
                 .block_on()
         }
     }
@@ -1960,8 +1979,8 @@ pub(crate) mod nonblocking {
     use easy_ext::ext;
 
     use crate::{
-        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId,
-        VoiceModelMeta,
+        asyncs::BlockingThreadPool, core::voice_spec::VoiceSpec, AccentPhrase, AudioQuery, Result,
+        StyleId, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{
@@ -2070,15 +2089,15 @@ pub(crate) mod nonblocking {
         /// [`cancellable`]を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
         ///
         /// [`cancellable`]: Synthesis::cancellable
-        pub fn synthesis<'a>(
+        pub fn synthesis<'a, S: VoiceSpec>(
             &'a self,
             audio_query: &'a AudioQuery,
-            style_id: StyleId,
-        ) -> Synthesis<'a> {
+            voice_spec: S,
+        ) -> Synthesis<'a, S> {
             Synthesis {
                 synthesizer: self.0.without_text_analyzer(),
                 audio_query,
-                style_id,
+                voice_spec,
                 options: Default::default(),
             }
         }
@@ -2110,9 +2129,11 @@ pub(crate) mod nonblocking {
         pub async fn create_accent_phrases_from_kana(
             &self,
             kana: &str,
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> Result<Vec<AccentPhrase>> {
-            self.0.create_accent_phrases_from_kana(kana, style_id).await
+            self.0
+                .create_accent_phrases_from_kana(kana, voice_spec)
+                .await
         }
 
         /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
@@ -2125,19 +2146,19 @@ pub(crate) mod nonblocking {
         pub async fn replace_mora_data(
             &self,
             accent_phrases: &[AccentPhrase],
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> Result<Vec<AccentPhrase>> {
-            self.0.replace_mora_data(accent_phrases, style_id).await
+            self.0.replace_mora_data(accent_phrases, voice_spec).await
         }
 
         /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
         pub async fn replace_phoneme_length(
             &self,
             accent_phrases: &[AccentPhrase],
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> Result<Vec<AccentPhrase>> {
             self.0
-                .replace_phoneme_length(accent_phrases, style_id)
+                .replace_phoneme_length(accent_phrases, voice_spec)
                 .await
         }
 
@@ -2145,9 +2166,9 @@ pub(crate) mod nonblocking {
         pub async fn replace_mora_pitch(
             &self,
             accent_phrases: &[AccentPhrase],
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> Result<Vec<AccentPhrase>> {
-            self.0.replace_mora_pitch(accent_phrases, style_id).await
+            self.0.replace_mora_pitch(accent_phrases, voice_spec).await
         }
 
         /// AquesTalk風記法から[AudioQuery]を生成する。
@@ -2179,9 +2200,9 @@ pub(crate) mod nonblocking {
         pub async fn create_audio_query_from_kana(
             &self,
             kana: &str,
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> Result<AudioQuery> {
-            self.0.create_audio_query_from_kana(kana, style_id).await
+            self.0.create_audio_query_from_kana(kana, voice_spec).await
         }
 
         /// AquesTalk風記法から音声合成を行う。
@@ -2191,11 +2212,15 @@ pub(crate) mod nonblocking {
         /// [`cancellable`]を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
         ///
         /// [`cancellable`]: TtsFromKana::cancellable
-        pub fn tts_from_kana<'a>(&'a self, kana: &'a str, style_id: StyleId) -> TtsFromKana<'a> {
+        pub fn tts_from_kana<'a, S: VoiceSpec>(
+            &'a self,
+            kana: &'a str,
+            voice_spec: S,
+        ) -> TtsFromKana<'a, S> {
             TtsFromKana {
                 synthesizer: self.0.without_text_analyzer(),
                 kana,
-                style_id,
+                voice_spec,
                 options: Default::default(),
             }
         }
@@ -2235,9 +2260,9 @@ pub(crate) mod nonblocking {
         pub async fn create_accent_phrases(
             &self,
             text: &str,
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> Result<Vec<AccentPhrase>> {
-            self.0.create_accent_phrases(text, style_id).await
+            self.0.create_accent_phrases(text, voice_spec).await
         }
 
         /// 日本語のテキストから[AudioQuery]を生成する。
@@ -2273,9 +2298,9 @@ pub(crate) mod nonblocking {
         pub async fn create_audio_query(
             &self,
             text: &str,
-            style_id: StyleId,
+            voice_spec: impl VoiceSpec,
         ) -> Result<AudioQuery> {
-            self.0.create_audio_query(text, style_id).await
+            self.0.create_audio_query(text, voice_spec).await
         }
 
         /// 日本語のテキストから音声合成を行う。
@@ -2290,11 +2315,11 @@ pub(crate) mod nonblocking {
         /// [`synthesis`]: Self::synthesis
         /// [音声の調整]: ../index.html#音声の調整
         /// [`cancellable`]: Tts::cancellable
-        pub fn tts<'a>(&'a self, text: &'a str, style_id: StyleId) -> Tts<'a, T> {
+        pub fn tts<'a, S: VoiceSpec>(&'a self, text: &'a str, voice_spec: S) -> Tts<'a, T, S> {
             Tts {
                 synthesizer: &self.0,
                 text,
-                style_id,
+                voice_spec,
                 options: Default::default(),
             }
         }
@@ -2359,14 +2384,14 @@ pub(crate) mod nonblocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct Synthesis<'a> {
+    pub struct Synthesis<'a, S> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
-        style_id: StyleId,
+        voice_spec: S,
         options: SynthesisOptions<BlockingThreadPool>,
     }
 
-    impl Synthesis<'_> {
+    impl<S: VoiceSpec> Synthesis<'_, S> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2385,21 +2410,21 @@ pub(crate) mod nonblocking {
         /// 実行する。
         pub async fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
-                .synthesis(self.audio_query, self.style_id, &self.options)
+                .synthesis(self.audio_query, self.voice_spec, &self.options)
                 .await
         }
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct TtsFromKana<'a> {
+    pub struct TtsFromKana<'a, S: VoiceSpec> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         kana: &'a str,
-        style_id: StyleId,
+        voice_spec: S,
         options: TtsOptions<BlockingThreadPool>,
     }
 
-    impl TtsFromKana<'_> {
+    impl<S: VoiceSpec> TtsFromKana<'_, S> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2418,21 +2443,21 @@ pub(crate) mod nonblocking {
         /// 実行する。
         pub async fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
-                .tts_from_kana(self.kana, self.style_id, &self.options)
+                .tts_from_kana(self.kana, self.voice_spec, &self.options)
                 .await
         }
     }
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct Tts<'a, T> {
+    pub struct Tts<'a, T, S> {
         synthesizer: &'a Inner<T, BlockingThreadPool>,
         text: &'a str,
-        style_id: StyleId,
+        voice_spec: S,
         options: TtsOptions<BlockingThreadPool>,
     }
 
-    impl<T: crate::nonblocking::TextAnalyzer> Tts<'_, T> {
+    impl<T: crate::nonblocking::TextAnalyzer, S: VoiceSpec> Tts<'_, T, S> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2451,7 +2476,7 @@ pub(crate) mod nonblocking {
         /// 実行する。
         pub async fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
-                .tts(self.text, self.style_id, &self.options)
+                .tts(self.text, self.voice_spec, &self.options)
                 .await
         }
     }

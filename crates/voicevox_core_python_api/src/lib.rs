@@ -92,7 +92,8 @@ exceptions! {
     InvalidModelFormatError: PyException;
     InvalidModelDataError: PyException;
     GetSupportedDevicesError: PyException;
-    StyleNotFoundError: PyKeyError;
+    VoiceNotFoundError: PyKeyError;
+    AmbiguousVoiceError: PyException;
     ModelNotFoundError: PyKeyError;
     RunModelError: PyException;
     AnalyzeTextError: PyException;
@@ -768,7 +769,7 @@ mod blocking {
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
             synthesizer
-                .replace_mora_data(&accent_phrases, style_id.into())
+                .replace_mora_data(&accent_phrases, style_id)
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -783,7 +784,7 @@ mod blocking {
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
             synthesizer
-                .replace_phoneme_length(&accent_phrases, style_id.into())
+                .replace_phoneme_length(&accent_phrases, style_id)
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -798,7 +799,7 @@ mod blocking {
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
             synthesizer
-                .replace_mora_pitch(&accent_phrases, style_id.into())
+                .replace_mora_pitch(&accent_phrases, style_id)
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -1451,7 +1452,7 @@ mod asyncio {
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
             let phrases = synthesizer
-                .replace_mora_data(&accent_phrases, style_id.into())
+                .replace_mora_data(&accent_phrases, style_id)
                 .await
                 .map(Into::into);
             Python::with_gil(|py| phrases.into_py_result(py))
@@ -1466,7 +1467,7 @@ mod asyncio {
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
             let phrases = synthesizer
-                .replace_phoneme_length(&accent_phrases, style_id.into())
+                .replace_phoneme_length(&accent_phrases, style_id)
                 .await
                 .map(Into::into);
             Python::with_gil(|py| phrases.into_py_result(py))
@@ -1481,7 +1482,7 @@ mod asyncio {
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
             let phrases = synthesizer
-                .replace_mora_pitch(&accent_phrases, style_id.into())
+                .replace_mora_pitch(&accent_phrases, style_id)
                 .await
                 .map(Into::into);
             Python::with_gil(|py| phrases.into_py_result(py))
