@@ -67,16 +67,38 @@
 
 ### Added
 
-- \[C\] Doxygenがv1.9.8-r0からv1.12.0-r0になります ([#1155])。
+- AudioQueryに書かれている音素が不正だったときのクラッシュにおいて、メッセージが改善されます ([#1203])。
+- `sil`に対する扱いが、現行のバージョン0.25.0のVOICEVOX ENGINEと同じになります ([#1197])。
+
+### Removed
+
+- `replace_{phoneme_length,mora_pitch,mora_data}`においてこれまでは[`""`という名の音素を受理してしまって](https://github.com/VOICEVOX/voicevox_core/issues/1202)いましたが、今後は完全に不正な音素となります ([#1203])。
+- \[macOS\] macOS 13がサポート範囲から外れ、バイナリのリリースはmacOS 14で行われるようになります。ただし、macOS 14でビルドされたバイナリでもmacOS 13で動作すると考えられています ([#1174])。
+
+## [0.16.2] - 2025-10-28 (+09:00)
+
+### Added
+
+- \[C\] APIドキュメントに使っているDoxygenがv1.9.8-r0からv1.12.0-r0になります ([#1155])。
 
 ### Changed
 
 - \[Rust\] `voicevox_core_macros`は内部クレートであり、SemVerに従わないということが明記されます。`substitute_type!`と`pyproject_project_version!`に関してはバージョン0.16の間は保持しますが、バージョン0.17以降の保証はしません ([#1149])。
-- \[Rust\] 依存ライブラリが変化します ([#1153])。
+- \[Rust\] 依存ライブラリが変化します ([#1153], [#1147])。
+    - \[削除\] `ndarray@0.15`
+    - \[削除\] `ndarray-stats@0.5`
+    - \[削除\] `git+https://github.com/VOICEVOX/ort.git?rev=12101456be9975b7d263478c7c53554017b7927c#voicevox-ort@2.0.0-rc.4`
+    - \[追加\] `ndarray@0.16`: `^0.16.1`
+    - \[追加\] `ndarray-stats@0.6`: `^0.6.0`
+    - \[追加\] `git+https://github.com/VOICEVOX/ort.git?rev=22172d0fcf0715c1316f95ea08db50cf55cf0ad4#voicevox-ort@2.0.0-rc.10`
     - \[変更\] `anyhow@1`: `^1.0.89` → `^1.0.99`
     - \[変更\] `serde@1`: `^1.0.210` → `^1.0.219`
     - \[変更\] `serde_json@1`: `^1.0.128` → `^1.0.143`
     - \[変更\] `uuid@1`: `^1.10.0` → `^1.18.1`
+
+### Fixed
+
+- \[Windows,Linux\] バージョン[0.16.0-preview.0](#0160-preview0---2025-03-01-0900)にて意図せず著しく低下していた、CUDAでの音声合成のパフォーマンスが元に戻ります ([#1164] by [@Sanzentyo])。
 
 ## [0.16.1] - 2025-08-14 (+09:00)
 
@@ -359,6 +381,8 @@
     - エラーの種類として`InitInferenceRuntime`が追加されます。
     - C APIでは、LinuxとmacOS用のrpath設定が削除されます。
     - Python APIはmanylinuxに対応するようになり、wheel名の"linux"は"manylinux_{glibcのバージョン}"になります。また、カレントディレクトリ下の動的ライブラリを自動で読み込む機能は無くなります。
+
+    補足: この変更によりCUDAでの音声合成のパフォーマンスが意図せず著しく低下しましたが、バージョン[0.16.2](#0162---2025-10-28-0900)にて修正されます。
 
 - \[BREAKING\] VOICEVOX CORE自体からはCPU版/GPU版という区分は無くなり、GPU違いのリリースについては完全に(VOICEVOX) ONNX Runtimeに委ねる形になります ([#802], [#810])。
 
@@ -982,7 +1006,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
-[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...HEAD
+[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...HEAD
+[0.16.2]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...0.16.2
 [0.16.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...0.16.1
 [0.16.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.1...0.16.0
 [0.16.0-preview.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.0...0.16.0-preview.1
@@ -1332,9 +1357,14 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1140]: https://github.com/VOICEVOX/voicevox_core/pull/1140
 [#1143]: https://github.com/VOICEVOX/voicevox_core/pull/1143
 [#1144]: https://github.com/VOICEVOX/voicevox_core/pull/1144
+[#1147]: https://github.com/VOICEVOX/voicevox_core/pull/1147
 [#1149]: https://github.com/VOICEVOX/voicevox_core/pull/1149
 [#1153]: https://github.com/VOICEVOX/voicevox_core/pull/1153
 [#1155]: https://github.com/VOICEVOX/voicevox_core/pull/1155
+[#1164]: https://github.com/VOICEVOX/voicevox_core/pull/1164
+[#1174]: https://github.com/VOICEVOX/voicevox_core/pull/1174
+[#1197]: https://github.com/VOICEVOX/voicevox_core/pull/1197
+[#1203]: https://github.com/VOICEVOX/voicevox_core/pull/1203
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
@@ -1365,6 +1395,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [@nanae772]: https://github.com/nanae772
 [@nekomimimi]: https://github.com/nekomimimi
 [@osakanataro]: https://github.com/osakanataro
+[@Sanzentyo]: https://github.com/Sanzentyo
 [@sh1ma]: https://github.com/sh1ma
 [@shigobu]: https://github.com/shigobu
 [@shuntia]: https://github.com/shuntia

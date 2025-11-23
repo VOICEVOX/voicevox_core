@@ -3,6 +3,7 @@
 //! メインの部分。[`crate::core`]と[`crate::engine`]の二つはここで用いる。
 
 use easy_ext::ext;
+use educe::Educe;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
 use std::{
@@ -39,7 +40,7 @@ use crate::{
     },
     engine::{
         talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
-        to_s16le_pcm, wav_from_s16le, OjtPhoneme,
+        to_s16le_pcm, wav_from_s16le, PhonemeCode,
     },
     error::ErrorRepr,
     future::FutureExt as _,
@@ -74,28 +75,16 @@ impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for SynthesisOptions<A> {
     }
 }
 
-impl<A: infer::AsyncExt> From<&TtsOptions<A>> for SynthesisOptions<A> {
-    fn from(options: &TtsOptions<A>) -> Self {
-        Self {
-            enable_interrogative_upspeak: options.enable_interrogative_upspeak,
-            cancellable: options.cancellable,
-        }
-    }
-}
-
-#[derive(derive_more::Debug)]
+#[derive(Educe, derive_more::Debug)]
+#[educe(Default(bound = "A: infer::AsyncExt"))]
 #[debug(bound(A::Cancellable: Debug))]
 struct TtsOptions<A: infer::AsyncExt> {
-    enable_interrogative_upspeak: bool,
-    cancellable: A::Cancellable,
+    synthesis: SynthesisOptions<A>,
 }
 
-impl<A: infer::AsyncExt> Default for TtsOptions<A> {
-    fn default() -> Self {
-        Self {
-            enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
-            cancellable: A::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
-        }
+impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for TtsOptions<A> {
+    fn as_ref(&self) -> &SynthesisOptions<A> {
+        &self.synthesis
     }
 }
 
@@ -162,6 +151,7 @@ impl AsyncExt for BlockingThreadPool {
 
 const DEFAULT_SAMPLING_RATE: u32 = 24000;
 /// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（フレーム数）
+// TODO: Rust 1.90であれば`{float}::round`がそのまま使える
 const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * 24000Hz / 256.0).round()
 /// 音声生成の際、音声特徴量の前後に確保すべきマージン幅（フレーム数）
 /// モデルの受容野から計算される
@@ -416,7 +406,7 @@ trait AsInner {
         let spec = self
             .generate_full_intermediate(
                 f0.len(),
-                OjtPhoneme::num_phoneme(),
+                PhonemeCode::num_phoneme(),
                 &f0,
                 phoneme.as_flattened(),
                 style_id,
@@ -462,7 +452,7 @@ trait AsInner {
             let wave = &self
                 .decode(
                     f0.len(),
-                    OjtPhoneme::num_phoneme(),
+                    PhonemeCode::num_phoneme(),
                     &f0,
                     phoneme.as_flattened(),
                     style_id,
@@ -515,11 +505,8 @@ trait AsInner {
 
         let (_, _, vowel_indexes_data) = split_mora(&phoneme_data_list);
 
-        let phoneme_list_s: Vec<i64> = phoneme_data_list
-            .iter()
-            .map(|phoneme_data| phoneme_data.phoneme_id())
-            .collect();
-        let phoneme_length = self.predict_duration(&phoneme_list_s, style_id).await?;
+        let phoneme_list_s = bytemuck::must_cast_slice(&phoneme_data_list);
+        let phoneme_length = self.predict_duration(phoneme_list_s, style_id).await?;
 
         let mut index = 0;
         let new_accent_phrases = accent_phrases
@@ -583,14 +570,8 @@ trait AsInner {
         let (consonant_phoneme_data_list, vowel_phoneme_data_list, vowel_indexes) =
             split_mora(&phoneme_data_list);
 
-        let consonant_phoneme_list: Vec<i64> = consonant_phoneme_data_list
-            .iter()
-            .map(|phoneme_data| phoneme_data.phoneme_id())
-            .collect();
-        let vowel_phoneme_list: Vec<i64> = vowel_phoneme_data_list
-            .iter()
-            .map(|phoneme_data| phoneme_data.phoneme_id())
-            .collect();
+        let consonant_phoneme_list = bytemuck::must_cast_slice(&consonant_phoneme_data_list);
+        let vowel_phoneme_list = bytemuck::must_cast_slice(&vowel_phoneme_data_list);
 
         let mut start_accent_list = Vec::with_capacity(vowel_indexes.len());
         let mut end_accent_list = Vec::with_capacity(vowel_indexes.len());
@@ -607,8 +588,8 @@ trait AsInner {
         let mut f0_list = self
             .predict_intonation(
                 vowel_phoneme_list.len(),
-                &vowel_phoneme_list,
-                &consonant_phoneme_list,
+                vowel_phoneme_list,
+                consonant_phoneme_list,
                 &start_accent_list,
                 &end_accent_list,
                 &start_accent_phrase_list,
@@ -618,12 +599,7 @@ trait AsInner {
             .await?;
 
         for i in 0..vowel_phoneme_data_list.len() {
-            const UNVOICED_MORA_PHONEME_LIST: &[&str] = &["A", "I", "U", "E", "O", "cl", "pau"];
-
-            if UNVOICED_MORA_PHONEME_LIST
-                .iter()
-                .any(|phoneme| *phoneme == vowel_phoneme_data_list[i].phoneme())
-            {
+            if vowel_phoneme_data_list[i].is_unvoiced() {
                 f0_list[i] = 0.;
             }
         }
@@ -697,7 +673,7 @@ trait AsInner {
         options: &TtsOptions<Self::Async>,
     ) -> Result<Vec<u8>> {
         let audio_query = &self.create_audio_query_from_kana(kana, style_id).await?;
-        self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
+        self.synthesis(audio_query, style_id, options.as_ref())
             .await
     }
 
@@ -731,7 +707,7 @@ trait AsInner {
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
         let audio_query = &self.create_audio_query(text, style_id).await?;
-        self.synthesis(audio_query, style_id, &SynthesisOptions::from(options))
+        self.synthesis(audio_query, style_id, options.as_ref())
             .await
     }
 
@@ -898,7 +874,7 @@ impl<R: InferenceRuntime> Status<R> {
                     A::LIGHT_INFERENCE_CANCELLABLE,
                 )
                 .await?;
-            return Ok(ensure_minimum_phoneme_length(output.into_raw_vec()));
+            return Ok(ensure_minimum_phoneme_length(output.into_vec()));
         }
         let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
@@ -914,7 +890,7 @@ impl<R: InferenceRuntime> Status<R> {
                 A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
-        Ok(ensure_minimum_phoneme_length(output.into_raw_vec()))
+        Ok(ensure_minimum_phoneme_length(output.into_vec()))
     }
 
     #[expect(
@@ -952,7 +928,7 @@ impl<R: InferenceRuntime> Status<R> {
                     A::LIGHT_INFERENCE_CANCELLABLE,
                 )
                 .await?;
-            return Ok(output.into_raw_vec());
+            return Ok(output.into_vec());
         }
         let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
 
@@ -973,7 +949,7 @@ impl<R: InferenceRuntime> Status<R> {
             )
             .await?;
 
-        Ok(output.into_raw_vec())
+        Ok(output.into_vec())
     }
 
     /// モデル`generate_full_intermediate`の実行と、その前後の処理を行う。
@@ -992,7 +968,9 @@ impl<R: InferenceRuntime> Status<R> {
         let (length_with_padding, f0_with_padding, phoneme_with_padding) =
             pad_decoder_feature::<PADDING_FRAME_LENGTH>(
                 f0,
-                phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
+                phoneme_vector
+                    .into_shape_with_order([length, phoneme_size])
+                    .unwrap(),
             );
 
         let GenerateFullIntermediateOutput {
@@ -1002,7 +980,7 @@ impl<R: InferenceRuntime> Status<R> {
                 model_id,
                 GenerateFullIntermediateInput {
                     f0: f0_with_padding
-                        .into_shape([length_with_padding, 1])
+                        .into_shape_with_order([length_with_padding, 1])
                         .unwrap(),
                     phoneme: phoneme_with_padding,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
@@ -1060,14 +1038,16 @@ impl<R: InferenceRuntime> Status<R> {
             let (length_with_padding, f0_with_padding, phoneme_with_padding) =
                 pad_decoder_feature::<PADDING_FRAME_LENGTH>(
                     f0,
-                    phoneme_vector.into_shape([length, phoneme_size]).unwrap(),
+                    phoneme_vector
+                        .into_shape_with_order([length, phoneme_size])
+                        .unwrap(),
                 );
             let DecodeOutput { wave: output } = self
                 .run_session::<A, _>(
                     model_id,
                     DecodeInput {
                         f0: f0_with_padding
-                            .into_shape([length_with_padding, 1])
+                            .into_shape_with_order([length_with_padding, 1])
                             .unwrap(),
                         phoneme: phoneme_with_padding,
                         speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
@@ -1082,7 +1062,7 @@ impl<R: InferenceRuntime> Status<R> {
                 ])
                 .as_standard_layout()
                 .into_owned()
-                .into_raw_vec());
+                .into_vec());
         }
         let intermediate = self
             .generate_full_intermediate::<A>(length, phoneme_size, f0, phoneme_vector, style_id)
@@ -1198,7 +1178,18 @@ impl<R: InferenceRuntime> Status<R> {
 impl<T> ndarray::Array1<T> {
     fn into_one_row(self) -> ndarray::Array2<T> {
         let n = self.len();
-        self.into_shape([1, n]).expect("should be ok")
+        self.into_shape_with_order([1, n]).expect("should be ok")
+    }
+
+    fn into_vec(self) -> Vec<T> {
+        let (vec, offset) = self.into_raw_vec_and_offset();
+        // TODO: Rust 2024にしたらlet chainにする
+        if let Some(offset) = offset {
+            if offset != 0 {
+                unimplemented!("offset = {offset}");
+            }
+        }
+        vec
     }
 }
 
@@ -1928,7 +1919,7 @@ pub(crate) mod blocking {
 
     impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -1951,7 +1942,7 @@ pub(crate) mod blocking {
 
     impl<T: crate::blocking::TextAnalyzer> Tts<'_, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -2411,7 +2402,7 @@ pub(crate) mod nonblocking {
 
     impl TtsFromKana<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -2421,7 +2412,7 @@ pub(crate) mod nonblocking {
         ///
         /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
         pub fn cancellable(mut self, cancellable: bool) -> Self {
-            self.options.cancellable = cancellable;
+            self.options.synthesis.cancellable = cancellable;
             self
         }
 
@@ -2444,7 +2435,7 @@ pub(crate) mod nonblocking {
 
     impl<T: crate::nonblocking::TextAnalyzer> Tts<'_, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -2454,7 +2445,7 @@ pub(crate) mod nonblocking {
         ///
         /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
         pub fn cancellable(mut self, cancellable: bool) -> Self {
-            self.options.cancellable = cancellable;
+            self.options.synthesis.cancellable = cancellable;
             self
         }
 
