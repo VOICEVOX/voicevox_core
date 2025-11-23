@@ -101,7 +101,7 @@ mod tests {
     use rstest::rstest;
     use serde_json::json;
 
-    use super::AudioQuery;
+    use super::{super::super::DEFAULT_SAMPLING_RATE, AudioQuery};
 
     #[rstest]
     fn it_accepts_json_without_optional_fields() -> anyhow::Result<()> {
@@ -125,7 +125,7 @@ mod tests {
             "volumeScale": 1.0,
             "prePhonemeLength": 0.1,
             "postPhonemeLength": 0.1,
-            "outputSamplingRate": 24000,
+            "outputSamplingRate": DEFAULT_SAMPLING_RATE,
             "outputStereo": false
         }))?;
         Ok(())

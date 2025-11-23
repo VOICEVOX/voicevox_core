@@ -40,7 +40,7 @@ use crate::{
     },
     engine::{
         talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
-        to_s16le_pcm, wav_from_s16le, PhonemeCode,
+        to_s16le_pcm, wav_from_s16le, PhonemeCode, DEFAULT_SAMPLING_RATE,
     },
     error::ErrorRepr,
     future::FutureExt as _,
@@ -149,7 +149,6 @@ impl AsyncExt for BlockingThreadPool {
     }
 }
 
-const DEFAULT_SAMPLING_RATE: u32 = 24000;
 /// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（フレーム数）
 // TODO: Rust 1.90であれば`{float}::round`がそのまま使える
 const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * 24000Hz / 256.0).round()
@@ -433,7 +432,7 @@ trait AsInner {
             .render_audio_segment(spec_segment.to_owned(), audio.style_id)
             .await?;
         let wave = trim_margin_from_wave(wave_with_margin);
-        Ok(to_s16le_pcm::<DEFAULT_SAMPLING_RATE>(
+        Ok(to_s16le_pcm(
             wave.as_slice()
                 .expect("`trim_margin_from_wave` should just trim an array"),
             &audio.audio_query,
@@ -460,7 +459,7 @@ trait AsInner {
                 )
                 .await?;
             return Ok(wav_from_s16le(
-                &to_s16le_pcm::<DEFAULT_SAMPLING_RATE>(wave, audio_query),
+                &to_s16le_pcm(wave, audio_query),
                 audio_query.output_sampling_rate,
                 audio_query.output_stereo,
             ));
