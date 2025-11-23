@@ -17,9 +17,9 @@ pub(crate) fn initial_process<'query>(
     let mut phoneme_data_list = vec![PhonemeCode::MorablePau];
     for mora in flatten_moras.iter() {
         if let Some(consonant) = &mora.consonant {
-            phoneme_data_list.push(consonant.phoneme.clone().into_owned().into())
+            phoneme_data_list.push(consonant.phoneme.clone().into())
         }
-        phoneme_data_list.push(mora.vowel.phoneme.clone().into_owned().into());
+        phoneme_data_list.push(mora.vowel.phoneme.clone().into());
     }
     phoneme_data_list.push(PhonemeCode::MorablePau);
 

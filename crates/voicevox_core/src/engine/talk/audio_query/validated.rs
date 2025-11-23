@@ -98,8 +98,8 @@ impl AudioQuery {
 #[derive(Clone, PartialEq, Debug)]
 pub(crate) struct ValidatedMora<'original> {
     pub(crate) text: Cow<'original, str>,
-    pub(crate) consonant: Option<LengthedPhoneme<'original>>,
-    pub(crate) vowel: LengthedPhoneme<'original>,
+    pub(crate) consonant: Option<LengthedPhoneme>,
+    pub(crate) vowel: LengthedPhoneme,
     pub(crate) pitch: f32,
 }
 
@@ -134,8 +134,6 @@ impl<'original> ValidatedMora<'original> {
             pitch,
         } = self;
         let text = text.into_owned().into();
-        let consonant = consonant.map(LengthedPhoneme::into_owned);
-        let vowel = vowel.into_owned();
         ValidatedMora {
             text,
             consonant,
@@ -168,27 +166,17 @@ impl From<ValidatedMora<'_>> for Mora {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub(crate) struct LengthedPhoneme<'original> {
-    pub(crate) phoneme: Cow<'original, Phoneme>,
+pub(crate) struct LengthedPhoneme {
+    pub(crate) phoneme: Phoneme,
     pub(crate) length: f32,
 }
 
-impl LengthedPhoneme<'static> {
+impl LengthedPhoneme {
     fn new(phoneme: &str, length: f32) -> Result<Self, InvalidQueryErrorKind> {
-        let phoneme = Cow::Owned(
-            phoneme
-                .parse()
-                .map_err(|_| InvalidQueryErrorKind::InvalidPhoneme(phoneme.to_owned()))?,
-        );
+        let phoneme = phoneme
+            .parse()
+            .map_err(|_| InvalidQueryErrorKind::InvalidPhoneme(phoneme.to_owned()))?;
         Ok(Self { phoneme, length })
-    }
-}
-
-impl LengthedPhoneme<'_> {
-    fn into_owned(self) -> LengthedPhoneme<'static> {
-        let Self { phoneme, length } = self;
-        let phoneme = Cow::Owned(phoneme.into_owned());
-        LengthedPhoneme { phoneme, length }
     }
 }
 
