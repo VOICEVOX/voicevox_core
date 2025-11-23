@@ -21,7 +21,6 @@ on:
 
 jobs:
   rust-api:
-    if: false # FIXME: 一時的に無効化。詳細は #1167
     name: Rust API
     runs-on: ubuntu-latest
     steps:
