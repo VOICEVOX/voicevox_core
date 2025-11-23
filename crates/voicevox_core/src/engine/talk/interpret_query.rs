@@ -3,7 +3,7 @@
 use super::{
     super::{
         acoustic_feature_extractor::{MoraTail, OptionalConsonant, Phoneme},
-        PhonemeCode,
+        PhonemeCode, DEFAULT_SAMPLING_RATE,
     },
     full_context_label::mora_to_text,
     AccentPhrase, AudioQuery, Mora,
@@ -160,7 +160,7 @@ impl AudioQuery {
         let mut phoneme = Vec::new();
         let mut f0: Vec<f32> = Vec::new();
         {
-            const RATE: f32 = 24000. / 256.;
+            const RATE: f32 = DEFAULT_SAMPLING_RATE as f32 / 256.;
             let mut sum_of_phoneme_length = 0;
             let mut count_of_f0 = 0;
             let mut vowel_indexes_index = 0;
