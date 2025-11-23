@@ -39,7 +39,10 @@ use crate::{
         voice_model,
     },
     engine::{
-        talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
+        talk::{
+            create_kana, initial_process, parse_kana, split_mora,
+            text_analyzer::DEFAULT_ENABLE_KATAKANA_ENGLISH, DecoderFeature, Mora,
+        },
         to_s16le_pcm, wav_from_s16le, PhonemeCode,
     },
     error::ErrorRepr,
@@ -51,6 +54,19 @@ pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
 pub const DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK: bool = true;
 pub const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: bool =
     <BlockingThreadPool as infer::AsyncExt>::DEFAULT_HEAVY_INFERENCE_CANCELLABLE;
+
+#[derive(Debug)]
+struct CreateAccentPhrasesOptions {
+    enable_katakana_english: bool,
+}
+
+impl Default for CreateAccentPhrasesOptions {
+    fn default() -> Self {
+        Self {
+            enable_katakana_english: DEFAULT_ENABLE_KATAKANA_ENGLISH,
+        }
+    }
+}
 
 #[derive(derive_more::Debug)]
 #[debug(bound(A::Cancellable: Debug))]
@@ -79,7 +95,14 @@ impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for SynthesisOptions<A> {
 #[educe(Default(bound = "A: infer::AsyncExt"))]
 #[debug(bound(A::Cancellable: Debug))]
 struct TtsOptions<A: infer::AsyncExt> {
+    create_accent_phrases: CreateAccentPhrasesOptions,
     synthesis: SynthesisOptions<A>,
+}
+
+impl<A: infer::AsyncExt> AsRef<CreateAccentPhrasesOptions> for TtsOptions<A> {
+    fn as_ref(&self) -> &CreateAccentPhrasesOptions {
+        &self.create_accent_phrases
+    }
 }
 
 impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for TtsOptions<A> {
@@ -681,19 +704,28 @@ trait AsInner {
         &self,
         text: &str,
         style_id: StyleId,
+        options: &CreateAccentPhrasesOptions,
     ) -> Result<Vec<AccentPhrase>>
     where
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
-        let accent_phrases = self.text_analyzer().analyze_(text).await?;
+        let accent_phrases = self
+            .text_analyzer()
+            .analyze_(text, options.enable_katakana_english)
+            .await?;
         self.replace_mora_data(&accent_phrases, style_id).await
     }
 
-    async fn create_audio_query(&self, text: &str, style_id: StyleId) -> Result<AudioQuery>
+    async fn create_audio_query(
+        &self,
+        text: &str,
+        style_id: StyleId,
+        options: &CreateAccentPhrasesOptions,
+    ) -> Result<AudioQuery>
     where
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
-        let accent_phrases = self.create_accent_phrases(text, style_id).await?;
+        let accent_phrases = self.create_accent_phrases(text, style_id, options).await?;
         Ok(accent_phrases.into())
     }
 
@@ -706,7 +738,9 @@ trait AsInner {
     where
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
-        let audio_query = &self.create_audio_query(text, style_id).await?;
+        let audio_query = &self
+            .create_audio_query(text, style_id, options.as_ref())
+            .await?;
         self.synthesis(audio_query, style_id, options.as_ref())
             .await
     }
@@ -1261,14 +1295,16 @@ impl<T: crate::nonblocking::TextAnalyzer> T {
     pub fn analyze_(
         &self,
         text: &str,
+        enable_katakana_english: bool,
     ) -> impl Future<Output = crate::Result<Vec<AccentPhrase>>> + Send {
-        self.analyze(text).map_err(|source| {
-            ErrorRepr::AnalyzeText {
-                text: text.to_owned(),
-                source,
-            }
-            .into()
-        })
+        self.__analyze_with_options(text, enable_katakana_english)
+            .map_err(|source| {
+                ErrorRepr::AnalyzeText {
+                    text: text.to_owned(),
+                    source,
+                }
+                .into()
+            })
     }
 }
 
@@ -1314,8 +1350,8 @@ pub(crate) mod blocking {
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeSingleTasked, InitializeOptions, Inner,
-        InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
+        AccelerationMode, AsInner as _, AssumeSingleTasked, CreateAccentPhrasesOptions,
+        InitializeOptions, Inner, InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
     };
 
     pub use super::AudioFeature;
@@ -1628,7 +1664,25 @@ pub(crate) mod blocking {
             text: &str,
             style_id: StyleId,
         ) -> crate::Result<Vec<AccentPhrase>> {
-            self.0.create_accent_phrases(text, style_id).block_on()
+            self.0
+                .create_accent_phrases(text, style_id, &Default::default())
+                .block_on()
+        }
+
+        /// [`create_accent_phrases`]のオプション付き版。
+        ///
+        /// [`create_accent_phrases`]: Self::create_accent_phrases
+        pub fn create_accent_phrases_with_options<'a>(
+            &'a self,
+            text: &'a str,
+            style_id: StyleId,
+        ) -> CreateAccentPhrases<'a, T> {
+            CreateAccentPhrases {
+                synthesizer: &self.0,
+                text,
+                style_id,
+                options: Default::default(),
+            }
         }
 
         /// 日本語のテキストから[AudioQuery]を生成する。
@@ -1668,7 +1722,25 @@ pub(crate) mod blocking {
             text: &str,
             style_id: StyleId,
         ) -> crate::Result<AudioQuery> {
-            self.0.create_audio_query(text, style_id).block_on()
+            self.0
+                .create_audio_query(text, style_id, &Default::default())
+                .block_on()
+        }
+
+        /// [`create_audio_query`]のオプション付き版。
+        ///
+        /// [`create_audio_query`]: Self::create_audio_query
+        pub fn create_audio_query_with_options<'a>(
+            &'a self,
+            text: &'a str,
+            style_id: StyleId,
+        ) -> CreateAudioQuery<'a, T> {
+            CreateAudioQuery {
+                synthesizer: &self.0,
+                text,
+                style_id,
+                options: Default::default(),
+            }
         }
 
         /// 日本語のテキストから音声合成を行う。
@@ -1864,6 +1936,80 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
+    pub struct CreateAccentPhrases<'a, T> {
+        synthesizer: &'a Inner<AssumeSingleTasked<T>, SingleTasked>,
+        text: &'a str,
+        style_id: StyleId,
+        options: CreateAccentPhrasesOptions,
+    }
+
+    impl CreateAccentPhrases<'_, crate::blocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
+        pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
+            self.__enable_katakana_english(enable_katakana_english)
+        }
+    }
+
+    impl<T: crate::blocking::TextAnalyzer> CreateAccentPhrases<'_, T> {
+        #[doc(hidden)]
+        pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
+            self.options.enable_katakana_english = enable_katakana_english;
+            self
+        }
+
+        /// 実行する。
+        pub fn perform(self) -> crate::Result<Vec<AccentPhrase>> {
+            self.synthesizer
+                .create_accent_phrases(self.text, self.style_id, &self.options)
+                .block_on()
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
+    pub struct CreateAudioQuery<'a, T> {
+        synthesizer: &'a Inner<AssumeSingleTasked<T>, SingleTasked>,
+        text: &'a str,
+        style_id: StyleId,
+        options: CreateAccentPhrasesOptions,
+    }
+
+    impl CreateAudioQuery<'_, crate::blocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
+        pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
+            self.__enable_katakana_english(enable_katakana_english)
+        }
+    }
+
+    impl<T: crate::blocking::TextAnalyzer> CreateAudioQuery<'_, T> {
+        #[doc(hidden)]
+        pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
+            self.options.enable_katakana_english = enable_katakana_english;
+            self
+        }
+
+        /// 実行する。
+        pub fn perform(self) -> crate::Result<AudioQuery> {
+            self.synthesizer
+                .create_audio_query(self.text, self.style_id, &self.options)
+                .block_on()
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct PrecomputeRender<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -1940,7 +2086,26 @@ pub(crate) mod blocking {
         options: TtsOptions<SingleTasked>,
     }
 
+    impl Tts<'_, crate::blocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
+        pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
+            self.__enable_katakana_english(enable_katakana_english)
+        }
+    }
+
     impl<T: crate::blocking::TextAnalyzer> Tts<'_, T> {
+        #[doc(hidden)]
+        pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
+            self.options.create_accent_phrases.enable_katakana_english = enable_katakana_english;
+            self
+        }
+
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -1966,8 +2131,8 @@ pub(crate) mod nonblocking {
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeBlockable, InitializeOptions, Inner,
-        InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
+        AccelerationMode, AsInner as _, AssumeBlockable, CreateAccentPhrasesOptions,
+        InitializeOptions, Inner, InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -2238,7 +2403,25 @@ pub(crate) mod nonblocking {
             text: &str,
             style_id: StyleId,
         ) -> Result<Vec<AccentPhrase>> {
-            self.0.create_accent_phrases(text, style_id).await
+            self.0
+                .create_accent_phrases(text, style_id, &Default::default())
+                .await
+        }
+
+        /// [`create_accent_phrases`]のオプション付き版。
+        ///
+        /// [`create_accent_phrases`]: Self::create_accent_phrases
+        pub fn create_accent_phrases_with_options<'a>(
+            &'a self,
+            text: &'a str,
+            style_id: StyleId,
+        ) -> CreateAccentPhrases<'a, T> {
+            CreateAccentPhrases {
+                synthesizer: &self.0,
+                text,
+                style_id,
+                options: Default::default(),
+            }
         }
 
         /// 日本語のテキストから[AudioQuery]を生成する。
@@ -2276,7 +2459,25 @@ pub(crate) mod nonblocking {
             text: &str,
             style_id: StyleId,
         ) -> Result<AudioQuery> {
-            self.0.create_audio_query(text, style_id).await
+            self.0
+                .create_audio_query(text, style_id, &Default::default())
+                .await
+        }
+
+        /// [`create_audio_query`]のオプション付き版。
+        ///
+        /// [`create_audio_query`]: Self::create_audio_query
+        pub fn create_audio_query_with_options<'a>(
+            &'a self,
+            text: &'a str,
+            style_id: StyleId,
+        ) -> CreateAudioQuery<'a, T> {
+            CreateAudioQuery {
+                synthesizer: &self.0,
+                text,
+                style_id,
+                options: Default::default(),
+            }
         }
 
         /// 日本語のテキストから音声合成を行う。
@@ -2360,6 +2561,80 @@ pub(crate) mod nonblocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
+    pub struct CreateAccentPhrases<'a, T> {
+        synthesizer: &'a Inner<T, BlockingThreadPool>,
+        text: &'a str,
+        style_id: StyleId,
+        options: CreateAccentPhrasesOptions,
+    }
+
+    impl CreateAccentPhrases<'_, crate::nonblocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
+        pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
+            self.__enable_katakana_english(enable_katakana_english)
+        }
+    }
+
+    impl<T: crate::nonblocking::TextAnalyzer> CreateAccentPhrases<'_, T> {
+        #[doc(hidden)]
+        pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
+            self.options.enable_katakana_english = enable_katakana_english;
+            self
+        }
+
+        /// 実行する。
+        pub async fn perform(self) -> crate::Result<Vec<AccentPhrase>> {
+            self.synthesizer
+                .create_accent_phrases(self.text, self.style_id, &self.options)
+                .await
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
+    pub struct CreateAudioQuery<'a, T> {
+        synthesizer: &'a Inner<T, BlockingThreadPool>,
+        text: &'a str,
+        style_id: StyleId,
+        options: CreateAccentPhrasesOptions,
+    }
+
+    impl CreateAudioQuery<'_, crate::nonblocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
+        pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
+            self.__enable_katakana_english(enable_katakana_english)
+        }
+    }
+
+    impl<T: crate::nonblocking::TextAnalyzer> CreateAudioQuery<'_, T> {
+        #[doc(hidden)]
+        pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
+            self.options.enable_katakana_english = enable_katakana_english;
+            self
+        }
+
+        /// 実行する。
+        pub async fn perform(self) -> crate::Result<AudioQuery> {
+            self.synthesizer
+                .create_audio_query(self.text, self.style_id, &self.options)
+                .await
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Synthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
@@ -2433,7 +2708,26 @@ pub(crate) mod nonblocking {
         options: TtsOptions<BlockingThreadPool>,
     }
 
+    impl Tts<'_, crate::nonblocking::OpenJtalk> {
+        /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+        ///
+        /// デフォルトは`false`。
+        ///
+        /// # Caveats
+        ///
+        /// デフォルト値はバージョン0.17にて`true`になる予定。
+        pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
+            self.__enable_katakana_english(enable_katakana_english)
+        }
+    }
+
     impl<T: crate::nonblocking::TextAnalyzer> Tts<'_, T> {
+        #[doc(hidden)]
+        pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
+            self.options.create_accent_phrases.enable_katakana_english = enable_katakana_english;
+            self
+        }
+
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self

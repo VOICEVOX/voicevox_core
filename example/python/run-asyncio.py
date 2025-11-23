@@ -108,7 +108,9 @@ async def main() -> None:
     logger.debug("%s", f"{synthesizer.metas()=}")
 
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
-    audio_query = await synthesizer.create_audio_query(args.text, args.style_id)
+    audio_query = await synthesizer.create_audio_query(
+        args.text, args.style_id, enable_katakana_english=True
+    )
 
     logger.info("%s", f"Synthesizing with {audio_query}")
     wav = await synthesizer.synthesis(audio_query, args.style_id)

@@ -1023,6 +1023,23 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query(const struct Voicevox
                                                            char **output_audio_query_json);
 
 /**
+ * \safety{
+ * - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_synthesizer_create_audio_query_with_options}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_create_audio_query_with_options(const struct VoicevoxSynthesizer *synthesizer,
+                                                                        const char *text,
+                                                                        VoicevoxStyleId style_id,
+                                                                        bool enable_katakana_english,
+                                                                        char **output_audio_query_json);
+
+/**
  * AquesTalk風記法から、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -1099,6 +1116,23 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct Voice
                                                               const char *text,
                                                               VoicevoxStyleId style_id,
                                                               char **output_accent_phrases_json);
+
+/**
+ * \safety{
+ * - `text`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_synthesizer_create_accent_phrases_with_options}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_create_accent_phrases_with_options(const struct VoicevoxSynthesizer *synthesizer,
+                                                                           const char *text,
+                                                                           VoicevoxStyleId style_id,
+                                                                           bool enable_katakana_english,
+                                                                           char **output_accent_phrases_json);
 
 /**
  * AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。

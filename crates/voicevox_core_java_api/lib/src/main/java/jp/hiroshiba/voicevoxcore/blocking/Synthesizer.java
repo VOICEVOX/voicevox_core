@@ -153,17 +153,12 @@ public class Synthesizer {
    */
   @Nonnull
   public AudioQuery createAudioQuery(String text, int styleId) throws RunModelException {
-    if (!Utils.isU32(styleId)) {
-      throw new IllegalArgumentException("styleId");
-    }
-    String queryJson = rsCreateAudioQuery(text, styleId);
-    Gson gson = new Gson();
+    return createAudioQueryWithOptions(text, styleId).perform();
+  }
 
-    AudioQuery audioQuery = gson.fromJson(queryJson, AudioQuery.class);
-    if (audioQuery == null) {
-      throw new NullPointerException("audio_query");
-    }
-    return audioQuery;
+  @Nonnull
+  public CreateAudioQueryConfigurator createAudioQueryWithOptions(String text, int styleId) {
+    return new CreateAudioQueryConfigurator(this, text, styleId);
   }
 
   /**
@@ -199,13 +194,12 @@ public class Synthesizer {
    */
   @Nonnull
   public List<AccentPhrase> createAccentPhrases(String text, int styleId) throws RunModelException {
-    String accentPhrasesJson = rsAccentPhrases(text, styleId);
-    Gson gson = new Gson();
-    AccentPhrase[] rawAccentPhrases = gson.fromJson(accentPhrasesJson, AccentPhrase[].class);
-    if (rawAccentPhrases == null) {
-      throw new NullPointerException("accent_phrases");
-    }
-    return new ArrayList<AccentPhrase>(Arrays.asList(rawAccentPhrases));
+    return createAccentPhrasesWithOptions(text, styleId).perform();
+  }
+
+  @Nonnull
+  public CreateAccentPhrasesConfigurator createAccentPhrasesWithOptions(String text, int styleId) {
+    return new CreateAccentPhrasesConfigurator(this, text, styleId);
   }
 
   /**
@@ -331,13 +325,15 @@ public class Synthesizer {
       throws RunModelException;
 
   @Nonnull
-  private native String rsCreateAudioQuery(String text, int styleId) throws RunModelException;
+  private native String rsCreateAudioQuery(String text, int styleId, boolean enableKatakanaEnglish)
+      throws RunModelException;
 
   @Nonnull
   private native String rsAccentPhrasesFromKana(String kana, int styleId) throws RunModelException;
 
   @Nonnull
-  private native String rsAccentPhrases(String text, int styleId) throws RunModelException;
+  private native String rsAccentPhrases(String text, int styleId, boolean enableKatakanaEnglish)
+      throws RunModelException;
 
   @Nonnull
   private native String rsReplaceMoraData(String accentPhrasesJson, int styleId, boolean kana)
@@ -360,7 +356,8 @@ public class Synthesizer {
       throws RunModelException;
 
   @Nonnull
-  private native byte[] rsTts(String text, int styleId, boolean enableInterrogativeUpspeak)
+  private native byte[] rsTts(
+      String text, int styleId, boolean enableKatakanaEnglish, boolean enableInterrogativeUpspeak)
       throws RunModelException;
 
   private native void rsDrop();
@@ -422,6 +419,75 @@ public class Synthesizer {
     public Synthesizer build() {
       Synthesizer synthesizer = new Synthesizer(onnxruntime, openJtalk, this);
       return synthesizer;
+    }
+  }
+
+  /** {@link Synthesizer#createAudioQueryWithOptions} のオプション。 */
+  public class CreateAudioQueryConfigurator {
+    private final Synthesizer synthesizer;
+    private final String text;
+    private final int styleId;
+    private boolean enableKatakanaEnglish;
+
+    private CreateAudioQueryConfigurator(Synthesizer synthesizer, String text, int styleId) {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      this.synthesizer = synthesizer;
+      this.text = text;
+      this.styleId = styleId;
+    }
+
+    @Nonnull
+    public CreateAudioQueryConfigurator enableKatakanaEnglish(boolean enableKatakanaEnglish) {
+      this.enableKatakanaEnglish = enableKatakanaEnglish;
+      return this;
+    }
+
+    @Nonnull
+    public AudioQuery perform() throws RunModelException {
+      String queryJson = synthesizer.rsCreateAudioQuery(text, styleId, enableKatakanaEnglish);
+      Gson gson = new Gson();
+
+      AudioQuery audioQuery = gson.fromJson(queryJson, AudioQuery.class);
+      if (audioQuery == null) {
+        throw new NullPointerException("audio_query");
+      }
+      return audioQuery;
+    }
+  }
+
+  /** {@link Synthesizer#createAccentPhrasesWithOptions} のオプション。 */
+  public class CreateAccentPhrasesConfigurator {
+    private final Synthesizer synthesizer;
+    private final String text;
+    private final int styleId;
+    private boolean enableKatakanaEnglish;
+
+    private CreateAccentPhrasesConfigurator(Synthesizer synthesizer, String text, int styleId) {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      this.synthesizer = synthesizer;
+      this.text = text;
+      this.styleId = styleId;
+    }
+
+    @Nonnull
+    public CreateAccentPhrasesConfigurator enableKatakanaEnglish(boolean enableKatakanaEnglish) {
+      this.enableKatakanaEnglish = enableKatakanaEnglish;
+      return this;
+    }
+
+    @Nonnull
+    public List<AccentPhrase> perform() throws RunModelException {
+      String accentPhrasesJson = synthesizer.rsAccentPhrases(text, styleId, enableKatakanaEnglish);
+      Gson gson = new Gson();
+      AccentPhrase[] rawAccentPhrases = gson.fromJson(accentPhrasesJson, AccentPhrase[].class);
+      if (rawAccentPhrases == null) {
+        throw new NullPointerException("accent_phrases");
+      }
+      return new ArrayList<AccentPhrase>(Arrays.asList(rawAccentPhrases));
     }
   }
 
@@ -519,6 +585,7 @@ public class Synthesizer {
     private Synthesizer synthesizer;
     private String text;
     private int styleId;
+    private boolean katakanaEnglish;
     private boolean interrogativeUpspeak;
 
     private TtsConfigurator(Synthesizer synthesizer, String text, int styleId) {
@@ -528,6 +595,12 @@ public class Synthesizer {
       this.synthesizer = synthesizer;
       this.text = text;
       this.styleId = styleId;
+    }
+
+    @Nonnull
+    public TtsConfigurator katakanaEnglish(boolean katakanaEnglish) {
+      this.katakanaEnglish = katakanaEnglish;
+      return this;
     }
 
     /**
@@ -553,7 +626,8 @@ public class Synthesizer {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }
-      return synthesizer.rsTts(this.text, this.styleId, this.interrogativeUpspeak);
+      return synthesizer.rsTts(
+          this.text, this.styleId, this.katakanaEnglish, this.interrogativeUpspeak);
     }
   }
 }
