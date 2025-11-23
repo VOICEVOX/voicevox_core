@@ -50,6 +50,7 @@ impl AccentPhrase {
     /// [`pause_mora`]: Self::pause_mora
     /// [`accent`]: Self::accent
     /// [不正]: Mora::validate
+    #[cfg_attr(doc, doc(alias = "voicevox_validate_accent_phrases"))]
     pub fn validate(&self) -> crate::Result<()> {
         self.to_validated().map(|_| ())
     }
@@ -80,6 +81,7 @@ impl AudioQuery {
     /// [`output_sampling_rate`]: Self::output_sampling_rate
     /// [不正]: AccentPhrase::validate
     /// [#762]: https://github.com/VOICEVOX/voicevox_core/issues/762
+    #[cfg_attr(doc, doc(alias = "voicevox_audio_query_validate"))]
     pub fn validate(&self) -> crate::Result<()> {
         self.to_validated().map(|_| ())
     }

@@ -510,6 +510,48 @@ pub unsafe extern "C" fn voicevox_audio_query_create_from_accent_phrases(
     })())
 }
 
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
+/// @param [out] output_accent_phrases_json 生成先
+///
+/// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR
+///
+/// \safety{
+/// - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_audio_query_validate}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_audio_query_validate(
+    audio_query_json: *const c_char,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    // SAFETY: The safety contract must be upheld by the caller.
+    let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) };
+    into_result_code_with_error(validate_audio_query(audio_query_json).map(|_| ()))
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// @param [in] audio_query_json AudioQueryのJSON文字列
+/// @param [out] output_accent_phrases_json 生成先
+///
+/// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR
+///
+/// \safety{
+/// - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_validate_accent_phrases}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_validate_accent_phrases(
+    accent_phrases_json: *const c_char,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    // SAFETY: The safety contract must be upheld by the caller.
+    let accent_phrases_json = unsafe { CStr::from_ptr(accent_phrases_json) };
+    into_result_code_with_error(validate_accent_phrases(accent_phrases_json).map(|_| ()))
+}
+
 /// 音声モデルファイル。
 ///
 /// VVMファイルと対応する。

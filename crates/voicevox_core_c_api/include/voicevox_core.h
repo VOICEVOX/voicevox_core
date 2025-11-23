@@ -702,6 +702,27 @@ VoicevoxResultCode voicevox_audio_query_create_from_accent_phrases(const char *a
                                                                    char **output_audio_query_json);
 
 /**
+ * この構造体をバリデートする。
+ *
+ * 次のうちどれかを満たすなら ::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR を返す。
+ *
+ * @param [in] audio_query_json AudioQueryのJSON文字列
+ * @param [out] output_accent_phrases_json 生成先
+ *
+ * @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR
+ *
+ * \safety{
+ * - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_audio_query_validate}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_audio_query_validate(const char *audio_query_json);
+
+/**
  * VVMファイルを開く。
  *
  * @param [in] path vvmファイルへのUTF-8のファイルパス
