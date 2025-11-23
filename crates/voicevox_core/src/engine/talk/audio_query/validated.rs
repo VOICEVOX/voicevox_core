@@ -73,7 +73,7 @@ impl AudioQuery {
     /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
     ///
     /// - [`accent_phrases`]の要素のうちいずれかが[不正]。
-    /// - [`output_sampling_rate`]が`24000`の倍数ではない (将来的に解消予定。cf. [#762])。
+    /// - [`output_sampling_rate`]が`24000`の倍数ではない、もしくは`0` (将来的に解消予定。cf. [#762])。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     /// [`accent_phrases`]: Self::accent_phrases
