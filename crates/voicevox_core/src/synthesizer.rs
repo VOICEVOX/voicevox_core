@@ -437,7 +437,7 @@ trait AsInner {
             .render_audio_segment(spec_segment.to_owned(), audio.style_id)
             .await?;
         let wave = trim_margin_from_wave(wave_with_margin);
-        Ok(to_s16le_pcm::<DEFAULT_SAMPLING_RATE>(
+        Ok(to_s16le_pcm(
             wave.as_slice()
                 .expect("`trim_margin_from_wave` should just trim an array"),
             &audio.audio_query,
@@ -465,7 +465,7 @@ trait AsInner {
                 )
                 .await?;
             return Ok(wav_from_s16le(
-                &to_s16le_pcm::<DEFAULT_SAMPLING_RATE>(wave, &audio_query),
+                &to_s16le_pcm(wave, &audio_query),
                 audio_query.output_sampling_rate.get(),
                 audio_query.output_stereo,
             ));
