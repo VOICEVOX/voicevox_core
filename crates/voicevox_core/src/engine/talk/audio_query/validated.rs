@@ -71,6 +71,7 @@ impl AccentPhrase {
     /// - [`moras`]もしくは[`pause_mora`]の要素のうちいずれかが、警告が出る状態。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+    /// [`WARN`]: tracing::Level::WARN
     /// [`moras`]: Self::moras
     /// [`pause_mora`]: Self::pause_mora
     /// [`accent`]: Self::accent
@@ -113,6 +114,7 @@ impl AudioQuery {
     /// - [`output_sampling_rate`]が`24000`以外の値 (エラーと同様将来的に解消予定)。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+    /// [`WARN`]: tracing::Level::WARN
     /// [`accent_phrases`]: Self::accent_phrases
     /// [`speed_scale`]: Self::speed_scale
     /// [`pitch_scale`]: Self::pitch_scale
