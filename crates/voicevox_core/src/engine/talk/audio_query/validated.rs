@@ -1,8 +1,16 @@
-use std::{borrow::Cow, num::NonZero};
+use std::{
+    borrow::Cow,
+    num::{FpCategory, NonZero},
+};
+
+use tracing::warn;
 
 use crate::error::{ErrorRepr, InvalidQueryErrorKind};
 
-use super::{super::super::acoustic_feature_extractor::Phoneme, AccentPhrase, AudioQuery, Mora};
+use super::{
+    super::super::{acoustic_feature_extractor::Phoneme, DEFAULT_SAMPLING_RATE},
+    AccentPhrase, AudioQuery, Mora,
+};
 
 pub(crate) use self::sampling_rate::SamplingRate;
 
@@ -16,10 +24,21 @@ impl Mora {
     /// - [`consonant`]と[`consonant_length`]の有無が不一致。
     /// - [`consonant`]もしくは[`vowel`]が音素として不正。
     ///
+    /// # Warnings
+    ///
+    /// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
+    ///
+    /// - [`consonant_length`]がNaN、inifinity、もしくは負。
+    /// - [`vowel_length`]がNaN、inifinity、もしくは負。
+    /// - [`pitch`]がNaNもしくは±inifinity。
+    ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+    /// [`WARN`]: tracing::Level::WARN
     /// [`consonant`]: Self::consonant
     /// [`consonant_length`]: Self::consonant_length
     /// [`vowel`]: Self::vowel
+    /// [`vowel_length`]: Self::vowel_length
+    /// [`pitch`]: Self::pitch
     pub fn validate(&self) -> crate::Result<()> {
         self.to_validated().map(|_| ())
     }
@@ -44,6 +63,12 @@ impl AccentPhrase {
     ///
     /// - [`moras`]もしくは[`pause_mora`]の要素のうちいずれかが[不正]。
     /// - [`accent`]が`0`。
+    ///
+    /// # Warnings
+    ///
+    /// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
+    ///
+    /// - [`moras`]もしくは[`pause_mora`]の要素のうちいずれかが、警告が出る状態。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     /// [`moras`]: Self::moras
@@ -76,8 +101,25 @@ impl AudioQuery {
     /// - [`accent_phrases`]の要素のうちいずれかが[不正]。
     /// - [`output_sampling_rate`]が`24000`の倍数ではない、もしくは`0` (将来的に解消予定。cf. [#762])。
     ///
+    /// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
+    ///
+    /// - [`accent_phrases`]の要素のうちいずれかが警告が出る状態。
+    /// - [`speed_scale`]がNaN、inifinity、もしくは負。
+    /// - [`pitch_scale`]がNaNもしくは±inifinity。
+    /// - [`intonation_scale`]がNaNもしくは±inifinity。
+    /// - [`volume_scale`]がNaN、inifinity、もしくは負。
+    /// - [`pre_phoneme_length`]がNaN、inifinity、もしくは負。
+    /// - [`post_phoneme_length`]がNaN、inifinity、もしくは負。
+    /// - [`output_sampling_rate`]が`24000`以外の値 (エラーと同様将来的に解消予定)。
+    ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     /// [`accent_phrases`]: Self::accent_phrases
+    /// [`speed_scale`]: Self::speed_scale
+    /// [`pitch_scale`]: Self::pitch_scale
+    /// [`intonation_scale`]: Self::intonation_scale
+    /// [`volume_scale`]: Self::volume_scale
+    /// [`pre_phoneme_length`]: Self::pre_phoneme_length
+    /// [`post_phoneme_length`]: Self::post_phoneme_length
     /// [`output_sampling_rate`]: Self::output_sampling_rate
     /// [不正]: AccentPhrase::validate
     /// [#762]: https://github.com/VOICEVOX/voicevox_core/issues/762
@@ -97,6 +139,30 @@ impl AudioQuery {
     }
 }
 
+macro_rules! warn_for_non_finite {
+    ($v:ident $(,)?) => {{
+        match $v.classify() {
+            FpCategory::Nan => warn!("`{}` should not be NaN", stringify!($v)),
+            FpCategory::Infinite => warn!("`{}` should not be inifinite", stringify!($v)),
+            FpCategory::Zero | FpCategory::Subnormal | FpCategory::Normal => {}
+        }
+    }};
+}
+
+macro_rules! warn_for_non_positive_finite {
+    ($v:ident $(,)?) => {{
+        match $v.classify() {
+            FpCategory::Nan => warn!("`{}` should not be NaN", stringify!($v)),
+            FpCategory::Infinite => warn!("`{}` should not be inifinite", stringify!($v)),
+            FpCategory::Zero | FpCategory::Subnormal | FpCategory::Normal => {
+                if $v.is_sign_negative() {
+                    warn!("`{}` should not be negative", stringify!($v));
+                }
+            }
+        }
+    }};
+}
+
 #[derive(Clone, PartialEq, Debug)]
 pub(crate) struct ValidatedMora<'original> {
     pub(crate) text: Cow<'original, str>,
@@ -107,18 +173,34 @@ pub(crate) struct ValidatedMora<'original> {
 
 impl<'original> ValidatedMora<'original> {
     fn new(original: &'original Mora) -> Result<Self, InvalidQueryErrorKind> {
-        let consonant = match (&original.consonant, original.consonant_length) {
+        let Mora {
+            text,
+            consonant,
+            consonant_length,
+            vowel,
+            vowel_length,
+            pitch,
+        } = original;
+        let consonant_length = *consonant_length;
+        let vowel_length = *vowel_length;
+        let pitch = *pitch;
+
+        if let Some(consonant_length) = consonant_length {
+            warn_for_non_positive_finite!(consonant_length);
+        }
+        warn_for_non_positive_finite!(vowel_length);
+        warn_for_non_finite!(pitch);
+
+        let consonant = match (consonant, consonant_length) {
             (Some(phoneme), Some(length)) => Some(LengthedPhoneme::new(phoneme, length)?),
             (None, None) => None,
             (Some(_), None) => return Err(InvalidQueryErrorKind::MissingConsonantLength),
             (None, Some(_)) => return Err(InvalidQueryErrorKind::MissingConsonantPhoneme),
         };
 
-        let vowel = LengthedPhoneme::new(&original.vowel, original.vowel_length)?;
+        let vowel = LengthedPhoneme::new(vowel, vowel_length)?;
 
-        let text = (&original.text).into();
-
-        let Mora { pitch, .. } = *original;
+        let text = text.into();
 
         Ok(Self {
             text,
@@ -192,25 +274,26 @@ pub(crate) struct ValidatedAccentPhrase<'original> {
 
 impl<'original> ValidatedAccentPhrase<'original> {
     fn new(original: &'original AccentPhrase) -> Result<Self, InvalidQueryErrorKind> {
-        let moras = original
-            .moras
+        let AccentPhrase {
+            moras,
+            accent,
+            pause_mora,
+            is_interrogative,
+        } = original;
+        let is_interrogative = *is_interrogative;
+
+        let moras = moras
             .iter()
             .map(ValidatedMora::new)
             .collect::<Result<_, _>>()?;
-
-        let accent = NonZero::new(original.accent).ok_or(InvalidQueryErrorKind::AccentIsZero)?;
-
-        let pause_mora = original
-            .pause_mora
-            .as_ref()
-            .map(ValidatedMora::new)
-            .transpose()?;
+        let accent = NonZero::new(*accent).ok_or(InvalidQueryErrorKind::AccentIsZero)?;
+        let pause_mora = pause_mora.as_ref().map(ValidatedMora::new).transpose()?;
 
         Ok(Self {
             moras,
             accent,
             pause_mora,
-            is_interrogative: original.is_interrogative,
+            is_interrogative,
         })
     }
 
@@ -266,27 +349,46 @@ pub struct ValidatedAudioQuery<'original> {
 
 impl<'original> ValidatedAudioQuery<'original> {
     fn new(original: &'original AudioQuery) -> Result<Self, InvalidQueryErrorKind> {
-        let accent_phrases = original
-            .accent_phrases
-            .iter()
-            .map(ValidatedAccentPhrase::new)
-            .collect::<Result<_, _>>()?;
-
-        let output_sampling_rate = SamplingRate::new(original.output_sampling_rate).ok_or(
-            InvalidQueryErrorKind::InvalidSamplingRate(original.output_sampling_rate),
-        )?;
-
         let AudioQuery {
+            accent_phrases,
             speed_scale,
             pitch_scale,
             intonation_scale,
             volume_scale,
             pre_phoneme_length,
             post_phoneme_length,
+            output_sampling_rate,
             output_stereo,
-            ..
-        } = *original;
-        let kana = original.kana.clone();
+            kana,
+        } = original;
+        let speed_scale = *speed_scale;
+        let pitch_scale = *pitch_scale;
+        let intonation_scale = *intonation_scale;
+        let volume_scale = *volume_scale;
+        let pre_phoneme_length = *pre_phoneme_length;
+        let post_phoneme_length = *post_phoneme_length;
+        let output_stereo = *output_stereo;
+
+        warn_for_non_positive_finite!(speed_scale);
+        warn_for_non_finite!(pitch_scale);
+        warn_for_non_finite!(intonation_scale);
+        warn_for_non_positive_finite!(volume_scale);
+        warn_for_non_positive_finite!(pre_phoneme_length);
+        warn_for_non_positive_finite!(post_phoneme_length);
+        if *output_sampling_rate != DEFAULT_SAMPLING_RATE {
+            warn!("`output_sampling_rate` should be `DEFAULT_SAMPLING_RATE`");
+        }
+
+        let accent_phrases = accent_phrases
+            .iter()
+            .map(ValidatedAccentPhrase::new)
+            .collect::<Result<_, _>>()?;
+
+        let output_sampling_rate = SamplingRate::new(*output_sampling_rate).ok_or(
+            InvalidQueryErrorKind::InvalidSamplingRate(*output_sampling_rate),
+        )?;
+
+        let kana = kana.clone();
 
         Ok(Self {
             accent_phrases,

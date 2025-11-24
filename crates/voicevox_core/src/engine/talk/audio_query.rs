@@ -9,6 +9,13 @@ pub(crate) use self::validated::{
 /* 各フィールドのjsonフィールド名はsnake_caseとする*/
 
 /// モーラ（子音＋母音）ごとの情報。
+///
+/// # Validation
+///
+/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]。
+///
+/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [`validate`メソッド]: Self::validate
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[non_exhaustive]
 pub struct Mora {
@@ -27,6 +34,13 @@ pub struct Mora {
 }
 
 /// AccentPhrase (アクセント句ごとの情報)。
+///
+/// # Validation
+///
+/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]。
+///
+/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [`validate`メソッド]: Self::validate
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[non_exhaustive]
 pub struct AccentPhrase {
@@ -58,6 +72,13 @@ impl AccentPhrase {
 /// VOICEVOX ENGINEと同じスキーマになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
 ///
 /// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
+///
+/// # Validation
+///
+/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]。
+///
+/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [`validate`メソッド]: Self::validate
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct AudioQuery {
