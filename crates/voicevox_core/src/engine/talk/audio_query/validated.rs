@@ -69,6 +69,7 @@ impl AccentPhrase {
     /// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
     ///
     /// - [`moras`]もしくは[`pause_mora`]の要素のうちいずれかが、警告が出る状態。
+    /// - [`accent`]が[`moras`]の数を超過している。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     /// [`WARN`]: tracing::Level::WARN
@@ -283,6 +284,10 @@ impl<'original> ValidatedAccentPhrase<'original> {
             is_interrogative,
         } = original;
         let is_interrogative = *is_interrogative;
+
+        if *accent > moras.len() {
+            warn!("`accent` should not exceed the number of `moras`");
+        }
 
         let moras = moras
             .iter()
