@@ -28,9 +28,9 @@ impl Mora {
     ///
     /// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
     ///
-    /// - [`consonant_length`]がNaN、inifinity、もしくは負。
-    /// - [`vowel_length`]がNaN、inifinity、もしくは負。
-    /// - [`pitch`]がNaNもしくは±inifinity。
+    /// - [`consonant_length`]がNaN、infinity、もしくは負。
+    /// - [`vowel_length`]がNaN、infinity、もしくは負。
+    /// - [`pitch`]がNaNもしくは±infinity。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     /// [`WARN`]: tracing::Level::WARN
@@ -104,12 +104,12 @@ impl AudioQuery {
     /// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
     ///
     /// - [`accent_phrases`]の要素のうちいずれかが警告が出る状態。
-    /// - [`speed_scale`]がNaN、inifinity、もしくは負。
-    /// - [`pitch_scale`]がNaNもしくは±inifinity。
-    /// - [`intonation_scale`]がNaNもしくは±inifinity。
-    /// - [`volume_scale`]がNaN、inifinity、もしくは負。
-    /// - [`pre_phoneme_length`]がNaN、inifinity、もしくは負。
-    /// - [`post_phoneme_length`]がNaN、inifinity、もしくは負。
+    /// - [`speed_scale`]がNaN、infinity、もしくは負。
+    /// - [`pitch_scale`]がNaNもしくは±infinity。
+    /// - [`intonation_scale`]がNaNもしくは±infinity。
+    /// - [`volume_scale`]がNaN、infinity、もしくは負。
+    /// - [`pre_phoneme_length`]がNaN、infinity、もしくは負。
+    /// - [`post_phoneme_length`]がNaN、infinity、もしくは負。
     /// - [`output_sampling_rate`]が`24000`以外の値 (エラーと同様将来的に解消予定)。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
@@ -143,7 +143,7 @@ macro_rules! warn_for_non_finite {
     ($v:ident $(,)?) => {{
         match $v.classify() {
             FpCategory::Nan => warn!("`{}` should not be NaN", stringify!($v)),
-            FpCategory::Infinite => warn!("`{}` should not be inifinite", stringify!($v)),
+            FpCategory::Infinite => warn!("`{}` should not be infinite", stringify!($v)),
             FpCategory::Zero | FpCategory::Subnormal | FpCategory::Normal => {}
         }
     }};
@@ -153,7 +153,7 @@ macro_rules! warn_for_non_positive_finite {
     ($v:ident $(,)?) => {{
         match $v.classify() {
             FpCategory::Nan => warn!("`{}` should not be NaN", stringify!($v)),
-            FpCategory::Infinite => warn!("`{}` should not be inifinite", stringify!($v)),
+            FpCategory::Infinite => warn!("`{}` should not be infinite", stringify!($v)),
             FpCategory::Zero | FpCategory::Subnormal | FpCategory::Normal => {
                 if $v.is_sign_negative() {
                     warn!("`{}` should not be negative", stringify!($v));
