@@ -142,27 +142,26 @@ impl AudioQuery {
 }
 
 macro_rules! warn_for_non_finite {
-    ($v:ident $(,)?) => {{
+    ($v:ident $(,)?) => {
         match $v.classify() {
             FpCategory::Nan => warn!("`{}` should not be NaN", stringify!($v)),
             FpCategory::Infinite => warn!("`{}` should not be infinite", stringify!($v)),
             FpCategory::Zero | FpCategory::Subnormal | FpCategory::Normal => {}
         }
-    }};
+    };
 }
 
 macro_rules! warn_for_non_positive_finite {
-    ($v:ident $(,)?) => {{
+    ($v:ident $(,)?) => {
         match $v.classify() {
-            FpCategory::Nan => warn!("`{}` should not be NaN", stringify!($v)),
-            FpCategory::Infinite => warn!("`{}` should not be infinite", stringify!($v)),
+            FpCategory::Nan | FpCategory::Infinite => warn_for_non_finite!($v),
             FpCategory::Zero | FpCategory::Subnormal | FpCategory::Normal => {
                 if $v.is_sign_negative() {
                     warn!("`{}` should not be negative", stringify!($v));
                 }
             }
         }
-    }};
+    };
 }
 
 #[derive(Clone, PartialEq, Debug)]
