@@ -194,8 +194,9 @@ impl<'original> ValidatedMora<'original> {
         let consonant = match (consonant, consonant_length) {
             (Some(phoneme), Some(length)) => Some(LengthedPhoneme::new(phoneme, length)?),
             (None, None) => None,
-            (Some(_), None) => return Err(InvalidQueryErrorKind::MissingConsonantLength),
-            (None, Some(_)) => return Err(InvalidQueryErrorKind::MissingConsonantPhoneme),
+            (Some(_), None) | (None, Some(_)) => {
+                return Err(InvalidQueryErrorKind::MissingConsonantPhonemeOrLength);
+            }
         };
 
         let vowel = LengthedPhoneme::new(vowel, vowel_length)?;

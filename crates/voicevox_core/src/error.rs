@@ -218,10 +218,8 @@ pub(crate) enum LoadModelErrorKind {
 
 #[derive(Error, Debug)]
 pub(crate) enum InvalidQueryErrorKind {
-    #[error("`consonant_length`があるときは`consonant`もなければなりません")]
-    MissingConsonantPhoneme,
-    #[error("`consonant`があるときは`consonant_length`もなければなりません")]
-    MissingConsonantLength,
+    #[error("`consonant`と`consonant_length`の有無は一致していなければなりません")]
+    MissingConsonantPhonemeOrLength,
     #[error("`accent`を`0`にすることはできません")]
     AccentIsZero,
     #[error(
