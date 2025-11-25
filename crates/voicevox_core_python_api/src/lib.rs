@@ -5,6 +5,8 @@ use std::{
 };
 
 mod convert;
+use crate::convert::VoicevoxCoreResultExt as _;
+
 use self::convert::{AudioQueryExt as _, ToDataclass, from_utf8_path};
 use easy_ext::ext;
 use log::{debug, warn};
@@ -17,7 +19,7 @@ use pyo3::{
     wrap_pyfunction,
 };
 use voicevox_core::{
-    __internal::interop::raii::MaybeClosed, AccentPhrase, AudioQuery, UserDictWord,
+    __internal::interop::raii::MaybeClosed, AccentPhrase, AudioQuery, Mora, UserDictWord,
 };
 
 #[pymodule]
@@ -30,6 +32,9 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_accent_phrases))?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_json))?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_to_json))?;
+    module.add_wrapped(wrap_pyfunction!(_validate_audio_query))?;
+    module.add_wrapped(wrap_pyfunction!(_validate_accent_phrase))?;
+    module.add_wrapped(wrap_pyfunction!(_validate_mora))?;
     module.add_wrapped(wrap_pyfunction!(_validate_user_dict_word))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
     module.add_wrapped(wrap_pyfunction!(wav_from_s16le))?;
@@ -275,6 +280,30 @@ fn _audio_query_to_json(
     #[pyo3(from_py_with = "convert::from_audio_query")] audio_query: AudioQuery,
 ) -> String {
     audio_query.to_json()
+}
+
+#[pyfunction]
+fn _validate_mora(
+    #[pyo3(from_py_with = "convert::from_dataclass_via_serde")] mora: Mora,
+    py: Python<'_>,
+) -> PyResult<()> {
+    mora.validate().into_py_result(py)
+}
+
+#[pyfunction]
+fn _validate_accent_phrase(
+    #[pyo3(from_py_with = "convert::from_dataclass_via_serde")] accent_phrase: AccentPhrase,
+    py: Python<'_>,
+) -> PyResult<()> {
+    accent_phrase.validate().into_py_result(py)
+}
+
+#[pyfunction]
+fn _validate_audio_query(
+    #[pyo3(from_py_with = "convert::from_audio_query")] audio_query: AudioQuery,
+    py: Python<'_>,
+) -> PyResult<()> {
+    audio_query.validate().into_py_result(py)
 }
 
 #[pyfunction]

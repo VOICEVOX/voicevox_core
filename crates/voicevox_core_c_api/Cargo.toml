@@ -35,6 +35,7 @@ ndarray.workspace = true
 parking_lot = { workspace = true, features = ["arc_lock"] }
 process_path.workspace = true
 ref-cast.workspace = true
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 thiserror.workspace = true
 tracing.workspace = true
@@ -57,7 +58,6 @@ ndarray.workspace = true
 ndarray-stats.workspace = true
 predicates.workspace = true
 regex.workspace = true
-serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
 tempfile.workspace = true
 test_util.workspace = true

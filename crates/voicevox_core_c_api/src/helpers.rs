@@ -1,13 +1,13 @@
 use easy_ext::ext;
+use serde::de::DeserializeOwned;
 use std::{error::Error as _, ffi::CStr, fmt::Debug, iter};
 use uuid::Uuid;
-use voicevox_core::{AccelerationMode, AudioQuery, UserDictWord, VoiceModelId};
+use voicevox_core::{AccelerationMode, AccentPhrase, AudioQuery, Mora, UserDictWord, VoiceModelId};
 
+use duplicate::duplicate_item;
 use either::Either;
 use thiserror::Error;
 use tracing::error;
-
-use voicevox_core::AccentPhrase;
 
 use crate::{
     VoicevoxAccelerationMode, VoicevoxInitializeOptions, VoicevoxSynthesisOptions,
@@ -52,7 +52,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 InvalidQuery => {
                     panic!(
                         "the audio query (or accent phrases) should have been validated \
-                         beforehand with `validate_audio_query`/`validate_accent_phrases`",
+                         beforehand with one of the `validate_` functions",
                     );
                 }
                 __NonExhaustive => unreachable!(),
@@ -60,6 +60,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
             Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
+            Err(InvalidMora(_)) => VOICEVOX_RESULT_INVALID_MORA_ERROR,
             Err(InvalidUuid(_)) => VOICEVOX_RESULT_INVALID_UUID_ERROR,
         }
     }
@@ -85,38 +86,52 @@ pub(crate) enum CApiError {
     InvalidAudioQuery(Either<serde_json::Error, String>),
     #[error("無効なAccentPhraseです: {0}")]
     InvalidAccentPhrase(Either<serde_json::Error, String>),
+    #[error("無効なモーラです: {0}")]
+    InvalidMora(Either<serde_json::Error, String>),
     #[error("無効なUUIDです: {0}")]
     InvalidUuid(uuid::Error),
 }
 
-pub(crate) fn validate_audio_query(json: &CStr) -> CApiResult<AudioQuery> {
-    let json = ensure_utf8(json)?;
-    (|| {
-        let res = serde_json::from_str::<AudioQuery>(json).map_err(Either::Left)?;
+pub(crate) trait ValidateJson: DeserializeOwned {
+    fn error(source: Either<serde_json::Error, String>) -> CApiError;
+    fn validate(&self) -> voicevox_core::Result<()>;
+
+    fn validate_json(json: &CStr) -> CApiResult<Self> {
+        let res = Self::from_json_without_validation(json)?;
         res.validate()
-            .map_err(|e| Either::Right(unwrap_invalid_query_error_kind(&e)))?;
-        Ok(res)
-    })()
-    .map_err(CApiError::InvalidAudioQuery)
-}
+            .map_err(|e| Either::Right(unwrap_invalid_query_error_kind(&e)))
+            .map_err(Self::error)?;
+        return Ok(res);
 
-pub(crate) fn validate_accent_phrases(json: &CStr) -> CApiResult<Vec<AccentPhrase>> {
-    let json = ensure_utf8(json)?;
-    (|| {
-        let res = serde_json::from_str::<Vec<AccentPhrase>>(json).map_err(Either::Left)?;
-        for res in &res {
-            res.validate()
-                .map_err(|e| Either::Right(unwrap_invalid_query_error_kind(&e)))?;
+        fn unwrap_invalid_query_error_kind(err: &voicevox_core::Error) -> String {
+            err.source()
+                .expect("the error is expected to be `InvalidQuery`, which has `source`")
+                .to_string()
         }
-        Ok(res)
-    })()
-    .map_err(CApiError::InvalidAccentPhrase)
+    }
+
+    fn from_json_without_validation(json: &CStr) -> CApiResult<Self> {
+        serde_json::from_str(ensure_utf8(json)?)
+            .map_err(Either::Left)
+            .map_err(Self::error)
+    }
 }
 
-fn unwrap_invalid_query_error_kind(err: &voicevox_core::Error) -> String {
-    err.source()
-        .expect("the error is expected to be `InvalidQuery`, which has `source`")
-        .to_string()
+#[duplicate_item(
+    T ErrorVariant validation;
+    [ AudioQuery ] [ InvalidAudioQuery ] [ Self::validate ];
+    [ AccentPhrase ] [ InvalidAccentPhrase ] [ Self::validate ];
+    [ Mora ] [ InvalidMora ] [ Self::validate ];
+    [ Vec<AccentPhrase> ] [ InvalidAccentPhrase ] [ |this: &Self| this.into_iter().try_for_each(AccentPhrase::validate) ];
+)]
+impl ValidateJson for T {
+    fn error(source: Either<serde_json::Error, String>) -> CApiError {
+        CApiError::ErrorVariant(source)
+    }
+
+    fn validate(&self) -> voicevox_core::Result<()> {
+        (validation)(self)
+    }
 }
 
 pub(crate) fn audio_query_model_to_json(audio_query_model: &AudioQuery) -> String {

@@ -248,7 +248,9 @@ impl<'py> IntoPyObject<'py> for ToPyUuid {
     }
 }
 
-fn from_dataclass_via_serde<T: DeserializeOwned>(instance: &Bound<'_, PyAny>) -> PyResult<T> {
+pub(crate) fn from_dataclass_via_serde<T: DeserializeOwned>(
+    instance: &Bound<'_, PyAny>,
+) -> PyResult<T> {
     let fields = dataclasses_asdict(instance)?;
     serde_pyobject::from_pyobject(fields).map_err(Into::into)
 }

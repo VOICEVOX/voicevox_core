@@ -6,6 +6,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
 
 /**
  * AccentPhrase (アクセント句ごとの情報)。
@@ -43,6 +44,27 @@ public class AccentPhrase {
     this.isInterrogative = false;
   }
 
+  /**
+   * このインスタンスをバリデートする。
+   *
+   * <p>次のうちどれかを満たすなら{@link InvalidQueryException}を発する。
+   *
+   * <ul>
+   *   <li>{@link #moras}もしくは{@link #pauseMora}の要素のいずれかが不正。
+   *   <li>{@link #accent}が{@code 0}。
+   * </ul>
+   *
+   * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
+   *
+   * <ul>
+   *   <li>{@link #moras}もしくは{@link #pauseMora}の要素のいずれかが、警告が出る状態。
+   *   <li>{@link #accent}が{@link #moras}の数を超過している。
+   * </ul>
+   */
+  public void validate() {
+    rsValidate();
+  }
+
   // `moras`の型が`List`のため、`clone`は実装できない
 
   @Override
@@ -56,4 +78,6 @@ public class AccentPhrase {
         && pauseMora == other.pauseMora
         && isInterrogative == other.isInterrogative;
   }
+
+  private native void rsValidate();
 }

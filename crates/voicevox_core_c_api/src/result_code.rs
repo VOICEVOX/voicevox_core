@@ -60,6 +60,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR = 24,
     /// UUIDの変換に失敗した
     VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
+    /// 無効なMora
+    VOICEVOX_RESULT_INVALID_MORA_ERROR = 30,
 }
 
 pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static CStr {
@@ -106,5 +108,6 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
             c"ユーザー辞書の単語のバリデーションに失敗しました"
         }
         VOICEVOX_RESULT_INVALID_UUID_ERROR => c"UUIDの変換に失敗しました",
+        VOICEVOX_RESULT_INVALID_MORA_ERROR => c"無効なモーラです",
     }
 }

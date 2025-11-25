@@ -226,6 +226,10 @@ enum VoicevoxResultCode
    * UUIDの変換に失敗した
    */
   VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
+  /**
+   * 無効なMora
+   */
+  VOICEVOX_RESULT_INVALID_MORA_ERROR = 30,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
@@ -702,13 +706,32 @@ VoicevoxResultCode voicevox_audio_query_create_from_accent_phrases(const char *a
                                                                    char **output_audio_query_json);
 
 /**
- * @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
- * @param [out] output_accent_phrases_json 生成先
+ * JSONを[`AudioQuery`型]としてバリデートする。
+ *
+ * [`AudioQuery`型]: ../rust_api/voicevox_core/struct.AudioQuery.html
+ *
+ * 次のうちどれかを満たすならエラーを返す。
+ *
+ * - `accent_phrases`の要素のうちいずれかが、 ::voicevox_accent_phrase_validate でエラーになる。
+ * - `outputSamplingRate`が`24000`の倍数ではない、もしくは`0` (将来的に解消予定。cf. [#762])。
+ *
+ * [#762]: https://github.com/VOICEVOX/voicevox_core/issues/762
+ *
+ * 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
+ *
+ * - `accent_phrases`の要素のうちいずれかが警告が出る状態。
+ * - `speedScale`が負。
+ * - `volumeScale`が負。
+ * - `prePhonemeLength`が負。
+ * - `postPhonemeLength`が負。
+ * - `outputSamplingRate`が`24000`以外の値 (エラーと同様将来的に解消予定)。
+ *
+ * @param [in] audio_query_json `AudioQuery`型のJSON
  *
  * @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR
  *
  * \safety{
- * - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * }
  *
  * \orig-impl{voicevox_audio_query_validate}
@@ -719,21 +742,64 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_audio_query_validate(const char *audio_query_json);
 
 /**
- * @param [in] audio_query_json AudioQueryのJSON文字列
- * @param [out] output_accent_phrases_json 生成先
+ * JSONを[`AccentPhrase`型]としてバリデートする。
  *
- * @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR
+ *[`AccentPhrase`型]: ../rust_api/voicevox_core/struct.AccentPhrase.html
+ *
+ * 次のうちどれかを満たすならエラーを返す。
+ *
+ * - `moras`もしくは`pause_mora`の要素のうちいずれかが、 ::voicevox_mora_validate でエラーになる。
+ * - `accent`が`0`。
+ *
+ * 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
+ *
+ * - `moras`もしくは`pause_mora`の要素のうちいずれかが、警告が出る状態。
+ * - `accent`が`moras`の数を超過している。
+ *
+ * @param [in] accent_phrase_json `AccentPhrase`型のJSON
+ *
+ * @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR
  *
  * \safety{
- * - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `accent_phrase_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * }
  *
- * \orig-impl{voicevox_validate_accent_phrases}
+ * \orig-impl{voicevox_accent_phrase_validate}
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_validate_accent_phrases(const char *accent_phrases_json);
+VoicevoxResultCode voicevox_accent_phrase_validate(const char *accent_phrase_json);
+
+/**
+ * JSONを[`Mora`型]としてバリデートする。
+ *
+ * [`Mora`型]: ../rust_api/voicevox_core/struct.Mora.html
+ *
+ * 次のうちどれかを満たすならエラーを返す。
+ *
+ * - `consonant`と`consonant_length`の有無が不一致。
+ * - `consonant`もしくは`vowel`が音素として不正。
+ *
+ * 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
+ *
+ * - `consonant_length`が負。
+ * - `vowel_length`が負。
+ *
+ * @param [in] mora_json `Mora`型のJSON
+ *
+ * @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_MORA_ERROR
+ *
+ * \safety{
+ * - `mora_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_mora_validate}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_mora_validate(const char *mora_json);
 
 /**
  * VVMファイルを開く。

@@ -39,6 +39,7 @@ impl Mora {
     /// [`vowel`]: Self::vowel
     /// [`vowel_length`]: Self::vowel_length
     /// [`pitch`]: Self::pitch
+    #[cfg_attr(doc, doc(alias = "voicevox_mora_validate"))]
     pub fn validate(&self) -> crate::Result<()> {
         self.to_validated().map(|_| ())
     }
@@ -77,7 +78,7 @@ impl AccentPhrase {
     /// [`pause_mora`]: Self::pause_mora
     /// [`accent`]: Self::accent
     /// [不正]: Mora::validate
-    #[cfg_attr(doc, doc(alias = "voicevox_validate_accent_phrases"))]
+    #[cfg_attr(doc, doc(alias = "voicevox_accent_phrase_validate"))]
     pub fn validate(&self) -> crate::Result<()> {
         self.to_validated().map(|_| ())
     }

@@ -7,6 +7,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /**
@@ -74,6 +75,34 @@ public class AudioQuery {
     this.kana = null;
   }
 
+  /**
+   * このインスタンスをバリデートする。
+   *
+   * <p>次のうちどれかを満たすなら{@link InvalidQueryException}を発する。
+   *
+   * <ul>
+   *   <li>{@link #accentPhrases}の要素のうちいずれかが不正。
+   *   <li>{@link #outputSamplingRate}が{@code 24000}の倍数ではない、もしくは{@code 0} (将来的に解消予定。cf. <a
+   *       href="https://github.com/VOICEVOX/voicevox_core/issues/762">#762</a>)
+   * </ul>
+   *
+   * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
+   *
+   * <ul>
+   *   <li>{@link #accentPhrases}の要素のうちいずれかが警告が出る状態。
+   *   <li>{@link #speedScale}がNaN、infinity、もしくは負。
+   *   <li>{@link #pitchScale}がNaNもしくは±infinity。
+   *   <li>{@link #intonationScale}がNaNもしくは±infinity。
+   *   <li>{@link #volumeScale}がNaN、infinity、もしくは負。
+   *   <li>{@link #prePhonemeLength}がNaN、infinity、もしくは負。
+   *   <li>{@link #postPhonemeLength}がNaN、infinity、もしくは負。
+   *   <li>{@link #outputSamplingRate}が{@code 24000}以外の値 (エラーと同様将来的に解消予定)。
+   * </ul>
+   */
+  public void validate() {
+    rsValidate();
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (!(obj instanceof AudioQuery)) {
@@ -103,4 +132,6 @@ public class AudioQuery {
 
   @Nonnull
   private static native String rsFromAccentPhrases(String accentPhrases);
+
+  private native void rsValidate();
 }

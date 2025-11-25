@@ -15,8 +15,8 @@ mod result_code;
 mod slice_owner;
 use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::{
-    CApiError, UuidBytesExt as _, accent_phrases_to_json, audio_query_model_to_json, ensure_utf8,
-    into_result_code_with_error, validate_accent_phrases, validate_audio_query,
+    CApiError, UuidBytesExt as _, ValidateJson, accent_phrases_to_json, audio_query_model_to_json,
+    ensure_utf8, into_result_code_with_error,
 };
 use self::object::{CApiObject as _, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
@@ -41,7 +41,7 @@ use uuid::Uuid;
 use voicevox_core::__internal::interop::{
     BlockingTextAnalyzerExt as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE, ToJsonValue as _,
 };
-use voicevox_core::{AudioQuery, StyleId};
+use voicevox_core::{AccentPhrase, AudioQuery, Mora, StyleId};
 
 fn init_logger_once() {
     static ONCE: Once = Once::new();
@@ -497,7 +497,7 @@ pub unsafe extern "C" fn voicevox_audio_query_create_from_accent_phrases(
         CStr::from_ptr(accent_phrases_json)
     };
     into_result_code_with_error((|| {
-        let accent_phrases = validate_accent_phrases(accent_phrases_json)?;
+        let accent_phrases = ValidateJson::from_json_without_validation(accent_phrases_json)?;
         let audio_query = &AudioQuery::from_accent_phrases(accent_phrases);
         let audio_query = serde_json::to_string(audio_query).expect("should not fail");
         let audio_query = CString::new(audio_query).expect("should not contain '\\0'");
@@ -511,13 +511,32 @@ pub unsafe extern "C" fn voicevox_audio_query_create_from_accent_phrases(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
-/// @param [out] output_accent_phrases_json 生成先
+/// JSONを[`AudioQuery`型]としてバリデートする。
+///
+/// [`AudioQuery`型]: ../rust_api/voicevox_core/struct.AudioQuery.html
+///
+/// 次のうちどれかを満たすならエラーを返す。
+///
+/// - `accent_phrases`の要素のうちいずれかが、 ::voicevox_accent_phrase_validate でエラーになる。
+/// - `outputSamplingRate`が`24000`の倍数ではない、もしくは`0` (将来的に解消予定。cf. [#762])。
+///
+/// [#762]: https://github.com/VOICEVOX/voicevox_core/issues/762
+///
+/// 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
+///
+/// - `accent_phrases`の要素のうちいずれかが警告が出る状態。
+/// - `speedScale`が負。
+/// - `volumeScale`が負。
+/// - `prePhonemeLength`が負。
+/// - `postPhonemeLength`が負。
+/// - `outputSamplingRate`が`24000`以外の値 (エラーと同様将来的に解消予定)。
+///
+/// @param [in] audio_query_json `AudioQuery`型のJSON
 ///
 /// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR
 ///
 /// \safety{
-/// - `accent_phrases_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 ///
 /// \orig-impl{voicevox_audio_query_validate}
@@ -528,28 +547,73 @@ pub unsafe extern "C" fn voicevox_audio_query_validate(
     init_logger_once();
     // SAFETY: The safety contract must be upheld by the caller.
     let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) };
-    into_result_code_with_error(validate_audio_query(audio_query_json).map(|_| ()))
+    into_result_code_with_error(AudioQuery::validate_json(audio_query_json).map(|_| ()))
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// @param [in] audio_query_json AudioQueryのJSON文字列
-/// @param [out] output_accent_phrases_json 生成先
+/// JSONを[`AccentPhrase`型]としてバリデートする。
 ///
-/// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR
+///[`AccentPhrase`型]: ../rust_api/voicevox_core/struct.AccentPhrase.html
+///
+/// 次のうちどれかを満たすならエラーを返す。
+///
+/// - `moras`もしくは`pause_mora`の要素のうちいずれかが、 ::voicevox_mora_validate でエラーになる。
+/// - `accent`が`0`。
+///
+/// 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
+///
+/// - `moras`もしくは`pause_mora`の要素のうちいずれかが、警告が出る状態。
+/// - `accent`が`moras`の数を超過している。
+///
+/// @param [in] accent_phrase_json `AccentPhrase`型のJSON
+///
+/// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR
 ///
 /// \safety{
-/// - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `accent_phrase_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// }
 ///
-/// \orig-impl{voicevox_validate_accent_phrases}
+/// \orig-impl{voicevox_accent_phrase_validate}
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn voicevox_validate_accent_phrases(
-    accent_phrases_json: *const c_char,
+pub unsafe extern "C" fn voicevox_accent_phrase_validate(
+    accent_phrase_json: *const c_char,
 ) -> VoicevoxResultCode {
     init_logger_once();
     // SAFETY: The safety contract must be upheld by the caller.
-    let accent_phrases_json = unsafe { CStr::from_ptr(accent_phrases_json) };
-    into_result_code_with_error(validate_accent_phrases(accent_phrases_json).map(|_| ()))
+    let accent_phrase_json = unsafe { CStr::from_ptr(accent_phrase_json) };
+    into_result_code_with_error(AccentPhrase::validate_json(accent_phrase_json).map(|_| ()))
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// JSONを[`Mora`型]としてバリデートする。
+///
+/// [`Mora`型]: ../rust_api/voicevox_core/struct.Mora.html
+///
+/// 次のうちどれかを満たすならエラーを返す。
+///
+/// - `consonant`と`consonant_length`の有無が不一致。
+/// - `consonant`もしくは`vowel`が音素として不正。
+///
+/// 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
+///
+/// - `consonant_length`が負。
+/// - `vowel_length`が負。
+///
+/// @param [in] mora_json `Mora`型のJSON
+///
+/// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_MORA_ERROR
+///
+/// \safety{
+/// - `mora_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_mora_validate}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_mora_validate(mora_json: *const c_char) -> VoicevoxResultCode {
+    init_logger_once();
+    // SAFETY: The safety contract must be upheld by the caller.
+    let mora_json = unsafe { CStr::from_ptr(mora_json) };
+    into_result_code_with_error(Mora::validate_json(mora_json).map(|_| ()))
 }
 
 /// 音声モデルファイル。
@@ -1148,7 +1212,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
         let accent_phrases_json = unsafe { CStr::from_ptr(accent_phrases_json) };
-        let accent_phrases = validate_accent_phrases(accent_phrases_json)?;
+        let accent_phrases = Vec::<AccentPhrase>::validate_json(accent_phrases_json)?;
         let accent_phrases = synthesizer
             .body()
             .replace_mora_data(&accent_phrases, StyleId::new(style_id))?;
@@ -1192,7 +1256,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
         let accent_phrases_json = unsafe { CStr::from_ptr(accent_phrases_json) };
-        let accent_phrases = validate_accent_phrases(accent_phrases_json)?;
+        let accent_phrases = Vec::<AccentPhrase>::validate_json(accent_phrases_json)?;
         let accent_phrases = synthesizer
             .body()
             .replace_phoneme_length(&accent_phrases, StyleId::new(style_id))?;
@@ -1236,7 +1300,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_pitch(
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
         let accent_phrases_json = unsafe { CStr::from_ptr(accent_phrases_json) };
-        let accent_phrases = validate_accent_phrases(accent_phrases_json)?;
+        let accent_phrases = Vec::<AccentPhrase>::validate_json(accent_phrases_json)?;
         let accent_phrases = synthesizer
             .body()
             .replace_mora_pitch(&accent_phrases, StyleId::new(style_id))?;
@@ -1305,7 +1369,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
         let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) };
-        let audio_query = validate_audio_query(audio_query_json)?;
+        let audio_query = ValidateJson::validate_json(audio_query_json)?;
         let VoicevoxSynthesisOptions {
             enable_interrogative_upspeak,
         } = options;
