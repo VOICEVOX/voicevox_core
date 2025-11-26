@@ -1,11 +1,13 @@
 use std::{borrow::Cow, ptr};
 
-use crate::common::{JavaApiError, throw_if_err};
+use crate::common::{JavaApiError, JavaApiResult, throw_if_err};
+use duplicate::duplicate_item;
 use jni::{
     JNIEnv,
     objects::{JClass, JObject, JString, JValueGen},
     sys::jstring,
 };
+use serde::de::DeserializeOwned;
 use voicevox_core::{AccentPhrase, AudioQuery, Mora};
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
@@ -31,26 +33,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_AudioQuery_rsValidate(
     env: JNIEnv<'_>,
     this: JObject<'_>,
 ) {
-    throw_if_err(env, (), |env| {
-        let gson = env.new_object("com/google/gson/Gson", "()V", &[])?;
-
-        let audio_query = &env
-            .call_method(
-                gson,
-                "toJson",
-                "(Ljava/lang/Object;)Ljava/lang/String;",
-                &[JValueGen::Object(&this)],
-            )?
-            .l()?
-            .into();
-        let audio_query = &env.get_string(audio_query)?;
-        let audio_query = &Cow::from(audio_query);
-
-        serde_json::from_str::<AudioQuery>(audio_query)
-            .map_err(JavaApiError::DeJson)?
-            .validate()?;
-        Ok(())
-    })
+    throw_if_err(env, (), |env| AudioQuery::validate_json(env, this))
 }
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
@@ -59,26 +42,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_AccentPhrase_rsValidate(
     env: JNIEnv<'_>,
     this: JObject<'_>,
 ) {
-    throw_if_err(env, (), |env| {
-        let gson = env.new_object("com/google/gson/Gson", "()V", &[])?;
-
-        let audio_query = &env
-            .call_method(
-                gson,
-                "toJson",
-                "(Ljava/lang/Object;)Ljava/lang/String;",
-                &[JValueGen::Object(&this)],
-            )?
-            .l()?
-            .into();
-        let audio_query = &env.get_string(audio_query)?;
-        let audio_query = &Cow::from(audio_query);
-
-        serde_json::from_str::<AccentPhrase>(audio_query)
-            .map_err(JavaApiError::DeJson)?
-            .validate()?;
-        Ok(())
-    })
+    throw_if_err(env, (), |env| AccentPhrase::validate_json(env, this))
 }
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
@@ -87,10 +51,16 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_Mora_rsValidate(
     env: JNIEnv<'_>,
     this: JObject<'_>,
 ) {
-    throw_if_err(env, (), |env| {
+    throw_if_err(env, (), |env| Mora::validate_json(env, this))
+}
+
+trait ValidateJson: DeserializeOwned {
+    fn validate(&self) -> voicevox_core::Result<()>;
+
+    fn validate_json(env: &mut JNIEnv<'_>, this: JObject<'_>) -> JavaApiResult<()> {
         let gson = env.new_object("com/google/gson/Gson", "()V", &[])?;
 
-        let audio_query = &env
+        let this = &env
             .call_method(
                 gson,
                 "toJson",
@@ -99,12 +69,24 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_Mora_rsValidate(
             )?
             .l()?
             .into();
-        let audio_query = &env.get_string(audio_query)?;
-        let audio_query = &Cow::from(audio_query);
+        let this = &env.get_string(this)?;
+        let this = &Cow::from(this);
 
-        serde_json::from_str::<Mora>(audio_query)
+        serde_json::from_str::<Self>(this)
             .map_err(JavaApiError::DeJson)?
             .validate()?;
         Ok(())
-    })
+    }
+}
+
+#[duplicate_item(
+    T;
+    [ AudioQuery ];
+    [ AccentPhrase ];
+    [ Mora ];
+)]
+impl ValidateJson for T {
+    fn validate(&self) -> voicevox_core::Result<()> {
+        self.validate()
+    }
 }

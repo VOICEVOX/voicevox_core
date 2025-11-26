@@ -5028,6 +5028,7 @@ dependencies = [
  "jni",
  "pretty_assertions",
  "rstest",
+ "serde",
  "serde_json",
  "tracing",
  "tracing-subscriber",
