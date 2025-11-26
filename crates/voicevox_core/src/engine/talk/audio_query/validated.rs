@@ -3,6 +3,8 @@ use std::{
     num::{FpCategory, NonZero},
 };
 
+use duplicate::duplicate_item;
+use serde::de::DeserializeOwned;
 use tracing::warn;
 
 use crate::error::{ErrorRepr, InvalidQueryErrorKind};
@@ -140,6 +142,23 @@ impl AudioQuery {
             }
             .into()
         })
+    }
+}
+
+pub trait Validate: DeserializeOwned {
+    fn validate(&self) -> crate::Result<()>;
+}
+
+#[duplicate_item(
+    T validation;
+    [ AudioQuery ] [ Self::validate ];
+    [ AccentPhrase ] [ Self::validate ];
+    [ Mora ] [ Self::validate ];
+    [ Vec<AccentPhrase> ] [ |this: &Self| this.iter().try_for_each(AccentPhrase::validate) ];
+)]
+impl Validate for T {
+    fn validate(&self) -> crate::Result<()> {
+        (validation)(self)
     }
 }
 

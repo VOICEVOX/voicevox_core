@@ -1,14 +1,13 @@
 use std::{borrow::Cow, ptr};
 
 use crate::common::{JavaApiError, JavaApiResult, throw_if_err};
-use duplicate::duplicate_item;
+use easy_ext::ext;
 use jni::{
     JNIEnv,
     objects::{JClass, JObject, JString, JValueGen},
     sys::jstring,
 };
-use serde::de::DeserializeOwned;
-use voicevox_core::{AccentPhrase, AudioQuery, Mora};
+use voicevox_core::{__internal::interop::Validate, AccentPhrase, AudioQuery, Mora};
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
@@ -54,9 +53,8 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_Mora_rsValidate(
     throw_if_err(env, (), |env| Mora::validate_json(env, this))
 }
 
-trait ValidateJson: DeserializeOwned {
-    fn validate(&self) -> voicevox_core::Result<()>;
-
+#[ext]
+impl<T: Validate> T {
     fn validate_json(env: &mut JNIEnv<'_>, this: JObject<'_>) -> JavaApiResult<()> {
         let gson = env.new_object("com/google/gson/Gson", "()V", &[])?;
 
@@ -76,17 +74,5 @@ trait ValidateJson: DeserializeOwned {
             .map_err(JavaApiError::DeJson)?
             .validate()?;
         Ok(())
-    }
-}
-
-#[duplicate_item(
-    T;
-    [ AudioQuery ];
-    [ AccentPhrase ];
-    [ Mora ];
-)]
-impl ValidateJson for T {
-    fn validate(&self) -> voicevox_core::Result<()> {
-        self.validate()
     }
 }

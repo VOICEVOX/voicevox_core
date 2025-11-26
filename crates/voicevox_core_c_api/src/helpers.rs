@@ -1,8 +1,10 @@
 use easy_ext::ext;
-use serde::de::DeserializeOwned;
 use std::{error::Error as _, ffi::CStr, fmt::Debug, iter};
 use uuid::Uuid;
-use voicevox_core::{AccelerationMode, AccentPhrase, AudioQuery, Mora, UserDictWord, VoiceModelId};
+use voicevox_core::{
+    __internal::interop::Validate, AccelerationMode, AccentPhrase, AudioQuery, Mora, UserDictWord,
+    VoiceModelId,
+};
 
 use duplicate::duplicate_item;
 use either::Either;
@@ -92,9 +94,8 @@ pub(crate) enum CApiError {
     InvalidUuid(uuid::Error),
 }
 
-pub(crate) trait ValidateJson: DeserializeOwned {
+pub(crate) trait ValidateJson: Validate {
     fn error(source: Either<serde_json::Error, String>) -> CApiError;
-    fn validate(&self) -> voicevox_core::Result<()>;
 
     fn validate_json(json: &CStr) -> CApiResult<Self> {
         let res = Self::from_json_without_validation(json)?;
@@ -118,19 +119,15 @@ pub(crate) trait ValidateJson: DeserializeOwned {
 }
 
 #[duplicate_item(
-    T ErrorVariant validation;
-    [ AudioQuery ] [ InvalidAudioQuery ] [ Self::validate ];
-    [ AccentPhrase ] [ InvalidAccentPhrase ] [ Self::validate ];
-    [ Mora ] [ InvalidMora ] [ Self::validate ];
-    [ Vec<AccentPhrase> ] [ InvalidAccentPhrase ] [ |this: &Self| this.into_iter().try_for_each(AccentPhrase::validate) ];
+    T ErrorVariant;
+    [ AudioQuery ] [ InvalidAudioQuery ];
+    [ AccentPhrase ] [ InvalidAccentPhrase ];
+    [ Mora ] [ InvalidMora ];
+    [ Vec<AccentPhrase> ] [ InvalidAccentPhrase ];
 )]
 impl ValidateJson for T {
     fn error(source: Either<serde_json::Error, String>) -> CApiError {
         CApiError::ErrorVariant(source)
-    }
-
-    fn validate(&self) -> voicevox_core::Result<()> {
-        (validation)(self)
     }
 }
 

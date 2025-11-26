@@ -7,7 +7,7 @@ pub(crate) mod text;
 pub(crate) mod text_analyzer;
 pub(crate) mod user_dict;
 
-pub use self::audio_query::{AccentPhrase, AudioQuery, Mora};
+pub use self::audio_query::{AccentPhrase, AudioQuery, Mora, Validate};
 pub(crate) use self::audio_query::{
     LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
 };
